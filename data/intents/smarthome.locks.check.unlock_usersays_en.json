@@ -1,0 +1,199 @@
+[
+  {
+    "id": "53f383dc-d77c-458d-b7bd-cbe55dc811b2",
+    "data": [
+      {
+        "text": "is the ",
+        "userDefined": false
+      },
+      {
+        "text": "front door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " unlocked",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "ab6e113c-2dd5-4d66-9859-ed15b53f087f",
+    "data": [
+      {
+        "text": "did I unlock ",
+        "userDefined": false
+      },
+      {
+        "text": "door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "everywhere",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "53c1856c-b905-4b95-af58-f1c193266efa",
+    "data": [
+      {
+        "text": "did I unlock the ",
+        "userDefined": false
+      },
+      {
+        "text": "door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " in the ",
+        "userDefined": false
+      },
+      {
+        "text": "kitchen",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "506eb54a-14f1-424a-9b52-152e62e888ad",
+    "data": [
+      {
+        "text": "are",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "kitchen",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "doors",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " unlocked",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "b501126a-3968-43fc-9522-9590147ecbce",
+    "data": [
+      {
+        "text": "did I unlock the ",
+        "userDefined": false
+      },
+      {
+        "text": "front door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "6c9bdf87-b1bb-472c-840a-64028bae7df9",
+    "data": [
+      {
+        "text": "is ",
+        "userDefined": false
+      },
+      {
+        "text": "garage",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": false
+      },
+      {
+        "text": " unlocked",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "20ebe15e-044e-4812-9145-aa4bf62d15db",
+    "data": [
+      {
+        "text": "are",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": true
+      },
+      {
+        "text": " the ",
+        "userDefined": false
+      },
+      {
+        "text": "doors",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " unlocked",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  }
+]

@@ -1,0 +1,120 @@
+{
+  "id": "e3acf680-4ebe-48c4-9e02-cc4c9bec5d37",
+  "name": "smarthome.lights.switch.on",
+  "auto": true,
+  "contexts": [],
+  "responses": [
+    {
+      "resetContexts": false,
+      "action": "smarthome.lights.switch.on",
+      "affectedContexts": [
+        {
+          "name": "switch",
+          "lifespan": 3,
+          "parameters": {}
+        },
+        {
+          "name": "color",
+          "lifespan": 3,
+          "parameters": {}
+        },
+        {
+          "name": "room",
+          "lifespan": 3,
+          "parameters": {}
+        },
+        {
+          "name": "schedule",
+          "lifespan": 3,
+          "parameters": {}
+        },
+        {
+          "name": "check",
+          "lifespan": 3,
+          "parameters": {}
+        },
+        {
+          "name": "brightness",
+          "lifespan": 5,
+          "parameters": {}
+        }
+      ],
+      "parameters": [
+        {
+          "id": "88f525ad-d5f6-4d46-8dd4-1508d1d82313",
+          "name": "color",
+          "required": false,
+          "dataType": "@color",
+          "value": "$color",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "407d2da8-41d7-46df-a9df-191cf7cd070b",
+          "name": "device",
+          "required": false,
+          "dataType": "@lights",
+          "value": "$device",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "bd87b30a-2308-439a-8c9c-3505474451e8",
+          "name": "room",
+          "required": false,
+          "dataType": "@room",
+          "value": "$room",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "083380cf-dc1c-4b67-80c2-eb8de40017b0",
+          "name": "all",
+          "required": false,
+          "dataType": "@all",
+          "value": "$all",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        }
+      ],
+      "messages": [
+        {
+          "type": "0",
+          "title": "",
+          "textToSpeech": "",
+          "lang": "en",
+          "condition": ""
+        }
+      ],
+      "speech": []
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": false,
+  "webhookForSlotFilling": false,
+  "fallbackIntent": false,
+  "events": [],
+  "conditionalResponses": [],
+  "condition": "",
+  "conditionalFollowupEvents": []
+}

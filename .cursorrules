@@ -1,0 +1,329 @@
+# ChatBot Project Rules
+
+This is an Elixir/Phoenix chatbot application using classical NLP techniques (no LLMs).
+The system uses TF-IDF vectorization, intent classification, entity extraction, and a cognitive memory system.
+
+## Project Overview
+
+### Core Architecture
+
+```
+lib/chat_bot/
+├── brain.ex              # Main orchestrator (GenServer) - handles conversations, learning
+├── analysis/             # NLP analysis pipeline
+│   ├── pipeline.ex       # Orchestrates multi-stage analysis
+│   ├── semantic_chunker.ex    # Splits input into utterances
+│   ├── discourse_analyzer.ex  # Determines addressee (bot/user/third-party)
+│   ├── speech_act_classifier.ex # Classifies intent type (greeting, question, etc.)
+│   ├── slot_detector.ex  # Detects required/missing slots for intents
+│   └── internal_model.ex # Data structures for analysis results
+├── memory/               # Cognitive memory system (Elixir port of Rust system)
+│   ├── embedder.ex       # TF-IDF vectorization (GenServer)
+│   ├── store.ex          # Episode/semantic memory storage (GenServer)
+│   ├── vector_index.ex   # ETS-based similarity search
+│   ├── consolidation.ex  # Clusters episodes into semantic facts
+│   ├── think.ex          # High-level memory API
+│   └── types.ex          # Episode, SemanticFact, Procedure structs
+├── ml/                   # Machine learning components
+│   ├── intent_classifier_simple.ex  # TF-IDF + cosine similarity (Agent)
+│   ├── gazetteer.ex      # Fast entity lookup (GenServer + ETS)
+│   ├── tokenizer.ex      # Text tokenization (no regex!)
+│   └── simple_classifier.ex # Classification algorithms
+└── system_status.ex      # Reports background process status
+```
+
+### Key Design Principles
+
+1. **No Regex in NLP**: Use `ChatBot.ML.Tokenizer` functions instead of regex for text processing
+2. **Non-blocking Operations**: Always check `ready?()` before calling GenServers that may be initializing
+3. **Multi-sentence Handling**: Split input into chunks, analyze each, combine responses
+4. **Slot Detection**: Intents define required slots; missing slots trigger clarification questions
+5. **Graceful Degradation**: System should work even when some components are still loading
+
+## Common Patterns
+
+### GenServer Ready Check Pattern
+
+When a GenServer might be busy (e.g., building vocabulary), always check before calling:
+
+```elixir
+# In the GenServer module
+def ready? do
+  try do
+    GenServer.call(__MODULE__, :ready?, 100)  # Short timeout
+  catch
+    :exit, {:timeout, _} -> false
+    :exit, {:noproc, _} -> false
+  end
+end
+
+# Before using the GenServer
+if Embedder.ready?() do
+  Embedder.embed(text)
+else
+  {:error, :embedder_not_ready}
+end
+```
+
+### Slot Detection for Missing Context
+
+When an intent requires parameters that aren't provided, ask for clarification:
+
+```elixir
+# In slot_schemas.json
+"weather.query": {
+  "required": ["location"],
+  "clarification_templates": {
+    "location": "What location would you like the weather for?"
+  }
+}
+```
+
+The pipeline returns `:needs_clarification` strategy with prompts when slots are missing.
+
+### Keyword-Based Intent Fallback
+
+When ML classifier has low confidence, use keyword heuristics:
+
+```elixir
+def suggest_intent_from_keywords(text) do
+  # Check for domain-specific keywords
+  if String.contains?(lower_text, "weather"), do: {:ok, "weather.query", 0.8}
+end
+```
+
+### Multi-Sentence Response Combination
+
+For inputs with multiple utterances:
+
+```elixir
+# 1. Semantic chunker splits into sentences
+# 2. Each chunk is analyzed independently  
+# 3. Response strategies are combined:
+#    - :can_respond + :needs_clarification = :partial_response_with_clarification
+# 4. Brain combines greeting response + clarification question
+```
+
+## Important Files
+
+### Configuration
+
+- `priv/analysis/slot_schemas.json` - Defines required/optional slots per intent
+- `data/intents/*.json` - Training data for intent classification
+- `data/entities/*.json` - Entity definitions for gazetteer
+- `priv/ml_models/` - Trained model files
+
+### Training
+
+Run `mix train_models` to retrain all ML models from data files.
+
+## Common Issues & Solutions
+
+### 1. GenServer Timeout During Initialization
+
+**Problem**: Embedder is building vocabulary (4755+ texts), blocking other calls.
+
+**Solution**: 
+- Check `Embedder.ready?()` before calling `Embedder.embed/1`
+- Store episodes without embeddings if embedder not ready
+- Use short timeouts with graceful fallbacks
+
+### 2. Intent Not Recognized
+
+**Problem**: Classifier returns wrong intent with low confidence.
+
+**Solution**:
+- Add keyword-based fallback in `SlotDetector.suggest_intent_from_keywords/1`
+- Add more training examples to `data/intents/` for that intent
+- Check that training data covers variations (with/without location, etc.)
+
+### 3. Multi-Sentence Input Only Responds to First Part
+
+**Problem**: "Hello! What's the weather?" only gets greeting response.
+
+**Solution**:
+- Brain's `generate_analysis_response/4` must collect ALL speech acts
+- Prioritize substantive intents (questions/commands) over expressives (greetings)
+- Handle `:partial_response_with_clarification` strategy to combine responses
+
+### 4. Missing Location/Context Not Detected
+
+**Problem**: Weather query without location doesn't ask for clarification.
+
+**Solution**:
+- Ensure intent is correctly classified (may need keyword heuristic)
+- Slot schema must have `"required": ["location"]`
+- Pipeline returns `:needs_clarification` when slots are missing
+- Brain must handle this strategy and build clarification response
+
+## Testing
+
+### Feature Tests
+
+Test end-to-end behavior in `test/chat_bot/feature_test.exs`:
+
+```elixir
+test "handles greeting with weather question" do
+  {:ok, response} = Brain.evaluate(conv_id, "Hello! What's the weather in NYC?")
+  assert response =~ ~r/hello|hi/i
+  assert response =~ ~r/weather|location/i
+end
+```
+
+### Running Tests
+
+```bash
+mix test                           # Run all tests
+mix test test/chat_bot/feature_test.exs  # Run specific file
+mix test --failed                  # Rerun failed tests
+mix precommit                      # Full validation (format, credo, tests)
+```
+
+## Memory System
+
+### Episode Memory
+
+Stores individual experiences:
+```elixir
+%Episode{
+  id: "abc123",
+  state: "user said hello",
+  action: "conversation", 
+  outcome: "responded with greeting",
+  tags: ["greeting", "conv_id"],
+  embedding: [0.1, 0.2, ...]  # TF-IDF vector
+}
+```
+
+### Semantic Memory
+
+Aggregated knowledge from clustered episodes:
+```elixir
+%SemanticFact{
+  representation: "Users often greet before asking questions",
+  embedding: [...],
+  evidence_ids: ["ep1", "ep2", "ep3"]
+}
+```
+
+### Memory Integration
+
+Memory is used in speech act classification as an additional analysis pass:
+```elixir
+# In SpeechActClassifier
+defp analyze_with_memory(text) do
+  case Memory.Store.query_similar(text, 5) do
+    {:ok, similar_episodes} -> extract_classification_from_episodes(similar_episodes)
+    _ -> %{category: nil, confidence: 0}
+  end
+end
+```
+
+## UI Status Display
+
+The LiveView shows system status with:
+- `ChatBot.SystemStatus.get_all/0` - All component statuses
+- `ChatBot.SystemStatus.all_ready?/0` - Quick check if everything is ready
+- Periodic polling (2 seconds) refreshes status display
+
+Components tracked:
+- Embedder (building vocabulary / ready)
+- NLP Pipeline (loading models / ready)
+- Brain (ready / not started)
+- Memory Store (episode/semantic counts)
+
+## Code Style
+
+### Elixir Conventions
+
+- No regex for text processing - use `Tokenizer` functions
+- GenServers for stateful processes
+- Agents for simple state (like loaded models)
+- ETS for fast concurrent lookups
+- Pattern matching over conditionals when possible
+
+### Phoenix/LiveView
+
+- Use `<Layouts.app>` wrapper in templates
+- Use `<.input>` and `<.form>` components
+- Assign forms with `to_form/2`
+- No inline `<script>` tags - use app.js hooks
+
+### Testing
+
+- Feature tests for end-to-end behavior
+- Unit tests for individual modules
+- Use `assert` with pattern matching
+- Test IDs on key DOM elements
+
+## Admin Interface
+
+### Entity Management (`/admin`)
+
+The admin interface allows managing gazetteer entries (locations, devices, etc.):
+
+- **View entities** by type (location, city, device, room, etc.)
+- **Search** across all entity types
+- **Add new entries** dynamically (stored in memory, tagged with `:admin` source)
+- **Remove admin-added entries** (data-sourced entries cannot be removed)
+
+### Gazetteer API for Dynamic Entries
+
+```elixir
+# Add a new location
+Gazetteer.add_entry("San Francisco", "city", %{country: "USA"})
+
+# Remove an entry
+Gazetteer.remove_entry("san francisco")
+
+# List entries by type
+Gazetteer.list_by_type("location")
+
+# Search across all types
+Gazetteer.search("new york")
+
+# List all entity types
+Gazetteer.list_types()
+```
+
+### Routes
+
+- `/chat` - Main chat interface
+- `/admin` - Entity management admin panel
+- `/dev/dashboard` - Phoenix LiveDashboard (dev only)
+
+## Quick Reference
+### Start Development Server
+```bash
+mix phx.server
+# or
+iex -S mix phx.server
+```
+
+### Train Models
+```bash
+mix train_models
+```
+
+### Check System Status
+```elixir
+ChatBot.SystemStatus.get_all()
+ChatBot.Memory.Embedder.ready?()
+ChatBot.Memory.Store.stats()
+```
+
+### Test Intent Classification
+```elixir
+ChatBot.ML.IntentClassifierSimple.classify("What's the weather?")
+```
+
+### Test Analysis Pipeline
+```elixir
+ChatBot.Analysis.Pipeline.process("Hello! What's the weather in NYC?")
+```
+
+### Test Slot Detection
+```elixir
+ChatBot.Analysis.SlotDetector.detect("weather.query", [])
+# => %SlotResult{missing_required: ["location"], ...}
+```

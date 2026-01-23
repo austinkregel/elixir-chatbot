@@ -1,0 +1,200 @@
+[
+  {
+    "id": "25d3bb0a-da12-4e47-ac74-e3cc71274dc3",
+    "data": [
+      {
+        "text": "what\u0027s the weather in ",
+        "userDefined": false
+      },
+      {
+        "text": "Black River, New York",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "97d865d3-af58-4cfc-8d15-f9826f47606a",
+    "data": [
+      {
+        "text": "weather in ",
+        "userDefined": false
+      },
+      {
+        "text": "petoskey michigan",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "955af116-4a22-4452-8fa9-60e88e4ccfb8",
+    "data": [
+      {
+        "text": "what about ",
+        "userDefined": false
+      },
+      {
+        "text": "San Francisco",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "10fc3424-db26-4d2d-a7fa-9bcde59f1c24",
+    "data": [
+      {
+        "text": "can you check ",
+        "userDefined": false
+      },
+      {
+        "text": "Seattle",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "387171e9-ce80-4033-9cdb-8f24fde03701",
+    "data": [
+      {
+        "text": "what about ",
+        "userDefined": false
+      },
+      {
+        "text": "Oakland",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "a0f17ce7-a5e7-4967-a7f2-e883080da89b",
+    "data": [
+      {
+        "text": "now",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "in",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "Aspen",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "ee4fea3e-0b38-4ed6-8e39-08bc6dddb28b",
+    "data": [
+      {
+        "text": "what about ",
+        "userDefined": false
+      },
+      {
+        "text": "Aspen",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "72601e79-b8c5-4e63-9766-1b7f81fa3dad",
+    "data": [
+      {
+        "text": "Moscow",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "27737e21-4e87-447e-add6-979d947dd942",
+    "data": [
+      {
+        "text": "and in ",
+        "userDefined": false
+      },
+      {
+        "text": "London",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "7b671b3d-417a-4bd2-ad8d-aa784e78b11c",
+    "data": [
+      {
+        "text": "what about ",
+        "userDefined": false
+      },
+      {
+        "text": "Paris",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  }
+]

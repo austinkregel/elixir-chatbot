@@ -1,0 +1,115 @@
+[
+  {
+    "id": "greeting_hello",
+    "pattern": {
+      "first_word": ["hi", "hello", "hey", "howdy"],
+      "word_count": [1, 5]
+    },
+    "conclusion": {
+      "intent": "smalltalk.greeting",
+      "confidence_boost": 0.4
+    }
+  },
+  {
+    "id": "greeting_good_morning",
+    "pattern": {
+      "phrase": "good morning"
+    },
+    "conclusion": {
+      "intent": "smalltalk.greeting",
+      "confidence_boost": 0.4
+    }
+  },
+  {
+    "id": "farewell_bye",
+    "pattern": {
+      "first_word": ["bye", "goodbye", "farewell", "cya"],
+      "word_count": [1, 4]
+    },
+    "conclusion": {
+      "intent": "smalltalk.farewell",
+      "confidence_boost": 0.4
+    }
+  },
+  {
+    "id": "weather_query_pattern",
+    "pattern": {
+      "keywords": ["weather", "forecast", "temperature"]
+    },
+    "conclusion": {
+      "intent": "weather.query",
+      "confidence_boost": 0.35
+    }
+  },
+  {
+    "id": "weather_whats_pattern",
+    "pattern": {
+      "phrase": "what's the weather"
+    },
+    "conclusion": {
+      "intent": "weather.query",
+      "confidence_boost": 0.4
+    }
+  },
+  {
+    "id": "device_turn_on",
+    "pattern": {
+      "phrase": "turn on"
+    },
+    "conclusion": {
+      "intent": "device.control",
+      "confidence_boost": 0.35
+    }
+  },
+  {
+    "id": "device_turn_off",
+    "pattern": {
+      "phrase": "turn off"
+    },
+    "conclusion": {
+      "intent": "device.control",
+      "confidence_boost": 0.35
+    }
+  },
+  {
+    "id": "music_play",
+    "pattern": {
+      "first_word": ["play"],
+      "keywords": ["music", "song", "album", "playlist"]
+    },
+    "conclusion": {
+      "intent": "music.play",
+      "confidence_boost": 0.35
+    }
+  },
+  {
+    "id": "reminder_create",
+    "pattern": {
+      "phrase": "remind me"
+    },
+    "conclusion": {
+      "intent": "reminder.create",
+      "confidence_boost": 0.35
+    }
+  },
+  {
+    "id": "timer_set",
+    "pattern": {
+      "keywords": ["timer", "set a timer", "set timer"]
+    },
+    "conclusion": {
+      "intent": "timer.set",
+      "confidence_boost": 0.35
+    }
+  },
+  {
+    "id": "thanks_pattern",
+    "pattern": {
+      "keywords": ["thanks", "thank you", "appreciate"]
+    },
+    "conclusion": {
+      "intent": "smalltalk.thanks",
+      "confidence_boost": 0.4
+    }
+  }
+]

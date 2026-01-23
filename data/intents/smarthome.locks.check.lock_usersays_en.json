@@ -1,0 +1,234 @@
+[
+  {
+    "id": "4f557a8a-6271-4c12-a1aa-0fba20f77824",
+    "data": [
+      {
+        "text": "have ",
+        "userDefined": false
+      },
+      {
+        "text": "I",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "locked",
+        "userDefined": false
+      },
+      {
+        "text": " the ",
+        "userDefined": false
+      },
+      {
+        "text": "front door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "ef96f9b5-3200-4cbd-9b50-6bb2f72a0527",
+    "data": [
+      {
+        "text": "did I lock the ",
+        "userDefined": false
+      },
+      {
+        "text": "door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " in the ",
+        "userDefined": false
+      },
+      {
+        "text": "kitchen",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "4f2bb8be-43b1-40ac-b7f6-4a17b212b103",
+    "data": [
+      {
+        "text": "are",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "kitchen",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " locked",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "091d94c9-5382-43d1-976c-80238359ece8",
+    "data": [
+      {
+        "text": "did I lock the ",
+        "userDefined": false
+      },
+      {
+        "text": "door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "660d560c-48e9-485a-9af6-3ca700477b89",
+    "data": [
+      {
+        "text": "are",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": true
+      },
+      {
+        "text": " the ",
+        "userDefined": false
+      },
+      {
+        "text": "door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " locked",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "d698c0a1-9fe4-49a4-aaa6-a333a1b86e10",
+    "data": [
+      {
+        "text": "is ",
+        "userDefined": false
+      },
+      {
+        "text": "garage",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": false
+      },
+      {
+        "text": " locked",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "cbb76eae-2584-4e75-afde-43d33c3eed7e",
+    "data": [
+      {
+        "text": "is the ",
+        "userDefined": false
+      },
+      {
+        "text": "door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " locked",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "aec27b72-afe0-45ab-bdbc-2689cd8c72e9",
+    "data": [
+      {
+        "text": "did I lock ",
+        "userDefined": false
+      },
+      {
+        "text": "door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "everywhere",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  }
+]

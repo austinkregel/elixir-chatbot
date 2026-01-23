@@ -1,0 +1,75 @@
+{
+  "id": "a4f69f85-6468-4262-b06d-dc163adb780d",
+  "name": "smarthome.locks.check",
+  "auto": true,
+  "contexts": [],
+  "responses": [
+    {
+      "resetContexts": false,
+      "action": "smarthome.locks.check",
+      "affectedContexts": [],
+      "parameters": [
+        {
+          "id": "8ef5bbbd-abd8-4f7d-9aaf-46f3ac0dd01b",
+          "name": "lock",
+          "required": false,
+          "dataType": "@lock",
+          "value": "$lock",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "75473f05-e3f6-4d3a-9c0d-d6b0faf366d2",
+          "name": "room",
+          "required": false,
+          "dataType": "@room",
+          "value": "$room",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "eb079351-58f1-49c2-b55b-5e982101be7e",
+          "name": "all",
+          "required": false,
+          "dataType": "@all",
+          "value": "$all",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        }
+      ],
+      "messages": [
+        {
+          "type": "0",
+          "title": "",
+          "textToSpeech": "",
+          "lang": "en",
+          "condition": ""
+        }
+      ],
+      "speech": []
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": false,
+  "webhookForSlotFilling": false,
+  "fallbackIntent": false,
+  "events": [],
+  "conditionalResponses": [],
+  "condition": "",
+  "conditionalFollowupEvents": []
+}

@@ -1,0 +1,485 @@
+[
+  {
+    "id": "5dd3b176-a44d-4c59-b518-af0507a23309",
+    "data": [
+      {
+        "text": "now ",
+        "userDefined": false
+      },
+      {
+        "text": "Monster",
+        "meta": "@song",
+        "alias": "song",
+        "userDefined": true
+      },
+      {
+        "text": " by ",
+        "userDefined": false
+      },
+      {
+        "text": "Rihanna",
+        "meta": "@sys.music-artist",
+        "alias": "artist",
+        "userDefined": true
+      },
+      {
+        "text": " feat ",
+        "userDefined": false
+      },
+      {
+        "text": "Eminem",
+        "meta": "@sys.music-artist",
+        "alias": "artist",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "a1d2aeed-4686-45c9-b3b2-6f13960241e9",
+    "data": [
+      {
+        "text": "now the album ",
+        "userDefined": false
+      },
+      {
+        "text": "19",
+        "meta": "@music-album",
+        "alias": "album",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "of",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "Adele",
+        "meta": "@sys.music-artist",
+        "alias": "artist",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "f8a5c835-6626-47c2-95ef-6c04ccf7f660",
+    "data": [
+      {
+        "text": "I mean ",
+        "userDefined": false
+      },
+      {
+        "text": "Red Hot Chili Peppers",
+        "meta": "@sys.music-artist",
+        "alias": "artist",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "841a0c90-91b1-4f15-bdf4-7c5a7c3aaf0e",
+    "data": [
+      {
+        "text": "now from the album ",
+        "userDefined": false
+      },
+      {
+        "text": "Summer",
+        "meta": "@music-album",
+        "alias": "album",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "6e4ddeba-9cb3-48b5-8907-2bd38a331c4d",
+    "data": [
+      {
+        "text": "now the ",
+        "userDefined": false
+      },
+      {
+        "text": "summer",
+        "meta": "@playlist",
+        "alias": "playlist",
+        "userDefined": true
+      },
+      {
+        "text": " playlist",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "b43d0b2c-65f7-4f76-b1cc-3dc93d013523",
+    "data": [
+      {
+        "text": "now ",
+        "userDefined": false
+      },
+      {
+        "text": "Diamonds",
+        "meta": "@song",
+        "alias": "song",
+        "userDefined": true
+      },
+      {
+        "text": " song",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "e89c310d-bd31-4d51-ac3a-6d51c9e08c60",
+    "data": [
+      {
+        "text": "now album ",
+        "userDefined": false
+      },
+      {
+        "text": "Please Please Me",
+        "meta": "@music-album",
+        "alias": "album",
+        "userDefined": true
+      },
+      {
+        "text": " of ",
+        "userDefined": false
+      },
+      {
+        "text": "The Beatles",
+        "meta": "@sys.music-artist",
+        "alias": "artist",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "b3e83289-9db4-4556-aec6-0df713dcaf0f",
+    "data": [
+      {
+        "text": "now ",
+        "userDefined": false
+      },
+      {
+        "text": "year",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "2015",
+        "meta": "@sys.number",
+        "alias": "year",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "29e78e06-c8e6-4926-97f0-8cfb2c908315",
+    "data": [
+      {
+        "text": "now ",
+        "userDefined": false
+      },
+      {
+        "text": "rock",
+        "meta": "@sys.music-genre",
+        "alias": "genre",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "1caae695-2c67-40bc-8092-11740d6344c7",
+    "data": [
+      {
+        "text": "now play ",
+        "userDefined": false
+      },
+      {
+        "text": "The Beatles",
+        "meta": "@sys.music-artist",
+        "alias": "artist",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "5b7073cf-3005-49a0-9ab3-ec1c132abba0",
+    "data": [
+      {
+        "text": "now ",
+        "userDefined": false
+      },
+      {
+        "text": "jazz",
+        "meta": "@sys.music-genre",
+        "alias": "genre",
+        "userDefined": true
+      },
+      {
+        "text": " songs",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "c5c6f81f-35f0-431c-aacb-70d0023d4a37",
+    "data": [
+      {
+        "text": "now ",
+        "userDefined": false
+      },
+      {
+        "text": "The Beatles",
+        "meta": "@sys.music-artist",
+        "alias": "artist",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "7de96d27-4bd2-4a3b-bf75-e5a95e7cae1c",
+    "data": [
+      {
+        "text": "now ",
+        "userDefined": false
+      },
+      {
+        "text": "Diamonds",
+        "meta": "@song",
+        "alias": "song",
+        "userDefined": true
+      },
+      {
+        "text": " by ",
+        "userDefined": false
+      },
+      {
+        "text": "Rihanna",
+        "meta": "@sys.music-artist",
+        "alias": "artist",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "6073ad7c-8426-4588-bd88-9ad84fe842d9",
+    "data": [
+      {
+        "text": "now ",
+        "userDefined": false
+      },
+      {
+        "text": "Diamonds",
+        "meta": "@song",
+        "alias": "song",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "b2c4b78d-7aba-4db5-8ae4-28876d5b646a",
+    "data": [
+      {
+        "text": "now from ",
+        "userDefined": false
+      },
+      {
+        "text": "summer",
+        "meta": "@playlist",
+        "alias": "playlist",
+        "userDefined": true
+      },
+      {
+        "text": " playlist",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "9e44b798-7276-481d-8637-b4c0cf515741",
+    "data": [
+      {
+        "text": "now ",
+        "userDefined": false
+      },
+      {
+        "text": "on",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "Spotify",
+        "meta": "@music-service",
+        "alias": "service",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "37b8deba-59c0-4e25-8c18-e4fd9e43d637",
+    "data": [
+      {
+        "text": "now ",
+        "userDefined": false
+      },
+      {
+        "text": "jazz",
+        "meta": "@sys.music-genre",
+        "alias": "genre",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "music",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "93d99fcf-45e4-4943-b2e8-6f7525d34fa0",
+    "data": [
+      {
+        "text": "now from ",
+        "userDefined": false
+      },
+      {
+        "text": "year",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "2015",
+        "meta": "@sys.number",
+        "alias": "year",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "3d5a8ae5-0df6-4c66-a66e-1a05cbbadac9",
+    "data": [
+      {
+        "text": "now play ",
+        "userDefined": false
+      },
+      {
+        "text": "it",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "on",
+        "userDefined": false
+      },
+      {
+        "text": "  ",
+        "userDefined": false
+      },
+      {
+        "text": "YouTube",
+        "meta": "@music-service",
+        "alias": "service",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  }
+]

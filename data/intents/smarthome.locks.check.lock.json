@@ -1,0 +1,86 @@
+{
+  "id": "926a3b7f-0eb5-4c60-be88-cbbe6cbea632",
+  "name": "smarthome.locks.check.lock",
+  "auto": true,
+  "contexts": [],
+  "responses": [
+    {
+      "resetContexts": false,
+      "action": "smarthome.locks.check.lock",
+      "affectedContexts": [
+        {
+          "name": "lock",
+          "lifespan": 3,
+          "parameters": {}
+        },
+        {
+          "name": "unlock",
+          "lifespan": 3,
+          "parameters": {}
+        }
+      ],
+      "parameters": [
+        {
+          "id": "8fb61e08-df18-4163-bb8d-70eed9399d2a",
+          "name": "lock",
+          "required": false,
+          "dataType": "@lock",
+          "value": "$lock",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "0c55a35e-7c6e-4332-83a4-0140c9ab293d",
+          "name": "room",
+          "required": false,
+          "dataType": "@room",
+          "value": "$room",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "cd8560f4-e5a6-49be-a525-7872be08a1ca",
+          "name": "all",
+          "required": false,
+          "dataType": "@all",
+          "value": "$all",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        }
+      ],
+      "messages": [
+        {
+          "type": "0",
+          "title": "",
+          "textToSpeech": "",
+          "lang": "en",
+          "condition": ""
+        }
+      ],
+      "speech": []
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": false,
+  "webhookForSlotFilling": false,
+  "fallbackIntent": false,
+  "events": [],
+  "conditionalResponses": [],
+  "condition": "",
+  "conditionalFollowupEvents": []
+}

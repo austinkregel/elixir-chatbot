@@ -1,0 +1,142 @@
+{
+  "id": "e882c1d7-4947-474f-b6c3-a69e472a3e3b",
+  "name": "smarthome.lights.switch.schedule.on",
+  "auto": true,
+  "contexts": [],
+  "responses": [
+    {
+      "resetContexts": false,
+      "action": "smarthome.lights.switch.schedule.on",
+      "affectedContexts": [
+        {
+          "name": "schedule",
+          "lifespan": 3,
+          "parameters": {}
+        }
+      ],
+      "parameters": [
+        {
+          "id": "79097e19-2a21-4936-a896-0f6f14809981",
+          "name": "room",
+          "required": false,
+          "dataType": "@room",
+          "value": "$room",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "740bfc36-84fe-4f84-ae85-c867c025088b",
+          "name": "color",
+          "required": false,
+          "dataType": "@color",
+          "value": "$color",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "9b54422a-1004-41c1-ab07-eb082eefc88a",
+          "name": "device",
+          "required": false,
+          "dataType": "@lights",
+          "value": "$device",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "68866099-80ab-4ddc-81dc-40db794bd2b6",
+          "name": "condition",
+          "required": false,
+          "dataType": "@condition",
+          "value": "$condition",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "fd96a126-4956-4be1-95b2-ef4988467829",
+          "name": "all",
+          "required": false,
+          "dataType": "@all",
+          "value": "$all",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "daa214d2-3d5d-4b72-9fd5-769d575010f7",
+          "name": "date-time",
+          "required": false,
+          "dataType": "@sys.date-time",
+          "value": "$date-time",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [
+            {
+              "lang": "en",
+              "value": "What time?"
+            }
+          ],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "1327d15e-99be-4865-b585-c72184ed4972",
+          "name": "recurrence",
+          "required": false,
+          "dataType": "@recurrence",
+          "value": "$recurrence",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        }
+      ],
+      "messages": [
+        {
+          "type": "0",
+          "title": "",
+          "textToSpeech": "",
+          "lang": "en",
+          "condition": ""
+        }
+      ],
+      "speech": []
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": false,
+  "webhookForSlotFilling": false,
+  "fallbackIntent": false,
+  "events": [],
+  "conditionalResponses": [],
+  "condition": "",
+  "conditionalFollowupEvents": []
+}

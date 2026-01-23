@@ -1,0 +1,128 @@
+{
+  "id": "28a4bd6d-4d30-42f3-8d52-ac8bbe08a8fd",
+  "name": "smarthome.locks.schedule.close",
+  "auto": true,
+  "contexts": [],
+  "responses": [
+    {
+      "resetContexts": false,
+      "action": "smarthome.locks.schedule.close",
+      "affectedContexts": [
+        {
+          "name": "schedule",
+          "lifespan": 5,
+          "parameters": {}
+        }
+      ],
+      "parameters": [
+        {
+          "id": "a569be5d-87ee-4d94-b4c9-40521fc8372a",
+          "name": "lock",
+          "required": false,
+          "dataType": "@lock",
+          "value": "$lock",
+          "defaultValue": "door",
+          "isList": true,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "b58d9a2e-b1a8-4841-8822-a2850e3b7edf",
+          "name": "room",
+          "required": false,
+          "dataType": "@room",
+          "value": "$room",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "58c2b3a9-42ed-413a-b7a1-2048ead78c77",
+          "name": "condition",
+          "required": false,
+          "dataType": "@condition",
+          "value": "$condition",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "0312f799-a80b-4fdd-b13c-f04da0c8b409",
+          "name": "date-time",
+          "required": false,
+          "dataType": "@sys.date-time",
+          "value": "$date-time",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [
+            {
+              "lang": "en",
+              "value": "What time?"
+            }
+          ],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "52cc6a95-6802-434d-94ff-61a7bbaeafbb",
+          "name": "recurrence",
+          "required": false,
+          "dataType": "@recurrence",
+          "value": "$recurrence",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "ddca8fc9-cae6-413e-b2e2-11edd423ffc5",
+          "name": "all",
+          "required": false,
+          "dataType": "@all",
+          "value": "$all",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        }
+      ],
+      "messages": [
+        {
+          "type": "0",
+          "title": "",
+          "textToSpeech": "",
+          "lang": "en",
+          "condition": ""
+        }
+      ],
+      "speech": []
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": false,
+  "webhookForSlotFilling": false,
+  "fallbackIntent": false,
+  "events": [],
+  "conditionalResponses": [],
+  "condition": "",
+  "conditionalFollowupEvents": []
+}

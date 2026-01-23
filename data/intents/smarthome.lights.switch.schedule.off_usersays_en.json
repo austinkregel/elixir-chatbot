@@ -1,0 +1,1244 @@
+[
+  {
+    "id": "e68ad881-48a6-4b5d-98ae-6aa5b744669c",
+    "data": [
+      {
+        "text": "turn off the ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "b36dd76d-9446-41d8-ba26-6773cb8b4c7a",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "kitchen",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " when I ",
+        "userDefined": false
+      },
+      {
+        "text": "leave",
+        "meta": "@condition",
+        "alias": "condition",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "7e104dc9-e86c-4680-ae4c-aaed66a8e494",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "romantic",
+        "meta": "@color",
+        "alias": "color",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " in the ",
+        "userDefined": false
+      },
+      {
+        "text": "kitchen",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "ab315f39-4182-4043-8bb3-d44432d11e79",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "kitchen",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "0a6a07cd-951c-4f6a-8515-a8e2cd6ef61b",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "green",
+        "meta": "@color",
+        "alias": "color",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "6d4c8f19-e97a-4165-a7b4-d01a678a1255",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "bedroom",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "f4fbe40f-b825-457f-bfa4-7865f34cd126",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " when I ",
+        "userDefined": false
+      },
+      {
+        "text": "leave",
+        "meta": "@condition",
+        "alias": "condition",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "2ab73bb1-b436-4d48-9032-01382c8f39a3",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "kitchen",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "bb7527ae-159b-4314-802f-6563007c0e0f",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "bedroom",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "85a68c0b-8e05-455d-ba66-21e87b6f98e9",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "green",
+        "meta": "@color",
+        "alias": "color",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "5ababb38-1ef9-452b-a59b-bed615d57537",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "romantic",
+        "meta": "@color",
+        "alias": "color",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " in the ",
+        "userDefined": false
+      },
+      {
+        "text": "kitchen",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "67b55c32-8ca6-4253-b549-fa59f14ad642",
+    "data": [
+      {
+        "text": "switch off ",
+        "userDefined": false
+      },
+      {
+        "text": "table lamp",
+        "meta": "@lights",
+        "alias": "device",
+        "userDefined": true
+      },
+      {
+        "text": "  ",
+        "userDefined": false
+      },
+      {
+        "text": "at 11 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "9db5e0b3-3a53-44e8-b33b-5a99ac086aa6",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "c9723120-eceb-45ef-9db1-7ac85ddda32b",
+    "data": [
+      {
+        "text": "turn off the ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " when I ",
+        "userDefined": false
+      },
+      {
+        "text": "leave",
+        "meta": "@condition",
+        "alias": "condition",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "e7bc1887-d7a9-450b-be8f-e28543b1fdba",
+    "data": [
+      {
+        "text": "light",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "off",
+        "userDefined": true
+      },
+      {
+        "text": " in ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": false
+      },
+      {
+        "text": " rooms when I ",
+        "userDefined": false
+      },
+      {
+        "text": "leave",
+        "meta": "@condition",
+        "alias": "condition",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "2eabc01f-17fe-4aa7-ab5c-cde1092b6d4c",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "green",
+        "meta": "@color",
+        "alias": "color",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "00f0d8bf-9556-47c7-beb2-005099fb1823",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "kitchen",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "4c2eeb6d-42c7-42db-a460-db7e674921b9",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "a6c2b7c8-c3d2-46df-ba4e-6c77fcd2143f",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "0d2479cc-ce65-4447-ab73-82b0d9af806e",
+    "data": [
+      {
+        "text": "turn ",
+        "userDefined": false
+      },
+      {
+        "text": "off",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "red",
+        "meta": "@color",
+        "alias": "color",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " on ",
+        "userDefined": false
+      },
+      {
+        "text": "Mondays",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "1ef489bb-f53d-4c4e-b06b-7091dd0792d0",
+    "data": [
+      {
+        "text": "turn off the ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "5868ae7a-a3a7-4476-bc12-d01f18e681f0",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "green",
+        "meta": "@color",
+        "alias": "color",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " when I ",
+        "userDefined": false
+      },
+      {
+        "text": "leave",
+        "meta": "@condition",
+        "alias": "condition",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "f9d8bd0b-bce2-4bc2-8bf9-3adddc8d92e6",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "romantic",
+        "meta": "@color",
+        "alias": "color",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " in the ",
+        "userDefined": false
+      },
+      {
+        "text": "kitchen",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      },
+      {
+        "text": " when I ",
+        "userDefined": false
+      },
+      {
+        "text": "leave",
+        "meta": "@condition",
+        "alias": "condition",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "28486384-e5a3-47e0-b9dc-e61acdeee438",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "bedroom",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " when I ",
+        "userDefined": false
+      },
+      {
+        "text": "leave",
+        "meta": "@condition",
+        "alias": "condition",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "7a153d17-10b2-435b-8dd2-bcc5f20b25fd",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": true
+      },
+      {
+        "text": " the ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " at ",
+        "userDefined": false
+      },
+      {
+        "text": "home",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 11 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "5b483993-a30c-4b43-bea4-270ff5e815a4",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "romantic",
+        "meta": "@color",
+        "alias": "color",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " in the ",
+        "userDefined": false
+      },
+      {
+        "text": "kitchen",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "fc6480d6-bb02-4a33-98d1-ddf490c7b927",
+    "data": [
+      {
+        "text": "turn off the ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "0fc57f2f-ca6e-42c7-aa66-8fd8f363f0e5",
+    "data": [
+      {
+        "text": "turn off ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "bedroom",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "3cc43de0-dbdf-4fff-b762-43fbe0a45bed",
+    "data": [
+      {
+        "text": "red",
+        "meta": "@color",
+        "alias": "color",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "light",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "off",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "after 3 hours",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "aac05a47-46d4-40ac-b39f-b561d33bbe0a",
+    "data": [
+      {
+        "text": "turn ",
+        "userDefined": false
+      },
+      {
+        "text": "off",
+        "userDefined": true
+      },
+      {
+        "text": " the ",
+        "userDefined": false
+      },
+      {
+        "text": "lights",
+        "userDefined": true
+      },
+      {
+        "text": " when I ",
+        "userDefined": false
+      },
+      {
+        "text": "leave",
+        "meta": "@condition",
+        "alias": "condition",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "home",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  }
+]

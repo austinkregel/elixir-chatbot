@@ -1,0 +1,635 @@
+[
+  {
+    "id": "6904f3bb-673b-4a7c-913c-56a432677291",
+    "data": [
+      {
+        "text": "one",
+        "userDefined": false
+      },
+      {
+        "text": " more time",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "87fb12a4-54d1-4141-90f5-55e65a72d91b",
+    "data": [
+      {
+        "text": "repeat it",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "d228d939-69f2-4cf6-b116-87e72c583bcd",
+    "data": [
+      {
+        "text": "play",
+        "userDefined": false
+      },
+      {
+        "text": " it ",
+        "userDefined": false
+      },
+      {
+        "text": "one",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "more",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "time",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "b4c2ce98-1644-4b2e-adbd-e25da223e4d5",
+    "data": [
+      {
+        "text": "play this track",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "once",
+        "userDefined": false
+      },
+      {
+        "text": " again",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "31b0f615-58a4-40d9-a083-1f9652b347c7",
+    "data": [
+      {
+        "text": "let\u0027",
+        "userDefined": false
+      },
+      {
+        "text": "s",
+        "userDefined": false
+      },
+      {
+        "text": " repeat this ",
+        "userDefined": false
+      },
+      {
+        "text": "track",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "775ac562-7377-4261-a23b-4d9750c81263",
+    "data": [
+      {
+        "text": "put this ",
+        "userDefined": false
+      },
+      {
+        "text": "on",
+        "userDefined": false
+      },
+      {
+        "text": " repeat",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "096e15b6-ff66-4b23-8af5-06d7121ff578",
+    "data": [
+      {
+        "text": "put ",
+        "userDefined": false
+      },
+      {
+        "text": "it",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "on",
+        "userDefined": false
+      },
+      {
+        "text": " repeat mode",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "4ead1159-08fb-40e9-841e-1dcdeb4c378e",
+    "data": [
+      {
+        "text": "put this ",
+        "userDefined": false
+      },
+      {
+        "text": "track",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "on",
+        "userDefined": false
+      },
+      {
+        "text": " repeat",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "e3a7c9e0-d31f-4a49-ad6c-66a00006bc6b",
+    "data": [
+      {
+        "text": "could",
+        "userDefined": false
+      },
+      {
+        "text": " you repeat them",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "1b6ef44c-34fc-4d9c-b0ce-4ce81ef1f673",
+    "data": [
+      {
+        "text": "can you repeat this track",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "c056d8fe-b0ef-4be8-bf2c-791e305e5016",
+    "data": [
+      {
+        "text": "can",
+        "userDefined": false
+      },
+      {
+        "text": " you repeat ",
+        "userDefined": false
+      },
+      {
+        "text": "it",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "c05310b9-8ea3-48f6-bc1f-85cdc5769eee",
+    "data": [
+      {
+        "text": "turn on",
+        "userDefined": false
+      },
+      {
+        "text": " repeat mode for this ",
+        "userDefined": false
+      },
+      {
+        "text": "song",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "6d894071-251f-4e57-aa3e-cd40099a2cbb",
+    "data": [
+      {
+        "text": "turn on",
+        "userDefined": false
+      },
+      {
+        "text": " repeat mode for ",
+        "userDefined": false
+      },
+      {
+        "text": "it",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "97eda91e-3b0c-4aa5-886a-74e52ccad5c9",
+    "data": [
+      {
+        "text": "turn on",
+        "userDefined": false
+      },
+      {
+        "text": " repeat for this ",
+        "userDefined": false
+      },
+      {
+        "text": "song",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "121780d8-0a40-416f-89e1-2afdf87984c0",
+    "data": [
+      {
+        "text": "repeat ",
+        "userDefined": false
+      },
+      {
+        "text": "mode for this track",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "f98337d8-064f-46f0-82c0-81ddd9601f76",
+    "data": [
+      {
+        "text": "repeat please",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "5f854072-fd38-45de-9590-477ffc166a1a",
+    "data": [
+      {
+        "text": "repeat ",
+        "userDefined": false
+      },
+      {
+        "text": "one",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "more",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "time",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "7f3735bf-4385-4117-a2d7-ea4eb3706a85",
+    "data": [
+      {
+        "text": "repeat this track one",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "more",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "time",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "b1714586-6ed5-416d-891e-744b7a47666c",
+    "data": [
+      {
+        "text": "play",
+        "userDefined": false
+      },
+      {
+        "text": " again from the ",
+        "userDefined": false
+      },
+      {
+        "text": "very",
+        "userDefined": false
+      },
+      {
+        "text": " beginning",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "118a4c83-09b2-4df3-ace3-3f822f784772",
+    "data": [
+      {
+        "text": "repeat ",
+        "userDefined": false
+      },
+      {
+        "text": "it",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "once",
+        "userDefined": false
+      },
+      {
+        "text": " again",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "a40ab974-d473-46a1-a2dd-f291c267ef05",
+    "data": [
+      {
+        "text": "repeat this ",
+        "userDefined": false
+      },
+      {
+        "text": "song",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "once",
+        "userDefined": false
+      },
+      {
+        "text": " again",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "ea7b30ef-b75d-4578-b717-91990c0986c0",
+    "data": [
+      {
+        "text": "repeat the ",
+        "userDefined": false
+      },
+      {
+        "text": "song",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "308ea3c5-44dd-440c-8ada-18d2165ebb79",
+    "data": [
+      {
+        "text": "repeat",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "7ff0c014-2e64-484e-9451-eb7be672db40",
+    "data": [
+      {
+        "text": "I",
+        "userDefined": true
+      },
+      {
+        "text": " want ",
+        "userDefined": false
+      },
+      {
+        "text": "to",
+        "userDefined": true
+      },
+      {
+        "text": " listen ",
+        "userDefined": false
+      },
+      {
+        "text": "to",
+        "userDefined": true
+      },
+      {
+        "text": " this song once again",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "84874059-c41e-4938-ad12-92cc7427a448",
+    "data": [
+      {
+        "text": "play",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "it",
+        "userDefined": true
+      },
+      {
+        "text": " again",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "30867ebe-98ec-40ea-bbe7-4c11d2720992",
+    "data": [
+      {
+        "text": "play",
+        "userDefined": true
+      },
+      {
+        "text": " this song from the beginning",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "2603277b-6a84-483c-863a-a64d63bdd109",
+    "data": [
+      {
+        "text": "repeat this song",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "a7dfad49-b9c7-424e-9428-54e3616fd1a5",
+    "data": [
+      {
+        "text": "repeat this ",
+        "userDefined": false
+      },
+      {
+        "text": "track",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "1347a768-abba-4e18-a12a-7f21f685c8bb",
+    "data": [
+      {
+        "text": "play this song again",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  }
+]

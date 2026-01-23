@@ -1,0 +1,132 @@
+[
+  {
+    "id": "b490c4a0-45e4-48db-b8a0-0ebb972d5bba",
+    "data": [
+      {
+        "text": "repeat",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "2e113efa-041f-460c-a787-c990dc52b0ec",
+    "data": [
+      {
+        "text": "repeat it",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "94321d2a-dd19-408e-8e19-cc1b4ace416c",
+    "data": [
+      {
+        "text": "come again",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "fcc4a091-15fe-4641-81af-147198498e06",
+    "data": [
+      {
+        "text": "do it again",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "c114c4e3-1d79-4dea-b8d3-5a5827b6d960",
+    "data": [
+      {
+        "text": "say it again",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "fb1ea039-11ef-4c9f-8466-18f070d70bbc",
+    "data": [
+      {
+        "text": "say the same again",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "1f410b06-c207-4d5b-ab59-cb8951bf24c0",
+    "data": [
+      {
+        "text": "please repeat that",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "e37023eb-b711-4fe1-b0f7-3d167277e99c",
+    "data": [
+      {
+        "text": "repeat these results",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "f6499a09-530d-4141-ae4e-b7c815d65a99",
+    "data": [
+      {
+        "text": "could you repeat that",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "3bfc4d42-da70-4e17-8089-c0670dd56844",
+    "data": [
+      {
+        "text": "repeat what you\u0027ve just said",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  }
+]

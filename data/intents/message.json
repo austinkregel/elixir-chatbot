@@ -1,0 +1,89 @@
+{
+  "id": "c1b9f2c5-f985-4b1b-a4a1-4764a4e11074",
+  "name": "message",
+  "auto": true,
+  "contexts": [],
+  "responses": [
+    {
+      "resetContexts": false,
+      "action": "",
+      "affectedContexts": [],
+      "parameters": [
+        {
+          "id": "c8733087-85bc-444e-a63d-766da8bbdb43",
+          "name": "message_type",
+          "required": false,
+          "dataType": "@message_type",
+          "value": "$message_type",
+          "defaultValue": "",
+          "isList": true,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "9a3536d5-7a65-4a86-953d-ceffcc79b448",
+          "name": "given-name",
+          "required": false,
+          "dataType": "@sys.given-name",
+          "value": "$given-name",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "0f276232-bfb7-4120-8d92-3a191ce2b869",
+          "name": "message_content",
+          "required": false,
+          "dataType": "@message_content",
+          "value": "$message_content",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "3beb8883-61cd-4d0c-bfc7-d81647a34e7f",
+          "name": "last-name",
+          "required": false,
+          "dataType": "@sys.last-name",
+          "value": "$last-name",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        }
+      ],
+      "messages": [
+        {
+          "type": "0",
+          "title": "",
+          "textToSpeech": "",
+          "lang": "en",
+          "condition": ""
+        }
+      ],
+      "speech": []
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": false,
+  "webhookForSlotFilling": false,
+  "fallbackIntent": false,
+  "events": [],
+  "conditionalResponses": [],
+  "condition": "",
+  "conditionalFollowupEvents": []
+}

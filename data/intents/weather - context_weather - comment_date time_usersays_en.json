@@ -1,0 +1,289 @@
+[
+  {
+    "id": "dc10ab8f-8b59-42de-a0eb-2e827ac4708c",
+    "data": [
+      {
+        "text": "how ",
+        "userDefined": false
+      },
+      {
+        "text": "about",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "Saturday",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "da195c54-0770-4306-b63f-ed73f7b59e08",
+    "data": [
+      {
+        "text": "and during ",
+        "userDefined": false
+      },
+      {
+        "text": "next week",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "909bad32-13f7-4e28-aa2a-938ee9968ef0",
+    "data": [
+      {
+        "text": "and ",
+        "userDefined": false
+      },
+      {
+        "text": "tomorrow",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "e776d7e8-ed00-4747-844c-32e1185b11c2",
+    "data": [
+      {
+        "text": "what ",
+        "userDefined": false
+      },
+      {
+        "text": "about",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "today",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "aff396d2-841a-4e64-bbdc-df02d9475183",
+    "data": [
+      {
+        "text": "will",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "it",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "change",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "2ee56828-3a1b-460d-b783-5060fcf9604d",
+    "data": [
+      {
+        "text": "on ",
+        "userDefined": false
+      },
+      {
+        "text": "Wednesday",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "540146c7-90bc-46a4-8089-9cfca7cb50eb",
+    "data": [
+      {
+        "text": "and what ",
+        "userDefined": false
+      },
+      {
+        "text": "about",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "tomorrow",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "e8a6f1a6-b1e1-4870-83de-ec2a2b33d7cb",
+    "data": [
+      {
+        "text": "what about ",
+        "userDefined": false
+      },
+      {
+        "text": "tomorrow",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "af7aa1c9-59c2-492e-b19e-0b72dbccf98c",
+    "data": [
+      {
+        "text": "check for ",
+        "userDefined": false
+      },
+      {
+        "text": "next Monday",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "48d28c81-14e4-43bd-932b-b1a822335aba",
+    "data": [
+      {
+        "text": "check ",
+        "userDefined": false
+      },
+      {
+        "text": "next week",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "b12cda45-3066-478b-8991-8bc70ccf1328",
+    "data": [
+      {
+        "text": "and ",
+        "userDefined": false
+      },
+      {
+        "text": "next weekend",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "6008793d-21ce-4908-85f8-38441f723aef",
+    "data": [
+      {
+        "text": "for next month",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      },
+      {
+        "text": " too",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "ad7fc893-fb72-49fc-a342-1a5cb4425d40",
+    "data": [
+      {
+        "text": "this evening",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  }
+]

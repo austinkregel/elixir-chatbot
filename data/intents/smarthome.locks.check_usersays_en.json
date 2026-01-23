@@ -1,0 +1,160 @@
+[
+  {
+    "id": "e8433a54-f521-4d56-a74d-a0f8ce001a82",
+    "data": [
+      {
+        "text": "check ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "windows",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "4db8b689-d7e0-446d-950b-8ee202460665",
+    "data": [
+      {
+        "text": "garage",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "window",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " status",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "3f65e09c-2674-481f-839a-b25cb646fb90",
+    "data": [
+      {
+        "text": "front door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " status",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "7b44cba0-5909-47b0-96ce-6d0dfa1de450",
+    "data": [
+      {
+        "text": "check ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "doors",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " status",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "cdbb3456-fc00-4479-9421-884d029f2ef2",
+    "data": [
+      {
+        "text": "status of ",
+        "userDefined": false
+      },
+      {
+        "text": "garage",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "windows",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "68549d8e-ec85-41a5-9a10-76e0db4f92b9",
+    "data": [
+      {
+        "text": "status of ",
+        "userDefined": false
+      },
+      {
+        "text": "front door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  }
+]

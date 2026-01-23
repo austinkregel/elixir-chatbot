@@ -1,0 +1,750 @@
+<div class="flex h-screen bg-base-200">
+  <!-- Sidebar -->
+  <div class="w-1/4 bg-base-100 shadow-lg">
+    <div class="p-4 border-b border-base-300">
+      <h1 class="text-xl font-bold text-base-content">Chat Bot</h1>
+      <div class="mt-2 text-sm text-base-content/70">
+        <div>
+          Status:
+          <span class={if @status.is_shutting_down, do: "text-error", else: "text-success"}>
+            {if @status.is_shutting_down, do: "Shutting Down", else: "Active"}
+          </span>
+        </div>
+        <div>Conversations: {@status.active_conversations}</div>
+        <div>Memory: {@status.global_memory_size} entries</div>
+      </div>
+      <!-- System Status -->
+      <div class="mt-3 pt-3 border-t border-base-300">
+        <div class="text-xs font-semibold text-base-content/60 mb-2">⚙️ System Status</div>
+        <div class="space-y-1">
+          <!-- Overall Status -->
+          <%= if ChatBot.SystemStatus.all_ready?() do %>
+            <div class="flex items-center gap-2 text-xs text-success">
+              <span class="w-2 h-2 rounded-full bg-success"></span> All systems ready
+            </div>
+          <% else %>
+            <div class="flex items-center gap-2 text-xs text-warning">
+              <span class="w-2 h-2 rounded-full bg-warning animate-pulse"></span> Initializing...
+            </div>
+          <% end %>
+          
+<!-- Individual System Status -->
+          <div class="ml-2 space-y-1">
+            <!-- Embedder -->
+            <div class="flex items-center gap-2 text-xs">
+              <%= if @system_status.embedder.ready do %>
+                <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+              <% else %>
+                <span class="w-1.5 h-1.5 rounded-full bg-warning animate-pulse"></span>
+              <% end %>
+              <span class={[
+                "text-base-content/70",
+                if(!@system_status.embedder.ready, do: "italic")
+              ]}>
+                Embedder: {@system_status.embedder.label}
+              </span>
+            </div>
+            
+<!-- NLP Pipeline -->
+            <div class="flex items-center gap-2 text-xs">
+              <%= if @system_status.nlp_pipeline.ready do %>
+                <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+              <% else %>
+                <span class="w-1.5 h-1.5 rounded-full bg-warning animate-pulse"></span>
+              <% end %>
+              <span class={[
+                "text-base-content/70",
+                if(!@system_status.nlp_pipeline.ready, do: "italic")
+              ]}>
+                NLP: {@system_status.nlp_pipeline.label}
+              </span>
+            </div>
+            
+<!-- Brain -->
+            <div class="flex items-center gap-2 text-xs">
+              <%= if @system_status.brain.ready do %>
+                <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+              <% else %>
+                <span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+              <% end %>
+              <span class="text-base-content/70">
+                Brain: {@system_status.brain.label}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+<!-- Cognitive Memory Stats -->
+      <div class="mt-3 pt-3 border-t border-base-300">
+        <div class="text-xs font-semibold text-base-content/60 mb-1">🧠 Cognitive Memory</div>
+        <div class="text-xs text-base-content/70">
+          <div>Episodes: {@memory_stats.episode_count}</div>
+          <div>Semantic Facts: {@memory_stats.semantic_count}</div>
+        </div>
+      </div>
+    </div>
+    
+<!-- New Conversation Button -->
+    <div class="p-4">
+      <button
+        phx-click="new_conversation"
+        class="btn btn-primary w-full"
+      >
+        New Conversation
+      </button>
+    </div>
+    
+    <!-- Toggle Buttons -->
+    <div class="px-4 pb-2 space-y-2">
+      <button
+        phx-click="toggle_processing"
+        class={["btn w-full btn-sm", if(@show_processing, do: "btn-info", else: "btn-outline btn-info")]}
+      >
+        <.icon name="hero-cpu-chip" class="w-4 h-4" />
+        {if @show_processing, do: "Hide Processing", else: "Show Processing"}
+      </button>
+      <button
+        phx-click="toggle_knowledge"
+        class={["btn w-full btn-sm", if(@show_knowledge, do: "btn-success", else: "btn-outline btn-success")]}
+      >
+        <.icon name="hero-light-bulb" class="w-4 h-4" />
+        {if @show_knowledge, do: "Hide Knowledge", else: "Show Knowledge"}
+      </button>
+    </div>
+
+    <!-- Admin Link -->
+    <div class="px-4 pb-4">
+      <.link navigate={~p"/admin"} class="btn btn-outline btn-sm w-full">
+        <.icon name="hero-cog-6-tooth" class="w-4 h-4" /> Entity Management
+      </.link>
+    </div>
+    
+<!-- Conversations List -->
+    <div class="px-4">
+      <h3 class="text-sm font-semibold text-base-content/70 mb-2">Conversations</h3>
+      <div class="space-y-2">
+        <%= for conversation <- @conversations do %>
+          <div
+            class={[
+              "p-2 rounded cursor-pointer",
+              if(@current_conversation_id == conversation.id,
+                do: "bg-primary/10 border-l-4 border-primary",
+                else: "hover:bg-base-200"
+              )
+            ]}
+            phx-click="select_conversation"
+            phx-value-conversation_id={conversation.id}
+          >
+            <div class="text-sm font-medium text-base-content">
+              Conversation {String.slice(conversation.id, 0, 8)}
+            </div>
+            <div class="text-xs text-base-content/50">{conversation.message_count} messages</div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+    
+<!-- Knowledge Panel -->
+    <%= if @show_knowledge do %>
+      <div class="px-4 pb-4 border-t border-base-300 mt-4 pt-4">
+        <h3 class="text-sm font-semibold text-base-content/70 mb-2">Learned Knowledge</h3>
+        <div class="space-y-3 max-h-64 overflow-y-auto">
+          <%= if map_size(@knowledge) == 0 do %>
+            <div class="text-xs text-base-content/50 italic">No knowledge learned yet</div>
+          <% else %>
+            <!-- People -->
+            <%= if Map.has_key?(@knowledge, "people") && map_size(@knowledge["people"]) > 0 do %>
+              <div>
+                <h4 class="text-xs font-semibold text-base-content/60 mb-1">👥 People</h4>
+                <%= for {name, person} <- @knowledge["people"] do %>
+                  <div class="text-xs text-base-content/70 ml-2 mb-1">
+                    <strong>{name}</strong>
+                    <%= if person["age"] do %>
+                      ({person["age"]} years old)
+                    <% end %>
+                    <%= if person["occupation"] do %>
+                      - {person["occupation"]}
+                    <% end %>
+                    <%= if person["birthdate"] do %>
+                      - Born: {person["birthdate"]}
+                    <% end %>
+                    <%= if person["favorite_holidays"] && length(person["favorite_holidays"]) > 0 do %>
+                      <br />🎉 Likes: {Enum.join(person["favorite_holidays"], ", ")}
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+            
+<!-- Pets -->
+            <%= if Map.has_key?(@knowledge, "pets") && map_size(@knowledge["pets"]) > 0 do %>
+              <div>
+                <h4 class="text-xs font-semibold text-base-content/60 mb-1">🐾 Pets</h4>
+                <%= for {name, pet} <- @knowledge["pets"] do %>
+                  <div class="text-xs text-base-content/70 ml-2 mb-1">
+                    <strong>{name}</strong>
+                    <%= if pet["species"] do %>
+                      - {pet["species"]}
+                    <% end %>
+                    <%= if pet["breed"] do %>
+                      ({pet["breed"]})
+                    <% end %>
+                    <%= if pet["age"] do %>
+                      - {pet["age"]} years old
+                    <% end %>
+                    <%= if pet["color"] do %>
+                      - {pet["color"]}
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+            
+<!-- Rooms -->
+            <%= if Map.has_key?(@knowledge, "rooms") && map_size(@knowledge["rooms"]) > 0 do %>
+              <div>
+                <h4 class="text-xs font-semibold text-base-content/60 mb-1">🏠 Rooms</h4>
+                <%= for {name, room} <- @knowledge["rooms"] do %>
+                  <div class="text-xs text-base-content/70 ml-2 mb-1">
+                    <strong>{name}</strong>
+                    <%= if room["type"] do %>
+                      - {room["type"]}
+                    <% end %>
+                    <%= if room["size"] do %>
+                      ({room["size"]})
+                    <% end %>
+                    <%= if room["purpose"] do %>
+                      - {room["purpose"]}
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+            
+<!-- Devices -->
+            <%= if Map.has_key?(@knowledge, "devices") && map_size(@knowledge["devices"]) > 0 do %>
+              <div>
+                <h4 class="text-xs font-semibold text-base-content/60 mb-1">📱 Devices</h4>
+                <%= for {name, device} <- @knowledge["devices"] do %>
+                  <div class="text-xs text-base-content/70 ml-2 mb-1">
+                    <strong>{name}</strong>
+                    <%= if device["type"] do %>
+                      - {device["type"]}
+                    <% end %>
+                    <%= if device["brand"] do %>
+                      ({device["brand"]})
+                    <% end %>
+                    <%= if device["model"] do %>
+                      {device["model"]}
+                    <% end %>
+                    <%= if device["location"] do %>
+                      - in {device["location"]}
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+            
+<!-- Places -->
+            <%= if Map.has_key?(@knowledge, "places") && map_size(@knowledge["places"]) > 0 do %>
+              <div>
+                <h4 class="text-xs font-semibold text-base-content/60 mb-1">📍 Places</h4>
+                <%= for {name, place} <- @knowledge["places"] do %>
+                  <div class="text-xs text-base-content/70 ml-2 mb-1">
+                    <strong>{name}</strong>
+                    <%= if place["type"] do %>
+                      - {place["type"]}
+                    <% end %>
+                    <%= if place["location"] do %>
+                      ({place["location"]})
+                    <% end %>
+                    <%= if place["description"] do %>
+                      - {place["description"]}
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+            
+<!-- Tasks -->
+            <%= if Map.has_key?(@knowledge, "tasks") && map_size(@knowledge["tasks"]) > 0 do %>
+              <div>
+                <h4 class="text-xs font-semibold text-base-content/60 mb-1">✅ Tasks</h4>
+                <%= for {name, task} <- @knowledge["tasks"] do %>
+                  <div class="text-xs text-base-content/70 ml-2 mb-1">
+                    <strong>{name}</strong>
+                    <%= if task["status"] do %>
+                      - {task["status"]}
+                    <% end %>
+                    <%= if task["priority"] do %>
+                      ({task["priority"]})
+                    <% end %>
+                    <%= if task["due_date"] do %>
+                      - Due: {task["due_date"]}
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+            
+<!-- Events -->
+            <%= if Map.has_key?(@knowledge, "events") && map_size(@knowledge["events"]) > 0 do %>
+              <div>
+                <h4 class="text-xs font-semibold text-base-content/60 mb-1">📅 Events</h4>
+                <%= for {name, event} <- @knowledge["events"] do %>
+                  <div class="text-xs text-base-content/70 ml-2 mb-1">
+                    <strong>{name}</strong>
+                    <%= if event["date"] do %>
+                      - {event["date"]}
+                    <% end %>
+                    <%= if event["time"] do %>
+                      at {event["time"]}
+                    <% end %>
+                    <%= if event["location"] do %>
+                      - {event["location"]}
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+            
+<!-- Preferences -->
+            <%= if Map.has_key?(@knowledge, "preferences") && map_size(@knowledge["preferences"]) > 0 do %>
+              <div>
+                <h4 class="text-xs font-semibold text-base-content/60 mb-1">❤️ Preferences</h4>
+                <%= for {name, preference} <- @knowledge["preferences"] do %>
+                  <div class="text-xs text-base-content/70 ml-2 mb-1">
+                    <strong>{name}</strong>
+                    <%= if preference["category"] do %>
+                      - {preference["category"]}
+                    <% end %>
+                    <%= if preference["value"] do %>
+                      : {preference["value"]}
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+            
+<!-- Relationships -->
+            <%= if Map.has_key?(@knowledge, "relationships") && length(@knowledge["relationships"]) > 0 do %>
+              <div>
+                <h4 class="text-xs font-semibold text-base-content/60 mb-1">🔗 Relationships</h4>
+                <%= for rel <- @knowledge["relationships"] do %>
+                  <div class="text-xs text-base-content/70 ml-2 mb-1">
+                    <strong>{rel["subject"]}</strong> {rel["relation"]}
+                    <strong>{rel["object"]}</strong>
+                    <%= if rel["confidence"] && rel["confidence"] < 1.0 do %>
+                      (confidence: {Float.round(rel["confidence"], 2)})
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+            
+<!-- Facts -->
+            <%= if Map.has_key?(@knowledge, "facts") && length(@knowledge["facts"]) > 0 do %>
+              <div>
+                <h4 class="text-xs font-semibold text-base-content/60 mb-1">💡 Facts</h4>
+                <%= for fact <- @knowledge["facts"] do %>
+                  <div class="text-xs text-base-content/70 ml-2 mb-1">
+                    <strong><%= fact["entity"] %></strong>: {fact["fact"]}
+                    <%= if fact["confidence"] && fact["confidence"] < 1.0 do %>
+                      (confidence: {Float.round(fact["confidence"], 2)})
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+  
+<!-- Main Chat Area -->
+  <div class="flex-1 flex flex-col">
+    <!-- Chat Header -->
+    <div class="bg-base-100 shadow-sm border-b border-base-300 p-4">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-lg font-semibold text-base-content">
+            <%= if @current_conversation_id do %>
+              Conversation {String.slice(@current_conversation_id, 0, 8)}
+            <% else %>
+              Start a new conversation
+            <% end %>
+          </h2>
+          <p class="text-sm text-base-content/70">
+            {@status.name} - {Enum.join(@status.traits, ", ")}
+          </p>
+        </div>
+        <%= if @current_conversation_id do %>
+          <button
+            phx-click="end_conversation"
+            class="btn btn-error btn-sm"
+          >
+            End Conversation
+          </button>
+        <% end %>
+      </div>
+    </div>
+    
+<!-- Messages Area -->
+    <div class="flex-1 overflow-y-auto p-4 space-y-4">
+      <!-- System Initialization Banner -->
+      <%= if not ChatBot.SystemStatus.all_ready?() do %>
+        <div role="alert" class="alert alert-warning">
+          <span class="loading loading-spinner loading-sm"></span>
+          <div>
+            <span class="font-semibold">System initializing...</span>
+            <span class="text-sm">You can chat, but some features may be limited.</span>
+          </div>
+        </div>
+      <% end %>
+
+      <%= if @error_message do %>
+        <div role="alert" class="alert alert-error">
+          <.icon name="hero-exclamation-circle" class="size-5" />
+          <span>{@error_message}</span>
+        </div>
+      <% end %>
+
+      <%= if length(@messages) == 0 do %>
+        <div class="text-center text-base-content/50 mt-8">
+          <p>No messages yet. Start a conversation!</p>
+        </div>
+      <% else %>
+        <%= for message <- @messages do %>
+          <% analysis_steps = @analysis_logs[message.id] || [] %>
+          <% dev = @analysis_details[message.id] || %{} %>
+          <% active_tab = @dev_panel_tabs[message.id] || "stages" %>
+          <div class={[
+            "flex flex-col gap-1",
+            if(message.role == "user", do: "items-end", else: "items-start")
+          ]}>
+            <!-- Compact Processing Indicator (when not expanded) -->
+            <%= if message.role == "user" && @show_processing && message[:trace] && !MapSet.member?(@expanded_traces, message.id) do %>
+              <button
+                phx-click="toggle_trace"
+                phx-value-message_id={message.id}
+                class="flex items-center gap-2 text-xs bg-base-200/80 hover:bg-base-300 rounded-full px-3 py-1 transition-colors cursor-pointer border border-base-300"
+                title="Click to expand processing details"
+              >
+                <.icon name="hero-cpu-chip" class="w-3 h-3 text-info" />
+                <%= if (message.trace.chunk_count || 1) > 1 do %>
+                  <span class="badge badge-info badge-xs">{message.trace.chunk_count} parts</span>
+                  <span class="font-medium text-base-content/80">{message.trace.intent || "Processing"}</span>
+                  <span class={[
+                    "badge badge-xs",
+                    strategy_badge_class(message.trace.overall_strategy)
+                  ]}>
+                    {format_strategy(message.trace.overall_strategy)}
+                  </span>
+                <% else %>
+                  <span class="font-medium text-base-content/80">{message.trace.intent || "Processing"}</span>
+                  <span class={[
+                    "badge badge-xs",
+                    confidence_badge_class(message.trace.confidence_level)
+                  ]}>
+                    {message.trace.confidence}
+                  </span>
+                  <%= if message.trace.fast_path do %>
+                    <span class="badge badge-success badge-xs">Fast</span>
+                  <% end %>
+                <% end %>
+                <%= if message.trace.backtrack_count > 0 do %>
+                  <span class="badge badge-warning badge-xs">↩{message.trace.backtrack_count}</span>
+                <% end %>
+                <.icon name="hero-chevron-down" class="w-3 h-3 text-base-content/50" />
+              </button>
+            <% end %>
+
+            <div class={[
+              "max-w-xs lg:max-w-md px-4 py-2 rounded-lg",
+              if(message.role == "user",
+                do: "bg-primary text-primary-content",
+                else: "bg-base-100 border border-base-300 text-base-content"
+              )
+            ]}>
+              <div class="text-sm">{message.content}</div>
+              <div class="text-xs opacity-75 mt-1 flex items-center gap-2">
+                {Calendar.strftime(DateTime.from_unix!(div(message.timestamp, 1000)), "%H:%M")}
+              </div>
+            </div>
+
+            <!-- Developer panel (enabled by default) -->
+            <%= if message.role == "user" && @show_processing && length(analysis_steps) > 0 do %>
+              <div class="mt-1 max-w-lg w-full">
+                <div class="bg-base-200 rounded-lg p-3 text-xs border border-base-300 shadow-sm">
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="font-semibold text-base-content/70 flex items-center gap-2">
+                      <.icon name="hero-wrench-screwdriver" class="w-4 h-4 text-info" />
+                      <span>Developer panel</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <%= if dev[:elapsed_ms] do %>
+                        <span class="badge badge-ghost badge-xs">{dev.elapsed_ms}ms</span>
+                      <% end %>
+                      <%= if dev[:overall_strategy] do %>
+                        <span class="badge badge-info badge-xs">{step_label(dev.overall_strategy)}</span>
+                      <% end %>
+                    </div>
+                  </div>
+
+                  <!-- Tabs -->
+                  <div class="tabs tabs-boxed mb-2">
+                    <button
+                      type="button"
+                      phx-click="set_dev_tab"
+                      phx-value-message_id={message.id}
+                      phx-value-tab="stages"
+                      class={["tab", if(active_tab == "stages", do: "tab-active")]}
+                    >
+                      Stages
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="set_dev_tab"
+                      phx-value-message_id={message.id}
+                      phx-value-tab="chunks"
+                      class={["tab", if(active_tab == "chunks", do: "tab-active")]}
+                    >
+                      Chunks
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="set_dev_tab"
+                      phx-value-message_id={message.id}
+                      phx-value-tab="entities"
+                      class={["tab", if(active_tab == "entities", do: "tab-active")]}
+                    >
+                      Entities/Slots
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="set_dev_tab"
+                      phx-value-message_id={message.id}
+                      phx-value-tab="context"
+                      class={["tab", if(active_tab == "context", do: "tab-active")]}
+                    >
+                      Context
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="set_dev_tab"
+                      phx-value-message_id={message.id}
+                      phx-value-tab="strategy"
+                      class={["tab", if(active_tab == "strategy", do: "tab-active")]}
+                    >
+                      Strategy
+                    </button>
+                  </div>
+
+                  <!-- Tab content -->
+                  <%= if active_tab == "stages" do %>
+                    <div
+                      id={"analysis-dev-stages-#{message.id}"}
+                      phx-hook="AutoScrollBottom"
+                      class="max-h-32 overflow-y-auto space-y-1 pr-1"
+                    >
+                      <%= for step <- analysis_steps do %>
+                        <div class="flex items-center justify-between gap-3">
+                          <div class="text-base-content/80 capitalize">
+                            {step_label(step.step)}
+                          </div>
+                          <div class="text-base-content/40 flex items-center gap-2">
+                            <%= if step[:chunk_index] != nil do %>
+                              <span>chunk {step.chunk_index + 1}</span>
+                            <% end %>
+                            <%= if dev[:started_at] && step[:timestamp] do %>
+                              <span>+{step.timestamp - dev.started_at}ms</span>
+                            <% end %>
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
+                  <% end %>
+
+                  <%= if active_tab == "chunks" do %>
+                    <div class="max-h-32 overflow-y-auto space-y-2 pr-1">
+                      <%= for {idx, chunk} <- Enum.sort_by(Map.get(dev, :chunks, %{}), fn {i, _} -> i end) do %>
+                        <div class="bg-base-100 border border-base-300 rounded p-2">
+                          <div class="flex items-center justify-between">
+                            <div class="font-semibold text-base-content/80">Chunk {idx + 1}</div>
+                            <div class="text-base-content/50">
+                              {chunk[:response_strategy] && step_label(chunk.response_strategy)}
+                            </div>
+                          </div>
+                          <div class="mt-1 text-base-content/70">
+                            <span class="font-medium">Intent:</span> {chunk[:intent] || "—"}
+                          </div>
+                          <div class="mt-0.5 text-base-content/70">
+                            <span class="font-medium">Addressee:</span>
+                            {get_in(chunk, [:discourse, :addressee]) || "—"}
+                          </div>
+                          <div class="mt-0.5 text-base-content/70">
+                            <span class="font-medium">Speech act:</span>
+                            {get_in(chunk, [:speech_act, :category]) || "—"}/{get_in(chunk, [:speech_act, :sub_type]) || "—"}
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
+                  <% end %>
+
+                  <%= if active_tab == "entities" do %>
+                    <div class="max-h-32 overflow-y-auto space-y-2 pr-1">
+                      <%= for {idx, chunk} <- Enum.sort_by(Map.get(dev, :chunks, %{}), fn {i, _} -> i end) do %>
+                        <div class="bg-base-100 border border-base-300 rounded p-2">
+                          <div class="font-semibold text-base-content/80 mb-1">Chunk {idx + 1}</div>
+                          <div class="mb-1">
+                            <span class="font-medium text-base-content/70">Entities:</span>
+                            <%= if length(chunk[:entities] || []) > 0 do %>
+                              <div class="mt-1 space-y-0.5">
+                                <%= for e <- chunk.entities do %>
+                                  <div class="text-base-content/70">
+                                    <span class="badge badge-outline badge-xs">{e[:type] || e["type"]}</span>
+                                    <span class="ml-1">{e[:value] || e["value"]}</span>
+                                    <%= if e[:confidence] || e["confidence"] do %>
+                                      <span class="text-base-content/40 ml-1">({e[:confidence] || e["confidence"]})</span>
+                                    <% end %>
+                                  </div>
+                                <% end %>
+                              </div>
+                            <% else %>
+                              <span class="text-base-content/40 italic ml-1">none</span>
+                            <% end %>
+                          </div>
+
+                          <% slots = chunk[:slots_detected] || %{} %>
+                          <div>
+                            <span class="font-medium text-base-content/70">Slots:</span>
+                            <span class="ml-1 text-base-content/60">
+                              filled {slots[:filled_count] || 0},
+                              missing {length(slots[:missing_required] || [])}
+                            </span>
+                            <%= if map_size(slots[:filled_slots] || %{}) > 0 do %>
+                              <div class="mt-1 space-y-0.5">
+                                <%= for {k, v} <- slots.filled_slots do %>
+                                  <div class="text-base-content/70">
+                                    <span class="text-success">✓</span> {k}: {inspect(v)}
+                                  </div>
+                                <% end %>
+                              </div>
+                            <% end %>
+                            <%= if length(slots[:missing_required] || []) > 0 do %>
+                              <div class="mt-1 text-warning">
+                                Missing: {Enum.join(slots.missing_required, ", ")}
+                              </div>
+                            <% end %>
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
+                  <% end %>
+
+                  <%= if active_tab == "context" do %>
+                    <div class="max-h-32 overflow-y-auto space-y-2 pr-1">
+                      <%= for {idx, chunk} <- Enum.sort_by(Map.get(dev, :chunks, %{}), fn {i, _} -> i end) do %>
+                        <% ctx = chunk[:context_resolved] || %{} %>
+                        <div class="bg-base-100 border border-base-300 rounded p-2">
+                          <div class="font-semibold text-base-content/80 mb-1">Chunk {idx + 1}</div>
+                          <div class="text-base-content/70">
+                            <span class="font-medium">All required filled:</span>
+                            {inspect(ctx[:all_required_filled])}
+                          </div>
+                          <%= if map_size(ctx[:filled_slots] || %{}) > 0 do %>
+                            <div class="mt-1 space-y-0.5">
+                              <%= for {k, v} <- ctx.filled_slots do %>
+                                <div class="text-base-content/70">
+                                  <span class="text-success">✓</span> {k}: {inspect(v)}
+                                </div>
+                              <% end %>
+                            </div>
+                          <% else %>
+                            <div class="text-base-content/40 italic mt-1">No slots filled from context</div>
+                          <% end %>
+                          <%= if length(ctx[:missing_required] || []) > 0 do %>
+                            <div class="mt-1 text-warning">
+                              Still missing: {Enum.join(ctx.missing_required, ", ")}
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </div>
+                  <% end %>
+
+                  <%= if active_tab == "strategy" do %>
+                    <div class="max-h-32 overflow-y-auto space-y-2 pr-1">
+                      <div class="bg-base-100 border border-base-300 rounded p-2">
+                        <div class="text-base-content/70">
+                          <span class="font-medium">Overall strategy:</span> {dev[:overall_strategy] && step_label(dev.overall_strategy)}
+                        </div>
+                        <div class="text-base-content/70">
+                          <span class="font-medium">Elapsed:</span> {dev[:elapsed_ms] || "—"}ms
+                        </div>
+                        <div class="mt-2">
+                          <div class="font-semibold text-base-content/80 mb-1">Per-chunk</div>
+                          <div class="space-y-0.5">
+                            <%= for {idx, chunk} <- Enum.sort_by(Map.get(dev, :chunks, %{}), fn {i, _} -> i end) do %>
+                              <div class="text-base-content/70 flex items-center justify-between gap-3">
+                                <span>Chunk {idx + 1}</span>
+                                <span class="text-base-content/60">
+                                  {chunk[:response_strategy] && step_label(chunk.response_strategy)} (conf {chunk[:confidence] || "—"})
+                                </span>
+                              </div>
+                            <% end %>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+            
+            <!-- Expanded Processing Trace Panel -->
+            <%= if message.role == "user" && @show_processing && message[:trace] && MapSet.member?(@expanded_traces, message.id) do %>
+              <div class="mt-1 max-w-lg w-full">
+                <button
+                  phx-click="toggle_trace"
+                  phx-value-message_id={message.id}
+                  class="w-full text-left"
+                >
+                  <div class="flex items-center gap-1 text-xs text-base-content/60 mb-1 hover:text-base-content/80">
+                    <.icon name="hero-chevron-up" class="w-3 h-3" />
+                    <span>Collapse processing details</span>
+                  </div>
+                </button>
+                <.processing_trace trace={message.trace} />
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+    
+<!-- Input Area -->
+    <div class="bg-base-100 border-t border-base-300 p-4">
+      <form id="message-form" phx-submit="send_message" class="flex space-x-2">
+        <input
+          type="text"
+          name="input"
+          value={@input_text}
+          placeholder="Type your message..."
+          class="input input-bordered flex-1"
+          phx-keyup="input_change"
+          phx-value-value={@input_text}
+        />
+        <button
+          type="submit"
+          disabled={@input_text == ""}
+          class="btn btn-primary"
+        >
+          Send
+        </button>
+      </form>
+    </div>
+  </div>
+</div>

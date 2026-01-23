@@ -1,0 +1,162 @@
+{
+  "weather.query": {
+    "description": "Weather information request",
+    "required": ["location"],
+    "optional": ["date", "time", "unit-temperature"],
+    "defaults": {
+      "date": "today"
+    },
+    "entity_mappings": {
+      "location": ["location", "room", "city"],
+      "date": ["date", "relative_date", "sys-date"],
+      "time": ["time", "sys-time"],
+      "unit-temperature": ["unit-temperature"]
+    },
+    "clarification_templates": {
+      "location": "What location would you like the weather for?"
+    }
+  },
+  "news.query": {
+    "description": "News information request",
+    "required": [],
+    "optional": ["topic", "news-source", "date", "news-sort"],
+    "defaults": {
+      "news-sort": "latest"
+    },
+    "entity_mappings": {
+      "topic": ["topic"],
+      "news-source": ["news-source"],
+      "date": ["date", "relative_date"],
+      "news-sort": ["news-sort"]
+    },
+    "clarification_templates": {}
+  },
+  "device.control": {
+    "description": "Smart device control request",
+    "required": ["device", "action"],
+    "optional": ["room", "color", "value", "condition"],
+    "defaults": {},
+    "entity_mappings": {
+      "device": ["device", "lights", "heating"],
+      "action": ["locks-status"],
+      "room": ["room"],
+      "color": ["color"],
+      "condition": ["condition"]
+    },
+    "clarification_templates": {
+      "device": "Which device would you like me to control?",
+      "action": "What would you like me to do with it?"
+    }
+  },
+  "music.play": {
+    "description": "Music playback request",
+    "required": [],
+    "optional": ["song", "music-artist", "music-album", "playlist", "music-service", "music-sort"],
+    "defaults": {},
+    "entity_mappings": {
+      "song": ["song"],
+      "music-artist": ["music-artist"],
+      "music-album": ["music-album"],
+      "playlist": ["playlist"],
+      "music-service": ["music-service"],
+      "music-sort": ["music-sort"]
+    },
+    "clarification_templates": {}
+  },
+  "reminder.create": {
+    "description": "Create a reminder",
+    "required": ["content"],
+    "optional": ["date", "time", "recurrence"],
+    "defaults": {},
+    "entity_mappings": {
+      "date": ["date", "relative_date", "sys-date"],
+      "time": ["time", "sys-time"],
+      "recurrence": ["recurrence"]
+    },
+    "clarification_templates": {
+      "content": "What would you like me to remind you about?"
+    }
+  },
+  "account.query": {
+    "description": "Account information request",
+    "required": ["account"],
+    "optional": ["category", "merchant", "date"],
+    "defaults": {},
+    "entity_mappings": {
+      "account": ["account"],
+      "category": ["category"],
+      "merchant": ["merchant"],
+      "date": ["date", "relative_date"]
+    },
+    "clarification_templates": {
+      "account": "Which account would you like to check?"
+    }
+  },
+  "search.web": {
+    "description": "Web search request",
+    "required": ["query"],
+    "optional": ["search-engine"],
+    "defaults": {
+      "search-engine": "Google"
+    },
+    "entity_mappings": {
+      "search-engine": ["search-engine"]
+    },
+    "clarification_templates": {
+      "query": "What would you like me to search for?"
+    }
+  },
+  "outfit.recommend": {
+    "description": "Outfit recommendation request",
+    "required": [],
+    "optional": ["weather-condition", "temperature", "activity", "outfit"],
+    "defaults": {},
+    "entity_mappings": {
+      "weather-condition": ["weather-condition"],
+      "temperature": ["temperature"],
+      "activity": ["activity"],
+      "outfit": ["outfit"]
+    },
+    "clarification_templates": {}
+  },
+  "smalltalk.greeting": {
+    "description": "Greeting exchange",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "smalltalk.farewell": {
+    "description": "Farewell exchange",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "smalltalk.thanks": {
+    "description": "Expression of gratitude",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "smalltalk.general": {
+    "description": "General small talk",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "unknown": {
+    "description": "Unknown intent - fallback",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  }
+}

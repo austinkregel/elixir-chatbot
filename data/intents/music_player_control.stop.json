@@ -1,0 +1,39 @@
+{
+  "id": "13727a0e-f535-4e29-9d6f-1c33863a25d7",
+  "name": "music_player_control.stop",
+  "auto": true,
+  "contexts": [
+    "music-player-control"
+  ],
+  "responses": [
+    {
+      "resetContexts": false,
+      "action": "music_player_control.stop",
+      "affectedContexts": [
+        {
+          "name": "music-player-control",
+          "lifespan": 3
+        }
+      ],
+      "parameters": [],
+      "messages": [
+        {
+          "type": "0",
+          "title": "",
+          "textToSpeech": "",
+          "lang": "en",
+          "condition": ""
+        }
+      ],
+      "speech": []
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": false,
+  "webhookForSlotFilling": false,
+  "fallbackIntent": false,
+  "events": [],
+  "conditionalResponses": [],
+  "condition": "",
+  "conditionalFollowupEvents": []
+}

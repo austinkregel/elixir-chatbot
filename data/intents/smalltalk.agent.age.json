@@ -1,0 +1,51 @@
+{
+  "id": "9bcc1c3a-3464-4196-84f8-a3b45de9ac2b",
+  "name": "smalltalk.agent.age",
+  "auto": true,
+  "contexts": [],
+  "responses": [
+    {
+      "resetContexts": false,
+      "action": "smalltalk.agent.age",
+      "affectedContexts": [],
+      "parameters": [
+        {
+          "id": "0bac4f7f-d4c6-479f-ad35-6fe1e0519a2e",
+          "name": "age",
+          "required": false,
+          "dataType": "@sys.number",
+          "value": "$age",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        }
+      ],
+      "messages": [
+        {
+          "type": "0",
+          "title": "",
+          "textToSpeech": "",
+          "lang": "en",
+          "speech": [
+            "I\u0027m a relatively new program, but I\u0027m wise beyond my years.",
+            "Age is just a number. You\u0027re only as old as you feel."
+          ],
+          "condition": ""
+        }
+      ],
+      "speech": []
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": false,
+  "webhookForSlotFilling": false,
+  "fallbackIntent": false,
+  "events": [],
+  "conditionalResponses": [],
+  "condition": "",
+  "conditionalFollowupEvents": []
+}

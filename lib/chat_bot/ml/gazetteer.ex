@@ -1,0 +1,642 @@
+defmodule ChatBot.ML.Gazetteer do
+  @moduledoc """
+  Fast entity lookup using ETS tables.
+
+  The gazetteer provides efficient lookup of entities from various sources:
+  - Cities (from world-cities.csv)
+  - Music artists (from Global Music Artists.csv)
+  - Devices, rooms, and other entities (from entities/*.json)
+  - Emojis (from emojis.csv)
+
+  Uses ETS tables for O(1) average lookup time and concurrent read access.
+  Also supports prefix matching for multi-word entity detection.
+  """
+
+  use GenServer
+  require Logger
+
+  alias ChatBot.ML.DataLoaders
+
+  @table_name :gazetteer_entities
+  @prefix_table :gazetteer_prefixes
+  @stats_table :gazetteer_stats
+
+  @type entity_match :: %{
+          entity_type: String.t(),
+          value: String.t(),
+          confidence: float(),
+          metadata: map()
+        }
+
+  # ============================================================================
+  # Client API
+  # ============================================================================
+
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  @doc """
+  Initialize and load all gazetteers from data files.
+  """
+  def load_all do
+    GenServer.call(__MODULE__, :load_all, :infinity)
+  end
+
+  @doc """
+  Returns true if the gazetteer is loaded and ready.
+  """
+  def is_loaded? do
+    Process.whereis(__MODULE__) != nil and
+      :ets.info(@table_name) != :undefined
+  rescue
+    _ -> false
+  end
+
+  @doc """
+  Look up an entity by exact match (case-insensitive).
+  Returns {:ok, entity_info} or :not_found
+  """
+  def lookup(text) when is_binary(text) do
+    normalized = normalize(text)
+
+    case :ets.lookup(@table_name, normalized) do
+      [{^normalized, entity_info}] -> {:ok, entity_info}
+      [] -> :not_found
+    end
+  rescue
+    ArgumentError -> :not_found
+  end
+
+  @doc """
+  Look up multiple potential entity spans from a list of tokens.
+  Returns a list of {start_index, end_index, entity_info} tuples.
+  Prioritizes longer matches (multi-word entities).
+  """
+  def lookup_spans(tokens) when is_list(tokens) do
+    token_count = length(tokens)
+
+    # Try to find matches starting from each position
+    # Prioritize longer matches
+    find_all_spans(tokens, 0, token_count, [])
+  rescue
+    ArgumentError -> []
+  end
+
+  @doc """
+  Check if a text is a known prefix of any entity.
+  Useful for multi-word entity detection during streaming.
+  """
+  def is_prefix?(text) when is_binary(text) do
+    normalized = normalize(text)
+
+    case :ets.lookup(@prefix_table, normalized) do
+      [{^normalized, true}] -> true
+      [] -> false
+    end
+  rescue
+    ArgumentError -> false
+  end
+
+  @doc """
+  Get statistics about loaded gazetteers.
+  """
+  def stats do
+    case :ets.lookup(@stats_table, :stats) do
+      [{:stats, stats}] -> stats
+      [] -> %{}
+    end
+  rescue
+    ArgumentError -> %{}
+  end
+
+  @doc """
+  Check if gazetteers are loaded.
+  """
+  def loaded? do
+    case stats() do
+      %{loaded: true} -> true
+      _ -> false
+    end
+  end
+
+  @doc """
+  Add a new entity to the gazetteer dynamically.
+
+  ## Parameters
+    - name: The entity name (e.g., "New York City")
+    - entity_type: The type (e.g., "location", "city", "device")
+    - metadata: Optional additional metadata
+
+  ## Returns
+    - {:ok, normalized_key} on success
+    - {:error, reason} on failure
+  """
+  def add_entry(name, entity_type, metadata \\ %{}) when is_binary(name) and is_binary(entity_type) do
+    GenServer.call(__MODULE__, {:add_entry, name, entity_type, metadata})
+  end
+
+  @doc """
+  Remove an entity from the gazetteer.
+  """
+  def remove_entry(name) when is_binary(name) do
+    GenServer.call(__MODULE__, {:remove_entry, name})
+  end
+
+  @doc """
+  Clear all entities of a given type.
+  Returns {:ok, count} with the number of entries removed.
+  """
+  def clear_by_type(entity_type) when is_binary(entity_type) do
+    GenServer.call(__MODULE__, {:clear_by_type, entity_type}, 60_000)
+  end
+
+  @doc """
+  Clear all admin-added entities.
+  Returns {:ok, count} with the number of entries removed.
+  """
+  def clear_admin_entries do
+    GenServer.call(__MODULE__, :clear_admin_entries, 60_000)
+  end
+
+  @doc """
+  Clear all entities from the gazetteer.
+  Returns {:ok, count} with the number of entries removed.
+  """
+  def clear_all do
+    GenServer.call(__MODULE__, :clear_all, 60_000)
+  end
+
+  @doc """
+  Check if an entity already exists in the gazetteer.
+  Returns {true, entity_info} if it exists, false otherwise.
+  """
+  def exists?(name) when is_binary(name) do
+    try do
+      normalized_key = normalize(name)
+
+      case :ets.lookup(@table_name, normalized_key) do
+        [{^normalized_key, info}] -> {true, info}
+        [] -> false
+      end
+    rescue
+      _ -> false
+    end
+  end
+
+  @doc """
+  List all entities of a given type.
+  Returns a list of {name, entity_info} tuples.
+  """
+  def list_by_type(entity_type) when is_binary(entity_type) do
+    try do
+      :ets.tab2list(@table_name)
+      |> Enum.filter(fn {_key, info} ->
+        Map.get(info, :entity_type) == entity_type or
+          Map.get(info, :type) == entity_type
+      end)
+      |> Enum.map(fn {key, info} -> {key, info} end)
+      |> Enum.sort_by(fn {key, _} -> key end)
+    rescue
+      _ -> []
+    end
+  end
+
+  @doc """
+  List all entity types in the gazetteer.
+  """
+  def list_types do
+    try do
+      :ets.tab2list(@table_name)
+      |> Enum.map(fn {_key, info} ->
+        Map.get(info, :entity_type) || Map.get(info, :type) || "unknown"
+      end)
+      |> Enum.uniq()
+      |> Enum.sort()
+    rescue
+      _ -> []
+    end
+  end
+
+  @doc """
+  Search entities by partial name match.
+  """
+  def search(query) when is_binary(query) do
+    normalized_query = normalize(query)
+
+    try do
+      :ets.tab2list(@table_name)
+      |> Enum.filter(fn {key, _info} ->
+        String.contains?(key, normalized_query)
+      end)
+      |> Enum.take(50)
+      |> Enum.sort_by(fn {key, _} -> key end)
+    rescue
+      _ -> []
+    end
+  end
+
+  # ============================================================================
+  # GenServer Callbacks
+  # ============================================================================
+
+  @impl true
+  def init(_opts) do
+    # Create ETS tables
+    create_tables()
+
+    {:ok, %{loaded: false}}
+  end
+
+  @impl true
+  def handle_call(:load_all, _from, state) do
+    Logger.info("Loading all gazetteers...")
+
+    stats = %{
+      entities: 0,
+      prefixes: 0,
+      cities: 0,
+      artists: 0,
+      emojis: 0,
+      us_cities: 0,
+      entity_types: 0,
+      loaded: false,
+      load_time_ms: 0
+    }
+
+    start_time = System.monotonic_time(:millisecond)
+
+    # Load and index entities from JSON files
+    stats =
+      case DataLoaders.load_all_entities() do
+        {:ok, entities} ->
+          entity_lookup = DataLoaders.build_entity_lookup(entities)
+          indexed = index_entities(entity_lookup, "json_entity")
+          %{stats | entities: stats.entities + indexed, entity_types: map_size(entities)}
+
+        {:error, _} ->
+          stats
+      end
+
+    # Load and index world cities
+    stats =
+      case DataLoaders.load_cities() do
+        {:ok, cities} ->
+          city_lookup = DataLoaders.build_city_lookup(cities)
+          indexed = index_entities(city_lookup, :cities)
+          %{stats | entities: stats.entities + indexed, cities: length(cities)}
+
+        {:error, _} ->
+          stats
+      end
+
+    # Load and index US cities (comprehensive dataset)
+    stats =
+      case DataLoaders.load_us_cities() do
+        {:ok, us_cities} ->
+          us_city_lookup = DataLoaders.build_us_city_lookup(us_cities)
+          indexed = index_entities(us_city_lookup, :us_cities)
+          Logger.info("Loaded US cities", %{count: length(us_cities), indexed: indexed})
+          %{stats | entities: stats.entities + indexed, us_cities: length(us_cities)}
+
+        {:error, _} ->
+          stats
+      end
+
+    # Load and index artists
+    stats =
+      case DataLoaders.load_artists() do
+        {:ok, artists} ->
+          artist_lookup = DataLoaders.build_artist_lookup(artists)
+          indexed = index_entities(artist_lookup, "artist")
+          %{stats | entities: stats.entities + indexed, artists: length(artists)}
+
+        {:error, _} ->
+          stats
+      end
+
+    # Load and index emojis
+    stats =
+      case DataLoaders.load_emojis() do
+        {:ok, emojis} ->
+          emoji_lookup = DataLoaders.build_emoji_lookup(emojis)
+          indexed = index_entities(emoji_lookup, "emoji")
+          %{stats | entities: stats.entities + indexed, emojis: length(emojis)}
+
+        {:error, _} ->
+          stats
+      end
+
+    # Build prefix index
+    prefix_count = build_prefix_index()
+
+    end_time = System.monotonic_time(:millisecond)
+    load_time = end_time - start_time
+
+    final_stats = %{stats | prefixes: prefix_count, loaded: true, load_time_ms: load_time}
+
+    :ets.insert(@stats_table, {:stats, final_stats})
+
+    Logger.info("Gazetteers loaded", %{
+      entities: final_stats.entities,
+      prefixes: final_stats.prefixes,
+      cities: final_stats.cities,
+      artists: final_stats.artists,
+      emojis: final_stats.emojis,
+      load_time_ms: load_time
+    })
+
+    {:reply, {:ok, final_stats}, %{state | loaded: true}}
+  end
+
+  @impl true
+  def handle_call({:add_entry, name, entity_type, metadata}, _from, state) do
+    normalized_key = normalize(name)
+
+    # Check if entry already exists
+    case :ets.lookup(@table_name, normalized_key) do
+      [{^normalized_key, existing_info}] ->
+        existing_type = existing_info[:entity_type] || existing_info[:type]
+        {:reply, {:error, {:duplicate, existing_type}}, state}
+
+      [] ->
+        entity_info =
+          metadata
+          |> Map.put(:entity_type, entity_type)
+          |> Map.put(:type, entity_type)
+          |> Map.put(:value, name)
+          |> Map.put(:original_name, name)
+          |> Map.put(:source, :admin)
+          |> Map.put(:added_at, System.system_time(:second))
+
+        :ets.insert(@table_name, {normalized_key, entity_info})
+
+        # Update prefixes if multi-word
+        words = String.split(normalized_key)
+
+        if length(words) > 1 do
+          prefixes =
+            1..(length(words) - 1)
+            |> Enum.map(fn n -> Enum.take(words, n) |> Enum.join(" ") end)
+
+          Enum.each(prefixes, fn prefix ->
+            :ets.insert(@prefix_table, {prefix, true})
+          end)
+        end
+
+        # Update stats
+        case :ets.lookup(@stats_table, :stats) do
+          [{:stats, current_stats}] ->
+            new_stats = Map.update(current_stats, :entities, 1, &(&1 + 1))
+            :ets.insert(@stats_table, {:stats, new_stats})
+
+          _ ->
+            :ok
+        end
+
+        Logger.info("Added gazetteer entry", %{name: name, type: entity_type})
+        {:reply, {:ok, normalized_key}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:remove_entry, name}, _from, state) do
+    normalized_key = normalize(name)
+
+    case :ets.lookup(@table_name, normalized_key) do
+      [{^normalized_key, _info}] ->
+        :ets.delete(@table_name, normalized_key)
+
+        # Update stats
+        case :ets.lookup(@stats_table, :stats) do
+          [{:stats, current_stats}] ->
+            new_stats = Map.update(current_stats, :entities, 0, &max(&1 - 1, 0))
+            :ets.insert(@stats_table, {:stats, new_stats})
+
+          _ ->
+            :ok
+        end
+
+        Logger.info("Removed gazetteer entry", %{name: name})
+        {:reply, :ok, state}
+
+      [] ->
+        {:reply, {:error, :not_found}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:clear_by_type, entity_type}, _from, state) do
+    # Find and delete all entries of the given type
+    entries_to_delete =
+      :ets.tab2list(@table_name)
+      |> Enum.filter(fn {_key, info} ->
+        Map.get(info, :entity_type) == entity_type or
+          Map.get(info, :type) == entity_type
+      end)
+
+    count = length(entries_to_delete)
+
+    Enum.each(entries_to_delete, fn {key, _info} ->
+      :ets.delete(@table_name, key)
+    end)
+
+    # Update stats
+    update_entity_count(-count)
+
+    Logger.info("Cleared gazetteer entries by type", %{type: entity_type, count: count})
+    {:reply, {:ok, count}, state}
+  end
+
+  @impl true
+  def handle_call(:clear_admin_entries, _from, state) do
+    # Find and delete all admin-added entries
+    entries_to_delete =
+      :ets.tab2list(@table_name)
+      |> Enum.filter(fn {_key, info} ->
+        Map.get(info, :source) == :admin
+      end)
+
+    count = length(entries_to_delete)
+
+    Enum.each(entries_to_delete, fn {key, _info} ->
+      :ets.delete(@table_name, key)
+    end)
+
+    # Update stats
+    update_entity_count(-count)
+
+    Logger.info("Cleared admin-added gazetteer entries", %{count: count})
+    {:reply, {:ok, count}, state}
+  end
+
+  @impl true
+  def handle_call(:clear_all, _from, state) do
+    # Count before clearing
+    count = :ets.info(@table_name, :size) || 0
+
+    # Clear all tables
+    :ets.delete_all_objects(@table_name)
+    :ets.delete_all_objects(@prefix_table)
+
+    # Reset stats
+    :ets.insert(@stats_table, {:stats, %{entities: 0, loaded: false}})
+
+    Logger.info("Cleared all gazetteer entries", %{count: count})
+    {:reply, {:ok, count}, state}
+  end
+
+  # ============================================================================
+  # Private Functions
+  # ============================================================================
+
+  defp update_entity_count(delta) do
+    case :ets.lookup(@stats_table, :stats) do
+      [{:stats, current_stats}] ->
+        new_count = max((current_stats[:entities] || 0) + delta, 0)
+        new_stats = Map.put(current_stats, :entities, new_count)
+        :ets.insert(@stats_table, {:stats, new_stats})
+
+      _ ->
+        :ok
+    end
+  end
+
+  defp create_tables do
+    # Main entity lookup table
+    if :ets.whereis(@table_name) != :undefined do
+      :ets.delete(@table_name)
+    end
+
+    :ets.new(@table_name, [:set, :public, :named_table, read_concurrency: true])
+
+    # Prefix table for multi-word entity detection
+    if :ets.whereis(@prefix_table) != :undefined do
+      :ets.delete(@prefix_table)
+    end
+
+    :ets.new(@prefix_table, [:set, :public, :named_table, read_concurrency: true])
+
+    # Stats table
+    if :ets.whereis(@stats_table) != :undefined do
+      :ets.delete(@stats_table)
+    end
+
+    :ets.new(@stats_table, [:set, :public, :named_table, read_concurrency: true])
+  end
+
+  defp index_entities(lookup_map, source) do
+    Enum.reduce(lookup_map, 0, fn {normalized_key, entity_info}, count ->
+      # Add source information
+      enriched_info = Map.put(entity_info, :source, source)
+
+      # Insert into ETS (newer entries override older ones)
+      :ets.insert(@table_name, {normalized_key, enriched_info})
+
+      count + 1
+    end)
+  end
+
+  defp build_prefix_index do
+    # Build prefixes for all multi-word entities
+    # This enables efficient lookup of entities like "New York"
+
+    entities = :ets.tab2list(@table_name)
+
+    prefixes =
+      Enum.flat_map(entities, fn {key, _info} ->
+        words = String.split(key)
+
+        if length(words) > 1 do
+          # Generate all prefixes
+          1..(length(words) - 1)
+          |> Enum.map(fn n -> Enum.take(words, n) |> Enum.join(" ") end)
+        else
+          []
+        end
+      end)
+      |> Enum.uniq()
+
+    Enum.each(prefixes, fn prefix ->
+      :ets.insert(@prefix_table, {prefix, true})
+    end)
+
+    length(prefixes)
+  end
+
+  defp find_all_spans(tokens, start_idx, token_count, acc) when start_idx >= token_count do
+    # Sort by span length (longest first) and then by start position
+    acc
+    |> Enum.sort_by(fn {start, end_idx, _info} -> {-(end_idx - start), start} end)
+    |> remove_overlapping_spans([])
+  end
+
+  defp find_all_spans(tokens, start_idx, token_count, acc) do
+    # Try to find the longest match starting at start_idx
+    # Max 5 words per entity
+    max_span = min(5, token_count - start_idx)
+
+    match = find_longest_match(tokens, start_idx, max_span)
+
+    case match do
+      {:ok, end_idx, entity_info} ->
+        # Found a match, continue from after this match
+        new_acc = [{start_idx, end_idx, entity_info} | acc]
+        find_all_spans(tokens, start_idx + 1, token_count, new_acc)
+
+      :not_found ->
+        # No match at this position, try next
+        find_all_spans(tokens, start_idx + 1, token_count, acc)
+    end
+  end
+
+  defp find_longest_match(tokens, start_idx, max_span) do
+    # Try longest spans first
+    if max_span < 1 do
+      :not_found
+    else
+      max_span..1//-1
+      |> Enum.reduce_while(:not_found, fn span_len, _acc ->
+        span_tokens = Enum.slice(tokens, start_idx, span_len)
+        phrase = Enum.join(span_tokens, " ")
+        normalized = normalize(phrase)
+
+        case :ets.lookup(@table_name, normalized) do
+          [{^normalized, entity_info}] ->
+            end_idx = start_idx + span_len - 1
+            {:halt, {:ok, end_idx, entity_info}}
+
+          [] ->
+            {:cont, :not_found}
+        end
+      end)
+    end
+  end
+
+  defp remove_overlapping_spans([], resolved), do: Enum.reverse(resolved)
+
+  defp remove_overlapping_spans([span | rest], resolved) do
+    {start_idx, end_idx, _info} = span
+
+    # Check if this span overlaps with any resolved span
+    overlaps =
+      Enum.any?(resolved, fn {res_start, res_end, _} ->
+        # Overlaps if ranges intersect
+        start_idx <= res_end and end_idx >= res_start
+      end)
+
+    if overlaps do
+      # Skip this span (a longer span was already added)
+      remove_overlapping_spans(rest, resolved)
+    else
+      # Add this span
+      remove_overlapping_spans(rest, [span | resolved])
+    end
+  end
+
+  defp normalize(text) when is_binary(text) do
+    text
+    |> String.downcase()
+    |> String.trim()
+  end
+end

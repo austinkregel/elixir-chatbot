@@ -1,0 +1,12 @@
+{
+  "action": "has",
+  "objects": [
+    "Samsung TV",
+    "Philips Hue lights"
+  ],
+  "properties": {},
+  "raw_text": "The living room has a Samsung TV and Philips Hue lights",
+  "relationships": [],
+  "subject": "living room",
+  "type": "command"
+}

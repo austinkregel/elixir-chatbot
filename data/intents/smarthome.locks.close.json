@@ -1,0 +1,86 @@
+{
+  "id": "46d58ee0-a1c6-45b7-8e7a-ca97631f05e6",
+  "name": "smarthome.locks.close",
+  "auto": true,
+  "contexts": [],
+  "responses": [
+    {
+      "resetContexts": false,
+      "action": "smarthome.locks.close",
+      "affectedContexts": [
+        {
+          "name": "schedule",
+          "lifespan": 3,
+          "parameters": {}
+        },
+        {
+          "name": "room",
+          "lifespan": 3,
+          "parameters": {}
+        }
+      ],
+      "parameters": [
+        {
+          "id": "ea4aecd3-e53a-46b5-a1d2-9029595a1042",
+          "name": "lock",
+          "required": false,
+          "dataType": "@lock",
+          "value": "$lock",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "23b8bdbb-0213-49e0-a443-97730e4eb3bc",
+          "name": "room",
+          "required": false,
+          "dataType": "@room",
+          "value": "$room",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "9272ee38-2146-4136-847b-3aa59d3f906b",
+          "name": "all",
+          "required": false,
+          "dataType": "@all",
+          "value": "$all",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        }
+      ],
+      "messages": [
+        {
+          "type": "0",
+          "title": "",
+          "textToSpeech": "",
+          "lang": "en",
+          "condition": ""
+        }
+      ],
+      "speech": []
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": false,
+  "webhookForSlotFilling": false,
+  "fallbackIntent": false,
+  "events": [],
+  "conditionalResponses": [],
+  "condition": "",
+  "conditionalFollowupEvents": []
+}

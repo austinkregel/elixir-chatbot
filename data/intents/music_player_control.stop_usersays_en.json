@@ -1,0 +1,172 @@
+[
+  {
+    "id": "d512d509-4cc4-41ec-a5d4-fa1d49b97826",
+    "data": [
+      {
+        "text": "stop",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "51f8b881-ba21-4148-b127-923137b7fb8b",
+    "data": [
+      {
+        "text": "stop playing",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "be8269d5-321e-46af-9309-93e28424db69",
+    "data": [
+      {
+        "text": "enough ",
+        "userDefined": false
+      },
+      {
+        "text": "music",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "b6ab0b8c-0f78-4418-ad2f-fe408a77bda1",
+    "data": [
+      {
+        "text": "enough",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "bdb674c3-b3cd-43b9-b587-f087e9369a7f",
+    "data": [
+      {
+        "text": "stop the ",
+        "userDefined": false
+      },
+      {
+        "text": "music",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "620c7daf-c31b-4fd9-8e96-be9de692c95b",
+    "data": [
+      {
+        "text": "can you stop the ",
+        "userDefined": false
+      },
+      {
+        "text": "music",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "8330472c-5cc4-40e4-b511-10f85c72baef",
+    "data": [
+      {
+        "text": "could you ",
+        "userDefined": false
+      },
+      {
+        "text": "stop",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "dbd33933-b094-42f1-8302-1713fd50b4e1",
+    "data": [
+      {
+        "text": "stop",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "it",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "d53e9dd7-e8ca-4c79-a3ee-72d9822b16c4",
+    "data": [
+      {
+        "text": "turn off",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "music",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "95d38881-b94d-46aa-96fd-9b9bb9b280cf",
+    "data": [
+      {
+        "text": "music",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "off",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  }
+]

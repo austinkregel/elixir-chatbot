@@ -1,0 +1,11 @@
+{
+  "action": "verb",
+  "objects": [
+    "things mentioned"
+  ],
+  "properties": {
+    "key": "value"
+  },
+  "subject": "main entity",
+  "type": "command|personal_info|other"
+}

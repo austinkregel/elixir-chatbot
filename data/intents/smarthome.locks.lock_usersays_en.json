@@ -1,0 +1,308 @@
+[
+  {
+    "id": "28e63cf8-586e-494a-96ea-123e06815428",
+    "data": [
+      {
+        "text": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "kitchen",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "ff45f4d8-421c-4510-9f4b-73704d214e18",
+    "data": [
+      {
+        "text": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "garage",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "windows",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "cc5f5969-c033-44fa-b18a-4e59d2afc131",
+    "data": [
+      {
+        "text": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " the ",
+        "userDefined": false
+      },
+      {
+        "text": "front door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "e69086a2-1e0b-4c89-9892-9f012c010aef",
+    "data": [
+      {
+        "text": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "doors",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "everywhere",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "14cdb1c3-56ed-473c-a28b-b6e3b9231ef3",
+    "data": [
+      {
+        "text": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "4ae0db9a-b678-49ab-bc72-aa612fc8274a",
+    "data": [
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "doors",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " should be locked",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "19ba36cb-640c-43bc-b992-1447b14ade5c",
+    "data": [
+      {
+        "text": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " the ",
+        "userDefined": false
+      },
+      {
+        "text": "kitchen",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "32fd5164-9fef-438d-b620-fe0141ad0be4",
+    "data": [
+      {
+        "text": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "doors",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "bfc31ead-86fa-40f8-a816-c383315bdf83",
+    "data": [
+      {
+        "text": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "garage",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "dac58ac7-f697-4f05-a636-b3d85579ad20",
+    "data": [
+      {
+        "text": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "windows",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " in the ",
+        "userDefined": false
+      },
+      {
+        "text": "kitchen",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  }
+]

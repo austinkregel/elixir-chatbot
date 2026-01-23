@@ -1,0 +1,182 @@
+[
+  {
+    "id": "6853ea94bc296724",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello",
+    "timestamp": 1769199679974
+  },
+  {
+    "id": "3b440f4132b4e764",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769199708484
+  },
+  {
+    "id": "c2ea684274453d3c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769199732091
+  },
+  {
+    "id": "8a9576de6f68f268",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Can you tell me the weather in owosso michigan?",
+    "timestamp": 1769199746914
+  },
+  {
+    "id": "5040044853768c51",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769200158083
+  },
+  {
+    "id": "0e6a9312b1b28b47",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769200247527
+  },
+  {
+    "id": "c4afeeb673a1d34d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769200794819
+  },
+  {
+    "id": "9fe7c01d0fa98ca3",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769200917588
+  },
+  {
+    "id": "06785077e3ac83b6",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769201079968
+  },
+  {
+    "id": "57eba0e9ba0f7f4b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769201212146
+  },
+  {
+    "id": "226b69feaf976662",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769201827719
+  },
+  {
+    "id": "70a5bfab6e3ac63b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769202191373
+  },
+  {
+    "id": "e35ddee903434719",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769202304736
+  },
+  {
+    "id": "f4c233dc1b7bc323",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769202462188
+  },
+  {
+    "id": "d0994c45b7982aed",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769202565995
+  },
+  {
+    "id": "aad5f754961096e9",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769202823209
+  },
+  {
+    "id": "b6ff1470c3ee9d96",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769204236248
+  },
+  {
+    "id": "2d737fd97f290347",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: What do you know about me?",
+    "timestamp": 1769204258047
+  }
+]

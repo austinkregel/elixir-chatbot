@@ -1,0 +1,78 @@
+{
+  "facts": [
+    {
+      "confidence": 0.9,
+      "entity": "world",
+      "fact": "The text is a greeting.",
+      "timestamp": 1759714036811
+    },
+    {
+      "confidence": 0.85,
+      "entity": "entity_name",
+      "fact": "descriptive fact about an entity",
+      "timestamp": 1759714401637
+    },
+    {
+      "confidence": 0.85,
+      "entity": "entity_name",
+      "fact": "descriptive fact about an entity",
+      "timestamp": 1759714522414
+    }
+  ],
+  "people": {
+    "nil": {
+      "age": "vial",
+      "confidence": 0.9,
+      "description": "description",
+      "location": "city",
+      "name": null,
+      "type": "person"
+    }
+  },
+  "places": {
+    "world": {
+      "confidence": 0.98,
+      "description": "the world",
+      "name": "world",
+      "type": "place"
+    }
+  },
+  "relationships": [
+    {
+      "confidence": 0.9,
+      "object": "entity2",
+      "relation": "has|owns|lives_in|works_at|likes|dislikes|uses|located_in|scheduled_for|completed|in_progress",
+      "subject": "entity1",
+      "timestamp": 1759714401637
+    },
+    {
+      "confidence": 0.9,
+      "object": "entity2",
+      "relation": "has|owns|lives_in|works_at|likes|dislikes|uses|located_in|scheduled_for|completed|in_progress",
+      "subject": "entity1",
+      "timestamp": 1759714522412
+    },
+    {
+      "confidence": 0.9,
+      "object": "entity1",
+      "relation": "owns|lives_in|works_at|likes|dislikes|uses|located_in|scheduled_for|completed|in_progress",
+      "subject": "entity2",
+      "timestamp": 1759714522412
+    }
+  ],
+  "tasks": {
+    "First message": {
+      "confidence": 0.98,
+      "description": "initial message",
+      "name": "First message",
+      "status": "in_progress",
+      "type": "task"
+    },
+    "Test message": {
+      "confidence": 0.98,
+      "description": "A test message",
+      "name": "Test message",
+      "type": "task"
+    }
+  }
+}

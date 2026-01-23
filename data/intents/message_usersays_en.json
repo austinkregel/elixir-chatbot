@@ -1,0 +1,162 @@
+[
+  {
+    "id": "f57ff62d-02ae-4fdd-b758-396e05807bdc",
+    "data": [
+      {
+        "text": "message",
+        "meta": "@message_type",
+        "alias": "message_type",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "Thaman",
+        "meta": "@sys.given-name",
+        "alias": "given-name",
+        "userDefined": true
+      },
+      {
+        "text": " on ",
+        "userDefined": false
+      },
+      {
+        "text": "slack",
+        "meta": "@message_type",
+        "alias": "message_type",
+        "userDefined": true
+      },
+      {
+        "text": " that ",
+        "userDefined": false
+      },
+      {
+        "text": "I\u0027ll be there soon",
+        "meta": "@message_content",
+        "alias": "message_content",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "d1624c86-c401-4acb-8b8d-57040976e888",
+    "data": [
+      {
+        "text": "message",
+        "meta": "@message_type",
+        "alias": "message_type",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "andrew",
+        "meta": "@sys.given-name",
+        "alias": "given-name",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "I\u0027ll let you know when I\u0027m on my way",
+        "meta": "@message_content",
+        "alias": "message_content",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "4e2afa03-d018-4ddd-92c2-d308b7736d38",
+    "data": [
+      {
+        "text": "message",
+        "meta": "@message_type",
+        "alias": "message_type",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "John",
+        "meta": "@sys.given-name",
+        "alias": "given-name",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "Smith",
+        "meta": "@sys.last-name",
+        "alias": "last-name",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "Hey man I\u0027m sorry I missed your call",
+        "meta": "@message_content",
+        "alias": "message_content",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "4dd40b25-5dd4-435e-915f-a273bdd3ef18",
+    "data": [
+      {
+        "text": "text",
+        "meta": "@message_type",
+        "alias": "message_type",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "Mike",
+        "meta": "@sys.given-name",
+        "alias": "given-name",
+        "userDefined": true
+      },
+      {
+        "text": " and tell him ",
+        "userDefined": false
+      },
+      {
+        "text": "I said happy birthday",
+        "meta": "@message_content",
+        "alias": "message_content",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  }
+]

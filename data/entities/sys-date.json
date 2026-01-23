@@ -1,0 +1,10 @@
+{
+  "id": "@sys.date",
+  "name": "@sys.date",
+  "isOverridable": true,
+  "isEnum": false,
+  "isRegexp": false,
+  "automatedExpansion": false,
+  "allowFuzzyExtraction": false
+}
+

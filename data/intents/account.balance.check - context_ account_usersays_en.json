@@ -1,0 +1,99 @@
+[
+  {
+    "id": "09234c96-17ee-4835-a4eb-f9625778fcaf",
+    "data": [
+      {
+        "text": "and for savings",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "64c19240-cbb6-48c0-8704-5f2ff5d760ff",
+    "data": [
+      {
+        "text": "how about ",
+        "userDefined": false
+      },
+      {
+        "text": "checking",
+        "meta": "@account",
+        "alias": "account",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "210a1fbf-fd11-4160-8352-bcb9e51d0317",
+    "data": [
+      {
+        "text": "and ",
+        "userDefined": false
+      },
+      {
+        "text": "savings",
+        "meta": "@account",
+        "alias": "account",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "a0e87376-c715-402f-9080-c5d59cbf9a94",
+    "data": [
+      {
+        "text": "can you check my ",
+        "userDefined": false
+      },
+      {
+        "text": "savings",
+        "meta": "@account",
+        "alias": "account",
+        "userDefined": true
+      },
+      {
+        "text": " as well",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "11e958b9-bd66-4da5-b35a-3bec255c9a23",
+    "data": [
+      {
+        "text": "check ",
+        "userDefined": false
+      },
+      {
+        "text": "checking",
+        "meta": "@account",
+        "alias": "account",
+        "userDefined": true
+      },
+      {
+        "text": " too",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  }
+]

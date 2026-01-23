@@ -1,0 +1,39 @@
+{
+  "id": "5ace7719-460c-46de-8feb-4f9684f9758f",
+  "name": "Default Fallback Intent",
+  "contexts": [],
+  "responses": [
+    {
+      "resetContexts": false,
+      "action": "web.search",
+      "affectedContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "type": "0",
+          "title": "",
+          "textToSpeech": "",
+          "lang": "en",
+          "speech": [
+            "My apologies, I am not equipt to comprehend human rational. Your words are lost one me.",
+            "I have no idea what you\u0027re talking about.",
+            "I cannot, yet, answer that question.",
+            "I\u0027m sorry, but you have a lot to learn before you\u0027re ready to save anyone.",
+            "I cannot help with that at the moment, I\u0027m busy finding the cure for cancer.",
+            "You can\u0027t be serious. That\u0027s a complex question. I don\u0027t have the computing power for that."
+          ],
+          "condition": ""
+        }
+      ],
+      "speech": []
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": false,
+  "webhookForSlotFilling": false,
+  "fallbackIntent": true,
+  "events": [],
+  "conditionalResponses": [],
+  "condition": "",
+  "conditionalFollowupEvents": []
+}

@@ -1,0 +1,1081 @@
+[
+  {
+    "id": "d027bde0-a9f2-482b-b28f-6a81431f4339",
+    "data": [
+      {
+        "text": "open ",
+        "userDefined": false
+      },
+      {
+        "text": "garage",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "window",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "a46da159-fcb7-46fd-9161-76fc91e46bf7",
+    "data": [
+      {
+        "text": "open ",
+        "userDefined": false
+      },
+      {
+        "text": "bathroom",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "15bc6bc0-8e0e-40e3-ad6b-3be27c9a303b",
+    "data": [
+      {
+        "text": "open the ",
+        "userDefined": false
+      },
+      {
+        "text": "door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " when I ",
+        "userDefined": false
+      },
+      {
+        "text": "come",
+        "meta": "@condition",
+        "alias": "condition",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "home",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "5d9f9219-c01a-4abe-997b-dce12e923280",
+    "data": [
+      {
+        "text": "open ",
+        "userDefined": false
+      },
+      {
+        "text": "garage",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "bc888967-7542-4b15-9895-a97d4db46340",
+    "data": [
+      {
+        "text": "open ",
+        "userDefined": false
+      },
+      {
+        "text": "garage",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": false
+      },
+      {
+        "text": " when I ",
+        "userDefined": false
+      },
+      {
+        "text": "leave",
+        "meta": "@condition",
+        "alias": "condition",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "4d83a7a8-a031-4255-88e7-946dd4b13a06",
+    "data": [
+      {
+        "text": "open ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "garage",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "windows",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "915a4eb5-cc31-47cc-ad5d-ad1ddf4f6f01",
+    "data": [
+      {
+        "text": "open ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "garage",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "windows",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "a6367c0f-8eb6-4716-b9eb-c6df49384950",
+    "data": [
+      {
+        "text": "open the ",
+        "userDefined": false
+      },
+      {
+        "text": "front door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " when I ",
+        "userDefined": false
+      },
+      {
+        "text": "leave",
+        "meta": "@condition",
+        "alias": "condition",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "f681e717-45c0-4f1f-82ec-f8198c8c7269",
+    "data": [
+      {
+        "text": "open ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "doors",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " when I ",
+        "userDefined": false
+      },
+      {
+        "text": "leave",
+        "meta": "@condition",
+        "alias": "condition",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "6d084919-3dd8-462e-bb5c-b8dcb94e6494",
+    "data": [
+      {
+        "text": "open ",
+        "userDefined": false
+      },
+      {
+        "text": "garage",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "window",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " when I ",
+        "userDefined": false
+      },
+      {
+        "text": "leave",
+        "meta": "@condition",
+        "alias": "condition",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "bde2e407-84bc-47b8-92a0-7f5151919e73",
+    "data": [
+      {
+        "text": "open the ",
+        "userDefined": false
+      },
+      {
+        "text": "front door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "9b167578-f43c-4334-9a0b-1614831a197c",
+    "data": [
+      {
+        "text": "open ",
+        "userDefined": false
+      },
+      {
+        "text": "garage",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "window",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "3fbd2348-f6b9-48ad-b104-0b3450a4ab3d",
+    "data": [
+      {
+        "text": "open ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "garage",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "windows",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "b3b9b7a1-f977-48ac-8161-a89800b48d73",
+    "data": [
+      {
+        "text": "open ",
+        "userDefined": false
+      },
+      {
+        "text": "bathroom",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "in 2 min",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "c1fce094-a62b-49ea-bb5d-5b3b1c051fe9",
+    "data": [
+      {
+        "text": "open ",
+        "userDefined": false
+      },
+      {
+        "text": "garage",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "deb6ee94-97fb-422b-a288-538e37ecd639",
+    "data": [
+      {
+        "text": "open ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "doors",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "69fc998f-ef9a-4076-a6ea-46fe8d4be937",
+    "data": [
+      {
+        "text": "open ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "doors",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "5a9b63d7-5557-486b-b5cd-30a983711e43",
+    "data": [
+      {
+        "text": "open ",
+        "userDefined": false
+      },
+      {
+        "text": "bathroom",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "9d0ddc04-8334-4a88-8bed-0ae2708c1dfd",
+    "data": [
+      {
+        "text": "open ",
+        "userDefined": false
+      },
+      {
+        "text": "garage",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "window",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "085bc2d2-f8db-4ec9-940a-efda12b1d40c",
+    "data": [
+      {
+        "text": "open ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "doors",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "331b0bad-6c99-4424-804c-248542a88c64",
+    "data": [
+      {
+        "text": "open the ",
+        "userDefined": false
+      },
+      {
+        "text": "door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " when I ",
+        "userDefined": false
+      },
+      {
+        "text": "leave",
+        "meta": "@condition",
+        "alias": "condition",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "fadd056b-f5d9-4777-a8b5-c2103a3de5b4",
+    "data": [
+      {
+        "text": "open ",
+        "userDefined": false
+      },
+      {
+        "text": "door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "on Mondays",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "c6e70fb4-34b5-4b8a-947d-91d73c3ae3d5",
+    "data": [
+      {
+        "text": "open the ",
+        "userDefined": false
+      },
+      {
+        "text": "window",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 10 am",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "6232575f-99c1-43ca-8fd0-9155485bb23a",
+    "data": [
+      {
+        "text": "open ",
+        "userDefined": false
+      },
+      {
+        "text": "garage",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "1d103998-f194-42d5-aa13-7f1df7db6c97",
+    "data": [
+      {
+        "text": "open the ",
+        "userDefined": false
+      },
+      {
+        "text": "window",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " when I ",
+        "userDefined": false
+      },
+      {
+        "text": "leave",
+        "meta": "@condition",
+        "alias": "condition",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "bathroom",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "0153359d-7d3c-4488-9f55-43eb6482c3a2",
+    "data": [
+      {
+        "text": "open the ",
+        "userDefined": false
+      },
+      {
+        "text": "front door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "4a16ea1a-dbd1-4048-8e58-6f4e18cdb770",
+    "data": [
+      {
+        "text": "open the ",
+        "userDefined": false
+      },
+      {
+        "text": "front door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 5 pm",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "every day",
+        "meta": "@recurrence",
+        "alias": "recurrence",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "9112b076-c658-4de2-80c9-bc56654b5f48",
+    "data": [
+      {
+        "text": "open ",
+        "userDefined": false
+      },
+      {
+        "text": "all",
+        "meta": "@all",
+        "alias": "all",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "garage",
+        "meta": "@room",
+        "alias": "room",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "windows",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": false
+      },
+      {
+        "text": " when I ",
+        "userDefined": false
+      },
+      {
+        "text": "leave",
+        "meta": "@condition",
+        "alias": "condition",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "451d1446-1fd2-43cc-a8ec-187cff353845",
+    "data": [
+      {
+        "text": "open the ",
+        "userDefined": false
+      },
+      {
+        "text": "door",
+        "meta": "@lock",
+        "alias": "lock",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "at 7 am",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  }
+]

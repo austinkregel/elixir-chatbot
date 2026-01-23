@@ -1,0 +1,438 @@
+defmodule ChatBot.Analysis.InternalModel do
+  @moduledoc """
+  Core data structures for the text analysis pipeline.
+
+  The InternalModel represents the complete analysis of user input,
+  combining results from all analysis stages into a unified model
+  that downstream components can use to generate contextual responses.
+  """
+
+  alias ChatBot.Analysis.{Chunk, ChunkAnalysis, DiscourseResult, SpeechActResult, SlotResult}
+
+  @type response_strategy ::
+          :can_respond
+          | :needs_clarification
+          | :cannot_respond
+          | :defer_to_user
+          | :partial_response_with_clarification
+
+  @type t :: %__MODULE__{
+          raw_input: String.t(),
+          chunks: list(Chunk.t()),
+          analyses: list(ChunkAnalysis.t()),
+          overall_strategy: response_strategy(),
+          suggested_prompts: list(String.t()),
+          metadata: map(),
+          created_at: integer()
+        }
+
+  defstruct [
+    :raw_input,
+    chunks: [],
+    analyses: [],
+    overall_strategy: :can_respond,
+    suggested_prompts: [],
+    metadata: %{},
+    created_at: nil
+  ]
+
+  @doc """
+  Creates a new InternalModel from raw input.
+  """
+  def new(raw_input) when is_binary(raw_input) do
+    %__MODULE__{
+      raw_input: raw_input,
+      created_at: System.system_time(:millisecond)
+    }
+  end
+
+  @doc """
+  Adds chunks to the model.
+  """
+  def with_chunks(%__MODULE__{} = model, chunks) when is_list(chunks) do
+    %{model | chunks: chunks}
+  end
+
+  @doc """
+  Adds chunk analyses to the model.
+  """
+  def with_analyses(%__MODULE__{} = model, analyses) when is_list(analyses) do
+    %{model | analyses: analyses}
+  end
+
+  @doc """
+  Determines the overall response strategy based on chunk analyses.
+  """
+  def determine_strategy(%__MODULE__{analyses: analyses} = model) do
+    strategies = Enum.map(analyses, & &1.response_strategy)
+
+    overall =
+      cond do
+        Enum.all?(strategies, &(&1 == :can_respond)) ->
+          :can_respond
+
+        Enum.all?(strategies, &(&1 == :cannot_respond)) ->
+          :cannot_respond
+
+        Enum.all?(strategies, &(&1 == :defer_to_user)) ->
+          :defer_to_user
+
+        Enum.any?(strategies, &(&1 == :needs_clarification)) ->
+          if Enum.any?(strategies, &(&1 == :can_respond)) do
+            :partial_response_with_clarification
+          else
+            :needs_clarification
+          end
+
+        true ->
+          :can_respond
+      end
+
+    prompts =
+      analyses
+      |> Enum.filter(&(&1.response_strategy == :needs_clarification))
+      |> Enum.flat_map(& &1.clarification_prompts)
+      |> Enum.uniq()
+
+    %{model | overall_strategy: overall, suggested_prompts: prompts}
+  end
+
+  @doc """
+  Returns analyses that can be responded to.
+  """
+  def respondable_analyses(%__MODULE__{analyses: analyses}) do
+    Enum.filter(analyses, &(&1.response_strategy == :can_respond))
+  end
+
+  @doc """
+  Returns analyses that need clarification.
+  """
+  def clarification_analyses(%__MODULE__{analyses: analyses}) do
+    Enum.filter(analyses, &(&1.response_strategy == :needs_clarification))
+  end
+
+  @doc """
+  Checks if the bot is being addressed in any chunk.
+  """
+  def bot_addressed?(%__MODULE__{analyses: analyses}) do
+    Enum.any?(analyses, fn analysis ->
+      analysis.discourse.addressee == :bot
+    end)
+  end
+end
+
+defmodule ChatBot.Analysis.Chunk do
+  @moduledoc """
+  Represents a single semantic chunk (utterance) extracted from user input.
+  """
+
+  @type t :: %__MODULE__{
+          text: String.t(),
+          index: non_neg_integer(),
+          start_pos: non_neg_integer(),
+          end_pos: non_neg_integer(),
+          is_quoted: boolean(),
+          discourse_markers: list(String.t())
+        }
+
+  defstruct [
+    :text,
+    :index,
+    :start_pos,
+    :end_pos,
+    is_quoted: false,
+    discourse_markers: []
+  ]
+
+  @doc """
+  Creates a new chunk.
+  """
+  def new(text, index, start_pos, end_pos, opts \\ []) do
+    %__MODULE__{
+      text: text,
+      index: index,
+      start_pos: start_pos,
+      end_pos: end_pos,
+      is_quoted: Keyword.get(opts, :is_quoted, false),
+      discourse_markers: Keyword.get(opts, :discourse_markers, [])
+    }
+  end
+end
+
+defmodule ChatBot.Analysis.ChunkAnalysis do
+  @moduledoc """
+  Complete analysis for a single chunk, combining results from all analyzers.
+  """
+
+  alias ChatBot.Analysis.{DiscourseResult, SpeechActResult, SlotResult}
+  alias ChatBot.Analysis.InternalModel
+
+  @type t :: %__MODULE__{
+          chunk_index: non_neg_integer(),
+          text: String.t(),
+          discourse: DiscourseResult.t(),
+          speech_act: SpeechActResult.t(),
+          intent: String.t() | nil,
+          entities: list(map()),
+          slots: SlotResult.t(),
+          missing_context: list(atom()),
+          response_strategy: InternalModel.response_strategy(),
+          clarification_prompts: list(String.t()),
+          confidence: float()
+        }
+
+  defstruct [
+    :chunk_index,
+    :text,
+    :discourse,
+    :speech_act,
+    intent: nil,
+    entities: [],
+    slots: nil,
+    missing_context: [],
+    response_strategy: :can_respond,
+    clarification_prompts: [],
+    confidence: 0.0
+  ]
+
+  @doc """
+  Creates a new chunk analysis.
+  """
+  def new(chunk_index, text) do
+    %__MODULE__{
+      chunk_index: chunk_index,
+      text: text
+    }
+  end
+
+  @doc """
+  Determines response strategy based on analysis results.
+  """
+  def determine_response_strategy(%__MODULE__{} = analysis) do
+    cond do
+      # Bot not addressed - defer to user
+      analysis.discourse.addressee != :bot ->
+        %{analysis | response_strategy: :defer_to_user}
+
+      # Missing required context - needs clarification
+      length(analysis.missing_context) > 0 ->
+        prompts = generate_clarification_prompts(analysis.missing_context, analysis.intent)
+
+        %{
+          analysis
+          | response_strategy: :needs_clarification,
+            clarification_prompts: prompts
+        }
+
+      # Speech act is not a directive - might just be a statement
+      not is_directive?(analysis.speech_act) ->
+        %{analysis | response_strategy: :can_respond}
+
+      # All good - can respond
+      true ->
+        %{analysis | response_strategy: :can_respond}
+    end
+  end
+
+  defp is_directive?(speech_act) when is_map(speech_act) do
+    Map.get(speech_act, :category) == :directive
+  end
+
+  defp is_directive?(_), do: false
+
+  defp generate_clarification_prompts(missing_context, intent) do
+    Enum.map(missing_context, fn slot ->
+      case {slot, intent} do
+        {:location, "weather.query"} ->
+          "What location would you like the weather for?"
+
+        {:location, _} ->
+          "Which location are you referring to?"
+
+        {:device, "device.control"} ->
+          "Which device would you like me to control?"
+
+        {:action, "device.control"} ->
+          "What would you like me to do with the device?"
+
+        {:date, _} ->
+          "For which date?"
+
+        {:time, _} ->
+          "At what time?"
+
+        {slot_name, _} ->
+          "Could you please specify the #{slot_name}?"
+      end
+    end)
+  end
+end
+
+defmodule ChatBot.Analysis.DiscourseResult do
+  @moduledoc """
+  Result of discourse analysis - who is being addressed.
+  """
+
+  @type addressee :: :bot | :user | :third_party | :ambiguous | :unknown
+
+  @type t :: %__MODULE__{
+          addressee: addressee(),
+          confidence: float(),
+          indicators: list(String.t()),
+          participants: list(atom()),
+          direct_address_detected: boolean()
+        }
+
+  defstruct addressee: :unknown,
+            confidence: 0.0,
+            indicators: [],
+            participants: [:user, :bot],
+            direct_address_detected: false
+
+  @doc """
+  Creates a new discourse result.
+  """
+  def new(addressee, confidence, indicators \\ []) do
+    %__MODULE__{
+      addressee: addressee,
+      confidence: confidence,
+      indicators: indicators,
+      direct_address_detected: "direct_address" in indicators
+    }
+  end
+end
+
+defmodule ChatBot.Analysis.SpeechActResult do
+  @moduledoc """
+  Result of speech act classification.
+
+  Based on Searle's taxonomy:
+  - Assertives: statements, claims, reports
+  - Directives: requests, commands, questions
+  - Commissives: promises, offers
+  - Expressives: thanks, apologies, greetings
+  - Declaratives: performatives
+  """
+
+  @type category :: :assertive | :directive | :commissive | :expressive | :declarative | :unknown
+
+  @type sub_type ::
+          :statement
+          | :claim
+          | :report
+          | :question_factual
+          | :question_opinion
+          | :question_rhetorical
+          | :request_action
+          | :request_information
+          | :command
+          | :promise
+          | :offer
+          | :thanks
+          | :apology
+          | :greeting
+          | :farewell
+          | :performative
+          | :unknown
+
+  @type t :: %__MODULE__{
+          category: category(),
+          sub_type: sub_type(),
+          confidence: float(),
+          indicators: list(String.t()),
+          is_question: boolean(),
+          is_imperative: boolean()
+        }
+
+  defstruct category: :unknown,
+            sub_type: :unknown,
+            confidence: 0.0,
+            indicators: [],
+            is_question: false,
+            is_imperative: false
+
+  @doc """
+  Creates a new speech act result.
+  """
+  def new(category, sub_type, confidence, opts \\ []) do
+    %__MODULE__{
+      category: category,
+      sub_type: sub_type,
+      confidence: confidence,
+      indicators: Keyword.get(opts, :indicators, []),
+      is_question: Keyword.get(opts, :is_question, false),
+      is_imperative: Keyword.get(opts, :is_imperative, false)
+    }
+  end
+
+  @doc """
+  Checks if this speech act expects a response from the addressee.
+  """
+  def expects_response?(%__MODULE__{category: :directive}), do: true
+  def expects_response?(%__MODULE__{sub_type: :greeting}), do: true
+  def expects_response?(%__MODULE__{sub_type: :question_factual}), do: true
+  def expects_response?(%__MODULE__{sub_type: :question_opinion}), do: true
+  def expects_response?(_), do: false
+end
+
+defmodule ChatBot.Analysis.SlotResult do
+  @moduledoc """
+  Result of slot detection and context resolution.
+  """
+
+  @type slot_value :: %{
+          value: any(),
+          source: :explicit | :conversation | :user_profile | :default | :inferred,
+          confidence: float()
+        }
+
+  @type t :: %__MODULE__{
+          schema_name: String.t() | nil,
+          filled_slots: %{String.t() => slot_value()},
+          missing_required: list(String.t()),
+          missing_optional: list(String.t()),
+          all_required_filled: boolean()
+        }
+
+  defstruct schema_name: nil,
+            filled_slots: %{},
+            missing_required: [],
+            missing_optional: [],
+            all_required_filled: true
+
+  @doc """
+  Creates a new slot result.
+  """
+  def new(schema_name \\ nil) do
+    %__MODULE__{schema_name: schema_name}
+  end
+
+  @doc """
+  Adds a filled slot.
+  """
+  def fill_slot(%__MODULE__{} = result, slot_name, value, source, confidence \\ 1.0) do
+    slot_value = %{value: value, source: source, confidence: confidence}
+
+    updated_filled = Map.put(result.filled_slots, slot_name, slot_value)
+    updated_missing_req = List.delete(result.missing_required, slot_name)
+    updated_missing_opt = List.delete(result.missing_optional, slot_name)
+
+    %{
+      result
+      | filled_slots: updated_filled,
+        missing_required: updated_missing_req,
+        missing_optional: updated_missing_opt,
+        all_required_filled: updated_missing_req == []
+    }
+  end
+
+  @doc """
+  Gets the value of a slot if filled.
+  """
+  def get_slot_value(%__MODULE__{filled_slots: slots}, slot_name) do
+    case Map.get(slots, slot_name) do
+      nil -> nil
+      %{value: value} -> value
+    end
+  end
+end

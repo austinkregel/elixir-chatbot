@@ -1,0 +1,308 @@
+defmodule Mix.Tasks.TrainModels do
+  @moduledoc """
+  Mix task to train ML models from training data.
+
+  ## Usage
+
+      mix train_models [options]
+
+  ## Options
+
+    --intent-only    Train only the intent classifier
+    --entity-only    Train only the entity recognition model
+    --gazetteer-only Build only the gazetteer lookup tables
+    --skip-gazetteer Skip gazetteer building (faster training)
+
+  This task will:
+  - Load intent training data from data/intents/
+  - Load entity definitions from data/entities/
+  - Load supplementary data (cities, artists, emojis) from CSVs
+  - Build TF-IDF vectorizer and train intent classifier
+  - Train BIO-tagged entity recognition model
+  - Build gazetteer lookup tables for fast entity extraction
+  - Save all models to priv/ml_models/
+  - Report training statistics and model sizes
+  """
+
+  use Mix.Task
+  require Logger
+  alias ChatBot.ML.Trainer
+
+  @shortdoc "Train ML models from training data"
+
+  def run(args) do
+    # Parse arguments
+    {opts, _, _} =
+      OptionParser.parse(args,
+        strict: [
+          intent_only: :boolean,
+          entity_only: :boolean,
+          gazetteer_only: :boolean,
+          skip_gazetteer: :boolean
+        ]
+      )
+
+    # Ensure we're in the right environment
+    Mix.Task.run("app.start")
+
+    Logger.info("Starting ML model training pipeline...")
+
+    # Check if training data exists
+    training_data_path = Application.get_env(:chat_bot, :ml)[:training_data_path]
+
+    if not File.exists?(training_data_path) do
+      Mix.shell().error("Training data path not found: #{training_data_path}")
+      Mix.shell().error("Please ensure training data is available.")
+      System.halt(1)
+    end
+
+    # Display available data sources
+    display_data_sources(training_data_path)
+
+    # Start training
+    start_time = System.monotonic_time(:millisecond)
+
+    result =
+      cond do
+        Keyword.get(opts, :intent_only, false) ->
+          run_intent_training()
+
+        Keyword.get(opts, :entity_only, false) ->
+          run_entity_training()
+
+        Keyword.get(opts, :gazetteer_only, false) ->
+          run_gazetteer_building()
+
+        Keyword.get(opts, :skip_gazetteer, false) ->
+          run_training_without_gazetteer()
+
+        true ->
+          # Full training pipeline
+          Trainer.train_and_save()
+      end
+
+    end_time = System.monotonic_time(:millisecond)
+    duration = end_time - start_time
+
+    case result do
+      {:ok, stats} ->
+        display_success(stats, duration)
+
+      {:error, reason} ->
+        display_error(reason)
+        System.halt(1)
+    end
+  end
+
+  defp run_intent_training do
+    Mix.shell().info("Training intent classifier only...")
+    {stats, result} = Trainer.train_intent_classifier()
+
+    case result do
+      :ok -> {:ok, stats}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp run_entity_training do
+    Mix.shell().info("Training entity recognition model only...")
+    stats = Trainer.train_entity_model()
+    {:ok, stats}
+  end
+
+  defp run_gazetteer_building do
+    Mix.shell().info("Building gazetteer lookup tables only...")
+    stats = Trainer.build_gazetteer_data()
+    {:ok, stats}
+  end
+
+  defp run_training_without_gazetteer do
+    Mix.shell().info("Training models (skipping gazetteer)...")
+
+    stats = %{
+      intent_samples: 0,
+      vocab_size: 0,
+      entity_model_trained: false
+    }
+
+    {stats, result} = Trainer.train_intent_classifier(stats)
+
+    case result do
+      :ok ->
+        stats = Trainer.train_entity_model(stats)
+        {:ok, stats}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp display_data_sources(training_data_path) do
+    Mix.shell().info("")
+    Mix.shell().info("Training Data Sources:")
+    Mix.shell().info("=" |> String.duplicate(50))
+
+    # Check intents
+    intents_path = Path.join(training_data_path, "intents")
+
+    if File.exists?(intents_path) do
+      case File.ls(intents_path) do
+        {:ok, files} ->
+          json_files = Enum.filter(files, &String.ends_with?(&1, ".json"))
+          Mix.shell().info("  Intents:    #{length(json_files)} files in #{intents_path}")
+
+        _ ->
+          Mix.shell().info("  Intents:    (unable to list)")
+      end
+    else
+      Mix.shell().error("  Intents:    NOT FOUND at #{intents_path}")
+    end
+
+    # Check entities
+    entities_dir = Path.join(training_data_path, "entities")
+
+    if File.exists?(entities_dir) do
+      case File.ls(entities_dir) do
+        {:ok, files} ->
+          json_files = Enum.filter(files, &String.ends_with?(&1, ".json"))
+          Mix.shell().info("  Entities:   #{length(json_files)} files in #{entities_dir}")
+
+        _ ->
+          Mix.shell().info("  Entities:   (unable to list)")
+      end
+    else
+      Mix.shell().info("  Entities:   NOT FOUND (optional)")
+    end
+
+    # Check CSV data sources
+    cities_path = Path.join(training_data_path, "world-cities.csv")
+
+    if File.exists?(cities_path) do
+      line_count = count_lines(cities_path)
+      Mix.shell().info("  Cities:     ~#{line_count} entries in world-cities.csv")
+    else
+      Mix.shell().info("  Cities:     NOT FOUND (optional)")
+    end
+
+    artists_path = Path.join(training_data_path, "Global Music Artists.csv")
+
+    if File.exists?(artists_path) do
+      line_count = count_lines(artists_path)
+      Mix.shell().info("  Artists:    ~#{line_count} entries in Global Music Artists.csv")
+    else
+      Mix.shell().info("  Artists:    NOT FOUND (optional)")
+    end
+
+    emojis_path = Path.join(training_data_path, "emojis.csv")
+
+    if File.exists?(emojis_path) do
+      line_count = count_lines(emojis_path)
+      Mix.shell().info("  Emojis:     ~#{line_count} entries in emojis.csv")
+    else
+      Mix.shell().info("  Emojis:     NOT FOUND (optional)")
+    end
+
+    # Check smalltalk responses
+    smalltalk_path = Path.join(training_data_path, "customSmalltalkResponses_en.json")
+
+    if File.exists?(smalltalk_path) do
+      Mix.shell().info("  Smalltalk:  customSmalltalkResponses_en.json")
+    else
+      Mix.shell().info("  Smalltalk:  NOT FOUND (optional)")
+    end
+
+    Mix.shell().info("")
+  end
+
+  defp count_lines(path) do
+    case File.read(path) do
+      {:ok, content} ->
+        content
+        |> String.split("\n")
+        |> length()
+        # Subtract header
+        |> Kernel.-(1)
+
+      _ ->
+        0
+    end
+  end
+
+  defp display_success(stats, duration) do
+    Mix.shell().info("")
+    Mix.shell().info("Training completed successfully!")
+    Mix.shell().info("")
+    Mix.shell().info("Training Statistics:")
+    Mix.shell().info("=" |> String.duplicate(50))
+
+    if Map.has_key?(stats, :intent_samples) and stats.intent_samples > 0 do
+      Mix.shell().info("  Intent Classifier:")
+      Mix.shell().info("    - Training samples: #{stats.intent_samples}")
+      Mix.shell().info("    - Vocabulary size:  #{stats.vocab_size}")
+    end
+
+    if Map.get(stats, :entity_model_trained, false) do
+      Mix.shell().info("  Entity Recognition:")
+      Mix.shell().info("    - BIO model trained: Yes")
+    end
+
+    if Map.has_key?(stats, :gazetteer_entries) and stats.gazetteer_entries > 0 do
+      Mix.shell().info("  Gazetteer:")
+      Mix.shell().info("    - Total entries:    #{stats.gazetteer_entries}")
+      Mix.shell().info("    - Entity types:     #{stats.entity_types}")
+    end
+
+    Mix.shell().info("")
+    Mix.shell().info("  Total training time: #{format_duration(duration)}")
+
+    # Display model file sizes
+    models_path = Application.get_env(:chat_bot, :ml)[:models_path]
+    Mix.shell().info("")
+    Mix.shell().info("Saved Models:")
+    Mix.shell().info("=" |> String.duplicate(50))
+
+    display_model_file(models_path, "classifier.term", "Intent Classifier")
+    display_model_file(models_path, "entity_model.term", "Entity Model")
+    display_model_file(models_path, "gazetteer.term", "Gazetteer")
+    display_model_file(models_path, "vectorizer.term", "TF-IDF Vectorizer")
+
+    Mix.shell().info("")
+    Mix.shell().info("Models saved to: #{models_path}")
+    Mix.shell().info("")
+    Mix.shell().info("You can now start the application to use the trained models.")
+  end
+
+  defp display_model_file(models_path, filename, label) do
+    path = Path.join(models_path, filename)
+
+    if File.exists?(path) do
+      size = File.stat!(path).size
+      Mix.shell().info("  #{label}: #{format_file_size(size)}")
+    end
+  end
+
+  defp display_error(reason) do
+    Mix.shell().error("")
+    Mix.shell().error("Training failed: #{inspect(reason)}")
+    Mix.shell().error("")
+    Mix.shell().error("Please check:")
+    Mix.shell().error("  - Training data format and locations")
+    Mix.shell().error("  - Dependencies (Nx for tensor operations)")
+    Mix.shell().error("  - Available memory (large gazetteers need RAM)")
+    Mix.shell().error("")
+    Mix.shell().error("Try running with --skip-gazetteer to reduce memory usage")
+  end
+
+  defp format_duration(ms) when ms < 1000, do: "#{ms}ms"
+  defp format_duration(ms) when ms < 60_000, do: "#{Float.round(ms / 1000, 1)}s"
+  defp format_duration(ms), do: "#{Float.round(ms / 60_000, 1)}m"
+
+  defp format_file_size(bytes) do
+    cond do
+      bytes < 1024 -> "#{bytes} B"
+      bytes < 1024 * 1024 -> "#{Float.round(bytes / 1024, 1)} KB"
+      bytes < 1024 * 1024 * 1024 -> "#{Float.round(bytes / (1024 * 1024), 1)} MB"
+      true -> "#{Float.round(bytes / (1024 * 1024 * 1024), 1)} GB"
+    end
+  end
+end

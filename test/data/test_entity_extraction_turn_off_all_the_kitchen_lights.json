@@ -1,0 +1,11 @@
+{
+  "action": "turn off",
+  "objects": [
+    "kitchen lights"
+  ],
+  "properties": {},
+  "raw_text": "Turn off all the kitchen lights",
+  "relationships": [],
+  "subject": "lights",
+  "type": "command"
+}
