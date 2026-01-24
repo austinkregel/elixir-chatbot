@@ -48,18 +48,23 @@ defmodule ChatBot.Memory.Think do
   def think(operation, params \\ %{})
 
   def think(:add_episode, params) do
-    state = Map.get(params, :state, "")
-    action = Map.get(params, :action, "")
-    outcome = Map.get(params, :outcome, "")
-    tags = Map.get(params, :tags, [])
+    # Check if Store is available before attempting to add
+    if Process.whereis(Store) do
+      state = Map.get(params, :state, "")
+      action = Map.get(params, :action, "")
+      outcome = Map.get(params, :outcome, "")
+      tags = Map.get(params, :tags, [])
 
-    case Store.add_episode(state, action, outcome, tags) do
-      {:ok, id} ->
-        Logger.debug("Episode added", id: id)
-        {:ok, {:episode_added, id}}
+      case Store.add_episode(state, action, outcome, tags) do
+        {:ok, id} ->
+          Logger.debug("Episode added", id: id)
+          {:ok, {:episode_added, id}}
 
-      {:error, reason} ->
-        {:error, reason}
+        {:error, reason} ->
+          {:error, reason}
+      end
+    else
+      {:error, :store_not_available}
     end
   end
 

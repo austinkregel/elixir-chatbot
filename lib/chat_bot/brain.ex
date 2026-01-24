@@ -10,7 +10,7 @@ defmodule ChatBot.Brain do
   alias ChatBot.Analysis.{SelfKnowledgeAnalyzer, Progress}
   alias ChatBot.Epistemic.{UserModelStore, BeliefStore}
   alias ChatBot.Epistemic.Types.{Belief, Config}
-  alias ChatBot.Response.{Synthesizer, TemplateStore}
+  alias ChatBot.Response.{Synthesizer, TemplateStore, MemoryAugmented, Composer}
 
   # Client API
 
@@ -1175,13 +1175,22 @@ defmodule ChatBot.Brain do
 
   # Version that returns both response and type for progress reporting
   defp generate_classical_response_with_type(intent, entities, persona) do
+    # First try domain-specific response
     case generate_domain_response(intent, entities) do
       {:ok, response} ->
         {response, :domain}
 
       :not_handled ->
-        response = generate_smalltalk_response(intent, entities, persona)
-        {response, :smalltalk}
+        # Try memory-augmented response (learns from past interactions)
+        case MemoryAugmented.generate(intent, entities) do
+          {:ok, response, _metadata} ->
+            {response, :memory_augmented}
+
+          _ ->
+            # Fall back to smalltalk/template responses
+            response = generate_smalltalk_response(intent, entities, persona)
+            {response, :smalltalk}
+        end
     end
   end
 
@@ -1240,6 +1249,7 @@ defmodule ChatBot.Brain do
     # Determine primary response type
     primary_type =
       cond do
+        :memory_augmented in response_types -> :memory_augmented
         :domain in response_types -> :domain
         :smalltalk in response_types -> :smalltalk
         :expressive in response_types -> :expressive
@@ -1248,13 +1258,38 @@ defmodule ChatBot.Brain do
 
     response =
       case valid_parts do
-        [] -> generate_classical_response(intent, entities, persona)
-        [single] -> single
-        parts -> Enum.join(parts, " ")
+        [] ->
+          generate_classical_response(intent, entities, persona)
+
+        [single] ->
+          single
+
+        parts ->
+          # Use Composer to weave multiple response parts together
+          # Build mock analyses for the composer
+          analyses =
+            Enum.zip(parts, Enum.reverse(response_types))
+            |> Enum.map(fn {_part, type} ->
+              %{
+                speech_act: %{
+                  category: type_to_category(type),
+                  is_question: false,
+                  sub_type: nil
+                }
+              }
+            end)
+
+          Composer.weave_multi_chunk_response(parts, analyses)
       end
 
     {response, primary_type}
   end
+
+  defp type_to_category(:expressive), do: :expressive
+  defp type_to_category(:domain), do: :directive
+  defp type_to_category(:smalltalk), do: :assertive
+  defp type_to_category(:memory_augmented), do: :assertive
+  defp type_to_category(_), do: :assertive
 
   # Domain-specific response handlers
   defp generate_domain_response("weather.query", entities) do

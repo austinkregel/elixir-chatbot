@@ -15,6 +15,7 @@ defmodule ChatBot.Analysis.ContextResolver do
   alias ChatBot.Analysis.SlotResult
   alias ChatBot.Epistemic.UserModelStore
   alias ChatBot.Epistemic.Types.Config
+  alias ChatBot.ML.Gazetteer
 
   require Logger
 
@@ -27,8 +28,9 @@ defmodule ChatBot.Analysis.ContextResolver do
   # Slots that commonly come from user profile
   @profile_slots ~w(location timezone preferred_temperature_unit preferred_language)
 
-  # Mapping from slot names to user model predicates
-  @slot_to_predicate_map %{
+  # Fallback mapping from slot names to user model predicates
+  # Used when Gazetteer lookup fails
+  @slot_to_predicate_fallback %{
     "location" => [:location, :city, :home_city, :preferred_location],
     "timezone" => [:timezone],
     "preferred_language" => [:language, :preferred_language],
@@ -221,8 +223,8 @@ defmodule ChatBot.Analysis.ContextResolver do
   end
 
   defp find_in_user_model(slot_name, user_id) do
-    # Get predicates to search for this slot
-    predicates = Map.get(@slot_to_predicate_map, slot_name, [String.to_atom(slot_name)])
+    # Get predicates to search for this slot via Gazetteer (data-driven)
+    predicates = get_user_model_predicates(slot_name)
 
     # Try each predicate until we find a match
     Enum.find_value(predicates, :not_found, fn predicate ->
@@ -236,6 +238,20 @@ defmodule ChatBot.Analysis.ContextResolver do
     end)
   rescue
     _ -> :not_found
+  end
+
+  # Look up user model predicates from Gazetteer (slot_mappings.json)
+  defp get_user_model_predicates(slot_name) do
+    case Gazetteer.lookup(slot_name) do
+      {:ok, %{entity_type: "slot_mapping", metadata: meta}} ->
+        # Get predicates from the slot mapping
+        keys = meta["user_model_keys"] || meta[:user_model_keys] || []
+        Enum.map(keys, &String.to_atom/1)
+
+      _ ->
+        # Fall back to hardcoded mappings
+        Map.get(@slot_to_predicate_fallback, slot_name, [String.to_atom(slot_name)])
+    end
   end
 
   defp resolve_from_profile(slot_result, profile) when map_size(profile) == 0 do

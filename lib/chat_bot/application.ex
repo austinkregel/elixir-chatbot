@@ -110,27 +110,39 @@ defmodule ChatBot.Application do
   defp init_cognitive_memory do
     require Logger
 
-    Logger.info("Initializing cognitive memory system...")
-
-    # Load training data into memory system for classification
-    case ChatBot.Memory.Think.load_training_data() do
-      {:ok, count} ->
-        Logger.info("Cognitive memory loaded #{count} episodes from training data")
-
-        # Run initial consolidation to create semantic facts
-        case ChatBot.Memory.Think.think(:consolidate, %{threshold: 0.7, min_size: 3}) do
-          {:ok, {:consolidated, new_facts}} ->
-            Logger.info("Consolidated #{new_facts} semantic facts")
-
-          _ ->
-            :ok
-        end
-
-      {:error, reason} ->
-        Logger.warning("Failed to load cognitive memory: #{inspect(reason)}")
+    # Wait briefly for Memory.Store to be available
+    unless Process.whereis(ChatBot.Memory.Store) do
+      Logger.debug("Waiting for Memory.Store to start...")
+      Process.sleep(100)
     end
 
-    Logger.info("Cognitive memory system initialized")
+    # Skip if Store still not available (e.g., in test environment)
+    unless Process.whereis(ChatBot.Memory.Store) do
+      Logger.info("Memory.Store not available, skipping cognitive memory init")
+      :ok
+    else
+      Logger.info("Initializing cognitive memory system...")
+
+      # Load training data into memory system for classification
+      case ChatBot.Memory.Think.load_training_data() do
+        {:ok, count} ->
+          Logger.info("Cognitive memory loaded #{count} episodes from training data")
+
+          # Run initial consolidation to create semantic facts
+          case ChatBot.Memory.Think.think(:consolidate, %{threshold: 0.7, min_size: 3}) do
+            {:ok, {:consolidated, new_facts}} ->
+              Logger.info("Consolidated #{new_facts} semantic facts")
+
+            _ ->
+              :ok
+          end
+
+        {:error, reason} ->
+          Logger.warning("Failed to load cognitive memory: #{inspect(reason)}")
+      end
+
+      Logger.info("Cognitive memory system initialized")
+    end
   end
 
   # Tell Phoenix to update the endpoint configuration
