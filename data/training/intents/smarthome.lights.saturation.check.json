@@ -1,0 +1,448 @@
+[
+  {
+    "text": "is the green light saturation 15 points",
+    "tokens": [
+      "is",
+      "the",
+      "green",
+      "light",
+      "saturation",
+      "15",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "ADJ",
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "green",
+        "type": "color",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "15",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "3a264078-3dfd-40f3-8502-f06611979454",
+    "intent": "smarthome.lights.saturation.check"
+  },
+  {
+    "text": "check my table lamp saturation",
+    "tokens": [
+      "check",
+      "my",
+      "table",
+      "lamp",
+      "saturation"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "table lamp",
+        "type": "lights",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "6b33a13c-2379-40ae-8cf4-0569e973bc5e",
+    "intent": "smarthome.lights.saturation.check"
+  },
+  {
+    "text": "what's the saturation of lights in bedroom",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "saturation",
+      "of",
+      "lights",
+      "in",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "39b51784-bd45-403b-aa40-291fa8934287",
+    "intent": "smarthome.lights.saturation.check"
+  },
+  {
+    "text": "what's the saturation",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "saturation"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "69bb5087-8e80-40e9-a491-7f7f1021a9ab",
+    "intent": "smarthome.lights.saturation.check"
+  },
+  {
+    "text": "what's the saturation of kitchen lights",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "saturation",
+      "of",
+      "kitchen",
+      "lights"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "95b4a3ff-544d-480a-9e3d-232445c09213",
+    "intent": "smarthome.lights.saturation.check"
+  },
+  {
+    "text": "what is lights saturation",
+    "tokens": [
+      "what",
+      "is",
+      "lights",
+      "saturation"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "a64b99d5-93c6-4db1-ad7b-e8fad3ae12c5",
+    "intent": "smarthome.lights.saturation.check"
+  },
+  {
+    "text": "what's saturation of bedroom",
+    "tokens": [
+      "what",
+      "'s",
+      "saturation",
+      "of",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "97c536e5-9255-43f3-b9f4-18ebb15a0b47",
+    "intent": "smarthome.lights.saturation.check"
+  },
+  {
+    "text": "what's the saturation of lights",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "saturation",
+      "of",
+      "lights"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "9866436f-9d2b-491d-a18d-8ca71eb2cd33",
+    "intent": "smarthome.lights.saturation.check"
+  },
+  {
+    "text": "is saturation of lamp in bedroom 5 points",
+    "tokens": [
+      "is",
+      "saturation",
+      "of",
+      "lamp",
+      "in",
+      "bedroom",
+      "5",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "lamp",
+        "type": "lights",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "812438d7-036e-4c98-a9bf-96dc7b914f36",
+    "intent": "smarthome.lights.saturation.check"
+  },
+  {
+    "text": "what saturation is",
+    "tokens": [
+      "what",
+      "saturation",
+      "is"
+    ],
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "2a20bfcd-fc82-414d-9d76-1402a73c3c75",
+    "intent": "smarthome.lights.saturation.check"
+  },
+  {
+    "text": "is saturation of lamp 5 points",
+    "tokens": [
+      "is",
+      "saturation",
+      "of",
+      "lamp",
+      "5",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "SYM",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "lamp",
+        "type": "lights",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "58fe46be-3d51-440a-9464-a523993cfa3f",
+    "intent": "smarthome.lights.saturation.check"
+  },
+  {
+    "text": "check the saturation everywhere",
+    "tokens": [
+      "check",
+      "the",
+      "saturation",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "everywhere",
+        "type": "all",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "4b822e70-4d79-4d2e-a0e9-64fc6660f532",
+    "intent": "smarthome.lights.saturation.check"
+  },
+  {
+    "text": "check red lights in the kitchen",
+    "tokens": [
+      "check",
+      "red",
+      "lights",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "red",
+        "type": "color",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "73e610c4-62c5-47d3-a378-082300550b0d",
+    "intent": "smarthome.lights.saturation.check"
+  },
+  {
+    "text": "is the light saturation 10 points",
+    "tokens": [
+      "is",
+      "the",
+      "light",
+      "saturation",
+      "10",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "10",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "92cfc212-4fd0-47c2-8335-7bde1061b02a",
+    "intent": "smarthome.lights.saturation.check"
+  },
+  {
+    "text": "what about saturation",
+    "tokens": [
+      "what",
+      "about",
+      "saturation"
+    ],
+    "pos_tags": [
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "22033b5c-b8c7-4702-9c15-3d508b5e61ec",
+    "intent": "smarthome.lights.saturation.check"
+  },
+  {
+    "text": "check lights saturation",
+    "tokens": [
+      "check",
+      "lights",
+      "saturation"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "204ba7aa-4236-4169-95cb-6addac8ea53b",
+    "intent": "smarthome.lights.saturation.check"
+  },
+  {
+    "text": "tell about saturation",
+    "tokens": [
+      "tell",
+      "about",
+      "saturation"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "a62e7acb-1980-48e6-9970-4292c35e4093",
+    "intent": "smarthome.lights.saturation.check"
+  }
+]

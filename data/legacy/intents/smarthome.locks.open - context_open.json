@@ -1,0 +1,34 @@
+{
+  "id": "a4bc1c52-4429-41c6-a221-dcc749e5a9f8",
+  "name": "smarthome.locks.open - context:open",
+  "auto": true,
+  "contexts": [
+    "open"
+  ],
+  "responses": [
+    {
+      "resetContexts": false,
+      "action": "smarthome.locks.open",
+      "affectedContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "type": "0",
+          "title": "",
+          "textToSpeech": "",
+          "lang": "en",
+          "condition": ""
+        }
+      ],
+      "speech": []
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": false,
+  "webhookForSlotFilling": false,
+  "fallbackIntent": false,
+  "events": [],
+  "conditionalResponses": [],
+  "condition": "",
+  "conditionalFollowupEvents": []
+}

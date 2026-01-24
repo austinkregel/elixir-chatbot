@@ -1,0 +1,499 @@
+[
+  {
+    "text": "turn off TV when I leave",
+    "tokens": [
+      "turn",
+      "off",
+      "TV",
+      "when",
+      "I",
+      "leave"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "NOUN",
+      "ADV",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "leave",
+        "type": "condition",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "7a4230ba-1e8f-4df7-8ea9-6aeeb56fef3f",
+    "intent": "smarthome.device.switch.schedule.off"
+  },
+  {
+    "text": "turn off everything everyday at 5 pm",
+    "tokens": [
+      "turn",
+      "off",
+      "everything",
+      "everyday",
+      "at",
+      "5",
+      "pm"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "everything",
+        "type": "all",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "everyday",
+        "type": "recurrence",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "at 5 pm",
+        "type": "date_time",
+        "start": 4,
+        "end": 6
+      }
+    ],
+    "id": "34228f87-b201-4ddd-b046-d9c044ac7a81",
+    "intent": "smarthome.device.switch.schedule.off"
+  },
+  {
+    "text": "turn off all appliances when I leave",
+    "tokens": [
+      "turn",
+      "off",
+      "all",
+      "appliances",
+      "when",
+      "I",
+      "leave"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADV",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "all",
+        "type": "all",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "leave",
+        "type": "condition",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "a0b2e06b-317b-4490-9937-9147adf14eb1",
+    "intent": "smarthome.device.switch.schedule.off"
+  },
+  {
+    "text": "turn off TV after 10 pm",
+    "tokens": [
+      "turn",
+      "off",
+      "TV",
+      "after",
+      "10",
+      "pm"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "10 pm",
+        "type": "date_time",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "90e7daa5-85cc-41da-b626-0fa1b975730b",
+    "intent": "smarthome.device.switch.schedule.off"
+  },
+  {
+    "text": "turn off TV at 10 pm",
+    "tokens": [
+      "turn",
+      "off",
+      "TV",
+      "at",
+      "10",
+      "pm"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "at 10 pm",
+        "type": "date_time",
+        "start": 3,
+        "end": 5
+      }
+    ],
+    "id": "7c8d365d-0cad-401d-8a56-79ee0fe2fbd7",
+    "intent": "smarthome.device.switch.schedule.off"
+  },
+  {
+    "text": "turn off everything at 5 pm",
+    "tokens": [
+      "turn",
+      "off",
+      "everything",
+      "at",
+      "5",
+      "pm"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "everything",
+        "type": "all",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "at 5 pm",
+        "type": "date_time",
+        "start": 3,
+        "end": 5
+      }
+    ],
+    "id": "92435378-1968-4a79-a034-c2c6debd30ee",
+    "intent": "smarthome.device.switch.schedule.off"
+  },
+  {
+    "text": "turn off TV from 10 pm till 8 am",
+    "tokens": [
+      "turn",
+      "off",
+      "TV",
+      "from",
+      "10",
+      "pm",
+      "till",
+      "8",
+      "am"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN",
+      "NOUN",
+      "NUM",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "from 10 pm till 8 am",
+        "type": "date_time",
+        "start": 3,
+        "end": 8
+      }
+    ],
+    "id": "c8368807-8e97-4fe3-b8bf-ac2fb9a764e2",
+    "intent": "smarthome.device.switch.schedule.off"
+  },
+  {
+    "text": "turn off coffee pot at 5 pm everyday",
+    "tokens": [
+      "turn",
+      "off",
+      "coffee",
+      "pot",
+      "at",
+      "5",
+      "pm",
+      "everyday"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "coffee pot",
+        "type": "device",
+        "start": 2,
+        "end": 3
+      },
+      {
+        "text": "at 5 pm",
+        "type": "date_time",
+        "start": 4,
+        "end": 6
+      },
+      {
+        "text": "everyday",
+        "type": "recurrence",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "b8fd2819-2e8c-4cb4-a7f9-4ea184c7cea4",
+    "intent": "smarthome.device.switch.schedule.off"
+  },
+  {
+    "text": "turn off the TV in 2 hours",
+    "tokens": [
+      "turn",
+      "off",
+      "the",
+      "TV",
+      "in",
+      "2",
+      "hours"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "in 2 hours",
+        "type": "date_time",
+        "start": 4,
+        "end": 6
+      }
+    ],
+    "id": "e6687cc2-66ad-4953-92f8-5edd855a878f",
+    "intent": "smarthome.device.switch.schedule.off"
+  },
+  {
+    "text": "turn off TV when I leave kitchen",
+    "tokens": [
+      "turn",
+      "off",
+      "TV",
+      "when",
+      "I",
+      "leave",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "NOUN",
+      "ADV",
+      "PRON",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "leave",
+        "type": "condition",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "53cfa49c-2dd2-417b-9fe4-777a73b34f69",
+    "intent": "smarthome.device.switch.schedule.off"
+  },
+  {
+    "text": "turn off everything when I leave",
+    "tokens": [
+      "turn",
+      "off",
+      "everything",
+      "when",
+      "I",
+      "leave"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "NOUN",
+      "ADV",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "everything",
+        "type": "all",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "leave",
+        "type": "condition",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "c8615fa8-70d4-4d94-9c8b-8295f0972e31",
+    "intent": "smarthome.device.switch.schedule.off"
+  },
+  {
+    "text": "turn off coffee pot everyday at 5 pm",
+    "tokens": [
+      "turn",
+      "off",
+      "coffee",
+      "pot",
+      "everyday",
+      "at",
+      "5",
+      "pm"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "coffee pot",
+        "type": "device",
+        "start": 2,
+        "end": 3
+      },
+      {
+        "text": "everyday",
+        "type": "recurrence",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "at 5 pm",
+        "type": "date_time",
+        "start": 5,
+        "end": 7
+      }
+    ],
+    "id": "a2547670-76f1-4099-9428-7da789ab2282",
+    "intent": "smarthome.device.switch.schedule.off"
+  },
+  {
+    "text": "turn off everything everyday",
+    "tokens": [
+      "turn",
+      "off",
+      "everything",
+      "everyday"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "everything",
+        "type": "all",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "everyday",
+        "type": "recurrence",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "bbef805a-54ea-49ed-b79c-6adeec608c88",
+    "intent": "smarthome.device.switch.schedule.off"
+  }
+]

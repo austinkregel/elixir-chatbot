@@ -1,0 +1,132 @@
+[
+  {
+    "text": "your birth date",
+    "tokens": [
+      "your",
+      "birth",
+      "date"
+    ],
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "7d0c0a8b-a26a-4063-b6e0-ad68a75983d2",
+    "intent": "smalltalk.agent.birth_date"
+  },
+  {
+    "text": "when is your birthday",
+    "tokens": [
+      "when",
+      "is",
+      "your",
+      "birthday"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "0ecc29e7-3b0c-4e30-8402-1ee283c1841a",
+    "intent": "smalltalk.agent.birth_date"
+  },
+  {
+    "text": "when do you celebrate your birthday",
+    "tokens": [
+      "when",
+      "do",
+      "you",
+      "celebrate",
+      "your",
+      "birthday"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "ccfdaa09-dc64-42c8-abdc-b735d93ce136",
+    "intent": "smalltalk.agent.birth_date"
+  },
+  {
+    "text": "when do you have birthday",
+    "tokens": [
+      "when",
+      "do",
+      "you",
+      "have",
+      "birthday"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "e8907408-6775-4e6d-8cab-18bf9df6ef9b",
+    "intent": "smalltalk.agent.birth_date"
+  },
+  {
+    "text": "date of your birthday",
+    "tokens": [
+      "date",
+      "of",
+      "your",
+      "birthday"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "dcb0bdab-f753-45c3-bd0b-9fbb56e148c5",
+    "intent": "smalltalk.agent.birth_date"
+  },
+  {
+    "text": "when were you born",
+    "tokens": [
+      "when",
+      "were",
+      "you",
+      "born"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "bfe8167d-f557-4d5d-9743-31033ff10037",
+    "intent": "smalltalk.agent.birth_date"
+  },
+  {
+    "text": "what's your birthday",
+    "tokens": [
+      "what",
+      "'s",
+      "your",
+      "birthday"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "3b71c912-2168-4f72-a5f2-d6ab74e3da71",
+    "intent": "smalltalk.agent.birth_date"
+  }
+]

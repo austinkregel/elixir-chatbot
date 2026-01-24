@@ -1,0 +1,447 @@
+[
+  {
+    "text": "turn on everything everyday",
+    "tokens": [
+      "turn",
+      "on",
+      "everything",
+      "everyday"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "everything",
+        "type": "all",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "everyday",
+        "type": "recurrence",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "acfbc6fe-97cd-4cdf-8679-e147e81d7f50",
+    "intent": "smarthome.device.switch.schedule.on"
+  },
+  {
+    "text": "turn on everything when I come",
+    "tokens": [
+      "turn",
+      "on",
+      "everything",
+      "when",
+      "I",
+      "come"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADV",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "everything",
+        "type": "all",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "come",
+        "type": "condition",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "c00df149-2347-4489-8c01-52cc4ab0182f",
+    "intent": "smarthome.device.switch.schedule.on"
+  },
+  {
+    "text": "turn on the TV in 2 minutes",
+    "tokens": [
+      "turn",
+      "on",
+      "the",
+      "TV",
+      "in",
+      "2",
+      "minutes"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "in 2 minutes",
+        "type": "date_time",
+        "start": 4,
+        "end": 6
+      }
+    ],
+    "id": "787e3605-9ab9-45d9-b9dd-da3e332f5c37",
+    "intent": "smarthome.device.switch.schedule.on"
+  },
+  {
+    "text": "turn on coffee pot at 5 pm everyday",
+    "tokens": [
+      "turn",
+      "on",
+      "coffee",
+      "pot",
+      "at",
+      "5",
+      "pm",
+      "everyday"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "coffee pot",
+        "type": "device",
+        "start": 2,
+        "end": 3
+      },
+      {
+        "text": "at 5 pm",
+        "type": "date_time",
+        "start": 4,
+        "end": 6
+      },
+      {
+        "text": "everyday",
+        "type": "recurrence",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "54db01c3-9fb0-44f0-971e-e28e7f00ff3a",
+    "intent": "smarthome.device.switch.schedule.on"
+  },
+  {
+    "text": "start brewing coffee at 6 AM each morning",
+    "tokens": [
+      "start",
+      "brewing",
+      "coffee",
+      "at",
+      "6",
+      "AM",
+      "each",
+      "morning"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "PROPN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "brewing coffee",
+        "type": "device",
+        "start": 1,
+        "end": 2
+      },
+      {
+        "text": "at 6 AM",
+        "type": "date_time",
+        "start": 3,
+        "end": 5
+      },
+      {
+        "text": "each morning",
+        "type": "recurrence",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "14f26825-99a8-4256-a2e7-2aca45173502",
+    "intent": "smarthome.device.switch.schedule.on"
+  },
+  {
+    "text": "turn on the TV in 2 hours",
+    "tokens": [
+      "turn",
+      "on",
+      "the",
+      "TV",
+      "in",
+      "2",
+      "hours"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "in 2 hours",
+        "type": "date_time",
+        "start": 4,
+        "end": 6
+      }
+    ],
+    "id": "344cd015-d2b2-49ab-92b3-a168b9c31eab",
+    "intent": "smarthome.device.switch.schedule.on"
+  },
+  {
+    "text": "turn on coffee pot everyday at 5 pm",
+    "tokens": [
+      "turn",
+      "on",
+      "coffee",
+      "pot",
+      "everyday",
+      "at",
+      "5",
+      "pm"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "coffee pot",
+        "type": "device",
+        "start": 2,
+        "end": 3
+      },
+      {
+        "text": "everyday",
+        "type": "recurrence",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "at 5 pm",
+        "type": "date_time",
+        "start": 5,
+        "end": 7
+      }
+    ],
+    "id": "8d416656-446f-431e-b498-f2c9edc0f19c",
+    "intent": "smarthome.device.switch.schedule.on"
+  },
+  {
+    "text": "turn on TV when I enter",
+    "tokens": [
+      "turn",
+      "on",
+      "TV",
+      "when",
+      "I",
+      "enter"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADV",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "enter",
+        "type": "condition",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "b81391e2-972c-4936-92bd-cafd1c5978f0",
+    "intent": "smarthome.device.switch.schedule.on"
+  },
+  {
+    "text": "turn on coffee pot in the kitchen at 5 pm everyday",
+    "tokens": [
+      "turn",
+      "on",
+      "coffee",
+      "pot",
+      "in",
+      "the",
+      "kitchen",
+      "at",
+      "5",
+      "pm",
+      "everyday"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "coffee pot",
+        "type": "device",
+        "start": 2,
+        "end": 3
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "5 pm",
+        "type": "date_time",
+        "start": 8,
+        "end": 9
+      },
+      {
+        "text": "everyday",
+        "type": "recurrence",
+        "start": 10,
+        "end": 10
+      }
+    ],
+    "id": "456adb69-6374-4166-8c00-e670c7fbd084",
+    "intent": "smarthome.device.switch.schedule.on"
+  },
+  {
+    "text": "turn on everything at 5 pm",
+    "tokens": [
+      "turn",
+      "on",
+      "everything",
+      "at",
+      "5",
+      "pm"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "everything",
+        "type": "all",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "at 5 pm",
+        "type": "date_time",
+        "start": 3,
+        "end": 5
+      }
+    ],
+    "id": "018a0087-a1fc-44b3-9b73-1a18a018d407",
+    "intent": "smarthome.device.switch.schedule.on"
+  },
+  {
+    "text": "turn on everything everyday at 5 pm",
+    "tokens": [
+      "turn",
+      "on",
+      "everything",
+      "everyday",
+      "at",
+      "5",
+      "pm"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "everything",
+        "type": "all",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "everyday",
+        "type": "recurrence",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "at 5 pm",
+        "type": "date_time",
+        "start": 4,
+        "end": 6
+      }
+    ],
+    "id": "e78ae670-d6af-4918-ac52-62e41ed572e0",
+    "intent": "smarthome.device.switch.schedule.on"
+  }
+]

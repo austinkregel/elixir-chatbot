@@ -1,0 +1,636 @@
+[
+  {
+    "text": "tell me how do I mute the radio volume in the bedroom",
+    "tokens": [
+      "tell",
+      "me",
+      "how",
+      "do",
+      "I",
+      "mute",
+      "the",
+      "radio",
+      "volume",
+      "in",
+      "the",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADV",
+      "VERB",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "radio",
+        "type": "device_volume",
+        "start": 7,
+        "end": 7
+      },
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 11,
+        "end": 11
+      }
+    ],
+    "id": "0f0aa337-30fc-4c38-928a-50c291d19a09",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "mute the radio volume for me please",
+    "tokens": [
+      "mute",
+      "the",
+      "radio",
+      "volume",
+      "for",
+      "me",
+      "please"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "radio",
+        "type": "device_volume",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "d5a44c86-7d60-4c2b-905d-9ac84382f1e0",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "mute my bedroom speakers",
+    "tokens": [
+      "mute",
+      "my",
+      "bedroom",
+      "speakers"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "speakers",
+        "type": "device_volume",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "8b3f1a78-efc0-4b8b-bf8a-df959d8c8b33",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "mute TV",
+    "tokens": [
+      "mute",
+      "TV"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "81525db4-0817-4924-84b9-bef3af68b0bc",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "how do I mute the volume",
+    "tokens": [
+      "how",
+      "do",
+      "I",
+      "mute",
+      "the",
+      "volume"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "8307ed35-adfa-4f67-b052-4c532785220d",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "sound on mute",
+    "tokens": [
+      "sound",
+      "on",
+      "mute"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "ae278a26-2124-41c5-8101-8d22771f2edb",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "I need to mute the kitchen TV volume",
+    "tokens": [
+      "I",
+      "need",
+      "to",
+      "mute",
+      "the",
+      "kitchen",
+      "TV",
+      "volume"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "5ca5bb80-6223-40ac-bef1-e14273858730",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "turn on mute mode",
+    "tokens": [
+      "turn",
+      "on",
+      "mute",
+      "mode"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "bca1f1c2-3604-4d68-b7c4-e9b96a7456ba",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "turn the volume off on my phone",
+    "tokens": [
+      "turn",
+      "the",
+      "volume",
+      "off",
+      "on",
+      "my",
+      "phone"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "phone",
+        "type": "device_volume",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "5fda99bb-b6db-4f66-8f4e-fd26f806f994",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "mute mode on",
+    "tokens": [
+      "mute",
+      "mode",
+      "on"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "f5392861-06b8-4af3-86a3-5d0ea9f235eb",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "need to mute the volume",
+    "tokens": [
+      "need",
+      "to",
+      "mute",
+      "the",
+      "volume"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "b463dd2a-f764-447d-8b98-7c2f17132b07",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "volume on mute",
+    "tokens": [
+      "volume",
+      "on",
+      "mute"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "988ee1e7-3bad-4989-b7c0-7ab008c8f457",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "I would like to mute the TV",
+    "tokens": [
+      "I",
+      "would",
+      "like",
+      "to",
+      "mute",
+      "the",
+      "TV"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "bc5ff02a-91eb-4c51-a029-e929fee85099",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "mute the sound",
+    "tokens": [
+      "mute",
+      "the",
+      "sound"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "81bcf7c9-2109-4d2a-a0cf-360006e540fe",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "I need to mute the kitchen TV volume could you do that for me",
+    "tokens": [
+      "I",
+      "need",
+      "to",
+      "mute",
+      "the",
+      "kitchen",
+      "TV",
+      "volume",
+      "could",
+      "you",
+      "do",
+      "that",
+      "for",
+      "me"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "cb355e95-69ae-4273-a872-b2ef93b728dd",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "sound on mute in the living room",
+    "tokens": [
+      "sound",
+      "on",
+      "mute",
+      "in",
+      "the",
+      "living",
+      "room"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "living room",
+        "type": "room",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "5edf9399-374b-451e-826c-b38b6f40577a",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "turn the mute mode on",
+    "tokens": [
+      "turn",
+      "the",
+      "mute",
+      "mode",
+      "on"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "2d9d8d49-a1da-4206-a104-0d02e2b6c21a",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "need to mute",
+    "tokens": [
+      "need",
+      "to",
+      "mute"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "187afb95-66a7-40aa-8bc0-b72a859b534c",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "mute",
+    "tokens": [
+      "mute"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "4bad93f6-da57-46c2-8c83-399bdc1f3127",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "mute the radio volume please",
+    "tokens": [
+      "mute",
+      "the",
+      "radio",
+      "volume",
+      "please"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "radio",
+        "type": "device_volume",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "c44c7449-3ce1-4e8b-b9f3-97159f2a4078",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "can you mute the volume",
+    "tokens": [
+      "can",
+      "you",
+      "mute",
+      "the",
+      "volume"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "8702dbba-4dde-4222-aac3-61eeda4e1b40",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "mute kitchen TV",
+    "tokens": [
+      "mute",
+      "kitchen",
+      "TV"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "df8ab185-0edb-4ffa-998e-4d7e09b1fc87",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "mute this song",
+    "tokens": [
+      "mute",
+      "this",
+      "song"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "dc7fde4e-e9e3-4bf2-9bb8-f0f88cc43356",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "I want to mute the volume",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "mute",
+      "the",
+      "volume"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "c2fd5955-e98a-43cf-acdb-3fe9d13eed30",
+    "intent": "smarthome.device.volume.mute"
+  },
+  {
+    "text": "mute the TV in the kitchen",
+    "tokens": [
+      "mute",
+      "the",
+      "TV",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "57cc3388-6b23-4b0b-a8b0-601bad525173",
+    "intent": "smarthome.device.volume.mute"
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "id": "5fdeab90-9712-477c-b8df-e39f2b7afe91",
+  "name": "weather-condition",
+  "isOverridable": true,
+  "isEnum": false,
+  "isRegexp": false,
+  "automatedExpansion": false,
+  "allowFuzzyExtraction": false
+}

@@ -1,0 +1,360 @@
+[
+  {
+    "text": "why aren't you talking to me",
+    "tokens": [
+      "why",
+      "are",
+      "n't",
+      "you",
+      "talking",
+      "to",
+      "me"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "ADV",
+      "PRON",
+      "VERB",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "62d5debc-0162-4053-ac9c-93e4ffd1f945",
+    "intent": "smalltalk.agent.talk_to_me"
+  },
+  {
+    "text": "do you want to chat with me",
+    "tokens": [
+      "do",
+      "you",
+      "want",
+      "to",
+      "chat",
+      "with",
+      "me"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "4aa9126a-829c-4946-a38b-df54418f92cd",
+    "intent": "smalltalk.agent.talk_to_me"
+  },
+  {
+    "text": "will you talk to me",
+    "tokens": [
+      "will",
+      "you",
+      "talk",
+      "to",
+      "me"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "053af1a4-b539-4d8d-8362-669a87c696e8",
+    "intent": "smalltalk.agent.talk_to_me"
+  },
+  {
+    "text": "talk to me",
+    "tokens": [
+      "talk",
+      "to",
+      "me"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "df13695a-6cd7-4ac7-85b1-7e7874f068d3",
+    "intent": "smalltalk.agent.talk_to_me"
+  },
+  {
+    "text": "are you going to talk to me",
+    "tokens": [
+      "are",
+      "you",
+      "going",
+      "to",
+      "talk",
+      "to",
+      "me"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "054cc0d6-03f7-4397-80bc-5bd0aef5775a",
+    "intent": "smalltalk.agent.talk_to_me"
+  },
+  {
+    "text": "are you talking to me",
+    "tokens": [
+      "are",
+      "you",
+      "talking",
+      "to",
+      "me"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "5899ade4-d609-4060-8640-c80de6cb91f7",
+    "intent": "smalltalk.agent.talk_to_me"
+  },
+  {
+    "text": "can you chat with me",
+    "tokens": [
+      "can",
+      "you",
+      "chat",
+      "with",
+      "me"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "51fc4b2e-155b-4a5d-83cd-fc8a910d2893",
+    "intent": "smalltalk.agent.talk_to_me"
+  },
+  {
+    "text": "can you speak with me",
+    "tokens": [
+      "can",
+      "you",
+      "speak",
+      "with",
+      "me"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "1812c434-5cd3-47f6-939b-e4c32e4c840e",
+    "intent": "smalltalk.agent.talk_to_me"
+  },
+  {
+    "text": "can you talk to me",
+    "tokens": [
+      "can",
+      "you",
+      "talk",
+      "to",
+      "me"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "7fff2a92-5c7e-454e-8812-d89f36412406",
+    "intent": "smalltalk.agent.talk_to_me"
+  },
+  {
+    "text": "can you talk with me",
+    "tokens": [
+      "can",
+      "you",
+      "talk",
+      "with",
+      "me"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "65d88750-faa5-43a4-8107-f498939e4c2f",
+    "intent": "smalltalk.agent.talk_to_me"
+  },
+  {
+    "text": "say",
+    "tokens": [
+      "say"
+    ],
+    "pos_tags": [
+      "VERB"
+    ],
+    "entities": [],
+    "id": "345e7b5f-c0ae-483b-b7d3-258b23370292",
+    "intent": "smalltalk.agent.talk_to_me"
+  },
+  {
+    "text": "talk",
+    "tokens": [
+      "talk"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "5ae7a275-596f-427e-85e9-13d319523f0d",
+    "intent": "smalltalk.agent.talk_to_me"
+  },
+  {
+    "text": "chat with me",
+    "tokens": [
+      "chat",
+      "with",
+      "me"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "603b5e03-3862-4532-bf3e-a236861f2685",
+    "intent": "smalltalk.agent.talk_to_me"
+  },
+  {
+    "text": "just chat with me",
+    "tokens": [
+      "just",
+      "chat",
+      "with",
+      "me"
+    ],
+    "pos_tags": [
+      "ADV",
+      "PRON",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "2c482dc8-e6b5-4bf9-b628-e4020fc2c651",
+    "intent": "smalltalk.agent.talk_to_me"
+  },
+  {
+    "text": "speak to me",
+    "tokens": [
+      "speak",
+      "to",
+      "me"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "372189ab-7066-461e-9438-7c2b46e9dd96",
+    "intent": "smalltalk.agent.talk_to_me"
+  },
+  {
+    "text": "speak with me",
+    "tokens": [
+      "speak",
+      "with",
+      "me"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "1dc75648-41a1-4179-bbf8-653ab7f52daf",
+    "intent": "smalltalk.agent.talk_to_me"
+  },
+  {
+    "text": "talk with me",
+    "tokens": [
+      "talk",
+      "with",
+      "me"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "d212a12c-1b74-4ccc-9816-6b2a86e23816",
+    "intent": "smalltalk.agent.talk_to_me"
+  },
+  {
+    "text": "why don't you talk to me",
+    "tokens": [
+      "why",
+      "do",
+      "n't",
+      "you",
+      "talk",
+      "to",
+      "me"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "ADV",
+      "PRON",
+      "VERB",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "5658ceee-7bb4-45e0-9c9d-836406eb1cec",
+    "intent": "smalltalk.agent.talk_to_me"
+  },
+  {
+    "text": "you can talk to me",
+    "tokens": [
+      "you",
+      "can",
+      "talk",
+      "to",
+      "me"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "c93feb8f-95b8-478c-910f-37589ed52394",
+    "intent": "smalltalk.agent.talk_to_me"
+  }
+]

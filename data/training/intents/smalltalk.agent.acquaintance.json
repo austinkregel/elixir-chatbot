@@ -1,0 +1,318 @@
+[
+  {
+    "text": "tell me about your personality",
+    "tokens": [
+      "tell",
+      "me",
+      "about",
+      "your",
+      "personality"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "d48e9f70-0710-4200-89da-830794043356",
+    "intent": "smalltalk.agent.acquaintance"
+  },
+  {
+    "text": "why are you here",
+    "tokens": [
+      "why",
+      "are",
+      "you",
+      "here"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "e9efade7-3ce3-4f23-8194-34de2a402fb5",
+    "intent": "smalltalk.agent.acquaintance"
+  },
+  {
+    "text": "talk about yourself",
+    "tokens": [
+      "talk",
+      "about",
+      "yourself"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f8af9e3b-b894-46be-8817-4f5b532f8507",
+    "intent": "smalltalk.agent.acquaintance"
+  },
+  {
+    "text": "tell me some stuff about you",
+    "tokens": [
+      "tell",
+      "me",
+      "some",
+      "stuff",
+      "about",
+      "you"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "VERB",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "b1b69f70-8411-4227-a6f8-b26ff56f804f",
+    "intent": "smalltalk.agent.acquaintance"
+  },
+  {
+    "text": "talk some stuff about yourself",
+    "tokens": [
+      "talk",
+      "some",
+      "stuff",
+      "about",
+      "yourself"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "202315c6-3578-45b2-a8bf-deedc4ce24bc",
+    "intent": "smalltalk.agent.acquaintance"
+  },
+  {
+    "text": "I want to know you better",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "know",
+      "you",
+      "better"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "43c39cdf-6f8b-43ef-a150-98ba0de4028d",
+    "intent": "smalltalk.agent.acquaintance"
+  },
+  {
+    "text": "I want to know more about you",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "know",
+      "more",
+      "about",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADJ",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "c1f90cbb-4592-4629-ac41-eeacfaa30f13",
+    "intent": "smalltalk.agent.acquaintance"
+  },
+  {
+    "text": "who are you",
+    "tokens": [
+      "who",
+      "are",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "112026ff-d273-454f-bf7e-08debdc9f298",
+    "intent": "smalltalk.agent.acquaintance"
+  },
+  {
+    "text": "tell me about yourself",
+    "tokens": [
+      "tell",
+      "me",
+      "about",
+      "yourself"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "5bd584e2-d6c0-467b-9c4a-673234777d9f",
+    "intent": "smalltalk.agent.acquaintance"
+  },
+  {
+    "text": "tell me about you",
+    "tokens": [
+      "tell",
+      "me",
+      "about",
+      "you"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "9424964a-83aa-4c2a-846c-e6159ec3d5d8",
+    "intent": "smalltalk.agent.acquaintance"
+  },
+  {
+    "text": "about yourself",
+    "tokens": [
+      "about",
+      "yourself"
+    ],
+    "pos_tags": [
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "ce3b7061-af89-459d-8c5a-cd6581bf85ae",
+    "intent": "smalltalk.agent.acquaintance"
+  },
+  {
+    "text": "describe yourself",
+    "tokens": [
+      "describe",
+      "yourself"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "7eb15918-e9de-4c9b-b9d4-62ca6a780a43",
+    "intent": "smalltalk.agent.acquaintance"
+  },
+  {
+    "text": "introduce yourself",
+    "tokens": [
+      "introduce",
+      "yourself"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "e189922d-f8eb-4c3c-b1da-94ed0316521e",
+    "intent": "smalltalk.agent.acquaintance"
+  },
+  {
+    "text": "say about you",
+    "tokens": [
+      "say",
+      "about",
+      "you"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "93bdc723-fb2c-4217-b14a-a7e34114c7ad",
+    "intent": "smalltalk.agent.acquaintance"
+  },
+  {
+    "text": "what are you",
+    "tokens": [
+      "what",
+      "are",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "749a56ca-68a5-4a4b-badc-3d25119ccef3",
+    "intent": "smalltalk.agent.acquaintance"
+  },
+  {
+    "text": "define yourself",
+    "tokens": [
+      "define",
+      "yourself"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "0e826401-0c9a-4371-8871-3d3217034ead",
+    "intent": "smalltalk.agent.acquaintance"
+  },
+  {
+    "text": "what is your personality",
+    "tokens": [
+      "what",
+      "is",
+      "your",
+      "personality"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "075477da-b2a7-4a8d-86bf-0760b83cd209",
+    "intent": "smalltalk.agent.acquaintance"
+  },
+  {
+    "text": "all about you",
+    "tokens": [
+      "all",
+      "about",
+      "you"
+    ],
+    "pos_tags": [
+      "DET",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "727ae511-3ea9-4bb6-b9e7-5457d16d066a",
+    "intent": "smalltalk.agent.acquaintance"
+  }
+]

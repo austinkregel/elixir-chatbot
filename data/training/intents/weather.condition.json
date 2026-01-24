@@ -1,0 +1,1613 @@
+[
+  {
+    "text": "is it going to rain this Friday",
+    "tokens": [
+      "is",
+      "it",
+      "going",
+      "to",
+      "rain",
+      "this",
+      "Friday"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "rain",
+        "type": "weather_condition",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "this Friday",
+        "type": "date_time",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "18399d7a-e422-48b2-beeb-75820e65fa08",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "what is the weather forecast for snow in New York today",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "weather",
+      "forecast",
+      "for",
+      "snow",
+      "in",
+      "New",
+      "York",
+      "today"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "snow",
+        "type": "weather_condition",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "New York",
+        "type": "location",
+        "start": 8,
+        "end": 9
+      },
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 10,
+        "end": 10
+      }
+    ],
+    "id": "76db9e39-7a2f-43c0-8f3d-8c9564ff0ba1",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "is it supposed to snow today",
+    "tokens": [
+      "is",
+      "it",
+      "supposed",
+      "to",
+      "snow",
+      "today"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "snow",
+        "type": "weather_condition",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "468a27b5-0436-4d02-a868-1cef541e9b60",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "will it rain tomorrow in Paris",
+    "tokens": [
+      "will",
+      "it",
+      "rain",
+      "tomorrow",
+      "in",
+      "Paris"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "rain",
+        "type": "weather_condition",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Paris",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "70c1cdb3-41ee-4017-9eef-f73d2bd9f0bc",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "is it going to rain later in the evening",
+    "tokens": [
+      "is",
+      "it",
+      "going",
+      "to",
+      "rain",
+      "later",
+      "in",
+      "the",
+      "evening"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADV",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "rain",
+        "type": "weather_condition",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "in the evening",
+        "type": "date_time",
+        "start": 6,
+        "end": 8
+      }
+    ],
+    "id": "2b07e0bc-f1bb-4261-9c8b-6df31d15af80",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "are we getting snow today",
+    "tokens": [
+      "are",
+      "we",
+      "getting",
+      "snow",
+      "today"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "snow",
+        "type": "weather_condition",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "42e4974a-4676-4f4a-94d1-7edca45df5ae",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "is it going to rain",
+    "tokens": [
+      "is",
+      "it",
+      "going",
+      "to",
+      "rain"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "rain",
+        "type": "weather_condition",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "595038a7-a602-43ee-b32a-6429b659c504",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "but is it going to rain",
+    "tokens": [
+      "but",
+      "is",
+      "it",
+      "going",
+      "to",
+      "rain"
+    ],
+    "pos_tags": [
+      "CONJ",
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "rain",
+        "type": "weather_condition",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "7b39e319-596a-442a-a241-4a404108c1c9",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "is it raining",
+    "tokens": [
+      "is",
+      "it",
+      "raining"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "raining",
+        "type": "weather_condition",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "a8f70267-c660-4da4-92cc-a0c9b805ca4f",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "is it supposed to snow",
+    "tokens": [
+      "is",
+      "it",
+      "supposed",
+      "to",
+      "snow"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "snow",
+        "type": "weather_condition",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "a2cb30bd-be98-4b77-bd1a-20140fb6db97",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "any chance of tornadoes",
+    "tokens": [
+      "any",
+      "chance",
+      "of",
+      "tornadoes"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "tornadoes",
+        "type": "weather_condition",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "59b7abee-f2f9-482f-9bf4-a30fdedd1bef",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "are there hurricanes expected",
+    "tokens": [
+      "are",
+      "there",
+      "hurricanes",
+      "expected"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADV",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "hurricanes",
+        "type": "weather_condition",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "b225daae-fa16-4749-956f-fa4317871e2e",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "when will it rain",
+    "tokens": [
+      "when",
+      "will",
+      "it",
+      "rain"
+    ],
+    "pos_tags": [
+      "ADV",
+      "AUX",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "rain",
+        "type": "weather_condition",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "efc4d67a-655c-4b36-9ee1-f3a7627ad90c",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "will it be foggy",
+    "tokens": [
+      "will",
+      "it",
+      "be",
+      "foggy"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "foggy",
+        "type": "weather_condition",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "01d48421-1e15-42bd-a50d-a1b31026a04d",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "any snow in the forecast",
+    "tokens": [
+      "any",
+      "snow",
+      "in",
+      "the",
+      "forecast"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "snow",
+        "type": "weather_condition",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "806c7580-0bc4-4101-9316-840d7d5198f6",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "chances of storm",
+    "tokens": [
+      "chances",
+      "of",
+      "storm"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "storm",
+        "type": "weather_condition",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "23d0c3bf-10f8-4c9a-ae45-734be3ed89d7",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "is it snowing in Moscow",
+    "tokens": [
+      "is",
+      "it",
+      "snowing",
+      "in",
+      "Moscow"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "snowing",
+        "type": "weather_condition",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "Moscow",
+        "type": "location",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "f0ef9316-e432-41d7-a806-b7d2ab2354f6",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "is it supposed to rain in London",
+    "tokens": [
+      "is",
+      "it",
+      "supposed",
+      "to",
+      "rain",
+      "in",
+      "London"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "rain",
+        "type": "weather_condition",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "London",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "4d0e4043-9fab-439d-bb9b-41e885b761bc",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "any chance of thunderstorms in Colorado",
+    "tokens": [
+      "any",
+      "chance",
+      "of",
+      "thunderstorms",
+      "in",
+      "Colorado"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "thunderstorms",
+        "type": "weather_condition",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Colorado",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "51a2ac72-9bdb-4946-a838-801e08238650",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "are there freezing rains expected in Glasgow",
+    "tokens": [
+      "are",
+      "there",
+      "freezing",
+      "rains",
+      "expected",
+      "in",
+      "Glasgow"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADV",
+      "VERB",
+      "NOUN",
+      "VERB",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "freezing rains",
+        "type": "weather_condition",
+        "start": 2,
+        "end": 3
+      },
+      {
+        "text": "Glasgow",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "5b0b11cb-06c7-43b4-9181-0cc116278cbc",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "is it raining here",
+    "tokens": [
+      "is",
+      "it",
+      "raining",
+      "here"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "raining",
+        "type": "weather_condition",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "bd5eb37f-7d32-43c2-84be-b8c0ad2534f7",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "do you think it will start raining soon",
+    "tokens": [
+      "do",
+      "you",
+      "think",
+      "it",
+      "will",
+      "start",
+      "raining",
+      "soon"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PRON",
+      "AUX",
+      "VERB",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "raining",
+        "type": "weather_condition",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "1db853ca-ebf5-44b4-87dd-2928195fd7e6",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "is it going to be fog tomorrow in Paris",
+    "tokens": [
+      "is",
+      "it",
+      "going",
+      "to",
+      "be",
+      "fog",
+      "tomorrow",
+      "in",
+      "Paris"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "fog",
+        "type": "weather_condition",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "Paris",
+        "type": "location",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "f46c65a2-b1bf-4f85-97ab-e77b798573b8",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "does it snow in Moscow",
+    "tokens": [
+      "does",
+      "it",
+      "snow",
+      "in",
+      "Moscow"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "snow",
+        "type": "weather_condition",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "Moscow",
+        "type": "location",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "08d7d070-2259-40c6-afe8-32c94974f6cd",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "when will it snow in Palo Alto",
+    "tokens": [
+      "when",
+      "will",
+      "it",
+      "snow",
+      "in",
+      "Palo",
+      "Alto"
+    ],
+    "pos_tags": [
+      "ADV",
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "snow",
+        "type": "weather_condition",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Palo Alto",
+        "type": "location",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "fa940d56-7acc-4664-885f-c21023878cd1",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "will it be cloudy in Berlin",
+    "tokens": [
+      "will",
+      "it",
+      "be",
+      "cloudy",
+      "in",
+      "Berlin"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "cloudy",
+        "type": "weather_condition",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Berlin",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "e1e705ac-03b8-4b08-9593-c5df6d694fd9",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "any snow showers in the forecast for Valencia",
+    "tokens": [
+      "any",
+      "snow",
+      "showers",
+      "in",
+      "the",
+      "forecast",
+      "for",
+      "Valencia"
+    ],
+    "pos_tags": [
+      "DET",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "showers",
+        "type": "weather_condition",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "Valencia",
+        "type": "location",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "17f62019-8fb3-4f24-9f6a-25c978a39685",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "chances of drizzle in Hong Kong",
+    "tokens": [
+      "chances",
+      "of",
+      "drizzle",
+      "in",
+      "Hong",
+      "Kong"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "drizzle",
+        "type": "weather_condition",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "Hong Kong",
+        "type": "location",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "de98d31e-2dd3-483a-8957-b90647f628be",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "will it be raining tomorrow",
+    "tokens": [
+      "will",
+      "it",
+      "be",
+      "raining",
+      "tomorrow"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "raining",
+        "type": "weather_condition",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "6df0ecf3-9e69-41f5-bc88-00d983fc672b",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "is it supposed to snow on Friday",
+    "tokens": [
+      "is",
+      "it",
+      "supposed",
+      "to",
+      "snow",
+      "on",
+      "Friday"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "snow",
+        "type": "weather_condition",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "Friday",
+        "type": "date_time",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "64e9f1e0-99f4-4217-bfe2-f05c45356523",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "any chance of tornadoes on the weekend",
+    "tokens": [
+      "any",
+      "chance",
+      "of",
+      "tornadoes",
+      "on",
+      "the",
+      "weekend"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "tornadoes",
+        "type": "weather_condition",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "weekend",
+        "type": "date_time",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "12e7138c-0d8a-47f9-a0b4-57ebfd08b52a",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "are there hurricanes expected next week",
+    "tokens": [
+      "are",
+      "there",
+      "hurricanes",
+      "expected",
+      "next",
+      "week"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADV",
+      "NOUN",
+      "VERB",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "hurricanes",
+        "type": "weather_condition",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "next week",
+        "type": "date_time",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "d85ca548-8cca-4152-bed9-9972a9965eca",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "is it going to snow in Denver",
+    "tokens": [
+      "is",
+      "it",
+      "going",
+      "to",
+      "snow",
+      "in",
+      "Denver"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "snow",
+        "type": "weather_condition",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "Denver",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "f1372e48-7526-4527-a12e-134bc8721461",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "when will it rain today",
+    "tokens": [
+      "when",
+      "will",
+      "it",
+      "rain",
+      "today"
+    ],
+    "pos_tags": [
+      "ADV",
+      "AUX",
+      "PRON",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "rain",
+        "type": "weather_condition",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "656833d7-7494-475f-8da6-9855e0379d55",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "will it be foggy on July 22",
+    "tokens": [
+      "will",
+      "it",
+      "be",
+      "foggy",
+      "on",
+      "July",
+      "22"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "ADP",
+      "PROPN",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "foggy",
+        "type": "weather_condition",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "July 22",
+        "type": "date_time",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "cf498b49-2237-442b-973b-dee6060f6e8d",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "any snow in the forecast for next Monday",
+    "tokens": [
+      "any",
+      "snow",
+      "in",
+      "the",
+      "forecast",
+      "for",
+      "next",
+      "Monday"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "ADJ",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "snow",
+        "type": "weather_condition",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "next Monday",
+        "type": "date_time",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "26ef8527-98f4-4460-bc15-e8b5045c01ba",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "chances of storm this month",
+    "tokens": [
+      "chances",
+      "of",
+      "storm",
+      "this",
+      "month"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "storm",
+        "type": "weather_condition",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "this month",
+        "type": "date_time",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "4ae20590-cb6d-453a-bb53-06407638768a",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "is it going to snow in Paris on Sunday",
+    "tokens": [
+      "is",
+      "it",
+      "going",
+      "to",
+      "snow",
+      "in",
+      "Paris",
+      "on",
+      "Sunday"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "snow",
+        "type": "weather_condition",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "Paris",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "Sunday",
+        "type": "date_time",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "b1ed7f18-eba2-422e-92bd-9d2602d0b1d2",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "is it supposed to rain in Madrid next weekend",
+    "tokens": [
+      "is",
+      "it",
+      "supposed",
+      "to",
+      "rain",
+      "in",
+      "Madrid",
+      "next",
+      "weekend"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "PROPN",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "rain",
+        "type": "weather_condition",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "Madrid",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "next weekend",
+        "type": "date_time",
+        "start": 7,
+        "end": 8
+      }
+    ],
+    "id": "300c7bf0-db6a-4186-923e-0129e7df66fd",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "any chance of snow showers tomorrow in Barcelona",
+    "tokens": [
+      "any",
+      "chance",
+      "of",
+      "snow",
+      "showers",
+      "tomorrow",
+      "in",
+      "Barcelona"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "ADP",
+      "ADJ",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "snow showers",
+        "type": "weather_condition",
+        "start": 3,
+        "end": 4
+      },
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "Barcelona",
+        "type": "location",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "2206bf0d-f48e-4139-b88a-576f109250a5",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "are there any tornadoes expected in Cleveland on November 12",
+    "tokens": [
+      "are",
+      "there",
+      "any",
+      "tornadoes",
+      "expected",
+      "in",
+      "Cleveland",
+      "on",
+      "November",
+      "12"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "VERB",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "tornadoes",
+        "type": "weather_condition",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Cleveland",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "November 12",
+        "type": "date_time",
+        "start": 8,
+        "end": 9
+      }
+    ],
+    "id": "2a1a23e9-23d9-4201-87cd-0519ce0e65d3",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "when will it rain in Oslo today",
+    "tokens": [
+      "when",
+      "will",
+      "it",
+      "rain",
+      "in",
+      "Oslo",
+      "today"
+    ],
+    "pos_tags": [
+      "ADV",
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADP",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "rain",
+        "type": "weather_condition",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Oslo",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "71b7dc65-6322-4c07-8052-8794638581e5",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "will it be foggy next Saturday in San Francisco",
+    "tokens": [
+      "will",
+      "it",
+      "be",
+      "foggy",
+      "next",
+      "Saturday",
+      "in",
+      "San",
+      "Francisco"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "ADJ",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "foggy",
+        "type": "weather_condition",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "next Saturday",
+        "type": "date_time",
+        "start": 4,
+        "end": 5
+      },
+      {
+        "text": "San Francisco",
+        "type": "location",
+        "start": 7,
+        "end": 8
+      }
+    ],
+    "id": "3b429a20-5dc1-440e-a045-fee48791a7b1",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "any drizzle in the forecast for Vienna this weekend",
+    "tokens": [
+      "any",
+      "drizzle",
+      "in",
+      "the",
+      "forecast",
+      "for",
+      "Vienna",
+      "this",
+      "weekend"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "drizzle",
+        "type": "weather_condition",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Vienna",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "this weekend",
+        "type": "date_time",
+        "start": 7,
+        "end": 8
+      }
+    ],
+    "id": "25310e1d-67ac-45b4-a236-6bc7daa78656",
+    "intent": "weather.condition"
+  },
+  {
+    "text": "chances of volcano eruption in Sicilia this month",
+    "tokens": [
+      "chances",
+      "of",
+      "volcano",
+      "eruption",
+      "in",
+      "Sicilia",
+      "this",
+      "month"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "volcano eruption",
+        "type": "weather_condition",
+        "start": 2,
+        "end": 3
+      },
+      {
+        "text": "Sicilia",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "this month",
+        "type": "date_time",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "6e788559-75b4-4818-a75a-176af4cbcdbb",
+    "intent": "weather.condition"
+  }
+]

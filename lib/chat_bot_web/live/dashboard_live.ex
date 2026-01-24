@@ -28,8 +28,10 @@ defmodule ChatBotWeb.DashboardLive do
       |> assign(:genserver_status, load_genserver_status())
       |> assign(:performance_metrics, load_performance_metrics())
       |> assign(:health_indicators, load_health_indicators())
+      |> assign(:ml_models_status, load_ml_models_status())
+      |> assign(:readiness_details, load_readiness_details())
       |> assign(:last_updated, DateTime.utc_now())
-      |> assign(:expanded_categories, MapSet.new([:core, :epistemic, :analysis, :ml, :storage]))
+      |> assign(:expanded_categories, MapSet.new([:core, :epistemic, :analysis, :ml, :storage, :metrics]))
       |> assign(:auto_refresh, true)
 
     {:ok, socket}
@@ -43,6 +45,8 @@ defmodule ChatBotWeb.DashboardLive do
         |> assign(:genserver_status, load_genserver_status())
         |> assign(:performance_metrics, load_performance_metrics())
         |> assign(:health_indicators, load_health_indicators())
+        |> assign(:ml_models_status, load_ml_models_status())
+        |> assign(:readiness_details, load_readiness_details())
         |> assign(:last_updated, DateTime.utc_now())
 
       {:noreply, socket}
@@ -63,6 +67,8 @@ defmodule ChatBotWeb.DashboardLive do
       |> assign(:genserver_status, load_genserver_status())
       |> assign(:performance_metrics, load_performance_metrics())
       |> assign(:health_indicators, load_health_indicators())
+      |> assign(:ml_models_status, load_ml_models_status())
+      |> assign(:readiness_details, load_readiness_details())
       |> assign(:last_updated, DateTime.utc_now())
 
     {:noreply, socket}
@@ -99,6 +105,14 @@ defmodule ChatBotWeb.DashboardLive do
     ChatBot.SystemStatus.get_health_indicators()
   end
 
+  defp load_ml_models_status do
+    ChatBot.SystemStatus.get_ml_models_status()
+  end
+
+  defp load_readiness_details do
+    ChatBot.SystemStatus.get_readiness_details()
+  end
+
   # ============================================================================
   # Helper Functions for Template
   # ============================================================================
@@ -108,6 +122,7 @@ defmodule ChatBotWeb.DashboardLive do
   def category_label(:analysis), do: "Analysis System"
   def category_label(:ml), do: "Machine Learning"
   def category_label(:storage), do: "Storage"
+  def category_label(:metrics), do: "Metrics & Telemetry"
   def category_label(other), do: to_string(other) |> String.capitalize()
 
   def category_icon(:core), do: "hero-cpu-chip"
@@ -115,6 +130,7 @@ defmodule ChatBotWeb.DashboardLive do
   def category_icon(:analysis), do: "hero-chart-bar"
   def category_icon(:ml), do: "hero-sparkles"
   def category_icon(:storage), do: "hero-circle-stack"
+  def category_icon(:metrics), do: "hero-chart-pie"
   def category_icon(_), do: "hero-cube"
 
   def status_color(:ready), do: "text-success"
@@ -207,6 +223,7 @@ defmodule ChatBotWeb.DashboardLive do
   def category_bg_class(:analysis), do: "bg-accent/10"
   def category_bg_class(:ml), do: "bg-warning/10"
   def category_bg_class(:storage), do: "bg-info/10"
+  def category_bg_class(:metrics), do: "bg-success/10"
   def category_bg_class(_), do: "bg-base-200"
 
   def category_text_class(:core), do: "text-primary"
@@ -214,6 +231,7 @@ defmodule ChatBotWeb.DashboardLive do
   def category_text_class(:analysis), do: "text-accent"
   def category_text_class(:ml), do: "text-warning"
   def category_text_class(:storage), do: "text-info"
+  def category_text_class(:metrics), do: "text-success"
   def category_text_class(_), do: "text-base-content"
 
   # Badge variant based on status
@@ -233,4 +251,79 @@ defmodule ChatBotWeb.DashboardLive do
   def format_stat_value(value) when is_list(value), do: "[#{length(value)}]"
   def format_stat_value(value) when is_map(value), do: "{#{map_size(value)}}"
   def format_stat_value(value), do: inspect(value)
+
+  # ============================================================================
+  # ML Model Status Helpers
+  # ============================================================================
+
+  def model_status_variant(%{exists: true, loaded: true}), do: :success
+  def model_status_variant(%{exists: true, loaded: false}), do: :warning
+  def model_status_variant(%{exists: false}), do: :error
+  def model_status_variant(%{loaded: true}), do: :success
+  def model_status_variant(%{loaded: false}), do: :error
+  def model_status_variant(_), do: :default
+
+  def model_status_label(%{exists: true, loaded: true}), do: "Loaded"
+  def model_status_label(%{exists: true, loaded: false}), do: "Not Loaded"
+  def model_status_label(%{exists: false}), do: "Not Trained"
+  def model_status_label(%{loaded: true}), do: "Loaded"
+  def model_status_label(%{loaded: false}), do: "Not Loaded"
+  def model_status_label(_), do: "Unknown"
+
+  def format_model_datetime(nil), do: "Never"
+
+  def format_model_datetime(%DateTime{} = dt) do
+    Calendar.strftime(dt, "%Y-%m-%d %H:%M")
+  end
+
+  def format_model_datetime({{year, month, day}, {hour, min, _sec}}) do
+    "#{year}-#{String.pad_leading("#{month}", 2, "0")}-#{String.pad_leading("#{day}", 2, "0")} #{String.pad_leading("#{hour}", 2, "0")}:#{String.pad_leading("#{min}", 2, "0")}"
+  end
+
+  def format_model_datetime(_), do: "-"
+
+  def training_status_variant(:completed), do: :success
+  def training_status_variant(:in_progress), do: :warning
+  def training_status_variant(:failed), do: :error
+  def training_status_variant(_), do: :default
+
+  def training_status_label(:completed), do: "Completed"
+  def training_status_label(:in_progress), do: "In Progress"
+  def training_status_label(:failed), do: "Failed"
+  def training_status_label(nil), do: "Never Run"
+  def training_status_label(_), do: "Unknown"
+
+  def model_name(:pos_model), do: "POS Tagger"
+  def model_name(:entity_model), do: "Entity Model"
+  def model_name(:classifier), do: "Intent Classifier"
+  def model_name(:gazetteer), do: "Gazetteer"
+  def model_name(:intent_classifier), do: "Intent Classifier (Agent)"
+  def model_name(:entity_extractor), do: "Entity Extractor (Agent)"
+  def model_name(:pos_tagger), do: "POS Tagger"
+  def model_name(:entity_trainer), do: "Entity Trainer"
+  def model_name(other), do: other |> to_string() |> String.replace("_", " ") |> String.capitalize()
+
+  # Get list of file-based models for display
+  def file_based_models(ml_models_status) do
+    [:pos_model, :entity_model, :classifier, :gazetteer]
+    |> Enum.map(fn key -> {key, Map.get(ml_models_status, key)} end)
+    |> Enum.filter(fn {_k, v} -> v != nil end)
+  end
+
+  # Get list of agent-based models for display
+  def agent_based_models(ml_models_status) do
+    [:intent_classifier, :entity_extractor]
+    |> Enum.map(fn key -> {key, Map.get(ml_models_status, key)} end)
+    |> Enum.filter(fn {_k, v} -> v != nil end)
+  end
+
+  # Get training stats from performance metrics
+  def get_training_stats(performance_metrics) do
+    Map.get(performance_metrics, :training, %{})
+  end
+
+  # Get all categories including the new metrics category
+  def all_categories do
+    [:core, :epistemic, :analysis, :ml, :storage, :metrics]
+  end
 end

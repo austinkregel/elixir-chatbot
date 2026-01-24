@@ -1,0 +1,217 @@
+[
+  {
+    "text": "is the front door unlocked",
+    "tokens": [
+      "is",
+      "the",
+      "front",
+      "door",
+      "unlocked"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "front door",
+        "type": "lock",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "53f383dc-d77c-458d-b7bd-cbe55dc811b2",
+    "intent": "smarthome.locks.check.unlock"
+  },
+  {
+    "text": "did I unlock door everywhere",
+    "tokens": [
+      "did",
+      "I",
+      "unlock",
+      "door",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "door",
+        "type": "lock",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "everywhere",
+        "type": "all",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "ab6e113c-2dd5-4d66-9859-ed15b53f087f",
+    "intent": "smarthome.locks.check.unlock"
+  },
+  {
+    "text": "did I unlock the door in the kitchen",
+    "tokens": [
+      "did",
+      "I",
+      "unlock",
+      "the",
+      "door",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "door",
+        "type": "lock",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "53c1856c-b905-4b95-af58-f1c193266efa",
+    "intent": "smarthome.locks.check.unlock"
+  },
+  {
+    "text": "are kitchen doors unlocked",
+    "tokens": [
+      "are",
+      "kitchen",
+      "doors",
+      "unlocked"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADJ",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "doors",
+        "type": "lock",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "506eb54a-14f1-424a-9b52-152e62e888ad",
+    "intent": "smarthome.locks.check.unlock"
+  },
+  {
+    "text": "did I unlock the front door",
+    "tokens": [
+      "did",
+      "I",
+      "unlock",
+      "the",
+      "front",
+      "door"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "front door",
+        "type": "lock",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "b501126a-3968-43fc-9522-9590147ecbce",
+    "intent": "smarthome.locks.check.unlock"
+  },
+  {
+    "text": "is garage unlocked",
+    "tokens": [
+      "is",
+      "garage",
+      "unlocked"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "garage",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "6c9bdf87-b1bb-472c-840a-64028bae7df9",
+    "intent": "smarthome.locks.check.unlock"
+  },
+  {
+    "text": "are all the doors unlocked",
+    "tokens": [
+      "are",
+      "all",
+      "the",
+      "doors",
+      "unlocked"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "DET",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "all",
+        "type": "all",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "doors",
+        "type": "lock",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "20ebe15e-044e-4812-9145-aa4bf62d15db",
+    "intent": "smarthome.locks.check.unlock"
+  }
+]

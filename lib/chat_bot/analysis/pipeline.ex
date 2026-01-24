@@ -232,7 +232,15 @@ defmodule ChatBot.Analysis.Pipeline do
       resolve_anaphora(chunk.text, history, chunk.index, opts)
 
     # Stage 3a: Entity extraction (use resolved text for better extraction)
-    entities = extract_entities(resolved_text, opts)
+    # Pass discourse and speech_act context for disambiguation
+    entity_opts =
+      opts ++
+        [
+          discourse: discourse_result,
+          speech_act: speech_act_result
+        ]
+
+    entities = extract_entities(resolved_text, entity_opts)
 
     # Merge anaphora-resolved entities with extracted entities
     entities = merge_anaphora_entities(entities, anaphora_entities)

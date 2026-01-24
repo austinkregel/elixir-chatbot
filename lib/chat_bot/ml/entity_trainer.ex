@@ -42,34 +42,75 @@ defmodule ChatBot.ML.EntityTrainer do
   @doc """
   Train entity recognition model from intent data.
   Returns {:ok, model} or {:error, reason}.
+  Emits telemetry events for training metrics.
   """
   def train do
+    start_time = System.monotonic_time(:millisecond)
+
     Logger.info("Starting entity model training...")
 
-    # Load intent data with entity annotations
-    case DataLoaders.load_all_intents() do
-      {:ok, examples} ->
-        Logger.info("Converting examples to BIO format", %{count: length(examples)})
+    # Emit training start event
+    :telemetry.execute(
+      [:chat_bot, :ml, :train, :start],
+      %{sequence_count: 0},
+      %{model: :entity_trainer, started_at: DateTime.utc_now()}
+    )
 
-        # Convert to BIO-tagged sequences
-        sequences = convert_to_bio_sequences(examples)
-        Logger.info("Generated BIO sequences", %{count: length(sequences)})
+    result =
+      # Load intent data with entity annotations
+      case DataLoaders.load_all_intents() do
+        {:ok, examples} ->
+          Logger.info("Converting examples to BIO format", %{count: length(examples)})
 
-        if length(sequences) > 0 do
-          # Train the model
-          model = train_sequence_model(sequences)
+          # Convert to BIO-tagged sequences
+          sequences = convert_to_bio_sequences(examples)
+          Logger.info("Generated BIO sequences", %{count: length(sequences)})
 
-          Logger.info("Entity model trained", %{
+          if length(sequences) > 0 do
+            # Train the model
+            model = train_sequence_model(sequences)
+
+            Logger.info("Entity model trained", %{
+              tag_count: map_size(model.tag_vocabulary),
+              feature_count: map_size(model.feature_weights)
+            })
+
+            {:ok, model, length(sequences)}
+          else
+            {:error, "No valid training sequences generated"}
+          end
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+
+    # Calculate training metrics
+    duration_ms = System.monotonic_time(:millisecond) - start_time
+
+    case result do
+      {:ok, model, sequence_count} ->
+        # Emit training success event
+        :telemetry.execute(
+          [:chat_bot, :ml, :train, :stop],
+          %{
+            duration_ms: duration_ms,
+            sequence_count: sequence_count,
             tag_count: map_size(model.tag_vocabulary),
             feature_count: map_size(model.feature_weights)
-          })
+          },
+          %{model: :entity_trainer, success: true}
+        )
 
-          {:ok, model}
-        else
-          {:error, "No valid training sequences generated"}
-        end
+        {:ok, model}
 
       {:error, reason} ->
+        # Emit training failure event
+        :telemetry.execute(
+          [:chat_bot, :ml, :train, :exception],
+          %{duration_ms: duration_ms, sequence_count: 0},
+          %{model: :entity_trainer, success: false, reason: reason}
+        )
+
         {:error, reason}
     end
   end

@@ -1,0 +1,67 @@
+[
+  {
+    "id": "ddf1dd66-0cf0-4ecf-80e0-2bdf437e0aee",
+    "data": [
+      {
+        "text": "what are the steps for opening account",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "e2e9e3a0-b0cf-4d27-b1e8-c03b9d5ef2fd",
+    "data": [
+      {
+        "text": "account opening",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "47ef5c81-86ae-4f05-8bf0-35d8b0d33dfa",
+    "data": [
+      {
+        "text": "open an account",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "877ed268-e66c-462c-a39c-ace2cb491266",
+    "data": [
+      {
+        "text": "I want to open an account",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "c6c1ac26-d661-4597-abb0-1669d34171c7",
+    "data": [
+      {
+        "text": "how do I open an account",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  }
+]

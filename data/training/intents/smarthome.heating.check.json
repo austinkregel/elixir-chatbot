@@ -1,0 +1,1069 @@
+[
+  {
+    "text": "can you report the temperature in bedroom please",
+    "tokens": [
+      "can",
+      "you",
+      "report",
+      "the",
+      "temperature",
+      "in",
+      "bedroom",
+      "please"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "77873d4a-43e6-4b02-9216-adcc6cb241fe",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "what's the temperature everywhere",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "temperature",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "everywhere",
+        "type": "all",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "42bca7d2-b678-4f20-adb7-24d9bc3b0c71",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "check temperature in the kitchen",
+    "tokens": [
+      "check",
+      "temperature",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "92a720dc-3d9b-4cb1-85a7-3138b57aa9f8",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "please check bedroom's temperature",
+    "tokens": [
+      "please",
+      "check",
+      "bedroom",
+      "'s",
+      "temperature"
+    ],
+    "pos_tags": [
+      "VERB",
+      "VERB",
+      "NOUN",
+      "PART",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom's",
+        "type": "room",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "0d17dd76-427d-4354-9d2f-5a9e07ec433e",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "what's the temperature in bedroom",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "temperature",
+      "in",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "42c2d7a2-bd58-4bb1-8db9-29ea10724952",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "please check the temperature in kids room",
+    "tokens": [
+      "please",
+      "check",
+      "the",
+      "temperature",
+      "in",
+      "kids",
+      "room"
+    ],
+    "pos_tags": [
+      "VERB",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kids room",
+        "type": "room",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "0470160c-9dee-4d38-9f0f-4fbabcaabe20",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "check heating in the kitchen",
+    "tokens": [
+      "check",
+      "heating",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "a6ce8c1e-796f-4ca4-94b0-672ee66b1017",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "tell me what's the temperature in dining room now",
+    "tokens": [
+      "tell",
+      "me",
+      "what",
+      "'s",
+      "the",
+      "temperature",
+      "in",
+      "dining",
+      "room",
+      "now"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "VERB",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "dining room",
+        "type": "room",
+        "start": 7,
+        "end": 8
+      }
+    ],
+    "id": "b1525d37-e4c8-4fb2-968e-8e088477fef5",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "check kitchen temperature",
+    "tokens": [
+      "check",
+      "kitchen",
+      "temperature"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "6c7836ee-65b1-4c79-a5d6-b99959909bde",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "can you check the temperature in kids room",
+    "tokens": [
+      "can",
+      "you",
+      "check",
+      "the",
+      "temperature",
+      "in",
+      "kids",
+      "room"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kids room",
+        "type": "room",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "1f3b0b29-3091-4104-bd62-27c4d6c34e30",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "tell me the temperature in all rooms",
+    "tokens": [
+      "tell",
+      "me",
+      "the",
+      "temperature",
+      "in",
+      "all",
+      "rooms"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "all",
+        "type": "all",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "ba300fc1-205a-448a-a233-208e94139010",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "is temperature in bedroom 20 degrees",
+    "tokens": [
+      "is",
+      "temperature",
+      "in",
+      "bedroom",
+      "20",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "68c4e1a2-2ffd-4e4b-a60d-4309a6957704",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "report the temperature in bedroom",
+    "tokens": [
+      "report",
+      "the",
+      "temperature",
+      "in",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "73ba9355-580f-4daf-a7f1-8bb5cfaeb62f",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "report the temperature in kids room",
+    "tokens": [
+      "report",
+      "the",
+      "temperature",
+      "in",
+      "kids",
+      "room"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kids room",
+        "type": "room",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "2475e2db-b21a-4cf4-b004-b47500d7b8d5",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "check temperature at home",
+    "tokens": [
+      "check",
+      "temperature",
+      "at",
+      "home"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e72cfec6-e2f0-4eb8-995a-0b7e11458219",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "report the temperature in bedroom please",
+    "tokens": [
+      "report",
+      "the",
+      "temperature",
+      "in",
+      "bedroom",
+      "please"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "dfe85c33-c011-4737-b2d2-ccea5ff26a3d",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "what is the temperature of motion sensor",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "temperature",
+      "of",
+      "motion",
+      "sensor"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "motion sensor",
+        "type": "heating",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "b115ca5f-ae1e-4a05-9c90-71e89da87bc4",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "is temp 25 degrees",
+    "tokens": [
+      "is",
+      "temp",
+      "25",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADJ",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "25",
+        "type": "number",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "453367a5-8cd0-4a52-ac84-8f545a4700a1",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "check temperature in the bedroom",
+    "tokens": [
+      "check",
+      "temperature",
+      "in",
+      "the",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "bf2010ea-3a07-42fd-b4ef-e9fa6f772722",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "what is the temp",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "temp"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "0af4c229-8a26-4cdf-b655-f8bc05429611",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "is temperature 20 degrees",
+    "tokens": [
+      "is",
+      "temperature",
+      "20",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADJ",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "20",
+        "type": "number",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "9ccf06b2-d2e9-4a49-9ebd-e30d4808c950",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "is temperature high",
+    "tokens": [
+      "is",
+      "temperature",
+      "high"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADJ",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "79586e2e-7377-4b66-878b-7ee282608cea",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "temperature in kitchen",
+    "tokens": [
+      "temperature",
+      "in",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "a5d4ccb4-0565-467b-a2bc-e49a9dd906d6",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "tell me the temp level",
+    "tokens": [
+      "tell",
+      "me",
+      "the",
+      "temp",
+      "level"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "cd0fe4c4-2fcd-4b76-98fe-2839f47420c1",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "can you report the temperature in bedroom for me",
+    "tokens": [
+      "can",
+      "you",
+      "report",
+      "the",
+      "temperature",
+      "in",
+      "bedroom",
+      "for",
+      "me"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "46cf6eb9-c296-42fc-aec4-6cc976bda160",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "what's the temperature",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "temperature"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f06f96b3-8ead-4f3d-be15-fd317d3c6171",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "what is the temperature in the living room",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "temperature",
+      "in",
+      "the",
+      "living",
+      "room"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "living room",
+        "type": "room",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "9918ca22-61a2-4951-99b3-ea4a7dae7c63",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "what's the temperature",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "temperature"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "12786993-a885-4398-8caa-868255e9b21e",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "tell me the temperature for dining room",
+    "tokens": [
+      "tell",
+      "me",
+      "the",
+      "temperature",
+      "for",
+      "dining",
+      "room"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "dining room",
+        "type": "room",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "686607a3-3f97-42e7-b5f2-870be237c213",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "what is cooling point set as",
+    "tokens": [
+      "what",
+      "is",
+      "cooling",
+      "point",
+      "set",
+      "as"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB",
+      "NOUN",
+      "VERB",
+      "ADP"
+    ],
+    "entities": [
+      {
+        "text": "cooling point",
+        "type": "heating",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "c290e180-2bc3-45ec-bee1-8c484955a22e",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "what's the temperature in the living room",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "temperature",
+      "in",
+      "the",
+      "living",
+      "room"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "living room",
+        "type": "room",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "03938f2c-21a9-4731-adaa-0515052e1de6",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "what is the temperature",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "temperature"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "02d0a1a8-2931-4d84-8642-6e78ce77238a",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "check the heating",
+    "tokens": [
+      "check",
+      "the",
+      "heating"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "9e80eaf0-ba93-46f2-aa78-30249ab59a58",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "tell me the temperature in dining room",
+    "tokens": [
+      "tell",
+      "me",
+      "the",
+      "temperature",
+      "in",
+      "dining",
+      "room"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "dining room",
+        "type": "room",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "2a80d45e-d370-40c9-9636-f149e1397ee8",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "what is the temperature in bedroom",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "temperature",
+      "in",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "6210a328-9dc6-4feb-a280-b610d150a4d1",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "what s the temperature in the kitchen",
+    "tokens": [
+      "what",
+      "s",
+      "the",
+      "temperature",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "fe315eed-77b9-42ab-b077-9be80da094d3",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "can you report the temperature in bedroom now",
+    "tokens": [
+      "can",
+      "you",
+      "report",
+      "the",
+      "temperature",
+      "in",
+      "bedroom",
+      "now"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "6011d7b2-50d9-427f-a378-00e234790802",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "can you report the temperature in kids room",
+    "tokens": [
+      "can",
+      "you",
+      "report",
+      "the",
+      "temperature",
+      "in",
+      "kids",
+      "room"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kids room",
+        "type": "room",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "c2d8da9f-e4b7-4e4c-b5c1-80a6f6796de2",
+    "intent": "smarthome.heating.check"
+  },
+  {
+    "text": "tell me the temperature",
+    "tokens": [
+      "tell",
+      "me",
+      "the",
+      "temperature"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "8f32ac02-c794-4b6b-a43d-3ed3508ab0e5",
+    "intent": "smarthome.heating.check"
+  }
+]

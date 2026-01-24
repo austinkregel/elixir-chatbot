@@ -1,0 +1,98 @@
+[
+  {
+    "text": "I am here",
+    "tokens": [
+      "I",
+      "am",
+      "here"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "71ffd6fd-6079-4ef5-9e0a-fd26078e5206",
+    "intent": "smalltalk.user.here"
+  },
+  {
+    "text": "here I am",
+    "tokens": [
+      "here",
+      "I",
+      "am"
+    ],
+    "pos_tags": [
+      "ADV",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "2e6cc639-3fb4-456b-84c4-2e5d1d346717",
+    "intent": "smalltalk.user.here"
+  },
+  {
+    "text": "I'm right here",
+    "tokens": [
+      "I",
+      "'m",
+      "right",
+      "here"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "8d5c0cc6-c30d-4380-be26-8670777e410e",
+    "intent": "smalltalk.user.here"
+  },
+  {
+    "text": "I'm already here",
+    "tokens": [
+      "I",
+      "'m",
+      "already",
+      "here"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "d9fa5892-6b3a-44b0-a8ce-f63652975a77",
+    "intent": "smalltalk.user.here"
+  },
+  {
+    "text": "can you tell if I'm here or not",
+    "tokens": [
+      "can",
+      "you",
+      "tell",
+      "if",
+      "I",
+      "'m",
+      "here",
+      "or",
+      "not"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADP",
+      "PRON",
+      "VERB",
+      "ADV",
+      "CONJ",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "a7acc230-b245-4645-ba60-7bcb7ed9ab37",
+    "intent": "smalltalk.user.here"
+  }
+]

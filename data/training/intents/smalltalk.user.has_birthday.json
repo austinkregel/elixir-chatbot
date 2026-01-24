@@ -1,0 +1,116 @@
+[
+  {
+    "text": "it is my birthday",
+    "tokens": [
+      "it",
+      "is",
+      "my",
+      "birthday"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "757dc74e-4cd7-4c3b-963a-15b528fdd4f9",
+    "intent": "smalltalk.user.has_birthday"
+  },
+  {
+    "text": "I'm celebrating my birthday today",
+    "tokens": [
+      "I",
+      "'m",
+      "celebrating",
+      "my",
+      "birthday",
+      "today"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "d7905650-e33e-4fbb-8f11-838c28fc1f47",
+    "intent": "smalltalk.user.has_birthday"
+  },
+  {
+    "text": "today is my birthday",
+    "tokens": [
+      "today",
+      "is",
+      "my",
+      "birthday"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "1323f031-9e56-4e12-b673-7b5b7bd1800e",
+    "intent": "smalltalk.user.has_birthday"
+  },
+  {
+    "text": "it's my birthday today",
+    "tokens": [
+      "it",
+      "'s",
+      "my",
+      "birthday",
+      "today"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "a079e5e2-2bc2-4c9f-9a28-551ea7a1f724",
+    "intent": "smalltalk.user.has_birthday"
+  },
+  {
+    "text": "I was born today",
+    "tokens": [
+      "I",
+      "was",
+      "born",
+      "today"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "999e50f4-0f44-48d8-9f8b-725ba11b8b52",
+    "intent": "smalltalk.user.has_birthday"
+  },
+  {
+    "text": "it's my b-day",
+    "tokens": [
+      "it",
+      "'s",
+      "my",
+      "b-day"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "67ea0329-85e6-4ed1-9c8e-e1da7d0fc604",
+    "intent": "smalltalk.user.has_birthday"
+  }
+]

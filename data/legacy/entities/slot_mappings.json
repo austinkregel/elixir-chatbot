@@ -1,0 +1,124 @@
+{
+  "entries": [
+    {
+      "value": "location",
+      "synonyms": ["address", "place", "city"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["location", "city", "home_city", "preferred_location"],
+        "entity_types": ["location", "city", "room", "geo-location", "place-name"],
+        "description": "Geographic location for weather, directions, etc."
+      }
+    },
+    {
+      "value": "timezone",
+      "synonyms": ["time_zone", "tz"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["timezone"],
+        "entity_types": ["timezone"],
+        "description": "User's preferred timezone"
+      }
+    },
+    {
+      "value": "preferred_language",
+      "synonyms": ["language", "lang"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["language", "preferred_language"],
+        "entity_types": ["sys.language"],
+        "description": "User's preferred language"
+      }
+    },
+    {
+      "value": "preferred_temperature_unit",
+      "synonyms": ["temperature_unit", "temp_unit"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["temperature_unit"],
+        "entity_types": ["unit-temperature"],
+        "description": "Celsius or Fahrenheit preference"
+      }
+    },
+    {
+      "value": "name",
+      "synonyms": ["user_name", "first_name"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["name", "first_name"],
+        "entity_types": ["person"],
+        "description": "User's name"
+      }
+    },
+    {
+      "value": "artist",
+      "synonyms": ["music-artist", "musician", "band"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["favorite_artist", "preferred_artist"],
+        "entity_types": ["music-artist", "sys.music-artist"],
+        "description": "Music artist preference"
+      }
+    },
+    {
+      "value": "genre",
+      "synonyms": ["music_genre", "music-genre"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["favorite_genre", "preferred_genre"],
+        "entity_types": ["sys.music-genre"],
+        "description": "Music genre preference"
+      }
+    },
+    {
+      "value": "news_source",
+      "synonyms": ["news-source", "source"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["preferred_news_source"],
+        "entity_types": ["news-source"],
+        "description": "Preferred news source"
+      }
+    },
+    {
+      "value": "device",
+      "synonyms": ["smart_device"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["default_device"],
+        "entity_types": ["device", "lights", "heating"],
+        "description": "Smart home device"
+      }
+    },
+    {
+      "value": "room",
+      "synonyms": ["location", "area"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["default_room", "current_room"],
+        "entity_types": ["room"],
+        "description": "Room in the home"
+      }
+    },
+    {
+      "value": "account",
+      "synonyms": ["bank_account", "financial_account"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["default_account"],
+        "entity_types": ["account"],
+        "description": "Financial account"
+      }
+    },
+    {
+      "value": "music_service",
+      "synonyms": ["music-service", "streaming_service"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["preferred_music_service"],
+        "entity_types": ["music-service"],
+        "description": "Preferred music streaming service"
+      }
+    }
+  ]
+}

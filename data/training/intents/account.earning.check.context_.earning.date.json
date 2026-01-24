@@ -1,0 +1,100 @@
+[
+  {
+    "text": "Check January 1.",
+    "tokens": [
+      "Check",
+      "January",
+      "1",
+      "."
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PROPN",
+      "NUM",
+      "PUNCT"
+    ],
+    "entities": [
+      {
+        "text": "January 1",
+        "type": "date",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "ed87c346-07c1-494a-a380-b5cb4b300d6a",
+    "intent": "account.earning.check.context_.earning.date"
+  },
+  {
+    "text": "and January 2",
+    "tokens": [
+      "and",
+      "January",
+      "2"
+    ],
+    "pos_tags": [
+      "CONJ",
+      "PROPN",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "January 2",
+        "type": "date",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "841b93b7-a5bb-4a69-b428-80d07bb606ba",
+    "intent": "account.earning.check.context_.earning.date"
+  },
+  {
+    "text": "check January 1 too",
+    "tokens": [
+      "check",
+      "January",
+      "1",
+      "too"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "NUM",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "January 1",
+        "type": "date",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "dbe42451-62d2-43ff-b8b1-d6ada8b8c40e",
+    "intent": "account.earning.check.context_.earning.date"
+  },
+  {
+    "text": "what about December 30",
+    "tokens": [
+      "what",
+      "about",
+      "December",
+      "30"
+    ],
+    "pos_tags": [
+      "PRON",
+      "ADP",
+      "PROPN",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "December 30",
+        "type": "date",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "bc1860b3-407c-4d73-bd17-28599fba3eaa",
+    "intent": "account.earning.check.context_.earning.date"
+  }
+]

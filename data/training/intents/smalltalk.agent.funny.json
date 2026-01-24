@@ -1,0 +1,284 @@
+[
+  {
+    "text": "you make me laugh a lot",
+    "tokens": [
+      "you",
+      "make",
+      "me",
+      "laugh",
+      "a",
+      "lot"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "7bba312a-47c0-4949-9d96-2c7fa02fdbdf",
+    "intent": "smalltalk.agent.funny"
+  },
+  {
+    "text": "you are hilarious",
+    "tokens": [
+      "you",
+      "are",
+      "hilarious"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "efebc0f0-fb71-4565-bdde-b24b061d8ade",
+    "intent": "smalltalk.agent.funny"
+  },
+  {
+    "text": "you are really funny",
+    "tokens": [
+      "you",
+      "are",
+      "really",
+      "funny"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "038652c5-4faf-4248-91df-eeeae9ba728e",
+    "intent": "smalltalk.agent.funny"
+  },
+  {
+    "text": "you're the funniest bot I've talked to",
+    "tokens": [
+      "you",
+      "'re",
+      "the",
+      "funniest",
+      "bot",
+      "I",
+      "'ve",
+      "talked",
+      "to"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "PRON",
+      "VERB",
+      "VERB",
+      "PART"
+    ],
+    "entities": [],
+    "id": "291584cc-1167-4b92-a94a-9f20bbc4476b",
+    "intent": "smalltalk.agent.funny"
+  },
+  {
+    "text": "you make me laugh",
+    "tokens": [
+      "you",
+      "make",
+      "me",
+      "laugh"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "15f6df9e-2536-452e-9fae-924d3d1d45c4",
+    "intent": "smalltalk.agent.funny"
+  },
+  {
+    "text": "you're so funny",
+    "tokens": [
+      "you",
+      "'re",
+      "so",
+      "funny"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "c81387e3-c8c3-4b1e-a377-6f332ffaa23e",
+    "intent": "smalltalk.agent.funny"
+  },
+  {
+    "text": "you're a very funny bot",
+    "tokens": [
+      "you",
+      "'re",
+      "a",
+      "very",
+      "funny",
+      "bot"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "ADV",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "71e437fb-380d-4a14-90ab-4066b31efeae",
+    "intent": "smalltalk.agent.funny"
+  },
+  {
+    "text": "you're really funny",
+    "tokens": [
+      "you",
+      "'re",
+      "really",
+      "funny"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "9defd334-6a31-4388-8cd6-0cffc51d766d",
+    "intent": "smalltalk.agent.funny"
+  },
+  {
+    "text": "how funny you are",
+    "tokens": [
+      "how",
+      "funny",
+      "you",
+      "are"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "54ca6878-ed12-447a-be91-09b34919ca5b",
+    "intent": "smalltalk.agent.funny"
+  },
+  {
+    "text": "you're incredibly funny",
+    "tokens": [
+      "you",
+      "'re",
+      "incredibly",
+      "funny"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "06534655-ebeb-436d-8fc7-3311941fc7aa",
+    "intent": "smalltalk.agent.funny"
+  },
+  {
+    "text": "you are funny",
+    "tokens": [
+      "you",
+      "are",
+      "funny"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "a16db8a6-e523-43b3-aa89-1984d3ffae25",
+    "intent": "smalltalk.agent.funny"
+  },
+  {
+    "text": "you're the funniest",
+    "tokens": [
+      "you",
+      "'re",
+      "the",
+      "funniest"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "a4a1613a-d3eb-44a8-92fc-9ea65db0c5ef",
+    "intent": "smalltalk.agent.funny"
+  },
+  {
+    "text": "you are so funny",
+    "tokens": [
+      "you",
+      "are",
+      "so",
+      "funny"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "27c762e7-23ef-4b76-888c-70e052e44b3d",
+    "intent": "smalltalk.agent.funny"
+  },
+  {
+    "text": "you are very funny",
+    "tokens": [
+      "you",
+      "are",
+      "very",
+      "funny"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "8cf6b2d9-455a-43c6-b101-daf892d75491",
+    "intent": "smalltalk.agent.funny"
+  },
+  {
+    "text": "that was funny",
+    "tokens": [
+      "that",
+      "was",
+      "funny"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "c9d2f8da-a486-4f82-afe4-fc39dbb95d70",
+    "intent": "smalltalk.agent.funny"
+  }
+]

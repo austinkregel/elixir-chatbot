@@ -1,0 +1,9 @@
+{
+  "id": "436514ef-18cd-4c4d-85f5-743a69aa8105",
+  "name": "music-service",
+  "isOverridable": true,
+  "isEnum": false,
+  "isRegexp": false,
+  "automatedExpansion": false,
+  "allowFuzzyExtraction": false
+}

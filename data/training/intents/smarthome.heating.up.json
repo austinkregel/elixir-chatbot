@@ -1,0 +1,2090 @@
+[
+  {
+    "text": "increase the heat by 5 degrees",
+    "tokens": [
+      "increase",
+      "the",
+      "heat",
+      "by",
+      "5",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heat",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "5d3d61f9-8851-4069-b194-af8e3b099f15",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "more heating",
+    "tokens": [
+      "more",
+      "heating"
+    ],
+    "pos_tags": [
+      "ADV",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "f0c30e36-bf95-4ef0-a2d3-2e7e926d8eed",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn up heating in the kitchen",
+    "tokens": [
+      "turn",
+      "up",
+      "heating",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "a4e9cb16-d9e2-4459-8e97-dfc508fda739",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "a little more heating",
+    "tokens": [
+      "a",
+      "little",
+      "more",
+      "heating"
+    ],
+    "pos_tags": [
+      "DET",
+      "ADJ",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "e2d59f0c-64c6-4fff-9aed-2ff5b2d063a7",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "heating up in all rooms",
+    "tokens": [
+      "heating",
+      "up",
+      "in",
+      "all",
+      "rooms"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 0,
+        "end": 0
+      },
+      {
+        "text": "all",
+        "type": "all",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "d032c97c-dc9f-4da4-b7d1-aa9cf9f76b09",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "little more heating",
+    "tokens": [
+      "little",
+      "more",
+      "heating"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADV",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "ea508bc6-449c-4146-9d01-9914f3b2db58",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "make air conditioner blow warmer",
+    "tokens": [
+      "make",
+      "air",
+      "conditioner",
+      "blow",
+      "warmer"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADJ",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "air conditioner",
+        "type": "heating",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "6a99c966-a8d3-48c4-8cd6-47e3fffe5bd8",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn up the temperature to 80",
+    "tokens": [
+      "turn",
+      "up",
+      "the",
+      "temperature",
+      "to",
+      "80"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "PART",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "80",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "07036cb3-694d-4ce7-9cc0-3fb696b25dcb",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn up temperature by 1 point",
+    "tokens": [
+      "turn",
+      "up",
+      "temperature",
+      "by",
+      "1",
+      "point"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "1",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "ad8e0334-d4d0-4fd4-898c-26b1ec44582b",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "increase the temperature to 74 degrees",
+    "tokens": [
+      "increase",
+      "the",
+      "temperature",
+      "to",
+      "74",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "74",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "da0c64ac-3193-4ab4-af14-d94cf10ffd81",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "temperature higher by 25 grad",
+    "tokens": [
+      "temperature",
+      "higher",
+      "by",
+      "25",
+      "grad"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADJ",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "25",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "8f185000-28c6-4faa-b25a-b68c0d50dd42",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "can you lift up the heating for 20 grad",
+    "tokens": [
+      "can",
+      "you",
+      "lift",
+      "up",
+      "the",
+      "heating",
+      "for",
+      "20",
+      "grad"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "a8cc4f55-b3e7-404a-bb59-5780debaacf2",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn heating up by 50",
+    "tokens": [
+      "turn",
+      "heating",
+      "up",
+      "by",
+      "50"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PART",
+      "ADP",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "50",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "03a963af-fbda-4f37-b67e-24273cd4dd36",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "make temperature up",
+    "tokens": [
+      "make",
+      "temperature",
+      "up"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PART"
+    ],
+    "entities": [],
+    "id": "9fe1db19-71ea-406d-9d59-fed7f55cb61c",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn up the heating by 5 points",
+    "tokens": [
+      "turn",
+      "up",
+      "the",
+      "heating",
+      "by",
+      "5",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "0bc86c24-3df6-4235-85bc-6e94f600ab77",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn heating up",
+    "tokens": [
+      "turn",
+      "heating",
+      "up"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "89908c76-cde5-4c9b-94ef-566ec476a780",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "make bedroom temperature up",
+    "tokens": [
+      "make",
+      "bedroom",
+      "temperature",
+      "up"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "46129a6f-f65c-4222-adeb-6e6eb3c1fe72",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "temperature up",
+    "tokens": [
+      "temperature",
+      "up"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART"
+    ],
+    "entities": [],
+    "id": "78cbc830-8416-47bf-81d0-6cf4ea1529ae",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "increase the temperature for air conditioner",
+    "tokens": [
+      "increase",
+      "the",
+      "temperature",
+      "for",
+      "air",
+      "conditioner"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "air conditioner",
+        "type": "heating",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "1aeefe55-f577-451b-b667-4a69b6d210b1",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "make heating 20 degrees hotter",
+    "tokens": [
+      "make",
+      "heating",
+      "20",
+      "degrees",
+      "hotter"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "2c897b20-b62f-4fd2-97fd-ec345d6e4fb2",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "increase the temperature by 5 points",
+    "tokens": [
+      "increase",
+      "the",
+      "temperature",
+      "by",
+      "5",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "5",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "f5a618d1-3e33-4444-aa25-a965b3c1297d",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "raise up the temperature to 78",
+    "tokens": [
+      "raise",
+      "up",
+      "the",
+      "temperature",
+      "to",
+      "78"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "PART",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "78",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "9e837945-003f-4e62-a5ca-23227ad24f12",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "higher temp to 25 grad",
+    "tokens": [
+      "higher",
+      "temp",
+      "to",
+      "25",
+      "grad"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "25",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "3e0a9bff-3cfe-4dc3-bf7e-036ec751b535",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn up heating",
+    "tokens": [
+      "turn",
+      "up",
+      "heating"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "42fda077-d33d-4c58-ad69-e7a9107f9238",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "raise the temp to 28",
+    "tokens": [
+      "raise",
+      "the",
+      "temp",
+      "to",
+      "28"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PART",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "28",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "873c3365-33bc-4f19-95b7-50e473065432",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "heating 50 hotter",
+    "tokens": [
+      "heating",
+      "50",
+      "hotter"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 0,
+        "end": 0
+      },
+      {
+        "text": "50",
+        "type": "number",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "1a15bc05-91c5-408d-aec9-35c18aeaffd9",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "make heating 20 percents hotter",
+    "tokens": [
+      "make",
+      "heating",
+      "20",
+      "percents",
+      "hotter"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "18c525c3-2b57-4890-872c-58ce52d88e66",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "20 percent hotter",
+    "tokens": [
+      "20",
+      "percent",
+      "hotter"
+    ],
+    "pos_tags": [
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "20",
+        "type": "number",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "84d885bd-9d6c-436f-b099-fcf87b0fd4f5",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "increase the temperature in air conditioner to 26 degrees",
+    "tokens": [
+      "increase",
+      "the",
+      "temperature",
+      "in",
+      "air",
+      "conditioner",
+      "to",
+      "26",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "air conditioner",
+        "type": "heating",
+        "start": 4,
+        "end": 5
+      },
+      {
+        "text": "26",
+        "type": "number",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "973ed13b-af87-4b9c-a258-979723b6aade",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "make bedroom heating up",
+    "tokens": [
+      "make",
+      "bedroom",
+      "heating",
+      "up"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "VERB",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "d86ab6cf-8855-40a6-a6ce-fefccf9c7eb3",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn the temperature in air conditioner up to 25 degrees",
+    "tokens": [
+      "turn",
+      "the",
+      "temperature",
+      "in",
+      "air",
+      "conditioner",
+      "up",
+      "to",
+      "25",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "air conditioner",
+        "type": "heating",
+        "start": 4,
+        "end": 5
+      },
+      {
+        "text": "25",
+        "type": "number",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "c090db0e-2165-4b5e-b90b-7038960a0745",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "make hotter by 30 percent",
+    "tokens": [
+      "make",
+      "hotter",
+      "by",
+      "30",
+      "percent"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "30",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "a4769989-111c-47a2-b7cb-5b66b5044dbe",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn temperature up",
+    "tokens": [
+      "turn",
+      "temperature",
+      "up"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PART"
+    ],
+    "entities": [],
+    "id": "22554c4b-a493-4d0d-a4e9-a395509c191b",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn heating up for 5 grad",
+    "tokens": [
+      "turn",
+      "heating",
+      "up",
+      "for",
+      "5",
+      "grad"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PART",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "2f607625-a7a5-4666-a3a1-589440442a45",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "heating up",
+    "tokens": [
+      "heating",
+      "up"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "9df392a8-6a8f-4228-8c32-3de03df65f5e",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "increase temperature by 10 degrees",
+    "tokens": [
+      "increase",
+      "temperature",
+      "by",
+      "10",
+      "degrees"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "10",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "9845f344-9f4a-44b6-bf52-74bd960b2902",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "increase temp to 25 degrees",
+    "tokens": [
+      "increase",
+      "temp",
+      "to",
+      "25",
+      "degrees"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "25",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "028bcda9-0c33-4c26-8019-0ece71bc8f4e",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn up the heating in bedroom by 5 grad",
+    "tokens": [
+      "turn",
+      "up",
+      "the",
+      "heating",
+      "in",
+      "bedroom",
+      "by",
+      "5",
+      "grad"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "4bb4fe7a-1998-430e-886b-3e887f915ce2",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "temperature up in the kitchen",
+    "tokens": [
+      "temperature",
+      "up",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "50db6421-e7ba-46a7-aebc-24118e3b8a9e",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "higher temperature to 25 grad",
+    "tokens": [
+      "higher",
+      "temperature",
+      "to",
+      "25",
+      "grad"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "25",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "25ff0d0e-a47e-49e5-b6e0-6970ef6c70b8",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "increase the heat in living room by 5 degrees",
+    "tokens": [
+      "increase",
+      "the",
+      "heat",
+      "in",
+      "living",
+      "room",
+      "by",
+      "5",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heat",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "living room",
+        "type": "room",
+        "start": 4,
+        "end": 5
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "b9c13c6b-1e54-4754-b042-5192afa2b3ba",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn up heating everywhere",
+    "tokens": [
+      "turn",
+      "up",
+      "heating",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "everywhere",
+        "type": "all",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "d285ff7c-a653-4f32-ba0e-4df34d7e9010",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn heating 20 percents hotter",
+    "tokens": [
+      "turn",
+      "heating",
+      "20",
+      "percents",
+      "hotter"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "0c90b380-8679-4a42-bce0-d9750dbdb966",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "make hotter by 30 degrees",
+    "tokens": [
+      "make",
+      "hotter",
+      "by",
+      "30",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "30",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "04a15665-c830-4440-82c5-31200da36631",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn temperature up to 5 degrees",
+    "tokens": [
+      "turn",
+      "temperature",
+      "up",
+      "to",
+      "5",
+      "degrees"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "5",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "1d964b63-35f8-4227-a96c-a0ebb67cad6e",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn up the temperature",
+    "tokens": [
+      "turn",
+      "up",
+      "the",
+      "temperature"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f22c2c85-24f8-4713-afc8-c33e4c7aa49b",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "heating up till 45",
+    "tokens": [
+      "heating",
+      "up",
+      "till",
+      "45"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "ADV",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 0,
+        "end": 0
+      },
+      {
+        "text": "45",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "ddf4c4af-1e0b-4c73-a0fb-ae5c5caeffb2",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "make heating hotter",
+    "tokens": [
+      "make",
+      "heating",
+      "hotter"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "df62c3c2-23a2-444b-a7bb-7d0bd612e90b",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "increase the temperature in my home",
+    "tokens": [
+      "increase",
+      "the",
+      "temperature",
+      "in",
+      "my",
+      "home"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "21b1f5d5-5513-4a1f-92d4-3606dca40ea2",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "switch the temp up to 75 F",
+    "tokens": [
+      "switch",
+      "the",
+      "temp",
+      "up",
+      "to",
+      "75",
+      "F"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADV",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "75",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "6d06abc4-a5bc-4cbe-80c3-0fcfe6403c8e",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "make my kitchen heat warmer",
+    "tokens": [
+      "make",
+      "my",
+      "kitchen",
+      "heat",
+      "warmer"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "heat",
+        "type": "heating",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "19e3e048-d70a-4c7c-b62b-4c3bd335ae85",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn up temperature in the kitchen",
+    "tokens": [
+      "turn",
+      "up",
+      "temperature",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "3e4ea013-bf63-4c78-8875-33c2fc7dafbe",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "make heating hotter for 20 degrees",
+    "tokens": [
+      "make",
+      "heating",
+      "hotter",
+      "for",
+      "20",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "6da1ede2-327a-430f-bf7d-4f0fa04f2c8b",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "can you turn the heating up to 25 grad",
+    "tokens": [
+      "can",
+      "you",
+      "turn",
+      "the",
+      "heating",
+      "up",
+      "to",
+      "25",
+      "grad"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "VERB",
+      "PART",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "25",
+        "type": "number",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "a13e1efb-87cb-4165-88b3-cdd523cba7c7",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn up the heating",
+    "tokens": [
+      "turn",
+      "up",
+      "the",
+      "heating"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "546950e8-bc1f-4591-a76f-daeb6636c727",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "kitchen temperature up",
+    "tokens": [
+      "kitchen",
+      "temperature",
+      "up"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "5292ef85-4d48-4d49-8768-be8abeb4a130",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "make heating up by 5 degrees in the kitchen",
+    "tokens": [
+      "make",
+      "heating",
+      "up",
+      "by",
+      "5",
+      "degrees",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PART",
+      "ADP",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "fb9d6ca2-7c6b-4e0e-a309-ed60314f2007",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "little more temperature",
+    "tokens": [
+      "little",
+      "more",
+      "temperature"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADV",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "56b42653-2f97-4e8b-8388-f9b9501467d7",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn up the temperature of air conditioner",
+    "tokens": [
+      "turn",
+      "up",
+      "the",
+      "temperature",
+      "of",
+      "air",
+      "conditioner"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "air conditioner",
+        "type": "heating",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "54e50471-35f2-460a-ae08-36684d32a95f",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "heating higher temp by 5 grad",
+    "tokens": [
+      "heating",
+      "higher",
+      "temp",
+      "by",
+      "5",
+      "grad"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 0,
+        "end": 0
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "b8643e63-68da-4b51-8412-1dbd41befbc8",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "make heating up",
+    "tokens": [
+      "make",
+      "heating",
+      "up"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "e12ec6d9-a48d-4587-8cb8-2e605bc122c5",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "make heating hotter for 20 percents",
+    "tokens": [
+      "make",
+      "heating",
+      "hotter",
+      "for",
+      "20",
+      "percents"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "bddf06d6-5a20-460a-955b-2de58d81474f",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn up the temperature of the air in air conditioner",
+    "tokens": [
+      "turn",
+      "up",
+      "the",
+      "temperature",
+      "of",
+      "the",
+      "air",
+      "in",
+      "air",
+      "conditioner"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "air conditioner",
+        "type": "heating",
+        "start": 8,
+        "end": 9
+      }
+    ],
+    "id": "b642aa6b-2ac5-4e2a-8813-0e815625e078",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn heating hotter for 20 percents",
+    "tokens": [
+      "turn",
+      "heating",
+      "hotter",
+      "for",
+      "20",
+      "percents"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "a9a66b7b-dfb0-4f4a-b75c-a7c37a8166c7",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "temperature up by 5 degrees",
+    "tokens": [
+      "temperature",
+      "up",
+      "by",
+      "5",
+      "degrees"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "5",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "95d515db-42ae-49d7-ac69-df5290aeb9b6",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn heating hotter for 20 degrees",
+    "tokens": [
+      "turn",
+      "heating",
+      "hotter",
+      "for",
+      "20",
+      "degrees"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "f7d1deb2-aa74-4d5f-8d0c-7f4295bf333f",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn heating 20 degrees hotter",
+    "tokens": [
+      "turn",
+      "heating",
+      "20",
+      "degrees",
+      "hotter"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "b761f426-142a-4826-a8eb-3e1c9a37d996",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "temperature up till 5 degrees in the kitchen",
+    "tokens": [
+      "temperature",
+      "up",
+      "till",
+      "5",
+      "degrees",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "ADV",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "5",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "0b99eed2-98b3-41a3-9b7a-997c03487807",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "turn heating hotter",
+    "tokens": [
+      "turn",
+      "heating",
+      "hotter"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "f74e24f3-d152-41ff-aa5b-fbd557091ed9",
+    "intent": "smarthome.heating.up"
+  },
+  {
+    "text": "can you lift the heating up to 25 grad",
+    "tokens": [
+      "can",
+      "you",
+      "lift",
+      "the",
+      "heating",
+      "up",
+      "to",
+      "25",
+      "grad"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "VERB",
+      "PART",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "25",
+        "type": "number",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "5510c051-6fb0-48b0-b86e-a582620d5579",
+    "intent": "smarthome.heating.up"
+  }
+]

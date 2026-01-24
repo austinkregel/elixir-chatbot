@@ -1,0 +1,410 @@
+[
+  {
+    "text": "huh",
+    "tokens": [
+      "huh"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "549f9ec1-e515-4faa-b9d8-6bdfb9f1500e",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "lol",
+    "tokens": [
+      "lol"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "57a33166-9df6-43e1-9347-32ae537be7e6",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "xd",
+    "tokens": [
+      "xd"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "61ec9e04-733b-4069-bc56-3543733b3d0b",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "ha ha",
+    "tokens": [
+      "ha",
+      "ha"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f7f3f04f-02c5-4dce-8716-8913c87af8c5",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "ahahah",
+    "tokens": [
+      "ahahah"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "5b62b408-b318-49b5-a278-a8169ff59f35",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "ahah lol",
+    "tokens": [
+      "ahah",
+      "lol"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "fa4e727d-fc1f-4c07-b23c-cf113bbb4943",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "laughing out loud",
+    "tokens": [
+      "laughing",
+      "out",
+      "loud"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "59d6096c-8752-4925-9328-2204b6033bd7",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "LMAO",
+    "tokens": [
+      "LMAO"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "09cbbfe7-c999-4d5a-b35a-d5ea7f180572",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "that's funny",
+    "tokens": [
+      "that",
+      "'s",
+      "funny"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "db333b88-015b-4710-a612-2eea8a5abd1d",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "ah",
+    "tokens": [
+      "ah"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "77a43660-b92a-4ad7-a5f9-bdfc4a0b090a",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "ah ah ah",
+    "tokens": [
+      "ah",
+      "ah",
+      "ah"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "5fdfe744-d8f0-433b-9422-8b0aef8bd5e1",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "ahah",
+    "tokens": [
+      "ahah"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "20e83a24-8511-428b-bd08-a513cf6abf5b",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "ahaha",
+    "tokens": [
+      "ahaha"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "00406ef7-7713-44d7-ae10-7ab1c3a2990e",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "ahahaha",
+    "tokens": [
+      "ahahaha"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "28e1a183-0c04-4d2d-bd71-b3830408b73e",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "ha",
+    "tokens": [
+      "ha"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e57d8fa8-59f8-4693-a539-e270fa83ac1c",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "ha ha ha",
+    "tokens": [
+      "ha",
+      "ha",
+      "ha"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "083780f9-bf6e-4030-8e82-aeae6ab3c9a7",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "ha ha ha ha",
+    "tokens": [
+      "ha",
+      "ha",
+      "ha",
+      "ha"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "eb102277-d45a-4a3d-b4fc-c25372f9b910",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "hah",
+    "tokens": [
+      "hah"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "7f42bbbc-fabc-4e81-a290-c4091acea91e",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "haha",
+    "tokens": [
+      "haha"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "adbb0323-c513-4d69-aa68-47f018a0ddb6",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "haha funny",
+    "tokens": [
+      "haha",
+      "funny"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "ebe2df92-24fb-4419-8554-864b4c739e55",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "haha haha haha",
+    "tokens": [
+      "haha",
+      "haha",
+      "haha"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "d7c3eeb1-fb51-4604-b4c9-539e25cf79c7",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "haha that's funny",
+    "tokens": [
+      "haha",
+      "that",
+      "'s",
+      "funny"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "ea11a38c-a3a1-42d5-8c85-289d7d448981",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "haha very funny",
+    "tokens": [
+      "haha",
+      "very",
+      "funny"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "53097edd-4865-4211-b904-c7993f132a58",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "hahaha",
+    "tokens": [
+      "hahaha"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "99abe5ab-7bb1-49f6-a992-cab7cb57081e",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "hahaha funny",
+    "tokens": [
+      "hahaha",
+      "funny"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "2577373b-03aa-4863-b359-1d610b2dd937",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "hahaha very funny",
+    "tokens": [
+      "hahaha",
+      "very",
+      "funny"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "c1452dcd-aa96-4994-8624-41d1c76acb1b",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "he",
+    "tokens": [
+      "he"
+    ],
+    "pos_tags": [
+      "PRON"
+    ],
+    "entities": [],
+    "id": "086aebc1-9b78-4f64-bb7c-833e8335f5c6",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "hehe",
+    "tokens": [
+      "hehe"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "2b9f0867-3357-4def-bd79-b2f2cb9d8fc7",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "hehehe",
+    "tokens": [
+      "hehehe"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "a1fcc9f0-6463-4dcc-a927-43f9cc3c56e8",
+    "intent": "smalltalk.emotions.ha_ha"
+  },
+  {
+    "text": "lmao",
+    "tokens": [
+      "lmao"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "049ebe03-6548-4238-9226-b453e2fcfe0e",
+    "intent": "smalltalk.emotions.ha_ha"
+  }
+]

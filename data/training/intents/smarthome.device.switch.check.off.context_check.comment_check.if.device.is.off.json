@@ -1,0 +1,232 @@
+[
+  {
+    "text": "it is off",
+    "tokens": [
+      "it",
+      "is",
+      "off"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "47bc626a-f2b6-4806-9de1-ed50e0480b34",
+    "intent": "smarthome.device.switch.check.off.context_check.comment_check.if.device.is.off"
+  },
+  {
+    "text": "is it turned off",
+    "tokens": [
+      "is",
+      "it",
+      "turned",
+      "off"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART"
+    ],
+    "entities": [],
+    "id": "229fd9b9-1bd5-445c-b924-6150a1a48be1",
+    "intent": "smarthome.device.switch.check.off.context_check.comment_check.if.device.is.off"
+  },
+  {
+    "text": "tell me if it is off",
+    "tokens": [
+      "tell",
+      "me",
+      "if",
+      "it",
+      "is",
+      "off"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "PRON",
+      "VERB",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "2422027a-601b-4601-8847-b3f858448fb0",
+    "intent": "smarthome.device.switch.check.off.context_check.comment_check.if.device.is.off"
+  },
+  {
+    "text": "did you turn it off",
+    "tokens": [
+      "did",
+      "you",
+      "turn",
+      "it",
+      "off"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PRON",
+      "PART"
+    ],
+    "entities": [],
+    "id": "4a8100f6-e17f-40bd-9250-8378270e5ff8",
+    "intent": "smarthome.device.switch.check.off.context_check.comment_check.if.device.is.off"
+  },
+  {
+    "text": "but is it off",
+    "tokens": [
+      "but",
+      "is",
+      "it",
+      "off"
+    ],
+    "pos_tags": [
+      "CONJ",
+      "VERB",
+      "PRON",
+      "PART"
+    ],
+    "entities": [],
+    "id": "99b2b6b1-affc-4c5f-a82b-2ca1df36e689",
+    "intent": "smarthome.device.switch.check.off.context_check.comment_check.if.device.is.off"
+  },
+  {
+    "text": "is it off really",
+    "tokens": [
+      "is",
+      "it",
+      "off",
+      "really"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "PART",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "8d1205df-b1fb-4938-8bca-a5f859cb6b87",
+    "intent": "smarthome.device.switch.check.off.context_check.comment_check.if.device.is.off"
+  },
+  {
+    "text": "did you turn them off",
+    "tokens": [
+      "did",
+      "you",
+      "turn",
+      "them",
+      "off"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PRON",
+      "PART"
+    ],
+    "entities": [],
+    "id": "1a0f6264-5a94-4adb-a494-18256f9044cf",
+    "intent": "smarthome.device.switch.check.off.context_check.comment_check.if.device.is.off"
+  },
+  {
+    "text": "is it switched off",
+    "tokens": [
+      "is",
+      "it",
+      "switched",
+      "off"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART"
+    ],
+    "entities": [],
+    "id": "30b64fa9-dfeb-4e14-a027-8be65449b7dc",
+    "intent": "smarthome.device.switch.check.off.context_check.comment_check.if.device.is.off"
+  },
+  {
+    "text": "did I turn it off",
+    "tokens": [
+      "did",
+      "I",
+      "turn",
+      "it",
+      "off"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PRON",
+      "PART"
+    ],
+    "entities": [],
+    "id": "c847afd0-7e60-456e-aab1-6fca9503345c",
+    "intent": "smarthome.device.switch.check.off.context_check.comment_check.if.device.is.off"
+  },
+  {
+    "text": "did I turn them off",
+    "tokens": [
+      "did",
+      "I",
+      "turn",
+      "them",
+      "off"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PRON",
+      "PART"
+    ],
+    "entities": [],
+    "id": "04aa882f-fe98-40b5-89d8-c6a579cd95e2",
+    "intent": "smarthome.device.switch.check.off.context_check.comment_check.if.device.is.off"
+  },
+  {
+    "text": "but tell me if it's off",
+    "tokens": [
+      "but",
+      "tell",
+      "me",
+      "if",
+      "it",
+      "'s",
+      "off"
+    ],
+    "pos_tags": [
+      "CONJ",
+      "VERB",
+      "PRON",
+      "ADP",
+      "PRON",
+      "VERB",
+      "PART"
+    ],
+    "entities": [],
+    "id": "4a4e39ba-f598-492c-a343-b22406156fcf",
+    "intent": "smarthome.device.switch.check.off.context_check.comment_check.if.device.is.off"
+  },
+  {
+    "text": "is it off",
+    "tokens": [
+      "is",
+      "it",
+      "off"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "PART"
+    ],
+    "entities": [],
+    "id": "e22b4ad8-a9f0-4c45-8ff3-a0704ba4f550",
+    "intent": "smarthome.device.switch.check.off.context_check.comment_check.if.device.is.off"
+  }
+]

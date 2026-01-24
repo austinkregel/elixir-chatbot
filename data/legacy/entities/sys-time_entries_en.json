@@ -1,0 +1,19 @@
+[
+  {
+    "value": "12:00",
+    "synonyms": ["noon", "midday"]
+  },
+  {
+    "value": "00:00",
+    "synonyms": ["midnight"]
+  },
+  {
+    "value": "08:00",
+    "synonyms": ["morning"]
+  },
+  {
+    "value": "18:00",
+    "synonyms": ["evening"]
+  }
+]
+

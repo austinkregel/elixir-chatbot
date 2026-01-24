@@ -1,0 +1,157 @@
+[
+  {
+    "text": "tell me your age",
+    "tokens": [
+      "tell",
+      "me",
+      "your",
+      "age"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "baae8f54-a973-44eb-a87a-d80595de6731",
+    "intent": "smalltalk.agent.age"
+  },
+  {
+    "text": "what's your age",
+    "tokens": [
+      "what",
+      "'s",
+      "your",
+      "age"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "c9e8687a-1ca7-4d2e-9051-2a58a6224f58",
+    "intent": "smalltalk.agent.age"
+  },
+  {
+    "text": "your age",
+    "tokens": [
+      "your",
+      "age"
+    ],
+    "pos_tags": [
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "626ae78f-f8df-4538-922b-ac5ecd7d47ca",
+    "intent": "smalltalk.agent.age"
+  },
+  {
+    "text": "age of yours",
+    "tokens": [
+      "age",
+      "of",
+      "yours"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "7633f82f-271d-45bd-a07d-db55e1cdeca1",
+    "intent": "smalltalk.agent.age"
+  },
+  {
+    "text": "how old are you",
+    "tokens": [
+      "how",
+      "old",
+      "are",
+      "you"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "916b751f-1c8e-4d7c-8222-2b8bb36b78f7",
+    "intent": "smalltalk.agent.age"
+  },
+  {
+    "text": "I'd like to know your age",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "know",
+      "your",
+      "age"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "889bec1a-a413-49b3-9c13-0ff509ce13f0",
+    "intent": "smalltalk.agent.age"
+  },
+  {
+    "text": "are you 21 years old",
+    "tokens": [
+      "are",
+      "you",
+      "21",
+      "years",
+      "old"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NUM",
+      "NOUN",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "21",
+        "type": "number",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "024401c4-f5bf-4421-af3c-562adb6a15d0",
+    "intent": "smalltalk.agent.age"
+  },
+  {
+    "text": "how old is your platform",
+    "tokens": [
+      "how",
+      "old",
+      "is",
+      "your",
+      "platform"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "fdecc826-94ce-416e-b7a4-b2743f366cb5",
+    "intent": "smalltalk.agent.age"
+  }
+]

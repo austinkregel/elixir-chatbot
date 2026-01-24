@@ -1,0 +1,856 @@
+[
+  {
+    "text": "you are very helpful",
+    "tokens": [
+      "you",
+      "are",
+      "very",
+      "helpful"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "72c0e512-b7f5-4bd7-b203-2a7055e59ca1",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are the best",
+    "tokens": [
+      "you",
+      "are",
+      "the",
+      "best"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "bc848599-3742-418b-b8bf-783f391f8d1e",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you're a true professional",
+    "tokens": [
+      "you",
+      "'re",
+      "a",
+      "true",
+      "professional"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "a1d537c0-1b64-4669-85ad-19aad9bbaa76",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are good",
+    "tokens": [
+      "you",
+      "are",
+      "good"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "ece1b1a3-8815-4d8c-8851-16ab8f9e53f4",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you work well",
+    "tokens": [
+      "you",
+      "work",
+      "well"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "92be1bc3-8ab5-40c6-a0ec-9d47b16710d6",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are good at it",
+    "tokens": [
+      "you",
+      "are",
+      "good",
+      "at",
+      "it"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "bf820f10-e226-4092-be1b-b5da04da6167",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are very good at it",
+    "tokens": [
+      "you",
+      "are",
+      "very",
+      "good",
+      "at",
+      "it"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "168c20e9-7135-4759-9f17-d0db57bc7fdf",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are a pro",
+    "tokens": [
+      "you",
+      "are",
+      "a",
+      "pro"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "ecaf5a0f-e892-4446-b475-6a2faa4ec5c0",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are a professional",
+    "tokens": [
+      "you",
+      "are",
+      "a",
+      "professional"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "b9bced29-58a9-4ccb-8aa7-ba8aa63085f5",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you're awesome",
+    "tokens": [
+      "you",
+      "'re",
+      "awesome"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "d33f152d-44d6-4379-ba8a-cdc0ea36c953",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you work very well",
+    "tokens": [
+      "you",
+      "work",
+      "very",
+      "well"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "707f1cf7-1d7a-4ce3-8979-6e6e2dfdbf08",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you're perfect",
+    "tokens": [
+      "you",
+      "'re",
+      "perfect"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "3e0c3e72-ee43-4224-adbf-c18cf86760b6",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you're great",
+    "tokens": [
+      "you",
+      "'re",
+      "great"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "34010677-25e3-40c8-8563-b5feba890cd4",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you're so kind",
+    "tokens": [
+      "you",
+      "'re",
+      "so",
+      "kind"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "62f5e083-a25a-43bb-8c1b-01a49c6773d3",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are amazing",
+    "tokens": [
+      "you",
+      "are",
+      "amazing"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "25fb1d2c-4732-4a1e-adf6-854d9c7058f1",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are awesome",
+    "tokens": [
+      "you",
+      "are",
+      "awesome"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "e0802620-279a-4f0a-9d99-aae3927ef3ae",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are cool",
+    "tokens": [
+      "you",
+      "are",
+      "cool"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "2f3e173c-9a18-46ac-9d3b-9eafe56e4fc0",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are really good",
+    "tokens": [
+      "you",
+      "are",
+      "really",
+      "good"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "f34e5759-256d-4c43-b9e6-7fd02239618c",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are really nice",
+    "tokens": [
+      "you",
+      "are",
+      "really",
+      "nice"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "227e0ef1-faf6-4f1d-b264-9a21c3010c53",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are so amazing",
+    "tokens": [
+      "you",
+      "are",
+      "so",
+      "amazing"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "975b00b2-1c06-4905-b3ba-519b62b8a33b",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you're just super",
+    "tokens": [
+      "you",
+      "'re",
+      "just",
+      "super"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "a303b17f-31a5-4304-af67-d3323d4cec79",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are so awesome",
+    "tokens": [
+      "you",
+      "are",
+      "so",
+      "awesome"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "ca3859c3-10ec-48c1-bd14-179d1c301d19",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are so cool",
+    "tokens": [
+      "you",
+      "are",
+      "so",
+      "cool"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "2efc07eb-d3c8-40c9-833b-4e4588847127",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are so fine",
+    "tokens": [
+      "you",
+      "are",
+      "so",
+      "fine"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "08f0c842-c935-4a2d-b204-d1ae04f49a80",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are so good",
+    "tokens": [
+      "you",
+      "are",
+      "so",
+      "good"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "ead14d0b-597d-4e38-93c3-f60a3f6602ec",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are so helpful",
+    "tokens": [
+      "you",
+      "are",
+      "so",
+      "helpful"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "503c9390-8fa3-4e2c-9bca-0618c62fc2db",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are so lovely",
+    "tokens": [
+      "you",
+      "are",
+      "so",
+      "lovely"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "e76eef4a-716f-4723-8ed8-edddc118b11c",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are the best ever",
+    "tokens": [
+      "you",
+      "are",
+      "the",
+      "best",
+      "ever"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "ADJ",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "3771e685-a515-4ddf-8c27-7ea097f1b734",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are the best in the world",
+    "tokens": [
+      "you",
+      "are",
+      "the",
+      "best",
+      "in",
+      "the",
+      "world"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "ADJ",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "2f91afe8-713f-4d33-8e05-7769d82fadf9",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are the nicest person in the world",
+    "tokens": [
+      "you",
+      "are",
+      "the",
+      "nicest",
+      "person",
+      "in",
+      "the",
+      "world"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "b6dae469-39b7-4a5a-aa69-82dacafb5eec",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are too good",
+    "tokens": [
+      "you",
+      "are",
+      "too",
+      "good"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "ccaefca1-81a3-4265-b5a0-6239ebe05c84",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are very cool",
+    "tokens": [
+      "you",
+      "are",
+      "very",
+      "cool"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "e05139a0-5a80-4a87-a788-440ab8aa9a96",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are very kind",
+    "tokens": [
+      "you",
+      "are",
+      "very",
+      "kind"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "88d089d2-2902-4c0d-94fd-ccaee070c9db",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are very lovely",
+    "tokens": [
+      "you",
+      "are",
+      "very",
+      "lovely"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "40c3ee40-3b98-46bb-8a4c-7a19443ed228",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are very useful",
+    "tokens": [
+      "you",
+      "are",
+      "very",
+      "useful"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "324d91ee-5342-4bfd-9bea-a0b9e80e19fb",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are wonderful",
+    "tokens": [
+      "you",
+      "are",
+      "wonderful"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "2b5d6419-8b11-4444-b29a-a467d34f97d0",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you made my day",
+    "tokens": [
+      "you",
+      "made",
+      "my",
+      "day"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "264364b7-1565-4b46-a927-431989269f19",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you make my day",
+    "tokens": [
+      "you",
+      "make",
+      "my",
+      "day"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "2852c9e7-19d1-4ed3-8d2c-1cac6d982509",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you rock",
+    "tokens": [
+      "you",
+      "rock"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "076f119c-1ad8-4b08-802d-b76a7ac3eaa7",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you almost sound human",
+    "tokens": [
+      "you",
+      "almost",
+      "sound",
+      "human"
+    ],
+    "pos_tags": [
+      "PRON",
+      "ADV",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "f6da4b4b-62f7-411b-892e-637ab8c9481b",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "I want to tell everyone how awesome you are",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "tell",
+      "everyone",
+      "how",
+      "awesome",
+      "you",
+      "are"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "NOUN",
+      "ADV",
+      "ADJ",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "6058f15c-15c9-406b-850c-acd64920055e",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "I'd like to tell everyone that you are awesome",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "tell",
+      "everyone",
+      "that",
+      "you",
+      "are",
+      "awesome"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "312d8531-02ec-4fc4-af7f-69c8189e4ffe",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "I want to let everyone know that you are awesome",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "let",
+      "everyone",
+      "know",
+      "that",
+      "you",
+      "are",
+      "awesome"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "NOUN",
+      "VERB",
+      "ADP",
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "21b5e802-6d65-4e11-b51e-742656871148",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "let's tell everyone that you are awesome",
+    "tokens": [
+      "let",
+      "'s",
+      "tell",
+      "everyone",
+      "that",
+      "you",
+      "are",
+      "awesome"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "c54bf94e-3fda-4565-9f86-4c55a95ae32a",
+    "intent": "smalltalk.agent.good"
+  },
+  {
+    "text": "you are really amazing",
+    "tokens": [
+      "you",
+      "are",
+      "really",
+      "amazing"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "87710ae7-154f-4df1-ac4f-4d0efdbd75ae",
+    "intent": "smalltalk.agent.good"
+  }
+]

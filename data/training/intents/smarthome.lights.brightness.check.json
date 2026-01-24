@@ -1,0 +1,481 @@
+[
+  {
+    "text": "what's the level of lights",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "level",
+      "of",
+      "lights"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "b699a908-9f8a-49d3-ad00-803d9c6094c6",
+    "intent": "smarthome.lights.brightness.check"
+  },
+  {
+    "text": "check lights brightness",
+    "tokens": [
+      "check",
+      "lights",
+      "brightness"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f19bad04-dfcd-4efb-a0e1-5e3ccc478b3a",
+    "intent": "smarthome.lights.brightness.check"
+  },
+  {
+    "text": "is level of lamp 5 points",
+    "tokens": [
+      "is",
+      "level",
+      "of",
+      "lamp",
+      "5",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "SYM",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "5",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "740dd077-af9c-43ff-803b-aca04c881682",
+    "intent": "smarthome.lights.brightness.check"
+  },
+  {
+    "text": "what about brightness",
+    "tokens": [
+      "what",
+      "about",
+      "brightness"
+    ],
+    "pos_tags": [
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "88f23fbc-435c-4167-8328-0e3eef242dc9",
+    "intent": "smarthome.lights.brightness.check"
+  },
+  {
+    "text": "check the brightness everywhere",
+    "tokens": [
+      "check",
+      "the",
+      "brightness",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "everywhere",
+        "type": "all",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "079ff787-96d8-4fea-851b-7058a09c467e",
+    "intent": "smarthome.lights.brightness.check"
+  },
+  {
+    "text": "what's the brightness",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "brightness"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e4f6f189-7ff5-4bb8-89a2-109544aea7f5",
+    "intent": "smarthome.lights.brightness.check"
+  },
+  {
+    "text": "what's the level of lights in bedroom",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "level",
+      "of",
+      "lights",
+      "in",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "6914e3c3-d8dc-4a95-9b99-ead6169d54cd",
+    "intent": "smarthome.lights.brightness.check"
+  },
+  {
+    "text": "brightness of table lamp",
+    "tokens": [
+      "brightness",
+      "of",
+      "table",
+      "lamp"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "table lamp",
+        "type": "lights",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "984fc0e8-4aa7-44bd-ad02-487d3b1311aa",
+    "intent": "smarthome.lights.brightness.check"
+  },
+  {
+    "text": "what's the brightness of pink lights in the bedroom",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "brightness",
+      "of",
+      "pink",
+      "lights",
+      "in",
+      "the",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "pink",
+        "type": "color",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 9,
+        "end": 9
+      }
+    ],
+    "id": "8bb76fa7-cdb8-4ecd-9f30-b8ba0444c6a6",
+    "intent": "smarthome.lights.brightness.check"
+  },
+  {
+    "text": "check red lights brightness",
+    "tokens": [
+      "check",
+      "red",
+      "lights",
+      "brightness"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADJ",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "red",
+        "type": "color",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "9c4c2ed6-a722-4949-93ab-20fe30adf25c",
+    "intent": "smarthome.lights.brightness.check"
+  },
+  {
+    "text": "is the light brightness 10 points",
+    "tokens": [
+      "is",
+      "the",
+      "light",
+      "brightness",
+      "10",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "10",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "f0850ff7-1dbd-4853-a678-4f1ab749db41",
+    "intent": "smarthome.lights.brightness.check"
+  },
+  {
+    "text": "what's brightness of bedroom",
+    "tokens": [
+      "what",
+      "'s",
+      "brightness",
+      "of",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "7727d715-06b7-4393-ac50-44b98525439b",
+    "intent": "smarthome.lights.brightness.check"
+  },
+  {
+    "text": "what's the brightness of kitchen lights",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "brightness",
+      "of",
+      "kitchen",
+      "lights"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "33bcde68-8a3a-4c20-8ae6-ae61131a675c",
+    "intent": "smarthome.lights.brightness.check"
+  },
+  {
+    "text": "what brightness is",
+    "tokens": [
+      "what",
+      "brightness",
+      "is"
+    ],
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "20bbb4a8-0348-4c42-9f8a-1273ebd4a4d6",
+    "intent": "smarthome.lights.brightness.check"
+  },
+  {
+    "text": "how bright are the lights in bedroom",
+    "tokens": [
+      "how",
+      "bright",
+      "are",
+      "the",
+      "lights",
+      "in",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "f9cf4fdc-d6ee-4ed2-9100-6f2f45a6ef72",
+    "intent": "smarthome.lights.brightness.check"
+  },
+  {
+    "text": "tell about brightness",
+    "tokens": [
+      "tell",
+      "about",
+      "brightness"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "5693d241-a1ec-4ca7-a303-bc4cf5302215",
+    "intent": "smarthome.lights.brightness.check"
+  },
+  {
+    "text": "is level of lamp in bedroom 5 points",
+    "tokens": [
+      "is",
+      "level",
+      "of",
+      "lamp",
+      "in",
+      "bedroom",
+      "5",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "7b957bff-2379-49dd-9057-acc524e52e9a",
+    "intent": "smarthome.lights.brightness.check"
+  },
+  {
+    "text": "how bright are the lights",
+    "tokens": [
+      "how",
+      "bright",
+      "are",
+      "the",
+      "lights"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "03c642d8-529b-4013-9969-506d80bbf2e1",
+    "intent": "smarthome.lights.brightness.check"
+  },
+  {
+    "text": "what is lights brightness",
+    "tokens": [
+      "what",
+      "is",
+      "lights",
+      "brightness"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "5ac5e566-dbb6-4a8d-91bf-68187947104a",
+    "intent": "smarthome.lights.brightness.check"
+  }
+]

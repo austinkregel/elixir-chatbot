@@ -10,15 +10,18 @@ defmodule Mix.Tasks.TrainModels do
 
     --intent-only    Train only the intent classifier
     --entity-only    Train only the entity recognition model
+    --pos-only       Train only the POS tagger model
     --gazetteer-only Build only the gazetteer lookup tables
     --skip-gazetteer Skip gazetteer building (faster training)
+    --skip-pos       Skip POS tagger training
 
   This task will:
-  - Load intent training data from data/intents/
+  - Load intent training data from data/intents/ (or data/training/intents/)
   - Load entity definitions from data/entities/
   - Load supplementary data (cities, artists, emojis) from CSVs
   - Build TF-IDF vectorizer and train intent classifier
   - Train BIO-tagged entity recognition model
+  - Train POS tagger from annotated data (if available)
   - Build gazetteer lookup tables for fast entity extraction
   - Save all models to priv/ml_models/
   - Report training statistics and model sizes
@@ -27,6 +30,7 @@ defmodule Mix.Tasks.TrainModels do
   use Mix.Task
   require Logger
   alias ChatBot.ML.Trainer
+  alias ChatBot.ML.POSTagger
 
   @shortdoc "Train ML models from training data"
 
@@ -37,8 +41,10 @@ defmodule Mix.Tasks.TrainModels do
         strict: [
           intent_only: :boolean,
           entity_only: :boolean,
+          pos_only: :boolean,
           gazetteer_only: :boolean,
-          skip_gazetteer: :boolean
+          skip_gazetteer: :boolean,
+          skip_pos: :boolean
         ]
       )
 
@@ -70,6 +76,9 @@ defmodule Mix.Tasks.TrainModels do
         Keyword.get(opts, :entity_only, false) ->
           run_entity_training()
 
+        Keyword.get(opts, :pos_only, false) ->
+          run_pos_training()
+
         Keyword.get(opts, :gazetteer_only, false) ->
           run_gazetteer_building()
 
@@ -78,7 +87,8 @@ defmodule Mix.Tasks.TrainModels do
 
         true ->
           # Full training pipeline
-          Trainer.train_and_save()
+          skip_pos = Keyword.get(opts, :skip_pos, false)
+          run_full_training(skip_pos)
       end
 
     end_time = System.monotonic_time(:millisecond)
@@ -137,25 +147,177 @@ defmodule Mix.Tasks.TrainModels do
     end
   end
 
+  defp run_full_training(skip_pos) do
+    # Run standard training
+    case Trainer.train_and_save() do
+      {:ok, stats} ->
+        # Also train POS tagger if data is available and not skipped
+        if skip_pos do
+          {:ok, stats}
+        else
+          case run_pos_training_internal() do
+            {:ok, pos_stats} ->
+              {:ok, Map.merge(stats, pos_stats)}
+
+            {:error, _reason} ->
+              # POS training is optional, don't fail the whole pipeline
+              {:ok, stats}
+          end
+        end
+
+      error ->
+        error
+    end
+  end
+
+  defp run_pos_training do
+    Mix.shell().info("Training POS tagger model only...")
+    run_pos_training_internal()
+  end
+
+  defp run_pos_training_internal do
+    # Check for POS training data in data/training/pos/
+    training_file = "data/training/pos/sequences.json"
+
+    if File.exists?(training_file) do
+      Mix.shell().info("  Loading POS training data from #{training_file}...")
+
+      case POSTagger.train_from_file(training_file) do
+        {:ok, model} ->
+          case POSTagger.save_model(model) do
+            {:ok, path} ->
+              Mix.shell().info("  POS model saved to #{path}")
+
+              {:ok,
+               %{
+                 pos_model_trained: true,
+                 pos_tag_count: map_size(model.tag_vocabulary),
+                 pos_feature_count: map_size(model.feature_weights)
+               }}
+
+            {:error, reason} ->
+              Mix.shell().error("  Failed to save POS model: #{reason}")
+              {:error, reason}
+          end
+
+        {:error, reason} ->
+          Mix.shell().error("  POS training failed: #{reason}")
+          {:error, reason}
+      end
+    else
+      # Try loading from enriched intent data
+      training_dir = "data/training/intents"
+
+      if File.exists?(training_dir) do
+        Mix.shell().info("  Loading POS training data from enriched intents...")
+        sequences = load_pos_from_enriched_intents(training_dir)
+
+        if length(sequences) > 0 do
+          Mix.shell().info("  Found #{length(sequences)} sequences with POS annotations")
+
+          case POSTagger.train(sequences) do
+            {:ok, model} ->
+              case POSTagger.save_model(model) do
+                {:ok, path} ->
+                  Mix.shell().info("  POS model saved to #{path}")
+
+                  {:ok,
+                   %{
+                     pos_model_trained: true,
+                     pos_tag_count: map_size(model.tag_vocabulary),
+                     pos_feature_count: map_size(model.feature_weights)
+                   }}
+
+                {:error, reason} ->
+                  {:error, reason}
+              end
+
+            {:error, reason} ->
+              {:error, reason}
+          end
+        else
+          Mix.shell().info("  No POS training data found. Run 'mix migrate_training_data' first.")
+          {:error, :no_training_data}
+        end
+      else
+        Mix.shell().info("  POS training data not found at #{training_file}")
+        Mix.shell().info("  Run 'mix migrate_training_data' to generate POS annotations.")
+        {:error, :no_training_data}
+      end
+    end
+  end
+
+  defp load_pos_from_enriched_intents(training_dir) do
+    training_dir
+    |> Path.join("*.json")
+    |> Path.wildcard()
+    |> Enum.flat_map(fn file ->
+      case File.read(file) do
+        {:ok, content} ->
+          case Jason.decode(content) do
+            {:ok, examples} when is_list(examples) ->
+              examples
+              |> Enum.filter(fn ex ->
+                tokens = ex["tokens"] || []
+                tags = ex["pos_tags"] || []
+                length(tokens) > 0 and length(tokens) == length(tags)
+              end)
+              |> Enum.map(fn ex ->
+                %{
+                  tokens: ex["tokens"],
+                  tags: ex["pos_tags"],
+                  source: ex["intent"]
+                }
+              end)
+
+            _ ->
+              []
+          end
+
+        _ ->
+          []
+      end
+    end)
+  end
+
   defp display_data_sources(training_data_path) do
     Mix.shell().info("")
     Mix.shell().info("Training Data Sources:")
     Mix.shell().info("=" |> String.duplicate(50))
 
-    # Check intents
-    intents_path = Path.join(training_data_path, "intents")
+    # Check intents (prefer enriched training data if available)
+    enriched_intents = Path.join(training_data_path, "training/intents")
+    legacy_intents = Path.join(training_data_path, "intents")
+
+    intents_path =
+      if File.exists?(enriched_intents), do: enriched_intents, else: legacy_intents
 
     if File.exists?(intents_path) do
       case File.ls(intents_path) do
         {:ok, files} ->
           json_files = Enum.filter(files, &String.ends_with?(&1, ".json"))
-          Mix.shell().info("  Intents:    #{length(json_files)} files in #{intents_path}")
+          label = if intents_path == enriched_intents, do: "(enriched)", else: "(legacy)"
+          Mix.shell().info("  Intents:    #{length(json_files)} files #{label}")
 
         _ ->
           Mix.shell().info("  Intents:    (unable to list)")
       end
     else
-      Mix.shell().error("  Intents:    NOT FOUND at #{intents_path}")
+      Mix.shell().error("  Intents:    NOT FOUND at #{legacy_intents}")
+    end
+
+    # Check POS training data
+    pos_data_path = Path.join(training_data_path, "training/pos/sequences.json")
+
+    if File.exists?(pos_data_path) do
+      Mix.shell().info("  POS Data:   training/pos/sequences.json")
+    else
+      # Check if enriched intents have POS tags
+      if File.exists?(enriched_intents) do
+        Mix.shell().info("  POS Data:   (from enriched intents)")
+      else
+        Mix.shell().info("  POS Data:   NOT FOUND (run 'mix migrate_training_data')")
+      end
     end
 
     # Check entities
@@ -246,6 +408,12 @@ defmodule Mix.Tasks.TrainModels do
       Mix.shell().info("    - BIO model trained: Yes")
     end
 
+    if Map.get(stats, :pos_model_trained, false) do
+      Mix.shell().info("  POS Tagger:")
+      Mix.shell().info("    - Tag vocabulary:   #{Map.get(stats, :pos_tag_count, 0)}")
+      Mix.shell().info("    - Feature count:    #{Map.get(stats, :pos_feature_count, 0)}")
+    end
+
     if Map.has_key?(stats, :gazetteer_entries) and stats.gazetteer_entries > 0 do
       Mix.shell().info("  Gazetteer:")
       Mix.shell().info("    - Total entries:    #{stats.gazetteer_entries}")
@@ -263,6 +431,7 @@ defmodule Mix.Tasks.TrainModels do
 
     display_model_file(models_path, "classifier.term", "Intent Classifier")
     display_model_file(models_path, "entity_model.term", "Entity Model")
+    display_model_file(models_path, "pos_model.term", "POS Tagger")
     display_model_file(models_path, "gazetteer.term", "Gazetteer")
     display_model_file(models_path, "vectorizer.term", "TF-IDF Vectorizer")
 

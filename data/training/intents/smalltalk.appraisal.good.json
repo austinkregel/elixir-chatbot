@@ -1,0 +1,1494 @@
+[
+  {
+    "text": "so cool",
+    "tokens": [
+      "so",
+      "cool"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "8e8fe5ec-7eed-4ab8-b2ff-b4967c71cea1",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "cool",
+    "tokens": [
+      "cool"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "c7da933a-9866-4ac3-8d15-fa74a22312e7",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that is good",
+    "tokens": [
+      "that",
+      "is",
+      "good"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "f578c491-6b0a-4c94-9f5a-71ffc9c95ed8",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "glad to hear that",
+    "tokens": [
+      "glad",
+      "to",
+      "hear",
+      "that"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "VERB",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "559dceb4-a6c1-445a-b78d-269d802c8e35",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's very nice of you",
+    "tokens": [
+      "that",
+      "'s",
+      "very",
+      "nice",
+      "of",
+      "you"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "6fadc769-d531-47b7-bd0f-4fd4d85bcc96",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "terrific",
+    "tokens": [
+      "terrific"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "6fe7a2c3-0499-459a-aa29-ad26c53360e9",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "it's amazing",
+    "tokens": [
+      "it",
+      "'s",
+      "amazing"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "6c60cbd9-736d-4784-bac0-6d51dc80e3da",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's awesome",
+    "tokens": [
+      "that",
+      "'s",
+      "awesome"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "82f69e1b-4a57-44bf-8128-d9630d2d0f5c",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "perfect",
+    "tokens": [
+      "perfect"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "49512c31-aadc-49f0-b64d-aef41b0b5a9d",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "excellent",
+    "tokens": [
+      "excellent"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e6bc1309-3255-4a8b-9529-c9839c08d956",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "brilliant",
+    "tokens": [
+      "brilliant"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f84de813-0ece-4371-872b-e7737df787d3",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's great",
+    "tokens": [
+      "that",
+      "'s",
+      "great"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "ef2d6959-81f3-4776-bc4d-e45ef470878d",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "it's good",
+    "tokens": [
+      "it",
+      "'s",
+      "good"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "4a047f0e-1a69-43bc-8bd3-83faed102781",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "it's great",
+    "tokens": [
+      "it",
+      "'s",
+      "great"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "bfc6e3c9-528a-465c-88f5-89042b64dccf",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "fine",
+    "tokens": [
+      "fine"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f974cc18-27f8-4ccb-9015-4f0944debedb",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "good",
+    "tokens": [
+      "good"
+    ],
+    "pos_tags": [
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "49bc5455-c796-40f7-9bbe-6cd78e389e3e",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "nice",
+    "tokens": [
+      "nice"
+    ],
+    "pos_tags": [
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "56e98f1c-ecf8-47d4-8fb2-f542605701ce",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's fine",
+    "tokens": [
+      "that",
+      "'s",
+      "fine"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "99acdf9d-76fa-4786-bdd1-e19aa0996238",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "very good",
+    "tokens": [
+      "very",
+      "good"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "f5cd1eae-dc28-4ae0-a1f4-6782781c7e7c",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "amazing",
+    "tokens": [
+      "amazing"
+    ],
+    "pos_tags": [
+      "VERB"
+    ],
+    "entities": [],
+    "id": "c9cd626a-f370-4291-9cd8-a1d525c2194d",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "fantastic",
+    "tokens": [
+      "fantastic"
+    ],
+    "pos_tags": [
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "ac1cf6ec-9965-4440-8c24-6cf7366ca215",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "great",
+    "tokens": [
+      "great"
+    ],
+    "pos_tags": [
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "da8582ea-4b69-4bee-8129-ac15ba7bf36a",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "good very good",
+    "tokens": [
+      "good",
+      "very",
+      "good"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "39febb88-09d1-4f4d-9e71-3a441eecb374",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's very good",
+    "tokens": [
+      "that",
+      "'s",
+      "very",
+      "good"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "3d662fcf-cbab-4bf3-9377-9b8023a703d4",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "really good",
+    "tokens": [
+      "really",
+      "good"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "12f54a9d-ab70-4c1d-a844-fe5f3c482b38",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "it is fine",
+    "tokens": [
+      "it",
+      "is",
+      "fine"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "360c3f38-6894-4fef-b870-8d3436f6c12e",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "it is good",
+    "tokens": [
+      "it",
+      "is",
+      "good"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "e299405f-e43d-468b-abc4-c5745ddf97f7",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "it's great",
+    "tokens": [
+      "it",
+      "'s",
+      "great"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "dc46d3d0-a519-489c-bcef-e23e6532a155",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "it's perfect",
+    "tokens": [
+      "it",
+      "'s",
+      "perfect"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "a8bcf380-522d-449c-b973-aca34d837d62",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "much better",
+    "tokens": [
+      "much",
+      "better"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "fe974bae-99f3-45fe-9d3c-6662c3c759c0",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "not bad",
+    "tokens": [
+      "not",
+      "bad"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "cda502ca-6635-412c-acba-e02e2fe033e8",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "not too bad",
+    "tokens": [
+      "not",
+      "too",
+      "bad"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "100fec8d-c202-404b-a4f7-3817c81317c3",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "it's very good",
+    "tokens": [
+      "it",
+      "'s",
+      "very",
+      "good"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "1a2bab1c-582d-4ded-815e-00b696880471",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "marvelous",
+    "tokens": [
+      "marvelous"
+    ],
+    "pos_tags": [
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "9a589888-832d-4496-b266-287c972f3b98",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's nice",
+    "tokens": [
+      "that",
+      "'s",
+      "nice"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "10709f66-83fa-4e93-a7d5-7de07072c39a",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "pleasant",
+    "tokens": [
+      "pleasant"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "b6780488-6cbf-4233-9272-a4c77715def7",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "pretty good",
+    "tokens": [
+      "pretty",
+      "good"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "f5da2825-58cb-4b69-a51c-524e224846eb",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "really nice",
+    "tokens": [
+      "really",
+      "nice"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "01439bef-ae17-4c28-b410-ae32c62a7e67",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "splendid",
+    "tokens": [
+      "splendid"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "14427936-bd52-4a28-b188-a4cf314cbd1e",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "straight",
+    "tokens": [
+      "straight"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "4c95c938-94f6-4439-b5a6-1dd36e5bc1a7",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "super",
+    "tokens": [
+      "super"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "5ebf0040-f62f-4e8c-8b53-9c2a457fb0a2",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "super fantastic",
+    "tokens": [
+      "super",
+      "fantastic"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "b1f5305d-e4e2-4775-b6ab-ac4e472a6b13",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "sweet",
+    "tokens": [
+      "sweet"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "653969ec-2571-4f9e-86d2-4809937d2b11",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "really well",
+    "tokens": [
+      "really",
+      "well"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "d7727191-3bd0-4d47-8859-979f7ae82577",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "very well",
+    "tokens": [
+      "very",
+      "well"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "450863ab-da2e-4570-bbef-ac93e020608e",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that is awesome",
+    "tokens": [
+      "that",
+      "is",
+      "awesome"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "4ed23007-6e37-48c4-9374-3935181ff46e",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that is nice",
+    "tokens": [
+      "that",
+      "is",
+      "nice"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "445fc68d-ce14-487a-9920-37103195d74a",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that is wonderful",
+    "tokens": [
+      "that",
+      "is",
+      "wonderful"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "3efb9379-386a-465a-9ba0-19adc4447caf",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that was amazing",
+    "tokens": [
+      "that",
+      "was",
+      "amazing"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "9e729bd8-9af6-4e69-81ab-ed268a669530",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that was awesome",
+    "tokens": [
+      "that",
+      "was",
+      "awesome"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "a3ad9697-e6af-4307-a634-4314b3278e08",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that was cute",
+    "tokens": [
+      "that",
+      "was",
+      "cute"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "b1aeb9c3-d4b1-4cbd-8c37-9bb18da73b3f",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that was pretty good",
+    "tokens": [
+      "that",
+      "was",
+      "pretty",
+      "good"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "902e794a-20ac-48b5-941e-16bdc628c624",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that was very good",
+    "tokens": [
+      "that",
+      "was",
+      "very",
+      "good"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "3f3fcd64-4305-449d-948c-76c6e185100a",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's a good idea",
+    "tokens": [
+      "that",
+      "'s",
+      "a",
+      "good",
+      "idea"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "11dd9ee5-e70d-4d4b-9dff-583c6d656bb4",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's a good thing",
+    "tokens": [
+      "that",
+      "'s",
+      "a",
+      "good",
+      "thing"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "3ebdcc1e-d67b-4b48-9541-a1a3e62cc657",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's amazing",
+    "tokens": [
+      "that",
+      "'s",
+      "amazing"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "4b82b376-669b-4362-a387-c38e59227464",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's awesome thank you",
+    "tokens": [
+      "that",
+      "'s",
+      "awesome",
+      "thank",
+      "you"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ",
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "f6361c7a-ea21-49d7-964a-cd83c468045b",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's better",
+    "tokens": [
+      "that",
+      "'s",
+      "better"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "84eeb3bf-0f1b-410a-a5f5-4249905b4be2",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's cute",
+    "tokens": [
+      "that",
+      "'s",
+      "cute"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "7359c4ce-9b1f-42d4-acd6-92aa1862f265",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's fantastic",
+    "tokens": [
+      "that",
+      "'s",
+      "fantastic"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "110ad3b6-da12-4c65-8f60-879e60fe3a1b",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's much better",
+    "tokens": [
+      "that",
+      "'s",
+      "much",
+      "better"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "8042b4c8-c1e7-46ae-b393-d2db3bc976ef",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's nice of you",
+    "tokens": [
+      "that",
+      "'s",
+      "nice",
+      "of",
+      "you"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "242ff08e-fda0-44e1-b269-f225c6f52751",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's not bad",
+    "tokens": [
+      "that",
+      "'s",
+      "not",
+      "bad"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "ab6fac22-e2b2-4a9b-a9e8-1d6c853fa7d3",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's perfect",
+    "tokens": [
+      "that",
+      "'s",
+      "perfect"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "99758855-5ed4-49fb-923e-186fdd4670e9",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's pretty good",
+    "tokens": [
+      "that",
+      "'s",
+      "pretty",
+      "good"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "5d9eba4e-4705-4a6d-811e-c1837bafaf39",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's really good",
+    "tokens": [
+      "that",
+      "'s",
+      "really",
+      "good"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "9177ae6b-08bc-4b50-b7fb-5085d0ae462f",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's really nice",
+    "tokens": [
+      "that",
+      "'s",
+      "really",
+      "nice"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "c6e3a9a4-da64-4acb-9eb1-1db662fe54aa",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's sweet of you",
+    "tokens": [
+      "that",
+      "'s",
+      "sweet",
+      "of",
+      "you"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "c1d738fa-38fb-423d-a3b2-68c6b03715df",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's very nice",
+    "tokens": [
+      "that",
+      "'s",
+      "very",
+      "nice"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "7b92a7de-face-4898-b194-889d89d65d1c",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's wonderful",
+    "tokens": [
+      "that",
+      "'s",
+      "wonderful"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "87e23065-67fa-46da-83a3-a75e6e4ea795",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "this is awesome",
+    "tokens": [
+      "this",
+      "is",
+      "awesome"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "65ab38c5-c9c1-41f7-9015-4b1b23cef42c",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "this is good",
+    "tokens": [
+      "this",
+      "is",
+      "good"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "f6b2fc07-460d-487a-89ba-86bea7bd5d56",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "this is great",
+    "tokens": [
+      "this",
+      "is",
+      "great"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "c3f6c1be-d32e-483d-9527-bb3fbb0c4280",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "very nice",
+    "tokens": [
+      "very",
+      "nice"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "5cfaac23-d2fd-47d8-aced-a7f1fab702ee",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "very then",
+    "tokens": [
+      "very",
+      "then"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "7f4154fb-8400-4c45-bcd6-4a27586da5b8",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "wonderful",
+    "tokens": [
+      "wonderful"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "56069b97-56da-4015-b237-a7e583ec5a79",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "I'm glad to hear that",
+    "tokens": [
+      "I",
+      "'m",
+      "glad",
+      "to",
+      "hear",
+      "that"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "PART",
+      "VERB",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "6b6a8682-2325-4b18-bfa0-7a633500f25e",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "ok good",
+    "tokens": [
+      "ok",
+      "good"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "9a63fa67-4dca-416b-93e6-7eb2f4fa07de",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "good for you",
+    "tokens": [
+      "good",
+      "for",
+      "you"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "42fdd0a5-0858-4a78-b060-aea89d9a1bb9",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "good to know",
+    "tokens": [
+      "good",
+      "to",
+      "know"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "e4a5dc95-01f6-4b6b-944a-6ce2a6b72733",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "glad to hear it",
+    "tokens": [
+      "glad",
+      "to",
+      "hear",
+      "it"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "57727b66-7b4e-49d4-aba9-15b011ea2212",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "so good",
+    "tokens": [
+      "so",
+      "good"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "4feff0b2-bb5c-472d-9759-544b8b6c0f1f",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "so nice of you",
+    "tokens": [
+      "so",
+      "nice",
+      "of",
+      "you"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "3f11ba36-643b-423a-8908-bf6c09cb215b",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "so sweet of you",
+    "tokens": [
+      "so",
+      "sweet",
+      "of",
+      "you"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "b1003b7a-0e34-4fc2-9a3f-375b4a85aa22",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "it was good",
+    "tokens": [
+      "it",
+      "was",
+      "good"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "a2fb44ad-ce06-4903-a9b4-c9ab4b62faa6",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "oh well",
+    "tokens": [
+      "oh",
+      "well"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "c1998d93-13fc-4c14-9fa1-d1e937979623",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "good thing",
+    "tokens": [
+      "good",
+      "thing"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "3298655c-733c-4537-b735-cb684fb0b4e4",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that was good",
+    "tokens": [
+      "that",
+      "was",
+      "good"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "77cb2d9d-43be-4067-a3eb-e596122dd3e3",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "it's awesome",
+    "tokens": [
+      "it",
+      "'s",
+      "awesome"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "47bb370d-9947-41f2-a439-8e9f608316fc",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "okay good",
+    "tokens": [
+      "okay",
+      "good"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "ee4eebea-9d9f-4a56-97dc-9d2edfebbf7d",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "it's fine",
+    "tokens": [
+      "it",
+      "'s",
+      "fine"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "82ac6014-47fd-420a-8211-fe34ac5c8974",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "no it's okay",
+    "tokens": [
+      "no",
+      "it",
+      "'s",
+      "okay"
+    ],
+    "pos_tags": [
+      "DET",
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "1da4c146-92d3-4928-b385-da62c3308bc9",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's great",
+    "tokens": [
+      "that",
+      "'s",
+      "great"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "2e6f2549-3105-4937-9394-e0728eb6fc6c",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "very nice",
+    "tokens": [
+      "very",
+      "nice"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "2af56890-c958-49fd-83ab-b7d6d03f10be",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "it's very good",
+    "tokens": [
+      "it",
+      "'s",
+      "very",
+      "good"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "6b28e4ab-739e-4e08-bb1b-ee6df51541d2",
+    "intent": "smalltalk.appraisal.good"
+  },
+  {
+    "text": "that's fine",
+    "tokens": [
+      "that",
+      "'s",
+      "fine"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "ae463b95-fa45-4ca6-ba71-63a53faddf49",
+    "intent": "smalltalk.appraisal.good"
+  }
+]

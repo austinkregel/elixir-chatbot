@@ -1,0 +1,269 @@
+[
+  {
+    "text": "change to red",
+    "tokens": [
+      "change",
+      "to",
+      "red"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "red",
+        "type": "color",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "d01cd5f2-1e7e-4906-aba4-4915495bc781",
+    "intent": "smarthome.device.switch.context_color.comment_change.color"
+  },
+  {
+    "text": "now make it red",
+    "tokens": [
+      "now",
+      "make",
+      "it",
+      "red"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "red",
+        "type": "color",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "208e98cc-130d-4ecb-95be-1cd55f881ae1",
+    "intent": "smarthome.device.switch.context_color.comment_change.color"
+  },
+  {
+    "text": "turn it green",
+    "tokens": [
+      "turn",
+      "it",
+      "green"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "green",
+        "type": "color",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "7f9f8e7a-5e08-48ae-8e5f-462a0dbf0085",
+    "intent": "smarthome.device.switch.context_color.comment_change.color"
+  },
+  {
+    "text": "now blue",
+    "tokens": [
+      "now",
+      "blue"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "blue",
+        "type": "color",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "a10f76ed-7226-4cde-89fd-5ec92d3358ce",
+    "intent": "smarthome.device.switch.context_color.comment_change.color"
+  },
+  {
+    "text": "I need it to be red now",
+    "tokens": [
+      "I",
+      "need",
+      "it",
+      "to",
+      "be",
+      "red",
+      "now"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "PART",
+      "VERB",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "red",
+        "type": "color",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "f2545bb4-2bd9-4dd5-af74-b6ef8966ed7d",
+    "intent": "smarthome.device.switch.context_color.comment_change.color"
+  },
+  {
+    "text": "turn them green",
+    "tokens": [
+      "turn",
+      "them",
+      "green"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "green",
+        "type": "color",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "0d3275e2-a1ad-4f61-84ff-1d36aeb23dc1",
+    "intent": "smarthome.device.switch.context_color.comment_change.color"
+  },
+  {
+    "text": "make it red",
+    "tokens": [
+      "make",
+      "it",
+      "red"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "red",
+        "type": "color",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "1fe8ee50-8a8c-41f3-8907-7c96a76551f5",
+    "intent": "smarthome.device.switch.context_color.comment_change.color"
+  },
+  {
+    "text": "blue",
+    "tokens": [
+      "blue"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "blue",
+        "type": "color",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "7695d6d8-5775-48fb-b2fc-50d66b44f5cf",
+    "intent": "smarthome.device.switch.context_color.comment_change.color"
+  },
+  {
+    "text": "change color to blue",
+    "tokens": [
+      "change",
+      "color",
+      "to",
+      "blue"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PART",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "blue",
+        "type": "color",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "5611cfe6-796e-4b4b-90e7-fa34be94c488",
+    "intent": "smarthome.device.switch.context_color.comment_change.color"
+  },
+  {
+    "text": "can you make it green now please",
+    "tokens": [
+      "can",
+      "you",
+      "make",
+      "it",
+      "green",
+      "now",
+      "please"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADJ",
+      "ADV",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "green",
+        "type": "color",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "74f2e82d-95b7-4521-9e91-0ea2c5925125",
+    "intent": "smarthome.device.switch.context_color.comment_change.color"
+  },
+  {
+    "text": "make them red",
+    "tokens": [
+      "make",
+      "them",
+      "red"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "red",
+        "type": "color",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "09ea19fa-c430-4773-840f-8b4c03e07aa2",
+    "intent": "smarthome.device.switch.context_color.comment_change.color"
+  }
+]

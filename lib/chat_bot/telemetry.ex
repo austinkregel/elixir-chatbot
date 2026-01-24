@@ -14,6 +14,8 @@ defmodule ChatBot.Telemetry do
   - `[:chat_bot, :memory, :query, :start | :stop]` - Memory queries
   - `[:chat_bot, :memory, :embed, :start | :stop]` - Embedding operations
   - `[:chat_bot, :gazetteer, :lookup, :start | :stop]` - Gazetteer lookups
+  - `[:chat_bot, :ml, :train, :start | :stop | :exception]` - ML model training
+  - `[:chat_bot, :ml, :load, :stop]` - ML model loading
   - `[:chat_bot, :genserver, :message_queue]` - Periodic queue size sampling
   - `[:chat_bot, :error]` - Error events
   """
@@ -29,6 +31,8 @@ defmodule ChatBot.Telemetry do
   @memory_query [:chat_bot, :memory, :query]
   @memory_embed [:chat_bot, :memory, :embed]
   @gazetteer_lookup [:chat_bot, :gazetteer, :lookup]
+  @ml_train [:chat_bot, :ml, :train]
+  @model_load [:chat_bot, :ml, :load]
   @message_queue [:chat_bot, :genserver, :message_queue]
   @error_event [:chat_bot, :error]
 
@@ -65,6 +69,14 @@ defmodule ChatBot.Telemetry do
       {"chatbot-gazetteer-lookup-stop", @gazetteer_lookup ++ [:stop], &handle_span_stop/4,
        %{metric: :gazetteer_lookup}},
 
+      # ML Training handlers
+      {"chatbot-ml-train-start", @ml_train ++ [:start], &handle_training_start/4, %{}},
+      {"chatbot-ml-train-stop", @ml_train ++ [:stop], &handle_training_stop/4, %{}},
+      {"chatbot-ml-train-exception", @ml_train ++ [:exception], &handle_training_exception/4, %{}},
+
+      # Model load handlers
+      {"chatbot-model-load-stop", @model_load ++ [:stop], &handle_model_load/4, %{}},
+
       # Message queue sampling
       {"chatbot-message-queue", @message_queue, &handle_message_queue/4, %{}},
 
@@ -91,6 +103,10 @@ defmodule ChatBot.Telemetry do
       "chatbot-memory-query-stop",
       "chatbot-memory-embed-stop",
       "chatbot-gazetteer-lookup-stop",
+      "chatbot-ml-train-start",
+      "chatbot-ml-train-stop",
+      "chatbot-ml-train-exception",
+      "chatbot-model-load-stop",
       "chatbot-message-queue",
       "chatbot-error"
     ]
@@ -221,6 +237,46 @@ defmodule ChatBot.Telemetry do
       GenServer.cast(
         ChatBot.Metrics.Aggregator,
         {:record_error_event, metadata[:error_type], metadata[:details]}
+      )
+    end
+  end
+
+  # Handle ML training start events
+  defp handle_training_start(_event, measurements, metadata, _config) do
+    if Process.whereis(ChatBot.Metrics.Aggregator) do
+      GenServer.cast(
+        ChatBot.Metrics.Aggregator,
+        {:record_training_start, metadata[:model], measurements[:sequence_count], metadata}
+      )
+    end
+  end
+
+  # Handle ML training stop events
+  defp handle_training_stop(_event, measurements, metadata, _config) do
+    if Process.whereis(ChatBot.Metrics.Aggregator) do
+      GenServer.cast(
+        ChatBot.Metrics.Aggregator,
+        {:record_training_stop, metadata[:model], measurements, metadata}
+      )
+    end
+  end
+
+  # Handle ML training exception events
+  defp handle_training_exception(_event, measurements, metadata, _config) do
+    if Process.whereis(ChatBot.Metrics.Aggregator) do
+      GenServer.cast(
+        ChatBot.Metrics.Aggregator,
+        {:record_training_exception, metadata[:model], measurements, metadata}
+      )
+    end
+  end
+
+  # Handle model load events
+  defp handle_model_load(_event, measurements, metadata, _config) do
+    if Process.whereis(ChatBot.Metrics.Aggregator) do
+      GenServer.cast(
+        ChatBot.Metrics.Aggregator,
+        {:record_model_load, metadata[:model], measurements[:duration_ms], metadata}
       )
     end
   end

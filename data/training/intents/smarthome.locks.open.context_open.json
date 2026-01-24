@@ -1,0 +1,210 @@
+[
+  {
+    "text": "and open it",
+    "tokens": [
+      "and",
+      "open",
+      "it"
+    ],
+    "pos_tags": [
+      "CONJ",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "db3f05a7-679e-43f5-85ff-4c3be391abd3",
+    "intent": "smarthome.locks.open.context_open"
+  },
+  {
+    "text": "open",
+    "tokens": [
+      "open"
+    ],
+    "pos_tags": [
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "acad8ef8-81da-4316-b9c8-5b710eee012c",
+    "intent": "smarthome.locks.open.context_open"
+  },
+  {
+    "text": "open them",
+    "tokens": [
+      "open",
+      "them"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "63873aea-8d68-4525-afa8-0db6bda2b8d0",
+    "intent": "smarthome.locks.open.context_open"
+  },
+  {
+    "text": "open it please",
+    "tokens": [
+      "open",
+      "it",
+      "please"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "1b27e8bb-9c2d-4a86-b874-4a291203226c",
+    "intent": "smarthome.locks.open.context_open"
+  },
+  {
+    "text": "can you open it as well",
+    "tokens": [
+      "can",
+      "you",
+      "open",
+      "it",
+      "as",
+      "well"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "29249e89-eaa8-47c2-8e53-cdf2b2a487f4",
+    "intent": "smarthome.locks.open.context_open"
+  },
+  {
+    "text": "could you open this",
+    "tokens": [
+      "could",
+      "you",
+      "open",
+      "this"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET"
+    ],
+    "entities": [],
+    "id": "44e246cd-40b2-4cfd-b3ef-985f01e01865",
+    "intent": "smarthome.locks.open.context_open"
+  },
+  {
+    "text": "now open",
+    "tokens": [
+      "now",
+      "open"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "0cc3b852-7895-4565-8288-888ede405ac0",
+    "intent": "smarthome.locks.open.context_open"
+  },
+  {
+    "text": "now I need to open it",
+    "tokens": [
+      "now",
+      "I",
+      "need",
+      "to",
+      "open",
+      "it"
+    ],
+    "pos_tags": [
+      "ADV",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "cf03463c-bf40-4193-bb35-c76a44354c1b",
+    "intent": "smarthome.locks.open.context_open"
+  },
+  {
+    "text": "open it",
+    "tokens": [
+      "open",
+      "it"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "e82edcf5-fe88-423c-bc46-73762460fa38",
+    "intent": "smarthome.locks.open.context_open"
+  },
+  {
+    "text": "I need it to be opened",
+    "tokens": [
+      "I",
+      "need",
+      "it",
+      "to",
+      "be",
+      "opened"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "PART",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "ce98448f-30b9-4a66-9444-dadc0a544e10",
+    "intent": "smarthome.locks.open.context_open"
+  },
+  {
+    "text": "please open now",
+    "tokens": [
+      "please",
+      "open",
+      "now"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADJ",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "44e31bda-922b-4841-a984-bb35bb33e23c",
+    "intent": "smarthome.locks.open.context_open"
+  },
+  {
+    "text": "I want to open it now",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "open",
+      "it",
+      "now"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "42b0ba09-b5da-4160-a851-a948e86f9f35",
+    "intent": "smarthome.locks.open.context_open"
+  }
+]

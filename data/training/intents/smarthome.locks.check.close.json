@@ -1,0 +1,217 @@
+[
+  {
+    "text": "is the front door closed",
+    "tokens": [
+      "is",
+      "the",
+      "front",
+      "door",
+      "closed"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "front door",
+        "type": "lock",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "d908c096-6474-4a91-9a8e-1f302a0f6af5",
+    "intent": "smarthome.locks.check.close"
+  },
+  {
+    "text": "did I close door everywhere",
+    "tokens": [
+      "did",
+      "I",
+      "close",
+      "door",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "door",
+        "type": "lock",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "everywhere",
+        "type": "all",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "be6e8d59-b9bf-4637-9dd3-16eabe1617c6",
+    "intent": "smarthome.locks.check.close"
+  },
+  {
+    "text": "is garage closed",
+    "tokens": [
+      "is",
+      "garage",
+      "closed"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "garage",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "71e03625-e358-4e7a-aae8-1041d702a505",
+    "intent": "smarthome.locks.check.close"
+  },
+  {
+    "text": "did I close the door in the kitchen",
+    "tokens": [
+      "did",
+      "I",
+      "close",
+      "the",
+      "door",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "door",
+        "type": "lock",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "9ff7c003-3161-4ec4-89a4-a736f6d1b2e5",
+    "intent": "smarthome.locks.check.close"
+  },
+  {
+    "text": "is kitchen door closed",
+    "tokens": [
+      "is",
+      "kitchen",
+      "door",
+      "closed"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADJ",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "door",
+        "type": "lock",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "1991f51a-90d1-4179-b5df-0dd70dbdede2",
+    "intent": "smarthome.locks.check.close"
+  },
+  {
+    "text": "did I close the front door",
+    "tokens": [
+      "did",
+      "I",
+      "close",
+      "the",
+      "front",
+      "door"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "front door",
+        "type": "lock",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "a819663e-14a5-4416-8973-3523273c3c78",
+    "intent": "smarthome.locks.check.close"
+  },
+  {
+    "text": "are all the door closed",
+    "tokens": [
+      "are",
+      "all",
+      "the",
+      "door",
+      "closed"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "DET",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "all",
+        "type": "all",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "door",
+        "type": "lock",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "dece7c20-45a6-4698-b7f6-8849f241cc6a",
+    "intent": "smarthome.locks.check.close"
+  }
+]

@@ -1,0 +1,230 @@
+[
+  {
+    "text": "you are real",
+    "tokens": [
+      "you",
+      "are",
+      "real"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "7b941c0e-5254-4613-98c8-aa6027cf43cf",
+    "intent": "smalltalk.agent.real"
+  },
+  {
+    "text": "you are not fake",
+    "tokens": [
+      "you",
+      "are",
+      "not",
+      "fake"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "fe654490-688b-450b-b7fb-a4a12a4ab254",
+    "intent": "smalltalk.agent.real"
+  },
+  {
+    "text": "are you real",
+    "tokens": [
+      "are",
+      "you",
+      "real"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "6b00019a-c56d-4ecf-ab04-998298a0bdc7",
+    "intent": "smalltalk.agent.real"
+  },
+  {
+    "text": "you are so real",
+    "tokens": [
+      "you",
+      "are",
+      "so",
+      "real"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "19513871-f7e9-44e5-a28c-3e77f02816fb",
+    "intent": "smalltalk.agent.real"
+  },
+  {
+    "text": "I think you are real",
+    "tokens": [
+      "I",
+      "think",
+      "you",
+      "are",
+      "real"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "0eaf7cc4-47fa-4de6-98e2-78265576a54b",
+    "intent": "smalltalk.agent.real"
+  },
+  {
+    "text": "I don't think you're fake",
+    "tokens": [
+      "I",
+      "do",
+      "n't",
+      "think",
+      "you",
+      "'re",
+      "fake"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "VERB",
+      "PRON",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "e5732dff-9c4e-4540-9338-efd59bf6cc14",
+    "intent": "smalltalk.agent.real"
+  },
+  {
+    "text": "I suppose you're real",
+    "tokens": [
+      "I",
+      "suppose",
+      "you",
+      "'re",
+      "real"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "d05339a1-e0a1-4347-b158-942e2d8f5688",
+    "intent": "smalltalk.agent.real"
+  },
+  {
+    "text": "glad you're real",
+    "tokens": [
+      "glad",
+      "you",
+      "'re",
+      "real"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "4d65b272-96a4-4f74-a334-aa79d752e9c9",
+    "intent": "smalltalk.agent.real"
+  },
+  {
+    "text": "are you a real person",
+    "tokens": [
+      "are",
+      "you",
+      "a",
+      "real",
+      "person"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "cd996c42-bc53-402f-ad19-5420ddca3336",
+    "intent": "smalltalk.agent.real"
+  },
+  {
+    "text": "are you a real human",
+    "tokens": [
+      "are",
+      "you",
+      "a",
+      "real",
+      "human"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "30414c6f-0539-4184-9c1f-543c296aa7ac",
+    "intent": "smalltalk.agent.real"
+  },
+  {
+    "text": "you are a real person",
+    "tokens": [
+      "you",
+      "are",
+      "a",
+      "real",
+      "person"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "c23b6918-0164-4d66-b063-0e353fb20b53",
+    "intent": "smalltalk.agent.real"
+  },
+  {
+    "text": "you are not real",
+    "tokens": [
+      "you",
+      "are",
+      "not",
+      "real"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "a5f59a57-8a1f-49d1-a271-ec7db47ab56f",
+    "intent": "smalltalk.agent.real"
+  }
+]

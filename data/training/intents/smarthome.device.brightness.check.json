@@ -1,0 +1,544 @@
+[
+  {
+    "text": "what about brightness",
+    "tokens": [
+      "what",
+      "about",
+      "brightness"
+    ],
+    "pos_tags": [
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "de8052e2-7deb-46ca-93c8-2957ccf4403e",
+    "intent": "smarthome.device.brightness.check"
+  },
+  {
+    "text": "what's the brightness of the TV in the bedroom",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "brightness",
+      "of",
+      "the",
+      "TV",
+      "in",
+      "the",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 9,
+        "end": 9
+      }
+    ],
+    "id": "d341a56a-b731-4932-9a5e-ec01be6332ab",
+    "intent": "smarthome.device.brightness.check"
+  },
+  {
+    "text": "check TV brightness",
+    "tokens": [
+      "check",
+      "TV",
+      "brightness"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "79a58b71-5bfd-425e-9faa-92c3f0e4117e",
+    "intent": "smarthome.device.brightness.check"
+  },
+  {
+    "text": "is the PC brightness 10 points",
+    "tokens": [
+      "is",
+      "the",
+      "PC",
+      "brightness",
+      "10",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "PC",
+        "type": "device",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "10",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "9fb4773a-46ed-466d-8445-d403d84a8250",
+    "intent": "smarthome.device.brightness.check"
+  },
+  {
+    "text": "how bright are the TV in bedroom",
+    "tokens": [
+      "how",
+      "bright",
+      "are",
+      "the",
+      "TV",
+      "in",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "0842ad57-0615-4e88-a2a5-bc480ece48a7",
+    "intent": "smarthome.device.brightness.check"
+  },
+  {
+    "text": "is level of my MacBook 5 points",
+    "tokens": [
+      "is",
+      "level",
+      "of",
+      "my",
+      "MacBook",
+      "5",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "PROPN",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "MacBook",
+        "type": "device",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "8a607834-4c84-4f49-abed-ad9726160ebc",
+    "intent": "smarthome.device.brightness.check"
+  },
+  {
+    "text": "what's the brightness of kitchen  TV set",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "brightness",
+      "of",
+      "kitchen",
+      "TV",
+      "set"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "ADJ",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "TV set",
+        "type": "device",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "937fbe30-c7e7-473c-aa2a-6a1aab7d9f58",
+    "intent": "smarthome.device.brightness.check"
+  },
+  {
+    "text": "how bright is the computer screen",
+    "tokens": [
+      "how",
+      "bright",
+      "is",
+      "the",
+      "computer",
+      "screen"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "computer",
+        "type": "device",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "9c85e087-12f4-4e9e-b35d-d3d54c4bcc60",
+    "intent": "smarthome.device.brightness.check"
+  },
+  {
+    "text": "check the brightness of all of my TVs",
+    "tokens": [
+      "check",
+      "the",
+      "brightness",
+      "of",
+      "all",
+      "of",
+      "my",
+      "TVs"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "all",
+        "type": "all",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "TVs",
+        "type": "device",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "81426848-6d40-403d-8d13-9f7616f39607",
+    "intent": "smarthome.device.brightness.check"
+  },
+  {
+    "text": "check my laptop brightness",
+    "tokens": [
+      "check",
+      "my",
+      "laptop",
+      "brightness"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "laptop",
+        "type": "device",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "f45bc10c-268b-436d-8adc-794930b7a225",
+    "intent": "smarthome.device.brightness.check"
+  },
+  {
+    "text": "what brightness is",
+    "tokens": [
+      "what",
+      "brightness",
+      "is"
+    ],
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "660058ac-906d-4064-9f5f-e9173eeb850f",
+    "intent": "smarthome.device.brightness.check"
+  },
+  {
+    "text": "brightness of my PC",
+    "tokens": [
+      "brightness",
+      "of",
+      "my",
+      "PC"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "PC",
+        "type": "device",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "05b1787c-868d-4ad2-99dc-777311f348a2",
+    "intent": "smarthome.device.brightness.check"
+  },
+  {
+    "text": "tell about brightness",
+    "tokens": [
+      "tell",
+      "about",
+      "brightness"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "23454962-b3fa-4f63-8325-7231b953984d",
+    "intent": "smarthome.device.brightness.check"
+  },
+  {
+    "text": "what's the level of the PC in bedroom",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "level",
+      "of",
+      "the",
+      "PC",
+      "in",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "PC",
+        "type": "device",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "1a39c993-e552-4a12-a1d7-799b99848783",
+    "intent": "smarthome.device.brightness.check"
+  },
+  {
+    "text": "what's the brightness",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "brightness"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "ff3008a8-bdf8-4b1f-9f03-7c778c8d59ab",
+    "intent": "smarthome.device.brightness.check"
+  },
+  {
+    "text": "what is TV brightness",
+    "tokens": [
+      "what",
+      "is",
+      "TV",
+      "brightness"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "a981b75a-424e-46db-af6c-ec9c103b030f",
+    "intent": "smarthome.device.brightness.check"
+  },
+  {
+    "text": "what's the level of computer screen",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "level",
+      "of",
+      "computer",
+      "screen"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "computer",
+        "type": "device",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "7a8c6b58-8163-4ae6-9c5b-a587d7fe3641",
+    "intent": "smarthome.device.brightness.check"
+  },
+  {
+    "text": "is level of the computer in bedroom 5 points",
+    "tokens": [
+      "is",
+      "level",
+      "of",
+      "the",
+      "computer",
+      "in",
+      "bedroom",
+      "5",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "computer",
+        "type": "device",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "f7b878dd-d6e0-4380-87e9-5d21338bfbd4",
+    "intent": "smarthome.device.brightness.check"
+  }
+]

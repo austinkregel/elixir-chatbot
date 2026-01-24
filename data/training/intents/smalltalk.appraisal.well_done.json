@@ -1,0 +1,128 @@
+[
+  {
+    "text": "good job",
+    "tokens": [
+      "good",
+      "job"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f0949523-c236-416c-ac8d-a69ae1ca1d1e",
+    "intent": "smalltalk.appraisal.well_done"
+  },
+  {
+    "text": "great job",
+    "tokens": [
+      "great",
+      "job"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "9af79423-fc93-44e3-987c-cd1bcbfb3983",
+    "intent": "smalltalk.appraisal.well_done"
+  },
+  {
+    "text": "way to go",
+    "tokens": [
+      "way",
+      "to",
+      "go"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "890269ec-c776-4130-90df-5f916abb9b01",
+    "intent": "smalltalk.appraisal.well_done"
+  },
+  {
+    "text": "well done",
+    "tokens": [
+      "well",
+      "done"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "0ac06f1b-277d-415d-ab12-56e2d246910e",
+    "intent": "smalltalk.appraisal.well_done"
+  },
+  {
+    "text": "nice work",
+    "tokens": [
+      "nice",
+      "work"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "05f13e1f-07a5-4786-bc5c-d1abbc97f66d",
+    "intent": "smalltalk.appraisal.well_done"
+  },
+  {
+    "text": "great work",
+    "tokens": [
+      "great",
+      "work"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "592ec042-1a8e-4b39-9894-0737ef643bf9",
+    "intent": "smalltalk.appraisal.well_done"
+  },
+  {
+    "text": "amazing work",
+    "tokens": [
+      "amazing",
+      "work"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f84ed223-6fce-48cc-9513-3e6ea16c24df",
+    "intent": "smalltalk.appraisal.well_done"
+  },
+  {
+    "text": "bravo",
+    "tokens": [
+      "bravo"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "d3067a5f-6438-444c-9362-77ac530a1296",
+    "intent": "smalltalk.appraisal.well_done"
+  },
+  {
+    "text": "good work",
+    "tokens": [
+      "good",
+      "work"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "fb34ac1f-138d-42a7-b030-8d273627f9c8",
+    "intent": "smalltalk.appraisal.well_done"
+  }
+]

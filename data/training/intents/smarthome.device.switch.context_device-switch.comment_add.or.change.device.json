@@ -1,0 +1,167 @@
+[
+  {
+    "text": "also the air conditioner",
+    "tokens": [
+      "also",
+      "the",
+      "air",
+      "conditioner"
+    ],
+    "pos_tags": [
+      "ADV",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "air conditioner",
+        "type": "device",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "967d8eba-be57-44ce-8ffa-3b47b16ca136",
+    "intent": "smarthome.device.switch.context_device-switch.comment_add.or.change.device"
+  },
+  {
+    "text": "and air conditioner",
+    "tokens": [
+      "and",
+      "air",
+      "conditioner"
+    ],
+    "pos_tags": [
+      "CONJ",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "air conditioner",
+        "type": "device",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "4240cf3d-f7be-4224-903a-3d1c3b5dcb8c",
+    "intent": "smarthome.device.switch.context_device-switch.comment_add.or.change.device"
+  },
+  {
+    "text": "and tv",
+    "tokens": [
+      "and",
+      "tv"
+    ],
+    "pos_tags": [
+      "CONJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "tv",
+        "type": "device",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "153eedd2-aba1-4baa-ba54-7c967052b1c5",
+    "intent": "smarthome.device.switch.context_device-switch.comment_add.or.change.device"
+  },
+  {
+    "text": "video player too",
+    "tokens": [
+      "video",
+      "player",
+      "too"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "video player",
+        "type": "device",
+        "start": 0,
+        "end": 1
+      }
+    ],
+    "id": "bf4340fa-860c-4843-91a7-14e751516935",
+    "intent": "smarthome.device.switch.context_device-switch.comment_add.or.change.device"
+  },
+  {
+    "text": "and the video player too please",
+    "tokens": [
+      "and",
+      "the",
+      "video",
+      "player",
+      "too",
+      "please"
+    ],
+    "pos_tags": [
+      "CONJ",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "video player",
+        "type": "device",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "997206c3-07fc-4620-88fc-629fd8a906be",
+    "intent": "smarthome.device.switch.context_device-switch.comment_add.or.change.device"
+  },
+  {
+    "text": "video player",
+    "tokens": [
+      "video",
+      "player"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "video player",
+        "type": "device",
+        "start": 0,
+        "end": 1
+      }
+    ],
+    "id": "f9b0fe38-5a88-4683-b58a-a6192affdfa6",
+    "intent": "smarthome.device.switch.context_device-switch.comment_add.or.change.device"
+  },
+  {
+    "text": "what about thermostat",
+    "tokens": [
+      "what",
+      "about",
+      "thermostat"
+    ],
+    "pos_tags": [
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "thermostat",
+        "type": "device",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "58d08c2a-1495-4654-adbe-368c5458f2f6",
+    "intent": "smarthome.device.switch.context_device-switch.comment_add.or.change.device"
+  }
+]

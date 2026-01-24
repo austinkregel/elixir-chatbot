@@ -1,0 +1,9 @@
+{
+  "id": "1267046d-b3cf-49f9-b5b5-372d686f75f9",
+  "name": "message_type",
+  "isOverridable": true,
+  "isEnum": false,
+  "isRegexp": false,
+  "automatedExpansion": false,
+  "allowFuzzyExtraction": false
+}

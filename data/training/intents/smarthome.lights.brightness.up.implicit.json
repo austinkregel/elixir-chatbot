@@ -1,0 +1,223 @@
+[
+  {
+    "text": "it's dark in the kitchen",
+    "tokens": [
+      "it",
+      "'s",
+      "dark",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "2bef7ff3-b541-484a-9e8e-170ba5976c9a",
+    "intent": "smarthome.lights.brightness.up.implicit"
+  },
+  {
+    "text": "it's too dark",
+    "tokens": [
+      "it",
+      "'s",
+      "too",
+      "dark"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "c201389f-4398-401e-8f99-c03e1aa90894",
+    "intent": "smarthome.lights.brightness.up.implicit"
+  },
+  {
+    "text": "it's dark here",
+    "tokens": [
+      "it",
+      "'s",
+      "dark",
+      "here"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "631a4350-63a4-4e98-a13b-8ad000b6a446",
+    "intent": "smarthome.lights.brightness.up.implicit"
+  },
+  {
+    "text": "it's dark",
+    "tokens": [
+      "it",
+      "'s",
+      "dark"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "75f9fe04-a308-4fe8-b2d1-397fb7b06f19",
+    "intent": "smarthome.lights.brightness.up.implicit"
+  },
+  {
+    "text": "it's so dark everywhere",
+    "tokens": [
+      "it",
+      "'s",
+      "so",
+      "dark",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "everywhere",
+        "type": "all",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "5e728cc7-7466-4c87-a2b8-b8ab2d19ce57",
+    "intent": "smarthome.lights.brightness.up.implicit"
+  },
+  {
+    "text": "it's too dark in the kitchen",
+    "tokens": [
+      "it",
+      "'s",
+      "too",
+      "dark",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "c2695156-8d83-4f4a-b28d-1aea4ed4fabb",
+    "intent": "smarthome.lights.brightness.up.implicit"
+  },
+  {
+    "text": "my red table lamp is too dark",
+    "tokens": [
+      "my",
+      "red",
+      "table",
+      "lamp",
+      "is",
+      "too",
+      "dark"
+    ],
+    "pos_tags": [
+      "PRON",
+      "ADJ",
+      "ADJ",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "red",
+        "type": "color",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "table lamp",
+        "type": "lights",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "e0d3c56a-6fd5-4654-8f75-90c94456dc0c",
+    "intent": "smarthome.lights.brightness.up.implicit"
+  },
+  {
+    "text": "it's dark everywhere",
+    "tokens": [
+      "it",
+      "'s",
+      "dark",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "everywhere",
+        "type": "all",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "c3227cce-fb4b-4b86-893e-6d63f2ee68d1",
+    "intent": "smarthome.lights.brightness.up.implicit"
+  },
+  {
+    "text": "it's dark in here",
+    "tokens": [
+      "it",
+      "'s",
+      "dark",
+      "in",
+      "here"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "ADP",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "993392c6-3001-4f65-8113-f0f76c067950",
+    "intent": "smarthome.lights.brightness.up.implicit"
+  }
+]

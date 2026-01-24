@@ -26,11 +26,16 @@ defmodule ChatBot.SystemStatus do
     ],
     ml: [
       {ChatBot.ML.Gazetteer, "Gazetteer", :has_stats},
-      {ChatBot.ML.InformalExpansions, "Informal Expansions", :has_ready}
+      {ChatBot.ML.InformalExpansions, "Informal Expansions", :has_ready},
+      {ChatBot.Response.TemplateStore, "Template Store", :has_ready}
     ],
     storage: [
       {ChatBot.KnowledgeStore, "Knowledge Store", :basic},
-      {ChatBot.MemoryStore, "Memory Store (Legacy)", :basic}
+      {ChatBot.MemoryStore, "Memory Store (Legacy)", :basic},
+      {ChatBot.FactDatabase, "Fact Database", :has_stats}
+    ],
+    metrics: [
+      {ChatBot.Metrics.Aggregator, "Metrics Aggregator", :basic}
     ]
   }
 
@@ -233,19 +238,177 @@ defmodule ChatBot.SystemStatus do
 
   @doc """
   Returns true if all systems are ready.
+  Checks core systems, NLP pipeline, and ML models.
   """
   def all_ready? do
     status = get_all()
+    models = get_ml_models_status()
 
-    status.embedder.ready and
-      status.memory_store.ready and
-      status.brain.ready and
-      status.nlp_pipeline.ready
+    # Core systems
+    core_ready =
+      status.embedder.ready and
+        status.memory_store.ready and
+        status.brain.ready
+
+    # NLP pipeline
+    nlp_ready = status.nlp_pipeline.ready
+
+    # ML models (agents must be loaded)
+    models_ready =
+      models.intent_classifier.loaded and
+        models.entity_extractor.loaded
+
+    # Template store
+    template_ready = safe_call_ready(ChatBot.Response.TemplateStore)
+
+    core_ready and nlp_ready and models_ready and template_ready
+  end
+
+  @doc """
+  Returns detailed readiness status for all subsystems.
+  Useful for debugging what's still initializing.
+  """
+  def get_readiness_details do
+    status = get_all()
+    models = get_ml_models_status()
+
+    %{
+      core: %{
+        embedder: status.embedder.ready,
+        memory_store: status.memory_store.ready,
+        brain: status.brain.ready
+      },
+      nlp_pipeline: %{
+        ready: status.nlp_pipeline.ready,
+        components: status.nlp_pipeline.components
+      },
+      ml_models: %{
+        intent_classifier: models.intent_classifier.loaded,
+        entity_extractor: models.entity_extractor.loaded,
+        pos_model_exists: models.pos_model.exists,
+        entity_model_exists: models.entity_model.exists,
+        classifier_exists: models.classifier.exists
+      },
+      template_store: safe_call_ready(ChatBot.Response.TemplateStore),
+      all_ready: all_ready?()
+    }
+  end
+
+  @doc """
+  Returns the status of all ML models (file-based and agent-based).
+  """
+  def get_ml_models_status do
+    models_path = get_models_path()
+
+    %{
+      # File-based models
+      pos_model: get_model_file_status(models_path, "pos_model.term"),
+      entity_model: get_model_file_status(models_path, "entity_model.term"),
+      classifier: get_model_file_status(models_path, "classifier.term"),
+      gazetteer: get_model_file_status(models_path, "gazetteer.term"),
+      # Agent-based models (runtime loaded)
+      intent_classifier: get_agent_status(ChatBot.ML.IntentClassifierSimple),
+      entity_extractor: get_agent_status(ChatBot.ML.EntityExtractor),
+      checked_at: DateTime.utc_now()
+    }
+  end
+
+  @doc """
+  Returns training history/stats if available.
+  """
+  def get_training_stats do
+    try do
+      ChatBot.Metrics.Aggregator.get_metrics()
+      |> Map.take([:pos_train, :entity_train, :classifier_train, :model_load])
+      |> Enum.filter(fn {_k, v} -> v != nil end)
+      |> Map.new()
+    catch
+      :exit, _ -> %{}
+    end
   end
 
   # ============================================================================
   # Private Functions
   # ============================================================================
+
+  defp get_models_path do
+    Application.get_env(:chat_bot, :ml)[:models_path] || "priv/ml_models"
+  end
+
+  defp get_model_file_status(models_path, filename) do
+    path = Path.join(models_path, filename)
+
+    case File.stat(path) do
+      {:ok, stat} ->
+        %{
+          exists: true,
+          loaded: check_model_loaded(filename),
+          size_bytes: stat.size,
+          modified_at: stat.mtime |> NaiveDateTime.from_erl!() |> DateTime.from_naive!("Etc/UTC"),
+          path: path
+        }
+
+      {:error, _} ->
+        %{
+          exists: false,
+          loaded: false,
+          size_bytes: 0,
+          modified_at: nil,
+          path: path
+        }
+    end
+  end
+
+  defp check_model_loaded(filename) do
+    case filename do
+      "classifier.term" ->
+        try do
+          ChatBot.ML.IntentClassifierSimple.is_loaded?()
+        catch
+          _, _ -> false
+        end
+
+      "gazetteer.term" ->
+        try do
+          ChatBot.ML.Gazetteer.is_loaded?()
+        catch
+          _, _ -> false
+        end
+
+      "entity_model.term" ->
+        # Entity model is loaded into EntityExtractor agent
+        Process.whereis(ChatBot.ML.EntityExtractor) != nil
+
+      "pos_model.term" ->
+        # POS model exists on disk but loaded on-demand
+        ChatBot.ML.POSTagger.model_exists?()
+
+      _ ->
+        false
+    end
+  end
+
+  defp get_agent_status(module) do
+    pid = Process.whereis(module)
+
+    if pid do
+      process_info = get_process_info(pid)
+
+      %{
+        loaded: true,
+        pid: pid,
+        memory_bytes: process_info[:memory],
+        message_queue_len: process_info[:message_queue_len]
+      }
+    else
+      %{
+        loaded: false,
+        pid: nil,
+        memory_bytes: nil,
+        message_queue_len: nil
+      }
+    end
+  end
 
   defp get_genserver_status(module, name, type) do
     pid = Process.whereis(module)

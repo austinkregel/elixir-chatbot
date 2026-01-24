@@ -1,0 +1,1078 @@
+[
+  {
+    "text": "I plan to ski today is it possible",
+    "tokens": [
+      "I",
+      "plan",
+      "to",
+      "ski",
+      "today",
+      "is",
+      "it",
+      "possible"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "NOUN",
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "ski",
+        "type": "activity",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "e5490f61-642a-4285-b33f-c86e93559dac",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "can I go surfing",
+    "tokens": [
+      "can",
+      "I",
+      "go",
+      "surfing"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "surfing",
+        "type": "activity",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "8c307247-0f50-4f1e-bae7-fe9da76bd3e8",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "can I go climbing mount Fuji",
+    "tokens": [
+      "can",
+      "I",
+      "go",
+      "climbing",
+      "mount",
+      "Fuji"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "climbing",
+        "type": "activity",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Fuji",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "0594a9a6-b7eb-4fc1-9c6e-01fc0afb3c35",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "is the weather good for walking",
+    "tokens": [
+      "is",
+      "the",
+      "weather",
+      "good",
+      "for",
+      "walking"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADJ",
+      "ADP",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "walking",
+        "type": "activity",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "092035fe-193a-4762-9268-82b5d71b3ba3",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "is the weather good enough to play frisbee outside",
+    "tokens": [
+      "is",
+      "the",
+      "weather",
+      "good",
+      "enough",
+      "to",
+      "play",
+      "frisbee",
+      "outside"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADJ",
+      "ADV",
+      "PART",
+      "VERB",
+      "ADJ",
+      "ADP"
+    ],
+    "entities": [
+      {
+        "text": "frisbee",
+        "type": "activity",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "bf0f992a-5d1a-4be7-966d-9d02927f8b8c",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "is hiking a good idea right now",
+    "tokens": [
+      "is",
+      "hiking",
+      "a",
+      "good",
+      "idea",
+      "right",
+      "now"
+    ],
+    "pos_tags": [
+      "VERB",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "hiking",
+        "type": "activity",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "right now",
+        "type": "date_time",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "f375ea16-e8ad-4d5c-964f-bd69c24f3fec",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "do you think the weather is bad for frisbee",
+    "tokens": [
+      "do",
+      "you",
+      "think",
+      "the",
+      "weather",
+      "is",
+      "bad",
+      "for",
+      "frisbee"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "ADJ",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "frisbee",
+        "type": "activity",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "a10c9e0b-bb92-4b90-8716-9efed34f9943",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "is the weather good for snowball fights",
+    "tokens": [
+      "is",
+      "the",
+      "weather",
+      "good",
+      "for",
+      "snowball",
+      "fights"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "snowball fights",
+        "type": "activity",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "2cfa2b6b-37d5-4afd-9dac-fb0df9aaed27",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "do you think it's the good weather for cycling",
+    "tokens": [
+      "do",
+      "you",
+      "think",
+      "it",
+      "'s",
+      "the",
+      "good",
+      "weather",
+      "for",
+      "cycling"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PRON",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "cycling",
+        "type": "activity",
+        "start": 9,
+        "end": 9
+      }
+    ],
+    "id": "f9cba29d-694e-470c-9f5a-dbf90e7656c7",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "should I go for a run",
+    "tokens": [
+      "should",
+      "I",
+      "go",
+      "for",
+      "a",
+      "run"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "run",
+        "type": "activity",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "79c89487-6633-4189-a2fc-91c22355b4dc",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "is it hot enough to go swimming",
+    "tokens": [
+      "is",
+      "it",
+      "hot",
+      "enough",
+      "to",
+      "go",
+      "swimming"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "ADV",
+      "PART",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "swimming",
+        "type": "activity",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "e3a1d762-bf89-4424-b0c8-5954a9c6f937",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "is the weather nice enough to go surfing",
+    "tokens": [
+      "is",
+      "the",
+      "weather",
+      "nice",
+      "enough",
+      "to",
+      "go",
+      "surfing"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADJ",
+      "ADV",
+      "PART",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "surfing",
+        "type": "activity",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "62d30d02-89fb-4920-90be-5c5413887637",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "is it the perfect weather for camping",
+    "tokens": [
+      "is",
+      "it",
+      "the",
+      "perfect",
+      "weather",
+      "for",
+      "camping"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "camping",
+        "type": "activity",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "aa6a04ff-e682-44d5-901a-40ce7536c936",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "can I go skiing in Vienna",
+    "tokens": [
+      "can",
+      "I",
+      "go",
+      "skiing",
+      "in",
+      "Vienna"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "skiing",
+        "type": "activity",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Vienna",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "7e4b339c-2fc2-47fa-9246-d5cbe9b164f3",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "should I go cycling in Moscow",
+    "tokens": [
+      "should",
+      "I",
+      "go",
+      "cycling",
+      "in",
+      "Moscow"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "cycling",
+        "type": "activity",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Moscow",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "63e5f1a9-243a-4252-b4f2-cf28912edbbe",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "is the weather good enough to go climbing to Malaga",
+    "tokens": [
+      "is",
+      "the",
+      "weather",
+      "good",
+      "enough",
+      "to",
+      "go",
+      "climbing",
+      "to",
+      "Malaga"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADJ",
+      "ADV",
+      "PART",
+      "VERB",
+      "VERB",
+      "PART",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "climbing",
+        "type": "activity",
+        "start": 7,
+        "end": 7
+      },
+      {
+        "text": "Malaga",
+        "type": "location",
+        "start": 9,
+        "end": 9
+      }
+    ],
+    "id": "d2a86641-4fbc-404b-84db-ea42c413e029",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "is it the perfect weather for windsurfing in Phuket",
+    "tokens": [
+      "is",
+      "it",
+      "the",
+      "perfect",
+      "weather",
+      "for",
+      "windsurfing",
+      "in",
+      "Phuket"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "VERB",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "windsurfing",
+        "type": "activity",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "Phuket",
+        "type": "location",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "1a00ef9f-3515-47fa-951a-4cc061041978",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "ok do you think it's the good weather for cycling right now",
+    "tokens": [
+      "ok",
+      "do",
+      "you",
+      "think",
+      "it",
+      "'s",
+      "the",
+      "good",
+      "weather",
+      "for",
+      "cycling",
+      "right",
+      "now"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "VERB",
+      "PRON",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "VERB",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "cycling",
+        "type": "activity",
+        "start": 10,
+        "end": 10
+      },
+      {
+        "text": "right now",
+        "type": "date_time",
+        "start": 11,
+        "end": 12
+      }
+    ],
+    "id": "9b031466-7612-4862-b97e-1bff4bb2a325",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "can I go snowboarding on the weekend",
+    "tokens": [
+      "can",
+      "I",
+      "go",
+      "snowboarding",
+      "on",
+      "the",
+      "weekend"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "snowboarding",
+        "type": "activity",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "weekend",
+        "type": "date_time",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "dba84e6d-5e2d-4f73-bbc9-6b3fe7b249cf",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "should I go jogging this evening",
+    "tokens": [
+      "should",
+      "I",
+      "go",
+      "jogging",
+      "this",
+      "evening"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "jogging",
+        "type": "activity",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "this evening",
+        "type": "date_time",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "33decc16-9941-4ebb-b10c-9d0c86d23199",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "will it be cold enough for snowball fighting on Friday",
+    "tokens": [
+      "will",
+      "it",
+      "be",
+      "cold",
+      "enough",
+      "for",
+      "snowball",
+      "fighting",
+      "on",
+      "Friday"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "ADV",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "snowball fighting",
+        "type": "activity",
+        "start": 6,
+        "end": 7
+      },
+      {
+        "text": "Friday",
+        "type": "date_time",
+        "start": 9,
+        "end": 9
+      }
+    ],
+    "id": "1a802bd0-6134-4597-bdf0-50ab9843b7b4",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "is the weather nice enough to go sightseeing today",
+    "tokens": [
+      "is",
+      "the",
+      "weather",
+      "nice",
+      "enough",
+      "to",
+      "go",
+      "sightseeing",
+      "today"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADJ",
+      "ADV",
+      "PART",
+      "VERB",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "sightseeing",
+        "type": "activity",
+        "start": 7,
+        "end": 7
+      },
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "b2bdea18-0fc7-4c7b-beb9-ada8d5c012fc",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "is it the perfect weather for elephant safari tonight",
+    "tokens": [
+      "is",
+      "it",
+      "the",
+      "perfect",
+      "weather",
+      "for",
+      "elephant",
+      "safari",
+      "tonight"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "ADJ",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "elephant safari",
+        "type": "activity",
+        "start": 6,
+        "end": 7
+      },
+      {
+        "text": "tonight",
+        "type": "date_time",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "33b19e93-c239-40e1-a807-627675cf8b75",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "can I go tree climbing in Chicago on the weekend",
+    "tokens": [
+      "can",
+      "I",
+      "go",
+      "tree",
+      "climbing",
+      "in",
+      "Chicago",
+      "on",
+      "the",
+      "weekend"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "VERB",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "tree climbing",
+        "type": "activity",
+        "start": 3,
+        "end": 4
+      },
+      {
+        "text": "Chicago",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "weekend",
+        "type": "date_time",
+        "start": 9,
+        "end": 9
+      }
+    ],
+    "id": "6a17fc87-0376-456a-9ddb-67d09d213c7e",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "should I go kayaking in Miami this evening",
+    "tokens": [
+      "should",
+      "I",
+      "go",
+      "kayaking",
+      "in",
+      "Miami",
+      "this",
+      "evening"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "ADP",
+      "PROPN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kayaking",
+        "type": "activity",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Miami",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "this evening",
+        "type": "date_time",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "ffc993d6-97d8-4ac9-a4b7-28dcdb45623f",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "will it be warm enough for mushroom hunting on Friday in Ottawa",
+    "tokens": [
+      "will",
+      "it",
+      "be",
+      "warm",
+      "enough",
+      "for",
+      "mushroom",
+      "hunting",
+      "on",
+      "Friday",
+      "in",
+      "Ottawa"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "ADV",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "mushroom hunting",
+        "type": "activity",
+        "start": 6,
+        "end": 7
+      },
+      {
+        "text": "Friday",
+        "type": "date_time",
+        "start": 9,
+        "end": 9
+      },
+      {
+        "text": "Ottawa",
+        "type": "location",
+        "start": 11,
+        "end": 11
+      }
+    ],
+    "id": "6f6d0b56-8b8d-42c6-8307-a5692be9e016",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "is the weather nice enough to go birdwatching in Norfolk today",
+    "tokens": [
+      "is",
+      "the",
+      "weather",
+      "nice",
+      "enough",
+      "to",
+      "go",
+      "birdwatching",
+      "in",
+      "Norfolk",
+      "today"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADJ",
+      "ADV",
+      "PART",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "birdwatching",
+        "type": "activity",
+        "start": 7,
+        "end": 7
+      },
+      {
+        "text": "Norfolk",
+        "type": "location",
+        "start": 9,
+        "end": 9
+      },
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 10,
+        "end": 10
+      }
+    ],
+    "id": "b1a32a62-d7a2-4953-bb1a-8bbdd164997a",
+    "intent": "weather.activity"
+  },
+  {
+    "text": "is it the perfect weather for mountain biking in Bansko tonight",
+    "tokens": [
+      "is",
+      "it",
+      "the",
+      "perfect",
+      "weather",
+      "for",
+      "mountain",
+      "biking",
+      "in",
+      "Bansko",
+      "tonight"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "mountain biking",
+        "type": "activity",
+        "start": 6,
+        "end": 7
+      },
+      {
+        "text": "Bansko",
+        "type": "location",
+        "start": 9,
+        "end": 9
+      },
+      {
+        "text": "tonight",
+        "type": "date_time",
+        "start": 10,
+        "end": 10
+      }
+    ],
+    "id": "aec21592-2451-47b1-9bda-d835f8c4432a",
+    "intent": "weather.activity"
+  }
+]

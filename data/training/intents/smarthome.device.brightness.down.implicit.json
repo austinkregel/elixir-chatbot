@@ -1,0 +1,174 @@
+[
+  {
+    "text": "it's bright",
+    "tokens": [
+      "it",
+      "'s",
+      "bright"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "c2930027-7520-426b-b312-f80aed4642b3",
+    "intent": "smarthome.device.brightness.down.implicit"
+  },
+  {
+    "text": "it's too bright",
+    "tokens": [
+      "it",
+      "'s",
+      "too",
+      "bright"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "e43ab3a3-cfea-46f8-bd4b-29a92b58761a",
+    "intent": "smarthome.device.brightness.down.implicit"
+  },
+  {
+    "text": "kitchen TV is too bright",
+    "tokens": [
+      "kitchen",
+      "TV",
+      "is",
+      "too",
+      "bright"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 0,
+        "end": 0
+      },
+      {
+        "text": "TV",
+        "type": "device",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "89724678-eb9e-4f73-9e9b-e1c4a82d3051",
+    "intent": "smarthome.device.brightness.down.implicit"
+  },
+  {
+    "text": "the kitchen TV is too bright",
+    "tokens": [
+      "the",
+      "kitchen",
+      "TV",
+      "is",
+      "too",
+      "bright"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "TV",
+        "type": "device",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "68ad971e-8275-4d9f-bf84-fca8656e1a52",
+    "intent": "smarthome.device.brightness.down.implicit"
+  },
+  {
+    "text": "the computer screen is too bright",
+    "tokens": [
+      "the",
+      "computer",
+      "screen",
+      "is",
+      "too",
+      "bright"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "computer",
+        "type": "device",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "c7d5190a-17c0-4548-b54c-a8175d3d64c5",
+    "intent": "smarthome.device.brightness.down.implicit"
+  },
+  {
+    "text": "TV brightness is too much everywhere in the house",
+    "tokens": [
+      "TV",
+      "brightness",
+      "is",
+      "too",
+      "much",
+      "everywhere",
+      "in",
+      "the",
+      "house"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "ADV",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device",
+        "start": 0,
+        "end": 0
+      },
+      {
+        "text": "everywhere",
+        "type": "all",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "8bf49abb-6bd2-48f4-adc0-e9c7bccaf8db",
+    "intent": "smarthome.device.brightness.down.implicit"
+  }
+]

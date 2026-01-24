@@ -1,0 +1,1086 @@
+[
+  {
+    "text": "speakers volume down till 7",
+    "tokens": [
+      "speakers",
+      "volume",
+      "down",
+      "till",
+      "7"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADV",
+      "ADV",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "speakers",
+        "type": "device_volume",
+        "start": 0,
+        "end": 0
+      },
+      {
+        "text": "7",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "50bb5536-45a4-4321-a91a-2431944886e1",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "turn the volume down",
+    "tokens": [
+      "turn",
+      "the",
+      "volume",
+      "down"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PART"
+    ],
+    "entities": [],
+    "id": "d743b935-0fdb-4e5b-a3af-a086b2224001",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "can you turn the volume down on my ipod",
+    "tokens": [
+      "can",
+      "you",
+      "turn",
+      "the",
+      "volume",
+      "down",
+      "on",
+      "my",
+      "ipod"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "PART",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "ipod",
+        "type": "device_volume",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "c0a9cf1c-2c6a-4519-917c-4709afec7b76",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "turn down the volume of speakers",
+    "tokens": [
+      "turn",
+      "down",
+      "the",
+      "volume",
+      "of",
+      "speakers"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "speakers",
+        "type": "device_volume",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "9001a541-4c5f-4b69-a850-6cc6777a3aaf",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "volume of the TV down",
+    "tokens": [
+      "volume",
+      "of",
+      "the",
+      "TV",
+      "down"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "4be9c6b9-32ea-4414-a8a3-2abae1d3c3b0",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "turn down the speakers",
+    "tokens": [
+      "turn",
+      "down",
+      "the",
+      "speakers"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "speakers",
+        "type": "device_volume",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "2727246a-542d-43f0-8995-b18bd385ffe2",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "volume down",
+    "tokens": [
+      "volume",
+      "down"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART"
+    ],
+    "entities": [],
+    "id": "d7456172-7bd8-4af4-8013-1e71bfe3e5cf",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "decrease the volume of the speakers",
+    "tokens": [
+      "decrease",
+      "the",
+      "volume",
+      "of",
+      "the",
+      "speakers"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "speakers",
+        "type": "device_volume",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "c23a0abd-f608-494f-a447-dbcdfe895ab6",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "now have the volume turned down",
+    "tokens": [
+      "now",
+      "have",
+      "the",
+      "volume",
+      "turned",
+      "down"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "PART"
+    ],
+    "entities": [],
+    "id": "582ff222-45fa-402f-ab1e-23d45906370a",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "reduce the volume",
+    "tokens": [
+      "reduce",
+      "the",
+      "volume"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "1ab3f0b8-f7e0-4888-ac4a-19e092f5ceb4",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "turn the radio in the kitchen down by 10 points",
+    "tokens": [
+      "turn",
+      "the",
+      "radio",
+      "in",
+      "the",
+      "kitchen",
+      "down",
+      "by",
+      "10",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "PART",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "radio",
+        "type": "device_volume",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "10",
+        "type": "number",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "71fa9487-9b28-4192-8e44-574192384161",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "make the volume go down",
+    "tokens": [
+      "make",
+      "the",
+      "volume",
+      "go",
+      "down"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "PART"
+    ],
+    "entities": [],
+    "id": "17961688-0186-4be8-9221-c045b3a73b75",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "volume lower",
+    "tokens": [
+      "volume",
+      "lower"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "f096b7cd-6c7f-4bb8-bdb3-21b8d18579a4",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "decrease the volume of the speakers by 10 percent",
+    "tokens": [
+      "decrease",
+      "the",
+      "volume",
+      "of",
+      "the",
+      "speakers",
+      "by",
+      "10",
+      "percent"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "speakers",
+        "type": "device_volume",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "10",
+        "type": "number",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "d04811cf-e745-4500-a64a-714455f9a977",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "it's too loud",
+    "tokens": [
+      "it",
+      "'s",
+      "too",
+      "loud"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "fd24030a-b423-40c2-8409-08b2fced53ed",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "too loud",
+    "tokens": [
+      "too",
+      "loud"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "c5c0af6a-c676-41f5-9c33-d3422c8231bb",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "turn the volume down in the living room",
+    "tokens": [
+      "turn",
+      "the",
+      "volume",
+      "down",
+      "in",
+      "the",
+      "living",
+      "room"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PART",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "living room",
+        "type": "room",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "281ef17a-0a41-497e-b904-4e6c89a7e965",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "turn the TV volume down in bedroom",
+    "tokens": [
+      "turn",
+      "the",
+      "TV",
+      "volume",
+      "down",
+      "in",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "PART",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "e4966019-4a2d-47f2-9dae-4a00f703b3e3",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "please lower the volume",
+    "tokens": [
+      "please",
+      "lower",
+      "the",
+      "volume"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADJ",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "2a54fc66-19b8-4644-8c04-87f9e3ad8ffd",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "turn the volume down to 2 points",
+    "tokens": [
+      "turn",
+      "the",
+      "volume",
+      "down",
+      "to",
+      "2",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADV",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "2",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "73301f1d-5797-411e-8752-2b5f0db2f2af",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "turn down the volume by 9 percent",
+    "tokens": [
+      "turn",
+      "down",
+      "the",
+      "volume",
+      "by",
+      "9",
+      "percent"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "9",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "d971e230-3e7a-498d-a225-48d2e87e8a4a",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "turn down the volume of the TV in the kitchen",
+    "tokens": [
+      "turn",
+      "down",
+      "the",
+      "volume",
+      "of",
+      "the",
+      "TV",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 9,
+        "end": 9
+      }
+    ],
+    "id": "25f316f9-2d5f-4e9d-b0b2-cfa586988486",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "turn down the volume in bedroom",
+    "tokens": [
+      "turn",
+      "down",
+      "the",
+      "volume",
+      "in",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "b52bd582-64db-47d1-b987-d885a292e8e4",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "turn down the volume of speakers by 5 points",
+    "tokens": [
+      "turn",
+      "down",
+      "the",
+      "volume",
+      "of",
+      "speakers",
+      "by",
+      "5",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "speakers",
+        "type": "device_volume",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "8a60393d-bd16-451b-b676-2ec6b6373197",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "decrease the volume",
+    "tokens": [
+      "decrease",
+      "the",
+      "volume"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "36c82aea-4f12-4827-b288-ca383907acc1",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "turn the TV down by 3 percent",
+    "tokens": [
+      "turn",
+      "the",
+      "TV",
+      "down",
+      "by",
+      "3",
+      "percent"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PART",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "3",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "3f88b254-c078-4a1e-9d4c-b178ab603391",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "turn the TV volume down",
+    "tokens": [
+      "turn",
+      "the",
+      "TV",
+      "volume",
+      "down"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "be33623b-357a-4155-ba24-694293e09783",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "decrease TV volume",
+    "tokens": [
+      "decrease",
+      "TV",
+      "volume"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "b83c10b4-2662-494d-8a57-8ab5ec30deea",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "turn down the radio by 6 points",
+    "tokens": [
+      "turn",
+      "down",
+      "the",
+      "radio",
+      "by",
+      "6",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "radio",
+        "type": "device_volume",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "6",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "d11be048-f18d-4c7b-bc43-42e6535cc463",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "decrease the volume of the speakers to 90 percent",
+    "tokens": [
+      "decrease",
+      "the",
+      "volume",
+      "of",
+      "the",
+      "speakers",
+      "to",
+      "90",
+      "percent"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "speakers",
+        "type": "device_volume",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "90",
+        "type": "number",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "ff7d98f7-1916-48b2-b392-9de215d960c0",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "turn the TV down by 6 percent in the kitchen",
+    "tokens": [
+      "turn",
+      "the",
+      "TV",
+      "down",
+      "by",
+      "6",
+      "percent",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PART",
+      "ADP",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "6",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 9,
+        "end": 9
+      }
+    ],
+    "id": "4c7e5caa-f4a2-438e-a9ff-8ab204fdb48f",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "please reduce the volume",
+    "tokens": [
+      "please",
+      "reduce",
+      "the",
+      "volume"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "0e45f9a7-15a7-44e3-aedb-783657704906",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "speakers volume down",
+    "tokens": [
+      "speakers",
+      "volume",
+      "down"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "speakers",
+        "type": "device_volume",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "f62e0f28-a9d0-45c1-935b-294d1a9758d5",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "turn down speakers in bedroom",
+    "tokens": [
+      "turn",
+      "down",
+      "speakers",
+      "in",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "speakers",
+        "type": "device_volume",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "bd13235f-6161-4887-bc18-74dd2ee12f6a",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "turn down the volume to 5 points",
+    "tokens": [
+      "turn",
+      "down",
+      "the",
+      "volume",
+      "to",
+      "5",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "5",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "1d78366c-ae36-4302-8363-19e42ca3233b",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "lower volume",
+    "tokens": [
+      "lower",
+      "volume"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "dbf3f8fc-a9e6-475c-97fb-68585323847a",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "turn down the TV volume",
+    "tokens": [
+      "turn",
+      "down",
+      "the",
+      "TV",
+      "volume"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "19f2ac46-ab51-430f-bb5c-5926b38f2c65",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "turn down the volume",
+    "tokens": [
+      "turn",
+      "down",
+      "the",
+      "volume"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "1b8eab2b-d63d-444f-8ba0-c29a57923656",
+    "intent": "smarthome.device.volume.down"
+  },
+  {
+    "text": "TV volume down",
+    "tokens": [
+      "TV",
+      "volume",
+      "down"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "cb03dbf5-6a90-4c9a-aae1-b4b7a52b2e5d",
+    "intent": "smarthome.device.volume.down"
+  }
+]

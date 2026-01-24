@@ -1,0 +1,620 @@
+[
+  {
+    "id": "c7267df7-4b24-4e9c-a9a9-46cdc434c379",
+    "data": [
+      {
+        "text": "now find ",
+        "userDefined": false
+      },
+      {
+        "text": "Hello Darling",
+        "meta": "@song",
+        "alias": "song",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "4d8794f3-b8c1-4fe8-b00a-40f0ed9bcba2",
+    "data": [
+      {
+        "text": "now songs about ",
+        "userDefined": false
+      },
+      {
+        "text": "love",
+        "meta": "@song",
+        "alias": "song",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "9c705f7f-9940-4bf5-a750-687a5ff20499",
+    "data": [
+      {
+        "text": "find another ",
+        "userDefined": false
+      },
+      {
+        "text": "one",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "9e100e94-2eca-4e7c-96b2-f5881081e7ef",
+    "data": [
+      {
+        "text": "now ",
+        "userDefined": false
+      },
+      {
+        "text": "jazz",
+        "meta": "@sys.music-genre",
+        "alias": "genre",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "585b495f-8728-499c-9562-4d8864e9d818",
+    "data": [
+      {
+        "text": "now find ",
+        "userDefined": false
+      },
+      {
+        "text": "jazz",
+        "meta": "@sys.music-genre",
+        "alias": "genre",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "095fe6a6-0e06-41ee-90c1-30cb4686b3ab",
+    "data": [
+      {
+        "text": "now find ",
+        "userDefined": false
+      },
+      {
+        "text": "Britney Spears",
+        "meta": "@sys.music-artist",
+        "alias": "artist",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "f2ec8e92-e035-4482-9516-d276c1b851b8",
+    "data": [
+      {
+        "text": "now ",
+        "userDefined": false
+      },
+      {
+        "text": "Elton John",
+        "meta": "@sys.music-artist",
+        "alias": "artist",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "9ec14e39-4f20-4304-9944-b394761c23ae",
+    "data": [
+      {
+        "text": "now search for ",
+        "userDefined": false
+      },
+      {
+        "text": "Eminem",
+        "meta": "@sys.music-artist",
+        "alias": "artist",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "03b45a45-0eee-40c1-b2f4-ef50f4bd6261",
+    "data": [
+      {
+        "text": "now search for ",
+        "userDefined": false
+      },
+      {
+        "text": "jazz",
+        "meta": "@sys.music-genre",
+        "alias": "genre",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "76588456-31b3-4aa7-bdce-59d223c6ad78",
+    "data": [
+      {
+        "text": "search for ",
+        "userDefined": false
+      },
+      {
+        "text": "Adele",
+        "meta": "@sys.music-artist",
+        "alias": "artist",
+        "userDefined": true
+      },
+      {
+        "text": " now",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "82cf87e1-2e0a-4b44-aa17-fae795ab990d",
+    "data": [
+      {
+        "text": "now search ",
+        "userDefined": false
+      },
+      {
+        "text": "Rihanna",
+        "meta": "@sys.music-artist",
+        "alias": "artist",
+        "userDefined": true
+      },
+      {
+        "text": " ft ",
+        "userDefined": false
+      },
+      {
+        "text": "Eminem",
+        "meta": "@sys.music-artist",
+        "alias": "artist",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "3aa57b70-1a97-4844-83f9-8162ac0191d9",
+    "data": [
+      {
+        "text": "search for ",
+        "userDefined": false
+      },
+      {
+        "text": "Rihanna",
+        "meta": "@sys.music-artist",
+        "alias": "artist",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "796ff830-fee7-4fbc-947f-a4ab892e7ec0",
+    "data": [
+      {
+        "text": "now find ",
+        "userDefined": false
+      },
+      {
+        "text": "Monster",
+        "meta": "@song",
+        "alias": "song",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "524f057d-f5f8-4c57-a674-dcc73937f0d2",
+    "data": [
+      {
+        "text": "find ",
+        "userDefined": false
+      },
+      {
+        "text": "Take 5",
+        "meta": "@song",
+        "alias": "song",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "250eb0a4-ef49-4c9f-aa63-ae99cf14b697",
+    "data": [
+      {
+        "text": "now search for ",
+        "userDefined": false
+      },
+      {
+        "text": "Diamonds",
+        "meta": "@song",
+        "alias": "song",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "18867b49-ee70-4876-878e-e9febe8e4271",
+    "data": [
+      {
+        "text": "now search for album ",
+        "userDefined": false
+      },
+      {
+        "text": "Lucky Star",
+        "meta": "@music-album",
+        "alias": "album",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "28f635cd-1f92-435d-be63-5e8d9172e40f",
+    "data": [
+      {
+        "text": "now find ",
+        "userDefined": false
+      },
+      {
+        "text": "Summer",
+        "meta": "@music-album",
+        "alias": "album",
+        "userDefined": false
+      },
+      {
+        "text": " album",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "b45bd91a-7275-4957-8eee-7b1bfd746fa0",
+    "data": [
+      {
+        "text": "now find album ",
+        "userDefined": false
+      },
+      {
+        "text": "Burning up",
+        "meta": "@music-album",
+        "alias": "album",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "b7c11013-b923-4f14-acd4-40a66cbaae5b",
+    "data": [
+      {
+        "text": "now find album called ",
+        "userDefined": false
+      },
+      {
+        "text": "Let it be",
+        "meta": "@music-album",
+        "alias": "album",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "16caa370-bee8-4b4c-86c7-3ff6812dc310",
+    "data": [
+      {
+        "text": "now find ",
+        "userDefined": false
+      },
+      {
+        "text": "jazz",
+        "meta": "@sys.music-genre",
+        "alias": "genre",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "music",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "1de846d0-05b1-4bee-a509-802812d7e399",
+    "data": [
+      {
+        "text": "now by ",
+        "userDefined": false
+      },
+      {
+        "text": "Madonna",
+        "meta": "@sys.music-artist",
+        "alias": "artist",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "06e593f9-4a3d-47fd-8d0b-9094a6dd335f",
+    "data": [
+      {
+        "text": "now find ",
+        "userDefined": false
+      },
+      {
+        "text": "winter",
+        "meta": "@playlist",
+        "alias": "playlist",
+        "userDefined": true
+      },
+      {
+        "text": " playlist",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "8f8f0cac-e019-475d-9e53-945bdf24d8f9",
+    "data": [
+      {
+        "text": "now search for ",
+        "userDefined": false
+      },
+      {
+        "text": "work",
+        "meta": "@playlist",
+        "alias": "playlist",
+        "userDefined": true
+      },
+      {
+        "text": " playlist",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "3afa4fea-0dbc-4a33-8b06-35e3587388e7",
+    "data": [
+      {
+        "text": "search ",
+        "userDefined": false
+      },
+      {
+        "text": "gym",
+        "meta": "@playlist",
+        "alias": "playlist",
+        "userDefined": true
+      },
+      {
+        "text": " playlist",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "2ab63440-3a54-4e46-878a-deec49340747",
+    "data": [
+      {
+        "text": "now ",
+        "userDefined": false
+      },
+      {
+        "text": "on",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "Spotify",
+        "meta": "@music-service",
+        "alias": "service",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "b5f54150-9f97-44ec-a888-4dd8e7fac792",
+    "data": [
+      {
+        "text": "now ",
+        "userDefined": false
+      },
+      {
+        "text": "YouTube",
+        "meta": "@music-service",
+        "alias": "service",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "13c00d12-0959-4c1f-9a42-8bff4af086e9",
+    "data": [
+      {
+        "text": "now from ",
+        "userDefined": false
+      },
+      {
+        "text": "iTunes",
+        "meta": "@music-service",
+        "alias": "service",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "28b1648a-b02e-47d7-98a6-6a7b349f1283",
+    "data": [
+      {
+        "text": "what about ",
+        "userDefined": false
+      },
+      {
+        "text": "Netflix",
+        "meta": "@music-service",
+        "alias": "service",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "56403957-bf6c-4619-aa43-5224d55741f7",
+    "data": [
+      {
+        "text": "how about ",
+        "userDefined": false
+      },
+      {
+        "text": "Pandora",
+        "meta": "@music-service",
+        "alias": "service",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "f4d42cb7-5f07-428d-9d9b-2e6f9db625c2",
+    "data": [
+      {
+        "text": "now find ",
+        "userDefined": false
+      },
+      {
+        "text": "Hello Darling",
+        "meta": "@song",
+        "alias": "song",
+        "userDefined": true
+      },
+      {
+        "text": " song",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  }
+]

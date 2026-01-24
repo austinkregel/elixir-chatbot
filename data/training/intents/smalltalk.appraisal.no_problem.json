@@ -1,0 +1,147 @@
+[
+  {
+    "text": "no worries",
+    "tokens": [
+      "no",
+      "worries"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "dd623cd5-650e-431f-a588-a959763d73bb",
+    "intent": "smalltalk.appraisal.no_problem"
+  },
+  {
+    "text": "no probs",
+    "tokens": [
+      "no",
+      "probs"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f4e75fd3-87ce-4e85-b038-e0688f1fd7c7",
+    "intent": "smalltalk.appraisal.no_problem"
+  },
+  {
+    "text": "no problem",
+    "tokens": [
+      "no",
+      "problem"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "19b8f297-0119-4fcd-b1a1-bd401ae8fa88",
+    "intent": "smalltalk.appraisal.no_problem"
+  },
+  {
+    "text": "there's no problem",
+    "tokens": [
+      "there",
+      "'s",
+      "no",
+      "problem"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "666b58ce-655c-4b12-990c-98a50a53a9fc",
+    "intent": "smalltalk.appraisal.no_problem"
+  },
+  {
+    "text": "sure no problem",
+    "tokens": [
+      "sure",
+      "no",
+      "problem"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "086e7dd8-2ee4-43d2-9467-a30165fd2447",
+    "intent": "smalltalk.appraisal.no_problem"
+  },
+  {
+    "text": "no problem about that",
+    "tokens": [
+      "no",
+      "problem",
+      "about",
+      "that"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET"
+    ],
+    "entities": [],
+    "id": "71a33256-f7e1-4095-af11-01eb63f33c0f",
+    "intent": "smalltalk.appraisal.no_problem"
+  },
+  {
+    "text": "don't worry",
+    "tokens": [
+      "do",
+      "n't",
+      "worry"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADV",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "37c12e81-caa2-49c6-b5c4-d598040d9004",
+    "intent": "smalltalk.appraisal.no_problem"
+  },
+  {
+    "text": "don't worry there's no problem",
+    "tokens": [
+      "do",
+      "n't",
+      "worry",
+      "there",
+      "'s",
+      "no",
+      "problem"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADV",
+      "VERB",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "14b87c15-7865-4301-ace2-dc4e08513a87",
+    "intent": "smalltalk.appraisal.no_problem"
+  },
+  {
+    "text": "dope",
+    "tokens": [
+      "dope"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "intent": "smalltalk.appraisal.no_problem"
+  }
+]

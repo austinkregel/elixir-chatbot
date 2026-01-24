@@ -1,0 +1,268 @@
+[
+  {
+    "text": "did I turn off the red lights",
+    "tokens": [
+      "did",
+      "I",
+      "turn",
+      "off",
+      "the",
+      "red",
+      "lights"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "red",
+        "type": "color",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "07ca3682-dadd-423a-9648-2052869deef2",
+    "intent": "smarthome.lights.switch.check.off"
+  },
+  {
+    "text": "check if lights are off in the bedroom",
+    "tokens": [
+      "check",
+      "if",
+      "lights",
+      "are",
+      "off",
+      "in",
+      "the",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "VERB",
+      "ADP",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "aad6645a-58e1-47ba-af24-331d6bc7b842",
+    "intent": "smarthome.lights.switch.check.off"
+  },
+  {
+    "text": "are the green lights in bedroom off",
+    "tokens": [
+      "are",
+      "the",
+      "green",
+      "lights",
+      "in",
+      "bedroom",
+      "off"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP"
+    ],
+    "entities": [
+      {
+        "text": "green",
+        "type": "color",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "04e267d0-fa4e-45a0-8918-bcccddd85283",
+    "intent": "smarthome.lights.switch.check.off"
+  },
+  {
+    "text": "check if I forgot to turn lights off in bedroom",
+    "tokens": [
+      "check",
+      "if",
+      "I",
+      "forgot",
+      "to",
+      "turn",
+      "lights",
+      "off",
+      "in",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "NOUN",
+      "PART",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 9,
+        "end": 9
+      }
+    ],
+    "id": "5b70d590-0653-4f06-b34e-6431bf89ac3e",
+    "intent": "smarthome.lights.switch.check.off"
+  },
+  {
+    "text": "is my table lamp off",
+    "tokens": [
+      "is",
+      "my",
+      "table",
+      "lamp",
+      "off"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "NOUN",
+      "ADP"
+    ],
+    "entities": [
+      {
+        "text": "table lamp",
+        "type": "lights",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "440fe9c8-acb3-422c-948b-c7107adb7c3d",
+    "intent": "smarthome.lights.switch.check.off"
+  },
+  {
+    "text": "are the lights off",
+    "tokens": [
+      "are",
+      "the",
+      "lights",
+      "off"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PART"
+    ],
+    "entities": [],
+    "id": "dddb7711-c03d-4594-8c3a-3185e8b61dd8",
+    "intent": "smarthome.lights.switch.check.off"
+  },
+  {
+    "text": "are lights off in all the rooms",
+    "tokens": [
+      "are",
+      "lights",
+      "off",
+      "in",
+      "all",
+      "the",
+      "rooms"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "PART",
+      "ADP",
+      "DET",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "all",
+        "type": "all",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "2fa8f52f-2f24-4980-8481-ec80dafde48a",
+    "intent": "smarthome.lights.switch.check.off"
+  },
+  {
+    "text": "are kitchen lights off",
+    "tokens": [
+      "are",
+      "kitchen",
+      "lights",
+      "off"
+    ],
+    "pos_tags": [
+      "VERB",
+      "VERB",
+      "NOUN",
+      "ADP"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "9607ce87-6a01-4130-bced-86cf77228efb",
+    "intent": "smarthome.lights.switch.check.off"
+  },
+  {
+    "text": "are the green lights off",
+    "tokens": [
+      "are",
+      "the",
+      "green",
+      "lights",
+      "off"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "green",
+        "type": "color",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "8f562e34-8b2f-4da8-bd71-6f8c6566b862",
+    "intent": "smarthome.lights.switch.check.off"
+  }
+]

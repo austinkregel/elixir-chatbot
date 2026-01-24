@@ -1,0 +1,80 @@
+{
+  "id": "933e6f9e-04d9-4c03-95b4-f9824a4f3bab",
+  "name": "account.spending.check - context: spending - date",
+  "auto": true,
+  "contexts": [
+    "spending"
+  ],
+  "responses": [
+    {
+      "resetContexts": false,
+      "action": "account.spending.check",
+      "affectedContexts": [],
+      "parameters": [
+        {
+          "id": "7e7c44a6-5e1b-49d5-a753-bcdbc230303c",
+          "name": "date",
+          "required": false,
+          "dataType": "@sys.date",
+          "value": "$date.recent",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "23f07312-d0ec-4e54-85aa-9b7eef2e0c36",
+          "name": "account",
+          "required": false,
+          "dataType": "@account",
+          "value": "#spending.account",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "76d80f01-7a76-4275-b656-670eb3dbd060",
+          "name": "merchant",
+          "required": false,
+          "dataType": "@merchant",
+          "value": "#spending.merchant",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        }
+      ],
+      "messages": [
+        {
+          "type": "0",
+          "title": "",
+          "textToSpeech": "",
+          "lang": "en",
+          "speech": [
+            "Here are your withdrawals for that date:"
+          ],
+          "condition": ""
+        }
+      ],
+      "speech": []
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": true,
+  "webhookForSlotFilling": false,
+  "fallbackIntent": false,
+  "events": [],
+  "conditionalResponses": [],
+  "condition": "",
+  "conditionalFollowupEvents": []
+}

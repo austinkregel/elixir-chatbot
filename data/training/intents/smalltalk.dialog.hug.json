@@ -1,0 +1,232 @@
+[
+  {
+    "text": "wanna hug",
+    "tokens": [
+      "wan",
+      "na",
+      "hug"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "4a88aa69-dd40-458c-982b-19f133c952b8",
+    "intent": "smalltalk.dialog.hug"
+  },
+  {
+    "text": "hug you",
+    "tokens": [
+      "hug",
+      "you"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "be0133c7-72c9-4cce-a7b2-be1fc1bfa9ae",
+    "intent": "smalltalk.dialog.hug"
+  },
+  {
+    "text": "do you want a hug",
+    "tokens": [
+      "do",
+      "you",
+      "want",
+      "a",
+      "hug"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "b97d5f91-aab6-4b48-94f3-237b21fa8a31",
+    "intent": "smalltalk.dialog.hug"
+  },
+  {
+    "text": "may I hug you",
+    "tokens": [
+      "may",
+      "I",
+      "hug",
+      "you"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "128fe4f9-5538-434c-aaaa-26b8b43ef16f",
+    "intent": "smalltalk.dialog.hug"
+  },
+  {
+    "text": "could you give me a hug",
+    "tokens": [
+      "could",
+      "you",
+      "give",
+      "me",
+      "a",
+      "hug"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "355c369b-c87f-4028-b5d4-4da61618b9bf",
+    "intent": "smalltalk.dialog.hug"
+  },
+  {
+    "text": "I want a hug",
+    "tokens": [
+      "I",
+      "want",
+      "a",
+      "hug"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "9cf1fc59-718d-473a-bb42-e991c3238fcb",
+    "intent": "smalltalk.dialog.hug"
+  },
+  {
+    "text": "hug",
+    "tokens": [
+      "hug"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "0b8bcdb8-973f-4c2c-bd97-6663874924db",
+    "intent": "smalltalk.dialog.hug"
+  },
+  {
+    "text": "hug me",
+    "tokens": [
+      "hug",
+      "me"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "bfa02316-9965-41c6-a725-80ac057cfbe7",
+    "intent": "smalltalk.dialog.hug"
+  },
+  {
+    "text": "hugged",
+    "tokens": [
+      "hugged"
+    ],
+    "pos_tags": [
+      "VERB"
+    ],
+    "entities": [],
+    "id": "e1582e25-fad9-4e10-8204-e4b99c051990",
+    "intent": "smalltalk.dialog.hug"
+  },
+  {
+    "text": "you hugged",
+    "tokens": [
+      "you",
+      "hugged"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "cc588bb2-974c-4ea9-a76e-8545efc07e6e",
+    "intent": "smalltalk.dialog.hug"
+  },
+  {
+    "text": "hugging",
+    "tokens": [
+      "hugging"
+    ],
+    "pos_tags": [
+      "VERB"
+    ],
+    "entities": [],
+    "id": "7ede200d-c329-400f-a924-c0ace9b4de5a",
+    "intent": "smalltalk.dialog.hug"
+  },
+  {
+    "text": "hugging me",
+    "tokens": [
+      "hugging",
+      "me"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "a7b2566d-89b8-474a-b255-9f2444f7e3cb",
+    "intent": "smalltalk.dialog.hug"
+  },
+  {
+    "text": "hugged me",
+    "tokens": [
+      "hugged",
+      "me"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "d53030e0-d850-4a28-8a57-57435d3eca41",
+    "intent": "smalltalk.dialog.hug"
+  },
+  {
+    "text": "want a hug",
+    "tokens": [
+      "want",
+      "a",
+      "hug"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "1283471f-6caf-4a96-99d3-226843598e41",
+    "intent": "smalltalk.dialog.hug"
+  },
+  {
+    "text": "a hug",
+    "tokens": [
+      "a",
+      "hug"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "1de0b261-2bff-4704-bb83-f7edf5317ce6",
+    "intent": "smalltalk.dialog.hug"
+  }
+]

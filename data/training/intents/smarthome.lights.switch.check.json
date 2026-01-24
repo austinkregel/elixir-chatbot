@@ -1,0 +1,106 @@
+[
+  {
+    "text": "check the status of all the lights",
+    "tokens": [
+      "check",
+      "the",
+      "status",
+      "of",
+      "all",
+      "the",
+      "lights"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "all",
+        "type": "all",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "9944ac6f-dee9-42d4-aac0-9a4cbe1c5feb",
+    "intent": "smarthome.lights.switch.check"
+  },
+  {
+    "text": "kitchen lights status",
+    "tokens": [
+      "kitchen",
+      "lights",
+      "status"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "4537d424-be3a-48ca-b386-271b288decbf",
+    "intent": "smarthome.lights.switch.check"
+  },
+  {
+    "text": "the blue lights status",
+    "tokens": [
+      "the",
+      "blue",
+      "lights",
+      "status"
+    ],
+    "pos_tags": [
+      "DET",
+      "ADJ",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "blue",
+        "type": "color",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "596eae56-7821-4685-8545-4be9a704d8ae",
+    "intent": "smarthome.lights.switch.check"
+  },
+  {
+    "text": "the table lamp status",
+    "tokens": [
+      "the",
+      "table",
+      "lamp",
+      "status"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "table lamp",
+        "type": "lights",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "3edb32b8-781a-4b24-b5f7-55441b37bcb2",
+    "intent": "smarthome.lights.switch.check"
+  }
+]

@@ -1,0 +1,552 @@
+[
+  {
+    "text": "one more time",
+    "tokens": [
+      "one",
+      "more",
+      "time"
+    ],
+    "pos_tags": [
+      "NUM",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "6904f3bb-673b-4a7c-913c-56a432677291",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "repeat it",
+    "tokens": [
+      "repeat",
+      "it"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "87fb12a4-54d1-4141-90f5-55e65a72d91b",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "play it one more time",
+    "tokens": [
+      "play",
+      "it",
+      "one",
+      "more",
+      "time"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NUM",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "d228d939-69f2-4cf6-b116-87e72c583bcd",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "play this track once again",
+    "tokens": [
+      "play",
+      "this",
+      "track",
+      "once",
+      "again"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "b4c2ce98-1644-4b2e-adbd-e25da223e4d5",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "let's repeat this track",
+    "tokens": [
+      "let",
+      "'s",
+      "repeat",
+      "this",
+      "track"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "31b0f615-58a4-40d9-a083-1f9652b347c7",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "put this on repeat",
+    "tokens": [
+      "put",
+      "this",
+      "on",
+      "repeat"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "775ac562-7377-4261-a23b-4d9750c81263",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "put it on repeat mode",
+    "tokens": [
+      "put",
+      "it",
+      "on",
+      "repeat",
+      "mode"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "096e15b6-ff66-4b23-8af5-06d7121ff578",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "put this track on repeat",
+    "tokens": [
+      "put",
+      "this",
+      "track",
+      "on",
+      "repeat"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "4ead1159-08fb-40e9-841e-1dcdeb4c378e",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "could you repeat them",
+    "tokens": [
+      "could",
+      "you",
+      "repeat",
+      "them"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "e3a7c9e0-d31f-4a49-ad6c-66a00006bc6b",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "can you repeat this track",
+    "tokens": [
+      "can",
+      "you",
+      "repeat",
+      "this",
+      "track"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "1b6ef44c-34fc-4d9c-b0ce-4ce81ef1f673",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "can you repeat it",
+    "tokens": [
+      "can",
+      "you",
+      "repeat",
+      "it"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "c056d8fe-b0ef-4be8-bf2c-791e305e5016",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "turn on repeat mode for this song",
+    "tokens": [
+      "turn",
+      "on",
+      "repeat",
+      "mode",
+      "for",
+      "this",
+      "song"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "c05310b9-8ea3-48f6-bc1f-85cdc5769eee",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "turn on repeat mode for it",
+    "tokens": [
+      "turn",
+      "on",
+      "repeat",
+      "mode",
+      "for",
+      "it"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "6d894071-251f-4e57-aa3e-cd40099a2cbb",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "turn on repeat for this song",
+    "tokens": [
+      "turn",
+      "on",
+      "repeat",
+      "for",
+      "this",
+      "song"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "97eda91e-3b0c-4aa5-886a-74e52ccad5c9",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "repeat mode for this track",
+    "tokens": [
+      "repeat",
+      "mode",
+      "for",
+      "this",
+      "track"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "121780d8-0a40-416f-89e1-2afdf87984c0",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "repeat please",
+    "tokens": [
+      "repeat",
+      "please"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f98337d8-064f-46f0-82c0-81ddd9601f76",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "repeat one more time",
+    "tokens": [
+      "repeat",
+      "one",
+      "more",
+      "time"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NUM",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "5f854072-fd38-45de-9590-477ffc166a1a",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "repeat this track one more time",
+    "tokens": [
+      "repeat",
+      "this",
+      "track",
+      "one",
+      "more",
+      "time"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NUM",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "7f3735bf-4385-4117-a2d7-ea4eb3706a85",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "play again from the very beginning",
+    "tokens": [
+      "play",
+      "again",
+      "from",
+      "the",
+      "very",
+      "beginning"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADV",
+      "ADP",
+      "DET",
+      "ADV",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "b1714586-6ed5-416d-891e-744b7a47666c",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "repeat it once again",
+    "tokens": [
+      "repeat",
+      "it",
+      "once",
+      "again"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "118a4c83-09b2-4df3-ace3-3f822f784772",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "repeat this song once again",
+    "tokens": [
+      "repeat",
+      "this",
+      "song",
+      "once",
+      "again"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "a40ab974-d473-46a1-a2dd-f291c267ef05",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "repeat the song",
+    "tokens": [
+      "repeat",
+      "the",
+      "song"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "ea7b30ef-b75d-4578-b717-91990c0986c0",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "repeat",
+    "tokens": [
+      "repeat"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "308ea3c5-44dd-440c-8ada-18d2165ebb79",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "I want to listen to this song once again",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "listen",
+      "to",
+      "this",
+      "song",
+      "once",
+      "again"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "7ff0c014-2e64-484e-9451-eb7be672db40",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "play it again",
+    "tokens": [
+      "play",
+      "it",
+      "again"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "84874059-c41e-4938-ad12-92cc7427a448",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "play this song from the beginning",
+    "tokens": [
+      "play",
+      "this",
+      "song",
+      "from",
+      "the",
+      "beginning"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "30867ebe-98ec-40ea-bbe7-4c11d2720992",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "repeat this song",
+    "tokens": [
+      "repeat",
+      "this",
+      "song"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "2603277b-6a84-483c-863a-a64d63bdd109",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "repeat this track",
+    "tokens": [
+      "repeat",
+      "this",
+      "track"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "a7dfad49-b9c7-424e-9428-54e3616fd1a5",
+    "intent": "music_player_control.repeat"
+  },
+  {
+    "text": "play this song again",
+    "tokens": [
+      "play",
+      "this",
+      "song",
+      "again"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "1347a768-abba-4e18-a12a-7f21f685c8bb",
+    "intent": "music_player_control.repeat"
+  }
+]

@@ -1,0 +1,278 @@
+[
+  {
+    "text": "also from BBC",
+    "tokens": [
+      "also",
+      "from",
+      "BBC"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "BBC",
+        "type": "news_source",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "288c1466-fc82-40dd-a599-3798be27a715",
+    "intent": "news.search.context_news-search"
+  },
+  {
+    "text": "from BBC also",
+    "tokens": [
+      "from",
+      "BBC",
+      "also"
+    ],
+    "pos_tags": [
+      "ADP",
+      "PROPN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "BBC",
+        "type": "news_source",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "ed68c9fc-afb0-4b14-aac0-ab1ee2a1d1f0",
+    "intent": "news.search.context_news-search"
+  },
+  {
+    "text": "I need BBC now",
+    "tokens": [
+      "I",
+      "need",
+      "BBC",
+      "now"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PROPN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "BBC",
+        "type": "news_source",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "8c17a740-bdd6-454c-a0a8-3adc7412e118",
+    "intent": "news.search.context_news-search"
+  },
+  {
+    "text": "now from BBC please",
+    "tokens": [
+      "now",
+      "from",
+      "BBC",
+      "please"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADP",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "BBC",
+        "type": "news_source",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "afae680f-bf0d-4d2c-ac6a-20012ab597ad",
+    "intent": "news.search.context_news-search"
+  },
+  {
+    "text": "now CNN",
+    "tokens": [
+      "now",
+      "CNN"
+    ],
+    "pos_tags": [
+      "ADV",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "CNN",
+        "type": "news_source",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "03540ce9-ba07-40cb-8591-f35419898984",
+    "intent": "news.search.context_news-search"
+  },
+  {
+    "text": "CNN too",
+    "tokens": [
+      "CNN",
+      "too"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "CNN",
+        "type": "news_source",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "5fdc1deb-dc14-4642-bc4a-249cf4c15200",
+    "intent": "news.search.context_news-search"
+  },
+  {
+    "text": "CNN as well",
+    "tokens": [
+      "CNN",
+      "as",
+      "well"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "CNN",
+        "type": "news_source",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "3a22320e-41f8-4601-8267-f71c4c7eb402",
+    "intent": "news.search.context_news-search"
+  },
+  {
+    "text": "and CNN",
+    "tokens": [
+      "and",
+      "CNN"
+    ],
+    "pos_tags": [
+      "CONJ",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "CNN",
+        "type": "news_source",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "e8dbd77f-dc8d-44f7-a223-ee325d39acc2",
+    "intent": "news.search.context_news-search"
+  },
+  {
+    "text": "now the ones form BBC",
+    "tokens": [
+      "now",
+      "the",
+      "ones",
+      "form",
+      "BBC"
+    ],
+    "pos_tags": [
+      "ADV",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "BBC",
+        "type": "news_source",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "57e31d82-0b83-4ab8-863f-b9e8f52c8984",
+    "intent": "news.search.context_news-search"
+  },
+  {
+    "text": "now from ABC",
+    "tokens": [
+      "now",
+      "from",
+      "ABC"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "ABC",
+        "type": "news_source",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "c8ad9cf8-ec53-491f-bab2-9664521bf082",
+    "intent": "news.search.context_news-search"
+  },
+  {
+    "text": "from BBC",
+    "tokens": [
+      "from",
+      "BBC"
+    ],
+    "pos_tags": [
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "BBC",
+        "type": "news_source",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "35ad99ae-411f-4a4a-a24a-67317703563d",
+    "intent": "news.search.context_news-search"
+  },
+  {
+    "text": "how about CNN",
+    "tokens": [
+      "how",
+      "about",
+      "CNN"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "CNN",
+        "type": "news_source",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "470b01a8-aae5-4388-8bae-c7e0cd3b5c56",
+    "intent": "news.search.context_news-search"
+  }
+]

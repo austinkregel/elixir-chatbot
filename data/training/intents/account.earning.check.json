@@ -1,0 +1,312 @@
+[
+  {
+    "text": "deposits history",
+    "tokens": [
+      "deposits",
+      "history"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "deposits",
+        "type": "category",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "bd106c28-9485-4991-8fe2-2a12e9d98b9d",
+    "intent": "account.earning.check"
+  },
+  {
+    "text": "see my latest deposit",
+    "tokens": [
+      "see",
+      "my",
+      "latest",
+      "deposit"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "deposit",
+        "type": "category",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "750d0925-eaf4-435c-94b5-8a7632336dda",
+    "intent": "account.earning.check"
+  },
+  {
+    "text": "I want to see my deposits",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "see",
+      "my",
+      "deposits"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "deposits",
+        "type": "category",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "3064dc2a-b272-4c2e-8bf6-e6e56c539f91",
+    "intent": "account.earning.check"
+  },
+  {
+    "text": "check earnings",
+    "tokens": [
+      "check",
+      "earnings"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "17bc3267-228a-4312-a68e-1eb1f4934d63",
+    "intent": "account.earning.check"
+  },
+  {
+    "text": "earnings",
+    "tokens": [
+      "earnings"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "7157adb0-ad55-494f-856f-b4c744729acc",
+    "intent": "account.earning.check"
+  },
+  {
+    "text": "can you say how much money I got last month on my checking account",
+    "tokens": [
+      "can",
+      "you",
+      "say",
+      "how",
+      "much",
+      "money",
+      "I",
+      "got",
+      "last",
+      "month",
+      "on",
+      "my",
+      "checking",
+      "account"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "NOUN",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "last month",
+        "type": "date_time",
+        "start": 8,
+        "end": 9
+      },
+      {
+        "text": "checking account",
+        "type": "account",
+        "start": 12,
+        "end": 13
+      }
+    ],
+    "id": "f4c19057-02e6-4ae3-b52f-c5d59b3b3c26",
+    "intent": "account.earning.check"
+  },
+  {
+    "text": "how much money did I earn in December",
+    "tokens": [
+      "how",
+      "much",
+      "money",
+      "did",
+      "I",
+      "earn",
+      "in",
+      "December"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "NOUN",
+      "VERB",
+      "PRON",
+      "VERB",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "December",
+        "type": "date_time",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "f6ddfe06-1d02-44c7-b904-6e7af233bca5",
+    "intent": "account.earning.check"
+  },
+  {
+    "text": "how much money did I earn on January 2",
+    "tokens": [
+      "how",
+      "much",
+      "money",
+      "did",
+      "I",
+      "earn",
+      "on",
+      "January",
+      "2"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "NOUN",
+      "VERB",
+      "PRON",
+      "VERB",
+      "ADP",
+      "PROPN",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "January 2",
+        "type": "date_time",
+        "start": 7,
+        "end": 8
+      }
+    ],
+    "id": "858e7aac-af2f-4718-996d-21a9ee3c3d0f",
+    "intent": "account.earning.check"
+  },
+  {
+    "text": "check my earnings on my card",
+    "tokens": [
+      "check",
+      "my",
+      "earnings",
+      "on",
+      "my",
+      "card"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "dd103fa7-ff79-4762-af8c-113537c51500",
+    "intent": "account.earning.check"
+  },
+  {
+    "text": "check earnings are on my checking account",
+    "tokens": [
+      "check",
+      "earnings",
+      "are",
+      "on",
+      "my",
+      "checking",
+      "account"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "VERB",
+      "ADP",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "checking",
+        "type": "account",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "30fa9cd6-30c1-4155-8222-a2e79fc9223a",
+    "intent": "account.earning.check"
+  },
+  {
+    "text": "get info about my earnings on my card in December",
+    "tokens": [
+      "get",
+      "info",
+      "about",
+      "my",
+      "earnings",
+      "on",
+      "my",
+      "card",
+      "in",
+      "December"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "December",
+        "type": "date_time",
+        "start": 9,
+        "end": 9
+      }
+    ],
+    "id": "8d81c175-d74a-4ea6-8af8-e71b710a652c",
+    "intent": "account.earning.check"
+  }
+]

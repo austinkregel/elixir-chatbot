@@ -1,0 +1,166 @@
+[
+  {
+    "text": "it's been so nice to talk to you",
+    "tokens": [
+      "it",
+      "'s",
+      "been",
+      "so",
+      "nice",
+      "to",
+      "talk",
+      "to",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "PART",
+      "VERB",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "4abff2bc-a875-4055-a9f9-d6ca84f3df3d",
+    "intent": "smalltalk.greetings.nice_to_talk_to_you"
+  },
+  {
+    "text": "it's been a pleasure talking to you",
+    "tokens": [
+      "it",
+      "'s",
+      "been",
+      "a",
+      "pleasure",
+      "talking",
+      "to",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "ab23b7d2-ff8f-4bab-8657-97f35f666815",
+    "intent": "smalltalk.greetings.nice_to_talk_to_you"
+  },
+  {
+    "text": "nice to talk to you",
+    "tokens": [
+      "nice",
+      "to",
+      "talk",
+      "to",
+      "you"
+    ],
+    "pos_tags": [
+      "ADV",
+      "PART",
+      "VERB",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "3e5a8f5e-ef4d-4584-8de6-71a3f8389c51",
+    "intent": "smalltalk.greetings.nice_to_talk_to_you"
+  },
+  {
+    "text": "it's nice to talk to you",
+    "tokens": [
+      "it",
+      "'s",
+      "nice",
+      "to",
+      "talk",
+      "to",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "PART",
+      "VERB",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "4fe202a3-0650-4cf0-9dcb-a869b3a1c0a1",
+    "intent": "smalltalk.greetings.nice_to_talk_to_you"
+  },
+  {
+    "text": "nice talking to you",
+    "tokens": [
+      "nice",
+      "talking",
+      "to",
+      "you"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "efd45fda-42ac-4dbf-9a89-c3ab22b4e5cd",
+    "intent": "smalltalk.greetings.nice_to_talk_to_you"
+  },
+  {
+    "text": "it is nice talking to you",
+    "tokens": [
+      "it",
+      "is",
+      "nice",
+      "talking",
+      "to",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "VERB",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "41ebf1f7-010d-4158-af45-85c184fee40e",
+    "intent": "smalltalk.greetings.nice_to_talk_to_you"
+  },
+  {
+    "text": "how nice it is to talk to you",
+    "tokens": [
+      "how",
+      "nice",
+      "it",
+      "is",
+      "to",
+      "talk",
+      "to",
+      "you"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "54546ca1-23a3-4d89-92ca-17815312b7d3",
+    "intent": "smalltalk.greetings.nice_to_talk_to_you"
+  }
+]

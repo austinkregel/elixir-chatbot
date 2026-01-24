@@ -1,0 +1,67 @@
+[
+  {
+    "id": "646e899f-ea46-4b7e-81e2-007668a01942",
+    "data": [
+      {
+        "text": "I\u0027m waiting",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "5abfa493-d3be-4319-a1b2-042cba201521",
+    "data": [
+      {
+        "text": "still waiting",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "331a5159-2506-4036-85bd-786f43693f24",
+    "data": [
+      {
+        "text": "I\u0027ll wait",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "bc52557e-e20a-44df-9379-5153495a50fa",
+    "data": [
+      {
+        "text": "I can\u0027t wait anymore",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "0ffe1cee-7174-4dad-9b62-d7cdff7cca7e",
+    "data": [
+      {
+        "text": "how long do I have to wait",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  }
+]

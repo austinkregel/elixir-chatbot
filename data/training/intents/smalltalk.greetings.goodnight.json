@@ -1,0 +1,302 @@
+[
+  {
+    "text": "sweet dreams",
+    "tokens": [
+      "sweet",
+      "dreams"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "d573fb2b-392e-4805-926c-ffc2d3f04310",
+    "intent": "smalltalk.greetings.goodnight"
+  },
+  {
+    "text": "good night",
+    "tokens": [
+      "good",
+      "night"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "ecd7cb7e-6309-4870-8ad0-546014bafc83",
+    "intent": "smalltalk.greetings.goodnight"
+  },
+  {
+    "text": "have a good night",
+    "tokens": [
+      "have",
+      "a",
+      "good",
+      "night"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "ebcb18fb-a69a-4e0a-8c76-3616d681043e",
+    "intent": "smalltalk.greetings.goodnight"
+  },
+  {
+    "text": "good night to you",
+    "tokens": [
+      "good",
+      "night",
+      "to",
+      "you"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "f0e18516-97dc-46e8-b19a-14e6e7c7d5d2",
+    "intent": "smalltalk.greetings.goodnight"
+  },
+  {
+    "text": "thank you good night",
+    "tokens": [
+      "thank",
+      "you",
+      "good",
+      "night"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "afe39463-8575-4bdd-b517-69e5e3b428c9",
+    "intent": "smalltalk.greetings.goodnight"
+  },
+  {
+    "text": " bye good night",
+    "tokens": [
+      "bye",
+      "good",
+      "night"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "5ad8becf-8753-4770-9336-a93e582fb75a",
+    "intent": "smalltalk.greetings.goodnight"
+  },
+  {
+    "text": "good night bye",
+    "tokens": [
+      "good",
+      "night",
+      "bye"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "39282d40-6436-44a9-8233-f405253d1ff8",
+    "intent": "smalltalk.greetings.goodnight"
+  },
+  {
+    "text": "bye good night",
+    "tokens": [
+      "bye",
+      "good",
+      "night"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "2f212818-cfe9-4c49-b44d-6c49f7b2eeb5",
+    "intent": "smalltalk.greetings.goodnight"
+  },
+  {
+    "text": "good good night",
+    "tokens": [
+      "good",
+      "good",
+      "night"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "231867da-4f71-42a6-bece-a41b71108a18",
+    "intent": "smalltalk.greetings.goodnight"
+  },
+  {
+    "text": "good night for now",
+    "tokens": [
+      "good",
+      "night",
+      "for",
+      "now"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "cea87342-f797-4954-8508-c9cb738a5d02",
+    "intent": "smalltalk.greetings.goodnight"
+  },
+  {
+    "text": "goodnight",
+    "tokens": [
+      "goodnight"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "90d25a39-0312-4ef9-97f2-0b009464a028",
+    "intent": "smalltalk.greetings.goodnight"
+  },
+  {
+    "text": "night",
+    "tokens": [
+      "night"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "9362270f-33d5-4359-9854-71f6a95a4151",
+    "intent": "smalltalk.greetings.goodnight"
+  },
+  {
+    "text": "thanks goodnight",
+    "tokens": [
+      "thanks",
+      "goodnight"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "9380edb8-7095-4cc1-8633-c1ba9eaa2bc0",
+    "intent": "smalltalk.greetings.goodnight"
+  },
+  {
+    "text": "good night see you tomorrow",
+    "tokens": [
+      "good",
+      "night",
+      "see",
+      "you",
+      "tomorrow"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e22423d6-8861-4e1e-a7d6-e063b423594e",
+    "intent": "smalltalk.greetings.goodnight"
+  },
+  {
+    "text": "alright goodnight",
+    "tokens": [
+      "alright",
+      "goodnight"
+    ],
+    "pos_tags": [
+      "ADV",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "5e0c5929-1e0f-4e2b-901b-b157d4599a41",
+    "intent": "smalltalk.greetings.goodnight"
+  },
+  {
+    "text": "good tonight",
+    "tokens": [
+      "good",
+      "tonight"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "7faba752-0d58-4e51-b3f8-e9b95f9c2607",
+    "intent": "smalltalk.greetings.goodnight"
+  },
+  {
+    "text": "okay have a good night",
+    "tokens": [
+      "okay",
+      "have",
+      "a",
+      "good",
+      "night"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "dec8431e-8bc3-4daa-845b-436399a10639",
+    "intent": "smalltalk.greetings.goodnight"
+  },
+  {
+    "text": "night",
+    "tokens": [
+      "night"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "982a8b7d-c705-45cb-b37c-71c2ca73c760",
+    "intent": "smalltalk.greetings.goodnight"
+  },
+  {
+    "text": "have a good night",
+    "tokens": [
+      "have",
+      "a",
+      "good",
+      "night"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "880c6d74-2438-4e22-a5a9-3386123d56d0",
+    "intent": "smalltalk.greetings.goodnight"
+  }
+]

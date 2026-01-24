@@ -1,0 +1,164 @@
+[
+  {
+    "text": "repeat",
+    "tokens": [
+      "repeat"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "843ce563-d00d-4f69-9113-ada4950812c8",
+    "intent": "web.search.repeat"
+  },
+  {
+    "text": "repeat it",
+    "tokens": [
+      "repeat",
+      "it"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "215df3ab-4cc3-43bb-97ce-2a18b01be3c8",
+    "intent": "web.search.repeat"
+  },
+  {
+    "text": "come again",
+    "tokens": [
+      "come",
+      "again"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "15462f58-ec48-46e1-a53f-7bf26fa86b7f",
+    "intent": "web.search.repeat"
+  },
+  {
+    "text": "do it again",
+    "tokens": [
+      "do",
+      "it",
+      "again"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "642c47f4-a6b8-4165-b07a-e6d88b70a0d8",
+    "intent": "web.search.repeat"
+  },
+  {
+    "text": "say it again",
+    "tokens": [
+      "say",
+      "it",
+      "again"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "4a593938-0d3e-4811-8abc-72c6f5c2ca2f",
+    "intent": "web.search.repeat"
+  },
+  {
+    "text": "say the same again",
+    "tokens": [
+      "say",
+      "the",
+      "same",
+      "again"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "5990d8ce-3491-4b13-b593-5d13bf5ab57e",
+    "intent": "web.search.repeat"
+  },
+  {
+    "text": "please repeat that",
+    "tokens": [
+      "please",
+      "repeat",
+      "that"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "f855b288-3196-4915-be9e-38140e68221d",
+    "intent": "web.search.repeat"
+  },
+  {
+    "text": "repeat these results",
+    "tokens": [
+      "repeat",
+      "these",
+      "results"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "7256ae28-2727-41ac-8512-33173226ac03",
+    "intent": "web.search.repeat"
+  },
+  {
+    "text": "could you repeat that",
+    "tokens": [
+      "could",
+      "you",
+      "repeat",
+      "that"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "59475322-05f6-4627-aa74-f498e640d9c6",
+    "intent": "web.search.repeat"
+  },
+  {
+    "text": "repeat what you've just said",
+    "tokens": [
+      "repeat",
+      "what",
+      "you",
+      "'ve",
+      "just",
+      "said"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "PRON",
+      "VERB",
+      "ADV",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "a61f12a3-d1a3-4017-99d6-4e279f8bd05b",
+    "intent": "web.search.repeat"
+  }
+]

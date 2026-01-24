@@ -1,0 +1,154 @@
+[
+  {
+    "text": "I'm insomnious",
+    "tokens": [
+      "I",
+      "'m",
+      "insomnious"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "2baba4b1-11a9-46b5-ba3d-99e683cd7cbc",
+    "intent": "smalltalk.user.can_not_sleep"
+  },
+  {
+    "text": "I'm sleepless",
+    "tokens": [
+      "I",
+      "'m",
+      "sleepless"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "76b604cb-b93a-400f-b2ec-a23308edaa9c",
+    "intent": "smalltalk.user.can_not_sleep"
+  },
+  {
+    "text": "I can't get any sleep",
+    "tokens": [
+      "I",
+      "ca",
+      "n't",
+      "get",
+      "any",
+      "sleep"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "ADV",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e14755e7-820e-4f65-b5e9-c2020dee6c82",
+    "intent": "smalltalk.user.can_not_sleep"
+  },
+  {
+    "text": "I can't sleep",
+    "tokens": [
+      "I",
+      "ca",
+      "n't",
+      "sleep"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "ADV",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "c549ee3d-f75f-441f-a29f-29f29959e213",
+    "intent": "smalltalk.user.can_not_sleep"
+  },
+  {
+    "text": "I can't fall asleep",
+    "tokens": [
+      "I",
+      "ca",
+      "n't",
+      "fall",
+      "asleep"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "ADV",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "e23a4bc2-70af-4fa9-bc62-a3e1e9e7afb2",
+    "intent": "smalltalk.user.can_not_sleep"
+  },
+  {
+    "text": "I can't get to sleep",
+    "tokens": [
+      "I",
+      "ca",
+      "n't",
+      "get",
+      "to",
+      "sleep"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "ADV",
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "9202d504-4dc6-4e87-a365-df744e9b3e33",
+    "intent": "smalltalk.user.can_not_sleep"
+  },
+  {
+    "text": "I can't get no sleep",
+    "tokens": [
+      "I",
+      "ca",
+      "n't",
+      "get",
+      "no",
+      "sleep"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "ADV",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e6e5973e-b0c0-4db7-8c9d-934066c23482",
+    "intent": "smalltalk.user.can_not_sleep"
+  },
+  {
+    "text": "I'm insomniac",
+    "tokens": [
+      "I",
+      "'m",
+      "insomniac"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "867e43e5-f794-4918-a850-cac5be214ba5",
+    "intent": "smalltalk.user.can_not_sleep"
+  }
+]

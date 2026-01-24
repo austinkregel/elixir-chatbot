@@ -1,0 +1,309 @@
+[
+  {
+    "text": "how about Saturday",
+    "tokens": [
+      "how",
+      "about",
+      "Saturday"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADV",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Saturday",
+        "type": "date_time",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "dc10ab8f-8b59-42de-a0eb-2e827ac4708c",
+    "intent": "weather.context_weather.comment_date.time"
+  },
+  {
+    "text": "and during next week",
+    "tokens": [
+      "and",
+      "during",
+      "next",
+      "week"
+    ],
+    "pos_tags": [
+      "CONJ",
+      "ADP",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "next week",
+        "type": "date_time",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "da195c54-0770-4306-b63f-ed73f7b59e08",
+    "intent": "weather.context_weather.comment_date.time"
+  },
+  {
+    "text": "and tomorrow",
+    "tokens": [
+      "and",
+      "tomorrow"
+    ],
+    "pos_tags": [
+      "CONJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "909bad32-13f7-4e28-aa2a-938ee9968ef0",
+    "intent": "weather.context_weather.comment_date.time"
+  },
+  {
+    "text": "what about today",
+    "tokens": [
+      "what",
+      "about",
+      "today"
+    ],
+    "pos_tags": [
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "e776d7e8-ed00-4747-844c-32e1185b11c2",
+    "intent": "weather.context_weather.comment_date.time"
+  },
+  {
+    "text": "will it change at 5 pm",
+    "tokens": [
+      "will",
+      "it",
+      "change",
+      "at",
+      "5",
+      "pm"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "at 5 pm",
+        "type": "date_time",
+        "start": 3,
+        "end": 5
+      }
+    ],
+    "id": "aff396d2-841a-4e64-bbdc-df02d9475183",
+    "intent": "weather.context_weather.comment_date.time"
+  },
+  {
+    "text": "on Wednesday",
+    "tokens": [
+      "on",
+      "Wednesday"
+    ],
+    "pos_tags": [
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Wednesday",
+        "type": "date_time",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "2ee56828-3a1b-460d-b783-5060fcf9604d",
+    "intent": "weather.context_weather.comment_date.time"
+  },
+  {
+    "text": "and what about tomorrow",
+    "tokens": [
+      "and",
+      "what",
+      "about",
+      "tomorrow"
+    ],
+    "pos_tags": [
+      "CONJ",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "540146c7-90bc-46a4-8089-9cfca7cb50eb",
+    "intent": "weather.context_weather.comment_date.time"
+  },
+  {
+    "text": "what about tomorrow",
+    "tokens": [
+      "what",
+      "about",
+      "tomorrow"
+    ],
+    "pos_tags": [
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "e8a6f1a6-b1e1-4870-83de-ec2a2b33d7cb",
+    "intent": "weather.context_weather.comment_date.time"
+  },
+  {
+    "text": "check for next Monday",
+    "tokens": [
+      "check",
+      "for",
+      "next",
+      "Monday"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "ADJ",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "next Monday",
+        "type": "date_time",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "af7aa1c9-59c2-492e-b19e-0b72dbccf98c",
+    "intent": "weather.context_weather.comment_date.time"
+  },
+  {
+    "text": "check next week",
+    "tokens": [
+      "check",
+      "next",
+      "week"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "next week",
+        "type": "date_time",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "48d28c81-14e4-43bd-932b-b1a822335aba",
+    "intent": "weather.context_weather.comment_date.time"
+  },
+  {
+    "text": "and next weekend",
+    "tokens": [
+      "and",
+      "next",
+      "weekend"
+    ],
+    "pos_tags": [
+      "CONJ",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "next weekend",
+        "type": "date_time",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "b12cda45-3066-478b-8991-8bc70ccf1328",
+    "intent": "weather.context_weather.comment_date.time"
+  },
+  {
+    "text": "for next month too",
+    "tokens": [
+      "for",
+      "next",
+      "month",
+      "too"
+    ],
+    "pos_tags": [
+      "ADP",
+      "ADJ",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "for next month",
+        "type": "date_time",
+        "start": 0,
+        "end": 2
+      }
+    ],
+    "id": "6008793d-21ce-4908-85f8-38441f723aef",
+    "intent": "weather.context_weather.comment_date.time"
+  },
+  {
+    "text": "this evening",
+    "tokens": [
+      "this",
+      "evening"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "this evening",
+        "type": "date_time",
+        "start": 0,
+        "end": 1
+      }
+    ],
+    "id": "ad7fc893-fb72-49fc-a342-1a5cb4425d40",
+    "intent": "weather.context_weather.comment_date.time"
+  }
+]

@@ -1,0 +1,114 @@
+[
+  {
+    "text": "I'll get back to you in a moment",
+    "tokens": [
+      "I",
+      "'ll",
+      "get",
+      "back",
+      "to",
+      "you",
+      "in",
+      "a",
+      "moment"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "ADV",
+      "PART",
+      "PRON",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "7d1c1c33-7b29-4dad-95c9-b881be2cb3e5",
+    "intent": "smalltalk.user.will_be_back"
+  },
+  {
+    "text": "be back in 5 minutes",
+    "tokens": [
+      "be",
+      "back",
+      "in",
+      "5",
+      "minutes"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADV",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "9ea982d4-9f6b-4123-a19d-fa72f1890d7c",
+    "intent": "smalltalk.user.will_be_back"
+  },
+  {
+    "text": "I'll be back",
+    "tokens": [
+      "I",
+      "'ll",
+      "be",
+      "back"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "d954fabb-9ccf-4cdf-9a65-542e2293c99f",
+    "intent": "smalltalk.user.will_be_back"
+  },
+  {
+    "text": "I promise to come back",
+    "tokens": [
+      "I",
+      "promise",
+      "to",
+      "come",
+      "back"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "6dbe72b0-60df-4f86-8d10-2fa69820372d",
+    "intent": "smalltalk.user.will_be_back"
+  },
+  {
+    "text": "I'll be back in a few minutes",
+    "tokens": [
+      "I",
+      "'ll",
+      "be",
+      "back",
+      "in",
+      "a",
+      "few",
+      "minutes"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "ADV",
+      "ADP",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "70b39844-3705-4ede-b0c3-3d2b57445fec",
+    "intent": "smalltalk.user.will_be_back"
+  }
+]

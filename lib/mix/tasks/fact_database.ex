@@ -115,13 +115,8 @@ defmodule Mix.Tasks.FactDatabase do
   defp sync_to_beliefs do
     IO.puts("\n=== Syncing Facts to Epistemic System ===\n")
 
-    case ChatBot.FactDatabase.Integration.sync_facts_to_beliefs() do
-      {:ok, count} ->
-        IO.puts("  Successfully synced #{count} facts to beliefs")
-
-      {:error, reason} ->
-        IO.puts("  Error: #{inspect(reason)}")
-    end
+    {:ok, count} = ChatBot.FactDatabase.Integration.sync_facts_to_beliefs()
+    IO.puts("  Successfully synced #{count} facts to beliefs")
 
     IO.puts("")
   end
@@ -131,18 +126,14 @@ defmodule Mix.Tasks.FactDatabase do
     IO.puts("  Entity: #{entity}")
     IO.puts("  Fact: #{fact_text}")
 
-    case ChatBot.FactDatabase.Integration.add_fact(entity, fact_text,
-           category: "learned",
-           confidence: 0.8,
-           verification_source: "manual_entry"
-         ) do
-      {:ok, fact_id, _fact} ->
-        IO.puts("\n  Success! Fact ID: #{fact_id}")
+    {:ok, fact_id, _fact} =
+      ChatBot.FactDatabase.Integration.add_fact(entity, fact_text,
+        category: "learned",
+        confidence: 0.8,
+        verification_source: "manual_entry"
+      )
 
-      {:error, reason} ->
-        IO.puts("\n  Error: #{inspect(reason)}")
-    end
-
+    IO.puts("\n  Success! Fact ID: #{fact_id}")
     IO.puts("")
   end
 

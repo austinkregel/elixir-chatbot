@@ -1,0 +1,146 @@
+[
+  {
+    "text": "you are chatbot",
+    "tokens": [
+      "you",
+      "are",
+      "chatbot"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "8d20b9c9-3bd4-4a4f-9930-0b8151d29f80",
+    "intent": "smalltalk.agent.chatbot"
+  },
+  {
+    "text": "you are a bot",
+    "tokens": [
+      "you",
+      "are",
+      "a",
+      "bot"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "1155021a-412d-43fc-98b5-899f43e2b6ad",
+    "intent": "smalltalk.agent.chatbot"
+  },
+  {
+    "text": "are you a chatbot",
+    "tokens": [
+      "are",
+      "you",
+      "a",
+      "chatbot"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "d03e3f1f-5815-4d6f-a7f6-2b913e507c23",
+    "intent": "smalltalk.agent.chatbot"
+  },
+  {
+    "text": "are you a bot",
+    "tokens": [
+      "are",
+      "you",
+      "a",
+      "bot"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "b961dc7a-3b57-4855-af07-d653d3db594c",
+    "intent": "smalltalk.agent.chatbot"
+  },
+  {
+    "text": "are you just a bot",
+    "tokens": [
+      "are",
+      "you",
+      "just",
+      "a",
+      "bot"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADV",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f191c750-d074-4b7e-bac0-5d3f729897b4",
+    "intent": "smalltalk.agent.chatbot"
+  },
+  {
+    "text": "are you a robot",
+    "tokens": [
+      "are",
+      "you",
+      "a",
+      "robot"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "9cbfe308-67ed-41f0-a9ad-23b9298a0d85",
+    "intent": "smalltalk.agent.chatbot"
+  },
+  {
+    "text": "are you a program",
+    "tokens": [
+      "are",
+      "you",
+      "a",
+      "program"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "ce75673b-4467-426a-9ee9-b7d378c53607",
+    "intent": "smalltalk.agent.chatbot"
+  },
+  {
+    "text": "you're a robot",
+    "tokens": [
+      "you",
+      "'re",
+      "a",
+      "robot"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "18b31073-cdc4-4bf6-83a2-43fc3b3e8d9d",
+    "intent": "smalltalk.agent.chatbot"
+  }
+]

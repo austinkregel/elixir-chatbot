@@ -1,0 +1,94 @@
+[
+  {
+    "text": "good evening",
+    "tokens": [
+      "good",
+      "evening"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "7d81c029-b66f-4da6-af11-dfc4f85a2c6a",
+    "intent": "smalltalk.greetings.goodevening"
+  },
+  {
+    "text": "good evening to you",
+    "tokens": [
+      "good",
+      "evening",
+      "to",
+      "you"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "0ceac0ee-85f0-4e72-b76b-750617021746",
+    "intent": "smalltalk.greetings.goodevening"
+  },
+  {
+    "text": "hey good evening",
+    "tokens": [
+      "hey",
+      "good",
+      "evening"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "15e321ce-b65f-4ad4-be2f-c00f2da5ea2d",
+    "intent": "smalltalk.greetings.goodevening"
+  },
+  {
+    "text": "hello good evening",
+    "tokens": [
+      "hello",
+      "good",
+      "evening"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "342ec27a-f782-4bc2-a127-4cc3dbc83eb9",
+    "intent": "smalltalk.greetings.goodevening"
+  },
+  {
+    "text": "evening",
+    "tokens": [
+      "evening"
+    ],
+    "pos_tags": [
+      "VERB"
+    ],
+    "entities": [],
+    "id": "8db41b47-a018-4c00-bb4a-a992b087d61e",
+    "intent": "smalltalk.greetings.goodevening"
+  },
+  {
+    "text": "good evening there",
+    "tokens": [
+      "good",
+      "evening",
+      "there"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "47df0f10-60e4-4980-a0db-c4dce2448784",
+    "intent": "smalltalk.greetings.goodevening"
+  }
+]

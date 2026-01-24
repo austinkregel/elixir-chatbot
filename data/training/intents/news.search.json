@@ -1,0 +1,874 @@
+[
+  {
+    "text": "I want to read the latest news about government tax policy from the Washington Post",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "read",
+      "the",
+      "latest",
+      "news",
+      "about",
+      "government",
+      "tax",
+      "policy",
+      "from",
+      "the",
+      "Washington",
+      "Post"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "latest",
+        "type": "topic",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "government tax policy",
+        "type": "any",
+        "start": 8,
+        "end": 10
+      },
+      {
+        "text": "Washington Post",
+        "type": "news_source",
+        "start": 13,
+        "end": 14
+      }
+    ],
+    "id": "e5382120-d5bc-415c-9fd1-bc136f602cc1",
+    "intent": "news.search"
+  },
+  {
+    "text": "read top news from BBC from today",
+    "tokens": [
+      "read",
+      "top",
+      "news",
+      "from",
+      "BBC",
+      "from",
+      "today"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "top",
+        "type": "news_sort",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "BBC",
+        "type": "news_source",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "cf8a1b62-b116-45cd-b219-ee6a3696ba98",
+    "intent": "news.search"
+  },
+  {
+    "text": "give me breaking news from Europe",
+    "tokens": [
+      "give",
+      "me",
+      "breaking",
+      "news",
+      "from",
+      "Europe"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "breaking",
+        "type": "news_sort",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "Europe",
+        "type": "any",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "dfc3278c-a212-47db-99fe-dea565b29169",
+    "intent": "news.search"
+  },
+  {
+    "text": "what's going on in financial news",
+    "tokens": [
+      "what",
+      "'s",
+      "going",
+      "on",
+      "in",
+      "financial",
+      "news"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB",
+      "ADP",
+      "ADP",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "financial",
+        "type": "topic",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "725865e7-776f-4436-bd57-5b842baa5634",
+    "intent": "news.search"
+  },
+  {
+    "text": "give me the latest sports stories",
+    "tokens": [
+      "give",
+      "me",
+      "the",
+      "latest",
+      "sports",
+      "stories"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "latest",
+        "type": "news_sort",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "sports",
+        "type": "topic",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "c05f4cc1-c0c9-4780-8203-3393d2793fe8",
+    "intent": "news.search"
+  },
+  {
+    "text": "news",
+    "tokens": [
+      "news"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "a997c770-a551-4a0e-a3cd-b7035de3a9b7",
+    "intent": "news.search"
+  },
+  {
+    "text": "read news",
+    "tokens": [
+      "read",
+      "news"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "b6577354-053f-4b01-a903-c2a37f048128",
+    "intent": "news.search"
+  },
+  {
+    "text": "news report",
+    "tokens": [
+      "news",
+      "report"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "ca4175f9-e232-49cd-9457-76be44c90b3d",
+    "intent": "news.search"
+  },
+  {
+    "text": "I want to hear the news",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "hear",
+      "the",
+      "news"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "3de785f0-f7c5-43e4-b3f2-7c006c40f715",
+    "intent": "news.search"
+  },
+  {
+    "text": "show me headlines",
+    "tokens": [
+      "show",
+      "me",
+      "headlines"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "5597553d-526b-4710-b971-1b1620c05f0c",
+    "intent": "news.search"
+  },
+  {
+    "text": "news update",
+    "tokens": [
+      "news",
+      "update"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e149ab29-0ede-4392-ac8b-3793312a94a5",
+    "intent": "news.search"
+  },
+  {
+    "text": "top news",
+    "tokens": [
+      "top",
+      "news"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "top",
+        "type": "news_sort",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "adb3708b-336e-4548-b2b6-5ba3b8a6ec78",
+    "intent": "news.search"
+  },
+  {
+    "text": "read the latest news",
+    "tokens": [
+      "read",
+      "the",
+      "latest",
+      "news"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "latest",
+        "type": "news_sort",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "10491539-6dec-4e74-902f-76c8615118df",
+    "intent": "news.search"
+  },
+  {
+    "text": "bring me up the hottest news",
+    "tokens": [
+      "bring",
+      "me",
+      "up",
+      "the",
+      "hottest",
+      "news"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "PART",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "hottest",
+        "type": "news_sort",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "b6df6d27-dcca-4530-92c9-dc4648206ded",
+    "intent": "news.search"
+  },
+  {
+    "text": "show me the recent headlines",
+    "tokens": [
+      "show",
+      "me",
+      "the",
+      "recent",
+      "headlines"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "recent",
+        "type": "news_sort",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "b1960692-e7db-4ad1-9acb-2f9f96560cd7",
+    "intent": "news.search"
+  },
+  {
+    "text": "today's news",
+    "tokens": [
+      "today",
+      "'s",
+      "news"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "today's",
+        "type": "date_time",
+        "start": 0,
+        "end": 1
+      }
+    ],
+    "id": "8b3245f3-5496-43f2-a10b-e48651e7d0c7",
+    "intent": "news.search"
+  },
+  {
+    "text": "read yesterday's headlines",
+    "tokens": [
+      "read",
+      "yesterday",
+      "'s",
+      "headlines"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PART",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "yesterday's",
+        "type": "date_time",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "f4db4b30-c2bd-41c4-866d-4995971a1dd4",
+    "intent": "news.search"
+  },
+  {
+    "text": "fashion news",
+    "tokens": [
+      "fashion",
+      "news"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "fashion",
+        "type": "topic",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "7d61b0d7-504a-4a8a-a145-45943c93f2b6",
+    "intent": "news.search"
+  },
+  {
+    "text": "show me news about sports",
+    "tokens": [
+      "show",
+      "me",
+      "news",
+      "about",
+      "sports"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "sports",
+        "type": "topic",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "2df2ea3e-6122-4d16-bdda-df9e5c7826c7",
+    "intent": "news.search"
+  },
+  {
+    "text": "CNN news",
+    "tokens": [
+      "CNN",
+      "news"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "CNN",
+        "type": "news_source",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "52e06948-06c0-4bd9-af21-7d210480634e",
+    "intent": "news.search"
+  },
+  {
+    "text": "read me BBC news",
+    "tokens": [
+      "read",
+      "me",
+      "BBC",
+      "news"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "BBC",
+        "type": "news_source",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "ee3614f5-5a40-4a13-b505-eb07a44bcaad",
+    "intent": "news.search"
+  },
+  {
+    "text": "show me the Yahoo headlines",
+    "tokens": [
+      "show",
+      "me",
+      "the",
+      "Yahoo",
+      "headlines"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Yahoo",
+        "type": "news_source",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "fc0f69c4-9106-47f6-90ac-66f1c1180264",
+    "intent": "news.search"
+  },
+  {
+    "text": "news about Madonna",
+    "tokens": [
+      "news",
+      "about",
+      "Madonna"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Madonna",
+        "type": "any",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "01b23ed5-b8c9-4491-b747-9b0f50892bff",
+    "intent": "news.search"
+  },
+  {
+    "text": "bring me up the news about Spain",
+    "tokens": [
+      "bring",
+      "me",
+      "up",
+      "the",
+      "news",
+      "about",
+      "Spain"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Spain",
+        "type": "any",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "8bad0c21-f8b0-4224-9df7-0b37191e10a8",
+    "intent": "news.search"
+  },
+  {
+    "text": "headlines about elections",
+    "tokens": [
+      "headlines",
+      "about",
+      "elections"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "elections",
+        "type": "any",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "f372671c-17f6-4c62-9d5a-b21185c22e95",
+    "intent": "news.search"
+  },
+  {
+    "text": "latest CNN news",
+    "tokens": [
+      "latest",
+      "CNN",
+      "news"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "latest",
+        "type": "news_sort",
+        "start": 0,
+        "end": 0
+      },
+      {
+        "text": "CNN",
+        "type": "news_source",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "ff2559fa-0f06-4f14-bdc4-8c65f94f1bc9",
+    "intent": "news.search"
+  },
+  {
+    "text": "top fashion news",
+    "tokens": [
+      "top",
+      "fashion",
+      "news"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "top",
+        "type": "news_sort",
+        "start": 0,
+        "end": 0
+      },
+      {
+        "text": "fashion",
+        "type": "topic",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "34c8be76-23f8-491f-8581-6bd521901090",
+    "intent": "news.search"
+  },
+  {
+    "text": "provide me the recent fashion news",
+    "tokens": [
+      "provide",
+      "me",
+      "the",
+      "recent",
+      "fashion",
+      "news"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "recent",
+        "type": "news_sort",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "fashion",
+        "type": "topic",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "258e2169-f1d6-49bc-bd1f-4528b4a81583",
+    "intent": "news.search"
+  },
+  {
+    "text": "could you read top news about Google Pixel Phone",
+    "tokens": [
+      "could",
+      "you",
+      "read",
+      "top",
+      "news",
+      "about",
+      "Google",
+      "Pixel",
+      "Phone"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "top",
+        "type": "news_sort",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Google Pixel Phone",
+        "type": "any",
+        "start": 6,
+        "end": 8
+      }
+    ],
+    "id": "e8c0d969-452b-4f74-81ce-aa44a3302f2f",
+    "intent": "news.search"
+  },
+  {
+    "text": "hottest news from BBC",
+    "tokens": [
+      "hottest",
+      "news",
+      "from",
+      "BBC"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "hottest",
+        "type": "news_sort",
+        "start": 0,
+        "end": 0
+      },
+      {
+        "text": "BBC",
+        "type": "news_source",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "b2f4a4f1-e860-4c45-bf4f-d645df223715",
+    "intent": "news.search"
+  },
+  {
+    "text": "update me with political news",
+    "tokens": [
+      "update",
+      "me",
+      "with",
+      "political",
+      "news"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "political",
+        "type": "topic",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "1cdd7d4d-390e-4bee-85b1-aa190d4f891b",
+    "intent": "news.search"
+  },
+  {
+    "text": "what are the latest news from Amazon",
+    "tokens": [
+      "what",
+      "are",
+      "the",
+      "latest",
+      "news",
+      "from",
+      "Amazon"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "latest",
+        "type": "news_sort",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Amazon",
+        "type": "news_source",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "5566afa2-19e5-4668-806e-07e3d0c8a356",
+    "intent": "news.search"
+  }
+]

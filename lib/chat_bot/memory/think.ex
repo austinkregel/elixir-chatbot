@@ -108,13 +108,8 @@ defmodule ChatBot.Memory.Think do
     threshold = Map.get(params, :threshold, 0.8)
     min_size = Map.get(params, :min_size, 2)
 
-    case Consolidation.consolidate(threshold: threshold, min_cluster_size: min_size) do
-      {:ok, count} ->
-        {:ok, {:consolidated, count}}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+    {:ok, count} = Consolidation.consolidate(threshold: threshold, min_cluster_size: min_size)
+    {:ok, {:consolidated, count}}
   end
 
   def think(:stats, _params) do

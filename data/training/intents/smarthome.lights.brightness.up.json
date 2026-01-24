@@ -1,0 +1,1337 @@
+[
+  {
+    "text": "brightness up",
+    "tokens": [
+      "brightness",
+      "up"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART"
+    ],
+    "entities": [],
+    "id": "a3c9c693-8177-42a9-8313-dc26e5a97363",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "make lights 20 percents brighter",
+    "tokens": [
+      "make",
+      "lights",
+      "20",
+      "percents",
+      "brighter"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "20",
+        "type": "number",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "ae6db2aa-310e-4134-8799-04bdf0ed2911",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "turn lights level up till 23",
+    "tokens": [
+      "turn",
+      "lights",
+      "level",
+      "up",
+      "till",
+      "23"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADV",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "23",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "8db37a61-8109-4250-a92a-abdf1b0117e3",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "turn up brightness by 10 points",
+    "tokens": [
+      "turn",
+      "up",
+      "brightness",
+      "by",
+      "10",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "10",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "7189cf0b-fe43-43d8-beae-e242fc9f67cd",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "make lights brighter for 20 percents",
+    "tokens": [
+      "make",
+      "lights",
+      "brighter",
+      "for",
+      "20",
+      "percents"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "20",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "fc8d8dcc-a933-43d8-9b17-2792f01bb120",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "turn lights brighter for 20 percents",
+    "tokens": [
+      "turn",
+      "lights",
+      "brighter",
+      "for",
+      "20",
+      "percents"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "20",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "11dd1022-b6db-44be-845c-5345079bc99c",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "turn up all the lights",
+    "tokens": [
+      "turn",
+      "up",
+      "all",
+      "the",
+      "lights"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "all",
+        "type": "all",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "d0624a0a-db63-4a4f-adc6-b9e6c0845428",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "kitchen lights up",
+    "tokens": [
+      "kitchen",
+      "lights",
+      "up"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "004b194d-9129-4738-850f-0bfaf9c7241d",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "turn up brightness till 10 points",
+    "tokens": [
+      "turn",
+      "up",
+      "brightness",
+      "till",
+      "10",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "NOUN",
+      "ADV",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "10",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "74111fba-c6d9-496f-b521-388f9ff705d2",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "turn lights 20 percents brighter",
+    "tokens": [
+      "turn",
+      "lights",
+      "20",
+      "percents",
+      "brighter"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "20",
+        "type": "number",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "cf6f03af-5dfa-4ba1-b3a9-6f9e93c63730",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "make lights shine 20 percents brighter",
+    "tokens": [
+      "make",
+      "lights",
+      "shine",
+      "20",
+      "percents",
+      "brighter"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "VERB",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "20",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "ddbb41e9-3235-448f-8400-1f1ea74eef96",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "I need brighter light in the kitchen",
+    "tokens": [
+      "I",
+      "need",
+      "brighter",
+      "light",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "VERB",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "707aee8b-f91e-475f-8a6c-f7bc1c40d5cd",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "turn up all red lights",
+    "tokens": [
+      "turn",
+      "up",
+      "all",
+      "red",
+      "lights"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "all",
+        "type": "all",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "red",
+        "type": "color",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "8775f334-51ae-4627-a2fe-d2323d5773c5",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "lights level up till 23",
+    "tokens": [
+      "lights",
+      "level",
+      "up",
+      "till",
+      "23"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADV",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "23",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "5d6888dc-4462-47cb-966d-c9b2ada9ab22",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "brightness up for 15 percents in the bedroom",
+    "tokens": [
+      "brightness",
+      "up",
+      "for",
+      "15",
+      "percents",
+      "in",
+      "the",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADV",
+      "ADP",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "15",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "072d385c-7db4-438a-a3fd-04d0ef8b42d3",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "turn the lights level up till 5 points",
+    "tokens": [
+      "turn",
+      "the",
+      "lights",
+      "level",
+      "up",
+      "till",
+      "5",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADV",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "5",
+        "type": "number",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "64e5fdac-4806-46cc-8c7b-06e0619836a8",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "increase brightness of my table lamp",
+    "tokens": [
+      "increase",
+      "brightness",
+      "of",
+      "my",
+      "table",
+      "lamp"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "table lamp",
+        "type": "lights",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "bd2569a4-6447-41cc-a01f-5bce59591026",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "turn the living room lights all the way up",
+    "tokens": [
+      "turn",
+      "the",
+      "living",
+      "room",
+      "lights",
+      "all",
+      "the",
+      "way",
+      "up"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "DET",
+      "DET",
+      "NOUN",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "living room",
+        "type": "room",
+        "start": 2,
+        "end": 3
+      },
+      {
+        "text": "all",
+        "type": "all",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "0560eb75-55c6-4c86-8ca9-75774120ac96",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "brightness level up till 23",
+    "tokens": [
+      "brightness",
+      "level",
+      "up",
+      "till",
+      "23"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADV",
+      "ADV",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "23",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "5991819a-df7b-4011-ad8c-206da9efec74",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "lights brightness up for 15 percents in the bedroom",
+    "tokens": [
+      "lights",
+      "brightness",
+      "up",
+      "for",
+      "15",
+      "percents",
+      "in",
+      "the",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADP",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "15",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "aa31e1ca-e999-42ea-9333-a746a95381ab",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "lights brightness up by 45",
+    "tokens": [
+      "lights",
+      "brightness",
+      "up",
+      "by",
+      "45"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PART",
+      "ADP",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "45",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "29380f0e-e2d0-4a88-87b9-0582ec63b5af",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "turn up the lightning in kitchen",
+    "tokens": [
+      "turn",
+      "up",
+      "the",
+      "lightning",
+      "in",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "f5e1d9d3-27c4-4872-a6f9-a397ba86302f",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "make light level up by 5 points in the kitchen",
+    "tokens": [
+      "make",
+      "light",
+      "level",
+      "up",
+      "by",
+      "5",
+      "points",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADV",
+      "ADP",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "5",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 9,
+        "end": 9
+      }
+    ],
+    "id": "13c1818a-339a-4ed0-89af-9268835bffc1",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "lights brightness up to 15 percents in the bedroom",
+    "tokens": [
+      "lights",
+      "brightness",
+      "up",
+      "to",
+      "15",
+      "percents",
+      "in",
+      "the",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "ADV",
+      "PART",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "15",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "04ecfa65-492f-492e-bb60-a73456d5e108",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "turn the lights level up till 5 points in the kitchen",
+    "tokens": [
+      "turn",
+      "the",
+      "lights",
+      "level",
+      "up",
+      "till",
+      "5",
+      "points",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADV",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "5",
+        "type": "number",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 10,
+        "end": 10
+      }
+    ],
+    "id": "e63e685c-7d42-4cbb-9778-4bedfa3b68dd",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "lights level up by 50",
+    "tokens": [
+      "lights",
+      "level",
+      "up",
+      "by",
+      "50"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADP",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "50",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "a45428fc-5427-4b45-bc3a-81e1dcf15434",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "turn up lights brightness by 10 points",
+    "tokens": [
+      "turn",
+      "up",
+      "lights",
+      "brightness",
+      "by",
+      "10",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "10",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "64a0bef0-c195-48a2-83db-f53b97e9e412",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "turn up lights brightness till 10 points",
+    "tokens": [
+      "turn",
+      "up",
+      "lights",
+      "brightness",
+      "till",
+      "10",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "NOUN",
+      "NOUN",
+      "ADV",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "10",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "afe81aad-74a9-4512-8ce9-bea43ce270f6",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "brightness up to 15 percents in the bedroom",
+    "tokens": [
+      "brightness",
+      "up",
+      "to",
+      "15",
+      "percents",
+      "in",
+      "the",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADV",
+      "PART",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "15",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "e3a8fc95-320f-4d7e-88bc-0d4569b9109e",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "turn up the lights in the kitchen",
+    "tokens": [
+      "turn",
+      "up",
+      "the",
+      "lights",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "a507316a-0b21-4743-b82d-d5eed0ae0511",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "brightness up till 10 points",
+    "tokens": [
+      "brightness",
+      "up",
+      "till",
+      "10",
+      "points"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADV",
+      "ADV",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "10",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "8ea1fe1e-05e0-41e7-aa58-8e7af7cda485",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "turn lights shine 20 percents brighter",
+    "tokens": [
+      "turn",
+      "lights",
+      "shine",
+      "20",
+      "percents",
+      "brighter"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "20",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "160db3ab-6809-4c07-81e3-3db92538f664",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "make lights brighter",
+    "tokens": [
+      "make",
+      "lights",
+      "brighter"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e1022750-1d47-46f0-a51a-8f89a7797c2c",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "lights brightness up till 30",
+    "tokens": [
+      "lights",
+      "brightness",
+      "up",
+      "till",
+      "30"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PART",
+      "ADV",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "30",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "d90eb035-2424-4ce1-a6b0-62325791e486",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "lights brightness up by 10 points",
+    "tokens": [
+      "lights",
+      "brightness",
+      "up",
+      "by",
+      "10",
+      "points"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PART",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "10",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "034f9b47-3a92-4f51-beed-972d3ace096e",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "more lights",
+    "tokens": [
+      "more",
+      "lights"
+    ],
+    "pos_tags": [
+      "ADV",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "c88618c7-b9e8-4ea1-83b4-16350aa2ef88",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "brightness up by 10 points",
+    "tokens": [
+      "brightness",
+      "up",
+      "by",
+      "10",
+      "points"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADV",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "10",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "17e46588-a91e-40a1-9dd3-80cd437638e7",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "make light level up by 5 points",
+    "tokens": [
+      "make",
+      "light",
+      "level",
+      "up",
+      "by",
+      "5",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADV",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "5",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "695e4706-feee-4db7-825a-3d4fde28ce82",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "let the brightness go up",
+    "tokens": [
+      "let",
+      "the",
+      "brightness",
+      "go",
+      "up"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "PART"
+    ],
+    "entities": [],
+    "id": "bd2a2e0b-450e-4880-8180-89a2c8ee20a7",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "turn up the lights",
+    "tokens": [
+      "turn",
+      "up",
+      "the",
+      "lights"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "ed62cacf-408f-46fa-842b-f52d90375ff9",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "lights brightness up till 10 points",
+    "tokens": [
+      "lights",
+      "brightness",
+      "up",
+      "till",
+      "10",
+      "points"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PART",
+      "ADV",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "10",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "cd553f37-884f-4c8f-b444-90ab48a98dc6",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "lights up",
+    "tokens": [
+      "lights",
+      "up"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART"
+    ],
+    "entities": [],
+    "id": "49c45777-ff31-4ef6-a244-76310ddf77e1",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "a little more lights",
+    "tokens": [
+      "a",
+      "little",
+      "more",
+      "lights"
+    ],
+    "pos_tags": [
+      "DET",
+      "ADJ",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "44e9cdda-a353-4c1f-b806-c9378aab5dcc",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "turn lights level up by 50",
+    "tokens": [
+      "turn",
+      "lights",
+      "level",
+      "up",
+      "by",
+      "50"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADP",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "50",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "cc82ac1c-2a9b-4454-a787-c3d93a20796a",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "turn the level up till 23",
+    "tokens": [
+      "turn",
+      "the",
+      "level",
+      "up",
+      "till",
+      "23"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADV",
+      "ADV",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "23",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "495c6577-de4f-4f9e-928f-e10345fa4c4d",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "turn all lights up",
+    "tokens": [
+      "turn",
+      "all",
+      "lights",
+      "up"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "all",
+        "type": "all",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "5476057f-7686-4bd7-8068-d717b1db571d",
+    "intent": "smarthome.lights.brightness.up"
+  },
+  {
+    "text": "turn lights brighter",
+    "tokens": [
+      "turn",
+      "lights",
+      "brighter"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e8812d8c-ecb4-4d24-adfc-81ecc7d08073",
+    "intent": "smarthome.lights.brightness.up"
+  }
+]

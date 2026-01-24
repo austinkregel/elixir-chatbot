@@ -1,0 +1,737 @@
+[
+  {
+    "text": "now find Hello Darling",
+    "tokens": [
+      "now",
+      "find",
+      "Hello",
+      "Darling"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Hello Darling",
+        "type": "song",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "c7267df7-4b24-4e9c-a9a9-46cdc434c379",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now songs about love",
+    "tokens": [
+      "now",
+      "songs",
+      "about",
+      "love"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "love",
+        "type": "song",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "4d8794f3-b8c1-4fe8-b00a-40f0ed9bcba2",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "find another one",
+    "tokens": [
+      "find",
+      "another",
+      "one"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "9c705f7f-9940-4bf5-a750-687a5ff20499",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now jazz",
+    "tokens": [
+      "now",
+      "jazz"
+    ],
+    "pos_tags": [
+      "ADV",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "jazz",
+        "type": "music_genre",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "9e100e94-2eca-4e7c-96b2-f5881081e7ef",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now find jazz",
+    "tokens": [
+      "now",
+      "find",
+      "jazz"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "jazz",
+        "type": "music_genre",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "585b495f-8728-499c-9562-4d8864e9d818",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now find Britney Spears",
+    "tokens": [
+      "now",
+      "find",
+      "Britney",
+      "Spears"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Britney Spears",
+        "type": "music_artist",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "095fe6a6-0e06-41ee-90c1-30cb4686b3ab",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now Elton John",
+    "tokens": [
+      "now",
+      "Elton",
+      "John"
+    ],
+    "pos_tags": [
+      "ADV",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Elton John",
+        "type": "music_artist",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "f2ec8e92-e035-4482-9516-d276c1b851b8",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now search for Eminem",
+    "tokens": [
+      "now",
+      "search",
+      "for",
+      "Eminem"
+    ],
+    "pos_tags": [
+      "ADV",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Eminem",
+        "type": "music_artist",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "9ec14e39-4f20-4304-9944-b394761c23ae",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now search for jazz",
+    "tokens": [
+      "now",
+      "search",
+      "for",
+      "jazz"
+    ],
+    "pos_tags": [
+      "ADV",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "jazz",
+        "type": "music_genre",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "03b45a45-0eee-40c1-b2f4-ef50f4bd6261",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "search for Adele now",
+    "tokens": [
+      "search",
+      "for",
+      "Adele",
+      "now"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "Adele",
+        "type": "music_artist",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "76588456-31b3-4aa7-bdce-59d223c6ad78",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now search Rihanna ft Eminem",
+    "tokens": [
+      "now",
+      "search",
+      "Rihanna",
+      "ft",
+      "Eminem"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PROPN",
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Rihanna",
+        "type": "music_artist",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "Eminem",
+        "type": "music_artist",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "82cf87e1-2e0a-4b44-aa17-fae795ab990d",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "search for Rihanna",
+    "tokens": [
+      "search",
+      "for",
+      "Rihanna"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Rihanna",
+        "type": "music_artist",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "3aa57b70-1a97-4844-83f9-8162ac0191d9",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now find Monster",
+    "tokens": [
+      "now",
+      "find",
+      "Monster"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Monster",
+        "type": "song",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "796ff830-fee7-4fbc-947f-a4ab892e7ec0",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "find Take 5",
+    "tokens": [
+      "find",
+      "Take",
+      "5"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "Take 5",
+        "type": "song",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "524f057d-f5f8-4c57-a674-dcc73937f0d2",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now search for Diamonds",
+    "tokens": [
+      "now",
+      "search",
+      "for",
+      "Diamonds"
+    ],
+    "pos_tags": [
+      "ADV",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Diamonds",
+        "type": "song",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "250eb0a4-ef49-4c9f-aa63-ae99cf14b697",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now search for album Lucky Star",
+    "tokens": [
+      "now",
+      "search",
+      "for",
+      "album",
+      "Lucky",
+      "Star"
+    ],
+    "pos_tags": [
+      "ADV",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Lucky Star",
+        "type": "music_album",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "18867b49-ee70-4876-878e-e9febe8e4271",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now find Summer album",
+    "tokens": [
+      "now",
+      "find",
+      "Summer",
+      "album"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Summer",
+        "type": "music_album",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "28f635cd-1f92-435d-be63-5e8d9172e40f",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now find album Burning up",
+    "tokens": [
+      "now",
+      "find",
+      "album",
+      "Burning",
+      "up"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "NOUN",
+      "PROPN",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "Burning up",
+        "type": "music_album",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "b45bd91a-7275-4957-8eee-7b1bfd746fa0",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now find album called Let it be",
+    "tokens": [
+      "now",
+      "find",
+      "album",
+      "called",
+      "Let",
+      "it",
+      "be"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "NOUN",
+      "VERB",
+      "VERB",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "Let it be",
+        "type": "music_album",
+        "start": 4,
+        "end": 6
+      }
+    ],
+    "id": "b7c11013-b923-4f14-acd4-40a66cbaae5b",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now find jazz music",
+    "tokens": [
+      "now",
+      "find",
+      "jazz",
+      "music"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "jazz",
+        "type": "music_genre",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "16caa370-bee8-4b4c-86c7-3ff6812dc310",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now by Madonna",
+    "tokens": [
+      "now",
+      "by",
+      "Madonna"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Madonna",
+        "type": "music_artist",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "1de846d0-05b1-4bee-a509-802812d7e399",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now find winter playlist",
+    "tokens": [
+      "now",
+      "find",
+      "winter",
+      "playlist"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "winter",
+        "type": "playlist",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "06e593f9-4a3d-47fd-8d0b-9094a6dd335f",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now search for work playlist",
+    "tokens": [
+      "now",
+      "search",
+      "for",
+      "work",
+      "playlist"
+    ],
+    "pos_tags": [
+      "ADV",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "work",
+        "type": "playlist",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "8f8f0cac-e019-475d-9e53-945bdf24d8f9",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "search gym playlist",
+    "tokens": [
+      "search",
+      "gym",
+      "playlist"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "gym",
+        "type": "playlist",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "3afa4fea-0dbc-4a33-8b06-35e3587388e7",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now on Spotify",
+    "tokens": [
+      "now",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "2ab63440-3a54-4e46-878a-deec49340747",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now YouTube",
+    "tokens": [
+      "now",
+      "YouTube"
+    ],
+    "pos_tags": [
+      "ADV",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "YouTube",
+        "type": "music_service",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "b5f54150-9f97-44ec-a888-4dd8e7fac792",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now from iTunes",
+    "tokens": [
+      "now",
+      "from",
+      "iTunes"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "iTunes",
+        "type": "music_service",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "13c00d12-0959-4c1f-9a42-8bff4af086e9",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "what about Netflix",
+    "tokens": [
+      "what",
+      "about",
+      "Netflix"
+    ],
+    "pos_tags": [
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Netflix",
+        "type": "music_service",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "28b1648a-b02e-47d7-98a6-6a7b349f1283",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "how about Pandora",
+    "tokens": [
+      "how",
+      "about",
+      "Pandora"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Pandora",
+        "type": "music_service",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "56403957-bf6c-4619-aa43-5224d55741f7",
+    "intent": "music.search.context_search-music"
+  },
+  {
+    "text": "now find Hello Darling song",
+    "tokens": [
+      "now",
+      "find",
+      "Hello",
+      "Darling",
+      "song"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PROPN",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Hello Darling",
+        "type": "song",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "f4d42cb7-5f07-428d-9d9b-2e6f9db625c2",
+    "intent": "music.search.context_search-music"
+  }
+]

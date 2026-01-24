@@ -1,0 +1,188 @@
+[
+  {
+    "text": "off now",
+    "tokens": [
+      "off",
+      "now"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "0d507a58-f73f-49ae-8a93-36c1706108ac",
+    "intent": "smarthome.device.switch.off.context_device-switch.comment_turn.off.devices"
+  },
+  {
+    "text": "turn it off",
+    "tokens": [
+      "turn",
+      "it",
+      "off"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "PART"
+    ],
+    "entities": [],
+    "id": "051a2702-4ccd-461f-afcf-40ae8f346550",
+    "intent": "smarthome.device.switch.off.context_device-switch.comment_turn.off.devices"
+  },
+  {
+    "text": "turn off",
+    "tokens": [
+      "turn",
+      "off"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART"
+    ],
+    "entities": [],
+    "id": "c5034547-6e96-41c9-b3e5-2b6811c97f21",
+    "intent": "smarthome.device.switch.off.context_device-switch.comment_turn.off.devices"
+  },
+  {
+    "text": "now switch off",
+    "tokens": [
+      "now",
+      "switch",
+      "off"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PART"
+    ],
+    "entities": [],
+    "id": "ac530cd9-cef7-474e-a287-2bb404892e81",
+    "intent": "smarthome.device.switch.off.context_device-switch.comment_turn.off.devices"
+  },
+  {
+    "text": "now turn it off",
+    "tokens": [
+      "now",
+      "turn",
+      "it",
+      "off"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "PART"
+    ],
+    "entities": [],
+    "id": "0a02f921-7741-498f-9730-071d47217665",
+    "intent": "smarthome.device.switch.off.context_device-switch.comment_turn.off.devices"
+  },
+  {
+    "text": "switch it off now",
+    "tokens": [
+      "switch",
+      "it",
+      "off",
+      "now"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "PART",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "13278863-6b40-4a66-895d-0a2cb9aac836",
+    "intent": "smarthome.device.switch.off.context_device-switch.comment_turn.off.devices"
+  },
+  {
+    "text": "switch it off",
+    "tokens": [
+      "switch",
+      "it",
+      "off"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "PART"
+    ],
+    "entities": [],
+    "id": "feba0457-6847-4a58-8585-b4ded3073bf6",
+    "intent": "smarthome.device.switch.off.context_device-switch.comment_turn.off.devices"
+  },
+  {
+    "text": "turn this off",
+    "tokens": [
+      "turn",
+      "this",
+      "off"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "PART"
+    ],
+    "entities": [],
+    "id": "2be2d539-2e15-4afe-b642-a1c7966c72ae",
+    "intent": "smarthome.device.switch.off.context_device-switch.comment_turn.off.devices"
+  },
+  {
+    "text": "now turn off",
+    "tokens": [
+      "now",
+      "turn",
+      "off"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PART"
+    ],
+    "entities": [],
+    "id": "249385e0-dec8-4df5-bfdd-33f989047ab9",
+    "intent": "smarthome.device.switch.off.context_device-switch.comment_turn.off.devices"
+  },
+  {
+    "text": "turn them off",
+    "tokens": [
+      "turn",
+      "them",
+      "off"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "PART"
+    ],
+    "entities": [],
+    "id": "9df68926-e88f-432e-85a8-dca130a4250b",
+    "intent": "smarthome.device.switch.off.context_device-switch.comment_turn.off.devices"
+  },
+  {
+    "text": "now off",
+    "tokens": [
+      "now",
+      "off"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "b7e1cda0-50e9-48b9-9fb8-d9dec409f028",
+    "intent": "smarthome.device.switch.off.context_device-switch.comment_turn.off.devices"
+  },
+  {
+    "text": "off",
+    "tokens": [
+      "off"
+    ],
+    "pos_tags": [
+      "ADP"
+    ],
+    "entities": [],
+    "id": "62d897cf-6fd7-4bae-917d-4caf0b61d59b",
+    "intent": "smarthome.device.switch.off.context_device-switch.comment_turn.off.devices"
+  }
+]

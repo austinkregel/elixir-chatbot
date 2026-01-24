@@ -1,0 +1,743 @@
+[
+  {
+    "text": "I would like to tell you something",
+    "tokens": [
+      "I",
+      "would",
+      "like",
+      "to",
+      "tell",
+      "you",
+      "something"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "d3e72f47-456d-498e-b372-74a841bd8007",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "I need you to help me",
+    "tokens": [
+      "I",
+      "need",
+      "you",
+      "to",
+      "help",
+      "me"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "PART",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "01e39698-d541-4af9-bab8-c8f70846fc3b",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "I need you to do something for me",
+    "tokens": [
+      "I",
+      "need",
+      "you",
+      "to",
+      "do",
+      "something",
+      "for",
+      "me"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "PART",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "3af71b7c-a2f3-4349-9d3f-14cc30a2606c",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "I need a hand",
+    "tokens": [
+      "I",
+      "need",
+      "a",
+      "hand"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "ae43a6a0-5323-487b-bda8-caa9f573d345",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "will you help me",
+    "tokens": [
+      "will",
+      "you",
+      "help",
+      "me"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "1b57bb44-9443-45fc-a066-180c27ad4d0a",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "can you do something for me",
+    "tokens": [
+      "can",
+      "you",
+      "do",
+      "something",
+      "for",
+      "me"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "8fa9921e-5ebf-4344-966c-a5fb4f198010",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "help me with a problem",
+    "tokens": [
+      "help",
+      "me",
+      "with",
+      "a",
+      "problem"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "3474e16a-3d65-4ad8-8684-cd5a800a7d02",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "can you help me",
+    "tokens": [
+      "can",
+      "you",
+      "help",
+      "me"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "74f661a0-8512-41e0-9150-bf4bc2b9e531",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "help me",
+    "tokens": [
+      "help",
+      "me"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "03ca6b20-5659-496b-a350-b97b65b8370d",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "assistance",
+    "tokens": [
+      "assistance"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e35047fa-ccbc-48ac-80f4-9265ba1c3dd0",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "I need your help",
+    "tokens": [
+      "I",
+      "need",
+      "your",
+      "help"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "d0e2960d-bdca-4c23-b1f3-f5a3019f4bbe",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "I need help",
+    "tokens": [
+      "I",
+      "need",
+      "help"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "50e277b2-5002-4e3d-9af8-cd3ff63e920f",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "you can help me",
+    "tokens": [
+      "you",
+      "can",
+      "help",
+      "me"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "edb0ee52-9ebd-490e-b10d-de1f1d8bda76",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "can you help me with something",
+    "tokens": [
+      "can",
+      "you",
+      "help",
+      "me",
+      "with",
+      "something"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "6d7128e5-1444-4c75-8e91-241662006cb7",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "can you help",
+    "tokens": [
+      "can",
+      "you",
+      "help"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "f05f2d4a-0dfa-4371-89dc-47d8852f8094",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "assist",
+    "tokens": [
+      "assist"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "d219675c-ab56-41ec-b133-d02f15f55630",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "can u help me",
+    "tokens": [
+      "can",
+      "u",
+      "help",
+      "me"
+    ],
+    "pos_tags": [
+      "AUX",
+      "VERB",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "6832a158-e4e6-4472-98c5-2e5de92d94e0",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "I need some help",
+    "tokens": [
+      "I",
+      "need",
+      "some",
+      "help"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "435d0d21-5435-4c63-9374-4ed4353a48d2",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "you help me",
+    "tokens": [
+      "you",
+      "help",
+      "me"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "538ac5dc-303a-43be-a04a-fc4c2f8b4d8a",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "do you help me",
+    "tokens": [
+      "do",
+      "you",
+      "help",
+      "me"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "98987973-ca88-4ce9-af58-a935dfd1454e",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "can help me",
+    "tokens": [
+      "can",
+      "help",
+      "me"
+    ],
+    "pos_tags": [
+      "AUX",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "459f0055-afa4-4b23-9241-9bb4d4708205",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "could you give me a hand",
+    "tokens": [
+      "could",
+      "you",
+      "give",
+      "me",
+      "a",
+      "hand"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e3544004-6d5d-45e1-ba6e-8c4126d0b219",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "can you help me out",
+    "tokens": [
+      "can",
+      "you",
+      "help",
+      "me",
+      "out"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "PART"
+    ],
+    "entities": [],
+    "id": "377d9101-c76d-4fef-b22c-99b54d5d4fb4",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "need help",
+    "tokens": [
+      "need",
+      "help"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "4a4517ce-5a42-4d61-8ac5-f8bb6ada5fd2",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "I need you",
+    "tokens": [
+      "I",
+      "need",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "a73860ec-5a94-4f42-bce7-ca6839a5e017",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "can you help me now",
+    "tokens": [
+      "can",
+      "you",
+      "help",
+      "me",
+      "now"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "add3150a-249c-4a21-ba34-8bd1c06b9b66",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "I want your help",
+    "tokens": [
+      "I",
+      "want",
+      "your",
+      "help"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "8af5b1ae-0797-4734-92d0-ee5c2cc7a789",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "need your help",
+    "tokens": [
+      "need",
+      "your",
+      "help"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "bab89986-965a-4218-a28e-ef3bf5305daa",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "assist me",
+    "tokens": [
+      "assist",
+      "me"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "256f85cb-2c21-4c94-a795-0d5beae4206c",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "are you going to help me",
+    "tokens": [
+      "are",
+      "you",
+      "going",
+      "to",
+      "help",
+      "me"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "b324b761-e548-425d-89ef-3087c22314f6",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "can you help me with that",
+    "tokens": [
+      "can",
+      "you",
+      "help",
+      "me",
+      "with",
+      "that"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADP",
+      "DET"
+    ],
+    "entities": [],
+    "id": "25e515cb-9884-4e0a-852d-518cb96b7319",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "help",
+    "tokens": [
+      "help"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "2fbca9f2-c9bb-47d1-9db8-a5406f4c3928",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "I need you right now",
+    "tokens": [
+      "I",
+      "need",
+      "you",
+      "right",
+      "now"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "e520e606-72ba-4a15-951a-99eeb4615b36",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "would you help me",
+    "tokens": [
+      "would",
+      "you",
+      "help",
+      "me"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "9f9553cd-03c7-4bc9-9ca4-a95cfbbad188",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "can you assist me",
+    "tokens": [
+      "can",
+      "you",
+      "assist",
+      "me"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "fa474e14-434a-46ac-b6fa-f126ca3a3e0c",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "sos",
+    "tokens": [
+      "sos"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "79f1ecc4-71e3-4576-a4ac-f0337e2947d7",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "do you want to help me",
+    "tokens": [
+      "do",
+      "you",
+      "want",
+      "to",
+      "help",
+      "me"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "b8e7cdb3-f0fe-43df-8a9b-ad3932518d53",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "please help me",
+    "tokens": [
+      "please",
+      "help",
+      "me"
+    ],
+    "pos_tags": [
+      "VERB",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "7c85b658-8e67-4628-a7df-495c10186cb0",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "can you help us",
+    "tokens": [
+      "can",
+      "you",
+      "help",
+      "us"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "6b0d65a3-a98e-4c09-8179-adccc0bd01ef",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "do me a favor",
+    "tokens": [
+      "do",
+      "me",
+      "a",
+      "favor"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "73fba7eb-225a-4ac4-9d84-370b82a02566",
+    "intent": "smalltalk.agent.can_you_help"
+  },
+  {
+    "text": "Can I talk to you?",
+    "tokens": [
+      "Can",
+      "I",
+      "talk",
+      "to",
+      "you",
+      "?"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PART",
+      "PRON",
+      "PUNCT"
+    ],
+    "entities": [],
+    "intent": "smalltalk.agent.can_you_help"
+  }
+]

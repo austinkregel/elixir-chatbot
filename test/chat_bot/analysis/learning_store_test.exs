@@ -52,7 +52,7 @@ defmodule ChatBot.Analysis.LearningStoreTest do
 
   describe "update_params/3" do
     test "updates component parameters" do
-      original = LearningStore.get_params("chunker")
+      _original = LearningStore.get_params("chunker")
 
       :ok = LearningStore.update_params("chunker", %{"max_chunk_words" => 60})
 

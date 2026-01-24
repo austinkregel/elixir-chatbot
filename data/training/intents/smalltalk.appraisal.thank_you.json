@@ -1,0 +1,573 @@
+[
+  {
+    "text": "you helped a lot thank you",
+    "tokens": [
+      "you",
+      "helped",
+      "a",
+      "lot",
+      "thank",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "bf96ae0f-a153-4dcd-a562-b87364f89bea",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "appreciate your help",
+    "tokens": [
+      "appreciate",
+      "your",
+      "help"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "fb6d0a01-5f5b-4bae-8e03-5a2450eac221",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "cheers",
+    "tokens": [
+      "cheers"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "c6593c4c-d8a6-4ec3-a894-297517896532",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "thank you",
+    "tokens": [
+      "thank",
+      "you"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "b60fd605-d260-4fbb-a47e-2d3b8af46cc2",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "thanks",
+    "tokens": [
+      "thanks"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "bcdb350a-b162-497b-a31f-cfb889fbf4cd",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "thanks a lot",
+    "tokens": [
+      "thanks",
+      "a",
+      "lot"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "be185466-f40f-4180-8dde-7d8a2c14c979",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "terrific thank you",
+    "tokens": [
+      "terrific",
+      "thank",
+      "you"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "6b608d26-0a1f-4844-9667-4d70aa712afa",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "great thank you",
+    "tokens": [
+      "great",
+      "thank",
+      "you"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "1d32da3d-5019-4f5c-b579-8aece14ae1ba",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "thanks so much",
+    "tokens": [
+      "thanks",
+      "so",
+      "much"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "09a05bd9-df42-4743-8449-fdf153f6479d",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "thank you so much",
+    "tokens": [
+      "thank",
+      "you",
+      "so",
+      "much"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "1a110476-fa45-46ca-af27-8fc56b94d419",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "thanks for your help",
+    "tokens": [
+      "thanks",
+      "for",
+      "your",
+      "help"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "cee7b4d3-c25a-4726-932d-98649b84947f",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "thank you for your help",
+    "tokens": [
+      "thank",
+      "you",
+      "for",
+      "your",
+      "help"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "596eee66-9ede-4df9-ad40-c3dad504dc81",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "nice thank you",
+    "tokens": [
+      "nice",
+      "thank",
+      "you"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "1e47a071-16c3-46c0-aff1-fe139428f551",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "I appreciate it",
+    "tokens": [
+      "I",
+      "appreciate",
+      "it"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "2a93892b-9906-449c-9bd8-aaa9ba999edf",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "I thank you",
+    "tokens": [
+      "I",
+      "thank",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "19800970-fc1b-462b-a7f9-d91d13b21772",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "thank you that will be all",
+    "tokens": [
+      "thank",
+      "you",
+      "that",
+      "will",
+      "be",
+      "all"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "DET",
+      "AUX",
+      "VERB",
+      "DET"
+    ],
+    "entities": [],
+    "id": "b9f14e39-29d3-465e-ac94-ba056b3bd129",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "thanks buddy",
+    "tokens": [
+      "thanks",
+      "buddy"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "4217cbdb-08e7-4f9d-a9ea-173264c9031b",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "thanks love",
+    "tokens": [
+      "thanks",
+      "love"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "7dd2aab6-d7f9-43d5-b956-f893fcdebf7a",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "thank you my friend",
+    "tokens": [
+      "thank",
+      "you",
+      "my",
+      "friend"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "b2fc2b9e-3b1c-4935-986b-d5ed4b8c93d2",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "well thanks",
+    "tokens": [
+      "well",
+      "thanks"
+    ],
+    "pos_tags": [
+      "ADV",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "9180f55b-8aff-4309-96c8-c9cce5970c0a",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "very good thank you",
+    "tokens": [
+      "very",
+      "good",
+      "thank",
+      "you"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "556c288d-f13a-4335-8a70-bde3ade1e5c3",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "good thanks",
+    "tokens": [
+      "good",
+      "thanks"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "bd1f99f7-3b27-4859-84dd-8bf299c2c9fd",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "thanks again",
+    "tokens": [
+      "thanks",
+      "again"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "395aa30f-f887-4af7-a921-4528f0fc3ba4",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "thank you again",
+    "tokens": [
+      "thank",
+      "you",
+      "again"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "df4ba92e-f62f-4b85-9580-0a42fd2286ae",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "all thank you",
+    "tokens": [
+      "all",
+      "thank",
+      "you"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "958614fd-fb24-4968-b788-d69db08c7092",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "alright thank you",
+    "tokens": [
+      "alright",
+      "thank",
+      "you"
+    ],
+    "pos_tags": [
+      "ADV",
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "4da12c48-7f92-4bdb-9322-f16a4860e191",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "alright thanks",
+    "tokens": [
+      "alright",
+      "thanks"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "18319e67-22da-493a-b7ae-dfc9938d686d",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "no thank you that's all",
+    "tokens": [
+      "no",
+      "thank",
+      "you",
+      "that",
+      "'s",
+      "all"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "PRON",
+      "DET",
+      "VERB",
+      "DET"
+    ],
+    "entities": [],
+    "id": "d2e73573-7b40-4fb1-ac9b-6f6bc3b9a00e",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "perfect thank you",
+    "tokens": [
+      "perfect",
+      "thank",
+      "you"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "c80c16d1-5b4f-4036-af6f-202c422bb96a",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "so nice of you",
+    "tokens": [
+      "so",
+      "nice",
+      "of",
+      "you"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "29b50187-67e5-4d6f-8bea-69d11ad9fa3a",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "well thank you",
+    "tokens": [
+      "well",
+      "thank",
+      "you"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "28f166a1-4e08-4bdb-94e2-0f612b16c426",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "well thanks",
+    "tokens": [
+      "well",
+      "thanks"
+    ],
+    "pos_tags": [
+      "ADV",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "ea4b9a88-c434-4e24-ada2-c0544abcac91",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "thnx",
+    "tokens": [
+      "thnx"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "2b6ce0c5-05d0-43ba-a292-6a904cc85aec",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "thank you",
+    "tokens": [
+      "thank",
+      "you"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "fed6623c-e16d-40a8-ba86-d52048e6ee2c",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "thanx",
+    "tokens": [
+      "thanx"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f8b3a682-4f38-40f0-a6d3-7df53a7fc978",
+    "intent": "smalltalk.appraisal.thank_you"
+  },
+  {
+    "text": "thanks!",
+    "tokens": [
+      "thanks",
+      "!"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PUNCT"
+    ],
+    "entities": [],
+    "intent": "smalltalk.appraisal.thank_you"
+  }
+]

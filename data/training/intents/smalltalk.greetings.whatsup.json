@@ -1,0 +1,268 @@
+[
+  {
+    "text": "what is on your mind",
+    "tokens": [
+      "what",
+      "is",
+      "on",
+      "your",
+      "mind"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "11c1ebc9-b170-47f1-a045-75f5d0637fed",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "what's happened",
+    "tokens": [
+      "what",
+      "'s",
+      "happened"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "a71ea3e7-89c1-44f3-a6c8-60b691d1370a",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "what is up",
+    "tokens": [
+      "what",
+      "is",
+      "up"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART"
+    ],
+    "entities": [],
+    "id": "82ee347a-c2bd-4de6-9d5d-21e5c52f4ed9",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "what's up",
+    "tokens": [
+      "what",
+      "'s",
+      "up"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART"
+    ],
+    "entities": [],
+    "id": "ba71f1c3-8c7a-4cff-9b2b-9aa8a7f5ccc3",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "whazzup",
+    "tokens": [
+      "whazzup"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "df577932-4f84-4a57-9788-82b8f56a0243",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "good what's up",
+    "tokens": [
+      "good",
+      "what",
+      "'s",
+      "up"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "PRON",
+      "VERB",
+      "PART"
+    ],
+    "entities": [],
+    "id": "824b01cf-65a3-4ebb-bd82-4daef152c09e",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "I said what's up",
+    "tokens": [
+      "I",
+      "said",
+      "what",
+      "'s",
+      "up"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART"
+    ],
+    "entities": [],
+    "id": "99f5d274-79c8-4877-b835-fa55650c15f5",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "then what's up",
+    "tokens": [
+      "then",
+      "what",
+      "'s",
+      "up"
+    ],
+    "pos_tags": [
+      "ADV",
+      "PRON",
+      "VERB",
+      "PART"
+    ],
+    "entities": [],
+    "id": "eb77c92c-5629-4a2a-be64-d770f7300fd0",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "what's shaking",
+    "tokens": [
+      "what",
+      "'s",
+      "shaking"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "6f470b80-4014-4509-b6f4-7c9c053eb172",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "wassup",
+    "tokens": [
+      "wassup"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "6b69f550-be36-487c-8815-bbac5b023360",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "what is going on",
+    "tokens": [
+      "what",
+      "is",
+      "going",
+      "on"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "038d7ca3-244f-4198-a2d7-19c017791626",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "what is happening",
+    "tokens": [
+      "what",
+      "is",
+      "happening"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "db4ed48f-c7b8-41f6-a796-b446b035146c",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "what's cracking",
+    "tokens": [
+      "what",
+      "'s",
+      "cracking"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "128330ef-838e-44c1-910f-7fc45bdd103c",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "what's cooking",
+    "tokens": [
+      "what",
+      "'s",
+      "cooking"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "e0999128-5608-4045-909f-95c234ce09f4",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "hey what's up",
+    "tokens": [
+      "hey",
+      "what",
+      "'s",
+      "up"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART"
+    ],
+    "entities": [],
+    "id": "a2116a0f-27d7-4a3b-85a1-a104a72d9d47",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "what's up today",
+    "tokens": [
+      "what",
+      "'s",
+      "up",
+      "today"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "a9935339-bd77-4b9a-b864-6d63d707eb6c",
+    "intent": "smalltalk.greetings.whatsup"
+  }
+]

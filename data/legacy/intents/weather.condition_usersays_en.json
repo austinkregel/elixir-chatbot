@@ -1,0 +1,1321 @@
+[
+  {
+    "id": "18399d7a-e422-48b2-beeb-75820e65fa08",
+    "data": [
+      {
+        "text": "is it going to ",
+        "userDefined": false
+      },
+      {
+        "text": "rain",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "this Friday",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "76db9e39-7a2f-43c0-8f3d-8c9564ff0ba1",
+    "data": [
+      {
+        "text": "what is",
+        "userDefined": false
+      },
+      {
+        "text": " the weather forecast for ",
+        "userDefined": false
+      },
+      {
+        "text": "snow",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " in ",
+        "userDefined": false
+      },
+      {
+        "text": "New York",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "today",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "468a27b5-0436-4d02-a868-1cef541e9b60",
+    "data": [
+      {
+        "text": "is it supposed to ",
+        "userDefined": false
+      },
+      {
+        "text": "snow",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "today",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "70c1cdb3-41ee-4017-9eef-f73d2bd9f0bc",
+    "data": [
+      {
+        "text": "will it ",
+        "userDefined": false
+      },
+      {
+        "text": "rain",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "tomorrow",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      },
+      {
+        "text": " in ",
+        "userDefined": false
+      },
+      {
+        "text": "Paris",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "2b07e0bc-f1bb-4261-9c8b-6df31d15af80",
+    "data": [
+      {
+        "text": "is it going to ",
+        "userDefined": false
+      },
+      {
+        "text": "rain",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": false
+      },
+      {
+        "text": " later ",
+        "userDefined": false
+      },
+      {
+        "text": "in the evening",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "42e4974a-4676-4f4a-94d1-7edca45df5ae",
+    "data": [
+      {
+        "text": "are we getting ",
+        "userDefined": false
+      },
+      {
+        "text": "snow",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "today",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "595038a7-a602-43ee-b32a-6429b659c504",
+    "data": [
+      {
+        "text": "is it going to ",
+        "userDefined": false
+      },
+      {
+        "text": "rain",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "7b39e319-596a-442a-a241-4a404108c1c9",
+    "data": [
+      {
+        "text": "but is",
+        "userDefined": false
+      },
+      {
+        "text": " it going to ",
+        "userDefined": false
+      },
+      {
+        "text": "rain",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "a8f70267-c660-4da4-92cc-a0c9b805ca4f",
+    "data": [
+      {
+        "text": "is it ",
+        "userDefined": false
+      },
+      {
+        "text": "raining",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "a2cb30bd-be98-4b77-bd1a-20140fb6db97",
+    "data": [
+      {
+        "text": "is it supposed to ",
+        "userDefined": false
+      },
+      {
+        "text": "snow",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "59b7abee-f2f9-482f-9bf4-a30fdedd1bef",
+    "data": [
+      {
+        "text": "any chance of ",
+        "userDefined": false
+      },
+      {
+        "text": "tornadoes",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "b225daae-fa16-4749-956f-fa4317871e2e",
+    "data": [
+      {
+        "text": "are there ",
+        "userDefined": false
+      },
+      {
+        "text": "hurricanes",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " expected",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "efc4d67a-655c-4b36-9ee1-f3a7627ad90c",
+    "data": [
+      {
+        "text": "when will it ",
+        "userDefined": false
+      },
+      {
+        "text": "rain",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "01d48421-1e15-42bd-a50d-a1b31026a04d",
+    "data": [
+      {
+        "text": "will it be ",
+        "userDefined": false
+      },
+      {
+        "text": "foggy",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "806c7580-0bc4-4101-9316-840d7d5198f6",
+    "data": [
+      {
+        "text": "any ",
+        "userDefined": false
+      },
+      {
+        "text": "snow",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " in the forecast",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "23d0c3bf-10f8-4c9a-ae45-734be3ed89d7",
+    "data": [
+      {
+        "text": "chances of ",
+        "userDefined": false
+      },
+      {
+        "text": "storm",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "f0ef9316-e432-41d7-a806-b7d2ab2354f6",
+    "data": [
+      {
+        "text": "is it ",
+        "userDefined": false
+      },
+      {
+        "text": "snowing",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " in ",
+        "userDefined": false
+      },
+      {
+        "text": "Moscow",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "4d0e4043-9fab-439d-bb9b-41e885b761bc",
+    "data": [
+      {
+        "text": "is it supposed to ",
+        "userDefined": false
+      },
+      {
+        "text": "rain",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " in ",
+        "userDefined": false
+      },
+      {
+        "text": "London",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "51a2ac72-9bdb-4946-a838-801e08238650",
+    "data": [
+      {
+        "text": "any chance of ",
+        "userDefined": false
+      },
+      {
+        "text": "thunderstorms",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " in ",
+        "userDefined": false
+      },
+      {
+        "text": "Colorado",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "5b0b11cb-06c7-43b4-9181-0cc116278cbc",
+    "data": [
+      {
+        "text": "are there ",
+        "userDefined": false
+      },
+      {
+        "text": "freezing rains",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " expected in ",
+        "userDefined": false
+      },
+      {
+        "text": "Glasgow",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "bd5eb37f-7d32-43c2-84be-b8c0ad2534f7",
+    "data": [
+      {
+        "text": "is it ",
+        "userDefined": false
+      },
+      {
+        "text": "raining",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " here",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "1db853ca-ebf5-44b4-87dd-2928195fd7e6",
+    "data": [
+      {
+        "text": "do you think it will start ",
+        "userDefined": false
+      },
+      {
+        "text": "raining",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " soon",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "f46c65a2-b1bf-4f85-97ab-e77b798573b8",
+    "data": [
+      {
+        "text": "is it going to be ",
+        "userDefined": false
+      },
+      {
+        "text": "fog",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "tomorrow",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      },
+      {
+        "text": " in ",
+        "userDefined": false
+      },
+      {
+        "text": "Paris",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "08d7d070-2259-40c6-afe8-32c94974f6cd",
+    "data": [
+      {
+        "text": "does it ",
+        "userDefined": false
+      },
+      {
+        "text": "snow",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " in ",
+        "userDefined": false
+      },
+      {
+        "text": "Moscow",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "fa940d56-7acc-4664-885f-c21023878cd1",
+    "data": [
+      {
+        "text": "when will it ",
+        "userDefined": false
+      },
+      {
+        "text": "snow",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " in ",
+        "userDefined": false
+      },
+      {
+        "text": "Palo Alto",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "e1e705ac-03b8-4b08-9593-c5df6d694fd9",
+    "data": [
+      {
+        "text": "will it be ",
+        "userDefined": false
+      },
+      {
+        "text": "cloudy",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " in ",
+        "userDefined": false
+      },
+      {
+        "text": "Berlin",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "17f62019-8fb3-4f24-9f6a-25c978a39685",
+    "data": [
+      {
+        "text": "any snow ",
+        "userDefined": false
+      },
+      {
+        "text": "showers",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " in the forecast for ",
+        "userDefined": false
+      },
+      {
+        "text": "Valencia",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "de98d31e-2dd3-483a-8957-b90647f628be",
+    "data": [
+      {
+        "text": "chances of ",
+        "userDefined": false
+      },
+      {
+        "text": "drizzle",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " in ",
+        "userDefined": false
+      },
+      {
+        "text": "Hong Kong",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "6df0ecf3-9e69-41f5-bc88-00d983fc672b",
+    "data": [
+      {
+        "text": "will it be ",
+        "userDefined": false
+      },
+      {
+        "text": "raining",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "tomorrow",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "64e9f1e0-99f4-4217-bfe2-f05c45356523",
+    "data": [
+      {
+        "text": "is it supposed to ",
+        "userDefined": false
+      },
+      {
+        "text": "snow",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " on ",
+        "userDefined": false
+      },
+      {
+        "text": "Friday",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "12e7138c-0d8a-47f9-a0b4-57ebfd08b52a",
+    "data": [
+      {
+        "text": "any chance of ",
+        "userDefined": false
+      },
+      {
+        "text": "tornadoes",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " on the ",
+        "userDefined": false
+      },
+      {
+        "text": "weekend",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "d85ca548-8cca-4152-bed9-9972a9965eca",
+    "data": [
+      {
+        "text": "are there ",
+        "userDefined": false
+      },
+      {
+        "text": "hurricanes",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " expected ",
+        "userDefined": false
+      },
+      {
+        "text": "next week",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "f1372e48-7526-4527-a12e-134bc8721461",
+    "data": [
+      {
+        "text": "is it going to ",
+        "userDefined": false
+      },
+      {
+        "text": "snow",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " in ",
+        "userDefined": false
+      },
+      {
+        "text": "Denver",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "656833d7-7494-475f-8da6-9855e0379d55",
+    "data": [
+      {
+        "text": "when will it ",
+        "userDefined": false
+      },
+      {
+        "text": "rain",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "today",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "cf498b49-2237-442b-973b-dee6060f6e8d",
+    "data": [
+      {
+        "text": "will it be ",
+        "userDefined": false
+      },
+      {
+        "text": "foggy",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " on ",
+        "userDefined": false
+      },
+      {
+        "text": "July 22",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "26ef8527-98f4-4460-bc15-e8b5045c01ba",
+    "data": [
+      {
+        "text": "any ",
+        "userDefined": false
+      },
+      {
+        "text": "snow",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " in the forecast for ",
+        "userDefined": false
+      },
+      {
+        "text": "next Monday",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "4ae20590-cb6d-453a-bb53-06407638768a",
+    "data": [
+      {
+        "text": "chances of ",
+        "userDefined": false
+      },
+      {
+        "text": "storm",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "this month",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "b1ed7f18-eba2-422e-92bd-9d2602d0b1d2",
+    "data": [
+      {
+        "text": "is it going to ",
+        "userDefined": false
+      },
+      {
+        "text": "snow",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " in ",
+        "userDefined": false
+      },
+      {
+        "text": "Paris",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      },
+      {
+        "text": " on ",
+        "userDefined": false
+      },
+      {
+        "text": "Sunday",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "300c7bf0-db6a-4186-923e-0129e7df66fd",
+    "data": [
+      {
+        "text": "is it supposed to ",
+        "userDefined": false
+      },
+      {
+        "text": "rain",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " in ",
+        "userDefined": false
+      },
+      {
+        "text": "Madrid",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "next weekend",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "2206bf0d-f48e-4139-b88a-576f109250a5",
+    "data": [
+      {
+        "text": "any chance of ",
+        "userDefined": false
+      },
+      {
+        "text": "snow showers",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "tomorrow",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      },
+      {
+        "text": " in ",
+        "userDefined": false
+      },
+      {
+        "text": "Barcelona",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "2a1a23e9-23d9-4201-87cd-0519ce0e65d3",
+    "data": [
+      {
+        "text": "are there any ",
+        "userDefined": false
+      },
+      {
+        "text": "tornadoes",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " expected in ",
+        "userDefined": false
+      },
+      {
+        "text": "Cleveland",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      },
+      {
+        "text": " on ",
+        "userDefined": false
+      },
+      {
+        "text": "November 12",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "71b7dc65-6322-4c07-8052-8794638581e5",
+    "data": [
+      {
+        "text": "when will it ",
+        "userDefined": false
+      },
+      {
+        "text": "rain",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " in ",
+        "userDefined": false
+      },
+      {
+        "text": "Oslo",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "today",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "3b429a20-5dc1-440e-a045-fee48791a7b1",
+    "data": [
+      {
+        "text": "will it be ",
+        "userDefined": false
+      },
+      {
+        "text": "foggy",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "next Saturday",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      },
+      {
+        "text": " in ",
+        "userDefined": false
+      },
+      {
+        "text": "San Francisco",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "25310e1d-67ac-45b4-a236-6bc7daa78656",
+    "data": [
+      {
+        "text": "any ",
+        "userDefined": false
+      },
+      {
+        "text": "drizzle",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " in the forecast for ",
+        "userDefined": false
+      },
+      {
+        "text": "Vienna",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "this weekend",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "6e788559-75b4-4818-a75a-176af4cbcdbb",
+    "data": [
+      {
+        "text": "chances of ",
+        "userDefined": false
+      },
+      {
+        "text": "volcano eruption",
+        "meta": "@weather-condition",
+        "alias": "condition",
+        "userDefined": true
+      },
+      {
+        "text": " in ",
+        "userDefined": false
+      },
+      {
+        "text": "Sicilia",
+        "meta": "@sys.location",
+        "alias": "address",
+        "userDefined": true
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "this month",
+        "meta": "@sys.date-time",
+        "alias": "date-time",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  }
+]

@@ -1,7 +1,7 @@
 <div class="min-h-screen bg-gradient-to-br from-base-300 via-base-200 to-base-300">
   <!-- Header -->
   <header class="bg-base-100/80 backdrop-blur-lg border-b border-base-300/50 shadow-lg sticky top-0 z-10">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div class="w-full px-4 sm:px-6 lg:px-8 py-4">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div class="flex items-center gap-4">
           <.link navigate={~p"/chat"}>
@@ -40,229 +40,507 @@
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
-    <!-- Health Overview Cards -->
-    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      <!-- Health Score Card -->
-      <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-base-100 to-base-100/80 border border-base-300/50 shadow-xl shadow-base-300/20 p-6">
-        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2">
-        </div>
-        <div class="relative">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-base-content/60 uppercase tracking-wider">
-                Health Score
-              </p>
-              <p class={[
-                "text-4xl font-bold mt-2 tracking-tight",
-                health_status_color(@health_indicators.health_status)
-              ]}>
-                {@health_indicators.health_score}%
-              </p>
-            </div>
-            <.circular_progress
-              value={@health_indicators.health_score}
-              variant={health_variant(@health_indicators.health_status)}
-              size={:lg}
-            >
-              <.icon name="hero-heart-solid" class="size-6" />
-            </.circular_progress>
+  <main class="w-full p-4 sm:p-6 lg:p-8 space-y-6">
+    <!-- Top Row: Health Cards + Subprocess (1/3) | System Readiness & Performance (2/3 stacked) -->
+    <div class="flex flex-col 2xl:flex-row gap-6">
+      <!-- Left Column - 1/3 width on ultra-wide -->
+      <div class="2xl:w-1/3 flex flex-col gap-4">
+        <!-- Health Overview Cards -->
+        <section class="grid grid-cols-2 gap-4">
+        <!-- Health Score Card -->
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-base-100 to-base-100/80 border border-base-300/50 shadow-xl shadow-base-300/20 p-5">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2">
           </div>
-          <div class="mt-4 pt-4 border-t border-base-300/50">
-            <.badge variant={health_variant(@health_indicators.health_status)} size={:sm}>
-              <.icon name="hero-check-circle" class="size-3 mr-1" />
-              {@health_indicators.health_status |> to_string() |> String.capitalize()}
+          <div class="relative">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs font-medium text-base-content/60 uppercase tracking-wider">
+                  Health Score
+                </p>
+                <p class={[
+                  "text-3xl font-bold mt-1 tracking-tight",
+                  health_status_color(@health_indicators.health_status)
+                ]}>
+                  {@health_indicators.health_score}%
+                </p>
+              </div>
+              <.circular_progress
+                value={@health_indicators.health_score}
+                variant={health_variant(@health_indicators.health_status)}
+                size={:md}
+              >
+                <.icon name="hero-heart-solid" class="size-4" />
+              </.circular_progress>
+            </div>
+            <div class="mt-3 pt-3 border-t border-base-300/50">
+              <.badge variant={health_variant(@health_indicators.health_status)} size={:xs}>
+                <.icon name="hero-check-circle" class="size-3 mr-1" />
+                {@health_indicators.health_status |> to_string() |> String.capitalize()}
+              </.badge>
+            </div>
+          </div>
+        </div>
+
+        <!-- GenServers Card -->
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-base-100 to-base-100/80 border border-base-300/50 shadow-xl shadow-base-300/20 p-5">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-success/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2">
+          </div>
+          <div class="relative">
+            <p class="text-xs font-medium text-base-content/60 uppercase tracking-wider">
+              GenServers
+            </p>
+            <div class="flex items-end gap-2 mt-1">
+              <span class="text-3xl font-bold text-base-content tracking-tight">
+                {@health_indicators.genservers_running}
+              </span>
+              <span class="text-lg text-base-content/40 mb-0.5">
+                / {@health_indicators.genservers_total}
+              </span>
+            </div>
+            <div class="mt-3 pt-3 border-t border-base-300/50 flex items-center justify-between">
+              <span class="text-xs text-base-content/60">Running</span>
+              <div class="p-1.5 rounded-lg bg-success/10">
+                <.icon name="hero-server-stack" class="size-4 text-success" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Uptime Card -->
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-base-100 to-base-100/80 border border-base-300/50 shadow-xl shadow-base-300/20 p-5">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-info/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2">
+          </div>
+          <div class="relative">
+            <p class="text-xs font-medium text-base-content/60 uppercase tracking-wider">Uptime</p>
+            <p class="text-3xl font-bold text-base-content mt-1 tracking-tight">
+              {format_uptime(@health_indicators.uptime_seconds)}
+            </p>
+            <div class="mt-3 pt-3 border-t border-base-300/50 flex items-center justify-between">
+              <span class="text-xs text-base-content/60">System time</span>
+              <div class="p-1.5 rounded-lg bg-info/10">
+                <.icon name="hero-clock" class="size-4 text-info" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Supervisor Card -->
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-base-100 to-base-100/80 border border-base-300/50 shadow-xl shadow-base-300/20 p-5">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2">
+          </div>
+          <div class="relative">
+            <p class="text-xs font-medium text-base-content/60 uppercase tracking-wider">
+              Supervisor
+            </p>
+            <p class="text-3xl font-bold text-base-content mt-1 tracking-tight">
+              {@health_indicators.supervisor.active}
+            </p>
+            <div class="mt-3 pt-3 border-t border-base-300/50 flex items-center justify-between">
+              <span class="text-xs text-base-content/60">
+                {@health_indicators.supervisor.workers} workers
+              </span>
+              <div class="p-1.5 rounded-lg bg-primary/10">
+                <.icon name="hero-cube-transparent" class="size-4 text-primary" />
+              </div>
+            </div>
+          </div>
+        </div>
+        </section>
+
+        <!-- Subprocess Supervisor -->
+        <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+          <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="p-2 rounded-xl bg-gradient-to-br from-accent/20 to-accent/5">
+                  <.icon name="hero-rectangle-group" class="size-5 text-accent" />
+                </div>
+                <div>
+                  <h2 class="text-base font-bold text-base-content">Subprocess Supervisor</h2>
+                  <p class="text-xs text-base-content/60">Child process overview</p>
+                </div>
+              </div>
+              <.badge variant={if @genserver_status.subprocess_supervisor.running, do: :success, else: :error} size={:sm}>
+                <%= if @genserver_status.subprocess_supervisor.running do %>
+                  <.icon name="hero-check-circle" class="size-3 mr-1" /> Running
+                <% else %>
+                  <.icon name="hero-x-circle" class="size-3 mr-1" /> Not Running
+                <% end %>
+              </.badge>
+            </div>
+          </div>
+
+          <div class="p-4">
+            <div class="flex items-center justify-between gap-2">
+              <div class="text-center flex-1">
+                <div class="text-lg font-bold text-base-content">{@genserver_status.subprocess_supervisor.active_children}</div>
+                <div class="text-[10px] text-base-content/60">Active</div>
+              </div>
+              <div class="text-center flex-1">
+                <div class="text-lg font-bold text-base-content">{@genserver_status.subprocess_supervisor.workers}</div>
+                <div class="text-[10px] text-base-content/60">Workers</div>
+              </div>
+              <div class="text-center flex-1">
+                <div class="text-lg font-bold text-base-content">{@genserver_status.subprocess_supervisor.supervisors}</div>
+                <div class="text-[10px] text-base-content/60">Supervisors</div>
+              </div>
+              <div class="text-center flex-1">
+                <div class="text-lg font-bold text-base-content">{@genserver_status.subprocess_supervisor.specs}</div>
+                <div class="text-[10px] text-base-content/60">Specs</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- System Readiness + Performance Metrics stacked - 2/3 width on ultra-wide -->
+      <div class="2xl:w-2/3 space-y-6">
+        <!-- System Readiness -->
+      <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+        <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="p-2 rounded-xl bg-gradient-to-br from-info/20 to-info/5">
+                <.icon name="hero-shield-check" class="size-5 text-info" />
+              </div>
+              <div>
+                <h2 class="text-base font-bold text-base-content">System Readiness</h2>
+                <p class="text-xs text-base-content/60">Components affecting chat availability</p>
+              </div>
+            </div>
+            <.badge variant={if @readiness_details.all_ready, do: :success, else: :warning} size={:sm}>
+              <%= if @readiness_details.all_ready do %>
+                <.icon name="hero-check-circle" class="size-3 mr-1" /> All Ready
+              <% else %>
+                <.icon name="hero-clock" class="size-3 mr-1" /> Initializing
+              <% end %>
             </.badge>
           </div>
         </div>
-      </div>
-      
-<!-- GenServers Card -->
-      <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-base-100 to-base-100/80 border border-base-300/50 shadow-xl shadow-base-300/20 p-6">
-        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-success/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2">
-        </div>
-        <div class="relative">
-          <p class="text-sm font-medium text-base-content/60 uppercase tracking-wider">
-            GenServers
-          </p>
-          <div class="flex items-end gap-2 mt-2">
-            <span class="text-4xl font-bold text-base-content tracking-tight">
-              {@health_indicators.genservers_running}
-            </span>
-            <span class="text-xl text-base-content/40 mb-1">
-              / {@health_indicators.genservers_total}
-            </span>
-          </div>
-          <div class="mt-4 pt-4 border-t border-base-300/50 flex items-center justify-between">
-            <span class="text-sm text-base-content/60">Running processes</span>
-            <div class="p-2 rounded-xl bg-success/10">
-              <.icon name="hero-server-stack" class="size-5 text-success" />
-            </div>
-          </div>
-        </div>
-      </div>
-      
-<!-- Uptime Card -->
-      <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-base-100 to-base-100/80 border border-base-300/50 shadow-xl shadow-base-300/20 p-6">
-        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-info/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2">
-        </div>
-        <div class="relative">
-          <p class="text-sm font-medium text-base-content/60 uppercase tracking-wider">Uptime</p>
-          <p class="text-4xl font-bold text-base-content mt-2 tracking-tight">
-            {format_uptime(@health_indicators.uptime_seconds)}
-          </p>
-          <div class="mt-4 pt-4 border-t border-base-300/50 flex items-center justify-between">
-            <span class="text-sm text-base-content/60">System running time</span>
-            <div class="p-2 rounded-xl bg-info/10">
-              <.icon name="hero-clock" class="size-5 text-info" />
-            </div>
-          </div>
-        </div>
-      </div>
-      
-<!-- Supervisor Card -->
-      <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-base-100 to-base-100/80 border border-base-300/50 shadow-xl shadow-base-300/20 p-6">
-        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2">
-        </div>
-        <div class="relative">
-          <p class="text-sm font-medium text-base-content/60 uppercase tracking-wider">
-            Supervisor
-          </p>
-          <p class="text-4xl font-bold text-base-content mt-2 tracking-tight">
-            {@health_indicators.supervisor.active}
-          </p>
-          <div class="mt-4 pt-4 border-t border-base-300/50 flex items-center justify-between">
-            <span class="text-sm text-base-content/60">
-              {@health_indicators.supervisor.workers} workers
-            </span>
-            <div class="p-2 rounded-xl bg-primary/10">
-              <.icon name="hero-cube-transparent" class="size-5 text-primary" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-    
-<!-- Performance Metrics -->
-    <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
-      <div class="p-6 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
-        <div class="flex items-center gap-3">
-          <div class="p-2 rounded-xl bg-gradient-to-br from-warning/20 to-warning/5">
-            <.icon name="hero-chart-bar" class="size-5 text-warning" />
-          </div>
-          <div>
-            <h2 class="text-lg font-bold text-base-content">Performance Metrics</h2>
-            <p class="text-sm text-base-content/60">Response times and throughput</p>
-          </div>
-        </div>
-      </div>
 
-      <div class="p-6">
-        <%= if map_size(@performance_metrics) == 0 or not Enum.any?(@performance_metrics, fn {_, v} -> is_map(v) and Map.has_key?(v, :avg_ms) end) do %>
-          <div class="text-center py-12">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-base-200 mb-4">
-              <.icon name="hero-chart-bar" class="size-8 text-base-content/30" />
+        <div class="p-4">
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <!-- Core Systems -->
+            <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+              <div class="flex items-center gap-2 mb-2">
+                <.icon name="hero-cpu-chip" class="size-4 text-primary" />
+                <span class="font-semibold text-xs text-base-content">Core Systems</span>
+              </div>
+              <div class="space-y-1.5 text-xs">
+                <div class="flex justify-between items-center">
+                  <span class="text-base-content/60">Embedder</span>
+                  <.status_dot status={if @readiness_details.core.embedder, do: :ready, else: :initializing} />
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-base-content/60">Memory Store</span>
+                  <.status_dot status={if @readiness_details.core.memory_store, do: :ready, else: :initializing} />
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-base-content/60">Brain</span>
+                  <.status_dot status={if @readiness_details.core.brain, do: :ready, else: :initializing} />
+                </div>
+              </div>
             </div>
-            <p class="text-base-content/60 font-medium">No performance data available yet</p>
-            <p class="text-sm text-base-content/40 mt-1">
-              Metrics will appear after processing some requests
-            </p>
+
+            <!-- NLP Pipeline -->
+            <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+              <div class="flex items-center gap-2 mb-2">
+                <.icon name="hero-language" class="size-4 text-secondary" />
+                <span class="font-semibold text-xs text-base-content">NLP Pipeline</span>
+              </div>
+              <div class="space-y-1.5 text-xs">
+                <div class="flex justify-between items-center">
+                  <span class="text-base-content/60">Ready</span>
+                  <.status_dot status={if @readiness_details.nlp_pipeline.ready, do: :ready, else: :loading} />
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-base-content/60">Intent Classifier</span>
+                  <.status_dot status={if @readiness_details.nlp_pipeline.components.intent_classifier, do: :ready, else: :loading} />
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-base-content/60">Gazetteer</span>
+                  <.status_dot status={if @readiness_details.nlp_pipeline.components.gazetteer, do: :ready, else: :loading} />
+                </div>
+              </div>
+            </div>
+
+            <!-- ML Models -->
+            <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+              <div class="flex items-center gap-2 mb-2">
+                <.icon name="hero-sparkles" class="size-4 text-warning" />
+                <span class="font-semibold text-xs text-base-content">ML Models</span>
+              </div>
+              <div class="space-y-1.5 text-xs">
+                <div class="flex justify-between items-center">
+                  <span class="text-base-content/60">Intent Classifier</span>
+                  <.status_dot status={if @readiness_details.ml_models.intent_classifier, do: :ready, else: :not_started} />
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-base-content/60">Entity Extractor</span>
+                  <.status_dot status={if @readiness_details.ml_models.entity_extractor, do: :ready, else: :not_started} />
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-base-content/60">POS Model</span>
+                  <.status_dot status={if @readiness_details.ml_models.pos_model_exists, do: :ready, else: :not_started} />
+                </div>
+              </div>
+            </div>
+
+            <!-- Response System -->
+            <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+              <div class="flex items-center gap-2 mb-2">
+                <.icon name="hero-document-text" class="size-4 text-accent" />
+                <span class="font-semibold text-xs text-base-content">Response System</span>
+              </div>
+              <div class="space-y-1.5 text-xs">
+                <div class="flex justify-between items-center">
+                  <span class="text-base-content/60">Template Store</span>
+                  <.status_dot status={if @readiness_details.template_store, do: :ready, else: :initializing} />
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-base-content/60">Classifier</span>
+                  <.status_dot status={if @readiness_details.ml_models.classifier_exists, do: :ready, else: :not_started} />
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-base-content/60">Entity Model</span>
+                  <.status_dot status={if @readiness_details.ml_models.entity_model_exists, do: :ready, else: :not_started} />
+                </div>
+              </div>
+            </div>
           </div>
-        <% else %>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            <%= for {metric_name, data} <- @performance_metrics do %>
-              <%= if is_map(data) and Map.has_key?(data, :avg_ms) do %>
-                <div class="group rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-4 hover:border-primary/30 hover:shadow-lg transition-all duration-200">
-                  <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3">
-                    {metric_name |> to_string() |> String.replace("_", " ")}
+        </div>
+      </section>
+
+    <!-- Performance Metrics -->
+      <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+        <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-xl bg-gradient-to-br from-warning/20 to-warning/5">
+              <.icon name="hero-chart-bar" class="size-5 text-warning" />
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-base-content">Performance Metrics</h2>
+              <p class="text-xs text-base-content/60">Response times and throughput</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4">
+          <%= if map_size(@performance_metrics) == 0 or not Enum.any?(@performance_metrics, fn {_, v} -> is_map(v) and Map.has_key?(v, :avg_ms) end) do %>
+            <div class="text-center py-8">
+              <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-base-200 mb-3">
+                <.icon name="hero-chart-bar" class="size-6 text-base-content/30" />
+              </div>
+              <p class="text-base-content/60 font-medium text-sm">No performance data yet</p>
+              <p class="text-xs text-base-content/40 mt-1">Metrics appear after requests</p>
+            </div>
+          <% else %>
+            <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+              <%= for {metric_name, data} <- @performance_metrics do %>
+                <%= if is_map(data) and Map.has_key?(data, :avg_ms) do %>
+                  <div class="group rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 hover:border-primary/30 transition-all duration-200">
+                    <div class="text-[10px] font-semibold text-base-content/50 uppercase tracking-wider mb-2">
+                      {metric_name |> to_string() |> String.replace("_", " ")}
+                    </div>
+                    <div class="space-y-1">
+                      <div class="flex justify-between items-center">
+                        <span class="text-[10px] text-base-content/60">Avg</span>
+                        <span class="font-mono font-bold text-sm text-base-content">
+                          {format_ms(data.avg_ms)}
+                        </span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-[10px] text-base-content/60">P95</span>
+                        <span class="font-mono text-xs text-base-content/80">
+                          {format_ms(data[:p95_ms] || data.avg_ms)}
+                        </span>
+                      </div>
+                      <div class="h-px bg-base-300/50"></div>
+                      <div class="flex justify-between items-center text-[10px]">
+                        <span class="text-base-content/50">Min/Max</span>
+                        <span class="font-mono text-base-content/60">
+                          {format_ms(data.min_ms)} / {format_ms(data.max_ms)}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="mt-2 pt-2 border-t border-base-300/30 flex justify-between text-[10px]">
+                      <span class="text-base-content/40">{data.count} calls</span>
+                      <span class="text-primary/80">{format_rate(data[:rate_per_minute])}</span>
+                    </div>
                   </div>
-                  <div class="space-y-2">
-                    <div class="flex justify-between items-center">
-                      <span class="text-xs text-base-content/60">Avg</span>
-                      <span class="font-mono font-bold text-base-content">
-                        {format_ms(data.avg_ms)}
-                      </span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                      <span class="text-xs text-base-content/60">P95</span>
-                      <span class="font-mono text-sm text-base-content/80">
-                        {format_ms(data[:p95_ms] || data.avg_ms)}
-                      </span>
-                    </div>
-                    <div class="h-px bg-base-300/50 my-2"></div>
-                    <div class="flex justify-between items-center text-xs">
-                      <span class="text-base-content/50">Min/Max</span>
-                      <span class="font-mono text-base-content/60">
-                        {format_ms(data.min_ms)} / {format_ms(data.max_ms)}
-                      </span>
-                    </div>
+                <% end %>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </section>
+      </div>
+    </div>
+
+    <!-- ML Models Status -->
+      <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+        <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-xl bg-gradient-to-br from-warning/20 to-warning/5">
+              <.icon name="hero-sparkles" class="size-5 text-warning" />
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-base-content">ML Models</h2>
+              <p class="text-xs text-base-content/60">Trained model files and runtime agents</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 space-y-4">
+          <!-- File-based Models -->
+          <div>
+            <h3 class="text-[10px] font-semibold text-base-content/70 uppercase tracking-wider mb-2">Trained Model Files</h3>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-2">
+              <%= for {model_key, model_data} <- file_based_models(@ml_models_status) do %>
+                <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="font-semibold text-xs text-base-content">{model_name(model_key)}</span>
+                    <.badge variant={model_status_variant(model_data)} size={:xs}>
+                      {model_status_label(model_data)}
+                    </.badge>
                   </div>
-                  <div class="mt-3 pt-3 border-t border-base-300/30 flex justify-between text-xs">
-                    <span class="text-base-content/40">{data.count} calls</span>
-                    <span class="text-primary/80">{format_rate(data[:rate_per_minute])}</span>
+                  <div class="space-y-1 text-[10px]">
+                    <div class="flex justify-between items-center">
+                      <span class="text-base-content/60">Size</span>
+                      <span class="font-mono text-base-content/70">{format_bytes(model_data.size_bytes)}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-base-content/60">Modified</span>
+                      <span class="font-mono text-base-content/70 truncate max-w-[80px]">{format_model_datetime(model_data.modified_at)}</span>
+                    </div>
                   </div>
                 </div>
               <% end %>
-            <% end %>
+            </div>
           </div>
-        <% end %>
-      </div>
-    </section>
-    
-<!-- GenServer Status -->
+
+          <!-- Agent-based Models -->
+          <div>
+            <h3 class="text-[10px] font-semibold text-base-content/70 uppercase tracking-wider mb-2">Runtime Model Agents</h3>
+            <div class="grid grid-cols-2 gap-2">
+              <%= for {model_key, model_data} <- agent_based_models(@ml_models_status) do %>
+                <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                      <.status_dot status={if model_data.loaded, do: :ready, else: :not_started} />
+                      <span class="font-semibold text-xs text-base-content">{model_name(model_key)}</span>
+                    </div>
+                    <.badge variant={model_status_variant(model_data)} size={:xs}>
+                      {model_status_label(model_data)}
+                    </.badge>
+                  </div>
+                  <%= if model_data.loaded do %>
+                    <div class="grid grid-cols-2 gap-2 text-[10px]">
+                      <div class="flex items-center gap-1 text-base-content/60">
+                        <.icon name="hero-cpu-chip" class="size-3" />
+                        <span>{format_bytes(model_data.memory_bytes)}</span>
+                      </div>
+                      <div class="flex items-center gap-1 text-base-content/60">
+                        <.icon name="hero-queue-list" class="size-3" />
+                        <span>Queue: {model_data.message_queue_len || 0}</span>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+
+          <!-- Training Stats -->
+          <%= if map_size(get_training_stats(@performance_metrics)) > 0 do %>
+            <div>
+              <h3 class="text-[10px] font-semibold text-base-content/70 uppercase tracking-wider mb-2">Training History</h3>
+              <div class="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                <%= for {model_key, stats} <- get_training_stats(@performance_metrics) do %>
+                  <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="font-semibold text-xs text-base-content">{model_name(model_key)}</span>
+                      <.badge variant={training_status_variant(stats.status)} size={:xs}>
+                        {training_status_label(stats.status)}
+                      </.badge>
+                    </div>
+                    <div class="space-y-1 text-[10px]">
+                      <%= if stats[:duration_ms] do %>
+                        <div class="flex justify-between items-center">
+                          <span class="text-base-content/60">Duration</span>
+                          <span class="font-mono text-base-content/70">{format_ms(stats.duration_ms)}</span>
+                        </div>
+                      <% end %>
+                      <%= if stats[:sequence_count] do %>
+                        <div class="flex justify-between items-center">
+                          <span class="text-base-content/60">Sequences</span>
+                          <span class="font-mono text-base-content/70">{stats.sequence_count}</span>
+                        </div>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </section>
+
+    <!-- GenServer Status - 6 column grid for categories -->
     <section class="space-y-4">
       <div class="flex items-center gap-3 px-2">
         <div class="p-2 rounded-xl bg-gradient-to-br from-secondary/20 to-secondary/5">
           <.icon name="hero-server-stack" class="size-5 text-secondary" />
         </div>
         <div>
-          <h2 class="text-lg font-bold text-base-content">GenServer Status</h2>
-          <p class="text-sm text-base-content/60">Process health by category</p>
+          <h2 class="text-base font-bold text-base-content">GenServer Status</h2>
+          <p class="text-xs text-base-content/60">Process health by category</p>
         </div>
       </div>
 
-      <div class="grid gap-4">
-        <%= for category <- [:core, :epistemic, :analysis, :ml, :storage] do %>
+      <!-- Categories in a 6 column responsive grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
+        <%= for category <- all_categories() do %>
           <div class="rounded-2xl bg-base-100 border border-base-300/50 shadow-lg shadow-base-300/10 overflow-hidden">
             <button
               type="button"
-              class="w-full p-5 text-left hover:bg-base-200/30 transition-colors duration-200"
+              class="w-full p-4 text-left hover:bg-base-200/30 transition-colors duration-200"
               phx-click="toggle_category"
               phx-value-category={category}
             >
               <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-3">
                   <div class={[
-                    "p-2.5 rounded-xl",
+                    "p-2 rounded-xl",
                     category_bg_class(category)
                   ]}>
                     <.icon
                       name={category_icon(category)}
-                      class={["size-5", category_text_class(category)]}
+                      class={["size-4", category_text_class(category)]}
                     />
                   </div>
                   <div>
-                    <h3 class="font-semibold text-base-content text-lg">
+                    <h3 class="font-semibold text-base-content text-sm">
                       {category_label(category)}
                     </h3>
-                    <p class="text-sm text-base-content/50">
-                      {count_running_in_category(@genserver_status.categories, category)} of {count_total_in_category(
-                        @genserver_status.categories,
-                        category
-                      )} processes running
+                    <p class="text-xs text-base-content/50">
+                      {count_running_in_category(@genserver_status.categories, category)} / {count_total_in_category(@genserver_status.categories, category)} running
                     </p>
                   </div>
                 </div>
-                <div class="flex items-center gap-3">
-                  <div class="hidden sm:flex items-center gap-1.5">
+                <div class="flex items-center gap-2">
+                  <div class="hidden sm:flex items-center gap-1">
                     <% running = count_running_in_category(@genserver_status.categories, category) %>
                     <% total = count_total_in_category(@genserver_status.categories, category) %>
-                    <%= for i <- 1..total do %>
+                    <%= for i <- 1..min(total, 6) do %>
                       <div class={[
-                        "w-2 h-2 rounded-full",
+                        "w-1.5 h-1.5 rounded-full",
                         if(i <= running, do: "bg-success", else: "bg-base-300")
                       ]}>
                       </div>
+                    <% end %>
+                    <%= if total > 6 do %>
+                      <span class="text-[10px] text-base-content/40">+{total - 6}</span>
                     <% end %>
                   </div>
                   <.icon
@@ -271,59 +549,49 @@
                         do: "hero-chevron-up",
                         else: "hero-chevron-down"
                     }
-                    class="size-5 text-base-content/40"
+                    class="size-4 text-base-content/40"
                   />
                 </div>
               </div>
             </button>
 
             <%= if MapSet.member?(@expanded_categories, category) do %>
-              <div class="px-5 pb-5 border-t border-base-300/30 pt-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div class="px-4 pb-4 border-t border-base-300/30 pt-3">
+                <div class="space-y-2">
                   <%= for {_module, status} <- category_servers(@genserver_status.categories, category) do %>
-                    <div class="rounded-xl bg-gradient-to-br from-base-200/60 to-base-200/30 border border-base-300/30 p-4 hover:border-base-300 transition-colors">
-                      <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="rounded-lg bg-gradient-to-br from-base-200/60 to-base-200/30 border border-base-300/30 p-3 hover:border-base-300 transition-colors">
+                      <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2 min-w-0">
                           <.status_dot
                             status={status.status}
-                            pulse={
-                              status.status in [:initializing, :building_vocabulary, :loading]
-                            }
+                            pulse={status.status in [:initializing, :building_vocabulary, :loading]}
                           />
-                          <span class="font-semibold text-sm text-base-content truncate">
+                          <span class="font-semibold text-xs text-base-content truncate">
                             {status.name}
                           </span>
                         </div>
-                        <.badge
-                          variant={status_badge_variant(status.status)}
-                          size={:xs}
-                        >
+                        <.badge variant={status_badge_variant(status.status)} size={:xs}>
                           {status.label}
                         </.badge>
                       </div>
 
-                      <div class="grid grid-cols-2 gap-3 text-xs">
-                        <div class="flex items-center gap-2 text-base-content/60">
-                          <.icon name="hero-cpu-chip" class="size-3.5" />
+                      <div class="flex items-center gap-3 text-[10px]">
+                        <div class="flex items-center gap-1 text-base-content/60">
+                          <.icon name="hero-cpu-chip" class="size-3" />
                           <span>{format_bytes(status.memory_bytes)}</span>
                         </div>
-                        <div class="flex items-center gap-2 text-base-content/60">
-                          <.icon name="hero-queue-list" class="size-3.5" />
-                          <span>Queue: {status.message_queue_len || 0}</span>
+                        <div class="flex items-center gap-1 text-base-content/60">
+                          <.icon name="hero-queue-list" class="size-3" />
+                          <span>Q: {status.message_queue_len || 0}</span>
                         </div>
                       </div>
 
                       <%= if status.stats && is_map(status.stats) && map_size(status.stats) > 0 do %>
-                        <div class="mt-3 pt-3 border-t border-base-300/30 space-y-1.5">
+                        <div class="mt-2 pt-2 border-t border-base-300/30 flex flex-wrap gap-x-3 gap-y-1 text-[10px]">
                           <%= for {key, value} <- Enum.take(status.stats, 3) do %>
-                            <div class="flex justify-between text-xs">
-                              <span class="text-base-content/50">
-                                {key |> to_string() |> String.replace("_", " ")}
-                              </span>
-                              <span class="font-mono text-base-content/70">
-                                {format_stat_value(value)}
-                              </span>
-                            </div>
+                            <span class="text-base-content/50">
+                              {key |> to_string() |> String.split("_") |> List.first()}: <span class="font-mono text-base-content/70">{format_stat_value(value)}</span>
+                            </span>
                           <% end %>
                         </div>
                       <% end %>
@@ -336,66 +604,9 @@
         <% end %>
       </div>
     </section>
-    
-<!-- Subprocess Supervisor -->
-    <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
-      <div class="p-6 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
-        <div class="flex items-center gap-3">
-          <div class="p-2 rounded-xl bg-gradient-to-br from-accent/20 to-accent/5">
-            <.icon name="hero-rectangle-group" class="size-5 text-accent" />
-          </div>
-          <div>
-            <h2 class="text-lg font-bold text-base-content">Subprocess Supervisor</h2>
-            <p class="text-sm text-base-content/60">Child process overview</p>
-          </div>
-        </div>
-      </div>
 
-      <div class="p-6">
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div class="text-center p-5 rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30">
-            <div class="text-3xl font-bold text-base-content">
-              {@genserver_status.subprocess_supervisor.active_children}
-            </div>
-            <div class="text-sm text-base-content/60 mt-1">Active Children</div>
-          </div>
-          <div class="text-center p-5 rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30">
-            <div class="text-3xl font-bold text-base-content">
-              {@genserver_status.subprocess_supervisor.workers}
-            </div>
-            <div class="text-sm text-base-content/60 mt-1">Workers</div>
-          </div>
-          <div class="text-center p-5 rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30">
-            <div class="text-3xl font-bold text-base-content">
-              {@genserver_status.subprocess_supervisor.supervisors}
-            </div>
-            <div class="text-sm text-base-content/60 mt-1">Supervisors</div>
-          </div>
-          <div class="text-center p-5 rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30">
-            <div class="text-3xl font-bold text-base-content">
-              {@genserver_status.subprocess_supervisor.specs}
-            </div>
-            <div class="text-sm text-base-content/60 mt-1">Specs</div>
-          </div>
-        </div>
-
-        <div class="mt-6 flex items-center justify-center gap-3 text-sm">
-          <.status_dot status={
-            if @genserver_status.subprocess_supervisor.running, do: :ready, else: :not_started
-          } />
-          <span class="text-base-content/60">
-            <%= if @genserver_status.subprocess_supervisor.running do %>
-              Running (PID: {inspect(@genserver_status.subprocess_supervisor.pid)})
-            <% else %>
-              Not running
-            <% end %>
-          </span>
-        </div>
-      </div>
-    </section>
-    
-<!-- Footer -->
-    <footer class="text-center py-6">
+    <!-- Footer -->
+    <footer class="text-center py-4">
       <p class="text-xs text-base-content/30">
         Check duration: {@genserver_status.check_duration_ms}ms
       </p>

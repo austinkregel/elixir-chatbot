@@ -1,0 +1,102 @@
+{
+  "id": "3428c48d-139f-4ba1-a9d8-93217a4e163d",
+  "name": "account.spending.check",
+  "auto": true,
+  "contexts": [],
+  "responses": [
+    {
+      "resetContexts": false,
+      "action": "account.spending.check",
+      "affectedContexts": [
+        {
+          "name": "spending",
+          "lifespan": 5
+        }
+      ],
+      "parameters": [
+        {
+          "id": "7141c485-a0a7-4571-bbf1-a71b69c9e4c7",
+          "name": "merchant",
+          "required": false,
+          "dataType": "@merchant",
+          "value": "$merchant",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "826c97fb-fbae-4222-ba92-725cc13f6b9f",
+          "name": "account",
+          "required": false,
+          "dataType": "@account",
+          "value": "$account",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [
+            {
+              "lang": "en",
+              "value": "What account are we checking?"
+            }
+          ],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "8a56e4db-e4c4-4633-9501-f59ea8cb03dc",
+          "name": "category",
+          "required": false,
+          "dataType": "@category",
+          "value": "$category",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "0a31dfdb-84ab-4c94-91a0-4a10fe0ec052",
+          "name": "date-time",
+          "required": false,
+          "dataType": "@sys.date-time",
+          "value": "$date-time",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        }
+      ],
+      "messages": [
+        {
+          "type": "0",
+          "title": "",
+          "textToSpeech": "",
+          "lang": "en",
+          "speech": [
+            "Here are your withdrawals:"
+          ],
+          "condition": ""
+        }
+      ],
+      "speech": []
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": true,
+  "webhookForSlotFilling": false,
+  "fallbackIntent": false,
+  "events": [],
+  "conditionalResponses": [],
+  "condition": "",
+  "conditionalFollowupEvents": []
+}

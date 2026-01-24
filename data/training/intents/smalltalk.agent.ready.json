@@ -1,0 +1,126 @@
+[
+  {
+    "text": "are you ready",
+    "tokens": [
+      "are",
+      "you",
+      "ready"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "0a3db19c-4aa6-4ec3-8b2b-ad814d11f24e",
+    "intent": "smalltalk.agent.ready"
+  },
+  {
+    "text": "are you ready right now",
+    "tokens": [
+      "are",
+      "you",
+      "ready",
+      "right",
+      "now"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "10a98a63-dd9c-43b4-aaf5-b2dc068bd624",
+    "intent": "smalltalk.agent.ready"
+  },
+  {
+    "text": "are you ready today",
+    "tokens": [
+      "are",
+      "you",
+      "ready",
+      "today"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f7fe48d1-db8a-4205-8b2b-020c8cd4ddae",
+    "intent": "smalltalk.agent.ready"
+  },
+  {
+    "text": "are you ready now",
+    "tokens": [
+      "are",
+      "you",
+      "ready",
+      "now"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "fc89e196-470a-415a-90a4-a5f88df0d0e6",
+    "intent": "smalltalk.agent.ready"
+  },
+  {
+    "text": "are you ready tonight",
+    "tokens": [
+      "are",
+      "you",
+      "ready",
+      "tonight"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "a5f3d9e9-e0eb-4349-b662-38a20a3ce392",
+    "intent": "smalltalk.agent.ready"
+  },
+  {
+    "text": "were you ready",
+    "tokens": [
+      "were",
+      "you",
+      "ready"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "ab6d006f-7320-455a-b580-b21801f45ef3",
+    "intent": "smalltalk.agent.ready"
+  },
+  {
+    "text": "have you been ready",
+    "tokens": [
+      "have",
+      "you",
+      "been",
+      "ready"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "9134a25f-895c-4e18-aa32-a5298696f52f",
+    "intent": "smalltalk.agent.ready"
+  }
+]

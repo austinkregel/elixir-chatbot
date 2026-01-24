@@ -1,0 +1,306 @@
+[
+  {
+    "text": "you're nuts",
+    "tokens": [
+      "you",
+      "'re",
+      "nuts"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "6840a289-8b3d-4496-b151-eb619bf460b9",
+    "intent": "smalltalk.agent.crazy"
+  },
+  {
+    "text": "you are crazy",
+    "tokens": [
+      "you",
+      "are",
+      "crazy"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "b71f8562-a258-4a37-8e06-13fb3e360853",
+    "intent": "smalltalk.agent.crazy"
+  },
+  {
+    "text": "you're out of your mind",
+    "tokens": [
+      "you",
+      "'re",
+      "out",
+      "of",
+      "your",
+      "mind"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADP",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "239cb259-3b90-447f-b18f-89fb3daf2f93",
+    "intent": "smalltalk.agent.crazy"
+  },
+  {
+    "text": "you're so crazy",
+    "tokens": [
+      "you",
+      "'re",
+      "so",
+      "crazy"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "82e6e6ef-37c1-4a30-a5a6-2b31e7ea4296",
+    "intent": "smalltalk.agent.crazy"
+  },
+  {
+    "text": "how crazy you are",
+    "tokens": [
+      "how",
+      "crazy",
+      "you",
+      "are"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "580ab4bd-75dc-4c60-a6db-2f38315d5341",
+    "intent": "smalltalk.agent.crazy"
+  },
+  {
+    "text": "you're so out of your mind",
+    "tokens": [
+      "you",
+      "'re",
+      "so",
+      "out",
+      "of",
+      "your",
+      "mind"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADP",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "c791f542-c8a7-498a-afd2-e3767d00d8c0",
+    "intent": "smalltalk.agent.crazy"
+  },
+  {
+    "text": "you went crazy",
+    "tokens": [
+      "you",
+      "went",
+      "crazy"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "9e0c6ac9-ab46-43a9-8b53-4ce82c453738",
+    "intent": "smalltalk.agent.crazy"
+  },
+  {
+    "text": "I think you're crazy",
+    "tokens": [
+      "I",
+      "think",
+      "you",
+      "'re",
+      "crazy"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "68de5d17-6e3b-44d9-b223-affbe4189ebf",
+    "intent": "smalltalk.agent.crazy"
+  },
+  {
+    "text": "are you crazy",
+    "tokens": [
+      "are",
+      "you",
+      "crazy"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "9666c8c9-d153-457e-b28e-6487704fb2bb",
+    "intent": "smalltalk.agent.crazy"
+  },
+  {
+    "text": "are you mad",
+    "tokens": [
+      "are",
+      "you",
+      "mad"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "6595f5c0-190c-4374-b77c-1e17978a4c85",
+    "intent": "smalltalk.agent.crazy"
+  },
+  {
+    "text": "are you insane",
+    "tokens": [
+      "are",
+      "you",
+      "insane"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "fd010246-3df4-428a-8dd8-e38cd7f61fa5",
+    "intent": "smalltalk.agent.crazy"
+  },
+  {
+    "text": "are you mad at me",
+    "tokens": [
+      "are",
+      "you",
+      "mad",
+      "at",
+      "me"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "a9e5e593-4ed7-4c51-b780-f753dcf2b068",
+    "intent": "smalltalk.agent.crazy"
+  },
+  {
+    "text": "are you mad or what",
+    "tokens": [
+      "are",
+      "you",
+      "mad",
+      "or",
+      "what"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "CONJ",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "44962fef-66de-4f94-b0be-d6f70acbcac6",
+    "intent": "smalltalk.agent.crazy"
+  },
+  {
+    "text": "are you nuts",
+    "tokens": [
+      "are",
+      "you",
+      "nuts"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "df6bc408-d462-44f0-a336-f11ea3783d48",
+    "intent": "smalltalk.agent.crazy"
+  },
+  {
+    "text": "you are a weirdo",
+    "tokens": [
+      "you",
+      "are",
+      "a",
+      "weirdo"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "24fac487-aa7a-48b7-bf48-3a6df64c45ee",
+    "intent": "smalltalk.agent.crazy"
+  },
+  {
+    "text": "you are insane",
+    "tokens": [
+      "you",
+      "are",
+      "insane"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "7546186f-2a8a-41ca-ab45-326120e94705",
+    "intent": "smalltalk.agent.crazy"
+  },
+  {
+    "text": "you are mad",
+    "tokens": [
+      "you",
+      "are",
+      "mad"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "875c42af-cc01-49e0-986b-b0559e57a420",
+    "intent": "smalltalk.agent.crazy"
+  }
+]

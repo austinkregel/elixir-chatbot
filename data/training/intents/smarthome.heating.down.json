@@ -1,0 +1,3109 @@
+[
+  {
+    "text": "little less temperature",
+    "tokens": [
+      "little",
+      "less",
+      "temperature"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "43205951-cadc-4791-a60b-854d77ab4927",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn heating down in the kitchen",
+    "tokens": [
+      "turn",
+      "heating",
+      "down",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PART",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "acde1282-0f01-422f-88a2-aab273b4f180",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make it colder by 20 degrees in kitchen",
+    "tokens": [
+      "make",
+      "it",
+      "colder",
+      "by",
+      "20",
+      "degrees",
+      "in",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "ADP",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "20",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "e5e153a3-6186-45d2-999c-2976297417a4",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "lower the bedroom temperature",
+    "tokens": [
+      "lower",
+      "the",
+      "bedroom",
+      "temperature"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "b6ead1b4-f916-4f4b-bb8e-552a795f8ab2",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "decrease the temp to 68",
+    "tokens": [
+      "decrease",
+      "the",
+      "temp",
+      "to",
+      "68"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PART",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "68",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "e07908ac-d43c-4a9c-8416-4ac6f6ba93e4",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn temperature down",
+    "tokens": [
+      "turn",
+      "temperature",
+      "down"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PART"
+    ],
+    "entities": [],
+    "id": "808cb306-5aaa-485b-8465-6522071a1f48",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "less heating",
+    "tokens": [
+      "less",
+      "heating"
+    ],
+    "pos_tags": [
+      "ADV",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "e7015326-fcb4-404a-99ab-ffa7376872e4",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make heating lower by 5 degrees in the kitchen",
+    "tokens": [
+      "make",
+      "heating",
+      "lower",
+      "by",
+      "5",
+      "degrees",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "VERB",
+      "ADJ",
+      "ADP",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "90cef8eb-98d7-4f78-b137-0a1d8701bb9b",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn heating colder to 40 percents",
+    "tokens": [
+      "turn",
+      "heating",
+      "colder",
+      "to",
+      "40",
+      "percents"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NOUN",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "40",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "e4e279c1-8b72-4aee-9511-06221c56ca52",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "decrease the heat by 5 degrees",
+    "tokens": [
+      "decrease",
+      "the",
+      "heat",
+      "by",
+      "5",
+      "degrees"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heat",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "35732cb6-44e8-4240-9a1c-7030ed7813b1",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make heating colder until 40 percents",
+    "tokens": [
+      "make",
+      "heating",
+      "colder",
+      "until",
+      "40",
+      "percents"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "40",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "78646fd6-a791-4cdd-836c-7b134abb0fec",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "cold heating till 40 percents",
+    "tokens": [
+      "cold",
+      "heating",
+      "till",
+      "40",
+      "percents"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "40",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "a0800bcf-389e-4399-a6cd-0cd17c3c64a9",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down the heating by 5 points",
+    "tokens": [
+      "turn",
+      "down",
+      "the",
+      "heating",
+      "by",
+      "5",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "e47ee074-a353-4204-8d24-7a39971b85aa",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "heating down everywhere",
+    "tokens": [
+      "heating",
+      "down",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 0,
+        "end": 0
+      },
+      {
+        "text": "everywhere",
+        "type": "all",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "13b3c7ab-f012-44c3-ac8f-3175214836a4",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down heating until 40 percents",
+    "tokens": [
+      "turn",
+      "down",
+      "heating",
+      "until",
+      "40",
+      "percents"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "40",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "8054ec39-39e1-4172-8906-8402113a1e65",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make it colder by 20 degrees",
+    "tokens": [
+      "make",
+      "it",
+      "colder",
+      "by",
+      "20",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "20",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "44f5e153-84e0-47be-8092-f6d217553def",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn heating colder till 40 percents",
+    "tokens": [
+      "turn",
+      "heating",
+      "colder",
+      "till",
+      "40",
+      "percents"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "40",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "e52f154f-1fc5-4aea-bc7e-63801efc41e4",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "temperature down",
+    "tokens": [
+      "temperature",
+      "down"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART"
+    ],
+    "entities": [],
+    "id": "75aa330d-a7c3-4ffd-bd92-c7487ecb14ff",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make heating 20 degrees cooler",
+    "tokens": [
+      "make",
+      "heating",
+      "20",
+      "degrees",
+      "cooler"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "938382da-80b3-4878-9dc2-7c79ea5d02d4",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "I need less heat in the living room",
+    "tokens": [
+      "I",
+      "need",
+      "less",
+      "heat",
+      "in",
+      "the",
+      "living",
+      "room"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heat",
+        "type": "heating",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "living room",
+        "type": "room",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "ddec9a92-11b3-420d-9505-25dd3ca66f51",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make heating cooler for 20 degrees",
+    "tokens": [
+      "make",
+      "heating",
+      "cooler",
+      "for",
+      "20",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "bb218382-e117-45f7-ae5e-57d61e5a57e0",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "lower the temperature to 20 degrees",
+    "tokens": [
+      "lower",
+      "the",
+      "temperature",
+      "to",
+      "20",
+      "degrees"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "DET",
+      "NOUN",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "20",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "cad44e77-814e-4872-89c2-08445b820916",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "drop the temp to 28",
+    "tokens": [
+      "drop",
+      "the",
+      "temp",
+      "to",
+      "28"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "PART",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "28",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "1623428f-cbcf-40f8-a199-54e288423f76",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down the temperature to 78",
+    "tokens": [
+      "turn",
+      "down",
+      "the",
+      "temperature",
+      "to",
+      "78"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "PART",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "78",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "109e11f6-c63e-40ed-b3a7-f5921926a0e6",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make heating in the kitchen 10 less",
+    "tokens": [
+      "make",
+      "heating",
+      "in",
+      "the",
+      "kitchen",
+      "10",
+      "less"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NUM",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "10",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "996cc3cd-5302-4e14-9191-c3cc2c5a203d",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make heating colder",
+    "tokens": [
+      "make",
+      "heating",
+      "colder"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "3ecdef72-6677-4fc6-bc71-fcacb42a948f",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn the temperature down to 72",
+    "tokens": [
+      "turn",
+      "the",
+      "temperature",
+      "down",
+      "to",
+      "72"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADV",
+      "PART",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "72",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "0a9e13c5-195b-4afd-aa21-844e56fe752b",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "decrease the heat in living room by 5 degrees",
+    "tokens": [
+      "decrease",
+      "the",
+      "heat",
+      "in",
+      "living",
+      "room",
+      "by",
+      "5",
+      "degrees"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heat",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "living room",
+        "type": "room",
+        "start": 4,
+        "end": 5
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "e3d0a608-fb11-480c-8b1f-2a268419420f",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "lower the temperature of air conditioner",
+    "tokens": [
+      "lower",
+      "the",
+      "temperature",
+      "of",
+      "air",
+      "conditioner"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "air conditioner",
+        "type": "heating",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "068993c6-49ac-495e-812e-b05a98090820",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn the thermostat down to 72",
+    "tokens": [
+      "turn",
+      "the",
+      "thermostat",
+      "down",
+      "to",
+      "72"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADV",
+      "PART",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "thermostat",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "72",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "66b11c93-12f3-4f05-93f6-456d2be9d08e",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn heating colder",
+    "tokens": [
+      "turn",
+      "heating",
+      "colder"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "1aa00817-4947-4e48-b4dd-2b3373315866",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "decrease the temperature in air conditioner to 18 degrees",
+    "tokens": [
+      "decrease",
+      "the",
+      "temperature",
+      "in",
+      "air",
+      "conditioner",
+      "to",
+      "18",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "air conditioner",
+        "type": "heating",
+        "start": 4,
+        "end": 5
+      },
+      {
+        "text": "18",
+        "type": "number",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "0e54eb00-bb6c-4135-95e5-34d9f759c591",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make it colder by 20 degrees in bedroom",
+    "tokens": [
+      "make",
+      "it",
+      "colder",
+      "by",
+      "20",
+      "degrees",
+      "in",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "ADP",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "20",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "c7d5f668-30e2-40e2-b5b9-c6e760b46601",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn the heating down by 5 degrees",
+    "tokens": [
+      "turn",
+      "the",
+      "heating",
+      "down",
+      "by",
+      "5",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "VERB",
+      "PART",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "e072e288-d227-4f93-be4f-7e99f2948487",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "lower temp by 5 grad",
+    "tokens": [
+      "lower",
+      "temp",
+      "by",
+      "5",
+      "grad"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "5",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "7e55fc1d-a287-482e-8b24-2ae7bbb35ca4",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "lower temp by 25 grad",
+    "tokens": [
+      "lower",
+      "temp",
+      "by",
+      "25",
+      "grad"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "25",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "049c410b-b512-4419-b541-9c4c54541bc5",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn heating cooler for 20 degrees",
+    "tokens": [
+      "turn",
+      "heating",
+      "cooler",
+      "for",
+      "20",
+      "degrees"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "a755b7ae-9e5c-40d2-ab03-8ff0910f1863",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "decrease the temperature to 74 degrees",
+    "tokens": [
+      "decrease",
+      "the",
+      "temperature",
+      "to",
+      "74",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "74",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "210c3911-9ab5-45ab-896d-f9d0d5466ae7",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make heating down",
+    "tokens": [
+      "make",
+      "heating",
+      "down"
+    ],
+    "pos_tags": [
+      "VERB",
+      "VERB",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "84cbe9cb-af00-479b-85c2-6fc215efa3ae",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "temperature down by 5 degrees",
+    "tokens": [
+      "temperature",
+      "down",
+      "by",
+      "5",
+      "degrees"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "5",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "65bbfc09-644b-47c4-b65c-dd300806c52b",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "cool the air in air conditioner",
+    "tokens": [
+      "cool",
+      "the",
+      "air",
+      "in",
+      "air",
+      "conditioner"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "air conditioner",
+        "type": "heating",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "65e1581b-12c7-4229-ab86-a8e39b0d6ab4",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down the temperature",
+    "tokens": [
+      "turn",
+      "down",
+      "the",
+      "temperature"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "96182ab3-340d-4220-b9cb-15dff4038dbc",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down heating",
+    "tokens": [
+      "turn",
+      "down",
+      "heating"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "a8e992a8-cccb-4036-9dab-0085bbd706df",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "cold heating to 40 percents",
+    "tokens": [
+      "cold",
+      "heating",
+      "to",
+      "40",
+      "percents"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "40",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "bcba9b04-23d1-43f5-973d-e0ecad93eae6",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn the heat down by five degrees",
+    "tokens": [
+      "turn",
+      "the",
+      "heat",
+      "down",
+      "by",
+      "five",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PART",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heat",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "five",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "375cabd8-cfad-4362-8576-6575c86fa1f2",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make the heating lower",
+    "tokens": [
+      "make",
+      "the",
+      "heating",
+      "lower"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "a65d7f59-211a-46c4-80e5-84ee2f466dea",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down the temperature in air conditioner by 10 points",
+    "tokens": [
+      "turn",
+      "down",
+      "the",
+      "temperature",
+      "in",
+      "air",
+      "conditioner",
+      "by",
+      "10",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "air conditioner",
+        "type": "heating",
+        "start": 5,
+        "end": 6
+      },
+      {
+        "text": "10",
+        "type": "number",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "fbea0587-4ea4-439c-8871-da266cee5082",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn heating 20 degrees cooler",
+    "tokens": [
+      "turn",
+      "heating",
+      "20",
+      "degrees",
+      "cooler"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "78fef89b-f1ec-4fba-8ef5-dda8dcea045b",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make heating colder till 40 percents",
+    "tokens": [
+      "make",
+      "heating",
+      "colder",
+      "till",
+      "40",
+      "percents"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "40",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "c7a2f584-41fe-4c9e-9529-09c935980e6a",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "can you switch down the heating for 20 grad",
+    "tokens": [
+      "can",
+      "you",
+      "switch",
+      "down",
+      "the",
+      "heating",
+      "for",
+      "20",
+      "grad"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "cca40a7e-0d39-4983-9912-1ecc31f18951",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make heating colder to 40 percents",
+    "tokens": [
+      "make",
+      "heating",
+      "colder",
+      "to",
+      "40",
+      "percents"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "40",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "f52e9810-2fe3-40c6-b435-5649678559d3",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down the temperature to 80",
+    "tokens": [
+      "turn",
+      "down",
+      "the",
+      "temperature",
+      "to",
+      "80"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "PART",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "80",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "2094f057-9f4b-43f6-8323-b88196322e43",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down heating in the kitchen",
+    "tokens": [
+      "turn",
+      "down",
+      "heating",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "9766a1d5-2202-4dcc-88bf-c21623714e60",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn heating down",
+    "tokens": [
+      "turn",
+      "heating",
+      "down"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "20bb281b-e4a3-44a3-8a43-f6cb4a6a7594",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make temperature down",
+    "tokens": [
+      "make",
+      "temperature",
+      "down"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "PART"
+    ],
+    "entities": [],
+    "id": "b93329c6-96cd-410e-aa62-7d88bcd122bf",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "I need less heat in here",
+    "tokens": [
+      "I",
+      "need",
+      "less",
+      "heat",
+      "in",
+      "here"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "heat",
+        "type": "heating",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "bb95bbc8-cbd5-4e79-853d-ae516761b8d2",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "lower the thermostat to 69 Fahrenheit",
+    "tokens": [
+      "lower",
+      "the",
+      "thermostat",
+      "to",
+      "69",
+      "Fahrenheit"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "DET",
+      "NOUN",
+      "PART",
+      "NUM",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "thermostat",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "69",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "e8a21537-666e-45a8-a5da-19ba2bf19c93",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "little less heating",
+    "tokens": [
+      "little",
+      "less",
+      "heating"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADV",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "61919923-6812-4407-872f-bae42dd078e1",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down the heating by 50 percent",
+    "tokens": [
+      "turn",
+      "down",
+      "the",
+      "heating",
+      "by",
+      "50",
+      "percent"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "50",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "99f4756b-5329-45dd-90ae-3275aa8c3c98",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "can you turn the heating down to 25 grad",
+    "tokens": [
+      "can",
+      "you",
+      "turn",
+      "the",
+      "heating",
+      "down",
+      "to",
+      "25",
+      "grad"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "VERB",
+      "PART",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "25",
+        "type": "number",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "a9419b2b-20d3-4952-9cca-57ff8bde755b",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "temperature down till 5 degrees in the kitchen",
+    "tokens": [
+      "temperature",
+      "down",
+      "till",
+      "5",
+      "degrees",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "ADV",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "5",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "26c3fe12-07ad-43e7-8aac-73471703232c",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down heating until 40 percent",
+    "tokens": [
+      "turn",
+      "down",
+      "heating",
+      "until",
+      "40",
+      "percent"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "40",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "a55ba968-fdf8-4d93-b73f-e3cdfe9f68d4",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down heating for 20 degrees",
+    "tokens": [
+      "turn",
+      "down",
+      "heating",
+      "for",
+      "20",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "294c27b7-d1f5-42d7-a2bd-925335b7de0c",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make it cooler",
+    "tokens": [
+      "make",
+      "it",
+      "cooler"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "a6bbbf68-0fa0-4135-a8d4-0422b7d7551b",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn heating down for 5 grad",
+    "tokens": [
+      "turn",
+      "heating",
+      "down",
+      "for",
+      "5",
+      "grad"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PART",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "01ebc892-ada2-4851-af4f-268be02a74ff",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn the heating down for 20 percents",
+    "tokens": [
+      "turn",
+      "the",
+      "heating",
+      "down",
+      "for",
+      "20",
+      "percents"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "VERB",
+      "PART",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "720243ba-6a61-49f3-8c01-ab2e5d124ed2",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn heating colder for 20 percents",
+    "tokens": [
+      "turn",
+      "heating",
+      "colder",
+      "for",
+      "20",
+      "percents"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "24f1e99f-5169-4d6a-99b1-716b03672509",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down the heating",
+    "tokens": [
+      "turn",
+      "down",
+      "the",
+      "heating"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "8ee14052-fdc9-4eff-b16b-542a6242d8de",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "can you switch the heating down to 25 grad",
+    "tokens": [
+      "can",
+      "you",
+      "switch",
+      "the",
+      "heating",
+      "down",
+      "to",
+      "25",
+      "grad"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "VERB",
+      "PART",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "25",
+        "type": "number",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "ce7ec6a6-7b2e-47e6-8109-c94b0cb08145",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "heating 50 lower",
+    "tokens": [
+      "heating",
+      "50",
+      "lower"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NUM",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 0,
+        "end": 0
+      },
+      {
+        "text": "50",
+        "type": "number",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "3eee0ea5-8680-455a-807c-2cc878cb14df",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "switch the temp down to 75 F",
+    "tokens": [
+      "switch",
+      "the",
+      "temp",
+      "down",
+      "to",
+      "75",
+      "F"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADV",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "75",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "dd84f6c2-cb9f-485d-b692-36975b3e8e5a",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down the heating temperature by 7 degrees",
+    "tokens": [
+      "turn",
+      "down",
+      "the",
+      "heating",
+      "temperature",
+      "by",
+      "7",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating temperature",
+        "type": "heating",
+        "start": 3,
+        "end": 4
+      },
+      {
+        "text": "7",
+        "type": "number",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "be924674-6cb5-483c-b057-e86112e8c8ad",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "kitchen heating down",
+    "tokens": [
+      "kitchen",
+      "heating",
+      "down"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 0,
+        "end": 0
+      },
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "d09be579-c520-4a07-b597-c1eb6166a17b",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make bedroom temperature down",
+    "tokens": [
+      "make",
+      "bedroom",
+      "temperature",
+      "down"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "685b67d5-031c-4425-bbc8-fb6da95efd72",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down heating until 40 degrees",
+    "tokens": [
+      "turn",
+      "down",
+      "heating",
+      "until",
+      "40",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "40",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "1c8eff6d-f1b9-4dba-a309-e4a8a71a815f",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down heating for 20 percent",
+    "tokens": [
+      "turn",
+      "down",
+      "heating",
+      "for",
+      "20",
+      "percent"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "d2465d8c-47d6-4f40-b757-4756000b0cb1",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "can you lower the temperature of air conditioning a little bit",
+    "tokens": [
+      "can",
+      "you",
+      "lower",
+      "the",
+      "temperature",
+      "of",
+      "air",
+      "conditioning",
+      "a",
+      "little",
+      "bit"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "air conditioning",
+        "type": "heating",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "a43c5d1d-09ea-463f-a011-84158dbce133",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down heating for 20 percents",
+    "tokens": [
+      "turn",
+      "down",
+      "heating",
+      "for",
+      "20",
+      "percents"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "afa0e383-00e7-461c-bb84-8b5e7bf56027",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "lower the temperature by 2 degrees",
+    "tokens": [
+      "lower",
+      "the",
+      "temperature",
+      "by",
+      "2",
+      "degrees"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "2",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "a213f2b6-f681-4359-b06f-e7c3053d680b",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make cooler by 30 degrees",
+    "tokens": [
+      "make",
+      "cooler",
+      "by",
+      "30",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "30",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "cce89c3a-1fde-405e-8bec-1cc1fcca129b",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "temperature down to 5 degrees",
+    "tokens": [
+      "temperature",
+      "down",
+      "to",
+      "5",
+      "degrees"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADV",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "5",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "d8f881d1-b1bd-46e3-99ec-4f52a1df39bf",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "less heat in the kitchen",
+    "tokens": [
+      "less",
+      "heat",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "ADV",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heat",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "c69b945a-8de4-41ce-bcbc-d46edb735b1b",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down heating until 40",
+    "tokens": [
+      "turn",
+      "down",
+      "heating",
+      "until",
+      "40"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "40",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "f7dc3aa7-7d4f-454f-9729-14a4e3adea01",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down heating for 20",
+    "tokens": [
+      "turn",
+      "down",
+      "heating",
+      "for",
+      "20"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "25ce319c-1f9c-437d-bdbd-5f051ad5b2ec",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "heating down",
+    "tokens": [
+      "heating",
+      "down"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "5b971bc8-d807-4294-b6cf-26013687ae35",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down the temperature of air conditioner",
+    "tokens": [
+      "turn",
+      "down",
+      "the",
+      "temperature",
+      "of",
+      "air",
+      "conditioner"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "air conditioner",
+        "type": "heating",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "a163315a-270f-439d-b717-92e18333b87a",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn heating colder until 40 percents",
+    "tokens": [
+      "turn",
+      "heating",
+      "colder",
+      "until",
+      "40",
+      "percents"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "40",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "5f84fd8f-6201-43ae-a80f-2a5666e2e953",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down the heating in bedroom by 5 grad",
+    "tokens": [
+      "turn",
+      "down",
+      "the",
+      "heating",
+      "in",
+      "bedroom",
+      "by",
+      "5",
+      "grad"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "2f2d0bd9-5958-4e4f-bb2e-40379eed8c95",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "lower the temperature by 5 degrees",
+    "tokens": [
+      "lower",
+      "the",
+      "temperature",
+      "by",
+      "5",
+      "degrees"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "5",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "80e50e7e-9a43-4e00-a1f2-25ce87fc1d9e",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make the air conditioning cooler",
+    "tokens": [
+      "make",
+      "the",
+      "air",
+      "conditioning",
+      "cooler"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "air conditioning",
+        "type": "heating",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "d911ff35-6d0f-4969-b667-323c6b37a9ee",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "please turn the temp down by five degrees",
+    "tokens": [
+      "please",
+      "turn",
+      "the",
+      "temp",
+      "down",
+      "by",
+      "five",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "VERB",
+      "DET",
+      "NOUN",
+      "PART",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "five",
+        "type": "number",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "17a83919-1978-498d-a0b5-e17060660fa2",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make the heating colder for 20 percents",
+    "tokens": [
+      "make",
+      "the",
+      "heating",
+      "colder",
+      "for",
+      "20",
+      "percents"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "4c123bff-c0f4-4176-953c-a7624bfabafd",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "decrease the temperature in air conditioner",
+    "tokens": [
+      "decrease",
+      "the",
+      "temperature",
+      "in",
+      "air",
+      "conditioner"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "air conditioner",
+        "type": "heating",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "a80b1944-f1b5-4fa0-8563-d40e23c1f21a",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make bedroom heating down",
+    "tokens": [
+      "make",
+      "bedroom",
+      "heating",
+      "down"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "VERB",
+      "PART"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "ed025197-91b8-4950-b4c2-d22c0b53e4a2",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "heating 50 lower",
+    "tokens": [
+      "heating",
+      "50",
+      "lower"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NUM",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "50",
+        "type": "number",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "0477950c-e5e4-4029-a365-8990009f3d32",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "turn down temperature in the kitchen",
+    "tokens": [
+      "turn",
+      "down",
+      "temperature",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "0c843821-a6b2-408b-af22-8ce73b60f817",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "make heating colder for 20 degrees",
+    "tokens": [
+      "make",
+      "heating",
+      "colder",
+      "for",
+      "20",
+      "degrees"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "20",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "cef68735-e8ca-470d-a4f6-5974fa7a326a",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "a little less heating",
+    "tokens": [
+      "a",
+      "little",
+      "less",
+      "heating"
+    ],
+    "pos_tags": [
+      "DET",
+      "ADJ",
+      "ADV",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "heating",
+        "type": "heating",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "8b0fa8e8-4c0b-402a-aaaa-79f99ed4bc3a",
+    "intent": "smarthome.heating.down"
+  },
+  {
+    "text": "switch down the temp to 69",
+    "tokens": [
+      "switch",
+      "down",
+      "the",
+      "temp",
+      "to",
+      "69"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "PART",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "69",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "9c9ee3af-64d1-41a2-9bc7-fd5697150d96",
+    "intent": "smarthome.heating.down"
+  }
+]

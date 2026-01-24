@@ -1,0 +1,102 @@
+[
+  {
+    "text": "I am back",
+    "tokens": [
+      "I",
+      "am",
+      "back"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "e46bacd7-74c8-4bcd-9bbd-1eeda235edf2",
+    "intent": "smalltalk.user.back"
+  },
+  {
+    "text": "I'm here again",
+    "tokens": [
+      "I",
+      "'m",
+      "here",
+      "again"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "2e19504e-0a52-4e16-9e13-da050777d09c",
+    "intent": "smalltalk.user.back"
+  },
+  {
+    "text": "here I am again",
+    "tokens": [
+      "here",
+      "I",
+      "am",
+      "again"
+    ],
+    "pos_tags": [
+      "ADV",
+      "PRON",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "e40f6672-03cc-472e-9a7e-16632aa50fb4",
+    "intent": "smalltalk.user.back"
+  },
+  {
+    "text": "I got back",
+    "tokens": [
+      "I",
+      "got",
+      "back"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "74899fa2-3e1d-4775-94b1-3310f1a34dd7",
+    "intent": "smalltalk.user.back"
+  },
+  {
+    "text": "I came back",
+    "tokens": [
+      "I",
+      "came",
+      "back"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "a02e3ef7-b7c8-4520-a1ac-302f85d953df",
+    "intent": "smalltalk.user.back"
+  },
+  {
+    "text": "I have returned",
+    "tokens": [
+      "I",
+      "have",
+      "returned"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "4eb22953-baa0-4903-aa4d-80eca0874edb",
+    "intent": "smalltalk.user.back"
+  }
+]

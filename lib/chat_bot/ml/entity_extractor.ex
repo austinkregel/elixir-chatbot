@@ -12,7 +12,8 @@ defmodule ChatBot.ML.EntityExtractor do
 
   require Logger
 
-  alias ChatBot.ML.{Gazetteer, Tokenizer, EntityTrainer}
+  alias ChatBot.ML.{Gazetteer, Tokenizer, EntityTrainer, POSTagger}
+  alias ChatBot.Analysis.EntityDisambiguator
 
   @type entity_match :: %{
           entity: String.t(),
@@ -378,14 +379,26 @@ defmodule ChatBot.ML.EntityExtractor do
   @doc """
   Extract entities from text using gazetteer lookups and pattern matching.
   Returns a list of entity matches with positions and confidence scores.
+
+  ## Options
+
+  - `:entity_maps` - Pre-loaded entity maps (optional)
+  - `:discourse` - Discourse analysis result for disambiguation context
+  - `:speech_act` - Speech act classification result for disambiguation context
+  - `:skip_disambiguation` - If true, skip the disambiguation step (default: false)
   """
-  def extract_entities(text, entity_maps \\ nil) do
-    entity_maps = entity_maps || get_entity_maps()
+  def extract_entities(text, opts \\ [])
+
+  def extract_entities(text, opts) when is_list(opts) do
+    entity_maps = Keyword.get(opts, :entity_maps) || get_entity_maps()
+    discourse = Keyword.get(opts, :discourse)
+    speech_act = Keyword.get(opts, :speech_act)
+    skip_disambiguation = Keyword.get(opts, :skip_disambiguation, false)
 
     # Tokenize the text
     tokens = Tokenizer.tokenize(text)
 
-    # Extract entities from gazetteer
+    # Extract entities from gazetteer (may return multiple types per entity)
     gazetteer_entities = extract_gazetteer_entities(tokens, entity_maps)
 
     # Extract system entities (dates, numbers)
@@ -396,8 +409,23 @@ defmodule ChatBot.ML.EntityExtractor do
 
     # Combine and resolve conflicts
     all_entities = gazetteer_entities ++ system_entities ++ location_entities
+    resolved_entities = resolve_entity_conflicts(all_entities)
 
-    resolve_entity_conflicts(all_entities)
+    # Disambiguate entities with multiple types if context is available
+    if skip_disambiguation or (is_nil(discourse) and is_nil(speech_act)) do
+      resolved_entities
+    else
+      disambiguate_entities(resolved_entities, tokens, discourse, speech_act)
+    end
+  end
+
+  # Legacy support: entity_maps passed directly
+  def extract_entities(text, entity_maps) when is_map(entity_maps) do
+    extract_entities(text, entity_maps: entity_maps)
+  end
+
+  def extract_entities(text, nil) do
+    extract_entities(text, [])
   end
 
   @doc """
@@ -473,18 +501,70 @@ defmodule ChatBot.ML.EntityExtractor do
       matched_tokens = Enum.slice(tokens, start_idx..end_idx)
       match_text = Enum.map(matched_tokens, & &1.text) |> Enum.join(" ")
 
-      # Handle both :entity_type and :entity keys for backwards compatibility
-      entity_type = Map.get(entity_info, :entity_type) || Map.get(entity_info, :entity, "unknown")
-      entity_value = Map.get(entity_info, :value, match_text)
+      # Handle single entity_info or list of possible types
+      case entity_info do
+        infos when is_list(infos) and length(infos) > 1 ->
+          # Multiple possible entity types - keep all for disambiguation
+          primary_info = hd(infos)
+          primary_type =
+            Map.get(primary_info, :entity_type) ||
+              Map.get(primary_info, :entity, "unknown")
 
-      %{
-        entity: entity_type,
-        value: entity_value,
-        match: match_text,
-        start_pos: start_token.start_pos,
-        end_pos: end_token.end_pos,
-        confidence: calculate_confidence(match_text, entity_type)
-      }
+          %{
+            entity: primary_type,
+            value: Map.get(primary_info, :value, match_text),
+            match: match_text,
+            start_pos: start_token.start_pos,
+            end_pos: end_token.end_pos,
+            confidence: calculate_confidence(match_text, primary_type),
+            types: infos
+          }
+
+        [single_info] ->
+          # List with single entry
+          entity_type =
+            Map.get(single_info, :entity_type) ||
+              Map.get(single_info, :entity, "unknown")
+
+          entity_value = Map.get(single_info, :value, match_text)
+
+          %{
+            entity: entity_type,
+            value: entity_value,
+            match: match_text,
+            start_pos: start_token.start_pos,
+            end_pos: end_token.end_pos,
+            confidence: calculate_confidence(match_text, entity_type)
+          }
+
+        single_info when is_map(single_info) ->
+          # Single entity info (legacy format)
+          entity_type =
+            Map.get(single_info, :entity_type) ||
+              Map.get(single_info, :entity, "unknown")
+
+          entity_value = Map.get(single_info, :value, match_text)
+
+          %{
+            entity: entity_type,
+            value: entity_value,
+            match: match_text,
+            start_pos: start_token.start_pos,
+            end_pos: end_token.end_pos,
+            confidence: calculate_confidence(match_text, entity_type)
+          }
+
+        _ ->
+          # Unknown format
+          %{
+            entity: "unknown",
+            value: match_text,
+            match: match_text,
+            start_pos: start_token.start_pos,
+            end_pos: end_token.end_pos,
+            confidence: 0.5
+          }
+      end
     end)
   end
 
@@ -835,5 +915,71 @@ defmodule ChatBot.ML.EntityExtractor do
       (codepoint >= 0x0370 and codepoint <= 0x03FF) or
       (codepoint >= 0x0400 and codepoint <= 0x04FF) or
       (codepoint >= 0x1E00 and codepoint <= 0x1EFF)
+  end
+
+  # ============================================================================
+  # Entity Disambiguation
+  # ============================================================================
+
+  defp disambiguate_entities(entities, tokens, discourse, speech_act) do
+    # Build context for disambiguation
+    context = %{
+      discourse: discourse,
+      speech_act: speech_act
+    }
+
+    # Try to get POS tags for better disambiguation
+    pos_tagged = get_pos_tags(tokens)
+
+    # Use the EntityDisambiguator to resolve entities with multiple types
+    entities
+    |> Enum.map(fn entity ->
+      # Check if this entity has multiple possible types
+      types = get_entity_types(entity)
+
+      if length(types) > 1 do
+        # Disambiguate this entity
+        EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
+      else
+        entity
+      end
+    end)
+  end
+
+  defp get_pos_tags(tokens) do
+    # Try to use POS tagger if model is available
+    case POSTagger.load_model() do
+      {:ok, model} ->
+        # Extract just the text from tokens
+        token_texts = Enum.map(tokens, fn
+          %{text: text} -> text
+          text when is_binary(text) -> text
+          _ -> ""
+        end)
+
+        POSTagger.predict(token_texts, model)
+
+      {:error, _} ->
+        # No POS model available, return tokens without tags
+        Enum.map(tokens, fn
+          %{text: text} -> {text, "X"}
+          text when is_binary(text) -> {text, "X"}
+          _ -> {"", "X"}
+        end)
+    end
+  end
+
+  defp get_entity_types(entity) do
+    cond do
+      is_list(Map.get(entity, :types)) ->
+        entity.types
+
+      is_list(Map.get(entity, "types")) ->
+        entity["types"]
+
+      # Entity already has a single type
+      true ->
+        []
+    end
   end
 end

@@ -1,0 +1,658 @@
+[
+  {
+    "text": "adjust volume",
+    "tokens": [
+      "adjust",
+      "volume"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "ae0a4601-d653-41aa-873e-cfa10258749d",
+    "intent": "smarthome.device.volume.set"
+  },
+  {
+    "text": "could you please adjust the kitchen TV volume to 10",
+    "tokens": [
+      "could",
+      "you",
+      "please",
+      "adjust",
+      "the",
+      "kitchen",
+      "TV",
+      "volume",
+      "to",
+      "10"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "NOUN",
+      "PART",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "10",
+        "type": "number",
+        "start": 9,
+        "end": 9
+      }
+    ],
+    "id": "e059d8ec-6f37-4498-b8fa-a14652305b27",
+    "intent": "smarthome.device.volume.set"
+  },
+  {
+    "text": "can you adjust volume",
+    "tokens": [
+      "can",
+      "you",
+      "adjust",
+      "volume"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "b6009517-8596-429f-bf45-95594ed7b43e",
+    "intent": "smarthome.device.volume.set"
+  },
+  {
+    "text": "please could you change to 20 the volume of my speakers",
+    "tokens": [
+      "please",
+      "could",
+      "you",
+      "change",
+      "to",
+      "20",
+      "the",
+      "volume",
+      "of",
+      "my",
+      "speakers"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "VERB",
+      "PART",
+      "NUM",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "20",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "speakers",
+        "type": "device_volume",
+        "start": 10,
+        "end": 10
+      }
+    ],
+    "id": "34025895-6ac7-4acf-a03d-a9fd4514bb40",
+    "intent": "smarthome.device.volume.set"
+  },
+  {
+    "text": "set the speakers volume to 50 points",
+    "tokens": [
+      "set",
+      "the",
+      "speakers",
+      "volume",
+      "to",
+      "50",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "speakers",
+        "type": "device_volume",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "50",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "b5760bfa-7cb3-4c5f-a16e-459397fa505a",
+    "intent": "smarthome.device.volume.set"
+  },
+  {
+    "text": "set the TV volume in the kitchen",
+    "tokens": [
+      "set",
+      "the",
+      "TV",
+      "volume",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "f776301b-e16e-44d4-baaf-ea575ec1e23d",
+    "intent": "smarthome.device.volume.set"
+  },
+  {
+    "text": "set bedroom TV volume",
+    "tokens": [
+      "set",
+      "bedroom",
+      "TV",
+      "volume"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "605a979c-b003-45b9-a9ba-d86ae755a55f",
+    "intent": "smarthome.device.volume.set"
+  },
+  {
+    "text": "set volume for TV",
+    "tokens": [
+      "set",
+      "volume",
+      "for",
+      "TV"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "d0700de5-2b1a-4bd0-b3fc-16028e2c702e",
+    "intent": "smarthome.device.volume.set"
+  },
+  {
+    "text": "set volume",
+    "tokens": [
+      "set",
+      "volume"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "3ca49a19-f169-4e3a-b714-368eb640dda4",
+    "intent": "smarthome.device.volume.set"
+  },
+  {
+    "text": "change my iPod volume to 8",
+    "tokens": [
+      "change",
+      "my",
+      "iPod",
+      "volume",
+      "to",
+      "8"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "PART",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "iPod",
+        "type": "device_volume",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "8",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "a133fbe7-a024-4252-b791-5d82e958ae82",
+    "intent": "smarthome.device.volume.set"
+  },
+  {
+    "text": "set speakers volume to 5 points",
+    "tokens": [
+      "set",
+      "speakers",
+      "volume",
+      "to",
+      "5",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "speakers",
+        "type": "device_volume",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "95a53f21-90c9-4f06-bb4c-6244f6ecb10b",
+    "intent": "smarthome.device.volume.set"
+  },
+  {
+    "text": "set the kitchen TV volume to 60 points",
+    "tokens": [
+      "set",
+      "the",
+      "kitchen",
+      "TV",
+      "volume",
+      "to",
+      "60",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "NOUN",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "60",
+        "type": "number",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "3cdacb8c-bf82-4518-85d5-3e7cd24bbc46",
+    "intent": "smarthome.device.volume.set"
+  },
+  {
+    "text": "I need to adjust the TV volume",
+    "tokens": [
+      "I",
+      "need",
+      "to",
+      "adjust",
+      "the",
+      "TV",
+      "volume"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "672ad0bc-c564-4db0-847e-67e679a2cc48",
+    "intent": "smarthome.device.volume.set"
+  },
+  {
+    "text": "set TV volume",
+    "tokens": [
+      "set",
+      "TV",
+      "volume"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "c6627ecf-5c70-4580-864e-faca4dc85af6",
+    "intent": "smarthome.device.volume.set"
+  },
+  {
+    "text": "set bedroom TV volume to 7 points",
+    "tokens": [
+      "set",
+      "bedroom",
+      "TV",
+      "volume",
+      "to",
+      "7",
+      "points"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "7",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "734e868e-0006-4dec-be03-78da4f82a459",
+    "intent": "smarthome.device.volume.set"
+  },
+  {
+    "text": "how do I adjust the radio volume to 9",
+    "tokens": [
+      "how",
+      "do",
+      "I",
+      "adjust",
+      "the",
+      "radio",
+      "volume",
+      "to",
+      "9"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "PART",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "radio",
+        "type": "device_volume",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "9",
+        "type": "number",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "2c3e69f3-6580-4d8a-8e3c-e5bbf9868f01",
+    "intent": "smarthome.device.volume.set"
+  },
+  {
+    "text": "change volume of my TV in the garage",
+    "tokens": [
+      "change",
+      "volume",
+      "of",
+      "my",
+      "TV",
+      "in",
+      "the",
+      "garage"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "garage",
+        "type": "room",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "7f3e2589-8d92-44dc-b245-fc709b510ac3",
+    "intent": "smarthome.device.volume.set"
+  },
+  {
+    "text": "I would like to adjust to 15 the radio volume",
+    "tokens": [
+      "I",
+      "would",
+      "like",
+      "to",
+      "adjust",
+      "to",
+      "15",
+      "the",
+      "radio",
+      "volume"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "NUM",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "15",
+        "type": "number",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "radio",
+        "type": "device_volume",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "017d8f6b-05c3-448f-a63c-0b7c14d4aa2c",
+    "intent": "smarthome.device.volume.set"
+  },
+  {
+    "text": "volume of the TV in the bedroom should be 5 points",
+    "tokens": [
+      "volume",
+      "of",
+      "the",
+      "TV",
+      "in",
+      "the",
+      "bedroom",
+      "should",
+      "be",
+      "5",
+      "points"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "AUX",
+      "VERB",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "TV",
+        "type": "device_volume",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "bedroom",
+        "type": "room",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 9,
+        "end": 9
+      }
+    ],
+    "id": "6430fc50-3759-4d1a-ba09-b42c10da0d37",
+    "intent": "smarthome.device.volume.set"
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "id": "3e34b5f3-43ef-4409-9456-adf013c79009",
+  "name": "message_content",
+  "isOverridable": true,
+  "isEnum": true,
+  "isRegexp": false,
+  "automatedExpansion": true,
+  "allowFuzzyExtraction": false
+}

@@ -1,0 +1,416 @@
+[
+  {
+    "text": "what's the next one",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "next",
+      "one"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "97511e32-b0b1-4eb2-bcd8-0735c684246f",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "skip",
+    "tokens": [
+      "skip"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "45ad22ff-5730-458a-9048-9d1d5147732e",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "what's the next song",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "next",
+      "song"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "7d4b50d7-435f-49ff-9621-a6729d8311bc",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "next please",
+    "tokens": [
+      "next",
+      "please"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "77f78338-9c0a-4f81-a7d6-4b0a7725ea7c",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "skip forward",
+    "tokens": [
+      "skip",
+      "forward"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e4729894-616a-4770-8a7d-5c4641b3a21f",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "next",
+    "tokens": [
+      "next"
+    ],
+    "pos_tags": [
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "b72aceff-b698-4bf7-a9ea-f05de078c589",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "the following song",
+    "tokens": [
+      "the",
+      "following",
+      "song"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "2eab22c4-928c-48a6-b2f8-eae5bbb209ca",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "play the next song",
+    "tokens": [
+      "play",
+      "the",
+      "next",
+      "song"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "2ef7b8fe-36f4-4efe-abb7-4ce060f4bd18",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "skip to the next one",
+    "tokens": [
+      "skip",
+      "to",
+      "the",
+      "next",
+      "one"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "3dc74d59-7a4e-4678-a1a8-000d9111e045",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "next track",
+    "tokens": [
+      "next",
+      "track"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "146b8777-c1ec-44df-9b1e-ed537b3f1cb1",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "next song",
+    "tokens": [
+      "next",
+      "song"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "a9785530-f4f1-42b6-83ca-2165046322cd",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "the next please",
+    "tokens": [
+      "the",
+      "next",
+      "please"
+    ],
+    "pos_tags": [
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "2b2c13c2-1a06-4d4d-8e2f-f6cd6e8a61ab",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "go forward",
+    "tokens": [
+      "go",
+      "forward"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "fdfe75fe-4816-4907-9f0f-e0ff5366862b",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "play the next one",
+    "tokens": [
+      "play",
+      "the",
+      "next",
+      "one"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "924e7554-8a7b-4910-86a4-f222403b8962",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "the next song",
+    "tokens": [
+      "the",
+      "next",
+      "song"
+    ],
+    "pos_tags": [
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "daa5e931-7a45-4dbf-83fa-baabaaa6a3b1",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "go to the next",
+    "tokens": [
+      "go",
+      "to",
+      "the",
+      "next"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "f69868fe-c197-47e9-8a4d-5eb69cde44cc",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "play next track",
+    "tokens": [
+      "play",
+      "next",
+      "track"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "43130b33-af76-4205-b348-f8d712e99418",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "skip to next",
+    "tokens": [
+      "skip",
+      "to",
+      "next"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "095fe315-bb2e-4308-8b83-3be3cf56c1bf",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "now the next one",
+    "tokens": [
+      "now",
+      "the",
+      "next",
+      "one"
+    ],
+    "pos_tags": [
+      "ADV",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f5a575b8-4fde-4e59-86c0-7f65b63d408b",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "skip this song",
+    "tokens": [
+      "skip",
+      "this",
+      "song"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "21025091-6b48-4536-972e-6caf08474a39",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "skip next",
+    "tokens": [
+      "skip",
+      "next"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "a9f874aa-4e8f-4db9-9d20-0f9f2226ecdd",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "go to the next one",
+    "tokens": [
+      "go",
+      "to",
+      "the",
+      "next",
+      "one"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "9710b5dc-7eb2-4eb6-94db-945f54f72ad6",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "play next",
+    "tokens": [
+      "play",
+      "next"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "710b1afd-b6cf-4cbd-b346-8716b36d8ea1",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "what's next",
+    "tokens": [
+      "what",
+      "'s",
+      "next"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "a125f64f-c6f1-44c0-ad54-5c59c861e202",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "other",
+    "tokens": [
+      "other"
+    ],
+    "pos_tags": [
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "016707f7-6eff-4e29-be8e-46a49e37190f",
+    "intent": "music_player_control.skip_forward"
+  },
+  {
+    "text": "play another one",
+    "tokens": [
+      "play",
+      "another",
+      "one"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "672e7bdb-42a4-4b56-b7b8-b150f2d67693",
+    "intent": "music_player_control.skip_forward"
+  }
+]

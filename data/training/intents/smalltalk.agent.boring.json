@@ -1,0 +1,126 @@
+[
+  {
+    "text": "you are boring",
+    "tokens": [
+      "you",
+      "are",
+      "boring"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "880d9b22-9930-48ff-9851-d17e8b9af220",
+    "intent": "smalltalk.agent.boring"
+  },
+  {
+    "text": "you're so boring",
+    "tokens": [
+      "you",
+      "'re",
+      "so",
+      "boring"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "71f0f831-a6f4-4250-a180-67cd95736589",
+    "intent": "smalltalk.agent.boring"
+  },
+  {
+    "text": "how boring you are",
+    "tokens": [
+      "how",
+      "boring",
+      "you",
+      "are"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "0c44e116-d69d-482a-9d53-1fdc27273a2c",
+    "intent": "smalltalk.agent.boring"
+  },
+  {
+    "text": "you're really boring",
+    "tokens": [
+      "you",
+      "'re",
+      "really",
+      "boring"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "36576cf1-f296-49b2-bee6-ca38d953a5f5",
+    "intent": "smalltalk.agent.boring"
+  },
+  {
+    "text": "you're incredibly boring",
+    "tokens": [
+      "you",
+      "'re",
+      "incredibly",
+      "boring"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "f94f9da2-26cf-438c-bc00-3c266f4995dd",
+    "intent": "smalltalk.agent.boring"
+  },
+  {
+    "text": "you are boring me",
+    "tokens": [
+      "you",
+      "are",
+      "boring",
+      "me"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "5b2d2f11-4ee9-4f87-a4c4-7d8c1feb13d1",
+    "intent": "smalltalk.agent.boring"
+  },
+  {
+    "text": "you are very boring",
+    "tokens": [
+      "you",
+      "are",
+      "very",
+      "boring"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "d9513100-2ed2-40d6-8c87-28e841077cba",
+    "intent": "smalltalk.agent.boring"
+  }
+]

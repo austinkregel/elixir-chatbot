@@ -1,0 +1,92 @@
+[
+  {
+    "text": "I'm waiting",
+    "tokens": [
+      "I",
+      "'m",
+      "waiting"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "646e899f-ea46-4b7e-81e2-007668a01942",
+    "intent": "smalltalk.user.waits"
+  },
+  {
+    "text": "still waiting",
+    "tokens": [
+      "still",
+      "waiting"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "5abfa493-d3be-4319-a1b2-042cba201521",
+    "intent": "smalltalk.user.waits"
+  },
+  {
+    "text": "I'll wait",
+    "tokens": [
+      "I",
+      "'ll",
+      "wait"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "331a5159-2506-4036-85bd-786f43693f24",
+    "intent": "smalltalk.user.waits"
+  },
+  {
+    "text": "I can't wait anymore",
+    "tokens": [
+      "I",
+      "ca",
+      "n't",
+      "wait",
+      "anymore"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "ADV",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "bc52557e-e20a-44df-9379-5153495a50fa",
+    "intent": "smalltalk.user.waits"
+  },
+  {
+    "text": "how long do I have to wait",
+    "tokens": [
+      "how",
+      "long",
+      "do",
+      "I",
+      "have",
+      "to",
+      "wait"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "0ffe1cee-7174-4dad-9b62-d7cdff7cca7e",
+    "intent": "smalltalk.user.waits"
+  }
+]

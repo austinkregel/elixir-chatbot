@@ -1,0 +1,437 @@
+[
+  {
+    "text": "could you shuffle my Work playlist",
+    "tokens": [
+      "could",
+      "you",
+      "shuffle",
+      "my",
+      "Work",
+      "playlist"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Work",
+        "type": "playlist",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "f5fab0a7-6000-4ce7-a2b3-213144b6edd8",
+    "intent": "music.shuffle"
+  },
+  {
+    "text": "shuffle songs from the year 2000",
+    "tokens": [
+      "shuffle",
+      "songs",
+      "from",
+      "the",
+      "year",
+      "2000"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "2000",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "54122f41-0695-4d1c-a654-5c24fd6f43c0",
+    "intent": "music.shuffle"
+  },
+  {
+    "text": "shuffle Kanye West's albums",
+    "tokens": [
+      "shuffle",
+      "Kanye",
+      "West",
+      "'s",
+      "albums"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "PART",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Kanye West",
+        "type": "music_artist",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "bb654e87-5f3e-441b-b613-67ad9cb48946",
+    "intent": "music.shuffle"
+  },
+  {
+    "text": "shuffle country music on my device",
+    "tokens": [
+      "shuffle",
+      "country",
+      "music",
+      "on",
+      "my",
+      "device"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "country",
+        "type": "music_genre",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "bac925f2-b795-427e-b7ba-9e8e94b91760",
+    "intent": "music.shuffle"
+  },
+  {
+    "text": "shuffle all my jazz music",
+    "tokens": [
+      "shuffle",
+      "all",
+      "my",
+      "jazz",
+      "music"
+    ],
+    "pos_tags": [
+      "ADV",
+      "DET",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "jazz",
+        "type": "music_genre",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "f1962b91-50f9-4367-b964-be81ccd8423a",
+    "intent": "music.shuffle"
+  },
+  {
+    "text": "shuffle the album Songs about Jane",
+    "tokens": [
+      "shuffle",
+      "the",
+      "album",
+      "Songs",
+      "about",
+      "Jane"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Songs about Jane",
+        "type": "music_album",
+        "start": 3,
+        "end": 5
+      }
+    ],
+    "id": "2641fdee-c184-4879-9b6f-2915bbe918ee",
+    "intent": "music.shuffle"
+  },
+  {
+    "text": "shuffle my playlist",
+    "tokens": [
+      "shuffle",
+      "my",
+      "playlist"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "2319c3ae-2e26-4017-8bda-22cba69c3b45",
+    "intent": "music.shuffle"
+  },
+  {
+    "text": "shuffle Faves playlist",
+    "tokens": [
+      "shuffle",
+      "Faves",
+      "playlist"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "Faves",
+        "type": "playlist",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "8777fa0a-124c-4e71-b8e1-6ad745ada766",
+    "intent": "music.shuffle"
+  },
+  {
+    "text": "shuffle White Album by The Beatles",
+    "tokens": [
+      "shuffle",
+      "White",
+      "Album",
+      "by",
+      "The",
+      "Beatles"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "White Album",
+        "type": "music_album",
+        "start": 1,
+        "end": 2
+      },
+      {
+        "text": "The Beatles",
+        "type": "music_artist",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "5e0c56db-05f9-48b5-bf78-b26b63b7e4f7",
+    "intent": "music.shuffle"
+  },
+  {
+    "text": "shuffle Eminem's songs",
+    "tokens": [
+      "shuffle",
+      "Eminem",
+      "'s",
+      "songs"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PART",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Eminem",
+        "type": "music_artist",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "dd0e1f19-3aea-42ab-8989-1685b7267a04",
+    "intent": "music.shuffle"
+  },
+  {
+    "text": "shuffle songs by Rihanna feat Eminem",
+    "tokens": [
+      "shuffle",
+      "songs",
+      "by",
+      "Rihanna",
+      "feat",
+      "Eminem"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Rihanna",
+        "type": "music_artist",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Eminem",
+        "type": "music_artist",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "8417148d-1d89-49b8-ab73-0553007caf5e",
+    "intent": "music.shuffle"
+  },
+  {
+    "text": "I'd like you to shuffle my Gym playlist",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "you",
+      "to",
+      "shuffle",
+      "my",
+      "Gym",
+      "playlist"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PRON",
+      "PART",
+      "VERB",
+      "PRON",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Gym",
+        "type": "playlist",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "852bc6c1-a5f3-42d7-9eeb-44baf0624669",
+    "intent": "music.shuffle"
+  },
+  {
+    "text": "shuffle Lucky Star album by Madonna year 1968",
+    "tokens": [
+      "shuffle",
+      "Lucky",
+      "Star",
+      "album",
+      "by",
+      "Madonna",
+      "year",
+      "1968"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "NOUN",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "Lucky Star",
+        "type": "music_album",
+        "start": 1,
+        "end": 2
+      },
+      {
+        "text": "Madonna",
+        "type": "music_artist",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "1968",
+        "type": "number",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "a4359352-6522-4b8a-a1a6-ef552c07ab60",
+    "intent": "music.shuffle"
+  },
+  {
+    "text": "shuffle Nirvana's Nevermind album",
+    "tokens": [
+      "shuffle",
+      "Nirvana",
+      "'s",
+      "Nevermind",
+      "album"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PART",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Nirvana",
+        "type": "music_artist",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Nevermind",
+        "type": "music_album",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "5fece9a0-a8db-4234-959c-d79186996114",
+    "intent": "music.shuffle"
+  },
+  {
+    "text": "can you shuffle tracks",
+    "tokens": [
+      "can",
+      "you",
+      "shuffle",
+      "tracks"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "031e3c54-7070-4051-ba1f-2ac115255d08",
+    "intent": "music.shuffle"
+  }
+]

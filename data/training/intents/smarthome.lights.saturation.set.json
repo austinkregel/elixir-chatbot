@@ -1,0 +1,235 @@
+[
+  {
+    "text": "set the table lamp saturation",
+    "tokens": [
+      "set",
+      "the",
+      "table",
+      "lamp",
+      "saturation"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "table lamp",
+        "type": "lights",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "e3d2854a-048d-4ed1-b59d-e1cc54bbd9d0",
+    "intent": "smarthome.lights.saturation.set"
+  },
+  {
+    "text": "set saturation to 50 points",
+    "tokens": [
+      "set",
+      "saturation",
+      "to",
+      "50",
+      "points"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "PART",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "50",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "f3ef2311-f591-4d4e-bad5-945c33a193dc",
+    "intent": "smarthome.lights.saturation.set"
+  },
+  {
+    "text": "saturation till 50",
+    "tokens": [
+      "saturation",
+      "till",
+      "50"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "50",
+        "type": "number",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "8ed0a143-caea-44b3-a225-cc9769a760bd",
+    "intent": "smarthome.lights.saturation.set"
+  },
+  {
+    "text": "set green saturation",
+    "tokens": [
+      "set",
+      "green",
+      "saturation"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "green",
+        "type": "color",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "0d84912a-c6f6-497d-947a-c72953a73959",
+    "intent": "smarthome.lights.saturation.set"
+  },
+  {
+    "text": "set saturation in the kitchen",
+    "tokens": [
+      "set",
+      "saturation",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "21fd7822-cff0-45a3-b27c-85afca797908",
+    "intent": "smarthome.lights.saturation.set"
+  },
+  {
+    "text": "set saturation in all rooms",
+    "tokens": [
+      "set",
+      "saturation",
+      "in",
+      "all",
+      "rooms"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "all",
+        "type": "all",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "b5bea6db-5d7a-4e5c-9190-3a0f89c190c6",
+    "intent": "smarthome.lights.saturation.set"
+  },
+  {
+    "text": "red saturation",
+    "tokens": [
+      "red",
+      "saturation"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "red",
+        "type": "color",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "b24ea0c2-dc49-46f6-914e-d65b9323acb1",
+    "intent": "smarthome.lights.saturation.set"
+  },
+  {
+    "text": "set kitchen saturation",
+    "tokens": [
+      "set",
+      "kitchen",
+      "saturation"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "a7822790-e5da-4e2e-b72c-726bfd5ac949",
+    "intent": "smarthome.lights.saturation.set"
+  },
+  {
+    "text": "saturation everywhere",
+    "tokens": [
+      "saturation",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "everywhere",
+        "type": "all",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "39b74d4d-c351-4149-a870-90ed5ae559c6",
+    "intent": "smarthome.lights.saturation.set"
+  },
+  {
+    "text": "set saturation",
+    "tokens": [
+      "set",
+      "saturation"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "96265c49-ef52-41e2-8338-5fcc383d8e59",
+    "intent": "smarthome.lights.saturation.set"
+  }
+]

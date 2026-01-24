@@ -1,0 +1,188 @@
+[
+  {
+    "text": "colder now",
+    "tokens": [
+      "colder",
+      "now"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "82b7710f-43e7-4283-8a56-90b7ba0d1fa0",
+    "intent": "smarthome.heating.down.context_heating.comment_not.cold.enough"
+  },
+  {
+    "text": "still not cold enough",
+    "tokens": [
+      "still",
+      "not",
+      "cold",
+      "enough"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADV",
+      "ADJ",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "7a64b3b2-51be-4a0e-99fb-8f9f2a709a56",
+    "intent": "smarthome.heating.down.context_heating.comment_not.cold.enough"
+  },
+  {
+    "text": "colder",
+    "tokens": [
+      "colder"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "700f45f3-a2d0-49ed-a2f3-7cd4ce6cd88e",
+    "intent": "smarthome.heating.down.context_heating.comment_not.cold.enough"
+  },
+  {
+    "text": "still warm",
+    "tokens": [
+      "still",
+      "warm"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "ccb6cae2-2049-47f3-9572-7d5597cb9d5b",
+    "intent": "smarthome.heating.down.context_heating.comment_not.cold.enough"
+  },
+  {
+    "text": "too warm",
+    "tokens": [
+      "too",
+      "warm"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "c74eb9d1-cf11-4179-955b-d40d04cf7beb",
+    "intent": "smarthome.heating.down.context_heating.comment_not.cold.enough"
+  },
+  {
+    "text": "still too warm for me",
+    "tokens": [
+      "still",
+      "too",
+      "warm",
+      "for",
+      "me"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADV",
+      "ADJ",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "f6cd8a4c-3919-4b58-b9e6-c821351f6a85",
+    "intent": "smarthome.heating.down.context_heating.comment_not.cold.enough"
+  },
+  {
+    "text": "not cold enough",
+    "tokens": [
+      "not",
+      "cold",
+      "enough"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "91905b90-defe-4442-90f3-027cc15fd58c",
+    "intent": "smarthome.heating.down.context_heating.comment_not.cold.enough"
+  },
+  {
+    "text": "make it colder",
+    "tokens": [
+      "make",
+      "it",
+      "colder"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "2e0d927f-5c2c-4f6c-9c30-1c4333c09c22",
+    "intent": "smarthome.heating.down.context_heating.comment_not.cold.enough"
+  },
+  {
+    "text": "too warm for me",
+    "tokens": [
+      "too",
+      "warm",
+      "for",
+      "me"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "352ade9a-1213-4bd8-8e08-1b6cc4a0338c",
+    "intent": "smarthome.heating.down.context_heating.comment_not.cold.enough"
+  },
+  {
+    "text": "colder please",
+    "tokens": [
+      "colder",
+      "please"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "c4e8fb93-228c-4ff4-849c-89d275153246",
+    "intent": "smarthome.heating.down.context_heating.comment_not.cold.enough"
+  },
+  {
+    "text": "still too warm",
+    "tokens": [
+      "still",
+      "too",
+      "warm"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "239a9556-4151-4f5d-b588-33a849b60bf9",
+    "intent": "smarthome.heating.down.context_heating.comment_not.cold.enough"
+  },
+  {
+    "text": "still hot",
+    "tokens": [
+      "still",
+      "hot"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "32293143-5425-4c62-a9af-998b6fde8dc7",
+    "intent": "smarthome.heating.down.context_heating.comment_not.cold.enough"
+  }
+]

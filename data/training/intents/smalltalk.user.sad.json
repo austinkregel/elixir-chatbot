@@ -1,0 +1,158 @@
+[
+  {
+    "text": "I am sad",
+    "tokens": [
+      "I",
+      "am",
+      "sad"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "d09a75e4-3fc2-430b-8c5b-a10eeb521821",
+    "intent": "smalltalk.user.sad"
+  },
+  {
+    "text": "I'm grieving",
+    "tokens": [
+      "I",
+      "'m",
+      "grieving"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "f3aebf18-8b7e-4838-bfe7-49644b24f7b8",
+    "intent": "smalltalk.user.sad"
+  },
+  {
+    "text": "I am depressed",
+    "tokens": [
+      "I",
+      "am",
+      "depressed"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "af2007e1-5751-41c3-879e-885acea771f0",
+    "intent": "smalltalk.user.sad"
+  },
+  {
+    "text": "I am feeling sad",
+    "tokens": [
+      "I",
+      "am",
+      "feeling",
+      "sad"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "9b573783-9725-4825-971f-c620c7d193bd",
+    "intent": "smalltalk.user.sad"
+  },
+  {
+    "text": "I am upset",
+    "tokens": [
+      "I",
+      "am",
+      "upset"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "517b1b71-a255-40f8-b550-787f637eb41a",
+    "intent": "smalltalk.user.sad"
+  },
+  {
+    "text": "I'm unhappy",
+    "tokens": [
+      "I",
+      "'m",
+      "unhappy"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "3ad94ddb-6539-4359-b008-aadc4be48261",
+    "intent": "smalltalk.user.sad"
+  },
+  {
+    "text": "I'm having a bad day",
+    "tokens": [
+      "I",
+      "'m",
+      "having",
+      "a",
+      "bad",
+      "day"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "269c5c1a-b959-41c8-b5c0-686458051388",
+    "intent": "smalltalk.user.sad"
+  },
+  {
+    "text": "I want to cry",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "cry"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "54f57887-b6fc-4290-b601-8b0f566f96c6",
+    "intent": "smalltalk.user.sad"
+  },
+  {
+    "text": "I'm not happy",
+    "tokens": [
+      "I",
+      "'m",
+      "not",
+      "happy"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "8a486318-8cd8-4768-a52e-9774356ea396",
+    "intent": "smalltalk.user.sad"
+  }
+]

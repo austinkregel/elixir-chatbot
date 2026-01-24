@@ -1,0 +1,247 @@
+[
+  {
+    "text": "kitchen lights are too bright",
+    "tokens": [
+      "kitchen",
+      "lights",
+      "are",
+      "too",
+      "bright"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "344e6ce4-20bc-4f2f-9b6e-a055e0cddf52",
+    "intent": "smarthome.lights.brightness.down.implicit"
+  },
+  {
+    "text": "everywhere is too bright",
+    "tokens": [
+      "everywhere",
+      "is",
+      "too",
+      "bright"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "everywhere",
+        "type": "all",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "58304a8c-080d-4172-b37a-74b349d65397",
+    "intent": "smarthome.lights.brightness.down.implicit"
+  },
+  {
+    "text": "the table lamp is way too bright",
+    "tokens": [
+      "the",
+      "table",
+      "lamp",
+      "is",
+      "way",
+      "too",
+      "bright"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "NOUN",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "table lamp",
+        "type": "lights",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "5b1f2d86-269a-4a9f-8d6a-eba4dc5924d6",
+    "intent": "smarthome.lights.brightness.down.implicit"
+  },
+  {
+    "text": "it's too bright in kitchen",
+    "tokens": [
+      "it",
+      "'s",
+      "too",
+      "bright",
+      "in",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "88558ba0-8da1-4f42-99d5-7a356210e302",
+    "intent": "smarthome.lights.brightness.down.implicit"
+  },
+  {
+    "text": "it's too bright",
+    "tokens": [
+      "it",
+      "'s",
+      "too",
+      "bright"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "f5c52a6f-ad56-4543-9769-4ea5e8f71264",
+    "intent": "smarthome.lights.brightness.down.implicit"
+  },
+  {
+    "text": "the lights are too bright",
+    "tokens": [
+      "the",
+      "lights",
+      "are",
+      "too",
+      "bright"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "f6794340-39ad-4c95-9789-cb601568bdcc",
+    "intent": "smarthome.lights.brightness.down.implicit"
+  },
+  {
+    "text": "it's bright",
+    "tokens": [
+      "it",
+      "'s",
+      "bright"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "cfc44dd8-a437-4797-b737-eba0e18b01e3",
+    "intent": "smarthome.lights.brightness.down.implicit"
+  },
+  {
+    "text": "it's bright in kitchen",
+    "tokens": [
+      "it",
+      "'s",
+      "bright",
+      "in",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "8ad77f0d-efd7-4193-a7ce-a8d4b5354453",
+    "intent": "smarthome.lights.brightness.down.implicit"
+  },
+  {
+    "text": "it's bright everywhere",
+    "tokens": [
+      "it",
+      "'s",
+      "bright",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "everywhere",
+        "type": "all",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "394069b8-e918-4edf-8616-d9ba4d053c42",
+    "intent": "smarthome.lights.brightness.down.implicit"
+  },
+  {
+    "text": "red lights are too bright",
+    "tokens": [
+      "red",
+      "lights",
+      "are",
+      "too",
+      "bright"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "red",
+        "type": "color",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "ece59ae5-c93b-492a-868a-78f710099525",
+    "intent": "smarthome.lights.brightness.down.implicit"
+  }
+]

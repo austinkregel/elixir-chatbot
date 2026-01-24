@@ -7,6 +7,33 @@
       "confidence": 0.9,
       "entity": "france",
       "fact": "The capital is Paris",
+      "id": "learned_5c65fefb4e9aa0f0",
+      "learned_at": 1769275531,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_b8cbc9a147b57097",
+      "learned_at": 1769274582,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_73fbb07010f109e4",
+      "learned_at": 1769271492,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
       "id": "learned_e006d96ca49e3923",
       "learned_at": 1769268778,
       "verification_source": "learned_from_conversation"

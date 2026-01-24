@@ -1,0 +1,204 @@
+[
+  {
+    "text": "let's discuss something",
+    "tokens": [
+      "let",
+      "'s",
+      "discuss",
+      "something"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "ddcca146-14ba-47b0-81e8-b64d3b070f43",
+    "intent": "smalltalk.user.wants_to_talk"
+  },
+  {
+    "text": "let's have a discussion",
+    "tokens": [
+      "let",
+      "'s",
+      "have",
+      "a",
+      "discussion"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "a085bd20-123d-4d8e-bc36-61d32235de7d",
+    "intent": "smalltalk.user.wants_to_talk"
+  },
+  {
+    "text": "can I speak",
+    "tokens": [
+      "can",
+      "I",
+      "speak"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "1a7b9e12-da8b-4897-9fe0-531e19f95476",
+    "intent": "smalltalk.user.wants_to_talk"
+  },
+  {
+    "text": "can I start speaking",
+    "tokens": [
+      "can",
+      "I",
+      "start",
+      "speaking"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "4e5521f1-cb50-4d03-abb0-b429fb07b411",
+    "intent": "smalltalk.user.wants_to_talk"
+  },
+  {
+    "text": "can we talk",
+    "tokens": [
+      "can",
+      "we",
+      "talk"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "1c3d5741-bea5-42e6-a686-1b0ee3c9bea9",
+    "intent": "smalltalk.user.wants_to_talk"
+  },
+  {
+    "text": "speak with me",
+    "tokens": [
+      "speak",
+      "with",
+      "me"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "81119e30-c2a1-47f8-bf49-0cf6e50a8241",
+    "intent": "smalltalk.user.wants_to_talk"
+  },
+  {
+    "text": "let's talk",
+    "tokens": [
+      "let",
+      "'s",
+      "talk"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "27ea0ca5-d0c4-48d9-8149-685b840584b6",
+    "intent": "smalltalk.user.wants_to_talk"
+  },
+  {
+    "text": "I want to talk to you",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "talk",
+      "to",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "b1429be6-a728-4006-ae70-ca3d48f2eb4e",
+    "intent": "smalltalk.user.wants_to_talk"
+  },
+  {
+    "text": "I need to talk to you",
+    "tokens": [
+      "I",
+      "need",
+      "to",
+      "talk",
+      "to",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "5cd9c2d2-4dd8-46bc-8638-b29d60cdb90b",
+    "intent": "smalltalk.user.wants_to_talk"
+  },
+  {
+    "text": "I want to speak with you",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "speak",
+      "with",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "1a10005e-b46e-4025-80cb-ae86bc064db7",
+    "intent": "smalltalk.user.wants_to_talk"
+  },
+  {
+    "text": "can we chat",
+    "tokens": [
+      "can",
+      "we",
+      "chat"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "6a0b4085-1ef7-4b1d-a2e8-1e6cfb262214",
+    "intent": "smalltalk.user.wants_to_talk"
+  }
+]

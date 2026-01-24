@@ -1,0 +1,412 @@
+[
+  {
+    "text": "open garage",
+    "tokens": [
+      "open",
+      "garage"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "garage",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "4d2c8f11-710f-4289-bd87-d537e64504aa",
+    "intent": "smarthome.locks.open"
+  },
+  {
+    "text": "open bathroom door",
+    "tokens": [
+      "open",
+      "bathroom",
+      "door"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bathroom",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "door",
+        "type": "lock",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "8d665bdc-a136-4e0d-8c40-fdcec636865a",
+    "intent": "smarthome.locks.open"
+  },
+  {
+    "text": "open bathroom",
+    "tokens": [
+      "open",
+      "bathroom"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "bathroom",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "6bc0dad0-9d82-49b0-9925-de9faad3beb7",
+    "intent": "smarthome.locks.open"
+  },
+  {
+    "text": "all doors should be open",
+    "tokens": [
+      "all",
+      "doors",
+      "should",
+      "be",
+      "open"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "AUX",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "all",
+        "type": "all",
+        "start": 0,
+        "end": 0
+      },
+      {
+        "text": "doors",
+        "type": "lock",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "11b3e6dc-54a8-402f-8af6-20ab4896da98",
+    "intent": "smarthome.locks.open"
+  },
+  {
+    "text": "open door in my kitchen",
+    "tokens": [
+      "open",
+      "door",
+      "in",
+      "my",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "door",
+        "type": "lock",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "a560c194-9fca-4af4-866c-6f590aa99b7d",
+    "intent": "smarthome.locks.open"
+  },
+  {
+    "text": "open all doors",
+    "tokens": [
+      "open",
+      "all",
+      "doors"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "all",
+        "type": "all",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "doors",
+        "type": "lock",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "866c2281-98f9-4d94-9c7f-60e0d8baf724",
+    "intent": "smarthome.locks.open"
+  },
+  {
+    "text": "open the garage door",
+    "tokens": [
+      "open",
+      "the",
+      "garage",
+      "door"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "garage",
+        "type": "room",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "door",
+        "type": "lock",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "713f982e-1b9b-45ed-9931-a6be8f0f47a9",
+    "intent": "smarthome.locks.open"
+  },
+  {
+    "text": "open the window in kitchen",
+    "tokens": [
+      "open",
+      "the",
+      "window",
+      "in",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "window",
+        "type": "lock",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "8c58d068-4799-4007-ad11-b386104f3dc7",
+    "intent": "smarthome.locks.open"
+  },
+  {
+    "text": "open the front door",
+    "tokens": [
+      "open",
+      "the",
+      "front",
+      "door"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "front door",
+        "type": "lock",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "922098fa-9571-45f1-9f80-db7163033e0f",
+    "intent": "smarthome.locks.open"
+  },
+  {
+    "text": "open the door",
+    "tokens": [
+      "open",
+      "the",
+      "door"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "door",
+        "type": "lock",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "3e15004e-e69d-4eb3-881d-c46a35f619e4",
+    "intent": "smarthome.locks.open"
+  },
+  {
+    "text": "open window",
+    "tokens": [
+      "open",
+      "window"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "window",
+        "type": "lock",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "0ab1a07f-7115-43ec-bbc5-d02a77359fa4",
+    "intent": "smarthome.locks.open"
+  },
+  {
+    "text": "open doors everywhere",
+    "tokens": [
+      "open",
+      "doors",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "doors",
+        "type": "lock",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "everywhere",
+        "type": "all",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "29719397-2551-477f-a31b-48cec063ea9c",
+    "intent": "smarthome.locks.open"
+  },
+  {
+    "text": "locks",
+    "tokens": [
+      "locks"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "0dc6a93e-fce0-451a-a56b-ffb1cdcc6fe9",
+    "intent": "smarthome.locks.open"
+  },
+  {
+    "text": "open door in the kitchen",
+    "tokens": [
+      "open",
+      "door",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "door",
+        "type": "lock",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "0239c5c5-bb17-409b-a201-0422e5d38511",
+    "intent": "smarthome.locks.open"
+  },
+  {
+    "text": "open all garage windows",
+    "tokens": [
+      "open",
+      "all",
+      "garage",
+      "windows"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "all",
+        "type": "all",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "garage",
+        "type": "room",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "windows",
+        "type": "lock",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "4e50f379-fa0b-4d5a-b76d-8803de2b26ac",
+    "intent": "smarthome.locks.open"
+  }
+]

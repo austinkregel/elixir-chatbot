@@ -104,11 +104,11 @@ defmodule ChatBot.Memory.VectorIndexTest do
     test "returns 0.0 for different length vectors" do
       a = [1.0, 2.0]
       b = [1.0, 2.0, 3.0]
-      assert VectorIndex.cosine_similarity(a, b) == 0.0
+      assert VectorIndex.cosine_similarity(a, b) == +0.0
     end
 
     test "returns 0.0 for empty vectors" do
-      assert VectorIndex.cosine_similarity([], []) == 0.0
+      assert VectorIndex.cosine_similarity([], []) == +0.0
     end
   end
 
@@ -144,8 +144,8 @@ defmodule ChatBot.Memory.VectorIndexTest do
       :ok = VectorIndex.import(new_table, exported)
 
       assert VectorIndex.count(new_table) == 2
-      assert {:ok, [1.0, 0.0]} = VectorIndex.get(new_table, "a")
-      assert {:ok, [0.0, 1.0]} = VectorIndex.get(new_table, "b")
+      assert {:ok, [1.0, +0.0]} = VectorIndex.get(new_table, "a")
+      assert {:ok, [+0.0, 1.0]} = VectorIndex.get(new_table, "b")
     end
   end
 end

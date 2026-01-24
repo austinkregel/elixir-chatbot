@@ -1,0 +1,275 @@
+[
+  {
+    "text": "did I open door everywhere",
+    "tokens": [
+      "did",
+      "I",
+      "open",
+      "door",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "door",
+        "type": "lock",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "everywhere",
+        "type": "all",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "5a147800-1e22-4c55-af26-c1dd44d39310",
+    "intent": "smarthome.locks.check.open"
+  },
+  {
+    "text": "is the front door opened",
+    "tokens": [
+      "is",
+      "the",
+      "front",
+      "door",
+      "opened"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "front door",
+        "type": "lock",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "1cf3c141-5bab-4e63-aad0-84e1e2e13ada",
+    "intent": "smarthome.locks.check.open"
+  },
+  {
+    "text": "are kitchen doors opened",
+    "tokens": [
+      "are",
+      "kitchen",
+      "doors",
+      "opened"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADJ",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "doors",
+        "type": "lock",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "efae9ecd-bea8-4e47-9801-416f9cae6b48",
+    "intent": "smarthome.locks.check.open"
+  },
+  {
+    "text": "did I open the front door",
+    "tokens": [
+      "did",
+      "I",
+      "open",
+      "the",
+      "front",
+      "door"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "front door",
+        "type": "lock",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "786dd53e-79b1-42e6-a936-d1fd6e25c5e8",
+    "intent": "smarthome.locks.check.open"
+  },
+  {
+    "text": "are all the doors opened",
+    "tokens": [
+      "are",
+      "all",
+      "the",
+      "doors",
+      "opened"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "DET",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "all",
+        "type": "all",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "doors",
+        "type": "lock",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "e3d0ef7b-1f5a-47d9-a9ef-9ecafebc253f",
+    "intent": "smarthome.locks.check.open"
+  },
+  {
+    "text": "is garage open",
+    "tokens": [
+      "is",
+      "garage",
+      "open"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "garage",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "dc4c3895-99dc-4d11-a4bf-3903a81d07d4",
+    "intent": "smarthome.locks.check.open"
+  },
+  {
+    "text": "is the front door open",
+    "tokens": [
+      "is",
+      "the",
+      "front",
+      "door",
+      "open"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "front door",
+        "type": "lock",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "02cedbd7-4b06-441e-b858-92a1f23a1dcc",
+    "intent": "smarthome.locks.check.open"
+  },
+  {
+    "text": "is garage door opened",
+    "tokens": [
+      "is",
+      "garage",
+      "door",
+      "opened"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADJ",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "garage",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "door",
+        "type": "lock",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "d347690e-13e3-4300-b07d-efac49d4c5b6",
+    "intent": "smarthome.locks.check.open"
+  },
+  {
+    "text": "did I open the door in the kitchen",
+    "tokens": [
+      "did",
+      "I",
+      "open",
+      "the",
+      "door",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "door",
+        "type": "lock",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "74b90ca7-64e5-4efa-93be-ce6c92d08c97",
+    "intent": "smarthome.locks.check.open"
+  }
+]

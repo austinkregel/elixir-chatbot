@@ -1,0 +1,757 @@
+[
+  {
+    "text": "are we going to need a coat tomorow",
+    "tokens": [
+      "are",
+      "we",
+      "going",
+      "to",
+      "need",
+      "a",
+      "coat",
+      "tomorow"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "coat",
+        "type": "outfit",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "tomorow",
+        "type": "date_time",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "ea00e67d-8769-4182-b80d-68e37828340d",
+    "intent": "weather.outfit"
+  },
+  {
+    "text": "do I need umbrella in Tokyo",
+    "tokens": [
+      "do",
+      "I",
+      "need",
+      "umbrella",
+      "in",
+      "Tokyo"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "umbrella",
+        "type": "outfit",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Tokyo",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "2bc4a8c8-0785-4e0f-a5fc-1c308a3a75bf",
+    "intent": "weather.outfit"
+  },
+  {
+    "text": "should I wear my gloves in Aspen",
+    "tokens": [
+      "should",
+      "I",
+      "wear",
+      "my",
+      "gloves",
+      "in",
+      "Aspen"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "gloves",
+        "type": "outfit",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "Aspen",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "a915241d-ff74-466c-b461-bd7d7a500c1b",
+    "intent": "weather.outfit"
+  },
+  {
+    "text": "do I need sunglasses",
+    "tokens": [
+      "do",
+      "I",
+      "need",
+      "sunglasses"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "sunglasses",
+        "type": "outfit",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "19287462-8e78-4c32-90e2-f71356c8993d",
+    "intent": "weather.outfit"
+  },
+  {
+    "text": "should I wear sunglasses",
+    "tokens": [
+      "should",
+      "I",
+      "wear",
+      "sunglasses"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "sunglasses",
+        "type": "outfit",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "5372c5f9-5583-4cb5-a500-4acaa9c491bd",
+    "intent": "weather.outfit"
+  },
+  {
+    "text": "will I need an umbrella",
+    "tokens": [
+      "will",
+      "I",
+      "need",
+      "an",
+      "umbrella"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "umbrella",
+        "type": "outfit",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "a1caef8e-905e-4e4e-9500-0b62a72f78f2",
+    "intent": "weather.outfit"
+  },
+  {
+    "text": "should I take a jacket",
+    "tokens": [
+      "should",
+      "I",
+      "take",
+      "a",
+      "jacket"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "jacket",
+        "type": "outfit",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "0a22aaee-53df-41cd-9d77-a21014a3a4f0",
+    "intent": "weather.outfit"
+  },
+  {
+    "text": "should I wear a jacket today",
+    "tokens": [
+      "should",
+      "I",
+      "wear",
+      "a",
+      "jacket",
+      "today"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "jacket",
+        "type": "outfit",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "1202cfd8-0b6c-4d6f-803b-b7edfc2e58d2",
+    "intent": "weather.outfit"
+  },
+  {
+    "text": "will I need an umbrella this weekend",
+    "tokens": [
+      "will",
+      "I",
+      "need",
+      "an",
+      "umbrella",
+      "this",
+      "weekend"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "umbrella",
+        "type": "outfit",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "this weekend",
+        "type": "date_time",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "6f849309-0708-4118-a4ca-df8400c740e6",
+    "intent": "weather.outfit"
+  },
+  {
+    "text": "should I take sunglasses tomorrow",
+    "tokens": [
+      "should",
+      "I",
+      "take",
+      "sunglasses",
+      "tomorrow"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "sunglasses",
+        "type": "outfit",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "2860dc99-14ce-4c1a-b62d-b3282bfe5b35",
+    "intent": "weather.outfit"
+  },
+  {
+    "text": "should I take an umbrella tomorrow",
+    "tokens": [
+      "should",
+      "I",
+      "take",
+      "an",
+      "umbrella",
+      "tomorrow"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "umbrella",
+        "type": "outfit",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "8aec5624-cca3-4151-8e02-c1312dd18707",
+    "intent": "weather.outfit"
+  },
+  {
+    "text": "do I need an umbrella tomorrow",
+    "tokens": [
+      "do",
+      "I",
+      "need",
+      "an",
+      "umbrella",
+      "tomorrow"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "umbrella",
+        "type": "outfit",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "7b6aa70e-853f-424a-a4b6-dc62f5e8a530",
+    "intent": "weather.outfit"
+  },
+  {
+    "text": "do I need to bring a jacket to work tomorrow",
+    "tokens": [
+      "do",
+      "I",
+      "need",
+      "to",
+      "bring",
+      "a",
+      "jacket",
+      "to",
+      "work",
+      "tomorrow"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN",
+      "PART",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "jacket",
+        "type": "outfit",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 9,
+        "end": 9
+      }
+    ],
+    "id": "33ab4b32-1247-4523-b5cd-c53bbf9a1445",
+    "intent": "weather.outfit"
+  },
+  {
+    "text": "will I need an umbrella next Friday in Paris",
+    "tokens": [
+      "will",
+      "I",
+      "need",
+      "an",
+      "umbrella",
+      "next",
+      "Friday",
+      "in",
+      "Paris"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "ADJ",
+      "ADJ",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "umbrella",
+        "type": "outfit",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "next Friday",
+        "type": "date_time",
+        "start": 5,
+        "end": 6
+      },
+      {
+        "text": "Paris",
+        "type": "location",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "9ba20498-fc8a-4ae0-bbb9-310b0a004621",
+    "intent": "weather.outfit"
+  },
+  {
+    "text": "should I wear sunglasses in Milan",
+    "tokens": [
+      "should",
+      "I",
+      "wear",
+      "sunglasses",
+      "in",
+      "Milan"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "sunglasses",
+        "type": "outfit",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Milan",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "d8165e18-d0ba-4e29-bf9e-d6b96e8cd813",
+    "intent": "weather.outfit"
+  },
+  {
+    "text": "will I need an umbrella in London",
+    "tokens": [
+      "will",
+      "I",
+      "need",
+      "an",
+      "umbrella",
+      "in",
+      "London"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "umbrella",
+        "type": "outfit",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "London",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "3ecaa731-4a48-4d6d-92d7-4db2fa1923ae",
+    "intent": "weather.outfit"
+  },
+  {
+    "text": "should I wear my coat",
+    "tokens": [
+      "should",
+      "I",
+      "wear",
+      "my",
+      "coat"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "coat",
+        "type": "outfit",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "c0cc9102-019e-4ff5-9f4a-1e3ae26c9884",
+    "intent": "weather.outfit"
+  },
+  {
+    "text": "should I take a jacket to Moscow",
+    "tokens": [
+      "should",
+      "I",
+      "take",
+      "a",
+      "jacket",
+      "to",
+      "Moscow"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "PART",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "jacket",
+        "type": "outfit",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "Moscow",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "dde5cf3e-7f58-4809-982a-a138b2c6cd73",
+    "intent": "weather.outfit"
+  },
+  {
+    "text": "should I wear sunglasses tomorrow in California",
+    "tokens": [
+      "should",
+      "I",
+      "wear",
+      "sunglasses",
+      "tomorrow",
+      "in",
+      "California"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "sunglasses",
+        "type": "outfit",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "California",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "12af0d8d-f1ad-4165-bc24-5819814fc557",
+    "intent": "weather.outfit"
+  },
+  {
+    "text": "will I need an umbrella in Paris this weekend",
+    "tokens": [
+      "will",
+      "I",
+      "need",
+      "an",
+      "umbrella",
+      "in",
+      "Paris",
+      "this",
+      "weekend"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "umbrella",
+        "type": "outfit",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "Paris",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "this weekend",
+        "type": "date_time",
+        "start": 7,
+        "end": 8
+      }
+    ],
+    "id": "2ffb911e-2f69-4134-942b-df5faab2b5fe",
+    "intent": "weather.outfit"
+  },
+  {
+    "text": "should I take a jacket to Prague on June 20",
+    "tokens": [
+      "should",
+      "I",
+      "take",
+      "a",
+      "jacket",
+      "to",
+      "Prague",
+      "on",
+      "June",
+      "20"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "PART",
+      "VERB",
+      "ADP",
+      "PROPN",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "jacket",
+        "type": "outfit",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "Prague",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "June 20",
+        "type": "date_time",
+        "start": 8,
+        "end": 9
+      }
+    ],
+    "id": "df2a9a9b-0b7a-40eb-bfea-1b19eec4b20a",
+    "intent": "weather.outfit"
+  }
+]

@@ -1,0 +1,253 @@
+[
+  {
+    "id": "5eeca9ea-a189-4384-bff8-c24e5b20336f",
+    "data": [
+      {
+        "text": "can",
+        "userDefined": false
+      },
+      {
+        "text": " you ",
+        "userDefined": false
+      },
+      {
+        "text": "close",
+        "userDefined": false
+      },
+      {
+        "text": " them for ",
+        "userDefined": false
+      },
+      {
+        "text": "me",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "4ddc962d-823f-4f3a-a84a-0ac4b20185ea",
+    "data": [
+      {
+        "text": "they should ",
+        "userDefined": false
+      },
+      {
+        "text": "be",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "closed",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "15852037-281b-4a13-a34f-4bada242325e",
+    "data": [
+      {
+        "text": "it",
+        "userDefined": false
+      },
+      {
+        "text": " should ",
+        "userDefined": false
+      },
+      {
+        "text": "be",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "closed",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "03bec637-9941-4bca-8769-376a1f3023f3",
+    "data": [
+      {
+        "text": "please ",
+        "userDefined": false
+      },
+      {
+        "text": "close",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "it",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "8c03be43-df82-4ee2-b580-d9501d430f25",
+    "data": [
+      {
+        "text": "close",
+        "userDefined": false
+      },
+      {
+        "text": " them ",
+        "userDefined": false
+      },
+      {
+        "text": "now",
+        "userDefined": false
+      },
+      {
+        "text": " please",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "2336fdee-0a60-4f6a-8a44-a54b7205a41d",
+    "data": [
+      {
+        "text": "I need ",
+        "userDefined": false
+      },
+      {
+        "text": "to",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "close",
+        "userDefined": false
+      },
+      {
+        "text": " them",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "693957a7-64ac-4de4-8496-7a39489da0a9",
+    "data": [
+      {
+        "text": "close them",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "0a736b0a-d1fc-4c1f-9f92-94a4b803eda9",
+    "data": [
+      {
+        "text": "now",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "close",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "f8935518-3993-47e8-8fff-0199a03b3c8f",
+    "data": [
+      {
+        "text": "could",
+        "userDefined": false
+      },
+      {
+        "text": " you ",
+        "userDefined": false
+      },
+      {
+        "text": "close",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "it",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "19e3e808-7988-4aaa-bb59-1e95d1c78a63",
+    "data": [
+      {
+        "text": "close",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "a8cc8820-506c-4d8c-ae42-5d9bfe2dd006",
+    "data": [
+      {
+        "text": "close it",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  }
+]

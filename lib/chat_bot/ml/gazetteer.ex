@@ -55,17 +55,39 @@ defmodule ChatBot.ML.Gazetteer do
 
   @doc """
   Look up an entity by exact match (case-insensitive).
-  Returns {:ok, entity_info} or :not_found
+  Returns {:ok, entity_info} or {:ok, [entity_info, ...]} or :not_found.
+
+  When multiple entity types exist for the same key (e.g., "Austin" as both
+  a person name and a city), returns a list of all matching types.
   """
   def lookup(text) when is_binary(text) do
     normalized = normalize(text)
 
     case :ets.lookup(@table_name, normalized) do
-      [{^normalized, entity_info}] -> {:ok, entity_info}
-      [] -> :not_found
+      [{^normalized, entity_infos}] when is_list(entity_infos) ->
+        {:ok, entity_infos}
+
+      [{^normalized, entity_info}] when is_map(entity_info) ->
+        # Legacy format - single entity
+        {:ok, entity_info}
+
+      [] ->
+        :not_found
     end
   rescue
     ArgumentError -> :not_found
+  end
+
+  @doc """
+  Look up an entity and return all possible types.
+  Always returns a list (empty if not found).
+  """
+  def lookup_all_types(text) when is_binary(text) do
+    case lookup(text) do
+      {:ok, infos} when is_list(infos) -> infos
+      {:ok, info} when is_map(info) -> [info]
+      :not_found -> []
+    end
   end
 
   @doc """
@@ -170,14 +192,15 @@ defmodule ChatBot.ML.Gazetteer do
 
   @doc """
   Check if an entity already exists in the gazetteer.
-  Returns {true, entity_info} if it exists, false otherwise.
+  Returns {true, entity_infos} if it exists (list of all types), false otherwise.
   """
   def exists?(name) when is_binary(name) do
     try do
       normalized_key = normalize(name)
 
       case :ets.lookup(@table_name, normalized_key) do
-        [{^normalized_key, info}] -> {true, info}
+        [{^normalized_key, infos}] when is_list(infos) -> {true, infos}
+        [{^normalized_key, info}] when is_map(info) -> {true, [info]}
         [] -> false
       end
     rescue
@@ -192,11 +215,17 @@ defmodule ChatBot.ML.Gazetteer do
   def list_by_type(entity_type) when is_binary(entity_type) do
     try do
       :ets.tab2list(@table_name)
-      |> Enum.filter(fn {_key, info} ->
-        Map.get(info, :entity_type) == entity_type or
-          Map.get(info, :type) == entity_type
+      |> Enum.flat_map(fn {key, infos} ->
+        # Handle both list and single entity formats
+        info_list = if is_list(infos), do: infos, else: [infos]
+
+        info_list
+        |> Enum.filter(fn info ->
+          Map.get(info, :entity_type) == entity_type or
+            Map.get(info, :type) == entity_type
+        end)
+        |> Enum.map(fn info -> {key, info} end)
       end)
-      |> Enum.map(fn {key, info} -> {key, info} end)
       |> Enum.sort_by(fn {key, _} -> key end)
     rescue
       _ -> []
@@ -209,8 +238,13 @@ defmodule ChatBot.ML.Gazetteer do
   def list_types do
     try do
       :ets.tab2list(@table_name)
-      |> Enum.map(fn {_key, info} ->
-        Map.get(info, :entity_type) || Map.get(info, :type) || "unknown"
+      |> Enum.flat_map(fn {_key, infos} ->
+        # Handle both list and single entity formats
+        info_list = if is_list(infos), do: infos, else: [infos]
+
+        Enum.map(info_list, fn info ->
+          Map.get(info, :entity_type) || Map.get(info, :type) || "unknown"
+        end)
       end)
       |> Enum.uniq()
       |> Enum.sort()
@@ -531,8 +565,27 @@ defmodule ChatBot.ML.Gazetteer do
       # Add source information
       enriched_info = Map.put(entity_info, :source, source)
 
-      # Insert into ETS (newer entries override older ones)
-      :ets.insert(@table_name, {normalized_key, enriched_info})
+      # Append to existing entries instead of overwriting
+      # This allows multiple entity types per key (e.g., "Austin" as person AND location)
+      existing =
+        case :ets.lookup(@table_name, normalized_key) do
+          [{^normalized_key, infos}] when is_list(infos) -> infos
+          [{^normalized_key, info}] when is_map(info) -> [info]
+          [] -> []
+        end
+
+      # Only add if this exact entity_type isn't already present
+      entity_type = Map.get(enriched_info, :entity_type) || Map.get(enriched_info, :type)
+
+      already_exists =
+        Enum.any?(existing, fn ex ->
+          ex_type = Map.get(ex, :entity_type) || Map.get(ex, :type)
+          ex_type == entity_type
+        end)
+
+      unless already_exists do
+        :ets.insert(@table_name, {normalized_key, [enriched_info | existing]})
+      end
 
       count + 1
     end)
@@ -545,7 +598,8 @@ defmodule ChatBot.ML.Gazetteer do
     entities = :ets.tab2list(@table_name)
 
     prefixes =
-      Enum.flat_map(entities, fn {key, _info} ->
+      Enum.flat_map(entities, fn {key, _infos} ->
+        # Handle both list and single entity formats
         words = String.split(key)
 
         if length(words) > 1 do
@@ -603,9 +657,15 @@ defmodule ChatBot.ML.Gazetteer do
         normalized = normalize(phrase)
 
         case :ets.lookup(@table_name, normalized) do
-          [{^normalized, entity_info}] ->
+          [{^normalized, entity_infos}] when is_list(entity_infos) ->
+            # Multiple entity types - return all of them
             end_idx = start_idx + span_len - 1
-            {:halt, {:ok, end_idx, entity_info}}
+            {:halt, {:ok, end_idx, entity_infos}}
+
+          [{^normalized, entity_info}] when is_map(entity_info) ->
+            # Single entity (legacy format)
+            end_idx = start_idx + span_len - 1
+            {:halt, {:ok, end_idx, [entity_info]}}
 
           [] ->
             {:cont, :not_found}

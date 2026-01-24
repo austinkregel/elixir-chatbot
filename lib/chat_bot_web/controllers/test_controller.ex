@@ -1,25 +1,14 @@
 defmodule ChatBotWeb.TestController do
   use ChatBotWeb, :controller
-  require Logger
 
   def test_learning(conn, %{"input" => input}) do
-    case ChatBot.Learner.learn_from_input("Echo", input) do
-      {:ok, extracted_data} ->
-        json(conn, %{
-          status: "success",
-          input: input,
-          extracted_data: extracted_data
-        })
+    {:ok, extracted_data} = ChatBot.Learner.learn_from_input("Echo", input)
 
-      {:error, reason} ->
-        Logger.error("Learning test failed", %{reason: reason, input: input})
-
-        json(conn, %{
-          status: "error",
-          input: input,
-          error: inspect(reason)
-        })
-    end
+    json(conn, %{
+      status: "success",
+      input: input,
+      extracted_data: extracted_data
+    })
   end
 
   def test_knowledge(conn, _params) do

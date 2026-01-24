@@ -56,7 +56,7 @@ defmodule ChatBot.Response.MemoryAugmented do
 
     # Find similar successful past exchanges
     case Store.query_similar(query, @max_episodes) do
-      {:ok, episodes} when length(episodes) > 0 ->
+      {:ok, [_ | _] = episodes} ->
         # Extract and adapt response pattern
         adapt_from_episodes(episodes, entities, context)
 
@@ -84,7 +84,7 @@ defmodule ChatBot.Response.MemoryAugmented do
     end
   end
 
-  defp adapt_from_episodes(episodes, current_entities, context) do
+  defp adapt_from_episodes(episodes, current_entities, _context) do
     # Filter for episodes with positive outcomes
     positive_episodes =
       episodes

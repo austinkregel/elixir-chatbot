@@ -1,0 +1,196 @@
+{
+  "id": "ad118f22-6185-4566-8b22-7a6067fb42e2",
+  "name": "music.play",
+  "auto": true,
+  "contexts": [],
+  "responses": [
+    {
+      "resetContexts": false,
+      "action": "music.play",
+      "affectedContexts": [
+        {
+          "name": "play-music",
+          "lifespan": 5
+        },
+        {
+          "name": "music-player-control",
+          "lifespan": 3
+        }
+      ],
+      "parameters": [
+        {
+          "id": "608d9454-58c4-473f-b4d0-ae78fe22a709",
+          "name": "song",
+          "required": false,
+          "dataType": "@song",
+          "value": "$song",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "2cc64b69-a5e9-490b-aa5b-e724040b1e29",
+          "name": "artist",
+          "required": false,
+          "dataType": "@sys.music-artist",
+          "value": "$artist",
+          "defaultValue": "",
+          "isList": true,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "c302aaca-9042-414d-af6f-76e51af60a9c",
+          "name": "album",
+          "required": false,
+          "dataType": "@music-album",
+          "value": "$album",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "ee08150d-e5f2-4c70-9a0d-48e1d33305b0",
+          "name": "genre",
+          "required": false,
+          "dataType": "@sys.music-genre",
+          "value": "$genre",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "f9f6b9bb-4a56-4a62-bbd3-c24ff3aa39ea",
+          "name": "playlist",
+          "required": false,
+          "dataType": "@playlist",
+          "value": "$playlist",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "692224e6-d16c-4511-8b84-f5116d589014",
+          "name": "service",
+          "required": false,
+          "dataType": "@music-service",
+          "value": "$service",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "da79068a-54fe-4c6f-97e0-0f1173f7f3e4",
+          "name": "sort",
+          "required": false,
+          "dataType": "@music-sort",
+          "value": "$sort",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "1dcbaa45-e4f1-4095-a731-26a7a34b63a5",
+          "name": "language",
+          "required": false,
+          "dataType": "@sys.language",
+          "value": "$language",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "df079380-339a-4733-a746-8f4d3db6f4b3",
+          "name": "start-year",
+          "required": false,
+          "dataType": "@sys.number",
+          "value": "$start-year",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "7c2d306a-8c08-4e90-bda7-a776d26a58cb",
+          "name": "end-year",
+          "required": false,
+          "dataType": "@sys.number",
+          "value": "$end-year",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        },
+        {
+          "id": "7484bd14-4e7a-4e2e-8942-1660f03ac1a9",
+          "name": "amount",
+          "required": false,
+          "dataType": "@sys.number",
+          "value": "$amount",
+          "defaultValue": "",
+          "isList": false,
+          "prompts": [],
+          "promptMessages": [],
+          "noMatchPromptMessages": [],
+          "noInputPromptMessages": [],
+          "outputDialogContexts": []
+        }
+      ],
+      "messages": [
+        {
+          "type": "0",
+          "title": "",
+          "textToSpeech": "",
+          "lang": "en",
+          "condition": ""
+        }
+      ],
+      "speech": []
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": false,
+  "webhookForSlotFilling": false,
+  "fallbackIntent": false,
+  "events": [],
+  "conditionalResponses": [],
+  "condition": "",
+  "conditionalFollowupEvents": []
+}

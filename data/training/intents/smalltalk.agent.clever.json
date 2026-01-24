@@ -1,0 +1,596 @@
+[
+  {
+    "text": "you are so intelligent",
+    "tokens": [
+      "you",
+      "are",
+      "so",
+      "intelligent"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "6b91016b-ac78-4d65-b154-1bbd5fdac1c6",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you are a genius",
+    "tokens": [
+      "you",
+      "are",
+      "a",
+      "genius"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "4cdc1237-ca89-4037-801a-c20b5f7485b3",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "smart",
+    "tokens": [
+      "smart"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "313aa147-1d4a-4bc7-a690-7771635683e9",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "brilliant",
+    "tokens": [
+      "brilliant"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "0215652e-2269-4816-bd16-4abffbc589c9",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "clever",
+    "tokens": [
+      "clever"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "1467e0a7-f9ff-4941-9cc6-2c8c56d2a97c",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you are clever",
+    "tokens": [
+      "you",
+      "are",
+      "clever"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "8545425d-73d4-4b1a-a032-069afb711065",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you are so brainy",
+    "tokens": [
+      "you",
+      "are",
+      "so",
+      "brainy"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "51446744-c64a-41d9-9bbe-a3d92d6764ce",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you're really smart",
+    "tokens": [
+      "you",
+      "'re",
+      "really",
+      "smart"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "9aa722b3-a774-43b0-94d5-9c46d7411653",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you're really brainy",
+    "tokens": [
+      "you",
+      "'re",
+      "really",
+      "brainy"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "e8740b24-478e-4b83-8a6c-fca71a9d3596",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you know a lot",
+    "tokens": [
+      "you",
+      "know",
+      "a",
+      "lot"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "3ea94d21-5236-4ea2-8d45-a319df732b77",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you know a lot of things",
+    "tokens": [
+      "you",
+      "know",
+      "a",
+      "lot",
+      "of",
+      "things"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "6f8b585a-d316-42f2-a32e-9517fe1be22d",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you have a lot of knowledge",
+    "tokens": [
+      "you",
+      "have",
+      "a",
+      "lot",
+      "of",
+      "knowledge"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "9e220277-6e0a-4fe5-802e-057bf6c1e908",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you know so much",
+    "tokens": [
+      "you",
+      "know",
+      "so",
+      "much"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "1da48638-ff5c-4a7d-bdfc-556076493e6e",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "how smart you are",
+    "tokens": [
+      "how",
+      "smart",
+      "you",
+      "are"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "ddd96b04-7428-469d-8aba-722ccd421ba3",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "how brainy you are",
+    "tokens": [
+      "how",
+      "brainy",
+      "you",
+      "are"
+    ],
+    "pos_tags": [
+      "ADV",
+      "NOUN",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "d91493be-6753-4a8f-8d4c-903d4d9c116d",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "how clever you are",
+    "tokens": [
+      "how",
+      "clever",
+      "you",
+      "are"
+    ],
+    "pos_tags": [
+      "ADV",
+      "NOUN",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "39e2022d-5dad-427e-8a50-274fb3b7a12f",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "how brilliant you are",
+    "tokens": [
+      "how",
+      "brilliant",
+      "you",
+      "are"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "3c8c69f6-40ba-415d-854e-cfe17f36ac4d",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you are intelligent",
+    "tokens": [
+      "you",
+      "are",
+      "intelligent"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "a52eb873-5b12-474d-a44b-10ca33019839",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you are qualified",
+    "tokens": [
+      "you",
+      "are",
+      "qualified"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "8e646c3e-32d5-49db-a12b-a92cc176324f",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you are really smart",
+    "tokens": [
+      "you",
+      "are",
+      "really",
+      "smart"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "ba2356bd-c7fe-48bb-90ad-87ce6f5ae959",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you're very smart",
+    "tokens": [
+      "you",
+      "'re",
+      "very",
+      "smart"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "439cb29e-9e61-44c7-a17a-f01144e41cab",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you are so smart",
+    "tokens": [
+      "you",
+      "are",
+      "so",
+      "smart"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "9bcb2d0f-3346-47ac-a9c8-7f5fd97999f1",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you are too smart",
+    "tokens": [
+      "you",
+      "are",
+      "too",
+      "smart"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "5a5e4116-d291-46da-9dcd-3a20544609bf",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you are very clever",
+    "tokens": [
+      "you",
+      "are",
+      "very",
+      "clever"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "fc7d5b8b-b95e-42ca-9e29-6418bb0000f9",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you are very intelligent",
+    "tokens": [
+      "you",
+      "are",
+      "very",
+      "intelligent"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "4524c352-6386-46a5-aabd-12f9875b2fe8",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you are very smart",
+    "tokens": [
+      "you",
+      "are",
+      "very",
+      "smart"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "95029486-2dd6-4122-bd5d-588d18ca504b",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you're intelligent",
+    "tokens": [
+      "you",
+      "'re",
+      "intelligent"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "86d002fb-6c25-49c7-9916-03fd7866a888",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you're a genius",
+    "tokens": [
+      "you",
+      "'re",
+      "a",
+      "genius"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "0612878e-7cb7-473b-8ab0-2342b791f448",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you're a smart cookie",
+    "tokens": [
+      "you",
+      "'re",
+      "a",
+      "smart",
+      "cookie"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "6fff2b27-45b7-4a70-b950-92bd8a1fdd14",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you're clever",
+    "tokens": [
+      "you",
+      "'re",
+      "clever"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "d89b8f1c-6f87-4924-b161-c9bb7116b8c7",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you're pretty smart",
+    "tokens": [
+      "you",
+      "'re",
+      "pretty",
+      "smart"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "7935984f-74f1-41eb-8b59-8ad8231f4bae",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you're qualified",
+    "tokens": [
+      "you",
+      "'re",
+      "qualified"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "9a750346-05e8-4095-a54b-c7efebb1c421",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "why are you so smart",
+    "tokens": [
+      "why",
+      "are",
+      "you",
+      "so",
+      "smart"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "ADP",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "fce2109b-76ba-4724-9fa9-dcb5be363a82",
+    "intent": "smalltalk.agent.clever"
+  },
+  {
+    "text": "you are so clever",
+    "tokens": [
+      "you",
+      "are",
+      "so",
+      "clever"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "7d018dac-941e-4303-9e1f-8f8bb7b5a77e",
+    "intent": "smalltalk.agent.clever"
+  }
+]

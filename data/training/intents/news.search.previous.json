@@ -1,0 +1,164 @@
+[
+  {
+    "text": "back",
+    "tokens": [
+      "back"
+    ],
+    "pos_tags": [
+      "ADV"
+    ],
+    "entities": [],
+    "id": "eaee9eec-abda-433d-84cf-e34ddceb0ecf",
+    "intent": "news.search.previous"
+  },
+  {
+    "text": "previous",
+    "tokens": [
+      "previous"
+    ],
+    "pos_tags": [
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "06d48433-959f-4e97-aa12-83b72ae86bc6",
+    "intent": "news.search.previous"
+  },
+  {
+    "text": "go back",
+    "tokens": [
+      "go",
+      "back"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "b2937926-694f-4118-958b-d2af9b0d1019",
+    "intent": "news.search.previous"
+  },
+  {
+    "text": "previous page",
+    "tokens": [
+      "previous",
+      "page"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "3ca23f3e-f6b6-475a-81a3-2e706a5d81cf",
+    "intent": "news.search.previous"
+  },
+  {
+    "text": "previous results",
+    "tokens": [
+      "previous",
+      "results"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "fcbff5da-fc29-47b9-a260-efa09889c648",
+    "intent": "news.search.previous"
+  },
+  {
+    "text": "return to the previous",
+    "tokens": [
+      "return",
+      "to",
+      "the",
+      "previous"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "DET",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "44248d43-f717-487a-b817-6b5fb3811328",
+    "intent": "news.search.previous"
+  },
+  {
+    "text": "return to previous page",
+    "tokens": [
+      "return",
+      "to",
+      "previous",
+      "page"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f031dcce-522d-4859-8fe6-49efc7b154e1",
+    "intent": "news.search.previous"
+  },
+  {
+    "text": "go to the previous page",
+    "tokens": [
+      "go",
+      "to",
+      "the",
+      "previous",
+      "page"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "4b24a57f-f44e-468c-b0bd-9a6a61e7c638",
+    "intent": "news.search.previous"
+  },
+  {
+    "text": "go back to previous results",
+    "tokens": [
+      "go",
+      "back",
+      "to",
+      "previous",
+      "results"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADV",
+      "PART",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "6721331d-e55a-4abc-bfb2-20ea3c1f74af",
+    "intent": "news.search.previous"
+  },
+  {
+    "text": "read out the previous results",
+    "tokens": [
+      "read",
+      "out",
+      "the",
+      "previous",
+      "results"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "38a3cd04-1786-49af-9af8-b205bbf954d2",
+    "intent": "news.search.previous"
+  }
+]

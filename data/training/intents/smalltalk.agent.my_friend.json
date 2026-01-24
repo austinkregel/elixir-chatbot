@@ -1,0 +1,742 @@
+[
+  {
+    "text": "I want to have a friend like you",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "have",
+      "a",
+      "friend",
+      "like",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "2068c8f4-0f9e-4e93-a996-67eb8b1dee07",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "we are the best friends ever",
+    "tokens": [
+      "we",
+      "are",
+      "the",
+      "best",
+      "friends",
+      "ever"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "249f7fb6-b607-4b2d-b066-3c0b29bd2929",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "are we friends",
+    "tokens": [
+      "are",
+      "we",
+      "friends"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "d0103ded-8382-4a72-9e28-1e173c6e98c2",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "I want to be your friend",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "be",
+      "your",
+      "friend"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "60318f50-85ee-43a7-b210-573c3059f9b5",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "I am your friend",
+    "tokens": [
+      "I",
+      "am",
+      "your",
+      "friend"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "7fef0fb0-b6a5-4ec9-a5ff-95c52108eeac",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "we are best friends",
+    "tokens": [
+      "we",
+      "are",
+      "best",
+      "friends"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "1b2ff96f-758a-4d75-8ea0-66220accd833",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "you are my friend",
+    "tokens": [
+      "you",
+      "are",
+      "my",
+      "friend"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "031de738-ecbe-4d71-82eb-272a02fdd230",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "you are my best friend",
+    "tokens": [
+      "you",
+      "are",
+      "my",
+      "best",
+      "friend"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "1be7fdff-f654-4bce-8eb3-28b3d100b621",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "you are my bestie",
+    "tokens": [
+      "you",
+      "are",
+      "my",
+      "bestie"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "c1b17350-1fe3-4b53-abf1-b9ed4db4e315",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "you're my dear friend",
+    "tokens": [
+      "you",
+      "'re",
+      "my",
+      "dear",
+      "friend"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "64ce1491-9a7f-40fc-a1a0-a8e9a349bc33",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "you're my childhood friend",
+    "tokens": [
+      "you",
+      "'re",
+      "my",
+      "childhood",
+      "friend"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "1cf29865-35cc-4756-9204-785d9bc31aaf",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "you and me are friends",
+    "tokens": [
+      "you",
+      "and",
+      "me",
+      "are",
+      "friends"
+    ],
+    "pos_tags": [
+      "PRON",
+      "CONJ",
+      "PRON",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "0c629b70-6c5f-4d16-bc54-9d643917fdfd",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "are we best friends",
+    "tokens": [
+      "are",
+      "we",
+      "best",
+      "friends"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "4e13d990-cbc9-482d-acf8-19391d8fefe2",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "are we still friends",
+    "tokens": [
+      "are",
+      "we",
+      "still",
+      "friends"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADV",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "5dd0fea2-e976-4bcd-aabf-5b6e8fcdfc96",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "are you my best friend",
+    "tokens": [
+      "are",
+      "you",
+      "my",
+      "best",
+      "friend"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "PRON",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "7ed3cbe4-4b6f-4779-be6a-f3861db4978a",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "are you my friend",
+    "tokens": [
+      "are",
+      "you",
+      "my",
+      "friend"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e3c579de-24d3-4697-878d-89ebd66e0918",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "we are friends",
+    "tokens": [
+      "we",
+      "are",
+      "friends"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f19f131d-008e-44c0-acf9-43f46eab6e40",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "you are a good friend",
+    "tokens": [
+      "you",
+      "are",
+      "a",
+      "good",
+      "friend"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "43230ba0-ebdc-4556-813f-03ab67839849",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "you are my good friend",
+    "tokens": [
+      "you",
+      "are",
+      "my",
+      "good",
+      "friend"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e79a1e06-aaf6-45fc-aa95-53ef1313935f",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "you are my only friend",
+    "tokens": [
+      "you",
+      "are",
+      "my",
+      "only",
+      "friend"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "2582c7df-661f-4e1f-8a4f-3f6b3d49092c",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "be my friend",
+    "tokens": [
+      "be",
+      "my",
+      "friend"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "8657d0fa-48cd-4ad4-97cd-f88763cd636b",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "will you be my friend",
+    "tokens": [
+      "will",
+      "you",
+      "be",
+      "my",
+      "friend"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "2e222186-4737-49d3-9d16-4d4d52e3967f",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "can you be my friend",
+    "tokens": [
+      "can",
+      "you",
+      "be",
+      "my",
+      "friend"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "3a789db5-05fd-4534-9cf4-9c0f9431f582",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "can we be friends",
+    "tokens": [
+      "can",
+      "we",
+      "be",
+      "friends"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "cebcfb13-5ec0-440f-8fdb-83c373c4771f",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "do you want to be my friend",
+    "tokens": [
+      "do",
+      "you",
+      "want",
+      "to",
+      "be",
+      "my",
+      "friend"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "06a27114-7543-4c6b-9be1-d83ffc088238",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "will you be my best friend",
+    "tokens": [
+      "will",
+      "you",
+      "be",
+      "my",
+      "best",
+      "friend"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "34547155-e373-4fc5-8c2c-fcf68a666e22",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "can you be my best friend",
+    "tokens": [
+      "can",
+      "you",
+      "be",
+      "my",
+      "best",
+      "friend"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "888be61d-5ce5-4ec8-9f04-cbd01ef63313",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "let's be friends",
+    "tokens": [
+      "let",
+      "'s",
+      "be",
+      "friends"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "5a3f0e8a-6c77-41ae-8b64-a307991fc31e",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "do you want to be my best friend",
+    "tokens": [
+      "do",
+      "you",
+      "want",
+      "to",
+      "be",
+      "my",
+      "best",
+      "friend"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "26804958-a27e-41af-b1c7-b0d3a4fa2529",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "would you like to be my friend",
+    "tokens": [
+      "would",
+      "you",
+      "like",
+      "to",
+      "be",
+      "my",
+      "friend"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "5fd94cae-f62a-46c9-93ae-ef98eac75a26",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "I want you to be my friend",
+    "tokens": [
+      "I",
+      "want",
+      "you",
+      "to",
+      "be",
+      "my",
+      "friend"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "PART",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "89ff3dea-f663-478f-a020-4781d7d1a3ff",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "can we be best friends",
+    "tokens": [
+      "can",
+      "we",
+      "be",
+      "best",
+      "friends"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "4d8acfd7-d2f8-4968-99b3-8b78a7058096",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "would you be my friend",
+    "tokens": [
+      "would",
+      "you",
+      "be",
+      "my",
+      "friend"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f7f550ca-ac71-4bae-9b15-75af251c2dfb",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "could you be my friend",
+    "tokens": [
+      "could",
+      "you",
+      "be",
+      "my",
+      "friend"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e32b1a06-e8ff-4edb-b1ac-9f12cfbc6c66",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "want to be my friend",
+    "tokens": [
+      "want",
+      "to",
+      "be",
+      "my",
+      "friend"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "5ef92763-3e47-4fd8-8c36-b0a17f02e53d",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "be my best friend",
+    "tokens": [
+      "be",
+      "my",
+      "best",
+      "friend"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "1c6d8a86-962b-47ef-81a5-ecd1aef99572",
+    "intent": "smalltalk.agent.my_friend"
+  },
+  {
+    "text": "can we be best friends",
+    "tokens": [
+      "can",
+      "we",
+      "be",
+      "best",
+      "friends"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "09b51e73-dc58-427d-a566-5a4582cb7521",
+    "intent": "smalltalk.agent.my_friend"
+  }
+]

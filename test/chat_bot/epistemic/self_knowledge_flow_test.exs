@@ -3,7 +3,7 @@ defmodule ChatBot.Epistemic.SelfKnowledgeFlowTest do
 
   alias ChatBot.Analysis.SelfKnowledgeAnalyzer
   alias ChatBot.Epistemic.{UserModelStore, BeliefStore}
-  alias ChatBot.Epistemic.Types.{SelfKnowledgeAssessment, Config}
+  alias ChatBot.Epistemic.Types.SelfKnowledgeAssessment
   alias ChatBot.Response.Synthesizer
 
   setup do

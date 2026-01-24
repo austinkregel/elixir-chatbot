@@ -1,0 +1,242 @@
+[
+  {
+    "text": "not bright enough",
+    "tokens": [
+      "not",
+      "bright",
+      "enough"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "857f2e29-79e3-4d7c-9c36-06cded11e96a",
+    "intent": "smarthome.device.brightness.up.context_device-brightness.comment_not.bright.enough"
+  },
+  {
+    "text": "still dark",
+    "tokens": [
+      "still",
+      "dark"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "0e9a1c13-eed9-4aa5-ba3e-644f1f8a0248",
+    "intent": "smarthome.device.brightness.up.context_device-brightness.comment_not.bright.enough"
+  },
+  {
+    "text": "it is too dark here",
+    "tokens": [
+      "it",
+      "is",
+      "too",
+      "dark",
+      "here"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "6ba781ab-3a98-43fb-a849-18fe2513dd28",
+    "intent": "smarthome.device.brightness.up.context_device-brightness.comment_not.bright.enough"
+  },
+  {
+    "text": "still too dark",
+    "tokens": [
+      "still",
+      "too",
+      "dark"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "311dd58c-bd95-40f7-a2a6-4092491fd750",
+    "intent": "smarthome.device.brightness.up.context_device-brightness.comment_not.bright.enough"
+  },
+  {
+    "text": "a little more",
+    "tokens": [
+      "a",
+      "little",
+      "more"
+    ],
+    "pos_tags": [
+      "DET",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "8b52957c-c525-425d-898b-e7d101e7c38d",
+    "intent": "smarthome.device.brightness.up.context_device-brightness.comment_not.bright.enough"
+  },
+  {
+    "text": "brighten them",
+    "tokens": [
+      "brighten",
+      "them"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "ef5224cc-479c-42a8-882b-fb5808322164",
+    "intent": "smarthome.device.brightness.up.context_device-brightness.comment_not.bright.enough"
+  },
+  {
+    "text": "brighter",
+    "tokens": [
+      "brighter"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e9902ba5-962f-4321-a8a5-242f9d6c9c6d",
+    "intent": "smarthome.device.brightness.up.context_device-brightness.comment_not.bright.enough"
+  },
+  {
+    "text": "it's too dark in here",
+    "tokens": [
+      "it",
+      "'s",
+      "too",
+      "dark",
+      "in",
+      "here"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "ADP",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "24c34ab0-bb1b-4766-897a-3b23fad23f0d",
+    "intent": "smarthome.device.brightness.up.context_device-brightness.comment_not.bright.enough"
+  },
+  {
+    "text": "too dark",
+    "tokens": [
+      "too",
+      "dark"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "74a60787-9ef1-4800-a3bd-a6404a387240",
+    "intent": "smarthome.device.brightness.up.context_device-brightness.comment_not.bright.enough"
+  },
+  {
+    "text": "make them brighter",
+    "tokens": [
+      "make",
+      "them",
+      "brighter"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "1a62034d-a942-4457-8e4f-2ec48dcb9c84",
+    "intent": "smarthome.device.brightness.up.context_device-brightness.comment_not.bright.enough"
+  },
+  {
+    "text": "brighten it",
+    "tokens": [
+      "brighten",
+      "it"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "15528621-ccdc-4939-84c5-d094a121e53e",
+    "intent": "smarthome.device.brightness.up.context_device-brightness.comment_not.bright.enough"
+  },
+  {
+    "text": "it's too dark",
+    "tokens": [
+      "it",
+      "'s",
+      "too",
+      "dark"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "3c508d56-b81e-4374-a1c2-df7bb2d9604d",
+    "intent": "smarthome.device.brightness.up.context_device-brightness.comment_not.bright.enough"
+  },
+  {
+    "text": "make brighter",
+    "tokens": [
+      "make",
+      "brighter"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "d7f85fb1-b1ab-425e-9dcc-b46e12f492bd",
+    "intent": "smarthome.device.brightness.up.context_device-brightness.comment_not.bright.enough"
+  },
+  {
+    "text": "it is dark",
+    "tokens": [
+      "it",
+      "is",
+      "dark"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "0e1e9039-3e83-4777-91ac-b09ff62deca5",
+    "intent": "smarthome.device.brightness.up.context_device-brightness.comment_not.bright.enough"
+  },
+  {
+    "text": "it's dark here",
+    "tokens": [
+      "it",
+      "'s",
+      "dark",
+      "here"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "15f3b260-59f1-43d2-9583-06027a8cd3a5",
+    "intent": "smarthome.device.brightness.up.context_device-brightness.comment_not.bright.enough"
+  }
+]

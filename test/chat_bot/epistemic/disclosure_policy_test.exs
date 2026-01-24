@@ -2,7 +2,7 @@ defmodule ChatBot.Epistemic.DisclosurePolicyTest do
   use ExUnit.Case, async: true
 
   alias ChatBot.Epistemic.DisclosurePolicy
-  alias ChatBot.Epistemic.Types.{Belief, SelfKnowledgeAssessment, DisclosureDecision}
+  alias ChatBot.Epistemic.Types.{Belief, SelfKnowledgeAssessment}
 
   describe "evaluate_disclosure/2" do
     test "allows disclosure of safe explicit facts" do

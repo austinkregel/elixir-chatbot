@@ -1,0 +1,67 @@
+[
+  {
+    "text": "skiing",
+    "tokens": [
+      "skiing"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "skiing",
+        "type": "activity",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "b96ad820-b994-4a07-b16c-84fe630ecad4",
+    "intent": "weather.context_weather.comment_activity"
+  },
+  {
+    "text": "and for skating",
+    "tokens": [
+      "and",
+      "for",
+      "skating"
+    ],
+    "pos_tags": [
+      "CONJ",
+      "ADP",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "skating",
+        "type": "activity",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "7ab27973-10b4-4665-bfbc-ca898e52b09c",
+    "intent": "weather.context_weather.comment_activity"
+  },
+  {
+    "text": "what about swimming",
+    "tokens": [
+      "what",
+      "about",
+      "swimming"
+    ],
+    "pos_tags": [
+      "PRON",
+      "ADP",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "swimming",
+        "type": "activity",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "1b682788-256c-4ccf-b359-f9b1d4a64959",
+    "intent": "weather.context_weather.comment_activity"
+  }
+]

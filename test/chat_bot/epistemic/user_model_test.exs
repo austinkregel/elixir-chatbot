@@ -2,7 +2,6 @@ defmodule ChatBot.Epistemic.UserModelStoreTest do
   use ExUnit.Case, async: false
 
   alias ChatBot.Epistemic.UserModelStore
-  alias ChatBot.Epistemic.Types.UserModel
 
   setup do
     # Ensure UserModelStore is started and cleared before each test
@@ -27,7 +26,7 @@ defmodule ChatBot.Epistemic.UserModelStoreTest do
     end
 
     test "returns existing model on second call" do
-      {:ok, model1} = UserModelStore.get_or_create("user123")
+      {:ok, _model1} = UserModelStore.get_or_create("user123")
       UserModelStore.update_fact("user123", :name, "Alice", :explicit, 0.9)
       {:ok, model2} = UserModelStore.get_or_create("user123")
 

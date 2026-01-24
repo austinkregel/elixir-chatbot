@@ -1,0 +1,325 @@
+[
+  {
+    "text": "unlock garage",
+    "tokens": [
+      "unlock",
+      "garage"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "garage",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "826c45d4-5b59-487d-a1cd-11cfd2ca3fbd",
+    "intent": "smarthome.locks.unlock"
+  },
+  {
+    "text": "all doors should be unlocked",
+    "tokens": [
+      "all",
+      "doors",
+      "should",
+      "be",
+      "unlocked"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "AUX",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "all",
+        "type": "all",
+        "start": 0,
+        "end": 0
+      },
+      {
+        "text": "doors",
+        "type": "lock",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "eff0a579-6794-4e9f-b3ef-d383c07ea35d",
+    "intent": "smarthome.locks.unlock"
+  },
+  {
+    "text": "unlock the front door",
+    "tokens": [
+      "unlock",
+      "the",
+      "front",
+      "door"
+    ],
+    "pos_tags": [
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "front door",
+        "type": "lock",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "630ec1aa-43cd-4c24-9f20-12329921a1a2",
+    "intent": "smarthome.locks.unlock"
+  },
+  {
+    "text": "unlock the door",
+    "tokens": [
+      "unlock",
+      "the",
+      "door"
+    ],
+    "pos_tags": [
+      "ADV",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "door",
+        "type": "lock",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "f97a93db-3410-488b-b997-2a628f5ae840",
+    "intent": "smarthome.locks.unlock"
+  },
+  {
+    "text": "unlock the kitchen lock",
+    "tokens": [
+      "unlock",
+      "the",
+      "kitchen",
+      "lock"
+    ],
+    "pos_tags": [
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "lock",
+        "type": "lock",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "55cf5c5d-c0f5-415d-b0af-713f83f86d9e",
+    "intent": "smarthome.locks.unlock"
+  },
+  {
+    "text": "unlock doors everywhere",
+    "tokens": [
+      "unlock",
+      "doors",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "doors",
+        "type": "lock",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "everywhere",
+        "type": "all",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "9db9f9c0-a80d-4443-873e-850914d9c190",
+    "intent": "smarthome.locks.unlock"
+  },
+  {
+    "text": "unlock all doors",
+    "tokens": [
+      "unlock",
+      "all",
+      "doors"
+    ],
+    "pos_tags": [
+      "ADV",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "all",
+        "type": "all",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "doors",
+        "type": "lock",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "73b47879-a560-46b1-bbd3-539aac892ab6",
+    "intent": "smarthome.locks.unlock"
+  },
+  {
+    "text": "unlock the window in kitchen",
+    "tokens": [
+      "unlock",
+      "the",
+      "window",
+      "in",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "window",
+        "type": "lock",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "5fd1bf62-fd55-46c3-bd52-1ff7270db810",
+    "intent": "smarthome.locks.unlock"
+  },
+  {
+    "text": "unlock all garage windows",
+    "tokens": [
+      "unlock",
+      "all",
+      "garage",
+      "windows"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "all",
+        "type": "all",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "garage",
+        "type": "room",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "windows",
+        "type": "lock",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "2a1fdd1a-3f3c-47a8-9c37-36d61aa311b1",
+    "intent": "smarthome.locks.unlock"
+  },
+  {
+    "text": "unlock door in the kitchen",
+    "tokens": [
+      "unlock",
+      "door",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "door",
+        "type": "lock",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "8783b971-1dba-48d7-afb7-fca5add8b21c",
+    "intent": "smarthome.locks.unlock"
+  },
+  {
+    "text": "unlock kitchen window",
+    "tokens": [
+      "unlock",
+      "kitchen",
+      "window"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "window",
+        "type": "lock",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "706e9c70-7343-4b6a-a01e-b0bd7835e1bb",
+    "intent": "smarthome.locks.unlock"
+  }
+]

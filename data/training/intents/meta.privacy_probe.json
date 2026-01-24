@@ -1,0 +1,324 @@
+[
+  {
+    "text": "are you tracking me",
+    "tokens": [
+      "are",
+      "you",
+      "tracking",
+      "me"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "meta-pp-001",
+    "intent": "meta.privacy_probe"
+  },
+  {
+    "text": "are you watching me",
+    "tokens": [
+      "are",
+      "you",
+      "watching",
+      "me"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "meta-pp-002",
+    "intent": "meta.privacy_probe"
+  },
+  {
+    "text": "are you monitoring me",
+    "tokens": [
+      "are",
+      "you",
+      "monitoring",
+      "me"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "meta-pp-003",
+    "intent": "meta.privacy_probe"
+  },
+  {
+    "text": "what data are you collecting on me",
+    "tokens": [
+      "what",
+      "data",
+      "are",
+      "you",
+      "collecting",
+      "on",
+      "me"
+    ],
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "VERB",
+      "PRON",
+      "VERB",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "meta-pp-004",
+    "intent": "meta.privacy_probe"
+  },
+  {
+    "text": "what data do you have on me",
+    "tokens": [
+      "what",
+      "data",
+      "do",
+      "you",
+      "have",
+      "on",
+      "me"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB",
+      "PRON",
+      "VERB",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "meta-pp-005",
+    "intent": "meta.privacy_probe"
+  },
+  {
+    "text": "are you storing my information",
+    "tokens": [
+      "are",
+      "you",
+      "storing",
+      "my",
+      "information"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "meta-pp-006",
+    "intent": "meta.privacy_probe"
+  },
+  {
+    "text": "do you keep records of our conversations",
+    "tokens": [
+      "do",
+      "you",
+      "keep",
+      "records",
+      "of",
+      "our",
+      "conversations"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "meta-pp-007",
+    "intent": "meta.privacy_probe"
+  },
+  {
+    "text": "are you spying on me",
+    "tokens": [
+      "are",
+      "you",
+      "spying",
+      "on",
+      "me"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "meta-pp-008",
+    "intent": "meta.privacy_probe"
+  },
+  {
+    "text": "do you record everything I say",
+    "tokens": [
+      "do",
+      "you",
+      "record",
+      "everything",
+      "I",
+      "say"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "meta-pp-009",
+    "intent": "meta.privacy_probe"
+  },
+  {
+    "text": "what information are you keeping about me",
+    "tokens": [
+      "what",
+      "information",
+      "are",
+      "you",
+      "keeping",
+      "about",
+      "me"
+    ],
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "VERB",
+      "PRON",
+      "VERB",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "meta-pp-010",
+    "intent": "meta.privacy_probe"
+  },
+  {
+    "text": "is my data being stored",
+    "tokens": [
+      "is",
+      "my",
+      "data",
+      "being",
+      "stored"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "meta-pp-011",
+    "intent": "meta.privacy_probe"
+  },
+  {
+    "text": "are you logging our conversation",
+    "tokens": [
+      "are",
+      "you",
+      "logging",
+      "our",
+      "conversation"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "meta-pp-012",
+    "intent": "meta.privacy_probe"
+  },
+  {
+    "text": "who has access to my data",
+    "tokens": [
+      "who",
+      "has",
+      "access",
+      "to",
+      "my",
+      "data"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "NOUN",
+      "PART",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "meta-pp-013",
+    "intent": "meta.privacy_probe"
+  },
+  {
+    "text": "can you delete what you know about me",
+    "tokens": [
+      "can",
+      "you",
+      "delete",
+      "what",
+      "you",
+      "know",
+      "about",
+      "me"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "PRON",
+      "VERB",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "meta-pp-014",
+    "intent": "meta.privacy_probe"
+  },
+  {
+    "text": "how do I delete my data",
+    "tokens": [
+      "how",
+      "do",
+      "I",
+      "delete",
+      "my",
+      "data"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "meta-pp-015",
+    "intent": "meta.privacy_probe"
+  }
+]

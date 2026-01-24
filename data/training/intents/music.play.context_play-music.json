@@ -1,0 +1,511 @@
+[
+  {
+    "text": "now Monster by Rihanna feat Eminem",
+    "tokens": [
+      "now",
+      "Monster",
+      "by",
+      "Rihanna",
+      "feat",
+      "Eminem"
+    ],
+    "pos_tags": [
+      "ADV",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Monster",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Rihanna",
+        "type": "music_artist",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Eminem",
+        "type": "music_artist",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "5dd3b176-a44d-4c59-b518-af0507a23309",
+    "intent": "music.play.context_play-music"
+  },
+  {
+    "text": "now the album 19 of Adele",
+    "tokens": [
+      "now",
+      "the",
+      "album",
+      "19",
+      "of",
+      "Adele"
+    ],
+    "pos_tags": [
+      "ADV",
+      "DET",
+      "NOUN",
+      "NUM",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "19",
+        "type": "music_album",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Adele",
+        "type": "music_artist",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "a1d2aeed-4686-45c9-b3b2-6f13960241e9",
+    "intent": "music.play.context_play-music"
+  },
+  {
+    "text": "I mean Red Hot Chili Peppers",
+    "tokens": [
+      "I",
+      "mean",
+      "Red",
+      "Hot",
+      "Chili",
+      "Peppers"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "PROPN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Red Hot Chili Peppers",
+        "type": "music_artist",
+        "start": 2,
+        "end": 5
+      }
+    ],
+    "id": "f8a5c835-6626-47c2-95ef-6c04ccf7f660",
+    "intent": "music.play.context_play-music"
+  },
+  {
+    "text": "now from the album Summer",
+    "tokens": [
+      "now",
+      "from",
+      "the",
+      "album",
+      "Summer"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADP",
+      "DET",
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Summer",
+        "type": "music_album",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "841a0c90-91b1-4f15-bdf4-7c5a7c3aaf0e",
+    "intent": "music.play.context_play-music"
+  },
+  {
+    "text": "now the summer playlist",
+    "tokens": [
+      "now",
+      "the",
+      "summer",
+      "playlist"
+    ],
+    "pos_tags": [
+      "ADV",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "summer",
+        "type": "playlist",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "6e4ddeba-9cb3-48b5-8907-2bd38a331c4d",
+    "intent": "music.play.context_play-music"
+  },
+  {
+    "text": "now Diamonds song",
+    "tokens": [
+      "now",
+      "Diamonds",
+      "song"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Diamonds",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "b43d0b2c-65f7-4f76-b1cc-3dc93d013523",
+    "intent": "music.play.context_play-music"
+  },
+  {
+    "text": "now album Please Please Me of The Beatles",
+    "tokens": [
+      "now",
+      "album",
+      "Please",
+      "Please",
+      "Me",
+      "of",
+      "The",
+      "Beatles"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PROPN",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "DET",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Please Please Me",
+        "type": "music_album",
+        "start": 2,
+        "end": 4
+      },
+      {
+        "text": "The Beatles",
+        "type": "music_artist",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "e89c310d-bd31-4d51-ac3a-6d51c9e08c60",
+    "intent": "music.play.context_play-music"
+  },
+  {
+    "text": "now year 2015",
+    "tokens": [
+      "now",
+      "year",
+      "2015"
+    ],
+    "pos_tags": [
+      "ADV",
+      "NOUN",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "2015",
+        "type": "number",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "b3e83289-9db4-4556-aec6-0df713dcaf0f",
+    "intent": "music.play.context_play-music"
+  },
+  {
+    "text": "now rock",
+    "tokens": [
+      "now",
+      "rock"
+    ],
+    "pos_tags": [
+      "ADV",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "rock",
+        "type": "music_genre",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "29e78e06-c8e6-4926-97f0-8cfb2c908315",
+    "intent": "music.play.context_play-music"
+  },
+  {
+    "text": "now play The Beatles",
+    "tokens": [
+      "now",
+      "play",
+      "The",
+      "Beatles"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "The Beatles",
+        "type": "music_artist",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "1caae695-2c67-40bc-8092-11740d6344c7",
+    "intent": "music.play.context_play-music"
+  },
+  {
+    "text": "now jazz songs",
+    "tokens": [
+      "now",
+      "jazz",
+      "songs"
+    ],
+    "pos_tags": [
+      "ADV",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "jazz",
+        "type": "music_genre",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "5b7073cf-3005-49a0-9ab3-ec1c132abba0",
+    "intent": "music.play.context_play-music"
+  },
+  {
+    "text": "now The Beatles",
+    "tokens": [
+      "now",
+      "The",
+      "Beatles"
+    ],
+    "pos_tags": [
+      "ADV",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "The Beatles",
+        "type": "music_artist",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "c5c6f81f-35f0-431c-aacb-70d0023d4a37",
+    "intent": "music.play.context_play-music"
+  },
+  {
+    "text": "now Diamonds by Rihanna",
+    "tokens": [
+      "now",
+      "Diamonds",
+      "by",
+      "Rihanna"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Diamonds",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Rihanna",
+        "type": "music_artist",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "7de96d27-4bd2-4a3b-bf75-e5a95e7cae1c",
+    "intent": "music.play.context_play-music"
+  },
+  {
+    "text": "now Diamonds",
+    "tokens": [
+      "now",
+      "Diamonds"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "Diamonds",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "6073ad7c-8426-4588-bd88-9ad84fe842d9",
+    "intent": "music.play.context_play-music"
+  },
+  {
+    "text": "now from summer playlist",
+    "tokens": [
+      "now",
+      "from",
+      "summer",
+      "playlist"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "summer",
+        "type": "playlist",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "b2c4b78d-7aba-4db5-8ae4-28876d5b646a",
+    "intent": "music.play.context_play-music"
+  },
+  {
+    "text": "now on Spotify",
+    "tokens": [
+      "now",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "9e44b798-7276-481d-8637-b4c0cf515741",
+    "intent": "music.play.context_play-music"
+  },
+  {
+    "text": "now jazz music",
+    "tokens": [
+      "now",
+      "jazz",
+      "music"
+    ],
+    "pos_tags": [
+      "ADV",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "jazz",
+        "type": "music_genre",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "37b8deba-59c0-4e25-8c18-e4fd9e43d637",
+    "intent": "music.play.context_play-music"
+  },
+  {
+    "text": "now from year 2015",
+    "tokens": [
+      "now",
+      "from",
+      "year",
+      "2015"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADP",
+      "NOUN",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "2015",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "93d99fcf-45e4-4943-b2e8-6f7525d34fa0",
+    "intent": "music.play.context_play-music"
+  },
+  {
+    "text": "now play it on  YouTube",
+    "tokens": [
+      "now",
+      "play",
+      "it",
+      "on",
+      "YouTube"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "YouTube",
+        "type": "music_service",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "3d5a8ae5-0df6-4c66-a66e-1a05cbbadac9",
+    "intent": "music.play.context_play-music"
+  }
+]

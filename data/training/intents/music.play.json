@@ -1,0 +1,8621 @@
+[
+  {
+    "text": "Play some coheed and cambria",
+    "tokens": [
+      "Play",
+      "some",
+      "coheed",
+      "and",
+      "cambria"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "CONJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "coheed and cambria",
+        "type": "music_artist",
+        "start": 2,
+        "end": 4
+      }
+    ],
+    "id": "0441dd2c-67d8-4c32-a9e9-97016fad8448",
+    "intent": "music.play"
+  },
+  {
+    "text": "play some destiny potato",
+    "tokens": [
+      "play",
+      "some",
+      "destiny",
+      "potato"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "destiny potato",
+        "type": "music_artist",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "774d41f5-8681-4dd6-b250-e96ccc36f277",
+    "intent": "music.play"
+  },
+  {
+    "text": "play something by The Rolling Stones",
+    "tokens": [
+      "play",
+      "something",
+      "by",
+      "The",
+      "Rolling",
+      "Stones"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "The Rolling Stones",
+        "type": "music_artist",
+        "start": 3,
+        "end": 5
+      }
+    ],
+    "id": "88ff7ee7-8725-4066-9d3d-591c6bc4a104",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Spanish songs by Enrique Iglesias",
+    "tokens": [
+      "play",
+      "Spanish",
+      "songs",
+      "by",
+      "Enrique",
+      "Iglesias"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Spanish",
+        "type": "language",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Enrique Iglesias",
+        "type": "music_artist",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "cfdb1a14-891b-4b66-9a5e-c9fadf0dae69",
+    "intent": "music.play"
+  },
+  {
+    "text": "I'd like to listen jazz",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "listen",
+      "jazz"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "jazz",
+        "type": "music_genre",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "049c5a28-80d9-48ca-85ea-570674b8d12e",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Home To Mama by Justin Bieber song on Spotify",
+    "tokens": [
+      "play",
+      "Home",
+      "To",
+      "Mama",
+      "by",
+      "Justin",
+      "Bieber",
+      "song",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PART",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Home To Mama",
+        "type": "song",
+        "start": 1,
+        "end": 3
+      },
+      {
+        "text": "Justin Bieber",
+        "type": "music_artist",
+        "start": 5,
+        "end": 6
+      },
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 9,
+        "end": 9
+      }
+    ],
+    "id": "e1c9bfeb-5d89-455b-83c8-2ef8fb3f7aca",
+    "intent": "music.play"
+  },
+  {
+    "text": "I want to listen to the best songs of the year 2016",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "listen",
+      "to",
+      "the",
+      "best",
+      "songs",
+      "of",
+      "the",
+      "year",
+      "2016"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "best",
+        "type": "music_sort",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "2016",
+        "type": "number",
+        "start": 11,
+        "end": 11
+      }
+    ],
+    "id": "0ff7d752-6d9b-4ee0-bc6b-384062b8a9bd",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Empty Sky by Elton John",
+    "tokens": [
+      "play",
+      "Empty",
+      "Sky",
+      "by",
+      "Elton",
+      "John"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Empty Sky",
+        "type": "music_album",
+        "start": 1,
+        "end": 2
+      },
+      {
+        "text": "Elton John",
+        "type": "music_artist",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "a4ca7b4e-98f1-4be5-be3e-530890936ca6",
+    "intent": "music.play"
+  },
+  {
+    "text": "play best Metallica songs",
+    "tokens": [
+      "play",
+      "best",
+      "Metallica",
+      "songs"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADJ",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "best",
+        "type": "music_sort",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Metallica",
+        "type": "music_artist",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "711913de-fc8b-4877-9733-8d3122ee06df",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Sweet Dreams by Eurythmics",
+    "tokens": [
+      "play",
+      "Sweet",
+      "Dreams",
+      "by",
+      "Eurythmics"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Sweet Dreams",
+        "type": "song",
+        "start": 1,
+        "end": 2
+      },
+      {
+        "text": "Eurythmics",
+        "type": "music_artist",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "83f0b904-2979-40de-b84d-9c9c6bd288d3",
+    "intent": "music.play"
+  },
+  {
+    "text": "play an album by Madonna",
+    "tokens": [
+      "play",
+      "an",
+      "album",
+      "by",
+      "Madonna"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Madonna",
+        "type": "music_artist",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "40c98665-9347-4bb4-a467-9af6dcd713e0",
+    "intent": "music.play"
+  },
+  {
+    "text": "I want to listen to some music",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "listen",
+      "to",
+      "some",
+      "music"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "196d4489-3c60-4842-af79-ba90369af551",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Red Hot Chili Peppers",
+    "tokens": [
+      "play",
+      "Red",
+      "Hot",
+      "Chili",
+      "Peppers"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Red Hot Chili Peppers",
+        "type": "music_artist",
+        "start": 1,
+        "end": 4
+      }
+    ],
+    "id": "bda738fe-0bd1-47b9-b771-a0c4e71d2fc1",
+    "intent": "music.play"
+  },
+  {
+    "text": "play a song from Spotify",
+    "tokens": [
+      "play",
+      "a",
+      "song",
+      "from",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "80e887a8-bb21-4284-8903-23eb8ab7e07c",
+    "intent": "music.play"
+  },
+  {
+    "text": "put on my late night playlist",
+    "tokens": [
+      "put",
+      "on",
+      "my",
+      "late",
+      "night",
+      "playlist"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON",
+      "ADJ",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "late night",
+        "type": "playlist",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "51681b7e-0408-40e2-9db7-7cd7c094d465",
+    "intent": "music.play"
+  },
+  {
+    "text": "switch to workout music",
+    "tokens": [
+      "switch",
+      "to",
+      "workout",
+      "music"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "workout",
+        "type": "playlist",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "cdc494a8-43c2-4fa4-ac5c-7ef4461d0147",
+    "intent": "music.play"
+  },
+  {
+    "text": "reproduce a the track Monster by Rihanna ft Eminem",
+    "tokens": [
+      "reproduce",
+      "a",
+      "the",
+      "track",
+      "Monster",
+      "by",
+      "Rihanna",
+      "ft",
+      "Eminem"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "DET",
+      "NOUN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Monster",
+        "type": "song",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "Rihanna",
+        "type": "music_artist",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "Eminem",
+        "type": "music_artist",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "db2cfbe2-b6b7-459f-b67c-7eda0bb1712c",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song The Cantos de Mallorca",
+    "tokens": [
+      "play",
+      "song",
+      "The",
+      "Cantos",
+      "de",
+      "Mallorca"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "DET",
+      "PROPN",
+      "X",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "The Cantos de Mallorca",
+        "type": "song",
+        "start": 2,
+        "end": 5
+      }
+    ],
+    "id": "a1abad91-7343-4a2e-aad8-43008a865dbf",
+    "intent": "music.play"
+  },
+  {
+    "text": "I want to hear a song",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "hear",
+      "a",
+      "song"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "1d61f560-e8f1-4d19-baa9-719ea2862d62",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Madonna's Like a Virgin",
+    "tokens": [
+      "play",
+      "Madonna",
+      "'s",
+      "Like",
+      "a",
+      "Virgin"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PART",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Madonna",
+        "type": "music_artist",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Like a Virgin",
+        "type": "song",
+        "start": 3,
+        "end": 5
+      }
+    ],
+    "id": "16d4e5af-90a4-4845-a554-f2a84699896d",
+    "intent": "music.play"
+  },
+  {
+    "text": "play the song Gorilla",
+    "tokens": [
+      "play",
+      "the",
+      "song",
+      "Gorilla"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Gorilla",
+        "type": "song",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "e4948cfc-af0f-4d20-9e30-799b1ba37e9a",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song Krystof Tak Pojd Hlwdat Breh",
+    "tokens": [
+      "play",
+      "song",
+      "Krystof",
+      "Tak",
+      "Pojd",
+      "Hlwdat",
+      "Breh"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "PROPN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Krystof",
+        "type": "music_artist",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "Tak Pojd Hlwdat Breh",
+        "type": "song",
+        "start": 3,
+        "end": 6
+      }
+    ],
+    "id": "d0dbdb59-86ea-4030-9226-72f9407e63c5",
+    "intent": "music.play"
+  },
+  {
+    "text": "play artist A great big world",
+    "tokens": [
+      "play",
+      "artist",
+      "A",
+      "great",
+      "big",
+      "world"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PROPN",
+      "ADJ",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "A great big world",
+        "type": "music_artist",
+        "start": 2,
+        "end": 5
+      }
+    ],
+    "id": "2370d1e0-b85d-4d24-8641-b528ebf0feaf",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song by Shaggy",
+    "tokens": [
+      "play",
+      "song",
+      "by",
+      "Shaggy"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Shaggy",
+        "type": "music_artist",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "0d8f1f72-c388-4f03-b7d5-dceb88e4e637",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Ignition by R Kelly",
+    "tokens": [
+      "play",
+      "Ignition",
+      "by",
+      "R",
+      "Kelly"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Ignition",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "R Kelly",
+        "type": "music_artist",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "bc834133-8699-4c85-a5ba-8165b2070774",
+    "intent": "music.play"
+  },
+  {
+    "text": "Bart Baker song",
+    "tokens": [
+      "Bart",
+      "Baker",
+      "song"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Bart Baker",
+        "type": "music_artist",
+        "start": 0,
+        "end": 1
+      }
+    ],
+    "id": "97b70d53-9232-43fd-a2b7-32c5a246aab5",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song Alive",
+    "tokens": [
+      "play",
+      "song",
+      "Alive"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "Alive",
+        "type": "song",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "3c3aba89-b44e-41cc-90fc-f7ac4f009f4f",
+    "intent": "music.play"
+  },
+  {
+    "text": "can you please play a song from my favourite playlist",
+    "tokens": [
+      "can",
+      "you",
+      "please",
+      "play",
+      "a",
+      "song",
+      "from",
+      "my",
+      "favourite",
+      "playlist"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "favourite",
+        "type": "playlist",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "1fd78158-15ed-4d74-8c90-03f23d9e0b4e",
+    "intent": "music.play"
+  },
+  {
+    "text": "play r&b music",
+    "tokens": [
+      "play",
+      "r",
+      "&",
+      "b",
+      "music"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "CONJ",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "r&b",
+        "type": "song",
+        "start": 1,
+        "end": 3
+      }
+    ],
+    "id": "bc0849a2-bb09-4bbf-9a6f-e4e63323b3bf",
+    "intent": "music.play"
+  },
+  {
+    "text": "country song",
+    "tokens": [
+      "country",
+      "song"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "country",
+        "type": "music_genre",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "892add4e-26ea-4b0f-aa1a-a1e37041804f",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Nirvana",
+    "tokens": [
+      "play",
+      "Nirvana"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Nirvana",
+        "type": "music_artist",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "713d35c3-2288-4250-b77f-d1b8d4d65350",
+    "intent": "music.play"
+  },
+  {
+    "text": "play a romantic song",
+    "tokens": [
+      "play",
+      "a",
+      "romantic",
+      "song"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "romantic",
+        "type": "music_genre",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "8337b75b-f2aa-4154-b31d-a9124d1e21d2",
+    "intent": "music.play"
+  },
+  {
+    "text": "play songs by Ellie Goulding",
+    "tokens": [
+      "play",
+      "songs",
+      "by",
+      "Ellie",
+      "Goulding"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Ellie Goulding",
+        "type": "music_artist",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "c0d54139-1340-4416-8333-ac4eec59a550",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Now Call Mom",
+    "tokens": [
+      "play",
+      "Now",
+      "Call",
+      "Mom"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADV",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Now Call Mom",
+        "type": "song",
+        "start": 1,
+        "end": 3
+      }
+    ],
+    "id": "7fbe911a-21cc-4214-9fd8-dfb868e386fa",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Keep On Walking by CeCe",
+    "tokens": [
+      "play",
+      "Keep",
+      "On",
+      "Walking",
+      "by",
+      "CeCe"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Keep On Walking",
+        "type": "song",
+        "start": 1,
+        "end": 3
+      },
+      {
+        "text": "CeCe",
+        "type": "music_artist",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "13466ca8-a42e-4bd2-80e3-820c08e2db73",
+    "intent": "music.play"
+  },
+  {
+    "text": "I want to listen to a song",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "listen",
+      "to",
+      "a",
+      "song"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "36bee1b2-d6b5-4235-926d-3ca973b2edd2",
+    "intent": "music.play"
+  },
+  {
+    "text": "play album Nevermind by Nirvana",
+    "tokens": [
+      "play",
+      "album",
+      "Nevermind",
+      "by",
+      "Nirvana"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Nevermind",
+        "type": "music_album",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "Nirvana",
+        "type": "music_artist",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "78c76acd-f950-40e5-96a6-cd79a2b6561a",
+    "intent": "music.play"
+  },
+  {
+    "text": "play a song",
+    "tokens": [
+      "play",
+      "a",
+      "song"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e54cc0ba-415f-454c-9ead-bb7318261c3c",
+    "intent": "music.play"
+  },
+  {
+    "text": "play I See Fire by Ed Sheeran song on Spotify",
+    "tokens": [
+      "play",
+      "I",
+      "See",
+      "Fire",
+      "by",
+      "Ed",
+      "Sheeran",
+      "song",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "ADP",
+      "PROPN",
+      "PROPN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "I See Fire",
+        "type": "song",
+        "start": 1,
+        "end": 3
+      },
+      {
+        "text": "Ed Sheeran",
+        "type": "music_artist",
+        "start": 5,
+        "end": 6
+      },
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 9,
+        "end": 9
+      }
+    ],
+    "id": "6aca3206-d668-43c7-b5e3-d68129678f23",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Harder Better Faster",
+    "tokens": [
+      "play",
+      "Harder",
+      "Better",
+      "Faster"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Harder Better Faster",
+        "type": "song",
+        "start": 1,
+        "end": 3
+      }
+    ],
+    "id": "d5e14547-1275-42d6-85b8-9166c88e17b8",
+    "intent": "music.play"
+  },
+  {
+    "text": "play my faves playlist",
+    "tokens": [
+      "play",
+      "my",
+      "faves",
+      "playlist"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "my faves",
+        "type": "playlist",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "763079be-bd5b-4621-a05e-02488b629a77",
+    "intent": "music.play"
+  },
+  {
+    "text": "a song for me",
+    "tokens": [
+      "a",
+      "song",
+      "for",
+      "me"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "4e6b0742-9720-4f71-a9cd-4f83e3b5dd78",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Maroon 5",
+    "tokens": [
+      "play",
+      "Maroon",
+      "5"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "Maroon 5",
+        "type": "music_artist",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "38c557af-c54f-4291-b322-5b9d78a3ec71",
+    "intent": "music.play"
+  },
+  {
+    "text": "play RnB",
+    "tokens": [
+      "play",
+      "RnB"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "RnB",
+        "type": "music_genre",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "9e38efa0-5751-45c7-981c-3692578b859e",
+    "intent": "music.play"
+  },
+  {
+    "text": "play 6 Words by Wretch 32 on Spotify",
+    "tokens": [
+      "play",
+      "6",
+      "Words",
+      "by",
+      "Wretch",
+      "32",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "NUM",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "6 Words",
+        "type": "song",
+        "start": 1,
+        "end": 2
+      },
+      {
+        "text": "Wretch 32",
+        "type": "music_artist",
+        "start": 4,
+        "end": 5
+      },
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "3a0938d5-7257-49a3-933a-4ce4c65f0868",
+    "intent": "music.play"
+  },
+  {
+    "text": "I want to listen to Crazy performed by Aerosmith",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "listen",
+      "to",
+      "Crazy",
+      "performed",
+      "by",
+      "Aerosmith"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "PROPN",
+      "VERB",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Crazy",
+        "type": "song",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "Aerosmith",
+        "type": "music_artist",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "229a9da4-15ee-44ff-9caa-748e8f956393",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Adele's Hello",
+    "tokens": [
+      "play",
+      "Adele",
+      "'s",
+      "Hello"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PART",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Adele",
+        "type": "music_artist",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Hello",
+        "type": "song",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "2b1b3123-edba-4acc-9978-030e02f39cad",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Gospel songs on Spotify",
+    "tokens": [
+      "play",
+      "Gospel",
+      "songs",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Gospel",
+        "type": "music_genre",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "2ed0ed59-d401-4e60-a345-31dc694938b2",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Focus by Ariana Grande",
+    "tokens": [
+      "play",
+      "Focus",
+      "by",
+      "Ariana",
+      "Grande"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Focus",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Ariana Grande",
+        "type": "music_artist",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "e4e4875a-4cff-4df7-a979-0f65ff039468",
+    "intent": "music.play"
+  },
+  {
+    "text": "play music for me",
+    "tokens": [
+      "play",
+      "music",
+      "for",
+      "me"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "12544dde-37c9-4183-8a6c-0f5435868349",
+    "intent": "music.play"
+  },
+  {
+    "text": "play hip hop",
+    "tokens": [
+      "play",
+      "hip",
+      "hop"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "hip hop",
+        "type": "music_genre",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "22941307-2e3d-4ca8-b4e7-84151e3d693f",
+    "intent": "music.play"
+  },
+  {
+    "text": "turn on the music",
+    "tokens": [
+      "turn",
+      "on",
+      "the",
+      "music"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "58b2e7c9-9394-41ed-bbd8-b8d8dfe997f7",
+    "intent": "music.play"
+  },
+  {
+    "text": "turn on a song",
+    "tokens": [
+      "turn",
+      "on",
+      "a",
+      "song"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "48d162d3-1449-4986-8022-5b823479551a",
+    "intent": "music.play"
+  },
+  {
+    "text": "I want to listen Temperature by Sean Paul",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "listen",
+      "Temperature",
+      "by",
+      "Sean",
+      "Paul"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Temperature",
+        "type": "song",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "Sean Paul",
+        "type": "music_artist",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "f657b911-0858-40c2-81ea-540cd5a2202a",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song Chasing the Dragon",
+    "tokens": [
+      "play",
+      "song",
+      "Chasing",
+      "the",
+      "Dragon"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "DET",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Chasing the Dragon",
+        "type": "song",
+        "start": 2,
+        "end": 4
+      }
+    ],
+    "id": "1c015ecc-3e24-4693-af05-b32c5ae7d18a",
+    "intent": "music.play"
+  },
+  {
+    "text": "play country blues",
+    "tokens": [
+      "play",
+      "country",
+      "blues"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "country blues",
+        "type": "music_genre",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "88e48d3a-6650-4ee6-b4b7-16423f2a3dbd",
+    "intent": "music.play"
+  },
+  {
+    "text": "can you play some music",
+    "tokens": [
+      "can",
+      "you",
+      "play",
+      "some",
+      "music"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f4f09131-76af-45f4-8b5f-bdc32da91519",
+    "intent": "music.play"
+  },
+  {
+    "text": "play my workout playlist",
+    "tokens": [
+      "play",
+      "my",
+      "workout",
+      "playlist"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "workout",
+        "type": "playlist",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "2febf854-47c7-4f99-9b40-215ae4daac4e",
+    "intent": "music.play"
+  },
+  {
+    "text": "can you open Careless Whisper song",
+    "tokens": [
+      "can",
+      "you",
+      "open",
+      "Careless",
+      "Whisper",
+      "song"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PROPN",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Careless Whisper",
+        "type": "song",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "8203a32f-b9e0-48b5-93ee-1f9ff8610dde",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Queens of the stone age",
+    "tokens": [
+      "play",
+      "Queens",
+      "of",
+      "the",
+      "stone",
+      "age"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Queens of the stone age",
+        "type": "music_artist",
+        "start": 1,
+        "end": 5
+      }
+    ],
+    "id": "69aa7e64-e553-435d-8939-5bab0bafc21a",
+    "intent": "music.play"
+  },
+  {
+    "text": "let's listen to Come together by Beatles",
+    "tokens": [
+      "let",
+      "'s",
+      "listen",
+      "to",
+      "Come",
+      "together",
+      "by",
+      "Beatles"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADV",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Come together",
+        "type": "song",
+        "start": 4,
+        "end": 5
+      },
+      {
+        "text": "Beatles",
+        "type": "music_artist",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "026801f6-8ee7-429a-9b56-38b3477be1fa",
+    "intent": "music.play"
+  },
+  {
+    "text": "let me hear something from George Strait",
+    "tokens": [
+      "let",
+      "me",
+      "hear",
+      "something",
+      "from",
+      "George",
+      "Strait"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "George Strait",
+        "type": "music_artist",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "2cc7ec7b-ddb6-4d58-ba22-ca51366e9c4d",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Never listen Julia Othmer",
+    "tokens": [
+      "play",
+      "Never",
+      "listen",
+      "Julia",
+      "Othmer"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "VERB",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Never listen",
+        "type": "song",
+        "start": 1,
+        "end": 2
+      },
+      {
+        "text": "Julia Othmer",
+        "type": "music_artist",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "eb679501-32e2-4662-9d30-6842b280ae70",
+    "intent": "music.play"
+  },
+  {
+    "text": "Play chill playlist",
+    "tokens": [
+      "Play",
+      "chill",
+      "playlist"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "chill",
+        "type": "playlist",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "9b916e28-bd71-40e7-bc5d-86660c78b25a",
+    "intent": "music.play"
+  },
+  {
+    "text": "bring a song for me",
+    "tokens": [
+      "bring",
+      "a",
+      "song",
+      "for",
+      "me"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "1aa79a33-350b-4d60-a374-b9e087277f85",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Britney Spears Me Against the Music feat Madonna",
+    "tokens": [
+      "play",
+      "Britney",
+      "Spears",
+      "Me",
+      "Against",
+      "the",
+      "Music",
+      "feat",
+      "Madonna"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "DET",
+      "PROPN",
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Britney Spears",
+        "type": "music_artist",
+        "start": 1,
+        "end": 2
+      },
+      {
+        "text": "Me Against the Music",
+        "type": "song",
+        "start": 3,
+        "end": 6
+      },
+      {
+        "text": "Madonna",
+        "type": "music_artist",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "d26718e8-1e25-46fc-bcd7-4b29d17141c0",
+    "intent": "music.play"
+  },
+  {
+    "text": "will you please play Tik Tok",
+    "tokens": [
+      "will",
+      "you",
+      "please",
+      "play",
+      "Tik",
+      "Tok"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Tik Tok",
+        "type": "song",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "340f9b0b-173e-4954-93d9-edf78e3617f9",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Budapest",
+    "tokens": [
+      "play",
+      "Budapest"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "Budapest",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "b5024ba5-c7d8-41c3-bd74-f9e811b78822",
+    "intent": "music.play"
+  },
+  {
+    "text": "play a song on Spotify",
+    "tokens": [
+      "play",
+      "a",
+      "song",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "ee8d9e65-99a3-4201-ab75-bb9f5822f9d3",
+    "intent": "music.play"
+  },
+  {
+    "text": "give me music",
+    "tokens": [
+      "give",
+      "me",
+      "music"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "59d63a00-ecec-4632-9ebd-938aa5da51aa",
+    "intent": "music.play"
+  },
+  {
+    "text": "let's hear Wilco",
+    "tokens": [
+      "let",
+      "'s",
+      "hear",
+      "Wilco"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Wilco",
+        "type": "music_artist",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "338a652e-5fe3-40c9-adcf-c97e84a443b1",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song Thriller",
+    "tokens": [
+      "play",
+      "song",
+      "Thriller"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Thriller",
+        "type": "song",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "b04292fd-b2c0-43be-919d-b8c8a0027ef0",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Bohemian Rhapsody by Queen",
+    "tokens": [
+      "play",
+      "Bohemian",
+      "Rhapsody",
+      "by",
+      "Queen"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Bohemian Rhapsody",
+        "type": "song",
+        "start": 1,
+        "end": 2
+      },
+      {
+        "text": "Queen",
+        "type": "music_artist",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "63c9bbcb-d04f-45df-a68a-35aa7e6a7889",
+    "intent": "music.play"
+  },
+  {
+    "text": "play album Madonna",
+    "tokens": [
+      "play",
+      "album",
+      "Madonna"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Madonna",
+        "type": "music_album",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "e9bb806e-cbe2-4d79-86c0-9ad873e612d8",
+    "intent": "music.play"
+  },
+  {
+    "text": "play songs form playlist Hot Hits UK",
+    "tokens": [
+      "play",
+      "songs",
+      "form",
+      "playlist",
+      "Hot",
+      "Hits",
+      "UK"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "ADJ",
+      "PROPN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Hot Hits UK",
+        "type": "playlist",
+        "start": 4,
+        "end": 6
+      }
+    ],
+    "id": "4a8af0e5-ea76-4575-ac05-c643b69cf514",
+    "intent": "music.play"
+  },
+  {
+    "text": "I wanna listen to reggae",
+    "tokens": [
+      "I",
+      "wan",
+      "na",
+      "listen",
+      "to",
+      "reggae"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "reggae",
+        "type": "music_genre",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "08d8bd39-fcd8-4982-9fb8-ad7fe6fa83df",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song from Rihanna",
+    "tokens": [
+      "play",
+      "song",
+      "from",
+      "Rihanna"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Rihanna",
+        "type": "music_artist",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "6d66642c-ca21-43d0-ba2d-c2902f826d25",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Drake",
+    "tokens": [
+      "play",
+      "Drake"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "Drake",
+        "type": "music_artist",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "8cf8f55a-f79a-42db-bfca-72a4ee507a5e",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song She's Got the Look",
+    "tokens": [
+      "play",
+      "song",
+      "She",
+      "'s",
+      "Got",
+      "the",
+      "Look"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PRON",
+      "VERB",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "She's Got the Look",
+        "type": "song",
+        "start": 2,
+        "end": 6
+      }
+    ],
+    "id": "fcabc32a-e1be-4db3-834c-dc8bfeffe77b",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Apparently by J Cole",
+    "tokens": [
+      "play",
+      "Apparently",
+      "by",
+      "J",
+      "Cole"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADV",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Apparently",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "J Cole",
+        "type": "music_artist",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "f3a8852c-d5ae-43e5-bdaa-0e0700ccd2e5",
+    "intent": "music.play"
+  },
+  {
+    "text": "I want to listen to Bleeding Love",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "listen",
+      "to",
+      "Bleeding",
+      "Love"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Bleeding Love",
+        "type": "song",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "0e4f966c-b8c2-460d-b6ee-6c8c55a8db8d",
+    "intent": "music.play"
+  },
+  {
+    "text": "play me some songs",
+    "tokens": [
+      "play",
+      "me",
+      "some",
+      "songs"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "9291f961-2385-4952-8036-c495e56134f3",
+    "intent": "music.play"
+  },
+  {
+    "text": "play for me some music",
+    "tokens": [
+      "play",
+      "for",
+      "me",
+      "some",
+      "music"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "23f77c11-c68a-4225-a5e1-ef1571e5b2c4",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song Killer Queen by Queen",
+    "tokens": [
+      "play",
+      "song",
+      "Killer",
+      "Queen",
+      "by",
+      "Queen"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Killer Queen",
+        "type": "song",
+        "start": 2,
+        "end": 3
+      },
+      {
+        "text": "Queen",
+        "type": "music_artist",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "01542a57-d32b-437e-a7e7-46a35775502e",
+    "intent": "music.play"
+  },
+  {
+    "text": "put on some Rolling Stones",
+    "tokens": [
+      "put",
+      "on",
+      "some",
+      "Rolling",
+      "Stones"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Rolling Stones",
+        "type": "music_artist",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "476da266-73fc-4557-82a3-44443ef84b40",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Guns N Roses",
+    "tokens": [
+      "play",
+      "Guns",
+      "N",
+      "Roses"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Guns N Roses",
+        "type": "music_artist",
+        "start": 1,
+        "end": 3
+      }
+    ],
+    "id": "18f884f1-f4a7-40f2-9514-18d3d16e79c8",
+    "intent": "music.play"
+  },
+  {
+    "text": "Play Five Seconds of Summer",
+    "tokens": [
+      "Play",
+      "Five",
+      "Seconds",
+      "of",
+      "Summer"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Five Seconds of Summer",
+        "type": "music_artist",
+        "start": 1,
+        "end": 4
+      }
+    ],
+    "id": "454fd46a-7cc5-4e61-9178-23fa71267455",
+    "intent": "music.play"
+  },
+  {
+    "text": "can you start playing music",
+    "tokens": [
+      "can",
+      "you",
+      "start",
+      "playing",
+      "music"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "ebd3909a-2c5a-46d9-97b7-278bb6d613e8",
+    "intent": "music.play"
+  },
+  {
+    "text": "play the song Bird",
+    "tokens": [
+      "play",
+      "the",
+      "song",
+      "Bird"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Bird",
+        "type": "song",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "d21f19c8-b1ca-4c0f-a535-fc35074cfe7f",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Laura Pausini",
+    "tokens": [
+      "play",
+      "Laura",
+      "Pausini"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Laura Pausini",
+        "type": "music_artist",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "077a882d-c5ee-41f9-909c-9b2996c64f79",
+    "intent": "music.play"
+  },
+  {
+    "text": "I want you to play music",
+    "tokens": [
+      "I",
+      "want",
+      "you",
+      "to",
+      "play",
+      "music"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "PART",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "9482e6cd-237d-444a-8f52-10af315596f8",
+    "intent": "music.play"
+  },
+  {
+    "text": "No Scrubs song play",
+    "tokens": [
+      "No",
+      "Scrubs",
+      "song",
+      "play"
+    ],
+    "pos_tags": [
+      "DET",
+      "PROPN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "No Scrubs",
+        "type": "song",
+        "start": 0,
+        "end": 1
+      }
+    ],
+    "id": "f405abaf-9bbd-4b93-9df8-962ce55f201f",
+    "intent": "music.play"
+  },
+  {
+    "text": "song for me",
+    "tokens": [
+      "song",
+      "for",
+      "me"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "299a8a78-59a3-4a33-acde-f8e34572f5ac",
+    "intent": "music.play"
+  },
+  {
+    "text": "play album Horses",
+    "tokens": [
+      "play",
+      "album",
+      "Horses"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Horses",
+        "type": "music_album",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "7f5a7a3a-f274-4245-ba91-7509ac0c97e3",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Do I Wanna Know by Arctic Monkeys",
+    "tokens": [
+      "play",
+      "Do",
+      "I",
+      "Wan",
+      "na",
+      "Know",
+      "by",
+      "Arctic",
+      "Monkeys"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PRON",
+      "PROPN",
+      "ADV",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Do I Wanna Know",
+        "type": "song",
+        "start": 1,
+        "end": 5
+      },
+      {
+        "text": "Arctic Monkeys",
+        "type": "music_artist",
+        "start": 7,
+        "end": 8
+      }
+    ],
+    "id": "4070c5c4-21e7-49ba-a0ba-572193f6dfe1",
+    "intent": "music.play"
+  },
+  {
+    "text": "just play music for me",
+    "tokens": [
+      "just",
+      "play",
+      "music",
+      "for",
+      "me"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "14d64d3b-28f0-4c31-8058-5af531b1846a",
+    "intent": "music.play"
+  },
+  {
+    "text": "can you open Shape of My Heart in Google music",
+    "tokens": [
+      "can",
+      "you",
+      "open",
+      "Shape",
+      "of",
+      "My",
+      "Heart",
+      "in",
+      "Google",
+      "music"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "ADJ",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Shape of My Heart",
+        "type": "song",
+        "start": 3,
+        "end": 6
+      },
+      {
+        "text": "Google music",
+        "type": "music_service",
+        "start": 8,
+        "end": 9
+      }
+    ],
+    "id": "8e13151e-0ee0-4b4b-9146-2b88e4dc91b7",
+    "intent": "music.play"
+  },
+  {
+    "text": "play a song from my music library",
+    "tokens": [
+      "play",
+      "a",
+      "song",
+      "from",
+      "my",
+      "music",
+      "library"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "7c24e473-112d-4b93-9d88-c2b33e75b988",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Justin Bieber",
+    "tokens": [
+      "play",
+      "Justin",
+      "Bieber"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Justin Bieber",
+        "type": "music_artist",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "f97ad512-6711-49f2-9c7e-00cb75adb05d",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Miracle from Apple Music",
+    "tokens": [
+      "play",
+      "Miracle",
+      "from",
+      "Apple",
+      "Music"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Miracle",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Apple Music",
+        "type": "music_service",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "b6439f66-c3cf-4a4f-9b8b-d3de2152f186",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Animals by Maroon 5",
+    "tokens": [
+      "play",
+      "Animals",
+      "by",
+      "Maroon",
+      "5"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "Animals",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Maroon 5",
+        "type": "music_artist",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "8e231a57-b609-478f-9b2d-78e76f40422b",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Theory of a Deadman",
+    "tokens": [
+      "play",
+      "Theory",
+      "of",
+      "a",
+      "Deadman"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "ADP",
+      "DET",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Theory of a Deadman",
+        "type": "music_artist",
+        "start": 1,
+        "end": 4
+      }
+    ],
+    "id": "99125288-7825-4ad2-8784-8249080af664",
+    "intent": "music.play"
+  },
+  {
+    "text": "play any song of Babbu Maan from my library",
+    "tokens": [
+      "play",
+      "any",
+      "song",
+      "of",
+      "Babbu",
+      "Maan",
+      "from",
+      "my",
+      "library"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Babbu Maan",
+        "type": "music_artist",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "9e5fd2a5-9405-40ec-869a-11b43e65a8ae",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Maroon 5 on Spotify",
+    "tokens": [
+      "play",
+      "Maroon",
+      "5",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "NUM",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Maroon 5",
+        "type": "music_artist",
+        "start": 1,
+        "end": 2
+      },
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "baac033b-76b7-4a60-b470-426c5d27eb7a",
+    "intent": "music.play"
+  },
+  {
+    "text": "play genre party",
+    "tokens": [
+      "play",
+      "genre",
+      "party"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "party",
+        "type": "music_genre",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "ef0e3c50-f5a4-4c72-add0-b07203b20a6d",
+    "intent": "music.play"
+  },
+  {
+    "text": "play It’s Now or Never",
+    "tokens": [
+      "play",
+      "It",
+      "’",
+      "s",
+      "Now",
+      "or",
+      "Never"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "ADV",
+      "ADV",
+      "CONJ",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "It’s Now or Never",
+        "type": "song",
+        "start": 1,
+        "end": 6
+      }
+    ],
+    "id": "89a5c0e2-dfd3-420f-a905-2f53afd6f103",
+    "intent": "music.play"
+  },
+  {
+    "text": "please play song Lost in You",
+    "tokens": [
+      "please",
+      "play",
+      "song",
+      "Lost",
+      "in",
+      "You"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [
+      {
+        "text": "Lost in You",
+        "type": "song",
+        "start": 3,
+        "end": 5
+      }
+    ],
+    "id": "b573c419-a021-4e0f-82c5-215a2565de46",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Hard Times by David Newman",
+    "tokens": [
+      "play",
+      "Hard",
+      "Times",
+      "by",
+      "David",
+      "Newman"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Hard Times",
+        "type": "song",
+        "start": 1,
+        "end": 2
+      },
+      {
+        "text": "David Newman",
+        "type": "music_artist",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "aaa1276e-5889-4d5a-9097-f9df3e4dc6bc",
+    "intent": "music.play"
+  },
+  {
+    "text": "can you turn on my music",
+    "tokens": [
+      "can",
+      "you",
+      "turn",
+      "on",
+      "my",
+      "music"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "a86ee98d-31a9-42eb-b239-06f3edd3d54a",
+    "intent": "music.play"
+  },
+  {
+    "text": "play any song which you like in my playlist",
+    "tokens": [
+      "play",
+      "any",
+      "song",
+      "which",
+      "you",
+      "like",
+      "in",
+      "my",
+      "playlist"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "DET",
+      "PRON",
+      "ADP",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "62d9826a-4af3-4280-bc18-1b4fc56b9365",
+    "intent": "music.play"
+  },
+  {
+    "text": "I'd like to listen to some music",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "listen",
+      "to",
+      "some",
+      "music"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f9ed6d03-bb32-4162-b578-ede6fcfbc9b2",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Mates of State",
+    "tokens": [
+      "play",
+      "Mates",
+      "of",
+      "State"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Mates of State",
+        "type": "music_artist",
+        "start": 1,
+        "end": 3
+      }
+    ],
+    "id": "2ccec971-005c-4cee-82a9-8a2d0756ec31",
+    "intent": "music.play"
+  },
+  {
+    "text": "can you play country music",
+    "tokens": [
+      "can",
+      "you",
+      "play",
+      "country",
+      "music"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "country",
+        "type": "music_genre",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "f11e85b4-521a-4a4c-ad21-03e8f0699da6",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Bowie before 1970",
+    "tokens": [
+      "play",
+      "Bowie",
+      "before",
+      "1970"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "ADP",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "Bowie",
+        "type": "music_artist",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "1970",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "767efefe-b666-44de-9771-3466d07dc3d0",
+    "intent": "music.play"
+  },
+  {
+    "text": "play me some jazz",
+    "tokens": [
+      "play",
+      "me",
+      "some",
+      "jazz"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "jazz",
+        "type": "music_genre",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "37b42f5d-c813-4455-955b-abe81f57aeee",
+    "intent": "music.play"
+  },
+  {
+    "text": "I would like to listen to some music",
+    "tokens": [
+      "I",
+      "would",
+      "like",
+      "to",
+      "listen",
+      "to",
+      "some",
+      "music"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "12c3b360-ae82-447b-bc13-7cfdd32e6992",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song The Nights",
+    "tokens": [
+      "play",
+      "song",
+      "The",
+      "Nights"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "The Nights",
+        "type": "song",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "a5284f5b-8521-4e87-adc1-581d98152d99",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song by Willie Nelson",
+    "tokens": [
+      "play",
+      "song",
+      "by",
+      "Willie",
+      "Nelson"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Willie Nelson",
+        "type": "music_artist",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "bd1d31e1-3a8a-46db-aeaf-93ee4de6cf09",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Ca Marche by Maitre Gims",
+    "tokens": [
+      "play",
+      "Ca",
+      "Marche",
+      "by",
+      "Maitre",
+      "Gims"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Ca Marche",
+        "type": "song",
+        "start": 1,
+        "end": 2
+      },
+      {
+        "text": "Maitre Gims",
+        "type": "music_artist",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "0833c079-d78c-4172-a60e-72f6ba30241e",
+    "intent": "music.play"
+  },
+  {
+    "text": "play album Master of Puppets",
+    "tokens": [
+      "play",
+      "album",
+      "Master",
+      "of",
+      "Puppets"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PROPN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Master of Puppets",
+        "type": "music_album",
+        "start": 2,
+        "end": 4
+      }
+    ],
+    "id": "0af2b7c4-1f81-4f41-8960-43b260f555fc",
+    "intent": "music.play"
+  },
+  {
+    "text": "Live While We are Young song",
+    "tokens": [
+      "Live",
+      "While",
+      "We",
+      "are",
+      "Young",
+      "song"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "ADP",
+      "PRON",
+      "VERB",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Live While We are Young",
+        "type": "song",
+        "start": 0,
+        "end": 4
+      }
+    ],
+    "id": "fe69584f-9ba7-436e-8e41-e5c0bb7327d9",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song by Eminem and Rihanna",
+    "tokens": [
+      "play",
+      "song",
+      "by",
+      "Eminem",
+      "and",
+      "Rihanna"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "CONJ",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Eminem",
+        "type": "music_artist",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Rihanna",
+        "type": "music_artist",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "7cd19b5e-9794-4751-92c2-6e04fe1dda97",
+    "intent": "music.play"
+  },
+  {
+    "text": "I want to listen the song New York",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "listen",
+      "the",
+      "song",
+      "New",
+      "York"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "ADJ",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "New York",
+        "type": "song",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "428f6e97-bb22-4921-af02-2bc77aa6a859",
+    "intent": "music.play"
+  },
+  {
+    "text": "I want to hear Owner of a Lonely Heart",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "hear",
+      "Owner",
+      "of",
+      "a",
+      "Lonely",
+      "Heart"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PROPN",
+      "ADP",
+      "DET",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Owner of a Lonely Heart",
+        "type": "song",
+        "start": 4,
+        "end": 8
+      }
+    ],
+    "id": "3735fae9-89cb-409c-821d-1093ae8f3c28",
+    "intent": "music.play"
+  },
+  {
+    "text": "play album Power Corruption Lies",
+    "tokens": [
+      "play",
+      "album",
+      "Power",
+      "Corruption",
+      "Lies"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "Power Corruption Lies",
+        "type": "music_album",
+        "start": 2,
+        "end": 4
+      }
+    ],
+    "id": "2c7e8d88-7206-4346-9b6b-63e5a53944a6",
+    "intent": "music.play"
+  },
+  {
+    "text": "turn on meditative tracks",
+    "tokens": [
+      "turn",
+      "on",
+      "meditative",
+      "tracks"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "meditative",
+        "type": "playlist",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "bce50e33-5498-4504-b1e2-e803e4866ec4",
+    "intent": "music.play"
+  },
+  {
+    "text": "play music by Megan Trainer",
+    "tokens": [
+      "play",
+      "music",
+      "by",
+      "Megan",
+      "Trainer"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Megan Trainer",
+        "type": "music_artist",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "1e70d21e-37d0-4eda-a46a-4e06df440292",
+    "intent": "music.play"
+  },
+  {
+    "text": "play some rock music from iPod",
+    "tokens": [
+      "play",
+      "some",
+      "rock",
+      "music",
+      "from",
+      "iPod"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "rock",
+        "type": "music_genre",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "ab33235e-1187-4570-8e93-343b9c83f258",
+    "intent": "music.play"
+  },
+  {
+    "text": "play music",
+    "tokens": [
+      "play",
+      "music"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "27fbf51c-6963-4d5f-b2b1-3b3c74ae4dd7",
+    "intent": "music.play"
+  },
+  {
+    "text": "play me some Michael Jackson",
+    "tokens": [
+      "play",
+      "me",
+      "some",
+      "Michael",
+      "Jackson"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Michael Jackson",
+        "type": "music_artist",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "c3945b49-7a13-449a-9368-a6f796454588",
+    "intent": "music.play"
+  },
+  {
+    "text": "play genre romance",
+    "tokens": [
+      "play",
+      "genre",
+      "romance"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "romance",
+        "type": "music_genre",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "6bbe4e32-e50f-4c10-903b-1aa1d1238cd5",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song Roxanne",
+    "tokens": [
+      "play",
+      "song",
+      "Roxanne"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Roxanne",
+        "type": "song",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "70d3b54b-3aef-46ea-9d31-7f2a68c08a04",
+    "intent": "music.play"
+  },
+  {
+    "text": "play album London calling by The Clash",
+    "tokens": [
+      "play",
+      "album",
+      "London",
+      "calling",
+      "by",
+      "The",
+      "Clash"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADJ",
+      "PROPN",
+      "VERB",
+      "ADP",
+      "DET",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "London calling",
+        "type": "music_album",
+        "start": 2,
+        "end": 3
+      },
+      {
+        "text": "The Clash",
+        "type": "music_artist",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "1336e0b7-748b-4714-82bf-4958b09264fb",
+    "intent": "music.play"
+  },
+  {
+    "text": "play the album Divorcio by Julio Iglesia",
+    "tokens": [
+      "play",
+      "the",
+      "album",
+      "Divorcio",
+      "by",
+      "Julio",
+      "Iglesia"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Divorcio",
+        "type": "music_album",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Julio Iglesia",
+        "type": "music_artist",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "8e10af47-ce5e-448c-be6c-f1a77baa9e2a",
+    "intent": "music.play"
+  },
+  {
+    "text": "can you play It Must Have Been Love",
+    "tokens": [
+      "can",
+      "you",
+      "play",
+      "It",
+      "Must",
+      "Have",
+      "Been",
+      "Love"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "PROPN",
+      "PROPN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "It Must Have Been Love",
+        "type": "song",
+        "start": 3,
+        "end": 7
+      }
+    ],
+    "id": "8b1bc3a1-83e3-46e7-8e93-a7d9bebebbdb",
+    "intent": "music.play"
+  },
+  {
+    "text": "Eminem song",
+    "tokens": [
+      "Eminem",
+      "song"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Eminem",
+        "type": "music_artist",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "7acc3962-1c68-4ade-a9e7-004a73ae4fcd",
+    "intent": "music.play"
+  },
+  {
+    "text": "put on some music",
+    "tokens": [
+      "put",
+      "on",
+      "some",
+      "music"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "9afb0fb9-56fe-4d03-8cfb-abb560be72f5",
+    "intent": "music.play"
+  },
+  {
+    "text": "Can't Feel My Face on Google Music",
+    "tokens": [
+      "Ca",
+      "n't",
+      "Feel",
+      "My",
+      "Face",
+      "on",
+      "Google",
+      "Music"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "ADV",
+      "PROPN",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Can't Feel My Face",
+        "type": "song",
+        "start": 0,
+        "end": 4
+      },
+      {
+        "text": "Google Music",
+        "type": "music_service",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "b01a39c1-ef59-455b-a614-4cac8b727ffb",
+    "intent": "music.play"
+  },
+  {
+    "text": "Bob Marley play the song please",
+    "tokens": [
+      "Bob",
+      "Marley",
+      "play",
+      "the",
+      "song",
+      "please"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PROPN",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Bob Marley",
+        "type": "music_artist",
+        "start": 0,
+        "end": 1
+      }
+    ],
+    "id": "045e6fe8-56c9-499a-a2cf-8aeb664f884e",
+    "intent": "music.play"
+  },
+  {
+    "text": "play The Police",
+    "tokens": [
+      "play",
+      "The",
+      "Police"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "The Police",
+        "type": "music_artist",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "b8e088ea-b669-4059-8fe3-680a9c477e78",
+    "intent": "music.play"
+  },
+  {
+    "text": "I would like to hear some music",
+    "tokens": [
+      "I",
+      "would",
+      "like",
+      "to",
+      "hear",
+      "some",
+      "music"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "7d2ae8f8-3545-48e7-bf93-0a44da1b5928",
+    "intent": "music.play"
+  },
+  {
+    "text": "play the song Love Me Like You Do",
+    "tokens": [
+      "play",
+      "the",
+      "song",
+      "Love",
+      "Me",
+      "Like",
+      "You",
+      "Do"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "Love Me Like You Do",
+        "type": "song",
+        "start": 3,
+        "end": 7
+      }
+    ],
+    "id": "2ad90c78-27bd-4563-b587-2b616285fe13",
+    "intent": "music.play"
+  },
+  {
+    "text": "play One Direction",
+    "tokens": [
+      "play",
+      "One",
+      "Direction"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "One Direction",
+        "type": "music_artist",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "22f129dc-d193-4d30-9b4b-5ea3b45345e7",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Led Zeppelin two",
+    "tokens": [
+      "play",
+      "Led",
+      "Zeppelin",
+      "two"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "Led Zeppelin two",
+        "type": "music_album",
+        "start": 1,
+        "end": 3
+      }
+    ],
+    "id": "6c53e0ce-03c3-495e-8ded-431ebee9e5cf",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Black Widow by Iggy Azalea song on Spotify",
+    "tokens": [
+      "play",
+      "Black",
+      "Widow",
+      "by",
+      "Iggy",
+      "Azalea",
+      "song",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Black Widow",
+        "type": "song",
+        "start": 1,
+        "end": 2
+      },
+      {
+        "text": "Iggy Azalea",
+        "type": "music_artist",
+        "start": 4,
+        "end": 5
+      },
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "ef24e070-0cd5-4fb2-9ea7-f25c48e95891",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Foolin by Changing Faces",
+    "tokens": [
+      "play",
+      "Foolin",
+      "by",
+      "Changing",
+      "Faces"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "ADP",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Foolin",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Changing Faces",
+        "type": "music_artist",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "665d6c0f-8fc2-43fb-8205-4485edcc384c",
+    "intent": "music.play"
+  },
+  {
+    "text": "start playing The Lost song",
+    "tokens": [
+      "start",
+      "playing",
+      "The",
+      "Lost",
+      "song"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "DET",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "The Lost",
+        "type": "song",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "570b5202-1db4-4dc9-b691-9c4dbf8b1e6d",
+    "intent": "music.play"
+  },
+  {
+    "text": "play End of the World by The living end",
+    "tokens": [
+      "play",
+      "End",
+      "of",
+      "the",
+      "World",
+      "by",
+      "The",
+      "living",
+      "end"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "DET",
+      "PROPN",
+      "ADP",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "End of the World",
+        "type": "song",
+        "start": 1,
+        "end": 4
+      },
+      {
+        "text": "The living end",
+        "type": "music_artist",
+        "start": 6,
+        "end": 8
+      }
+    ],
+    "id": "16d8d62f-bde7-406b-b463-1978ee08dec6",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song from iTunes",
+    "tokens": [
+      "play",
+      "song",
+      "from",
+      "iTunes"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "iTunes",
+        "type": "music_service",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "68092492-154f-4d2f-adff-318b8f79ad35",
+    "intent": "music.play"
+  },
+  {
+    "text": "Tom Waits songs",
+    "tokens": [
+      "Tom",
+      "Waits",
+      "songs"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Tom Waits",
+        "type": "music_artist",
+        "start": 0,
+        "end": 1
+      }
+    ],
+    "id": "b98e2825-f177-479a-aca5-93b18d950e9c",
+    "intent": "music.play"
+  },
+  {
+    "text": "start up the track Come Together",
+    "tokens": [
+      "start",
+      "up",
+      "the",
+      "track",
+      "Come",
+      "Together"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN",
+      "PROPN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "Come Together",
+        "type": "song",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "9a97061b-2d59-41d9-93ba-3c872bef6aba",
+    "intent": "music.play"
+  },
+  {
+    "text": "I want to listen to Ariana Grande",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "listen",
+      "to",
+      "Ariana",
+      "Grande"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Ariana Grande",
+        "type": "music_artist",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "837a30e0-1171-4194-a49b-57da40585785",
+    "intent": "music.play"
+  },
+  {
+    "text": "play some good music",
+    "tokens": [
+      "play",
+      "some",
+      "good",
+      "music"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "64c11d6b-0ecc-4006-9e07-74cc92a98ede",
+    "intent": "music.play"
+  },
+  {
+    "text": "play top 10 songs from 2014",
+    "tokens": [
+      "play",
+      "top",
+      "10",
+      "songs",
+      "from",
+      "2014"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADJ",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "top",
+        "type": "music_sort",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "10",
+        "type": "number",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "2014",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "76a2ef99-0386-4797-8bd1-3f7090a5f3fb",
+    "intent": "music.play"
+  },
+  {
+    "text": "play some romantic songs",
+    "tokens": [
+      "play",
+      "some",
+      "romantic",
+      "songs"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "romantic",
+        "type": "music_genre",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "bb0e4db7-20b6-44c1-b539-512f3aa7822d",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Experimental songs on Spotify",
+    "tokens": [
+      "play",
+      "Experimental",
+      "songs",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Experimental",
+        "type": "music_genre",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "a68ce4b5-989a-4f48-ac14-e4ffe87424e0",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Pearl Jam",
+    "tokens": [
+      "play",
+      "Pearl",
+      "Jam"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Pearl Jam",
+        "type": "music_artist",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "8178ef96-ac04-4ac8-904e-a89ca1456756",
+    "intent": "music.play"
+  },
+  {
+    "text": "play me a song by Aventura",
+    "tokens": [
+      "play",
+      "me",
+      "a",
+      "song",
+      "by",
+      "Aventura"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Aventura",
+        "type": "music_artist",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "7fbc89db-c81a-4b4d-aaee-5163e48440f2",
+    "intent": "music.play"
+  },
+  {
+    "text": "play What Does the Fox Say",
+    "tokens": [
+      "play",
+      "What",
+      "Does",
+      "the",
+      "Fox",
+      "Say"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "DET",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "What Does the Fox Say",
+        "type": "song",
+        "start": 1,
+        "end": 5
+      }
+    ],
+    "id": "069529ea-110b-4ce7-99ed-892d1cb466c5",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Song of Joy",
+    "tokens": [
+      "play",
+      "Song",
+      "of",
+      "Joy"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Song of Joy",
+        "type": "song",
+        "start": 1,
+        "end": 3
+      }
+    ],
+    "id": "546a0aee-05c7-4ebc-9a28-305c86e3d21c",
+    "intent": "music.play"
+  },
+  {
+    "text": "change to my workout music",
+    "tokens": [
+      "change",
+      "to",
+      "my",
+      "workout",
+      "music"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "workout",
+        "type": "playlist",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "c7217033-64bc-4e36-9afb-210d42c82942",
+    "intent": "music.play"
+  },
+  {
+    "text": "play album Appetite for destruction by Guns n Roses",
+    "tokens": [
+      "play",
+      "album",
+      "Appetite",
+      "for",
+      "destruction",
+      "by",
+      "Guns",
+      "n",
+      "Roses"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PROPN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Appetite for destruction",
+        "type": "music_album",
+        "start": 2,
+        "end": 4
+      },
+      {
+        "text": "Guns n Roses",
+        "type": "music_artist",
+        "start": 6,
+        "end": 8
+      }
+    ],
+    "id": "0c512c6c-199d-4966-a3ff-b0546664a8fa",
+    "intent": "music.play"
+  },
+  {
+    "text": "can I listen to Gangsta's Paradise song",
+    "tokens": [
+      "can",
+      "I",
+      "listen",
+      "to",
+      "Gangsta",
+      "'s",
+      "Paradise",
+      "song"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PART",
+      "PROPN",
+      "PART",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Gangsta's Paradise",
+        "type": "song",
+        "start": 4,
+        "end": 6
+      }
+    ],
+    "id": "a0bac5d2-efcb-480b-8207-a275c77e58f1",
+    "intent": "music.play"
+  },
+  {
+    "text": "let's hear The Beatles",
+    "tokens": [
+      "let",
+      "'s",
+      "hear",
+      "The",
+      "Beatles"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "The Beatles",
+        "type": "music_artist",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "67a28119-21e4-46be-9de3-1a40fe22e7fb",
+    "intent": "music.play"
+  },
+  {
+    "text": "play some rock music",
+    "tokens": [
+      "play",
+      "some",
+      "rock",
+      "music"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "rock",
+        "type": "music_genre",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "87b4fdeb-0df1-4ae2-ace3-c5265bb613e4",
+    "intent": "music.play"
+  },
+  {
+    "text": "play me some good music",
+    "tokens": [
+      "play",
+      "me",
+      "some",
+      "good",
+      "music"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "good",
+        "type": "music_sort",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "37dc629c-6730-476d-af98-73e2d6c86b0b",
+    "intent": "music.play"
+  },
+  {
+    "text": "I'd like to listen to music",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "listen",
+      "to",
+      "music"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f1e55d6f-e771-4f61-bd52-5e3181d8cad5",
+    "intent": "music.play"
+  },
+  {
+    "text": "play a song Tera Mera Rishta",
+    "tokens": [
+      "play",
+      "a",
+      "song",
+      "Tera",
+      "Mera",
+      "Rishta"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Tera Mera Rishta",
+        "type": "song",
+        "start": 3,
+        "end": 5
+      }
+    ],
+    "id": "5ca94815-ab1e-432a-ba64-7abda7c44e81",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Imagine Dragons",
+    "tokens": [
+      "play",
+      "Imagine",
+      "Dragons"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Imagine Dragons",
+        "type": "music_artist",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "d9f72b01-5712-41bd-be09-b3e410be7a14",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Yesterday by Beatles",
+    "tokens": [
+      "play",
+      "Yesterday",
+      "by",
+      "Beatles"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Yesterday",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Beatles",
+        "type": "music_artist",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "ba467996-0d57-4624-b48e-ff3b16682e87",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Telugu songs",
+    "tokens": [
+      "play",
+      "Telugu",
+      "songs"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Telugu",
+        "type": "language",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "9b1c698a-d9ca-4585-92a8-741233ef83f8",
+    "intent": "music.play"
+  },
+  {
+    "text": "I would like to hear a song",
+    "tokens": [
+      "I",
+      "would",
+      "like",
+      "to",
+      "hear",
+      "a",
+      "song"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "957b0651-b0aa-4fd9-b4a2-fac4ef1cc1a5",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song for me",
+    "tokens": [
+      "play",
+      "song",
+      "for",
+      "me"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "2ed1c0c9-51cf-4a1a-8b76-eef285d4a99f",
+    "intent": "music.play"
+  },
+  {
+    "text": "play album Thriller",
+    "tokens": [
+      "play",
+      "album",
+      "Thriller"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Thriller",
+        "type": "music_album",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "e2dd5d63-1d9d-40ab-a9cf-cf74ef0b6e1f",
+    "intent": "music.play"
+  },
+  {
+    "text": "I want to listen to something by Madonna",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "listen",
+      "to",
+      "something",
+      "by",
+      "Madonna"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Madonna",
+        "type": "music_artist",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "446a9ea3-46de-4aad-8369-ad476ec52953",
+    "intent": "music.play"
+  },
+  {
+    "text": "play top songs of 2016",
+    "tokens": [
+      "play",
+      "top",
+      "songs",
+      "of",
+      "2016"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "top",
+        "type": "music_sort",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "2016",
+        "type": "number",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "7522289a-36bc-48c0-b20f-36ab126cd5c1",
+    "intent": "music.play"
+  },
+  {
+    "text": "play album Ramones on Spotify",
+    "tokens": [
+      "play",
+      "album",
+      "Ramones",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Ramones",
+        "type": "music_album",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "2719e083-9524-4c18-a71b-59f0d94c7c09",
+    "intent": "music.play"
+  },
+  {
+    "text": "play genre RnB",
+    "tokens": [
+      "play",
+      "genre",
+      "RnB"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "RnB",
+        "type": "music_genre",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "ce9cb20b-229a-4f14-9e86-9080c9ae5135",
+    "intent": "music.play"
+  },
+  {
+    "text": "let's hear some music",
+    "tokens": [
+      "let",
+      "'s",
+      "hear",
+      "some",
+      "music"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "961948f7-337d-4756-acd2-f92515836f0c",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Anaconda by Nicki Minaj",
+    "tokens": [
+      "play",
+      "Anaconda",
+      "by",
+      "Nicki",
+      "Minaj"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Anaconda",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Nicki Minaj",
+        "type": "music_artist",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "b5b60ec4-03e6-4b7b-b816-ef7ffd34ebd1",
+    "intent": "music.play"
+  },
+  {
+    "text": "rock compositions",
+    "tokens": [
+      "rock",
+      "compositions"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "rock",
+        "type": "music_genre",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "7588744b-db3d-4ac3-b221-18102fd00954",
+    "intent": "music.play"
+  },
+  {
+    "text": "play some songs in Hindi",
+    "tokens": [
+      "play",
+      "some",
+      "songs",
+      "in",
+      "Hindi"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Hindi",
+        "type": "language",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "1f31b8de-baea-4b61-82ee-a10cc19c1d5e",
+    "intent": "music.play"
+  },
+  {
+    "text": "play music by Vanessa Paradis",
+    "tokens": [
+      "play",
+      "music",
+      "by",
+      "Vanessa",
+      "Paradis"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Vanessa Paradis",
+        "type": "music_artist",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "d3fb3f50-6ae2-482f-a5f8-af208ef48194",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song Poker Face by Lady Gaga",
+    "tokens": [
+      "play",
+      "song",
+      "Poker",
+      "Face",
+      "by",
+      "Lady",
+      "Gaga"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Poker Face",
+        "type": "song",
+        "start": 2,
+        "end": 3
+      },
+      {
+        "text": "Lady Gaga",
+        "type": "music_artist",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "b4515132-b908-4f53-b637-0608ee8afe17",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Rihanna Unfaithful song for me",
+    "tokens": [
+      "play",
+      "Rihanna",
+      "Unfaithful",
+      "song",
+      "for",
+      "me"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [
+      {
+        "text": "Rihanna",
+        "type": "music_artist",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Unfaithful",
+        "type": "song",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "5f1debc8-3070-4eb2-8752-e97e7744f084",
+    "intent": "music.play"
+  },
+  {
+    "text": "play a country song",
+    "tokens": [
+      "play",
+      "a",
+      "country",
+      "song"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "country",
+        "type": "music_genre",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "d8ffc8b7-e583-4cb8-8758-d70204d930a0",
+    "intent": "music.play"
+  },
+  {
+    "text": "can you play the song Beauty and a Beat",
+    "tokens": [
+      "can",
+      "you",
+      "play",
+      "the",
+      "song",
+      "Beauty",
+      "and",
+      "a",
+      "Beat"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "PROPN",
+      "CONJ",
+      "DET",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Beauty and a Beat",
+        "type": "song",
+        "start": 5,
+        "end": 8
+      }
+    ],
+    "id": "dcfb00dc-a341-4c13-9f98-32b91e3c24a7",
+    "intent": "music.play"
+  },
+  {
+    "text": "play the newest song by Eminem",
+    "tokens": [
+      "play",
+      "the",
+      "newest",
+      "song",
+      "by",
+      "Eminem"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "newest",
+        "type": "music_sort",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "Eminem",
+        "type": "music_artist",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "d4367bff-344c-4996-aef0-7ccc4fb7508d",
+    "intent": "music.play"
+  },
+  {
+    "text": "I'm in the mood for music",
+    "tokens": [
+      "I",
+      "'m",
+      "in",
+      "the",
+      "mood",
+      "for",
+      "music"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "38e487f0-2856-4477-b500-65ebe5598dd1",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Do you Mind by Changing Faces",
+    "tokens": [
+      "play",
+      "Do",
+      "you",
+      "Mind",
+      "by",
+      "Changing",
+      "Faces"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PRON",
+      "VERB",
+      "ADP",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Do you Mind",
+        "type": "song",
+        "start": 1,
+        "end": 3
+      },
+      {
+        "text": "Changing Faces",
+        "type": "music_artist",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "cd087649-f43c-492b-9904-ab25202f1fd3",
+    "intent": "music.play"
+  },
+  {
+    "text": "can you play me a song",
+    "tokens": [
+      "can",
+      "you",
+      "play",
+      "me",
+      "a",
+      "song"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "0770c51d-41f7-4a48-b655-41e660ac3bc9",
+    "intent": "music.play"
+  },
+  {
+    "text": "Hollaback Girl music",
+    "tokens": [
+      "Hollaback",
+      "Girl",
+      "music"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Hollaback Girl",
+        "type": "song",
+        "start": 0,
+        "end": 1
+      }
+    ],
+    "id": "156cec8c-e8e9-4760-8a6f-53f5f64403d9",
+    "intent": "music.play"
+  },
+  {
+    "text": "play the song Nothing Gonna Stop Us Now",
+    "tokens": [
+      "play",
+      "the",
+      "song",
+      "Nothing",
+      "Gon",
+      "na",
+      "Stop",
+      "Us",
+      "Now"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "PART",
+      "VERB",
+      "PROPN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "Nothing Gonna Stop Us Now",
+        "type": "song",
+        "start": 3,
+        "end": 8
+      }
+    ],
+    "id": "6c94b007-51b0-4084-8aa0-0d2ee29763d1",
+    "intent": "music.play"
+  },
+  {
+    "text": "play what Prince wrote between 1980 and 1999",
+    "tokens": [
+      "play",
+      "what",
+      "Prince",
+      "wrote",
+      "between",
+      "1980",
+      "and",
+      "1999"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "PROPN",
+      "VERB",
+      "ADP",
+      "NUM",
+      "CONJ",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "Prince",
+        "type": "music_artist",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "1980",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "1999",
+        "type": "number",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "26ce5343-50d4-4d08-b682-bd03e2163340",
+    "intent": "music.play"
+  },
+  {
+    "text": "play the 50 Great Beatles Songs playlist in Prime Music",
+    "tokens": [
+      "play",
+      "the",
+      "50",
+      "Great",
+      "Beatles",
+      "Songs",
+      "playlist",
+      "in",
+      "Prime",
+      "Music"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NUM",
+      "PROPN",
+      "PROPN",
+      "PROPN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "50 Great Beatles Songs",
+        "type": "playlist",
+        "start": 2,
+        "end": 5
+      },
+      {
+        "text": "Prime Music",
+        "type": "music_service",
+        "start": 8,
+        "end": 9
+      }
+    ],
+    "id": "933ea340-0c58-4922-a0df-1a4ce5b6ac60",
+    "intent": "music.play"
+  },
+  {
+    "text": "play I Will Always Love You from Whitney Houston",
+    "tokens": [
+      "play",
+      "I",
+      "Will",
+      "Always",
+      "Love",
+      "You",
+      "from",
+      "Whitney",
+      "Houston"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "PROPN",
+      "PROPN",
+      "PROPN",
+      "PRON",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "I Will Always Love You",
+        "type": "song",
+        "start": 1,
+        "end": 5
+      },
+      {
+        "text": "Whitney Houston",
+        "type": "music_artist",
+        "start": 7,
+        "end": 8
+      }
+    ],
+    "id": "ae6b8d10-6ce8-49d4-827a-dbee1b9ab193",
+    "intent": "music.play"
+  },
+  {
+    "text": "play album After the Gold Rush",
+    "tokens": [
+      "play",
+      "album",
+      "After",
+      "the",
+      "Gold",
+      "Rush"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "After the Gold Rush",
+        "type": "music_album",
+        "start": 2,
+        "end": 5
+      }
+    ],
+    "id": "e874070e-4fdb-4d70-ab28-81a36e564392",
+    "intent": "music.play"
+  },
+  {
+    "text": "play the album Un monde meilleur by Kids United",
+    "tokens": [
+      "play",
+      "the",
+      "album",
+      "Un",
+      "monde",
+      "meilleur",
+      "by",
+      "Kids",
+      "United"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PROPN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Un monde meilleur",
+        "type": "music_album",
+        "start": 3,
+        "end": 5
+      },
+      {
+        "text": "Kids United",
+        "type": "music_artist",
+        "start": 7,
+        "end": 8
+      }
+    ],
+    "id": "920d0d7c-9126-42ae-9d92-a937b4c3dbb4",
+    "intent": "music.play"
+  },
+  {
+    "text": "play a rock song",
+    "tokens": [
+      "play",
+      "a",
+      "rock",
+      "song"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "rock",
+        "type": "music_genre",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "b0cb245b-aaff-4f55-a5f4-35479811fb0a",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song by Lil Wayne",
+    "tokens": [
+      "play",
+      "song",
+      "by",
+      "Lil",
+      "Wayne"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Lil Wayne",
+        "type": "music_artist",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "b8146e4d-424c-40db-8d83-0303e0dc4787",
+    "intent": "music.play"
+  },
+  {
+    "text": "play artist ACDC",
+    "tokens": [
+      "play",
+      "artist",
+      "ACDC"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "ACDC",
+        "type": "music_artist",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "38218530-e689-4e3c-88fb-2d185698d4eb",
+    "intent": "music.play"
+  },
+  {
+    "text": "play the song Encantadora",
+    "tokens": [
+      "play",
+      "the",
+      "song",
+      "Encantadora"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Encantadora",
+        "type": "song",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "8686d58d-9fe7-4458-aae4-de2918e43f62",
+    "intent": "music.play"
+  },
+  {
+    "text": "please play song Secret Love Song",
+    "tokens": [
+      "please",
+      "play",
+      "song",
+      "Secret",
+      "Love",
+      "Song"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Secret Love Song",
+        "type": "music_genre",
+        "start": 3,
+        "end": 5
+      }
+    ],
+    "id": "361c6b2f-5b85-4eb1-b038-2dbd58642a3e",
+    "intent": "music.play"
+  },
+  {
+    "text": "play music by Rolling Stones",
+    "tokens": [
+      "play",
+      "music",
+      "by",
+      "Rolling",
+      "Stones"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Rolling Stones",
+        "type": "music_artist",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "d8fdadef-a61a-4bb6-bec4-0f1202b7007c",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Bad from Michael Jackson",
+    "tokens": [
+      "play",
+      "Bad",
+      "from",
+      "Michael",
+      "Jackson"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Bad",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Michael Jackson",
+        "type": "music_artist",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "98655ad4-75af-40f5-a4ec-8948f87aedb8",
+    "intent": "music.play"
+  },
+  {
+    "text": "play jazz",
+    "tokens": [
+      "play",
+      "jazz"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "jazz",
+        "type": "music_genre",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "915909e1-8ba2-4bf6-bb0d-4fc2e822c58a",
+    "intent": "music.play"
+  },
+  {
+    "text": "play the artist Rush",
+    "tokens": [
+      "play",
+      "the",
+      "artist",
+      "Rush"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Rush",
+        "type": "music_artist",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "b9dd6a92-7f4f-43c4-a756-a4164544bef3",
+    "intent": "music.play"
+  },
+  {
+    "text": "play album The marshall mathers by Eminem",
+    "tokens": [
+      "play",
+      "album",
+      "The",
+      "marshall",
+      "mathers",
+      "by",
+      "Eminem"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "The marshall mathers",
+        "type": "music_album",
+        "start": 2,
+        "end": 4
+      },
+      {
+        "text": "Eminem",
+        "type": "music_artist",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "656c52ef-2203-4f1b-9a0d-49da5ece0164",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Abbey Road remastered by The Beatles",
+    "tokens": [
+      "play",
+      "Abbey",
+      "Road",
+      "remastered",
+      "by",
+      "The",
+      "Beatles"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "VERB",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Abbey Road",
+        "type": "music_album",
+        "start": 1,
+        "end": 2
+      },
+      {
+        "text": "The Beatles",
+        "type": "music_artist",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "4032b83a-56ce-45fb-be02-d9b19166e9f3",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Miracle",
+    "tokens": [
+      "play",
+      "Miracle"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Miracle",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "7e1a9c6a-7bc6-49f6-83b0-bea166646820",
+    "intent": "music.play"
+  },
+  {
+    "text": "play me some country music",
+    "tokens": [
+      "play",
+      "me",
+      "some",
+      "country",
+      "music"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "country",
+        "type": "music_genre",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "5e60659f-6ede-444b-bb46-6cb7530cd21a",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Faded by ZHU song on Spotify",
+    "tokens": [
+      "play",
+      "Faded",
+      "by",
+      "ZHU",
+      "song",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "ADP",
+      "PROPN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Faded",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "ZHU",
+        "type": "music_artist",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "1b4643de-2fd6-4a1d-8e4b-3c46ac1bf5aa",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Metallica",
+    "tokens": [
+      "play",
+      "Metallica"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Metallica",
+        "type": "music_artist",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "727f7fc7-04cd-4a69-9f65-c4a7a97d89e6",
+    "intent": "music.play"
+  },
+  {
+    "text": "play jazz on Spotify",
+    "tokens": [
+      "play",
+      "jazz",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "jazz",
+        "type": "music_genre",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "f763cd61-5a0b-401d-9d84-31450d1f0789",
+    "intent": "music.play"
+  },
+  {
+    "text": "play album Born to Run by Bruce Springsteen on Spotify",
+    "tokens": [
+      "play",
+      "album",
+      "Born",
+      "to",
+      "Run",
+      "by",
+      "Bruce",
+      "Springsteen",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PROPN",
+      "PART",
+      "VERB",
+      "ADP",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Born to Run",
+        "type": "music_album",
+        "start": 2,
+        "end": 4
+      },
+      {
+        "text": "Bruce Springsteen",
+        "type": "music_artist",
+        "start": 6,
+        "end": 7
+      },
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 9,
+        "end": 9
+      }
+    ],
+    "id": "0ef6030e-e654-4a41-92e7-feaa31481c0c",
+    "intent": "music.play"
+  },
+  {
+    "text": "play the song Pots of gold by the artist Mamas Gun",
+    "tokens": [
+      "play",
+      "the",
+      "song",
+      "Pots",
+      "of",
+      "gold",
+      "by",
+      "the",
+      "artist",
+      "Mamas",
+      "Gun"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "PROPN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Pots of gold",
+        "type": "song",
+        "start": 3,
+        "end": 5
+      },
+      {
+        "text": "Mamas Gun",
+        "type": "music_artist",
+        "start": 9,
+        "end": 10
+      }
+    ],
+    "id": "05e46ac6-526e-409f-ba71-14bc844ce974",
+    "intent": "music.play"
+  },
+  {
+    "text": "Cher Believe",
+    "tokens": [
+      "Cher",
+      "Believe"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Cher",
+        "type": "music_artist",
+        "start": 0,
+        "end": 0
+      },
+      {
+        "text": "Believe",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "4be300ed-3212-48e2-ac0a-0a09e91fce7a",
+    "intent": "music.play"
+  },
+  {
+    "text": "play françoise hardy",
+    "tokens": [
+      "play",
+      "françoise",
+      "hardy"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "françoise hardy",
+        "type": "music_artist",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "08c222e7-e82d-4c7a-857c-1d29a983035e",
+    "intent": "music.play"
+  },
+  {
+    "text": "I would like to listen to a song",
+    "tokens": [
+      "I",
+      "would",
+      "like",
+      "to",
+      "listen",
+      "to",
+      "a",
+      "song"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "f4d650e0-b98b-439d-bc60-6744701cedd7",
+    "intent": "music.play"
+  },
+  {
+    "text": "play music by Marco Mengoni",
+    "tokens": [
+      "play",
+      "music",
+      "by",
+      "Marco",
+      "Mengoni"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Marco Mengoni",
+        "type": "music_artist",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "ec2dee11-5c5c-434b-beff-ac87d85a92a8",
+    "intent": "music.play"
+  },
+  {
+    "text": "play me some relaxing music",
+    "tokens": [
+      "play",
+      "me",
+      "some",
+      "relaxing",
+      "music"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "relaxing",
+        "type": "music_genre",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "a305bca6-9ae9-41df-9557-45359e99a788",
+    "intent": "music.play"
+  },
+  {
+    "text": "play some rock and roll",
+    "tokens": [
+      "play",
+      "some",
+      "rock",
+      "and",
+      "roll"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "CONJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "rock and roll",
+        "type": "music_genre",
+        "start": 2,
+        "end": 4
+      }
+    ],
+    "id": "2f74bda1-349b-4c19-bcf2-a01e0ac98136",
+    "intent": "music.play"
+  },
+  {
+    "text": "Blank Space song",
+    "tokens": [
+      "Blank",
+      "Space",
+      "song"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Blank Space",
+        "type": "song",
+        "start": 0,
+        "end": 1
+      }
+    ],
+    "id": "9e2944b1-5e8b-4d2b-95ec-4c20544d30d6",
+    "intent": "music.play"
+  },
+  {
+    "text": "play some good songs",
+    "tokens": [
+      "play",
+      "some",
+      "good",
+      "songs"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "a3842e68-e56b-48d3-8f76-1551a41fd83f",
+    "intent": "music.play"
+  },
+  {
+    "text": "can you play Irreplaceable by Beyonce",
+    "tokens": [
+      "can",
+      "you",
+      "play",
+      "Irreplaceable",
+      "by",
+      "Beyonce"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Irreplaceable",
+        "type": "song",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Beyonce",
+        "type": "music_artist",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "c0bf7470-d797-45cd-b338-6738ee2307a6",
+    "intent": "music.play"
+  },
+  {
+    "text": "play 21 by Adele on Spotify",
+    "tokens": [
+      "play",
+      "21",
+      "by",
+      "Adele",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NUM",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "21",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Adele",
+        "type": "music_artist",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "d5f84841-ebf1-4073-af14-ccd3172c8e7b",
+    "intent": "music.play"
+  },
+  {
+    "text": "music Grenade in my library",
+    "tokens": [
+      "music",
+      "Grenade",
+      "in",
+      "my",
+      "library"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Grenade",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "8d2c4783-e727-4e4a-98f7-c2283f9ec2c1",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song from the album Address",
+    "tokens": [
+      "play",
+      "song",
+      "from",
+      "the",
+      "album",
+      "Address"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Address",
+        "type": "music_album",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "0a4934f1-a979-4433-8c1c-ac04b8f4f825",
+    "intent": "music.play"
+  },
+  {
+    "text": "play album Songs for the Deaf by Queens of the stone age",
+    "tokens": [
+      "play",
+      "album",
+      "Songs",
+      "for",
+      "the",
+      "Deaf",
+      "by",
+      "Queens",
+      "of",
+      "the",
+      "stone",
+      "age"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PROPN",
+      "ADP",
+      "DET",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Songs for the Deaf",
+        "type": "music_album",
+        "start": 2,
+        "end": 5
+      },
+      {
+        "text": "Queens of the stone age",
+        "type": "music_artist",
+        "start": 7,
+        "end": 11
+      }
+    ],
+    "id": "a75b76d9-8f2e-4c12-b0ca-f94a151082f0",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Thriller Michael Jackson",
+    "tokens": [
+      "play",
+      "Thriller",
+      "Michael",
+      "Jackson"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Thriller",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Michael Jackson",
+        "type": "music_artist",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "39c92b85-b853-456e-9fd2-fe50af73be45",
+    "intent": "music.play"
+  },
+  {
+    "text": "yes play music",
+    "tokens": [
+      "yes",
+      "play",
+      "music"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "ddcbdcd6-371d-4b5f-8d5a-de45e337748c",
+    "intent": "music.play"
+  },
+  {
+    "text": "let me hear some music by Coldplay",
+    "tokens": [
+      "let",
+      "me",
+      "hear",
+      "some",
+      "music",
+      "by",
+      "Coldplay"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Coldplay",
+        "type": "music_artist",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "16cc5424-c07b-4bb4-b985-2c615338c2a5",
+    "intent": "music.play"
+  },
+  {
+    "text": "play some rock n roll music",
+    "tokens": [
+      "play",
+      "some",
+      "rock",
+      "n",
+      "roll",
+      "music"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "CONJ",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "rock n roll",
+        "type": "music_genre",
+        "start": 2,
+        "end": 4
+      }
+    ],
+    "id": "91a9dd7b-55e8-4162-9fff-280fda25e898",
+    "intent": "music.play"
+  },
+  {
+    "text": "a song Still Loving You",
+    "tokens": [
+      "a",
+      "song",
+      "Still",
+      "Loving",
+      "You"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "ADV",
+      "PROPN",
+      "PRON"
+    ],
+    "entities": [
+      {
+        "text": "Still Loving You",
+        "type": "song",
+        "start": 2,
+        "end": 4
+      }
+    ],
+    "id": "cb2a4d7f-fcc0-43ad-a66d-7ba347004090",
+    "intent": "music.play"
+  },
+  {
+    "text": "play the album The Wall on Spotify",
+    "tokens": [
+      "play",
+      "the",
+      "album",
+      "The",
+      "Wall",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "DET",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "The Wall",
+        "type": "music_album",
+        "start": 3,
+        "end": 4
+      },
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "844722a0-e3c8-42b4-903c-20f9270443d9",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Beyonce",
+    "tokens": [
+      "play",
+      "Beyonce"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Beyonce",
+        "type": "music_artist",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "de2ecec2-155a-42e9-9766-7e595625c941",
+    "intent": "music.play"
+  },
+  {
+    "text": "play a U2 song",
+    "tokens": [
+      "play",
+      "a",
+      "U2",
+      "song"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "U2",
+        "type": "music_artist",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "97c13763-e910-44c5-a154-8d13d86d9ae3",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Dangerous feat Sam Martin by David Guetta song on Spotify",
+    "tokens": [
+      "play",
+      "Dangerous",
+      "feat",
+      "Sam",
+      "Martin",
+      "by",
+      "David",
+      "Guetta",
+      "song",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Dangerous",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Sam Martin",
+        "type": "music_artist",
+        "start": 3,
+        "end": 4
+      },
+      {
+        "text": "David Guetta",
+        "type": "music_artist",
+        "start": 6,
+        "end": 7
+      },
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 10,
+        "end": 10
+      }
+    ],
+    "id": "1466de95-1d72-4538-b078-0f8235e6f4cf",
+    "intent": "music.play"
+  },
+  {
+    "text": "can you play Adele",
+    "tokens": [
+      "can",
+      "you",
+      "play",
+      "Adele"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Adele",
+        "type": "music_artist",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "2ea55703-cc44-4674-bc67-51bb8b206554",
+    "intent": "music.play"
+  },
+  {
+    "text": "play album by Rihanna year 2016",
+    "tokens": [
+      "play",
+      "album",
+      "by",
+      "Rihanna",
+      "year",
+      "2016"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "NOUN",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "Rihanna",
+        "type": "music_artist",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "2016",
+        "type": "number",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "45231c7b-91d1-4b26-ac3a-ca1ce89433d7",
+    "intent": "music.play"
+  },
+  {
+    "text": "play R&B",
+    "tokens": [
+      "play",
+      "R",
+      "&",
+      "B"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "CONJ",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "R&B",
+        "type": "music_genre",
+        "start": 1,
+        "end": 3
+      }
+    ],
+    "id": "d5e784fd-074e-4054-a046-ff91379fecc1",
+    "intent": "music.play"
+  },
+  {
+    "text": "play something from Madonna",
+    "tokens": [
+      "play",
+      "something",
+      "from",
+      "Madonna"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Madonna",
+        "type": "music_artist",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "7a612ab0-7a1a-47a1-b564-0a3cb4fd764e",
+    "intent": "music.play"
+  },
+  {
+    "text": "play The Antlers",
+    "tokens": [
+      "play",
+      "The",
+      "Antlers"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "The Antlers",
+        "type": "music_artist",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "4b433775-3bdf-4f41-b07b-3478b4381609",
+    "intent": "music.play"
+  },
+  {
+    "text": "play any songs in German",
+    "tokens": [
+      "play",
+      "any",
+      "songs",
+      "in",
+      "German"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "German",
+        "type": "language",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "6f23be4a-47bc-4fc2-8cb0-8eb0b8b4c659",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Meghan Trainor",
+    "tokens": [
+      "play",
+      "Meghan",
+      "Trainor"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Meghan Trainor",
+        "type": "music_artist",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "4b448aff-3ebc-4acf-895b-42a4672509b4",
+    "intent": "music.play"
+  },
+  {
+    "text": "put music on",
+    "tokens": [
+      "put",
+      "music",
+      "on"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "0a25fa8d-c63d-4c1c-868f-0a4e70ba0623",
+    "intent": "music.play"
+  },
+  {
+    "text": "can you play song Dark Horse",
+    "tokens": [
+      "can",
+      "you",
+      "play",
+      "song",
+      "Dark",
+      "Horse"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Dark Horse",
+        "type": "song",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "812bf48a-4127-4bcb-9bd7-3436487d87f2",
+    "intent": "music.play"
+  },
+  {
+    "text": "play some smooth jazz",
+    "tokens": [
+      "play",
+      "some",
+      "smooth",
+      "jazz"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "smooth jazz",
+        "type": "music_genre",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "8b2d49b2-7301-434e-99df-588f8a9c85b5",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song In Da Club",
+    "tokens": [
+      "play",
+      "song",
+      "In",
+      "Da",
+      "Club"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "In Da Club",
+        "type": "song",
+        "start": 2,
+        "end": 4
+      }
+    ],
+    "id": "b47136f9-87cc-407b-9d35-fdc980e0dcda",
+    "intent": "music.play"
+  },
+  {
+    "text": "I want to listen to Disturbia song",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "listen",
+      "to",
+      "Disturbia",
+      "song"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Disturbia",
+        "type": "song",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "c697eef8-e09f-4774-baee-3cfd21337458",
+    "intent": "music.play"
+  },
+  {
+    "text": "pop song",
+    "tokens": [
+      "pop",
+      "song"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "pop",
+        "type": "music_genre",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "36522f45-e8b7-478d-9656-ee5bfee035cf",
+    "intent": "music.play"
+  },
+  {
+    "text": "play a pop song",
+    "tokens": [
+      "play",
+      "a",
+      "pop",
+      "song"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "pop",
+        "type": "music_genre",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "c4ffa00f-01ca-41fa-b1ff-7d3ffa6daaa7",
+    "intent": "music.play"
+  },
+  {
+    "text": "play the song Back in time by Pitbull",
+    "tokens": [
+      "play",
+      "the",
+      "song",
+      "Back",
+      "in",
+      "time",
+      "by",
+      "Pitbull"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PROPN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Back in time",
+        "type": "song",
+        "start": 3,
+        "end": 5
+      },
+      {
+        "text": "Pitbull",
+        "type": "music_artist",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "c5f2cec9-a815-433a-9580-01197cfd86b2",
+    "intent": "music.play"
+  },
+  {
+    "text": "can I listen to Macarena",
+    "tokens": [
+      "can",
+      "I",
+      "listen",
+      "to",
+      "Macarena"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PART",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Macarena",
+        "type": "song",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "21f52a4f-ec21-4af6-ba77-e2738e7cfc86",
+    "intent": "music.play"
+  },
+  {
+    "text": "just play me a song",
+    "tokens": [
+      "just",
+      "play",
+      "me",
+      "a",
+      "song"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "428b952e-946a-4d92-97ce-0f8d4dab9e9e",
+    "intent": "music.play"
+  },
+  {
+    "text": "play a song Another Brick in the Wall",
+    "tokens": [
+      "play",
+      "a",
+      "song",
+      "Another",
+      "Brick",
+      "in",
+      "the",
+      "Wall"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "DET",
+      "PROPN",
+      "ADP",
+      "DET",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Another Brick in the Wall",
+        "type": "song",
+        "start": 3,
+        "end": 7
+      }
+    ],
+    "id": "12dcd163-15bb-4b3a-b66e-ab99f79a8991",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Elastic Heart by Sia song on Spotify",
+    "tokens": [
+      "play",
+      "Elastic",
+      "Heart",
+      "by",
+      "Sia",
+      "song",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Elastic Heart",
+        "type": "song",
+        "start": 1,
+        "end": 2
+      },
+      {
+        "text": "Sia",
+        "type": "music_artist",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "9e827f18-4e41-4977-92eb-065e8bdb44c8",
+    "intent": "music.play"
+  },
+  {
+    "text": "Show best songs by Rihanna",
+    "tokens": [
+      "Show",
+      "best",
+      "songs",
+      "by",
+      "Rihanna"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "best",
+        "type": "music_sort",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Rihanna",
+        "type": "music_artist",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "50f3fbab-b674-40bc-8f0c-e22b1d3888f4",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Tears in Heaven by Eric Clapton",
+    "tokens": [
+      "play",
+      "Tears",
+      "in",
+      "Heaven",
+      "by",
+      "Eric",
+      "Clapton"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Tears in Heaven",
+        "type": "music_album",
+        "start": 1,
+        "end": 3
+      },
+      {
+        "text": "Eric Clapton",
+        "type": "music_artist",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "81f876f3-35e9-4705-81b7-88e5955d6a93",
+    "intent": "music.play"
+  },
+  {
+    "text": "play genre blues",
+    "tokens": [
+      "play",
+      "genre",
+      "blues"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "blues",
+        "type": "music_genre",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "6945a318-3c90-4a02-991b-8e57656266a0",
+    "intent": "music.play"
+  },
+  {
+    "text": "play album In the jungle groove",
+    "tokens": [
+      "play",
+      "album",
+      "In",
+      "the",
+      "jungle",
+      "groove"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "In the jungle groove",
+        "type": "music_album",
+        "start": 2,
+        "end": 5
+      }
+    ],
+    "id": "4f739c31-a140-4e88-9deb-e4fc0d67c4e8",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Let Her Go by Passenger song on Spotify",
+    "tokens": [
+      "play",
+      "Let",
+      "Her",
+      "Go",
+      "by",
+      "Passenger",
+      "song",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Let Her Go",
+        "type": "song",
+        "start": 1,
+        "end": 3
+      },
+      {
+        "text": "Passenger",
+        "type": "music_artist",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "1593785c-16dd-4715-8a0b-61d0e6701cce",
+    "intent": "music.play"
+  },
+  {
+    "text": "I'd like to listen to classic opera",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "listen",
+      "to",
+      "classic",
+      "opera"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "classic opera",
+        "type": "music_genre",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "de51a1ac-5280-4052-8595-99bd27a43eeb",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song by Nicki Minaj",
+    "tokens": [
+      "play",
+      "song",
+      "by",
+      "Nicki",
+      "Minaj"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Nicki Minaj",
+        "type": "music_artist",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "27ddf76a-5b0b-4527-8808-a2f257305b04",
+    "intent": "music.play"
+  },
+  {
+    "text": "play some relaxing music",
+    "tokens": [
+      "play",
+      "some",
+      "relaxing",
+      "music"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "relaxing",
+        "type": "music_genre",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "b6db8b5a-415e-47a0-9800-7827570ff96b",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Miracles from phone",
+    "tokens": [
+      "play",
+      "Miracles",
+      "from",
+      "phone"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Miracles",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "fd5c3d0f-5278-49f5-9aff-a08e04ddfe5d",
+    "intent": "music.play"
+  },
+  {
+    "text": "playing Mozart song",
+    "tokens": [
+      "playing",
+      "Mozart",
+      "song"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Mozart",
+        "type": "music_artist",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "b440e125-40d2-4379-a81c-3b9f27a4ca22",
+    "intent": "music.play"
+  },
+  {
+    "text": "play album Sounds Good Field by Five Seconds of Summer",
+    "tokens": [
+      "play",
+      "album",
+      "Sounds",
+      "Good",
+      "Field",
+      "by",
+      "Five",
+      "Seconds",
+      "of",
+      "Summer"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Sounds Good Field",
+        "type": "music_album",
+        "start": 2,
+        "end": 4
+      },
+      {
+        "text": "Five Seconds of Summer",
+        "type": "music_artist",
+        "start": 6,
+        "end": 9
+      }
+    ],
+    "id": "0aba1e40-44bb-4050-9e55-5e81f6750337",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Amy Winehouse",
+    "tokens": [
+      "play",
+      "Amy",
+      "Winehouse"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Amy Winehouse",
+        "type": "music_artist",
+        "start": 1,
+        "end": 2
+      }
+    ],
+    "id": "7ef4182b-b7b6-4bee-8893-a6ccbeae8c8a",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Best of You by Foo Fighters",
+    "tokens": [
+      "play",
+      "Best",
+      "of",
+      "You",
+      "by",
+      "Foo",
+      "Fighters"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADJ",
+      "ADP",
+      "PRON",
+      "ADP",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Best of You",
+        "type": "song",
+        "start": 1,
+        "end": 3
+      },
+      {
+        "text": "Foo Fighters",
+        "type": "music_artist",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "56e2f1ba-aa0a-4d51-90f6-e04160a6d2e1",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Do I Wanna Know by Arctic Monkeys song on Spotify",
+    "tokens": [
+      "play",
+      "Do",
+      "I",
+      "Wan",
+      "na",
+      "Know",
+      "by",
+      "Arctic",
+      "Monkeys",
+      "song",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PRON",
+      "PROPN",
+      "ADV",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Do I Wanna Know",
+        "type": "song",
+        "start": 1,
+        "end": 5
+      },
+      {
+        "text": "Arctic Monkeys",
+        "type": "music_artist",
+        "start": 7,
+        "end": 8
+      },
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 11,
+        "end": 11
+      }
+    ],
+    "id": "b12b5c45-c3c0-4a1f-8576-87cad24f6746",
+    "intent": "music.play"
+  },
+  {
+    "text": "play album Graceland by Paul Simon",
+    "tokens": [
+      "play",
+      "album",
+      "Graceland",
+      "by",
+      "Paul",
+      "Simon"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Graceland",
+        "type": "music_album",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "Paul Simon",
+        "type": "music_artist",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "4bd8daf8-28de-4185-ad63-507c81cba3a9",
+    "intent": "music.play"
+  },
+  {
+    "text": "play music on Spotify",
+    "tokens": [
+      "play",
+      "music",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "12b5394b-5784-4e3e-89a2-435ee61290de",
+    "intent": "music.play"
+  },
+  {
+    "text": "play album Purple Rain on Spotify",
+    "tokens": [
+      "play",
+      "album",
+      "Purple",
+      "Rain",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PROPN",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Purple Rain",
+        "type": "music_album",
+        "start": 2,
+        "end": 3
+      },
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "dba64a82-064f-4494-8138-7e479eed1143",
+    "intent": "music.play"
+  },
+  {
+    "text": "play greatest hits by Metallica",
+    "tokens": [
+      "play",
+      "greatest",
+      "hits",
+      "by",
+      "Metallica"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "greatest",
+        "type": "music_sort",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Metallica",
+        "type": "music_artist",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "ebcd7725-e6d6-47fb-9765-e86a2166522d",
+    "intent": "music.play"
+  },
+  {
+    "text": "can you play How You Remind Me",
+    "tokens": [
+      "can",
+      "you",
+      "play",
+      "How",
+      "You",
+      "Remind",
+      "Me"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADV",
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "How You Remind Me",
+        "type": "song",
+        "start": 3,
+        "end": 6
+      }
+    ],
+    "id": "00434378-3a51-4ba5-a5c2-bfec5c31d0b7",
+    "intent": "music.play"
+  },
+  {
+    "text": "song pop",
+    "tokens": [
+      "song",
+      "pop"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "pop",
+        "type": "music_genre",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "1b825b5b-bb05-4a00-a999-134250206818",
+    "intent": "music.play"
+  },
+  {
+    "text": "play a playlist",
+    "tokens": [
+      "play",
+      "a",
+      "playlist"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "1d69a2d2-d43e-460e-a81b-7b3f6ee1a041",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Blackbird from SD card",
+    "tokens": [
+      "play",
+      "Blackbird",
+      "from",
+      "SD",
+      "card"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Blackbird",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "e84a960f-2223-460a-a536-9185032bc52d",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song from music",
+    "tokens": [
+      "play",
+      "song",
+      "from",
+      "music"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "61579a70-34a7-4df4-88ea-7adfb65d6d1d",
+    "intent": "music.play"
+  },
+  {
+    "text": "play album Madonna by Madonna",
+    "tokens": [
+      "play",
+      "album",
+      "Madonna",
+      "by",
+      "Madonna"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Madonna",
+        "type": "music_album",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "Madonna",
+        "type": "music_artist",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "557cd1b1-8d94-4840-99ca-55f56d290ca7",
+    "intent": "music.play"
+  },
+  {
+    "text": "play me the music",
+    "tokens": [
+      "play",
+      "me",
+      "the",
+      "music"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "2e5674b5-dbcf-493a-bc16-7079115e7030",
+    "intent": "music.play"
+  },
+  {
+    "text": "songs by Tom Waits",
+    "tokens": [
+      "songs",
+      "by",
+      "Tom",
+      "Waits"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Tom Waits",
+        "type": "music_artist",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "626c610b-f5d1-4e2d-8b85-1af7f92060a5",
+    "intent": "music.play"
+  },
+  {
+    "text": "music play Addicted to Love",
+    "tokens": [
+      "music",
+      "play",
+      "Addicted",
+      "to",
+      "Love"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PROPN",
+      "PART",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "Addicted to Love",
+        "type": "song",
+        "start": 2,
+        "end": 4
+      }
+    ],
+    "id": "8986e87d-f613-47bb-8fda-62e6954c5be6",
+    "intent": "music.play"
+  },
+  {
+    "text": "play the Mean Kitty song",
+    "tokens": [
+      "play",
+      "the",
+      "Mean",
+      "Kitty",
+      "song"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "PROPN",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Mean Kitty",
+        "type": "song",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "16631b91-b101-4442-8955-f5fdc90587ff",
+    "intent": "music.play"
+  },
+  {
+    "text": "play album Fly by Night by Rush",
+    "tokens": [
+      "play",
+      "album",
+      "Fly",
+      "by",
+      "Night",
+      "by",
+      "Rush"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Fly by Night",
+        "type": "music_album",
+        "start": 2,
+        "end": 4
+      },
+      {
+        "text": "Rush",
+        "type": "music_artist",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "67f5c787-5b83-44cb-b0db-42209c5655fd",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Thinking Out Loud by Ed Sheeran",
+    "tokens": [
+      "play",
+      "Thinking",
+      "Out",
+      "Loud",
+      "by",
+      "Ed",
+      "Sheeran"
+    ],
+    "pos_tags": [
+      "VERB",
+      "VERB",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Thinking Out Loud",
+        "type": "song",
+        "start": 1,
+        "end": 3
+      },
+      {
+        "text": "Ed Sheeran",
+        "type": "music_artist",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "d1306790-1dc0-4f82-afaf-274c4e11e15c",
+    "intent": "music.play"
+  },
+  {
+    "text": "play song How do I Live",
+    "tokens": [
+      "play",
+      "song",
+      "How",
+      "do",
+      "I",
+      "Live"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADV",
+      "VERB",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "How do I Live",
+        "type": "song",
+        "start": 2,
+        "end": 5
+      }
+    ],
+    "id": "c748e3a4-8571-4dfa-a705-82c0fdf6b04d",
+    "intent": "music.play"
+  },
+  {
+    "text": "please play best 5 songs ever",
+    "tokens": [
+      "please",
+      "play",
+      "best",
+      "5",
+      "songs",
+      "ever"
+    ],
+    "pos_tags": [
+      "VERB",
+      "VERB",
+      "ADJ",
+      "NUM",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "best",
+        "type": "music_sort",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "5",
+        "type": "number",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "b29c179a-fd4e-4f8a-bac8-d3c61fda746b",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Rihanna on Spotify",
+    "tokens": [
+      "play",
+      "Rihanna",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Rihanna",
+        "type": "music_artist",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "3f64dca4-038f-48a8-a48b-634bd27d6ae0",
+    "intent": "music.play"
+  },
+  {
+    "text": "play artist Meghan Trainor",
+    "tokens": [
+      "play",
+      "artist",
+      "Meghan",
+      "Trainor"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Meghan Trainor",
+        "type": "music_artist",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "cea54313-1320-4900-b2a8-1c9b6fd0db3e",
+    "intent": "music.play"
+  },
+  {
+    "text": "play She's Got the Look by Roxette",
+    "tokens": [
+      "play",
+      "She",
+      "'s",
+      "Got",
+      "the",
+      "Look",
+      "by",
+      "Roxette"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "VERB",
+      "DET",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "She's Got the Look",
+        "type": "song",
+        "start": 1,
+        "end": 5
+      },
+      {
+        "text": "Roxette",
+        "type": "music_artist",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "6817ea35-2189-432f-9ffc-eb93c6efd9bf",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Aaron and Maria by the American analog set on Spotify",
+    "tokens": [
+      "play",
+      "Aaron",
+      "and",
+      "Maria",
+      "by",
+      "the",
+      "American",
+      "analog",
+      "set",
+      "on",
+      "Spotify"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN",
+      "CONJ",
+      "PROPN",
+      "ADP",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "VERB",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Aaron and Maria",
+        "type": "song",
+        "start": 1,
+        "end": 3
+      },
+      {
+        "text": "American analog set",
+        "type": "music_artist",
+        "start": 6,
+        "end": 8
+      },
+      {
+        "text": "Spotify",
+        "type": "music_service",
+        "start": 10,
+        "end": 10
+      }
+    ],
+    "id": "1603d2c9-6f0c-4c3b-867d-c584f628282a",
+    "intent": "music.play"
+  },
+  {
+    "text": "play something by Rihanna",
+    "tokens": [
+      "play",
+      "something",
+      "by",
+      "Rihanna"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Rihanna",
+        "type": "music_artist",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "25ffe46b-b346-4918-a2a1-a9533d5ab340",
+    "intent": "music.play"
+  },
+  {
+    "text": "the song Grew by Bruno Mars",
+    "tokens": [
+      "the",
+      "song",
+      "Grew",
+      "by",
+      "Bruno",
+      "Mars"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Grew",
+        "type": "song",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "Bruno Mars",
+        "type": "music_artist",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "2a1f984c-052d-4e7d-b3b1-74c2c5a190c6",
+    "intent": "music.play"
+  },
+  {
+    "text": "can you play the song Still into You",
+    "tokens": [
+      "can",
+      "you",
+      "play",
+      "the",
+      "song",
+      "Still",
+      "into",
+      "You"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADV",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [
+      {
+        "text": "Still into You",
+        "type": "song",
+        "start": 5,
+        "end": 7
+      }
+    ],
+    "id": "33871941-3a84-4ece-b772-e31866e13c8e",
+    "intent": "music.play"
+  },
+  {
+    "text": "play Miracles from Apple Music",
+    "tokens": [
+      "play",
+      "Miracles",
+      "from",
+      "Apple",
+      "Music"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Miracles",
+        "type": "song",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Apple Music",
+        "type": "music_service",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "825b5ac9-2be3-4248-884a-281343da74cd",
+    "intent": "music.play"
+  }
+]

@@ -1,0 +1,164 @@
+[
+  {
+    "text": "repeat",
+    "tokens": [
+      "repeat"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "b490c4a0-45e4-48db-b8a0-0ebb972d5bba",
+    "intent": "news.search.repeat"
+  },
+  {
+    "text": "repeat it",
+    "tokens": [
+      "repeat",
+      "it"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "2e113efa-041f-460c-a787-c990dc52b0ec",
+    "intent": "news.search.repeat"
+  },
+  {
+    "text": "come again",
+    "tokens": [
+      "come",
+      "again"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "94321d2a-dd19-408e-8e19-cc1b4ace416c",
+    "intent": "news.search.repeat"
+  },
+  {
+    "text": "do it again",
+    "tokens": [
+      "do",
+      "it",
+      "again"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "fcc4a091-15fe-4641-81af-147198498e06",
+    "intent": "news.search.repeat"
+  },
+  {
+    "text": "say it again",
+    "tokens": [
+      "say",
+      "it",
+      "again"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "c114c4e3-1d79-4dea-b8d3-5a5827b6d960",
+    "intent": "news.search.repeat"
+  },
+  {
+    "text": "say the same again",
+    "tokens": [
+      "say",
+      "the",
+      "same",
+      "again"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "ADJ",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "fb1ea039-11ef-4c9f-8466-18f070d70bbc",
+    "intent": "news.search.repeat"
+  },
+  {
+    "text": "please repeat that",
+    "tokens": [
+      "please",
+      "repeat",
+      "that"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "1f410b06-c207-4d5b-ab59-cb8951bf24c0",
+    "intent": "news.search.repeat"
+  },
+  {
+    "text": "repeat these results",
+    "tokens": [
+      "repeat",
+      "these",
+      "results"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e37023eb-b711-4fe1-b0f7-3d167277e99c",
+    "intent": "news.search.repeat"
+  },
+  {
+    "text": "could you repeat that",
+    "tokens": [
+      "could",
+      "you",
+      "repeat",
+      "that"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "f6499a09-530d-4141-ae4e-b7c815d65a99",
+    "intent": "news.search.repeat"
+  },
+  {
+    "text": "repeat what you've just said",
+    "tokens": [
+      "repeat",
+      "what",
+      "you",
+      "'ve",
+      "just",
+      "said"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "PRON",
+      "VERB",
+      "ADV",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "3bfc4d42-da70-4e17-8089-c0670dd56844",
+    "intent": "news.search.repeat"
+  }
+]

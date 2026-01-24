@@ -1,0 +1,9 @@
+{
+  "id": "f8367511-f740-4952-9882-8dc06e858515",
+  "name": "activity",
+  "isOverridable": true,
+  "isEnum": false,
+  "isRegexp": false,
+  "automatedExpansion": false,
+  "allowFuzzyExtraction": false
+}

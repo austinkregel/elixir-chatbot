@@ -1,0 +1,396 @@
+[
+  {
+    "text": "where do you live",
+    "tokens": [
+      "where",
+      "do",
+      "you",
+      "live"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "5e4171b7-34ee-4cc3-bd14-87e147a44f5f",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "in which city do you live",
+    "tokens": [
+      "in",
+      "which",
+      "city",
+      "do",
+      "you",
+      "live"
+    ],
+    "pos_tags": [
+      "ADP",
+      "DET",
+      "NOUN",
+      "VERB",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "c09d0d1d-bbd2-4536-8004-97c72131b205",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "your residence",
+    "tokens": [
+      "your",
+      "residence"
+    ],
+    "pos_tags": [
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "a5205680-0bfb-4fba-94e6-d93ce7641e46",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "your house",
+    "tokens": [
+      "your",
+      "house"
+    ],
+    "pos_tags": [
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "4eeb38c5-9909-4868-af6d-a43b301925bb",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "your home",
+    "tokens": [
+      "your",
+      "home"
+    ],
+    "pos_tags": [
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "3c2099b6-ad9b-4bcc-b14c-f38288b1edc0",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "your hometown",
+    "tokens": [
+      "your",
+      "hometown"
+    ],
+    "pos_tags": [
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "020a5dbe-7024-4efd-967c-2bf46ee0a581",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "what is your hometown",
+    "tokens": [
+      "what",
+      "is",
+      "your",
+      "hometown"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "612cd0b8-39f4-4402-8ca9-016a3e5e05f7",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "is it your hometown",
+    "tokens": [
+      "is",
+      "it",
+      "your",
+      "hometown"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "61f4266c-4e32-4563-b6da-60e40315f4cc",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "where is your hometown",
+    "tokens": [
+      "where",
+      "is",
+      "your",
+      "hometown"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "6447ddbd-4edb-44a5-a24a-1f8c75297d2f",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "tell me about your city",
+    "tokens": [
+      "tell",
+      "me",
+      "about",
+      "your",
+      "city"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "ad120699-bbbf-4986-8e9e-4891a8d23626",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "what is your city",
+    "tokens": [
+      "what",
+      "is",
+      "your",
+      "city"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "b29fdc68-726d-4f0d-85dd-6a00f0c9df04",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "what is your residence",
+    "tokens": [
+      "what",
+      "is",
+      "your",
+      "residence"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "6a593cb7-563f-45e2-851b-29b466180e9e",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "what is your town",
+    "tokens": [
+      "what",
+      "is",
+      "your",
+      "town"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "2d7f5e6d-e276-4bec-ad0c-1315589d7d24",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "what's your city",
+    "tokens": [
+      "what",
+      "'s",
+      "your",
+      "city"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "b7306f95-7589-4e5f-9638-bc86bee85a25",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "what's your home",
+    "tokens": [
+      "what",
+      "'s",
+      "your",
+      "home"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "cd7051a6-55ff-42c1-b43d-b080f4bbe5ef",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "where is your home",
+    "tokens": [
+      "where",
+      "is",
+      "your",
+      "home"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "d0ee1049-dad4-4984-b7bb-f468cb91626e",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "where is your residence",
+    "tokens": [
+      "where",
+      "is",
+      "your",
+      "residence"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "d9d70577-0fa3-4bed-92f7-6f3c6f6977ac",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "where's your home",
+    "tokens": [
+      "where",
+      "'s",
+      "your",
+      "home"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "640aeb33-2cb1-4e04-a776-9de2754861ab",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "where's your hometown",
+    "tokens": [
+      "where",
+      "'s",
+      "your",
+      "hometown"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "cc6ec852-2cbe-43b9-b0cc-1dd07fc2fa0b",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "where's your house",
+    "tokens": [
+      "where",
+      "'s",
+      "your",
+      "house"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "41c51ce3-fab4-4ee4-a09e-c78c2c45cf4c",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "where you live",
+    "tokens": [
+      "where",
+      "you",
+      "live"
+    ],
+    "pos_tags": [
+      "ADV",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "8768332e-4d4a-4f0a-a146-118fde20c26b",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "your city",
+    "tokens": [
+      "your",
+      "city"
+    ],
+    "pos_tags": [
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "742b9e27-a1ce-4053-8ffa-a4286d8676b9",
+    "intent": "smalltalk.agent.residence"
+  },
+  {
+    "text": "your town",
+    "tokens": [
+      "your",
+      "town"
+    ],
+    "pos_tags": [
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e89573c6-989a-4c7e-affe-aa934c0b46e9",
+    "intent": "smalltalk.agent.residence"
+  }
+]

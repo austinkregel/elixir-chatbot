@@ -1,0 +1,15 @@
+[
+  {
+    "value": "2025-07-07",
+    "synonyms": ["today", "now", "current date"]
+  },
+  {
+    "value": "2025-07-06",
+    "synonyms": ["yesterday"]
+  },
+  {
+    "value": "2025-07-08",
+    "synonyms": ["tomorrow"]
+  }
+]
+

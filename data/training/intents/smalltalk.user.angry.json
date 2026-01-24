@@ -1,0 +1,154 @@
+[
+  {
+    "text": "I'm being mad",
+    "tokens": [
+      "I",
+      "'m",
+      "being",
+      "mad"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "34ade327-ca03-4e9c-87cc-a9327db193f4",
+    "intent": "smalltalk.user.angry"
+  },
+  {
+    "text": "I'm enraged",
+    "tokens": [
+      "I",
+      "'m",
+      "enraged"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "ab1b51fc-f334-4b81-a87f-d72ed342436e",
+    "intent": "smalltalk.user.angry"
+  },
+  {
+    "text": "I'm angry",
+    "tokens": [
+      "I",
+      "'m",
+      "angry"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "97ec70d5-2748-41f7-8d1b-aa755264bf67",
+    "intent": "smalltalk.user.angry"
+  },
+  {
+    "text": "I'm furious",
+    "tokens": [
+      "I",
+      "'m",
+      "furious"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "e1d7aa5f-3b56-46d3-bb66-47ac7a47571c",
+    "intent": "smalltalk.user.angry"
+  },
+  {
+    "text": "I am angry with you",
+    "tokens": [
+      "I",
+      "am",
+      "angry",
+      "with",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "687fc9a2-704c-486a-89c2-f6c79f36879f",
+    "intent": "smalltalk.user.angry"
+  },
+  {
+    "text": "I am mad",
+    "tokens": [
+      "I",
+      "am",
+      "mad"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "948feab0-472a-471a-975c-8e44bf44f0e1",
+    "intent": "smalltalk.user.angry"
+  },
+  {
+    "text": "I am mad at you",
+    "tokens": [
+      "I",
+      "am",
+      "mad",
+      "at",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "5ee94b87-f0ea-4dd7-a5cb-dcdd4980fada",
+    "intent": "smalltalk.user.angry"
+  },
+  {
+    "text": "Fantastic! Today has been shit!",
+    "tokens": [
+      "Fantastic",
+      "!",
+      "Today",
+      "has",
+      "been",
+      "shit",
+      "!"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "PUNCT",
+      "NOUN",
+      "VERB",
+      "VERB",
+      "VERB",
+      "PUNCT"
+    ],
+    "entities": [
+      {
+        "text": "Today",
+        "type": "date_time",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "intent": "smalltalk.user.angry"
+  }
+]

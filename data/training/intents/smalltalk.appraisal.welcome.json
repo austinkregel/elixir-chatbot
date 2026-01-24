@@ -1,0 +1,136 @@
+[
+  {
+    "text": "that's my pleasure",
+    "tokens": [
+      "that",
+      "'s",
+      "my",
+      "pleasure"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "a6fd9f2b-5e07-4a88-be48-e1565ef76388",
+    "intent": "smalltalk.appraisal.welcome"
+  },
+  {
+    "text": "my pleasure",
+    "tokens": [
+      "my",
+      "pleasure"
+    ],
+    "pos_tags": [
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "2a928077-0d02-401a-8656-e04e5049452f",
+    "intent": "smalltalk.appraisal.welcome"
+  },
+  {
+    "text": "anytime",
+    "tokens": [
+      "anytime"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "5f27c292-3374-4496-84e0-53359696a536",
+    "intent": "smalltalk.appraisal.welcome"
+  },
+  {
+    "text": "welcome",
+    "tokens": [
+      "welcome"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "2d7e6765-4c31-4aad-9785-2f10cb6ed705",
+    "intent": "smalltalk.appraisal.welcome"
+  },
+  {
+    "text": "you're welcome",
+    "tokens": [
+      "you",
+      "'re",
+      "welcome"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "9ca67c5b-daf0-45ad-876c-e4198d34e605",
+    "intent": "smalltalk.appraisal.welcome"
+  },
+  {
+    "text": "sure welcome",
+    "tokens": [
+      "sure",
+      "welcome"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "1a5a167e-900b-436e-bbfb-72da8e09127f",
+    "intent": "smalltalk.appraisal.welcome"
+  },
+  {
+    "text": "welcome here",
+    "tokens": [
+      "welcome",
+      "here"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "de14784c-25c9-4835-af92-c38a62dbb599",
+    "intent": "smalltalk.appraisal.welcome"
+  },
+  {
+    "text": "you're so welcome",
+    "tokens": [
+      "you",
+      "'re",
+      "so",
+      "welcome"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "ab897864-439d-4282-b0ad-f5e0a33a5a59",
+    "intent": "smalltalk.appraisal.welcome"
+  },
+  {
+    "text": "anything you want",
+    "tokens": [
+      "anything",
+      "you",
+      "want"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "39a0bf24-01df-49e9-8983-f5552b17b39c",
+    "intent": "smalltalk.appraisal.welcome"
+  }
+]

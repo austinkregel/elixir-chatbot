@@ -60,6 +60,14 @@ defmodule ChatBot.Metrics.Aggregator do
           queues = Map.get(acc, :queues, %{})
           Map.put(acc, :queues, Map.put(queues, name, data))
 
+        {{:training, name}, data}, acc ->
+          training = Map.get(acc, :training, %{})
+          Map.put(acc, :training, Map.put(training, name, data))
+
+        {{:model_load, name}, data}, acc ->
+          model_loads = Map.get(acc, :model_loads, %{})
+          Map.put(acc, :model_loads, Map.put(model_loads, name, data))
+
         _, acc ->
           acc
       end)
@@ -138,6 +146,35 @@ defmodule ChatBot.Metrics.Aggregator do
     GenServer.call(__MODULE__, :reset)
   end
 
+  @doc """
+  Gets training metrics. Reads directly from ETS - non-blocking.
+  Returns a map of model name to training stats.
+  """
+  def get_training_stats do
+    try do
+      @metrics_table
+      |> :ets.match({{:training, :"$1"}, :"$2"})
+      |> Enum.map(fn [model, data] -> {model, data} end)
+      |> Map.new()
+    catch
+      :error, :badarg -> %{}
+    end
+  end
+
+  @doc """
+  Gets model load metrics. Reads directly from ETS - non-blocking.
+  """
+  def get_model_load_stats do
+    try do
+      @metrics_table
+      |> :ets.match({{:model_load, :"$1"}, :"$2"})
+      |> Enum.map(fn [model, data] -> {model, data} end)
+      |> Map.new()
+    catch
+      :error, :badarg -> %{}
+    end
+  end
+
   # ============================================================================
   # Server Callbacks
   # ============================================================================
@@ -208,6 +245,106 @@ defmodule ChatBot.Metrics.Aggregator do
        %{
          length: queue_length,
          timestamp: System.monotonic_time(:millisecond)
+       }}
+    )
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:record_training_start, model, sequence_count, metadata}, state) do
+    now = System.monotonic_time(:millisecond)
+
+    :ets.insert(
+      @metrics_table,
+      {{:training, model},
+       %{
+         status: :in_progress,
+         started_at: metadata[:started_at] || DateTime.utc_now(),
+         sequence_count: sequence_count,
+         duration_ms: nil,
+         tag_count: nil,
+         feature_count: nil,
+         last_updated: now
+       }}
+    )
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:record_training_stop, model, measurements, _metadata}, state) do
+    now = System.monotonic_time(:millisecond)
+
+    # Get existing training record or create new one
+    existing =
+      case :ets.lookup(@metrics_table, {:training, model}) do
+        [{{:training, ^model}, data}] -> data
+        [] -> %{}
+      end
+
+    updated = %{
+      status: :completed,
+      started_at: existing[:started_at],
+      completed_at: DateTime.utc_now(),
+      sequence_count: measurements[:sequence_count] || existing[:sequence_count],
+      duration_ms: measurements[:duration_ms],
+      tag_count: measurements[:tag_count],
+      feature_count: measurements[:feature_count],
+      success: true,
+      last_updated: now
+    }
+
+    :ets.insert(@metrics_table, {{:training, model}, updated})
+
+    # Also record as a duration metric for aggregation
+    add_raw_data_point({:train, model}, measurements[:duration_ms] || 0, now)
+    increment_counter({:train, model}, :count)
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:record_training_exception, model, measurements, metadata}, state) do
+    now = System.monotonic_time(:millisecond)
+
+    existing =
+      case :ets.lookup(@metrics_table, {:training, model}) do
+        [{{:training, ^model}, data}] -> data
+        [] -> %{}
+      end
+
+    updated = %{
+      status: :failed,
+      started_at: existing[:started_at],
+      completed_at: DateTime.utc_now(),
+      sequence_count: measurements[:sequence_count] || existing[:sequence_count],
+      duration_ms: measurements[:duration_ms],
+      reason: metadata[:reason],
+      success: false,
+      last_updated: now
+    }
+
+    :ets.insert(@metrics_table, {{:training, model}, updated})
+
+    # Track error
+    increment_error_counter({:training_failed, model})
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:record_model_load, model, duration_ms, metadata}, state) do
+    now = System.monotonic_time(:millisecond)
+
+    :ets.insert(
+      @metrics_table,
+      {{:model_load, model},
+       %{
+         loaded_at: DateTime.utc_now(),
+         duration_ms: duration_ms,
+         success: metadata[:success] != false,
+         last_updated: now
        }}
     )
 

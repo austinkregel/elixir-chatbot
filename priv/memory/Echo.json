@@ -28,5 +28,25 @@
     ],
     "text": "Learned 1 entities, 0 relationships, 0 facts from: Very good!",
     "timestamp": 1769233558176
+  },
+  {
+    "id": "19447d388743c609",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 5 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769271621451
+  },
+  {
+    "id": "9f6d5f43dc83aba9",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you",
+    "timestamp": 1769272073085
   }
 ]

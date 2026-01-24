@@ -1,0 +1,9 @@
+{
+  "id": "63af90f6-6dfe-4bf4-bec2-8963224bef6c",
+  "name": "outfit",
+  "isOverridable": true,
+  "isEnum": false,
+  "isRegexp": false,
+  "automatedExpansion": false,
+  "allowFuzzyExtraction": false
+}

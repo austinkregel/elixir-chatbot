@@ -9,7 +9,7 @@ defmodule ChatBot.FactDatabase.Integration do
   """
 
   alias ChatBot.FactDatabase
-  alias ChatBot.Epistemic.{BeliefStore, JTMS, UserModelStore}
+  alias ChatBot.Epistemic.{BeliefStore, JTMS}
   alias ChatBot.Epistemic.Types.Belief
   require Logger
 
@@ -85,7 +85,7 @@ defmodule ChatBot.FactDatabase.Integration do
   def verify_fact(entity, fact_text) do
     # Check against existing beliefs
     case BeliefStore.query_beliefs(subject: :world, predicate: normalize_entity(entity)) do
-      {:ok, beliefs} when length(beliefs) > 0 ->
+      {:ok, [_ | _] = beliefs} ->
         # Check for contradictions
         contradictions = find_contradictions(fact_text, beliefs)
 

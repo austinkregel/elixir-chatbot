@@ -2,7 +2,6 @@ defmodule ChatBot.Epistemic.JTMSTest do
   use ExUnit.Case, async: false
 
   alias ChatBot.Epistemic.JTMS
-  alias ChatBot.Epistemic.Types.{Node, Justification}
 
   setup do
     # Ensure JTMS is started and cleared before each test

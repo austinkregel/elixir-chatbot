@@ -1,0 +1,114 @@
+[
+  {
+    "text": "I miss you",
+    "tokens": [
+      "I",
+      "miss",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "717056b3-a610-42fa-b6a3-25c36eaaf4ff",
+    "intent": "smalltalk.user.misses_agent"
+  },
+  {
+    "text": "missing you",
+    "tokens": [
+      "missing",
+      "you"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "09bdd530-79e3-4536-a700-b1849ebf038e",
+    "intent": "smalltalk.user.misses_agent"
+  },
+  {
+    "text": "miss you",
+    "tokens": [
+      "miss",
+      "you"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "ced7d0be-dd2f-42e1-8848-2dea91849655",
+    "intent": "smalltalk.user.misses_agent"
+  },
+  {
+    "text": "already miss you",
+    "tokens": [
+      "already",
+      "miss",
+      "you"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "31cb67e2-e47d-4062-9e26-8bbd8bf50fae",
+    "intent": "smalltalk.user.misses_agent"
+  },
+  {
+    "text": "I miss you much",
+    "tokens": [
+      "I",
+      "miss",
+      "you",
+      "much"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "e295d565-8259-45c8-901e-5d459fdca381",
+    "intent": "smalltalk.user.misses_agent"
+  },
+  {
+    "text": "I missed you",
+    "tokens": [
+      "I",
+      "missed",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "08f8dd7a-ff69-4be6-8bc2-a89dc690a103",
+    "intent": "smalltalk.user.misses_agent"
+  },
+  {
+    "text": "I've missed you",
+    "tokens": [
+      "I",
+      "'ve",
+      "missed",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "fa742d50-1472-4bbb-b4cf-3f7374ef4921",
+    "intent": "smalltalk.user.misses_agent"
+  }
+]

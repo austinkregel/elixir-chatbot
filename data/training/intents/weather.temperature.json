@@ -1,0 +1,1624 @@
+[
+  {
+    "text": "show me the temperature in Paris in Fahrenheit",
+    "tokens": [
+      "show",
+      "me",
+      "the",
+      "temperature",
+      "in",
+      "Paris",
+      "in",
+      "Fahrenheit"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Paris",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "Fahrenheit",
+        "type": "unit_temperature",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "05113df5-1f9b-4a21-bffc-9fa257e703ef",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "how cold is it supposed to be this Sunday in Mountain View",
+    "tokens": [
+      "how",
+      "cold",
+      "is",
+      "it",
+      "supposed",
+      "to",
+      "be",
+      "this",
+      "Sunday",
+      "in",
+      "Mountain",
+      "View"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "cold",
+        "type": "temperature",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "this Sunday",
+        "type": "date_time",
+        "start": 7,
+        "end": 8
+      },
+      {
+        "text": "Mountain View",
+        "type": "location",
+        "start": 10,
+        "end": 11
+      }
+    ],
+    "id": "20049320-a4db-47d6-a40e-efce8b84a1e7",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "temperature in Bangkok",
+    "tokens": [
+      "temperature",
+      "in",
+      "Bangkok"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Bangkok",
+        "type": "location",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "dac3cbde-a0ec-4229-9075-410d9a3aa475",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "what is the temperature tomorrow in Campbell",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "temperature",
+      "tomorrow",
+      "in",
+      "Campbell"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "Campbell",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "1bd81857-86c8-4697-b8df-bff6adccd89d",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "what is the temperature tomorrow in Canberra",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "temperature",
+      "tomorrow",
+      "in",
+      "Canberra"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "Canberra",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "ea3bcd99-b53b-4eaf-b409-f33711553eca",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "at New York is there cold",
+    "tokens": [
+      "at",
+      "New",
+      "York",
+      "is",
+      "there",
+      "cold"
+    ],
+    "pos_tags": [
+      "ADP",
+      "PROPN",
+      "PROPN",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "New York",
+        "type": "location",
+        "start": 1,
+        "end": 2
+      },
+      {
+        "text": "cold",
+        "type": "temperature",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "5de37a96-1df7-4647-beee-1960a3c6a4ed",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "is there warm in New York",
+    "tokens": [
+      "is",
+      "there",
+      "warm",
+      "in",
+      "New",
+      "York"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "warm",
+        "type": "temperature",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "New York",
+        "type": "location",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "335b60ba-2d80-4291-8e6c-da936e5524f7",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "in New York is there hot",
+    "tokens": [
+      "in",
+      "New",
+      "York",
+      "is",
+      "there",
+      "hot"
+    ],
+    "pos_tags": [
+      "ADP",
+      "PROPN",
+      "PROPN",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "New York",
+        "type": "location",
+        "start": 1,
+        "end": 2
+      },
+      {
+        "text": "hot",
+        "type": "temperature",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "e7c06c7e-9426-462c-b0d8-b9f83277dc46",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "is today a hot day",
+    "tokens": [
+      "is",
+      "today",
+      "a",
+      "hot",
+      "day"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "hot",
+        "type": "temperature",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "bf8c6f6c-93d1-4315-a6b2-5b9a3a152283",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "temperature",
+    "tokens": [
+      "temperature"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "79e288c7-8fe5-4df4-9b77-f28e7b9c3cbe",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "check temperature",
+    "tokens": [
+      "check",
+      "temperature"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "c5bbae96-3959-4dc3-91d3-ccbca20f59ed",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "what's the temperature outside",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "temperature",
+      "outside"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "dc1f5b58-4b1c-4e39-a8ae-6f340f6621e0",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "what's the temperature in Moscow in Celsius",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "temperature",
+      "in",
+      "Moscow",
+      "in",
+      "Celsius"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Moscow",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "Celsius",
+        "type": "unit_temperature",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "75920750-213f-460c-a9c4-5a334baf6311",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "show me the temperature",
+    "tokens": [
+      "show",
+      "me",
+      "the",
+      "temperature"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "e2c2f3d7-a57d-48f6-99a6-b8b0878f10a9",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "I'd like to know the temperature",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "know",
+      "the",
+      "temperature"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "210fcaed-e6d5-4158-b23b-5c65061e91bf",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "is it hot",
+    "tokens": [
+      "is",
+      "it",
+      "hot"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "hot",
+        "type": "temperature",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "7914e8c9-cde7-45d7-9c1e-77568f0211ae",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "tell me if it's cold outside",
+    "tokens": [
+      "tell",
+      "me",
+      "if",
+      "it",
+      "'s",
+      "cold",
+      "outside"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "ADP"
+    ],
+    "entities": [
+      {
+        "text": "cold",
+        "type": "temperature",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "1f0ea595-1870-4989-ae59-5925395ee4b8",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "it's chilly outside right",
+    "tokens": [
+      "it",
+      "'s",
+      "chilly",
+      "outside",
+      "right"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "chilly",
+        "type": "temperature",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "c3921efc-d18a-47e2-bb81-55469bb517d1",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "how cold is it",
+    "tokens": [
+      "how",
+      "cold",
+      "is",
+      "it"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [
+      {
+        "text": "cold",
+        "type": "temperature",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "837b3320-f6bd-44a1-b0aa-dc0296405d0a",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "temperature in Moscow",
+    "tokens": [
+      "temperature",
+      "in",
+      "Moscow"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Moscow",
+        "type": "location",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "4f6bbfb6-9bb0-4493-a8e6-0e682aeb1e3c",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "will it be warm tomorrow",
+    "tokens": [
+      "will",
+      "it",
+      "be",
+      "warm",
+      "tomorrow"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "warm",
+        "type": "temperature",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "9dbeb4af-34bc-4b58-be15-c8249bba1abd",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "it is chilly in London right now",
+    "tokens": [
+      "it",
+      "is",
+      "chilly",
+      "in",
+      "London",
+      "right",
+      "now"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADP",
+      "PROPN",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "chilly",
+        "type": "temperature",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "London",
+        "type": "location",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "467f9bdf-9ede-4626-bb1f-cbeaacb22991",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "check temperature in Berlin",
+    "tokens": [
+      "check",
+      "temperature",
+      "in",
+      "Berlin"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Berlin",
+        "type": "location",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "6684288f-b93f-4f93-9665-9612a3e463e2",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "what's the temperature in Madrid",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "temperature",
+      "in",
+      "Madrid"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Madrid",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "6d47fb04-f798-414e-9111-2f1e88620d00",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "show me the temperature in Paris",
+    "tokens": [
+      "show",
+      "me",
+      "the",
+      "temperature",
+      "in",
+      "Paris"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Paris",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "5f8f2924-b364-4289-a61b-f1c843d71b5c",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "I'd like to know the temperature in London",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "know",
+      "the",
+      "temperature",
+      "in",
+      "London"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "London",
+        "type": "location",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "6dee4702-829f-4b43-b8ad-d416d116dec5",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "is it hot in Tokyo",
+    "tokens": [
+      "is",
+      "it",
+      "hot",
+      "in",
+      "Tokyo"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "hot",
+        "type": "temperature",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "Tokyo",
+        "type": "location",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "f3b4eaa5-5f39-474b-8cbc-fd796ac11f53",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "tell me if it's cold in Oslo",
+    "tokens": [
+      "tell",
+      "me",
+      "if",
+      "it",
+      "'s",
+      "cold",
+      "in",
+      "Oslo"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "cold",
+        "type": "temperature",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "Oslo",
+        "type": "location",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "b8054eb8-7af2-4be7-8d3d-b94d9aa612c2",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "it's chilly in New York right",
+    "tokens": [
+      "it",
+      "'s",
+      "chilly",
+      "in",
+      "New",
+      "York",
+      "right"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADP",
+      "PROPN",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "chilly",
+        "type": "temperature",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "New York",
+        "type": "location",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "4820269f-901b-498e-8a66-19ac04598d9f",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "how cold is it in Chicago",
+    "tokens": [
+      "how",
+      "cold",
+      "is",
+      "it",
+      "in",
+      "Chicago"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "VERB",
+      "PRON",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "cold",
+        "type": "temperature",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "Chicago",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "648839e9-cdec-4df2-b4ab-efcc5e6b1d2f",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "check if it's going to be freezing tomorrow",
+    "tokens": [
+      "check",
+      "if",
+      "it",
+      "'s",
+      "going",
+      "to",
+      "be",
+      "freezing",
+      "tomorrow"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON",
+      "VERB",
+      "VERB",
+      "PART",
+      "VERB",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "freezing",
+        "type": "temperature",
+        "start": 7,
+        "end": 7
+      },
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "67de1105-a438-41ed-b801-86a0868e53f8",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "temperature tonight",
+    "tokens": [
+      "temperature",
+      "tonight"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "tonight",
+        "type": "date_time",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "99bbf637-6cff-4147-8edc-81b15df3860d",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "today's temperature",
+    "tokens": [
+      "today",
+      "'s",
+      "temperature"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "today's",
+        "type": "date_time",
+        "start": 0,
+        "end": 1
+      }
+    ],
+    "id": "37cdcfe9-9fdf-4e95-9a0d-ca01db86bb4b",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "check temperature for next Friday",
+    "tokens": [
+      "check",
+      "temperature",
+      "for",
+      "next",
+      "Friday"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "ADJ",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "next Friday",
+        "type": "date_time",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "407116e6-7d1c-4b52-ada2-963d335896f0",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "what will the temperature be on Monday",
+    "tokens": [
+      "what",
+      "will",
+      "the",
+      "temperature",
+      "be",
+      "on",
+      "Monday"
+    ],
+    "pos_tags": [
+      "DET",
+      "AUX",
+      "DET",
+      "NOUN",
+      "VERB",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Monday",
+        "type": "date_time",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "bf9d512a-a618-49fb-bf98-1c926c7a20eb",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "show me the temperature for this weekend",
+    "tokens": [
+      "show",
+      "me",
+      "the",
+      "temperature",
+      "for",
+      "this",
+      "weekend"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "this weekend",
+        "type": "date_time",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "a0ee17df-cba0-4b0a-a7a2-ad9b126f40db",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "I'd like to know the temperature on June 14",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "know",
+      "the",
+      "temperature",
+      "on",
+      "June",
+      "14"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "June 14",
+        "type": "date_time",
+        "start": 8,
+        "end": 9
+      }
+    ],
+    "id": "409d162c-416b-48eb-8236-061ef8738357",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "is it going to be chilly tomorrow",
+    "tokens": [
+      "is",
+      "it",
+      "going",
+      "to",
+      "be",
+      "chilly",
+      "tomorrow"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADV",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "chilly",
+        "type": "temperature",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "8aefb3ac-e51c-46be-ba54-1298018812b2",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "tell me if it will be freezing on Tuesday",
+    "tokens": [
+      "tell",
+      "me",
+      "if",
+      "it",
+      "will",
+      "be",
+      "freezing",
+      "on",
+      "Tuesday"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "PRON",
+      "AUX",
+      "VERB",
+      "VERB",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "freezing",
+        "type": "temperature",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "Tuesday",
+        "type": "date_time",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "8d0a80fa-767b-48a4-8993-e373f038d2e3",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "how cold is it supposed to be this week",
+    "tokens": [
+      "how",
+      "cold",
+      "is",
+      "it",
+      "supposed",
+      "to",
+      "be",
+      "this",
+      "week"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "cold",
+        "type": "temperature",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "this week",
+        "type": "date_time",
+        "start": 7,
+        "end": 8
+      }
+    ],
+    "id": "78de8bea-685b-44a8-b0f4-3234ad9f21e8",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "allright is it cold tonight in Aspen",
+    "tokens": [
+      "allright",
+      "is",
+      "it",
+      "cold",
+      "tonight",
+      "in",
+      "Aspen"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PRON",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "cold",
+        "type": "temperature",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "tonight",
+        "type": "date_time",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "Aspen",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "1e9b76ef-9ced-4d4f-b984-64442c962b42",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "temperature in San Diego next Wednesday",
+    "tokens": [
+      "temperature",
+      "in",
+      "San",
+      "Diego",
+      "next",
+      "Wednesday"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN",
+      "ADJ",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "San Diego",
+        "type": "location",
+        "start": 2,
+        "end": 3
+      },
+      {
+        "text": "next Wednesday",
+        "type": "date_time",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "676f1261-873c-4ed8-a27b-b7e33723f00f",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "today's temperature in Salamanca",
+    "tokens": [
+      "today",
+      "'s",
+      "temperature",
+      "in",
+      "Salamanca"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "today's",
+        "type": "date_time",
+        "start": 0,
+        "end": 1
+      },
+      {
+        "text": "Salamanca",
+        "type": "location",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "1820732a-ee24-4d14-b4f2-808f3fb66833",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "check temperature for next week in Budapest",
+    "tokens": [
+      "check",
+      "temperature",
+      "for",
+      "next",
+      "week",
+      "in",
+      "Budapest"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "next week",
+        "type": "date_time",
+        "start": 3,
+        "end": 4
+      },
+      {
+        "text": "Budapest",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "8a83b69d-d482-4ace-8523-e604a99f79bc",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "what will the temperature be in Munich on Monday",
+    "tokens": [
+      "what",
+      "will",
+      "the",
+      "temperature",
+      "be",
+      "in",
+      "Munich",
+      "on",
+      "Monday"
+    ],
+    "pos_tags": [
+      "DET",
+      "AUX",
+      "DET",
+      "NOUN",
+      "VERB",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Munich",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "Monday",
+        "type": "date_time",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "4a0d519f-b599-488b-a61c-5e777a8bee31",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "show me the temperature for this weekend in Los Angeles",
+    "tokens": [
+      "show",
+      "me",
+      "the",
+      "temperature",
+      "for",
+      "this",
+      "weekend",
+      "in",
+      "Los",
+      "Angeles"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "this weekend",
+        "type": "date_time",
+        "start": 5,
+        "end": 6
+      },
+      {
+        "text": "Los Angeles",
+        "type": "location",
+        "start": 8,
+        "end": 9
+      }
+    ],
+    "id": "e370ca8e-2b22-4ecb-ab68-402776c7f11f",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "I'd like to know the temperature on July 22 in Tampa",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "know",
+      "the",
+      "temperature",
+      "on",
+      "July",
+      "22",
+      "in",
+      "Tampa"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "NUM",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "July 22",
+        "type": "date_time",
+        "start": 8,
+        "end": 9
+      },
+      {
+        "text": "Tampa",
+        "type": "location",
+        "start": 11,
+        "end": 11
+      }
+    ],
+    "id": "54e490c4-2148-41fe-89a7-5d09c58ee0e9",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "is it going to be cold tomorrow in Dresden",
+    "tokens": [
+      "is",
+      "it",
+      "going",
+      "to",
+      "be",
+      "cold",
+      "tomorrow",
+      "in",
+      "Dresden"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "cold",
+        "type": "temperature",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "Dresden",
+        "type": "location",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "eb44e038-c193-4353-a8e3-22c848644219",
+    "intent": "weather.temperature"
+  },
+  {
+    "text": "tell me if it will be hot in Ibiza next weekend",
+    "tokens": [
+      "tell",
+      "me",
+      "if",
+      "it",
+      "will",
+      "be",
+      "hot",
+      "in",
+      "Ibiza",
+      "next",
+      "weekend"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "PRON",
+      "AUX",
+      "VERB",
+      "ADJ",
+      "ADP",
+      "PROPN",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "hot",
+        "type": "temperature",
+        "start": 6,
+        "end": 6
+      },
+      {
+        "text": "Ibiza",
+        "type": "location",
+        "start": 8,
+        "end": 8
+      },
+      {
+        "text": "next weekend",
+        "type": "date_time",
+        "start": 9,
+        "end": 10
+      }
+    ],
+    "id": "f55abc14-e76e-4b71-8a19-29c6637f84e7",
+    "intent": "weather.temperature"
+  }
+]
