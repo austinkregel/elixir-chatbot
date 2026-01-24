@@ -88,8 +88,13 @@ defmodule ChatBot.ML.NLPPipeline do
   @doc """
   Main entry point for text processing using classical NLP.
   Returns {:ok, result} or {:error, reason}.
+
+  ## Options
+
+  - `:discourse` - Discourse analysis result for entity disambiguation
+  - `:speech_act` - Speech act classification for entity disambiguation
   """
-  def process(text) do
+  def process(text, opts \\ []) do
     Logger.debug("Processing text with classical NLP", %{text: text})
 
     try do
@@ -98,7 +103,8 @@ defmodule ChatBot.ML.NLPPipeline do
       Logger.debug("Tokenized input", %{token_count: length(tokens)})
 
       # Extract entities using gazetteer and patterns
-      entities = EntityExtractor.extract_entities(text)
+      # Pass context for disambiguation if available
+      entities = EntityExtractor.extract_entities(text, opts)
       Logger.debug("Extracted entities", %{count: length(entities)})
 
       # Classify intent

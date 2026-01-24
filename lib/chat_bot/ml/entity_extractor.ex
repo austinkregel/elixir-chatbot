@@ -932,18 +932,86 @@ defmodule ChatBot.ML.EntityExtractor do
     pos_tagged = get_pos_tags(tokens)
 
     # Use the EntityDisambiguator to resolve entities with multiple types
-    entities
-    |> Enum.map(fn entity ->
-      # Check if this entity has multiple possible types
-      types = get_entity_types(entity)
+    disambiguated =
+      entities
+      |> Enum.map(fn entity ->
+        # Check if this entity has multiple possible types
+        types = get_entity_types(entity)
 
-      if length(types) > 1 do
-        # Disambiguate this entity
-        EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
-      else
-        entity
-      end
+        if length(types) > 1 do
+          # Disambiguate this entity
+          result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
+
+          # Emit telemetry for disambiguation
+          :telemetry.execute(
+            [:chat_bot, :analysis, :disambiguation, :entity],
+            %{
+              type_count: length(types),
+              selected_type: result[:entity_type] || result[:entity]
+            },
+            %{
+              value: entity[:value],
+              available_types: Enum.map(types, &((&1[:entity_type] || &1[:type]))),
+              context_type: context_type(context),
+              pos_pattern: extract_pos_pattern(pos_tagged)
+            }
+          )
+
+          result
+        else
+          entity
+        end
+      end)
+
+    # Emit summary telemetry
+    ambiguous_count = Enum.count(entities, fn e -> length(get_entity_types(e)) > 1 end)
+
+    if ambiguous_count > 0 do
+      :telemetry.execute(
+        [:chat_bot, :analysis, :disambiguation, :complete],
+        %{
+          total_entities: length(entities),
+          ambiguous_entities: ambiguous_count
+        },
+        %{
+          has_discourse: discourse != nil,
+          has_speech_act: speech_act != nil
+        }
+      )
+    end
+
+    disambiguated
+  end
+
+  defp context_type(context) do
+    speech_act = context[:speech_act]
+
+    # Handle both struct and map access safely
+    sub_type = get_field(speech_act, :sub_type)
+    intent = get_field(speech_act, :intent) || ""
+
+    cond do
+      sub_type == :greeting -> :introduction
+      String.contains?(to_string(intent), "weather") -> :weather
+      String.contains?(to_string(intent), "music") -> :music
+      true -> :default
+    end
+  end
+
+  # Helper to safely get a field from either a struct or map
+  defp get_field(nil, _key), do: nil
+  defp get_field(struct, key) when is_struct(struct), do: Map.get(struct, key)
+  defp get_field(map, key) when is_map(map), do: Map.get(map, key)
+  defp get_field(_, _), do: nil
+
+  defp extract_pos_pattern(pos_tagged) do
+    pos_tagged
+    |> Enum.take(3)
+    |> Enum.map(fn
+      {_token, tag} -> tag
+      tag -> tag
     end)
+    |> Enum.join("-")
   end
 
   defp get_pos_tags(tokens) do

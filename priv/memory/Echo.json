@@ -48,5 +48,55 @@
     ],
     "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you",
     "timestamp": 1769272073085
+  },
+  {
+    "id": "310267ac698d91e6",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 5 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769277038355
+  },
+  {
+    "id": "695987afcc7375a2",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 5 entities, 0 relationships, 0 facts from: Hello, I'm Steve. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769278522901
+  },
+  {
+    "id": "d9a46c338ee8a869",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I'm Austin",
+    "timestamp": 1769278800243
+  },
+  {
+    "id": "e0ef55ba234332b9",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I'm Austin",
+    "timestamp": 1769278802620
+  },
+  {
+    "id": "9a4db98cb393f7be",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 5 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769279370627
   }
 ]

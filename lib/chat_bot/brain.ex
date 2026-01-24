@@ -1084,8 +1084,20 @@ defmodule ChatBot.Brain do
     slots_info = if best_analysis, do: Map.get(best_analysis, :slots), else: nil
     missing_slots = if best_analysis, do: Map.get(best_analysis, :missing_context, []), else: []
 
+    # Extract discourse and speech_act context for disambiguation
+    disambiguation_opts =
+      if best_analysis do
+        [
+          discourse: Map.get(best_analysis, :discourse),
+          speech_act: Map.get(best_analysis, :speech_act)
+        ]
+      else
+        []
+      end
+
     # Try classical NLP pipeline for additional processing
-    case ChatBot.ML.NLPPipeline.process(input) do
+    # Pass context for entity disambiguation
+    case ChatBot.ML.NLPPipeline.process(input, disambiguation_opts) do
       {:ok, %{confidence: conf, intent: nlp_intent, entities: nlp_entities}} ->
         # Merge analysis intent with NLP intent (prefer analysis if both present)
         intent = analysis_intent || nlp_intent
