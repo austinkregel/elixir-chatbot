@@ -198,12 +198,21 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
   defp analyze_structure(text, normalized) do
     is_question = has_question_structure?(text, normalized)
     is_imperative = has_imperative_structure?(normalized)
-    is_exclamatory = String.ends_with?(String.trim(text), "!")
-    is_declarative = String.ends_with?(String.trim(text), ".")
+    trimmed = String.trim(text)
+    is_exclamatory = String.ends_with?(trimmed, "!")
+    is_declarative = String.ends_with?(trimmed, ".")
+
+    # Continuation detection: no terminal punctuation, or ends with continuation marker
+    is_continuation = has_continuation_structure?(trimmed, normalized)
+
     has_modal = has_modal_verb?(normalized)
 
     {category, sub_type, confidence} =
       cond do
+        # Continuation: incomplete thought, expecting more
+        is_continuation ->
+          {:assertive, :continuation, 0.75}
+
         is_question and has_modal ->
           {:directive, :request_action, 0.8}
 
@@ -228,6 +237,7 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
       is_imperative: is_imperative,
       is_exclamatory: is_exclamatory,
       is_declarative: is_declarative,
+      is_continuation: is_continuation,
       has_modal: has_modal,
       category: category,
       sub_type: sub_type,
@@ -241,6 +251,7 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
     # Remove punctuation for keyword matching using Tokenizer (no regex)
     words = Tokenizer.tokenize_words(normalized)
     first_word = List.first(words) || ""
+    word_count = length(words)
 
     # Check for greeting keywords
     greeting_score = keyword_match_score(words, @greeting_keywords)
@@ -254,6 +265,25 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
     # Check for sorry keywords
     sorry_score = keyword_match_score(words, @sorry_keywords)
 
+    # Check for acknowledgment keywords (response to thanks)
+    acknowledgment_score = keyword_match_score(words, @acknowledgment_keywords)
+
+    # Check for compliment keywords (only for short utterances to avoid false positives like "The weather is nice")
+    compliment_score =
+      if word_count <= 4 do
+        keyword_match_score(words, @compliment_keywords)
+      else
+        0.0
+      end
+
+    # Check for backchannel keywords (only if very short)
+    backchannel_score =
+      if word_count <= 2 do
+        keyword_match_score(words, @backchannel_keywords)
+      else
+        0.0
+      end
+
     # Check for question starters
     question_score = if first_word in @question_words, do: 0.8, else: 0.0
 
@@ -266,6 +296,9 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
       {:farewell, farewell_score},
       {:thanks, thanks_score},
       {:apology, sorry_score},
+      {:acknowledgment, acknowledgment_score},
+      {:compliment, compliment_score},
+      {:backchannel, backchannel_score},
       {:question, question_score},
       {:command, imperative_score}
     ]
@@ -278,6 +311,9 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
         :farewell -> {:expressive, :farewell}
         :thanks -> {:expressive, :thanks}
         :apology -> {:expressive, :apology}
+        :acknowledgment -> {:expressive, :acknowledgment}
+        :compliment -> {:expressive, :compliment}
+        :backchannel -> {:expressive, :backchannel}
         :question -> {:directive, :request_information}
         :command -> {:directive, :command}
         _ -> {:assertive, :statement}
@@ -295,6 +331,7 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
   # Pass 4: Pragmatic Markers Analysis
   defp analyze_pragmatics(_text, normalized) do
     words = String.split(normalized)
+    word_count = length(words)
 
     # Check for politeness markers
     has_please = "please" in words
@@ -313,15 +350,47 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
       end)
 
     # Short utterances (1-3 words) are often expressives
-    is_short = length(words) <= 3
+    is_short = word_count <= 3
+    is_very_short = word_count <= 2
+
+    # Backchannel detection: very short + low semantic content
+    # These are minimal acknowledgment signals
+    backchannel_word_count = Enum.count(words, &(&1 in @backchannel_keywords))
+    is_backchannel = is_very_short and backchannel_word_count > 0 and
+                     backchannel_word_count >= (word_count / 2)
+
+    # Acknowledgment detection: response to thanks/apology
+    acknowledgment_word_count = Enum.count(words, &(&1 in @acknowledgment_keywords))
+    has_acknowledgment = acknowledgment_word_count > 0
+
+    # Compliment detection: positive evaluation
+    compliment_word_count = Enum.count(words, &(&1 in @compliment_keywords))
+    # Compliment if has positive words + directed at addressee (you/your patterns)
+    has_you_reference = Enum.any?(words, &(&1 in ~w(you your youre you're)))
+    has_that_reference = Enum.any?(words, &(&1 in ~w(that this it)))
+    is_compliment = compliment_word_count > 0 and (has_you_reference or has_that_reference or is_short)
 
     # Determine if this looks like an expressive based on pragmatics
     expressive_score =
       cond do
+        is_backchannel -> 0.95
+        has_acknowledgment and is_short -> 0.9
+        is_compliment -> 0.85
         has_greeting_marker and is_short -> 0.9
         has_thanks and is_short -> 0.85
         has_please -> 0.3
         true -> 0.0
+      end
+
+    # Determine the specific sub_type detected
+    pragmatic_sub_type =
+      cond do
+        is_backchannel -> :backchannel
+        has_acknowledgment and is_short -> :acknowledgment
+        is_compliment -> :compliment
+        has_greeting_marker -> :greeting
+        has_thanks -> :thanks
+        true -> nil
       end
 
     %{
@@ -330,6 +399,11 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
       has_urgency: has_urgency,
       has_hedging: has_hedging,
       is_short_utterance: is_short,
+      is_very_short: is_very_short,
+      is_backchannel: is_backchannel,
+      is_compliment: is_compliment,
+      has_acknowledgment: has_acknowledgment,
+      pragmatic_sub_type: pragmatic_sub_type,
       expressive_score: expressive_score,
       source: :pragmatic
     }
@@ -437,6 +511,21 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
       String.contains?(tag, "sorry") or String.contains?(tag, "apolog") ->
         {:expressive, :apology}
 
+      # Response optionality tags
+      String.contains?(tag, "backchannel") or String.contains?(tag, "hmm") or
+          String.contains?(tag, "okay") ->
+        {:expressive, :backchannel}
+
+      String.contains?(tag, "compliment") or String.contains?(tag, "praise") or
+          String.contains?(tag, "good job") ->
+        {:expressive, :compliment}
+
+      String.contains?(tag, "welcome") or String.contains?(tag, "acknowledgment") ->
+        {:expressive, :acknowledgment}
+
+      String.contains?(tag, "continuation") or String.contains?(tag, "incomplete") ->
+        {:assertive, :continuation}
+
       String.contains?(tag, "weather") or String.contains?(tag, "time") ->
         {:directive, :request_information}
 
@@ -515,10 +604,12 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
         votes
       end
 
-    # Vote from pragmatic analysis (for expressives)
+    # Vote from pragmatic analysis (for expressives, including new sub-types)
     votes =
       if analyses.pragmatic.expressive_score > 0.5 do
-        vote = {:expressive, :general, analyses.pragmatic.expressive_score, :pragmatic}
+        # Use the specific pragmatic sub_type if detected
+        sub_type = analyses.pragmatic.pragmatic_sub_type || :general
+        vote = {:expressive, sub_type, analyses.pragmatic.expressive_score, :pragmatic}
         [vote | votes]
       else
         votes
@@ -639,6 +730,30 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
         indicators
       end
 
+    # Continuation indicator
+    indicators =
+      if Map.get(analyses.structural, :is_continuation, false) do
+        ["continuation_structure" | indicators]
+      else
+        indicators
+      end
+
+    # Backchannel indicator
+    indicators =
+      if Map.get(analyses.pragmatic, :is_backchannel, false) do
+        ["backchannel" | indicators]
+      else
+        indicators
+      end
+
+    # Compliment indicator
+    indicators =
+      if Map.get(analyses.pragmatic, :is_compliment, false) do
+        ["compliment" | indicators]
+      else
+        indicators
+      end
+
     # Keyword indicators
     indicators =
       if analyses.keyword.confidence > 0.3 do
@@ -686,6 +801,33 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
   defp has_modal_verb?(normalized) do
     words = String.split(normalized)
     Enum.any?(words, fn word -> word in @modal_verbs end)
+  end
+
+  defp has_continuation_structure?(trimmed, normalized) do
+    words = String.split(normalized)
+    last_word = List.last(words) || ""
+
+    # No terminal punctuation (. ! ?) suggests incomplete thought
+    no_terminal = not (String.ends_with?(trimmed, ".") or
+                       String.ends_with?(trimmed, "!") or
+                       String.ends_with?(trimmed, "?"))
+
+    # Ends with a continuation marker
+    ends_with_continuation = last_word in @continuation_markers
+
+    # Ends with a comma (incomplete sentence)
+    ends_with_comma = String.ends_with?(trimmed, ",")
+
+    # Trailing ellipsis suggests more coming
+    trailing_ellipsis = String.ends_with?(trimmed, "...")
+
+    # Consider it a continuation if any of these are true, but only if substantive
+    has_continuation_signal = ends_with_continuation or ends_with_comma or trailing_ellipsis
+
+    # Must have at least 2 words to be a continuation (not just "and" by itself)
+    substantive = length(words) >= 2
+
+    (no_terminal and has_continuation_signal and substantive)
   end
 
   defp keyword_match_score(words, keywords) do
@@ -744,6 +886,11 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
       :promise -> {:commissive, :promise}
       :offer -> {:commissive, :offer}
       :statement -> {:assertive, :statement}
+      # Response optionality types
+      :backchannel -> {:expressive, :backchannel}
+      :compliment -> {:expressive, :compliment}
+      :acknowledgment -> {:expressive, :acknowledgment}
+      :continuation -> {:assertive, :continuation}
       _ -> {:assertive, :statement}
     end
   end

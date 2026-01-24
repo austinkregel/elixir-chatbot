@@ -269,7 +269,21 @@ defmodule ChatBotWeb.ChatLive do
         socket
       ) do
     case result do
-      {:ok, response} ->
+      {:ok, nil} ->
+        # Response was deferred (e.g., backchannel, gratitude loop, continuation)
+        # No assistant message to display - just clear input
+        socket =
+          if socket.assigns.current_conversation_id == conversation_id do
+            socket
+            |> assign(:input_text, "")
+            |> assign(:error_message, nil)
+          else
+            socket
+          end
+
+        {:noreply, socket}
+
+      {:ok, response} when is_binary(response) and response != "" ->
         assistant_message = %{
           id: generate_message_id(),
           role: "assistant",
@@ -282,6 +296,19 @@ defmodule ChatBotWeb.ChatLive do
           if socket.assigns.current_conversation_id == conversation_id do
             socket
             |> assign(:messages, socket.assigns.messages ++ [assistant_message])
+            |> assign(:input_text, "")
+            |> assign(:error_message, nil)
+          else
+            socket
+          end
+
+        {:noreply, socket}
+
+      {:ok, ""} ->
+        # Empty response - treat same as nil (deferred)
+        socket =
+          if socket.assigns.current_conversation_id == conversation_id do
+            socket
             |> assign(:input_text, "")
             |> assign(:error_message, nil)
           else
@@ -667,6 +694,10 @@ defmodule ChatBotWeb.ChatLive do
         trace: nil
       }
     end)
+    # Filter out messages with nil or empty content (deferred responses)
+    |> Enum.filter(fn msg ->
+      msg.content != nil and msg.content != ""
+    end)
   end
 
   # Component for rendering processing trace
@@ -988,6 +1019,8 @@ defmodule ChatBotWeb.ChatLive do
   def format_strategy(:partial_response_with_clarification), do: "Partial"
   def format_strategy(:needs_clarification), do: "Need Info"
   def format_strategy(:low_confidence), do: "Low Conf"
+  def format_strategy(:response_optional), do: "Optional"
+  def format_strategy(:response_deferred), do: "Deferred"
   def format_strategy(nil), do: "Unknown"
   def format_strategy(other), do: to_string(other)
 

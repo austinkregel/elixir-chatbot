@@ -7,7 +7,7 @@ defmodule ChatBot.Brain do
   use GenServer
   require Logger
 
-  alias ChatBot.Analysis.{SelfKnowledgeAnalyzer, Progress}
+  alias ChatBot.Analysis.{SelfKnowledgeAnalyzer, Progress, ResponseGate}
   alias ChatBot.Epistemic.{UserModelStore, BeliefStore}
   alias ChatBot.Epistemic.Types.{Belief, Config}
   alias ChatBot.Response.{Synthesizer, TemplateStore, MemoryAugmented, Composer, FactRetriever}
@@ -165,35 +165,46 @@ defmodule ChatBot.Brain do
           context: context_snapshot
         }
 
-        assistant_message = %{
-          id: generate_message_id(),
-          role: "assistant",
-          content: response,
-          timestamp: System.system_time(:millisecond),
-          processing_method: processing_method
-        }
+        # Handle nil responses (deferred by ResponseGate)
+        # Still store user message for speech act history, but no assistant message
+        {new_messages, learning_response} =
+          if response == nil do
+            # Response deferred - only add user message
+            {[user_message], nil}
+          else
+            # Normal response - add both messages
+            assistant_message = %{
+              id: generate_message_id(),
+              role: "assistant",
+              content: response,
+              timestamp: System.system_time(:millisecond),
+              processing_method: processing_method
+            }
+
+            {[user_message, assistant_message], response}
+          end
 
         updated_conversation =
           conversation
-          |> Map.put(
-            :memory,
-            conversation.memory ++
-              [
-                user_message,
-                assistant_message
-              ]
-          )
+          |> Map.put(:memory, conversation.memory ++ new_messages)
           # Track active context for follow-up detection (use Map.put since key may not exist)
           |> Map.put(:active_context, context_snapshot)
           |> Map.put(:last_activity, System.system_time(:millisecond))
 
-        # Add to learning queue
-        learning_entry = %{
-          conversation_id: conversation_id,
-          timestamp: System.system_time(:millisecond),
-          input: input,
-          response: response
-        }
+        # Add to learning queue only if we responded
+        updated_learning_queue =
+          if learning_response != nil do
+            learning_entry = %{
+              conversation_id: conversation_id,
+              timestamp: System.system_time(:millisecond),
+              input: input,
+              response: learning_response
+            }
+
+            state.learning_queue ++ [learning_entry]
+          else
+            state.learning_queue
+          end
 
         # Extract and store beliefs from entities (epistemic integration)
         user_id = Keyword.get(opts, :user_id)
@@ -204,11 +215,13 @@ defmodule ChatBot.Brain do
           state
           | active_conversations:
               Map.put(state.active_conversations, conversation_id, updated_conversation),
-            learning_queue: state.learning_queue ++ [learning_entry]
+            learning_queue: updated_learning_queue
         }
 
-        # Process learning queue asynchronously
-        send(self(), :process_learning_queue)
+        # Process learning queue asynchronously (only if there are entries)
+        if length(updated_learning_queue) > length(state.learning_queue) do
+          send(self(), :process_learning_queue)
+        end
 
         {:reply, {:ok, response}, updated_state}
     end
@@ -546,6 +559,8 @@ defmodule ChatBot.Brain do
       entities: Map.get(context, :entities, []),
       slots: Map.get(context, :slots, %{}),
       missing_slots: Map.get(context, :missing_slots, []),
+      # Store speech act for response optionality history-based reasoning
+      speech_act: Map.get(context, :speech_act),
       timestamp: System.system_time(:millisecond)
     }
   end
@@ -642,6 +657,61 @@ defmodule ChatBot.Brain do
       prompts: analysis_model.suggested_prompts
     })
 
+    # NEW: Check if response is optional (after analysis, before response generation)
+    # This evaluates gratitude loops, backchannels, compliments, continuations, etc.
+    case ResponseGate.evaluate(analysis_model, memory, opts) do
+      {:defer, reason} ->
+        # Response not needed - return nil
+        Logger.info("Response deferred by ResponseGate", reason)
+
+        Progress.report(opts, :response_generated, %{
+          response_type: :deferred,
+          strategy: :response_optional,
+          reason: reason[:reason]
+        })
+
+        context = extract_context_from_analysis(analysis_model)
+        {nil, :response_deferred, Map.put(context, :defer_reason, reason)}
+
+      {:optional, confidence, reason} ->
+        # Response is situational - Brain decides based on confidence threshold
+        defer_threshold = get_defer_threshold(opts)
+
+        if confidence >= defer_threshold do
+          Logger.info("Response optional, deferring", %{
+            confidence: confidence,
+            threshold: defer_threshold,
+            reason: reason[:reason]
+          })
+
+          Progress.report(opts, :response_generated, %{
+            response_type: :optional_deferred,
+            strategy: :response_optional,
+            confidence: confidence,
+            reason: reason[:reason]
+          })
+
+          context = extract_context_from_analysis(analysis_model)
+          {nil, :response_optional, Map.put(context, :defer_reason, reason)}
+        else
+          # Low confidence - still respond but record for learning
+          Logger.debug("Response optional but proceeding", %{
+            confidence: confidence,
+            threshold: defer_threshold,
+            reason: reason[:reason]
+          })
+
+          proceed_with_standard_response(persona, input, memory, analysis_model, opts)
+        end
+
+      {:respond, _reason} ->
+        # Normal flow - proceed with response generation
+        proceed_with_standard_response(persona, input, memory, analysis_model, opts)
+    end
+  end
+
+  # Standard response generation after ResponseGate approves
+  defp proceed_with_standard_response(persona, input, memory, analysis_model, opts) do
     # Check if we need clarification before processing
     case analysis_model.overall_strategy do
       :needs_clarification ->
@@ -706,6 +776,11 @@ defmodule ChatBot.Brain do
     end
   end
 
+  # Get the threshold for deferring optional responses
+  defp get_defer_threshold(opts) do
+    Keyword.get(opts, :defer_threshold, 0.7)
+  end
+
   defp get_previous_context(memory) do
     memory
     |> Enum.reverse()
@@ -745,7 +820,9 @@ defmodule ChatBot.Brain do
         intent: merged_context.intent,
         entities: merged_context.entities,
         slots: merged_context.slots,
-        missing_slots: []
+        missing_slots: [],
+        # Followup inherits speech_act from original context if available
+        speech_act: Map.get(merged_context, :speech_act)
       }
 
       {response, :followup_completed, context}
@@ -757,7 +834,9 @@ defmodule ChatBot.Brain do
         intent: merged_context.intent,
         entities: merged_context.entities,
         slots: merged_context.slots,
-        missing_slots: merged_context.missing_slots
+        missing_slots: merged_context.missing_slots,
+        # Followup inherits speech_act from original context if available
+        speech_act: Map.get(merged_context, :speech_act)
       }
 
       {prompt, :followup_needs_more, context}
@@ -774,12 +853,28 @@ defmodule ChatBot.Brain do
         intent: best_analysis.intent,
         entities: best_analysis.entities || [],
         slots: Map.get(best_analysis, :slots, %{}) |> extract_filled_slots(),
-        missing_slots: Map.get(best_analysis, :missing_context, [])
+        missing_slots: Map.get(best_analysis, :missing_context, []),
+        # Include speech act for response optionality reasoning
+        speech_act: extract_speech_act_info(best_analysis.speech_act)
       }
     else
       %{}
     end
   end
+
+  # Extract speech act info for storage in conversation memory
+  defp extract_speech_act_info(nil), do: nil
+
+  defp extract_speech_act_info(speech_act) when is_map(speech_act) do
+    %{
+      category: Map.get(speech_act, :category),
+      sub_type: Map.get(speech_act, :sub_type),
+      confidence: Map.get(speech_act, :confidence),
+      is_question: Map.get(speech_act, :is_question, false)
+    }
+  end
+
+  defp extract_speech_act_info(_), do: nil
 
   defp extract_filled_slots(slots) when is_map(slots) do
     case Map.get(slots, :filled_slots) do
@@ -1004,12 +1099,13 @@ defmodule ChatBot.Brain do
           entities_count: length(entities)
         })
 
-        # Build context for storage
+        # Build context for storage (include speech_act for response optionality)
         context = %{
           intent: intent,
           entities: entities,
           slots: extract_filled_slots(slots_info),
-          missing_slots: missing_slots
+          missing_slots: missing_slots,
+          speech_act: if(best_analysis, do: extract_speech_act_info(best_analysis.speech_act), else: nil)
         }
 
         # Learn from extraction
@@ -1041,12 +1137,13 @@ defmodule ChatBot.Brain do
       {:error, reason} ->
         Logger.warning("NLP pipeline failed", %{reason: reason})
 
-        # Build context even on error
+        # Build context even on error (include speech_act for response optionality)
         context = %{
           intent: analysis_intent,
           entities: analysis_entities,
           slots: extract_filled_slots(slots_info),
-          missing_slots: missing_slots
+          missing_slots: missing_slots,
+          speech_act: if(best_analysis, do: extract_speech_act_info(best_analysis.speech_act), else: nil)
         }
 
         # Fall back to analysis-only response if we have a good analysis
@@ -1634,7 +1731,9 @@ defmodule ChatBot.Brain do
       entities: [],
       slots: %{},
       missing_slots: [],
-      epistemic_assessment: true
+      epistemic_assessment: true,
+      # Meta queries are directives (questions) - always expect response
+      speech_act: %{category: :directive, sub_type: :request_information, confidence: 0.9, is_question: true}
     }
 
     {response, :epistemic_response, context}

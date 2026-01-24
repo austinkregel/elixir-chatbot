@@ -40,6 +40,10 @@ defmodule ChatBot.Analysis.LearningStore do
       load_params_direct(component)
   end
 
+  def get_params(component) when is_atom(component) do
+    get_params(Atom.to_string(component))
+  end
+
   @doc """
   Gets all parameters.
   """
@@ -208,7 +212,7 @@ defmodule ChatBot.Analysis.LearningStore do
   end
 
   @impl true
-  def handle_cast({:record_feedback, feedback_type, _data}, state) do
+  def handle_cast({:record_feedback, feedback_type, data}, state) do
     stats = Map.get(state.params, "feedback_stats", %{})
 
     updated_stats =
@@ -223,6 +227,34 @@ defmodule ChatBot.Analysis.LearningStore do
           |> Map.update("total_interactions", 1, &(&1 + 1))
           |> Map.update("clarifications_needed", 1, &(&1 + 1))
 
+        # Response optionality feedback types
+        :response_deferred ->
+          stats
+          |> Map.update("total_interactions", 1, &(&1 + 1))
+          |> Map.update("responses_deferred", 1, &(&1 + 1))
+
+        :response_optional_deferred ->
+          stats
+          |> Map.update("total_interactions", 1, &(&1 + 1))
+          |> Map.update("optional_responses_deferred", 1, &(&1 + 1))
+
+        :response_optional_proceeded ->
+          stats
+          |> Map.update("total_interactions", 1, &(&1 + 1))
+          |> Map.update("optional_responses_proceeded", 1, &(&1 + 1))
+
+        :user_frustrated_by_silence ->
+          # User showed frustration after we deferred - reduce deferral confidence
+          update_optionality_learning(state.params, :reduce_deferral, data)
+          stats
+          |> Map.update("silence_frustrations", 1, &(&1 + 1))
+
+        :user_confirmed_no_response_needed ->
+          # User confirmed deferral was correct - reinforce pattern
+          update_optionality_learning(state.params, :reinforce_deferral, data)
+          stats
+          |> Map.update("deferral_confirmations", 1, &(&1 + 1))
+
         _ ->
           stats
       end
@@ -231,6 +263,56 @@ defmodule ChatBot.Analysis.LearningStore do
     new_state = schedule_save(%{state | params: new_params, dirty: true})
 
     {:noreply, new_state}
+  end
+
+  # Update response optionality learning based on feedback
+  defp update_optionality_learning(params, :reduce_deferral, data) do
+    # Reduce confidence for the pattern that caused frustration
+    optionality_params = Map.get(params, "response_optionality", %{})
+    pattern = Map.get(data, :pattern)
+
+    # Reduce the relevant confidence threshold
+    key =
+      case pattern do
+        :backchannel -> "backchannel_defer_confidence"
+        :compliment -> "compliment_defer_confidence"
+        :acknowledgment -> "acknowledgment_defer_confidence"
+        _ -> nil
+      end
+
+    if key do
+      current = Map.get(optionality_params, key, 0.7)
+      # Reduce by 0.05, but don't go below 0.3
+      new_value = max(current - 0.05, 0.3)
+      updated = Map.put(optionality_params, key, new_value)
+      Map.put(params, "response_optionality", updated)
+    else
+      params
+    end
+  end
+
+  defp update_optionality_learning(params, :reinforce_deferral, data) do
+    # Increase confidence for the pattern that was correctly deferred
+    optionality_params = Map.get(params, "response_optionality", %{})
+    pattern = Map.get(data, :pattern)
+
+    key =
+      case pattern do
+        :backchannel -> "backchannel_defer_confidence"
+        :compliment -> "compliment_defer_confidence"
+        :acknowledgment -> "acknowledgment_defer_confidence"
+        _ -> nil
+      end
+
+    if key do
+      current = Map.get(optionality_params, key, 0.7)
+      # Increase by 0.02, but don't go above 0.95
+      new_value = min(current + 0.02, 0.95)
+      updated = Map.put(optionality_params, key, new_value)
+      Map.put(params, "response_optionality", updated)
+    else
+      params
+    end
   end
 
   @impl true
@@ -337,7 +419,22 @@ defmodule ChatBot.Analysis.LearningStore do
       "feedback_stats" => %{
         "total_interactions" => 0,
         "successful_responses" => 0,
-        "clarifications_needed" => 0
+        "clarifications_needed" => 0,
+        "responses_deferred" => 0,
+        "optional_responses_deferred" => 0,
+        "optional_responses_proceeded" => 0,
+        "silence_frustrations" => 0,
+        "deferral_confirmations" => 0
+      },
+      "response_optionality" => %{
+        "admin_locked" => false,
+        "learned_at" => nil,
+        "gratitude_loop_threshold" => 2,
+        "compliment_defer_confidence" => 0.6,
+        "backchannel_defer_confidence" => 0.8,
+        "acknowledgment_defer_confidence" => 0.7,
+        "continuation_defer_confidence" => 0.9,
+        "default_defer_threshold" => 0.7
       }
     }
   end

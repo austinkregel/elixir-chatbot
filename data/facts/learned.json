@@ -1,0 +1,69 @@
+{
+  "category": "learned",
+  "description": "Facts learned dynamically from conversations",
+  "facts": [
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_e006d96ca49e3923",
+      "learned_at": 1769268778,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_cd09130168585073",
+      "learned_at": 1769268623,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_b05be24381ec6848",
+      "learned_at": 1769268619,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_c629efcc770e3aed",
+      "learned_at": 1769268540,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_f29eb4a91b82581a",
+      "learned_at": 1769234910,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_3e1cde6f3a691722",
+      "learned_at": 1769234442,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_e8261fc73b8fa9aa",
+      "learned_at": 1769234436,
+      "verification_source": "learned_from_conversation"
+    }
+  ]
+}
