@@ -1,0 +1,32 @@
+[
+  {
+    "id": "de91ce6f852b72b9",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Are there 4 days in a week?",
+    "timestamp": 1769233526661
+  },
+  {
+    "id": "8f8ecc330c749772",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Are there 8 days in a week?",
+    "timestamp": 1769233550117
+  },
+  {
+    "id": "ff01211ed83008a6",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Very good!",
+    "timestamp": 1769233558176
+  }
+]

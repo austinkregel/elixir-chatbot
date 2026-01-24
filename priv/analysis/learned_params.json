@@ -30,12 +30,12 @@
     "second_person_weight": 0.3
   },
   "feedback_stats": {
-    "clarifications_needed": 77,
+    "clarifications_needed": 81,
     "fallback_to_llm": 0,
-    "successful_responses": 398,
-    "total_interactions": 475
+    "successful_responses": 409,
+    "total_interactions": 490
   },
-  "last_updated": "2026-01-24T05:34:12.089750Z",
+  "last_updated": "2026-01-24T05:47:11.796782Z",
   "speech_acts": {
     "admin_locked": false,
     "confidence_threshold": 0.3,

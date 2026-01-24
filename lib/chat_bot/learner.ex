@@ -8,6 +8,7 @@ defmodule ChatBot.Learner do
   require Logger
   alias ChatBot.KnowledgeStore
   alias ChatBot.MemoryStore
+  alias ChatBot.FactDatabase.Integration
 
   # Client API
 
@@ -369,8 +370,50 @@ defmodule ChatBot.Learner do
         fact_text = Map.get(normalized, "fact", "")
         entity = Map.get(normalized, "entity", "general")
 
-        # Store fact in knowledge store
+        # Store fact in knowledge store (persona-specific)
         KnowledgeStore.add_fact(persona_name, entity, fact_text, confidence)
+
+        # Also add to fact database if it's a general knowledge fact (not user-specific)
+        if is_general_knowledge_fact?(entity, fact_text) do
+          # Verify fact before adding
+          case Integration.verify_fact(entity, fact_text) do
+            {:verified, verified_confidence} ->
+              # Use the higher confidence
+              final_confidence = max(confidence, verified_confidence)
+
+              case Integration.add_fact(entity, fact_text,
+                     category: "learned",
+                     verification_source: "conversation_learning",
+                     confidence: final_confidence,
+                     register_with_jtms: true,
+                     create_belief: true
+                   ) do
+                {:ok, fact_id, _fact} ->
+                  Logger.info("Added learned fact to database", %{
+                    fact_id: fact_id,
+                    entity: entity,
+                    confidence: final_confidence
+                  })
+
+                error ->
+                  Logger.debug("Failed to add fact to database", %{error: error})
+              end
+
+            {:contradicted, conflicting_beliefs} ->
+              Logger.warning("Learned fact contradicts existing beliefs", %{
+                entity: entity,
+                fact: fact_text,
+                conflicts: length(conflicting_beliefs)
+              })
+
+            {:uncertain, reason} ->
+              Logger.debug("Cannot verify learned fact", %{
+                entity: entity,
+                fact: fact_text,
+                reason: reason
+              })
+          end
+        end
 
         Logger.info("Learned fact", %{
           entity: entity,
@@ -379,6 +422,33 @@ defmodule ChatBot.Learner do
         })
       end
     end)
+  end
+
+  defp is_general_knowledge_fact?(entity, fact_text) do
+    # Determine if this is general knowledge vs user-specific
+    # User-specific entities: person names, pets, rooms, devices, preferences
+    user_specific_patterns = [
+      "my ",
+      "i ",
+      "me ",
+      "mine ",
+      "our ",
+      "we "
+    ]
+
+    entity_lower = String.downcase(entity)
+    fact_lower = String.downcase(fact_text)
+
+    # Check if it's clearly user-specific
+    is_user_specific =
+      Enum.any?(user_specific_patterns, &String.contains?(fact_lower, &1)) or
+        String.contains?(entity_lower, "person") or
+        String.contains?(entity_lower, "pet") or
+        String.contains?(entity_lower, "room") or
+        String.contains?(entity_lower, "device") or
+        String.contains?(entity_lower, "preference")
+
+    not is_user_specific
   end
 
   defp normalize_fact(fact) do

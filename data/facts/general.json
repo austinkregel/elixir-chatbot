@@ -1,0 +1,86 @@
+{
+  "category": "general",
+  "description": "General knowledge facts across various topics",
+  "facts": [
+    {
+      "id": "gen_001",
+      "entity": "week",
+      "fact": "A week consists of 7 days",
+      "category": "general",
+      "verification_source": "Calendar systems, ISO 8601",
+      "confidence": 1.0
+    },
+    {
+      "id": "gen_002",
+      "entity": "year",
+      "fact": "A standard year consists of 365 days, with a leap year having 366 days",
+      "category": "general",
+      "verification_source": "Calendar systems, ISO 8601",
+      "confidence": 1.0
+    },
+    {
+      "id": "gen_003",
+      "entity": "alphabet",
+      "fact": "The English alphabet consists of 26 letters",
+      "category": "general",
+      "verification_source": "Linguistic standards",
+      "confidence": 1.0
+    },
+    {
+      "id": "gen_004",
+      "entity": "chess",
+      "fact": "A standard chess game is played on an 8x8 board with 32 pieces total (16 per player)",
+      "category": "general",
+      "verification_source": "FIDE (World Chess Federation) rules",
+      "confidence": 1.0
+    },
+    {
+      "id": "gen_005",
+      "entity": "Olympic Games",
+      "fact": "The modern Olympic Games were revived in 1896 in Athens, Greece",
+      "category": "general",
+      "verification_source": "International Olympic Committee, historical records",
+      "confidence": 1.0
+    },
+    {
+      "id": "gen_006",
+      "entity": "United Nations",
+      "fact": "The United Nations was founded on October 24, 1945",
+      "category": "general",
+      "verification_source": "United Nations official records",
+      "confidence": 1.0
+    },
+    {
+      "id": "gen_007",
+      "entity": "time zones",
+      "fact": "The world is divided into 24 time zones, each approximately 15 degrees of longitude wide",
+      "category": "general",
+      "verification_source": "International Telecommunication Union, time zone databases",
+      "confidence": 1.0
+    },
+    {
+      "id": "gen_008",
+      "entity": "Internet",
+      "fact": "The World Wide Web was invented by Tim Berners-Lee in 1989",
+      "category": "general",
+      "verification_source": "W3C, historical records",
+      "confidence": 1.0
+    },
+    {
+      "id": "gen_009",
+      "entity": "human senses",
+      "fact": "Humans have five traditional senses: sight, hearing, taste, smell, and touch",
+      "category": "general",
+      "verification_source": "Medical and biological textbooks",
+      "confidence": 1.0
+    },
+    {
+      "id": "gen_010",
+      "entity": "continents",
+      "fact": "There are seven continents: Africa, Antarctica, Asia, Australia, Europe, North America, and South America",
+      "category": "general",
+      "verification_source": "Geographic standards, world atlases",
+      "confidence": 1.0
+    }
+  ]
+}

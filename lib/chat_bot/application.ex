@@ -23,6 +23,8 @@ defmodule ChatBot.Application do
       ChatBot.Analysis.LearningStore,
       # Start the Knowledge Store
       ChatBot.KnowledgeStore,
+      # Start the Fact Database
+      ChatBot.FactDatabase,
       # Start the Memory Store
       ChatBot.MemoryStore,
       # Start the Cognitive Memory System (Embedder and Store)

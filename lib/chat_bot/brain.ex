@@ -10,7 +10,7 @@ defmodule ChatBot.Brain do
   alias ChatBot.Analysis.{SelfKnowledgeAnalyzer, Progress}
   alias ChatBot.Epistemic.{UserModelStore, BeliefStore}
   alias ChatBot.Epistemic.Types.{Belief, Config}
-  alias ChatBot.Response.{Synthesizer, TemplateStore, MemoryAugmented, Composer}
+  alias ChatBot.Response.{Synthesizer, TemplateStore, MemoryAugmented, Composer, FactRetriever}
 
   # Client API
 
@@ -1364,6 +1364,28 @@ defmodule ChatBot.Brain do
     {:ok, response}
   end
 
+  defp generate_domain_response("question.factual", entities) do
+    # Try to retrieve facts from the fact database
+    if FactRetriever.available?() do
+      # Extract entities from the query
+      entity_names = extract_entity_names_for_facts(entities)
+      
+      # Try to get facts for mentioned entities
+      # Note: We don't have the original query text here, so we rely on entities
+      facts = FactRetriever.get_facts_for_query("", entity_names)
+      
+      if facts != [] do
+        formatted = FactRetriever.format_facts(facts, 2)
+        response = "Here's what I know: #{Enum.join(formatted, ". ")}."
+        {:ok, response}
+      else
+        :not_handled
+      end
+    else
+      :not_handled
+    end
+  end
+
   defp generate_domain_response(_intent, _entities) do
     :not_handled
   end
@@ -1383,6 +1405,16 @@ defmodule ChatBot.Brain do
   end
 
   defp find_entity_value(_, _), do: nil
+
+  defp extract_entity_names_for_facts(entities) when is_list(entities) do
+    entities
+    |> Enum.map(fn e ->
+      e[:value] || e["value"] || ""
+    end)
+    |> Enum.filter(&(&1 != ""))
+  end
+
+  defp extract_entity_names_for_facts(_), do: []
 
   defp generate_smalltalk_response(intent, entities, _persona) do
     # First, try to get a response from the TemplateStore (loaded from intent files)

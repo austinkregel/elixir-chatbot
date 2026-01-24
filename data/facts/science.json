@@ -1,0 +1,126 @@
+{
+  "category": "science",
+  "description": "Basic scientific facts about physics, chemistry, biology, and astronomy",
+  "facts": [
+    {
+      "id": "sci_001",
+      "entity": "water",
+      "fact": "Water freezes at 0 degrees Celsius (32 degrees Fahrenheit) at standard atmospheric pressure",
+      "category": "science",
+      "verification_source": "International Association for the Properties of Water and Steam, NIST",
+      "confidence": 1.0
+    },
+    {
+      "id": "sci_002",
+      "entity": "water",
+      "fact": "Water boils at 100 degrees Celsius (212 degrees Fahrenheit) at standard atmospheric pressure",
+      "category": "science",
+      "verification_source": "International Association for the Properties of Water and Steam, NIST",
+      "confidence": 1.0
+    },
+    {
+      "id": "sci_003",
+      "entity": "speed of light",
+      "fact": "The speed of light in a vacuum is approximately 299,792,458 meters per second",
+      "category": "science",
+      "verification_source": "NIST, International Bureau of Weights and Measures",
+      "confidence": 1.0
+    },
+    {
+      "id": "sci_004",
+      "entity": "Earth",
+      "fact": "Earth's average distance from the Sun is approximately 149.6 million kilometers (93 million miles), known as one astronomical unit",
+      "category": "science",
+      "verification_source": "NASA, International Astronomical Union",
+      "confidence": 1.0
+    },
+    {
+      "id": "sci_005",
+      "entity": "Earth",
+      "fact": "Earth's circumference at the equator is approximately 40,075 kilometers (24,901 miles)",
+      "category": "science",
+      "verification_source": "NASA, National Geodetic Survey",
+      "confidence": 1.0
+    },
+    {
+      "id": "sci_006",
+      "entity": "gravity",
+      "fact": "The acceleration due to gravity on Earth's surface is approximately 9.8 meters per second squared",
+      "category": "science",
+      "verification_source": "NIST, International Bureau of Weights and Measures",
+      "confidence": 1.0
+    },
+    {
+      "id": "sci_007",
+      "entity": "oxygen",
+      "fact": "Oxygen makes up approximately 21% of Earth's atmosphere by volume",
+      "category": "science",
+      "verification_source": "NASA, NOAA, Encyclopedia Britannica",
+      "confidence": 1.0
+    },
+    {
+      "id": "sci_008",
+      "entity": "nitrogen",
+      "fact": "Nitrogen makes up approximately 78% of Earth's atmosphere by volume",
+      "category": "science",
+      "verification_source": "NASA, NOAA, Encyclopedia Britannica",
+      "confidence": 1.0
+    },
+    {
+      "id": "sci_009",
+      "entity": "human body",
+      "fact": "The average adult human body contains approximately 60% water by weight",
+      "category": "science",
+      "verification_source": "National Academy of Sciences, Medical textbooks",
+      "confidence": 1.0
+    },
+    {
+      "id": "sci_010",
+      "entity": "DNA",
+      "fact": "DNA stands for deoxyribonucleic acid and contains the genetic instructions for all known living organisms",
+      "category": "science",
+      "verification_source": "National Human Genome Research Institute, Encyclopedia Britannica",
+      "confidence": 1.0
+    },
+    {
+      "id": "sci_011",
+      "entity": "Sun",
+      "fact": "The Sun is a star located at the center of our solar system, approximately 4.6 billion years old",
+      "category": "science",
+      "verification_source": "NASA, European Space Agency",
+      "confidence": 1.0
+    },
+    {
+      "id": "sci_012",
+      "entity": "Moon",
+      "fact": "The Moon is Earth's only natural satellite, located approximately 384,400 kilometers (238,900 miles) away",
+      "category": "science",
+      "verification_source": "NASA, International Astronomical Union",
+      "confidence": 1.0
+    },
+    {
+      "id": "sci_013",
+      "entity": "periodic table",
+      "fact": "The periodic table currently contains 118 confirmed chemical elements",
+      "category": "science",
+      "verification_source": "International Union of Pure and Applied Chemistry (IUPAC)",
+      "confidence": 1.0
+    },
+    {
+      "id": "sci_014",
+      "entity": "photosynthesis",
+      "fact": "Photosynthesis is the process by which plants convert carbon dioxide and water into glucose using sunlight energy",
+      "category": "science",
+      "verification_source": "Encyclopedia Britannica, Biology textbooks",
+      "confidence": 1.0
+    },
+    {
+      "id": "sci_015",
+      "entity": "atoms",
+      "fact": "Atoms consist of protons, neutrons, and electrons, with protons and neutrons in the nucleus and electrons orbiting around it",
+      "category": "science",
+      "verification_source": "Encyclopedia Britannica, Physics textbooks",
+      "confidence": 1.0
+    }
+  ]
+}

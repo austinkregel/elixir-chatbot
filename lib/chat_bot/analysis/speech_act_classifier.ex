@@ -113,6 +113,16 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
   )
   @modal_verbs ~w(can could would will should might may)
 
+  # Response optionality patterns (detected via pragmatic/structural passes)
+  # Acknowledgment: responses to thanks/apologies
+  @acknowledgment_keywords ~w(welcome anytime gladly certainly absolutely definitely)
+  # Compliment: positive evaluation directed at addressee
+  @compliment_keywords ~w(great good excellent wonderful amazing awesome fantastic brilliant nice)
+  # Backchannel: minimal acknowledgment signals
+  @backchannel_keywords ~w(hmm mhm uh-huh yeah yep okay ok right sure got gotcha interesting cool nice ah oh wow)
+  # Continuation markers: signal more is coming
+  @continuation_markers ~w(and but so then also plus because although however)
+
   @doc """
   Classifies the speech act of the given text using multiple analysis passes.
 

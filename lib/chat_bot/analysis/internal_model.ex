@@ -333,6 +333,11 @@ defmodule ChatBot.Analysis.SpeechActResult do
           | :greeting
           | :farewell
           | :performative
+          # Response optionality sub-types
+          | :backchannel
+          | :compliment
+          | :acknowledgment
+          | :continuation
           | :unknown
 
   @type t :: %__MODULE__{
@@ -367,12 +372,23 @@ defmodule ChatBot.Analysis.SpeechActResult do
 
   @doc """
   Checks if this speech act expects a response from the addressee.
+
+  Returns:
+  - `true` for speech acts that clearly expect a response (directives, questions, greetings)
+  - `false` for speech acts where silence is appropriate (backchannels, continuations)
+  - `:optional` for speech acts where response is situational (compliments, acknowledgments)
   """
   def expects_response?(%__MODULE__{category: :directive}), do: true
   def expects_response?(%__MODULE__{sub_type: :greeting}), do: true
   def expects_response?(%__MODULE__{sub_type: :question_factual}), do: true
   def expects_response?(%__MODULE__{sub_type: :question_opinion}), do: true
-  def expects_response?(_), do: false
+  # Response optionality: these typically don't need responses
+  def expects_response?(%__MODULE__{sub_type: :backchannel}), do: false
+  def expects_response?(%__MODULE__{sub_type: :continuation}), do: false
+  # These are situational - let ResponseGate decide
+  def expects_response?(%__MODULE__{sub_type: :compliment}), do: :optional
+  def expects_response?(%__MODULE__{sub_type: :acknowledgment}), do: :optional
+  def expects_response?(_), do: :unknown
 end
 
 defmodule ChatBot.Analysis.SlotResult do

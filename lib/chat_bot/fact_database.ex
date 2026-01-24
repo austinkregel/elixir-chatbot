@@ -1,0 +1,247 @@
+defmodule ChatBot.FactDatabase do
+  @moduledoc """
+  Fact database for storing and querying verifiable general knowledge facts.
+  
+  This module provides access to a curated database of true, verifiable facts
+  that can be used for testing and knowledge building. Facts are organized by
+  category and include verification sources.
+  
+  Facts are stored in JSON files under `data/facts/` and loaded at runtime.
+  """
+
+  use GenServer
+  require Logger
+
+  @facts_dir "data/facts"
+
+  # Client API
+
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  @doc """
+  Query facts by category, entity, or keyword search.
+  
+  Options:
+  - `:category` - Filter by category (e.g., "geography", "science")
+  - `:entity` - Filter by entity name (e.g., "France", "water")
+  - `:search` - Search in fact text
+  - `:limit` - Maximum number of results (default: 10)
+  """
+  def query(opts \\ []) do
+    GenServer.call(__MODULE__, {:query, opts})
+  end
+
+  @doc """
+  Get a specific fact by ID.
+  """
+  def get_fact(id) do
+    GenServer.call(__MODULE__, {:get_fact, id})
+  end
+
+  @doc """
+  Get all facts for a specific entity.
+  """
+  def get_entity_facts(entity_name) do
+    GenServer.call(__MODULE__, {:get_entity_facts, entity_name})
+  end
+
+  @doc """
+  Get all facts in a category.
+  """
+  def get_category_facts(category) do
+    GenServer.call(__MODULE__, {:get_category_facts, category})
+  end
+
+  @doc """
+  Get all available categories.
+  """
+  def list_categories do
+    GenServer.call(__MODULE__, :list_categories)
+  end
+
+  @doc """
+  Reload facts from disk.
+  """
+  def reload do
+    GenServer.call(__MODULE__, :reload)
+  end
+
+  @doc """
+  Add a fact dynamically (for learned facts).
+  This is a low-level function - use FactDatabase.Integration.add_fact/3 for full integration.
+  """
+  def add_fact_direct(fact_map) when is_map(fact_map) do
+    GenServer.call(__MODULE__, {:add_fact_direct, fact_map})
+  end
+
+  @doc """
+  Get statistics about the fact database.
+  """
+  def stats do
+    GenServer.call(__MODULE__, :stats)
+  end
+
+  # Server Callbacks
+
+  @impl true
+  def init(_opts) do
+    facts = load_all_facts()
+    Logger.info("FactDatabase started", %{fact_count: length(facts)})
+    {:ok, %{facts: facts, loaded_at: System.system_time(:second)}}
+  end
+
+  @impl true
+  def handle_call({:query, opts}, _from, state) do
+    results =
+      state.facts
+      |> filter_by_category(opts[:category])
+      |> filter_by_entity(opts[:entity])
+      |> search_in_text(opts[:search])
+      |> limit_results(opts[:limit] || 10)
+
+    {:reply, results, state}
+  end
+
+  @impl true
+  def handle_call({:get_fact, id}, _from, state) do
+    fact = Enum.find(state.facts, &(&1["id"] == id))
+    {:reply, fact, state}
+  end
+
+  @impl true
+  def handle_call({:get_entity_facts, entity_name}, _from, state) do
+    normalized = String.downcase(entity_name)
+    facts = Enum.filter(state.facts, fn fact ->
+      String.downcase(fact["entity"]) == normalized
+    end)
+    {:reply, facts, state}
+  end
+
+  @impl true
+  def handle_call({:get_category_facts, category}, _from, state) do
+    normalized = String.downcase(category)
+    facts = Enum.filter(state.facts, fn fact ->
+      String.downcase(fact["category"]) == normalized
+    end)
+    {:reply, facts, state}
+  end
+
+  @impl true
+  def handle_call(:list_categories, _from, state) do
+    categories =
+      state.facts
+      |> Enum.map(& &1["category"])
+      |> Enum.uniq()
+      |> Enum.sort()
+
+    {:reply, categories, state}
+  end
+
+  @impl true
+  def handle_call(:reload, _from, _state) do
+    facts = load_all_facts()
+    Logger.info("FactDatabase reloaded", %{fact_count: length(facts)})
+    {:reply, :ok, %{facts: facts, loaded_at: System.system_time(:second)}}
+  end
+
+  @impl true
+  def handle_call({:add_fact_direct, fact_map}, _from, state) do
+    # Ensure required fields
+    fact_with_id = Map.put_new_lazy(fact_map, "id", fn ->
+      "direct_#{generate_id()}"
+    end)
+
+    updated_facts = [fact_with_id | state.facts]
+    new_state = %{state | facts: updated_facts}
+
+    Logger.debug("Added fact directly", %{fact_id: fact_with_id["id"]})
+    {:reply, {:ok, fact_with_id["id"]}, new_state}
+  end
+
+  @impl true
+  def handle_call(:stats, _from, state) do
+    stats = %{
+      total_facts: length(state.facts),
+      categories: state.facts |> Enum.map(& &1["category"]) |> Enum.uniq() |> length(),
+      entities: state.facts |> Enum.map(& &1["entity"]) |> Enum.uniq() |> length(),
+      loaded_at: state.loaded_at
+    }
+    {:reply, stats, state}
+  end
+
+  # Private Functions
+
+  defp generate_id do
+    :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
+  end
+
+  defp load_all_facts do
+    facts_dir = Path.join([File.cwd!(), @facts_dir])
+
+    if File.exists?(facts_dir) do
+      facts_dir
+      |> Path.join("*.json")
+      |> Path.wildcard()
+      |> Enum.flat_map(&load_facts_file/1)
+    else
+      Logger.warning("Facts directory not found", %{path: facts_dir})
+      []
+    end
+  end
+
+  defp load_facts_file(file_path) do
+    case File.read(file_path) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, data} ->
+            facts = Map.get(data, "facts", [])
+            Logger.debug("Loaded facts from file", %{file: Path.basename(file_path), count: length(facts)})
+            facts
+
+          {:error, reason} ->
+            Logger.error("Failed to parse facts file", %{file: file_path, reason: reason})
+            []
+        end
+
+      {:error, reason} ->
+        Logger.error("Failed to read facts file", %{file: file_path, reason: reason})
+        []
+    end
+  end
+
+  defp filter_by_category(facts, nil), do: facts
+  defp filter_by_category(facts, category) when is_binary(category) do
+    normalized = String.downcase(category)
+    Enum.filter(facts, fn fact ->
+      String.downcase(fact["category"]) == normalized
+    end)
+  end
+  defp filter_by_category(facts, _), do: facts
+
+  defp filter_by_entity(facts, nil), do: facts
+  defp filter_by_entity(facts, entity) when is_binary(entity) do
+    normalized = String.downcase(entity)
+    Enum.filter(facts, fn fact ->
+      String.downcase(fact["entity"]) == normalized
+    end)
+  end
+  defp filter_by_entity(facts, _), do: facts
+
+  defp search_in_text(facts, nil), do: facts
+  defp search_in_text(facts, search_term) when is_binary(search_term) do
+    normalized = String.downcase(search_term)
+    Enum.filter(facts, fn fact ->
+      fact_text = String.downcase(fact["fact"] || "")
+      entity_text = String.downcase(fact["entity"] || "")
+      String.contains?(fact_text, normalized) or String.contains?(entity_text, normalized)
+    end)
+  end
+  defp search_in_text(facts, _), do: facts
+
+  defp limit_results(facts, limit) when is_integer(limit) and limit > 0 do
+    Enum.take(facts, limit)
+  end
+  defp limit_results(facts, _), do: facts
+end

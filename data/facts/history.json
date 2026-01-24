@@ -1,0 +1,86 @@
+{
+  "category": "history",
+  "description": "Well-established historical facts and dates",
+  "facts": [
+    {
+      "id": "hist_001",
+      "entity": "World War II",
+      "fact": "World War II lasted from 1939 to 1945",
+      "category": "history",
+      "verification_source": "Encyclopedia Britannica, Historical records",
+      "confidence": 1.0
+    },
+    {
+      "id": "hist_002",
+      "entity": "World War I",
+      "fact": "World War I lasted from 1914 to 1918",
+      "category": "history",
+      "verification_source": "Encyclopedia Britannica, Historical records",
+      "confidence": 1.0
+    },
+    {
+      "id": "hist_003",
+      "entity": "United States Declaration of Independence",
+      "fact": "The United States Declaration of Independence was adopted on July 4, 1776",
+      "category": "history",
+      "verification_source": "National Archives, Historical records",
+      "confidence": 1.0
+    },
+    {
+      "id": "hist_004",
+      "entity": "Berlin Wall",
+      "fact": "The Berlin Wall fell on November 9, 1989",
+      "category": "history",
+      "verification_source": "Historical records, news archives",
+      "confidence": 1.0
+    },
+    {
+      "id": "hist_005",
+      "entity": "Moon landing",
+      "fact": "The first human landing on the Moon occurred on July 20, 1969, during the Apollo 11 mission",
+      "category": "history",
+      "verification_source": "NASA, historical records",
+      "confidence": 1.0
+    },
+    {
+      "id": "hist_006",
+      "entity": "Renaissance",
+      "fact": "The Renaissance period in Europe is generally considered to have occurred from the 14th to the 17th century",
+      "category": "history",
+      "verification_source": "Encyclopedia Britannica, Historical scholarship",
+      "confidence": 1.0
+    },
+    {
+      "id": "hist_007",
+      "entity": "Industrial Revolution",
+      "fact": "The Industrial Revolution began in Great Britain in the mid-18th century and spread to other parts of the world",
+      "category": "history",
+      "verification_source": "Encyclopedia Britannica, Historical scholarship",
+      "confidence": 1.0
+    },
+    {
+      "id": "hist_008",
+      "entity": "French Revolution",
+      "fact": "The French Revolution began in 1789 and lasted until 1799",
+      "category": "history",
+      "verification_source": "Encyclopedia Britannica, Historical records",
+      "confidence": 1.0
+    },
+    {
+      "id": "hist_009",
+      "entity": "Roman Empire",
+      "fact": "The Roman Empire fell in 476 CE when the last Western Roman Emperor was deposed",
+      "category": "history",
+      "verification_source": "Encyclopedia Britannica, Historical records",
+      "confidence": 1.0
+    },
+    {
+      "id": "hist_010",
+      "entity": "Gutenberg printing press",
+      "fact": "Johannes Gutenberg invented the movable-type printing press around 1440",
+      "category": "history",
+      "verification_source": "Encyclopedia Britannica, Historical records",
+      "confidence": 1.0
+    }
+  ]
+}
