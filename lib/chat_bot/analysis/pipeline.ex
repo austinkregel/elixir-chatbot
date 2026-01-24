@@ -21,6 +21,7 @@ defmodule ChatBot.Analysis.Pipeline do
     SpeechActClassifier,
     SlotDetector,
     ContextResolver,
+    AnaphoraResolver,
     LearningStore,
     Progress
   }
@@ -43,6 +44,13 @@ defmodule ChatBot.Analysis.Pipeline do
   Returns an InternalModel struct with complete analysis.
   """
   def process(text, opts \\ []) when is_binary(text) do
+    # Wrap with telemetry span for async, non-blocking metrics
+    ChatBot.Telemetry.span(:pipeline_process, %{text_length: String.length(text)}, fn ->
+      do_process(text, opts)
+    end)
+  end
+
+  defp do_process(text, opts) do
     Logger.debug("Starting analysis pipeline", %{text_length: String.length(text)})
 
     start_time = System.monotonic_time(:millisecond)
@@ -65,7 +73,40 @@ defmodule ChatBot.Analysis.Pipeline do
 
     # Stage 4: Determine overall strategy
     model = InternalModel.determine_strategy(model)
-    Progress.report(opts, :strategy_determined, %{overall_strategy: model.overall_strategy})
+
+    # Build strategy reasoning for debug inspector
+    chunk_strategies = Enum.map(analyses, & &1.response_strategy)
+    has_expressives = Enum.any?(analyses, &(&1.speech_act.category == :expressive))
+    has_substantive = Enum.any?(analyses, fn a ->
+      a.speech_act.category in [:directive, :assertive] or a.speech_act.is_question
+    end)
+    all_missing = Enum.flat_map(analyses, & &1.missing_context)
+
+    decision_reason = cond do
+      Enum.all?(chunk_strategies, &(&1 == :can_respond)) ->
+        "All #{length(chunk_strategies)} chunk(s) can respond"
+      Enum.all?(chunk_strategies, &(&1 == :cannot_respond)) ->
+        "No chunks can respond"
+      Enum.all?(chunk_strategies, &(&1 == :defer_to_user)) ->
+        "Bot was not addressed in any chunk"
+      length(all_missing) > 0 and Enum.any?(chunk_strategies, &(&1 == :can_respond)) ->
+        "Partial: can respond to some, missing slots: #{Enum.join(all_missing, ", ")}"
+      length(all_missing) > 0 ->
+        "Missing required slots: #{Enum.join(all_missing, ", ")}"
+      true ->
+        "Default strategy applied"
+    end
+
+    Progress.report(opts, :strategy_determined, %{
+      overall_strategy: model.overall_strategy,
+      chunk_strategies: chunk_strategies,
+      has_expressives: has_expressives,
+      has_substantive: has_substantive,
+      missing_slots_count: length(all_missing),
+      missing_slots: all_missing,
+      decision_reason: decision_reason,
+      suggested_prompts: model.suggested_prompts
+    })
 
     # Record timing
     elapsed = System.monotonic_time(:millisecond) - start_time
@@ -132,7 +173,11 @@ defmodule ChatBot.Analysis.Pipeline do
     history = Keyword.get(opts, :conversation_history, [])
     profile = Keyword.get(opts, :user_profile, %{})
 
-    Progress.report(opts, :chunk_start, %{chunk_index: chunk.index, chunk_length: String.length(chunk.text)})
+    Progress.report(opts, :chunk_start, %{
+      chunk_index: chunk.index,
+      chunk_text: chunk.text,
+      chunk_length: String.length(chunk.text)
+    })
 
     # Stage 2a: Discourse analysis (who is being addressed)
     discourse_task =
@@ -182,8 +227,16 @@ defmodule ChatBot.Analysis.Pipeline do
       is_question: Map.get(speech_act_result, :is_question)
     })
 
-    # Stage 3a: Entity extraction
-    entities = extract_entities(chunk.text, opts)
+    # Stage 2c: Anaphora resolution (resolve pronouns/references from history)
+    {resolved_text, anaphora_entities} =
+      resolve_anaphora(chunk.text, history, chunk.index, opts)
+
+    # Stage 3a: Entity extraction (use resolved text for better extraction)
+    entities = extract_entities(resolved_text, opts)
+
+    # Merge anaphora-resolved entities with extracted entities
+    entities = merge_anaphora_entities(entities, anaphora_entities)
+
     Progress.report(opts, :entities_extracted, %{
       chunk_index: chunk.index,
       entity_count: length(entities),
@@ -191,11 +244,33 @@ defmodule ChatBot.Analysis.Pipeline do
     })
 
     # Stage 3b: Intent determination
-    intent = determine_intent(speech_act_result, entities, chunk.text)
-    Progress.report(opts, :intent_determined, %{chunk_index: chunk.index, intent: intent})
+    {intent, intent_method, intent_confidence} =
+      determine_intent(speech_act_result, entities, chunk.text)
 
-    # Stage 3c: Slot detection
-    slot_result = SlotDetector.detect(intent, entities)
+    Progress.report(opts, :intent_determined, %{
+      chunk_index: chunk.index,
+      intent: intent,
+      intent_method: intent_method,
+      intent_confidence: intent_confidence
+    })
+
+    # Stage 3b.5: Filter entities to only those relevant to the intent's slot schema
+    # This prevents entities from being used for the wrong intent
+    # (e.g., "Austin" as location when intent is smalltalk.greeting)
+    relevant_entities = filter_entities_by_intent(entities, intent)
+
+    Progress.report(opts, :entities_filtered, %{
+      chunk_index: chunk.index,
+      original_count: length(entities),
+      filtered_count: length(relevant_entities),
+      excluded_types:
+        (Enum.map(entities, & &1[:entity]) -- Enum.map(relevant_entities, & &1[:entity]))
+        |> Enum.uniq()
+    })
+
+    # Stage 3c: Slot detection (use only relevant entities)
+    slot_result = SlotDetector.detect(intent, relevant_entities)
+
     Progress.report(opts, :slots_detected, %{
       chunk_index: chunk.index,
       missing_required: Map.get(slot_result, :missing_required, []),
@@ -204,10 +279,13 @@ defmodule ChatBot.Analysis.Pipeline do
     })
 
     # Stage 3d: Context resolution
+    user_id = Keyword.get(opts, :user_id)
+
     resolved_slots =
       ContextResolver.resolve(slot_result,
         conversation_history: history,
-        user_profile: profile
+        user_profile: profile,
+        user_id: user_id
       )
 
     Progress.report(opts, :context_resolved, %{
@@ -218,12 +296,13 @@ defmodule ChatBot.Analysis.Pipeline do
     })
 
     # Build the chunk analysis
+    # Store only slot-relevant entities to prevent cross-intent contamination
     analysis =
       ChunkAnalysis.new(chunk.index, chunk.text)
       |> Map.put(:discourse, discourse_result)
       |> Map.put(:speech_act, speech_act_result)
       |> Map.put(:intent, intent)
-      |> Map.put(:entities, entities)
+      |> Map.put(:entities, relevant_entities)
       |> Map.put(:slots, resolved_slots)
       |> Map.put(:missing_context, resolved_slots.missing_required)
       |> calculate_confidence()
@@ -259,8 +338,14 @@ defmodule ChatBot.Analysis.Pipeline do
   end
 
   defp entity_to_dev_map(entity) when is_map(entity) do
-    type = Map.get(entity, :entity) || Map.get(entity, "entity") || Map.get(entity, :type) || Map.get(entity, "type")
-    value = Map.get(entity, :value) || Map.get(entity, "value") || Map.get(entity, :name) || Map.get(entity, "name")
+    type =
+      Map.get(entity, :entity) || Map.get(entity, "entity") || Map.get(entity, :type) ||
+        Map.get(entity, "type")
+
+    value =
+      Map.get(entity, :value) || Map.get(entity, "value") || Map.get(entity, :name) ||
+        Map.get(entity, "name")
+
     conf = Map.get(entity, :confidence) || Map.get(entity, "confidence")
 
     %{
@@ -278,24 +363,24 @@ defmodule ChatBot.Analysis.Pipeline do
     # For expressive speech acts (greetings, farewells, thanks), use speech act directly
     # This prevents entity-based overrides (e.g., "Hello" matching song "Hello")
     if speech_act.category == :expressive do
-      infer_intent_from_speech_act(speech_act, text)
+      {infer_intent_from_speech_act(speech_act, text), :speech_act_expressive, nil}
     else
       # For non-expressive speech acts, try multiple strategies
 
       # 1. First, check if entities suggest an intent
       case SlotDetector.suggest_intent_from_entities(entities) do
-        {:ok, intent, _score} ->
-          intent
+        {:ok, intent, score} ->
+          {intent, :entity_based, score}
 
         {:error, :no_match} ->
           # 2. Try keyword-based heuristic for substantive intents
           case SlotDetector.suggest_intent_from_keywords(text) do
-            {:ok, intent, _confidence} ->
-              intent
+            {:ok, intent, confidence} ->
+              {intent, :keyword_heuristic, confidence}
 
             {:error, :no_match} ->
               # 3. Fall back to speech act based intent
-              infer_intent_from_speech_act(speech_act, text)
+              {infer_intent_from_speech_act(speech_act, text), :speech_act_fallback, nil}
           end
       end
     end
@@ -420,4 +505,105 @@ defmodule ChatBot.Analysis.Pipeline do
       })
     end
   end
+
+  # Anaphora resolution helpers
+
+  defp resolve_anaphora(text, history, chunk_index, opts) do
+    case AnaphoraResolver.resolve_and_substitute(text, history) do
+      {:ok, resolved_text, resolved_entities} ->
+        if length(resolved_entities) > 0 do
+          Progress.report(opts, :anaphora_resolved, %{
+            chunk_index: chunk_index,
+            resolved_count: length(resolved_entities),
+            entities:
+              Enum.map(resolved_entities, fn e ->
+                %{
+                  entity: e[:entity] || e["entity"],
+                  value: e[:value] || e["value"]
+                }
+              end)
+          })
+        end
+
+        {resolved_text, resolved_entities}
+
+      _ ->
+        {text, []}
+    end
+  rescue
+    e ->
+      Logger.warning("Anaphora resolution failed", %{error: Exception.message(e)})
+      {text, []}
+  end
+
+  defp merge_anaphora_entities(entities, anaphora_entities) when is_list(anaphora_entities) do
+    # Convert anaphora entities to the expected format
+    converted =
+      Enum.map(anaphora_entities, fn e ->
+        %{
+          entity: e[:entity] || e["entity"],
+          value: e[:value] || e["value"],
+          confidence: 0.75,
+          source: :anaphora_resolution
+        }
+      end)
+
+    # Merge, avoiding duplicates (prefer extracted over resolved)
+    extracted_types =
+      entities
+      |> Enum.map(&(&1[:entity] || &1["entity"]))
+      |> MapSet.new()
+
+    unique_anaphora =
+      Enum.reject(converted, fn e ->
+        MapSet.member?(extracted_types, e[:entity])
+      end)
+
+    entities ++ unique_anaphora
+  end
+
+  defp merge_anaphora_entities(entities, _), do: entities
+
+  # ============================================================================
+  # Intent-Based Entity Filtering
+  # ============================================================================
+
+  @doc false
+  # Filter entities to only include those relevant to the intent's slot schema.
+  # This prevents entities from being used for the wrong intent.
+  # For example, if intent is "smalltalk.greeting" (no slots), all entities are filtered out.
+  # If intent is "weather.query", only location/date/time entities are kept.
+  defp filter_entities_by_intent(entities, intent) when is_list(entities) do
+    # Get the slot schema for this intent
+    schema = SlotDetector.get_schema(intent)
+
+    if schema == nil do
+      # No schema - keep all entities (conservative fallback)
+      entities
+    else
+      # Get all entity types that can map to slots for this intent
+      entity_mappings = Map.get(schema, "entity_mappings", %{})
+
+      # Build a set of all valid entity types for this intent
+      valid_types =
+        entity_mappings
+        |> Map.values()
+        |> List.flatten()
+        |> MapSet.new()
+
+      if MapSet.size(valid_types) == 0 do
+        # Intent has no slots (e.g., smalltalk.greeting) - filter out all entities
+        # This prevents entities like "Austin" in "I'm Austin" from leaking
+        []
+      else
+        # Keep only entities whose type matches a valid slot type
+        Enum.filter(entities, fn entity ->
+          entity_type = entity[:entity] || entity["entity"]
+          MapSet.member?(valid_types, entity_type)
+        end)
+      end
+    end
+  end
+
+  defp filter_entities_by_intent(entities, _), do: entities
 end

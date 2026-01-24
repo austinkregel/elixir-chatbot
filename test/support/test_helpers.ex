@@ -22,6 +22,8 @@ defmodule ChatBot.TestHelpers do
   def start_test_services do
     ensure_started({Phoenix.PubSub, name: ChatBot.PubSub})
     ensure_started({Registry, keys: :unique, name: ChatBot.SubprocessRegistry})
+    # Start the Metrics Aggregator (for telemetry collection)
+    ensure_started(ChatBot.Metrics.Aggregator)
     ensure_started(ChatBot.ML.Gazetteer)
     ensure_started(ChatBot.Analysis.LearningStore)
     ensure_started(ChatBot.KnowledgeStore)

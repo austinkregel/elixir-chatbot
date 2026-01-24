@@ -1,7 +1,7 @@
 {
   "chunker": {
     "admin_locked": false,
-    "learned_at": "2026-01-23T06:54:45.580680Z",
+    "learned_at": null,
     "max_chunk_words": 50,
     "min_chunk_words": 3,
     "split_on_conjunctions": true
@@ -25,21 +25,21 @@
     ],
     "confidence_threshold": 0.4,
     "imperative_weight": 0.25,
-    "learned_at": "2026-01-23T06:54:45.580798Z",
+    "learned_at": "2026-01-24T04:39:41.370151Z",
     "question_weight": 0.2,
     "second_person_weight": 0.3
   },
   "feedback_stats": {
-    "clarifications_needed": 36,
+    "clarifications_needed": 58,
     "fallback_to_llm": 0,
-    "successful_responses": 81,
-    "total_interactions": 117
+    "successful_responses": 250,
+    "total_interactions": 308
   },
-  "last_updated": "2026-01-23T21:37:43.008243Z",
+  "last_updated": "2026-01-24T05:10:33.069758Z",
   "speech_acts": {
     "admin_locked": false,
     "confidence_threshold": 0.3,
-    "learned_at": "2026-01-23T06:54:45.580867Z",
+    "learned_at": "2026-01-24T04:39:41.370070Z",
     "question_indicators": {
       "?": 0.4,
       "inversion_pattern": 0.2,

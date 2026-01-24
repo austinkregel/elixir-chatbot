@@ -45,7 +45,10 @@ defmodule ChatBot.Memory.Store do
   Returns top k episodes with similarity scores.
   """
   def query_similar(text, k \\ 5) do
-    GenServer.call(__MODULE__, {:query_similar, text, k})
+    # Wrap with telemetry span for async, non-blocking metrics
+    ChatBot.Telemetry.span(:memory_query, %{k: k}, fn ->
+      GenServer.call(__MODULE__, {:query_similar, text, k})
+    end)
   end
 
   @doc """

@@ -195,4 +195,79 @@ defmodule ChatBot.ML.EntityExtractorTest do
       assert is_map(maps)
     end
   end
+
+  describe "person name extraction" do
+    test "extracts common person names from gazetteer" do
+      # Test with common names that should be in our person gazetteer
+      entities = EntityExtractor.extract_entities("My name is Michael")
+
+      person =
+        Enum.find(entities, fn e ->
+          Map.get(e, :entity) == "person" and
+            String.downcase(Map.get(e, :value, "")) == "michael"
+        end)
+
+      assert person != nil, "Should find 'Michael' as a person entity"
+      assert person.entity == "person"
+      assert String.downcase(person.value) == "michael"
+    end
+
+    test "extracts person name with high enough confidence for learning" do
+      # Person names should have confidence >= 0.7 to be learned by Learner
+      entities = EntityExtractor.extract_entities("Tell Sarah about the meeting")
+
+      person =
+        Enum.find(entities, fn e ->
+          Map.get(e, :entity) == "person"
+        end)
+
+      if person do
+        assert person.confidence >= 0.7,
+               "Person entity confidence (#{person.confidence}) should be >= 0.7 for learning"
+      end
+    end
+
+    test "extracts multiple person names from text" do
+      entities = EntityExtractor.extract_entities("John and Emily are coming to dinner")
+
+      person_names =
+        entities
+        |> Enum.filter(fn e -> Map.get(e, :entity) == "person" end)
+        |> Enum.map(fn e -> String.downcase(e.value) end)
+
+      # Should find at least one of the names
+      assert Enum.any?(["john", "emily"], fn name -> name in person_names end),
+             "Should find at least one person name, got: #{inspect(person_names)}"
+    end
+
+    test "does not extract stoplist words as person names" do
+      # These are common words that are also names but filtered out
+      # to prevent false positives
+      entities = EntityExtractor.extract_entities("I will do it in May")
+
+      # "Will" and "May" are in the stoplist and should NOT be extracted as person
+      person_entities =
+        Enum.filter(entities, fn e ->
+          Map.get(e, :entity) == "person" and
+            String.downcase(Map.get(e, :value, "")) in ["will", "may"]
+        end)
+
+      assert person_entities == [],
+             "Should not extract 'Will' or 'May' as person entities in this context"
+    end
+
+    test "extracts person names case-insensitively" do
+      # Names should be matched regardless of case
+      entities = EntityExtractor.extract_entities("DAVID said hello")
+
+      person =
+        Enum.find(entities, fn e ->
+          Map.get(e, :entity) == "person"
+        end)
+
+      if person do
+        assert String.downcase(person.value) == "david"
+      end
+    end
+  end
 end

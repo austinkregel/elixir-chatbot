@@ -86,6 +86,8 @@ defmodule ChatBotWeb do
       import Phoenix.HTML
       # Core UI components
       import ChatBotWeb.CoreComponents
+      # Pure Tailwind UI components
+      import ChatBotWeb.UI
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS

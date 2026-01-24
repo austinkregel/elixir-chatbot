@@ -89,12 +89,20 @@ defmodule ChatBot.ML.Tokenizer do
   @doc """
   Tokenize text into normalized lowercase words.
   Filters out punctuation and short tokens.
+
+  Options:
+    - :min_length - minimum token length (default: 1)
+    - :include_numbers - include number tokens (default: true)
+    - :expand_contractions - expand contractions before tokenizing (default: false)
   """
   def tokenize_normalized(text, opts \\ []) when is_binary(text) do
     min_length = Keyword.get(opts, :min_length, 1)
     include_numbers = Keyword.get(opts, :include_numbers, true)
+    expand = Keyword.get(opts, :expand_contractions, false)
 
-    text
+    processed_text = if expand, do: expand_contractions(text), else: text
+
+    processed_text
     |> tokenize()
     |> Enum.filter(fn token ->
       case token.type do
@@ -105,6 +113,110 @@ defmodule ChatBot.ML.Tokenizer do
       end
     end)
     |> Enum.map(& &1.normalized)
+  end
+
+  @doc """
+  Expand contractions in text to their full forms using heuristics.
+
+  This uses pattern-based rules rather than a lookup table, so it can
+  handle contractions it hasn't seen before by recognizing the suffix patterns:
+
+    - X'm → X am (I'm → I am)
+    - X're → X are (you're → you are, they're → they are)
+    - X'll → X will (I'll → I will, she'll → she will)
+    - X've → X have (I've → I have, could've → could have)
+    - X'd → X would (I'd → I would, he'd → he would)
+    - X's → X is (it's → it is, what's → what is)
+    - Xn't → X not (don't → do not, can't → can not)
+
+  Special cases like "won't" → "will not" are handled separately.
+
+  This is useful as a preprocessing step before pattern matching,
+  so you only need to match against the canonical forms.
+  """
+  def expand_contractions(text) when is_binary(text) do
+    # Split into words, expand each, rejoin
+    # This preserves spacing and punctuation
+    text
+    |> split_preserving_delimiters()
+    |> Enum.map(&expand_token/1)
+    |> Enum.join()
+  end
+
+  # Split text into tokens while preserving delimiters (spaces, punctuation)
+  defp split_preserving_delimiters(text) do
+    # Split on word boundaries but keep the delimiters
+    text
+    |> String.graphemes()
+    |> chunk_by_word_boundary([])
+    |> Enum.reverse()
+  end
+
+  defp chunk_by_word_boundary([], acc), do: acc
+
+  defp chunk_by_word_boundary(graphemes, acc) do
+    {token, rest} = take_next_token(graphemes)
+    chunk_by_word_boundary(rest, [token | acc])
+  end
+
+  defp take_next_token([]), do: {"", []}
+
+  defp take_next_token([first | rest] = graphemes) do
+    cond do
+      # Whitespace - take all consecutive whitespace
+      is_whitespace?(first) ->
+        {spaces, remaining} = Enum.split_while(graphemes, &is_whitespace?/1)
+        {Enum.join(spaces), remaining}
+
+      # Word character - take the whole word (including apostrophes for contractions)
+      is_word_char?(first) ->
+        take_word(graphemes, [])
+
+      # Punctuation or other - take single char
+      true ->
+        {first, rest}
+    end
+  end
+
+  defp take_word([], acc), do: {Enum.join(Enum.reverse(acc)), []}
+
+  defp take_word([char | rest] = graphemes, acc) do
+    cond do
+      is_word_char?(char) ->
+        take_word(rest, [char | acc])
+
+      # Apostrophe followed by word chars is part of contraction
+      char == "'" and rest != [] and is_word_char?(hd(rest)) ->
+        take_word(rest, [char | acc])
+
+      true ->
+        {Enum.join(Enum.reverse(acc)), graphemes}
+    end
+  end
+
+  defp is_whitespace?(char), do: char in [" ", "\t", "\n", "\r"]
+
+  defp is_word_char?(char) do
+    # Check if it's a letter or digit
+    case char do
+      <<c::utf8>> when c in ?a..?z or c in ?A..?Z or c in ?0..?9 -> true
+      _ -> false
+    end
+  end
+
+  # Expand a single token if it's a contraction/informal form
+  # Uses the data-driven InformalExpansions module
+  defp expand_token(token) do
+    alias ChatBot.ML.InformalExpansions
+
+    case InformalExpansions.expand(token) do
+      {:ok, expansion} ->
+        # Case is already preserved by InformalExpansions
+        expansion
+
+      :not_found ->
+        token
+    end
   end
 
   @doc """

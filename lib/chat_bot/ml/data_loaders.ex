@@ -55,7 +55,15 @@ defmodule ChatBot.ML.DataLoaders do
     case File.read(path) do
       {:ok, content} ->
         cities =
-          parse_csv(content, [:id, :state_code, :state_name, :city, :county, :latitude, :longitude])
+          parse_csv(content, [
+            :id,
+            :state_code,
+            :state_name,
+            :city,
+            :county,
+            :latitude,
+            :longitude
+          ])
 
         Logger.info("Loaded US cities", %{count: length(cities)})
         {:ok, cities}

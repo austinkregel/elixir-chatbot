@@ -1,0 +1,186 @@
+{
+  "entries": [
+    {
+      "value": "it",
+      "synonyms": [],
+      "entity_type": "anaphora",
+      "metadata": {
+        "anaphora_type": "pronoun_object",
+        "number": "singular",
+        "gender": "neutral"
+      }
+    },
+    {
+      "value": "this",
+      "synonyms": [],
+      "entity_type": "anaphora",
+      "metadata": {
+        "anaphora_type": "demonstrative",
+        "number": "singular",
+        "proximity": "near"
+      }
+    },
+    {
+      "value": "that",
+      "synonyms": [],
+      "entity_type": "anaphora",
+      "metadata": {
+        "anaphora_type": "demonstrative",
+        "number": "singular",
+        "proximity": "far"
+      }
+    },
+    {
+      "value": "them",
+      "synonyms": [],
+      "entity_type": "anaphora",
+      "metadata": {
+        "anaphora_type": "pronoun_object",
+        "number": "plural",
+        "gender": "neutral"
+      }
+    },
+    {
+      "value": "those",
+      "synonyms": [],
+      "entity_type": "anaphora",
+      "metadata": {
+        "anaphora_type": "demonstrative",
+        "number": "plural",
+        "proximity": "far"
+      }
+    },
+    {
+      "value": "these",
+      "synonyms": [],
+      "entity_type": "anaphora",
+      "metadata": {
+        "anaphora_type": "demonstrative",
+        "number": "plural",
+        "proximity": "near"
+      }
+    },
+    {
+      "value": "one",
+      "synonyms": [],
+      "entity_type": "anaphora",
+      "metadata": {
+        "anaphora_type": "indefinite",
+        "number": "singular"
+      }
+    },
+    {
+      "value": "the same",
+      "synonyms": ["same thing", "the same one"],
+      "entity_type": "anaphora",
+      "metadata": {
+        "anaphora_type": "identity_reference",
+        "number": "singular"
+      }
+    },
+    {
+      "value": "there",
+      "synonyms": [],
+      "entity_type": "anaphora",
+      "metadata": {
+        "anaphora_type": "location_reference",
+        "refers_to": "location"
+      }
+    },
+    {
+      "value": "here",
+      "synonyms": [],
+      "entity_type": "anaphora",
+      "metadata": {
+        "anaphora_type": "location_reference",
+        "refers_to": "location",
+        "proximity": "near"
+      }
+    },
+    {
+      "value": "he",
+      "synonyms": [],
+      "entity_type": "anaphora",
+      "metadata": {
+        "anaphora_type": "pronoun_subject",
+        "number": "singular",
+        "gender": "male",
+        "refers_to": "person"
+      }
+    },
+    {
+      "value": "she",
+      "synonyms": [],
+      "entity_type": "anaphora",
+      "metadata": {
+        "anaphora_type": "pronoun_subject",
+        "number": "singular",
+        "gender": "female",
+        "refers_to": "person"
+      }
+    },
+    {
+      "value": "him",
+      "synonyms": [],
+      "entity_type": "anaphora",
+      "metadata": {
+        "anaphora_type": "pronoun_object",
+        "number": "singular",
+        "gender": "male",
+        "refers_to": "person"
+      }
+    },
+    {
+      "value": "her",
+      "synonyms": [],
+      "entity_type": "anaphora",
+      "metadata": {
+        "anaphora_type": "pronoun_object",
+        "number": "singular",
+        "gender": "female",
+        "refers_to": "person"
+      }
+    },
+    {
+      "value": "they",
+      "synonyms": [],
+      "entity_type": "anaphora",
+      "metadata": {
+        "anaphora_type": "pronoun_subject",
+        "number": "plural",
+        "gender": "neutral"
+      }
+    },
+    {
+      "value": "its",
+      "synonyms": [],
+      "entity_type": "anaphora",
+      "metadata": {
+        "anaphora_type": "possessive",
+        "number": "singular",
+        "gender": "neutral"
+      }
+    },
+    {
+      "value": "his",
+      "synonyms": [],
+      "entity_type": "anaphora",
+      "metadata": {
+        "anaphora_type": "possessive",
+        "number": "singular",
+        "gender": "male",
+        "refers_to": "person"
+      }
+    },
+    {
+      "value": "their",
+      "synonyms": [],
+      "entity_type": "anaphora",
+      "metadata": {
+        "anaphora_type": "possessive",
+        "number": "plural",
+        "gender": "neutral"
+      }
+    }
+  ]
+}

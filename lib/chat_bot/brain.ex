@@ -7,6 +7,11 @@ defmodule ChatBot.Brain do
   use GenServer
   require Logger
 
+  alias ChatBot.Analysis.{SelfKnowledgeAnalyzer, Progress}
+  alias ChatBot.Epistemic.{UserModelStore, BeliefStore}
+  alias ChatBot.Epistemic.Types.{Belief, Config}
+  alias ChatBot.Response.{Synthesizer, TemplateStore}
+
   # Client API
 
   def start_link(artifact_path) do
@@ -20,7 +25,11 @@ defmodule ChatBot.Brain do
   def evaluate(conversation_id, input, opts) when is_list(opts) do
     timeout = Keyword.get(opts, :timeout, 90_000)
     opts = Keyword.delete(opts, :timeout)
-    GenServer.call(__MODULE__, {:evaluate, conversation_id, input, opts}, timeout)
+
+    # Wrap with telemetry span for async, non-blocking metrics
+    ChatBot.Telemetry.span(:brain_evaluate, %{conversation_id: conversation_id}, fn ->
+      GenServer.call(__MODULE__, {:evaluate, conversation_id, input, opts}, timeout)
+    end)
   end
 
   def create_conversation do
@@ -185,6 +194,11 @@ defmodule ChatBot.Brain do
           input: input,
           response: response
         }
+
+        # Extract and store beliefs from entities (epistemic integration)
+        user_id = Keyword.get(opts, :user_id)
+        entities = Map.get(context, :entities, [])
+        extract_and_store_beliefs(input, entities, user_id, conversation_id)
 
         updated_state = %{
           state
@@ -607,6 +621,18 @@ defmodule ChatBot.Brain do
   end
 
   defp process_new_message(persona, input, memory, opts) do
+    user_id = Keyword.get(opts, :user_id)
+
+    # First, check for meta-cognitive queries (epistemic self-knowledge)
+    if Config.enabled?() and SelfKnowledgeAnalyzer.is_self_knowledge_query?(input) do
+      handle_meta_cognitive_query(persona, input, user_id, opts)
+    else
+      # Standard processing - run the analysis pipeline
+      process_standard_message(persona, input, memory, opts)
+    end
+  end
+
+  defp process_standard_message(persona, input, memory, opts) do
     # Run the analysis pipeline to build an internal model
     analysis_model = run_analysis_pipeline(input, memory, opts)
 
@@ -623,12 +649,19 @@ defmodule ChatBot.Brain do
         prompts = analysis_model.suggested_prompts
         response = build_clarification_response(prompts, persona)
         context = extract_context_from_analysis(analysis_model)
+
+        Progress.report(opts, :response_generated, %{
+          response_type: :clarification,
+          strategy: :needs_clarification,
+          prompts_count: length(prompts)
+        })
+
         {response, :clarification_needed, context}
 
       :partial_response_with_clarification ->
         # Respond to what we can, then ask for clarification on what's missing
-        {base_response, _status, context} =
-          try_nlp_with_analysis(persona, input, memory, analysis_model)
+        {base_response, response_method, context} =
+          try_nlp_with_analysis(persona, input, memory, analysis_model, opts)
 
         prompts = analysis_model.suggested_prompts
         clarification = build_clarification_addendum(prompts)
@@ -640,19 +673,36 @@ defmodule ChatBot.Brain do
             base_response
           end
 
+        Progress.report(opts, :response_generated, %{
+          response_type: :partial_with_clarification,
+          strategy: :partial_response_with_clarification,
+          base_method: response_method,
+          prompts_count: length(prompts)
+        })
+
         {combined_response, :partial_with_clarification, context}
 
       :defer_to_user ->
         # Bot wasn't addressed - acknowledge but don't try to respond substantively
+        Progress.report(opts, :response_generated, %{
+          response_type: :acknowledgment,
+          strategy: :defer_to_user
+        })
+
         {simple_acknowledgment(persona), :not_addressed, %{}}
 
       :cannot_respond ->
         # Cannot respond with classical NLP - use simple fallback
+        Progress.report(opts, :response_generated, %{
+          response_type: :fallback,
+          strategy: :cannot_respond
+        })
+
         {simple_fallback_response(persona, input), :cannot_respond, %{}}
 
       _ ->
         # Can respond (fully or partially) - proceed with NLP pipeline
-        try_nlp_with_analysis(persona, input, memory, analysis_model)
+        try_nlp_with_analysis(persona, input, memory, analysis_model, opts)
     end
   end
 
@@ -773,10 +823,12 @@ defmodule ChatBot.Brain do
         # Fall back to general response - extract values from slot maps
         entities =
           Enum.map(slots, fn {k, v} ->
-            value = case v do
-              %{value: val} -> val
-              val -> val
-            end
+            value =
+              case v do
+                %{value: val} -> val
+                val -> val
+              end
+
             %{entity: k, value: value}
           end)
 
@@ -872,19 +924,19 @@ defmodule ChatBot.Brain do
   defp build_entities_map(entities) when is_map(entities), do: entities
   defp build_entities_map(_), do: %{}
 
-  defp try_nlp_with_analysis(persona, input, _memory, analysis_model) do
-    # Collect ALL intents from all chunks, prioritizing substantive ones
-    all_intents =
+  defp try_nlp_with_analysis(persona, input, _memory, analysis_model, opts) do
+    # Collect ALL intents from all chunks with their analysis reference
+    all_intents_with_analysis =
       analysis_model.analyses
       |> Enum.map(fn analysis ->
-        {analysis.intent, analysis.speech_act, analysis.confidence}
+        {analysis.intent, analysis.speech_act, analysis.confidence, analysis}
       end)
-      |> Enum.filter(fn {intent, _, _} -> intent != nil and intent != "" end)
+      |> Enum.filter(fn {intent, _, _, _} -> intent != nil and intent != "" end)
 
     # Prioritize substantive intents (questions, commands) over expressives (greetings)
     substantive_intents =
-      all_intents
-      |> Enum.filter(fn {intent, speech_act, _} ->
+      all_intents_with_analysis
+      |> Enum.filter(fn {intent, speech_act, _, _} ->
         # Not a greeting/farewell/thanks
         not String.contains?(intent || "", "greeting") and
           not String.contains?(intent || "", "bye") and
@@ -892,23 +944,30 @@ defmodule ChatBot.Brain do
       end)
 
     # Pick the best substantive intent, or fall back to any intent
-    {analysis_intent, _, _} =
+    # IMPORTANT: Use entities from the SAME chunk as the selected intent
+    {analysis_intent, _, _, intent_analysis} =
       case substantive_intents do
         [first | _] -> first
-        [] -> List.first(all_intents) || {nil, nil, 0}
+        [] -> List.first(all_intents_with_analysis) || {nil, nil, 0, nil}
       end
 
-    # Use the best analysis for other attributes
+    # Use the intent's chunk for entities, NOT the highest confidence chunk
+    # This prevents entities from one chunk (e.g., "I'm Austin" greeting)
+    # from filling slots in another chunk (e.g., weather query)
     best_analysis =
-      analysis_model.analyses
-      |> Enum.filter(&(&1.response_strategy == :can_respond))
-      |> Enum.max_by(& &1.confidence, fn -> List.first(analysis_model.analyses) end)
+      if intent_analysis do
+        intent_analysis
+      else
+        # Fallback to highest confidence if no intent match
+        analysis_model.analyses
+        |> Enum.filter(&(&1.response_strategy == :can_respond))
+        |> Enum.max_by(& &1.confidence, fn -> List.first(analysis_model.analyses) end)
+      end
 
-    # Collect entities from ALL chunks
+    # Extract entities from the chunk that contains the selected intent
     analysis_entities =
-      analysis_model.analyses
-      |> Enum.flat_map(fn analysis ->
-        (analysis.entities || [])
+      if best_analysis do
+        (best_analysis.entities || [])
         |> Enum.map(fn e ->
           %{
             entity: e["type"] || e[:entity] || e["entity"],
@@ -916,8 +975,15 @@ defmodule ChatBot.Brain do
             confidence: e["confidence"] || e[:confidence] || 0.8
           }
         end)
-      end)
-      |> Enum.uniq_by(fn e -> {e.entity, e.value} end)
+      else
+        []
+      end
+
+    Logger.debug("Entity selection for intent", %{
+      intent: analysis_intent,
+      entities: Enum.map(analysis_entities, & &1[:entity]),
+      chunk_index: best_analysis && best_analysis.index
+    })
 
     # Extract slot information for context
     slots_info = if best_analysis, do: Map.get(best_analysis, :slots), else: nil
@@ -949,8 +1015,9 @@ defmodule ChatBot.Brain do
         # Learn from extraction
         ChatBot.Learner.learn_from_classical_extraction(persona.name, entities, input)
 
-        # Generate response with analysis context
-        response = generate_analysis_response(intent, entities, analysis_model, persona)
+        # Determine response type (domain vs smalltalk)
+        {response, response_type} =
+          generate_analysis_response_with_type(intent, entities, analysis_model, persona)
 
         method =
           if ChatBot.ML.NLPPipeline.should_use_classical_result?(conf) or analysis_intent != nil do
@@ -958,6 +1025,16 @@ defmodule ChatBot.Brain do
           else
             :classical_low_confidence
           end
+
+        # Report response generation details
+        Progress.report(opts, :response_generated, %{
+          response_type: response_type,
+          strategy: :can_respond,
+          method: method,
+          intent: intent,
+          entities_count: length(entities),
+          nlp_confidence: conf
+        })
 
         {response, method, context}
 
@@ -974,16 +1051,32 @@ defmodule ChatBot.Brain do
 
         # Fall back to analysis-only response if we have a good analysis
         if analysis_intent && best_analysis.confidence > 0.5 do
-          response =
-            generate_analysis_response(
+          {response, response_type} =
+            generate_analysis_response_with_type(
               analysis_intent,
               analysis_entities,
               analysis_model,
               persona
             )
 
+          Progress.report(opts, :response_generated, %{
+            response_type: response_type,
+            strategy: :can_respond,
+            method: :analysis_only,
+            intent: analysis_intent,
+            entities_count: length(analysis_entities),
+            nlp_error: reason
+          })
+
           {response, :analysis_only, context}
         else
+          Progress.report(opts, :response_generated, %{
+            response_type: :fallback,
+            strategy: :cannot_respond,
+            method: :classical_error,
+            nlp_error: reason
+          })
+
           {simple_fallback_response(persona, input), :classical_error, context}
         end
     end
@@ -1035,89 +1128,36 @@ defmodule ChatBot.Brain do
     "I noticed you said something, but I'm not sure if you were talking to me. Let me know if you need anything!"
   end
 
-  defp generate_analysis_response(intent, entities, analysis_model, persona) do
-    # Analyze all speech acts in the message
-    speech_acts =
-      analysis_model.analyses
-      |> Enum.map(& &1.speech_act)
-
-    # Find unique expressive types (avoid duplicate greetings)
-    expressives =
-      speech_acts
-      |> Enum.filter(&(&1.category == :expressive))
-      |> Enum.uniq_by(& &1.sub_type)
-
-    directives = Enum.filter(speech_acts, &(&1.category == :directive))
-
-    # Check if there's substantive content (questions, commands, or known intent)
-    has_substantive_content =
-      length(directives) > 0 or
-        (intent != nil and intent != "" and
-           not String.starts_with?(intent || "", "smalltalk.greetings"))
-
-    # Build response parts
-    response_parts = []
-
-    # Add ONE expressive acknowledgment if present
-    response_parts =
-      if length(expressives) > 0 do
-        expressive = List.first(expressives)
-        expressive_response = generate_expressive_part(expressive)
-
-        if expressive_response do
-          [expressive_response | response_parts]
-        else
-          response_parts
-        end
-      else
-        response_parts
+  defp generate_expressive_part(speech_act) do
+    # Map speech act sub_types to intent names for template lookup
+    intent_name =
+      case speech_act.sub_type do
+        :greeting -> "smalltalk.greetings.hello"
+        :farewell -> "smalltalk.greetings.bye"
+        :thanks -> "smalltalk.appraisal.thank_you"
+        :apology -> "smalltalk.dialog.sorry"
+        :how_are_you -> "smalltalk.greetings.how_are_you"
+        _ -> nil
       end
 
-    # Add substantive response for directives/questions/commands
-    response_parts =
-      if has_substantive_content do
-        substantive_response = generate_classical_response(intent, entities, persona)
-        [substantive_response | response_parts]
-      else
-        response_parts
+    # Try to get a template from the store
+    if intent_name && TemplateStore.ready?() do
+      case TemplateStore.get_random_template(intent_name) do
+        nil -> generate_expressive_fallback(speech_act.sub_type)
+        template -> template
       end
-
-    # Combine response parts (filter out nils)
-    valid_parts =
-      response_parts
-      |> Enum.reverse()
-      |> Enum.filter(&(&1 != nil and &1 != ""))
-
-    case valid_parts do
-      [] ->
-        # No specific response parts - use fallback
-        generate_classical_response(intent, entities, persona)
-
-      [single] ->
-        single
-
-      parts ->
-        # Join multiple parts with space
-        Enum.join(parts, " ")
+    else
+      generate_expressive_fallback(speech_act.sub_type)
     end
   end
 
-  defp generate_expressive_part(speech_act) do
-    case speech_act.sub_type do
-      :greeting ->
-        Enum.random(["Hello!", "Hi there!", "Hey!"])
-
-      :farewell ->
-        Enum.random(["Goodbye!", "See you!", "Take care!"])
-
-      :thanks ->
-        Enum.random(["You're welcome!", "Happy to help!", "No problem!"])
-
-      :apology ->
-        Enum.random(["No worries!", "That's fine.", "Don't worry about it!"])
-
-      _ ->
-        nil
+  defp generate_expressive_fallback(sub_type) do
+    case sub_type do
+      :greeting -> Enum.random(["Hello!", "Hi there!", "Hey!"])
+      :farewell -> Enum.random(["Goodbye!", "See you!", "Take care!"])
+      :thanks -> Enum.random(["You're welcome!", "Happy to help!", "No problem!"])
+      :apology -> Enum.random(["No worries!", "That's fine.", "Don't worry about it!"])
+      _ -> nil
     end
   end
 
@@ -1131,6 +1171,89 @@ defmodule ChatBot.Brain do
         # Fall back to smalltalk responses
         generate_smalltalk_response(intent, entities, persona)
     end
+  end
+
+  # Version that returns both response and type for progress reporting
+  defp generate_classical_response_with_type(intent, entities, persona) do
+    case generate_domain_response(intent, entities) do
+      {:ok, response} ->
+        {response, :domain}
+
+      :not_handled ->
+        response = generate_smalltalk_response(intent, entities, persona)
+        {response, :smalltalk}
+    end
+  end
+
+  # Generate response and return type for progress reporting
+  defp generate_analysis_response_with_type(intent, entities, analysis_model, persona) do
+    speech_acts =
+      analysis_model.analyses
+      |> Enum.map(& &1.speech_act)
+
+    expressives =
+      speech_acts
+      |> Enum.filter(&(&1.category == :expressive))
+      |> Enum.uniq_by(& &1.sub_type)
+
+    directives = Enum.filter(speech_acts, &(&1.category == :directive))
+
+    has_substantive_content =
+      length(directives) > 0 or
+        (intent != nil and intent != "" and
+           not String.starts_with?(intent || "", "smalltalk.greetings"))
+
+    response_parts = []
+    response_types = []
+
+    # Add expressive acknowledgment if present
+    {response_parts, response_types} =
+      if length(expressives) > 0 do
+        expressive = List.first(expressives)
+        expressive_response = generate_expressive_part(expressive)
+
+        if expressive_response do
+          {[expressive_response | response_parts], [:expressive | response_types]}
+        else
+          {response_parts, response_types}
+        end
+      else
+        {response_parts, response_types}
+      end
+
+    # Add substantive response for directives/questions/commands
+    {response_parts, response_types} =
+      if has_substantive_content do
+        {substantive_response, response_type} =
+          generate_classical_response_with_type(intent, entities, persona)
+
+        {[substantive_response | response_parts], [response_type | response_types]}
+      else
+        {response_parts, response_types}
+      end
+
+    valid_parts =
+      response_parts
+      |> Enum.reverse()
+      |> Enum.filter(&(&1 != nil and &1 != ""))
+
+    # Determine primary response type
+    primary_type =
+      cond do
+        :domain in response_types -> :domain
+        :smalltalk in response_types -> :smalltalk
+        :expressive in response_types -> :expressive
+        true -> :fallback
+      end
+
+    response =
+      case valid_parts do
+        [] -> generate_classical_response(intent, entities, persona)
+        [single] -> single
+        parts -> Enum.join(parts, " ")
+      end
+
+    {response, primary_type}
   end
 
   # Domain-specific response handlers
@@ -1211,10 +1334,11 @@ defmodule ChatBot.Brain do
   end
 
   defp find_entity_value(entities, entity_type) when is_list(entities) do
-    entity = Enum.find(entities, fn e ->
-      e_type = e[:entity] || e["entity"]
-      e_type == entity_type
-    end)
+    entity =
+      Enum.find(entities, fn e ->
+        e_type = e[:entity] || e["entity"]
+        e_type == entity_type
+      end)
 
     if entity do
       entity[:value] || entity["value"]
@@ -1226,6 +1350,34 @@ defmodule ChatBot.Brain do
   defp find_entity_value(_, _), do: nil
 
   defp generate_smalltalk_response(intent, entities, _persona) do
+    # First, try to get a response from the TemplateStore (loaded from intent files)
+    template_response = try_template_store_response(intent, entities)
+
+    if template_response do
+      template_response
+    else
+      # Fall back to custom smalltalk responses file
+      generate_smalltalk_from_file(intent, entities)
+    end
+  end
+
+  defp try_template_store_response(intent, entities) do
+    if TemplateStore.ready?() do
+      case TemplateStore.get_random_template(intent) do
+        nil ->
+          # Try parent intent (e.g., "smalltalk.greetings" from "smalltalk.greetings.hello")
+          nil
+
+        template ->
+          # Substitute slots with entity values
+          TemplateStore.substitute_slots(template, entities)
+      end
+    else
+      nil
+    end
+  end
+
+  defp generate_smalltalk_from_file(intent, entities) do
     # Load custom responses from Companion data
     responses_path =
       Path.join(
@@ -1377,5 +1529,271 @@ defmodule ChatBot.Brain do
     end
   rescue
     _ -> []
+  end
+
+  # ============================================================================
+  # Epistemic System Integration
+  # ============================================================================
+
+  defp handle_meta_cognitive_query(_persona, input, user_id, _opts) do
+    Logger.info("Handling meta-cognitive query", %{input: input, user_id: user_id})
+
+    # Build self-knowledge assessment
+    assessment = SelfKnowledgeAnalyzer.build_self_knowledge_assessment(user_id)
+
+    # Synthesize response using the epistemic response synthesizer
+    response =
+      Synthesizer.synthesize_self_knowledge_response(assessment,
+        context: %{
+          relationship_duration: :new,
+          user_initiated: true
+        }
+      )
+
+    # Record this disclosure
+    if user_id do
+      disclosed_keys =
+        (assessment.discloseable ++ assessment.inferred_uncertain)
+        |> Enum.map(& &1.key)
+
+      UserModelStore.record_disclosure(user_id, disclosed_keys, %{
+        query: input,
+        timestamp: DateTime.utc_now()
+      })
+    end
+
+    context = %{
+      intent: "meta.self_query",
+      entities: [],
+      slots: %{},
+      missing_slots: [],
+      epistemic_assessment: true
+    }
+
+    {response, :epistemic_response, context}
+  end
+
+  @doc false
+  def extract_and_store_beliefs(input, entities, user_id, conversation_id) do
+    if Config.auto_extraction_enabled?() and user_id do
+      # Extract potential beliefs from entities
+      Enum.each(entities, fn entity ->
+        entity_type = entity[:entity] || entity["entity"]
+        entity_value = entity[:value] || entity["value"]
+
+        if entity_type && entity_value do
+          # Determine if this is a user fact
+          if is_user_fact?(entity_type) do
+            # Create and store belief
+            belief =
+              Belief.new(:user, normalize_predicate(entity_type), entity_value,
+                source: :explicit,
+                confidence: 0.85,
+                user_id: user_id,
+                provenance: [
+                  "conversation:#{conversation_id}",
+                  "input:#{String.slice(input, 0, 50)}"
+                ]
+              )
+
+            BeliefStore.add_belief(belief)
+
+            # Also update user model
+            UserModelStore.update_fact(
+              user_id,
+              normalize_predicate(entity_type),
+              entity_value,
+              :explicit,
+              0.85
+            )
+
+            Logger.debug("Extracted belief from conversation", %{
+              predicate: entity_type,
+              value: entity_value,
+              user_id: user_id
+            })
+          end
+        end
+      end)
+
+      # Look for self-referential statements
+      extract_self_referential_facts(input, user_id, conversation_id)
+    end
+  rescue
+    e ->
+      Logger.warning("Failed to extract beliefs: #{inspect(e)}")
+  end
+
+  defp is_user_fact?(entity_type) do
+    user_fact_types = [
+      "location",
+      "city",
+      "country",
+      "timezone",
+      "name",
+      "person",
+      "occupation",
+      "company",
+      "preference",
+      "hobby",
+      "interest"
+    ]
+
+    entity_type_str = to_string(entity_type) |> String.downcase()
+    Enum.any?(user_fact_types, &String.contains?(entity_type_str, &1))
+  end
+
+  defp normalize_predicate(predicate) when is_atom(predicate), do: predicate
+
+  defp normalize_predicate(predicate) when is_binary(predicate) do
+    predicate
+    |> String.downcase()
+    |> String.replace([" ", "-"], "_")
+    |> String.to_atom()
+  end
+
+  defp normalize_predicate(_), do: :unknown
+
+  defp extract_self_referential_facts(input, user_id, conversation_id) do
+    # Expand contractions first for simpler pattern matching
+    # "I'm" → "I am", "don't" → "do not", etc.
+    expanded = ChatBot.ML.Tokenizer.expand_contractions(input)
+    tokens = ChatBot.ML.Tokenizer.tokenize_normalized(expanded)
+
+    # Check for various self-referential patterns (all in canonical form now)
+    extract_location_facts(tokens, expanded, user_id, conversation_id)
+    extract_name_facts(tokens, expanded, user_id, conversation_id)
+    extract_preference_facts(tokens, expanded, user_id, conversation_id)
+    extract_work_facts(tokens, expanded, user_id, conversation_id)
+  end
+
+  defp extract_location_facts(tokens, _input, user_id, conversation_id) do
+    # Pattern: "i am from X", "i live in X"
+    # Contractions are already expanded, so we only need canonical patterns
+    cond do
+      # "i am from" (handles both "I'm from" and "I am from")
+      has_sequence?(tokens, ["i", "am", "from"]) ->
+        value = extract_after_sequence(tokens, ["from"])
+        store_fact_if_valid(user_id, :location, value, conversation_id)
+
+      # "i live in"
+      has_sequence?(tokens, ["i", "live", "in"]) ->
+        value = extract_after_sequence(tokens, ["in"])
+        store_fact_if_valid(user_id, :location, value, conversation_id)
+
+      true ->
+        :ok
+    end
+  end
+
+  defp extract_name_facts(tokens, _input, user_id, conversation_id) do
+    # Pattern: "my name is X", "i'm X" (when short), "call me X"
+    cond do
+      has_sequence?(tokens, ["my", "name", "is"]) ->
+        value = extract_after_sequence(tokens, ["is"])
+        store_fact_if_valid(user_id, :name, value, conversation_id)
+
+      has_sequence?(tokens, ["call", "me"]) ->
+        value = extract_after_sequence(tokens, ["me"])
+        store_fact_if_valid(user_id, :name, value, conversation_id)
+
+      true ->
+        :ok
+    end
+  end
+
+  defp extract_preference_facts(tokens, _input, user_id, conversation_id) do
+    # Pattern: "i like X", "i prefer X", "i love X"
+    cond do
+      has_sequence?(tokens, ["i", "like"]) ->
+        value = extract_after_sequence(tokens, ["like"])
+        store_fact_if_valid(user_id, :likes, value, conversation_id)
+
+      has_sequence?(tokens, ["i", "prefer"]) ->
+        value = extract_after_sequence(tokens, ["prefer"])
+        store_fact_if_valid(user_id, :preference, value, conversation_id)
+
+      has_sequence?(tokens, ["i", "love"]) ->
+        value = extract_after_sequence(tokens, ["love"])
+        store_fact_if_valid(user_id, :likes, value, conversation_id)
+
+      true ->
+        :ok
+    end
+  end
+
+  defp extract_work_facts(tokens, _input, user_id, conversation_id) do
+    # Pattern: "i work at X", "i work for X"
+    cond do
+      has_sequence?(tokens, ["i", "work", "at"]) ->
+        value = extract_after_sequence(tokens, ["at"])
+        store_fact_if_valid(user_id, :workplace, value, conversation_id)
+
+      has_sequence?(tokens, ["i", "work", "for"]) ->
+        value = extract_after_sequence(tokens, ["for"])
+        store_fact_if_valid(user_id, :workplace, value, conversation_id)
+
+      true ->
+        :ok
+    end
+  end
+
+  defp has_sequence?(tokens, sequence) do
+    # Check if tokens contain the sequence in order
+    sequence_len = length(sequence)
+
+    tokens
+    |> Enum.chunk_every(sequence_len, 1, :discard)
+    |> Enum.any?(&(&1 == sequence))
+  end
+
+  defp extract_after_sequence(tokens, marker_sequence) do
+    # Find the marker sequence and return tokens after it
+    marker_len = length(marker_sequence)
+
+    case find_sequence_index(tokens, marker_sequence) do
+      nil ->
+        nil
+
+      idx ->
+        tokens
+        |> Enum.drop(idx + marker_len)
+        # Take up to 5 tokens
+        |> Enum.take(5)
+        |> Enum.join(" ")
+    end
+  end
+
+  defp find_sequence_index(tokens, sequence) do
+    sequence_len = length(sequence)
+
+    tokens
+    |> Enum.chunk_every(sequence_len, 1, :discard)
+    |> Enum.with_index()
+    |> Enum.find_value(fn {chunk, idx} ->
+      if chunk == sequence, do: idx, else: nil
+    end)
+  end
+
+  defp store_fact_if_valid(user_id, predicate, value, conversation_id) do
+    clean_value = if value, do: String.trim(value), else: ""
+
+    if String.length(clean_value) > 0 and String.length(clean_value) < 50 do
+      belief =
+        Belief.new(:user, predicate, clean_value,
+          source: :explicit,
+          confidence: 0.9,
+          user_id: user_id,
+          provenance: ["self_statement", "conversation:#{conversation_id}"]
+        )
+
+      BeliefStore.add_belief(belief)
+      UserModelStore.update_fact(user_id, predicate, clean_value, :explicit, 0.9)
+
+      Logger.debug("Extracted self-referential fact", %{
+        predicate: predicate,
+        value: clean_value
+      })
+    end
   end
 end

@@ -27,7 +27,8 @@ defmodule ChatBot.Analysis.AdaptiveProcessingTest do
 
   describe "Interpretation" do
     test "creates interpretation with activation levels" do
-      interp = Interpretation.new("weather.query", "What's the weather?", 0.85, :pattern_recognition)
+      interp =
+        Interpretation.new("weather.query", "What's the weather?", 0.85, :pattern_recognition)
 
       assert interp.intent == "weather.query"
       assert interp.activation == 0.85
@@ -56,7 +57,12 @@ defmodule ChatBot.Analysis.AdaptiveProcessingTest do
       interp =
         Interpretation.new("greeting", "Hello weather", 0.7, :keyword)
         |> Map.put(:alternatives, [
-          %{intent: "weather.query", activation: 0.5, source: :pattern_recognition, raw_score: 0.5}
+          %{
+            intent: "weather.query",
+            activation: 0.5,
+            source: :pattern_recognition,
+            raw_score: 0.5
+          }
         ])
 
       {:ok, promoted} = Interpretation.promote_alternative(interp)
@@ -133,7 +139,8 @@ defmodule ChatBot.Analysis.AdaptiveProcessingTest do
       boost_above = result3 - 0.9
       # At 0.9, boost should be minimal (only 10% of requested boost applies)
       assert boost_above <= boost_at
-      assert boost_above <= 0.04  # 10% of 0.2 boost, capped
+      # 10% of 0.2 boost, capped
+      assert boost_above <= 0.04
     end
 
     test "respects source-specific boost caps" do
@@ -144,7 +151,8 @@ defmodule ChatBot.Analysis.AdaptiveProcessingTest do
       user = ActivationPool.apply_boost(0.0, 1.0, :learned_user)
 
       assert seeded > user
-      assert seeded <= 0.5  # Can't exceed base + max_boost
+      # Can't exceed base + max_boost
+      assert seeded <= 0.5
       assert user <= 0.25
     end
 
@@ -205,7 +213,8 @@ defmodule ChatBot.Analysis.AdaptiveProcessingTest do
     test "forces clarification when budget exhausted" do
       state = %BacktrackController{
         input_text: "test input",
-        backtrack_count: 2  # At max
+        # At max
+        backtrack_count: 2
       }
 
       interp =
@@ -226,7 +235,8 @@ defmodule ChatBot.Analysis.AdaptiveProcessingTest do
       state = %BacktrackController{
         input_text: "test input",
         backtrack_count: 1,
-        interpretation_history: ["intent1"]  # Previously was intent1
+        # Previously was intent1
+        interpretation_history: ["intent1"]
       }
 
       # Currently at intent2, trying to backtrack to intent1 (which we came from)
@@ -491,7 +501,8 @@ defmodule ChatBot.Analysis.AdaptiveProcessingTest do
     end
 
     test "assesses positive outcome from explicit feedback" do
-      interp = Interpretation.new("weather.query", "What's the weather?", 0.85, :pattern_recognition)
+      interp =
+        Interpretation.new("weather.query", "What's the weather?", 0.85, :pattern_recognition)
 
       outcome = OutcomeLearner.assess_outcome(interp, "Here's the weather...", :positive)
 
@@ -499,7 +510,8 @@ defmodule ChatBot.Analysis.AdaptiveProcessingTest do
     end
 
     test "assesses negative outcome from explicit feedback" do
-      interp = Interpretation.new("weather.query", "What's the weather?", 0.85, :pattern_recognition)
+      interp =
+        Interpretation.new("weather.query", "What's the weather?", 0.85, :pattern_recognition)
 
       outcome = OutcomeLearner.assess_outcome(interp, "Here's the weather...", :negative)
 
@@ -507,7 +519,8 @@ defmodule ChatBot.Analysis.AdaptiveProcessingTest do
     end
 
     test "assesses likely success from high confidence" do
-      interp = Interpretation.new("weather.query", "What's the weather?", 0.90, :pattern_recognition)
+      interp =
+        Interpretation.new("weather.query", "What's the weather?", 0.90, :pattern_recognition)
 
       outcome = OutcomeLearner.assess_outcome(interp, "Here's the weather...", nil)
 
@@ -541,7 +554,12 @@ defmodule ChatBot.Analysis.AdaptiveProcessingTest do
 
     test "learns from successful outcome" do
       interp =
-        Interpretation.new("test.learned", "unique test phrase for learning", 0.85, :pattern_recognition)
+        Interpretation.new(
+          "test.learned",
+          "unique test phrase for learning",
+          0.85,
+          :pattern_recognition
+        )
 
       # Should not crash and should record learning
       outcome = OutcomeLearner.learn_from_outcome(interp, "Response", user_id: "test_user")
@@ -574,7 +592,9 @@ defmodule ChatBot.Analysis.AdaptiveProcessingTest do
 
       # 3. Attempt backtrack
       state = BacktrackController.new("What's the weather?")
-      {:ok, new_state, promoted, _cost} = BacktrackController.attempt_backtrack(state, initial, :missing_required)
+
+      {:ok, new_state, promoted, _cost} =
+        BacktrackController.attempt_backtrack(state, initial, :missing_required)
 
       assert promoted.intent == "question.factual"
       assert new_state.backtrack_count == 1
@@ -608,10 +628,12 @@ defmodule ChatBot.Analysis.AdaptiveProcessingTest do
         ])
 
       # First backtrack
-      {:ok, state, interp, _} = BacktrackController.attempt_backtrack(state, interp, :contradiction)
+      {:ok, state, interp, _} =
+        BacktrackController.attempt_backtrack(state, interp, :contradiction)
 
       # Second backtrack
-      {:ok, state, interp, _} = BacktrackController.attempt_backtrack(state, interp, :contradiction)
+      {:ok, state, interp, _} =
+        BacktrackController.attempt_backtrack(state, interp, :contradiction)
 
       # Third should be forced clarification
       result = BacktrackController.attempt_backtrack(state, interp, :contradiction)

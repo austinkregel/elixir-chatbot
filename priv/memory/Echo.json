@@ -178,5 +178,135 @@
     ],
     "text": "Learned 0 entities, 0 relationships, 0 facts from: What do you know about me?",
     "timestamp": 1769204258047
+  },
+  {
+    "id": "eb868af7a7e2400a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769211621321
+  },
+  {
+    "id": "ebda922afc57be32",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather in Owosso Michigan?",
+    "timestamp": 1769212360593
+  },
+  {
+    "id": "4ebd63f2fab99b6d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello it's nice to meet you, my name is Austin. I am your creator.",
+    "timestamp": 1769212657514
+  },
+  {
+    "id": "1794c5bd692cd194",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello it's nice to meet you, my name is Austin. I am your creator.",
+    "timestamp": 1769212701771
+  },
+  {
+    "id": "834c60d77df5a05d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: What's my name?",
+    "timestamp": 1769212735769
+  },
+  {
+    "id": "993ac744fc485315",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Who am I?",
+    "timestamp": 1769213737332
+  },
+  {
+    "id": "b8a999abc9c1cc94",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 8 entities, 0 relationships, 0 facts from: Hello! I am John, I am 30 years old, and I have a cat named Fluffy who is 3 years old. Can you tell me about the weather in London? My sister lives there",
+    "timestamp": 1769226320825
+  },
+  {
+    "id": "eab32db2728238aa",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769226342059
+  },
+  {
+    "id": "921e9668050dc54d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello how are you today?",
+    "timestamp": 1769227636759
+  },
+  {
+    "id": "8eb33c0f534f4dbe",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather in Owosso Michigan?",
+    "timestamp": 1769228305863
+  },
+  {
+    "id": "8c559599309ebb84",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello it's nice to meet you. My name is Austin. I am your creator.",
+    "timestamp": 1769229787390
+  },
+  {
+    "id": "718b7dd8910fc019",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather like in Owosso Michigan?",
+    "timestamp": 1769229847913
+  },
+  {
+    "id": "38022df90c988572",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather in Owosso Michigan?",
+    "timestamp": 1769230152269
   }
 ]

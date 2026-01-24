@@ -226,7 +226,9 @@ defmodule ChatBot.ML.Trainer do
         map_size(gazetteer_data.artists) +
         map_size(gazetteer_data.emojis)
 
-    %{stats | gazetteer_entries: total_entries, entity_types: count_entity_types(gazetteer_data)}
+    stats
+    |> Map.put(:gazetteer_entries, total_entries)
+    |> Map.put(:entity_types, count_entity_types(gazetteer_data))
   end
 
   defp count_entity_types(gazetteer_data) do

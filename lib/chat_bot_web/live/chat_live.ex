@@ -23,13 +23,16 @@ defmodule ChatBotWeb.ChatLive do
     # Get initial status with longer timeout
     status = GenServer.call(ChatBot.Brain, :get_status, 60_000)
     conversations = GenServer.call(ChatBot.Brain, :get_conversations, 60_000)
-    knowledge = ChatBot.KnowledgeStore.get_knowledge(status.name)
+    knowledge = get_combined_knowledge(status.name)
 
     # Get cognitive memory stats
     memory_stats = get_cognitive_memory_stats()
 
     # Get system status
     system_status = ChatBot.SystemStatus.get_all()
+
+    # Generate a session user_id for epistemic tracking
+    user_id = "web_user_" <> (:crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower))
 
     socket =
       socket
@@ -49,6 +52,8 @@ defmodule ChatBotWeb.ChatLive do
       |> assign(:dev_panel_tabs, %{})
       |> assign(:memory_stats, memory_stats)
       |> assign(:system_status, system_status)
+      |> assign(:user_id, user_id)
+      |> assign(:selected_message_id, nil)
 
     {:ok, socket}
   end
@@ -114,6 +119,18 @@ defmodule ChatBotWeb.ChatLive do
     {:noreply, assign(socket, :dev_panel_tabs, Map.put(tabs, message_id, tab))}
   end
 
+  def handle_event("select_message", %{"message_id" => message_id}, socket) do
+    # Toggle selection: if already selected, deselect; otherwise select
+    new_selected =
+      if socket.assigns.selected_message_id == message_id do
+        nil
+      else
+        message_id
+      end
+
+    {:noreply, assign(socket, :selected_message_id, new_selected)}
+  end
+
   def handle_event("select_conversation", %{"conversation_id" => conversation_id}, socket) do
     case ChatBot.Brain.get_conversation(conversation_id) do
       {:ok, conversation} ->
@@ -128,6 +145,7 @@ defmodule ChatBotWeb.ChatLive do
           |> assign(:analysis_details, %{})
           |> assign(:dev_panel_tabs, %{})
           |> assign(:error_message, nil)
+          |> assign(:selected_message_id, nil)
 
         {:noreply, socket}
 
@@ -146,6 +164,7 @@ defmodule ChatBotWeb.ChatLive do
       |> assign(:analysis_details, %{})
       |> assign(:dev_panel_tabs, %{})
       |> assign(:error_message, nil)
+      |> assign(:selected_message_id, nil)
 
     {:noreply, socket}
   end
@@ -245,7 +264,8 @@ defmodule ChatBotWeb.ChatLive do
   end
 
   def handle_info(
-        {:evaluation_complete, %{conversation_id: conversation_id, message_id: message_id, result: result}},
+        {:evaluation_complete,
+         %{conversation_id: conversation_id, message_id: message_id, result: result}},
         socket
       ) do
     case result do
@@ -281,7 +301,11 @@ defmodule ChatBotWeb.ChatLive do
         {:noreply, socket}
 
       other ->
-        Logger.warning("Unexpected evaluation result", %{message_id: message_id, result: inspect(other)})
+        Logger.warning("Unexpected evaluation result", %{
+          message_id: message_id,
+          result: inspect(other)
+        })
+
         {:noreply, socket}
     end
   end
@@ -296,7 +320,7 @@ defmodule ChatBotWeb.ChatLive do
       ) do
     # Update status, knowledge, and memory stats when learning is processed
     status = ChatBot.Brain.get_status()
-    knowledge = ChatBot.KnowledgeStore.get_knowledge(status.name)
+    knowledge = get_combined_knowledge(status.name)
     memory_stats = get_cognitive_memory_stats()
 
     {:noreply,
@@ -364,13 +388,20 @@ defmodule ChatBotWeb.ChatLive do
 
     view_pid = self()
 
+    user_id = socket.assigns.user_id
+
     Task.start(fn ->
       result =
         ChatBot.Brain.evaluate(conversation_id, input,
+          user_id: user_id,
           progress: %{conversation_id: conversation_id, message_id: message_id}
         )
 
-      send(view_pid, {:evaluation_complete, %{conversation_id: conversation_id, message_id: message_id, result: result}})
+      send(
+        view_pid,
+        {:evaluation_complete,
+         %{conversation_id: conversation_id, message_id: message_id, result: result}}
+      )
     end)
 
     {:noreply, socket}
@@ -387,6 +418,12 @@ defmodule ChatBotWeb.ChatLive do
   def step_label(step) when is_binary(step), do: String.replace(step, "_", " ")
   def step_label(_), do: "progress"
 
+  def strategy_badge_variant(:can_respond), do: :success
+  def strategy_badge_variant(:needs_clarification), do: :warning
+  def strategy_badge_variant(:partial_response_with_clarification), do: :info
+  def strategy_badge_variant(:cannot_respond), do: :error
+  def strategy_badge_variant(_), do: :default
+
   defp update_analysis_details(details, payload) when is_map(details) and is_map(payload) do
     step = Map.get(payload, :step) || Map.get(payload, "step")
     ts = Map.get(payload, :timestamp) || Map.get(payload, "timestamp")
@@ -395,21 +432,93 @@ defmodule ChatBotWeb.ChatLive do
     details =
       details
       |> Map.put_new(:started_at, ts)
-      |> Map.update(:steps, [payload], fn existing -> (existing ++ [payload]) |> Enum.take(-300) end)
+      |> Map.update(:steps, [payload], fn existing ->
+        (existing ++ [payload]) |> Enum.take(-300)
+      end)
 
     details =
       case step do
         :pipeline_start ->
-          Map.put(details, :text_length, Map.get(payload, :text_length) || Map.get(payload, "text_length"))
+          Map.put(
+            details,
+            :text_length,
+            Map.get(payload, :text_length) || Map.get(payload, "text_length")
+          )
 
         :chunking_complete ->
-          Map.put(details, :chunk_count, Map.get(payload, :chunk_count) || Map.get(payload, "chunk_count"))
+          Map.put(
+            details,
+            :chunk_count,
+            Map.get(payload, :chunk_count) || Map.get(payload, "chunk_count")
+          )
 
         :strategy_determined ->
-          Map.put(details, :overall_strategy, Map.get(payload, :overall_strategy) || Map.get(payload, "overall_strategy"))
+          details
+          |> Map.put(
+            :overall_strategy,
+            Map.get(payload, :overall_strategy) || Map.get(payload, "overall_strategy")
+          )
+          |> Map.put(:strategy_reasoning, %{
+            chunk_strategies:
+              Map.get(payload, :chunk_strategies) || Map.get(payload, "chunk_strategies") || [],
+            has_expressives:
+              Map.get(payload, :has_expressives) || Map.get(payload, "has_expressives"),
+            has_substantive:
+              Map.get(payload, :has_substantive) || Map.get(payload, "has_substantive"),
+            missing_slots_count:
+              Map.get(payload, :missing_slots_count) || Map.get(payload, "missing_slots_count") ||
+                0,
+            missing_slots:
+              Map.get(payload, :missing_slots) || Map.get(payload, "missing_slots") || [],
+            decision_reason:
+              Map.get(payload, :decision_reason) || Map.get(payload, "decision_reason"),
+            suggested_prompts:
+              Map.get(payload, :suggested_prompts) || Map.get(payload, "suggested_prompts") || []
+          })
 
         :pipeline_complete ->
-          Map.put(details, :elapsed_ms, Map.get(payload, :elapsed_ms) || Map.get(payload, "elapsed_ms"))
+          Map.put(
+            details,
+            :elapsed_ms,
+            Map.get(payload, :elapsed_ms) || Map.get(payload, "elapsed_ms")
+          )
+
+        :racing_complete ->
+          Map.put(details, :racing, %{
+            fast_path: Map.get(payload, :fast_path) || Map.get(payload, "fast_path"),
+            fast_path_source:
+              Map.get(payload, :fast_path_source) || Map.get(payload, "fast_path_source"),
+            early_exit: Map.get(payload, :early_exit) || Map.get(payload, "early_exit"),
+            elapsed_ms: Map.get(payload, :elapsed_ms) || Map.get(payload, "elapsed_ms"),
+            results: Map.get(payload, :results) || Map.get(payload, "results") || [],
+            alternatives:
+              Map.get(payload, :alternatives) || Map.get(payload, "alternatives") || []
+          })
+
+        :memory_query ->
+          Map.put(details, :memory, %{
+            query_text: Map.get(payload, :query_text) || Map.get(payload, "query_text"),
+            match_count: Map.get(payload, :match_count) || Map.get(payload, "match_count") || 0,
+            top_similarity:
+              Map.get(payload, :top_similarity) || Map.get(payload, "top_similarity") || 0.0,
+            matches: Map.get(payload, :matches) || Map.get(payload, "matches") || []
+          })
+
+        :response_generated ->
+          Map.put(details, :response, %{
+            response_type:
+              Map.get(payload, :response_type) || Map.get(payload, "response_type"),
+            strategy: Map.get(payload, :strategy) || Map.get(payload, "strategy"),
+            method: Map.get(payload, :method) || Map.get(payload, "method"),
+            intent: Map.get(payload, :intent) || Map.get(payload, "intent"),
+            entities_count:
+              Map.get(payload, :entities_count) || Map.get(payload, "entities_count") || 0,
+            nlp_confidence:
+              Map.get(payload, :nlp_confidence) || Map.get(payload, "nlp_confidence"),
+            base_method: Map.get(payload, :base_method) || Map.get(payload, "base_method"),
+            prompts_count:
+              Map.get(payload, :prompts_count) || Map.get(payload, "prompts_count") || 0
+          })
 
         _ ->
           details
@@ -423,7 +532,14 @@ defmodule ChatBotWeb.ChatLive do
         case step do
           :chunk_start ->
             chunk
-            |> Map.put(:chunk_length, Map.get(payload, :chunk_length) || Map.get(payload, "chunk_length"))
+            |> Map.put(
+              :chunk_length,
+              Map.get(payload, :chunk_length) || Map.get(payload, "chunk_length")
+            )
+            |> Map.put(
+              :chunk_text,
+              Map.get(payload, :chunk_text) || Map.get(payload, "chunk_text")
+            )
 
           :discourse_complete ->
             Map.put(chunk, :discourse, %{
@@ -439,32 +555,75 @@ defmodule ChatBotWeb.ChatLive do
               is_question: Map.get(payload, :is_question) || Map.get(payload, "is_question")
             })
 
+          :anaphora_resolved ->
+            Map.put(chunk, :anaphora, %{
+              resolved_count:
+                Map.get(payload, :resolved_count) || Map.get(payload, "resolved_count") || 0,
+              entities: Map.get(payload, :entities) || Map.get(payload, "entities") || []
+            })
+
+          :entities_filtered ->
+            Map.put(chunk, :entity_filtering, %{
+              original_count:
+                Map.get(payload, :original_count) || Map.get(payload, "original_count") || 0,
+              filtered_count:
+                Map.get(payload, :filtered_count) || Map.get(payload, "filtered_count") || 0,
+              excluded_types:
+                Map.get(payload, :excluded_types) || Map.get(payload, "excluded_types") || []
+            })
+
           :entities_extracted ->
             chunk
-            |> Map.put(:entities, Map.get(payload, :entities) || Map.get(payload, "entities") || [])
-            |> Map.put(:entity_count, Map.get(payload, :entity_count) || Map.get(payload, "entity_count"))
+            |> Map.put(
+              :entities,
+              Map.get(payload, :entities) || Map.get(payload, "entities") || []
+            )
+            |> Map.put(
+              :entity_count,
+              Map.get(payload, :entity_count) || Map.get(payload, "entity_count")
+            )
 
           :intent_determined ->
-            Map.put(chunk, :intent, Map.get(payload, :intent) || Map.get(payload, "intent"))
+            chunk
+            |> Map.put(:intent, Map.get(payload, :intent) || Map.get(payload, "intent"))
+            |> Map.put(
+              :intent_method,
+              Map.get(payload, :intent_method) || Map.get(payload, "intent_method")
+            )
+            |> Map.put(
+              :intent_confidence,
+              Map.get(payload, :intent_confidence) || Map.get(payload, "intent_confidence")
+            )
 
           :slots_detected ->
             Map.put(chunk, :slots_detected, %{
-              missing_required: Map.get(payload, :missing_required) || Map.get(payload, "missing_required") || [],
+              missing_required:
+                Map.get(payload, :missing_required) || Map.get(payload, "missing_required") || [],
               filled_count: Map.get(payload, :filled_count) || Map.get(payload, "filled_count"),
-              filled_slots: Map.get(payload, :filled_slots) || Map.get(payload, "filled_slots") || %{}
+              filled_slots:
+                Map.get(payload, :filled_slots) || Map.get(payload, "filled_slots") || %{}
             })
 
           :context_resolved ->
             Map.put(chunk, :context_resolved, %{
-              all_required_filled: Map.get(payload, :all_required_filled) || Map.get(payload, "all_required_filled"),
-              missing_required: Map.get(payload, :missing_required) || Map.get(payload, "missing_required") || [],
-              filled_slots: Map.get(payload, :filled_slots) || Map.get(payload, "filled_slots") || %{}
+              all_required_filled:
+                Map.get(payload, :all_required_filled) || Map.get(payload, "all_required_filled"),
+              missing_required:
+                Map.get(payload, :missing_required) || Map.get(payload, "missing_required") || [],
+              filled_slots:
+                Map.get(payload, :filled_slots) || Map.get(payload, "filled_slots") || %{}
             })
 
           :chunk_complete ->
             chunk
-            |> Map.put(:response_strategy, Map.get(payload, :response_strategy) || Map.get(payload, "response_strategy"))
-            |> Map.put(:confidence, Map.get(payload, :confidence) || Map.get(payload, "confidence"))
+            |> Map.put(
+              :response_strategy,
+              Map.get(payload, :response_strategy) || Map.get(payload, "response_strategy")
+            )
+            |> Map.put(
+              :confidence,
+              Map.get(payload, :confidence) || Map.get(payload, "confidence")
+            )
 
           _ ->
             chunk
@@ -484,14 +643,16 @@ defmodule ChatBotWeb.ChatLive do
     |> Enum.with_index()
     |> Enum.map(fn {entry, idx} ->
       role = Map.get(entry, :role) || Map.get(entry, "role") || "system"
-      content = Map.get(entry, :content) || Map.get(entry, "content") || Map.get(entry, "text") || ""
+
+      content =
+        Map.get(entry, :content) || Map.get(entry, "content") || Map.get(entry, "text") || ""
 
       timestamp =
         Map.get(entry, :timestamp) ||
           Map.get(entry, "timestamp") ||
           get_in(entry, [:context, :timestamp]) ||
           get_in(entry, ["context", "timestamp"]) ||
-          (base + idx * 1_000)
+          base + idx * 1_000
 
       id =
         Map.get(entry, :id) ||
@@ -533,8 +694,8 @@ defmodule ChatBotWeb.ChatLive do
             </span>
           </div>
         </div>
-
-        <!-- Each chunk -->
+        
+    <!-- Each chunk -->
         <div class="space-y-3">
           <%= for chunk <- @trace.chunks || [] do %>
             <.chunk_trace chunk={chunk} />
@@ -574,8 +735,8 @@ defmodule ChatBotWeb.ChatLive do
           <% end %>
         </div>
       </div>
-
-      <!-- Compact details row -->
+      
+    <!-- Compact details row -->
       <div class="flex flex-wrap items-center gap-2 text-base-content/60">
         <!-- Entities -->
         <%= if length(@chunk.entities || []) > 0 do %>
@@ -589,16 +750,16 @@ defmodule ChatBotWeb.ChatLive do
             <% end %>
           </div>
         <% end %>
-
-        <!-- Missing slots -->
+        
+    <!-- Missing slots -->
         <%= if length(@chunk.slots_missing || []) > 0 do %>
           <div class="flex items-center gap-1 text-warning">
             <.icon name="hero-exclamation-triangle" class="w-3 h-3" />
             <span>Missing: {Enum.join(@chunk.slots_missing, ", ")}</span>
           </div>
         <% end %>
-
-        <!-- Alternatives (collapsed) -->
+        
+    <!-- Alternatives (collapsed) -->
         <%= if length(@chunk.alternatives || []) > 0 do %>
           <div class="flex items-center gap-1">
             <span class="text-base-content/40">Also:</span>
@@ -607,13 +768,13 @@ defmodule ChatBotWeb.ChatLive do
             <% end %>
           </div>
         <% end %>
-
-        <!-- Backtrack indicator -->
+        
+    <!-- Backtrack indicator -->
         <%= if @chunk.backtrack_count > 0 do %>
           <span class="badge badge-warning badge-xs">↩{@chunk.backtrack_count}</span>
         <% end %>
-
-        <!-- Time -->
+        
+    <!-- Time -->
         <span class="ml-auto">{@chunk.racing_ms}ms</span>
       </div>
     </div>
@@ -643,8 +804,8 @@ defmodule ChatBotWeb.ChatLive do
           <% end %>
         </div>
       </div>
-
-      <!-- Racing Analyzers -->
+      
+    <!-- Racing Analyzers -->
       <%= if length(@trace.analyzers || []) > 0 do %>
         <div class="mb-3">
           <div class="font-semibold text-base-content/70 mb-1 flex items-center gap-1">
@@ -661,7 +822,9 @@ defmodule ChatBotWeb.ChatLive do
                       style={"width: #{analyzer.calibrated * 100}%"}
                     >
                     </div>
-                    <span class="text-base-content/50 w-10">{format_percent(analyzer.calibrated)}</span>
+                    <span class="text-base-content/50 w-10">
+                      {format_percent(analyzer.calibrated)}
+                    </span>
                   </div>
                 </div>
                 <%= if idx == 0 do %>
@@ -672,8 +835,8 @@ defmodule ChatBotWeb.ChatLive do
           </div>
         </div>
       <% end %>
-
-      <!-- Alternatives -->
+      
+    <!-- Alternatives -->
       <%= if length(@trace.alternatives || []) > 0 do %>
         <div class="mb-3">
           <div class="font-semibold text-base-content/70 mb-1 flex items-center gap-1">
@@ -689,8 +852,8 @@ defmodule ChatBotWeb.ChatLive do
           </div>
         </div>
       <% end %>
-
-      <!-- Entities & Slots -->
+      
+    <!-- Entities & Slots -->
       <div class="grid grid-cols-2 gap-3 mb-3">
         <!-- Entities Found -->
         <div>
@@ -710,8 +873,8 @@ defmodule ChatBotWeb.ChatLive do
             <span class="text-base-content/40 italic">None detected</span>
           <% end %>
         </div>
-
-        <!-- Slots -->
+        
+    <!-- Slots -->
         <div>
           <div class="font-semibold text-base-content/70 mb-1 flex items-center gap-1">
             <.icon name="hero-puzzle-piece" class="w-3 h-3" /> Slots
@@ -738,8 +901,8 @@ defmodule ChatBotWeb.ChatLive do
           <% end %>
         </div>
       </div>
-
-      <!-- Backtracking -->
+      
+    <!-- Backtracking -->
       <%= if @trace.backtrack_count > 0 do %>
         <div class="mb-2 p-2 bg-warning/10 rounded border border-warning/30">
           <div class="flex items-center gap-2">
@@ -753,8 +916,8 @@ defmodule ChatBotWeb.ChatLive do
           </div>
         </div>
       <% end %>
-
-      <!-- Clarification Needed -->
+      
+    <!-- Clarification Needed -->
       <%= if @trace.needs_clarification && @trace.clarification do %>
         <div class="p-2 bg-info/10 rounded border border-info/30">
           <div class="flex items-center gap-2">
@@ -763,8 +926,8 @@ defmodule ChatBotWeb.ChatLive do
           </div>
         </div>
       <% end %>
-
-      <!-- Stability Footer -->
+      
+    <!-- Stability Footer -->
       <div class="mt-2 pt-2 border-t border-base-300 flex items-center justify-between text-base-content/50">
         <div class="flex items-center gap-2">
           <span>Total Activation: {format_percent(@trace.total_activation)}</span>
@@ -837,4 +1000,63 @@ defmodule ChatBotWeb.ChatLive do
   rescue
     _ -> %{episode_count: 0, semantic_count: 0, episode_index_size: 0, semantic_index_size: 0}
   end
+
+  # Combines knowledge from KnowledgeStore and UserModelStore
+  defp get_combined_knowledge(persona_name) do
+    # Get structured knowledge from KnowledgeStore
+    base_knowledge = ChatBot.KnowledgeStore.get_knowledge(persona_name)
+
+    # Get user facts from UserModelStore
+    user_facts = get_all_user_facts()
+
+    # Merge user facts into the knowledge structure
+    Map.put(base_knowledge, "user_facts", user_facts)
+  end
+
+  # Gets all user facts from UserModelStore for display
+  defp get_all_user_facts do
+    if Process.whereis(ChatBot.Epistemic.UserModelStore) do
+      case ChatBot.Epistemic.UserModelStore.list_all_users() do
+        {:ok, user_ids} ->
+          user_ids
+          |> Enum.map(fn user_id ->
+            case ChatBot.Epistemic.UserModelStore.get(user_id) do
+              nil ->
+                nil
+
+              model ->
+                %{
+                  "user_id" => user_id,
+                  "facts" => format_user_facts(model.facts),
+                  "confidence" => format_epistemic_bounds(model.epistemic_bounds),
+                  "interaction_count" => map_size(model.interaction_patterns),
+                  "last_seen" => model.updated_at
+                }
+            end
+          end)
+          |> Enum.reject(&is_nil/1)
+
+        _ ->
+          []
+      end
+    else
+      []
+    end
+  rescue
+    _ -> []
+  end
+
+  defp format_user_facts(facts) when is_map(facts) do
+    facts
+    |> Enum.map(fn {k, v} -> %{"key" => to_string(k), "value" => to_string(v)} end)
+  end
+
+  defp format_user_facts(_), do: []
+
+  defp format_epistemic_bounds(bounds) when is_map(bounds) do
+    bounds
+    |> Enum.map(fn {k, v} -> %{"key" => to_string(k), "confidence" => v} end)
+  end
+
+  defp format_epistemic_bounds(_), do: []
 end

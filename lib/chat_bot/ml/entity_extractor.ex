@@ -461,7 +461,7 @@ defmodule ChatBot.ML.EntityExtractor do
       Enum.map(tokens, fn t ->
         t.text
         |> String.downcase()
-        |> String.replace(~r/[^\w\s-]/u, "")
+        |> strip_non_word_chars()
         |> String.trim()
       end)
 
@@ -755,6 +755,7 @@ defmodule ChatBot.ML.EntityExtractor do
       case entity_type do
         "device" -> 0.1
         "room" -> 0.1
+        "person" -> 0.1
         "location" -> 0.05
         "music-artist" -> 0.05
         "music_artist" -> 0.05
@@ -800,5 +801,39 @@ defmodule ChatBot.ML.EntityExtractor do
           resolve_overlaps(rest, [current | resolved_list])
         end
     end
+  end
+
+  # Strip non-word characters (keeping letters, digits, spaces, and hyphens)
+  # Unicode-aware replacement for regex: ~r/[^\w\s-]/u
+  defp strip_non_word_chars(text) do
+    text
+    |> String.graphemes()
+    |> Enum.filter(&word_or_space_or_hyphen?/1)
+    |> Enum.join()
+  end
+
+  defp word_or_space_or_hyphen?(grapheme) do
+    case grapheme do
+      "-" -> true
+      " " -> true
+      "\t" -> true
+      "\n" -> true
+      <<c::utf8>> when c in ?a..?z or c in ?A..?Z or c in ?0..?9 -> true
+      <<c::utf8>> when c > 127 -> letter_codepoint?(c)
+      _ -> false
+    end
+  end
+
+  defp letter_codepoint?(codepoint) do
+    # Check if codepoint is a Unicode letter (basic check for common ranges)
+    # Latin Extended, Greek, Cyrillic, etc.
+    # Latin Extended
+    # Greek
+    # Cyrillic
+    # Latin Extended Additional
+    (codepoint >= 0x00C0 and codepoint <= 0x024F) or
+      (codepoint >= 0x0370 and codepoint <= 0x03FF) or
+      (codepoint >= 0x0400 and codepoint <= 0x04FF) or
+      (codepoint >= 0x1E00 and codepoint <= 0x1EFF)
   end
 end

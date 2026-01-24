@@ -304,7 +304,10 @@ defmodule ChatBot.ML.EntityTrainer do
   end
 
   defp has_digit?(token) do
-    String.match?(token, ~r/\d/)
+    # Check if any character is a digit (without regex)
+    Enum.any?(String.graphemes(token), fn g ->
+      g >= "0" and g <= "9"
+    end)
   end
 
   defp all_digits?(token) do

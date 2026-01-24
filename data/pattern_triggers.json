@@ -1,0 +1,87 @@
+{
+  "version": "1.0.0",
+  "description": "Pattern-based intent triggers for fast-path recognition",
+  "patterns": [
+    {
+      "intent": "device.control",
+      "token_sequences": [
+        ["turn", "on"],
+        ["turn", "off"],
+        ["switch", "on"],
+        ["switch", "off"]
+      ],
+      "confidence": 0.85
+    },
+    {
+      "intent": "weather.query",
+      "token_sequences": [
+        ["what", "is", "the", "weather"],
+        ["what", "the", "weather"],
+        ["how", "is", "the", "weather"],
+        ["weather", "in"],
+        ["weather", "for"]
+      ],
+      "confidence": 0.90
+    },
+    {
+      "intent": "music.play",
+      "token_sequences": [
+        ["play"],
+        ["play", "some"],
+        ["play", "music"]
+      ],
+      "confidence": 0.80
+    },
+    {
+      "intent": "reminder.create",
+      "token_sequences": [
+        ["remind", "me", "to"],
+        ["remind", "me", "about"],
+        ["set", "a", "reminder"]
+      ],
+      "confidence": 0.85
+    },
+    {
+      "intent": "timer.set",
+      "token_sequences": [
+        ["set", "timer"],
+        ["set", "a", "timer"],
+        ["set", "an", "timer"],
+        ["start", "a", "timer"]
+      ],
+      "confidence": 0.85
+    }
+  ],
+  "keywords": [
+    {
+      "intent": "weather.query",
+      "keywords": ["weather", "forecast", "temperature", "rain", "sunny", "cloudy"],
+      "base_confidence": 0.75
+    },
+    {
+      "intent": "music.play",
+      "keywords": ["play", "music", "song", "playlist", "album"],
+      "base_confidence": 0.70
+    },
+    {
+      "intent": "device.control",
+      "keywords": ["turn", "lights", "switch", "dim", "brightness"],
+      "base_confidence": 0.70
+    },
+    {
+      "intent": "news.query",
+      "keywords": ["news", "headlines"],
+      "base_confidence": 0.65
+    },
+    {
+      "intent": "smalltalk.greeting",
+      "keywords": ["hello", "hi", "hey", "howdy"],
+      "base_confidence": 0.80
+    },
+    {
+      "intent": "smalltalk.farewell",
+      "keywords": ["bye", "goodbye", "farewell"],
+      "base_confidence": 0.80
+    }
+  ]
+}

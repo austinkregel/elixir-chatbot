@@ -16,18 +16,21 @@ defmodule ChatBotWeb.ChatLiveProgressTest do
     |> form("#message-form", %{input: "Hello there"})
     |> render_submit()
 
+    # Wait for the processing summary pill to appear (shown inline with user messages)
     html =
       eventually(
         fn -> render(view) end,
         fn h ->
-          String.contains?(h, "Developer panel") and
-            (String.contains?(h, "pipeline") or String.contains?(h, "chunk"))
+          # The processing pill shows strategy info like "can respond" or "Processing"
+          String.contains?(h, "select_message") or
+            String.contains?(h, "Processing") or
+            String.contains?(h, "can respond")
         end,
         200
       )
 
-    assert html =~ "Developer panel"
-    assert html =~ "pipeline" or html =~ "chunk"
+    # Processing pill should be visible with a click handler
+    assert html =~ "select_message" or html =~ "Processing" or html =~ "can respond"
   end
 
   defp eventually(fetch_html, predicate, attempts) do
@@ -43,4 +46,3 @@ defmodule ChatBotWeb.ChatLiveProgressTest do
     end) || flunk("Condition not met within timeout")
   end
 end
-

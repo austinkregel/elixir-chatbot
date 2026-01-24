@@ -23,17 +23,22 @@ defmodule ChatBot.Analysis.AnalyzerCalibration do
   @table :analyzer_calibration
 
   # Analyzers we track
-  @tracked_analyzers [:memory_similarity, :pattern_recognition, :structural, :keyword, :model, :early_confidence]
+  @tracked_analyzers [
+    :memory_similarity,
+    :pattern_recognition,
+    :structural,
+    :keyword,
+    :model,
+    :early_confidence
+  ]
 
   # Default calibration (assume analyzers are initially well-calibrated)
   @default_bucket_accuracy 0.8
 
   # State structure
-  defstruct [
-    outcomes_since_recalibration: %{},
-    total_outcomes: %{},
-    last_recalibration: %{}
-  ]
+  defstruct outcomes_since_recalibration: %{},
+            total_outcomes: %{},
+            last_recalibration: %{}
 
   # Client API
 
@@ -133,7 +138,8 @@ defmodule ChatBot.Analysis.AnalyzerCalibration do
     state = %__MODULE__{
       outcomes_since_recalibration: Map.new(@tracked_analyzers, fn a -> {a, 0} end),
       total_outcomes: Map.new(@tracked_analyzers, fn a -> {a, 0} end),
-      last_recalibration: Map.new(@tracked_analyzers, fn a -> {a, System.monotonic_time(:second)} end)
+      last_recalibration:
+        Map.new(@tracked_analyzers, fn a -> {a, System.monotonic_time(:second)} end)
     }
 
     Logger.info("AnalyzerCalibration started", %{tracked: @tracked_analyzers})
@@ -164,7 +170,8 @@ defmodule ChatBot.Analysis.AnalyzerCalibration do
           state
           | outcomes_since_recalibration: Map.put(new_outcomes, analyzer, 0),
             total_outcomes: new_total,
-            last_recalibration: Map.put(state.last_recalibration, analyzer, System.monotonic_time(:second))
+            last_recalibration:
+              Map.put(state.last_recalibration, analyzer, System.monotonic_time(:second))
         }
       else
         %{state | outcomes_since_recalibration: new_outcomes, total_outcomes: new_total}
@@ -180,7 +187,8 @@ defmodule ChatBot.Analysis.AnalyzerCalibration do
     new_state = %{
       state
       | outcomes_since_recalibration: Map.put(state.outcomes_since_recalibration, analyzer, 0),
-        last_recalibration: Map.put(state.last_recalibration, analyzer, System.monotonic_time(:second))
+        last_recalibration:
+          Map.put(state.last_recalibration, analyzer, System.monotonic_time(:second))
     }
 
     {:reply, :ok, new_state}

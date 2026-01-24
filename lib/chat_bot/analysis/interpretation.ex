@@ -15,7 +15,8 @@ defmodule ChatBot.Analysis.Interpretation do
 
   alias ChatBot.Analysis.{AnalyzerResult, SlotResult}
 
-  @type source :: :memory_match | :pattern_recognition | :structural | :keyword | :model | :heuristic
+  @type source ::
+          :memory_match | :pattern_recognition | :structural | :keyword | :model | :heuristic
   @type scope :: :global | :cohort | :user
 
   @type alternative :: %{
@@ -237,8 +238,13 @@ defmodule ChatBot.Analysis.AnalyzerResult do
   allowing the system to compare apples-to-apples across different analyzers.
   """
 
-  @type analyzer_type :: :memory_similarity | :pattern_recognition | :structural |
-                         :keyword | :model | :early_confidence
+  @type analyzer_type ::
+          :memory_similarity
+          | :pattern_recognition
+          | :structural
+          | :keyword
+          | :model
+          | :early_confidence
 
   @type t :: %__MODULE__{
           analyzer: analyzer_type(),

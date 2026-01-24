@@ -174,7 +174,7 @@ defmodule ChatBot.Analysis.BacktrackController do
 
         # Music intent with location entity (suspicious)
         String.contains?(intent, "music") and
-            has_entity_type?(entities, ["location"]) and
+          has_entity_type?(entities, ["location"]) and
             not has_entity_type?(entities, ["music-artist", "song", "album"]) ->
           {:entity_mismatch, "music intent with location but no music entities"}
 
@@ -279,7 +279,8 @@ defmodule ChatBot.Analysis.BacktrackController do
       [a, b] ->
         %{
           type: :disambiguation,
-          prompt: "I'm not sure if you're asking about #{humanize_intent(a)} or #{humanize_intent(b)}. Could you clarify?",
+          prompt:
+            "I'm not sure if you're asking about #{humanize_intent(a)} or #{humanize_intent(b)}. Could you clarify?",
           options: [a, b]
         }
 

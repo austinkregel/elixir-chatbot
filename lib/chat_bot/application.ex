@@ -13,6 +13,10 @@ defmodule ChatBot.Application do
       {Phoenix.PubSub, name: ChatBot.PubSub},
       # Start the Registry for subprocesses
       {Registry, keys: :unique, name: ChatBot.SubprocessRegistry},
+      # Start the Metrics Aggregator (for telemetry collection)
+      ChatBot.Metrics.Aggregator,
+      # Start the Informal Expansions data loader (for contraction expansion)
+      ChatBot.ML.InformalExpansions,
       # Start the Gazetteer GenServer for entity lookups
       ChatBot.ML.Gazetteer,
       # Start the Analysis Learning Store
@@ -24,9 +28,16 @@ defmodule ChatBot.Application do
       # Start the Cognitive Memory System (Embedder and Store)
       ChatBot.Memory.Embedder,
       ChatBot.Memory.Store,
+      # Start the Epistemic System (JTMS, BeliefStore, UserModelStore, ContradictionHandler)
+      ChatBot.Epistemic.JTMS,
+      ChatBot.Epistemic.BeliefStore,
+      ChatBot.Epistemic.UserModelStore,
+      ChatBot.Epistemic.ContradictionHandler,
       # Start the Adaptive Processing System
       ChatBot.Analysis.AnalyzerCalibration,
       {ChatBot.Analysis.HeuristicStore, seeded_path: "priv/heuristics/seeded.json"},
+      # Start the Response Template Store (loads templates from intent files)
+      ChatBot.Response.TemplateStore,
       # Start the Subprocess Supervisor
       ChatBot.Subprocesses.Supervisor,
       # Start the Brain GenServer
@@ -39,6 +50,9 @@ defmodule ChatBot.Application do
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: ChatBot.Supervisor]
     result = Supervisor.start_link(children, opts)
+
+    # Attach telemetry handlers after supervisor is started
+    ChatBot.Telemetry.attach_handlers()
 
     # Initialize ML models after supervisor is started
     if Application.get_env(:chat_bot, :ml)[:enabled] do

@@ -31,4 +31,3 @@ defmodule ChatBotWeb.ChatLiveHistoryTest do
     refute html =~ "History test message 2"
   end
 end
-

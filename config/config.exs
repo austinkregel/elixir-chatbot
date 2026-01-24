@@ -56,7 +56,7 @@ config :tailwind,
   chat_bot: [
     args: ~w(
       --input=css/app.css
-      --output=../priv/static/assets/app.css
+      --output=../priv/static/assets/css/app.css
     ),
     cd: Path.expand("../assets", __DIR__)
   ]

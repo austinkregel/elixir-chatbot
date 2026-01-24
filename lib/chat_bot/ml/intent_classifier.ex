@@ -198,11 +198,8 @@ defmodule ChatBot.ML.IntentClassifier do
   end
 
   defp tokenize_text(text) do
-    text
-    |> String.downcase()
-    |> String.replace(~r/[^\w\s]/, " ")
-    |> String.split()
-    |> Enum.filter(&(String.length(&1) > 1))
+    # Use the Tokenizer module for consistent, regex-free tokenization
+    ChatBot.ML.Tokenizer.tokenize_normalized(text, min_length: 2)
   end
 
   defp predict_nearest_neighbor(model, text_vector) do

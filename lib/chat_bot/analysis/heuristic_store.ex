@@ -282,7 +282,12 @@ defmodule ChatBot.Analysis.HeuristicStore do
         if :ets.whereis(table) != :undefined do
           case :ets.lookup(table, heuristic_id) do
             [{id, heuristic}] ->
-              updated = %{heuristic | deprecated: true, last_updated: System.system_time(:millisecond)}
+              updated = %{
+                heuristic
+                | deprecated: true,
+                  last_updated: System.system_time(:millisecond)
+              }
+
               :ets.insert(table, {id, updated})
               {:ok, updated}
 

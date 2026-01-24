@@ -132,7 +132,8 @@ defmodule ChatBot.ML.Gazetteer do
     - {:ok, normalized_key} on success
     - {:error, reason} on failure
   """
-  def add_entry(name, entity_type, metadata \\ %{}) when is_binary(name) and is_binary(entity_type) do
+  def add_entry(name, entity_type, metadata \\ %{})
+      when is_binary(name) and is_binary(entity_type) do
     GenServer.call(__MODULE__, {:add_entry, name, entity_type, metadata})
   end
 
@@ -564,7 +565,7 @@ defmodule ChatBot.ML.Gazetteer do
     length(prefixes)
   end
 
-  defp find_all_spans(tokens, start_idx, token_count, acc) when start_idx >= token_count do
+  defp find_all_spans(_tokens, start_idx, token_count, acc) when start_idx >= token_count do
     # Sort by span length (longest first) and then by start position
     acc
     |> Enum.sort_by(fn {start, end_idx, _info} -> {-(end_idx - start), start} end)

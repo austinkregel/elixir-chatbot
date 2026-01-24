@@ -1,0 +1,162 @@
+[
+  {
+    "id": "meta-sk-001",
+    "data": [{"text": "what do you know about me", "userDefined": false}],
+    "isTemplate": false,
+    "count": 5,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "meta-sk-002",
+    "data": [{"text": "what have you learned about me", "userDefined": false}],
+    "isTemplate": false,
+    "count": 3,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "meta-sk-003",
+    "data": [{"text": "tell me what you know about me", "userDefined": false}],
+    "isTemplate": false,
+    "count": 2,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "meta-sk-004",
+    "data": [{"text": "what can you tell me about myself", "userDefined": false}],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "meta-sk-005",
+    "data": [{"text": "what information do you have about me", "userDefined": false}],
+    "isTemplate": false,
+    "count": 2,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "meta-sk-006",
+    "data": [{"text": "how much do you know about me", "userDefined": false}],
+    "isTemplate": false,
+    "count": 2,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "meta-sk-007",
+    "data": [{"text": "do you know anything about me", "userDefined": false}],
+    "isTemplate": false,
+    "count": 2,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "meta-sk-008",
+    "data": [{"text": "what do you think you know about me", "userDefined": false}],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "meta-sk-009",
+    "data": [{"text": "what have you figured out about me", "userDefined": false}],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "meta-sk-010",
+    "data": [{"text": "what can you tell me about me", "userDefined": false}],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "meta-sk-011",
+    "data": [{"text": "how much have you learned about me", "userDefined": false}],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "meta-sk-012",
+    "data": [{"text": "what facts do you have about me", "userDefined": false}],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "meta-sk-013",
+    "data": [{"text": "describe what you know about me", "userDefined": false}],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "meta-sk-014",
+    "data": [{"text": "summarize what you know about me", "userDefined": false}],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "meta-sk-015",
+    "data": [{"text": "list what you know about me", "userDefined": false}],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "meta-sk-016",
+    "data": [{"text": "what do you actually know about me", "userDefined": false}],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "meta-sk-017",
+    "data": [{"text": "so what do you know about me then", "userDefined": false}],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "meta-sk-018",
+    "data": [{"text": "tell me everything you know about me", "userDefined": false}],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "meta-sk-019",
+    "data": [{"text": "what have I told you about myself", "userDefined": false}],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "meta-sk-020",
+    "data": [{"text": "what do you know about who I am", "userDefined": false}],
+    "isTemplate": false,
+    "count": 1,
+    "lang": "en",
+    "updated": 0
+  }
+]

@@ -32,7 +32,7 @@ defmodule Mix.Tasks.ClearKnowledge do
       )
 
     # Default to all if no specific option (except reload which is explicit)
-    clear_all = opts[:all] || (opts == [])
+    clear_all = opts[:all] || opts == []
 
     IO.puts("\n=== Clearing Knowledge ===\n")
 

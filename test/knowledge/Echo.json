@@ -20,6 +20,16 @@
     }
   ],
   "people": {
+    "Austin": {
+      "confidence": 0.7799999999999999,
+      "name": "Austin",
+      "type": "person"
+    },
+    "Jordan": {
+      "confidence": 0.7799999999999999,
+      "name": "Jordan",
+      "type": "person"
+    },
     "nil": {
       "age": "vial",
       "confidence": 0.9,

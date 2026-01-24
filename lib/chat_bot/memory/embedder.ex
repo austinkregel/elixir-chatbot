@@ -41,7 +41,10 @@ defmodule ChatBot.Memory.Embedder do
   Returns a list of floats representing the embedding.
   """
   def embed(text) when is_binary(text) do
-    GenServer.call(__MODULE__, {:embed, text})
+    # Wrap with telemetry span for async, non-blocking metrics
+    ChatBot.Telemetry.span(:memory_embed, %{text_length: byte_size(text)}, fn ->
+      GenServer.call(__MODULE__, {:embed, text})
+    end)
   end
 
   @doc """

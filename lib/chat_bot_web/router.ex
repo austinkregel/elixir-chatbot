@@ -22,6 +22,13 @@ defmodule ChatBotWeb.Router do
     live "/admin", AdminLive
   end
 
+  # Operational dashboard
+  scope "/ops", ChatBotWeb do
+    pipe_through :browser
+
+    live "/dashboard", DashboardLive
+  end
+
   # Test endpoints
   scope "/api", ChatBotWeb do
     pipe_through :api

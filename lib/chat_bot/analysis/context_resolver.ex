@@ -5,28 +5,45 @@ defmodule ChatBot.Analysis.ContextResolver do
   Context sources (in priority order):
   1. Current message - explicitly stated (already handled by SlotDetector)
   2. Conversation history - recently mentioned (within N turns)
-  3. User profile - stored preferences (location, timezone, etc.)
-  4. Defaults - schema-defined defaults (already handled by SlotDetector)
+  3. User model - learned facts from epistemic system (with confidence thresholds)
+  4. User profile - stored preferences (location, timezone, etc.)
+  5. Defaults - schema-defined defaults (already handled by SlotDetector)
 
-  This module focuses on sources 2 and 3.
+  This module focuses on sources 2, 3, and 4.
   """
 
   alias ChatBot.Analysis.SlotResult
+  alias ChatBot.Epistemic.UserModelStore
+  alias ChatBot.Epistemic.Types.Config
 
   require Logger
 
   # How many conversation turns to look back for context
   @default_history_depth 5
 
+  # Minimum confidence threshold for user model facts
+  @user_model_confidence_threshold 0.6
+
   # Slots that commonly come from user profile
   @profile_slots ~w(location timezone preferred_temperature_unit preferred_language)
 
+  # Mapping from slot names to user model predicates
+  @slot_to_predicate_map %{
+    "location" => [:location, :city, :home_city, :preferred_location],
+    "timezone" => [:timezone],
+    "preferred_language" => [:language, :preferred_language],
+    "preferred_temperature_unit" => [:temperature_unit],
+    "name" => [:name],
+    "workplace" => [:workplace, :employer, :company]
+  }
+
   @doc """
-  Resolves missing slots from conversation history and user profile.
+  Resolves missing slots from conversation history, user model, and user profile.
 
   Options:
   - :conversation_history - list of previous messages with entities
   - :user_profile - map of user preferences
+  - :user_id - user ID for querying the epistemic user model
   - :history_depth - how many turns to look back (default: 5)
 
   Returns an updated SlotResult with resolved slots.
@@ -34,6 +51,7 @@ defmodule ChatBot.Analysis.ContextResolver do
   def resolve(%SlotResult{} = slot_result, opts \\ []) do
     history = Keyword.get(opts, :conversation_history, [])
     profile = Keyword.get(opts, :user_profile, %{})
+    user_id = Keyword.get(opts, :user_id)
     depth = Keyword.get(opts, :history_depth, @default_history_depth)
 
     # Get missing slots that need resolution
@@ -44,6 +62,7 @@ defmodule ChatBot.Analysis.ContextResolver do
     else
       slot_result
       |> resolve_from_history(missing, history, depth)
+      |> resolve_from_user_model(user_id)
       |> resolve_from_profile(profile)
     end
   end
@@ -166,6 +185,57 @@ defmodule ChatBot.Analysis.ContextResolver do
     decay_rate = (base - min_conf) / max_depth
 
     max(min_conf, base - (turns_ago - 1) * decay_rate)
+  end
+
+  # Resolve slots from the epistemic user model
+  defp resolve_from_user_model(slot_result, nil), do: slot_result
+
+  defp resolve_from_user_model(slot_result, user_id) do
+    # Skip if epistemic system is disabled
+    unless Config.enabled?() do
+      slot_result
+    else
+      missing = slot_result.missing_required ++ slot_result.missing_optional
+
+      Enum.reduce(missing, slot_result, fn slot_name, acc ->
+        if Map.has_key?(acc.filled_slots, slot_name) do
+          # Already filled
+          acc
+        else
+          case find_in_user_model(slot_name, user_id) do
+            {:ok, value, confidence} ->
+              Logger.debug("Resolved slot from user model", %{
+                slot: slot_name,
+                value: value,
+                confidence: confidence
+              })
+
+              SlotResult.fill_slot(acc, slot_name, value, :user_model, confidence)
+
+            :not_found ->
+              acc
+          end
+        end
+      end)
+    end
+  end
+
+  defp find_in_user_model(slot_name, user_id) do
+    # Get predicates to search for this slot
+    predicates = Map.get(@slot_to_predicate_map, slot_name, [String.to_atom(slot_name)])
+
+    # Try each predicate until we find a match
+    Enum.find_value(predicates, :not_found, fn predicate ->
+      case UserModelStore.get_fact(user_id, predicate) do
+        %{value: value, confidence: conf} when conf >= @user_model_confidence_threshold ->
+          {:ok, value, conf}
+
+        _ ->
+          nil
+      end
+    end)
+  rescue
+    _ -> :not_found
   end
 
   defp resolve_from_profile(slot_result, profile) when map_size(profile) == 0 do

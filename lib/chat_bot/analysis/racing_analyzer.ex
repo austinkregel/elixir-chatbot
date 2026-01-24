@@ -12,6 +12,9 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
   - Memory match (high similarity to past interaction)
   - Confidence threshold (single analyzer hits 90%+)
   - Pattern recognition (structural features reliably indicate intent)
+
+  Pattern and keyword triggers are loaded from data/pattern_triggers.json
+  to keep intent recognition data-driven and trainable.
   """
 
   alias ChatBot.Analysis.{
@@ -19,7 +22,9 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
     AnalyzerResult,
     ActivationPool,
     AnalyzerCalibration,
-    HeuristicStore
+    HeuristicStore,
+    SelfKnowledgeAnalyzer,
+    Progress
   }
 
   alias ChatBot.ML.IntentClassifierSimple
@@ -30,6 +35,10 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
   @early_exit_threshold 0.90
   @fast_path_threshold 0.85
   @analyzer_timeout 2000
+  @pattern_triggers_file "data/pattern_triggers.json"
+
+  # Cache for loaded pattern triggers (loaded once per process)
+  @pattern_triggers_key :racing_analyzer_pattern_triggers
 
   @doc """
   Races multiple analyzers to interpret the input.
@@ -51,10 +60,23 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
     unless Keyword.get(opts, :skip_heuristics, false) do
       case check_fast_path(text, user_id, cohort_id) do
         {:fast_path, interpretation} ->
+          elapsed = System.monotonic_time(:millisecond) - start_time
+
           Logger.debug("Fast path hit", %{
             intent: interpretation.intent,
             source: interpretation.source,
-            elapsed_ms: System.monotonic_time(:millisecond) - start_time
+            elapsed_ms: elapsed
+          })
+
+          # Report fast path hit to debug inspector
+          Progress.report(opts, :racing_complete, %{
+            fast_path: true,
+            fast_path_source: interpretation.source,
+            intent: interpretation.intent,
+            activation: interpretation.activation,
+            elapsed_ms: elapsed,
+            results: [],
+            early_exit: false
           })
 
           return_with_timing(interpretation, start_time)
@@ -65,7 +87,7 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
     end
 
     # Step 2: Launch racing analyzers
-    results = run_analyzers_with_early_exit(text, opts)
+    {results, early_exit_triggered} = run_analyzers_with_early_exit(text, opts)
 
     # Step 3: Calibrate and normalize results
     calibrated_results = calibrate_results(results)
@@ -79,11 +101,37 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
       |> Interpretation.from_analyzer_results(corrected_results)
       |> ActivationPool.normalize_with_alternatives()
 
+    elapsed = System.monotonic_time(:millisecond) - start_time
+
     Logger.debug("Racing complete", %{
       intent: interpretation.intent,
       activation: interpretation.activation,
       alternatives: length(interpretation.alternatives),
-      elapsed_ms: System.monotonic_time(:millisecond) - start_time
+      elapsed_ms: elapsed
+    })
+
+    # Report racing results to debug inspector
+    Progress.report(opts, :racing_complete, %{
+      fast_path: false,
+      fast_path_source: nil,
+      intent: interpretation.intent,
+      activation: interpretation.activation,
+      elapsed_ms: elapsed,
+      early_exit: early_exit_triggered,
+      results:
+        Enum.map(corrected_results, fn r ->
+          %{
+            analyzer: r.analyzer,
+            intent: r.intent,
+            raw_score: r.raw_score,
+            calibrated: r.calibrated_activation,
+            indicators: r.indicators || []
+          }
+        end),
+      alternatives:
+        Enum.map(interpretation.alternatives || [], fn alt ->
+          %{intent: alt.intent, activation: alt.activation, source: alt.source}
+        end)
     })
 
     interpretation
@@ -158,6 +206,8 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
   end
 
   defp run_analyzers_with_early_exit(text, opts) do
+    user_id = Keyword.get(opts, :user_id)
+
     # Create tasks for each analyzer
     analyzers = [
       {:model, fn -> analyze_with_model(text) end},
@@ -169,7 +219,15 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
     # Add memory analyzer unless skipped
     analyzers =
       unless Keyword.get(opts, :skip_memory, false) do
-        [{:memory_similarity, fn -> analyze_memory(text) end} | analyzers]
+        [{:memory_similarity, fn -> analyze_memory(text, opts) end} | analyzers]
+      else
+        analyzers
+      end
+
+    # Add self-knowledge analyzer for meta-cognitive queries (epistemic system)
+    analyzers =
+      unless Keyword.get(opts, :skip_epistemic, false) do
+        [{:self_knowledge, fn -> analyze_self_knowledge(text, user_id) end} | analyzers]
       else
         analyzers
       end
@@ -180,13 +238,14 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
         {name, Task.async(fun)}
       end)
 
-    # Collect results with early exit
-    collect_with_early_exit(tasks, [], @analyzer_timeout)
+    # Collect results with early exit - returns {results, early_exit_triggered?}
+    collect_with_early_exit(tasks, [], @analyzer_timeout, false)
   end
 
-  defp collect_with_early_exit([], results, _timeout), do: results
+  defp collect_with_early_exit([], results, _timeout, early_exit_triggered),
+    do: {results, early_exit_triggered}
 
-  defp collect_with_early_exit(tasks, results, timeout) do
+  defp collect_with_early_exit(tasks, results, timeout, early_exit_triggered) do
     # Wait for any task to complete
     case Task.yield_many(tasks |> Enum.map(&elem(&1, 1)), timeout) do
       yielded_results ->
@@ -210,14 +269,14 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
         if should_early_exit?(all_results) do
           # Kill remaining tasks
           Enum.each(pending, fn {{_, task}, _} -> Task.shutdown(task, :brutal_kill) end)
-          all_results
+          {all_results, true}
         else
           # Continue waiting for remaining tasks
           remaining_tasks =
             pending
             |> Enum.map(fn {{name, task}, _} -> {name, task} end)
 
-          collect_with_early_exit(remaining_tasks, all_results, timeout)
+          collect_with_early_exit(remaining_tasks, all_results, timeout, early_exit_triggered)
         end
     end
   end
@@ -264,7 +323,9 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
     first_word = List.first(words) || ""
 
     question_words = ~w(what where when why who whom whose which how)
-    imperative_words = ~w(tell show give get find search look check turn set make create open close start stop play pause)
+
+    imperative_words =
+      ~w(tell show give get find search look check turn set make create open close start stop play pause)
 
     {intent, confidence, indicators} =
       cond do
@@ -291,16 +352,9 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
   end
 
   defp analyze_keywords(text) do
+    # Load keyword patterns from data file (cached)
+    keyword_patterns = get_keyword_patterns()
     lower = String.downcase(text)
-
-    keyword_patterns = [
-      {"weather.query", ~w(weather forecast temperature rain sunny cloudy), 0.75},
-      {"music.play", ~w(play music song playlist album), 0.70},
-      {"device.control", ~w(turn lights switch dim brightness), 0.70},
-      {"news.query", ~w(news headlines), 0.65},
-      {"smalltalk.greeting", ~w(hello hi hey howdy), 0.80},
-      {"smalltalk.farewell", ~w(bye goodbye farewell), 0.80}
-    ]
 
     best_match =
       keyword_patterns
@@ -331,19 +385,13 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
   end
 
   defp analyze_patterns(text) do
-    # Pattern-based recognition for common structures
-    patterns = [
-      {~r/^(turn|switch)\s+(on|off)\s+/i, "device.control", 0.85},
-      {~r/^what('s| is) the weather/i, "weather.query", 0.90},
-      {~r/^play\s+/i, "music.play", 0.80},
-      {~r/^remind me to\s+/i, "reminder.create", 0.85},
-      {~r/^set (a |an )?timer/i, "timer.set", 0.85}
-    ]
+    # Load token patterns from data file (cached)
+    patterns = get_token_patterns()
+    tokens = ChatBot.ML.Tokenizer.tokenize_normalized(text, expand_contractions: true)
 
     best_match =
-      patterns
-      |> Enum.find_value(fn {pattern, intent, confidence} ->
-        if Regex.match?(pattern, text) do
+      Enum.find_value(patterns, fn {token_sequences, intent, confidence} ->
+        if matches_any_token_pattern?(tokens, token_sequences) do
           {intent, confidence}
         else
           nil
@@ -362,21 +410,148 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
     end
   end
 
-  defp analyze_memory(text) do
+  # ============================================================================
+  # Pattern Data Loading (from JSON)
+  # ============================================================================
+
+  # Get keyword patterns, loading from file if not cached
+  defp get_keyword_patterns do
+    case Process.get(@pattern_triggers_key) do
+      %{keywords: keywords} -> keywords
+      nil -> load_and_cache_triggers().keywords
+    end
+  end
+
+  # Get token patterns, loading from file if not cached
+  defp get_token_patterns do
+    case Process.get(@pattern_triggers_key) do
+      %{patterns: patterns} -> patterns
+      nil -> load_and_cache_triggers().patterns
+    end
+  end
+
+  # Load triggers from JSON file and cache in process dictionary
+  defp load_and_cache_triggers do
+    triggers = load_pattern_triggers()
+    Process.put(@pattern_triggers_key, triggers)
+    triggers
+  end
+
+  # Load pattern triggers from JSON file
+  defp load_pattern_triggers do
+    paths_to_try = [
+      @pattern_triggers_file,
+      Path.join(File.cwd!(), @pattern_triggers_file)
+    ]
+
+    result =
+      Enum.find_value(paths_to_try, fn path ->
+        if File.exists?(path) do
+          case File.read(path) do
+            {:ok, contents} ->
+              case Jason.decode(contents) do
+                {:ok, data} -> {:ok, data}
+                {:error, _} -> nil
+              end
+
+            {:error, _} ->
+              nil
+          end
+        end
+      end)
+
+    case result do
+      {:ok, data} ->
+        %{
+          keywords: parse_keyword_patterns(data),
+          patterns: parse_token_patterns(data)
+        }
+
+      nil ->
+        Logger.warning("Pattern triggers file not found, using empty patterns")
+        %{keywords: [], patterns: []}
+    end
+  end
+
+  # Parse keyword patterns from JSON data
+  defp parse_keyword_patterns(data) do
+    (data["keywords"] || [])
+    |> Enum.map(fn entry ->
+      {
+        entry["intent"],
+        entry["keywords"],
+        entry["base_confidence"]
+      }
+    end)
+  end
+
+  # Parse token sequence patterns from JSON data
+  defp parse_token_patterns(data) do
+    (data["patterns"] || [])
+    |> Enum.map(fn entry ->
+      {
+        entry["token_sequences"],
+        entry["intent"],
+        entry["confidence"]
+      }
+    end)
+  end
+
+  # Check if tokens start with any of the given token patterns
+  defp matches_any_token_pattern?(tokens, token_patterns) do
+    Enum.any?(token_patterns, fn pattern ->
+      starts_with_tokens?(tokens, pattern)
+    end)
+  end
+
+  # Check if the token list starts with the given pattern
+  defp starts_with_tokens?(tokens, pattern) when length(tokens) >= length(pattern) do
+    tokens
+    |> Enum.take(length(pattern))
+    |> Enum.zip(pattern)
+    |> Enum.all?(fn {token, expected} -> token == expected end)
+  end
+
+  defp starts_with_tokens?(_, _), do: false
+
+  defp analyze_memory(text, opts) do
     if Process.whereis(MemoryStore) do
-      case MemoryStore.query_similar(text, 3) do
+      case MemoryStore.query_similar(text, 5) do
         {:ok, [_ | _] = results} ->
           # Weight by similarity
           {best_episode, best_similarity} = hd(results)
           intent = extract_intent_from_tags(best_episode.tags)
 
+          # Report memory query results to debug inspector
+          Progress.report(opts, :memory_query, %{
+            query_text: String.slice(text, 0, 100),
+            match_count: length(results),
+            top_similarity: best_similarity,
+            matches:
+              Enum.map(results, fn {ep, sim} ->
+                %{
+                  episode_id: ep.id,
+                  similarity: Float.round(sim, 3),
+                  tags: Enum.take(ep.tags, 5),
+                  state_preview: String.slice(ep.state || "", 0, 50)
+                }
+              end)
+          })
+
           AnalyzerResult.new(:memory_similarity, intent, best_similarity,
             confidence_estimate: best_similarity,
             indicators: ["memory_match"],
-            metadata: %{episode_id: best_episode.id}
+            metadata: %{episode_id: best_episode.id, match_count: length(results)}
           )
 
         _ ->
+          Progress.report(opts, :memory_query, %{
+            query_text: String.slice(text, 0, 100),
+            match_count: 0,
+            top_similarity: 0.0,
+            matches: []
+          })
+
           AnalyzerResult.new(:memory_similarity, nil, 0.0)
       end
     else
@@ -384,6 +559,13 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
     end
   rescue
     _ -> AnalyzerResult.new(:memory_similarity, nil, 0.0)
+  end
+
+  defp analyze_self_knowledge(text, user_id) do
+    # Use the SelfKnowledgeAnalyzer for meta-cognitive queries
+    SelfKnowledgeAnalyzer.analyze(text, user_id: user_id)
+  rescue
+    _ -> AnalyzerResult.new(:self_knowledge, nil, 0.0)
   end
 
   defp return_with_timing(interpretation, start_time) do
@@ -416,7 +598,11 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
         cond do
           # If classified as music.play, heavily penalize
           result.intent == "music.play" ->
-            %{result | raw_score: result.raw_score * 0.1, calibrated_activation: result.calibrated_activation * 0.1}
+            %{
+              result
+              | raw_score: result.raw_score * 0.1,
+                calibrated_activation: result.calibrated_activation * 0.1
+            }
 
           # If classified as greeting, boost
           result.intent == "smalltalk.greeting" or
@@ -433,14 +619,19 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
       # Only apply if text starts with "play" or contains explicit music keywords
       is_likely_music =
         String.starts_with?(lower, "play ") or
-          (String.contains?(lower, "play") and String.contains?(lower, ["song", "music", "album", "artist"]))
+          (String.contains?(lower, "play") and
+             String.contains?(lower, ["song", "music", "album", "artist"]))
 
       if is_likely_music do
         # Apply corrections: penalize greeting, boost music.play
         Enum.map(results, fn result ->
           cond do
             result.intent == "smalltalk.greeting" ->
-              %{result | raw_score: result.raw_score * 0.3, calibrated_activation: result.calibrated_activation * 0.3}
+              %{
+                result
+                | raw_score: result.raw_score * 0.3,
+                  calibrated_activation: result.calibrated_activation * 0.3
+              }
 
             result.intent == "music.play" ->
               %{result | raw_score: min(result.raw_score * 1.3, 0.95)}

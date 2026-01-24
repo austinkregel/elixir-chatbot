@@ -322,7 +322,10 @@ defmodule ChatBot.Analysis.ProcessingTrace do
       end
 
     # Calculate total activation
-    all_activations = [final_interp.activation | Enum.map(final_interp.alternatives, & &1.activation)]
+    all_activations = [
+      final_interp.activation | Enum.map(final_interp.alternatives, & &1.activation)
+    ]
+
     total = Enum.sum(all_activations)
 
     %ChunkTrace{
@@ -366,23 +369,24 @@ defmodule ChatBot.Analysis.ProcessingTrace do
 
   defp find_primary_chunk(chunk_traces) do
     # Priority: questions/commands > weather > other substantive > greetings
-    priority_order = [
-      ~r/^question\./,
-      ~r/^weather\./,
-      ~r/^device\./,
-      ~r/^music\./,
-      ~r/^reminder\./,
-      ~r/^timer\./,
-      ~r/^action\./,
-      ~r/^information\./,
-      ~r/^search\./
+    # Using string prefix matching instead of regex
+    priority_prefixes = [
+      "question.",
+      "weather.",
+      "device.",
+      "music.",
+      "reminder.",
+      "timer.",
+      "action.",
+      "information.",
+      "search."
     ]
 
     Enum.find(chunk_traces, List.first(chunk_traces), fn trace ->
       intent = trace.primary_intent || ""
 
-      Enum.any?(priority_order, fn pattern ->
-        Regex.match?(pattern, intent)
+      Enum.any?(priority_prefixes, fn prefix ->
+        String.starts_with?(intent, prefix)
       end)
     end)
   end
