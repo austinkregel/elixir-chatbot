@@ -88,9 +88,15 @@ defmodule ChatBot.Analysis.AnalyzerCalibration do
   Gets the historical accuracy for a specific confidence bucket.
   """
   def get_bucket_accuracy(analyzer, bucket) when is_atom(analyzer) and is_integer(bucket) do
-    case :ets.lookup(@table, {:bucket, analyzer, bucket}) do
-      [{_, accuracy, _count}] -> accuracy
-      [] -> @default_bucket_accuracy
+    case :ets.whereis(@table) do
+      :undefined ->
+        @default_bucket_accuracy
+
+      _tid ->
+        case :ets.lookup(@table, {:bucket, analyzer, bucket}) do
+          [{_, accuracy, _count}] -> accuracy
+          [] -> @default_bucket_accuracy
+        end
     end
   end
 

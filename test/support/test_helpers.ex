@@ -17,6 +17,35 @@ defmodule ChatBot.TestHelpers do
   end
 
   @doc """
+  Repeatedly calls `get_fn` and checks the result with `check_fn` until it returns true
+  or max_attempts is reached. Returns the value from get_fn when check succeeds.
+
+  ## Example
+
+      eventually(
+        fn -> render(view) end,
+        fn html -> String.contains?(html, "expected") end,
+        100
+      )
+  """
+  def eventually(get_fn, check_fn, max_attempts \\ 50, delay_ms \\ 10)
+
+  def eventually(_get_fn, _check_fn, 0, _delay_ms) do
+    raise "eventually: condition not met after max attempts"
+  end
+
+  def eventually(get_fn, check_fn, attempts, delay_ms) do
+    value = get_fn.()
+
+    if check_fn.(value) do
+      value
+    else
+      Process.sleep(delay_ms)
+      eventually(get_fn, check_fn, attempts - 1, delay_ms)
+    end
+  end
+
+  @doc """
   Starts common services needed for integration tests.
   """
   def start_test_services do

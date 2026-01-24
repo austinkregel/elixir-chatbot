@@ -293,14 +293,8 @@ defmodule ChatBot.Analysis.AdaptiveProcessingTest do
   describe "AnalyzerCalibration" do
     setup do
       # Start calibration GenServer for tests
-      case Process.whereis(AnalyzerCalibration) do
-        nil ->
-          {:ok, _pid} = AnalyzerCalibration.start_link([])
-          :ok
-
-        _pid ->
-          :ok
-      end
+      ensure_process_started(AnalyzerCalibration, fn -> AnalyzerCalibration.start_link([]) end)
+      :ok
     end
 
     test "calibrates raw scores" do
@@ -638,6 +632,20 @@ defmodule ChatBot.Analysis.AdaptiveProcessingTest do
       # Third should be forced clarification
       result = BacktrackController.attempt_backtrack(state, interp, :contradiction)
       assert {:force_clarification, _} = result
+    end
+  end
+
+  # Helper to safely start a process
+  defp ensure_process_started(name, start_fn) do
+    case Process.whereis(name) do
+      nil ->
+        case start_fn.() do
+          {:ok, _pid} -> :ok
+          {:error, {:already_started, _pid}} -> :ok
+        end
+
+      _pid ->
+        :ok
     end
   end
 end

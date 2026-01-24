@@ -5,15 +5,8 @@ defmodule ChatBot.Memory.StoreTest do
   alias ChatBot.Memory.Types.SemanticFact
 
   setup do
-    # Start embedder and build vocabulary
-    case Process.whereis(Embedder) do
-      nil ->
-        {:ok, _} = Embedder.start_link()
-
-      pid ->
-        GenServer.stop(pid)
-        {:ok, _} = Embedder.start_link()
-    end
+    # Start or reuse embedder
+    ensure_process_started(Embedder, fn -> Embedder.start_link() end)
 
     texts = [
       "hello world",
@@ -25,25 +18,31 @@ defmodule ChatBot.Memory.StoreTest do
 
     Embedder.build_vocabulary(texts)
 
-    # Start or restart store with temp persistence path
-    case Process.whereis(Store) do
-      nil ->
-        Store.start_link(
-          persistence_path: "/tmp/test_memory_store_#{:rand.uniform(100_000)}.term"
-        )
-
-      pid ->
-        GenServer.stop(pid)
-
-        Store.start_link(
-          persistence_path: "/tmp/test_memory_store_#{:rand.uniform(100_000)}.term"
-        )
-    end
+    # Start or reuse store with temp persistence path
+    ensure_process_started(Store, fn ->
+      Store.start_link(
+        persistence_path: "/tmp/test_memory_store_#{:rand.uniform(100_000)}.term"
+      )
+    end)
 
     # Clear any existing data
     Store.clear()
 
     :ok
+  end
+
+  defp ensure_process_started(name, start_fn) do
+    case Process.whereis(name) do
+      nil ->
+        case start_fn.() do
+          {:ok, _pid} -> :ok
+          {:error, {:already_started, _pid}} -> :ok
+        end
+
+      _pid ->
+        # Process already running, just use it
+        :ok
+    end
   end
 
   describe "add_episode" do

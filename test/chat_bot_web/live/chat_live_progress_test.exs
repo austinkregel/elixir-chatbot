@@ -2,7 +2,7 @@ defmodule ChatBotWeb.ChatLiveProgressTest do
   use ChatBotWeb.ConnCase, async: false
 
   import Phoenix.LiveViewTest
-  import ChatBot.TestHelpers
+  import ChatBot.TestHelpers, except: [eventually: 3, eventually: 4]
 
   setup do
     start_brain_services()

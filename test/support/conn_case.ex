@@ -33,13 +33,50 @@ defmodule ChatBotWeb.ConnCase do
   setup tags do
     # Ensure the endpoint is started for tests that need it
     unless tags[:skip_endpoint] do
-      case ChatBotWeb.Endpoint.start_link() do
-        {:ok, _pid} -> :ok
-        {:error, {:already_started, _pid}} -> :ok
-        {:error, _reason} -> :ok
-      end
+      ensure_endpoint_started()
     end
 
     %{conn: Phoenix.ConnTest.build_conn()}
+  end
+
+  defp ensure_endpoint_started do
+    # Check if the Endpoint is already started
+    case Process.whereis(ChatBotWeb.Endpoint) do
+      nil ->
+        # Start the endpoint
+        case ChatBotWeb.Endpoint.start_link() do
+          {:ok, _pid} ->
+            # Wait for ETS table to be ready
+            wait_for_endpoint_ready()
+
+          {:error, {:already_started, _pid}} ->
+            wait_for_endpoint_ready()
+
+          {:error, reason} ->
+            raise "Failed to start endpoint: #{inspect(reason)}"
+        end
+
+      _pid ->
+        # Already started, but ensure ETS is ready
+        wait_for_endpoint_ready()
+    end
+  end
+
+  defp wait_for_endpoint_ready(attempts \\ 20)
+
+  defp wait_for_endpoint_ready(0) do
+    raise "Endpoint ETS table not ready after waiting"
+  end
+
+  defp wait_for_endpoint_ready(attempts) do
+    try do
+      # Try to access the config - this will fail if ETS table isn't ready
+      _ = ChatBotWeb.Endpoint.config(:secret_key_base)
+      :ok
+    rescue
+      ArgumentError ->
+        Process.sleep(10)
+        wait_for_endpoint_ready(attempts - 1)
+    end
   end
 end
