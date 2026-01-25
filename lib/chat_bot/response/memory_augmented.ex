@@ -167,7 +167,7 @@ defmodule ChatBot.Response.MemoryAugmented do
   defp clean_pattern(text) when is_binary(text) do
     text
     |> String.trim()
-    |> String.replace(~r/\s+/, " ")
+    |> Tokenizer.collapse_whitespace_public()
   end
 
   defp clean_pattern(_), do: nil

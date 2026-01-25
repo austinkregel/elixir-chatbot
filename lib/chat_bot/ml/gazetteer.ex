@@ -20,6 +20,7 @@ defmodule ChatBot.ML.Gazetteer do
   @table_name :gazetteer_entities
   @prefix_table :gazetteer_prefixes
   @stats_table :gazetteer_stats
+  @world_overlay_table :gazetteer_world_overlays
 
   @type entity_match :: %{
           entity_type: String.t(),
@@ -272,6 +273,127 @@ defmodule ChatBot.ML.Gazetteer do
   end
 
   # ============================================================================
+  # World Overlay API - For Training Worlds
+  # ============================================================================
+
+  @doc """
+  Look up an entity, checking the world overlay first if provided.
+  Falls back to base gazetteer if not found in overlay.
+  """
+  def lookup(text, world_id) when is_binary(text) and is_binary(world_id) do
+    normalized = normalize(text)
+
+    # Check world overlay first
+    case lookup_world_overlay(normalized, world_id) do
+      {:ok, result} -> {:ok, result}
+      :not_found -> lookup(text)
+    end
+  end
+
+  @doc """
+  Look up all types for an entity, including world overlay.
+  """
+  def lookup_all_types(text, world_id) when is_binary(text) and is_binary(world_id) do
+    normalized = normalize(text)
+
+    # Get from world overlay
+    overlay_types =
+      case lookup_world_overlay(normalized, world_id) do
+        {:ok, infos} when is_list(infos) -> infos
+        {:ok, info} when is_map(info) -> [info]
+        :not_found -> []
+      end
+
+    # Get from base gazetteer
+    base_types = lookup_all_types(text)
+
+    # Merge, preferring overlay (more recent/specific)
+    merge_entity_types(overlay_types, base_types)
+  end
+
+  @doc """
+  Creates an overlay namespace for a training world.
+  """
+  def create_world_overlay(world_id) when is_binary(world_id) do
+    GenServer.call(__MODULE__, {:create_world_overlay, world_id})
+  end
+
+  @doc """
+  Destroys the overlay namespace for a training world.
+  """
+  def destroy_world_overlay(world_id) when is_binary(world_id) do
+    GenServer.call(__MODULE__, {:destroy_world_overlay, world_id})
+  end
+
+  @doc """
+  Adds an entity to a world's overlay (not the base gazetteer).
+  """
+  def add_to_world(world_id, text, entity_type, metadata \\ %{})
+      when is_binary(world_id) and is_binary(text) and is_binary(entity_type) do
+    GenServer.call(__MODULE__, {:add_to_world, world_id, text, entity_type, metadata})
+  end
+
+  @doc """
+  Gets all entities in a world's overlay.
+  """
+  def get_world_overlay(world_id) when is_binary(world_id) do
+    try do
+      :ets.match_object(@world_overlay_table, {{world_id, :_}, :_})
+      |> Enum.map(fn {{_world_id, key}, info} -> {key, info} end)
+    rescue
+      ArgumentError -> []
+    end
+  end
+
+  @doc """
+  Restores a world overlay from saved data.
+  """
+  def restore_world_overlay(world_id, overlay_data) when is_binary(world_id) and is_list(overlay_data) do
+    GenServer.call(__MODULE__, {:restore_world_overlay, world_id, overlay_data})
+  end
+
+  @doc """
+  Removes an entity from a world's overlay.
+  """
+  def remove_from_world(world_id, text) when is_binary(world_id) and is_binary(text) do
+    GenServer.call(__MODULE__, {:remove_from_world, world_id, text})
+  end
+
+  defp lookup_world_overlay(normalized_key, world_id) do
+    try do
+      case :ets.lookup(@world_overlay_table, {world_id, normalized_key}) do
+        [{{^world_id, ^normalized_key}, entity_infos}] when is_list(entity_infos) ->
+          {:ok, entity_infos}
+
+        [{{^world_id, ^normalized_key}, entity_info}] when is_map(entity_info) ->
+          {:ok, entity_info}
+
+        [] ->
+          :not_found
+      end
+    rescue
+      ArgumentError -> :not_found
+    end
+  end
+
+  defp merge_entity_types(overlay_types, base_types) do
+    # Get entity types from overlay
+    overlay_type_set =
+      overlay_types
+      |> Enum.map(&(Map.get(&1, :entity_type) || Map.get(&1, :type)))
+      |> MapSet.new()
+
+    # Filter base types to exclude those already in overlay
+    filtered_base =
+      Enum.reject(base_types, fn info ->
+        type = Map.get(info, :entity_type) || Map.get(info, :type)
+        MapSet.member?(overlay_type_set, type)
+      end)
+
+    overlay_types ++ filtered_base
+  end
+
+  # ============================================================================
   # GenServer Callbacks
   # ============================================================================
 
@@ -521,6 +643,102 @@ defmodule ChatBot.ML.Gazetteer do
     {:reply, {:ok, count}, state}
   end
 
+  # World Overlay Handlers
+
+  @impl true
+  def handle_call({:create_world_overlay, world_id}, _from, state) do
+    # Just mark that this world exists - entries are added individually
+    :ets.insert(@world_overlay_table, {{world_id, :_meta}, %{created_at: System.system_time(:second)}})
+    Logger.debug("Created world overlay", %{world_id: world_id})
+    {:reply, :ok, state}
+  end
+
+  @impl true
+  def handle_call({:destroy_world_overlay, world_id}, _from, state) do
+    # Delete all entries for this world
+    entries = :ets.match_object(@world_overlay_table, {{world_id, :_}, :_})
+    Enum.each(entries, fn {key, _} -> :ets.delete(@world_overlay_table, key) end)
+    Logger.debug("Destroyed world overlay", %{world_id: world_id, entries_removed: length(entries)})
+    {:reply, :ok, state}
+  end
+
+  @impl true
+  def handle_call({:add_to_world, world_id, text, entity_type, metadata}, _from, state) do
+    normalized_key = normalize(text)
+    key = {world_id, normalized_key}
+
+    entity_info =
+      metadata
+      |> Map.put(:entity_type, entity_type)
+      |> Map.put(:type, entity_type)
+      |> Map.put(:value, text)
+      |> Map.put(:original_name, text)
+      |> Map.put(:source, :world_learning)
+      |> Map.put(:world_id, world_id)
+      |> Map.put(:added_at, System.system_time(:second))
+
+    # Check if entry already exists
+    case :ets.lookup(@world_overlay_table, key) do
+      [{^key, existing_infos}] when is_list(existing_infos) ->
+        # Check if this type already exists
+        already_has_type =
+          Enum.any?(existing_infos, fn info ->
+            (Map.get(info, :entity_type) || Map.get(info, :type)) == entity_type
+          end)
+
+        if already_has_type do
+          {:reply, {:error, {:duplicate, entity_type}}, state}
+        else
+          :ets.insert(@world_overlay_table, {key, [entity_info | existing_infos]})
+          {:reply, {:ok, normalized_key}, state}
+        end
+
+      [{^key, existing_info}] when is_map(existing_info) ->
+        existing_type = Map.get(existing_info, :entity_type) || Map.get(existing_info, :type)
+
+        if existing_type == entity_type do
+          {:reply, {:error, {:duplicate, entity_type}}, state}
+        else
+          :ets.insert(@world_overlay_table, {key, [entity_info, existing_info]})
+          {:reply, {:ok, normalized_key}, state}
+        end
+
+      [] ->
+        :ets.insert(@world_overlay_table, {key, [entity_info]})
+        {:reply, {:ok, normalized_key}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:restore_world_overlay, world_id, overlay_data}, _from, state) do
+    # First clean any existing overlay
+    entries = :ets.match_object(@world_overlay_table, {{world_id, :_}, :_})
+    Enum.each(entries, fn {key, _} -> :ets.delete(@world_overlay_table, key) end)
+
+    # Restore all entries
+    Enum.each(overlay_data, fn {key, info} ->
+      :ets.insert(@world_overlay_table, {{world_id, key}, info})
+    end)
+
+    Logger.debug("Restored world overlay", %{world_id: world_id, entries: length(overlay_data)})
+    {:reply, :ok, state}
+  end
+
+  @impl true
+  def handle_call({:remove_from_world, world_id, text}, _from, state) do
+    normalized_key = normalize(text)
+    key = {world_id, normalized_key}
+
+    case :ets.lookup(@world_overlay_table, key) do
+      [{^key, _}] ->
+        :ets.delete(@world_overlay_table, key)
+        {:reply, :ok, state}
+
+      [] ->
+        {:reply, {:error, :not_found}, state}
+    end
+  end
+
   # ============================================================================
   # Private Functions
   # ============================================================================
@@ -558,6 +776,13 @@ defmodule ChatBot.ML.Gazetteer do
     end
 
     :ets.new(@stats_table, [:set, :public, :named_table, read_concurrency: true])
+
+    # World overlay table for training worlds
+    if :ets.whereis(@world_overlay_table) != :undefined do
+      :ets.delete(@world_overlay_table)
+    end
+
+    :ets.new(@world_overlay_table, [:set, :public, :named_table, read_concurrency: true])
   end
 
   defp index_entities(lookup_map, source) do

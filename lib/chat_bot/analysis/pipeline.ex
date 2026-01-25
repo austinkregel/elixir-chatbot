@@ -335,8 +335,9 @@ defmodule ChatBot.Analysis.Pipeline do
 
       true ->
         # Use the existing entity extractor from ML module
+        # Pass opts to include discourse and speech_act context for disambiguation
         try do
-          EntityExtractor.extract_entities(text)
+          EntityExtractor.extract_entities(text, opts)
         rescue
           _ -> []
         catch
@@ -381,22 +382,15 @@ defmodule ChatBot.Analysis.Pipeline do
           {intent, :entity_based, score}
 
         {:error, :no_match} ->
-          # 2. Try keyword-based heuristic for substantive intents
-          case SlotDetector.suggest_intent_from_keywords(text) do
-            {:ok, intent, confidence} ->
-              {intent, :keyword_heuristic, confidence}
-
-            {:error, :no_match} ->
-              # 3. Fall back to speech act based intent
-              {infer_intent_from_speech_act(speech_act, text), :speech_act_fallback, nil}
-          end
+          # 2. Fall back to speech act based intent (no keyword matching)
+          {infer_intent_from_speech_act(speech_act, text), :speech_act_fallback, nil}
       end
     end
   end
 
-  defp infer_intent_from_speech_act(speech_act, text) do
-    lower_text = String.downcase(text)
-
+  defp infer_intent_from_speech_act(speech_act, _text) do
+    # Infer intent purely from speech act classification
+    # No keyword matching - that bypasses the classification system
     cond do
       # Greetings
       speech_act.sub_type == :greeting ->
@@ -410,33 +404,21 @@ defmodule ChatBot.Analysis.Pipeline do
       speech_act.sub_type == :thanks ->
         "smalltalk.thanks"
 
-      # Weather related
-      String.contains?(lower_text, "weather") ->
-        "weather.query"
+      # Apology
+      speech_act.sub_type == :apology ->
+        "smalltalk.apology"
 
-      # News related
-      String.contains?(lower_text, "news") ->
-        "news.query"
+      # Backchannel
+      speech_act.sub_type == :backchannel ->
+        "smalltalk.backchannel"
 
-      # Music related
-      String.contains?(lower_text, ["play", "music", "song", "album"]) ->
-        "music.play"
-
-      # Device control
-      String.contains?(lower_text, ["turn on", "turn off", "switch", "light"]) ->
-        "device.control"
-
-      # Search related
-      String.contains?(lower_text, ["search", "find", "look up", "google"]) ->
-        "search.web"
-
-      # Question (factual or opinion)
+      # Question
       speech_act.is_question ->
-        if String.contains?(lower_text, ["think", "opinion", "feel"]) do
-          "question.opinion"
-        else
-          "question.factual"
-        end
+        "question.factual"
+
+      # Command/directive
+      speech_act.sub_type == :command ->
+        "action.request"
 
       # Request for action
       speech_act.sub_type == :request_action ->
@@ -446,9 +428,13 @@ defmodule ChatBot.Analysis.Pipeline do
       speech_act.sub_type == :request_information ->
         "information.request"
 
-      # General smalltalk
+      # General expressive
       speech_act.category == :expressive ->
         "smalltalk.general"
+
+      # Assertive statement
+      speech_act.category == :assertive ->
+        "unknown"
 
       # Unknown
       true ->

@@ -231,14 +231,49 @@ defmodule ChatBot.FactDatabase do
 
   defp search_in_text(facts, nil), do: facts
   defp search_in_text(facts, search_term) when is_binary(search_term) do
-    normalized = String.downcase(search_term)
+    # Extract meaningful keywords (skip common words)
+    keywords = extract_keywords(search_term)
+    
     Enum.filter(facts, fn fact ->
       fact_text = String.downcase(fact["fact"] || "")
       entity_text = String.downcase(fact["entity"] || "")
-      String.contains?(fact_text, normalized) or String.contains?(entity_text, normalized)
+      
+      # Match if any keyword appears in fact text or entity
+      Enum.any?(keywords, fn keyword ->
+        String.contains?(fact_text, keyword) or String.contains?(entity_text, keyword)
+      end)
     end)
   end
   defp search_in_text(facts, _), do: facts
+
+  # Extract meaningful keywords from search text using POS tagging
+  # Content words (NOUN, PROPN, VERB, ADJ, ADV, NUM) are meaningful for search
+  defp extract_keywords(text) do
+    alias ChatBot.ML.Tokenizer
+    alias ChatBot.ML.POSTagger
+    
+    # Content POS tags that indicate meaningful search terms
+    content_tags = ~w(NOUN PROPN VERB ADJ ADV NUM)
+    
+    tokens = Tokenizer.tokenize(text)
+    token_texts = Enum.map(tokens, fn t -> t.text end)
+    
+    case POSTagger.load_model() do
+      {:ok, model} ->
+        POSTagger.predict(token_texts, model)
+        |> Enum.filter(fn {_word, tag} -> tag in content_tags end)
+        |> Enum.map(fn {word, _tag} -> String.downcase(word) end)
+        |> Enum.filter(fn w -> String.length(w) > 2 end)
+      
+      {:error, _} ->
+        # Fallback: use word tokens with length > 2
+        tokens
+        |> Enum.filter(fn t -> 
+          t.type in [:word, :number] and String.length(t.text) > 2
+        end)
+        |> Enum.map(fn t -> String.downcase(t.text) end)
+    end
+  end
 
   defp limit_results(facts, limit) when is_integer(limit) and limit > 0 do
     Enum.take(facts, limit)

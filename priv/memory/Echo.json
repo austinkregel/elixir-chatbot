@@ -1,102 +1,172 @@
 [
   {
-    "id": "de91ce6f852b72b9",
+    "id": "5a26afcb96a4812d",
     "role": "system",
     "tags": [
       "learning",
       "context"
     ],
-    "text": "Learned 3 entities, 0 relationships, 0 facts from: Are there 4 days in a week?",
-    "timestamp": 1769233526661
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769283861443
   },
   {
-    "id": "8f8ecc330c749772",
+    "id": "4e76069b7db30ba4",
     "role": "system",
     "tags": [
       "learning",
       "context"
     ],
-    "text": "Learned 3 entities, 0 relationships, 0 facts from: Are there 8 days in a week?",
-    "timestamp": 1769233550117
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769284767994
   },
   {
-    "id": "ff01211ed83008a6",
+    "id": "d974d5a305278390",
     "role": "system",
     "tags": [
       "learning",
       "context"
     ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: Very good!",
-    "timestamp": 1769233558176
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello, I'm Nice.",
+    "timestamp": 1769284812395
   },
   {
-    "id": "19447d388743c609",
+    "id": "fdf65c098661f9b6",
     "role": "system",
     "tags": [
       "learning",
       "context"
     ],
-    "text": "Learned 5 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
-    "timestamp": 1769271621451
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello there, I'm Nice.",
+    "timestamp": 1769285435594
   },
   {
-    "id": "9f6d5f43dc83aba9",
+    "id": "d1b64916f0b5464e",
     "role": "system",
     "tags": [
       "learning",
       "context"
     ],
-    "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you",
-    "timestamp": 1769272073085
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769285505800
   },
   {
-    "id": "310267ac698d91e6",
+    "id": "f86550b0edb7a222",
     "role": "system",
     "tags": [
       "learning",
       "context"
     ],
-    "text": "Learned 5 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
-    "timestamp": 1769277038355
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Owosso Michigan",
+    "timestamp": 1769285561559
   },
   {
-    "id": "695987afcc7375a2",
+    "id": "76276154ce6997c3",
     "role": "system",
     "tags": [
       "learning",
       "context"
     ],
-    "text": "Learned 5 entities, 0 relationships, 0 facts from: Hello, I'm Steve. It is nice to meet you. Can you tell me about the weather?",
-    "timestamp": 1769278522901
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: What can you tell me about the news?",
+    "timestamp": 1769285587169
   },
   {
-    "id": "d9a46c338ee8a869",
+    "id": "0c6792ebc743fe99",
     "role": "system",
     "tags": [
       "learning",
       "context"
     ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: I'm Austin",
-    "timestamp": 1769278800243
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather in Owosso Michigan?",
+    "timestamp": 1769286042321
   },
   {
-    "id": "e0ef55ba234332b9",
+    "id": "58518baba1c2afec",
     "role": "system",
     "tags": [
       "learning",
       "context"
     ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: I'm Austin",
-    "timestamp": 1769278802620
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you!",
+    "timestamp": 1769286061703
   },
   {
-    "id": "9a4db98cb393f7be",
+    "id": "2c4543a41546f3a8",
     "role": "system",
     "tags": [
       "learning",
       "context"
     ],
-    "text": "Learned 5 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
-    "timestamp": 1769279370627
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello there, I'm Nice.",
+    "timestamp": 1769286108510
+  },
+  {
+    "id": "f763c8e5d3a80312",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769286258563
+  },
+  {
+    "id": "e84bdae254f8d47f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769286535729
+  },
+  {
+    "id": "44c51077c3398efc",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello! I am John, I am 30 years old, and I have a cat named Fluffy who is 3 years old",
+    "timestamp": 1769286580266
+  },
+  {
+    "id": "c06ffe8a87ff75cd",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: I'm Austin",
+    "timestamp": 1769286646166
+  },
+  {
+    "id": "0bc692b5bee96bf6",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Are there 8 days in a week?",
+    "timestamp": 1769286713113
+  },
+  {
+    "id": "ea3c8893250213e4",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: You are aboard the Imperial Romulan Warbird Khazara. I am Subcommander N'Vek.",
+    "timestamp": 1769315593385
+  },
+  {
+    "id": "4d2414e140ded02c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Have you seen Nadine?",
+    "timestamp": 1769315709243
   }
 ]

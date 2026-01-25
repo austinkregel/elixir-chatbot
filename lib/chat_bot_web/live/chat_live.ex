@@ -894,8 +894,23 @@ defmodule ChatBotWeb.ChatLive do
           <%= if length(@trace.entities || []) > 0 do %>
             <div class="space-y-0.5">
               <%= for entity <- @trace.entities do %>
+                <% 
+                  confidence = Map.get(entity, :confidence)
+                  confidence_percent = if confidence, do: Float.round(confidence * 100, 1), else: nil
+                  confidence_variant = cond do
+                    confidence && confidence >= 0.8 -> :success
+                    confidence && confidence >= 0.6 -> :warning
+                    confidence -> :error
+                    true -> :default
+                  end
+                %>
                 <div class="flex items-center gap-1">
                   <span class="badge badge-outline badge-xs">{entity.type}</span>
+                  <%= if confidence_percent do %>
+                    <.badge variant={confidence_variant} size={:xs}>
+                      {confidence_percent}%
+                    </.badge>
+                  <% end %>
                   <span class="text-base-content/80 truncate">{entity.value}</span>
                 </div>
               <% end %>

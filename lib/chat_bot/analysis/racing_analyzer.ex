@@ -27,7 +27,7 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
     Progress
   }
 
-  alias ChatBot.ML.IntentClassifierSimple
+  alias ChatBot.ML.{IntentClassifierSimple, Tokenizer}
   alias ChatBot.Memory.Store, as: MemoryStore
 
   require Logger
@@ -318,8 +318,8 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
 
   defp analyze_structure(text) do
     # Structural analysis based on sentence form
-    is_question = String.ends_with?(String.trim(text), "?")
-    words = String.split(String.downcase(text))
+    is_question = Tokenizer.ends_with_question?(text)
+    words = Tokenizer.tokenize_normalized(text)
     first_word = List.first(words) || ""
 
     question_words = ~w(what where when why who whom whose which how)
@@ -351,37 +351,13 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
     )
   end
 
-  defp analyze_keywords(text) do
-    # Load keyword patterns from data file (cached)
-    keyword_patterns = get_keyword_patterns()
-    lower = String.downcase(text)
-
-    best_match =
-      keyword_patterns
-      |> Enum.map(fn {intent, keywords, base_conf} ->
-        matches = Enum.count(keywords, &String.contains?(lower, &1))
-
-        if matches > 0 do
-          # Boost confidence for multiple matches
-          confidence = min(base_conf + matches * 0.05, 0.95)
-          {intent, confidence, matches}
-        else
-          nil
-        end
-      end)
-      |> Enum.reject(&is_nil/1)
-      |> Enum.max_by(fn {_, conf, _} -> conf end, fn -> nil end)
-
-    case best_match do
-      {intent, confidence, matches} ->
-        AnalyzerResult.new(:keyword, intent, confidence,
-          confidence_estimate: confidence,
-          indicators: ["keyword_match:#{matches}"]
-        )
-
-      nil ->
-        AnalyzerResult.new(:keyword, nil, 0.0)
-    end
+  defp analyze_keywords(_text) do
+    # Keyword-based analysis disabled - use model classification instead.
+    # Keyword matching bypasses the classification system and creates
+    # tight coupling to specific intent naming conventions.
+    # If intent detection is inaccurate, improve training data rather than
+    # adding keyword heuristics.
+    AnalyzerResult.new(:keyword, nil, 0.0)
   end
 
   defp analyze_patterns(text) do
@@ -413,14 +389,6 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
   # ============================================================================
   # Pattern Data Loading (from JSON)
   # ============================================================================
-
-  # Get keyword patterns, loading from file if not cached
-  defp get_keyword_patterns do
-    case Process.get(@pattern_triggers_key) do
-      %{keywords: keywords} -> keywords
-      nil -> load_and_cache_triggers().keywords
-    end
-  end
 
   # Get token patterns, loading from file if not cached
   defp get_token_patterns do
@@ -577,72 +545,8 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
 
   # Safeguards against common misclassifications
   # For example, "Hello" should not be classified as music.play just because
-  # Adele's song "Hello" is in the training data
-  defp apply_intent_safeguards(text, results) do
-    lower = String.downcase(String.trim(text))
-    words = String.split(lower)
-    first_word = List.first(words) || ""
-
-    # Common greeting words that should NOT be classified as music
-    greeting_words = ~w(hello hi hey howdy greetings hiya)
-
-    # Check if this looks like a greeting being misclassified
-    is_likely_greeting =
-      first_word in greeting_words and
-        length(words) <= 6 and
-        not String.contains?(lower, "play")
-
-    if is_likely_greeting do
-      # Apply corrections: penalize music.play, boost greeting
-      Enum.map(results, fn result ->
-        cond do
-          # If classified as music.play, heavily penalize
-          result.intent == "music.play" ->
-            %{
-              result
-              | raw_score: result.raw_score * 0.1,
-                calibrated_activation: result.calibrated_activation * 0.1
-            }
-
-          # If classified as greeting, boost
-          result.intent == "smalltalk.greeting" or
-              String.starts_with?(result.intent || "", "smalltalk.greeting") ->
-            %{result | raw_score: min(result.raw_score * 1.5, 0.95)}
-
-          # Otherwise keep as is
-          true ->
-            result
-        end
-      end)
-    else
-      # Check if this is a music play request being incorrectly classified as greeting
-      # Only apply if text starts with "play" or contains explicit music keywords
-      is_likely_music =
-        String.starts_with?(lower, "play ") or
-          (String.contains?(lower, "play") and
-             String.contains?(lower, ["song", "music", "album", "artist"]))
-
-      if is_likely_music do
-        # Apply corrections: penalize greeting, boost music.play
-        Enum.map(results, fn result ->
-          cond do
-            result.intent == "smalltalk.greeting" ->
-              %{
-                result
-                | raw_score: result.raw_score * 0.3,
-                  calibrated_activation: result.calibrated_activation * 0.3
-              }
-
-            result.intent == "music.play" ->
-              %{result | raw_score: min(result.raw_score * 1.3, 0.95)}
-
-            true ->
-              result
-          end
-        end)
-      else
-        results
-      end
-    end
-  end
+  # Intent safeguards removed - the classifier should be the source of truth.
+  # If misclassifications occur (e.g., "Hello" as music.play due to Adele's song),
+  # the solution is to improve training data, not add keyword heuristics.
+  defp apply_intent_safeguards(_text, results), do: results
 end

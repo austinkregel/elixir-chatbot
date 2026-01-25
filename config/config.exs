@@ -21,6 +21,7 @@ config :chat_bot,
   ml: [
     enabled: System.get_env("ML_ENABLED", "true") == "true",
     confidence_threshold: System.get_env("ML_CONFIDENCE_THRESHOLD", "0.75") |> String.to_float(),
+    entity_confidence_threshold: System.get_env("ML_ENTITY_CONFIDENCE_THRESHOLD", "0.51") |> String.to_float(),
     models_path: System.get_env("ML_MODELS_PATH", "priv/ml_models"),
     training_data_path: System.get_env("ML_TRAINING_DATA_PATH", "data"),
     use_gpu: System.get_env("ML_USE_GPU", "true") == "true",

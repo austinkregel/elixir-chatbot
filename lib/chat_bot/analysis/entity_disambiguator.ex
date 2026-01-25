@@ -7,12 +7,18 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
   text (e.g., "Austin" could be a person or a location), this module
   uses contextual features to determine the most likely interpretation.
 
+  Also handles cases where a single-type entity (e.g., "Nice" as location)
+  is being used as a proper noun/name in context (e.g., "I'm Nice"),
+  recognizing proper noun usage and mapping it to the appropriate entity type.
+
   ## Features Used
 
   - **POS tags**: What part of speech precedes/follows the entity
   - **Discourse indicators**: Is this a self-referential statement?
   - **Speech act context**: Is this a greeting, question, command?
   - **Intent hints**: What domain does the intent belong to?
+
+  Uses IntentRegistry for intent domain lookups instead of keyword matching.
 
   ## Usage
 
@@ -26,6 +32,8 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
   """
 
   require Logger
+
+  alias ChatBot.Analysis.IntentRegistry
 
   # Entity type preferences for different contexts
   # Higher score = more preferred in that context
@@ -105,15 +113,39 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
   """
   def disambiguate_single(entity, pos_tagged, context) do
     types = get_entity_types(entity)
+    entity_position = get_entity_position(entity, pos_tagged)
 
     cond do
       # No types to disambiguate
       length(types) == 0 ->
         entity
 
-      # Only one type, no disambiguation needed
+      # Only one type - but check if context suggests proper noun/name usage
       length(types) == 1 ->
-        select_type(entity, hd(types))
+        single_type = hd(types)
+        single_type_name = get_type_name(single_type)
+
+        # If context strongly suggests proper noun/name usage (introduction pattern)
+        # but entity is location/city, recognize it as a proper noun/name
+        intro_confidence = introduction_confidence(pos_tagged, entity_position, context)
+
+        if intro_confidence >= 0.7 and single_type_name in ["location", "city", "place-name"] do
+          # Strong introduction context - this is being used as a proper noun/name,
+          # not as a location reference. In our entity system, proper names map to "person" type.
+          name_type = %{
+            entity_type: "person",
+            entity: "person",
+            value: Map.get(entity, :value) || Map.get(entity, "value"),
+            confidence: intro_confidence,
+            # Metadata indicating this was recognized as proper noun usage, not from person database
+            disambiguation_reason: "proper_noun_usage"
+          }
+
+          select_type(entity, name_type)
+        else
+          # Normal case - use the single type
+          select_type(entity, single_type)
+        end
 
       # Multiple types - need to disambiguate
       true ->
@@ -192,6 +224,21 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
   defp get_entity_position(entity) do
     Map.get(entity, :start_pos) || Map.get(entity, "start_pos") || 0
   end
+
+  # Find entity position in POS-tagged tokens by matching entity value
+  defp get_entity_position(entity, pos_tagged) when is_list(pos_tagged) do
+    entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
+    entity_value_lower = String.downcase(entity_value)
+
+    # Find the token that matches the entity value
+    pos_tagged
+    |> Enum.with_index()
+    |> Enum.find_value(fn {{token, _tag}, idx} ->
+      if String.downcase(token) == entity_value_lower, do: idx
+    end) || 0
+  end
+
+  defp get_entity_position(_entity, _pos_tagged), do: 0
 
   defp get_entity_types(entity) do
     cond do
@@ -286,18 +333,18 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
   end
 
   defp weather_intent?(context) do
-    intent = Map.get(context, :intent, "") || ""
-    String.contains?(intent, "weather")
+    intent = Map.get(context, :intent, "")
+    IntentRegistry.weather_intent?(intent)
   end
 
   defp music_intent?(context) do
-    intent = Map.get(context, :intent, "") || ""
-    String.contains?(intent, "music") or String.contains?(intent, "play")
+    intent = Map.get(context, :intent, "")
+    IntentRegistry.music_intent?(intent)
   end
 
   defp navigation_intent?(context) do
-    intent = Map.get(context, :intent, "") || ""
-    String.contains?(intent, "navigation") or String.contains?(intent, "directions")
+    intent = Map.get(context, :intent, "")
+    IntentRegistry.navigation_intent?(intent)
   end
 
   defp detect_context_type(context, pos_tagged, entity_pos) do
@@ -376,15 +423,25 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
 
   defp select_type(entity, selected_type) when is_map(selected_type) do
     # Merge the selected type info into the entity
-    entity
-    |> Map.delete(:types)
-    |> Map.delete("types")
-    |> Map.merge(%{
+    base_merge = %{
       entity: get_type_name(selected_type),
       entity_type: get_type_name(selected_type),
       value: Map.get(selected_type, :value) || Map.get(entity, :value) || Map.get(entity, "value"),
       disambiguation_source: :context_analysis
-    })
+    }
+
+    # Preserve disambiguation_reason if provided (e.g., "proper_noun_usage")
+    final_merge =
+      if Map.has_key?(selected_type, :disambiguation_reason) do
+        Map.put(base_merge, :disambiguation_reason, selected_type.disambiguation_reason)
+      else
+        base_merge
+      end
+
+    entity
+    |> Map.delete(:types)
+    |> Map.delete("types")
+    |> Map.merge(final_merge)
   end
 
   defp select_type(entity, _), do: entity

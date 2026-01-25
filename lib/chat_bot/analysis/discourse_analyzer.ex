@@ -291,7 +291,7 @@ defmodule ChatBot.Analysis.DiscourseAnalyzer do
   end
 
   defp is_question?(text) do
-    String.ends_with?(String.trim(text), "?")
+    Tokenizer.ends_with_question?(text)
   end
 
   defp detect_pronouns(normalized) do

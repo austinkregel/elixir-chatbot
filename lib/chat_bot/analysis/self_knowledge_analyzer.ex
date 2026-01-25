@@ -19,20 +19,12 @@ defmodule ChatBot.Analysis.SelfKnowledgeAnalyzer do
   - Should avoid (too personal, uncertain, or inappropriate)
   """
 
-  alias ChatBot.Analysis.AnalyzerResult
+  alias ChatBot.Analysis.{AnalyzerResult, IntentRegistry}
   alias ChatBot.Epistemic.Types.{SelfKnowledgeAssessment, Config}
   alias ChatBot.Epistemic.UserModelStore
   alias ChatBot.ML.IntentClassifierSimple
 
   require Logger
-
-  # Meta-cognitive intent prefixes we recognize
-  @meta_intent_prefixes [
-    "meta.self_knowledge",
-    "meta.memory_check",
-    "meta.privacy_probe",
-    "meta.trust_check"
-  ]
 
   # Minimum confidence to consider a meta-cognitive intent
   @min_confidence 0.5
@@ -210,31 +202,23 @@ defmodule ChatBot.Analysis.SelfKnowledgeAnalyzer do
   end
 
   @doc """
-  Returns the list of meta-cognitive intents.
+  Returns the list of meta-cognitive intents from IntentRegistry.
   """
-  def meta_intents, do: @meta_intent_prefixes
+  def meta_intents do
+    IntentRegistry.list_by_domain(:meta)
+  end
 
   # ============================================================================
   # Private Functions
   # ============================================================================
 
-  defp is_meta_intent?(intent) when is_binary(intent) do
-    Enum.any?(@meta_intent_prefixes, &String.starts_with?(intent, &1))
+  defp is_meta_intent?(intent) do
+    IntentRegistry.meta_intent?(intent)
   end
 
-  defp is_meta_intent?(_), do: false
-
-  defp intent_to_query_type(intent) when is_binary(intent) do
-    cond do
-      String.starts_with?(intent, "meta.self_knowledge") -> :self_query
-      String.starts_with?(intent, "meta.memory_check") -> :memory_check
-      String.starts_with?(intent, "meta.privacy_probe") -> :privacy_probe
-      String.starts_with?(intent, "meta.trust_check") -> :trust_check
-      true -> :self_query
-    end
+  defp intent_to_query_type(intent) do
+    IntentRegistry.query_type(intent) || :self_query
   end
-
-  defp intent_to_query_type(_), do: :self_query
 
   defp sensitive_keys do
     [

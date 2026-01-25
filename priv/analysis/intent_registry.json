@@ -1,0 +1,404 @@
+{
+  "weather.query": {
+    "description": "Weather information request",
+    "domain": "weather",
+    "category": "directive",
+    "speech_act": "request_information",
+    "required": ["location"],
+    "optional": ["date", "time", "unit-temperature"],
+    "defaults": {
+      "date": "today"
+    },
+    "entity_mappings": {
+      "location": ["location", "room", "city"],
+      "date": ["date", "relative_date", "sys-date"],
+      "time": ["time", "sys-time"],
+      "unit-temperature": ["unit-temperature"]
+    },
+    "clarification_templates": {
+      "location": "What location would you like the weather for?"
+    }
+  },
+  "weather.condition": {
+    "description": "Weather condition query",
+    "domain": "weather",
+    "category": "directive",
+    "speech_act": "request_information",
+    "required": ["location"],
+    "optional": ["date", "time"],
+    "defaults": {},
+    "entity_mappings": {
+      "location": ["location", "city"],
+      "date": ["date", "relative_date"],
+      "time": ["time"]
+    },
+    "clarification_templates": {
+      "location": "What location would you like the weather for?"
+    }
+  },
+  "news.query": {
+    "description": "News information request",
+    "domain": "news",
+    "category": "directive",
+    "speech_act": "request_information",
+    "required": [],
+    "optional": ["topic", "news-source", "date", "news-sort"],
+    "defaults": {
+      "news-sort": "latest"
+    },
+    "entity_mappings": {
+      "topic": ["topic"],
+      "news-source": ["news-source"],
+      "date": ["date", "relative_date"],
+      "news-sort": ["news-sort"]
+    },
+    "clarification_templates": {}
+  },
+  "device.control": {
+    "description": "Smart device control request",
+    "domain": "device",
+    "category": "directive",
+    "speech_act": "command",
+    "required": ["device", "action"],
+    "optional": ["room", "color", "value", "condition"],
+    "defaults": {},
+    "entity_mappings": {
+      "device": ["device", "lights", "heating"],
+      "action": ["locks-status"],
+      "room": ["room"],
+      "color": ["color"],
+      "condition": ["condition"]
+    },
+    "clarification_templates": {
+      "device": "Which device would you like me to control?",
+      "action": "What would you like me to do with it?"
+    }
+  },
+  "music.play": {
+    "description": "Music playback request",
+    "domain": "music",
+    "category": "directive",
+    "speech_act": "command",
+    "required": [],
+    "optional": ["song", "music-artist", "music-album", "playlist", "music-service", "music-sort"],
+    "defaults": {},
+    "entity_mappings": {
+      "song": ["song"],
+      "music-artist": ["music-artist"],
+      "music-album": ["music-album"],
+      "playlist": ["playlist"],
+      "music-service": ["music-service"],
+      "music-sort": ["music-sort"]
+    },
+    "clarification_templates": {}
+  },
+  "music.stop": {
+    "description": "Stop music playback",
+    "domain": "music",
+    "category": "directive",
+    "speech_act": "command",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "music.skip": {
+    "description": "Skip to next track",
+    "domain": "music",
+    "category": "directive",
+    "speech_act": "command",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "reminder.create": {
+    "description": "Create a reminder",
+    "domain": "reminder",
+    "category": "directive",
+    "speech_act": "command",
+    "required": ["content"],
+    "optional": ["date", "time", "recurrence"],
+    "defaults": {},
+    "entity_mappings": {
+      "date": ["date", "relative_date", "sys-date"],
+      "time": ["time", "sys-time"],
+      "recurrence": ["recurrence"]
+    },
+    "clarification_templates": {
+      "content": "What would you like me to remind you about?"
+    }
+  },
+  "account.query": {
+    "description": "Account information request",
+    "domain": "account",
+    "category": "directive",
+    "speech_act": "request_information",
+    "required": ["account"],
+    "optional": ["category", "merchant", "date"],
+    "defaults": {},
+    "entity_mappings": {
+      "account": ["account"],
+      "category": ["category"],
+      "merchant": ["merchant"],
+      "date": ["date", "relative_date"]
+    },
+    "clarification_templates": {
+      "account": "Which account would you like to check?"
+    }
+  },
+  "search.web": {
+    "description": "Web search request",
+    "domain": "search",
+    "category": "directive",
+    "speech_act": "command",
+    "required": ["query"],
+    "optional": ["search-engine"],
+    "defaults": {
+      "search-engine": "Google"
+    },
+    "entity_mappings": {
+      "search-engine": ["search-engine"]
+    },
+    "clarification_templates": {
+      "query": "What would you like me to search for?"
+    }
+  },
+  "navigation.directions": {
+    "description": "Navigation directions request",
+    "domain": "navigation",
+    "category": "directive",
+    "speech_act": "request_information",
+    "required": ["destination"],
+    "optional": ["origin", "transport-mode"],
+    "defaults": {},
+    "entity_mappings": {
+      "destination": ["location", "address", "place-name"],
+      "origin": ["location", "address"],
+      "transport-mode": ["transport-mode"]
+    },
+    "clarification_templates": {
+      "destination": "Where would you like directions to?"
+    }
+  },
+  "outfit.recommend": {
+    "description": "Outfit recommendation request",
+    "domain": "outfit",
+    "category": "directive",
+    "speech_act": "request_information",
+    "required": [],
+    "optional": ["weather-condition", "temperature", "activity", "outfit"],
+    "defaults": {},
+    "entity_mappings": {
+      "weather-condition": ["weather-condition"],
+      "temperature": ["temperature"],
+      "activity": ["activity"],
+      "outfit": ["outfit"]
+    },
+    "clarification_templates": {}
+  },
+  "smalltalk.greeting": {
+    "description": "Greeting exchange",
+    "domain": "smalltalk",
+    "category": "expressive",
+    "speech_act": "greeting",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "smalltalk.farewell": {
+    "description": "Farewell exchange",
+    "domain": "smalltalk",
+    "category": "expressive",
+    "speech_act": "farewell",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "smalltalk.thanks": {
+    "description": "Expression of gratitude",
+    "domain": "smalltalk",
+    "category": "expressive",
+    "speech_act": "thanks",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "smalltalk.apology": {
+    "description": "Apology expression",
+    "domain": "smalltalk",
+    "category": "expressive",
+    "speech_act": "apology",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "smalltalk.backchannel": {
+    "description": "Backchannel acknowledgment",
+    "domain": "smalltalk",
+    "category": "expressive",
+    "speech_act": "backchannel",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "smalltalk.compliment": {
+    "description": "Compliment or praise",
+    "domain": "smalltalk",
+    "category": "expressive",
+    "speech_act": "compliment",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "smalltalk.acknowledgment": {
+    "description": "Acknowledgment response",
+    "domain": "smalltalk",
+    "category": "expressive",
+    "speech_act": "acknowledgment",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "smalltalk.general": {
+    "description": "General small talk",
+    "domain": "smalltalk",
+    "category": "expressive",
+    "speech_act": "statement",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "question.factual": {
+    "description": "Factual question",
+    "domain": "question",
+    "category": "directive",
+    "speech_act": "request_information",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "question.opinion": {
+    "description": "Opinion question",
+    "domain": "question",
+    "category": "directive",
+    "speech_act": "request_information",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "action.request": {
+    "description": "Action request",
+    "domain": "action",
+    "category": "directive",
+    "speech_act": "command",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "information.request": {
+    "description": "Information request",
+    "domain": "information",
+    "category": "directive",
+    "speech_act": "request_information",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "continuation": {
+    "description": "Continuation or incomplete utterance",
+    "domain": "unknown",
+    "category": "assertive",
+    "speech_act": "continuation",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "unknown": {
+    "description": "Unknown intent - fallback",
+    "domain": "unknown",
+    "category": "assertive",
+    "speech_act": "statement",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "meta.self_knowledge": {
+    "description": "Query about what the system knows about the user",
+    "domain": "meta",
+    "category": "directive",
+    "speech_act": "request_information",
+    "query_type": "self_query",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "meta.memory_check": {
+    "description": "Query about whether the system remembers something",
+    "domain": "meta",
+    "category": "directive",
+    "speech_act": "request_information",
+    "query_type": "memory_check",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "meta.privacy_probe": {
+    "description": "Query about privacy and tracking",
+    "domain": "meta",
+    "category": "directive",
+    "speech_act": "request_information",
+    "query_type": "privacy_probe",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "meta.trust_check": {
+    "description": "Query about trustworthiness",
+    "domain": "meta",
+    "category": "directive",
+    "speech_act": "request_information",
+    "query_type": "trust_check",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  }
+}

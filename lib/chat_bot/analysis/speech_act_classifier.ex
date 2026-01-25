@@ -19,7 +19,7 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
   Results are combined using confidence-weighted voting.
   """
 
-  alias ChatBot.Analysis.SpeechActResult
+  alias ChatBot.Analysis.{SpeechActResult, IntentRegistry}
   alias ChatBot.ML.IntentClassifierSimple
   alias ChatBot.ML.Tokenizer
 
@@ -198,12 +198,11 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
   defp analyze_structure(text, normalized) do
     is_question = has_question_structure?(text, normalized)
     is_imperative = has_imperative_structure?(normalized)
-    trimmed = String.trim(text)
-    is_exclamatory = String.ends_with?(trimmed, "!")
-    is_declarative = String.ends_with?(trimmed, ".")
+    is_exclamatory = Tokenizer.ends_with_exclamation?(text)
+    is_declarative = Tokenizer.ends_with_period?(text)
 
     # Continuation detection: no terminal punctuation, or ends with continuation marker
-    is_continuation = has_continuation_structure?(trimmed, normalized)
+    is_continuation = has_continuation_structure?(text, normalized)
 
     has_modal = has_modal_verb?(normalized)
 
@@ -497,48 +496,16 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
   end
 
   defp tag_to_speech_act(tag) do
-    # Map common intent/tag patterns to speech acts
-    cond do
-      String.contains?(tag, "greeting") or String.contains?(tag, "hello") ->
-        {:expressive, :greeting}
-
-      String.contains?(tag, "bye") or String.contains?(tag, "farewell") ->
-        {:expressive, :farewell}
-
-      String.contains?(tag, "thank") ->
-        {:expressive, :thanks}
-
-      String.contains?(tag, "sorry") or String.contains?(tag, "apolog") ->
-        {:expressive, :apology}
-
-      # Response optionality tags
-      String.contains?(tag, "backchannel") or String.contains?(tag, "hmm") or
-          String.contains?(tag, "okay") ->
-        {:expressive, :backchannel}
-
-      String.contains?(tag, "compliment") or String.contains?(tag, "praise") or
-          String.contains?(tag, "good job") ->
-        {:expressive, :compliment}
-
-      String.contains?(tag, "welcome") or String.contains?(tag, "acknowledgment") ->
-        {:expressive, :acknowledgment}
-
-      String.contains?(tag, "continuation") or String.contains?(tag, "incomplete") ->
-        {:assertive, :continuation}
-
-      String.contains?(tag, "weather") or String.contains?(tag, "time") ->
-        {:directive, :request_information}
-
-      String.contains?(tag, "play") or String.contains?(tag, "stop") or
-          String.contains?(tag, "turn") ->
-        {:directive, :command}
-
-      String.contains?(tag, "question") or String.contains?(tag, "what") or
-          String.contains?(tag, "how") ->
-        {:directive, :request_information}
-
-      true ->
+    # Look up speech act from IntentRegistry
+    case IntentRegistry.get(tag) do
+      nil ->
+        # Tag not in registry, default to statement
         {:assertive, :statement}
+
+      _meta ->
+        category = IntentRegistry.category(tag) || :assertive
+        speech_act = IntentRegistry.speech_act(tag) || :statement
+        {category, speech_act}
     end
   end
 
@@ -784,8 +751,7 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
   end
 
   defp has_question_structure?(text, normalized) do
-    String.ends_with?(String.trim(text), "?") or
-      starts_with_question_word?(normalized)
+    Tokenizer.ends_with_question?(text) or starts_with_question_word?(normalized)
   end
 
   defp starts_with_question_word?(normalized) do
@@ -803,23 +769,21 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
     Enum.any?(words, fn word -> word in @modal_verbs end)
   end
 
-  defp has_continuation_structure?(trimmed, normalized) do
+  defp has_continuation_structure?(text, normalized) do
     words = String.split(normalized)
     last_word = List.last(words) || ""
 
     # No terminal punctuation (. ! ?) suggests incomplete thought
-    no_terminal = not (String.ends_with?(trimmed, ".") or
-                       String.ends_with?(trimmed, "!") or
-                       String.ends_with?(trimmed, "?"))
+    no_terminal = not Tokenizer.ends_with_terminal_punctuation?(text)
 
     # Ends with a continuation marker
     ends_with_continuation = last_word in @continuation_markers
 
     # Ends with a comma (incomplete sentence)
-    ends_with_comma = String.ends_with?(trimmed, ",")
+    ends_with_comma = String.last(String.trim_trailing(text)) == ","
 
     # Trailing ellipsis suggests more coming
-    trailing_ellipsis = String.ends_with?(trimmed, "...")
+    trailing_ellipsis = Tokenizer.ends_with_ellipsis?(text)
 
     # Consider it a continuation if any of these are true, but only if substantive
     has_continuation_signal = ends_with_continuation or ends_with_comma or trailing_ellipsis

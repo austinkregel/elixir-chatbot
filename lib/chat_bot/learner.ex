@@ -15,12 +15,47 @@ defmodule ChatBot.Learner do
   @doc """
   Learn from user input using classical NLP entity extraction.
   Extracts entities and stores them in the knowledge store.
+
+  Options:
+  - `:discourse` - Discourse analysis result for entity disambiguation
+  - `:speech_act` - Speech act classification result for entity disambiguation
   """
-  def learn_from_input(persona_name, input) do
+  def learn_from_input(persona_name, input, opts \\ []) do
     Logger.debug("Learner.learn_from_input called", %{persona_name: persona_name, input: input})
 
-    # Use classical NLP pipeline to extract entities
-    entities = ChatBot.ML.EntityExtractor.extract_entities(input)
+    # Extract discourse and speech_act context if not provided
+    # This ensures entities are disambiguated correctly for learning
+    discourse = Keyword.get(opts, :discourse)
+    speech_act = Keyword.get(opts, :speech_act)
+
+    entity_opts =
+      if discourse || speech_act do
+        opts
+      else
+        # Try to extract context for better disambiguation
+        discourse_result =
+          try do
+            ChatBot.Analysis.DiscourseAnalyzer.analyze(input, [])
+          rescue
+            _ -> nil
+          catch
+            _ -> nil
+          end
+
+        speech_act_result =
+          try do
+            ChatBot.Analysis.SpeechActClassifier.classify(input)
+          rescue
+            _ -> nil
+          catch
+            _ -> nil
+          end
+
+        opts ++ [discourse: discourse_result, speech_act: speech_act_result]
+      end
+
+    # Use classical NLP pipeline to extract entities with disambiguation context
+    entities = ChatBot.ML.EntityExtractor.extract_entities(input, entity_opts)
 
     if length(entities) > 0 do
       # Convert to extracted_data format and process

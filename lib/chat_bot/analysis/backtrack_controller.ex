@@ -11,7 +11,7 @@ defmodule ChatBot.Analysis.BacktrackController do
   This addresses the "backtracking loops (thrash risk)" problem.
   """
 
-  alias ChatBot.Analysis.Interpretation
+  alias ChatBot.Analysis.{Interpretation, IntentRegistry}
 
   require Logger
 
@@ -157,23 +157,23 @@ defmodule ChatBot.Analysis.BacktrackController do
   defp check_entity_mismatch(%Interpretation{} = interp) do
     # Check if entities don't make sense for the intent
     entities = interp.entities || []
-    intent = interp.intent || ""
+    intent = interp.intent
 
     mismatches =
       cond do
         # Weather intent but no location, time entities
-        String.contains?(intent, "weather") and
+        IntentRegistry.weather_intent?(intent) and
             not has_entity_type?(entities, ["location", "city", "place-name"]) ->
           # This is borderline - might be clarification-worthy but not a hard contradiction
           nil
 
         # Device control but no device entity
-        String.contains?(intent, "device") and
+        IntentRegistry.device_intent?(intent) and
             not has_entity_type?(entities, ["device", "light", "switch"]) ->
           {:entity_mismatch, "device intent without device entity"}
 
         # Music intent with location entity (suspicious)
-        String.contains?(intent, "music") and
+        IntentRegistry.music_intent?(intent) and
           has_entity_type?(entities, ["location"]) and
             not has_entity_type?(entities, ["music-artist", "song", "album"]) ->
           {:entity_mismatch, "music intent with location but no music entities"}

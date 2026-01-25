@@ -13,7 +13,7 @@ defmodule ChatBot.Analysis.SlotDetector do
 
   require Logger
 
-  @schemas_path "priv/analysis/slot_schemas.json"
+  @schemas_path "priv/analysis/intent_registry.json"
 
   @doc """
   Detects slots for the given intent and fills them from entities.
@@ -44,6 +44,26 @@ defmodule ChatBot.Analysis.SlotDetector do
   def get_schema(intent) do
     schemas = load_schemas()
     Map.get(schemas, intent) || Map.get(schemas, get_parent_intent(intent))
+  end
+
+  @doc """
+  Returns the set of entity types that can fill slots for a given intent.
+
+  This is useful for filtering entities to only those relevant to the intent.
+  """
+  def get_entity_types_for_intent(intent) do
+    case get_schema(intent) do
+      nil ->
+        MapSet.new()
+
+      schema ->
+        entity_mappings = Map.get(schema, "entity_mappings", %{})
+
+        entity_mappings
+        |> Map.values()
+        |> List.flatten()
+        |> MapSet.new()
+    end
   end
 
   @doc """
@@ -83,48 +103,6 @@ defmodule ChatBot.Analysis.SlotDetector do
     case scored_schemas do
       [{intent, score} | _] when score > 0 -> {:ok, intent, score}
       _ -> {:error, :no_match}
-    end
-  end
-
-  @doc """
-  Suggests an intent based on keywords in the text.
-
-  This is a heuristic fallback when intent classification has low confidence.
-  Returns {:ok, intent, confidence} or {:error, :no_match}.
-  """
-  def suggest_intent_from_keywords(text) when is_binary(text) do
-    lower_text = String.downcase(text)
-
-    # Keyword patterns for different intents (ordered by specificity)
-    keyword_patterns = [
-      {"weather.query", ~w(weather forecast temperature rain sunny cloudy), 0.7},
-      {"music.play", ~w(play music song playlist album artist), 0.7},
-      {"reminder.create", ~w(remind reminder remember), 0.7},
-      {"device.control", ~w(turn on off lights switch dim brightness), 0.6},
-      {"news.query", ~w(news headlines), 0.6},
-      {"search.web", ~w(search google look up find information), 0.5}
-    ]
-
-    # Score each pattern
-    scored =
-      keyword_patterns
-      |> Enum.map(fn {intent, keywords, base_confidence} ->
-        matches = Enum.count(keywords, &String.contains?(lower_text, &1))
-
-        if matches > 0 do
-          # Boost confidence based on number of keyword matches
-          confidence = min(base_confidence + matches * 0.1, 0.9)
-          {intent, confidence, matches}
-        else
-          {intent, 0.0, 0}
-        end
-      end)
-      |> Enum.filter(fn {_, conf, _} -> conf > 0 end)
-      |> Enum.sort_by(fn {_, conf, matches} -> {-conf, -matches} end)
-
-    case scored do
-      [{intent, confidence, _} | _] -> {:ok, intent, confidence}
-      [] -> {:error, :no_match}
     end
   end
 

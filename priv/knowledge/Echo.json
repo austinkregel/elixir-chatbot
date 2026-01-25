@@ -1,8 +1,8 @@
 {
   "people": {
-    "Steve": {
-      "confidence": 0.8099999999999999,
-      "name": "Steve",
+    "John": {
+      "confidence": 0.7799999999999999,
+      "name": "John",
       "type": "person"
     }
   }

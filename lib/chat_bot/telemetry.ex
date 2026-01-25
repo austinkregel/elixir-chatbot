@@ -18,6 +18,16 @@ defmodule ChatBot.Telemetry do
   - `[:chat_bot, :ml, :load, :stop]` - ML model loading
   - `[:chat_bot, :genserver, :message_queue]` - Periodic queue size sampling
   - `[:chat_bot, :error]` - Error events
+
+  ## Learning/Training World Events
+
+  - `[:chat_bot, :learning, :entity_candidate_detected]` - New proper noun discovered
+  - `[:chat_bot, :learning, :entity_promoted_to_gazetteer]` - Entity added to gazetteer
+  - `[:chat_bot, :learning, :entity_ambiguity_detected]` - Entity with multiple types found
+  - `[:chat_bot, :learning, :document_processed]` - Document ingestion complete
+  - `[:chat_bot, :learning, :batch_complete]` - Batch ingestion complete
+  - `[:chat_bot, :learning, :world_created]` - Training world created
+  - `[:chat_bot, :learning, :world_destroyed]` - Training world destroyed
   """
 
   require Logger
@@ -35,6 +45,15 @@ defmodule ChatBot.Telemetry do
   @model_load [:chat_bot, :ml, :load]
   @message_queue [:chat_bot, :genserver, :message_queue]
   @error_event [:chat_bot, :error]
+
+  # Learning/Training World Events
+  @learning_entity_discovered [:chat_bot, :learning, :entity_candidate_detected]
+  @learning_entity_promoted [:chat_bot, :learning, :entity_promoted_to_gazetteer]
+  @learning_ambiguity [:chat_bot, :learning, :entity_ambiguity_detected]
+  @learning_document_processed [:chat_bot, :learning, :document_processed]
+  @learning_batch_complete [:chat_bot, :learning, :batch_complete]
+  @learning_world_created [:chat_bot, :learning, :world_created]
+  @learning_world_destroyed [:chat_bot, :learning, :world_destroyed]
 
   # ============================================================================
   # Public API - Attach Handlers
@@ -81,7 +100,23 @@ defmodule ChatBot.Telemetry do
       {"chatbot-message-queue", @message_queue, &handle_message_queue/4, %{}},
 
       # Error events
-      {"chatbot-error", @error_event, &handle_error/4, %{}}
+      {"chatbot-error", @error_event, &handle_error/4, %{}},
+
+      # Learning/Training World events
+      {"chatbot-learning-entity-discovered", @learning_entity_discovered, &handle_learning_event/4,
+       %{event: :entity_discovered}},
+      {"chatbot-learning-entity-promoted", @learning_entity_promoted, &handle_learning_event/4,
+       %{event: :entity_promoted}},
+      {"chatbot-learning-ambiguity", @learning_ambiguity, &handle_learning_event/4,
+       %{event: :ambiguity_detected}},
+      {"chatbot-learning-document", @learning_document_processed, &handle_learning_event/4,
+       %{event: :document_processed}},
+      {"chatbot-learning-batch", @learning_batch_complete, &handle_learning_event/4,
+       %{event: :batch_complete}},
+      {"chatbot-learning-world-created", @learning_world_created, &handle_learning_event/4,
+       %{event: :world_created}},
+      {"chatbot-learning-world-destroyed", @learning_world_destroyed, &handle_learning_event/4,
+       %{event: :world_destroyed}}
     ]
 
     Enum.each(handlers, fn {id, event, handler, config} ->
@@ -108,7 +143,15 @@ defmodule ChatBot.Telemetry do
       "chatbot-ml-train-exception",
       "chatbot-model-load-stop",
       "chatbot-message-queue",
-      "chatbot-error"
+      "chatbot-error",
+      # Learning events
+      "chatbot-learning-entity-discovered",
+      "chatbot-learning-entity-promoted",
+      "chatbot-learning-ambiguity",
+      "chatbot-learning-document",
+      "chatbot-learning-batch",
+      "chatbot-learning-world-created",
+      "chatbot-learning-world-destroyed"
     ]
 
     Enum.each(handler_ids, fn id ->
@@ -277,6 +320,16 @@ defmodule ChatBot.Telemetry do
       GenServer.cast(
         ChatBot.Metrics.Aggregator,
         {:record_model_load, metadata[:model], measurements[:duration_ms], metadata}
+      )
+    end
+  end
+
+  # Handle learning/training world events
+  defp handle_learning_event(_event, measurements, metadata, config) do
+    if Process.whereis(ChatBot.Metrics.Aggregator) do
+      GenServer.cast(
+        ChatBot.Metrics.Aggregator,
+        {:record_learning_event, config[:event], measurements, metadata}
       )
     end
   end

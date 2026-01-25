@@ -654,14 +654,31 @@
                       <%= if length(chunk[:entities] || []) > 0 do %>
                         <div class="space-y-1">
                           <%= for e <- chunk.entities do %>
-                            <div class="flex items-center justify-between p-2 bg-base-200/50 rounded text-xs">
-                              <div>
+                            <% 
+                              entity_type = e[:type] || e["type"] || "unknown"
+                              entity_value = e[:value] || e["value"] || ""
+                              confidence = e[:confidence] || e["confidence"]
+                              confidence_percent = if confidence, do: Float.round(confidence * 100, 1), else: nil
+                              confidence_variant = cond do
+                                confidence && confidence >= 0.8 -> :success
+                                confidence && confidence >= 0.6 -> :warning
+                                confidence -> :error
+                                true -> :default
+                              end
+                            %>
+                            <div class="flex items-center justify-between p-2 bg-base-200/50 rounded text-xs gap-2">
+                              <div class="flex items-center gap-2 flex-1 min-w-0">
                                 <span class="font-mono text-primary">
-                                  {e[:type] || e["type"]}
+                                  {entity_type}
                                 </span>
+                                <%= if confidence_percent do %>
+                                  <.badge variant={confidence_variant} size={:xs}>
+                                    {confidence_percent}%
+                                  </.badge>
+                                <% end %>
                               </div>
-                              <div class="font-medium text-base-content">
-                                "{e[:value] || e["value"]}"
+                              <div class="font-medium text-base-content truncate">
+                                "{entity_value}"
                               </div>
                             </div>
                           <% end %>

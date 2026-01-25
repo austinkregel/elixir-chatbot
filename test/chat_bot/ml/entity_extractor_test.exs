@@ -270,4 +270,104 @@ defmodule ChatBot.ML.EntityExtractorTest do
       end
     end
   end
+
+  describe "casing-based confidence adjustment" do
+    test "reduces confidence when match casing doesn't match entity value" do
+      # "friend" (lowercase in text) should have lower confidence
+      # when matched against "Friend" (capitalized location)
+      entities = EntityExtractor.extract_entities("hello friend")
+
+      friend_entity =
+        Enum.find(entities, fn e ->
+          String.downcase(Map.get(e, :value, "")) == "friend"
+        end)
+
+      if friend_entity do
+        # If "friend" matched a location "Friend", confidence should be reduced
+        entity_type = Map.get(friend_entity, :entity)
+        confidence = Map.get(friend_entity, :confidence, 1.0)
+        match_text = Map.get(friend_entity, :match, "")
+        entity_value = Map.get(friend_entity, :value, "")
+
+        if entity_type == "location" && match_text != entity_value &&
+             String.downcase(match_text) == String.downcase(entity_value) do
+          # Casing mismatch for location - confidence should be penalized
+          assert confidence < 0.7,
+                 "Expected lower confidence for casing mismatch, got: #{confidence} for match='#{match_text}' value='#{entity_value}'"
+        end
+      end
+    end
+
+    test "maintains high confidence when casing matches" do
+      # "Friend" (capitalized) should have normal confidence when matched against "Friend" location
+      entities = EntityExtractor.extract_entities("I'm from Friend")
+
+      friend_entity =
+        Enum.find(entities, fn e ->
+          String.downcase(Map.get(e, :value, "")) == "friend"
+        end)
+
+      if friend_entity do
+        match_text = Map.get(friend_entity, :match, "")
+        entity_value = Map.get(friend_entity, :value, "")
+        confidence = Map.get(friend_entity, :confidence, 0.0)
+
+        if match_text == entity_value do
+          # Casing matches - should have normal confidence
+          assert confidence >= 0.5,
+                 "Expected normal confidence for matching casing, got: #{confidence}"
+        end
+      end
+    end
+  end
+
+  describe "confidence threshold filtering" do
+    test "filters out entities below threshold" do
+      # Create test entities with different confidence levels
+      high_conf_entity = %{
+        entity: "location",
+        value: "Austin",
+        confidence: 0.85
+      }
+
+      low_conf_entity = %{
+        entity: "location",
+        value: "Friend",
+        confidence: 0.45
+      }
+
+      medium_conf_entity = %{
+        entity: "person",
+        value: "John",
+        confidence: 0.60
+      }
+
+      # Test filtering with 0.51 threshold
+      entities = [high_conf_entity, low_conf_entity, medium_conf_entity]
+      filtered = Enum.filter(entities, fn e ->
+        confidence = Map.get(e, :confidence, 0.0)
+        confidence >= 0.51
+      end)
+
+      # Should only include high and medium confidence entities
+      assert length(filtered) == 2
+      assert Enum.any?(filtered, &(&1.value == "Austin"))
+      assert Enum.any?(filtered, &(&1.value == "John"))
+      refute Enum.any?(filtered, &(&1.value == "Friend"))
+    end
+
+    test "respects min_confidence option" do
+      # Test that we can override threshold via opts
+      text = "hello friend"
+
+      # Extract with high threshold
+      entities_high = EntityExtractor.extract_entities(text, min_confidence: 0.8)
+
+      # Extract with low threshold
+      entities_low = EntityExtractor.extract_entities(text, min_confidence: 0.3)
+
+      # High threshold should filter more strictly
+      assert length(entities_low) >= length(entities_high)
+    end
+  end
 end

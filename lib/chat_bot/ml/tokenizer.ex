@@ -434,6 +434,77 @@ defmodule ChatBot.ML.Tokenizer do
     end
   end
 
+  # ============================================================================
+  # Terminal Punctuation Detection
+  # ============================================================================
+
+  @doc """
+  Check if text ends with a question mark.
+  Trims whitespace before checking.
+  """
+  def ends_with_question?(text) when is_binary(text) do
+    text |> String.trim_trailing() |> do_ends_with_char(??)
+  end
+
+  @doc """
+  Check if text ends with an exclamation mark.
+  Trims whitespace before checking.
+  """
+  def ends_with_exclamation?(text) when is_binary(text) do
+    text |> String.trim_trailing() |> do_ends_with_char(?!)
+  end
+
+  @doc """
+  Check if text ends with a period.
+  Trims whitespace before checking.
+  """
+  def ends_with_period?(text) when is_binary(text) do
+    text |> String.trim_trailing() |> do_ends_with_char(?.)
+  end
+
+  @doc """
+  Check if text ends with terminal punctuation (. ! ?).
+  Trims whitespace before checking.
+  """
+  def ends_with_terminal_punctuation?(text) when is_binary(text) do
+    trimmed = String.trim_trailing(text)
+
+    case String.last(trimmed) do
+      nil -> false
+      char -> char in [".", "!", "?"]
+    end
+  end
+
+  @doc """
+  Check if text ends with an ellipsis (...).
+  Trims whitespace before checking.
+  """
+  def ends_with_ellipsis?(text) when is_binary(text) do
+    trimmed = String.trim_trailing(text)
+    String.ends_with?(trimmed, "...") or String.ends_with?(trimmed, "\u2026")
+  end
+
+  @doc """
+  Get the terminal punctuation character from text, if any.
+  Returns the punctuation character or nil.
+  """
+  def terminal_punctuation(text) when is_binary(text) do
+    trimmed = String.trim_trailing(text)
+
+    case String.last(trimmed) do
+      char when char in [".", "!", "?"] -> char
+      _ -> nil
+    end
+  end
+
+  defp do_ends_with_char(text, char) do
+    case String.last(text) do
+      nil -> false
+      <<c::utf8>> -> c == char
+      _ -> false
+    end
+  end
+
   # Private helpers for new functions
 
   defp extract_quoted_impl([], acc, nil, _current, _current_start, _pos), do: Enum.reverse(acc)

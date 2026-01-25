@@ -17,7 +17,10 @@ defmodule ChatBot.Analysis.ProcessingTrace do
     RacingAnalyzer,
     BacktrackController,
     HeuristicStore,
-    SemanticChunker
+    SemanticChunker,
+    DiscourseAnalyzer,
+    SpeechActClassifier,
+    IntentRegistry
   }
 
   alias ChatBot.Analysis.SlotDetector
@@ -289,11 +292,40 @@ defmodule ChatBot.Analysis.ProcessingTrace do
 
     racing_time = System.monotonic_time(:millisecond) - start_time
 
-    # Extract entities
+    # Extract discourse and speech_act context for proper entity disambiguation
+    # This ensures entities are disambiguated with the same context as the main pipeline
+    discourse_result =
+      try do
+        DiscourseAnalyzer.analyze(chunk_text, [])
+      rescue
+        _ -> nil
+      catch
+        _ -> nil
+      end
+
+    speech_act_result =
+      try do
+        SpeechActClassifier.classify(chunk_text)
+      rescue
+        _ -> nil
+      catch
+        _ -> nil
+      end
+
+    # Extract entities with proper disambiguation context
+    entity_opts =
+      opts ++
+        [
+          discourse: discourse_result,
+          speech_act: speech_act_result
+        ]
+
     entities =
       try do
-        EntityExtractor.extract_entities(chunk_text)
+        EntityExtractor.extract_entities(chunk_text, entity_opts)
       rescue
+        _ -> []
+      catch
         _ -> []
       end
 
@@ -369,25 +401,13 @@ defmodule ChatBot.Analysis.ProcessingTrace do
 
   defp find_primary_chunk(chunk_traces) do
     # Priority: questions/commands > weather > other substantive > greetings
-    # Using string prefix matching instead of regex
-    priority_prefixes = [
-      "question.",
-      "weather.",
-      "device.",
-      "music.",
-      "reminder.",
-      "timer.",
-      "action.",
-      "information.",
-      "search."
-    ]
+    # Using IntentRegistry domain checks instead of string prefix matching
+    priority_domains = [:question, :weather, :device, :music, :reminder, :action, :information, :search]
 
     Enum.find(chunk_traces, List.first(chunk_traces), fn trace ->
-      intent = trace.primary_intent || ""
-
-      Enum.any?(priority_prefixes, fn prefix ->
-        String.starts_with?(intent, prefix)
-      end)
+      intent = trace.primary_intent
+      domain = IntentRegistry.domain(intent)
+      domain in priority_domains
     end)
   end
 

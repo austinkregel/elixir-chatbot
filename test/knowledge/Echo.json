@@ -20,14 +20,89 @@
     }
   ],
   "people": {
+    "Alexa": {
+      "confidence": 0.75,
+      "name": "Alexa",
+      "type": "person"
+    },
     "Austin": {
       "confidence": 0.7799999999999999,
       "name": "Austin",
       "type": "person"
     },
-    "Jordan": {
+    "Bobby": {
+      "confidence": 0.75,
+      "name": "Bobby",
+      "type": "person"
+    },
+    "Brooklyn": {
+      "confidence": 0.84,
+      "name": "Brooklyn",
+      "type": "person"
+    },
+    "Dakota": {
       "confidence": 0.7799999999999999,
+      "name": "Dakota",
+      "type": "person"
+    },
+    "Delilah": {
+      "confidence": 0.8099999999999999,
+      "name": "Delilah",
+      "type": "person"
+    },
+    "Jackson": {
+      "confidence": 0.76,
+      "name": "Jackson",
+      "type": "person"
+    },
+    "James": {
+      "confidence": 0.75,
+      "name": "James",
+      "type": "person"
+    },
+    "Jordan": {
+      "confidence": 0.73,
       "name": "Jordan",
+      "type": "person"
+    },
+    "Lincoln": {
+      "confidence": 0.76,
+      "name": "Lincoln",
+      "type": "person"
+    },
+    "Luna": {
+      "confidence": 0.72,
+      "name": "Luna",
+      "type": "person"
+    },
+    "Madison": {
+      "confidence": 0.8099999999999999,
+      "name": "Madison",
+      "type": "person"
+    },
+    "Orlando": {
+      "confidence": 0.76,
+      "name": "Orlando",
+      "type": "person"
+    },
+    "Paris": {
+      "confidence": 0.7000000000000001,
+      "name": "Paris",
+      "type": "person"
+    },
+    "Savannah": {
+      "confidence": 0.84,
+      "name": "Savannah",
+      "type": "person"
+    },
+    "Sydney": {
+      "confidence": 0.73,
+      "name": "Sydney",
+      "type": "person"
+    },
+    "Victoria": {
+      "confidence": 0.79,
+      "name": "Victoria",
       "type": "person"
     },
     "nil": {

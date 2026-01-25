@@ -18,7 +18,8 @@ defmodule ChatBot.Analysis.OutcomeLearner do
     Interpretation,
     HeuristicStore,
     AnalyzerCalibration,
-    ActivationPool
+    ActivationPool,
+    IntentRegistry
   }
 
   require Logger
@@ -400,9 +401,7 @@ defmodule ChatBot.Analysis.OutcomeLearner do
 
   defp specific_intent?(intent) do
     # Intents that are specific enough to warrant phrase matching
-    not String.contains?(intent, "general") and
-      not String.contains?(intent, "unknown") and
-      not String.contains?(intent, "smalltalk")
+    IntentRegistry.specific?(intent)
   end
 
   defp calculate_appropriate_boost(%Interpretation{} = interp) do

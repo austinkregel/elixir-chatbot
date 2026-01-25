@@ -288,6 +288,30 @@ defmodule ChatBot.Analysis.DisambiguationIntegrationTest do
              "Weather query triggered greeting: #{weather_response}"
     end
 
+    test "multi-sentence: intro + nice to meet you + weather query", %{conversation_id: conv_id} do
+      # This is the exact scenario from the UI:
+      # - Chunk 1: greeting with "Austin" as person
+      # - Chunk 2: nice to meet you
+      # - Chunk 3: weather query with NO location
+      # The weather query should ask for clarification, NOT use "Austin" from the greeting
+      {:ok, response} =
+        Brain.evaluate(conv_id, "Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?")
+
+      IO.puts("Multi-sentence response: #{response}")
+
+      # The response should ask for location, NOT assume "Austin" is the location
+      # Key assertion: should NOT say "weather for Austin" because Austin is a person here
+      refute response =~ ~r/weather for Austin|weather in Austin/i,
+             "Cross-chunk entity bleeding: Austin from greeting used for weather location: #{response}"
+
+      # Should either ask for location OR just not mention a specific location
+      has_location_question = response =~ ~r/what location|which city|where.*weather|specify.*location/i
+      does_not_assume_location = not (response =~ ~r/weather for \w+|weather in \w+/i)
+
+      assert has_location_question or does_not_assume_location,
+             "Expected location question or no assumed location, got: #{response}"
+    end
+
     test "Hello Austin vs Hello I'm Austin - different interpretations", %{conversation_id: conv_id} do
       # "Hello Austin" - could be addressing someone named Austin
       {:ok, response1} = Brain.evaluate(conv_id, "Hello Austin")
@@ -391,6 +415,42 @@ defmodule ChatBot.Analysis.DisambiguationIntegrationTest do
 
       assert result.entity_type == "location",
              "Expected disambiguation to select 'location' for weather, got: #{inspect(result)}"
+    end
+
+    test "recognizes proper noun usage when single-type location used as name" do
+      # Simulate "Nice" which only exists as location in gazetteer
+      # But in "I'm Nice" it's being used as a proper noun/name, not a location reference
+      location_info = %{entity_type: "location", value: "Nice"}
+
+      entity = %{
+        value: "Nice",
+        match: "Nice",
+        start_pos: 5,
+        end_pos: 9,
+        entity: "location",
+        types: [location_info]
+      }
+
+      # POS-tagged tokens showing PRON + VERB pattern (introduction)
+      # "Nice" is tagged as PROPN (proper noun), indicating name usage
+      pos_tagged = [{"I", "PRON"}, {"am", "VERB"}, {"Nice", "PROPN"}]
+
+      # Strong introduction context
+      context = %{
+        discourse: %{indicators: ["self_referential", "primarily_first_person"]},
+        speech_act: %{category: :expressive, sub_type: :greeting}
+      }
+
+      result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
+
+      # Should recognize this as proper noun/name usage (mapped to "person" type in our system)
+      assert result.entity_type == "person" || result.entity == "person",
+             "Expected proper noun recognition (mapped to 'person'), got: #{inspect(result)}"
+
+      # Should have disambiguation reason indicating proper noun usage
+      assert Map.get(result, :disambiguation_reason) == "proper_noun_usage" ||
+               Map.get(result, "disambiguation_reason") == "proper_noun_usage",
+             "Expected disambiguation_reason='proper_noun_usage', got: #{inspect(result)}"
     end
   end
 

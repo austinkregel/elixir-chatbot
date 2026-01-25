@@ -190,10 +190,16 @@ defmodule ChatBot.ML.NLPPipeline do
 
   @doc """
   Extract features from text (entities + intent) for learning.
+
+  Options:
+  - `:discourse` - Discourse analysis result for entity disambiguation
+  - `:speech_act` - Speech act classification result for entity disambiguation
   """
-  def extract_features(text) do
+  def extract_features(text, opts \\ []) do
     tokens = Tokenizer.tokenize(text)
-    entities = EntityExtractor.extract_entities(text)
+
+    # Extract entities with disambiguation context if available
+    entities = EntityExtractor.extract_entities(text, opts)
 
     case IntentClassifierSimple.classify(text) do
       {:ok, %{intent: intent, confidence: confidence}} ->

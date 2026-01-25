@@ -7,6 +7,150 @@
       "confidence": 0.9,
       "entity": "france",
       "fact": "The capital is Paris",
+      "id": "learned_d0b4a67285471550",
+      "learned_at": 1769302888,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_d8f2d2293e37588c",
+      "learned_at": 1769287495,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_c7774c3206c30fc2",
+      "learned_at": 1769287375,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_b5b53d8eb8bd0d2c",
+      "learned_at": 1769286417,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_d27b2b07b358e6fa",
+      "learned_at": 1769285382,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_ff80176289d54c79",
+      "learned_at": 1769284757,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_f11793db2abd6071",
+      "learned_at": 1769284560,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_c72f86ff5aa8fd73",
+      "learned_at": 1769284414,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_82af0f28c1f2f0b0",
+      "learned_at": 1769283091,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_5e21b55d2703f73c",
+      "learned_at": 1769282457,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_f34d74ef3b1f34be",
+      "learned_at": 1769282349,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_d2904dc35de02999",
+      "learned_at": 1769281942,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_7f46e3f70da58b8f",
+      "learned_at": 1769281895,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_1d2163a96fccc6b6",
+      "learned_at": 1769281726,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_eda41441314aa0ec",
+      "learned_at": 1769281606,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
+      "id": "learned_df3ffd3fb7059ea4",
+      "learned_at": 1769281242,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "fact": "The capital is Paris",
       "id": "learned_63bf1eda0b604a6f",
       "learned_at": 1769279874,
       "verification_source": "learned_from_conversation"

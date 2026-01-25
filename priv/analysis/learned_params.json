@@ -25,17 +25,17 @@
     ],
     "confidence_threshold": 0.4,
     "imperative_weight": 0.25,
-    "learned_at": "2026-01-24T18:32:15.309923Z",
+    "learned_at": "2026-01-25T03:32:50.495493Z",
     "question_weight": 0.2,
     "second_person_weight": 0.3
   },
   "feedback_stats": {
-    "clarifications_needed": 103,
+    "clarifications_needed": 117,
     "fallback_to_llm": 0,
-    "successful_responses": 535,
-    "total_interactions": 638
+    "successful_responses": 775,
+    "total_interactions": 892
   },
-  "last_updated": "2026-01-24T18:32:51.595869Z",
+  "last_updated": "2026-01-25T04:35:14.102705Z",
   "response_optionality": {
     "acknowledgment_defer_confidence": 0.7,
     "admin_locked": false,
@@ -49,7 +49,7 @@
   "speech_acts": {
     "admin_locked": false,
     "confidence_threshold": 0.3,
-    "learned_at": "2026-01-24T18:32:15.310073Z",
+    "learned_at": "2026-01-25T03:32:50.495254Z",
     "question_indicators": {
       "?": 0.4,
       "inversion_pattern": 0.2,

@@ -13,7 +13,7 @@ defmodule ChatBot.ML.EntityExtractor do
   require Logger
 
   alias ChatBot.ML.{Gazetteer, Tokenizer, EntityTrainer, POSTagger}
-  alias ChatBot.Analysis.EntityDisambiguator
+  alias ChatBot.Analysis.{EntityDisambiguator, IntentRegistry}
 
   @type entity_match :: %{
           entity: String.t(),
@@ -412,21 +412,43 @@ defmodule ChatBot.ML.EntityExtractor do
     resolved_entities = resolve_entity_conflicts(all_entities)
 
     # Disambiguate entities with multiple types if context is available
-    if skip_disambiguation or (is_nil(discourse) and is_nil(speech_act)) do
-      resolved_entities
-    else
-      disambiguate_entities(resolved_entities, tokens, discourse, speech_act)
-    end
+    disambiguated_entities =
+      if skip_disambiguation or (is_nil(discourse) and is_nil(speech_act)) do
+        resolved_entities
+      else
+        disambiguate_entities(resolved_entities, tokens, discourse, speech_act)
+      end
+
+    # Filter out entities below confidence threshold
+    min_confidence = Keyword.get(opts, :min_confidence) || get_min_confidence_threshold()
+    filter_by_confidence(disambiguated_entities, min_confidence)
   end
 
   # Legacy support: entity_maps passed directly
   def extract_entities(text, entity_maps) when is_map(entity_maps) do
-    extract_entities(text, entity_maps: entity_maps)
+    extract_entities(text, [entity_maps: entity_maps])
   end
 
   def extract_entities(text, nil) do
     extract_entities(text, [])
   end
+
+  # Get minimum confidence threshold from application config
+  defp get_min_confidence_threshold do
+    Application.get_env(:chat_bot, :ml)[:entity_confidence_threshold] ||
+      Application.get_env(:chat_bot, :ml)[:confidence_threshold] ||
+      0.51
+  end
+
+  # Filter entities by confidence threshold
+  defp filter_by_confidence(entities, min_confidence) when is_float(min_confidence) do
+    Enum.filter(entities, fn entity ->
+      confidence = Map.get(entity, :confidence) || Map.get(entity, "confidence", 0.0)
+      confidence >= min_confidence
+    end)
+  end
+
+  defp filter_by_confidence(entities, _), do: entities
 
   @doc """
   Extract entities using the BIO-tagged model (if available).
@@ -510,13 +532,15 @@ defmodule ChatBot.ML.EntityExtractor do
             Map.get(primary_info, :entity_type) ||
               Map.get(primary_info, :entity, "unknown")
 
+          entity_value = Map.get(primary_info, :value, match_text)
+
           %{
             entity: primary_type,
-            value: Map.get(primary_info, :value, match_text),
+            value: entity_value,
             match: match_text,
             start_pos: start_token.start_pos,
             end_pos: end_token.end_pos,
-            confidence: calculate_confidence(match_text, primary_type),
+            confidence: calculate_confidence(match_text, primary_type, entity_value),
             types: infos
           }
 
@@ -534,7 +558,7 @@ defmodule ChatBot.ML.EntityExtractor do
             match: match_text,
             start_pos: start_token.start_pos,
             end_pos: end_token.end_pos,
-            confidence: calculate_confidence(match_text, entity_type)
+            confidence: calculate_confidence(match_text, entity_type, entity_value)
           }
 
         single_info when is_map(single_info) ->
@@ -551,7 +575,7 @@ defmodule ChatBot.ML.EntityExtractor do
             match: match_text,
             start_pos: start_token.start_pos,
             end_pos: end_token.end_pos,
-            confidence: calculate_confidence(match_text, entity_type)
+            confidence: calculate_confidence(match_text, entity_type, entity_value)
           }
 
         _ ->
@@ -602,7 +626,7 @@ defmodule ChatBot.ML.EntityExtractor do
           match: match_text,
           start_pos: start_token.start_pos,
           end_pos: end_token.end_pos,
-          confidence: calculate_confidence(match_text, entity_type)
+          confidence: calculate_confidence(match_text, entity_type, entity_value)
         }
 
         find_all_local_spans(tokens, entity_maps, start_idx + 1, token_count, max_span, [
@@ -826,7 +850,7 @@ defmodule ChatBot.ML.EntityExtractor do
   # Helper Functions
   # ============================================================================
 
-  defp calculate_confidence(match_text, entity_type) do
+  defp calculate_confidence(match_text, entity_type, entity_value) do
     # Base confidence on match length and entity type
     base = min(0.9, 0.5 + String.length(match_text) * 0.03)
 
@@ -842,7 +866,40 @@ defmodule ChatBot.ML.EntityExtractor do
         _ -> 0.0
       end
 
-    min(0.95, base + type_bonus)
+    # Reduce confidence if casing doesn't match (e.g., "friend" vs "Friend")
+    # This helps avoid false matches like "friend" being tagged as location "Friend"
+    # Uses general linguistic pattern: capitalized entity value (proper noun) vs lowercase match (common word)
+    casing_penalty =
+      if entity_value && match_text != entity_value do
+        # Check if it's a casing mismatch (same when lowercased)
+        match_lower = String.downcase(match_text)
+        value_lower = String.downcase(entity_value)
+
+        if match_lower == value_lower && match_text != entity_value do
+          # Determine penalty based on linguistic pattern:
+          # - Stronger penalty when entity value is capitalized (proper noun) and match is lowercase (common word)
+          # - This indicates a likely false positive (e.g., "friend" matching "Friend" location)
+          value_is_capitalized = capitalized?(entity_value)
+          match_is_lowercase = match_text == match_lower
+
+          penalty =
+            if value_is_capitalized && match_is_lowercase do
+              # Proper noun entity matched by lowercase common word - high penalty
+              0.3
+            else
+              # Other casing mismatches - moderate penalty
+              0.15
+            end
+
+          -penalty
+        else
+          0.0
+        end
+      else
+        0.0
+      end
+
+    min(0.95, max(0.1, base + type_bonus + casing_penalty))
   end
 
   defp capitalized?(text) do
@@ -988,12 +1045,12 @@ defmodule ChatBot.ML.EntityExtractor do
 
     # Handle both struct and map access safely
     sub_type = get_field(speech_act, :sub_type)
-    intent = get_field(speech_act, :intent) || ""
+    intent = get_field(speech_act, :intent)
 
     cond do
       sub_type == :greeting -> :introduction
-      String.contains?(to_string(intent), "weather") -> :weather
-      String.contains?(to_string(intent), "music") -> :music
+      IntentRegistry.weather_intent?(intent) -> :weather
+      IntentRegistry.music_intent?(intent) -> :music
       true -> :default
     end
   end

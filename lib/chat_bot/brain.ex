@@ -7,7 +7,7 @@ defmodule ChatBot.Brain do
   use GenServer
   require Logger
 
-  alias ChatBot.Analysis.{SelfKnowledgeAnalyzer, Progress, ResponseGate}
+  alias ChatBot.Analysis.{SelfKnowledgeAnalyzer, Progress, ResponseGate, SlotDetector, IntentRegistry}
   alias ChatBot.Epistemic.{UserModelStore, BeliefStore}
   alias ChatBot.Epistemic.Types.{Belief, Config}
   alias ChatBot.Response.{Synthesizer, TemplateStore, MemoryAugmented, Composer, FactRetriever}
@@ -792,12 +792,34 @@ defmodule ChatBot.Brain do
   end
 
   defp handle_followup_message(persona, input, previous_context) do
-    # Extract entities from the follow-up
-    entities = ChatBot.ML.EntityExtractor.extract_entities(input)
+    # Run full analysis pipeline to get proper discourse/speech_act context for disambiguation
+    # This ensures entities are disambiguated correctly even in follow-up messages
+    analysis_model = run_analysis_pipeline(input, [], [])
+
+    # Extract entities from the best analysis chunk with proper disambiguation context
+    best_analysis =
+      analysis_model.analyses
+      |> Enum.max_by(& &1.confidence, fn -> nil end)
+
+    entities =
+      if best_analysis do
+        (best_analysis.entities || [])
+        |> Enum.map(fn e ->
+          %{
+            entity: e["type"] || e[:entity] || e["entity"],
+            value: e["name"] || e[:value] || e["value"],
+            confidence: e["confidence"] || e[:confidence] || 0.8
+          }
+        end)
+      else
+        # Fallback: extract without context if analysis failed
+        ChatBot.ML.EntityExtractor.extract_entities(input)
+      end
 
     Logger.info("Extracted entities from follow-up", %{
       entities_count: length(entities),
-      entities: Enum.map(entities, & &1.entity)
+      entities: Enum.map(entities, & &1.entity),
+      used_pipeline: best_analysis != nil
     })
 
     # Get carried context with previous info
@@ -927,7 +949,7 @@ defmodule ChatBot.Brain do
             %{entity: k, value: value}
           end)
 
-        generate_classical_response(intent, entities, persona)
+        generate_classical_response(intent, entities, persona, nil)
     end
   end
 
@@ -1032,9 +1054,9 @@ defmodule ChatBot.Brain do
     substantive_intents =
       all_intents_with_analysis
       |> Enum.filter(fn {intent, speech_act, _, _} ->
-        # Not a greeting/farewell/thanks
-        not String.contains?(intent || "", "greeting") and
-          not String.contains?(intent || "", "bye") and
+        # Not a greeting/farewell/thanks - use registry for classification
+        not IntentRegistry.greeting?(intent) and
+          not IntentRegistry.farewell?(intent) and
           speech_act.category in [:directive, :assertive]
       end)
 
@@ -1095,109 +1117,149 @@ defmodule ChatBot.Brain do
         []
       end
 
-    # Try classical NLP pipeline for additional processing
-    # Pass context for entity disambiguation
-    case ChatBot.ML.NLPPipeline.process(input, disambiguation_opts) do
-      {:ok, %{confidence: conf, intent: nlp_intent, entities: nlp_entities}} ->
-        # Merge analysis intent with NLP intent (prefer analysis if both present)
-        intent = analysis_intent || nlp_intent
-        entities = merge_entities(analysis_entities, nlp_entities)
+    # Collect ALL entities from ALL chunks for conflict detection
+    # This prevents "Austin" being used as location when it was identified as person in another chunk
+    all_analysis_entities =
+      analysis_model.analyses
+      |> Enum.flat_map(fn analysis ->
+        (analysis.entities || [])
+        |> Enum.map(fn e ->
+          %{
+            entity: e["type"] || e[:entity] || e["entity"],
+            value: e["name"] || e[:value] || e["value"],
+            confidence: e["confidence"] || e[:confidence] || 0.8
+          }
+        end)
+      end)
 
-        Logger.info("Using analysis-enhanced NLP", %{
-          analysis_intent: analysis_intent,
-          nlp_intent: nlp_intent,
-          final_intent: intent,
-          confidence: conf,
-          entities_count: length(entities)
+    # For multi-chunk inputs, skip NLPPipeline entirely.
+    # The per-chunk analysis is more accurate because each chunk gets proper context.
+    # NLPPipeline processes the whole text with only one chunk's context, which can cause
+    # cross-chunk entity bleeding (e.g., "Austin" as person in greeting being used as
+    # location for a weather query in the same message).
+    num_chunks = length(analysis_model.analyses)
+
+    {intent, entities, method} =
+      if num_chunks > 1 do
+        # Multi-chunk: use only per-chunk analysis results
+        Logger.debug("Multi-chunk input: skipping NLPPipeline, using only per-chunk analysis", %{
+          num_chunks: num_chunks,
+          analysis_entity_count: length(analysis_entities),
+          selected_intent: analysis_intent
         })
 
-        # Build context for storage (include speech_act for response optionality)
-        context = %{
-          intent: intent,
-          entities: entities,
-          slots: extract_filled_slots(slots_info),
-          missing_slots: missing_slots,
-          speech_act: if(best_analysis, do: extract_speech_act_info(best_analysis.speech_act), else: nil)
-        }
+        {analysis_intent, analysis_entities, :analysis_only}
+      else
+        # Single chunk: safe to use NLPPipeline for additional processing
+        case ChatBot.ML.NLPPipeline.process(input, disambiguation_opts) do
+          {:ok, %{confidence: conf, intent: nlp_intent, entities: nlp_entities}} ->
+            # Merge analysis intent with NLP intent (prefer analysis if both present)
+            intent = analysis_intent || nlp_intent
+            entities = merge_entities(analysis_entities, nlp_entities, all_analysis_entities, intent)
 
-        # Learn from extraction
-        ChatBot.Learner.learn_from_classical_extraction(persona.name, entities, input)
+            method =
+              if ChatBot.ML.NLPPipeline.should_use_classical_result?(conf) or analysis_intent != nil do
+                :analysis_enhanced
+              else
+                :classical_low_confidence
+              end
 
-        # Determine response type (domain vs smalltalk)
-        {response, response_type} =
-          generate_analysis_response_with_type(intent, entities, analysis_model, persona)
+            {intent, entities, method}
 
-        method =
-          if ChatBot.ML.NLPPipeline.should_use_classical_result?(conf) or analysis_intent != nil do
-            :analysis_enhanced
-          else
-            :classical_low_confidence
-          end
-
-        # Report response generation details
-        Progress.report(opts, :response_generated, %{
-          response_type: response_type,
-          strategy: :can_respond,
-          method: method,
-          intent: intent,
-          entities_count: length(entities),
-          nlp_confidence: conf
-        })
-
-        {response, method, context}
-
-      {:error, reason} ->
-        Logger.warning("NLP pipeline failed", %{reason: reason})
-
-        # Build context even on error (include speech_act for response optionality)
-        context = %{
-          intent: analysis_intent,
-          entities: analysis_entities,
-          slots: extract_filled_slots(slots_info),
-          missing_slots: missing_slots,
-          speech_act: if(best_analysis, do: extract_speech_act_info(best_analysis.speech_act), else: nil)
-        }
-
-        # Fall back to analysis-only response if we have a good analysis
-        if analysis_intent && best_analysis.confidence > 0.5 do
-          {response, response_type} =
-            generate_analysis_response_with_type(
-              analysis_intent,
-              analysis_entities,
-              analysis_model,
-              persona
-            )
-
-          Progress.report(opts, :response_generated, %{
-            response_type: response_type,
-            strategy: :can_respond,
-            method: :analysis_only,
-            intent: analysis_intent,
-            entities_count: length(analysis_entities),
-            nlp_error: reason
-          })
-
-          {response, :analysis_only, context}
-        else
-          Progress.report(opts, :response_generated, %{
-            response_type: :fallback,
-            strategy: :cannot_respond,
-            method: :classical_error,
-            nlp_error: reason
-          })
-
-          {simple_fallback_response(persona, input), :classical_error, context}
+          {:error, reason} ->
+            Logger.warning("NLP pipeline failed", %{reason: reason})
+            {analysis_intent, analysis_entities, :analysis_only}
         end
-    end
+      end
+
+    Logger.info("Processing with analysis", %{
+      analysis_intent: analysis_intent,
+      final_intent: intent,
+      method: method,
+      entities_count: length(entities),
+      num_chunks: num_chunks
+    })
+
+    # Build context for storage (include speech_act for response optionality)
+    context = %{
+      intent: intent,
+      entities: entities,
+      slots: extract_filled_slots(slots_info),
+      missing_slots: missing_slots,
+      speech_act: if(best_analysis, do: extract_speech_act_info(best_analysis.speech_act), else: nil)
+    }
+
+    # Learn from extraction
+    ChatBot.Learner.learn_from_classical_extraction(persona.name, entities, input)
+
+    # Determine response type (domain vs smalltalk)
+    {response, response_type} =
+      generate_analysis_response_with_type(intent, entities, analysis_model, persona, input)
+
+    # Report response generation details
+    Progress.report(opts, :response_generated, %{
+      response_type: response_type,
+      strategy: :can_respond,
+      method: method,
+      intent: intent,
+      entities_count: length(entities)
+    })
+
+    {response, method, context}
   end
 
-  defp merge_entities(analysis_entities, nlp_entities) do
+
+  defp merge_entities(analysis_entities, nlp_entities, all_analysis_entities, intent) do
     # Combine entities, preferring analysis entities for duplicates
+    # Analysis entities are extracted per-chunk with proper context disambiguation
+    # NLP entities are extracted globally and may have wrong context
+
+    # Get types from the selected chunk's entities
     analysis_types = Enum.map(analysis_entities, & &1.entity) |> MapSet.new()
+
+    # Get entity types allowed by the intent's slot schema
+    # This prevents entities extracted from other chunks from bleeding into the wrong intent
+    allowed_types =
+      if intent do
+        SlotDetector.get_entity_types_for_intent(intent)
+      else
+        MapSet.new()
+      end
+
+    # Get normalized values from ALL analysis chunks to detect cross-chunk conflicts
+    # e.g., if "Austin" was identified as "person" in chunk 1, don't add it as "location"
+    # for chunk 3's weather query
+    all_entities_for_conflict_check =
+      if length(all_analysis_entities) > 0, do: all_analysis_entities, else: analysis_entities
+
+    analysis_values =
+      all_entities_for_conflict_check
+      |> Enum.map(fn e ->
+        value = e[:value] || e["value"] || ""
+        String.downcase(to_string(value))
+      end)
+      |> MapSet.new()
 
     unique_nlp =
       nlp_entities
-      |> Enum.reject(fn e -> MapSet.member?(analysis_types, e.entity) end)
+      |> Enum.reject(fn e ->
+        e_type = e.entity
+        e_value = String.downcase(to_string(e[:value] || e["value"] || ""))
+
+        # Reject if same type already exists in selected chunk
+        same_type = MapSet.member?(analysis_types, e_type)
+
+        # Also reject if the same value was extracted by analysis in ANY chunk with a DIFFERENT type
+        # This prevents cross-chunk entity bleeding (e.g., "Austin" as person in greeting
+        # shouldn't become "Austin" as location for weather query)
+        value_conflict = MapSet.member?(analysis_values, e_value) and not same_type
+
+        # Additionally, reject if the entity type is not allowed by the intent's slot schema
+        # This prevents "person" entities from filling "location" slots, etc.
+        type_not_allowed = MapSet.size(allowed_types) > 0 and not MapSet.member?(allowed_types, e_type)
+
+        same_type or value_conflict or type_not_allowed
+      end)
 
     analysis_entities ++ unique_nlp
   end
@@ -1270,9 +1332,9 @@ defmodule ChatBot.Brain do
     end
   end
 
-  defp generate_classical_response(intent, entities, persona) do
+  defp generate_classical_response(intent, entities, persona, query_text) do
     # First, try domain-specific response generation
-    case generate_domain_response(intent, entities) do
+    case generate_domain_response(intent, entities, query_text) do
       {:ok, response} ->
         response
 
@@ -1283,9 +1345,9 @@ defmodule ChatBot.Brain do
   end
 
   # Version that returns both response and type for progress reporting
-  defp generate_classical_response_with_type(intent, entities, persona) do
+  defp generate_classical_response_with_type(intent, entities, persona, query_text) do
     # First try domain-specific response
-    case generate_domain_response(intent, entities) do
+    case generate_domain_response(intent, entities, query_text) do
       {:ok, response} ->
         {response, :domain}
 
@@ -1304,7 +1366,7 @@ defmodule ChatBot.Brain do
   end
 
   # Generate response and return type for progress reporting
-  defp generate_analysis_response_with_type(intent, entities, analysis_model, persona) do
+  defp generate_analysis_response_with_type(intent, entities, analysis_model, persona, query_text) do
     speech_acts =
       analysis_model.analyses
       |> Enum.map(& &1.speech_act)
@@ -1319,7 +1381,7 @@ defmodule ChatBot.Brain do
     has_substantive_content =
       length(directives) > 0 or
         (intent != nil and intent != "" and
-           not String.starts_with?(intent || "", "smalltalk.greetings"))
+           not IntentRegistry.greeting?(intent))
 
     response_parts = []
     response_types = []
@@ -1343,7 +1405,7 @@ defmodule ChatBot.Brain do
     {response_parts, response_types} =
       if has_substantive_content do
         {substantive_response, response_type} =
-          generate_classical_response_with_type(intent, entities, persona)
+          generate_classical_response_with_type(intent, entities, persona, query_text)
 
         {[substantive_response | response_parts], [response_type | response_types]}
       else
@@ -1368,7 +1430,7 @@ defmodule ChatBot.Brain do
     response =
       case valid_parts do
         [] ->
-          generate_classical_response(intent, entities, persona)
+          generate_classical_response(intent, entities, persona, query_text)
 
         [single] ->
           single
@@ -1401,7 +1463,9 @@ defmodule ChatBot.Brain do
   defp type_to_category(_), do: :assertive
 
   # Domain-specific response handlers
-  defp generate_domain_response("weather.query", entities) do
+  defp generate_domain_response(intent, entities, query_text)
+  
+  defp generate_domain_response("weather.query", entities, _query_text) do
     location = find_entity_value(entities, "location")
 
     response =
@@ -1414,11 +1478,11 @@ defmodule ChatBot.Brain do
     {:ok, response}
   end
 
-  defp generate_domain_response("weather" <> _, entities) do
-    generate_domain_response("weather.query", entities)
+  defp generate_domain_response("weather" <> _, entities, query_text) do
+    generate_domain_response("weather.query", entities, query_text)
   end
 
-  defp generate_domain_response("music.play", entities) do
+  defp generate_domain_response("music.play", entities, _query_text) do
     artist = find_entity_value(entities, "music-artist")
     song = find_entity_value(entities, "song")
 
@@ -1432,7 +1496,7 @@ defmodule ChatBot.Brain do
     {:ok, response}
   end
 
-  defp generate_domain_response("device.control", entities) do
+  defp generate_domain_response("device.control", entities, _query_text) do
     device = find_entity_value(entities, "device")
     action = find_entity_value(entities, "action") || find_entity_value(entities, "locks-status")
 
@@ -1446,7 +1510,7 @@ defmodule ChatBot.Brain do
     {:ok, response}
   end
 
-  defp generate_domain_response("news.query", entities) do
+  defp generate_domain_response("news.query", entities, _query_text) do
     topic = find_entity_value(entities, "topic")
 
     response =
@@ -1459,7 +1523,7 @@ defmodule ChatBot.Brain do
     {:ok, response}
   end
 
-  defp generate_domain_response("reminder.create", entities) do
+  defp generate_domain_response("reminder.create", entities, _query_text) do
     content = find_entity_value(entities, "content")
     date = find_entity_value(entities, "date")
 
@@ -1473,19 +1537,22 @@ defmodule ChatBot.Brain do
     {:ok, response}
   end
 
-  defp generate_domain_response("question.factual", entities) do
+  defp generate_domain_response("question.factual", entities, query_text) do
     # Try to retrieve facts from the fact database
     if FactRetriever.available?() do
       # Extract entities from the query
       entity_names = extract_entity_names_for_facts(entities)
       
-      # Try to get facts for mentioned entities
-      # Note: We don't have the original query text here, so we rely on entities
-      facts = FactRetriever.get_facts_for_query("", entity_names)
+      # Use keyword search on the query text to find relevant facts
+      # This handles questions like "Are there 8 days in a week?" where
+      # entities might not be extracted but keywords like "week" and "days" exist
+      query_str = query_text || ""
+      facts = FactRetriever.get_facts_for_query(query_str, entity_names)
       
       if facts != [] do
-        formatted = FactRetriever.format_facts(facts, 2)
-        response = "Here's what I know: #{Enum.join(formatted, ". ")}."
+        # Check if this is a verification question (e.g., "Are there 8 days in a week?")
+        # and provide a direct answer if the question contradicts the fact
+        response = format_factual_response(query_str, facts)
         {:ok, response}
       else
         :not_handled
@@ -1495,7 +1562,7 @@ defmodule ChatBot.Brain do
     end
   end
 
-  defp generate_domain_response(_intent, _entities) do
+  defp generate_domain_response(_intent, _entities, _query_text) do
     :not_handled
   end
 
@@ -1524,6 +1591,158 @@ defmodule ChatBot.Brain do
   end
 
   defp extract_entity_names_for_facts(_), do: []
+
+  # Format factual response, handling verification questions
+  # Uses POS tagger for content word extraction and tokenizer for number detection
+  defp format_factual_response(query_text, facts) when is_binary(query_text) and query_text != "" do
+    alias ChatBot.ML.Tokenizer
+    alias ChatBot.ML.POSTagger
+    
+    # Tokenize the query to extract components
+    query_tokens = Tokenizer.tokenize(query_text)
+    
+    # Use speech act classifier to detect if this is a question
+    # Questions that contain numbers are likely verification questions
+    speech_act = ChatBot.Analysis.SpeechActClassifier.classify(query_text)
+    is_question = Map.get(speech_act, :is_question, false)
+    
+    # Extract numbers from the query using tokenizer's type classification
+    query_numbers = 
+      query_tokens
+      |> Enum.filter(fn t -> t.type == :number end)
+      |> Enum.map(fn t -> parse_number(t.text) end)
+      |> Enum.reject(&is_nil/1)
+    
+    # Extract content words using POS tagger
+    # Content POS tags: NOUN, PROPN, VERB, ADJ, ADV, NUM
+    content_words = extract_content_words_with_pos(query_tokens)
+    
+    if is_question and length(query_numbers) > 0 and length(content_words) > 0 do
+      # Try to find a matching fact and compare numbers
+      stated_number = List.first(query_numbers)
+      
+      # Find a fact that contains any of the content words
+      relevant_fact = find_matching_fact(facts, content_words)
+      
+      if relevant_fact do
+        fact_text = relevant_fact["fact"]
+        
+        # Extract numbers from the fact using tokenizer
+        fact_tokens = Tokenizer.tokenize(fact_text)
+        fact_numbers = 
+          fact_tokens
+          |> Enum.filter(fn t -> t.type == :number end)
+          |> Enum.map(fn t -> parse_number(t.text) end)
+          |> Enum.reject(&is_nil/1)
+        
+        # Compare the stated number with fact numbers
+        case find_matching_number(stated_number, fact_numbers, content_words, fact_tokens) do
+          {:match, _} ->
+            "Yes, #{fact_text}."
+          
+          {:mismatch, _actual} ->
+            "No, #{fact_text}."
+          
+          :no_comparison ->
+            formatted = FactRetriever.format_facts([relevant_fact], 1)
+            "Here's what I know: #{Enum.join(formatted, ". ")}."
+        end
+      else
+        formatted = FactRetriever.format_facts(facts, 2)
+        "Here's what I know: #{Enum.join(formatted, ". ")}."
+      end
+    else
+      # Not a verification question, return facts normally
+      formatted = FactRetriever.format_facts(facts, 2)
+      "Here's what I know: #{Enum.join(formatted, ". ")}."
+    end
+  end
+
+  defp format_factual_response(_query_text, facts) do
+    formatted = FactRetriever.format_facts(facts, 2)
+    "Here's what I know: #{Enum.join(formatted, ". ")}."
+  end
+
+  # Extract content words using POS tagger
+  # Content POS tags indicate meaningful words: NOUN, PROPN, VERB, ADJ, ADV, NUM
+  defp extract_content_words_with_pos(tokens) do
+    alias ChatBot.ML.POSTagger
+    
+    # Content POS tags that indicate meaningful words
+    content_tags = ~w(NOUN PROPN VERB ADJ ADV NUM)
+    
+    token_texts = Enum.map(tokens, fn t -> t.text end)
+    
+    case POSTagger.load_model() do
+      {:ok, model} ->
+        POSTagger.predict(token_texts, model)
+        |> Enum.filter(fn {_word, tag} -> tag in content_tags end)
+        |> Enum.map(fn {word, _tag} -> String.downcase(word) end)
+        |> Enum.filter(fn w -> String.length(w) > 2 end)
+      
+      {:error, _} ->
+        # Fallback: use tokens with length > 2 that aren't numbers
+        tokens
+        |> Enum.filter(fn t -> t.type == :word and String.length(t.text) > 2 end)
+        |> Enum.map(fn t -> String.downcase(t.text) end)
+    end
+  end
+
+  # Parse a number string to integer, handling edge cases
+  defp parse_number(text) do
+    # Remove commas and try to parse
+    cleaned = String.replace(text, ",", "")
+    case Integer.parse(cleaned) do
+      {num, ""} -> num
+      {num, "." <> _} -> num  # Handle decimals by truncating
+      _ -> nil
+    end
+  end
+
+  # Find a fact that matches the content words from the query
+  defp find_matching_fact(facts, content_words) do
+    Enum.find(facts, fn fact ->
+      fact_text = String.downcase(fact["fact"] || "")
+      entity_text = String.downcase(fact["entity"] || "")
+      
+      # Check if any content word appears in the fact
+      Enum.any?(content_words, fn word ->
+        String.contains?(fact_text, word) or String.contains?(entity_text, word)
+      end)
+    end)
+  end
+
+  # Find if the stated number matches or mismatches numbers in the fact
+  # Uses proximity to shared content words to determine relevance
+  defp find_matching_number(stated_number, fact_numbers, content_words, fact_tokens) do
+    if fact_numbers == [] do
+      :no_comparison
+    else
+      fact_words = Enum.map(fact_tokens, fn t -> String.downcase(t.text) end)
+      
+      # Find numbers that are near shared content words
+      # This helps match "7 days" in fact with "8 days" in query
+      relevant_numbers = 
+        fact_tokens
+        |> Enum.with_index()
+        |> Enum.filter(fn {t, _idx} -> t.type == :number end)
+        |> Enum.filter(fn {_t, idx} ->
+          # Check if a content word appears within 3 tokens
+          nearby_words = Enum.slice(fact_words, max(0, idx - 3), 7)
+          Enum.any?(content_words, fn cw -> cw in nearby_words end)
+        end)
+        |> Enum.map(fn {t, _idx} -> parse_number(t.text) end)
+        |> Enum.reject(&is_nil/1)
+      
+      numbers_to_check = if relevant_numbers != [], do: relevant_numbers, else: fact_numbers
+      
+      if stated_number in numbers_to_check do
+        {:match, stated_number}
+      else
+        {:mismatch, List.first(numbers_to_check)}
+      end
+    end
+  end
 
   defp generate_smalltalk_response(intent, entities, _persona) do
     # First, try to get a response from the TemplateStore (loaded from intent files)
@@ -1632,10 +1851,11 @@ defmodule ChatBot.Brain do
   defp smalltalk_to_map(_), do: %{}
 
   defp choose_smalltalk_action(intent, _entities) do
-    # Heuristic fallbacks for greetings/smalltalk
-    cond do
-      String.starts_with?(to_string(intent), "smalltalk.") -> intent
-      true -> "smalltalk.greetings.hello"
+    # Use IntentRegistry to check if it's already a smalltalk intent
+    if IntentRegistry.smalltalk_intent?(intent) do
+      intent
+    else
+      "smalltalk.greetings.hello"
     end
   end
 

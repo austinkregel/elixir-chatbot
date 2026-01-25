@@ -564,6 +564,7 @@ defmodule Mix.Tasks.GeneratePersonNames do
       "Edward",
       "Edwin",
       "Eli",
+      "Eph",
       "Elijah",
       "Elliot",
       "Elliott",

@@ -38,6 +38,8 @@ defmodule ChatBot.Application do
       # Start the Adaptive Processing System
       ChatBot.Analysis.AnalyzerCalibration,
       {ChatBot.Analysis.HeuristicStore, seeded_path: "priv/heuristics/seeded.json"},
+      # Start the Training World Manager
+      ChatBot.Learning.WorldManager,
       # Start the Response Template Store (loads templates from intent files)
       ChatBot.Response.TemplateStore,
       # Start the Subprocess Supervisor
