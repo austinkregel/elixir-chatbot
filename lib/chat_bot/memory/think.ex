@@ -54,10 +54,14 @@ defmodule ChatBot.Memory.Think do
       action = Map.get(params, :action, "")
       outcome = Map.get(params, :outcome, "")
       tags = Map.get(params, :tags, [])
+      world_id = Map.get(params, :world_id, "default")
 
-      case Store.add_episode(state, action, outcome, tags) do
+      # Pass world_id option to the store
+      opts = [world_id: world_id]
+
+      case Store.add_episode(state, action, outcome, tags, opts) do
         {:ok, id} ->
-          Logger.debug("Episode added", id: id)
+          Logger.debug("Episode added", id: id, world_id: world_id)
           {:ok, {:episode_added, id}}
 
         {:error, reason} ->
@@ -71,8 +75,11 @@ defmodule ChatBot.Memory.Think do
   def think(:query_chat, params) do
     input = Map.get(params, :input, "")
     k = Map.get(params, :k, 5)
+    world_id = Map.get(params, :world_id, "default")
 
-    case Store.query_similar(input, k) do
+    opts = [world_id: world_id]
+
+    case Store.query_similar(input, k, opts) do
       {:ok, results} ->
         formatted =
           Enum.map(results, fn {episode, similarity} ->
@@ -89,8 +96,11 @@ defmodule ChatBot.Memory.Think do
   def think(:query_semantic, params) do
     input = Map.get(params, :input, "")
     k = Map.get(params, :k, 5)
+    world_id = Map.get(params, :world_id, "default")
 
-    case Store.query_semantic(input, k) do
+    opts = [world_id: world_id]
+
+    case Store.query_semantic(input, k, opts) do
       {:ok, results} ->
         formatted =
           Enum.map(results, fn {semantic, similarity} ->
@@ -107,8 +117,15 @@ defmodule ChatBot.Memory.Think do
   def think(:consolidate, params) do
     threshold = Map.get(params, :threshold, 0.8)
     min_size = Map.get(params, :min_size, 2)
+    world_id = Map.get(params, :world_id, "default")
 
-    {:ok, count} = Consolidation.consolidate(threshold: threshold, min_cluster_size: min_size)
+    {:ok, count} =
+      Consolidation.consolidate(
+        threshold: threshold,
+        min_cluster_size: min_size,
+        world_id: world_id
+      )
+
     {:ok, {:consolidated, count}}
   end
 

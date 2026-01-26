@@ -103,7 +103,7 @@ defmodule ChatBot.ML.EntityTrainerTest do
 
       assert length(entities) == 1
       entity = Enum.at(entities, 0)
-      assert entity.entity == "location"
+      assert entity.entity_type == "location"
       assert entity.value == "New York"
     end
 
@@ -119,8 +119,8 @@ defmodule ChatBot.ML.EntityTrainerTest do
 
       assert length(entities) == 2
 
-      location = Enum.find(entities, fn e -> e.entity == "location" end)
-      date = Enum.find(entities, fn e -> e.entity == "date" end)
+      location = Enum.find(entities, fn e -> e.entity_type == "location" end)
+      date = Enum.find(entities, fn e -> e.entity_type == "date" end)
 
       assert location.value == "London"
       assert date.value == "tomorrow"

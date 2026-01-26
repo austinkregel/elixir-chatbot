@@ -126,8 +126,8 @@ defmodule ChatBot.Analysis.ContextResolverTest do
   describe "extract_context/3" do
     test "extracts context snapshot from entities" do
       entities = [
-        %{entity: "location", value: "Paris", confidence: 0.9},
-        %{entity: "date", value: "tomorrow", confidence: 0.8}
+        %{entity_type: "location", value: "Paris", confidence: 0.9},
+        %{entity_type: "date", value: "tomorrow", confidence: 0.8}
       ]
 
       context = ContextResolver.extract_context(entities, "weather.query")

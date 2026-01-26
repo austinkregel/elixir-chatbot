@@ -6,7 +6,7 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
   describe "disambiguate/3" do
     test "returns entities unchanged when only one type" do
       entities = [
-        %{entity: "person", value: "John", match: "John", start_pos: 0, end_pos: 4}
+        %{entity_type: "person", value: "John", match: "John", start_pos: 0, end_pos: 4}
       ]
 
       pos_tagged = [{"I", "PRON"}, {"am", "VERB"}, {"John", "PROPN"}]
@@ -15,7 +15,7 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
       result = EntityDisambiguator.disambiguate(entities, pos_tagged, context)
 
       assert length(result) == 1
-      assert hd(result).entity == "person"
+      assert hd(result).entity_type == "person"
     end
 
     test "disambiguates entity with multiple types" do
@@ -119,13 +119,13 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
 
   describe "disambiguate_single/3" do
     test "preserves entity when no types field" do
-      entity = %{entity: "person", value: "John"}
+      entity = %{entity_type: "person", value: "John"}
       pos_tagged = [{"John", "PROPN"}]
       context = %{}
 
       result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
 
-      assert result.entity == "person"
+      assert result.entity_type == "person"
     end
 
     test "selects best type and removes types field" do
@@ -168,7 +168,8 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
         speech_act: %{category: :expressive, sub_type: :greeting}
       }
 
-      confidence = EntityDisambiguator.introduction_confidence(pos_tagged, entity_position, context)
+      confidence =
+        EntityDisambiguator.introduction_confidence(pos_tagged, entity_position, context)
 
       # Should have high confidence (all features present)
       assert confidence >= 0.8
@@ -183,7 +184,8 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
         speech_act: nil
       }
 
-      confidence = EntityDisambiguator.introduction_confidence(pos_tagged, entity_position, context)
+      confidence =
+        EntityDisambiguator.introduction_confidence(pos_tagged, entity_position, context)
 
       # Should have some confidence but not maximum
       assert confidence >= 0.4
@@ -199,7 +201,8 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
         speech_act: nil
       }
 
-      confidence = EntityDisambiguator.introduction_confidence(pos_tagged, entity_position, context)
+      confidence =
+        EntityDisambiguator.introduction_confidence(pos_tagged, entity_position, context)
 
       # Should have low confidence
       assert confidence < 0.3
@@ -233,7 +236,8 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
         speech_act: nil
       }
 
-      _result_without = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context_without)
+      _result_without =
+        EntityDisambiguator.disambiguate_single(entity, pos_tagged, context_without)
 
       # Self-referential context should boost person preference
       # Both might return person, but the scoring should be different internally
@@ -248,10 +252,11 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
       }
 
       # Should not crash with nil values
-      result = EntityDisambiguator.disambiguate_single(entity, [], %{
-        discourse: nil,
-        speech_act: nil
-      })
+      result =
+        EntityDisambiguator.disambiguate_single(entity, [], %{
+          discourse: nil,
+          speech_act: nil
+        })
 
       assert result.entity_type in ["a", "b"]
     end
@@ -263,10 +268,11 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
       entity_position = 2
 
       # The introduction_confidence function uses this internally
-      confidence = EntityDisambiguator.introduction_confidence(pos_tagged, entity_position, %{
-        discourse: %{indicators: []},
-        speech_act: nil
-      })
+      confidence =
+        EntityDisambiguator.introduction_confidence(pos_tagged, entity_position, %{
+          discourse: %{indicators: []},
+          speech_act: nil
+        })
 
       # PRON+VERB pattern should contribute to confidence
       assert confidence >= 0.4
@@ -276,10 +282,11 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
       pos_tagged = [{"Austin", "PROPN"}, {"is", "VERB"}, {"nice", "ADJ"}]
       entity_position = 0
 
-      confidence = EntityDisambiguator.introduction_confidence(pos_tagged, entity_position, %{
-        discourse: %{indicators: []},
-        speech_act: nil
-      })
+      confidence =
+        EntityDisambiguator.introduction_confidence(pos_tagged, entity_position, %{
+          discourse: %{indicators: []},
+          speech_act: nil
+        })
 
       # No preceding pattern possible
       assert confidence < 0.3

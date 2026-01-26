@@ -49,7 +49,7 @@ defmodule Mix.Tasks.TrainingWorld do
   @shortdoc "Training world management commands"
 
   @impl Mix.Task
-  def run(args) do
+  def run(_args) do
     Mix.shell().info("Usage: mix training_world.<command> [args]")
     Mix.shell().info("")
     Mix.shell().info("Available commands:")
@@ -66,6 +66,7 @@ defmodule Mix.Tasks.TrainingWorld do
     Mix.shell().info("  destroy    - Destroy a world")
     Mix.shell().info("  checkpoint - Save persistent world to disk")
     Mix.shell().info("  load       - Load persisted world from disk")
+    Mix.shell().info("  import     - Import entities from JSON file")
     Mix.shell().info("")
     Mix.shell().info("Run 'mix help training_world.<command>' for more info")
   end
@@ -136,10 +137,14 @@ defmodule Mix.Tasks.TrainingWorld.Ingest do
           progress_callback = fn progress ->
             case progress.type do
               :file_started ->
-                Mix.shell().info("Processing [#{progress.current}/#{progress.total}]: #{progress.file}")
+                Mix.shell().info(
+                  "Processing [#{progress.current}/#{progress.total}]: #{progress.file}"
+                )
 
               :file_completed ->
-                Mix.shell().info("  Completed: #{progress.result.entities_discovered} entities discovered")
+                Mix.shell().info(
+                  "  Completed: #{progress.result.entities_discovered} entities discovered"
+                )
 
               :file_failed ->
                 Mix.shell().error("  Failed: #{inspect(progress.error)}")
@@ -168,8 +173,10 @@ defmodule Mix.Tasks.TrainingWorld.Ingest do
                 Mix.shell().error("  Failed files: #{length(result.failed_files)}")
               end
 
-            {:error, reason} ->
-              Mix.shell().error("Ingestion failed: #{inspect(reason)}")
+            # Note: ingest_files always returns {:ok, _} with failed_files list
+            # This branch kept for future error handling if needed
+            other ->
+              Mix.shell().error("Unexpected result: #{inspect(other)}")
           end
         end
 
@@ -258,17 +265,22 @@ defmodule Mix.Tasks.TrainingWorld.Entities do
 
         limit = Keyword.get(opts, :limit, 50)
 
-        candidates = ChatBot.Learning.WorldManager.get_candidates(world_id, sort: sort, limit: limit)
+        candidates =
+          ChatBot.Learning.WorldManager.get_candidates(world_id, sort: sort, limit: limit)
 
         if length(candidates) == 0 do
           Mix.shell().info("No entity candidates found")
         else
           Mix.shell().info("Entity Candidates (sorted by #{sort}):")
           Mix.shell().info("=" |> String.duplicate(70))
-          Mix.shell().info(String.pad_trailing("Value", 25) <>
-                          String.pad_trailing("Type", 15) <>
-                          String.pad_trailing("Occurrences", 12) <>
-                          "Confidence")
+
+          Mix.shell().info(
+            String.pad_trailing("Value", 25) <>
+              String.pad_trailing("Type", 15) <>
+              String.pad_trailing("Occurrences", 12) <>
+              "Confidence"
+          )
+
           Mix.shell().info("-" |> String.duplicate(70))
 
           Enum.each(candidates, fn candidate ->
@@ -279,9 +291,9 @@ defmodule Mix.Tasks.TrainingWorld.Entities do
 
             Mix.shell().info(
               String.pad_trailing(value, 25) <>
-              String.pad_trailing(type, 15) <>
-              String.pad_trailing("#{occurrences}", 12) <>
-              Float.to_string(Float.round(confidence, 3))
+                String.pad_trailing(type, 15) <>
+                String.pad_trailing("#{occurrences}", 12) <>
+                Float.to_string(Float.round(confidence, 3))
             )
           end)
 
@@ -290,7 +302,9 @@ defmodule Mix.Tasks.TrainingWorld.Entities do
         end
 
       _ ->
-        Mix.shell().error("Usage: mix training_world.entities <world_id> [--sort=confidence|occurrences] [--limit=N]")
+        Mix.shell().error(
+          "Usage: mix training_world.entities <world_id> [--sort=confidence|occurrences] [--limit=N]"
+        )
     end
   end
 
@@ -364,7 +378,10 @@ defmodule Mix.Tasks.TrainingWorld.Events do
         ensure_started()
 
         filters = []
-        filters = if t = Keyword.get(opts, :type), do: [type: String.to_atom(t)] ++ filters, else: filters
+
+        filters =
+          if t = Keyword.get(opts, :type), do: [type: String.to_atom(t)] ++ filters, else: filters
+
         filters = [limit: Keyword.get(opts, :limit, 50)] ++ filters
 
         events = ChatBot.Learning.WorldManager.get_events(world_id, filters)
@@ -389,7 +406,9 @@ defmodule Mix.Tasks.TrainingWorld.Events do
         end
 
       _ ->
-        Mix.shell().error("Usage: mix training_world.events <world_id> [--type=event_type] [--limit=N]")
+        Mix.shell().error(
+          "Usage: mix training_world.events <world_id> [--type=event_type] [--limit=N]"
+        )
     end
   end
 
@@ -423,6 +442,7 @@ defmodule Mix.Tasks.TrainingWorld.Compare do
 
             if map_size(diff.type_distribution_diff) > 0 do
               Mix.shell().info("Type distribution differences:")
+
               Enum.each(diff.type_distribution_diff, fn {type, count_diff} ->
                 sign = if count_diff > 0, do: "+", else: ""
                 Mix.shell().info("  #{type}: #{sign}#{count_diff}")
@@ -431,11 +451,16 @@ defmodule Mix.Tasks.TrainingWorld.Compare do
 
             if length(diff.unique_to_world1) > 0 do
               Mix.shell().info("")
-              Mix.shell().info("Types unique to world 1: #{Enum.join(diff.unique_to_world1, ", ")}")
+
+              Mix.shell().info(
+                "Types unique to world 1: #{Enum.join(diff.unique_to_world1, ", ")}"
+              )
             end
 
             if length(diff.unique_to_world2) > 0 do
-              Mix.shell().info("Types unique to world 2: #{Enum.join(diff.unique_to_world2, ", ")}")
+              Mix.shell().info(
+                "Types unique to world 2: #{Enum.join(diff.unique_to_world2, ", ")}"
+              )
             end
 
           {:error, reason} ->
@@ -515,9 +540,11 @@ defmodule Mix.Tasks.TrainingWorld.Export do
 
   defp prepare_value(%DateTime{} = dt), do: DateTime.to_iso8601(dt)
   defp prepare_value(%_{} = struct), do: struct_to_map(struct)
+
   defp prepare_value(map) when is_map(map) do
     Enum.into(map, %{}, fn {k, v} -> {k, prepare_value(v)} end)
   end
+
   defp prepare_value(list) when is_list(list), do: Enum.map(list, &prepare_value/1)
   defp prepare_value(atom) when is_atom(atom), do: Atom.to_string(atom)
   defp prepare_value(other), do: other
@@ -551,7 +578,9 @@ defmodule Mix.Tasks.TrainingWorld.Merge do
             Mix.shell().info("")
 
             Enum.each(entities, fn {key, info} ->
-              Mix.shell().info("  #{key}: #{Map.get(info, :entity_type)} (confidence: #{Map.get(info, :confidence, "N/A")})")
+              Mix.shell().info(
+                "  #{key}: #{Map.get(info, :entity_type)} (confidence: #{Map.get(info, :confidence, "N/A")})"
+              )
             end)
 
             Mix.shell().info("")
@@ -562,7 +591,9 @@ defmodule Mix.Tasks.TrainingWorld.Merge do
         end
 
       _ ->
-        Mix.shell().error("Usage: mix training_world.merge <source_id> <target_id> [--require-review=true] [--min-confidence=0.7]")
+        Mix.shell().error(
+          "Usage: mix training_world.merge <source_id> <target_id> [--require-review=true] [--min-confidence=0.7]"
+        )
     end
   end
 
@@ -715,6 +746,150 @@ defmodule Mix.Tasks.TrainingWorld.Load do
         Mix.shell().error("Usage: mix training_world.load <world_id>")
     end
   end
+
+  defp ensure_started do
+    Mix.Task.run("app.start")
+  end
+end
+
+defmodule Mix.Tasks.TrainingWorld.Import do
+  use Mix.Task
+
+  @shortdoc "Import entities from a JSON file into a training world"
+
+  @moduledoc """
+  Imports pre-extracted entities into a training world's gazetteer overlay.
+
+  This is useful when you've already identified entities through preprocessing
+  and want to seed a training world with them.
+
+  ## Usage
+
+      mix training_world.import <world_id> <entities.json> [options]
+
+  ## Options
+
+    * `--promote` - Automatically promote entities to the gazetteer (default: false)
+    * `--skip-unknown` - Skip entities with type "unknown" (default: false)
+
+  ## JSON Format
+
+  The JSON file should have an "entities" array with objects containing:
+    - `value` - The entity text
+    - `entity_type` - The type (person, location, etc.)
+    - `metadata` - Optional metadata
+  """
+
+  @impl Mix.Task
+  def run(args) do
+    {opts, rest, _} =
+      OptionParser.parse(args,
+        strict: [promote: :boolean, skip_unknown: :boolean]
+      )
+
+    case rest do
+      [world_id, json_file] ->
+        ensure_started()
+
+        case File.read(json_file) do
+          {:ok, content} ->
+            case Jason.decode(content) do
+              {:ok, data} ->
+                import_entities(world_id, data, opts)
+
+              {:error, reason} ->
+                Mix.shell().error("Failed to parse JSON: #{inspect(reason)}")
+            end
+
+          {:error, reason} ->
+            Mix.shell().error("Failed to read file: #{inspect(reason)}")
+        end
+
+      _ ->
+        Mix.shell().error(
+          "Usage: mix training_world.import <world_id> <entities.json> [--promote] [--skip-unknown]"
+        )
+    end
+  end
+
+  defp import_entities(world_id, data, opts) do
+    promote = Keyword.get(opts, :promote, false)
+    skip_unknown = Keyword.get(opts, :skip_unknown, false)
+
+    entities = Map.get(data, "entities", [])
+
+    Mix.shell().info("Importing #{length(entities)} entities into world: #{world_id}")
+
+    # Check if world exists
+    case ChatBot.Learning.WorldManager.get(world_id) do
+      {:error, :not_found} ->
+        Mix.shell().error("World not found: #{world_id}")
+        return()
+
+      {:ok, _world} ->
+        :ok
+    end
+
+    {imported, skipped, promoted} =
+      Enum.reduce(entities, {0, 0, 0}, fn entity, {imp, skip, prom} ->
+        entity_type = Map.get(entity, "entity_type", "unknown")
+        value = Map.get(entity, "value", "")
+
+        cond do
+          skip_unknown and entity_type == "unknown" ->
+            {imp, skip + 1, prom}
+
+          String.trim(value) == "" ->
+            {imp, skip + 1, prom}
+
+          true ->
+            # Add as candidate
+            candidate = %{
+              value: value,
+              inferred_type: entity_type,
+              confidence: if(entity_type == "unknown", do: 0.5, else: 0.9),
+              source: :import,
+              metadata: Map.get(entity, "metadata", %{}),
+              discovered_at: DateTime.utc_now()
+            }
+
+            ChatBot.Learning.WorldManager.add_candidate(world_id, candidate)
+
+            # Optionally promote to gazetteer
+            if promote and entity_type != "unknown" do
+              ChatBot.ML.Gazetteer.add_to_world(world_id, value, entity_type)
+              {imp + 1, skip, prom + 1}
+            else
+              {imp + 1, skip, prom}
+            end
+        end
+      end)
+
+    Mix.shell().info("")
+    Mix.shell().info("Import complete:")
+    Mix.shell().info("  Imported: #{imported}")
+    Mix.shell().info("  Skipped: #{skipped}")
+
+    if promote do
+      Mix.shell().info("  Promoted to gazetteer: #{promoted}")
+    else
+      Mix.shell().info("  (Use --promote to add to gazetteer)")
+    end
+
+    # Checkpoint if persistent
+    case ChatBot.Learning.WorldManager.get(world_id) do
+      {:ok, world} when world.mode == :persistent ->
+        Mix.shell().info("")
+        Mix.shell().info("Saving checkpoint...")
+        ChatBot.Learning.WorldManager.checkpoint(world_id)
+        Mix.shell().info("Checkpoint saved.")
+
+      _ ->
+        :ok
+    end
+  end
+
+  defp return, do: :ok
 
   defp ensure_started do
     Mix.Task.run("app.start")

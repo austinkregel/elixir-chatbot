@@ -40,9 +40,15 @@ defmodule ChatBot.ML.Trainer do
   @doc """
   Main training function that loads data, trains all models, and saves them.
   Returns {:ok, stats} or {:error, reason}.
+
+  ## Options
+    - models_path: Override the default models output path
   """
-  def train_and_save do
-    Logger.info("Starting ML model training pipeline")
+  def train_and_save(opts \\ []) do
+    models_path =
+      Keyword.get(opts, :models_path, Application.get_env(:chat_bot, :ml)[:models_path])
+
+    Logger.info("Starting ML model training pipeline", %{models_path: models_path})
 
     # Configure Nx backend
     configure_nx_backend()
@@ -56,14 +62,14 @@ defmodule ChatBot.ML.Trainer do
     }
 
     # Step 1: Load and train intent classifier
-    {stats, result} = train_intent_classifier(stats)
+    {stats, result} = train_intent_classifier(stats, models_path: models_path)
 
     case result do
       :ok ->
         # Step 2: Train entity recognition model
-        stats = train_entity_model(stats)
+        stats = train_entity_model(stats, models_path: models_path)
 
-        # Step 3: Build and save gazetteer data
+        # Step 3: Build and save gazetteer data (uses global path, not world-specific)
         stats = build_gazetteer_data(stats)
 
         Logger.info("Training pipeline completed", stats)
@@ -76,8 +82,14 @@ defmodule ChatBot.ML.Trainer do
 
   @doc """
   Train only the intent classifier.
+
+  ## Options
+    - models_path: Override the default models output path
   """
-  def train_intent_classifier(stats \\ %{}) do
+  def train_intent_classifier(stats \\ %{}, opts \\ []) do
+    models_path =
+      Keyword.get(opts, :models_path, Application.get_env(:chat_bot, :ml)[:models_path])
+
     Logger.info("Training intent classifier...")
 
     # Load training data using new DataLoaders
@@ -97,11 +109,20 @@ defmodule ChatBot.ML.Trainer do
       })
 
       # Save model
-      models_path = Application.get_env(:chat_bot, :ml)[:models_path]
       File.mkdir_p!(models_path)
       model_path = Path.join(models_path, "classifier.term")
       File.write!(model_path, :erlang.term_to_binary(model))
       Logger.info("Intent classifier saved", %{path: model_path})
+
+      # Also save embedder vocabulary for this world
+      embedder_model = %{
+        vocabulary: model.vocabulary,
+        idf_weights: build_idf_weights_from_model(model)
+      }
+
+      embedder_path = Path.join(models_path, "embedder.term")
+      File.write!(embedder_path, :erlang.term_to_binary(embedder_model))
+      Logger.info("Embedder vocabulary saved", %{path: embedder_path})
 
       updated_stats = %{
         stats
@@ -113,13 +134,28 @@ defmodule ChatBot.ML.Trainer do
     end
   end
 
+  # Extract IDF weights from the classifier model's vocabulary
+  defp build_idf_weights_from_model(model) do
+    # The classifier model has vocabulary and idf weights computed during training
+    # Return a simple map with uniform IDF for now (the actual IDF calculation is done during classification)
+    model.vocabulary
+    |> Enum.map(fn {word, _idx} -> {word, 1.0} end)
+    |> Map.new()
+  end
+
   @doc """
   Train the entity recognition model using BIO tagging.
+
+  ## Options
+    - models_path: Override the default models output path
   """
-  def train_entity_model(stats \\ %{}) do
+  def train_entity_model(stats \\ %{}, opts \\ []) do
+    models_path =
+      Keyword.get(opts, :models_path, Application.get_env(:chat_bot, :ml)[:models_path])
+
     Logger.info("Training entity recognition model...")
 
-    case EntityTrainer.train_and_save() do
+    case EntityTrainer.train_and_save(models_path: models_path) do
       {:ok, model} ->
         Logger.info("Entity model trained and saved", %{
           tag_count: map_size(model.tag_vocabulary)

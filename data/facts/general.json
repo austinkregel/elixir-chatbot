@@ -3,84 +3,94 @@
   "description": "General knowledge facts across various topics",
   "facts": [
     {
-      "id": "gen_001",
+      "category": "general",
+      "confidence": 1.0,
       "entity": "week",
+      "entity_type": "general",
       "fact": "A week consists of 7 days",
-      "category": "general",
-      "verification_source": "Calendar systems, ISO 8601",
-      "confidence": 1.0
+      "id": "gen_001",
+      "verification_source": "Calendar systems, ISO 8601"
     },
     {
-      "id": "gen_002",
+      "category": "general",
+      "confidence": 1.0,
       "entity": "year",
+      "entity_type": "general",
       "fact": "A standard year consists of 365 days, with a leap year having 366 days",
-      "category": "general",
-      "verification_source": "Calendar systems, ISO 8601",
-      "confidence": 1.0
+      "id": "gen_002",
+      "verification_source": "Calendar systems, ISO 8601"
     },
     {
-      "id": "gen_003",
+      "category": "general",
+      "confidence": 1.0,
       "entity": "alphabet",
+      "entity_type": "general",
       "fact": "The English alphabet consists of 26 letters",
-      "category": "general",
-      "verification_source": "Linguistic standards",
-      "confidence": 1.0
+      "id": "gen_003",
+      "verification_source": "Linguistic standards"
     },
     {
-      "id": "gen_004",
+      "category": "general",
+      "confidence": 1.0,
       "entity": "chess",
+      "entity_type": "general",
       "fact": "A standard chess game is played on an 8x8 board with 32 pieces total (16 per player)",
-      "category": "general",
-      "verification_source": "FIDE (World Chess Federation) rules",
-      "confidence": 1.0
+      "id": "gen_004",
+      "verification_source": "FIDE (World Chess Federation) rules"
     },
     {
-      "id": "gen_005",
+      "category": "general",
+      "confidence": 1.0,
       "entity": "Olympic Games",
+      "entity_type": "general",
       "fact": "The modern Olympic Games were revived in 1896 in Athens, Greece",
-      "category": "general",
-      "verification_source": "International Olympic Committee, historical records",
-      "confidence": 1.0
+      "id": "gen_005",
+      "verification_source": "International Olympic Committee, historical records"
     },
     {
-      "id": "gen_006",
+      "category": "general",
+      "confidence": 1.0,
       "entity": "United Nations",
+      "entity_type": "general",
       "fact": "The United Nations was founded on October 24, 1945",
-      "category": "general",
-      "verification_source": "United Nations official records",
-      "confidence": 1.0
+      "id": "gen_006",
+      "verification_source": "United Nations official records"
     },
     {
-      "id": "gen_007",
+      "category": "general",
+      "confidence": 1.0,
       "entity": "time zones",
+      "entity_type": "general",
       "fact": "The world is divided into 24 time zones, each approximately 15 degrees of longitude wide",
-      "category": "general",
-      "verification_source": "International Telecommunication Union, time zone databases",
-      "confidence": 1.0
+      "id": "gen_007",
+      "verification_source": "International Telecommunication Union, time zone databases"
     },
     {
-      "id": "gen_008",
+      "category": "general",
+      "confidence": 1.0,
       "entity": "Internet",
+      "entity_type": "general",
       "fact": "The World Wide Web was invented by Tim Berners-Lee in 1989",
-      "category": "general",
-      "verification_source": "W3C, historical records",
-      "confidence": 1.0
+      "id": "gen_008",
+      "verification_source": "W3C, historical records"
     },
     {
-      "id": "gen_009",
+      "category": "general",
+      "confidence": 1.0,
       "entity": "human senses",
+      "entity_type": "general",
       "fact": "Humans have five traditional senses: sight, hearing, taste, smell, and touch",
-      "category": "general",
-      "verification_source": "Medical and biological textbooks",
-      "confidence": 1.0
+      "id": "gen_009",
+      "verification_source": "Medical and biological textbooks"
     },
     {
-      "id": "gen_010",
-      "entity": "continents",
-      "fact": "There are seven continents: Africa, Antarctica, Asia, Australia, Europe, North America, and South America",
       "category": "general",
-      "verification_source": "Geographic standards, world atlases",
-      "confidence": 1.0
+      "confidence": 1.0,
+      "entity": "continents",
+      "entity_type": "general",
+      "fact": "There are seven continents: Africa, Antarctica, Asia, Australia, Europe, North America, and South America",
+      "id": "gen_010",
+      "verification_source": "Geographic standards, world atlases"
     }
   ]
 }

@@ -1,0 +1,450 @@
+[
+  {
+    "text": "I'm in Paris",
+    "tokens": ["I", "'m", "in", "Paris"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Paris", "start": 7, "end": 12}],
+    "id": "location-001",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm in Austin",
+    "tokens": ["I", "'m", "in", "Austin"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Austin", "start": 7, "end": 13}],
+    "id": "location-002",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm in Georgia",
+    "tokens": ["I", "'m", "in", "Georgia"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Georgia", "start": 7, "end": 14}],
+    "id": "location-003",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm in Charlotte",
+    "tokens": ["I", "'m", "in", "Charlotte"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Charlotte", "start": 7, "end": 16}],
+    "id": "location-004",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm in Dallas",
+    "tokens": ["I", "'m", "in", "Dallas"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Dallas", "start": 7, "end": 13}],
+    "id": "location-005",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm in Brooklyn",
+    "tokens": ["I", "'m", "in", "Brooklyn"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Brooklyn", "start": 7, "end": 15}],
+    "id": "location-006",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm in Madison",
+    "tokens": ["I", "'m", "in", "Madison"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Madison", "start": 7, "end": 14}],
+    "id": "location-007",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm in Sydney",
+    "tokens": ["I", "'m", "in", "Sydney"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Sydney", "start": 7, "end": 13}],
+    "id": "location-008",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm in Jordan",
+    "tokens": ["I", "'m", "in", "Jordan"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Jordan", "start": 7, "end": 13}],
+    "id": "location-009",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm in Orlando",
+    "tokens": ["I", "'m", "in", "Orlando"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Orlando", "start": 7, "end": 14}],
+    "id": "location-010",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm in Victoria",
+    "tokens": ["I", "'m", "in", "Victoria"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Victoria", "start": 7, "end": 15}],
+    "id": "location-011",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm in Regina",
+    "tokens": ["I", "'m", "in", "Regina"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Regina", "start": 7, "end": 13}],
+    "id": "location-012",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm in Florence",
+    "tokens": ["I", "'m", "in", "Florence"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Florence", "start": 7, "end": 15}],
+    "id": "location-013",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm in Savannah",
+    "tokens": ["I", "'m", "in", "Savannah"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Savannah", "start": 7, "end": 15}],
+    "id": "location-014",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm in Phoenix",
+    "tokens": ["I", "'m", "in", "Phoenix"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Phoenix", "start": 7, "end": 14}],
+    "id": "location-015",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I live in Paris",
+    "tokens": ["I", "live", "in", "Paris"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Paris", "start": 10, "end": 15}],
+    "id": "location-016",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I live in Austin",
+    "tokens": ["I", "live", "in", "Austin"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Austin", "start": 10, "end": 16}],
+    "id": "location-017",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I live in Georgia",
+    "tokens": ["I", "live", "in", "Georgia"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Georgia", "start": 10, "end": 17}],
+    "id": "location-018",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm currently in Paris",
+    "tokens": ["I", "'m", "currently", "in", "Paris"],
+    "pos_tags": ["PRON", "VERB", "ADV", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Paris", "start": 17, "end": 22}],
+    "id": "location-019",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm currently in Austin",
+    "tokens": ["I", "'m", "currently", "in", "Austin"],
+    "pos_tags": ["PRON", "VERB", "ADV", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Austin", "start": 17, "end": 23}],
+    "id": "location-020",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm currently in Georgia",
+    "tokens": ["I", "'m", "currently", "in", "Georgia"],
+    "pos_tags": ["PRON", "VERB", "ADV", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Georgia", "start": 17, "end": 24}],
+    "id": "location-021",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm staying in Paris",
+    "tokens": ["I", "'m", "staying", "in", "Paris"],
+    "pos_tags": ["PRON", "VERB", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Paris", "start": 15, "end": 20}],
+    "id": "location-022",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm staying in Austin",
+    "tokens": ["I", "'m", "staying", "in", "Austin"],
+    "pos_tags": ["PRON", "VERB", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Austin", "start": 15, "end": 21}],
+    "id": "location-023",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm visiting Paris",
+    "tokens": ["I", "'m", "visiting", "Paris"],
+    "pos_tags": ["PRON", "VERB", "VERB", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Paris", "start": 13, "end": 18}],
+    "id": "location-024",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm visiting Austin",
+    "tokens": ["I", "'m", "visiting", "Austin"],
+    "pos_tags": ["PRON", "VERB", "VERB", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Austin", "start": 13, "end": 19}],
+    "id": "location-025",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm visiting Georgia",
+    "tokens": ["I", "'m", "visiting", "Georgia"],
+    "pos_tags": ["PRON", "VERB", "VERB", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Georgia", "start": 13, "end": 20}],
+    "id": "location-026",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I am in Paris",
+    "tokens": ["I", "am", "in", "Paris"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Paris", "start": 8, "end": 13}],
+    "id": "location-027",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I am in Austin",
+    "tokens": ["I", "am", "in", "Austin"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Austin", "start": 8, "end": 14}],
+    "id": "location-028",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I am in Georgia",
+    "tokens": ["I", "am", "in", "Georgia"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Georgia", "start": 8, "end": 15}],
+    "id": "location-029",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "Currently in Charlotte",
+    "tokens": ["Currently", "in", "Charlotte"],
+    "pos_tags": ["ADV", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Charlotte", "start": 13, "end": 22}],
+    "id": "location-030",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "Currently in Dallas",
+    "tokens": ["Currently", "in", "Dallas"],
+    "pos_tags": ["ADV", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Dallas", "start": 13, "end": 19}],
+    "id": "location-031",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm at the Paris office",
+    "tokens": ["I", "'m", "at", "the", "Paris", "office"],
+    "pos_tags": ["PRON", "VERB", "ADP", "DET", "PROPN", "NOUN"],
+    "entities": [{"entity_type": "location", "value": "Paris", "start": 11, "end": 16}],
+    "id": "location-032",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm at the Austin office",
+    "tokens": ["I", "'m", "at", "the", "Austin", "office"],
+    "pos_tags": ["PRON", "VERB", "ADP", "DET", "PROPN", "NOUN"],
+    "entities": [{"entity_type": "location", "value": "Austin", "start": 11, "end": 17}],
+    "id": "location-033",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm based in Paris",
+    "tokens": ["I", "'m", "based", "in", "Paris"],
+    "pos_tags": ["PRON", "VERB", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Paris", "start": 13, "end": 18}],
+    "id": "location-034",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm based in Austin",
+    "tokens": ["I", "'m", "based", "in", "Austin"],
+    "pos_tags": ["PRON", "VERB", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Austin", "start": 13, "end": 19}],
+    "id": "location-035",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm based in Georgia",
+    "tokens": ["I", "'m", "based", "in", "Georgia"],
+    "pos_tags": ["PRON", "VERB", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Georgia", "start": 13, "end": 20}],
+    "id": "location-036",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm living in Brooklyn",
+    "tokens": ["I", "'m", "living", "in", "Brooklyn"],
+    "pos_tags": ["PRON", "VERB", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Brooklyn", "start": 14, "end": 22}],
+    "id": "location-037",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm living in Madison",
+    "tokens": ["I", "'m", "living", "in", "Madison"],
+    "pos_tags": ["PRON", "VERB", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Madison", "start": 14, "end": 21}],
+    "id": "location-038",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I reside in Sydney",
+    "tokens": ["I", "reside", "in", "Sydney"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Sydney", "start": 12, "end": 18}],
+    "id": "location-039",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I reside in Jordan",
+    "tokens": ["I", "reside", "in", "Jordan"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Jordan", "start": 12, "end": 18}],
+    "id": "location-040",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm in New York",
+    "tokens": ["I", "'m", "in", "New", "York"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "New York", "start": 7, "end": 15}],
+    "id": "location-041",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm in Los Angeles",
+    "tokens": ["I", "'m", "in", "Los", "Angeles"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Los Angeles", "start": 7, "end": 18}],
+    "id": "location-042",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm in Chicago",
+    "tokens": ["I", "'m", "in", "Chicago"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Chicago", "start": 7, "end": 14}],
+    "id": "location-043",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm in London",
+    "tokens": ["I", "'m", "in", "London"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "London", "start": 7, "end": 13}],
+    "id": "location-044",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm in Tokyo",
+    "tokens": ["I", "'m", "in", "Tokyo"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Tokyo", "start": 7, "end": 12}],
+    "id": "location-045",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I live in Chelsea",
+    "tokens": ["I", "live", "in", "Chelsea"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Chelsea", "start": 10, "end": 17}],
+    "id": "location-046",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I live in Troy",
+    "tokens": ["I", "live", "in", "Troy"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Troy", "start": 10, "end": 14}],
+    "id": "location-047",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I live in Eugene",
+    "tokens": ["I", "live", "in", "Eugene"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Eugene", "start": 10, "end": 16}],
+    "id": "location-048",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I live in Helena",
+    "tokens": ["I", "live", "in", "Helena"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Helena", "start": 10, "end": 16}],
+    "id": "location-049",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I live in Lincoln",
+    "tokens": ["I", "live", "in", "Lincoln"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Lincoln", "start": 10, "end": 17}],
+    "id": "location-050",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "Right now I'm in Paris",
+    "tokens": ["Right", "now", "I", "'m", "in", "Paris"],
+    "pos_tags": ["ADV", "ADV", "PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Paris", "start": 17, "end": 22}],
+    "id": "location-051",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "Right now I'm in Austin",
+    "tokens": ["Right", "now", "I", "'m", "in", "Austin"],
+    "pos_tags": ["ADV", "ADV", "PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Austin", "start": 17, "end": 23}],
+    "id": "location-052",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm located in Georgia",
+    "tokens": ["I", "'m", "located", "in", "Georgia"],
+    "pos_tags": ["PRON", "VERB", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Georgia", "start": 15, "end": 22}],
+    "id": "location-053",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "I'm located in Charlotte",
+    "tokens": ["I", "'m", "located", "in", "Charlotte"],
+    "pos_tags": ["PRON", "VERB", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Charlotte", "start": 15, "end": 24}],
+    "id": "location-054",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "My location is Dallas",
+    "tokens": ["My", "location", "is", "Dallas"],
+    "pos_tags": ["PRON", "NOUN", "VERB", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Dallas", "start": 15, "end": 21}],
+    "id": "location-055",
+    "intent": "smalltalk.user.location"
+  },
+  {
+    "text": "My current location is Brooklyn",
+    "tokens": ["My", "current", "location", "is", "Brooklyn"],
+    "pos_tags": ["PRON", "ADJ", "NOUN", "VERB", "PROPN"],
+    "entities": [{"entity_type": "location", "value": "Brooklyn", "start": 23, "end": 31}],
+    "id": "location-056",
+    "intent": "smalltalk.user.location"
+  }
+]

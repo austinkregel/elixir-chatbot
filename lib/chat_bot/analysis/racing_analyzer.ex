@@ -321,19 +321,45 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
     is_question = Tokenizer.ends_with_question?(text)
     words = Tokenizer.tokenize_normalized(text)
     first_word = List.first(words) || ""
+    text_lower = String.downcase(text)
 
     question_words = ~w(what where when why who whom whose which how)
 
     imperative_words =
       ~w(tell show give get find search look check turn set make create open close start stop play pause)
 
+    # Personal/conversational question patterns - not factual
+    personal_patterns = [
+      "your name",
+      "you called",
+      "are you",
+      "do you",
+      "can you",
+      "will you",
+      "would you",
+      "how are",
+      "how do you",
+      "what do you",
+      "who are you",
+      "what are you",
+      "where are you from"
+    ]
+
+    # Check if this is a personal/conversational question
+    is_personal = Enum.any?(personal_patterns, &String.contains?(text_lower, &1))
+
     {intent, confidence, indicators} =
       cond do
+        # Personal questions about the bot itself
+        is_question and is_personal ->
+          {"question.personal", 0.70, ["question_mark", "personal_pattern"]}
+
+        # WH-questions about external facts (not personal)
         is_question and first_word in question_words ->
-          {"question.factual", 0.75, ["question_mark", "wh_word"]}
+          {"question.factual", 0.65, ["question_mark", "wh_word"]}
 
         is_question ->
-          {"question.general", 0.65, ["question_mark"]}
+          {"question.general", 0.60, ["question_mark"]}
 
         first_word in imperative_words ->
           {"command.general", 0.70, ["imperative_verb"]}

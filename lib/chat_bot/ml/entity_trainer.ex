@@ -56,8 +56,8 @@ defmodule ChatBot.ML.EntityTrainer do
       %{model: :entity_trainer, started_at: DateTime.utc_now()}
     )
 
+    # Load intent data with entity annotations
     result =
-      # Load intent data with entity annotations
       case DataLoaders.load_all_intents() do
         {:ok, examples} ->
           Logger.info("Converting examples to BIO format", %{count: length(examples)})
@@ -118,10 +118,19 @@ defmodule ChatBot.ML.EntityTrainer do
   @doc """
   Train and save entity model to disk.
   """
-  def train_and_save do
+  @doc """
+  Train entity recognition model and save to disk.
+
+  ## Options
+    - models_path: Override the default models output path
+  """
+  def train_and_save(opts \\ []) do
+    models_path =
+      Keyword.get(opts, :models_path, Application.get_env(:chat_bot, :ml)[:models_path])
+
     case train() do
       {:ok, model} ->
-        save_model(model)
+        save_model(model, models_path)
 
       {:error, reason} ->
         {:error, reason}
@@ -632,7 +641,7 @@ defmodule ChatBot.ML.EntityTrainer do
 
   defp finalize_entity(entity) do
     %{
-      entity: entity.type,
+      entity_type: entity.type,
       value: entity.text,
       tokens: entity.tokens,
       # Could be calculated based on model scores
@@ -644,8 +653,7 @@ defmodule ChatBot.ML.EntityTrainer do
   # Model Persistence
   # ============================================================================
 
-  defp save_model(model) do
-    models_path = Application.get_env(:chat_bot, :ml)[:models_path]
+  defp save_model(model, models_path) do
     File.mkdir_p!(models_path)
 
     model_path = Path.join(models_path, "entity_model.term")

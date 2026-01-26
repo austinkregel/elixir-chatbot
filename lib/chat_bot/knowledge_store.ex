@@ -2,10 +2,70 @@ defmodule ChatBot.KnowledgeStore do
   @moduledoc """
   Knowledge store for persistent storage of learned facts about users, pets, rooms, devices, etc.
   Provides functions to store and retrieve structured knowledge.
+
+  ## World Scoping
+
+  Supports both legacy persona-based storage and new world-scoped storage.
+  World-scoped knowledge is stored in `priv/training_worlds/{world_id}/knowledge.json`.
+  Persona-based knowledge remains in `priv/knowledge/{persona}.json`.
   """
 
   use GenServer
   require Logger
+
+  # ============================================================================
+  # World-Scoped API (New)
+  # ============================================================================
+
+  @doc """
+  Gets knowledge for a specific world.
+
+  ## Parameters
+    - world_id: The world to get knowledge from
+    - category: Optional category filter (e.g., "people", "facts")
+  """
+  def get_world_knowledge(world_id, category \\ nil) do
+    GenServer.call(__MODULE__, {:get_world_knowledge, world_id, category})
+  end
+
+  @doc """
+  Saves knowledge to a specific world.
+  """
+  def save_world_knowledge(world_id, knowledge) do
+    GenServer.call(__MODULE__, {:save_world_knowledge, world_id, knowledge})
+  end
+
+  @doc """
+  Adds an entry to a world's knowledge in a specific category.
+  """
+  def add_to_world(world_id, category, key, value) do
+    GenServer.call(__MODULE__, {:add_to_world, world_id, category, key, value})
+  end
+
+  @doc """
+  Removes an entry from a world's knowledge.
+  """
+  def remove_from_world(world_id, category, key) do
+    GenServer.call(__MODULE__, {:remove_from_world, world_id, category, key})
+  end
+
+  @doc """
+  Clears all knowledge for a world.
+  """
+  def clear_world(world_id) do
+    GenServer.call(__MODULE__, {:clear_world, world_id})
+  end
+
+  @doc """
+  Lists all worlds that have knowledge stored.
+  """
+  def list_knowledge_worlds do
+    GenServer.call(__MODULE__, :list_knowledge_worlds)
+  end
+
+  # ============================================================================
+  # Legacy Persona-Based API (Backward Compatible)
+  # ============================================================================
 
   # Client API
 
@@ -399,6 +459,105 @@ defmodule ChatBot.KnowledgeStore do
     {:reply, :ok, state}
   end
 
+  # ============================================================================
+  # World-Scoped Server Callbacks
+  # ============================================================================
+
+  @impl true
+  def handle_call({:get_world_knowledge, world_id, nil}, _from, state) do
+    knowledge = load_world_knowledge_data(world_id)
+    {:reply, knowledge, state}
+  end
+
+  @impl true
+  def handle_call({:get_world_knowledge, world_id, category}, _from, state) do
+    knowledge = load_world_knowledge_data(world_id)
+    category_data = Map.get(knowledge, category, %{})
+    {:reply, category_data, state}
+  end
+
+  @impl true
+  def handle_call({:save_world_knowledge, world_id, knowledge}, _from, state) do
+    result = save_world_knowledge_data(world_id, knowledge)
+    {:reply, result, state}
+  end
+
+  @impl true
+  def handle_call({:add_to_world, world_id, category, key, value}, _from, state) do
+    knowledge = load_world_knowledge_data(world_id)
+
+    category_data = Map.get(knowledge, category, %{})
+    updated_category = Map.put(category_data, key, value)
+    updated_knowledge = Map.put(knowledge, category, updated_category)
+
+    result = save_world_knowledge_data(world_id, updated_knowledge)
+
+    case result do
+      :ok ->
+        Logger.debug("Added to world knowledge", %{
+          world_id: world_id,
+          category: category,
+          key: key
+        })
+
+      _ ->
+        :ok
+    end
+
+    {:reply, result, state}
+  end
+
+  @impl true
+  def handle_call({:remove_from_world, world_id, category, key}, _from, state) do
+    knowledge = load_world_knowledge_data(world_id)
+
+    category_data = Map.get(knowledge, category, %{})
+    updated_category = Map.delete(category_data, key)
+    updated_knowledge = Map.put(knowledge, category, updated_category)
+
+    result = save_world_knowledge_data(world_id, updated_knowledge)
+    {:reply, result, state}
+  end
+
+  @impl true
+  def handle_call({:clear_world, world_id}, _from, state) do
+    empty_knowledge = %{
+      "people" => %{},
+      "pets" => %{},
+      "rooms" => %{},
+      "devices" => %{},
+      "places" => %{},
+      "tasks" => %{},
+      "events" => %{},
+      "preferences" => %{},
+      "relationships" => [],
+      "facts" => []
+    }
+
+    result = save_world_knowledge_data(world_id, empty_knowledge)
+    Logger.info("Cleared knowledge for world", %{world_id: world_id})
+    {:reply, result, state}
+  end
+
+  @impl true
+  def handle_call(:list_knowledge_worlds, _from, state) do
+    worlds_dir = "priv/training_worlds"
+
+    worlds =
+      if File.dir?(worlds_dir) do
+        worlds_dir
+        |> File.ls!()
+        |> Enum.filter(fn name ->
+          knowledge_path = Path.join([worlds_dir, name, "knowledge.json"])
+          File.exists?(knowledge_path)
+        end)
+      else
+        []
+      end
+
+    {:reply, {:ok, worlds}, state}
+  end
+
   # Private Functions
 
   defp get_knowledge_dir do
@@ -427,6 +586,43 @@ defmodule ChatBot.KnowledgeStore do
   defp save_knowledge_data(persona_name, knowledge) do
     file_path = get_knowledge_file_path(persona_name)
     File.write(file_path, Jason.encode!(knowledge, pretty: true))
+  end
+
+  # World-scoped knowledge helpers
+
+  defp get_world_knowledge_path(world_id) do
+    Path.join(["priv", "training_worlds", world_id, "knowledge.json"])
+  end
+
+  defp load_world_knowledge_data(world_id) do
+    file_path = get_world_knowledge_path(world_id)
+
+    case File.read(file_path) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, json} -> json
+          {:error, _} -> %{}
+        end
+
+      {:error, _} ->
+        %{}
+    end
+  end
+
+  defp save_world_knowledge_data(world_id, knowledge) do
+    file_path = get_world_knowledge_path(world_id)
+
+    # Ensure directory exists
+    file_path |> Path.dirname() |> File.mkdir_p!()
+
+    case File.write(file_path, Jason.encode!(knowledge, pretty: true)) do
+      :ok ->
+        :ok
+
+      {:error, reason} ->
+        Logger.error("Failed to save world knowledge", %{world_id: world_id, reason: reason})
+        {:error, reason}
+    end
   end
 
   # Idempotent upserts to avoid duplicate knowledge entries

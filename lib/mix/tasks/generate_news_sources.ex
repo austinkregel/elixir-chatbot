@@ -114,7 +114,11 @@ defmodule Mix.Tasks.GenerateNewsSources do
         bindings = get_in(body, ["results", "bindings"]) || []
 
         if is_list(bindings) do
-          File.write!(cache_path, Jason.encode!(%{"limit" => limit, "bindings" => bindings}, pretty: true))
+          File.write!(
+            cache_path,
+            Jason.encode!(%{"limit" => limit, "bindings" => bindings}, pretty: true)
+          )
+
           {:ok, bindings}
         else
           {:error, :unexpected_response}
@@ -230,4 +234,3 @@ defmodule Mix.Tasks.GenerateNewsSources do
     System.halt(1)
   end
 end
-

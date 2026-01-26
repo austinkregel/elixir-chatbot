@@ -1,19 +1,20 @@
 defmodule ChatBot.Epistemic.UserModelStoreTest do
   use ExUnit.Case, async: false
+  import ChatBot.TestHelpers
 
   alias ChatBot.Epistemic.UserModelStore
 
   setup do
-    # Ensure UserModelStore is started and cleared before each test
-    case Process.whereis(UserModelStore) do
-      nil ->
-        {:ok, _pid} = UserModelStore.start_link([])
-        :ok
+    # Ensure PubSub is started (required for some GenServers)
+    ensure_pubsub_started()
 
-      _pid ->
-        UserModelStore.clear_all()
-        :ok
-    end
+    # Start UserModelStore under ExUnit supervision
+    ensure_started(UserModelStore)
+
+    # Clear before each test
+    UserModelStore.clear_all()
+
+    :ok
   end
 
   describe "get_or_create/1" do

@@ -119,8 +119,8 @@ defmodule ChatBot.Analysis.ResponseGate do
   """
   def gratitude_loop?(current, history) do
     # Current must be thanks
+    # Check for thanks→acknowledgment pattern in recent history
     get_sub_type(current) == :thanks and
-      # Check for thanks→acknowledgment pattern in recent history
       has_recent_pattern?(history, [:thanks, :acknowledgment])
   end
 

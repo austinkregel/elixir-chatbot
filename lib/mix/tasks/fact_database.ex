@@ -55,13 +55,15 @@ defmodule Mix.Tasks.FactDatabase do
     IO.puts("\n=== All Facts (#{length(facts)}) ===\n")
 
     facts
-    |> Enum.group_by(& &1["category"])
+    |> Enum.group_by(& &1.category)
     |> Enum.sort_by(fn {cat, _} -> cat end)
     |> Enum.each(fn {category, cat_facts} ->
       IO.puts("## #{String.upcase(category)} (#{length(cat_facts)})")
+
       Enum.each(cat_facts, fn fact ->
-        IO.puts("  [#{fact["id"]}] #{fact["entity"]}: #{fact["fact"]}")
+        IO.puts("  [#{fact.id}] #{fact.entity}: #{fact.fact}")
       end)
+
       IO.puts("")
     end)
   end
@@ -88,7 +90,7 @@ defmodule Mix.Tasks.FactDatabase do
       IO.puts("  No facts found matching \"#{term}\"")
     else
       Enum.each(facts, fn fact ->
-        IO.puts("  [#{fact["category"]}] #{fact["entity"]}: #{fact["fact"]}")
+        IO.puts("  [#{fact.category}] #{fact.entity}: #{fact.fact}")
       end)
     end
 
@@ -104,9 +106,9 @@ defmodule Mix.Tasks.FactDatabase do
       IO.puts("  No facts found for entity \"#{entity}\"")
     else
       Enum.each(facts, fn fact ->
-        IO.puts("  [#{fact["category"]}] #{fact["fact"]}")
-        IO.puts("    Source: #{fact["verification_source"]}")
-        IO.puts("    Confidence: #{fact["confidence"]}")
+        IO.puts("  [#{fact.category}] #{fact.fact}")
+        IO.puts("    Source: #{fact.verification_source}")
+        IO.puts("    Confidence: #{fact.confidence}")
         IO.puts("")
       end)
     end

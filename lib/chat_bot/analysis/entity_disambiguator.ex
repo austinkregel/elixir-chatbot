@@ -34,6 +34,7 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
   require Logger
 
   alias ChatBot.Analysis.IntentRegistry
+  alias ChatBot.Learning.TypeInferrer
 
   # Entity type preferences for different contexts
   # Higher score = more preferred in that context
@@ -114,8 +115,14 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
   def disambiguate_single(entity, pos_tagged, context) do
     types = get_entity_types(entity)
     entity_position = get_entity_position(entity, pos_tagged)
+    entity_type = get_type_name(entity)
 
     cond do
+      # Single type that requires inference (e.g., ambiguous_name_location)
+      # Use TypeInferrer to dynamically determine the actual type from context
+      length(types) <= 1 and requires_inference?(entity_type) ->
+        infer_type_with_type_inferrer(entity, pos_tagged, context)
+
       # No types to disambiguate
       length(types) == 0 ->
         entity
@@ -164,6 +171,52 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
 
         select_type(entity, best_type)
     end
+  end
+
+  @doc """
+  Check if an entity type requires inference via TypeInferrer.
+
+  Types starting with "ambiguous_" prefix indicate entities that can be
+  multiple types and need context-based inference to resolve.
+  """
+  def requires_inference?(entity_type) when is_binary(entity_type) do
+    String.starts_with?(entity_type, "ambiguous_")
+  end
+
+  def requires_inference?(_), do: false
+
+  @doc """
+  Infer the entity type using TypeInferrer based on context patterns.
+
+  TypeInferrer learns type associations from POS tag context and co-occurrence
+  with known entities, without using hardcoded type-to-keyword mappings.
+  """
+  def infer_type_with_type_inferrer(entity, pos_tagged, _context) do
+    entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
+
+    # Extract tokens and tags from POS-tagged list
+    {context_tokens, context_tags} =
+      case pos_tagged do
+        [{_, _} | _] ->
+          tokens = Enum.map(pos_tagged, fn {token, _tag} -> token end)
+          tags = Enum.map(pos_tagged, fn {_token, tag} -> tag end)
+          {tokens, tags}
+
+        _ ->
+          # Fallback if not properly POS-tagged
+          {[], []}
+      end
+
+    # Use TypeInferrer to infer the type from context patterns
+    {inferred_type, confidence} =
+      TypeInferrer.infer_type(entity_value, context_tokens, context_tags)
+
+    # Return entity with inferred type
+    entity
+    |> Map.put(:entity, inferred_type)
+    |> Map.put(:entity_type, inferred_type)
+    |> Map.put(:disambiguation_source, :type_inferrer)
+    |> Map.put(:disambiguation_confidence, confidence)
   end
 
   @doc """
@@ -245,11 +298,8 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
       is_list(Map.get(entity, :types)) ->
         entity.types
 
-      is_list(Map.get(entity, "types")) ->
-        entity["types"]
-
-      # Single type in entity
-      is_map(entity) and (Map.has_key?(entity, :entity) or Map.has_key?(entity, "entity")) ->
+      # Single type in entity - check for entity_type key
+      is_map(entity) and Map.has_key?(entity, :entity_type) ->
         [entity]
 
       true ->
@@ -406,13 +456,7 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
   end
 
   defp get_type_name(type_info) when is_map(type_info) do
-    Map.get(type_info, :entity_type) ||
-      Map.get(type_info, :entity) ||
-      Map.get(type_info, :type) ||
-      Map.get(type_info, "entity_type") ||
-      Map.get(type_info, "entity") ||
-      Map.get(type_info, "type") ||
-      "unknown"
+    Map.get(type_info, :entity_type, "unknown")
   end
 
   defp get_type_name(_), do: "unknown"
@@ -426,7 +470,8 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
     base_merge = %{
       entity: get_type_name(selected_type),
       entity_type: get_type_name(selected_type),
-      value: Map.get(selected_type, :value) || Map.get(entity, :value) || Map.get(entity, "value"),
+      value:
+        Map.get(selected_type, :value) || Map.get(entity, :value) || Map.get(entity, "value"),
       disambiguation_source: :context_analysis
     }
 

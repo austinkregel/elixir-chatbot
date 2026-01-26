@@ -14,13 +14,19 @@ defmodule ChatBot.Learning.WorldPersistence do
       events.jsonl         - Append-only event log
       metrics.json         - Aggregated metrics
       type_inferrer.json   - Learned type inference data
+      episodes.json        - Episodic memories (NEW)
+      semantics.json       - Semantic facts (NEW)
+      knowledge.json       - Learned knowledge (NEW)
+      intents/             - World-specific intent data (NEW)
+      models/              - World-specific trained models (NEW)
   """
 
   require Logger
 
   alias ChatBot.Learning.{TrainingWorld, WorldMetrics, WorldEvents, TypeInferrer}
+  alias ChatBot.Memory.Types.{Episode, SemanticFact}
 
-  @base_path "priv/training_worlds"
+  @default_base_path "priv/training_worlds"
 
   # ============================================================================
   # Public API
@@ -28,9 +34,17 @@ defmodule ChatBot.Learning.WorldPersistence do
 
   @doc """
   Returns the base path for training world storage.
+
+  In test mode (when `:test_world_sandbox` is enabled), returns a temp directory
+  to ensure test worlds are completely isolated from production worlds.
   """
   def base_path do
-    Application.get_env(:chat_bot, :training_worlds_path, @base_path)
+    if Application.get_env(:chat_bot, :test_world_sandbox) do
+      # Test environment uses temp directory for complete isolation
+      Path.join(System.tmp_dir!(), "chat_bot_test_worlds")
+    else
+      Application.get_env(:chat_bot, :training_worlds_path, @default_base_path)
+    end
   end
 
   @doc """
@@ -57,7 +71,10 @@ defmodule ChatBot.Learning.WorldPersistence do
            :ok <- save_candidates(path, Map.get(data, :candidates, [])),
            :ok <- save_overlay(path, Map.get(data, :overlay, [])),
            :ok <- save_events(path, Map.get(data, :events, [])),
-           :ok <- save_type_inferrer(path) do
+           :ok <- save_type_inferrer(path),
+           :ok <- save_episodes(path, Map.get(data, :episodes, [])),
+           :ok <- save_semantics(path, Map.get(data, :semantics, [])),
+           :ok <- save_knowledge(path, Map.get(data, :knowledge, %{})) do
         Logger.info("Saved training world", %{world_id: world_id, path: path})
         :ok
       else
@@ -81,7 +98,10 @@ defmodule ChatBot.Learning.WorldPersistence do
            {:ok, metrics} <- load_metrics(path),
            {:ok, candidates} <- load_candidates(path),
            {:ok, overlay} <- load_overlay(path),
-           {:ok, events} <- load_events(path) do
+           {:ok, events} <- load_events(path),
+           {:ok, episodes} <- load_episodes(path),
+           {:ok, semantics} <- load_semantics(path),
+           {:ok, knowledge} <- load_knowledge(path) do
         # Load type inferrer data
         load_type_inferrer(path)
 
@@ -91,7 +111,10 @@ defmodule ChatBot.Learning.WorldPersistence do
            metrics: metrics,
            candidates: candidates,
            overlay: overlay,
-           events: events
+           events: events,
+           episodes: episodes,
+           semantics: semantics,
+           knowledge: knowledge
          }}
       else
         {:error, reason} = error ->
@@ -153,6 +176,73 @@ defmodule ChatBot.Learning.WorldPersistence do
       end
     else
       []
+    end
+  end
+
+  @doc """
+  Saves world-specific memory (episodes and semantics) to disk.
+  """
+  def save_memory(world_id) when is_binary(world_id) do
+    path = world_path(world_id)
+
+    if File.exists?(path) do
+      # Get episodes and semantics from the Memory.Store
+      case ChatBot.Memory.Store.all_episodes(world_id: world_id) do
+        {:ok, episodes} ->
+          case ChatBot.Memory.Store.all_semantics(world_id: world_id) do
+            {:ok, semantics} ->
+              with :ok <- save_episodes(path, episodes),
+                   :ok <- save_semantics(path, semantics) do
+                Logger.info("Saved world memory", %{
+                  world_id: world_id,
+                  episodes: length(episodes),
+                  semantics: length(semantics)
+                })
+
+                :ok
+              end
+
+            error ->
+              error
+          end
+
+        error ->
+          error
+      end
+    else
+      {:error, :world_not_found}
+    end
+  end
+
+  @doc """
+  Loads world-specific memory (episodes and semantics) into the Memory.Store.
+  """
+  def load_memory(world_id) when is_binary(world_id) do
+    path = world_path(world_id)
+
+    if File.exists?(path) do
+      with {:ok, episodes} <- load_episodes(path),
+           {:ok, semantics} <- load_semantics(path) do
+        # Add episodes to Memory.Store
+        Enum.each(episodes, fn episode ->
+          ChatBot.Memory.Store.add_episode_direct(episode, world_id: world_id)
+        end)
+
+        # Add semantics to Memory.Store
+        Enum.each(semantics, fn semantic ->
+          ChatBot.Memory.Store.add_semantic(semantic, world_id: world_id)
+        end)
+
+        Logger.info("Loaded world memory", %{
+          world_id: world_id,
+          episodes: length(episodes),
+          semantics: length(semantics)
+        })
+
+        {:ok, %{episodes: length(episodes), semantics: length(semantics)}}
+      end
+    else
+      {:error, :world_not_found}
     end
   end
 
@@ -280,6 +370,55 @@ defmodule ChatBot.Learning.WorldPersistence do
     write_json(inferrer_path, data)
   end
 
+  defp save_episodes(path, episodes) when is_list(episodes) do
+    episodes_path = Path.join(path, "episodes.json")
+
+    data =
+      Enum.map(episodes, fn episode ->
+        %{
+          id: episode.id,
+          state: episode.state,
+          action: episode.action,
+          outcome: episode.outcome,
+          tags: episode.tags,
+          timestamp: episode.timestamp,
+          semantic_id: episode.semantic_id,
+          embedding: episode.embedding
+        }
+      end)
+
+    write_json(episodes_path, data)
+  end
+
+  defp save_episodes(_path, _), do: :ok
+
+  defp save_semantics(path, semantics) when is_list(semantics) do
+    semantics_path = Path.join(path, "semantics.json")
+
+    data =
+      Enum.map(semantics, fn semantic ->
+        %{
+          id: semantic.id,
+          representation: semantic.representation,
+          evidence_ids: semantic.evidence_ids,
+          tags: semantic.tags,
+          timestamp: semantic.timestamp,
+          embedding: semantic.embedding
+        }
+      end)
+
+    write_json(semantics_path, data)
+  end
+
+  defp save_semantics(_path, _), do: :ok
+
+  defp save_knowledge(path, knowledge) when is_map(knowledge) do
+    knowledge_path = Path.join(path, "knowledge.json")
+    write_json(knowledge_path, knowledge)
+  end
+
+  defp save_knowledge(_path, _), do: :ok
+
   # ============================================================================
   # Private Functions - Loading
   # ============================================================================
@@ -322,7 +461,8 @@ defmodule ChatBot.Learning.WorldPersistence do
           confidence_histogram: Map.get(data, "confidence_histogram", %{}),
           low_confidence_entities: Map.get(data, "low_confidence_entities", []),
           high_confidence_entities: Map.get(data, "high_confidence_entities", []),
-          cooccurrence_counts: decode_cooccurrence_counts(Map.get(data, "cooccurrence_counts", %{})),
+          cooccurrence_counts:
+            decode_cooccurrence_counts(Map.get(data, "cooccurrence_counts", %{})),
           anomalies: Map.get(data, "anomalies", []),
           type_conflicts: Map.get(data, "type_conflicts", []),
           started_at: parse_datetime(Map.get(data, "started_at")),
@@ -428,6 +568,77 @@ defmodule ChatBot.Learning.WorldPersistence do
 
       _ ->
         :ok
+    end
+  end
+
+  defp load_episodes(path) do
+    episodes_path = Path.join(path, "episodes.json")
+
+    case read_json(episodes_path) do
+      {:ok, data} when is_list(data) ->
+        episodes =
+          Enum.map(data, fn ep ->
+            %Episode{
+              id: Map.get(ep, "id"),
+              state: Map.get(ep, "state", ""),
+              action: Map.get(ep, "action", ""),
+              outcome: Map.get(ep, "outcome", ""),
+              tags: Map.get(ep, "tags", []),
+              timestamp: Map.get(ep, "timestamp", 0),
+              semantic_id: Map.get(ep, "semantic_id"),
+              embedding: Map.get(ep, "embedding", [])
+            }
+          end)
+
+        {:ok, episodes}
+
+      {:error, :enoent} ->
+        {:ok, []}
+
+      error ->
+        error
+    end
+  end
+
+  defp load_semantics(path) do
+    semantics_path = Path.join(path, "semantics.json")
+
+    case read_json(semantics_path) do
+      {:ok, data} when is_list(data) ->
+        semantics =
+          Enum.map(data, fn sem ->
+            %SemanticFact{
+              id: Map.get(sem, "id"),
+              representation: Map.get(sem, "representation", ""),
+              evidence_ids: Map.get(sem, "evidence_ids", []),
+              tags: Map.get(sem, "tags", []),
+              timestamp: Map.get(sem, "timestamp", 0),
+              embedding: Map.get(sem, "embedding", [])
+            }
+          end)
+
+        {:ok, semantics}
+
+      {:error, :enoent} ->
+        {:ok, []}
+
+      error ->
+        error
+    end
+  end
+
+  defp load_knowledge(path) do
+    knowledge_path = Path.join(path, "knowledge.json")
+
+    case read_json(knowledge_path) do
+      {:ok, data} when is_map(data) ->
+        {:ok, data}
+
+      {:error, :enoent} ->
+        {:ok, %{}}
+
+      error ->
+        error
     end
   end
 

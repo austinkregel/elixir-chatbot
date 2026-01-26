@@ -15,7 +15,7 @@ defmodule ChatBot.Learning.EntityDiscoverer do
   require Logger
 
   alias ChatBot.ML.{POSTagger, Tokenizer, Gazetteer}
-  alias ChatBot.Learning.{WorldManager, WorldEvents, WorldMetrics}
+  alias ChatBot.Learning.{WorldManager, WorldMetrics}
 
   @type discovery_result :: %{
           value: String.t(),
@@ -43,7 +43,8 @@ defmodule ChatBot.Learning.EntityDiscoverer do
     - `:context_window` - Number of tokens around entity for context (default: 5)
     - `:emit_events` - Whether to emit world events (default: true)
   """
-  def discover_entities(text, world_id, opts \\ []) when is_binary(text) and is_binary(world_id) do
+  def discover_entities(text, world_id, opts \\ [])
+      when is_binary(text) and is_binary(world_id) do
     model = Keyword.get_lazy(opts, :model, &load_pos_model/0)
     context_window = Keyword.get(opts, :context_window, 5)
     emit_events = Keyword.get(opts, :emit_events, true)
@@ -354,7 +355,8 @@ defmodule ChatBot.Learning.EntityDiscoverer do
       position: result.position,
       context: result.context,
       inferred_type: result.inferred_type,
-      known_types: Enum.map(result.known_types, &(Map.get(&1, :entity_type) || Map.get(&1, :type))),
+      known_types:
+        Enum.map(result.known_types, &(Map.get(&1, :entity_type) || Map.get(&1, :type))),
       confidence: result.confidence
     }
 

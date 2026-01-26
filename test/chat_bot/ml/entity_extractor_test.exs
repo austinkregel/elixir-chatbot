@@ -28,7 +28,7 @@ defmodule ChatBot.ML.EntityExtractorTest do
         end)
 
       if kitchen do
-        assert Map.has_key?(kitchen, :entity)
+        assert Map.has_key?(kitchen, :entity_type)
         assert Map.has_key?(kitchen, :value)
         assert Map.has_key?(kitchen, :confidence)
       end
@@ -39,7 +39,7 @@ defmodule ChatBot.ML.EntityExtractorTest do
 
       number_entity =
         Enum.find(entities, fn e ->
-          Map.get(e, :entity) == "number"
+          Map.get(e, :entity_type) == "number"
         end)
 
       assert number_entity != nil
@@ -53,7 +53,7 @@ defmodule ChatBot.ML.EntityExtractorTest do
       # Look for tomorrow as either relative_date or with value matching
       date_entity =
         Enum.find(entities, fn e ->
-          Map.get(e, :entity) == "relative_date" or
+          Map.get(e, :entity_type) == "relative_date" or
             String.downcase(Map.get(e, :value, "")) == "tomorrow"
         end)
 
@@ -71,7 +71,7 @@ defmodule ChatBot.ML.EntityExtractorTest do
 
       day_entity =
         Enum.find(entities, fn e ->
-          Map.get(e, :entity) == "day_name"
+          Map.get(e, :entity_type) == "day_name"
         end)
 
       assert day_entity != nil
@@ -83,7 +83,7 @@ defmodule ChatBot.ML.EntityExtractorTest do
 
       if length(entities) > 0 do
         entity = Enum.at(entities, 0)
-        assert Map.has_key?(entity, :entity)
+        assert Map.has_key?(entity, :entity_type)
         assert Map.has_key?(entity, :value)
         assert Map.has_key?(entity, :match)
         assert Map.has_key?(entity, :start_pos)
@@ -114,7 +114,7 @@ defmodule ChatBot.ML.EntityExtractorTest do
 
       custom =
         Enum.find(entities, fn e ->
-          Map.get(e, :entity) == "custom" or
+          Map.get(e, :entity_type) == "custom" or
             String.downcase(Map.get(e, :value, "")) == "custom item"
         end)
 
@@ -134,7 +134,7 @@ defmodule ChatBot.ML.EntityExtractorTest do
 
       location =
         Enum.find(entities, fn e ->
-          Map.get(e, :entity) == "location"
+          Map.get(e, :entity_type) == "location"
         end)
 
       # Should find New York as location (either from gazetteer or context)
@@ -164,7 +164,7 @@ defmodule ChatBot.ML.EntityExtractorTest do
 
       just_new =
         Enum.find(entities, fn e ->
-          Map.get(e, :value) == "New" and Map.get(e, :entity) == "word"
+          Map.get(e, :value) == "New" and Map.get(e, :entity_type) == "word"
         end)
 
       # If we found "New York", we shouldn't also find just "New" at the same position
@@ -197,34 +197,78 @@ defmodule ChatBot.ML.EntityExtractorTest do
   end
 
   describe "person name extraction" do
+    alias ChatBot.ML.Gazetteer
+
+    setup do
+      # Ensure Gazetteer is loaded first (this happens once for all tests)
+      unless Gazetteer.loaded?() do
+        Gazetteer.load_all()
+      end
+
+      # Add test entities to the live Gazetteer
+      # EntityExtractor uses Gazetteer.lookup_spans which queries ETS directly
+      Gazetteer.add_entry("Michael", "person", %{confidence: 0.9})
+      Gazetteer.add_entry("Sarah", "person", %{confidence: 0.9})
+      Gazetteer.add_entry("John", "person", %{confidence: 0.9})
+      Gazetteer.add_entry("Emily", "person", %{confidence: 0.9})
+
+      on_exit(fn ->
+        # Clean up test entries after each test
+        Gazetteer.remove_entry("Michael")
+        Gazetteer.remove_entry("Sarah")
+        Gazetteer.remove_entry("John")
+        Gazetteer.remove_entry("Emily")
+      end)
+
+      :ok
+    end
+
     test "extracts common person names from gazetteer" do
-      # Test with common names that should be in our person gazetteer
+      # Verify Michael was added to the gazetteer in setup
+      assert {:ok, _info} = Gazetteer.lookup("Michael"),
+             "Michael should be in the gazetteer from setup"
+
       entities = EntityExtractor.extract_entities("My name is Michael")
 
-      person =
+      # Find entity for Michael - might be primary type or in types list
+      michael_entity =
         Enum.find(entities, fn e ->
-          Map.get(e, :entity) == "person" and
-            String.downcase(Map.get(e, :value, "")) == "michael"
+          String.downcase(Map.get(e, :value, "")) == "michael"
         end)
 
-      assert person != nil, "Should find 'Michael' as a person entity"
-      assert person.entity == "person"
-      assert String.downcase(person.value) == "michael"
+      assert michael_entity != nil, "Should find 'Michael' as an entity"
+      assert String.downcase(michael_entity.value) == "michael"
+
+      # Michael should be recognized as person (either primary type or in types)
+      has_person_type =
+        michael_entity.entity_type == "person" or
+          (is_list(Map.get(michael_entity, :types)) and
+             Enum.any?(michael_entity.types, fn t ->
+               Map.get(t, :entity_type) == "person"
+             end))
+
+      assert has_person_type,
+             "Michael should have person type, got: #{inspect(michael_entity)}"
     end
 
     test "extracts person name with high enough confidence for learning" do
+      # Verify Sarah was added to the gazetteer in setup
+      assert {:ok, _info} = Gazetteer.lookup("Sarah"),
+             "Sarah should be in the gazetteer from setup"
+
       # Person names should have confidence >= 0.7 to be learned by Learner
       entities = EntityExtractor.extract_entities("Tell Sarah about the meeting")
 
-      person =
+      # Find entity for Sarah - might be primary type or in types list
+      sarah_entity =
         Enum.find(entities, fn e ->
-          Map.get(e, :entity) == "person"
+          String.downcase(Map.get(e, :value, "")) == "sarah"
         end)
 
-      if person do
-        assert person.confidence >= 0.7,
-               "Person entity confidence (#{person.confidence}) should be >= 0.7 for learning"
-      end
+      assert sarah_entity != nil, "Should find 'Sarah' as an entity"
+      assert String.downcase(sarah_entity.value) == "sarah"
+      assert sarah_entity.confidence >= 0.7,
+             "Entity confidence (#{sarah_entity.confidence}) should be >= 0.7 for learning"
     end
 
     test "extracts multiple person names from text" do
@@ -232,12 +276,15 @@ defmodule ChatBot.ML.EntityExtractorTest do
 
       person_names =
         entities
-        |> Enum.filter(fn e -> Map.get(e, :entity) == "person" end)
+        |> Enum.filter(fn e -> Map.get(e, :entity_type) == "person" end)
         |> Enum.map(fn e -> String.downcase(e.value) end)
 
-      # Should find at least one of the names
-      assert Enum.any?(["john", "emily"], fn name -> name in person_names end),
-             "Should find at least one person name, got: #{inspect(person_names)}"
+      # Should find at least one of the names we added to the gazetteer
+      # Both should ideally be found, but gazetteer lookup may vary
+      found_count = Enum.count(["john", "emily"], &(&1 in person_names))
+
+      assert found_count >= 1,
+             "Should find at least 1 person name (John or Emily), got: #{inspect(person_names)}"
     end
 
     test "does not extract stoplist words as person names" do
@@ -248,7 +295,7 @@ defmodule ChatBot.ML.EntityExtractorTest do
       # "Will" and "May" are in the stoplist and should NOT be extracted as person
       person_entities =
         Enum.filter(entities, fn e ->
-          Map.get(e, :entity) == "person" and
+          Map.get(e, :entity_type) == "person" and
             String.downcase(Map.get(e, :value, "")) in ["will", "may"]
         end)
 
@@ -262,7 +309,7 @@ defmodule ChatBot.ML.EntityExtractorTest do
 
       person =
         Enum.find(entities, fn e ->
-          Map.get(e, :entity) == "person"
+          Map.get(e, :entity_type) == "person"
         end)
 
       if person do
@@ -284,7 +331,7 @@ defmodule ChatBot.ML.EntityExtractorTest do
 
       if friend_entity do
         # If "friend" matched a location "Friend", confidence should be reduced
-        entity_type = Map.get(friend_entity, :entity)
+        entity_type = Map.get(friend_entity, :entity_type)
         confidence = Map.get(friend_entity, :confidence, 1.0)
         match_text = Map.get(friend_entity, :match, "")
         entity_value = Map.get(friend_entity, :value, "")
@@ -325,29 +372,31 @@ defmodule ChatBot.ML.EntityExtractorTest do
     test "filters out entities below threshold" do
       # Create test entities with different confidence levels
       high_conf_entity = %{
-        entity: "location",
+        entity_type: "location",
         value: "Austin",
         confidence: 0.85
       }
 
       low_conf_entity = %{
-        entity: "location",
+        entity_type: "location",
         value: "Friend",
         confidence: 0.45
       }
 
       medium_conf_entity = %{
-        entity: "person",
+        entity_type: "person",
         value: "John",
         confidence: 0.60
       }
 
       # Test filtering with 0.51 threshold
       entities = [high_conf_entity, low_conf_entity, medium_conf_entity]
-      filtered = Enum.filter(entities, fn e ->
-        confidence = Map.get(e, :confidence, 0.0)
-        confidence >= 0.51
-      end)
+
+      filtered =
+        Enum.filter(entities, fn e ->
+          confidence = Map.get(e, :confidence, 0.0)
+          confidence >= 0.51
+        end)
 
       # Should only include high and medium confidence entities
       assert length(filtered) == 2

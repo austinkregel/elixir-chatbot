@@ -1,20 +1,21 @@
 defmodule ChatBot.Epistemic.BeliefStoreTest do
   use ExUnit.Case, async: false
+  import ChatBot.TestHelpers
 
   alias ChatBot.Epistemic.BeliefStore
   alias ChatBot.Epistemic.Types.Belief
 
   setup do
-    # Ensure BeliefStore is started and cleared before each test
-    case Process.whereis(BeliefStore) do
-      nil ->
-        {:ok, _pid} = BeliefStore.start_link([])
-        :ok
+    # Ensure PubSub is started (required for some GenServers)
+    ensure_pubsub_started()
 
-      _pid ->
-        BeliefStore.clear()
-        :ok
-    end
+    # Start BeliefStore under ExUnit supervision
+    ensure_started(BeliefStore)
+
+    # Clear before each test
+    BeliefStore.clear()
+
+    :ok
   end
 
   describe "add_belief/1" do

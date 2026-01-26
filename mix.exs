@@ -77,6 +77,18 @@ defmodule ChatBot.MixProject do
   #     $ mix setup
   #
   # See the documentation for `Mix` for more info on aliases.
+  #
+  # Training World Aliases:
+  #   mix world.list          - List all training worlds
+  #   mix world.status        - Show metrics for default world
+  #   mix world.setup         - Create the default world (persistent)
+  #   mix world.clear         - Destroy the default world
+  #   mix world.reset         - Destroy and recreate the default world
+  #   mix world.checkpoint    - Save default world to disk
+  #   mix world.ingest.scripts - Ingest Star Trek scripts into default world
+  #   mix train               - Train all ML models
+  #   mix retrain             - Reset default world and retrain everything
+  #
   defp aliases do
     [
       setup: ["deps.get", "assets.setup", "assets.build"],
@@ -87,7 +99,43 @@ defmodule ChatBot.MixProject do
         "esbuild chat_bot --minify",
         "phx.digest"
       ],
-      precommit: ["compile --warning-as-errors", "deps.unlock --unused", "format", "test"]
+      precommit: ["compile --warning-as-errors", "deps.unlock --unused", "format", "test"],
+
+      # Training world shortcuts (arguments must be in the same string)
+      "world.list": ["training_world.list"],
+      "world.status": ["training_world.metrics default"],
+      "world.setup": ["training_world.create default --mode=persistent"],
+      "world.clear": ["training_world.destroy default"],
+      "world.reset": [
+        "training_world.destroy default",
+        "training_world.create default --mode=persistent"
+      ],
+      "world.checkpoint": ["training_world.checkpoint default"],
+      "world.load": ["training_world.load default"],
+      "world.entities": ["training_world.entities default"],
+      "world.ambiguous": ["training_world.ambiguous default"],
+      "world.events": ["training_world.events default"],
+
+      # Ingest common data sources into default world
+      "world.ingest.scripts": ["training_world.ingest default data/scripts/**/*.txt"],
+      "world.ingest.tos": ["training_world.ingest default data/scripts/TOS/**/*.txt"],
+
+      # ML training shortcuts
+      train: ["train_models"],
+      "train.intent": ["train_models --intent-only"],
+      "train.entity": ["train_models --entity-only"],
+      "train.pos": ["train_models --pos-only"],
+      "train.gazetteer": ["train_models --gazetteer-only"],
+      "train.fast": ["train_models --skip-gazetteer --skip-pos"],
+
+      # Full retraining pipeline
+      retrain: [
+        "training_world.destroy default",
+        "training_world.create default --mode=persistent",
+        "training_world.ingest default data/scripts/TOS_processed/*.txt",
+        "training_world.checkpoint default",
+        "train_models"
+      ]
     ]
   end
 end

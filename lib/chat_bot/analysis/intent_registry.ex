@@ -143,6 +143,43 @@ defmodule ChatBot.Analysis.IntentRegistry do
   @doc "Returns true if intent is a continuation."
   def continuation?(intent), do: speech_act(intent) == :continuation
 
+  # Speech act to intent mapping
+  # Maps expressive speech act sub_types to their canonical intent names
+
+  @speech_act_intent_map %{
+    greeting: "smalltalk.greetings.hello",
+    farewell: "smalltalk.greetings.bye",
+    thanks: "smalltalk.appraisal.thank_you",
+    apology: "smalltalk.dialog.sorry",
+    how_are_you: "smalltalk.greetings.how_are_you",
+    compliment: "smalltalk.appraisal.good",
+    backchannel: "smalltalk.confirmation.ok",
+    continuation: "smalltalk.dialog.continue"
+  }
+
+  @doc """
+  Get the canonical intent name for a speech act sub_type.
+  Used to map expressive speech acts to their template intents.
+
+  ## Examples
+
+      iex> IntentRegistry.intent_for_speech_act(:greeting)
+      "smalltalk.greetings.hello"
+
+      iex> IntentRegistry.intent_for_speech_act(:unknown)
+      nil
+  """
+  def intent_for_speech_act(sub_type) when is_atom(sub_type) do
+    Map.get(@speech_act_intent_map, sub_type)
+  end
+
+  def intent_for_speech_act(_), do: nil
+
+  @doc """
+  Get all registered speech act to intent mappings.
+  """
+  def speech_act_intent_mappings, do: @speech_act_intent_map
+
   # Specificity check
 
   @doc """
@@ -226,6 +263,33 @@ defmodule ChatBot.Analysis.IntentRegistry do
     |> Enum.filter(fn {_intent, meta} -> meta["category"] == category_str end)
     |> Enum.map(fn {intent, _meta} -> intent end)
   end
+
+  @doc """
+  Converts intent name to human-readable format.
+
+  ## Examples
+
+      iex> IntentRegistry.humanize("weather.query")
+      "weather query"
+
+      iex> IntentRegistry.humanize("smalltalk.greetings.hello")
+      "greetings hello"
+
+      iex> IntentRegistry.humanize(nil)
+      "something"
+  """
+  def humanize(nil), do: "something"
+  def humanize(""), do: "something"
+
+  def humanize(intent) when is_binary(intent) do
+    intent
+    |> String.replace(".", " ")
+    |> String.replace("_", " ")
+    |> String.replace("smalltalk ", "")
+    |> String.trim()
+  end
+
+  def humanize(_), do: "something"
 
   # Private helpers
 

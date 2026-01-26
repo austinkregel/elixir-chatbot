@@ -24,7 +24,7 @@ defmodule ChatBot.ML.EntityExtractor do
           confidence: float()
         }
 
-  @type entity_map :: %{String.t() => %{entity: String.t(), value: String.t()}}
+  @type entity_map :: %{String.t() => %{entity_type: String.t(), value: String.t()}}
 
   # Common words to ignore for location detection
   @common_words MapSet.new([
@@ -426,7 +426,7 @@ defmodule ChatBot.ML.EntityExtractor do
 
   # Legacy support: entity_maps passed directly
   def extract_entities(text, entity_maps) when is_map(entity_maps) do
-    extract_entities(text, [entity_maps: entity_maps])
+    extract_entities(text, entity_maps: entity_maps)
   end
 
   def extract_entities(text, nil) do
@@ -470,7 +470,7 @@ defmodule ChatBot.ML.EntityExtractor do
           EntityTrainer.extract_entities_from_bio(predictions)
           |> Enum.map(fn entity ->
             %{
-              entity: entity.entity,
+              entity_type: entity.entity_type,
               value: entity.value,
               match: entity.value,
               # Position not tracked in BIO
@@ -488,7 +488,7 @@ defmodule ChatBot.ML.EntityExtractor do
     all_entities = gazetteer_entities ++ model_entities
 
     all_entities
-    |> Enum.uniq_by(fn e -> {String.downcase(e.value), e.entity} end)
+    |> Enum.uniq_by(fn e -> {String.downcase(e.value), e.entity_type} end)
     |> resolve_entity_conflicts()
   end
 
@@ -528,14 +528,11 @@ defmodule ChatBot.ML.EntityExtractor do
         infos when is_list(infos) and length(infos) > 1 ->
           # Multiple possible entity types - keep all for disambiguation
           primary_info = hd(infos)
-          primary_type =
-            Map.get(primary_info, :entity_type) ||
-              Map.get(primary_info, :entity, "unknown")
-
+          primary_type = Map.get(primary_info, :entity_type, "unknown")
           entity_value = Map.get(primary_info, :value, match_text)
 
           %{
-            entity: primary_type,
+            entity_type: primary_type,
             value: entity_value,
             match: match_text,
             start_pos: start_token.start_pos,
@@ -546,14 +543,11 @@ defmodule ChatBot.ML.EntityExtractor do
 
         [single_info] ->
           # List with single entry
-          entity_type =
-            Map.get(single_info, :entity_type) ||
-              Map.get(single_info, :entity, "unknown")
-
+          entity_type = Map.get(single_info, :entity_type, "unknown")
           entity_value = Map.get(single_info, :value, match_text)
 
           %{
-            entity: entity_type,
+            entity_type: entity_type,
             value: entity_value,
             match: match_text,
             start_pos: start_token.start_pos,
@@ -562,15 +556,12 @@ defmodule ChatBot.ML.EntityExtractor do
           }
 
         single_info when is_map(single_info) ->
-          # Single entity info (legacy format)
-          entity_type =
-            Map.get(single_info, :entity_type) ||
-              Map.get(single_info, :entity, "unknown")
-
+          # Single entity info
+          entity_type = Map.get(single_info, :entity_type, "unknown")
           entity_value = Map.get(single_info, :value, match_text)
 
           %{
-            entity: entity_type,
+            entity_type: entity_type,
             value: entity_value,
             match: match_text,
             start_pos: start_token.start_pos,
@@ -581,7 +572,7 @@ defmodule ChatBot.ML.EntityExtractor do
         _ ->
           # Unknown format
           %{
-            entity: "unknown",
+            entity_type: "unknown",
             value: match_text,
             match: match_text,
             start_pos: start_token.start_pos,
@@ -610,28 +601,27 @@ defmodule ChatBot.ML.EntityExtractor do
     match = find_longest_local_match(tokens, entity_maps, start_idx, max_span)
 
     case match do
-      {:ok, end_idx, entity_info, match_text} ->
+      {:ok, end_idx, entity_infos, match_text} ->
         start_token = Enum.at(tokens, start_idx)
         end_token = Enum.at(tokens, end_idx)
 
-        # Handle both :entity_type and :entity keys for backwards compatibility
-        entity_type =
-          Map.get(entity_info, :entity_type) || Map.get(entity_info, :entity, "unknown")
+        # Create an entity for each type (entity_infos is now always a list)
+        new_entities =
+          Enum.map(entity_infos, fn entity_info ->
+            entity_type = Map.get(entity_info, :entity_type, "unknown")
+            entity_value = Map.get(entity_info, :value, match_text)
 
-        entity_value = Map.get(entity_info, :value, match_text)
+            %{
+              entity_type: entity_type,
+              value: entity_value,
+              match: match_text,
+              start_pos: start_token.start_pos,
+              end_pos: end_token.end_pos,
+              confidence: calculate_confidence(match_text, entity_type, entity_value)
+            }
+          end)
 
-        entity = %{
-          entity: entity_type,
-          value: entity_value,
-          match: match_text,
-          start_pos: start_token.start_pos,
-          end_pos: end_token.end_pos,
-          confidence: calculate_confidence(match_text, entity_type, entity_value)
-        }
-
-        find_all_local_spans(tokens, entity_maps, start_idx + 1, token_count, max_span, [
-          entity | acc
-        ])
+        find_all_local_spans(tokens, entity_maps, start_idx + 1, token_count, max_span, new_entities ++ acc)
 
       :not_found ->
         find_all_local_spans(tokens, entity_maps, start_idx + 1, token_count, max_span, acc)
@@ -655,8 +645,13 @@ defmodule ChatBot.ML.EntityExtractor do
           nil ->
             {:cont, :not_found}
 
-          entity_info ->
+          entity_info when is_list(entity_info) ->
+            # Multiple entity types for this entry - return all of them
             {:halt, {:ok, start_idx + span_len - 1, entity_info, phrase}}
+
+          entity_info when is_map(entity_info) ->
+            # Single entity type - wrap in list for consistent handling
+            {:halt, {:ok, start_idx + span_len - 1, [entity_info], phrase}}
         end
       end)
     end
@@ -678,7 +673,7 @@ defmodule ChatBot.ML.EntityExtractor do
     |> Enum.filter(fn token -> token.type == :number end)
     |> Enum.map(fn token ->
       %{
-        entity: "number",
+        entity_type: "number",
         value: token.text,
         match: token.text,
         start_pos: token.start_pos,
@@ -698,7 +693,7 @@ defmodule ChatBot.ML.EntityExtractor do
         MapSet.member?(@relative_dates, lower) ->
           [
             %{
-              entity: "relative_date",
+              entity_type: "relative_date",
               value: token.text,
               match: token.text,
               start_pos: token.start_pos,
@@ -710,7 +705,7 @@ defmodule ChatBot.ML.EntityExtractor do
         MapSet.member?(@day_names, lower) ->
           [
             %{
-              entity: "day_name",
+              entity_type: "day_name",
               value: token.text,
               match: token.text,
               start_pos: token.start_pos,
@@ -727,7 +722,7 @@ defmodule ChatBot.ML.EntityExtractor do
             nil ->
               [
                 %{
-                  entity: "month_name",
+                  entity_type: "month_name",
                   value: token.text,
                   match: token.text,
                   start_pos: token.start_pos,
@@ -762,7 +757,7 @@ defmodule ChatBot.ML.EntityExtractor do
         match_text = "#{month_token.text} #{day_num} #{year_token.text}"
 
         %{
-          entity: "date",
+          entity_type: "date",
           value: match_text,
           match: match_text,
           start_pos: month_token.start_pos,
@@ -774,7 +769,7 @@ defmodule ChatBot.ML.EntityExtractor do
         match_text = "#{month_token.text} #{day_num}"
 
         %{
-          entity: "date",
+          entity_type: "date",
           value: match_text,
           match: match_text,
           start_pos: month_token.start_pos,
@@ -828,7 +823,7 @@ defmodule ChatBot.ML.EntityExtractor do
 
         [
           %{
-            entity: "location",
+            entity_type: "location",
             value: location_text,
             match: location_text,
             start_pos: first_token.start_pos,
@@ -989,13 +984,19 @@ defmodule ChatBot.ML.EntityExtractor do
     pos_tagged = get_pos_tags(tokens)
 
     # Use the EntityDisambiguator to resolve entities with multiple types
+    # or entities with a single ambiguous type that needs inference
     disambiguated =
       entities
       |> Enum.map(fn entity ->
         # Check if this entity has multiple possible types
         types = get_entity_types(entity)
+        entity_type = entity[:entity_type] || ""
 
-        if length(types) > 1 do
+        # Disambiguate if: multiple types OR single ambiguous type needing inference
+        needs_disambiguation =
+          length(types) > 1 or EntityDisambiguator.requires_inference?(entity_type)
+
+        if needs_disambiguation do
           # Disambiguate this entity
           result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
 
@@ -1003,12 +1004,12 @@ defmodule ChatBot.ML.EntityExtractor do
           :telemetry.execute(
             [:chat_bot, :analysis, :disambiguation, :entity],
             %{
-              type_count: length(types),
-              selected_type: result[:entity_type] || result[:entity]
+              type_count: max(length(types), 1),
+              selected_type: result[:entity_type]
             },
             %{
               value: entity[:value],
-              available_types: Enum.map(types, &((&1[:entity_type] || &1[:type]))),
+              available_types: Enum.map(types, &(&1[:entity_type] || &1[:type])),
               context_type: context_type(context),
               pos_pattern: extract_pos_pattern(pos_tagged)
             }
@@ -1021,7 +1022,12 @@ defmodule ChatBot.ML.EntityExtractor do
       end)
 
     # Emit summary telemetry
-    ambiguous_count = Enum.count(entities, fn e -> length(get_entity_types(e)) > 1 end)
+    ambiguous_count =
+      Enum.count(entities, fn e ->
+        types = get_entity_types(e)
+        entity_type = e[:entity_type] || ""
+        length(types) > 1 or EntityDisambiguator.requires_inference?(entity_type)
+      end)
 
     if ambiguous_count > 0 do
       :telemetry.execute(
@@ -1076,11 +1082,12 @@ defmodule ChatBot.ML.EntityExtractor do
     case POSTagger.load_model() do
       {:ok, model} ->
         # Extract just the text from tokens
-        token_texts = Enum.map(tokens, fn
-          %{text: text} -> text
-          text when is_binary(text) -> text
-          _ -> ""
-        end)
+        token_texts =
+          Enum.map(tokens, fn
+            %{text: text} -> text
+            text when is_binary(text) -> text
+            _ -> ""
+          end)
 
         POSTagger.predict(token_texts, model)
 

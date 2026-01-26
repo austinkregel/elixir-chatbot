@@ -1,11 +1,15 @@
 defmodule ChatBot.Analysis.PipelineTest do
   use ExUnit.Case, async: false
+  import ChatBot.TestHelpers
 
   alias ChatBot.Analysis.Pipeline
   alias ChatBot.Analysis.InternalModel
   alias ChatBot.ML.EntityExtractor
 
   setup do
+    # Start common test services (PubSub, IntentClassifierSimple, Gazetteer, etc.)
+    start_test_services()
+
     # Ensure entity maps are loaded for entity extraction
     EntityExtractor.load_entity_maps()
     :ok
@@ -71,7 +75,7 @@ defmodule ChatBot.Analysis.PipelineTest do
 
     test "uses provided entities" do
       entities = [
-        %{entity: "location", value: "Paris", confidence: 0.9}
+        %{entity_type: "location", value: "Paris", confidence: 0.9}
       ]
 
       model =

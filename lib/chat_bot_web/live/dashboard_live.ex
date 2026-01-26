@@ -7,13 +7,21 @@ defmodule ChatBotWeb.DashboardLive do
   - All GenServers organized by category (Core, Epistemic, Analysis, ML, Storage)
   - Performance metrics (processing times, throughput, queue sizes)
   - Health indicators (uptime, error rates, overall health score)
+  - World-specific memory and knowledge stats
   """
 
   use ChatBotWeb, :live_view
   require Logger
 
+  import ChatBotWeb.AppShell
+
+  alias ChatBot.Memory.Store, as: MemoryStore
+  alias ChatBot.KnowledgeStore
+
   # Refresh interval in milliseconds
   @refresh_interval_ms 2_000
+
+  @default_expanded [:core, :epistemic, :analysis, :ml, :learning, :storage, :metrics]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -22,31 +30,72 @@ defmodule ChatBotWeb.DashboardLive do
       :timer.send_interval(@refresh_interval_ms, self(), :refresh_dashboard)
     end
 
-    # Load initial data
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_params(_params, _uri, socket) do
+    # Load initial data with world context
+    world_id = socket.assigns.current_world_id
+
     socket =
       socket
       |> assign(:genserver_status, load_genserver_status())
       |> assign(:performance_metrics, load_performance_metrics())
       |> assign(:health_indicators, load_health_indicators())
       |> assign(:ml_models_status, load_ml_models_status())
-      |> assign(:readiness_details, load_readiness_details())
+      |> assign(:readiness_details, load_readiness_details(world_id))
+      |> assign(:training_worlds_status, load_training_worlds_status())
+      |> assign(:world_memory_stats, load_world_memory_stats(world_id))
+      |> assign(:world_models_status, load_world_models_status(world_id))
       |> assign(:last_updated, DateTime.utc_now())
-      |> assign(:expanded_categories, MapSet.new([:core, :epistemic, :analysis, :ml, :storage, :metrics]))
+      |> assign(:expanded_categories, MapSet.new(@default_expanded))
       |> assign(:auto_refresh, true)
 
-    {:ok, socket}
+    {:noreply, socket}
+  end
+
+  defp load_world_memory_stats(world_id) do
+    episodes =
+      case MemoryStore.all_episodes(world_id: world_id) do
+        {:ok, eps} -> length(eps)
+        _ -> 0
+      end
+
+    semantics =
+      case MemoryStore.all_semantics(world_id: world_id) do
+        {:ok, sems} -> length(sems)
+        _ -> 0
+      end
+
+    knowledge =
+      case KnowledgeStore.get_world_knowledge(world_id) do
+        k when is_map(k) -> map_size(k)
+        _ -> 0
+      end
+
+    %{
+      episodes: episodes,
+      semantics: semantics,
+      knowledge_categories: knowledge
+    }
   end
 
   @impl true
   def handle_info(:refresh_dashboard, socket) do
     if socket.assigns.auto_refresh do
+      world_id = socket.assigns.current_world_id
+
       socket =
         socket
         |> assign(:genserver_status, load_genserver_status())
         |> assign(:performance_metrics, load_performance_metrics())
         |> assign(:health_indicators, load_health_indicators())
         |> assign(:ml_models_status, load_ml_models_status())
-        |> assign(:readiness_details, load_readiness_details())
+        |> assign(:readiness_details, load_readiness_details(world_id))
+        |> assign(:training_worlds_status, load_training_worlds_status())
+        |> assign(:world_memory_stats, load_world_memory_stats(world_id))
+        |> assign(:world_models_status, load_world_models_status(world_id))
         |> assign(:last_updated, DateTime.utc_now())
 
       {:noreply, socket}
@@ -55,26 +104,53 @@ defmodule ChatBotWeb.DashboardLive do
     end
   end
 
-  @impl true
-  def handle_event("toggle_auto_refresh", _params, socket) do
-    {:noreply, assign(socket, :auto_refresh, !socket.assigns.auto_refresh)}
+  def handle_info({:world_context_changed, world_id}, socket) do
+    # World was changed from another LiveView or tab - sync our data
+    {:noreply, reload_world_data(socket, world_id)}
   end
 
   @impl true
+  def handle_event("toggle_auto_refresh", _params, socket) do
+    new_auto_refresh = !socket.assigns.auto_refresh
+    {:noreply, assign(socket, :auto_refresh, new_auto_refresh)}
+  end
+
   def handle_event("manual_refresh", _params, socket) do
+    world_id = socket.assigns.current_world_id
+
     socket =
       socket
       |> assign(:genserver_status, load_genserver_status())
       |> assign(:performance_metrics, load_performance_metrics())
       |> assign(:health_indicators, load_health_indicators())
       |> assign(:ml_models_status, load_ml_models_status())
-      |> assign(:readiness_details, load_readiness_details())
+      |> assign(:readiness_details, load_readiness_details(world_id))
+      |> assign(:training_worlds_status, load_training_worlds_status())
+      |> assign(:world_memory_stats, load_world_memory_stats(world_id))
+      |> assign(:world_models_status, load_world_models_status(world_id))
       |> assign(:last_updated, DateTime.utc_now())
 
     {:noreply, socket}
   end
 
-  @impl true
+  def handle_event("switch_world", %{"world_id" => world_id}, socket) do
+    # World context hook already updated current_world_id and broadcast the change
+    # Reload all world-specific data
+    {:noreply, reload_world_data(socket, world_id)}
+  end
+
+  def handle_event("refresh_worlds", _params, socket) do
+    # World context hook already refreshed available_worlds
+    {:noreply, socket}
+  end
+
+  defp reload_world_data(socket, world_id) do
+    socket
+    |> assign(:world_memory_stats, load_world_memory_stats(world_id))
+    |> assign(:world_models_status, load_world_models_status(world_id))
+    |> assign(:readiness_details, load_readiness_details(world_id))
+  end
+
   def handle_event("toggle_category", %{"category" => category}, socket) do
     category = String.to_existing_atom(category)
     expanded = socket.assigns.expanded_categories
@@ -87,6 +163,21 @@ defmodule ChatBotWeb.DashboardLive do
       end
 
     {:noreply, assign(socket, :expanded_categories, new_expanded)}
+  end
+
+  def handle_event("reload_training_worlds", _params, socket) do
+    case ChatBot.Learning.WorldManager.reload_persisted_worlds() do
+      {:ok, loaded} ->
+        socket =
+          socket
+          |> assign(:training_worlds_status, load_training_worlds_status())
+          |> put_flash(:info, "Reloaded #{loaded} world(s) from disk")
+
+        {:noreply, socket}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to reload: #{inspect(reason)}")}
+    end
   end
 
   # ============================================================================
@@ -109,8 +200,16 @@ defmodule ChatBotWeb.DashboardLive do
     ChatBot.SystemStatus.get_ml_models_status()
   end
 
-  defp load_readiness_details do
-    ChatBot.SystemStatus.get_readiness_details()
+  defp load_readiness_details(world_id) do
+    ChatBot.SystemStatus.get_readiness_details(world_id: world_id)
+  end
+
+  defp load_training_worlds_status do
+    ChatBot.SystemStatus.get_training_worlds_status()
+  end
+
+  defp load_world_models_status(world_id) do
+    ChatBot.SystemStatus.get_world_models_status(world_id)
   end
 
   # ============================================================================
@@ -121,6 +220,7 @@ defmodule ChatBotWeb.DashboardLive do
   def category_label(:epistemic), do: "Epistemic System"
   def category_label(:analysis), do: "Analysis System"
   def category_label(:ml), do: "Machine Learning"
+  def category_label(:learning), do: "Training Worlds"
   def category_label(:storage), do: "Storage"
   def category_label(:metrics), do: "Metrics & Telemetry"
   def category_label(other), do: to_string(other) |> String.capitalize()
@@ -129,6 +229,7 @@ defmodule ChatBotWeb.DashboardLive do
   def category_icon(:epistemic), do: "hero-light-bulb"
   def category_icon(:analysis), do: "hero-chart-bar"
   def category_icon(:ml), do: "hero-sparkles"
+  def category_icon(:learning), do: "hero-academic-cap"
   def category_icon(:storage), do: "hero-circle-stack"
   def category_icon(:metrics), do: "hero-chart-pie"
   def category_icon(_), do: "hero-cube"
@@ -137,7 +238,12 @@ defmodule ChatBotWeb.DashboardLive do
   def status_color(:running), do: "text-success"
   def status_color(:initializing), do: "text-warning"
   def status_color(:building_vocabulary), do: "text-warning"
+  def status_color(:tokenizing), do: "text-warning"
+  def status_color(:building_frequencies), do: "text-warning"
+  def status_color(:calculating_idf), do: "text-warning"
   def status_color(:loading), do: "text-warning"
+  def status_color(:busy), do: "text-warning"
+  def status_color(:idle), do: "text-info"
   def status_color(:not_started), do: "text-error"
   def status_color(_), do: "text-base-content/50"
 
@@ -146,7 +252,12 @@ defmodule ChatBotWeb.DashboardLive do
   def status_dot_color(:running), do: "bg-success"
   def status_dot_color(:initializing), do: "bg-warning"
   def status_dot_color(:building_vocabulary), do: "bg-warning"
+  def status_dot_color(:tokenizing), do: "bg-warning"
+  def status_dot_color(:building_frequencies), do: "bg-warning"
+  def status_dot_color(:calculating_idf), do: "bg-warning"
   def status_dot_color(:loading), do: "bg-warning"
+  def status_dot_color(:busy), do: "bg-warning"
+  def status_dot_color(:idle), do: "bg-info"
   def status_dot_color(:not_started), do: "bg-error"
   def status_dot_color(_), do: "bg-base-content/50"
 
@@ -222,6 +333,7 @@ defmodule ChatBotWeb.DashboardLive do
   def category_bg_class(:epistemic), do: "bg-secondary/10"
   def category_bg_class(:analysis), do: "bg-accent/10"
   def category_bg_class(:ml), do: "bg-warning/10"
+  def category_bg_class(:learning), do: "bg-error/10"
   def category_bg_class(:storage), do: "bg-info/10"
   def category_bg_class(:metrics), do: "bg-success/10"
   def category_bg_class(_), do: "bg-base-200"
@@ -230,6 +342,7 @@ defmodule ChatBotWeb.DashboardLive do
   def category_text_class(:epistemic), do: "text-secondary"
   def category_text_class(:analysis), do: "text-accent"
   def category_text_class(:ml), do: "text-warning"
+  def category_text_class(:learning), do: "text-error"
   def category_text_class(:storage), do: "text-info"
   def category_text_class(:metrics), do: "text-success"
   def category_text_class(_), do: "text-base-content"
@@ -239,7 +352,12 @@ defmodule ChatBotWeb.DashboardLive do
   def status_badge_variant(:running), do: :success
   def status_badge_variant(:initializing), do: :warning
   def status_badge_variant(:building_vocabulary), do: :warning
+  def status_badge_variant(:tokenizing), do: :warning
+  def status_badge_variant(:building_frequencies), do: :warning
+  def status_badge_variant(:calculating_idf), do: :warning
   def status_badge_variant(:loading), do: :warning
+  def status_badge_variant(:busy), do: :warning
+  def status_badge_variant(:idle), do: :info
   def status_badge_variant(:not_started), do: :error
   def status_badge_variant(_), do: :default
 
@@ -301,7 +419,9 @@ defmodule ChatBotWeb.DashboardLive do
   def model_name(:entity_extractor), do: "Entity Extractor (Agent)"
   def model_name(:pos_tagger), do: "POS Tagger"
   def model_name(:entity_trainer), do: "Entity Trainer"
-  def model_name(other), do: other |> to_string() |> String.replace("_", " ") |> String.capitalize()
+
+  def model_name(other),
+    do: other |> to_string() |> String.replace("_", " ") |> String.capitalize()
 
   # Get list of file-based models for display
   def file_based_models(ml_models_status) do
@@ -322,8 +442,53 @@ defmodule ChatBotWeb.DashboardLive do
     Map.get(performance_metrics, :training, %{})
   end
 
-  # Get all categories including the new metrics category
+  # Get all categories including learning and metrics categories
   def all_categories do
-    [:core, :epistemic, :analysis, :ml, :storage, :metrics]
+    [:core, :epistemic, :analysis, :ml, :learning, :storage, :metrics]
   end
+
+  # ============================================================================
+  # Embedder Status Helpers
+  # ============================================================================
+
+  @doc """
+  Determine the status dot indicator for the embedder.
+  Idle is shown as info (blue), building as warning, ready as success.
+  """
+  def embedder_status_for_dot(%{ready: true}), do: :ready
+  def embedder_status_for_dot(%{phase: :idle}), do: :idle
+  def embedder_status_for_dot(%{phase: :not_started}), do: :not_started
+  def embedder_status_for_dot(_), do: :initializing
+
+  @doc """
+  Check if the embedder is actively building vocabulary (should show progress).
+  Returns false for idle state (on-demand, not yet used).
+  """
+  def embedder_is_building?(%{ready: true}), do: false
+  def embedder_is_building?(%{phase: :idle}), do: false
+  def embedder_is_building?(%{phase: :not_started}), do: false
+  def embedder_is_building?(_), do: true
+
+  # ============================================================================
+  # World Embedder Status Helpers
+  # ============================================================================
+
+  @doc """
+  Determine the status dot indicator for the world-specific embedder.
+  """
+  def world_embedder_status_for_dot(%{ready: true}), do: :ready
+  def world_embedder_status_for_dot(%{phase: :not_initialized}), do: :idle
+  def world_embedder_status_for_dot(%{phase: :table_not_ready}), do: :warning
+  def world_embedder_status_for_dot(%{phase: :no_data}), do: :warning
+  def world_embedder_status_for_dot(_), do: :initializing
+
+  @doc """
+  Check if the world embedder is actively building vocabulary.
+  """
+  def world_embedder_is_building?(%{ready: true}), do: false
+  def world_embedder_is_building?(%{phase: :not_initialized}), do: false
+  def world_embedder_is_building?(%{phase: :table_not_ready}), do: false
+  def world_embedder_is_building?(%{phase: :no_data}), do: false
+  def world_embedder_is_building?(%{phase: :ready}), do: false
+  def world_embedder_is_building?(_), do: true
 end

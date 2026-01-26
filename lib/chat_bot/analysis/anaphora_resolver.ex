@@ -168,7 +168,7 @@ defmodule ChatBot.Analysis.AnaphoraResolver do
 
     candidates
     |> Enum.map(fn {entity, recency_score, _turns_ago} ->
-      entity_type = entity[:entity] || entity["entity"]
+      entity_type = entity[:entity_type]
       type_score = if entity_type in compatible_types, do: 1.0, else: 0.3
 
       # Combined score: weighted average of recency and type compatibility

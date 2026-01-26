@@ -176,8 +176,8 @@ defmodule ChatBot.Response.MemoryAugmented do
     # Replace placeholder tokens with current entity values
     # Placeholders are in format @entity_type
     Enum.reduce(entities, pattern, fn entity, acc ->
-      entity_type = entity[:entity] || entity["entity"]
-      value = entity[:value] || entity["value"] || ""
+      entity_type = entity[:entity_type]
+      value = entity[:value] || ""
 
       if entity_type && value != "" do
         placeholder = "@#{entity_type}"

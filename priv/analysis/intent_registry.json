@@ -10,7 +10,7 @@
       "date": "today"
     },
     "entity_mappings": {
-      "location": ["location", "room", "city"],
+      "location": ["location", "room", "city", "ambiguous_name_location"],
       "date": ["date", "relative_date", "sys-date"],
       "time": ["time", "sys-time"],
       "unit-temperature": ["unit-temperature"]
@@ -28,7 +28,7 @@
     "optional": ["date", "time"],
     "defaults": {},
     "entity_mappings": {
-      "location": ["location", "city"],
+      "location": ["location", "city", "ambiguous_name_location"],
       "date": ["date", "relative_date"],
       "time": ["time"]
     },
@@ -175,8 +175,8 @@
     "optional": ["origin", "transport-mode"],
     "defaults": {},
     "entity_mappings": {
-      "destination": ["location", "address", "place-name"],
-      "origin": ["location", "address"],
+      "destination": ["location", "address", "place-name", "ambiguous_name_location"],
+      "origin": ["location", "address", "ambiguous_name_location"],
       "transport-mode": ["transport-mode"]
     },
     "clarification_templates": {

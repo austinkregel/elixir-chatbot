@@ -1,12 +1,16 @@
 defmodule ChatBot.Memory.StoreTest do
   use ExUnit.Case, async: false
+  import ChatBot.TestHelpers
 
   alias ChatBot.Memory.{Store, Embedder}
   alias ChatBot.Memory.Types.SemanticFact
 
   setup do
-    # Start or reuse embedder
-    ensure_process_started(Embedder, fn -> Embedder.start_link() end)
+    # PubSub is started globally in test_helper.exs
+    ensure_pubsub_started()
+
+    # Start or reuse embedder using ExUnit's start_supervised
+    ensure_started(Embedder)
 
     texts = [
       "hello world",
@@ -18,31 +22,15 @@ defmodule ChatBot.Memory.StoreTest do
 
     Embedder.build_vocabulary(texts)
 
-    # Start or reuse store with temp persistence path
-    ensure_process_started(Store, fn ->
-      Store.start_link(
-        persistence_path: "/tmp/test_memory_store_#{:rand.uniform(100_000)}.term"
-      )
-    end)
+    # Start or reuse store
+    ensure_started(
+      {Store, persistence_path: "/tmp/test_memory_store_#{:rand.uniform(100_000)}.term"}
+    )
 
     # Clear any existing data
     Store.clear()
 
     :ok
-  end
-
-  defp ensure_process_started(name, start_fn) do
-    case Process.whereis(name) do
-      nil ->
-        case start_fn.() do
-          {:ok, _pid} -> :ok
-          {:error, {:already_started, _pid}} -> :ok
-        end
-
-      _pid ->
-        # Process already running, just use it
-        :ok
-    end
   end
 
   describe "add_episode" do

@@ -14,8 +14,8 @@ defmodule ChatBot.Learning.TypeInferrer do
 
   require Logger
 
-  alias ChatBot.ML.{POSTagger, Tokenizer, Gazetteer}
-  alias ChatBot.Learning.{WorldManager, WorldEvents}
+  alias ChatBot.ML.Gazetteer
+  alias ChatBot.Learning.WorldManager
 
   @ets_patterns :type_inferrer_patterns
   @ets_cooccurrence :type_inferrer_cooccurrence
@@ -377,10 +377,11 @@ defmodule ChatBot.Learning.TypeInferrer do
       case type_scores do
         [{best_type, best_score} | rest] ->
           # Calculate confidence based on score margin
-          second_score = case rest do
-            [{_, s} | _] -> s
-            [] -> 0
-          end
+          second_score =
+            case rest do
+              [{_, s} | _] -> s
+              [] -> 0
+            end
 
           confidence = calculate_confidence(best_score, second_score, length(all_matches))
           {best_type, confidence}

@@ -355,8 +355,10 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
     # Backchannel detection: very short + low semantic content
     # These are minimal acknowledgment signals
     backchannel_word_count = Enum.count(words, &(&1 in @backchannel_keywords))
-    is_backchannel = is_very_short and backchannel_word_count > 0 and
-                     backchannel_word_count >= (word_count / 2)
+
+    is_backchannel =
+      is_very_short and backchannel_word_count > 0 and
+        backchannel_word_count >= word_count / 2
 
     # Acknowledgment detection: response to thanks/apology
     acknowledgment_word_count = Enum.count(words, &(&1 in @acknowledgment_keywords))
@@ -367,7 +369,9 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
     # Compliment if has positive words + directed at addressee (you/your patterns)
     has_you_reference = Enum.any?(words, &(&1 in ~w(you your youre you're)))
     has_that_reference = Enum.any?(words, &(&1 in ~w(that this it)))
-    is_compliment = compliment_word_count > 0 and (has_you_reference or has_that_reference or is_short)
+
+    is_compliment =
+      compliment_word_count > 0 and (has_you_reference or has_that_reference or is_short)
 
     # Determine if this looks like an expressive based on pragmatics
     expressive_score =
@@ -791,7 +795,7 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
     # Must have at least 2 words to be a continuation (not just "and" by itself)
     substantive = length(words) >= 2
 
-    (no_terminal and has_continuation_signal and substantive)
+    no_terminal and has_continuation_signal and substantive
   end
 
   defp keyword_match_score(words, keywords) do

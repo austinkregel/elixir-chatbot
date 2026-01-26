@@ -26,7 +26,7 @@
       "type": "person"
     },
     "Austin": {
-      "confidence": 0.7799999999999999,
+      "confidence": 0.95,
       "name": "Austin",
       "type": "person"
     },
@@ -36,12 +36,12 @@
       "type": "person"
     },
     "Brooklyn": {
-      "confidence": 0.84,
+      "confidence": 0.79,
       "name": "Brooklyn",
       "type": "person"
     },
     "Dakota": {
-      "confidence": 0.7799999999999999,
+      "confidence": 0.73,
       "name": "Dakota",
       "type": "person"
     },
@@ -60,6 +60,11 @@
       "name": "James",
       "type": "person"
     },
+    "John": {
+      "confidence": 0.72,
+      "name": "John",
+      "type": "person"
+    },
     "Jordan": {
       "confidence": 0.73,
       "name": "Jordan",
@@ -76,7 +81,7 @@
       "type": "person"
     },
     "Madison": {
-      "confidence": 0.8099999999999999,
+      "confidence": 0.76,
       "name": "Madison",
       "type": "person"
     },
@@ -91,7 +96,7 @@
       "type": "person"
     },
     "Savannah": {
-      "confidence": 0.84,
+      "confidence": 0.79,
       "name": "Savannah",
       "type": "person"
     },

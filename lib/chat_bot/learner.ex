@@ -487,25 +487,43 @@ defmodule ChatBot.Learner do
   end
 
   defp normalize_fact(fact) do
+    alias ChatBot.FactDatabase.Fact
+
     cond do
       is_map(fact) ->
         fact_text = Map.get(fact, "fact") || Map.get(fact, "text") || to_string(fact)
+        entity = Map.get(fact, "entity") || infer_entity_from_text(fact_text)
+        category = Map.get(fact, "category", "learned")
+        entity_type = Map.get(fact, "entity_type") || Fact.infer_entity_type(entity, category)
 
         %{
           "fact" => fact_text,
-          "entity" => Map.get(fact, "entity") || infer_entity_from_text(fact_text),
+          "entity" => entity,
+          "entity_type" => entity_type,
+          "category" => category,
           "confidence" => Map.get(fact, "confidence", 0.8)
         }
 
       is_binary(fact) ->
+        entity = infer_entity_from_text(fact)
+        entity_type = Fact.infer_entity_type(entity, "learned")
+
         %{
           "fact" => fact,
-          "entity" => infer_entity_from_text(fact),
+          "entity" => entity,
+          "entity_type" => entity_type,
+          "category" => "learned",
           "confidence" => 0.8
         }
 
       true ->
-        %{"fact" => to_string(fact), "entity" => "general", "confidence" => 0.5}
+        %{
+          "fact" => to_string(fact),
+          "entity" => "general",
+          "entity_type" => "general",
+          "category" => "learned",
+          "confidence" => 0.5
+        }
     end
   end
 

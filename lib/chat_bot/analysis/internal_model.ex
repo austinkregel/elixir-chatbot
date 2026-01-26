@@ -164,7 +164,7 @@ defmodule ChatBot.Analysis.ChunkAnalysis do
   Complete analysis for a single chunk, combining results from all analyzers.
   """
 
-  alias ChatBot.Analysis.{DiscourseResult, SpeechActResult, SlotResult}
+  alias ChatBot.Analysis.{DiscourseResult, SpeechActResult, SlotResult, SlotDetector}
   alias ChatBot.Analysis.InternalModel
 
   @type t :: %__MODULE__{
@@ -241,30 +241,8 @@ defmodule ChatBot.Analysis.ChunkAnalysis do
   defp is_directive?(_), do: false
 
   defp generate_clarification_prompts(missing_context, intent) do
-    Enum.map(missing_context, fn slot ->
-      case {slot, intent} do
-        {:location, "weather.query"} ->
-          "What location would you like the weather for?"
-
-        {:location, _} ->
-          "Which location are you referring to?"
-
-        {:device, "device.control"} ->
-          "Which device would you like me to control?"
-
-        {:action, "device.control"} ->
-          "What would you like me to do with the device?"
-
-        {:date, _} ->
-          "For which date?"
-
-        {:time, _} ->
-          "At what time?"
-
-        {slot_name, _} ->
-          "Could you please specify the #{slot_name}?"
-      end
-    end)
+    # Use centralized clarification prompts from IntentRegistry via SlotDetector
+    SlotDetector.get_clarification_prompts(missing_context, intent)
   end
 end
 

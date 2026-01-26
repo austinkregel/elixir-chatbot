@@ -80,7 +80,7 @@ defmodule ChatBot.Analysis.ContextResolver do
     # Group entities by type
     entity_map =
       entities
-      |> Enum.group_by(fn e -> e[:entity] || e["entity"] end)
+      |> Enum.group_by(fn e -> e[:entity_type] end)
       |> Enum.map(fn {type, ents} ->
         # Take the highest confidence one
         best = Enum.max_by(ents, fn e -> e[:confidence] || e["confidence"] || 0 end)

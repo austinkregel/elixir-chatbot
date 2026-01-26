@@ -348,7 +348,8 @@ defmodule ChatBot.ML.Gazetteer do
   @doc """
   Restores a world overlay from saved data.
   """
-  def restore_world_overlay(world_id, overlay_data) when is_binary(world_id) and is_list(overlay_data) do
+  def restore_world_overlay(world_id, overlay_data)
+      when is_binary(world_id) and is_list(overlay_data) do
     GenServer.call(__MODULE__, {:restore_world_overlay, world_id, overlay_data})
   end
 
@@ -648,7 +649,11 @@ defmodule ChatBot.ML.Gazetteer do
   @impl true
   def handle_call({:create_world_overlay, world_id}, _from, state) do
     # Just mark that this world exists - entries are added individually
-    :ets.insert(@world_overlay_table, {{world_id, :_meta}, %{created_at: System.system_time(:second)}})
+    :ets.insert(
+      @world_overlay_table,
+      {{world_id, :_meta}, %{created_at: System.system_time(:second)}}
+    )
+
     Logger.debug("Created world overlay", %{world_id: world_id})
     {:reply, :ok, state}
   end
@@ -658,7 +663,12 @@ defmodule ChatBot.ML.Gazetteer do
     # Delete all entries for this world
     entries = :ets.match_object(@world_overlay_table, {{world_id, :_}, :_})
     Enum.each(entries, fn {key, _} -> :ets.delete(@world_overlay_table, key) end)
-    Logger.debug("Destroyed world overlay", %{world_id: world_id, entries_removed: length(entries)})
+
+    Logger.debug("Destroyed world overlay", %{
+      world_id: world_id,
+      entries_removed: length(entries)
+    })
+
     {:reply, :ok, state}
   end
 
@@ -787,8 +797,15 @@ defmodule ChatBot.ML.Gazetteer do
 
   defp index_entities(lookup_map, source) do
     Enum.reduce(lookup_map, 0, fn {normalized_key, entity_info}, count ->
-      # Add source information
-      enriched_info = Map.put(entity_info, :source, source)
+      # Handle both single entity and list of entities (from expanded ambiguous entries)
+      entities_to_add =
+        case entity_info do
+          infos when is_list(infos) ->
+            Enum.map(infos, &Map.put(&1, :source, source))
+
+          info when is_map(info) ->
+            [Map.put(info, :source, source)]
+        end
 
       # Append to existing entries instead of overwriting
       # This allows multiple entity types per key (e.g., "Austin" as person AND location)
@@ -799,20 +816,22 @@ defmodule ChatBot.ML.Gazetteer do
           [] -> []
         end
 
-      # Only add if this exact entity_type isn't already present
-      entity_type = Map.get(enriched_info, :entity_type) || Map.get(enriched_info, :type)
+      # Only add entities whose type isn't already present
+      new_entries =
+        Enum.filter(entities_to_add, fn enriched_info ->
+          entity_type = Map.get(enriched_info, :entity_type) || Map.get(enriched_info, :type)
 
-      already_exists =
-        Enum.any?(existing, fn ex ->
-          ex_type = Map.get(ex, :entity_type) || Map.get(ex, :type)
-          ex_type == entity_type
+          not Enum.any?(existing, fn ex ->
+            ex_type = Map.get(ex, :entity_type) || Map.get(ex, :type)
+            ex_type == entity_type
+          end)
         end)
 
-      unless already_exists do
-        :ets.insert(@table_name, {normalized_key, [enriched_info | existing]})
+      if new_entries != [] do
+        :ets.insert(@table_name, {normalized_key, new_entries ++ existing})
       end
 
-      count + 1
+      count + length(entities_to_add)
     end)
   end
 

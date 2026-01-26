@@ -1,5 +1,6 @@
 defmodule ChatBot.Epistemic.SelfKnowledgeFlowTest do
   use ExUnit.Case, async: false
+  import ChatBot.TestHelpers
 
   alias ChatBot.Analysis.SelfKnowledgeAnalyzer
   alias ChatBot.Epistemic.{UserModelStore, BeliefStore}
@@ -7,16 +8,16 @@ defmodule ChatBot.Epistemic.SelfKnowledgeFlowTest do
   alias ChatBot.Response.Synthesizer
 
   setup do
-    # Ensure stores are started and cleared before each test
-    case Process.whereis(UserModelStore) do
-      nil -> {:ok, _} = UserModelStore.start_link([])
-      _pid -> UserModelStore.clear_all()
-    end
+    # Start common test services (including IntentClassifierSimple)
+    start_test_services()
 
-    case Process.whereis(BeliefStore) do
-      nil -> {:ok, _} = BeliefStore.start_link([])
-      _pid -> BeliefStore.clear()
-    end
+    # Start stores under ExUnit supervision
+    ensure_started(UserModelStore)
+    ensure_started(BeliefStore)
+
+    # Clear before each test
+    UserModelStore.clear_all()
+    BeliefStore.clear()
 
     :ok
   end

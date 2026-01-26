@@ -298,7 +298,7 @@ defmodule ChatBot.ML.NLPPipeline do
       # Limit summary length
       |> Enum.take(5)
       |> Enum.map(fn entity ->
-        "#{Map.get(entity, :entity, "unknown")}: #{Map.get(entity, :value, "")}"
+        "#{Map.get(entity, :entity_type, "unknown")}: #{Map.get(entity, :value, "")}"
       end)
       |> Enum.join(", ")
 
@@ -310,10 +310,10 @@ defmodule ChatBot.ML.NLPPipeline do
   end
 
   defp format_entities_for_learner(entities) do
-    # Brain module expects atom keys: :entity, :value, :confidence
+    # Standardized format with :entity_type key
     Enum.map(entities, fn entity ->
       %{
-        entity: Map.get(entity, :entity, "unknown"),
+        entity_type: Map.get(entity, :entity_type, "unknown"),
         value: Map.get(entity, :value, ""),
         match: Map.get(entity, :match, ""),
         start_pos: Map.get(entity, :start_pos, 0),
@@ -328,8 +328,8 @@ defmodule ChatBot.ML.NLPPipeline do
     relationships = []
 
     # Look for device-room relationships
-    devices = Enum.filter(entities, fn e -> Map.get(e, :entity) == "device" end)
-    rooms = Enum.filter(entities, fn e -> Map.get(e, :entity) == "room" end)
+    devices = Enum.filter(entities, fn e -> Map.get(e, :entity_type) == "device" end)
+    rooms = Enum.filter(entities, fn e -> Map.get(e, :entity_type) == "room" end)
 
     device_room_relationships =
       for device <- devices, room <- rooms do
@@ -346,11 +346,11 @@ defmodule ChatBot.ML.NLPPipeline do
       end
 
     # Look for location-time relationships
-    locations = Enum.filter(entities, fn e -> Map.get(e, :entity) == "location" end)
+    locations = Enum.filter(entities, fn e -> Map.get(e, :entity_type) == "location" end)
 
     times =
       Enum.filter(entities, fn e ->
-        Map.get(e, :entity) in ["relative_date", "date", "day_name"]
+        Map.get(e, :entity_type) in ["relative_date", "date", "day_name"]
       end)
 
     location_time_relationships =
@@ -385,7 +385,7 @@ defmodule ChatBot.ML.NLPPipeline do
       |> Enum.map(fn entity ->
         %{
           "type" => "entity",
-          "entity_type" => Map.get(entity, :entity, "unknown"),
+          "entity_type" => Map.get(entity, :entity_type, "unknown"),
           "value" => Map.get(entity, :value, ""),
           "confidence" => Map.get(entity, :confidence, 0.5)
         }

@@ -1,7 +1,7 @@
 defmodule ChatBot.Epistemic.ContradictionHandlingTest do
   @moduledoc """
   Tests for handling contradictions when user input contradicts existing beliefs.
-  
+
   These tests verify:
   - Contradiction detection in fact verification
   - Learner handling of contradictory facts
@@ -18,16 +18,16 @@ defmodule ChatBot.Epistemic.ContradictionHandlingTest do
 
   setup do
     start_brain_services()
-    
+
     # Ensure epistemic stores are started and cleared
     ensure_epistemic_stores_started()
-    
+
     # Create a conversation for the test
     {:ok, conversation_id} = Brain.create_conversation()
-    
+
     # Generate a unique user_id for this test
     user_id = "test_user_#{:rand.uniform(100_000)}"
-    
+
     %{conversation_id: conversation_id, user_id: user_id}
   end
 
@@ -111,9 +111,9 @@ defmodule ChatBot.Epistemic.ContradictionHandlingTest do
 
       # Note: The contradiction detection may not catch "hot" vs "cold" as opposites
       # since it's a simple heuristic. This test verifies the function works.
-      assert match?({:contradicted, _}, result) or 
-             match?({:uncertain, _}, result) or 
-             match?({:verified, _}, result)
+      assert match?({:contradicted, _}, result) or
+               match?({:uncertain, _}, result) or
+               match?({:verified, _}, result)
     end
   end
 
@@ -210,7 +210,7 @@ defmodule ChatBot.Epistemic.ContradictionHandlingTest do
 
       # Should detect the contradiction or be consistent
       assert result == :consistent or match?({:contradicted, _}, result)
-      
+
       # If it's consistent, the new belief should still conflict with the old one
       beliefs = BeliefStore.query_beliefs(subject: :user, predicate: "location", user_id: user_id)
       assert {:ok, user_beliefs} = beliefs
@@ -245,7 +245,7 @@ defmodule ChatBot.Epistemic.ContradictionHandlingTest do
 
       # Should find both beliefs
       assert length(beliefs) == 2
-      
+
       # Verify both locations are present
       locations = Enum.map(beliefs, &String.downcase(&1.object))
       assert "new york" in locations
@@ -258,9 +258,9 @@ defmodule ChatBot.Epistemic.ContradictionHandlingTest do
 
       # The function queries :world beliefs, so user beliefs won't be found
       # This is expected behavior - the function is for world facts, not user facts
-      assert result == :no_data or 
-             result == :consistent or 
-             match?({:contradiction, _}, result)
+      assert result == :no_data or
+               result == :consistent or
+               match?({:contradiction, _}, result)
     end
   end
 
@@ -345,7 +345,9 @@ defmodule ChatBot.Epistemic.ContradictionHandlingTest do
       # Note: Belief extraction from Brain might not always work in tests
       # So we check if beliefs exist, but don't require them
       if length(beliefs1) > 0 do
-        new_york_belief = Enum.find(beliefs1, &(&1.object == "New York" or &1.object == "new york"))
+        new_york_belief =
+          Enum.find(beliefs1, &(&1.object == "New York" or &1.object == "new york"))
+
         assert new_york_belief != nil
       end
 
@@ -490,34 +492,16 @@ defmodule ChatBot.Epistemic.ContradictionHandlingTest do
 
   # Helper function to ensure epistemic stores are started
   defp ensure_epistemic_stores_started do
-    # Start BeliefStore if not running
-    case Process.whereis(BeliefStore) do
-      nil -> {:ok, _} = BeliefStore.start_link([])
-      _pid -> BeliefStore.clear()
-    end
+    # Start stores under ExUnit supervision
+    ensure_started(BeliefStore)
+    ensure_started(JTMS)
+    ensure_started(ContradictionHandler)
+    ensure_started(UserModelStore)
+    ensure_started(FactDatabase)
 
-    # Start JTMS if not running
-    case Process.whereis(JTMS) do
-      nil -> {:ok, _} = JTMS.start_link([])
-      _pid -> JTMS.clear()
-    end
-
-    # Start ContradictionHandler if not running
-    case Process.whereis(ContradictionHandler) do
-      nil -> {:ok, _} = ContradictionHandler.start_link([])
-      _pid -> :ok
-    end
-
-    # Start UserModelStore if not running (needed for Brain.evaluate)
-    case Process.whereis(UserModelStore) do
-      nil -> {:ok, _} = UserModelStore.start_link([])
-      _pid -> UserModelStore.clear_all()
-    end
-
-    # Start FactDatabase if not running (needed for Integration.add_fact)
-    case Process.whereis(FactDatabase) do
-      nil -> {:ok, _} = FactDatabase.start_link([])
-      _pid -> :ok
-    end
+    # Clear data before each test
+    BeliefStore.clear()
+    JTMS.clear()
+    UserModelStore.clear_all()
   end
 end

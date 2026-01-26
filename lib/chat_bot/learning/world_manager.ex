@@ -58,14 +58,41 @@ defmodule ChatBot.Learning.WorldManager do
   @doc """
   Lists all active training worlds.
   """
-  def list_worlds do
+  @doc """
+  Lists all active training worlds.
+
+  ## Options
+    - `:include_test` - If false (default), excludes test worlds from the list.
+                        Test worlds are identified by having `test: true` in metadata.
+  """
+  def list_worlds(opts \\ []) do
+    include_test = Keyword.get(opts, :include_test, false)
+
     try do
       :ets.tab2list(@ets_worlds)
+      |> Enum.filter(fn
+        {id, %TrainingWorld{} = world} when is_binary(id) ->
+          # Filter out test worlds unless explicitly requested
+          if include_test do
+            true
+          else
+            not is_test_world?(world)
+          end
+
+        _ ->
+          false
+      end)
       |> Enum.map(fn {_id, world} -> world end)
     rescue
       ArgumentError -> []
     end
   end
+
+  defp is_test_world?(%TrainingWorld{metadata: metadata}) when is_map(metadata) do
+    Map.get(metadata, :test, false) == true
+  end
+
+  defp is_test_world?(_), do: false
 
   @doc """
   Gets the metrics for a training world.
@@ -81,9 +108,25 @@ defmodule ChatBot.Learning.WorldManager do
 
   @doc """
   Updates the metrics for a training world.
+
+  This is a non-blocking operation that updates ETS directly for performance.
   """
-  def update_metrics(world_id, update_fn) when is_binary(world_id) and is_function(update_fn, 1) do
-    GenServer.call(__MODULE__, {:update_metrics, world_id, update_fn})
+  def update_metrics(world_id, update_fn)
+      when is_binary(world_id) and is_function(update_fn, 1) do
+    # Direct ETS update for performance (table is public)
+    try do
+      case :ets.lookup(@ets_worlds, {:metrics, world_id}) do
+        [{{:metrics, ^world_id}, metrics}] ->
+          new_metrics = update_fn.(metrics)
+          :ets.insert(@ets_worlds, {{:metrics, world_id}, new_metrics})
+          {:ok, new_metrics}
+
+        [] ->
+          {:error, :not_found}
+      end
+    rescue
+      ArgumentError -> {:error, :table_not_ready}
+    end
   end
 
   @doc """
@@ -193,6 +236,16 @@ defmodule ChatBot.Learning.WorldManager do
     end
   end
 
+  @doc """
+  Reloads persisted worlds from disk.
+
+  Useful when worlds have been saved by another process (e.g., mix task)
+  and you want the running server to pick them up.
+  """
+  def reload_persisted_worlds do
+    GenServer.call(__MODULE__, :reload_persisted_worlds, 60_000)
+  end
+
   # ============================================================================
   # GenServer Callbacks
   # ============================================================================
@@ -200,13 +253,60 @@ defmodule ChatBot.Learning.WorldManager do
   @impl true
   def init(_opts) do
     create_tables()
+    do_load_persisted_worlds()
     Logger.info("WorldManager started")
     {:ok, %{initialized: true}}
+  end
+
+  defp do_load_persisted_worlds do
+    # Load all persisted worlds from disk
+    persisted = WorldPersistence.list_persisted_worlds()
+
+    loaded =
+      Enum.reduce(persisted, 0, fn world, count ->
+        world_id = world.id
+
+        # Check if already loaded
+        case :ets.lookup(@ets_worlds, world_id) do
+          [{^world_id, _}] ->
+            # Already loaded, skip
+            count
+
+          [] ->
+            # Not loaded, load from disk
+            case WorldPersistence.load(world_id) do
+              {:ok, data} ->
+                # Restore to ETS
+                :ets.insert(@ets_worlds, {world_id, data.world})
+                :ets.insert(@ets_worlds, {{:metrics, world_id}, data.metrics})
+                :ets.insert(@ets_candidates, {world_id, data.candidates})
+                :ets.insert(@ets_events, {world_id, data.events})
+
+                # Restore gazetteer overlay
+                ChatBot.ML.Gazetteer.restore_world_overlay(world_id, data.overlay)
+
+                Logger.info("Loaded persisted world", %{id: world_id, name: world.name})
+                count + 1
+
+              {:error, reason} ->
+                Logger.warning("Failed to load persisted world", %{id: world_id, reason: reason})
+                count
+            end
+        end
+      end)
+
+    loaded
   end
 
   @impl true
   def handle_call(:ready?, _from, state) do
     {:reply, true, state}
+  end
+
+  @impl true
+  def handle_call(:reload_persisted_worlds, _from, state) do
+    loaded = do_load_persisted_worlds()
+    {:reply, {:ok, loaded}, state}
   end
 
   @impl true
@@ -231,6 +331,26 @@ defmodule ChatBot.Learning.WorldManager do
       WorldEvents.emit_telemetry(event)
     end
 
+    # Auto-save persistent worlds to disk immediately
+    if world.mode == :persistent do
+      events = [event]
+      overlay = ChatBot.ML.Gazetteer.get_world_overlay(world.id)
+
+      case WorldPersistence.save(world.id, %{
+             world: world,
+             metrics: metrics,
+             candidates: [],
+             events: events,
+             overlay: overlay
+           }) do
+        :ok ->
+          Logger.info("Auto-saved persistent world to disk", %{id: world.id})
+
+        {:error, reason} ->
+          Logger.warning("Failed to auto-save persistent world", %{id: world.id, reason: reason})
+      end
+    end
+
     Logger.info("Created training world", %{id: world.id, name: name, mode: world.mode})
     {:reply, {:ok, world}, state}
   end
@@ -250,19 +370,6 @@ defmodule ChatBot.Learning.WorldManager do
 
         Logger.info("Destroyed training world", %{id: world_id, name: world.name})
         {:reply, :ok, state}
-
-      [] ->
-        {:reply, {:error, :not_found}, state}
-    end
-  end
-
-  @impl true
-  def handle_call({:update_metrics, world_id, update_fn}, _from, state) do
-    case :ets.lookup(@ets_worlds, {:metrics, world_id}) do
-      [{{:metrics, ^world_id}, metrics}] ->
-        new_metrics = update_fn.(metrics)
-        :ets.insert(@ets_worlds, {{:metrics, world_id}, new_metrics})
-        {:reply, {:ok, new_metrics}, state}
 
       [] ->
         {:reply, {:error, :not_found}, state}
@@ -445,7 +552,11 @@ defmodule ChatBot.Learning.WorldManager do
         if is_new do
           entity_type = Map.get(candidate, :inferred_type, "unknown")
           confidence = Map.get(candidate, :confidence, 0.5)
-          update_metrics_internal(world_id, &WorldMetrics.record_entity_discovered(&1, entity_type, confidence))
+
+          update_metrics_internal(
+            world_id,
+            &WorldMetrics.record_entity_discovered(&1, entity_type, confidence)
+          )
         end
 
       [] ->

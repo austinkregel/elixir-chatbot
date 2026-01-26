@@ -46,6 +46,17 @@ defmodule ChatBot.Memory.VectorIndex do
   Returns a list of {id, similarity} tuples sorted by similarity descending.
   """
   def search(table, query_embedding, k) when is_list(query_embedding) and is_integer(k) do
+    search_all(table, query_embedding, k)
+  end
+
+  @doc """
+  Search for all vectors similar to the query, returning top k.
+  Returns a list of {id, similarity} tuples sorted by similarity descending.
+
+  This is useful when IDs are composite (e.g., {world_id, episode_id}) and
+  filtering is needed after the similarity search.
+  """
+  def search_all(table, query_embedding, k) when is_list(query_embedding) do
     table
     |> :ets.tab2list()
     |> Enum.map(fn {id, embedding} ->

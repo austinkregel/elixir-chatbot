@@ -246,12 +246,14 @@ defmodule ChatBot.Analysis.LearningStore do
         :user_frustrated_by_silence ->
           # User showed frustration after we deferred - reduce deferral confidence
           update_optionality_learning(state.params, :reduce_deferral, data)
+
           stats
           |> Map.update("silence_frustrations", 1, &(&1 + 1))
 
         :user_confirmed_no_response_needed ->
           # User confirmed deferral was correct - reinforce pattern
           update_optionality_learning(state.params, :reinforce_deferral, data)
+
           stats
           |> Map.update("deferral_confirmations", 1, &(&1 + 1))
 

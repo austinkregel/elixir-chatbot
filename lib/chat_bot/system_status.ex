@@ -5,6 +5,7 @@ defmodule ChatBot.SystemStatus do
   """
 
   alias ChatBot.Memory.{Embedder, Store}
+  alias ChatBot.Learning.WorldModelRegistry
 
   # All GenServers organized by category
   @genserver_categories %{
@@ -28,6 +29,10 @@ defmodule ChatBot.SystemStatus do
       {ChatBot.ML.Gazetteer, "Gazetteer", :has_stats},
       {ChatBot.ML.InformalExpansions, "Informal Expansions", :has_ready},
       {ChatBot.Response.TemplateStore, "Template Store", :has_ready}
+    ],
+    learning: [
+      {ChatBot.Learning.WorldManager, "World Manager", :has_ready},
+      {ChatBot.Learning.WorldModelRegistry, "World Model Registry", :has_ready}
     ],
     storage: [
       {ChatBot.KnowledgeStore, "Knowledge Store", :basic},
@@ -128,27 +133,87 @@ defmodule ChatBot.SystemStatus do
   end
 
   @doc """
-  Returns the embedder status.
+  Returns the embedder status with detailed initialization progress.
   """
   def get_embedder_status do
     if Process.whereis(Embedder) do
-      ready = Embedder.ready?()
+      # Get detailed status which includes progress info
+      detailed = Embedder.get_status()
 
       %{
         running: true,
-        ready: ready,
-        status: if(ready, do: :ready, else: :building_vocabulary),
-        label: if(ready, do: "Ready", else: "Building vocabulary...")
+        ready: detailed.ready,
+        status: phase_to_status(detailed.phase),
+        label: build_embedder_label(detailed),
+        # Detailed progress info
+        phase: detailed.phase,
+        phase_label: detailed.phase_label,
+        progress: detailed.progress,
+        vocabulary_size: detailed.vocabulary_size,
+        elapsed_ms: detailed.elapsed_ms
       }
     else
       %{
         running: false,
         ready: false,
         status: :not_started,
-        label: "Not started"
+        label: "Not started",
+        phase: :not_started,
+        phase_label: "Not started",
+        progress: nil,
+        vocabulary_size: 0,
+        elapsed_ms: nil
       }
     end
   end
+
+  defp phase_to_status(:ready), do: :ready
+  defp phase_to_status(:idle), do: :idle
+  defp phase_to_status(:not_started), do: :not_started
+  defp phase_to_status(:busy), do: :building_vocabulary
+  defp phase_to_status(_), do: :building_vocabulary
+
+  defp build_embedder_label(%{ready: true, vocabulary_size: size}) do
+    "Ready (#{size} terms)"
+  end
+
+  defp build_embedder_label(%{phase: :idle}) do
+    "Idle (on-demand)"
+  end
+
+  defp build_embedder_label(%{phase: :busy}) do
+    "Processing (busy)..."
+  end
+
+  defp build_embedder_label(%{
+         phase: phase,
+         phase_label: label,
+         progress: progress,
+         elapsed_ms: elapsed
+       }) do
+    base = label || phase_label(phase)
+
+    progress_str =
+      if progress && progress.percent do
+        " (#{progress.percent}%)"
+      else
+        ""
+      end
+
+    elapsed_str =
+      if elapsed && elapsed > 1000 do
+        " - #{Float.round(elapsed / 1000, 1)}s"
+      else
+        ""
+      end
+
+    "#{base}#{progress_str}#{elapsed_str}"
+  end
+
+  defp phase_label(:tokenizing), do: "Tokenizing texts"
+  defp phase_label(:building_frequencies), do: "Building frequencies"
+  defp phase_label(:calculating_idf), do: "Calculating IDF weights"
+  defp phase_label(_), do: "Initializing"
 
   @doc """
   Returns the memory store status.
@@ -239,14 +304,21 @@ defmodule ChatBot.SystemStatus do
   @doc """
   Returns true if all systems are ready.
   Checks core systems, NLP pipeline, and ML models.
+
+  Note: The embedder is optional - it's initialized on-demand when
+  episodic memory is used. The system works without it (graceful degradation).
   """
   def all_ready? do
     status = get_all()
     models = get_ml_models_status()
 
-    # Core systems
+    # Core systems (embedder is optional - it's on-demand)
+    # The embedder is only required if it's actively building vocabulary
+    # Idle state means it's not needed yet, ready means it's trained
+    embedder_ok = status.embedder.ready or status.embedder.phase == :idle
+
     core_ready =
-      status.embedder.ready and
+      embedder_ok and
         status.memory_store.ready and
         status.brain.ready
 
@@ -267,17 +339,39 @@ defmodule ChatBot.SystemStatus do
   @doc """
   Returns detailed readiness status for all subsystems.
   Useful for debugging what's still initializing.
+
+  Options:
+    - world_id: Get world-specific embedder status (default: "default")
   """
-  def get_readiness_details do
+  def get_readiness_details(opts \\ []) do
+    world_id = Keyword.get(opts, :world_id, "default")
+
     status = get_all()
     models = get_ml_models_status()
+    embedder_status = get_embedder_status()
+    world_embedder_status = get_world_embedder_status(world_id)
+    world_models_status = get_world_models_status(world_id)
 
     %{
       core: %{
-        embedder: status.embedder.ready,
+        embedder: status.embedder.ready or status.embedder.phase == :idle,
         memory_store: status.memory_store.ready,
         brain: status.brain.ready
       },
+      # Global embedder status (legacy, for backward compatibility)
+      embedder_details: %{
+        ready: embedder_status.ready,
+        phase: embedder_status.phase,
+        phase_label: embedder_status.phase_label,
+        label: embedder_status.label,
+        progress: embedder_status.progress,
+        vocabulary_size: embedder_status.vocabulary_size,
+        elapsed_ms: embedder_status.elapsed_ms
+      },
+      # World-specific embedder status
+      world_embedder: world_embedder_status,
+      # World-specific ML models status
+      world_models: world_models_status,
       nlp_pipeline: %{
         ready: status.nlp_pipeline.ready,
         components: status.nlp_pipeline.components
@@ -293,6 +387,117 @@ defmodule ChatBot.SystemStatus do
       all_ready: all_ready?()
     }
   end
+
+  @doc """
+  Returns the status of the world-specific embedder.
+  """
+  def get_world_embedder_status(world_id) do
+    alias ChatBot.Learning.WorldEmbedder
+
+    status = WorldEmbedder.get_status(world_id)
+
+    %{
+      world_id: world_id,
+      ready: status.ready,
+      phase: status.phase,
+      phase_label: status.phase_label,
+      vocabulary_size: status.vocabulary_size,
+      episode_count: status.episode_count,
+      built_at: status.built_at,
+      label: build_world_embedder_label(status)
+    }
+  end
+
+  defp build_world_embedder_label(%{ready: true, vocabulary_size: size, episode_count: count}) do
+    "Ready (#{size} terms from #{count} episodes)"
+  end
+
+  defp build_world_embedder_label(%{phase: :not_initialized}) do
+    "Not initialized (will build on first use)"
+  end
+
+  defp build_world_embedder_label(%{phase: :no_data}) do
+    "No training data"
+  end
+
+  defp build_world_embedder_label(%{phase: phase, phase_label: label}) do
+    label || world_embedder_phase_label(phase)
+  end
+
+  # ============================================================================
+  # World Model Status
+  # ============================================================================
+
+  @doc """
+  Returns the status of world models from the WorldModelRegistry.
+  """
+  def get_world_models_status(world_id \\ nil) do
+    target_world_id = world_id || get_active_world_id()
+
+    if Process.whereis(WorldModelRegistry) do
+      try do
+        WorldModelRegistry.get_world_status(target_world_id)
+      catch
+        :exit, _ ->
+          default_world_models_status(target_world_id)
+      end
+    else
+      default_world_models_status(target_world_id)
+    end
+  end
+
+  @doc """
+  Returns the status of all loaded world models.
+  """
+  def get_all_world_models_status do
+    if Process.whereis(WorldModelRegistry) do
+      try do
+        WorldModelRegistry.get_all_status()
+      catch
+        :exit, _ ->
+          %{active_world_id: "default", loaded_worlds: [], loading: [], ready: false, worlds: %{}}
+      end
+    else
+      %{active_world_id: "default", loaded_worlds: [], loading: [], ready: false, worlds: %{}}
+    end
+  end
+
+  @doc """
+  Returns the currently active world ID from the WorldModelRegistry.
+  """
+  def get_active_world_id do
+    if Process.whereis(WorldModelRegistry) do
+      try do
+        WorldModelRegistry.get_active_world()
+      catch
+        :exit, _ -> "default"
+      end
+    else
+      "default"
+    end
+  end
+
+  defp default_world_models_status(world_id) do
+    %{
+      world_id: world_id,
+      is_active: false,
+      is_loaded: false,
+      is_loading: false,
+      has_classifier: false,
+      has_embedder: false,
+      has_pos_model: false,
+      has_entity_model: false,
+      classifier_vocab_size: 0,
+      embedder_vocab_size: 0
+    }
+  end
+
+  defp world_embedder_phase_label(:loading_episodes), do: "Loading episodes"
+  defp world_embedder_phase_label(:tokenizing), do: "Tokenizing texts"
+  defp world_embedder_phase_label(:building_frequencies), do: "Building frequencies"
+  defp world_embedder_phase_label(:calculating_idf), do: "Calculating IDF weights"
+  defp world_embedder_phase_label(:ready), do: "Ready"
+  defp world_embedder_phase_label(_), do: "Initializing"
 
   @doc """
   Returns the status of all ML models (file-based and agent-based).
@@ -324,6 +529,72 @@ defmodule ChatBot.SystemStatus do
       |> Map.new()
     catch
       :exit, _ -> %{}
+    end
+  end
+
+  @doc """
+  Returns status of training worlds (self-learning system).
+  """
+  def get_training_worlds_status do
+    alias ChatBot.Learning.{WorldManager, WorldMetrics}
+
+    if Process.whereis(WorldManager) do
+      try do
+        worlds = WorldManager.list_worlds()
+
+        world_summaries =
+          Enum.map(worlds, fn world ->
+            metrics =
+              case WorldManager.get_metrics(world.id) do
+                {:ok, m} -> WorldMetrics.summary(m)
+                _ -> nil
+              end
+
+            candidates_count = length(WorldManager.get_candidates(world.id, limit: 1000))
+
+            %{
+              id: world.id,
+              name: world.name,
+              mode: world.mode,
+              created_at: world.created_at,
+              metrics: metrics,
+              candidates_count: candidates_count
+            }
+          end)
+
+        # Get persisted worlds count
+        persisted_count =
+          try do
+            ChatBot.Learning.WorldPersistence.list_persisted_worlds() |> length()
+          catch
+            _, _ -> 0
+          end
+
+        %{
+          manager_ready: WorldManager.ready?(),
+          active_worlds: length(worlds),
+          persisted_worlds: persisted_count,
+          worlds: world_summaries,
+          checked_at: DateTime.utc_now()
+        }
+      catch
+        :exit, _ ->
+          %{
+            manager_ready: false,
+            active_worlds: 0,
+            persisted_worlds: 0,
+            worlds: [],
+            checked_at: DateTime.utc_now()
+          }
+      end
+    else
+      %{
+        manager_ready: false,
+        active_worlds: 0,
+        persisted_worlds: 0,
+        worlds: [],
+        checked_at: DateTime.utc_now()
+      }
     end
   end
 
@@ -448,6 +719,23 @@ defmodule ChatBot.SystemStatus do
 
   defp enhance_status(status, _module, :basic) do
     %{status | ready: true, status: :ready, label: "Ready"}
+  end
+
+  defp enhance_status(status, ChatBot.Memory.Embedder = _module, :has_ready) do
+    # Special handling for Embedder to show detailed progress
+    embedder_status = get_embedder_status()
+
+    %{
+      status
+      | ready: embedder_status.ready,
+        status: embedder_status.status,
+        label: embedder_status.label,
+        stats: %{
+          phase: embedder_status.phase,
+          vocabulary: embedder_status.vocabulary_size,
+          progress: embedder_status.progress
+        }
+    }
   end
 
   defp enhance_status(status, module, :has_ready) do

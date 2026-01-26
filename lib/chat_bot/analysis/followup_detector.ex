@@ -180,8 +180,7 @@ defmodule ChatBot.Analysis.FollowupDetector do
       # Look for an entity that matches
       matching_entity =
         Enum.find(entities, fn entity ->
-          entity_type = entity[:entity] || entity["entity"]
-          entity_type in matching_entity_types
+          entity[:entity_type] in matching_entity_types
         end)
 
       case matching_entity do

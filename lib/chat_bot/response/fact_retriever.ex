@@ -1,7 +1,7 @@
 defmodule ChatBot.Response.FactRetriever do
   @moduledoc """
   Retrieves relevant facts from the FactDatabase for use in responses.
-  
+
   This module provides a simple interface for querying facts based on:
   - Entity mentions in the conversation
   - Intent classification (factual questions)
@@ -13,7 +13,7 @@ defmodule ChatBot.Response.FactRetriever do
 
   @doc """
   Retrieves relevant facts for a given query or entity.
-  
+
   Options:
   - `:entity` - Entity name to search for facts about
   - `:category` - Filter by category (geography, science, history, general)
@@ -36,28 +36,28 @@ defmodule ChatBot.Response.FactRetriever do
 
   @doc """
   Extracts entities from a query and retrieves facts about them.
-  
+
   This is a convenience function that combines entity extraction
   with fact retrieval.
-  
+
   Parameters:
   - query: The original query text (for keyword search)
   - entities: List of entity maps or entity name strings
   """
   def get_facts_for_query(query \\ "", entities \\ []) do
     query_str = if is_binary(query), do: query, else: ""
-    
+
     # Try to get facts for each mentioned entity
     entity_facts =
       entities
       |> Enum.map(fn entity ->
-        entity_name = 
+        entity_name =
           cond do
             is_binary(entity) -> entity
             is_map(entity) -> entity[:value] || entity["value"] || ""
             true -> ""
           end
-        
+
         if entity_name != "" do
           get_relevant_facts(entity: entity_name, limit: 2)
         else
@@ -77,7 +77,7 @@ defmodule ChatBot.Response.FactRetriever do
 
   @doc """
   Formats facts for use in responses.
-  
+
   Returns a list of formatted fact strings.
   """
   def format_facts(facts, max_count \\ 3) do
@@ -89,12 +89,21 @@ defmodule ChatBot.Response.FactRetriever do
   @doc """
   Formats a single fact for display.
   """
-  def format_single_fact(fact) when is_map(fact) do
-    fact_text = Map.get(fact, "fact", "")
-    entity = Map.get(fact, "entity", "")
-    
+  def format_single_fact(%ChatBot.FactDatabase.Fact{} = fact) do
     # If fact already mentions the entity, return as-is
     # Otherwise, prepend entity name
+    if String.contains?(String.downcase(fact.fact), String.downcase(fact.entity)) do
+      fact.fact
+    else
+      "#{fact.entity}: #{fact.fact}"
+    end
+  end
+
+  def format_single_fact(fact) when is_map(fact) do
+    # Backwards compatibility for raw maps
+    fact_text = Map.get(fact, "fact", Map.get(fact, :fact, ""))
+    entity = Map.get(fact, "entity", Map.get(fact, :entity, ""))
+
     if String.contains?(String.downcase(fact_text), String.downcase(entity)) do
       fact_text
     else

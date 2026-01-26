@@ -24,8 +24,10 @@ defmodule ChatBot.ML.POSTaggerTest do
 
     test "filters invalid sequences (mismatched lengths)" do
       training_sequences = [
-        %{tokens: ["I", "am"], tags: ["PRON"]},  # Mismatched lengths
-        %{tokens: ["Hello", "world"], tags: ["INTJ", "NOUN"]}  # Valid
+        # Mismatched lengths
+        %{tokens: ["I", "am"], tags: ["PRON"]},
+        # Valid
+        %{tokens: ["Hello", "world"], tags: ["INTJ", "NOUN"]}
       ]
 
       assert {:ok, model} = POSTagger.train(training_sequences)
@@ -34,8 +36,10 @@ defmodule ChatBot.ML.POSTaggerTest do
 
     test "normalizes tag formats (atoms and strings)" do
       training_sequences = [
-        %{tokens: ["I", "am"], tags: [:PRON, :VERB]},  # Atoms
-        %{tokens: ["Hello"], tags: ["intj"]}  # Lowercase string
+        # Atoms
+        %{tokens: ["I", "am"], tags: [:PRON, :VERB]},
+        # Lowercase string
+        %{tokens: ["Hello"], tags: ["intj"]}
       ]
 
       assert {:ok, model} = POSTagger.train(training_sequences)
@@ -66,9 +70,10 @@ defmodule ChatBot.ML.POSTaggerTest do
       predictions = POSTagger.predict(tokens, model)
 
       assert length(predictions) == 3
+
       assert Enum.all?(predictions, fn {token, tag} ->
-        is_binary(token) and is_binary(tag)
-      end)
+               is_binary(token) and is_binary(tag)
+             end)
     end
 
     test "returns empty list for empty input", %{model: model} do

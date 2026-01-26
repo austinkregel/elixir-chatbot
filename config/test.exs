@@ -7,7 +7,8 @@ config :chat_bot, ChatBotWeb.Endpoint,
   secret_key_base: "51WByb3ldPdetS9mKDGHriGrcCu/OwWCtzLjfyaZCLDJ9/25y53rtd/QutXqdqTo",
   server: false
 
-# Print only warnings and errors during test
+# Only show warnings and errors during tests
+# Individual tests can use ExUnit.CaptureLog to capture and verify log messages
 config :logger, level: :warning
 
 # Initialize plugs at runtime for faster test compilation
@@ -17,4 +18,6 @@ config :phoenix, :plug_init_mode, :runtime
 config :chat_bot,
   # Use test-specific directories
   knowledge_dir: "test/knowledge",
-  memory_dir: "test/memory"
+  memory_dir: "test/memory",
+  # Enable test world sandbox for isolated test worlds
+  test_world_sandbox: true

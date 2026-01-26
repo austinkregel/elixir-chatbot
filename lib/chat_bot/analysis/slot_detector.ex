@@ -7,9 +7,10 @@ defmodule ChatBot.Analysis.SlotDetector do
   - Maps extracted entities to slots
   - Identifies missing required slots
   - Applies default values where configured
+  - Provides clarification prompts for missing slots
   """
 
-  alias ChatBot.Analysis.SlotResult
+  alias ChatBot.Analysis.{SlotResult, IntentRegistry}
 
   require Logger
 
@@ -77,36 +78,137 @@ defmodule ChatBot.Analysis.SlotDetector do
   Suggests an intent based on entities present.
 
   This can be used when intent classification has low confidence.
+
+  Scoring algorithm:
+  1. Primary: Count unique entity types that can fill ANY slot (not slots per type)
+  2. Tiebreaker: Ratio of required slots that can be filled
+
+  This prevents intents with multiple slots accepting the same type from
+  scoring higher (e.g., navigation.directions with destination+origin both
+  accepting location should not beat weather.query for a single location entity).
   """
   def suggest_intent_from_entities(entities) when is_list(entities) do
     schemas = load_schemas()
-    entity_types = Enum.map(entities, fn e -> e[:entity] || e["entity"] end) |> Enum.uniq()
+    entity_types = Enum.map(entities, fn e -> e[:entity_type] end) |> Enum.uniq()
 
-    # Score each schema by how many entity types match
+    # Score each schema by unique entity type matches, with tiebreakers
     scored_schemas =
       schemas
       |> Enum.map(fn {intent, schema} ->
         mappings = Map.get(schema, "entity_mappings", %{})
+        required = Map.get(schema, "required", [])
+        domain = Map.get(schema, "domain", "unknown")
 
-        matching_slots =
-          mappings
-          |> Enum.filter(fn {_slot, mapped_entities} ->
-            Enum.any?(mapped_entities, &(&1 in entity_types))
+        # Count entity types that can fill ANY slot (not slots per type)
+        # This prevents double-counting when multiple slots accept the same type
+        matched_types =
+          entity_types
+          |> Enum.count(fn etype ->
+            Enum.any?(mappings, fn {_slot, mapped} -> etype in mapped end)
           end)
-          |> length()
 
-        {intent, matching_slots}
+        # Tiebreaker 1: ratio of required slots that can be filled
+        filled_required =
+          Enum.count(required, fn slot ->
+            mapped = Map.get(mappings, slot, [])
+            Enum.any?(entity_types, &(&1 in mapped))
+          end)
+
+        fill_ratio =
+          if length(required) > 0, do: filled_required / length(required), else: 1.0
+
+        # Tiebreaker 2: domain priority based on entity types present
+        # When location entities are present, prefer weather over navigation
+        # (navigation typically needs both origin AND destination to be useful)
+        domain_priority = domain_priority_for_entities(domain, entity_types)
+
+        {intent, matched_types, fill_ratio, domain_priority}
       end)
-      |> Enum.filter(fn {_, score} -> score > 0 end)
-      |> Enum.sort_by(fn {_, score} -> -score end)
+      |> Enum.filter(fn {_, score, _, _} -> score > 0 end)
+      # Sort by: most matches, highest fill ratio, highest domain priority, alphabetical
+      |> Enum.sort_by(fn {intent, score, ratio, priority} ->
+        {-score, -ratio, -priority, intent}
+      end)
 
     case scored_schemas do
-      [{intent, score} | _] when score > 0 -> {:ok, intent, score}
+      [{intent, score, _, _} | _] when score > 0 -> {:ok, intent, score}
       _ -> {:error, :no_match}
     end
   end
 
+  # Calculate domain priority based on entity types present
+  # Higher priority = more likely to be the intended domain
+  defp domain_priority_for_entities(domain, entity_types) do
+    has_location =
+      Enum.any?(entity_types, &(&1 in ["location", "city", "room", "ambiguous_name_location"]))
+
+    has_device = Enum.any?(entity_types, &(&1 in ["device", "lights", "heating"]))
+
+    has_music =
+      Enum.any?(entity_types, &(&1 in ["song", "music-artist", "music-album", "playlist"]))
+
+    cond do
+      # Weather queries with location are common - prioritize weather for location entities
+      domain == "weather" and has_location -> 10
+      # Device control with device entities
+      domain == "device" and has_device -> 10
+      # Music with music entities
+      domain == "music" and has_music -> 10
+      # Navigation requires destination, but location alone is ambiguous
+      # (could be weather, could be navigation) - slightly lower priority
+      domain == "navigation" and has_location -> 5
+      # Default priority
+      true -> 0
+    end
+  end
+
+  @doc """
+  Gets clarification prompt for a missing slot from intent_registry.json.
+  Falls back to a generic prompt if not defined.
+
+  ## Examples
+
+      iex> SlotDetector.get_clarification_prompt("location", "weather.query")
+      "What location would you like the weather for?"
+
+      iex> SlotDetector.get_clarification_prompt("unknown_slot", "some.intent")
+      "Could you please specify the unknown slot?"
+  """
+  def get_clarification_prompt(slot_name, intent) when is_binary(slot_name) do
+    templates = IntentRegistry.clarification_templates(intent)
+
+    case Map.get(templates, slot_name) do
+      nil -> generate_generic_prompt(slot_name)
+      prompt -> prompt
+    end
+  end
+
+  def get_clarification_prompt(slot_name, intent) when is_atom(slot_name) do
+    get_clarification_prompt(Atom.to_string(slot_name), intent)
+  end
+
+  def get_clarification_prompt(_, _), do: "Could you please provide more information?"
+
+  @doc """
+  Gets all clarification prompts for a list of missing slots.
+  """
+  def get_clarification_prompts(missing_slots, intent) when is_list(missing_slots) do
+    Enum.map(missing_slots, fn slot ->
+      slot_name = if is_atom(slot), do: Atom.to_string(slot), else: slot
+      get_clarification_prompt(slot_name, intent)
+    end)
+  end
+
   # Private functions
+
+  defp generate_generic_prompt(slot_name) do
+    readable =
+      slot_name
+      |> String.replace("-", " ")
+      |> String.replace("_", " ")
+
+    "Could you please specify the #{readable}?"
+  end
 
   defp load_schemas do
     case Application.get_env(:chat_bot, :analysis_schemas_path, @schemas_path) do
@@ -181,7 +283,7 @@ defmodule ChatBot.Analysis.SlotDetector do
       # Find an entity that matches one of the mapped types
       matching_entity =
         Enum.find(entities, fn entity ->
-          entity_type = entity[:entity] || entity["entity"]
+          entity_type = entity[:entity_type]
           entity_type in mapped_entity_types
         end)
 
@@ -212,9 +314,9 @@ defmodule ChatBot.Analysis.SlotDetector do
 
     # Still fill any entities we have
     Enum.reduce(entities, result, fn entity, acc ->
-      entity_type = entity[:entity] || entity["entity"]
-      value = entity[:value] || entity["value"]
-      confidence = entity[:confidence] || entity["confidence"] || 1.0
+      entity_type = entity[:entity_type]
+      value = entity[:value]
+      confidence = entity[:confidence] || 1.0
       SlotResult.fill_slot(acc, entity_type, value, :explicit, confidence)
     end)
   end

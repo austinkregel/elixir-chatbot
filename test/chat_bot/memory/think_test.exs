@@ -1,18 +1,15 @@
 defmodule ChatBot.Memory.ThinkTest do
   use ExUnit.Case, async: false
+  import ChatBot.TestHelpers
 
   alias ChatBot.Memory.{Think, Store, Embedder}
 
   setup do
-    # Initialize the memory system
-    case Process.whereis(Embedder) do
-      nil ->
-        {:ok, _} = Embedder.start_link()
+    # PubSub is started globally in test_helper.exs
+    ensure_pubsub_started()
 
-      pid ->
-        GenServer.stop(pid)
-        {:ok, _} = Embedder.start_link()
-    end
+    # Start the embedder under ExUnit supervision
+    ensure_started(Embedder)
 
     texts = [
       "hello world",
@@ -24,14 +21,8 @@ defmodule ChatBot.Memory.ThinkTest do
 
     Embedder.build_vocabulary(texts)
 
-    case Process.whereis(Store) do
-      nil ->
-        Store.start_link(persistence_path: "/tmp/test_think_#{:rand.uniform(100_000)}.term")
-
-      pid ->
-        GenServer.stop(pid)
-        Store.start_link(persistence_path: "/tmp/test_think_#{:rand.uniform(100_000)}.term")
-    end
+    # Start the store under ExUnit supervision with unique path per test
+    ensure_started({Store, persistence_path: "/tmp/test_think_#{:rand.uniform(100_000)}.term"})
 
     Store.clear()
 

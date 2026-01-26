@@ -77,25 +77,34 @@ defmodule ChatBot.Analysis.Pipeline do
     # Build strategy reasoning for debug inspector
     chunk_strategies = Enum.map(analyses, & &1.response_strategy)
     has_expressives = Enum.any?(analyses, &(&1.speech_act.category == :expressive))
-    has_substantive = Enum.any?(analyses, fn a ->
-      a.speech_act.category in [:directive, :assertive] or a.speech_act.is_question
-    end)
+
+    has_substantive =
+      Enum.any?(analyses, fn a ->
+        a.speech_act.category in [:directive, :assertive] or a.speech_act.is_question
+      end)
+
     all_missing = Enum.flat_map(analyses, & &1.missing_context)
 
-    decision_reason = cond do
-      Enum.all?(chunk_strategies, &(&1 == :can_respond)) ->
-        "All #{length(chunk_strategies)} chunk(s) can respond"
-      Enum.all?(chunk_strategies, &(&1 == :cannot_respond)) ->
-        "No chunks can respond"
-      Enum.all?(chunk_strategies, &(&1 == :defer_to_user)) ->
-        "Bot was not addressed in any chunk"
-      length(all_missing) > 0 and Enum.any?(chunk_strategies, &(&1 == :can_respond)) ->
-        "Partial: can respond to some, missing slots: #{Enum.join(all_missing, ", ")}"
-      length(all_missing) > 0 ->
-        "Missing required slots: #{Enum.join(all_missing, ", ")}"
-      true ->
-        "Default strategy applied"
-    end
+    decision_reason =
+      cond do
+        Enum.all?(chunk_strategies, &(&1 == :can_respond)) ->
+          "All #{length(chunk_strategies)} chunk(s) can respond"
+
+        Enum.all?(chunk_strategies, &(&1 == :cannot_respond)) ->
+          "No chunks can respond"
+
+        Enum.all?(chunk_strategies, &(&1 == :defer_to_user)) ->
+          "Bot was not addressed in any chunk"
+
+        length(all_missing) > 0 and Enum.any?(chunk_strategies, &(&1 == :can_respond)) ->
+          "Partial: can respond to some, missing slots: #{Enum.join(all_missing, ", ")}"
+
+        length(all_missing) > 0 ->
+          "Missing required slots: #{Enum.join(all_missing, ", ")}"
+
+        true ->
+          "Default strategy applied"
+      end
 
     Progress.report(opts, :strategy_determined, %{
       overall_strategy: model.overall_strategy,
@@ -272,7 +281,7 @@ defmodule ChatBot.Analysis.Pipeline do
       original_count: length(entities),
       filtered_count: length(relevant_entities),
       excluded_types:
-        (Enum.map(entities, & &1[:entity]) -- Enum.map(relevant_entities, & &1[:entity]))
+        (Enum.map(entities, & &1[:entity_type]) -- Enum.map(relevant_entities, & &1[:entity_type]))
         |> Enum.uniq()
     })
 
@@ -347,15 +356,9 @@ defmodule ChatBot.Analysis.Pipeline do
   end
 
   defp entity_to_dev_map(entity) when is_map(entity) do
-    type =
-      Map.get(entity, :entity) || Map.get(entity, "entity") || Map.get(entity, :type) ||
-        Map.get(entity, "type")
-
-    value =
-      Map.get(entity, :value) || Map.get(entity, "value") || Map.get(entity, :name) ||
-        Map.get(entity, "name")
-
-    conf = Map.get(entity, :confidence) || Map.get(entity, "confidence")
+    type = Map.get(entity, :entity_type)
+    value = Map.get(entity, :value)
+    conf = Map.get(entity, :confidence)
 
     %{
       type: type,
@@ -512,8 +515,8 @@ defmodule ChatBot.Analysis.Pipeline do
             entities:
               Enum.map(resolved_entities, fn e ->
                 %{
-                  entity: e[:entity] || e["entity"],
-                  value: e[:value] || e["value"]
+                  entity_type: e[:entity_type],
+                  value: e[:value]
                 }
               end)
           })
@@ -535,8 +538,8 @@ defmodule ChatBot.Analysis.Pipeline do
     converted =
       Enum.map(anaphora_entities, fn e ->
         %{
-          entity: e[:entity] || e["entity"],
-          value: e[:value] || e["value"],
+          entity_type: e[:entity_type],
+          value: e[:value],
           confidence: 0.75,
           source: :anaphora_resolution
         }
@@ -545,12 +548,12 @@ defmodule ChatBot.Analysis.Pipeline do
     # Merge, avoiding duplicates (prefer extracted over resolved)
     extracted_types =
       entities
-      |> Enum.map(&(&1[:entity] || &1["entity"]))
+      |> Enum.map(& &1[:entity_type])
       |> MapSet.new()
 
     unique_anaphora =
       Enum.reject(converted, fn e ->
-        MapSet.member?(extracted_types, e[:entity])
+        MapSet.member?(extracted_types, e[:entity_type])
       end)
 
     entities ++ unique_anaphora
@@ -592,7 +595,7 @@ defmodule ChatBot.Analysis.Pipeline do
       else
         # Keep only entities whose type matches a valid slot type
         Enum.filter(entities, fn entity ->
-          entity_type = entity[:entity] || entity["entity"]
+          entity_type = entity[:entity_type]
           MapSet.member?(valid_types, entity_type)
         end)
       end

@@ -168,5 +168,195 @@
     ],
     "text": "Learned 0 entities, 0 relationships, 0 facts from: Have you seen Nadine?",
     "timestamp": 1769315709243
+  },
+  {
+    "id": "9c9c5655551d987d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Sorry to disturb you sir, but I have an incoming transmission from Starfleet Command. It's Admiral Forrest.",
+    "timestamp": 1769318408315
+  },
+  {
+    "id": "bca4c0ef0d1f56e7",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi I'm Austin",
+    "timestamp": 1769321978816
+  },
+  {
+    "id": "8e54dc5fa408d359",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: I have a friend named Badga. He lives in Australia. Can you tell me the weather there?",
+    "timestamp": 1769322016835
+  },
+  {
+    "id": "2159b185621b9a71",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769322100316
+  },
+  {
+    "id": "f95f52f95a898fba",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769322382129
+  },
+  {
+    "id": "a44d1e65068325b7",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Here's what I know: The capital of Australia is Canberra. The capital of Canada is Ottawa. Good day!",
+    "timestamp": 1769322438818
+  },
+  {
+    "id": "9549d4a16e796d37",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769322472776
+  },
+  {
+    "id": "271c025e48e3543d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769351847406
+  },
+  {
+    "id": "1acf23ced78f2d1c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769352287835
+  },
+  {
+    "id": "620c4d4db3ef46ca",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1769352528808
+  },
+  {
+    "id": "c236eb880ffbb3e0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello",
+    "timestamp": 1769353092082
+  },
+  {
+    "id": "0c8cd3343153f269",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, I'm Austin. What's the weather like in Owosso, MI?",
+    "timestamp": 1769353118978
+  },
+  {
+    "id": "74bb7259eed35f50",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello",
+    "timestamp": 1769354862476
+  },
+  {
+    "id": "95c2c264b9e3b9f8",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I'm Paris",
+    "timestamp": 1769356647633
+  },
+  {
+    "id": "ed0f30135315e59c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello",
+    "timestamp": 1769357617069
+  },
+  {
+    "id": "5646e0556cd6f576",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: tell Odo that we need Security in the Promonade",
+    "timestamp": 1769357637479
+  },
+  {
+    "id": "4a6ea80fc3d57c4d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello",
+    "timestamp": 1769398656302
+  },
+  {
+    "id": "add026e570ff1d3d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I'm Austin",
+    "timestamp": 1769398664539
+  },
+  {
+    "id": "79fd150e658f6de8",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello, I'm Austin",
+    "timestamp": 1769398752224
   }
 ]

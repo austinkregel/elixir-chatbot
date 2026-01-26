@@ -110,7 +110,11 @@ defmodule Mix.Tasks.GenerateFortune500 do
       "formatversion" => "2"
     }
 
-    case Req.get(@wiki_api, params: params, receive_timeout: 60_000, connect_options: [timeout: 30_000]) do
+    case Req.get(@wiki_api,
+           params: params,
+           receive_timeout: 60_000,
+           connect_options: [timeout: 30_000]
+         ) do
       {:ok, %{status: 200, body: body}} when is_map(body) ->
         wikitext = get_in(body, ["parse", "wikitext"])
 
@@ -285,7 +289,8 @@ defmodule Mix.Tasks.GenerateFortune500 do
 
     idx =
       Enum.find_index(normalized, fn h ->
-        h == "company" or h == "name" or String.contains?(h, "company") or String.contains?(h, "name")
+        h == "company" or h == "name" or String.contains?(h, "company") or
+          String.contains?(h, "name")
       end)
 
     if is_integer(idx) do
@@ -429,4 +434,3 @@ defmodule Mix.Tasks.GenerateFortune500 do
     System.halt(1)
   end
 end
-

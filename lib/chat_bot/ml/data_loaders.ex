@@ -299,30 +299,88 @@ defmodule ChatBot.ML.DataLoaders do
 
   @doc """
   Build a normalized lookup map from entity entries.
-  Maps lowercase synonym -> {entity_type, canonical_value}
+  Maps lowercase synonym -> entity info or list of entity infos.
+
+  If an entry has a `types` array, each type becomes a separate entity entry.
+  The code simply reads what's in the data without interpretation.
   """
   def build_entity_lookup(entities) when is_map(entities) do
-    Enum.reduce(entities, %{}, fn {entity_type, entries}, acc ->
+    Enum.reduce(entities, %{}, fn {_file_entity_type, entries}, acc ->
       Enum.reduce(entries, acc, fn entry, inner_acc ->
         value = entry.value
-        synonyms = entry.synonyms
+        synonyms = Map.get(entry, :synonyms, [])
 
         # Add all synonyms (including the value itself) to the lookup
         Enum.reduce([value | synonyms], inner_acc, fn synonym, lookup ->
           normalized = normalize_text(synonym)
 
           if String.length(normalized) >= 2 do
-            Map.put(lookup, normalized, %{
-              entity_type: entity_type,
-              value: value,
-              original: synonym
-            })
+            entity_entries = build_entries_from_data(entry, value, synonym)
+            add_entries_to_lookup(lookup, normalized, entity_entries)
           else
             lookup
           end
         end)
       end)
     end)
+  end
+
+  # Build entity entries directly from data structure
+  # If entry has `types` array, create an entry for each type
+  # Otherwise, create a single entry with the `entity_type` field
+  defp build_entries_from_data(entry, value, original) do
+    types = Map.get(entry, :types) || Map.get(entry, "types")
+
+    if is_list(types) and length(types) > 0 do
+      # Entry has explicit types array - create an entry for each
+      Enum.map(types, fn type_data ->
+        build_entry_from_type_data(type_data, value, original)
+      end)
+    else
+      # Single type entry - use entity_type field
+      entity_type = Map.get(entry, :entity_type) || Map.get(entry, "entity_type") || "unknown"
+      metadata = Map.get(entry, :metadata) || Map.get(entry, "metadata") || %{}
+
+      [%{
+        entity_type: entity_type,
+        value: value,
+        original: original,
+        metadata: metadata
+      }]
+    end
+  end
+
+  # Build a single entry from type data - just pass through all fields
+  defp build_entry_from_type_data(type_data, value, original) do
+    # Start with the type data as-is
+    type_data
+    |> Map.put(:value, value)
+    |> Map.put(:original, original)
+    # Ensure entity_type is present
+    |> ensure_entity_type()
+  end
+
+  defp ensure_entity_type(entry) do
+    entity_type = Map.get(entry, :entity_type) || Map.get(entry, "entity_type")
+    if entity_type, do: entry, else: Map.put(entry, :entity_type, "unknown")
+  end
+
+  # Add entries to lookup, handling single vs multiple entries
+  defp add_entries_to_lookup(lookup, normalized, entries) when is_list(entries) do
+    case Map.get(lookup, normalized) do
+      nil ->
+        if length(entries) == 1 do
+          Map.put(lookup, normalized, hd(entries))
+        else
+          Map.put(lookup, normalized, entries)
+        end
+
+      existing when is_list(existing) ->
+        Map.put(lookup, normalized, entries ++ existing)
+
+      existing when is_map(existing) ->
+        Map.put(lookup, normalized, entries ++ [existing])
+    end
   end
 
   @doc """

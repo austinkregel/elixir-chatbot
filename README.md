@@ -9,6 +9,7 @@ This is a Phoenix LiveView chatbot application built around **classical NLP tech
 - **Cognitive memory**: TF‑IDF embeddings and similarity search used to augment reasoning/classification.
 - **Epistemic user model**: stores user “facts” (beliefs) extracted from conversation when enabled.
 - **Training & data tooling**: project-specific `mix` tasks to generate entity datasets and to train/load models.
+- **Self-learning training worlds**: isolated learning environments for entity discovery from large corpora (e.g., scripts, documents) with A/B testing, metrics comparison, and human review workflows.
 
 ---
 
@@ -61,10 +62,11 @@ iex -S mix phx.server
 
 ### Notable subsystems
 
-- **ML/NLP** (`lib/chat_bot/ml/`): intent classifier, gazetteer, tokenizer, entity extractor.
+- **ML/NLP** (`lib/chat_bot/ml/`): intent classifier, gazetteer, tokenizer, entity extractor, POS tagger.
 - **Analysis** (`lib/chat_bot/analysis/`): pipeline orchestration, slot schemas, context/anaphora resolution, heuristics.
 - **Memory** (`lib/chat_bot/memory/`): TF‑IDF embedder, vector index, store, consolidation, high-level API (`Think`).
 - **Epistemic** (`lib/chat_bot/epistemic/`): user facts/beliefs + contradiction handling.
+- **Learning** (`lib/chat_bot/learning/`): training worlds, entity discovery, type inference, document ingestion, world metrics.
 - **Responses** (`lib/chat_bot/response/`): templates, response composition/connectors, memory augmentation.
 
 ---
@@ -95,6 +97,7 @@ iex -S mix phx.server
 - **Caches for external downloads**: `priv/data_cache/*`
 - **Persisted conversation memory** (runtime): `priv/memory/`
 - **Persisted knowledge** (runtime): `priv/knowledge/`
+- **Training worlds** (persistent mode): `priv/training_worlds/{world_id}/`
 
 ---
 
@@ -183,6 +186,45 @@ These tasks download bounded datasets, write JSON into `data/entities/`, and cac
   - Outputs: `data/entities/news-source_entries_en.json`
   - Useful flags: `--limit`, `--download`, `--output`
 
+### Training worlds (self-learning)
+
+Training worlds provide isolated environments for entity discovery from large text corpora. Use them to process scripts, documents, or other text sources to discover new entities without affecting production data.
+
+- **`mix training_world.create "name"`**: create a new training world
+  - `--mode=ephemeral` (default): in-memory only
+  - `--mode=persistent`: saved to disk for later use
+
+- **`mix training_world.ingest "world_id" "path/to/*.txt"`**: ingest files into a world
+  - Discovers proper nouns using POS tagging
+  - Tracks entity candidates, ambiguities, and co-occurrences
+  - `--chunk-size=N`: characters per processing chunk
+
+- **`mix training_world.metrics "world_id"`**: view discovery metrics (entities, types, confidence distribution)
+
+- **`mix training_world.entities "world_id"`**: view discovered entity candidates
+  - `--sort=confidence|occurrences`: sort order
+  - `--limit=N`: max results
+
+- **`mix training_world.ambiguous "world_id"`**: view entities with multiple possible types (need human review)
+
+- **`mix training_world.events "world_id"`**: view event log
+  - `--type=event_type`: filter by event type
+  - `--limit=N`: max results
+
+- **`mix training_world.compare "world_1" "world_2"`**: A/B comparison of two worlds
+
+- **`mix training_world.export "world_id"`**: export world data for review
+  - `--output=file.json`: output file path
+
+- **`mix training_world.merge "source" "target"`**: merge learned entities from source to target
+  - `--require-review=true` (default): returns entities for review instead of merging
+  - `--min-confidence=0.7`: minimum confidence threshold
+
+- **`mix training_world.list`**: list all active and persisted worlds
+- **`mix training_world.checkpoint "world_id"`**: save persistent world to disk
+- **`mix training_world.load "world_id"`**: load persisted world from disk
+- **`mix training_world.destroy "world_id"`**: destroy a world
+
 ### Python data scripts
 
 There is currently one Python script used to generate tokenizer normalization data.
@@ -225,6 +267,48 @@ mix phx.server
 
 ```bash
 mix clear_knowledge
+```
+
+### I want to discover entities from a corpus (e.g., scripts)
+
+```bash
+# Create an ephemeral training world
+mix training_world.create "my_corpus"
+# Note the world_id printed
+
+# Ingest your text files
+mix training_world.ingest "WORLD_ID" "path/to/scripts/*.txt"
+
+# View what was discovered
+mix training_world.metrics "WORLD_ID"
+mix training_world.entities "WORLD_ID" --sort=occurrences
+
+# Review ambiguous entities (need human decision)
+mix training_world.ambiguous "WORLD_ID"
+
+# Export for review before merging
+mix training_world.export "WORLD_ID" --output=review.json
+
+# When ready, merge approved entities (or use --require-review=false)
+mix training_world.merge "WORLD_ID" "production_world"
+
+# Clean up
+mix training_world.destroy "WORLD_ID"
+```
+
+### I want to A/B test two learning approaches
+
+```bash
+# Create two worlds with different configurations
+mix training_world.create "approach_a"
+mix training_world.create "approach_b"
+
+# Ingest the same data into both
+mix training_world.ingest "WORLD_A_ID" "data/*.txt"
+mix training_world.ingest "WORLD_B_ID" "data/*.txt"
+
+# Compare results
+mix training_world.compare "WORLD_A_ID" "WORLD_B_ID"
 ```
 
 ---

@@ -1,27 +1,19 @@
 defmodule ChatBot.Analysis.LearningStoreTest do
   use ExUnit.Case, async: false
+  import ChatBot.TestHelpers
 
   alias ChatBot.Analysis.LearningStore
 
   # Note: These tests interact with the actual LearningStore GenServer
-  # which is started by the application
 
   setup do
-    # Start the LearningStore if not already running
-    case LearningStore.start_link([]) do
-      {:ok, pid} ->
-        on_exit(fn ->
-          if Process.alive?(pid), do: GenServer.stop(pid, :normal, 1000)
-        end)
+    # Ensure PubSub is started
+    ensure_pubsub_started()
 
-        :ok
+    # Start LearningStore under ExUnit supervision
+    ensure_started(LearningStore)
 
-      {:error, {:already_started, _pid}} ->
-        :ok
-
-      {:error, reason} ->
-        {:ok, %{skip: reason}}
-    end
+    :ok
   end
 
   describe "get_params/1" do

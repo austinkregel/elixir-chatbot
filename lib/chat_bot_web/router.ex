@@ -14,19 +14,36 @@ defmodule ChatBotWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # Main application routes with world context
   scope "/", ChatBotWeb do
     pipe_through :browser
 
+    # Landing page (no world context needed)
     get "/", PageController, :home
-    live "/chat", ChatLive
-    live "/admin", AdminLive
+
+    # World-aware LiveViews with shared context
+    live_session :world_context,
+      on_mount: [{ChatBotWeb.WorldContext, :default}] do
+      live "/chat", ChatLive
+      live "/chat/:conversation_id", ChatLive
+      live "/explorer", ExplorerLive
+      live "/dashboard", DashboardLive
+      live "/settings", SettingsLive
+    end
+
+    # Legacy route redirects
+    get "/admin", PageController, :redirect_to_settings
+    get "/worlds", PageController, :redirect_to_explorer
+    get "/worlds/:world_id/entities", PageController, :redirect_to_explorer
+    get "/memories", PageController, :redirect_to_explorer
   end
 
-  # Operational dashboard
+  # Legacy operational dashboard route (redirect to new location)
   scope "/ops", ChatBotWeb do
     pipe_through :browser
 
-    live "/dashboard", DashboardLive
+    # Redirect old dashboard URL to new one
+    get "/dashboard", PageController, :redirect_dashboard
   end
 
   # Test endpoints
@@ -38,18 +55,8 @@ defmodule ChatBotWeb.Router do
     post "/add-test-knowledge", TestController, :add_test_knowledge
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", ChatBotWeb do
-  #   pipe_through :api
-  # end
-
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:chat_bot, :dev_routes) do
-    # If you want to use the LiveDashboard in production, you should put
-    # it behind authentication and allow only admins to access it.
-    # If your application does not have an admins-only section yet,
-    # you can use Plug.BasicAuth to set up some basic authentication
-    # as long as you are also using SSL (which you should anyway).
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do

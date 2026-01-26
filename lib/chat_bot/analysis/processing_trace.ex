@@ -402,7 +402,16 @@ defmodule ChatBot.Analysis.ProcessingTrace do
   defp find_primary_chunk(chunk_traces) do
     # Priority: questions/commands > weather > other substantive > greetings
     # Using IntentRegistry domain checks instead of string prefix matching
-    priority_domains = [:question, :weather, :device, :music, :reminder, :action, :information, :search]
+    priority_domains = [
+      :question,
+      :weather,
+      :device,
+      :music,
+      :reminder,
+      :action,
+      :information,
+      :search
+    ]
 
     Enum.find(chunk_traces, List.first(chunk_traces), fn trace ->
       intent = trace.primary_intent
@@ -500,9 +509,9 @@ defmodule ChatBot.Analysis.ProcessingTrace do
   defp format_entities(entities) when is_list(entities) do
     Enum.map(entities, fn e ->
       %{
-        type: e[:entity] || e["entity"] || e[:type] || "unknown",
-        value: e[:value] || e["value"] || "unknown",
-        confidence: Float.round((e[:confidence] || e["confidence"] || 0.8) * 1.0, 2)
+        type: e[:entity_type] || e[:type] || "unknown",
+        value: e[:value] || "unknown",
+        confidence: Float.round((e[:confidence] || 0.8) * 1.0, 2)
       }
     end)
   end

@@ -1,87 +1,316 @@
 defmodule ChatBot.ML.IntentClassifierSimple do
   @moduledoc """
   Intent classifier using simple TF-IDF and nearest centroid classification.
+
+  ## World Scoping
+
+  Supports world-specific models with inheritance fallback:
+  1. Try world-specific model (priv/training_worlds/{world_id}/models/classifier.term)
+  2. Fall back to default model (priv/ml_models/classifier.term)
+
+  World-specific models can be trained using:
+  `mix train_models --world star_trek`
+
+  ## Integration with WorldModelRegistry
+
+  This classifier subscribes to `world_models:status` PubSub events to:
+  - Reload models when a world's models are updated
+  - Unload models when requested
   """
 
+  use GenServer
   require Logger
 
-  def load_models do
-    models_path = Application.get_env(:chat_bot, :ml)[:models_path]
+  @default_world_id "default"
+  @pubsub ChatBot.PubSub
 
-    try do
-      # Load classifier model
-      model_path = Path.join(models_path, "classifier.term")
-      model_binary = File.read!(model_path)
-      model = :erlang.binary_to_term(model_binary)
+  # ============================================================================
+  # Client API
+  # ============================================================================
 
-      # Store in Agent for fast access
-      case Agent.start_link(fn -> model end, name: __MODULE__) do
-        {:ok, _pid} ->
-          Logger.info("Classifier model loaded successfully", %{
-            vocab_size: map_size(model.vocabulary)
-          })
-
-          {:ok, model}
-
-        {:error, {:already_started, _pid}} ->
-          # Already loaded
-          model = Agent.get(__MODULE__, & &1)
-          {:ok, model}
-
-        {:error, reason} ->
-          Logger.error("Failed to start Agent", %{reason: reason})
-          {:error, reason}
-      end
-    rescue
-      e ->
-        Logger.error("Failed to load classifier model", %{error: inspect(e)})
-        {:error, :model_not_found}
-    end
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc """
-  Returns true if the classifier model is loaded.
+  Loads the default classifier model.
   """
-  def is_loaded? do
-    Process.whereis(__MODULE__) != nil
+  def load_models do
+    load_models(world_id: @default_world_id)
   end
 
+  @doc """
+  Loads the classifier model for a specific world.
+
+  ## Options
+    - world_id: The world to load the model for (default: "default")
+  """
+  def load_models(opts) do
+    world_id = Keyword.get(opts, :world_id, @default_world_id)
+    GenServer.call(__MODULE__, {:load_model, world_id})
+  end
+
+  @doc """
+  Returns true if the default classifier model is loaded.
+  """
+  def is_loaded? do
+    is_loaded?(world_id: @default_world_id)
+  end
+
+  @doc """
+  Returns true if the classifier model for a world is loaded.
+  """
+  def is_loaded?(opts) do
+    world_id = Keyword.get(opts, :world_id, @default_world_id)
+    GenServer.call(__MODULE__, {:is_loaded, world_id})
+  end
+
+  @doc """
+  Unloads the classifier model for a specific world to free memory.
+  Cannot unload the default world model.
+  """
+  def unload_world(world_id) when is_binary(world_id) do
+    GenServer.call(__MODULE__, {:unload_world, world_id})
+  end
+
+  @doc """
+  Returns status of all loaded models.
+  """
+  def get_status do
+    GenServer.call(__MODULE__, :get_status)
+  end
+
+  @doc """
+  Classifies text using the default world's model.
+  """
   def classify(text) do
-    try do
-      model = Agent.get(__MODULE__, & &1)
+    classify(text, world_id: @default_world_id)
+  end
 
-      case ChatBot.ML.SimpleClassifier.classify(text, model) do
-        {:ok, label, score} ->
-          {:ok,
-           %{
-             intent: label,
-             confidence: score
-           }}
+  @doc """
+  Classifies text using a world-specific model.
 
-        error ->
-          error
+  ## Options
+    - world_id: The world whose model to use (default: "default")
+
+  Falls back through the world inheritance chain if the world's
+  model is not available.
+  """
+  def classify(text, opts) do
+    world_id = Keyword.get(opts, :world_id, @default_world_id)
+    GenServer.call(__MODULE__, {:classify, text, world_id})
+  end
+
+  # ============================================================================
+  # Server Callbacks
+  # ============================================================================
+
+  @impl true
+  def init(_opts) do
+    # Subscribe to world model status events
+    Phoenix.PubSub.subscribe(@pubsub, "world_models:status")
+
+    # Models are loaded on-demand, keyed by world_id
+    state = %{
+      models: %{},
+      loading: MapSet.new()
+    }
+
+    # Try to load default model at startup
+    send(self(), {:load_default})
+
+    {:ok, state}
+  end
+
+  @impl true
+  def handle_info({:load_default}, state) do
+    case do_load_model(@default_world_id) do
+      {:ok, model} ->
+        {:noreply, %{state | models: Map.put(state.models, @default_world_id, model)}}
+
+      {:error, _} ->
+        {:noreply, state}
+    end
+  end
+
+  # Handle world model reload requests from WorldModelRegistry
+  @impl true
+  def handle_info({:world_models_loaded, world_id, _status}, state) do
+    # Reload this world's model if it was already loaded
+    if Map.has_key?(state.models, world_id) do
+      Logger.debug("IntentClassifier: Reloading model for world #{world_id}")
+
+      case do_load_model(world_id) do
+        {:ok, model} ->
+          {:noreply, %{state | models: Map.put(state.models, world_id, model)}}
+
+        {:error, _} ->
+          {:noreply, state}
       end
-    rescue
-      e ->
-        Logger.error("Classification failed", %{error: inspect(e)})
-        {:error, "Classification failed: #{inspect(e)}"}
-    catch
-      :exit, reason ->
-        Logger.warning("Classification service not available", %{reason: inspect(reason)})
-        # Try to load models and retry once
-        case load_models() do
-          {:ok, model} ->
-            case ChatBot.ML.SimpleClassifier.classify(text, model) do
-              {:ok, label, score} ->
-                {:ok, %{intent: label, confidence: score}}
+    else
+      {:noreply, state}
+    end
+  end
 
-              error ->
-                error
-            end
+  @impl true
+  def handle_info({:world_models_loading, _world_id}, state) do
+    # Could show loading state, but for now just acknowledge
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info({:world_models_error, _world_id, _reason}, state) do
+    # Log but continue operating
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_call({:load_model, world_id}, _from, state) do
+    case do_load_model(world_id) do
+      {:ok, model} ->
+        new_models = Map.put(state.models, world_id, model)
+        {:reply, {:ok, model}, %{state | models: new_models}}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:is_loaded, world_id}, _from, state) do
+    loaded = Map.has_key?(state.models, world_id)
+    {:reply, loaded, state}
+  end
+
+  @impl true
+  def handle_call({:unload_world, world_id}, _from, state) do
+    if world_id == @default_world_id do
+      {:reply, {:error, :cannot_unload_default}, state}
+    else
+      new_state = %{state | models: Map.delete(state.models, world_id)}
+      Logger.info("IntentClassifier: Unloaded model for world #{world_id}")
+      {:reply, :ok, new_state}
+    end
+  end
+
+  @impl true
+  def handle_call(:get_status, _from, state) do
+    status = %{
+      loaded_worlds: Map.keys(state.models),
+      loading: MapSet.to_list(state.loading),
+      models:
+        Enum.map(state.models, fn {world_id, model} ->
+          {world_id,
+           %{
+             vocab_size: map_size(Map.get(model, :vocabulary, %{})),
+             intent_count: map_size(Map.get(model, :intent_centroids, %{}))
+           }}
+        end)
+        |> Map.new()
+    }
+
+    {:reply, status, state}
+  end
+
+  @impl true
+  def handle_call({:classify, text, world_id}, _from, state) do
+    # Try to get model for this world, or load it
+    {model, new_state} = get_or_load_model(world_id, state)
+
+    result =
+      case model do
+        nil ->
+          # Try fallback to default
+          case Map.get(state.models, @default_world_id) do
+            nil -> {:error, :no_model_available}
+            default_model -> do_classify(text, default_model)
+          end
+
+        model ->
+          do_classify(text, model)
+      end
+
+    {:reply, result, new_state}
+  end
+
+  # ============================================================================
+  # Private Functions
+  # ============================================================================
+
+  defp get_or_load_model(world_id, state) do
+    case Map.get(state.models, world_id) do
+      nil ->
+        # Try to load it
+        case do_load_model(world_id) do
+          {:ok, model} ->
+            new_models = Map.put(state.models, world_id, model)
+            {model, %{state | models: new_models}}
 
           {:error, _} ->
-            {:error, "Classification service not available"}
+            {nil, state}
         end
+
+      model ->
+        {model, state}
     end
+  end
+
+  defp do_load_model(world_id) do
+    model_path = get_model_path(world_id)
+
+    if File.exists?(model_path) do
+      try do
+        model_binary = File.read!(model_path)
+        model = :erlang.binary_to_term(model_binary)
+
+        Logger.info("Classifier model loaded", %{
+          world_id: world_id,
+          vocab_size: map_size(model.vocabulary)
+        })
+
+        {:ok, model}
+      rescue
+        e ->
+          Logger.warning("Failed to load classifier model", %{
+            world_id: world_id,
+            error: inspect(e)
+          })
+
+          {:error, :load_failed}
+      end
+    else
+      # If world-specific model doesn't exist, try default
+      if world_id != @default_world_id do
+        Logger.debug("No world-specific model, using default", %{world_id: world_id})
+        {:error, :not_found}
+      else
+        Logger.warning("Default classifier model not found", %{path: model_path})
+        {:error, :model_not_found}
+      end
+    end
+  end
+
+  defp get_model_path(@default_world_id) do
+    models_path = Application.get_env(:chat_bot, :ml)[:models_path] || "priv/ml_models"
+    Path.join(models_path, "classifier.term")
+  end
+
+  defp get_model_path(world_id) do
+    # World-specific model path
+    Path.join(["priv", "training_worlds", world_id, "models", "classifier.term"])
+  end
+
+  defp do_classify(text, model) do
+    case ChatBot.ML.SimpleClassifier.classify(text, model) do
+      {:ok, label, score} ->
+        {:ok, %{intent: label, confidence: score}}
+
+      error ->
+        error
+    end
+  rescue
+    e ->
+      Logger.error("Classification failed", %{error: inspect(e)})
+      {:error, "Classification failed: #{inspect(e)}"}
   end
 end

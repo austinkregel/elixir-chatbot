@@ -36,15 +36,24 @@ defmodule ChatBot.Learning.TrainingWorld do
 
   @doc """
   Creates a new training world struct.
+
+  ## Options
+    - id: Custom ID (default: auto-generated)
+    - mode: :ephemeral or :persistent (default: :ephemeral)
+    - base: Base world ID for inheritance (default: nil)
+    - config: Custom configuration map
+    - metadata: Custom metadata map
   """
   def new(name, opts \\ []) do
+    # Allow custom ID (useful for "default" world)
+    id = Keyword.get(opts, :id, generate_id())
     mode = Keyword.get(opts, :mode, :ephemeral)
-    base_world = Keyword.get(opts, :base, nil)
+    base_world = Keyword.get(opts, :base_world, Keyword.get(opts, :base, nil))
     config = Keyword.get(opts, :config, default_config())
     metadata = Keyword.get(opts, :metadata, %{})
 
     %__MODULE__{
-      id: generate_id(),
+      id: id,
       name: name,
       mode: mode,
       base_world: base_world,

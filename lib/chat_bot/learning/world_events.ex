@@ -6,8 +6,8 @@ defmodule ChatBot.Learning.WorldEvents do
   Events are stored in the world's event log and can trigger telemetry.
   """
 
+  # Entity Discovery
   @type event_type ::
-          # Entity Discovery
           :entity_candidate_detected
           | :entity_candidate_updated
           | :entity_promoted_to_gazetteer

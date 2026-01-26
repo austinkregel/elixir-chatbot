@@ -443,17 +443,13 @@ defmodule ChatBot.ConversationSimulationTest do
   # Helper functions
 
   defp ensure_epistemic_stores_started do
-    # Start UserModelStore if not running
-    case Process.whereis(UserModelStore) do
-      nil -> {:ok, _} = UserModelStore.start_link([])
-      _pid -> UserModelStore.clear_all()
-    end
+    # Start stores under ExUnit supervision
+    ensure_started(UserModelStore)
+    ensure_started(BeliefStore)
 
-    # Start BeliefStore if not running
-    case Process.whereis(BeliefStore) do
-      nil -> {:ok, _} = BeliefStore.start_link([])
-      _pid -> BeliefStore.clear()
-    end
+    # Clear data before each test
+    UserModelStore.clear_all()
+    BeliefStore.clear()
 
     :ok
   end

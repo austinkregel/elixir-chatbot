@@ -8,12 +8,32 @@ defmodule Mix.Tasks.TrainModels do
 
   ## Options
 
+    --world <id>     Train models for a specific world (default: saves to priv/ml_models/)
     --intent-only    Train only the intent classifier
     --entity-only    Train only the entity recognition model
     --pos-only       Train only the POS tagger model
     --gazetteer-only Build only the gazetteer lookup tables
     --skip-gazetteer Skip gazetteer building (faster training)
     --skip-pos       Skip POS tagger training
+
+  ## World-Specific Training
+
+  When --world is specified, models are saved to:
+    priv/training_worlds/{world_id}/models/
+
+  This allows each world to have its own isolated ML models. When no world is
+  specified, models are saved to the default location (priv/ml_models/).
+
+  ## Examples
+
+      # Train all models for the default location
+      mix train_models
+
+      # Train all models for the "star_trek" world
+      mix train_models --world star_trek
+
+      # Train only intent classifier for a world
+      mix train_models --world my_world --intent-only
 
   This task will:
   - Load intent training data from data/intents/ (or data/training/intents/)
@@ -23,7 +43,7 @@ defmodule Mix.Tasks.TrainModels do
   - Train BIO-tagged entity recognition model
   - Train POS tagger from annotated data (if available)
   - Build gazetteer lookup tables for fast entity extraction
-  - Save all models to priv/ml_models/
+  - Save all models to priv/ml_models/ (or world-specific path)
   - Report training statistics and model sizes
   """
 
@@ -39,6 +59,7 @@ defmodule Mix.Tasks.TrainModels do
     {opts, _, _} =
       OptionParser.parse(args,
         strict: [
+          world: :string,
           intent_only: :boolean,
           entity_only: :boolean,
           pos_only: :boolean,
@@ -51,7 +72,20 @@ defmodule Mix.Tasks.TrainModels do
     # Ensure we're in the right environment
     Mix.Task.run("app.start")
 
-    Logger.info("Starting ML model training pipeline...")
+    # Get world ID if specified
+    world_id = Keyword.get(opts, :world)
+    models_path = get_models_path(world_id)
+
+    if world_id do
+      Logger.info("Starting ML model training pipeline for world: #{world_id}")
+      Mix.shell().info("Training models for world: #{world_id}")
+      Mix.shell().info("Models will be saved to: #{models_path}")
+    else
+      Logger.info("Starting ML model training pipeline (default models)...")
+    end
+
+    # Ensure output directory exists
+    File.mkdir_p!(models_path)
 
     # Check if training data exists
     training_data_path = Application.get_env(:chat_bot, :ml)[:training_data_path]
@@ -68,27 +102,28 @@ defmodule Mix.Tasks.TrainModels do
     # Start training
     start_time = System.monotonic_time(:millisecond)
 
+    # Pass models_path to training functions
     result =
       cond do
         Keyword.get(opts, :intent_only, false) ->
-          run_intent_training()
+          run_intent_training(models_path)
 
         Keyword.get(opts, :entity_only, false) ->
-          run_entity_training()
+          run_entity_training(models_path)
 
         Keyword.get(opts, :pos_only, false) ->
-          run_pos_training()
+          run_pos_training(models_path)
 
         Keyword.get(opts, :gazetteer_only, false) ->
-          run_gazetteer_building()
+          run_gazetteer_building(models_path)
 
         Keyword.get(opts, :skip_gazetteer, false) ->
-          run_training_without_gazetteer()
+          run_training_without_gazetteer(models_path)
 
         true ->
           # Full training pipeline
           skip_pos = Keyword.get(opts, :skip_pos, false)
-          run_full_training(skip_pos)
+          run_full_training(skip_pos, models_path)
       end
 
     end_time = System.monotonic_time(:millisecond)
@@ -96,7 +131,7 @@ defmodule Mix.Tasks.TrainModels do
 
     case result do
       {:ok, stats} ->
-        display_success(stats, duration)
+        display_success(stats, duration, models_path)
 
       {:error, reason} ->
         display_error(reason)
@@ -104,9 +139,17 @@ defmodule Mix.Tasks.TrainModels do
     end
   end
 
-  defp run_intent_training do
+  defp get_models_path(nil) do
+    Application.get_env(:chat_bot, :ml)[:models_path] || "priv/ml_models"
+  end
+
+  defp get_models_path(world_id) do
+    Path.join(["priv", "training_worlds", world_id, "models"])
+  end
+
+  defp run_intent_training(models_path) do
     Mix.shell().info("Training intent classifier only...")
-    {stats, result} = Trainer.train_intent_classifier()
+    {stats, result} = Trainer.train_intent_classifier(%{}, models_path: models_path)
 
     case result do
       :ok -> {:ok, stats}
@@ -114,19 +157,20 @@ defmodule Mix.Tasks.TrainModels do
     end
   end
 
-  defp run_entity_training do
+  defp run_entity_training(models_path) do
     Mix.shell().info("Training entity recognition model only...")
-    stats = Trainer.train_entity_model()
+    stats = Trainer.train_entity_model(%{}, models_path: models_path)
     {:ok, stats}
   end
 
-  defp run_gazetteer_building do
+  defp run_gazetteer_building(_models_path) do
     Mix.shell().info("Building gazetteer lookup tables only...")
+    # Gazetteer is global, not world-specific (uses overlays for worlds)
     stats = Trainer.build_gazetteer_data()
     {:ok, stats}
   end
 
-  defp run_training_without_gazetteer do
+  defp run_training_without_gazetteer(models_path) do
     Mix.shell().info("Training models (skipping gazetteer)...")
 
     stats = %{
@@ -135,11 +179,11 @@ defmodule Mix.Tasks.TrainModels do
       entity_model_trained: false
     }
 
-    {stats, result} = Trainer.train_intent_classifier(stats)
+    {stats, result} = Trainer.train_intent_classifier(stats, models_path: models_path)
 
     case result do
       :ok ->
-        stats = Trainer.train_entity_model(stats)
+        stats = Trainer.train_entity_model(stats, models_path: models_path)
         {:ok, stats}
 
       {:error, reason} ->
@@ -147,15 +191,15 @@ defmodule Mix.Tasks.TrainModels do
     end
   end
 
-  defp run_full_training(skip_pos) do
-    # Run standard training
-    case Trainer.train_and_save() do
+  defp run_full_training(skip_pos, models_path) do
+    # Run standard training with custom models path
+    case Trainer.train_and_save(models_path: models_path) do
       {:ok, stats} ->
         # Also train POS tagger if data is available and not skipped
         if skip_pos do
           {:ok, stats}
         else
-          case run_pos_training_internal() do
+          case run_pos_training_internal(models_path) do
             {:ok, pos_stats} ->
               {:ok, Map.merge(stats, pos_stats)}
 
@@ -170,12 +214,12 @@ defmodule Mix.Tasks.TrainModels do
     end
   end
 
-  defp run_pos_training do
+  defp run_pos_training(models_path) do
     Mix.shell().info("Training POS tagger model only...")
-    run_pos_training_internal()
+    run_pos_training_internal(models_path)
   end
 
-  defp run_pos_training_internal do
+  defp run_pos_training_internal(models_path) do
     # Check for POS training data in data/training/pos/
     training_file = "data/training/pos/sequences.json"
 
@@ -184,7 +228,9 @@ defmodule Mix.Tasks.TrainModels do
 
       case POSTagger.train_from_file(training_file) do
         {:ok, model} ->
-          case POSTagger.save_model(model) do
+          save_path = Path.join(models_path, "pos_model.term")
+
+          case POSTagger.save_model(model, save_path) do
             {:ok, path} ->
               Mix.shell().info("  POS model saved to #{path}")
 
@@ -217,7 +263,9 @@ defmodule Mix.Tasks.TrainModels do
 
           case POSTagger.train(sequences) do
             {:ok, model} ->
-              case POSTagger.save_model(model) do
+              save_path = Path.join(models_path, "pos_model.term")
+
+              case POSTagger.save_model(model, save_path) do
                 {:ok, path} ->
                   Mix.shell().info("  POS model saved to #{path}")
 
@@ -390,7 +438,7 @@ defmodule Mix.Tasks.TrainModels do
     end
   end
 
-  defp display_success(stats, duration) do
+  defp display_success(stats, duration, models_path) do
     Mix.shell().info("")
     Mix.shell().info("Training completed successfully!")
     Mix.shell().info("")
@@ -424,7 +472,6 @@ defmodule Mix.Tasks.TrainModels do
     Mix.shell().info("  Total training time: #{format_duration(duration)}")
 
     # Display model file sizes
-    models_path = Application.get_env(:chat_bot, :ml)[:models_path]
     Mix.shell().info("")
     Mix.shell().info("Saved Models:")
     Mix.shell().info("=" |> String.duplicate(50))
@@ -434,6 +481,7 @@ defmodule Mix.Tasks.TrainModels do
     display_model_file(models_path, "pos_model.term", "POS Tagger")
     display_model_file(models_path, "gazetteer.term", "Gazetteer")
     display_model_file(models_path, "vectorizer.term", "TF-IDF Vectorizer")
+    display_model_file(models_path, "embedder.term", "Embedder Vocabulary")
 
     Mix.shell().info("")
     Mix.shell().info("Models saved to: #{models_path}")

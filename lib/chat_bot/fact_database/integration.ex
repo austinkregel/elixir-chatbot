@@ -1,7 +1,7 @@
 defmodule ChatBot.FactDatabase.Integration do
   @moduledoc """
   Integration layer between FactDatabase and the epistemic system.
-  
+
   This module provides:
   1. Dynamic fact addition (learned facts can be added to the database)
   2. Integration with epistemic user model (facts as beliefs)
@@ -9,16 +9,17 @@ defmodule ChatBot.FactDatabase.Integration do
   """
 
   alias ChatBot.FactDatabase
+  alias ChatBot.FactDatabase.Fact
   alias ChatBot.Epistemic.{BeliefStore, JTMS}
   alias ChatBot.Epistemic.Types.Belief
   require Logger
 
   @doc """
   Adds a new fact to the database dynamically.
-  
+
   This allows the system to learn and grow its fact database.
   The fact is also registered with the epistemic system for verification.
-  
+
   Options:
   - :category - Category for the fact (default: "learned")
   - :verification_source - Source of verification
@@ -28,33 +29,32 @@ defmodule ChatBot.FactDatabase.Integration do
   """
   def add_fact(entity, fact_text, opts \\ []) do
     category = Keyword.get(opts, :category, "learned")
+    entity_type = Keyword.get(opts, :entity_type)
     verification_source = Keyword.get(opts, :verification_source, "learned_from_conversation")
     confidence = Keyword.get(opts, :confidence, 0.8)
     register_with_jtms? = Keyword.get(opts, :register_with_jtms, true)
     create_belief? = Keyword.get(opts, :create_belief, true)
 
-    # Generate fact ID
-    fact_id = "learned_#{generate_id()}"
+    # Create fact using Fact struct
+    new_fact =
+      Fact.new(
+        id: "learned_#{generate_id()}",
+        entity: entity,
+        entity_type: entity_type,
+        fact: fact_text,
+        category: category,
+        verification_source: verification_source,
+        confidence: confidence,
+        learned_at: System.system_time(:second)
+      )
 
-    # Create fact structure
-    new_fact = %{
-      "id" => fact_id,
-      "entity" => entity,
-      "fact" => fact_text,
-      "category" => category,
-      "verification_source" => verification_source,
-      "confidence" => confidence,
-      "learned_at" => System.system_time(:second)
-    }
-
-    # Add to fact database (we'll need to extend FactDatabase to support this)
-    # For now, we'll store it in a learned facts file
+    # Store in learned facts file
     store_learned_fact(new_fact)
 
     # Register with JTMS if requested
     node_id =
       if register_with_jtms? do
-        register_fact_with_jtms(fact_id, entity, fact_text, confidence)
+        register_fact_with_jtms(new_fact.id, entity, fact_text, confidence)
       else
         nil
       end
@@ -65,18 +65,19 @@ defmodule ChatBot.FactDatabase.Integration do
     end
 
     Logger.info("Added learned fact", %{
-      fact_id: fact_id,
+      fact_id: new_fact.id,
       entity: entity,
+      entity_type: new_fact.entity_type,
       category: category,
       confidence: confidence
     })
 
-    {:ok, fact_id, new_fact}
+    {:ok, new_fact.id, new_fact}
   end
 
   @doc """
   Verifies a fact against existing beliefs and the truth maintenance system.
-  
+
   Returns:
   - {:verified, confidence} - Fact is consistent with existing beliefs
   - {:contradicted, conflicting_beliefs} - Fact contradicts existing beliefs
@@ -94,6 +95,7 @@ defmodule ChatBot.FactDatabase.Integration do
         else
           # Check confidence levels
           max_confidence = Enum.max_by(beliefs, & &1.confidence, fn -> nil end)
+
           if max_confidence && max_confidence.confidence >= 0.7 do
             {:verified, max_confidence.confidence}
           else
@@ -108,7 +110,7 @@ defmodule ChatBot.FactDatabase.Integration do
 
   @doc """
   Syncs facts from the FactDatabase to the epistemic system as beliefs.
-  
+
   This creates beliefs for all facts in the database, allowing them to be
   verified and tracked by the truth maintenance system.
   """
@@ -116,38 +118,38 @@ defmodule ChatBot.FactDatabase.Integration do
     category = Keyword.get(opts, :category)
     min_confidence = Keyword.get(opts, :min_confidence, 0.7)
 
-    # Query facts from database
+    # Query facts from database (returns Fact structs)
     facts = FactDatabase.query(category: category, limit: 1000)
 
     # Filter by confidence
-    verified_facts = Enum.filter(facts, fn fact ->
-      Map.get(fact, "confidence", 0.0) >= min_confidence
-    end)
+    verified_facts =
+      Enum.filter(facts, fn fact ->
+        fact.confidence >= min_confidence
+      end)
 
     # Create beliefs for each fact
     created =
       Enum.map(verified_facts, fn fact ->
-        entity = Map.get(fact, "entity", "unknown")
-        fact_text = Map.get(fact, "fact", "")
-        confidence = Map.get(fact, "confidence", 0.8)
-        verification_source = Map.get(fact, "verification_source", "fact_database")
+        verification_source = fact.verification_source || "fact_database"
 
         belief =
-          Belief.new(:world, normalize_entity(entity), fact_text,
+          Belief.new(:world, normalize_entity(fact.entity), fact.fact,
             source: :learned,
-            confidence: confidence,
+            confidence: fact.confidence,
             provenance: ["fact_database", verification_source],
             metadata: %{
-              fact_id: Map.get(fact, "id"),
-              category: Map.get(fact, "category")
+              fact_id: fact.id,
+              category: fact.category
             }
           )
 
         case BeliefStore.add_belief(belief) do
           {:ok, belief_id} ->
             # Register with JTMS as a premise (high confidence verified fact)
-            if confidence >= 0.9 do
-              case JTMS.create_premise("fact:#{belief_id}", metadata: %{fact_id: Map.get(fact, "id")}) do
+            if fact.confidence >= 0.9 do
+              case JTMS.create_premise("fact:#{belief_id}",
+                     metadata: %{fact_id: fact.id}
+                   ) do
                 {:ok, node_id} ->
                   BeliefStore.link_to_node(belief_id, node_id)
                   1
@@ -171,7 +173,7 @@ defmodule ChatBot.FactDatabase.Integration do
 
   @doc """
   Checks if a fact contradicts any existing beliefs or facts.
-  
+
   Uses the JTMS to check for contradictions.
   """
   def check_contradiction(entity, fact_text) do
@@ -197,7 +199,7 @@ defmodule ChatBot.FactDatabase.Integration do
 
   # Private Functions
 
-  defp store_learned_fact(fact) do
+  defp store_learned_fact(%Fact{} = fact) do
     # Store learned facts in a separate file
     learned_file = Path.join([File.cwd!(), "data/facts/learned.json"])
 
@@ -217,8 +219,11 @@ defmodule ChatBot.FactDatabase.Integration do
         []
       end
 
-    # Add new fact
-    updated_facts = [fact | existing_facts]
+    # Convert Fact struct to map for JSON serialization
+    fact_map = Fact.to_map(fact)
+
+    # Add new fact (as map for JSON compatibility)
+    updated_facts = [fact_map | existing_facts]
 
     # Write back
     data = %{
@@ -240,9 +245,9 @@ defmodule ChatBot.FactDatabase.Integration do
       node_type = if confidence >= 0.9, do: :premise, else: :assumption
 
       case JTMS.create_node("fact:#{fact_id}",
-           node_type: node_type,
-           metadata: %{entity: entity, fact: fact_text, fact_id: fact_id}
-         ) do
+             node_type: node_type,
+             metadata: %{entity: entity, fact: fact_text, fact_id: fact_id}
+           ) do
         {:ok, node_id} ->
           # Enable assumption if it's an assumption node
           if node_type == :assumption do

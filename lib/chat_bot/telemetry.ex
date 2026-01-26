@@ -65,58 +65,59 @@ defmodule ChatBot.Telemetry do
   def attach_handlers do
     handlers = [
       # Brain evaluate handlers
-      {"chatbot-brain-evaluate-stop", @brain_evaluate ++ [:stop], &handle_span_stop/4,
+      {"chatbot-brain-evaluate-stop", @brain_evaluate ++ [:stop], &__MODULE__.handle_span_stop/4,
        %{metric: :brain_evaluate}},
       {"chatbot-brain-evaluate-exception", @brain_evaluate ++ [:exception],
-       &handle_span_exception/4, %{metric: :brain_evaluate}},
+       &__MODULE__.handle_span_exception/4, %{metric: :brain_evaluate}},
 
       # Pipeline process handlers
-      {"chatbot-pipeline-process-stop", @pipeline_process ++ [:stop], &handle_span_stop/4,
-       %{metric: :pipeline_process}},
+      {"chatbot-pipeline-process-stop", @pipeline_process ++ [:stop],
+       &__MODULE__.handle_span_stop/4, %{metric: :pipeline_process}},
       {"chatbot-pipeline-process-exception", @pipeline_process ++ [:exception],
-       &handle_span_exception/4, %{metric: :pipeline_process}},
+       &__MODULE__.handle_span_exception/4, %{metric: :pipeline_process}},
 
       # Memory query handlers
-      {"chatbot-memory-query-stop", @memory_query ++ [:stop], &handle_span_stop/4,
+      {"chatbot-memory-query-stop", @memory_query ++ [:stop], &__MODULE__.handle_span_stop/4,
        %{metric: :memory_query}},
 
       # Memory embed handlers
-      {"chatbot-memory-embed-stop", @memory_embed ++ [:stop], &handle_span_stop/4,
+      {"chatbot-memory-embed-stop", @memory_embed ++ [:stop], &__MODULE__.handle_span_stop/4,
        %{metric: :memory_embed}},
 
       # Gazetteer lookup handlers
-      {"chatbot-gazetteer-lookup-stop", @gazetteer_lookup ++ [:stop], &handle_span_stop/4,
-       %{metric: :gazetteer_lookup}},
+      {"chatbot-gazetteer-lookup-stop", @gazetteer_lookup ++ [:stop],
+       &__MODULE__.handle_span_stop/4, %{metric: :gazetteer_lookup}},
 
       # ML Training handlers
-      {"chatbot-ml-train-start", @ml_train ++ [:start], &handle_training_start/4, %{}},
-      {"chatbot-ml-train-stop", @ml_train ++ [:stop], &handle_training_stop/4, %{}},
-      {"chatbot-ml-train-exception", @ml_train ++ [:exception], &handle_training_exception/4, %{}},
+      {"chatbot-ml-train-start", @ml_train ++ [:start], &__MODULE__.handle_training_start/4, %{}},
+      {"chatbot-ml-train-stop", @ml_train ++ [:stop], &__MODULE__.handle_training_stop/4, %{}},
+      {"chatbot-ml-train-exception", @ml_train ++ [:exception],
+       &__MODULE__.handle_training_exception/4, %{}},
 
       # Model load handlers
-      {"chatbot-model-load-stop", @model_load ++ [:stop], &handle_model_load/4, %{}},
+      {"chatbot-model-load-stop", @model_load ++ [:stop], &__MODULE__.handle_model_load/4, %{}},
 
       # Message queue sampling
-      {"chatbot-message-queue", @message_queue, &handle_message_queue/4, %{}},
+      {"chatbot-message-queue", @message_queue, &__MODULE__.handle_message_queue/4, %{}},
 
       # Error events
-      {"chatbot-error", @error_event, &handle_error/4, %{}},
+      {"chatbot-error", @error_event, &__MODULE__.handle_error/4, %{}},
 
       # Learning/Training World events
-      {"chatbot-learning-entity-discovered", @learning_entity_discovered, &handle_learning_event/4,
-       %{event: :entity_discovered}},
-      {"chatbot-learning-entity-promoted", @learning_entity_promoted, &handle_learning_event/4,
-       %{event: :entity_promoted}},
-      {"chatbot-learning-ambiguity", @learning_ambiguity, &handle_learning_event/4,
+      {"chatbot-learning-entity-discovered", @learning_entity_discovered,
+       &__MODULE__.handle_learning_event/4, %{event: :entity_discovered}},
+      {"chatbot-learning-entity-promoted", @learning_entity_promoted,
+       &__MODULE__.handle_learning_event/4, %{event: :entity_promoted}},
+      {"chatbot-learning-ambiguity", @learning_ambiguity, &__MODULE__.handle_learning_event/4,
        %{event: :ambiguity_detected}},
-      {"chatbot-learning-document", @learning_document_processed, &handle_learning_event/4,
-       %{event: :document_processed}},
-      {"chatbot-learning-batch", @learning_batch_complete, &handle_learning_event/4,
+      {"chatbot-learning-document", @learning_document_processed,
+       &__MODULE__.handle_learning_event/4, %{event: :document_processed}},
+      {"chatbot-learning-batch", @learning_batch_complete, &__MODULE__.handle_learning_event/4,
        %{event: :batch_complete}},
-      {"chatbot-learning-world-created", @learning_world_created, &handle_learning_event/4,
-       %{event: :world_created}},
-      {"chatbot-learning-world-destroyed", @learning_world_destroyed, &handle_learning_event/4,
-       %{event: :world_destroyed}}
+      {"chatbot-learning-world-created", @learning_world_created,
+       &__MODULE__.handle_learning_event/4, %{event: :world_created}},
+      {"chatbot-learning-world-destroyed", @learning_world_destroyed,
+       &__MODULE__.handle_learning_event/4, %{event: :world_destroyed}}
     ]
 
     Enum.each(handlers, fn {id, event, handler, config} ->
@@ -234,10 +235,11 @@ defmodule ChatBot.Telemetry do
 
   # ============================================================================
   # Handler Functions (Must be fast - use cast only)
+  # These are public so telemetry can call them efficiently as module functions
   # ============================================================================
 
-  # Handle span stop events - record duration
-  defp handle_span_stop(_event, measurements, metadata, config) do
+  @doc false
+  def handle_span_stop(_event, measurements, metadata, config) do
     duration_ms = native_to_ms(measurements[:duration])
     metric = config[:metric]
 
@@ -250,8 +252,8 @@ defmodule ChatBot.Telemetry do
     end
   end
 
-  # Handle span exception events - record error
-  defp handle_span_exception(_event, measurements, metadata, config) do
+  @doc false
+  def handle_span_exception(_event, measurements, metadata, config) do
     duration_ms = native_to_ms(measurements[:duration])
     metric = config[:metric]
 
@@ -264,8 +266,8 @@ defmodule ChatBot.Telemetry do
     end
   end
 
-  # Handle message queue events
-  defp handle_message_queue(_event, measurements, metadata, _config) do
+  @doc false
+  def handle_message_queue(_event, measurements, metadata, _config) do
     if Process.whereis(ChatBot.Metrics.Aggregator) do
       GenServer.cast(
         ChatBot.Metrics.Aggregator,
@@ -274,8 +276,8 @@ defmodule ChatBot.Telemetry do
     end
   end
 
-  # Handle error events
-  defp handle_error(_event, _measurements, metadata, _config) do
+  @doc false
+  def handle_error(_event, _measurements, metadata, _config) do
     if Process.whereis(ChatBot.Metrics.Aggregator) do
       GenServer.cast(
         ChatBot.Metrics.Aggregator,
@@ -284,8 +286,8 @@ defmodule ChatBot.Telemetry do
     end
   end
 
-  # Handle ML training start events
-  defp handle_training_start(_event, measurements, metadata, _config) do
+  @doc false
+  def handle_training_start(_event, measurements, metadata, _config) do
     if Process.whereis(ChatBot.Metrics.Aggregator) do
       GenServer.cast(
         ChatBot.Metrics.Aggregator,
@@ -294,8 +296,8 @@ defmodule ChatBot.Telemetry do
     end
   end
 
-  # Handle ML training stop events
-  defp handle_training_stop(_event, measurements, metadata, _config) do
+  @doc false
+  def handle_training_stop(_event, measurements, metadata, _config) do
     if Process.whereis(ChatBot.Metrics.Aggregator) do
       GenServer.cast(
         ChatBot.Metrics.Aggregator,
@@ -304,8 +306,8 @@ defmodule ChatBot.Telemetry do
     end
   end
 
-  # Handle ML training exception events
-  defp handle_training_exception(_event, measurements, metadata, _config) do
+  @doc false
+  def handle_training_exception(_event, measurements, metadata, _config) do
     if Process.whereis(ChatBot.Metrics.Aggregator) do
       GenServer.cast(
         ChatBot.Metrics.Aggregator,
@@ -314,8 +316,8 @@ defmodule ChatBot.Telemetry do
     end
   end
 
-  # Handle model load events
-  defp handle_model_load(_event, measurements, metadata, _config) do
+  @doc false
+  def handle_model_load(_event, measurements, metadata, _config) do
     if Process.whereis(ChatBot.Metrics.Aggregator) do
       GenServer.cast(
         ChatBot.Metrics.Aggregator,
@@ -324,8 +326,8 @@ defmodule ChatBot.Telemetry do
     end
   end
 
-  # Handle learning/training world events
-  defp handle_learning_event(_event, measurements, metadata, config) do
+  @doc false
+  def handle_learning_event(_event, measurements, metadata, config) do
     if Process.whereis(ChatBot.Metrics.Aggregator) do
       GenServer.cast(
         ChatBot.Metrics.Aggregator,

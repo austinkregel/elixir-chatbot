@@ -352,6 +352,32 @@ defmodule ChatBot.Metrics.Aggregator do
   end
 
   @impl true
+  def handle_cast({:record_learning_event, event_type, _measurements, metadata}, state) do
+    now = System.monotonic_time(:millisecond)
+    world_id = Map.get(metadata, :world_id, "unknown")
+
+    # Increment counter for this event type
+    metric_key = {:learning, event_type}
+    increment_counter(metric_key, :count)
+
+    # Track per-world counts
+    world_key = {:learning_world, world_id, event_type}
+    increment_counter(world_key, :count)
+
+    # Record timestamp
+    :ets.insert(
+      @metrics_table,
+      {{:learning_last, event_type},
+       %{
+         timestamp: now,
+         world_id: world_id
+       }}
+    )
+
+    {:noreply, state}
+  end
+
+  @impl true
   def handle_call(:reset, _from, state) do
     :ets.delete_all_objects(@metrics_table)
     :ets.delete_all_objects(@raw_data_table)

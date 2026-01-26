@@ -1,12 +1,16 @@
 defmodule ChatBot.Memory.ConsolidationTest do
   use ExUnit.Case, async: false
+  import ChatBot.TestHelpers
 
   alias ChatBot.Memory.{Consolidation, Store, Embedder, VectorIndex}
   alias ChatBot.Memory.Types.Episode
 
   setup do
-    # Start or reuse embedder
-    ensure_process_started(Embedder, fn -> Embedder.start_link() end)
+    # PubSub is started globally in test_helper.exs
+    ensure_pubsub_started()
+
+    # Start embedder and store under ExUnit supervision
+    ensure_started(Embedder)
 
     texts = [
       "hello world friend",
@@ -20,29 +24,13 @@ defmodule ChatBot.Memory.ConsolidationTest do
     Embedder.build_vocabulary(texts)
 
     # Start or reuse store
-    ensure_process_started(Store, fn ->
-      Store.start_link(
-        persistence_path: "/tmp/test_consolidation_#{:rand.uniform(100_000)}.term"
-      )
-    end)
+    ensure_started(
+      {Store, persistence_path: "/tmp/test_consolidation_#{:rand.uniform(100_000)}.term"}
+    )
 
     Store.clear()
 
     :ok
-  end
-
-  defp ensure_process_started(name, start_fn) do
-    case Process.whereis(name) do
-      nil ->
-        case start_fn.() do
-          {:ok, _pid} -> :ok
-          {:error, {:already_started, _pid}} -> :ok
-        end
-
-      _pid ->
-        # Process already running, just use it
-        :ok
-    end
   end
 
   describe "find_clusters" do

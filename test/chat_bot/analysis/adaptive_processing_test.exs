@@ -10,6 +10,7 @@ defmodule ChatBot.Analysis.AdaptiveProcessingTest do
   """
 
   use ExUnit.Case, async: false
+  import ChatBot.TestHelpers
 
   alias ChatBot.Analysis.{
     Interpretation,
@@ -339,15 +340,9 @@ defmodule ChatBot.Analysis.AdaptiveProcessingTest do
 
   describe "HeuristicStore" do
     setup do
-      # Start heuristic store for tests
-      case Process.whereis(HeuristicStore) do
-        nil ->
-          {:ok, _pid} = HeuristicStore.start_link(seeded_path: "priv/heuristics/seeded.json")
-          :ok
-
-        _pid ->
-          :ok
-      end
+      # Start heuristic store under ExUnit supervision
+      ensure_started({HeuristicStore, seeded_path: "priv/heuristics/seeded.json"})
+      :ok
     end
 
     test "matches global heuristics" do
@@ -482,14 +477,9 @@ defmodule ChatBot.Analysis.AdaptiveProcessingTest do
 
   describe "OutcomeLearner" do
     setup do
-      # Ensure stores are running
-      unless Process.whereis(HeuristicStore) do
-        HeuristicStore.start_link(seeded_path: "priv/heuristics/seeded.json")
-      end
-
-      unless Process.whereis(AnalyzerCalibration) do
-        AnalyzerCalibration.start_link([])
-      end
+      # Start stores under ExUnit supervision
+      ensure_started({HeuristicStore, seeded_path: "priv/heuristics/seeded.json"})
+      ensure_started(AnalyzerCalibration)
 
       :ok
     end

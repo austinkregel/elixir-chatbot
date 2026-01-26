@@ -47,7 +47,8 @@ defmodule ChatBot.Learning.DocumentIngestor do
     - `:progress_callback` - Function called with progress updates
     - `:learn_types` - Whether to learn type patterns from known entities (default: true)
   """
-  def ingest_file(world_id, file_path, opts \\ []) when is_binary(world_id) and is_binary(file_path) do
+  def ingest_file(world_id, file_path, opts \\ [])
+      when is_binary(world_id) and is_binary(file_path) do
     start_time = System.monotonic_time(:millisecond)
 
     case File.read(file_path) do
@@ -75,7 +76,8 @@ defmodule ChatBot.Learning.DocumentIngestor do
 
   Processes files sequentially and aggregates results.
   """
-  def ingest_files(world_id, file_paths, opts \\ []) when is_binary(world_id) and is_list(file_paths) do
+  def ingest_files(world_id, file_paths, opts \\ [])
+      when is_binary(world_id) and is_list(file_paths) do
     start_time = System.monotonic_time(:millisecond)
     total_files = length(file_paths)
     progress_callback = Keyword.get(opts, :progress_callback)
@@ -132,10 +134,8 @@ defmodule ChatBot.Learning.DocumentIngestor do
     aggregated = %{
       documents_processed: length(successful),
       documents_failed: length(failed),
-      total_chunks:
-        Enum.sum(Enum.map(successful, fn {:ok, _, r} -> r.total_chunks end)),
-      total_tokens:
-        Enum.sum(Enum.map(successful, fn {:ok, _, r} -> r.total_tokens end)),
+      total_chunks: Enum.sum(Enum.map(successful, fn {:ok, _, r} -> r.total_chunks end)),
+      total_tokens: Enum.sum(Enum.map(successful, fn {:ok, _, r} -> r.total_tokens end)),
       entities_discovered:
         Enum.sum(Enum.map(successful, fn {:ok, _, r} -> r.entities_discovered end)),
       processing_time_ms: System.monotonic_time(:millisecond) - start_time,
@@ -245,7 +245,7 @@ defmodule ChatBot.Learning.DocumentIngestor do
         file_path
         |> File.stream!([], chunk_size)
         |> Stream.with_index(1)
-        |> Enum.reduce({0, 0, 0}, fn {chunk, idx}, {chunks_acc, tokens_acc, entities_acc} ->
+        |> Enum.reduce({0, 0, 0}, fn {chunk, _idx}, {chunks_acc, tokens_acc, entities_acc} ->
           {chunk_tokens, chunk_entities} =
             process_chunk(chunk, world_id, pos_model, learn_types)
 
@@ -283,7 +283,7 @@ defmodule ChatBot.Learning.DocumentIngestor do
   # Private Functions
   # ============================================================================
 
-  defp chunk_text(text, chunk_size, overlap) when byte_size(text) <= chunk_size do
+  defp chunk_text(text, chunk_size, _overlap) when byte_size(text) <= chunk_size do
     [text]
   end
 
@@ -296,7 +296,7 @@ defmodule ChatBot.Learning.DocumentIngestor do
 
   defp do_chunk("", _chunk_size, _overlap, acc), do: Enum.reverse(acc)
 
-  defp do_chunk(text, chunk_size, overlap, acc) when byte_size(text) <= chunk_size do
+  defp do_chunk(text, chunk_size, _overlap, acc) when byte_size(text) <= chunk_size do
     Enum.reverse([text | acc])
   end
 
@@ -392,7 +392,7 @@ defmodule ChatBot.Learning.DocumentIngestor do
     {token_count, entity_count}
   end
 
-  defp learn_from_known_entities(chunk, world_id, pos_model, tokens) do
+  defp learn_from_known_entities(_chunk, world_id, pos_model, tokens) do
     token_texts = Enum.map(tokens, & &1.text)
     pos_predictions = POSTagger.predict(token_texts, pos_model)
 
@@ -413,7 +413,9 @@ defmodule ChatBot.Learning.DocumentIngestor do
         end_idx = min(length(tokens) - 1, idx + context_window)
 
         context_tokens = Enum.slice(tokens, start_idx..end_idx)
-        context_tags = Enum.slice(pos_predictions, start_idx..end_idx) |> Enum.map(fn {_, tag} -> tag end)
+
+        context_tags =
+          Enum.slice(pos_predictions, start_idx..end_idx) |> Enum.map(fn {_, tag} -> tag end)
 
         TypeInferrer.learn_from_known_entity(entity_type, context_tokens, context_tags, world_id)
       end

@@ -11,7 +11,7 @@ defmodule ChatBot.Analysis.BacktrackController do
   This addresses the "backtracking loops (thrash risk)" problem.
   """
 
-  alias ChatBot.Analysis.{Interpretation, IntentRegistry}
+  alias ChatBot.Analysis.{Interpretation, IntentRegistry, SlotDetector}
 
   require Logger
 
@@ -199,7 +199,7 @@ defmodule ChatBot.Analysis.BacktrackController do
 
   defp has_entity_type?(entities, types) when is_list(types) do
     Enum.any?(entities, fn e ->
-      entity_type = e[:entity] || e["entity"] || e[:type] || e["type"]
+      entity_type = e[:entity_type]
       entity_type in types
     end)
   end
@@ -280,7 +280,7 @@ defmodule ChatBot.Analysis.BacktrackController do
         %{
           type: :disambiguation,
           prompt:
-            "I'm not sure if you're asking about #{humanize_intent(a)} or #{humanize_intent(b)}. Could you clarify?",
+            "I'm not sure if you're asking about #{IntentRegistry.humanize(a)} or #{IntentRegistry.humanize(b)}. Could you clarify?",
           options: [a, b]
         }
 
@@ -288,7 +288,7 @@ defmodule ChatBot.Analysis.BacktrackController do
         %{
           type: :disambiguation,
           prompt:
-            "I'm having trouble understanding. Are you asking about #{humanize_intent(a)}, #{humanize_intent(b)}, or #{humanize_intent(c)}?",
+            "I'm having trouble understanding. Are you asking about #{IntentRegistry.humanize(a)}, #{IntentRegistry.humanize(b)}, or #{IntentRegistry.humanize(c)}?",
           options: [a, b, c]
         }
 
@@ -316,7 +316,7 @@ defmodule ChatBot.Analysis.BacktrackController do
         %{
           type: :oscillation,
           prompt:
-            "I keep going back and forth between understanding this as #{humanize_intent(a)} and #{humanize_intent(b)}. Which did you mean?",
+            "I keep going back and forth between understanding this as #{IntentRegistry.humanize(a)} and #{IntentRegistry.humanize(b)}. Which did you mean?",
           options: [a, b]
         }
 
@@ -350,38 +350,7 @@ defmodule ChatBot.Analysis.BacktrackController do
   end
 
   defp generate_slot_prompt(slot, intent) do
-    case {slot, intent} do
-      {"location", "weather.query"} ->
-        "What location would you like the weather for?"
-
-      {"location", _} ->
-        "Which location are you referring to?"
-
-      {"device", "device.control"} ->
-        "Which device would you like me to control?"
-
-      {"action", "device.control"} ->
-        "What would you like me to do with the device?"
-
-      {"date", _} ->
-        "For which date?"
-
-      {"time", _} ->
-        "At what time?"
-
-      {slot_name, _} ->
-        readable = slot_name |> String.replace("-", " ") |> String.replace("_", " ")
-        "Could you please specify the #{readable}?"
-    end
-  end
-
-  defp humanize_intent(nil), do: "something"
-  defp humanize_intent(""), do: "something"
-
-  defp humanize_intent(intent) when is_binary(intent) do
-    intent
-    |> String.replace(".", " ")
-    |> String.replace("_", " ")
-    |> String.replace("smalltalk ", "")
+    # Use centralized clarification prompts from IntentRegistry via SlotDetector
+    SlotDetector.get_clarification_prompt(slot, intent)
   end
 end

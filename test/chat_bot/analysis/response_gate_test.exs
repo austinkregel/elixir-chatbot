@@ -209,9 +209,7 @@ defmodule ChatBot.Analysis.ResponseGateTest do
     is_question = Keyword.get(opts, :is_question, false)
     confidence = Keyword.get(opts, :confidence, 0.8)
 
-    speech_act = SpeechActResult.new(category, sub_type, confidence,
-      is_question: is_question
-    )
+    speech_act = SpeechActResult.new(category, sub_type, confidence, is_question: is_question)
 
     chunk_analysis = %ChunkAnalysis{
       chunk_index: 0,

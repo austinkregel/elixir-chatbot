@@ -99,7 +99,11 @@ defmodule Mix.Tasks.GenerateCountriesCapitals do
       "fields" => "name,capital,altSpellings,cca2,cca3"
     }
 
-    case Req.get(@endpoint, params: params, receive_timeout: 60_000, connect_options: [timeout: 30_000]) do
+    case Req.get(@endpoint,
+           params: params,
+           receive_timeout: 60_000,
+           connect_options: [timeout: 30_000]
+         ) do
       {:ok, %{status: 200, body: body}} when is_list(body) ->
         File.write!(cache_path, Jason.encode!(%{"countries" => body}, pretty: true))
         {:ok, body}
@@ -126,16 +130,23 @@ defmodule Mix.Tasks.GenerateCountriesCapitals do
               key = String.downcase(v)
 
               Map.update(country_acc, key, %{"value" => v, "synonyms" => syns}, fn existing ->
-                %{"value" => existing["value"], "synonyms" => Enum.uniq(existing["synonyms"] ++ syns)}
+                %{
+                  "value" => existing["value"],
+                  "synonyms" => Enum.uniq(existing["synonyms"] ++ syns)
+                }
               end)
           end
 
         capital_acc =
-          Enum.reduce(capital_entries, capital_acc, fn %{"value" => cv, "synonyms" => csyns}, acc ->
+          Enum.reduce(capital_entries, capital_acc, fn %{"value" => cv, "synonyms" => csyns},
+                                                       acc ->
             key = String.downcase(cv)
 
             Map.update(acc, key, %{"value" => cv, "synonyms" => csyns}, fn existing ->
-              %{"value" => existing["value"], "synonyms" => Enum.uniq(existing["synonyms"] ++ csyns)}
+              %{
+                "value" => existing["value"],
+                "synonyms" => Enum.uniq(existing["synonyms"] ++ csyns)
+              }
             end)
           end)
 
@@ -145,13 +156,17 @@ defmodule Mix.Tasks.GenerateCountriesCapitals do
     country_entries =
       countries_map
       |> Map.values()
-      |> Enum.map(fn %{"value" => v, "synonyms" => syns} -> %{"value" => v, "synonyms" => Enum.uniq([v | syns])} end)
+      |> Enum.map(fn %{"value" => v, "synonyms" => syns} ->
+        %{"value" => v, "synonyms" => Enum.uniq([v | syns])}
+      end)
       |> Enum.sort_by(fn %{"value" => v} -> String.downcase(v) end)
 
     capital_entries =
       capitals_map
       |> Map.values()
-      |> Enum.map(fn %{"value" => v, "synonyms" => syns} -> %{"value" => v, "synonyms" => Enum.uniq([v | syns])} end)
+      |> Enum.map(fn %{"value" => v, "synonyms" => syns} ->
+        %{"value" => v, "synonyms" => Enum.uniq([v | syns])}
+      end)
       |> Enum.sort_by(fn %{"value" => v} -> String.downcase(v) end)
 
     {country_entries, capital_entries}
@@ -219,4 +234,3 @@ defmodule Mix.Tasks.GenerateCountriesCapitals do
     System.halt(1)
   end
 end
-

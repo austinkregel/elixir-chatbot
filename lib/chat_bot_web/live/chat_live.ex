@@ -2,6 +2,7 @@ defmodule ChatBotWeb.ChatLive do
   @moduledoc """
   LiveView for the chat interface.
   Provides real-time chat functionality with the AI brain.
+  Uses global world context from WorldContext hook.
   """
 
   use ChatBotWeb, :live_view
@@ -16,6 +17,9 @@ defmodule ChatBotWeb.ChatLive do
       Phoenix.PubSub.subscribe(ChatBot.PubSub, "brain:conversations")
       Phoenix.PubSub.subscribe(ChatBot.PubSub, "brain:analysis")
 
+      # Subscribe to world model status changes
+      Phoenix.PubSub.subscribe(ChatBot.PubSub, "world_models:status")
+
       # Start periodic system status polling (every 2 seconds)
       :timer.send_interval(2_000, self(), :refresh_system_status)
     end
@@ -25,7 +29,7 @@ defmodule ChatBotWeb.ChatLive do
     conversations = GenServer.call(ChatBot.Brain, :get_conversations, 60_000)
     knowledge = get_combined_knowledge(status.name)
 
-    # Get cognitive memory stats
+    # Get cognitive memory stats (uses world context from on_mount)
     memory_stats = get_cognitive_memory_stats()
 
     # Get system status
@@ -34,6 +38,8 @@ defmodule ChatBotWeb.ChatLive do
     # Generate a session user_id for epistemic tracking
     user_id = "web_user_" <> (:crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower))
 
+    # Note: current_world_id and available_worlds are set by WorldContext on_mount hook
+    # Note: conversation loading is handled by handle_params which is called after mount
     socket =
       socket
       |> assign(:status, status)
@@ -54,8 +60,67 @@ defmodule ChatBotWeb.ChatLive do
       |> assign(:system_status, system_status)
       |> assign(:user_id, user_id)
       |> assign(:selected_message_id, nil)
+      |> assign(:world_models_loading, false)
+      |> assign(:world_models_status, get_world_models_status(socket))
 
     {:ok, socket}
+  end
+
+  defp get_world_models_status(socket) do
+    world_id = Map.get(socket.assigns, :current_world_id, "default")
+    ChatBot.SystemStatus.get_world_models_status(world_id)
+  end
+
+  @impl true
+  def handle_params(params, _uri, socket) do
+    conversation_id = params["conversation_id"]
+
+    socket =
+      cond do
+        # No conversation requested and none loaded - do nothing
+        is_nil(conversation_id) and is_nil(socket.assigns.current_conversation_id) ->
+          socket
+
+        # Same conversation already loaded - do nothing
+        conversation_id == socket.assigns.current_conversation_id ->
+          socket
+
+        # Load new conversation from URL
+        conversation_id ->
+          case ChatBot.Brain.get_conversation(conversation_id) do
+            {:ok, conversation} ->
+              messages = to_display_messages(conversation_id, Map.get(conversation, :memory, []))
+
+              socket
+              |> assign(:current_conversation_id, conversation_id)
+              |> assign(:messages, messages)
+              |> assign(:expanded_traces, MapSet.new())
+              |> assign(:analysis_logs, %{})
+              |> assign(:analysis_details, %{})
+              |> assign(:dev_panel_tabs, %{})
+              |> assign(:error_message, nil)
+              |> assign(:selected_message_id, nil)
+
+            {:error, _reason} ->
+              socket
+              |> put_flash(:error, "Conversation not found")
+              |> push_navigate(to: ~p"/chat")
+          end
+
+        # Clear conversation (navigated to /chat from /chat/:id)
+        true ->
+          socket
+          |> assign(:current_conversation_id, nil)
+          |> assign(:messages, [])
+          |> assign(:expanded_traces, MapSet.new())
+          |> assign(:analysis_logs, %{})
+          |> assign(:analysis_details, %{})
+          |> assign(:dev_panel_tabs, %{})
+          |> assign(:error_message, nil)
+          |> assign(:selected_message_id, nil)
+      end
+
+    {:noreply, socket}
   end
 
   @impl true
@@ -64,8 +129,10 @@ defmodule ChatBotWeb.ChatLive do
       # Send message to existing conversation
       send_message(socket.assigns.current_conversation_id, input, socket)
     else
-      # Create new conversation first
-      case ChatBot.Brain.create_conversation() do
+      # Create new conversation first with the selected world
+      world_id = socket.assigns.current_world_id
+
+      case ChatBot.Brain.create_conversation(world_id: world_id) do
         {:ok, conversation_id} ->
           socket =
             socket
@@ -73,12 +140,15 @@ defmodule ChatBotWeb.ChatLive do
             |> assign(:conversations, [
               %{
                 id: conversation_id,
+                world_id: world_id,
                 message_count: 0,
                 created_at: System.system_time(:millisecond),
                 last_activity: System.system_time(:millisecond)
               }
               | socket.assigns.conversations
             ])
+            # Update URL to include conversation ID (replace to avoid history spam)
+            |> push_patch(to: ~p"/chat/#{conversation_id}", replace: true)
 
           send_message(conversation_id, input, socket)
 
@@ -89,7 +159,7 @@ defmodule ChatBotWeb.ChatLive do
     end
   end
 
-  def handle_event("input_change", %{"value" => value}, socket) do
+  def handle_event("input_change", %{"input" => value}, socket) do
     {:noreply, assign(socket, :input_text, value)}
   end
 
@@ -132,41 +202,36 @@ defmodule ChatBotWeb.ChatLive do
   end
 
   def handle_event("select_conversation", %{"conversation_id" => conversation_id}, socket) do
-    case ChatBot.Brain.get_conversation(conversation_id) do
-      {:ok, conversation} ->
-        messages = to_display_messages(conversation_id, Map.get(conversation, :memory, []))
-
-        socket =
-          socket
-          |> assign(:current_conversation_id, conversation_id)
-          |> assign(:messages, messages)
-          |> assign(:expanded_traces, MapSet.new())
-          |> assign(:analysis_logs, %{})
-          |> assign(:analysis_details, %{})
-          |> assign(:dev_panel_tabs, %{})
-          |> assign(:error_message, nil)
-          |> assign(:selected_message_id, nil)
-
-        {:noreply, socket}
-
-      {:error, reason} ->
-        {:noreply, assign(socket, :error_message, "Failed to load conversation: #{reason}")}
-    end
+    # Navigate to the conversation URL - handle_params will load the messages
+    {:noreply, push_patch(socket, to: ~p"/chat/#{conversation_id}")}
   end
 
   def handle_event("new_conversation", _params, socket) do
+    # Navigate to base chat URL - handle_params will clear the conversation
     socket =
       socket
-      |> assign(:current_conversation_id, nil)
-      |> assign(:messages, [])
-      |> assign(:expanded_traces, MapSet.new())
-      |> assign(:analysis_logs, %{})
-      |> assign(:analysis_details, %{})
-      |> assign(:dev_panel_tabs, %{})
-      |> assign(:error_message, nil)
       |> assign(:selected_message_id, nil)
+      |> push_patch(to: ~p"/chat")
 
     {:noreply, socket}
+  end
+
+  def handle_event("switch_world", %{"world_id" => _world_id}, socket) do
+    # World context hook already updated current_world_id
+    # Reset conversation state when world changes
+    {:noreply, reset_for_world_change(socket)}
+  end
+
+  def handle_event("refresh_worlds", _params, socket) do
+    # World context hook already refreshed available_worlds
+    {:noreply, socket}
+  end
+
+  defp reset_for_world_change(socket) do
+    socket
+    |> assign(:current_conversation_id, nil)
+    |> assign(:messages, [])
+    |> assign(:selected_message_id, nil)
   end
 
   def handle_event("end_conversation", _params, socket) do
@@ -227,6 +292,19 @@ defmodule ChatBotWeb.ChatLive do
     else
       {:noreply, socket}
     end
+  end
+
+  def handle_info({:world_context_changed, world_id}, socket) do
+    # World was changed from another LiveView or tab - reset conversation and update models
+    world_models_status = ChatBot.SystemStatus.get_world_models_status(world_id)
+
+    socket =
+      socket
+      |> reset_for_world_change()
+      |> assign(:world_models_status, world_models_status)
+      |> assign(:world_models_loading, false)
+
+    {:noreply, socket}
   end
 
   def handle_info(
@@ -394,6 +472,41 @@ defmodule ChatBotWeb.ChatLive do
      |> assign(:memory_stats, memory_stats)}
   end
 
+  # World model status events
+  def handle_info({:world_models_loading, world_id}, socket) do
+    if world_id == socket.assigns.current_world_id do
+      {:noreply, assign(socket, :world_models_loading, true)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info({:world_models_loaded, world_id, _status}, socket) do
+    if world_id == socket.assigns.current_world_id do
+      world_models_status = get_world_models_status(socket)
+
+      {:noreply,
+       socket
+       |> assign(:world_models_loading, false)
+       |> assign(:world_models_status, world_models_status)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info({:world_models_error, world_id, reason}, socket) do
+    if world_id == socket.assigns.current_world_id do
+      Logger.warning("World models error for #{world_id}: #{inspect(reason)}")
+
+      {:noreply,
+       socket
+       |> assign(:world_models_loading, false)
+       |> put_flash(:warning, "World models failed to load. Using default models.")}
+    else
+      {:noreply, socket}
+    end
+  end
+
   # Private Functions
 
   defp send_message(conversation_id, input, socket) do
@@ -411,6 +524,7 @@ defmodule ChatBotWeb.ChatLive do
     socket =
       socket
       |> assign(:messages, socket.assigns.messages ++ [user_message])
+      |> assign(:input_text, "")
       |> assign(:error_message, nil)
 
     view_pid = self()
@@ -533,8 +647,7 @@ defmodule ChatBotWeb.ChatLive do
 
         :response_generated ->
           Map.put(details, :response, %{
-            response_type:
-              Map.get(payload, :response_type) || Map.get(payload, "response_type"),
+            response_type: Map.get(payload, :response_type) || Map.get(payload, "response_type"),
             strategy: Map.get(payload, :strategy) || Map.get(payload, "strategy"),
             method: Map.get(payload, :method) || Map.get(payload, "method"),
             intent: Map.get(payload, :intent) || Map.get(payload, "intent"),
@@ -894,16 +1007,16 @@ defmodule ChatBotWeb.ChatLive do
           <%= if length(@trace.entities || []) > 0 do %>
             <div class="space-y-0.5">
               <%= for entity <- @trace.entities do %>
-                <% 
-                  confidence = Map.get(entity, :confidence)
-                  confidence_percent = if confidence, do: Float.round(confidence * 100, 1), else: nil
-                  confidence_variant = cond do
+                <% confidence = Map.get(entity, :confidence)
+                confidence_percent = if confidence, do: Float.round(confidence * 100, 1), else: nil
+
+                confidence_variant =
+                  cond do
                     confidence && confidence >= 0.8 -> :success
                     confidence && confidence >= 0.6 -> :warning
                     confidence -> :error
                     true -> :default
-                  end
-                %>
+                  end %>
                 <div class="flex items-center gap-1">
                   <span class="badge badge-outline badge-xs">{entity.type}</span>
                   <%= if confidence_percent do %>

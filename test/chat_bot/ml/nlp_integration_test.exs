@@ -1,11 +1,15 @@
 defmodule ChatBot.ML.NLPIntegrationTest do
   use ExUnit.Case, async: false
+  import ChatBot.TestHelpers
 
   alias ChatBot.ML.IntentClassifierSimple
   alias ChatBot.ML.EntityExtractor
   alias ChatBot.ML.NLPPipeline
 
-  setup_all do
+  setup do
+    # Ensure PubSub is running (started in test_helper.exs)
+    ensure_pubsub_started()
+
     # Ensure models are trained
     Application.put_env(:chat_bot, :ml,
       enabled: true,
@@ -14,7 +18,8 @@ defmodule ChatBot.ML.NLPIntegrationTest do
       training_data_path: "data"
     )
 
-    # Load models - these may fail if not trained, which is ok for some tests
+    # Start the IntentClassifierSimple under ExUnit supervision
+    ensure_started(IntentClassifierSimple)
     IntentClassifierSimple.load_models()
     EntityExtractor.load_entity_maps()
 
@@ -52,7 +57,7 @@ defmodule ChatBot.ML.NLPIntegrationTest do
 
       # May or may not find depending on entity data
       if beatles do
-        assert beatles.entity =~ "music"
+        assert beatles.entity_type =~ "music"
       end
     end
   end

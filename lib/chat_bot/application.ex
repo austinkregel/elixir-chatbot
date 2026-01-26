@@ -38,8 +38,12 @@ defmodule ChatBot.Application do
       # Start the Adaptive Processing System
       ChatBot.Analysis.AnalyzerCalibration,
       {ChatBot.Analysis.HeuristicStore, seeded_path: "priv/heuristics/seeded.json"},
+      # Start the Intent Classifier
+      ChatBot.ML.IntentClassifierSimple,
       # Start the Training World Manager
       ChatBot.Learning.WorldManager,
+      # Start the World Model Registry (manages per-world ML models)
+      ChatBot.Learning.WorldModelRegistry,
       # Start the Response Template Store (loads templates from intent files)
       ChatBot.Response.TemplateStore,
       # Start the Subprocess Supervisor
@@ -68,15 +72,16 @@ defmodule ChatBot.Application do
 
   defp init_ml_pipeline do
     require Logger
+    alias ChatBot.Learning.WorldModelRegistry
 
     # Use the new NLP pipeline initialization
     Task.start(fn ->
-      # Give the Gazetteer GenServer time to start
+      # Give GenServers time to start
       Process.sleep(100)
 
       Logger.info("Initializing NLP pipeline...")
 
-      # Load gazetteer data
+      # Load gazetteer data (global, not per-world)
       case ChatBot.ML.Gazetteer.load_all() do
         {:ok, stats} ->
           Logger.info("Gazetteer loaded", stats)
@@ -85,14 +90,24 @@ defmodule ChatBot.Application do
           Logger.warning("Gazetteer loading failed: #{inspect(reason)}")
       end
 
-      # Load intent classifier
-      case ChatBot.ML.IntentClassifierSimple.load_models() do
-        {:ok, _models} ->
-          Logger.info("Intent classifier loaded successfully")
+      # Load default world models via WorldModelRegistry
+      # This handles classifier, embedder, and other per-world models
+      case WorldModelRegistry.activate_world("default") do
+        {:ok, status} ->
+          Logger.info("Default world models activated", status)
 
         {:error, reason} ->
-          Logger.warning("Intent classifier not found: #{inspect(reason)}")
+          Logger.warning("Default world model activation failed: #{inspect(reason)}")
           Logger.warning("Run 'mix train_models' to train models.")
+
+          # Fall back to loading classifier directly
+          case ChatBot.ML.IntentClassifierSimple.load_models() do
+            {:ok, _models} ->
+              Logger.info("Intent classifier loaded via fallback")
+
+            {:error, _} ->
+              :ok
+          end
       end
 
       # Load entity maps as fallback
@@ -107,8 +122,54 @@ defmodule ChatBot.Application do
       # Initialize cognitive memory system
       init_cognitive_memory()
 
+      # Initialize default training world
+      init_default_world()
+
       Logger.info("NLP pipeline initialization complete")
     end)
+  end
+
+  defp init_default_world do
+    require Logger
+    alias ChatBot.Learning.WorldManager
+
+    # Wait for WorldManager to be ready
+    unless Process.whereis(WorldManager) do
+      Logger.debug("Waiting for WorldManager to start...")
+      Process.sleep(100)
+    end
+
+    unless Process.whereis(WorldManager) do
+      Logger.warning("WorldManager not available, skipping default world init")
+      :ok
+    else
+      # Ensure default world exists
+      case WorldManager.get("default") do
+        {:ok, _world} ->
+          Logger.debug("Default world already exists")
+          :ok
+
+        {:error, :not_found} ->
+          Logger.info("Creating default training world...")
+
+          # Create the default world with persistent mode
+          # Use "default" as both name and ID for easy reference
+          case WorldManager.create("default",
+                 id: "default",
+                 mode: :persistent,
+                 base_world: nil,
+                 metadata: %{description: "Default training world containing base data"}
+               ) do
+            {:ok, world} ->
+              Logger.info("Default world created", %{id: world.id})
+              :ok
+
+            {:error, reason} ->
+              Logger.warning("Failed to create default world: #{inspect(reason)}")
+              :error
+          end
+      end
+    end
   end
 
   defp init_cognitive_memory do
@@ -127,23 +188,16 @@ defmodule ChatBot.Application do
     else
       Logger.info("Initializing cognitive memory system...")
 
-      # Load training data into memory system for classification
-      case ChatBot.Memory.Think.load_training_data() do
-        {:ok, count} ->
-          Logger.info("Cognitive memory loaded #{count} episodes from training data")
+      # Initialize world-specific embedder ETS table
+      ChatBot.Learning.WorldEmbedder.init()
+      Logger.info("World embedder system initialized")
 
-          # Run initial consolidation to create semantic facts
-          case ChatBot.Memory.Think.think(:consolidate, %{threshold: 0.7, min_size: 3}) do
-            {:ok, {:consolidated, new_facts}} ->
-              Logger.info("Consolidated #{new_facts} semantic facts")
-
-            _ ->
-              :ok
-          end
-
-        {:error, reason} ->
-          Logger.warning("Failed to load cognitive memory: #{inspect(reason)}")
-      end
+      # Note: We no longer load intent training data into episodic memory.
+      # The intent classifier has its own TF-IDF model (classifier.term).
+      # Episodic memory should only contain real user interactions,
+      # which are added by the Brain during conversations.
+      #
+      # Embeddings are now world-specific and built lazily when needed.
 
       Logger.info("Cognitive memory system initialized")
     end
