@@ -358,5 +358,15 @@
     ],
     "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello, I'm Austin",
     "timestamp": 1769398752224
+  },
+  {
+    "id": "7f383707f0f5ba89",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello",
+    "timestamp": 1769408578859
   }
 ]

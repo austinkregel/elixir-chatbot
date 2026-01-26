@@ -179,7 +179,11 @@ defmodule ChatBot.EdgeCasesTest do
     test "Austin is also a city in Texas", %{conversation_id: conv_id} do
       {:ok, response} = Brain.evaluate(conv_id, "Hello, I'm Austin")
 
-      # Should recognize as greeting with person name, NOT ask about weather in Austin, TX
+      # Positive: Should recognize as greeting/introduction
+      assert response =~ ~r/hello|hi|hey|nice|meet|welcome|austin/i,
+             "Expected greeting/introduction response, got: #{response}"
+
+      # Negative: Regression tests - should not misclassify as location
       refute response =~ ~r/weather|temperature|forecast/i,
              "Greeting was misclassified as weather query: #{response}"
 
@@ -191,6 +195,11 @@ defmodule ChatBot.EdgeCasesTest do
     test "Dallas is also a city in Texas", %{conversation_id: conv_id} do
       {:ok, response} = Brain.evaluate(conv_id, "Hi, my name is Dallas")
 
+      # Positive: Should recognize as greeting/introduction
+      assert response =~ ~r/hello|hi|hey|nice|meet|welcome|dallas/i,
+             "Expected greeting/introduction response, got: #{response}"
+
+      # Negative: Regression test
       refute response =~ ~r/weather|temperature|forecast|Texas/i,
              "Dallas was incorrectly interpreted as a location: #{response}"
     end
@@ -199,6 +208,11 @@ defmodule ChatBot.EdgeCasesTest do
     test "Paris is also a city in France", %{conversation_id: conv_id} do
       {:ok, response} = Brain.evaluate(conv_id, "Hello, I'm Paris")
 
+      # Positive: Should recognize as greeting/introduction
+      assert response =~ ~r/hello|hi|hey|nice|meet|welcome|paris/i,
+             "Expected greeting/introduction response, got: #{response}"
+
+      # Negative: Regression test
       refute response =~ ~r/weather|France|Eiffel|travel/i,
              "Paris was incorrectly interpreted as a location: #{response}"
     end
@@ -316,6 +330,11 @@ defmodule ChatBot.EdgeCasesTest do
     test "Delilah is also a song (Hey There Delilah)", %{conversation_id: conv_id} do
       {:ok, response} = Brain.evaluate(conv_id, "Hello, I'm Delilah")
 
+      # Positive: Should recognize as greeting/introduction (broad patterns)
+      assert response =~ ~r/hello|hi|hey|nice|meet|welcome|delilah|greetings|good|how/i,
+             "Expected greeting/introduction response, got: #{response}"
+
+      # Negative: Regression test - should not trigger music playback
       refute response =~ ~r/playing|play\s|music|song/i,
              "Delilah was misclassified as a music request: #{response}"
     end
@@ -324,6 +343,11 @@ defmodule ChatBot.EdgeCasesTest do
     test "Jolene is also a famous song", %{conversation_id: conv_id} do
       {:ok, response} = Brain.evaluate(conv_id, "Hi, my name is Jolene")
 
+      # Positive: Should recognize as greeting/introduction
+      assert response =~ ~r/hello|hi|hey|nice|meet|welcome|jolene/i,
+             "Expected greeting/introduction response, got: #{response}"
+
+      # Negative: Regression test
       refute response =~ ~r/playing|play\s|music|Dolly/i,
              "Jolene was misclassified as a music request: #{response}"
     end
@@ -332,6 +356,11 @@ defmodule ChatBot.EdgeCasesTest do
     test "Iris is also a song by Goo Goo Dolls", %{conversation_id: conv_id} do
       {:ok, response} = Brain.evaluate(conv_id, "Hello, I'm Iris")
 
+      # Positive: Should recognize as greeting/introduction (broad patterns)
+      assert response =~ ~r/hello|hi|hey|nice|meet|welcome|iris|good|what|going|how/i,
+             "Expected greeting/introduction response, got: #{response}"
+
+      # Negative: Regression test
       refute response =~ ~r/playing|play\s|music|song/i,
              "Iris was misclassified as a music request: #{response}"
     end
@@ -340,6 +369,11 @@ defmodule ChatBot.EdgeCasesTest do
     test "Roxanne is also a song by The Police", %{conversation_id: conv_id} do
       {:ok, response} = Brain.evaluate(conv_id, "Hi, I'm Roxanne")
 
+      # Positive: Should recognize as greeting/introduction
+      assert response =~ ~r/hello|hi|hey|nice|meet|welcome|roxanne/i,
+             "Expected greeting/introduction response, got: #{response}"
+
+      # Negative: Regression test
       refute response =~ ~r/playing|play\s|music|song/i,
              "Roxanne was misclassified as a music request: #{response}"
     end
@@ -383,17 +417,24 @@ defmodule ChatBot.EdgeCasesTest do
     test "yo as greeting", %{conversation_id: conv_id} do
       {:ok, response} = Brain.evaluate(conv_id, "Yo")
 
-      # Should be recognized as a greeting or at least not a command
+      # Positive: Should recognize informal greeting (broad patterns)
+      assert response =~ ~r/hello|hi|hey|yo|sup|wassup|what|going|how|wuz|good|greetings/i,
+             "Expected informal greeting response, got: #{response}"
+
+      # Negative: Regression test
       refute response =~ ~r/bye|goodbye|see you later/i,
              "Informal greeting got farewell response: #{response}"
-
-      assert String.length(response) > 0
     end
 
     @tag :informal
     test "sup as greeting", %{conversation_id: conv_id} do
       {:ok, response} = Brain.evaluate(conv_id, "Sup")
 
+      # Positive: Should recognize informal greeting
+      assert response =~ ~r/hello|hi|hey|yo|sup|wassup|what.*up|how.*you/i,
+             "Expected informal greeting response, got: #{response}"
+
+      # Negative: Regression test
       refute response =~ ~r/bye|goodbye|see you later/i,
              "Informal greeting got farewell response: #{response}"
     end
@@ -402,6 +443,11 @@ defmodule ChatBot.EdgeCasesTest do
     test "wassup as greeting", %{conversation_id: conv_id} do
       {:ok, response} = Brain.evaluate(conv_id, "Wassup")
 
+      # Positive: Should recognize informal greeting
+      assert response =~ ~r/hello|hi|hey|yo|sup|wassup|what.*up|how.*you/i,
+             "Expected informal greeting response, got: #{response}"
+
+      # Negative: Regression test
       refute response =~ ~r/bye|goodbye|see you later/i,
              "Informal greeting got farewell response: #{response}"
     end
@@ -410,6 +456,11 @@ defmodule ChatBot.EdgeCasesTest do
     test "hiya as greeting", %{conversation_id: conv_id} do
       {:ok, response} = Brain.evaluate(conv_id, "Hiya!")
 
+      # Positive: Should produce a non-empty response (informal greetings may get varied responses)
+      assert String.length(response) > 0,
+             "Expected non-empty response, got empty"
+
+      # Negative: Regression test
       refute response =~ ~r/bye|goodbye|see you later/i,
              "Informal greeting got farewell response: #{response}"
     end
@@ -520,16 +571,13 @@ defmodule ChatBot.EdgeCasesTest do
     test "extra spaces", %{conversation_id: conv_id} do
       {:ok, response} = Brain.evaluate(conv_id, "Hello,    I'm    Austin")
 
-      # Ideal: Should recognize as greeting + introduction, not trigger music/weather
-      # Current: Extra spaces may affect tokenization/classification
-      if response =~ ~r/playing|play\s|weather/i do
-        IO.puts(
-          "Note: 'Hello,    I'm    Austin' (extra spaces) triggered unexpected response - tokenization could be improved"
-        )
-      end
+      # Positive: Should recognize as greeting/introduction despite extra spaces (broad patterns)
+      assert response =~ ~r/hello|hi|hey|nice|meet|welcome|austin|good|what|going|how/i,
+             "Expected greeting/introduction response despite extra spaces, got: #{response}"
 
-      # At minimum, should get a response
-      assert String.length(response) > 0
+      # Negative: Regression test
+      refute response =~ ~r/playing|play\s|weather/i,
+             "Extra spaces caused misclassification: #{response}"
     end
   end
 
@@ -556,16 +604,13 @@ defmodule ChatBot.EdgeCasesTest do
     test "im vs I'm", %{conversation_id: conv_id} do
       {:ok, response} = Brain.evaluate(conv_id, "Hello, im Austin")
 
-      # Ideal: Should recognize as greeting + introduction, not music/weather
-      # Current: "Hello" may match song name, leading to music response
-      if response =~ ~r/playing|play\s|weather/i do
-        IO.puts(
-          "Note: 'Hello, im Austin' (typo) triggered unexpected response - disambiguation could be improved"
-        )
-      end
+      # Positive: Should still recognize as greeting/introduction despite typo
+      assert response =~ ~r/hello|hi|hey|nice|meet|welcome|austin/i,
+             "Expected greeting/introduction response despite typo, got: #{response}"
 
-      # At minimum, should get a response
-      assert String.length(response) > 0
+      # Negative: Regression test
+      refute response =~ ~r/playing|play\s|weather/i,
+             "Typo caused misclassification: #{response}"
     end
 
     @tag :typos
@@ -649,16 +694,13 @@ defmodule ChatBot.EdgeCasesTest do
     test "the name's pattern (James Bond style)", %{conversation_id: conv_id} do
       {:ok, response} = Brain.evaluate(conv_id, "The name's Bond, James Bond")
 
-      # Ideal: Should recognize as introduction, not trigger music/weather
-      # Current: Unusual patterns may not be perfectly recognized
-      if response =~ ~r/playing|play\s|weather/i do
-        IO.puts(
-          "Note: 'The name's Bond, James Bond' triggered unexpected response - unusual pattern handling could be improved"
-        )
-      end
+      # Positive: Should recognize as introduction despite unusual pattern
+      assert response =~ ~r/bond|name|introduce|meet|welcome|hello|hi/i,
+             "Expected introduction response for unusual pattern, got: #{response}"
 
-      # At minimum, should get a response
-      assert String.length(response) > 0
+      # Negative: Regression test
+      refute response =~ ~r/playing|play\s|weather/i,
+             "Unusual introduction pattern was misclassified: #{response}"
     end
 
     @tag :introductions
@@ -686,16 +728,13 @@ defmodule ChatBot.EdgeCasesTest do
     test "good afternoon with city name (Dallas)", %{conversation_id: conv_id} do
       {:ok, response} = Brain.evaluate(conv_id, "Good afternoon, I'm Dallas")
 
-      # Ideal: Dallas should be recognized as person name, not location
-      # Current: Disambiguation may not perfectly distinguish - this is an area for improvement
-      if response =~ ~r/weather|temperature|forecast/i do
-        IO.puts(
-          "Note: 'Good afternoon, I'm Dallas' triggered weather response - disambiguation could be improved"
-        )
-      end
+      # Positive: Should recognize as greeting/introduction
+      assert response =~ ~r/good afternoon|afternoon|hello|hi|nice|meet|welcome|dallas/i,
+             "Expected greeting/introduction response, got: #{response}"
 
-      # At minimum, should get a response
-      assert String.length(response) > 0
+      # Negative: Regression test - should not treat Dallas as location
+      refute response =~ ~r/weather|temperature|forecast/i,
+             "Dallas was incorrectly interpreted as location: #{response}"
     end
 
     @tag :time_greeting
@@ -724,16 +763,13 @@ defmodule ChatBot.EdgeCasesTest do
     test "greeting + question + name", %{conversation_id: conv_id} do
       {:ok, response} = Brain.evaluate(conv_id, "Hi! I'm Austin. What's the weather?")
 
-      # Ideal: Austin (from "I'm Austin") should not be used as weather location
-      # Current: Multi-chunk disambiguation may not perfectly distinguish - area for improvement
-      if response =~ ~r/Austin.*weather|weather.*Austin/i do
-        IO.puts(
-          "Note: 'Hi! I'm Austin. What's the weather?' used Austin as location - disambiguation could be improved"
-        )
-      end
+      # Positive: Should address weather question (may ask for location)
+      assert response =~ ~r/weather|temperature|forecast|location|city|where/i,
+             "Expected weather-related response, got: #{response}"
 
-      # At minimum, should get a response
-      assert String.length(response) > 0
+      # Negative: Regression test - Austin from introduction should not be used as weather location
+      refute response =~ ~r/Austin.*weather|weather.*Austin/i,
+             "Austin from introduction was incorrectly used as weather location: #{response}"
     end
 
     @tag :multi_sentence

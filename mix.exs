@@ -67,7 +67,9 @@ defmodule ChatBot.MixProject do
       # ML/NLP dependencies
       {:nx, "~> 0.7"},
       {:scholar, "~> 0.3"},
-      {:tokenizers, "~> 0.4"}
+      {:tokenizers, "~> 0.4"},
+      # Test dependencies
+      {:excoveralls, "~> 0.18", only: :test}
     ]
   end
 
@@ -106,6 +108,8 @@ defmodule ChatBot.MixProject do
       "world.status": ["training_world.metrics default"],
       "world.setup": ["training_world.create default --mode=persistent"],
       "world.clear": ["training_world.destroy default"],
+      "test.coverage": ["coveralls.html"],
+      "test.coverage.json": ["coveralls.json"],
       "world.reset": [
         "training_world.destroy default",
         "training_world.create default --mode=persistent"

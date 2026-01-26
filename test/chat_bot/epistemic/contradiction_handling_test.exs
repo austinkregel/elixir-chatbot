@@ -266,6 +266,8 @@ defmodule ChatBot.Epistemic.ContradictionHandlingTest do
 
   describe "Learner contradiction handling" do
     test "logs warning when learned fact contradicts existing belief" do
+      import ExUnit.CaptureLog
+
       # Add an initial belief (using atom predicate)
       {:ok, _belief_id} =
         BeliefStore.add_belief(
@@ -280,19 +282,21 @@ defmodule ChatBot.Epistemic.ContradictionHandlingTest do
       # The Learner calls verify_fact before adding
       # Note: The system detects explicit negations, not conflicting values
       result = Integration.verify_fact("france", "The capital is not Paris")
-
+      
+      # Positive: Should detect the contradiction
       assert {:contradicted, conflicting_beliefs} = result
-      assert length(conflicting_beliefs) == 1
+      assert length(conflicting_beliefs) == 1,
+             "Expected 1 conflicting belief, got: #{inspect(conflicting_beliefs)}"
 
-      # The Learner would log a warning and not add the fact
-      # We can't easily test logging, but we can verify the fact wasn't added
-      # by checking that the contradictory fact is not in the belief store
+      # Positive: Verify the fact wasn't added (existing assertion)
       {:ok, beliefs} = BeliefStore.query_beliefs(subject: :world, predicate: :france)
       paris_beliefs = Enum.filter(beliefs, &(&1.object == "The capital is Paris"))
       not_paris_beliefs = Enum.filter(beliefs, &(&1.object == "The capital is not Paris"))
 
-      assert length(paris_beliefs) == 1
-      assert length(not_paris_beliefs) == 0
+      assert length(paris_beliefs) == 1,
+             "Original belief should still exist when contradiction detected"
+      assert length(not_paris_beliefs) == 0,
+             "Contradictory fact should not be added when contradiction detected"
     end
 
     test "allows adding fact when no contradiction exists" do

@@ -73,3 +73,7 @@ erl_crash.dump
 /installer/tmp
 /installer/doc
 /installer/deps
+
+.venv
+.env
+.cursor

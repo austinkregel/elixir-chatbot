@@ -63,7 +63,11 @@ defmodule ChatBot.ConversationSimulationTest do
       # User introduces themselves
       {:ok, response1} = Brain.evaluate(conv_id, "Hello, my name is Alex", user_id: user_id)
 
-      assert String.length(response1) > 0
+      # Positive: Should recognize greeting/introduction
+      assert response1 =~ ~r/hello|hi|hey|nice|meet|welcome|alex/i,
+             "Expected greeting/introduction response, got: #{response1}"
+
+      # Negative: Regression test
       refute response1 =~ ~r/bye|goodbye/i
 
       # Verify the name was potentially extracted (if epistemic system is enabled)
@@ -90,17 +94,23 @@ defmodule ChatBot.ConversationSimulationTest do
     } do
       # Turn 1: Greeting
       {:ok, response1} = Brain.evaluate(conv_id, "Hello!", user_id: user_id)
-      assert String.length(response1) > 0
+      # Positive: Should be greeting response (broad patterns)
+      assert response1 =~ ~r/hello|hi|hey|welcome|nice|meet|how.*you|good|day|going|wuz/i,
+             "Expected greeting response, got: #{response1}"
 
       # Turn 2: Statement
       {:ok, response2} = Brain.evaluate(conv_id, "I like coffee", user_id: user_id)
-      assert String.length(response2) > 0
+      # Positive: Should produce a non-empty response (acknowledgment or conversation)
+      assert String.length(response2) > 0,
+             "Expected non-empty response, got empty"
 
       # Turn 3: Question
       {:ok, response3} = Brain.evaluate(conv_id, "What's the weather like?", user_id: user_id)
-      assert String.length(response3) > 0
+      # Positive: Should produce a non-empty response
+      assert String.length(response3) > 0,
+             "Expected non-empty response, got empty"
 
-      # Verify conversation maintained context (no crashes, coherent responses)
+      # Negative: Ensure responses are different (regression test)
       refute response1 == response2
       refute response2 == response3
     end
@@ -132,8 +142,12 @@ defmodule ChatBot.ConversationSimulationTest do
     } do
       for {input, _type} <- @preference_scenario do
         {:ok, response} = Brain.evaluate(conv_id, input, user_id: user_id)
-        assert String.length(response) > 0
-        # Should acknowledge the statement, not farewell
+
+        # Positive: Should produce a non-empty response (acknowledgment or conversation)
+        assert String.length(response) > 0,
+               "Expected non-empty response to preference statement, got empty"
+
+        # Negative: Regression test
         refute response =~ ~r/bye|goodbye|see you later/i
       end
     end
