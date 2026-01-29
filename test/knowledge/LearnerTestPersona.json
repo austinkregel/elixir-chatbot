@@ -8,13 +8,18 @@
   },
   "people": {
     "John": {
-      "confidence": 0.9,
+      "confidence": 0.72,
       "name": "John",
       "type": "person"
     },
     "Seattle": {
       "confidence": 0.76,
       "name": "Seattle",
+      "type": "person"
+    },
+    "Test": {
+      "confidence": 0.73,
+      "name": "Test",
       "type": "person"
     }
   },

@@ -15,8 +15,14 @@
       "type": "person"
     },
     "John": {
-      "confidence": 0.72,
+      "age": "30",
+      "birthdate": "1994-01-15",
+      "favorite_holidays": [
+        "christmas",
+        "new year"
+      ],
       "name": "John",
+      "occupation": "developer",
       "type": "person"
     }
   },

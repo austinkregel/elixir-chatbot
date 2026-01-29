@@ -360,7 +360,8 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
     pattern_score = max(text_intro_score, pron_verb_score)
     score = pattern_score + self_ref_score + greeting_score
 
-    min(score, 1.0)
+    # Round to 4 decimal places to avoid floating-point precision issues
+    Float.round(min(score, 1.0), 4)
   end
   
   # Extract entity value from context if available

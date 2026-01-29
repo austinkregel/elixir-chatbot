@@ -69,8 +69,8 @@ defmodule ChatBot.ML.Trainer do
         # Step 2: Train entity recognition model
         stats = train_entity_model(stats, models_path: models_path)
 
-        # Step 3: Build and save gazetteer data (uses global path, not world-specific)
-        stats = build_gazetteer_data(stats)
+        # Step 3: Build and save gazetteer data
+        stats = build_gazetteer_data(stats, models_path: models_path)
 
         Logger.info("Training pipeline completed", stats)
         {:ok, stats}
@@ -171,11 +171,15 @@ defmodule ChatBot.ML.Trainer do
 
   @doc """
   Build gazetteer lookup data and save for fast runtime access.
+
+  ## Options
+    - models_path: Override the default models output path
   """
-  def build_gazetteer_data(stats \\ %{}) do
+  def build_gazetteer_data(stats \\ %{}, opts \\ []) do
     Logger.info("Building gazetteer data...")
 
-    models_path = Application.get_env(:chat_bot, :ml)[:models_path]
+    models_path =
+      Keyword.get(opts, :models_path, Application.get_env(:chat_bot, :ml)[:models_path])
     File.mkdir_p!(models_path)
 
     gazetteer_data = %{

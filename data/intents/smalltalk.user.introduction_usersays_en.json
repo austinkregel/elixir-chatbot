@@ -566,5 +566,53 @@
     "entities": [{"entity_type": "person", "value": "Charlotte", "start": 13, "end": 22}],
     "id": "intro-071",
     "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Dakota",
+    "tokens": ["I", "'m", "Dakota"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Dakota", "start": 4, "end": 10}],
+    "id": "intro-072",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Hey, I'm Dakota",
+    "tokens": ["Hey", ",", "I", "'m", "Dakota"],
+    "pos_tags": ["NOUN", "PUNCT", "PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Dakota", "start": 9, "end": 15}],
+    "id": "intro-073",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Hi, I'm Dakota",
+    "tokens": ["Hi", ",", "I", "'m", "Dakota"],
+    "pos_tags": ["NOUN", "PUNCT", "PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Dakota", "start": 8, "end": 14}],
+    "id": "intro-074",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "My name is Dakota",
+    "tokens": ["My", "name", "is", "Dakota"],
+    "pos_tags": ["PRON", "NOUN", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Dakota", "start": 11, "end": 17}],
+    "id": "intro-075",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I am Dakota",
+    "tokens": ["I", "am", "Dakota"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Dakota", "start": 5, "end": 11}],
+    "id": "intro-076",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Call me Dakota",
+    "tokens": ["Call", "me", "Dakota"],
+    "pos_tags": ["VERB", "PRON", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Dakota", "start": 8, "end": 14}],
+    "id": "intro-077",
+    "intent": "smalltalk.user.introduction"
   }
 ]

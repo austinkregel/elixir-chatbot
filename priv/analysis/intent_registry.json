@@ -501,28 +501,34 @@
     "domain": "device",
     "category": "directive",
     "speech_act": "command",
-    "required": [],
+    "required": ["action"],
     "optional": ["room", "device"],
     "defaults": {},
     "entity_mappings": {
       "room": ["room", "location"],
-      "device": ["device", "light"]
+      "device": ["device", "light"],
+      "action": ["locks-status"]
     },
-    "clarification_templates": {}
+    "clarification_templates": {
+      "action": "What would you like me to do with the lights?"
+    }
   },
   "smarthome.lights.switch.off": {
     "description": "Turn off lights",
     "domain": "device",
     "category": "directive",
     "speech_act": "command",
-    "required": [],
+    "required": ["action"],
     "optional": ["room", "device"],
     "defaults": {},
     "entity_mappings": {
       "room": ["room", "location"],
-      "device": ["device", "light"]
+      "device": ["device", "light"],
+      "action": ["locks-status"]
     },
-    "clarification_templates": {}
+    "clarification_templates": {
+      "action": "What would you like me to do with the lights?"
+    }
   },
   "smarthome.context_room.comment_specify.or.change.room": {
     "description": "Specify or change room context",

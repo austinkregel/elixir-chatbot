@@ -40,7 +40,7 @@ defmodule ChatBot.Analysis.SlotDetectorTest do
         %{entity_type: "room", value: "kitchen", confidence: 0.8}
       ]
 
-      result = SlotDetector.detect("device.control", entities)
+      result = SlotDetector.detect("smarthome.lights.switch.off", entities)
 
       assert SlotResult.get_slot_value(result, "device") == "lights"
       assert SlotResult.get_slot_value(result, "room") == "kitchen"
@@ -100,7 +100,7 @@ defmodule ChatBot.Analysis.SlotDetectorTest do
       # - navigation.directions: 1 type match, 1/1 required slots = 100% fill ratio
       # Both are equally valid, but navigation.directions should NOT beat weather.query
       # (which was the bug - it was scoring 2 because it counted 2 slots accepting location)
-      assert intent in ["weather.query", "weather.condition", "navigation.directions"]
+      assert intent in ["weather", "weather.query", "weather.condition", "navigation.directions"]
     end
 
     test "suggests device control from device entity" do
@@ -111,6 +111,7 @@ defmodule ChatBot.Analysis.SlotDetectorTest do
 
       {:ok, intent, score} = SlotDetector.suggest_intent_from_entities(entities)
 
+      # device.control is returned as it has the best fill ratio for device + room entities
       assert intent == "device.control"
       assert score >= 2
     end

@@ -2,6 +2,26 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
   use ExUnit.Case, async: true
 
   alias ChatBot.Analysis.EntityDisambiguator
+  alias ChatBot.Learning.TypeInferrer
+
+  setup do
+    # Initialize TypeInferrer ETS tables
+    TypeInferrer.init()
+
+    # Teach TypeInferrer about introduction patterns for "person" type
+    # Pattern: PRON + VERB + PROPN (e.g., "I am John")
+    TypeInferrer.learn_from_known_entity("person", ["I", "am", "John"], ["PRON", "VERB", "PROPN"])
+
+    # Teach about location patterns
+    # Pattern: ADP + PROPN (e.g., "in Austin")
+    TypeInferrer.learn_from_known_entity("location", ["in", "Austin"], ["ADP", "PROPN"])
+
+    on_exit(fn ->
+      TypeInferrer.clear()
+    end)
+
+    :ok
+  end
 
   describe "disambiguate/3" do
     test "returns entities unchanged when only one type" do
@@ -10,7 +30,12 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
       ]
 
       pos_tagged = [{"I", "PRON"}, {"am", "VERB"}, {"John", "PROPN"}]
-      context = %{discourse: nil, speech_act: nil}
+
+      # Provide proper introduction context for "I am John" pattern
+      context = %{
+        discourse: %{indicators: ["self_referential"]},
+        speech_act: %{category: :expressive, sub_type: :greeting}
+      }
 
       result = EntityDisambiguator.disambiguate(entities, pos_tagged, context)
 
@@ -120,8 +145,13 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
   describe "disambiguate_single/3" do
     test "preserves entity when no types field" do
       entity = %{entity_type: "person", value: "John"}
-      pos_tagged = [{"John", "PROPN"}]
-      context = %{}
+      pos_tagged = [{"I", "PRON"}, {"am", "VERB"}, {"John", "PROPN"}]
+
+      # Provide introduction context so the person type is preserved
+      context = %{
+        discourse: %{indicators: ["self_referential"]},
+        speech_act: %{category: :expressive, sub_type: :greeting}
+      }
 
       result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
 
