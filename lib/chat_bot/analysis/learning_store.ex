@@ -24,9 +24,13 @@ defmodule ChatBot.Analysis.LearningStore do
 
   @doc """
   Starts the learning store.
+
+  ## Options
+    - `:name` - The name to register under (default: `#{__MODULE__}`)
   """
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   @doc """
@@ -98,6 +102,18 @@ defmodule ChatBot.Analysis.LearningStore do
   """
   def get_stats do
     GenServer.call(__MODULE__, :get_stats)
+  end
+
+  @doc """
+  Checks if the learning store is ready.
+  """
+  def ready? do
+    try do
+      GenServer.call(__MODULE__, :ready?, 100)
+    catch
+      :exit, {:timeout, _} -> false
+      :exit, {:noproc, _} -> false
+    end
   end
 
   # Server callbacks
@@ -209,6 +225,11 @@ defmodule ChatBot.Analysis.LearningStore do
   def handle_call(:get_stats, _from, state) do
     stats = Map.get(state.params, "feedback_stats", %{})
     {:reply, stats, state}
+  end
+
+  @impl true
+  def handle_call(:ready?, _from, state) do
+    {:reply, true, state}
   end
 
   @impl true

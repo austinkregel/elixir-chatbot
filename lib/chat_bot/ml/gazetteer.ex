@@ -16,11 +16,19 @@ defmodule ChatBot.ML.Gazetteer do
   require Logger
 
   alias ChatBot.ML.DataLoaders
+  alias ChatBot.Telemetry
 
-  @table_name :gazetteer_entities
-  @prefix_table :gazetteer_prefixes
-  @stats_table :gazetteer_stats
-  @world_overlay_table :gazetteer_world_overlays
+  # Default table names for the global instance
+  @default_table_name :gazetteer_entities
+  @default_prefix_table :gazetteer_prefixes
+  @default_stats_table :gazetteer_stats
+  @default_world_overlay_table :gazetteer_world_overlays
+
+  # Module attribute aliases for backward compatibility with direct ETS access
+  @table_name @default_table_name
+  @prefix_table @default_prefix_table
+  @stats_table @default_stats_table
+  @world_overlay_table @default_world_overlay_table
 
   @type entity_match :: %{
           entity_type: String.t(),
@@ -33,26 +41,64 @@ defmodule ChatBot.ML.Gazetteer do
   # Client API
   # ============================================================================
 
+  @doc """
+  Starts the Gazetteer GenServer.
+
+  ## Options
+    - `:name` - The name to register under (default: `#{__MODULE__}`)
+    - `:table_prefix` - Prefix for ETS table names (default: nil, uses global tables)
+      When set, creates isolated ETS tables named `{prefix}_entities`, etc.
+      This is useful for test isolation.
+  """
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   @doc """
   Initialize and load all gazetteers from data files.
+
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
   """
-  def load_all do
-    GenServer.call(__MODULE__, :load_all, :infinity)
+  def load_all(opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, :load_all, :infinity)
   end
 
   @doc """
   Returns true if the gazetteer is loaded and ready.
+
+  ## Options
+    - `:server` - The server to check (default: `#{__MODULE__}`)
   """
-  def is_loaded? do
-    Process.whereis(__MODULE__) != nil and
-      :ets.info(@table_name) != :undefined
+  def is_loaded?(opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    table = get_table_name(server, :entities)
+
+    Process.whereis(server) != nil and
+      :ets.info(table) != :undefined
   rescue
     _ -> false
   end
+
+  @doc """
+  Gets the ETS table name for a specific table type.
+  Useful for isolated instances that use custom table names.
+  """
+  def get_table_name(server \\ __MODULE__, table_type) do
+    case GenServer.call(server, {:get_table_name, table_type}) do
+      {:ok, name} -> name
+      _ -> default_table_name(table_type)
+    end
+  catch
+    :exit, _ -> default_table_name(table_type)
+  end
+
+  defp default_table_name(:entities), do: @default_table_name
+  defp default_table_name(:prefixes), do: @default_prefix_table
+  defp default_table_name(:stats), do: @default_stats_table
+  defp default_table_name(:world_overlays), do: @default_world_overlay_table
 
   @doc """
   Look up an entity by exact match (case-insensitive).
@@ -97,6 +143,12 @@ defmodule ChatBot.ML.Gazetteer do
   Prioritizes longer matches (multi-word entities).
   """
   def lookup_spans(tokens) when is_list(tokens) do
+    Telemetry.span(:gazetteer_lookup, %{token_count: length(tokens)}, fn ->
+      do_lookup_spans(tokens)
+    end)
+  end
+
+  defp do_lookup_spans(tokens) do
     token_count = length(tokens)
 
     # Try to find matches starting from each position
@@ -399,11 +451,53 @@ defmodule ChatBot.ML.Gazetteer do
   # ============================================================================
 
   @impl true
-  def init(_opts) do
-    # Create ETS tables
-    create_tables()
+  def init(opts) do
+    # Determine table names - use prefix for isolation or defaults for global
+    table_prefix = Keyword.get(opts, :table_prefix)
 
-    {:ok, %{loaded: false}}
+    tables =
+      if table_prefix do
+        # Isolated tables for testing
+        %{
+          entities: :"#{table_prefix}_entities",
+          prefixes: :"#{table_prefix}_prefixes",
+          stats: :"#{table_prefix}_stats",
+          world_overlays: :"#{table_prefix}_world_overlays"
+        }
+      else
+        # Default global tables
+        %{
+          entities: @default_table_name,
+          prefixes: @default_prefix_table,
+          stats: @default_stats_table,
+          world_overlays: @default_world_overlay_table
+        }
+      end
+
+    # Create ETS tables (with isolation support)
+    create_tables(tables)
+
+    state = %{
+      loaded: false,
+      tables: tables,
+      isolated: table_prefix != nil
+    }
+
+    {:ok, state}
+  end
+
+  @impl true
+  def handle_call({:get_table_name, table_type}, _from, state) do
+    table_name =
+      case table_type do
+        :entities -> state.tables.entities
+        :prefixes -> state.tables.prefixes
+        :stats -> state.tables.stats
+        :world_overlays -> state.tables.world_overlays
+        _ -> nil
+      end
+
+    {:reply, {:ok, table_name}, state}
   end
 
   @impl true
@@ -765,34 +859,26 @@ defmodule ChatBot.ML.Gazetteer do
     end
   end
 
-  defp create_tables do
+  defp create_tables(tables) do
     # Main entity lookup table
-    if :ets.whereis(@table_name) != :undefined do
-      :ets.delete(@table_name)
-    end
-
-    :ets.new(@table_name, [:set, :public, :named_table, read_concurrency: true])
+    create_table(tables.entities)
 
     # Prefix table for multi-word entity detection
-    if :ets.whereis(@prefix_table) != :undefined do
-      :ets.delete(@prefix_table)
-    end
-
-    :ets.new(@prefix_table, [:set, :public, :named_table, read_concurrency: true])
+    create_table(tables.prefixes)
 
     # Stats table
-    if :ets.whereis(@stats_table) != :undefined do
-      :ets.delete(@stats_table)
-    end
-
-    :ets.new(@stats_table, [:set, :public, :named_table, read_concurrency: true])
+    create_table(tables.stats)
 
     # World overlay table for training worlds
-    if :ets.whereis(@world_overlay_table) != :undefined do
-      :ets.delete(@world_overlay_table)
+    create_table(tables.world_overlays)
+  end
+
+  defp create_table(table_name) do
+    if :ets.whereis(table_name) != :undefined do
+      :ets.delete(table_name)
     end
 
-    :ets.new(@world_overlay_table, [:set, :public, :named_table, read_concurrency: true])
+    :ets.new(table_name, [:set, :public, :named_table, read_concurrency: true])
   end
 
   defp index_entities(lookup_map, source) do

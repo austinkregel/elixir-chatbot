@@ -26,202 +26,46 @@ defmodule ChatBot.ML.EntityExtractor do
 
   @type entity_map :: %{String.t() => %{entity_type: String.t(), value: String.t()}}
 
-  # Common words to ignore for location detection
-  @common_words MapSet.new([
-                  "i",
-                  "the",
-                  "a",
-                  "an",
-                  "and",
-                  "but",
-                  "or",
-                  "so",
-                  "if",
-                  "when",
-                  "where",
-                  "what",
-                  "how",
-                  "why",
-                  "who",
-                  "which",
-                  "that",
-                  "this",
-                  "these",
-                  "those",
-                  "hello",
-                  "hi",
-                  "hey",
-                  "thanks",
-                  "thank",
-                  "please",
-                  "yes",
-                  "no",
-                  "yeah",
-                  "nope",
-                  "ok",
-                  "okay",
-                  "sure",
-                  "can",
-                  "could",
-                  "would",
-                  "should",
-                  "do",
-                  "does",
-                  "did",
-                  "is",
-                  "are",
-                  "was",
-                  "were",
-                  "have",
-                  "has",
-                  "had",
-                  "will",
-                  "shall",
-                  "may",
-                  "might",
-                  "must",
-                  "let",
-                  "me",
-                  "my",
-                  "you",
-                  "your",
-                  "we",
-                  "our",
-                  "they",
-                  "their",
-                  "it",
-                  "its",
-                  "he",
-                  "she",
-                  "him",
-                  "her",
-                  "am",
-                  "be",
-                  "been",
-                  "being",
-                  "get",
-                  "got",
-                  "give",
-                  "gave",
-                  "go",
-                  "going",
-                  "gone",
-                  "come",
-                  "came",
-                  "tell",
-                  "told",
-                  "say",
-                  "said",
-                  "ask",
-                  "asked",
-                  "know",
-                  "knew",
-                  "think",
-                  "thought",
-                  "want",
-                  "wanted",
-                  "need",
-                  "needed",
-                  "make",
-                  "made",
-                  "see",
-                  "saw",
-                  "look",
-                  "looked",
-                  "find",
-                  "found",
-                  "take",
-                  "took",
-                  "put",
-                  "just",
-                  "also",
-                  "too",
-                  "very",
-                  "really",
-                  "actually",
-                  "probably",
-                  "maybe",
-                  "perhaps",
-                  "about",
-                  "for",
-                  "with",
-                  "from",
-                  "into",
-                  "after",
-                  "before",
-                  "during",
-                  "until",
-                  "since",
-                  "not",
-                  "don't",
-                  "doesn't",
-                  "didn't",
-                  "won't",
-                  "wouldn't",
-                  "can't",
-                  "couldn't",
-                  "shouldn't",
-                  "there",
-                  "here",
-                  "now",
-                  "then",
-                  "today",
-                  "tomorrow",
-                  "yesterday",
-                  "play",
-                  "show",
-                  "turn",
-                  "set",
-                  "check",
-                  "on",
-                  "off",
-                  "up",
-                  "down"
-                ])
+  # ============================================================================
+  # Data-Driven Entity Detection
+  # All entity patterns are learned from training data via the Gazetteer
+  # No hardcoded word lists - everything uses trained models or Gazetteer lookups
+  # ============================================================================
 
-  # Prepositions that often precede locations
-  @location_prepositions MapSet.new(["in", "at", "near", "around", "from", "to"])
+  defp is_location_preposition?(text) do
+    # Use POS tagger to detect prepositions (ADP)
+    case POSTagger.load_model() do
+      {:ok, model} ->
+        predictions = POSTagger.predict([text], model)
 
-  # Relative date words
-  @relative_dates MapSet.new(["today", "tomorrow", "yesterday"])
+        case predictions do
+          [{_word, "ADP"}] -> true
+          _ -> false
+        end
 
-  # Day names
-  @day_names MapSet.new([
-               "monday",
-               "tuesday",
-               "wednesday",
-               "thursday",
-               "friday",
-               "saturday",
-               "sunday"
-             ])
+      {:error, _} ->
+        false
+    end
+  end
 
-  # Month names
-  @month_names MapSet.new([
-                 "january",
-                 "february",
-                 "march",
-                 "april",
-                 "may",
-                 "june",
-                 "july",
-                 "august",
-                 "september",
-                 "october",
-                 "november",
-                 "december",
-                 "jan",
-                 "feb",
-                 "mar",
-                 "apr",
-                 "jun",
-                 "jul",
-                 "aug",
-                 "sep",
-                 "oct",
-                 "nov",
-                 "dec"
-               ])
+  defp common_word?(text) do
+    # Use POS tagger - common/function words are typically DET, ADP, CONJ, PART
+    lower = String.downcase(text)
+
+    case POSTagger.load_model() do
+      {:ok, model} ->
+        predictions = POSTagger.predict([lower], model)
+
+        case predictions do
+          [{_word, tag}] when tag in ["DET", "ADP", "CONJ", "PART", "PUNCT"] -> true
+          _ -> false
+        end
+
+      {:error, _} ->
+        # Can't determine, assume not common
+        false
+    end
+  end
 
   # ============================================================================
   # Client API
@@ -416,7 +260,8 @@ defmodule ChatBot.ML.EntityExtractor do
       if skip_disambiguation or (is_nil(discourse) and is_nil(speech_act)) do
         resolved_entities
       else
-        disambiguate_entities(resolved_entities, tokens, discourse, speech_act)
+        # Pass original text for text-based pattern matching (e.g., introduction detection)
+        disambiguate_entities(resolved_entities, tokens, discourse, speech_act, text)
       end
 
     # Filter out entities below confidence threshold
@@ -684,58 +529,73 @@ defmodule ChatBot.ML.EntityExtractor do
   end
 
   defp extract_dates_from_tokens(tokens) do
+    # Use Gazetteer to look up temporal entities - no hardcoded word lists
     tokens
     |> Enum.with_index()
     |> Enum.flat_map(fn {token, idx} ->
       lower = String.downcase(token.text)
 
-      cond do
-        MapSet.member?(@relative_dates, lower) ->
-          [
-            %{
-              entity_type: "relative_date",
-              value: token.text,
-              match: token.text,
-              start_pos: token.start_pos,
-              end_pos: token.end_pos,
-              confidence: 0.9
-            }
-          ]
+      # Look up in Gazetteer for temporal entities
+      case Gazetteer.lookup(lower) do
+        :not_found ->
+          []
 
-        MapSet.member?(@day_names, lower) ->
-          [
-            %{
-              entity_type: "day_name",
-              value: token.text,
-              match: token.text,
-              start_pos: token.start_pos,
-              end_pos: token.end_pos,
-              confidence: 0.85
-            }
-          ]
+        {:ok, result} ->
+          matches = if is_map(result), do: [result], else: result
 
-        MapSet.member?(@month_names, lower) ->
-          # Check if followed by a number (day)
-          maybe_date = check_for_date_pattern(tokens, idx)
+          # Check if any match is a temporal type
+          temporal_match =
+            Enum.find(matches, fn match ->
+              entity_type = match[:entity_type] || match["entity_type"] || ""
 
-          case maybe_date do
+              entity_type in ~w(
+                sys-date date relative_date day weekday month
+                day_name month_name time sys-time
+              )
+            end)
+
+          case temporal_match do
             nil ->
-              [
-                %{
-                  entity_type: "month_name",
-                  value: token.text,
-                  match: token.text,
-                  start_pos: token.start_pos,
-                  end_pos: token.end_pos,
-                  confidence: 0.8
-                }
-              ]
+              []
 
-            date_entity ->
-              [date_entity]
+            match ->
+              entity_type = match[:entity_type] || match["entity_type"]
+
+              # For month names, check if followed by a number (date pattern)
+              if entity_type in ["month", "month_name"] do
+                maybe_date = check_for_date_pattern(tokens, idx)
+
+                case maybe_date do
+                  nil ->
+                    [
+                      %{
+                        entity_type: entity_type,
+                        value: token.text,
+                        match: token.text,
+                        start_pos: token.start_pos,
+                        end_pos: token.end_pos,
+                        confidence: 0.8
+                      }
+                    ]
+
+                  date_entity ->
+                    [date_entity]
+                end
+              else
+                [
+                  %{
+                    entity_type: entity_type,
+                    value: token.text,
+                    match: token.text,
+                    start_pos: token.start_pos,
+                    end_pos: token.end_pos,
+                    confidence: 0.9
+                  }
+                ]
+              end
           end
 
-        true ->
+        _ ->
           []
       end
     end)
@@ -788,12 +648,11 @@ defmodule ChatBot.ML.EntityExtractor do
 
   defp extract_location_hints(tokens, entity_maps) do
     # Look for patterns like "in [Capitalized Words]"
+    # Use POS tagger to detect prepositions (ADP) rather than keyword list
     tokens
     |> Enum.with_index()
     |> Enum.flat_map(fn {token, idx} ->
-      lower = String.downcase(token.text)
-
-      if MapSet.member?(@location_prepositions, lower) do
+      if is_location_preposition?(token.text) do
         # Look at following tokens for potential location
         extract_following_location(tokens, idx + 1, entity_maps)
       else
@@ -902,10 +761,6 @@ defmodule ChatBot.ML.EntityExtractor do
     first != nil and first == String.upcase(first) and first != String.downcase(first)
   end
 
-  defp common_word?(text) do
-    MapSet.member?(@common_words, String.downcase(text))
-  end
-
   defp resolve_entity_conflicts(matches) do
     # Sort by start position, then by length (longest first)
     sorted = Enum.sort_by(matches, fn m -> {m.start_pos, -String.length(m.match)} end)
@@ -973,11 +828,17 @@ defmodule ChatBot.ML.EntityExtractor do
   # Entity Disambiguation
   # ============================================================================
 
-  defp disambiguate_entities(entities, tokens, discourse, speech_act) do
+  defp disambiguate_entities(entities, tokens, discourse, speech_act, original_text) do
+    # Extract classified intent from speech_act indicators
+    classified_intent = extract_intent_from_speech_act(speech_act)
+
     # Build context for disambiguation
+    # Include original text for text-based pattern matching (e.g., "I'm Austin" detection)
     context = %{
       discourse: discourse,
-      speech_act: speech_act
+      speech_act: speech_act,
+      intent: classified_intent,
+      original_text: original_text
     }
 
     # Try to get POS tags for better disambiguation
@@ -1047,18 +908,30 @@ defmodule ChatBot.ML.EntityExtractor do
   end
 
   defp context_type(context) do
-    speech_act = context[:speech_act]
-
-    # Handle both struct and map access safely
-    sub_type = get_field(speech_act, :sub_type)
-    intent = get_field(speech_act, :intent)
+    # Use the classified intent from context, or extract from speech_act
+    intent = context[:intent] || extract_intent_from_speech_act(context[:speech_act])
 
     cond do
-      sub_type == :greeting -> :introduction
+      # Use IntentRegistry predicates for all domain detection
+      IntentRegistry.introduction_intent?(intent) -> :introduction
       IntentRegistry.weather_intent?(intent) -> :weather
       IntentRegistry.music_intent?(intent) -> :music
+      IntentRegistry.device_intent?(intent) -> :device
       true -> :default
     end
+  end
+
+  defp extract_intent_from_speech_act(nil), do: nil
+
+  defp extract_intent_from_speech_act(speech_act) do
+    indicators = get_field(speech_act, :indicators) || []
+
+    Enum.find_value(indicators, fn indicator ->
+      case String.split(to_string(indicator), ":", parts: 2) do
+        ["intent", intent] -> intent
+        _ -> nil
+      end
+    end)
   end
 
   # Helper to safely get a field from either a struct or map

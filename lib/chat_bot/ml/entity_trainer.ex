@@ -116,9 +116,6 @@ defmodule ChatBot.ML.EntityTrainer do
   end
 
   @doc """
-  Train and save entity model to disk.
-  """
-  @doc """
   Train entity recognition model and save to disk.
 
   ## Options

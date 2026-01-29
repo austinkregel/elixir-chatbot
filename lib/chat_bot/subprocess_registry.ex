@@ -33,6 +33,26 @@ defmodule ChatBot.SubprocessRegistry do
     GenServer.cast(__MODULE__, {:broadcast_to_subprocesses, type, message})
   end
 
+  @doc """
+  Checks if the subprocess registry is ready.
+  """
+  def ready? do
+    try do
+      GenServer.call(__MODULE__, :ready?, 100)
+    catch
+      :exit, {:timeout, _} -> false
+      :exit, {:noproc, _} -> false
+    end
+  end
+
+  @doc """
+  Gets statistics about the subprocess registry.
+  """
+  @spec stats() :: map()
+  def stats do
+    GenServer.call(__MODULE__, :stats)
+  end
+
   # Server Callbacks
 
   @impl true
@@ -123,6 +143,27 @@ defmodule ChatBot.SubprocessRegistry do
       [] ->
         {:reply, {:error, :not_found}, state}
     end
+  end
+
+  @impl true
+  def handle_call(:ready?, _from, state) do
+    {:reply, true, state}
+  end
+
+  @impl true
+  def handle_call(:stats, _from, state) do
+    types =
+      state.subprocesses
+      |> Map.values()
+      |> Enum.map(& &1.type)
+      |> Enum.uniq()
+
+    stats = %{
+      registered_count: map_size(state.subprocesses),
+      subprocess_types: types
+    }
+
+    {:reply, stats, state}
   end
 
   @impl true

@@ -96,6 +96,14 @@ defmodule ChatBot.Epistemic.ContradictionHandler do
     end
   end
 
+  @doc """
+  Gets statistics about the contradiction handler.
+  """
+  @spec stats() :: map()
+  def stats do
+    GenServer.call(__MODULE__, :stats)
+  end
+
   # ============================================================================
   # Server Callbacks
   # ============================================================================
@@ -115,9 +123,32 @@ defmodule ChatBot.Epistemic.ContradictionHandler do
       assumption_metadata: %{}
     }
 
+    # Register built-in rules after state is created
+    # We'll register the knowledge expansion rule via a message to self
+    send(self(), :register_builtin_rules)
+
     Logger.info("ContradictionHandler initialized")
 
     {:ok, state}
+  end
+
+  @impl true
+  def handle_info(:register_builtin_rules, state) do
+    # Register the knowledge expansion rule
+    new_rules =
+      Map.put(state.rules, :knowledge_expansion, &handle_knowledge_expansion_conflict/2)
+
+    {:noreply, %{state | rules: new_rules}}
+  end
+
+  @impl true
+  def handle_info({:register_with_jtms}, state) do
+    # Delayed registration in case JTMS starts after us
+    if Process.whereis(JTMS) do
+      JTMS.set_contradiction_handler(&handle_jtms_callback/1)
+    end
+
+    {:noreply, state}
   end
 
   @impl true
@@ -210,13 +241,15 @@ defmodule ChatBot.Epistemic.ContradictionHandler do
   end
 
   @impl true
-  def handle_info({:register_with_jtms}, state) do
-    # Delayed registration in case JTMS starts after us
-    if Process.whereis(JTMS) do
-      JTMS.set_contradiction_handler(&handle_jtms_callback/1)
-    end
+  def handle_call(:stats, _from, state) do
+    stats = %{
+      pending_count: map_size(state.pending),
+      resolution_history_count: length(state.history),
+      strategy: state.strategy,
+      rules_count: map_size(state.rules)
+    }
 
-    {:noreply, state}
+    {:reply, stats, state}
   end
 
   # ============================================================================
@@ -229,6 +262,49 @@ defmodule ChatBot.Epistemic.ContradictionHandler do
     spawn(fn ->
       handle_contradiction(node_id, assumptions)
     end)
+  end
+
+  # Knowledge Expansion rule: when a new fact from knowledge expansion
+  # conflicts with an existing belief, queue it for admin review instead
+  # of auto-resolving.
+  defp handle_knowledge_expansion_conflict(node_id, _assumptions) do
+    # Check if this is a knowledge expansion conflict
+    case get_conflict_context(node_id) do
+      {:knowledge_expansion, new_fact, existing_belief} ->
+        # Queue for admin review instead of auto-resolving
+        if Process.whereis(ChatBot.Knowledge.ReviewQueue) do
+          ChatBot.Knowledge.ReviewQueue.add_contradiction(new_fact, existing_belief)
+          Logger.info("Knowledge expansion conflict queued for review",
+            node_id: node_id,
+            new_fact: inspect(new_fact)
+          )
+        end
+
+        # Return :no_match so it goes to :needs_user_input
+        :no_match
+
+      _ ->
+        :no_match
+    end
+  end
+
+  # Check if a contradiction node is related to knowledge expansion
+  defp get_conflict_context(node_id) do
+    case JTMS.get_node(node_id) do
+      {:ok, node} ->
+        metadata = node.metadata || %{}
+
+        if Map.get(metadata, :source) == :knowledge_expansion do
+          new_fact = Map.get(metadata, :new_fact, %{})
+          existing_belief = Map.get(metadata, :existing_belief, %{})
+          {:knowledge_expansion, new_fact, existing_belief}
+        else
+          :not_knowledge_expansion
+        end
+
+      _ ->
+        :not_knowledge_expansion
+    end
   end
 
   defp try_rules(rules, node_id, assumptions) do

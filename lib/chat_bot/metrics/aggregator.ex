@@ -37,8 +37,15 @@ defmodule ChatBot.Metrics.Aggregator do
   # Client API
   # ============================================================================
 
+  @doc """
+  Starts the Metrics.Aggregator GenServer.
+
+  ## Options
+    - `:name` - The name to register under (default: `#{__MODULE__}`)
+  """
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   @doc """
@@ -378,6 +385,28 @@ defmodule ChatBot.Metrics.Aggregator do
   end
 
   @impl true
+  def handle_cast({:record_racing_early_exit, analyzer, confidence, duration_ms}, state) do
+    now = System.monotonic_time(:millisecond)
+
+    # Track early exit counts by analyzer
+    key = {:racing_early_exit, analyzer}
+    increment_counter(key, :count)
+
+    # Update aggregate metrics
+    :ets.insert(
+      @metrics_table,
+      {{:racing_early_exit_last, analyzer},
+       %{
+         timestamp: now,
+         confidence: confidence,
+         duration_ms: duration_ms
+       }}
+    )
+
+    {:noreply, state}
+  end
+
+  @impl true
   def handle_call(:reset, _from, state) do
     :ets.delete_all_objects(@metrics_table)
     :ets.delete_all_objects(@raw_data_table)
@@ -399,11 +428,21 @@ defmodule ChatBot.Metrics.Aggregator do
   defp initialize_metrics do
     # Initialize default metrics with zero values
     default_metrics = [
+      # Core operations
       :brain_evaluate,
       :pipeline_process,
       :memory_query,
       :memory_embed,
-      :gazetteer_lookup
+      :gazetteer_lookup,
+      # Knowledge Expansion operations
+      :knowledge_research,
+      :knowledge_corroborate,
+      :knowledge_review,
+      # Epistemic System operations
+      :jtms_justify,
+      :belief_operation,
+      # Analysis operations
+      :racing_analysis
     ]
 
     Enum.each(default_metrics, fn name ->

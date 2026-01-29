@@ -127,23 +127,9 @@ defmodule ChatBotWeb.SettingsLive do
     {:noreply, socket}
   end
 
-  @impl true
-  def handle_info({:world_context_changed, _world_id}, socket) do
-    # World was changed from another LiveView or tab
-    {:noreply, load_section_data(socket)}
-  end
-
-  # ============================================================================
-  # Event Handlers - Navigation
-  # ============================================================================
-
   def handle_event("switch_section", %{"section" => section}, socket) do
     {:noreply, push_patch(socket, to: ~p"/settings?section=#{section}")}
   end
-
-  # ============================================================================
-  # Event Handlers - Worlds
-  # ============================================================================
 
   def handle_event("update_new_world", %{"name" => name, "mode" => mode}, socket) do
     {:noreply, socket |> assign(:new_world_name, name) |> assign(:new_world_mode, mode)}
@@ -285,6 +271,12 @@ defmodule ChatBotWeb.SettingsLive do
 
   @impl true
   def handle_event("refresh", _params, socket) do
+    {:noreply, load_section_data(socket)}
+  end
+
+  @impl true
+  def handle_info({:world_context_changed, _world_id}, socket) do
+    # World was changed from another LiveView or tab
     {:noreply, load_section_data(socket)}
   end
 

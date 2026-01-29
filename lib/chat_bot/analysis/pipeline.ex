@@ -371,24 +371,42 @@ defmodule ChatBot.Analysis.Pipeline do
 
   defp entity_to_dev_map(other), do: %{value: inspect(other)}
 
-  defp determine_intent(speech_act, entities, text) do
-    # For expressive speech acts (greetings, farewells, thanks), use speech act directly
-    # This prevents entity-based overrides (e.g., "Hello" matching song "Hello")
-    if speech_act.category == :expressive do
-      {infer_intent_from_speech_act(speech_act, text), :speech_act_expressive, nil}
-    else
-      # For non-expressive speech acts, try multiple strategies
+  defp determine_intent(speech_act, _entities, text) do
+    # Trust the trained intent classifier - it was trained on actual user intents
+    # No entity-based overrides - these caused consistent misclassification:
+    # - "Play some music" misclassified as news.query
+    # - "Turn on lights" misclassified as weather.query
+    # - "Hello, I'm Austin" had Austin misclassified as location
+    #
+    # The classifier is the source of truth for intent detection.
 
-      # 1. First, check if entities suggest an intent
-      case SlotDetector.suggest_intent_from_entities(entities) do
-        {:ok, intent, score} ->
-          {intent, :entity_based, score}
+    classifier_intent = extract_classifier_intent(speech_act)
 
-        {:error, :no_match} ->
-          # 2. Fall back to speech act based intent (no keyword matching)
-          {infer_intent_from_speech_act(speech_act, text), :speech_act_fallback, nil}
-      end
+    cond do
+      # Use the trained classifier's intent if available
+      classifier_intent != nil ->
+        {classifier_intent, :classifier, speech_act.confidence}
+
+      # For expressive speech acts without explicit classifier intent,
+      # infer from speech act category (greeting, farewell, thanks, etc.)
+      speech_act.category == :expressive ->
+        {infer_intent_from_speech_act(speech_act, text), :speech_act, nil}
+
+      # Default: use speech act inference
+      true ->
+        {infer_intent_from_speech_act(speech_act, text), :speech_act, nil}
     end
+  end
+
+  # Extract the classifier's intent from speech act indicators
+  defp extract_classifier_intent(speech_act) do
+    speech_act.indicators
+    |> Enum.find_value(fn indicator ->
+      case String.split(indicator, ":", parts: 2) do
+        ["intent", intent] -> intent
+        _ -> nil
+      end
+    end)
   end
 
   defp infer_intent_from_speech_act(speech_act, _text) do

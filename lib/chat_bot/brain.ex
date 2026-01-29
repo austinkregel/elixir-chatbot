@@ -9,6 +9,9 @@ defmodule ChatBot.Brain do
 
   alias ChatBot.Analysis.{
     SelfKnowledgeAnalyzer,
+    RacingAnalyzer,
+    OutcomeLearner,
+    Interpretation,
     Progress,
     ResponseGate,
     SlotDetector,
@@ -18,24 +21,40 @@ defmodule ChatBot.Brain do
   alias ChatBot.Epistemic.{UserModelStore, BeliefStore}
   alias ChatBot.Epistemic.Types.{Belief, Config}
   alias ChatBot.Response.{Synthesizer, Generator}
+  alias ChatBot.Learning.WorldContext
 
+  # ============================================================================
   # Client API
+  # ============================================================================
 
-  def start_link(artifact_path) do
-    GenServer.start_link(__MODULE__, artifact_path, name: __MODULE__)
+  @doc """
+  Starts the Brain GenServer.
+
+  ## Arguments
+    - `artifact_path` - Path to the personality artifact file
+    - `opts` - Options including:
+      - `:name` - The name to register under (default: `#{__MODULE__}`)
+  """
+  def start_link(artifact_path, opts \\ []) do
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, artifact_path, name: name)
   end
 
-  def evaluate(conversation_id, input) do
-    evaluate(conversation_id, input, [])
-  end
+  @doc """
+  Evaluates user input in a conversation.
 
-  def evaluate(conversation_id, input, opts) when is_list(opts) do
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
+    - `:timeout` - Call timeout in ms (default: 90_000)
+  """
+  def evaluate(conversation_id, input, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
     timeout = Keyword.get(opts, :timeout, 90_000)
-    opts = Keyword.delete(opts, :timeout)
+    opts = opts |> Keyword.delete(:server) |> Keyword.delete(:timeout)
 
     # Wrap with telemetry span for async, non-blocking metrics
     ChatBot.Telemetry.span(:brain_evaluate, %{conversation_id: conversation_id}, fn ->
-      GenServer.call(__MODULE__, {:evaluate, conversation_id, input, opts}, timeout)
+      GenServer.call(server, {:evaluate, conversation_id, input, opts}, timeout)
     end)
   end
 
@@ -43,58 +62,144 @@ defmodule ChatBot.Brain do
   Creates a new conversation.
 
   ## Options
-    - world_id: The training world to use for this conversation (default: "default")
+    - `:server` - The server to call (default: `#{__MODULE__}`)
+    - `:world_id` - The training world to use for this conversation (default: "default")
   """
   def create_conversation(opts \\ []) do
-    GenServer.call(__MODULE__, {:create_conversation, opts})
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:create_conversation, opts})
   end
 
-  def end_conversation(conversation_id) do
-    GenServer.call(__MODULE__, {:end_conversation, conversation_id})
+  @doc """
+  Ends a conversation.
+
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
+  """
+  def end_conversation(conversation_id, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:end_conversation, conversation_id})
   end
 
-  def get_status do
-    GenServer.call(__MODULE__, :get_status)
+  @doc """
+  Gets the Brain's status.
+
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
+  """
+  def get_status(opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, :get_status)
   end
 
-  def get_conversations do
-    GenServer.call(__MODULE__, :get_conversations)
+  @doc """
+  Gets all active conversations.
+
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
+  """
+  def get_conversations(opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, :get_conversations)
   end
 
-  def get_conversation(conversation_id) do
-    GenServer.call(__MODULE__, {:get_conversation, conversation_id})
+  @doc """
+  Gets a specific conversation.
+
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
+  """
+  def get_conversation(conversation_id, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:get_conversation, conversation_id})
   end
 
-  def handle_urgent_interrupt(reason, data \\ %{}) do
-    GenServer.cast(__MODULE__, {:urgent_interrupt, reason, data})
+  @doc """
+  Handles an urgent interrupt.
+
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
+  """
+  def handle_urgent_interrupt(reason, data \\ %{}, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.cast(server, {:urgent_interrupt, reason, data})
   end
 
-  def handle_urgent_emergency(reason, data \\ %{}) do
-    GenServer.cast(__MODULE__, {:urgent_emergency, reason, data})
+  @doc """
+  Handles an urgent emergency.
+
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
+  """
+  def handle_urgent_emergency(reason, data \\ %{}, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.cast(server, {:urgent_emergency, reason, data})
   end
 
+  @doc """
+  Starts an HTTP subprocess.
+
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
+  """
   def start_http_subprocess(opts \\ []) do
-    GenServer.call(__MODULE__, {:start_http_subprocess, opts})
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:start_http_subprocess, opts})
   end
 
+  @doc """
+  Starts a conversation subprocess.
+
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
+  """
   def start_conversation_subprocess(conversation_id, opts \\ []) do
-    GenServer.call(__MODULE__, {:start_conversation_subprocess, conversation_id, opts})
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:start_conversation_subprocess, conversation_id, opts})
   end
 
+  @doc """
+  Starts a CLI subprocess.
+
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
+  """
   def start_cli_subprocess(opts \\ []) do
-    GenServer.call(__MODULE__, {:start_cli_subprocess, opts})
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:start_cli_subprocess, opts})
   end
 
-  def stop_subprocess(subprocess_id) do
-    GenServer.call(__MODULE__, {:stop_subprocess, subprocess_id})
+  @doc """
+  Stops a subprocess.
+
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
+  """
+  def stop_subprocess(subprocess_id, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:stop_subprocess, subprocess_id})
   end
 
-  def list_subprocesses do
-    GenServer.call(__MODULE__, :list_subprocesses)
+  @doc """
+  Lists all subprocesses.
+
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
+  """
+  def list_subprocesses(opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, :list_subprocesses)
   end
 
-  def reset_state do
-    GenServer.call(__MODULE__, :reset_state)
+  @doc """
+  Resets the Brain state. Useful for testing.
+
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
+  """
+  def reset_state(opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, :reset_state)
   end
 
   # Server Callbacks
@@ -230,6 +335,19 @@ defmodule ChatBot.Brain do
         user_id = Keyword.get(opts, :user_id)
         entities = Map.get(context, :entities, [])
         extract_and_store_beliefs(input, entities, user_id, conversation_id)
+
+        # Learn from this interaction for future fast-path (heuristic learning)
+        # Only learn when we actually responded (not deferred)
+        if learning_response != nil and processing_method != :response_deferred do
+          Task.start(fn ->
+            interpretation = build_interpretation_from_context(input, context)
+
+            OutcomeLearner.learn_from_outcome(interpretation, learning_response,
+              user_id: user_id,
+              cohort_id: nil
+            )
+          end)
+        end
 
         updated_state = %{
           state
@@ -673,9 +791,55 @@ defmodule ChatBot.Brain do
     if Config.enabled?() and SelfKnowledgeAnalyzer.is_self_knowledge_query?(input) do
       handle_meta_cognitive_query(persona, input, user_id, opts)
     else
-      # Standard processing - run the analysis pipeline
-      process_standard_message(persona, input, memory, opts)
+      # Check for fast-path via RacingAnalyzer before running full pipeline
+      # This uses heuristics and memory similarity for quick responses
+      case RacingAnalyzer.check_fast_path(input, user_id, nil) do
+        {:fast_path, interpretation} ->
+          Logger.debug("Fast path hit", %{
+            intent: interpretation.intent,
+            source: interpretation.source,
+            activation: interpretation.activation
+          })
+
+          handle_fast_path_response(persona, interpretation, memory, opts)
+
+        :no_match ->
+          # No fast path - run standard analysis pipeline
+          process_standard_message(persona, input, memory, opts)
+      end
     end
+  end
+
+  # Handles responses when RacingAnalyzer finds a fast-path match
+  defp handle_fast_path_response(_persona, interpretation, _memory, opts) do
+    intent = interpretation.intent
+    entities = interpretation.entities || []
+
+    # Generate response using existing Generator
+    # Generator.generate always returns {:ok, response, type} with fallback if needed
+    {:ok, response, response_type} = Generator.generate(intent, entities, nil)
+
+    context = %{
+      intent: intent,
+      source: interpretation.source,
+      fast_path: true,
+      activation: interpretation.activation,
+      entities: entities
+    }
+
+    Logger.info("Fast path response generated", %{
+      intent: intent,
+      response_type: response_type
+    })
+
+    Progress.report(opts, :response_generated, %{
+      response_type: :fast_path,
+      strategy: :heuristic_match,
+      intent: intent,
+      source: interpretation.source
+    })
+
+    {response, :fast_path, context}
   end
 
   defp process_standard_message(persona, input, memory, opts) do
@@ -937,16 +1101,6 @@ defmodule ChatBot.Brain do
   end
 
   defp extract_filled_slots(_), do: %{}
-
-  # Extract the actual value from a slot, which may be a map with :value key
-  defp get_slot_value(slots, key, default \\ nil) do
-    case Map.get(slots, key) do
-      nil -> default
-      %{value: value} -> value
-      value when is_binary(value) -> value
-      value -> "#{inspect(value)}"
-    end
-  end
 
   defp generate_intent_response(context, _persona) do
     # Delegate to Generator for unified response generation
@@ -1309,12 +1463,6 @@ defmodule ChatBot.Brain do
     "I noticed you said something, but I'm not sure if you were talking to me. Let me know if you need anything!"
   end
 
-  defp generate_classical_response(intent, entities, _persona, query_text) do
-    # Delegate to Generator for unified response generation
-    {:ok, response, _type} = Generator.generate(intent, entities, query_text)
-    response
-  end
-
   # Generate response and return type for progress reporting
   defp generate_analysis_response_with_type(
          intent,
@@ -1352,20 +1500,21 @@ defmodule ChatBot.Brain do
 
   defp store_in_cognitive_memory(entries) do
     # Store conversation entries in the cognitive memory system
-    # This allows embedding-based retrieval for future classification
+    # Using WorldContext for inheritance-aware data access
     if Process.whereis(ChatBot.Memory.Store) != nil do
       Enum.each(entries, fn entry ->
         # Determine tags from NLP analysis if possible
         tags = extract_tags_for_memory(entry.input)
         world_id = Map.get(entry, :world_id, "default")
 
-        ChatBot.Memory.Think.think(:add_episode, %{
-          state: entry.input,
-          action: "conversation",
-          outcome: entry.response,
-          tags: ["conversation", entry.conversation_id | tags],
-          world_id: world_id
-        })
+        # Use WorldContext.add_episode for world-scoped storage with inheritance
+        WorldContext.add_episode(
+          world_id,
+          entry.input,
+          "conversation",
+          entry.response,
+          ["conversation", entry.conversation_id | tags]
+        )
       end)
     end
   rescue
@@ -1657,5 +1806,26 @@ defmodule ChatBot.Brain do
         value: clean_value
       })
     end
+  end
+
+  # Builds an Interpretation struct from the context for OutcomeLearner
+  defp build_interpretation_from_context(input, context) do
+    intent = Map.get(context, :intent)
+    activation = Map.get(context, :activation, 0.7)
+    source = Map.get(context, :source, :pipeline)
+    entities = Map.get(context, :entities, [])
+
+    # Determine the source type for the Interpretation
+    source_atom =
+      case source do
+        :fast_path -> :heuristic
+        :heuristic_match -> :heuristic
+        :memory_match -> :memory_match
+        :pattern_recognition -> :pattern_recognition
+        _ -> :model
+      end
+
+    Interpretation.new(intent, input, activation, source_atom)
+    |> Interpretation.with_entities(entities)
   end
 end

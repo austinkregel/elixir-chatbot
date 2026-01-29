@@ -46,10 +46,13 @@ defmodule ChatBot.Response.FactRetriever do
   """
   def get_facts_for_query(query \\ "", entities \\ []) do
     query_str = if is_binary(query), do: query, else: ""
+    # Handle nil entities
+    entities = if is_list(entities), do: entities, else: []
 
     # Try to get facts for each mentioned entity
     entity_facts =
       entities
+      |> Enum.filter(&(not is_nil(&1)))
       |> Enum.map(fn entity ->
         entity_name =
           cond do
@@ -65,7 +68,12 @@ defmodule ChatBot.Response.FactRetriever do
         end
       end)
       |> List.flatten()
-      |> Enum.uniq_by(& &1["id"])
+      |> Enum.uniq_by(fn 
+        %{id: id} -> id
+        %{"id" => id} -> id
+        fact when is_struct(fact) -> Map.get(fact, :id, fact)
+        other -> other
+      end)
 
     # Also try keyword search if no entity facts found or query is provided
     if entity_facts == [] and query_str != "" do

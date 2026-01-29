@@ -29,6 +29,7 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
 
   alias ChatBot.ML.{IntentClassifierSimple, Tokenizer}
   alias ChatBot.Memory.Store, as: MemoryStore
+  alias ChatBot.Telemetry
 
   require Logger
 
@@ -52,6 +53,12 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
   - :skip_memory - Skip memory similarity check
   """
   def race(text, opts \\ []) when is_binary(text) do
+    Telemetry.span(:racing_analysis, %{text_length: String.length(text)}, fn ->
+      do_race(text, opts)
+    end)
+  end
+
+  defp do_race(text, opts) do
     start_time = System.monotonic_time(:millisecond)
     user_id = Keyword.get(opts, :user_id)
     cohort_id = Keyword.get(opts, :cohort_id)
@@ -67,6 +74,9 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
             source: interpretation.source,
             elapsed_ms: elapsed
           })
+
+          # Emit early exit telemetry for fast path
+          Telemetry.emit_racing_early_exit(interpretation.source, interpretation.activation, elapsed)
 
           # Report fast path hit to debug inspector
           Progress.report(opts, :racing_complete, %{
@@ -102,6 +112,15 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
       |> ActivationPool.normalize_with_alternatives()
 
     elapsed = System.monotonic_time(:millisecond) - start_time
+
+    # Emit early exit telemetry if triggered
+    if early_exit_triggered do
+      winner = Enum.find(corrected_results, &(&1.raw_score >= @early_exit_threshold))
+
+      if winner do
+        Telemetry.emit_racing_early_exit(winner.analyzer, winner.raw_score, elapsed)
+      end
+    end
 
     Logger.debug("Racing complete", %{
       intent: interpretation.intent,

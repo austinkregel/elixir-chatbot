@@ -1,0 +1,570 @@
+[
+  {
+    "text": "I'm Paris",
+    "tokens": ["I", "'m", "Paris"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Paris", "start": 4, "end": 9}],
+    "id": "intro-001",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Austin",
+    "tokens": ["I", "'m", "Austin"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Austin", "start": 4, "end": 10}],
+    "id": "intro-002",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Georgia",
+    "tokens": ["I", "'m", "Georgia"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Georgia", "start": 4, "end": 11}],
+    "id": "intro-003",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Charlotte",
+    "tokens": ["I", "'m", "Charlotte"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Charlotte", "start": 4, "end": 13}],
+    "id": "intro-004",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Dallas",
+    "tokens": ["I", "'m", "Dallas"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Dallas", "start": 4, "end": 10}],
+    "id": "intro-005",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Brooklyn",
+    "tokens": ["I", "'m", "Brooklyn"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Brooklyn", "start": 4, "end": 12}],
+    "id": "intro-006",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Madison",
+    "tokens": ["I", "'m", "Madison"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Madison", "start": 4, "end": 11}],
+    "id": "intro-007",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Sydney",
+    "tokens": ["I", "'m", "Sydney"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Sydney", "start": 4, "end": 10}],
+    "id": "intro-008",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Jordan",
+    "tokens": ["I", "'m", "Jordan"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Jordan", "start": 4, "end": 10}],
+    "id": "intro-009",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Orlando",
+    "tokens": ["I", "'m", "Orlando"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Orlando", "start": 4, "end": 11}],
+    "id": "intro-010",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Victoria",
+    "tokens": ["I", "'m", "Victoria"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Victoria", "start": 4, "end": 12}],
+    "id": "intro-011",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Regina",
+    "tokens": ["I", "'m", "Regina"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Regina", "start": 4, "end": 10}],
+    "id": "intro-012",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Florence",
+    "tokens": ["I", "'m", "Florence"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Florence", "start": 4, "end": 12}],
+    "id": "intro-013",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Savannah",
+    "tokens": ["I", "'m", "Savannah"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Savannah", "start": 4, "end": 12}],
+    "id": "intro-014",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Phoenix",
+    "tokens": ["I", "'m", "Phoenix"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Phoenix", "start": 4, "end": 11}],
+    "id": "intro-015",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "My name is Paris",
+    "tokens": ["My", "name", "is", "Paris"],
+    "pos_tags": ["PRON", "NOUN", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Paris", "start": 11, "end": 16}],
+    "id": "intro-016",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "My name is Austin",
+    "tokens": ["My", "name", "is", "Austin"],
+    "pos_tags": ["PRON", "NOUN", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Austin", "start": 11, "end": 17}],
+    "id": "intro-017",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "My name is Georgia",
+    "tokens": ["My", "name", "is", "Georgia"],
+    "pos_tags": ["PRON", "NOUN", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Georgia", "start": 11, "end": 18}],
+    "id": "intro-018",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "My name is Charlotte",
+    "tokens": ["My", "name", "is", "Charlotte"],
+    "pos_tags": ["PRON", "NOUN", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Charlotte", "start": 11, "end": 20}],
+    "id": "intro-019",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "My name is Dallas",
+    "tokens": ["My", "name", "is", "Dallas"],
+    "pos_tags": ["PRON", "NOUN", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Dallas", "start": 11, "end": 17}],
+    "id": "intro-020",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "My name is Brooklyn",
+    "tokens": ["My", "name", "is", "Brooklyn"],
+    "pos_tags": ["PRON", "NOUN", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Brooklyn", "start": 11, "end": 19}],
+    "id": "intro-021",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "My name is Madison",
+    "tokens": ["My", "name", "is", "Madison"],
+    "pos_tags": ["PRON", "NOUN", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Madison", "start": 11, "end": 18}],
+    "id": "intro-022",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "My name is Sydney",
+    "tokens": ["My", "name", "is", "Sydney"],
+    "pos_tags": ["PRON", "NOUN", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Sydney", "start": 11, "end": 17}],
+    "id": "intro-023",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Call me Paris",
+    "tokens": ["Call", "me", "Paris"],
+    "pos_tags": ["VERB", "PRON", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Paris", "start": 8, "end": 13}],
+    "id": "intro-024",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Call me Austin",
+    "tokens": ["Call", "me", "Austin"],
+    "pos_tags": ["VERB", "PRON", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Austin", "start": 8, "end": 14}],
+    "id": "intro-025",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "You can call me Georgia",
+    "tokens": ["You", "can", "call", "me", "Georgia"],
+    "pos_tags": ["PRON", "VERB", "VERB", "PRON", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Georgia", "start": 16, "end": 23}],
+    "id": "intro-026",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "You can call me Charlotte",
+    "tokens": ["You", "can", "call", "me", "Charlotte"],
+    "pos_tags": ["PRON", "VERB", "VERB", "PRON", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Charlotte", "start": 16, "end": 25}],
+    "id": "intro-027",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Just call me Dallas",
+    "tokens": ["Just", "call", "me", "Dallas"],
+    "pos_tags": ["ADV", "VERB", "PRON", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Dallas", "start": 13, "end": 19}],
+    "id": "intro-028",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "People call me Brooklyn",
+    "tokens": ["People", "call", "me", "Brooklyn"],
+    "pos_tags": ["NOUN", "VERB", "PRON", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Brooklyn", "start": 15, "end": 23}],
+    "id": "intro-029",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Everyone calls me Madison",
+    "tokens": ["Everyone", "calls", "me", "Madison"],
+    "pos_tags": ["PRON", "VERB", "PRON", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Madison", "start": 18, "end": 25}],
+    "id": "intro-030",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Hi, I'm Paris",
+    "tokens": ["Hi", ",", "I", "'m", "Paris"],
+    "pos_tags": ["NOUN", "PUNCT", "PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Paris", "start": 8, "end": 13}],
+    "id": "intro-031",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Hello, I'm Austin",
+    "tokens": ["Hello", ",", "I", "'m", "Austin"],
+    "pos_tags": ["NOUN", "PUNCT", "PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Austin", "start": 11, "end": 17}],
+    "id": "intro-032",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Hey, I'm Georgia",
+    "tokens": ["Hey", ",", "I", "'m", "Georgia"],
+    "pos_tags": ["NOUN", "PUNCT", "PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Georgia", "start": 9, "end": 16}],
+    "id": "intro-033",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Hi there, I'm Charlotte",
+    "tokens": ["Hi", "there", ",", "I", "'m", "Charlotte"],
+    "pos_tags": ["NOUN", "PRON", "PUNCT", "PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Charlotte", "start": 14, "end": 23}],
+    "id": "intro-034",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Hello there, I'm Dallas",
+    "tokens": ["Hello", "there", ",", "I", "'m", "Dallas"],
+    "pos_tags": ["NOUN", "PRON", "PUNCT", "PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Dallas", "start": 17, "end": 23}],
+    "id": "intro-035",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "My name's Paris",
+    "tokens": ["My", "name", "'s", "Paris"],
+    "pos_tags": ["PRON", "NOUN", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Paris", "start": 10, "end": 15}],
+    "id": "intro-036",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "The name's Austin",
+    "tokens": ["The", "name", "'s", "Austin"],
+    "pos_tags": ["DET", "NOUN", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Austin", "start": 11, "end": 17}],
+    "id": "intro-037",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I go by Georgia",
+    "tokens": ["I", "go", "by", "Georgia"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Georgia", "start": 8, "end": 15}],
+    "id": "intro-038",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I go by Charlotte",
+    "tokens": ["I", "go", "by", "Charlotte"],
+    "pos_tags": ["PRON", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Charlotte", "start": 8, "end": 17}],
+    "id": "intro-039",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "They call me Dallas",
+    "tokens": ["They", "call", "me", "Dallas"],
+    "pos_tags": ["PRON", "VERB", "PRON", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Dallas", "start": 13, "end": 19}],
+    "id": "intro-040",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I am Paris",
+    "tokens": ["I", "am", "Paris"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Paris", "start": 5, "end": 10}],
+    "id": "intro-041",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I am Austin",
+    "tokens": ["I", "am", "Austin"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Austin", "start": 5, "end": 11}],
+    "id": "intro-042",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I am Georgia",
+    "tokens": ["I", "am", "Georgia"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Georgia", "start": 5, "end": 12}],
+    "id": "intro-043",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Hi, my name is Jordan",
+    "tokens": ["Hi", ",", "my", "name", "is", "Jordan"],
+    "pos_tags": ["NOUN", "PUNCT", "PRON", "NOUN", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Jordan", "start": 15, "end": 21}],
+    "id": "intro-044",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Hello, my name is Orlando",
+    "tokens": ["Hello", ",", "my", "name", "is", "Orlando"],
+    "pos_tags": ["NOUN", "PUNCT", "PRON", "NOUN", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Orlando", "start": 18, "end": 25}],
+    "id": "intro-045",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Nice to meet you, I'm Paris",
+    "tokens": ["Nice", "to", "meet", "you", ",", "I", "'m", "Paris"],
+    "pos_tags": ["ADJ", "PART", "VERB", "PRON", "PUNCT", "PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Paris", "start": 22, "end": 27}],
+    "id": "intro-046",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Nice to meet you, I'm Austin",
+    "tokens": ["Nice", "to", "meet", "you", ",", "I", "'m", "Austin"],
+    "pos_tags": ["ADJ", "PART", "VERB", "PRON", "PUNCT", "PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Austin", "start": 22, "end": 28}],
+    "id": "intro-047",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Pleased to meet you, my name is Georgia",
+    "tokens": ["Pleased", "to", "meet", "you", ",", "my", "name", "is", "Georgia"],
+    "pos_tags": ["VERB", "PART", "VERB", "PRON", "PUNCT", "PRON", "NOUN", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Georgia", "start": 32, "end": 39}],
+    "id": "intro-048",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Paris, nice to meet you",
+    "tokens": ["I", "'m", "Paris", ",", "nice", "to", "meet", "you"],
+    "pos_tags": ["PRON", "VERB", "PROPN", "PUNCT", "ADJ", "PART", "VERB", "PRON"],
+    "entities": [{"entity_type": "person", "value": "Paris", "start": 4, "end": 9}],
+    "id": "intro-049",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Austin, pleased to meet you",
+    "tokens": ["I", "'m", "Austin", ",", "pleased", "to", "meet", "you"],
+    "pos_tags": ["PRON", "VERB", "PROPN", "PUNCT", "VERB", "PART", "VERB", "PRON"],
+    "entities": [{"entity_type": "person", "value": "Austin", "start": 4, "end": 10}],
+    "id": "intro-050",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm John",
+    "tokens": ["I", "'m", "John"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "John", "start": 4, "end": 8}],
+    "id": "intro-051",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Sarah",
+    "tokens": ["I", "'m", "Sarah"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Sarah", "start": 4, "end": 9}],
+    "id": "intro-052",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Michael",
+    "tokens": ["I", "'m", "Michael"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Michael", "start": 4, "end": 11}],
+    "id": "intro-053",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Emily",
+    "tokens": ["I", "'m", "Emily"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Emily", "start": 4, "end": 9}],
+    "id": "intro-054",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "My name is David",
+    "tokens": ["My", "name", "is", "David"],
+    "pos_tags": ["PRON", "NOUN", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "David", "start": 11, "end": 16}],
+    "id": "intro-055",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "My name is Emma",
+    "tokens": ["My", "name", "is", "Emma"],
+    "pos_tags": ["PRON", "NOUN", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Emma", "start": 11, "end": 15}],
+    "id": "intro-056",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Call me Mike",
+    "tokens": ["Call", "me", "Mike"],
+    "pos_tags": ["VERB", "PRON", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Mike", "start": 8, "end": 12}],
+    "id": "intro-057",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Hi, I'm Jennifer",
+    "tokens": ["Hi", ",", "I", "'m", "Jennifer"],
+    "pos_tags": ["NOUN", "PUNCT", "PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Jennifer", "start": 8, "end": 16}],
+    "id": "intro-058",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Hello, I'm Robert",
+    "tokens": ["Hello", ",", "I", "'m", "Robert"],
+    "pos_tags": ["NOUN", "PUNCT", "PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Robert", "start": 11, "end": 17}],
+    "id": "intro-059",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I am Chelsea",
+    "tokens": ["I", "am", "Chelsea"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Chelsea", "start": 5, "end": 12}],
+    "id": "intro-060",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I am Hudson",
+    "tokens": ["I", "am", "Hudson"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Hudson", "start": 5, "end": 11}],
+    "id": "intro-061",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I am Lincoln",
+    "tokens": ["I", "am", "Lincoln"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Lincoln", "start": 5, "end": 12}],
+    "id": "intro-062",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I am Mason",
+    "tokens": ["I", "am", "Mason"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Mason", "start": 5, "end": 10}],
+    "id": "intro-063",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Troy",
+    "tokens": ["I", "'m", "Troy"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Troy", "start": 4, "end": 8}],
+    "id": "intro-064",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Eugene",
+    "tokens": ["I", "'m", "Eugene"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Eugene", "start": 4, "end": 10}],
+    "id": "intro-065",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Helena",
+    "tokens": ["I", "'m", "Helena"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Helena", "start": 4, "end": 10}],
+    "id": "intro-066",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm Geneva",
+    "tokens": ["I", "'m", "Geneva"],
+    "pos_tags": ["PRON", "VERB", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Geneva", "start": 4, "end": 10}],
+    "id": "intro-067",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "My friends call me Paris",
+    "tokens": ["My", "friends", "call", "me", "Paris"],
+    "pos_tags": ["PRON", "NOUN", "VERB", "PRON", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Paris", "start": 19, "end": 24}],
+    "id": "intro-068",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "My friends call me Austin",
+    "tokens": ["My", "friends", "call", "me", "Austin"],
+    "pos_tags": ["PRON", "NOUN", "VERB", "PRON", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Austin", "start": 19, "end": 25}],
+    "id": "intro-069",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm known as Georgia",
+    "tokens": ["I", "'m", "known", "as", "Georgia"],
+    "pos_tags": ["PRON", "VERB", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Georgia", "start": 13, "end": 20}],
+    "id": "intro-070",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I'm known as Charlotte",
+    "tokens": ["I", "'m", "known", "as", "Charlotte"],
+    "pos_tags": ["PRON", "VERB", "VERB", "ADP", "PROPN"],
+    "entities": [{"entity_type": "person", "value": "Charlotte", "start": 13, "end": 22}],
+    "id": "intro-071",
+    "intent": "smalltalk.user.introduction"
+  }
+]

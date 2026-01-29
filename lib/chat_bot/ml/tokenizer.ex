@@ -597,17 +597,32 @@ defmodule ChatBot.ML.Tokenizer do
         end
 
       punctuation?(g) ->
-        # End current token and add punctuation as separate token
-        acc2 =
-          if current != "" do
-            token = make_token(current, current_start, pos - 1)
-            [token | acc]
-          else
-            acc
-          end
+        # Check for decimal/thousand separator in numbers (e.g., 3.14, 1,000, $19.99)
+        cond do
+          # Decimal point or thousand separator within a number
+          g in [".", ","] and current != "" and all_digits_or_currency?(current) and
+              starts_with_digit?(rest) ->
+            # Include in current token (decimal number)
+            tokenize_graphemes(rest, acc, current <> g, current_start, pos + 1)
 
-        punct_token = make_token(g, pos, pos)
-        tokenize_graphemes(rest, [punct_token | acc2], "", pos + 1, pos + 1)
+          # Currency symbol at start of number (e.g., $19.99, €50, £100)
+          currency_symbol?(g) and current == "" and starts_with_digit?(rest) ->
+            # Start a currency number token
+            tokenize_graphemes(rest, acc, g, pos, pos + 1)
+
+          true ->
+            # End current token and add punctuation as separate token
+            acc2 =
+              if current != "" do
+                token = make_token(current, current_start, pos - 1)
+                [token | acc]
+              else
+                acc
+              end
+
+            punct_token = make_token(g, pos, pos)
+            tokenize_graphemes(rest, [punct_token | acc2], "", pos + 1, pos + 1)
+        end
 
       emoji?(g) ->
         # End current token and add emoji as separate token
@@ -719,21 +734,55 @@ defmodule ChatBot.ML.Tokenizer do
   defp classify_token(text) do
     cond do
       all_digits?(text) -> :number
+      is_currency_number?(text) -> :number
       all_punctuation?(text) -> :punctuation
       String.contains?(text, "'") -> :contraction
       true -> :word
     end
   end
 
-  defp all_digits?(text) do
-    text
-    |> String.graphemes()
-    |> Enum.all?(fn g ->
+  # Check if text is a currency number like "$19.99" or "€50"
+  defp is_currency_number?(text) do
+    case String.graphemes(text) do
+      [first | rest] when rest != [] ->
+        currency_symbol?(first) and has_digit?(rest)
+
+      _ ->
+        false
+    end
+  end
+
+  defp has_digit?(graphemes) do
+    Enum.any?(graphemes, fn g ->
       case String.to_charlist(g) do
-        [c] -> digit?(c) or c == ?. or c == ?,
+        [c] -> digit?(c)
         _ -> false
       end
     end)
+  end
+
+  defp all_digits?(text) do
+    graphemes = String.graphemes(text)
+
+    # Must contain at least one actual digit to be a number
+    has_digit =
+      Enum.any?(graphemes, fn g ->
+        case String.to_charlist(g) do
+          [c] -> digit?(c)
+          _ -> false
+        end
+      end)
+
+    # All characters must be digits, decimal points, or thousand separators
+    all_numeric_chars =
+      Enum.all?(graphemes, fn g ->
+        case String.to_charlist(g) do
+          [c] -> digit?(c) or c == ?. or c == ?,
+          _ -> false
+        end
+      end)
+
+    has_digit and all_numeric_chars
   end
 
   defp all_punctuation?(text) do
@@ -901,4 +950,47 @@ defmodule ChatBot.ML.Tokenizer do
   defp digit?(codepoint) do
     codepoint >= ?0 and codepoint <= ?9
   end
+
+  # Check if a string is all digits or starts with a currency symbol followed by digits
+  defp all_digits_or_currency?(text) do
+    case String.graphemes(text) do
+      [] ->
+        false
+
+      [first | rest] ->
+        if currency_symbol?(first) do
+          # Currency prefix followed by digits (and possible decimal points)
+          Enum.all?(rest, fn g ->
+            case String.to_charlist(g) do
+              [c] -> digit?(c) or c == ?. or c == ?,
+              _ -> false
+            end
+          end)
+        else
+          # All digits (and possible decimal points already included)
+          Enum.all?(String.graphemes(text), fn g ->
+            case String.to_charlist(g) do
+              [c] -> digit?(c) or c == ?. or c == ?,
+              _ -> false
+            end
+          end)
+        end
+    end
+  end
+
+  # Check if the next character(s) start with a digit
+  defp starts_with_digit?([]), do: false
+
+  defp starts_with_digit?([first | _rest]) do
+    case String.to_charlist(first) do
+      [c] -> digit?(c)
+      _ -> false
+    end
+  end
+
+  # Common currency symbols
+  @currency_symbols ["$", "€", "£", "¥", "₹", "₽", "₩", "฿", "₫", "₴", "₦", "₱", "₪", "₡", "₲", "₵"]
+
+  defp currency_symbol?(g) when is_binary(g), do: g in @currency_symbols
+  defp currency_symbol?(_), do: false
 end

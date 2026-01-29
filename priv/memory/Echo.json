@@ -368,5 +368,135 @@
     ],
     "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello",
     "timestamp": 1769408578859
+  },
+  {
+    "id": "2311cfc5763c5828",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi! I'm Austin. What's the weather?",
+    "timestamp": 1769702595352
+  },
+  {
+    "id": "b70092d5c966ffef",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi! I'm Austin. What's the weather?",
+    "timestamp": 1769702791477
+  },
+  {
+    "id": "92d9c6aac7171f1d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hi! I'm Austin. What's the weather?",
+    "timestamp": 1769702902005
+  },
+  {
+    "id": "3ba5623c8753454a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you.",
+    "timestamp": 1769711871473
+  },
+  {
+    "id": "343e7dd00db91e90",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Can you tell Odo we need security on the Prominade?",
+    "timestamp": 1769711921728
+  },
+  {
+    "id": "6ae380dc80cbe930",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Thank you for receiving us, Captain Georgiou.",
+    "timestamp": 1769716439620
+  },
+  {
+    "id": "2213dc571b7d957d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: How are you this afternoon?",
+    "timestamp": 1769716471484
+  },
+  {
+    "id": "42790f0ea27f3edc",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: HELP",
+    "timestamp": 1769716510291
+  },
+  {
+    "id": "e6c07eceeccae5be",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: There are 8 days in a week",
+    "timestamp": 1769716533818
+  },
+  {
+    "id": "051033f3161ca5d7",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: The sky is green",
+    "timestamp": 1769716640381
+  },
+  {
+    "id": "c31409e1e4f7acfb",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Dallas Texas",
+    "timestamp": 1769716797406
+  },
+  {
+    "id": "1323b9957903a4df",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello, my name is Austin Kregel. I live in Owosso, Michigan. I work at Cars.com. Can you tell me what their latest stock price was?",
+    "timestamp": 1769718631080
+  },
+  {
+    "id": "a9880f4fc6e22f1d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, my name is Austin Kregel. I live in Owosso, Michigan. I work at Cars.com. Can you tell me what their latest stock price was?",
+    "timestamp": 1769718913779
   }
 ]

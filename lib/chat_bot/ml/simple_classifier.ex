@@ -85,7 +85,9 @@ defmodule ChatBot.ML.SimpleClassifier do
 
   defp tokenize(text) do
     # Use the new Tokenizer module for unicode-aware tokenization
-    Tokenizer.tokenize_normalized(text, min_length: 2)
+    # Expand contractions so "I'm" becomes "I am" - ensures consistent
+    # tokenization between contracted and expanded forms
+    Tokenizer.tokenize_normalized(text, min_length: 2, expand_contractions: true)
   end
 
   defp vectorize(text, vocabulary, idf_weights) do

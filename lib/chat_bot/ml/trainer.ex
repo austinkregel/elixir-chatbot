@@ -278,7 +278,17 @@ defmodule ChatBot.ML.Trainer do
     all_lookups
     |> Enum.flat_map(fn lookup ->
       Map.values(lookup)
-      |> Enum.map(fn info -> Map.get(info, :entity_type) end)
+      |> Enum.flat_map(fn info ->
+        # Handle both single maps and lists of maps
+        case info do
+          entries when is_list(entries) ->
+            Enum.map(entries, fn entry -> Map.get(entry, :entity_type) end)
+          entry when is_map(entry) ->
+            [Map.get(entry, :entity_type)]
+          _ ->
+            []
+        end
+      end)
     end)
     |> Enum.uniq()
     |> Enum.filter(&(&1 != nil))
@@ -571,7 +581,8 @@ defmodule ChatBot.ML.Trainer do
 
     # Filter by minimum frequency and take top N words
     min_freq = 2
-    max_features = Application.get_env(:chat_bot, :ml)[:max_features]
+    # Default to 5000 features if not configured
+    max_features = Application.get_env(:chat_bot, :ml)[:max_features] || 5000
 
     word_counts
     |> Enum.filter(fn {_word, count} -> count >= min_freq end)

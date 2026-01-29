@@ -227,13 +227,6 @@ defmodule ChatBotWeb.ChatLive do
     {:noreply, socket}
   end
 
-  defp reset_for_world_change(socket) do
-    socket
-    |> assign(:current_conversation_id, nil)
-    |> assign(:messages, [])
-    |> assign(:selected_message_id, nil)
-  end
-
   def handle_event("end_conversation", _params, socket) do
     if socket.assigns.current_conversation_id do
       ChatBot.Brain.end_conversation(socket.assigns.current_conversation_id)
@@ -255,6 +248,13 @@ defmodule ChatBotWeb.ChatLive do
     else
       {:noreply, socket}
     end
+  end
+
+  defp reset_for_world_change(socket) do
+    socket
+    |> assign(:current_conversation_id, nil)
+    |> assign(:messages, [])
+    |> assign(:selected_message_id, nil)
   end
 
   @impl true

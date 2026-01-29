@@ -86,6 +86,18 @@ defmodule ChatBot.FactDatabase do
     GenServer.call(__MODULE__, :stats)
   end
 
+  @doc """
+  Checks if the fact database is ready.
+  """
+  def ready? do
+    try do
+      GenServer.call(__MODULE__, :ready?, 100)
+    catch
+      :exit, {:timeout, _} -> false
+      :exit, {:noproc, _} -> false
+    end
+  end
+
   # Server Callbacks
 
   @impl true
@@ -177,6 +189,11 @@ defmodule ChatBot.FactDatabase do
     }
 
     {:reply, stats, state}
+  end
+
+  @impl true
+  def handle_call(:ready?, _from, state) do
+    {:reply, true, state}
   end
 
   # Private Functions

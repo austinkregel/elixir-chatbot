@@ -38,6 +38,8 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
 
   # Entity type preferences for different contexts
   # Higher score = more preferred in that context
+  # NOTE: These are fallback preferences. The primary scoring now uses
+  # IntentRegistry.expected_entity_types/1 for dynamic context-aware scoring.
   @context_preferences %{
     # Introduction context: prefer person over location
     introduction: %{
@@ -57,6 +59,17 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
     music: %{
       "music-artist" => 1.0,
       "person" => 0.3,
+      "location" => 0.1,
+      "city" => 0.1
+    },
+    # Device/smarthome context: prefer device entities over music/person
+    device: %{
+      "device" => 1.0,
+      "lights" => 1.0,
+      "heating" => 1.0,
+      "room" => 0.8,
+      "music-artist" => 0.1,
+      "person" => 0.1,
       "location" => 0.1,
       "city" => 0.1
     },
@@ -111,17 +124,44 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
 
   @doc """
   Disambiguate a single entity with multiple possible types.
+  
+  Context map can include:
+  - `:discourse` - Discourse analysis result
+  - `:speech_act` - Speech act classification
+  - `:intent` - Classified intent string
+  - `:original_text` - The original text being processed (for text-based pattern matching)
   """
   def disambiguate_single(entity, pos_tagged, context) do
     types = get_entity_types(entity)
     entity_position = get_entity_position(entity, pos_tagged)
     entity_type = get_type_name(entity)
+    entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
+    
+    # Enrich context with entity value for introduction pattern detection
+    enriched_context = Map.put(context, :entity_value, entity_value)
 
     cond do
       # Single type that requires inference (e.g., ambiguous_name_location)
       # Use TypeInferrer to dynamically determine the actual type from context
       length(types) <= 1 and requires_inference?(entity_type) ->
-        infer_type_with_type_inferrer(entity, pos_tagged, context)
+        # First check if this is an introduction pattern - override type inference
+        intro_confidence = introduction_confidence(pos_tagged, entity_position, enriched_context)
+        
+        if intro_confidence >= 0.7 do
+          # Strong introduction context - this is a person's name
+          # Either keep existing person type or convert location to person
+          if entity_type == "person" do
+            # Already marked as person, just add disambiguation metadata
+            entity
+            |> Map.put(:disambiguation_reason, "introduction_pattern")
+            |> Map.put(:disambiguation_source, :context_analysis)
+          else
+            # Convert location/city to person
+            create_person_type_from_intro(entity, intro_confidence)
+          end
+        else
+          infer_type_with_type_inferrer(entity, pos_tagged, context)
+        end
 
       # No types to disambiguate
       length(types) == 0 ->
@@ -134,21 +174,12 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
 
         # If context strongly suggests proper noun/name usage (introduction pattern)
         # but entity is location/city, recognize it as a proper noun/name
-        intro_confidence = introduction_confidence(pos_tagged, entity_position, context)
+        intro_confidence = introduction_confidence(pos_tagged, entity_position, enriched_context)
 
         if intro_confidence >= 0.7 and single_type_name in ["location", "city", "place-name"] do
           # Strong introduction context - this is being used as a proper noun/name,
           # not as a location reference. In our entity system, proper names map to "person" type.
-          name_type = %{
-            entity_type: "person",
-            entity: "person",
-            value: Map.get(entity, :value) || Map.get(entity, "value"),
-            confidence: intro_confidence,
-            # Metadata indicating this was recognized as proper noun usage, not from person database
-            disambiguation_reason: "proper_noun_usage"
-          }
-
-          select_type(entity, name_type)
+          create_person_type_from_intro(entity, intro_confidence)
         else
           # Normal case - use the single type
           select_type(entity, single_type)
@@ -156,43 +187,85 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
 
       # Multiple types - need to disambiguate
       true ->
-        # Extract features from context
-        features = extract_features(entity, pos_tagged, context)
+        # First check for introduction pattern - this takes precedence
+        intro_confidence = introduction_confidence(pos_tagged, entity_position, enriched_context)
+        
+        if intro_confidence >= 0.7 do
+          # Strong introduction pattern - prefer person type
+          person_type = Enum.find(types, fn t -> get_type_name(t) == "person" end)
+          
+          if person_type do
+            select_type(entity, person_type)
+          else
+            # No person type available, create one
+            create_person_type_from_intro(entity, intro_confidence)
+          end
+        else
+          # Extract features from context
+          features = extract_features(entity, pos_tagged, context)
 
-        # Score each type based on features
-        scored_types =
-          Enum.map(types, fn type_info ->
-            score = score_type(type_info, features, context)
-            {type_info, score}
-          end)
+          # Score each type based on features
+          scored_types =
+            Enum.map(types, fn type_info ->
+              score = score_type(type_info, features, context)
+              {type_info, score}
+            end)
 
-        # Select highest scoring type
-        {best_type, _score} = Enum.max_by(scored_types, fn {_, score} -> score end)
+          # Select highest scoring type
+          {best_type, _score} = Enum.max_by(scored_types, fn {_, score} -> score end)
 
-        select_type(entity, best_type)
+          select_type(entity, best_type)
+        end
     end
+  end
+  
+  # Create a person type entity when introduction pattern is detected
+  defp create_person_type_from_intro(entity, intro_confidence) do
+    name_type = %{
+      entity_type: "person",
+      entity: "person",
+      value: Map.get(entity, :value) || Map.get(entity, "value"),
+      confidence: intro_confidence,
+      # Metadata indicating this was recognized as proper noun usage, not from person database
+      disambiguation_reason: "introduction_pattern"
+    }
+    
+    select_type(entity, name_type)
   end
 
   @doc """
-  Check if an entity type requires inference via TypeInferrer.
+  Check if an entity type requires context-based disambiguation.
 
-  Types starting with "ambiguous_" prefix indicate entities that can be
-  multiple types and need context-based inference to resolve.
+  Types that require inference include:
+  - Types with "ambiguous_" prefix
+  - "person" and "location" types, which are often ambiguous (e.g., Austin)
+  - These require context (intent, discourse) to determine the correct type
   """
   def requires_inference?(entity_type) when is_binary(entity_type) do
-    String.starts_with?(entity_type, "ambiguous_")
+    # ambiguous_* types always need inference
+    String.starts_with?(entity_type, "ambiguous_") or
+      # person/location are contextually ambiguous - "Austin" could be either
+      entity_type in ["person", "location"]
   end
 
   def requires_inference?(_), do: false
 
   @doc """
-  Infer the entity type using TypeInferrer based on context patterns.
+  Infer the entity type using intent context and TypeInferrer.
 
-  TypeInferrer learns type associations from POS tag context and co-occurrence
-  with known entities, without using hardcoded type-to-keyword mappings.
+  Primary: Uses IntentRegistry expected_entity_types to match the current
+  intent's requirements.
+  
+  Fallback: TypeInferrer's learned patterns when no intent context or
+  when TypeInferrer returns a type that matches expected types.
   """
-  def infer_type_with_type_inferrer(entity, pos_tagged, _context) do
+  def infer_type_with_type_inferrer(entity, pos_tagged, context) do
     entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
+    original_type = Map.get(entity, :entity_type) || ""
+    intent = Map.get(context, :intent, "")
+
+    # Get expected entity types from IntentRegistry
+    expected_types = IntentRegistry.expected_entity_types(intent)
 
     # Extract tokens and tags from POS-tagged list
     {context_tokens, context_tags} =
@@ -203,20 +276,53 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
           {tokens, tags}
 
         _ ->
-          # Fallback if not properly POS-tagged
           {[], []}
       end
 
     # Use TypeInferrer to infer the type from context patterns
-    {inferred_type, confidence} =
+    {inferred_type, type_confidence} =
       TypeInferrer.infer_type(entity_value, context_tokens, context_tags)
 
-    # Return entity with inferred type
+    # Determine final type based on intent context
+    # Intent context takes priority over TypeInferrer for ambiguous cases
+    final_type =
+      cond do
+        # If inferred type is in expected types, use it
+        inferred_type in expected_types ->
+          inferred_type
+
+        # If original type is in expected types, keep it
+        original_type in expected_types ->
+          original_type
+
+        # Weather/navigation intents expect location types
+        # Choose location if it's in expected types
+        IntentRegistry.weather_intent?(intent) or IntentRegistry.navigation_intent?(intent) ->
+          Enum.find(expected_types, "location", &(&1 in ["location", "city"]))
+
+        # Introduction intents expect person types
+        IntentRegistry.introduction_intent?(intent) ->
+          Enum.find(expected_types, "person", &(&1 in ["person", "name"]))
+
+        # Music intents expect artist types
+        IntentRegistry.music_intent?(intent) ->
+          Enum.find(expected_types, inferred_type, &(&1 in ["music-artist", "song", "album"]))
+
+        # If expected types exist but inferred doesn't match, use first expected type
+        length(expected_types) > 0 ->
+          hd(expected_types)
+
+        # Default: use inferred type
+        true ->
+          inferred_type
+      end
+
+    # Return entity with final type
     entity
-    |> Map.put(:entity, inferred_type)
-    |> Map.put(:entity_type, inferred_type)
+    |> Map.put(:entity, final_type)
+    |> Map.put(:entity_type, final_type)
     |> Map.put(:disambiguation_source, :type_inferrer)
-    |> Map.put(:disambiguation_confidence, confidence)
+    |> Map.put(:disambiguation_confidence, type_confidence)
   end
 
   @doc """
@@ -224,24 +330,97 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
 
   Returns a confidence score (0.0 to 1.0) indicating how likely
   this is an introduction context.
+  
+  Uses multiple signals:
+  - POS tag patterns (PRON + VERB before entity)
+  - Text-based patterns ("I'm [Name]", "My name is [Name]", etc.)
+  - Discourse indicators (self-referential)
+  - Speech act context (greeting)
   """
   def introduction_confidence(pos_tagged, entity_position, context) do
+    entity_value = extract_entity_value_from_context(context)
+    original_text = Map.get(context, :original_text, "")
+    
     # Extract features
     features = %{
       pron_verb_pattern: has_pron_verb_before?(pos_tagged, entity_position),
+      text_intro_pattern: text_has_introduction_pattern?(original_text, entity_value),
       self_referential: self_referential?(context),
       greeting_context: greeting_context?(context)
     }
 
     # Combine features with weights
+    # Text-based pattern is more reliable than POS tags for contractions
+    text_intro_score = if features.text_intro_pattern, do: 0.7, else: 0.0
     pron_verb_score = if features.pron_verb_pattern, do: 0.5, else: 0.0
-    self_ref_score = if features.self_referential, do: 0.3, else: 0.0
-    greeting_score = if features.greeting_context, do: 0.2, else: 0.0
+    self_ref_score = if features.self_referential, do: 0.2, else: 0.0
+    greeting_score = if features.greeting_context, do: 0.1, else: 0.0
 
-    score = pron_verb_score + self_ref_score + greeting_score
+    # Take the max of text pattern or POS pattern (don't double-count)
+    pattern_score = max(text_intro_score, pron_verb_score)
+    score = pattern_score + self_ref_score + greeting_score
 
     min(score, 1.0)
   end
+  
+  # Extract entity value from context if available
+  defp extract_entity_value_from_context(context) do
+    Map.get(context, :entity_value, "")
+  end
+  
+  @doc """
+  Check if text contains an introduction pattern with the given entity value.
+  
+  Detects patterns like:
+  - "I'm [Name]" / "I am [Name]"
+  - "My name is [Name]"
+  - "This is [Name]" (when self-referential)
+  - "Call me [Name]"
+  - "I go by [Name]"
+  - "[Name] here" (at start)
+  """
+  def text_has_introduction_pattern?(text, entity_value) when is_binary(text) and is_binary(entity_value) do
+    return_false_if_empty = entity_value == "" or String.length(entity_value) < 2
+    if return_false_if_empty do
+      false
+    else
+      lower_text = String.downcase(text)
+      lower_entity = String.downcase(entity_value)
+      
+      # Build introduction patterns with the entity value
+      # These are common ways people introduce themselves
+      introduction_patterns = [
+        # "I'm Austin" / "I am Austin"
+        "i'm #{lower_entity}",
+        "i am #{lower_entity}",
+        "im #{lower_entity}",
+        # "My name is Austin" / "My name's Austin"
+        "my name is #{lower_entity}",
+        "my name's #{lower_entity}",
+        "name is #{lower_entity}",
+        "name's #{lower_entity}",
+        # "Call me Austin" / "They call me Austin"
+        "call me #{lower_entity}",
+        "called #{lower_entity}",
+        # "I go by Austin"
+        "i go by #{lower_entity}",
+        "go by #{lower_entity}",
+        # "It's Austin" (when context is greeting)
+        "it's #{lower_entity}",
+        "this is #{lower_entity}",
+        # "[Name] here" at start
+        "#{lower_entity} here"
+      ]
+      
+      # Check if any pattern matches
+      # We use String.contains? which is character-based, not regex
+      Enum.any?(introduction_patterns, fn pattern ->
+        String.contains?(lower_text, pattern)
+      end)
+    end
+  end
+  
+  def text_has_introduction_pattern?(_, _), do: false
 
   # ============================================================================
   # Feature Extraction
@@ -249,6 +428,7 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
 
   defp extract_features(entity, pos_tagged, context) do
     entity_pos = get_entity_position(entity)
+    intent = Map.get(context, :intent, "")
 
     %{
       # POS-based features
@@ -268,6 +448,11 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
       weather_intent: weather_intent?(context),
       music_intent: music_intent?(context),
       navigation_intent: navigation_intent?(context),
+      device_intent: device_intent?(context),
+
+      # Dynamic entity expectations from IntentRegistry
+      expected_entity_types: IntentRegistry.expected_entity_types(intent),
+      intent: intent,
 
       # Detected context type (for preference lookup)
       context_type: detect_context_type(context, pos_tagged, entity_pos)
@@ -397,21 +582,43 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
     IntentRegistry.navigation_intent?(intent)
   end
 
+  defp device_intent?(context) do
+    intent = Map.get(context, :intent, "")
+    # Use IntentRegistry for device intent detection (data-driven via intent_registry.json)
+    IntentRegistry.device_intent?(intent)
+  end
+
   defp detect_context_type(context, pos_tagged, entity_pos) do
+    intent = Map.get(context, :intent, "")
+    domain = IntentRegistry.domain(intent)
+    
     cond do
+      # Introduction: Use IntentRegistry to detect introduction intents
+      # These prefer person over location for entity disambiguation
+      IntentRegistry.introduction_intent?(intent) ->
+        :introduction
+
       # Introduction: PRON+VERB before entity + self-referential discourse
+      # Structural pattern detection as backup
       has_pron_verb_before?(pos_tagged, entity_pos) and self_referential?(context) ->
         :introduction
 
-      # Music context
-      music_intent?(context) ->
+      # Use intent domain directly for dynamic context detection
+      # This automatically handles any domain defined in intent_registry.json
+      domain == :device ->
+        :device
+
+      domain == :music ->
         :music
 
-      # Weather/location query
-      weather_intent?(context) or navigation_intent?(context) ->
+      domain in [:weather, :navigation] ->
         :location_query
 
-      # Default
+      # Device intents via IntentRegistry
+      IntentRegistry.device_intent?(intent) ->
+        :device
+
+      # Default for unknown/unhandled domains
       true ->
         :default
     end
@@ -424,35 +631,55 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
   defp score_type(type_info, features, _context) do
     entity_type = get_type_name(type_info)
     context_type = features.context_type
+    expected_types = Map.get(features, :expected_entity_types, [])
 
-    # Get base preference for this entity type in this context
+    # PRIMARY: Dynamic scoring based on IntentRegistry entity_mappings
+    # If the entity type matches what the intent expects, give it a high score
+    dynamic_score = if entity_type in expected_types, do: 0.8, else: 0.0
+
+    # FALLBACK: Static context preferences for edge cases
     preferences = Map.get(@context_preferences, context_type, @context_preferences.default)
-    base_score = Map.get(preferences, entity_type, 0.3)
+    static_score = Map.get(preferences, entity_type, 0.3)
 
-    # Boost score based on specific features
-    boost =
-      cond do
-        # Strong introduction signal + person type
-        features.pron_verb_adjacent and features.self_referential and entity_type == "person" ->
-          0.5
+    # Use dynamic score if we have expected types, otherwise use static
+    base_score = if length(expected_types) > 0 and dynamic_score > 0 do
+      dynamic_score
+    else
+      static_score
+    end
 
-        # Weather intent + location type
-        features.weather_intent and entity_type in ["location", "city"] ->
-          0.4
-
-        # Music intent + artist type
-        features.music_intent and entity_type == "music-artist" ->
-          0.4
-
-        # Greeting context + person type
-        features.greeting_context and entity_type == "person" ->
-          0.3
-
-        true ->
-          0.0
-      end
+    # Additional boost based on specific POS/discourse features
+    boost = calculate_feature_boost(entity_type, features)
 
     base_score + boost
+  end
+
+  # Calculate boost from POS patterns and discourse features
+  defp calculate_feature_boost(entity_type, features) do
+    cond do
+      # Strong introduction signal + person type
+      features.pron_verb_adjacent and features.self_referential and entity_type == "person" ->
+        0.5
+
+      # Device intent + device/lights type
+      features.device_intent and entity_type in ["device", "lights", "heating", "room"] ->
+        0.4
+
+      # Weather intent + location type
+      features.weather_intent and entity_type in ["location", "city"] ->
+        0.4
+
+      # Music intent + artist type
+      features.music_intent and entity_type == "music-artist" ->
+        0.4
+
+      # Greeting context + person type
+      features.greeting_context and entity_type == "person" ->
+        0.3
+
+      true ->
+        0.0
+    end
   end
 
   defp get_type_name(type_info) when is_map(type_info) do

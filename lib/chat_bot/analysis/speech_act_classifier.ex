@@ -20,8 +20,7 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
   """
 
   alias ChatBot.Analysis.{SpeechActResult, IntentRegistry}
-  alias ChatBot.ML.IntentClassifierSimple
-  alias ChatBot.ML.Tokenizer
+  alias ChatBot.ML.{IntentClassifierSimple, POSTagger, Tokenizer}
 
   require Logger
 
@@ -65,6 +64,8 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
     "smalltalk.user.name" => {:assertive, :statement},
     "smalltalk.user.age" => {:assertive, :statement},
     "smalltalk.user.location" => {:assertive, :statement},
+    "smalltalk.user.introduction" => {:assertive, :statement},
+    "smalltalk.user.origin" => {:assertive, :statement},
 
     # Confirmations
     "smalltalk.confirmation.yes" => {:assertive, :confirmation},
@@ -98,30 +99,11 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
     "navigation" => {:directive, :request_information}
   }
 
-  # Keyword patterns for different speech acts
-  @greeting_keywords ~w(hello hi hey howdy greetings hola yo sup)
-  @farewell_keywords ~w(bye goodbye cya farewell later goodnight)
-  @thanks_keywords ~w(thanks thank appreciate grateful)
-  @sorry_keywords ~w(sorry apologies apologize pardon)
-  @question_words ~w(what where when why who whom whose which how)
-  @imperative_starters ~w(
-    tell show give get find search look check
-    turn set make create open close start stop
-    play pause skip next previous list read
-    send call text message remind schedule
-    help explain describe calculate
-  )
-  @modal_verbs ~w(can could would will should might may)
-
-  # Response optionality patterns (detected via pragmatic/structural passes)
-  # Acknowledgment: responses to thanks/apologies
-  @acknowledgment_keywords ~w(welcome anytime gladly certainly absolutely definitely)
-  # Compliment: positive evaluation directed at addressee
-  @compliment_keywords ~w(great good excellent wonderful amazing awesome fantastic brilliant nice)
-  # Backchannel: minimal acknowledgment signals
-  @backchannel_keywords ~w(hmm mhm uh-huh yeah yep okay ok right sure got gotcha interesting cool nice ah oh wow)
-  # Continuation markers: signal more is coming
-  @continuation_markers ~w(and but so then also plus because although however)
+  # ============================================================================
+  # ML-Based Classification
+  # Speech acts are determined by the trained intent classifier and POS analysis
+  # No keyword matching - all patterns are learned from training data
+  # ============================================================================
 
   @doc """
   Classifies the speech act of the given text using multiple analysis passes.
@@ -245,169 +227,44 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
     }
   end
 
-  # Pass 3: Keyword Analysis
-  defp analyze_keywords(normalized) do
-    # Remove punctuation for keyword matching using Tokenizer (no regex)
-    words = Tokenizer.tokenize_words(normalized)
-    first_word = List.first(words) || ""
-    word_count = length(words)
-
-    # Check for greeting keywords
-    greeting_score = keyword_match_score(words, @greeting_keywords)
-
-    # Check for farewell keywords
-    farewell_score = keyword_match_score(words, @farewell_keywords)
-
-    # Check for thanks keywords
-    thanks_score = keyword_match_score(words, @thanks_keywords)
-
-    # Check for sorry keywords
-    sorry_score = keyword_match_score(words, @sorry_keywords)
-
-    # Check for acknowledgment keywords (response to thanks)
-    acknowledgment_score = keyword_match_score(words, @acknowledgment_keywords)
-
-    # Check for compliment keywords (only for short utterances to avoid false positives like "The weather is nice")
-    compliment_score =
-      if word_count <= 4 do
-        keyword_match_score(words, @compliment_keywords)
-      else
-        0.0
-      end
-
-    # Check for backchannel keywords (only if very short)
-    backchannel_score =
-      if word_count <= 2 do
-        keyword_match_score(words, @backchannel_keywords)
-      else
-        0.0
-      end
-
-    # Check for question starters
-    question_score = if first_word in @question_words, do: 0.8, else: 0.0
-
-    # Check for imperative starters
-    imperative_score = if first_word in @imperative_starters, do: 0.8, else: 0.0
-
-    # Find the highest scoring category
-    scores = [
-      {:greeting, greeting_score},
-      {:farewell, farewell_score},
-      {:thanks, thanks_score},
-      {:apology, sorry_score},
-      {:acknowledgment, acknowledgment_score},
-      {:compliment, compliment_score},
-      {:backchannel, backchannel_score},
-      {:question, question_score},
-      {:command, imperative_score}
-    ]
-
-    {best_type, best_score} = Enum.max_by(scores, fn {_, score} -> score end)
-
-    {category, sub_type} =
-      case best_type do
-        :greeting -> {:expressive, :greeting}
-        :farewell -> {:expressive, :farewell}
-        :thanks -> {:expressive, :thanks}
-        :apology -> {:expressive, :apology}
-        :acknowledgment -> {:expressive, :acknowledgment}
-        :compliment -> {:expressive, :compliment}
-        :backchannel -> {:expressive, :backchannel}
-        :question -> {:directive, :request_information}
-        :command -> {:directive, :command}
-        _ -> {:assertive, :statement}
-      end
-
+  # Pass 3: Disabled - All patterns learned from training data
+  # Keyword matching has been removed in favor of ML-based classification
+  defp analyze_keywords(_normalized) do
+    # Return neutral results - let the ML model (intent classifier) drive speech act detection
+    # All speech act patterns are learned from training data, not keyword lists
     %{
-      scores: Map.new(scores),
-      category: if(best_score > 0.3, do: category, else: nil),
-      sub_type: if(best_score > 0.3, do: sub_type, else: nil),
-      confidence: best_score,
+      scores: %{},
+      category: nil,
+      sub_type: nil,
+      confidence: 0.0,
       source: :keyword
     }
   end
 
-  # Pass 4: Pragmatic Markers Analysis
+  # Pass 4: Pragmatic Markers Analysis (Structural Only)
+  # Keyword-based detection removed - ML model handles pattern recognition
   defp analyze_pragmatics(_text, normalized) do
     words = String.split(normalized)
     word_count = length(words)
 
-    # Check for politeness markers
-    has_please = "please" in words
-    has_thanks = Enum.any?(words, &(&1 in @thanks_keywords))
-
-    # Check for urgency markers
-    has_urgency = Enum.any?(words, &(&1 in ~w(now immediately urgent asap quickly)))
-
-    # Check for hedging (uncertainty)
-    has_hedging = Enum.any?(words, &(&1 in ~w(maybe perhaps possibly might)))
-
-    # Check for discourse markers
-    has_greeting_marker =
-      Enum.any?(words, fn word ->
-        word in @greeting_keywords or word in @farewell_keywords
-      end)
-
+    # Structural features only - no keyword matching
     # Short utterances (1-3 words) are often expressives
     is_short = word_count <= 3
     is_very_short = word_count <= 2
 
-    # Backchannel detection: very short + low semantic content
-    # These are minimal acknowledgment signals
-    backchannel_word_count = Enum.count(words, &(&1 in @backchannel_keywords))
-
-    is_backchannel =
-      is_very_short and backchannel_word_count > 0 and
-        backchannel_word_count >= word_count / 2
-
-    # Acknowledgment detection: response to thanks/apology
-    acknowledgment_word_count = Enum.count(words, &(&1 in @acknowledgment_keywords))
-    has_acknowledgment = acknowledgment_word_count > 0
-
-    # Compliment detection: positive evaluation
-    compliment_word_count = Enum.count(words, &(&1 in @compliment_keywords))
-    # Compliment if has positive words + directed at addressee (you/your patterns)
-    has_you_reference = Enum.any?(words, &(&1 in ~w(you your youre you're)))
-    has_that_reference = Enum.any?(words, &(&1 in ~w(that this it)))
-
-    is_compliment =
-      compliment_word_count > 0 and (has_you_reference or has_that_reference or is_short)
-
-    # Determine if this looks like an expressive based on pragmatics
-    expressive_score =
-      cond do
-        is_backchannel -> 0.95
-        has_acknowledgment and is_short -> 0.9
-        is_compliment -> 0.85
-        has_greeting_marker and is_short -> 0.9
-        has_thanks and is_short -> 0.85
-        has_please -> 0.3
-        true -> 0.0
-      end
-
-    # Determine the specific sub_type detected
-    pragmatic_sub_type =
-      cond do
-        is_backchannel -> :backchannel
-        has_acknowledgment and is_short -> :acknowledgment
-        is_compliment -> :compliment
-        has_greeting_marker -> :greeting
-        has_thanks -> :thanks
-        true -> nil
-      end
-
+    # Return structural features only - let ML model determine speech act type
     %{
-      has_please: has_please,
-      has_thanks: has_thanks,
-      has_urgency: has_urgency,
-      has_hedging: has_hedging,
+      has_please: false,
+      has_thanks: false,
+      has_urgency: false,
+      has_hedging: false,
       is_short_utterance: is_short,
       is_very_short: is_very_short,
-      is_backchannel: is_backchannel,
-      is_compliment: is_compliment,
-      has_acknowledgment: has_acknowledgment,
-      pragmatic_sub_type: pragmatic_sub_type,
-      expressive_score: expressive_score,
+      is_backchannel: false,
+      is_compliment: false,
+      has_acknowledgment: false,
+      pragmatic_sub_type: nil,
+      expressive_score: 0.0,
       source: :pragmatic
     }
   end
@@ -530,10 +387,17 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
     # Collect indicators for debugging
     indicators = collect_indicators(analyses)
 
+    # Infer is_imperative from either structural analysis OR intent classification
+    # If the intent classifier detected a command intent, treat it as imperative
+    is_imperative_from_intent =
+      analyses.intent.sub_type == :command and analyses.intent.confidence > 0.3
+
+    is_imperative = analyses.structural.is_imperative or is_imperative_from_intent
+
     SpeechActResult.new(category, sub_type, confidence,
       indicators: indicators,
       is_question: analyses.structural.is_question,
-      is_imperative: analyses.structural.is_imperative
+      is_imperative: is_imperative
     )
   end
 
@@ -755,33 +619,63 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
   end
 
   defp has_question_structure?(text, normalized) do
-    Tokenizer.ends_with_question?(text) or starts_with_question_word?(normalized)
+    # Use punctuation + POS-based detection (no keyword lists)
+    Tokenizer.ends_with_question?(text) or starts_with_interrogative_pos?(normalized)
   end
 
-  defp starts_with_question_word?(normalized) do
-    first_word = normalized |> String.split() |> List.first() || ""
-    first_word in @question_words
+  defp starts_with_interrogative_pos?(_normalized) do
+    # POS-based interrogative detection has been disabled because:
+    # 1. The POS tagger can't distinguish personal pronouns (I, you) from
+    #    interrogative pronouns (what, who) - both are tagged as PRON
+    # 2. Question detection now relies solely on punctuation (question mark)
+    #    which is more reliable
+    # 3. The intent classifier is trained on question patterns and will
+    #    correctly identify questions through ML
+    false
   end
 
   defp has_imperative_structure?(normalized) do
-    first_word = normalized |> String.split() |> List.first() || ""
-    first_word in @imperative_starters
+    # Use POS tagger to detect if first word is a verb (imperative)
+    words = normalized |> String.split() |> Enum.take(2)
+
+    case words do
+      [] ->
+        false
+
+      _ ->
+        case POSTagger.load_model() do
+          {:ok, model} ->
+            predictions = POSTagger.predict(words, model)
+            # Check if first token is tagged as VERB (command/imperative)
+            case predictions do
+              [{_word, "VERB"} | _] -> true
+              _ -> false
+            end
+
+          {:error, _} ->
+            false
+        end
+    end
   end
 
   defp has_modal_verb?(normalized) do
+    # Use POS tagger to detect AUX (auxiliary/modal verbs)
     words = String.split(normalized)
-    Enum.any?(words, fn word -> word in @modal_verbs end)
+
+    case POSTagger.load_model() do
+      {:ok, model} ->
+        predictions = POSTagger.predict(words, model)
+        Enum.any?(predictions, fn {_word, tag} -> tag == "AUX" end)
+
+      {:error, _} ->
+        false
+    end
   end
 
-  defp has_continuation_structure?(text, normalized) do
-    words = String.split(normalized)
-    last_word = List.last(words) || ""
-
+  defp has_continuation_structure?(text, _normalized) do
+    # Use only punctuation analysis - no keyword lists
     # No terminal punctuation (. ! ?) suggests incomplete thought
     no_terminal = not Tokenizer.ends_with_terminal_punctuation?(text)
-
-    # Ends with a continuation marker
-    ends_with_continuation = last_word in @continuation_markers
 
     # Ends with a comma (incomplete sentence)
     ends_with_comma = String.last(String.trim_trailing(text)) == ","
@@ -789,23 +683,8 @@ defmodule ChatBot.Analysis.SpeechActClassifier do
     # Trailing ellipsis suggests more coming
     trailing_ellipsis = Tokenizer.ends_with_ellipsis?(text)
 
-    # Consider it a continuation if any of these are true, but only if substantive
-    has_continuation_signal = ends_with_continuation or ends_with_comma or trailing_ellipsis
-
-    # Must have at least 2 words to be a continuation (not just "and" by itself)
-    substantive = length(words) >= 2
-
-    no_terminal and has_continuation_signal and substantive
-  end
-
-  defp keyword_match_score(words, keywords) do
-    matches = Enum.count(words, fn word -> word in keywords end)
-
-    cond do
-      matches >= 2 -> 0.95
-      matches == 1 -> 0.8
-      true -> 0.0
-    end
+    # Consider it a continuation if punctuation indicates it
+    no_terminal and (ends_with_comma or trailing_ellipsis)
   end
 
   defp intent_to_speech_act(intent) do

@@ -57,9 +57,6 @@ defmodule ChatBot.Learning.WorldManager do
 
   @doc """
   Lists all active training worlds.
-  """
-  @doc """
-  Lists all active training worlds.
 
   ## Options
     - `:include_test` - If false (default), excludes test worlds from the list.

@@ -48,6 +48,11 @@ defmodule ChatBot.Application do
       ChatBot.Response.TemplateStore,
       # Start the Subprocess Supervisor
       ChatBot.Subprocesses.Supervisor,
+      # Start the Knowledge Expansion System
+      {Task.Supervisor, name: ChatBot.Knowledge.AgentSupervisor},
+      ChatBot.Knowledge.SourceReliability,
+      ChatBot.Knowledge.ReviewQueue,
+      ChatBot.Knowledge.LearningCenter,
       # Start the Brain GenServer
       {ChatBot.Brain, "priv/static/demo.echo.json"},
       # Start to serve requests, typically the last entry

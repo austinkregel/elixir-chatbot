@@ -18,11 +18,11 @@ defmodule ChatBot.SystemStatus do
       {ChatBot.Epistemic.JTMS, "JTMS", :has_ready_and_stats},
       {ChatBot.Epistemic.BeliefStore, "Belief Store", :has_ready_and_stats},
       {ChatBot.Epistemic.UserModelStore, "User Model Store", :has_ready_and_stats},
-      {ChatBot.Epistemic.ContradictionHandler, "Contradiction Handler", :has_ready}
+      {ChatBot.Epistemic.ContradictionHandler, "Contradiction Handler", :has_ready_and_stats}
     ],
     analysis: [
-      {ChatBot.Analysis.LearningStore, "Learning Store", :basic},
-      {ChatBot.Analysis.AnalyzerCalibration, "Analyzer Calibration", :has_stats},
+      {ChatBot.Analysis.LearningStore, "Learning Store", :has_ready},
+      {ChatBot.Analysis.AnalyzerCalibration, "Analyzer Calibration", :has_ready_and_stats},
       {ChatBot.Analysis.HeuristicStore, "Heuristic Store", :has_stats}
     ],
     ml: [
@@ -30,14 +30,19 @@ defmodule ChatBot.SystemStatus do
       {ChatBot.ML.InformalExpansions, "Informal Expansions", :has_ready},
       {ChatBot.Response.TemplateStore, "Template Store", :has_ready}
     ],
+    knowledge: [
+      {ChatBot.Knowledge.LearningCenter, "Learning Center", :has_ready_and_stats},
+      {ChatBot.Knowledge.ReviewQueue, "Review Queue", :has_ready_and_stats},
+      {ChatBot.Knowledge.SourceReliability, "Source Reliability", :has_ready_and_stats}
+    ],
     learning: [
       {ChatBot.Learning.WorldManager, "World Manager", :has_ready},
       {ChatBot.Learning.WorldModelRegistry, "World Model Registry", :has_ready}
     ],
     storage: [
-      {ChatBot.KnowledgeStore, "Knowledge Store", :basic},
-      {ChatBot.MemoryStore, "Memory Store (Legacy)", :basic},
-      {ChatBot.FactDatabase, "Fact Database", :has_stats}
+      {ChatBot.KnowledgeStore, "Knowledge Store", :has_ready},
+      {ChatBot.MemoryStore, "Memory Store (Legacy)", :has_ready},
+      {ChatBot.FactDatabase, "Fact Database", :has_ready_and_stats}
     ],
     metrics: [
       {ChatBot.Metrics.Aggregator, "Metrics Aggregator", :basic}
@@ -129,6 +134,83 @@ defmodule ChatBot.SystemStatus do
       supervisor: supervisor_info,
       uptime_seconds: get_uptime_seconds(),
       checked_at: DateTime.utc_now()
+    }
+  end
+
+  @doc """
+  Returns a utilization report identifying idle, low-usage, and high-cost systems.
+
+  This helps identify systems that may need attention:
+  - `:idle` - No activity in 5+ minutes
+  - `:never_used` - Telemetry defined but never called
+  - `:low_usage` - Less than 0.1 calls/min
+  - `:high_cost` - Using >10MB with <1 call/min
+  """
+  def get_utilization_report do
+    genserver_status = get_all_genservers_status()
+
+    # Flatten all statuses and group by utilization_status
+    all_statuses =
+      genserver_status.categories
+      |> Enum.flat_map(fn {category, servers} ->
+        Enum.map(servers, fn {_module, status} ->
+          Map.put(status, :category, category)
+        end)
+      end)
+
+    idle_systems =
+      all_statuses
+      |> Enum.filter(&(&1.utilization_status == :idle))
+      |> Enum.map(&summarize_system/1)
+
+    never_used_systems =
+      all_statuses
+      |> Enum.filter(&(&1.utilization_status == :never_used))
+      |> Enum.map(&summarize_system/1)
+
+    low_usage_systems =
+      all_statuses
+      |> Enum.filter(&(&1.utilization_status == :low_usage))
+      |> Enum.map(&summarize_system/1)
+
+    high_cost_systems =
+      all_statuses
+      |> Enum.filter(&(&1.utilization_status == :high_cost))
+      |> Enum.map(&summarize_system/1)
+
+    normal_systems =
+      all_statuses
+      |> Enum.filter(&(&1.utilization_status == :normal))
+      |> Enum.map(&summarize_system/1)
+
+    %{
+      idle: idle_systems,
+      never_used: never_used_systems,
+      low_usage: low_usage_systems,
+      high_cost: high_cost_systems,
+      normal: normal_systems,
+      summary: %{
+        total: length(all_statuses),
+        idle_count: length(idle_systems),
+        never_used_count: length(never_used_systems),
+        low_usage_count: length(low_usage_systems),
+        high_cost_count: length(high_cost_systems),
+        normal_count: length(normal_systems)
+      },
+      checked_at: DateTime.utc_now()
+    }
+  end
+
+  defp summarize_system(status) do
+    %{
+      name: status.name,
+      module: status.module,
+      category: status.category,
+      memory_bytes: status.memory_bytes,
+      rate_per_minute: status.rate_per_minute,
+      call_count_total: status.call_count_total,
+      last_activity_at: status.last_activity_at,
+      utilization_status: status.utilization_status
     }
   end
 
@@ -694,7 +776,13 @@ defmodule ChatBot.SystemStatus do
       label: "Not started",
       stats: nil,
       memory_bytes: nil,
-      message_queue_len: nil
+      message_queue_len: nil,
+      # Utilization tracking
+      last_activity_at: nil,
+      call_count_total: 0,
+      call_count_window: 0,
+      rate_per_minute: 0.0,
+      utilization_status: :not_started
     }
 
     if pid do
@@ -710,8 +798,10 @@ defmodule ChatBot.SystemStatus do
           message_queue_len: process_info[:message_queue_len]
       }
 
-      # Add type-specific information
-      enhance_status(status_with_info, module, type)
+      # Add type-specific information and utilization data
+      status_with_info
+      |> enhance_status(module, type)
+      |> add_utilization_metrics(module)
     else
       base_status
     end
@@ -823,6 +913,105 @@ defmodule ChatBot.SystemStatus do
     catch
       _, _ -> []
     end
+  end
+
+  # Module to telemetry metric name mapping
+  @module_metric_map %{
+    ChatBot.Brain => :brain_evaluate,
+    ChatBot.Analysis.Pipeline => :pipeline_process,
+    ChatBot.Memory.Embedder => :memory_embed,
+    ChatBot.Memory.Store => :memory_query,
+    ChatBot.ML.Gazetteer => :gazetteer_lookup,
+    ChatBot.Knowledge.LearningCenter => :knowledge_research,
+    ChatBot.Knowledge.ReviewQueue => :knowledge_review,
+    ChatBot.Epistemic.JTMS => :jtms_justify,
+    ChatBot.Epistemic.BeliefStore => :belief_operation,
+    ChatBot.Analysis.RacingAnalyzer => :racing_analysis
+  }
+
+  defp add_utilization_metrics(status, module) do
+    metric_name = Map.get(@module_metric_map, module)
+
+    if metric_name do
+      metrics = get_metric_for_module(metric_name)
+
+      utilization_status =
+        classify_utilization(
+          status.memory_bytes,
+          metrics.count,
+          metrics.rate_per_minute,
+          metrics.last_updated
+        )
+
+      %{
+        status
+        | last_activity_at: metrics.last_updated,
+          call_count_total: metrics.count,
+          call_count_window: estimate_window_count(metrics.rate_per_minute),
+          rate_per_minute: metrics.rate_per_minute,
+          utilization_status: utilization_status
+      }
+    else
+      # No telemetry for this module - mark as normal if running
+      %{status | utilization_status: if(status.running, do: :normal, else: :not_started)}
+    end
+  end
+
+  defp get_metric_for_module(metric_name) do
+    try do
+      case ChatBot.Metrics.Aggregator.get_metric(metric_name) do
+        nil ->
+          %{count: 0, rate_per_minute: 0.0, last_updated: nil}
+
+        data ->
+          %{
+            count: Map.get(data, :count, 0),
+            rate_per_minute: Map.get(data, :rate_per_minute, 0.0),
+            last_updated: Map.get(data, :last_updated)
+          }
+      end
+    catch
+      _, _ -> %{count: 0, rate_per_minute: 0.0, last_updated: nil}
+    end
+  end
+
+  defp classify_utilization(memory_bytes, count, rate_per_minute, last_updated) do
+    now = System.monotonic_time(:millisecond)
+
+    # Calculate time since last activity (in minutes)
+    minutes_idle =
+      if last_updated && last_updated > 0 do
+        (now - last_updated) / 60_000
+      else
+        nil
+      end
+
+    cond do
+      # Never used: has telemetry defined but count == 0
+      count == 0 ->
+        :never_used
+
+      # Idle: no activity in 5+ minutes
+      minutes_idle && minutes_idle > 5 && rate_per_minute < 0.1 ->
+        :idle
+
+      # High cost: using >10MB but <1 call/min
+      memory_bytes && memory_bytes > 10_000_000 && rate_per_minute < 1.0 ->
+        :high_cost
+
+      # Low usage: has telemetry but <0.1 calls/min
+      rate_per_minute < 0.1 && count > 0 ->
+        :low_usage
+
+      # Normal usage
+      true ->
+        :normal
+    end
+  end
+
+  # Estimate calls in the 5-minute window from rate
+  defp estimate_window_count(rate_per_minute) do
+    round(rate_per_minute * 5)
   end
 
   defp get_subprocess_supervisor_status do

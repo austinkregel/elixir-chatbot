@@ -28,77 +28,78 @@ defmodule ChatBot.ML.IntentClassifierSimple do
   # Client API
   # ============================================================================
 
+  @doc """
+  Starts the intent classifier.
+
+  ## Options
+    - `:name` - The name to register the GenServer under (default: `#{__MODULE__}`)
+  """
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   @doc """
   Loads the default classifier model.
-  """
-  def load_models do
-    load_models(world_id: @default_world_id)
-  end
-
-  @doc """
-  Loads the classifier model for a specific world.
 
   ## Options
-    - world_id: The world to load the model for (default: "default")
+    - `:server` - The server to call (default: `#{__MODULE__}`)
   """
-  def load_models(opts) do
+  def load_models(opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
     world_id = Keyword.get(opts, :world_id, @default_world_id)
-    GenServer.call(__MODULE__, {:load_model, world_id})
+    GenServer.call(server, {:load_model, world_id})
   end
 
   @doc """
   Returns true if the default classifier model is loaded.
-  """
-  def is_loaded? do
-    is_loaded?(world_id: @default_world_id)
-  end
 
-  @doc """
-  Returns true if the classifier model for a world is loaded.
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
   """
-  def is_loaded?(opts) do
+  def is_loaded?(opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
     world_id = Keyword.get(opts, :world_id, @default_world_id)
-    GenServer.call(__MODULE__, {:is_loaded, world_id})
+    GenServer.call(server, {:is_loaded, world_id})
   end
 
   @doc """
   Unloads the classifier model for a specific world to free memory.
   Cannot unload the default world model.
+
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
   """
-  def unload_world(world_id) when is_binary(world_id) do
-    GenServer.call(__MODULE__, {:unload_world, world_id})
+  def unload_world(world_id, opts \\ []) when is_binary(world_id) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:unload_world, world_id})
   end
 
   @doc """
   Returns status of all loaded models.
+
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
   """
-  def get_status do
-    GenServer.call(__MODULE__, :get_status)
+  def get_status(opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, :get_status)
   end
 
   @doc """
   Classifies text using the default world's model.
-  """
-  def classify(text) do
-    classify(text, world_id: @default_world_id)
-  end
-
-  @doc """
-  Classifies text using a world-specific model.
 
   ## Options
-    - world_id: The world whose model to use (default: "default")
+    - `:server` - The server to call (default: `#{__MODULE__}`)
+    - `:world_id` - The world whose model to use (default: "default")
 
   Falls back through the world inheritance chain if the world's
   model is not available.
   """
-  def classify(text, opts) do
+  def classify(text, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
     world_id = Keyword.get(opts, :world_id, @default_world_id)
-    GenServer.call(__MODULE__, {:classify, text, world_id})
+    GenServer.call(server, {:classify, text, world_id})
   end
 
   # ============================================================================
@@ -296,8 +297,9 @@ defmodule ChatBot.ML.IntentClassifierSimple do
   end
 
   defp get_model_path(world_id) do
-    # World-specific model path
-    Path.join(["priv", "training_worlds", world_id, "models", "classifier.term"])
+    # World-specific model path - use WorldPersistence.world_path() for isolation
+    world_path = ChatBot.Learning.WorldPersistence.world_path(world_id)
+    Path.join([world_path, "models", "classifier.term"])
   end
 
   defp do_classify(text, model) do

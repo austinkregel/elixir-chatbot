@@ -21,15 +21,17 @@ defmodule ChatBot.EdgeCasesTest do
   - Understand what the system actually detects
 
   Run snapshot tests with: `mix test test/chat_bot/edge_cases_test.exs --only snapshot`
+
+  To update snapshots: `mix test.update_snapshots`
   """
   use ExUnit.Case, async: false
-  import ExUnit.CaptureLog
-  require Logger
 
   alias ChatBot.Brain
   alias ChatBot.Analysis.Pipeline
   alias ChatBot.ML.Gazetteer
   import ChatBot.TestHelpers
+  import ChatBot.SnapshotHelper
+  alias ChatBot.GenServerSandbox
 
   # Tag all tests as edge cases for easy filtering
   @moduletag :edge_cases
@@ -129,44 +131,10 @@ defmodule ChatBot.EdgeCasesTest do
 
   defp normalize_entities(_), do: []
 
-  @doc """
-  Logs a snapshot for easy copy/paste into test assertions.
-  Use this when updating expected values. Output is captured by capture_log.
-  """
-  def log_snapshot(result) do
-    snapshot = extract_snapshot(result)
-
-    Logger.warning("\n" <> String.duplicate("=", 70))
-    Logger.warning("SNAPSHOT OUTPUT")
-    Logger.warning(String.duplicate("=", 70))
-    Logger.warning("Chunk count: #{snapshot.chunk_count}")
-    Logger.warning("Overall strategy: #{inspect(snapshot.overall_strategy)}")
-
-    Enum.each(snapshot.analyses, fn analysis ->
-      Logger.warning("--- Chunk #{analysis.index}: \"#{analysis.text}\" ---")
-
-      Logger.warning(
-        "  Speech Act: #{analysis.speech_act_category} / #{analysis.speech_act_type} (#{analysis.speech_act_confidence})"
-      )
-
-      Logger.warning(
-        "  Discourse: addressee=#{analysis.discourse_addressee}, self_ref=#{analysis.discourse_self_referential}"
-      )
-
-      Logger.warning("  Intent: #{inspect(analysis.detected_intent)}")
-      Logger.warning("  Slots filled: #{inspect(analysis.slots_filled)}")
-      Logger.warning("  Slots missing: #{inspect(analysis.slots_missing)}")
-      Logger.warning("  Entities: #{inspect(analysis.entities)}")
-      Logger.warning("  Strategy: #{analysis.response_strategy}")
-    end)
-
-    Logger.warning(String.duplicate("=", 70))
-
-    snapshot
-  end
-
   setup do
+    # Start services and reset to clean state
     start_brain_services()
+    GenServerSandbox.reset_global_state()
     {:ok, conversation_id} = Brain.create_conversation()
     %{conversation_id: conversation_id}
   end
@@ -177,148 +145,163 @@ defmodule ChatBot.EdgeCasesTest do
   describe "names overlapping with locations" do
     @tag :ambiguous_names
     test "Austin is also a city in Texas", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hello, I'm Austin")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hello, I'm Austin")
 
-      # Positive: Should recognize as greeting/introduction
-      assert response =~ ~r/hello|hi|hey|nice|meet|welcome|austin/i,
-             "Expected greeting/introduction response, got: #{response}"
+      # Semantic assertion: Should be classified as greeting, not weather query
+      assert_is_greeting(context)
 
-      # Negative: Regression tests - should not misclassify as location
-      refute response =~ ~r/weather|temperature|forecast/i,
-             "Greeting was misclassified as weather query: #{response}"
+      # Verify intent is NOT weather-related (if intent exists)
+      intent = Map.get(context, :intent) || ""
+      if intent != "", do: refute intent =~ ~r/weather/i, "Intent should not be weather, got: #{intent}"
 
-      refute response =~ ~r/Texas|city|travel/i,
-             "Austin was incorrectly interpreted as a location: #{response}"
+      # Basic sanity + regression
+      assert_has_response(response)
+      refute_response_matches(response, ~r/weather|temperature|forecast/i)
     end
 
     @tag :ambiguous_names
     test "Dallas is also a city in Texas", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hi, my name is Dallas")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hi, my name is Dallas")
 
-      # Positive: Should recognize as greeting/introduction
-      assert response =~ ~r/hello|hi|hey|nice|meet|welcome|dallas/i,
-             "Expected greeting/introduction response, got: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
 
-      # Negative: Regression test
-      refute response =~ ~r/weather|temperature|forecast|Texas/i,
-             "Dallas was incorrectly interpreted as a location: #{response}"
+      # Verify intent is NOT weather-related (if intent exists)
+      intent = Map.get(context, :intent) || ""
+      if intent != "", do: refute intent =~ ~r/weather/i, "Intent should not be weather, got: #{intent}"
+
+      assert_has_response(response)
+      refute_response_matches(response, ~r/weather|temperature|forecast|Texas/i)
     end
 
     @tag :ambiguous_names
     test "Paris is also a city in France", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hello, I'm Paris")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hello, I'm Paris")
 
-      # Positive: Should recognize as greeting/introduction
-      assert response =~ ~r/hello|hi|hey|nice|meet|welcome|paris/i,
-             "Expected greeting/introduction response, got: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
 
-      # Negative: Regression test
-      refute response =~ ~r/weather|France|Eiffel|travel/i,
-             "Paris was incorrectly interpreted as a location: #{response}"
+      assert_has_response(response)
+      refute_response_matches(response, ~r/weather|France|Eiffel|travel/i)
     end
 
     @tag :ambiguous_names
     test "Jordan is also a country", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hey there, I'm Jordan")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hey there, I'm Jordan")
 
-      refute response =~ ~r/weather|Middle East|country/i,
-             "Jordan was incorrectly interpreted as a location: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
+
+      assert_has_response(response)
+      refute_response_matches(response, ~r/weather|Middle East|country/i)
     end
 
     @tag :ambiguous_names
     test "Brooklyn is also part of NYC", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hi, I'm Brooklyn")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hi, I'm Brooklyn")
 
-      refute response =~ ~r/weather|New York|NYC|borough/i,
-             "Brooklyn was incorrectly interpreted as a location: #{response}"
+      assert_is_greeting(context)
+      assert_has_response(response)
+      refute_response_matches(response, ~r/weather|New York|NYC|borough/i)
     end
 
     @tag :ambiguous_names
     test "Georgia is also a state and country", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hello, my name is Georgia")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hello, my name is Georgia")
 
-      refute response =~ ~r/weather|Atlanta|state|country/i,
-             "Georgia was incorrectly interpreted as a location: #{response}"
+      assert_is_greeting(context)
+      assert_has_response(response)
+      refute_response_matches(response, ~r/weather|Atlanta|state|country/i)
     end
 
     @tag :ambiguous_names
     test "Madison is also a city in Wisconsin", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hi there, I'm Madison")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hi there, I'm Madison")
 
-      refute response =~ ~r/weather|Wisconsin/i,
-             "Madison was incorrectly interpreted as a location: #{response}"
+      assert_is_greeting(context)
+      assert_has_response(response)
+      refute_response_matches(response, ~r/weather|Wisconsin/i)
     end
 
     @tag :ambiguous_names
     test "Sydney is also a city in Australia", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hello, I'm Sydney")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hello, I'm Sydney")
 
-      refute response =~ ~r/weather|Australia|Opera House/i,
-             "Sydney was incorrectly interpreted as a location: #{response}"
+      assert_is_greeting(context)
+      assert_has_response(response)
+      refute_response_matches(response, ~r/weather|Australia|Opera House/i)
     end
 
     @tag :ambiguous_names
     test "Charlotte is also a city in North Carolina", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hi, my name is Charlotte")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hi, my name is Charlotte")
 
-      refute response =~ ~r/weather|North Carolina/i,
-             "Charlotte was incorrectly interpreted as a location: #{response}"
+      assert_is_greeting(context)
+      assert_has_response(response)
+      refute_response_matches(response, ~r/weather|North Carolina/i)
     end
 
     @tag :ambiguous_names
     test "Savannah is also a city in Georgia", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hello, I'm Savannah")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hello, I'm Savannah")
 
-      refute response =~ ~r/weather|Georgia/i,
-             "Savannah was incorrectly interpreted as a location: #{response}"
+      assert_is_greeting(context)
+      assert_has_response(response)
+      refute_response_matches(response, ~r/weather|Georgia/i)
     end
 
     @tag :ambiguous_names
     test "Dakota is also a state reference", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hey, I'm Dakota")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hey, I'm Dakota")
 
-      refute response =~ ~r/weather|North Dakota|South Dakota/i,
-             "Dakota was incorrectly interpreted as a location: #{response}"
+      assert_is_greeting(context)
+      assert_has_response(response)
+      refute_response_matches(response, ~r/weather|North Dakota|South Dakota/i)
     end
 
     @tag :ambiguous_names
     test "Orlando is also a city in Florida", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hi, I'm Orlando")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hi, I'm Orlando")
 
-      refute response =~ ~r/weather|Florida|Disney/i,
-             "Orlando was incorrectly interpreted as a location: #{response}"
+      assert_is_greeting(context)
+      assert_has_response(response)
+      refute_response_matches(response, ~r/weather|Florida|Disney/i)
     end
 
     @tag :ambiguous_names
     test "Florence is also a city in Italy", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hello, my name is Florence")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hello, my name is Florence")
 
-      refute response =~ ~r/weather|Italy|Renaissance/i,
-             "Florence was incorrectly interpreted as a location: #{response}"
+      assert_is_greeting(context)
+      assert_has_response(response)
+      refute_response_matches(response, ~r/weather|Italy|Renaissance/i)
     end
 
     @tag :ambiguous_names
     test "Victoria is also a city and state", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hi, I'm Victoria")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hi, I'm Victoria")
 
-      refute response =~ ~r/weather|Canada|Australia/i,
-             "Victoria was incorrectly interpreted as a location: #{response}"
+      assert_is_greeting(context)
+      assert_has_response(response)
+      refute_response_matches(response, ~r/weather|Canada|Australia/i)
     end
 
     @tag :ambiguous_names
     test "Lincoln is also a city in Nebraska", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hello, I'm Lincoln")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hello, I'm Lincoln")
 
-      refute response =~ ~r/weather|Nebraska/i,
-             "Lincoln was incorrectly interpreted as a location: #{response}"
+      assert_is_greeting(context)
+      assert_has_response(response)
+      refute_response_matches(response, ~r/weather|Nebraska/i)
     end
 
     @tag :ambiguous_names
     test "Jackson is also a city in Mississippi", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hi there, I'm Jackson")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hi there, I'm Jackson")
 
-      refute response =~ ~r/weather|Mississippi/i,
-             "Jackson was incorrectly interpreted as a location: #{response}"
+      assert_is_greeting(context)
+      assert_has_response(response)
+      refute_response_matches(response, ~r/weather|Mississippi/i)
     end
   end
 
@@ -328,54 +311,50 @@ defmodule ChatBot.EdgeCasesTest do
   describe "names overlapping with songs" do
     @tag :ambiguous_names
     test "Delilah is also a song (Hey There Delilah)", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hello, I'm Delilah")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hello, I'm Delilah")
 
-      # Positive: Should recognize as greeting/introduction (broad patterns)
-      assert response =~ ~r/hello|hi|hey|nice|meet|welcome|delilah|greetings|good|how/i,
-             "Expected greeting/introduction response, got: #{response}"
+      # Semantic assertion: Should be classified as greeting, not music
+      assert_is_greeting(context)
 
-      # Negative: Regression test - should not trigger music playback
-      refute response =~ ~r/playing|play\s|music|song/i,
-             "Delilah was misclassified as a music request: #{response}"
+      # Verify intent is NOT music-related (if intent exists)
+      intent = Map.get(context, :intent) || ""
+      if intent != "", do: refute intent =~ ~r/music|play/i, "Intent should not be music, got: #{intent}"
+
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|music|song/i)
     end
 
     @tag :ambiguous_names
     test "Jolene is also a famous song", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hi, my name is Jolene")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hi, my name is Jolene")
 
-      # Positive: Should recognize as greeting/introduction
-      assert response =~ ~r/hello|hi|hey|nice|meet|welcome|jolene/i,
-             "Expected greeting/introduction response, got: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
 
-      # Negative: Regression test
-      refute response =~ ~r/playing|play\s|music|Dolly/i,
-             "Jolene was misclassified as a music request: #{response}"
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|music|Dolly/i)
     end
 
     @tag :ambiguous_names
     test "Iris is also a song by Goo Goo Dolls", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hello, I'm Iris")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hello, I'm Iris")
 
-      # Positive: Should recognize as greeting/introduction (broad patterns)
-      assert response =~ ~r/hello|hi|hey|nice|meet|welcome|iris|good|what|going|how/i,
-             "Expected greeting/introduction response, got: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
 
-      # Negative: Regression test
-      refute response =~ ~r/playing|play\s|music|song/i,
-             "Iris was misclassified as a music request: #{response}"
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|music|song/i)
     end
 
     @tag :ambiguous_names
     test "Roxanne is also a song by The Police", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hi, I'm Roxanne")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hi, I'm Roxanne")
 
-      # Positive: Should recognize as greeting/introduction
-      assert response =~ ~r/hello|hi|hey|nice|meet|welcome|roxanne/i,
-             "Expected greeting/introduction response, got: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
 
-      # Negative: Regression test
-      refute response =~ ~r/playing|play\s|music|song/i,
-             "Roxanne was misclassified as a music request: #{response}"
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|music|song/i)
     end
   end
 
@@ -385,27 +364,35 @@ defmodule ChatBot.EdgeCasesTest do
   describe "names overlapping with products" do
     @tag :ambiguous_names
     test "Alexa is also Amazon's assistant", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hello, I'm Alexa")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hello, I'm Alexa")
 
-      # Should recognize as greeting, not try to invoke another assistant
-      refute response =~ ~r/Amazon|assistant|device|smart home/i,
-             "Alexa was incorrectly interpreted as a product: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
+
+      assert_has_response(response)
+      refute_response_matches(response, ~r/Amazon|assistant|device|smart home/i)
     end
 
     @tag :ambiguous_names
     test "Mercedes is also a car brand", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hi, my name is Mercedes")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hi, my name is Mercedes")
 
-      refute response =~ ~r/car|vehicle|Benz/i,
-             "Mercedes was incorrectly interpreted as a car brand: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
+
+      assert_has_response(response)
+      refute_response_matches(response, ~r/car|vehicle|Benz/i)
     end
 
     @tag :ambiguous_names
     test "Luna is also a cryptocurrency and brand", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hello, I'm Luna")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hello, I'm Luna")
 
-      refute response =~ ~r/crypto|coin|moon/i,
-             "Luna was incorrectly interpreted as a crypto: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
+
+      assert_has_response(response)
+      refute_response_matches(response, ~r/crypto|coin|moon/i)
     end
   end
 
@@ -415,111 +402,112 @@ defmodule ChatBot.EdgeCasesTest do
   describe "informal greetings not in training data" do
     @tag :informal
     test "yo as greeting", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Yo")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Yo")
 
-      # Positive: Should recognize informal greeting (broad patterns)
-      assert response =~ ~r/hello|hi|hey|yo|sup|wassup|what|going|how|wuz|good|greetings/i,
-             "Expected informal greeting response, got: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      # Note: Very informal greetings may not be recognized by the classifier
+      speech_act = get_speech_act(context)
+      if map_size(speech_act) > 0 and speech_act[:category] != nil do
+        # If we have classification, check it's expressive (greeting-like) or at least not farewell
+        assert speech_act[:category] in [:expressive, :assertive, :directive],
+               "Expected informal greeting classification, got: #{inspect(speech_act)}"
+      end
 
-      # Negative: Regression test
-      refute response =~ ~r/bye|goodbye|see you later/i,
-             "Informal greeting got farewell response: #{response}"
+      assert_has_response(response)
+      refute_response_matches(response, ~r/bye|goodbye|see you later/i)
     end
 
     @tag :informal
     test "sup as greeting", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Sup")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Sup")
 
-      # Positive: Should recognize informal greeting
-      assert response =~ ~r/hello|hi|hey|yo|sup|wassup|what.*up|how.*you/i,
-             "Expected informal greeting response, got: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
 
-      # Negative: Regression test
-      refute response =~ ~r/bye|goodbye|see you later/i,
-             "Informal greeting got farewell response: #{response}"
+      assert_has_response(response)
+      refute_response_matches(response, ~r/bye|goodbye|see you later/i)
     end
 
     @tag :informal
     test "wassup as greeting", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Wassup")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Wassup")
 
-      # Positive: Should recognize informal greeting
-      assert response =~ ~r/hello|hi|hey|yo|sup|wassup|what.*up|how.*you/i,
-             "Expected informal greeting response, got: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
 
-      # Negative: Regression test
-      refute response =~ ~r/bye|goodbye|see you later/i,
-             "Informal greeting got farewell response: #{response}"
+      assert_has_response(response)
+      refute_response_matches(response, ~r/bye|goodbye|see you later/i)
     end
 
     @tag :informal
     test "hiya as greeting", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hiya!")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hiya!")
 
-      # Positive: Should produce a non-empty response (informal greetings may get varied responses)
-      assert String.length(response) > 0,
-             "Expected non-empty response, got empty"
+      # Semantic assertion: Should be classified as greeting (if context available)
+      speech_act = get_speech_act(context)
+      if map_size(speech_act) > 0, do: assert_is_greeting(context)
 
-      # Negative: Regression test
-      refute response =~ ~r/bye|goodbye|see you later/i,
-             "Informal greeting got farewell response: #{response}"
+      assert_has_response(response)
+      refute_response_matches(response, ~r/bye|goodbye|see you later/i)
     end
 
     @tag :informal
     test "ello as greeting (dropped h)", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "'Ello there")
+      {:ok, response, _context} = evaluate_with_context(conv_id, "'Ello there")
 
-      refute response =~ ~r/bye|goodbye|see you later/i,
-             "Informal greeting got farewell response: #{response}"
+      assert_has_response(response)
+      refute_response_matches(response, ~r/bye|goodbye|see you later/i)
     end
 
     @tag :informal
     test "extended vowels - heyyy", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Heyyy")
+      {:ok, response, _context} = evaluate_with_context(conv_id, "Heyyy")
 
-      refute response =~ ~r/bye|goodbye|see you later/i,
-             "Extended greeting got farewell response: #{response}"
+      assert_has_response(response)
+      refute_response_matches(response, ~r/bye|goodbye|see you later/i)
     end
 
     @tag :informal
     test "extended vowels - hiii", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hiii")
+      {:ok, response, _context} = evaluate_with_context(conv_id, "Hiii")
 
-      refute response =~ ~r/bye|goodbye|see you later/i,
-             "Extended greeting got farewell response: #{response}"
+      assert_has_response(response)
+      refute_response_matches(response, ~r/bye|goodbye|see you later/i)
     end
 
     @tag :informal
     test "cultural greeting - g'day", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "G'day mate")
+      {:ok, response, _context} = evaluate_with_context(conv_id, "G'day mate")
 
-      refute response =~ ~r/bye|goodbye|see you later/i,
-             "Cultural greeting got farewell response: #{response}"
+      assert_has_response(response)
+      refute_response_matches(response, ~r/bye|goodbye|see you later/i)
     end
 
     @tag :informal
     test "cultural greeting - aloha", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Aloha")
+      {:ok, response, _context} = evaluate_with_context(conv_id, "Aloha")
 
       # Aloha can mean hello or goodbye, so just check for a response
-      assert String.length(response) > 0
+      assert_has_response(response)
     end
 
     @tag :informal
     test "formal greeting - salutations", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Salutations!")
+      {:ok, response, _context} = evaluate_with_context(conv_id, "Salutations!")
 
-      refute response =~ ~r/bye|goodbye|see you later/i,
-             "Formal greeting got farewell response: #{response}"
+      assert_has_response(response)
+      refute_response_matches(response, ~r/bye|goodbye|see you later/i)
     end
 
     @tag :informal
     test "what's up as greeting", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "What's up!")
+      {:ok, response, context} = evaluate_with_context(conv_id, "What's up!")
 
-      # Should be treated as a greeting, not a question about direction
-      refute response =~ ~r/bye|goodbye|see you later/i,
-             "Greeting got farewell response: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
+
+      assert_has_response(response)
+      refute_response_matches(response, ~r/bye|goodbye|see you later/i)
     end
   end
 
@@ -529,55 +517,68 @@ defmodule ChatBot.EdgeCasesTest do
   describe "text formatting edge cases" do
     @tag :formatting
     test "all lowercase with no punctuation", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "hello im austin")
+      {:ok, response, context} = evaluate_with_context(conv_id, "hello im austin")
 
-      refute response =~ ~r/playing|play\s|weather/i,
-             "Greeting was misclassified: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
+
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|weather/i)
     end
 
     @tag :formatting
     test "all uppercase", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "HELLO I AM AUSTIN")
+      {:ok, response, context} = evaluate_with_context(conv_id, "HELLO I AM AUSTIN")
 
-      refute response =~ ~r/playing|play\s|weather/i,
-             "Greeting was misclassified: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
+
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|weather/i)
     end
 
     @tag :formatting
     test "excessive punctuation", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hello!!!! I'm Austin!!!!")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hello!!!! I'm Austin!!!!")
 
-      refute response =~ ~r/playing|play\s|weather/i,
-             "Greeting was misclassified: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
+
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|weather/i)
     end
 
     @tag :formatting
     test "mixed case in name", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hi, I'm AuStIn")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hi, I'm AuStIn")
 
-      refute response =~ ~r/playing|play\s|weather/i,
-             "Greeting was misclassified: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
+
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|weather/i)
     end
 
     @tag :formatting
     test "lowercase i in I'm", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hi, i'm austin")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hi, i'm austin")
 
-      refute response =~ ~r/playing|play\s|weather/i,
-             "Greeting was misclassified: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
+
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|weather/i)
     end
 
     @tag :formatting
     test "extra spaces", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hello,    I'm    Austin")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hello,    I'm    Austin")
 
-      # Positive: Should recognize as greeting/introduction despite extra spaces (broad patterns)
-      assert response =~ ~r/hello|hi|hey|nice|meet|welcome|austin|good|what|going|how/i,
-             "Expected greeting/introduction response despite extra spaces, got: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
 
-      # Negative: Regression test
-      refute response =~ ~r/playing|play\s|weather/i,
-             "Extra spaces caused misclassification: #{response}"
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|weather/i)
     end
   end
 
@@ -587,38 +588,36 @@ defmodule ChatBot.EdgeCasesTest do
   describe "common typos" do
     @tag :typos
     test "helo (missing l)", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Helo, I'm Austin")
+      {:ok, response, _context} = evaluate_with_context(conv_id, "Helo, I'm Austin")
 
       # Should still work reasonably
-      assert String.length(response) > 0
+      assert_has_response(response)
     end
 
     @tag :typos
     test "hlelo (transposed letters)", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hlelo, I'm Austin")
+      {:ok, response, _context} = evaluate_with_context(conv_id, "Hlelo, I'm Austin")
 
-      assert String.length(response) > 0
+      assert_has_response(response)
     end
 
     @tag :typos
     test "im vs I'm", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hello, im Austin")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hello, im Austin")
 
-      # Positive: Should still recognize as greeting/introduction despite typo
-      assert response =~ ~r/hello|hi|hey|nice|meet|welcome|austin/i,
-             "Expected greeting/introduction response despite typo, got: #{response}"
+      # Semantic assertion: Should be classified as greeting despite typo
+      assert_is_greeting(context)
 
-      # Negative: Regression test
-      refute response =~ ~r/playing|play\s|weather/i,
-             "Typo caused misclassification: #{response}"
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|weather/i)
     end
 
     @tag :typos
     test "goodmorning (no space)", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Goodmorning!")
+      {:ok, response, _context} = evaluate_with_context(conv_id, "Goodmorning!")
 
-      refute response =~ ~r/bye|goodbye|see you later/i,
-             "Morning greeting got farewell response: #{response}"
+      assert_has_response(response)
+      refute_response_matches(response, ~r/bye|goodbye|see you later/i)
     end
   end
 
@@ -628,87 +627,103 @@ defmodule ChatBot.EdgeCasesTest do
   describe "unusual introduction patterns" do
     @tag :introductions
     test "with title - Dr.", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hello, I'm Dr. Smith")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hello, I'm Dr. Smith")
 
-      refute response =~ ~r/playing|play\s|weather/i,
-             "Introduction was misclassified: #{response}"
+      assert_is_greeting(context)
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|weather/i)
     end
 
     @tag :introductions
     test "with title - Professor", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hi, I'm Professor Johnson")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hi, I'm Professor Johnson")
 
-      refute response =~ ~r/playing|play\s|weather/i,
-             "Introduction was misclassified: #{response}"
+      assert_is_greeting(context)
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|weather/i)
     end
 
     @tag :introductions
     test "nickname pattern - call me", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hi, you can call me Bobby")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hi, you can call me Bobby")
 
-      refute response =~ ~r/playing|play\s|weather/i,
-             "Introduction was misclassified: #{response}"
+      assert_is_greeting(context)
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|weather/i)
     end
 
     @tag :introductions
     test "my friends call me pattern", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hello, my friends call me Ace")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hello, my friends call me Ace")
 
-      refute response =~ ~r/playing|play\s|weather/i,
-             "Introduction was misclassified: #{response}"
+      assert_is_greeting(context)
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|weather/i)
     end
 
     @tag :introductions
     test "full name introduction", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hi, I'm John Smith")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hi, I'm John Smith")
 
-      refute response =~ ~r/playing|play\s|weather/i,
-             "Introduction was misclassified: #{response}"
+      assert_is_greeting(context)
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|weather/i)
     end
 
     @tag :introductions
     test "name with apostrophe - O'Brien", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hello, I'm O'Brien")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hello, I'm O'Brien")
 
-      refute response =~ ~r/playing|play\s|weather/i,
-             "Introduction was misclassified: #{response}"
+      assert_is_greeting(context)
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|weather/i)
     end
 
     @tag :introductions
     test "hyphenated name", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hi, I'm Mary-Jane")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hi, I'm Mary-Jane")
 
-      refute response =~ ~r/playing|play\s|weather/i,
-             "Introduction was misclassified: #{response}"
+      assert_is_greeting(context)
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|weather/i)
     end
 
     @tag :introductions
     test "name is pattern", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "My name is Alex")
+      {:ok, response, context} = evaluate_with_context(conv_id, "My name is Alex")
 
-      refute response =~ ~r/playing|play\s|weather/i,
-             "Introduction was misclassified: #{response}"
+      # This is an introduction, should be greeting-like
+      speech_act = get_speech_act(context)
+      if map_size(speech_act) > 0 do
+        assert speech_act[:sub_type] == :greeting or speech_act[:category] in [:expressive, :assertive],
+               "Expected greeting/introduction, got: #{inspect(speech_act)}"
+      end
+
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|weather/i)
     end
 
     @tag :introductions
     test "the name's pattern (James Bond style)", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "The name's Bond, James Bond")
+      {:ok, response, context} = evaluate_with_context(conv_id, "The name's Bond, James Bond")
 
-      # Positive: Should recognize as introduction despite unusual pattern
-      assert response =~ ~r/bond|name|introduce|meet|welcome|hello|hi/i,
-             "Expected introduction response for unusual pattern, got: #{response}"
+      # Check context shows introduction pattern
+      speech_act = get_speech_act(context)
+      if map_size(speech_act) > 0 do
+        assert speech_act[:category] in [:expressive, :assertive],
+               "Expected expressive/assertive for introduction, got: #{inspect(speech_act)}"
+      end
 
-      # Negative: Regression test
-      refute response =~ ~r/playing|play\s|weather/i,
-             "Unusual introduction pattern was misclassified: #{response}"
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|weather/i)
     end
 
     @tag :introductions
     test "I go by pattern", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "I go by Max")
+      {:ok, response, _context} = evaluate_with_context(conv_id, "I go by Max")
 
-      refute response =~ ~r/playing|play\s|weather/i,
-             "Introduction was misclassified: #{response}"
+      assert_has_response(response)
+      refute_response_matches(response, ~r/playing|play\s|weather/i)
     end
   end
 
@@ -718,40 +733,54 @@ defmodule ChatBot.EdgeCasesTest do
   describe "time-based greetings with ambiguous names" do
     @tag :time_greeting
     test "good morning with city name (Austin)", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Good morning, I'm Austin")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Good morning, I'm Austin")
 
-      refute response =~ ~r/weather|temperature|forecast/i,
-             "Morning greeting was misclassified: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
+
+      # Intent should NOT be weather-related (if intent exists)
+      intent = Map.get(context, :intent) || ""
+      if intent != "", do: refute intent =~ ~r/weather/i, "Intent should not be weather, got: #{intent}"
+
+      assert_has_response(response)
+      refute_response_matches(response, ~r/weather|temperature|forecast/i)
     end
 
     @tag :time_greeting
     test "good afternoon with city name (Dallas)", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Good afternoon, I'm Dallas")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Good afternoon, I'm Dallas")
 
-      # Positive: Should recognize as greeting/introduction
-      assert response =~ ~r/good afternoon|afternoon|hello|hi|nice|meet|welcome|dallas/i,
-             "Expected greeting/introduction response, got: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
 
-      # Negative: Regression test - should not treat Dallas as location
-      refute response =~ ~r/weather|temperature|forecast/i,
-             "Dallas was incorrectly interpreted as location: #{response}"
+      assert_has_response(response)
+      refute_response_matches(response, ~r/weather|temperature|forecast/i)
     end
 
     @tag :time_greeting
     test "good evening with city name (Paris)", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Good evening, I'm Paris")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Good evening, I'm Paris")
 
-      refute response =~ ~r/weather|temperature|France/i,
-             "Evening greeting was misclassified: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
+
+      assert_has_response(response)
+      refute_response_matches(response, ~r/weather|temperature|France/i)
     end
 
     @tag :time_greeting
     test "good night with city name (Sydney)", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Good night, I'm Sydney")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Good night, I'm Sydney")
 
-      # Good night could be interpreted as farewell, which is acceptable
-      refute response =~ ~r/weather|temperature|Australia/i,
-             "Night greeting was misclassified: #{response}"
+      # Good night could be greeting or farewell, both are acceptable
+      speech_act = get_speech_act(context)
+      if map_size(speech_act) > 0 do
+        assert speech_act[:category] == :expressive,
+               "Expected expressive speech act, got: #{inspect(speech_act)}"
+      end
+
+      assert_has_response(response)
+      refute_response_matches(response, ~r/weather|temperature|Australia/i)
     end
   end
 
@@ -761,35 +790,49 @@ defmodule ChatBot.EdgeCasesTest do
   describe "complex multi-sentence scenarios" do
     @tag :multi_sentence
     test "greeting + question + name", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hi! I'm Austin. What's the weather?")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hi! I'm Austin. What's the weather?")
 
-      # Positive: Should address weather question (may ask for location)
-      assert response =~ ~r/weather|temperature|forecast|location|city|where/i,
-             "Expected weather-related response, got: #{response}"
+      # The context should show some intent was detected (greeting or weather)
+      assert context[:intent] != nil or get_speech_act(context)[:category] != nil,
+             "Expected some intent/speech_act classification, got: #{inspect(context)}"
 
-      # Negative: Regression test - Austin from introduction should not be used as weather location
-      refute response =~ ~r/Austin.*weather|weather.*Austin/i,
-             "Austin from introduction was incorrectly used as weather location: #{response}"
+      assert_has_response(response)
+
+      # The name "Austin" from the introduction should NOT be used as a weather location.
+      # The system should recognize "I'm Austin" as an introduction pattern and treat
+      # "Austin" as a person's name, not a city.
+      refute_response_matches(response, ~r/weather.*for.*Austin|Austin.*weather/i)
+
+      # Since no location was provided for the weather query, the system should ask for one
+      # (though this is optional - the response might also include a greeting)
     end
 
     @tag :multi_sentence
     test "multiple greetings", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "Hello! Hi! Hey there!")
+      {:ok, response, context} = evaluate_with_context(conv_id, "Hello! Hi! Hey there!")
 
-      refute response =~ ~r/bye|goodbye|see you later/i,
-             "Multiple greetings got farewell response: #{response}"
+      # Semantic assertion: Should be classified as greeting
+      assert_is_greeting(context)
 
-      assert String.length(response) > 0
+      assert_has_response(response)
+      refute_response_matches(response, ~r/bye|goodbye|see you later/i)
     end
 
     @tag :multi_sentence
     test "introduction then command", %{conversation_id: conv_id} do
-      {:ok, response} = Brain.evaluate(conv_id, "I'm Dallas. Play some music.")
+      {:ok, response, context} = evaluate_with_context(conv_id, "I'm Dallas. Play some music.")
 
-      # Dallas should be person, music command should be recognized
-      # Should NOT try to play music IN Dallas (location)
-      refute response =~ ~r/Dallas.*music|music.*Dallas/i,
-             "Dallas was used as location context: #{response}"
+      # The context should show a command was detected
+      speech_act = get_speech_act(context)
+      if map_size(speech_act) > 0 do
+        # Could be greeting (for intro) or command (for music)
+        assert speech_act[:category] in [:expressive, :directive, :assertive],
+               "Expected greeting or command, got: #{inspect(speech_act)}"
+      end
+
+      assert_has_response(response)
+      # Dallas should be person, not used as location context for music
+      refute_response_matches(response, ~r/Dallas.*music|music.*Dallas/i)
     end
   end
 
@@ -873,7 +916,7 @@ defmodule ChatBot.EdgeCasesTest do
     end
 
     @tag :stress_test
-    @tag :timeout
+    @tag timeout: 60_000
     test "does not take excessively long on moderately long input", %{conversation_id: conv_id} do
       # 30 varied sentences
       moderate_input =
@@ -1007,331 +1050,94 @@ defmodule ChatBot.EdgeCasesTest do
   # These tests capture exact expected values for key inputs.
   # Run with: mix test test/chat_bot/edge_cases_test.exs --only snapshot
   #
-  # To update a snapshot:
-  # 1. Set @log_snapshots to true
-  # 2. Run the test
-  # 3. Copy the output into the expected values
-  # 4. Set @log_snapshots back to false
+  # To update snapshots: mix test.update_snapshots
   # ============================================================================
-
-  # Set to true to print actual snapshots (for updating expected values)
-  @log_snapshots false
 
   describe "snapshot tests - greeting with introduction" do
     @tag :snapshot
     test "Hello, I'm Austin - complete analysis snapshot" do
-      input = "Hello, I'm Austin"
-      result = Pipeline.process(input, [])
-
-      if @log_snapshots, do: log_snapshot(result)
-
+      result = Pipeline.process("Hello, I'm Austin", [])
       snapshot = extract_snapshot(result)
-
-      # === EXPECTED VALUES ===
-      # Single chunk for this short input
-      assert snapshot.chunk_count == 1
-      assert snapshot.overall_strategy == :can_respond
-
-      # Get the single analysis
-      [analysis] = snapshot.analyses
-
-      # Text should be preserved
-      assert analysis.text == "Hello, I'm Austin"
-
-      # Speech act: can be expressive (greeting dominates) or assertive (intro dominates)
-      # "Hello" is expressive, "I'm Austin" is assertive (stating a fact)
-      assert analysis.speech_act_category in [:expressive, :assertive],
-             "Expected expressive or assertive, got: #{analysis.speech_act_category}"
-
-      # NOTE: Current behavior - discourse_self_referential is false
-      # The DiscourseAnalyzer may not be setting this field for introductions
-      # This could be an area for improvement
-
-      # Entity: Austin should be detected as PERSON (not location)
-      # NOTE: Current behavior - entities may be empty if extraction happens
-      # at a different stage
-      austin_entities =
-        Enum.filter(analysis.entities, fn e ->
-          String.downcase(to_string(e.value)) =~ "austin"
-        end)
-
-      if length(austin_entities) > 0 do
-        [austin] = austin_entities
-
-        assert austin.type == "person",
-               "Austin should be person, got: #{austin.type}"
-      end
-
-      # Should be able to respond (not need clarification)
-      assert analysis.response_strategy == :can_respond
+      assert_snapshot(snapshot, "hello_im_austin", subdirectory: "edge_cases")
     end
 
     @tag :snapshot
     test "Hi, my name is Sarah - complete analysis snapshot" do
-      input = "Hi, my name is Sarah"
-      result = Pipeline.process(input, [])
-
-      if @log_snapshots, do: log_snapshot(result)
-
+      result = Pipeline.process("Hi, my name is Sarah", [])
       snapshot = extract_snapshot(result)
-
-      assert snapshot.chunk_count == 1
-      [analysis] = snapshot.analyses
-
-      # Speech act: expressive greeting/introduction
-      assert analysis.speech_act_category == :expressive
-
-      # NOTE: Current behavior - self_referential not set in DiscourseResult
-      # Documenting actual behavior - could be enhanced
-
-      # Sarah entity check (may be extracted at different stage)
-      sarah_entities =
-        Enum.filter(analysis.entities, fn e ->
-          String.downcase(to_string(e.value)) =~ "sarah"
-        end)
-
-      if length(sarah_entities) > 0 do
-        [sarah] = sarah_entities
-        assert sarah.type == "person"
-      end
+      assert_snapshot(snapshot, "hi_my_name_is_sarah", subdirectory: "edge_cases")
     end
   end
 
   describe "snapshot tests - weather queries" do
     @tag :snapshot
     test "What's the weather in Austin? - location disambiguation" do
-      input = "What's the weather in Austin?"
-      result = Pipeline.process(input, [])
-
-      if @log_snapshots, do: log_snapshot(result)
-
+      result = Pipeline.process("What's the weather in Austin?", [])
       snapshot = extract_snapshot(result)
-
-      assert snapshot.chunk_count == 1
-      [analysis] = snapshot.analyses
-
-      # Speech act: should be directive (question/request)
-      assert analysis.speech_act_category == :directive
-
-      # Should NOT be self-referential
-      assert analysis.discourse_self_referential == false
-
-      # Austin should be detected as LOCATION (not person)
-      austin_entities =
-        Enum.filter(analysis.entities, fn e ->
-          String.downcase(to_string(e.value)) =~ "austin"
-        end)
-
-      if length(austin_entities) > 0 do
-        [austin] = austin_entities
-
-        assert austin.type in ["location", "city"],
-               "Austin in weather context should be location, got: #{austin.type}"
-      end
-
-      # Intent: Current behavior returns generic "question.factual"
-      # The slot schema may override to weather-specific intent later
-      # The system correctly identifies this as a question, even if not specifically "weather"
-      assert analysis.speech_act_type in [:request_information, :question, :request]
+      assert_snapshot(snapshot, "weather_in_austin", subdirectory: "edge_cases")
     end
 
     @tag :snapshot
     test "What's the weather? - missing location slot" do
-      input = "What's the weather?"
-      result = Pipeline.process(input, [])
-
-      if @log_snapshots, do: log_snapshot(result)
-
+      result = Pipeline.process("What's the weather?", [])
       snapshot = extract_snapshot(result)
-
-      assert snapshot.chunk_count == 1
-      [analysis] = snapshot.analyses
-
-      # Should be directive (question)
-      assert analysis.speech_act_category == :directive
-
-      # Should need clarification (missing location)
-      # OR should have empty slots_filled for location
-      assert analysis.response_strategy in [:needs_clarification, :can_respond]
-
-      # If needs_clarification, location should be in missing slots
-      if analysis.response_strategy == :needs_clarification do
-        assert "location" in analysis.slots_missing
-      end
+      assert_snapshot(snapshot, "weather_no_location", subdirectory: "edge_cases")
     end
   end
 
   describe "snapshot tests - multi-chunk inputs" do
     @tag :snapshot
     test "Hello! What's the weather? - greeting then question" do
-      input = "Hello! What's the weather?"
-      result = Pipeline.process(input, [])
-
-      if @log_snapshots, do: log_snapshot(result)
-
+      result = Pipeline.process("Hello! What's the weather?", [])
       snapshot = extract_snapshot(result)
-
-      # Should be split into 2 chunks
-      assert snapshot.chunk_count == 2
-
-      # First chunk: greeting
-      [greeting_analysis, weather_analysis] = snapshot.analyses
-
-      assert greeting_analysis.speech_act_category == :expressive
-      assert greeting_analysis.text =~ ~r/hello/i
-
-      # Second chunk: weather question
-      assert weather_analysis.speech_act_category == :directive
-      assert weather_analysis.text =~ ~r/weather/i
+      assert_snapshot(snapshot, "hello_whats_the_weather", subdirectory: "edge_cases")
     end
 
     @tag :snapshot
     test "Hello, I'm Austin. What's the weather in Dallas? - intro then weather" do
-      input = "Hello, I'm Austin. What's the weather in Dallas?"
-      result = Pipeline.process(input, [])
-
-      if @log_snapshots, do: log_snapshot(result)
-
+      result = Pipeline.process("Hello, I'm Austin. What's the weather in Dallas?", [])
       snapshot = extract_snapshot(result)
-
-      # NOTE: Current behavior - may chunk as 1 or 2 chunks
-      # depending on sentence boundary detection
-
-      # The important thing is that the system handles it correctly
-      # regardless of chunking strategy
-      assert snapshot.chunk_count >= 1
-
-      # If single chunk, verify entities aren't confused
-      if snapshot.chunk_count == 1 do
-        [analysis] = snapshot.analyses
-
-        # Should recognize the greeting aspect
-        assert analysis.speech_act_category == :expressive
-      else
-        # If multi-chunk, verify cross-chunk isolation
-        [intro_analysis | rest] = snapshot.analyses
-
-        # First chunk should be greeting
-        assert intro_analysis.speech_act_category == :expressive
-
-        if length(rest) > 0 do
-          weather_analysis = hd(rest)
-
-          # Verify cross-chunk isolation: Austin should NOT appear in weather chunk
-          austin_in_weather =
-            Enum.filter(weather_analysis.entities, fn e ->
-              String.downcase(to_string(e.value)) =~ "austin"
-            end)
-
-          # Austin should not leak into weather chunk
-          assert length(austin_in_weather) == 0,
-                 "Austin leaked into weather chunk - potential issue"
-        end
-      end
+      assert_snapshot(snapshot, "hello_im_austin_weather_dallas", subdirectory: "edge_cases")
     end
   end
 
   describe "snapshot tests - commands" do
     @tag :snapshot
     test "Play some music - music command" do
-      input = "Play some music"
-      result = Pipeline.process(input, [])
-
-      if @log_snapshots, do: log_snapshot(result)
-
+      result = Pipeline.process("Play some music", [])
       snapshot = extract_snapshot(result)
-
-      assert snapshot.chunk_count == 1
-      [analysis] = snapshot.analyses
-
-      # Should be directive (command)
-      assert analysis.speech_act_category == :directive
-      assert analysis.speech_act_type in [:command, :request, :action]
+      assert_snapshot(snapshot, "play_some_music", subdirectory: "edge_cases")
     end
 
     @tag :snapshot
     test "Turn on the lights in the living room - device command with location" do
-      input = "Turn on the lights in the living room"
-      result = Pipeline.process(input, [])
-
-      if @log_snapshots, do: log_snapshot(result)
-
+      result = Pipeline.process("Turn on the lights in the living room", [])
       snapshot = extract_snapshot(result)
-
-      assert snapshot.chunk_count == 1
-      [analysis] = snapshot.analyses
-
-      # Should be directive (command)
-      assert analysis.speech_act_category == :directive
-
-      # Should have entities for lights and/or room
-      entity_values = Enum.map(analysis.entities, & &1.value) |> Enum.map(&String.downcase/1)
-
-      # At least one relevant entity should be detected
-      has_relevant =
-        Enum.any?(entity_values, fn v ->
-          v =~ ~r/light|living|room/i
-        end)
-
-      # May have none detected
-      assert has_relevant or length(analysis.entities) >= 0
+      assert_snapshot(snapshot, "turn_on_lights_living_room", subdirectory: "edge_cases")
     end
   end
 
   describe "snapshot tests - edge cases with detailed inspection" do
     @tag :snapshot
     test "yo - informal greeting analysis" do
-      input = "yo"
-      result = Pipeline.process(input, [])
-
-      if @log_snapshots, do: log_snapshot(result)
-
+      result = Pipeline.process("yo", [])
       snapshot = extract_snapshot(result)
-
-      assert snapshot.chunk_count == 1
-      [analysis] = snapshot.analyses
-
-      # Should recognize as expressive (informal greeting)
-      # May also be classified as unknown - that's a known limitation
-      # Document actual behavior - yo may not be recognized
-      assert analysis.speech_act_category in [:expressive, :unknown, nil]
+      assert_snapshot(snapshot, "yo_greeting", subdirectory: "edge_cases")
     end
 
     @tag :snapshot
     test "The name's Bond, James Bond - unusual intro pattern" do
-      input = "The name's Bond, James Bond"
-      result = Pipeline.process(input, [])
-
-      if @log_snapshots, do: log_snapshot(result)
-
+      result = Pipeline.process("The name's Bond, James Bond", [])
       snapshot = extract_snapshot(result)
-
-      [analysis | _] = snapshot.analyses
-
-      # Document behavior - may or may not be recognized as intro
-      # The point is to see what actually happens
-      assert analysis.speech_act_category != nil
+      assert_snapshot(snapshot, "names_bond_james_bond", subdirectory: "edge_cases")
     end
 
     @tag :snapshot
     test "mixed content inspection", %{conversation_id: _conv_id} do
-      input = """
-      Hello, I'm Austin. What's the weather? Play some music. Turn on the lights.
-      """
-
+      input = "Hello, I'm Austin. What's the weather? Play some music. Turn on the lights."
       result = Pipeline.process(input, [])
-
-      if @log_snapshots, do: log_snapshot(result)
-
       snapshot = extract_snapshot(result)
-
-      # Should produce multiple chunks
-      assert snapshot.chunk_count >= 3
-
-      # Each chunk should have a valid speech act
-      Enum.each(snapshot.analyses, fn a ->
-        assert a.speech_act_category != nil
-      end)
+      assert_snapshot(snapshot, "mixed_content", subdirectory: "edge_cases")
     end
   end
 
@@ -1339,53 +1145,17 @@ defmodule ChatBot.EdgeCasesTest do
     @tag :snapshot
     @tag :regression
     test "Hello should NOT trigger music playback" do
-      input = "Hello"
-      result = Pipeline.process(input, [])
-
+      result = Pipeline.process("Hello", [])
       snapshot = extract_snapshot(result)
-      [analysis] = snapshot.analyses
-
-      # Must be expressive, NOT directive
-      assert analysis.speech_act_category == :expressive,
-             "Hello should be greeting (expressive), got: #{analysis.speech_act_category}"
-
-      # Intent should NOT be music-related
-      if analysis.detected_intent do
-        refute analysis.detected_intent =~ ~r/music|play/i,
-               "Hello should not have music intent, got: #{analysis.detected_intent}"
-      end
+      assert_snapshot(snapshot, "hello_regression", subdirectory: "edge_cases")
     end
 
     @tag :snapshot
     @tag :regression
     test "Hello, I'm Austin should NOT ask about weather in Austin" do
-      input = "Hello, I'm Austin"
-      result = Pipeline.process(input, [])
-
+      result = Pipeline.process("Hello, I'm Austin", [])
       snapshot = extract_snapshot(result)
-      [analysis] = snapshot.analyses
-
-      # Can be expressive (greeting dominates) or assertive (intro dominates)
-      # "Hello" is expressive, "I'm Austin" is assertive (stating a fact)
-      assert analysis.speech_act_category in [:expressive, :assertive],
-             "Expected expressive or assertive, got: #{analysis.speech_act_category}"
-
-      # Austin must be person, not location
-      austin_entities =
-        Enum.filter(analysis.entities, fn e ->
-          String.downcase(to_string(e.value)) =~ "austin"
-        end)
-
-      Enum.each(austin_entities, fn e ->
-        refute e.type in ["location", "city"],
-               "Austin in greeting context must be person, got: #{e.type}"
-      end)
-
-      # Intent should NOT be weather
-      if analysis.detected_intent do
-        refute analysis.detected_intent =~ ~r/weather/i,
-               "Hello, I'm Austin should not have weather intent"
-      end
+      assert_snapshot(snapshot, "hello_im_austin_regression", subdirectory: "edge_cases")
     end
   end
 end

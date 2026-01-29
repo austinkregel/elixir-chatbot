@@ -28,6 +28,22 @@ defmodule ChatBot.Telemetry do
   - `[:chat_bot, :learning, :batch_complete]` - Batch ingestion complete
   - `[:chat_bot, :learning, :world_created]` - Training world created
   - `[:chat_bot, :learning, :world_destroyed]` - Training world destroyed
+
+  ## Knowledge Expansion Events
+
+  - `[:chat_bot, :knowledge, :research, :start | :stop | :exception]` - Research agent operations
+  - `[:chat_bot, :knowledge, :corroborate, :start | :stop | :exception]` - Cross-source corroboration
+  - `[:chat_bot, :knowledge, :review, :start | :stop]` - Review queue operations (approve/reject)
+
+  ## Epistemic System Events
+
+  - `[:chat_bot, :epistemic, :jtms_justify, :start | :stop | :exception]` - JTMS justification operations
+  - `[:chat_bot, :epistemic, :belief_operation, :start | :stop | :exception]` - BeliefStore operations
+
+  ## Analysis Events
+
+  - `[:chat_bot, :analysis, :racing, :start | :stop | :exception]` - Racing analyzer parallel processing
+  - `[:chat_bot, :analysis, :racing, :early_exit]` - Racing analyzer early exit (fast path)
   """
 
   require Logger
@@ -54,6 +70,19 @@ defmodule ChatBot.Telemetry do
   @learning_batch_complete [:chat_bot, :learning, :batch_complete]
   @learning_world_created [:chat_bot, :learning, :world_created]
   @learning_world_destroyed [:chat_bot, :learning, :world_destroyed]
+
+  # Knowledge Expansion Events
+  @knowledge_research [:chat_bot, :knowledge, :research]
+  @knowledge_corroborate [:chat_bot, :knowledge, :corroborate]
+  @knowledge_review [:chat_bot, :knowledge, :review]
+
+  # Epistemic System Events
+  @jtms_justify [:chat_bot, :epistemic, :jtms_justify]
+  @belief_operation [:chat_bot, :epistemic, :belief_operation]
+
+  # Analysis Events
+  @racing_analysis [:chat_bot, :analysis, :racing]
+  @racing_early_exit [:chat_bot, :analysis, :racing, :early_exit]
 
   # ============================================================================
   # Public API - Attach Handlers
@@ -117,7 +146,36 @@ defmodule ChatBot.Telemetry do
       {"chatbot-learning-world-created", @learning_world_created,
        &__MODULE__.handle_learning_event/4, %{event: :world_created}},
       {"chatbot-learning-world-destroyed", @learning_world_destroyed,
-       &__MODULE__.handle_learning_event/4, %{event: :world_destroyed}}
+       &__MODULE__.handle_learning_event/4, %{event: :world_destroyed}},
+
+      # Knowledge Expansion handlers
+      {"chatbot-knowledge-research-stop", @knowledge_research ++ [:stop],
+       &__MODULE__.handle_span_stop/4, %{metric: :knowledge_research}},
+      {"chatbot-knowledge-research-exception", @knowledge_research ++ [:exception],
+       &__MODULE__.handle_span_exception/4, %{metric: :knowledge_research}},
+      {"chatbot-knowledge-corroborate-stop", @knowledge_corroborate ++ [:stop],
+       &__MODULE__.handle_span_stop/4, %{metric: :knowledge_corroborate}},
+      {"chatbot-knowledge-corroborate-exception", @knowledge_corroborate ++ [:exception],
+       &__MODULE__.handle_span_exception/4, %{metric: :knowledge_corroborate}},
+      {"chatbot-knowledge-review-stop", @knowledge_review ++ [:stop],
+       &__MODULE__.handle_span_stop/4, %{metric: :knowledge_review}},
+
+      # Epistemic System handlers
+      {"chatbot-jtms-justify-stop", @jtms_justify ++ [:stop], &__MODULE__.handle_span_stop/4,
+       %{metric: :jtms_justify}},
+      {"chatbot-jtms-justify-exception", @jtms_justify ++ [:exception],
+       &__MODULE__.handle_span_exception/4, %{metric: :jtms_justify}},
+      {"chatbot-belief-operation-stop", @belief_operation ++ [:stop],
+       &__MODULE__.handle_span_stop/4, %{metric: :belief_operation}},
+      {"chatbot-belief-operation-exception", @belief_operation ++ [:exception],
+       &__MODULE__.handle_span_exception/4, %{metric: :belief_operation}},
+
+      # Racing Analyzer handlers
+      {"chatbot-racing-analysis-stop", @racing_analysis ++ [:stop], &__MODULE__.handle_span_stop/4,
+       %{metric: :racing_analysis}},
+      {"chatbot-racing-analysis-exception", @racing_analysis ++ [:exception],
+       &__MODULE__.handle_span_exception/4, %{metric: :racing_analysis}},
+      {"chatbot-racing-early-exit", @racing_early_exit, &__MODULE__.handle_racing_early_exit/4, %{}}
     ]
 
     Enum.each(handlers, fn {id, event, handler, config} ->
@@ -152,7 +210,22 @@ defmodule ChatBot.Telemetry do
       "chatbot-learning-document",
       "chatbot-learning-batch",
       "chatbot-learning-world-created",
-      "chatbot-learning-world-destroyed"
+      "chatbot-learning-world-destroyed",
+      # Knowledge Expansion events
+      "chatbot-knowledge-research-stop",
+      "chatbot-knowledge-research-exception",
+      "chatbot-knowledge-corroborate-stop",
+      "chatbot-knowledge-corroborate-exception",
+      "chatbot-knowledge-review-stop",
+      # Epistemic events
+      "chatbot-jtms-justify-stop",
+      "chatbot-jtms-justify-exception",
+      "chatbot-belief-operation-stop",
+      "chatbot-belief-operation-exception",
+      # Racing analyzer events
+      "chatbot-racing-analysis-stop",
+      "chatbot-racing-analysis-exception",
+      "chatbot-racing-early-exit"
     ]
 
     Enum.each(handler_ids, fn id ->
@@ -209,6 +282,65 @@ defmodule ChatBot.Telemetry do
       result = fun.()
       {result, %{}}
     end)
+  end
+
+  # Knowledge Expansion spans
+
+  def span(:knowledge_research, metadata, fun) do
+    :telemetry.span(@knowledge_research, metadata, fn ->
+      result = fun.()
+      {result, %{}}
+    end)
+  end
+
+  def span(:knowledge_corroborate, metadata, fun) do
+    :telemetry.span(@knowledge_corroborate, metadata, fn ->
+      result = fun.()
+      {result, %{}}
+    end)
+  end
+
+  def span(:knowledge_review, metadata, fun) do
+    :telemetry.span(@knowledge_review, metadata, fn ->
+      result = fun.()
+      {result, %{}}
+    end)
+  end
+
+  # Epistemic System spans
+
+  def span(:jtms_justify, metadata, fun) do
+    :telemetry.span(@jtms_justify, metadata, fn ->
+      result = fun.()
+      {result, %{}}
+    end)
+  end
+
+  def span(:belief_operation, metadata, fun) do
+    :telemetry.span(@belief_operation, metadata, fn ->
+      result = fun.()
+      {result, %{}}
+    end)
+  end
+
+  # Analysis spans
+
+  def span(:racing_analysis, metadata, fun) do
+    :telemetry.span(@racing_analysis, metadata, fn ->
+      result = fun.()
+      {result, %{}}
+    end)
+  end
+
+  @doc """
+  Emits a racing analyzer early exit event when a fast path is taken.
+  """
+  def emit_racing_early_exit(analyzer, confidence, duration_ms) do
+    :telemetry.execute(
+      @racing_early_exit,
+      %{confidence: confidence, duration_ms: duration_ms},
+      %{analyzer: analyzer, timestamp: System.monotonic_time(:millisecond)}
+    )
   end
 
   @doc """
@@ -332,6 +464,17 @@ defmodule ChatBot.Telemetry do
       GenServer.cast(
         ChatBot.Metrics.Aggregator,
         {:record_learning_event, config[:event], measurements, metadata}
+      )
+    end
+  end
+
+  @doc false
+  def handle_racing_early_exit(_event, measurements, metadata, _config) do
+    if Process.whereis(ChatBot.Metrics.Aggregator) do
+      GenServer.cast(
+        ChatBot.Metrics.Aggregator,
+        {:record_racing_early_exit, metadata[:analyzer], measurements[:confidence],
+         measurements[:duration_ms]}
       )
     end
   end

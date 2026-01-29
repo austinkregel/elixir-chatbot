@@ -1,4 +1,23 @@
 {
+  "weather": {
+    "description": "General weather request",
+    "domain": "weather",
+    "category": "directive",
+    "speech_act": "request_information",
+    "required": ["location"],
+    "optional": ["date", "time"],
+    "defaults": {
+      "date": "today"
+    },
+    "entity_mappings": {
+      "location": ["location", "city", "ambiguous_name_location"],
+      "date": ["date", "relative_date", "sys-date"],
+      "time": ["time", "sys-time"]
+    },
+    "clarification_templates": {
+      "location": "What location would you like the weather for?"
+    }
+  },
   "weather.query": {
     "description": "Weather information request",
     "domain": "weather",
@@ -399,6 +418,123 @@
     "optional": [],
     "defaults": {},
     "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "smalltalk.user.introduction": {
+    "description": "User introducing themselves",
+    "domain": "introduction",
+    "category": "expressive",
+    "speech_act": "statement",
+    "required": [],
+    "optional": ["person"],
+    "defaults": {},
+    "entity_mappings": {
+      "person": ["person", "name"]
+    },
+    "clarification_templates": {}
+  },
+  "smalltalk.user.name": {
+    "description": "User stating their name",
+    "domain": "introduction",
+    "category": "expressive",
+    "speech_act": "statement",
+    "required": [],
+    "optional": ["person"],
+    "defaults": {},
+    "entity_mappings": {
+      "person": ["person", "name"]
+    },
+    "clarification_templates": {}
+  },
+  "smalltalk.user.good": {
+    "description": "User expressing they are doing well",
+    "domain": "introduction",
+    "category": "expressive",
+    "speech_act": "statement",
+    "required": [],
+    "optional": [],
+    "defaults": {},
+    "entity_mappings": {},
+    "clarification_templates": {}
+  },
+  "smalltalk.user.age": {
+    "description": "User stating their age",
+    "domain": "introduction",
+    "category": "expressive",
+    "speech_act": "statement",
+    "required": [],
+    "optional": ["number"],
+    "defaults": {},
+    "entity_mappings": {
+      "number": ["number"]
+    },
+    "clarification_templates": {}
+  },
+  "smalltalk.user.location": {
+    "description": "User stating their location",
+    "domain": "introduction",
+    "category": "expressive",
+    "speech_act": "statement",
+    "required": [],
+    "optional": ["location"],
+    "defaults": {},
+    "entity_mappings": {
+      "location": ["location", "city"]
+    },
+    "clarification_templates": {}
+  },
+  "smalltalk.user.origin": {
+    "description": "User stating their origin",
+    "domain": "introduction",
+    "category": "expressive",
+    "speech_act": "statement",
+    "required": [],
+    "optional": ["location"],
+    "defaults": {},
+    "entity_mappings": {
+      "location": ["location", "city"]
+    },
+    "clarification_templates": {}
+  },
+  "smarthome.lights.switch.on": {
+    "description": "Turn on lights",
+    "domain": "device",
+    "category": "directive",
+    "speech_act": "command",
+    "required": [],
+    "optional": ["room", "device"],
+    "defaults": {},
+    "entity_mappings": {
+      "room": ["room", "location"],
+      "device": ["device", "light"]
+    },
+    "clarification_templates": {}
+  },
+  "smarthome.lights.switch.off": {
+    "description": "Turn off lights",
+    "domain": "device",
+    "category": "directive",
+    "speech_act": "command",
+    "required": [],
+    "optional": ["room", "device"],
+    "defaults": {},
+    "entity_mappings": {
+      "room": ["room", "location"],
+      "device": ["device", "light"]
+    },
+    "clarification_templates": {}
+  },
+  "smarthome.context_room.comment_specify.or.change.room": {
+    "description": "Specify or change room context",
+    "domain": "device",
+    "category": "directive",
+    "speech_act": "command",
+    "required": [],
+    "optional": ["room"],
+    "defaults": {},
+    "entity_mappings": {
+      "room": ["room", "location"]
+    },
     "clarification_templates": {}
   }
 }

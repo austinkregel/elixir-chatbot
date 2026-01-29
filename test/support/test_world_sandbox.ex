@@ -145,8 +145,12 @@ defmodule ChatBot.TestWorldSandbox do
       _ -> :ok
     end
 
-    # Also clean up the test worlds directory
+    # Clean up the test worlds temp directory
     cleanup_test_directory()
+
+    # Also clean up any orphaned test worlds in the production directory
+    # This handles worlds created by tests that bypassed the sandbox
+    cleanup_orphaned_test_worlds()
   end
 
   # ============================================================================
@@ -212,5 +216,64 @@ defmodule ChatBot.TestWorldSandbox do
     end
   rescue
     _ -> :ok
+  end
+
+  @doc """
+  Cleans up orphaned test worlds that were created in priv/training_worlds/.
+
+  This handles edge cases where tests:
+  - Created worlds directly via WorldManager instead of create_test_world
+  - Failed before cleanup could run
+  - Used hardcoded paths that bypassed the test sandbox
+
+  A world is considered a test world if:
+  - Its ID starts with "test_world_"
+  - Its config.json contains "test": true in metadata
+  - It has no config.json (incomplete world from crashed test)
+  """
+  def cleanup_orphaned_test_worlds do
+    prod_path = "priv/training_worlds"
+
+    if File.dir?(prod_path) do
+      prod_path
+      |> File.ls!()
+      |> Enum.filter(&is_test_world?(&1, prod_path))
+      |> Enum.each(fn world_id ->
+        world_path = Path.join(prod_path, world_id)
+        File.rm_rf(world_path)
+      end)
+    end
+  rescue
+    _ -> :ok
+  end
+
+  defp is_test_world?(world_id, base_path) do
+    # Check for explicit test world naming convention
+    if String.starts_with?(world_id, "test_world_") do
+      true
+    else
+      # Check for test metadata in config.json
+      config_path = Path.join([base_path, world_id, "config.json"])
+
+      if File.exists?(config_path) do
+        try do
+          config = File.read!(config_path) |> Jason.decode!()
+          metadata = config["metadata"] || %{}
+          metadata["test"] == true
+        rescue
+          _ -> false
+        end
+      else
+        # World has no config - might be from crashed test
+        # Only delete if it looks like a test ID (short random string with only knowledge.json)
+        world_path = Path.join(base_path, world_id)
+
+        has_only_knowledge =
+          File.dir?(world_path) and
+            File.ls!(world_path) == ["knowledge.json"]
+
+        has_only_knowledge
+      end
+    end
   end
 end

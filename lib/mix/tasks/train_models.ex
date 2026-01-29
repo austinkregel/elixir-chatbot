@@ -144,7 +144,9 @@ defmodule Mix.Tasks.TrainModels do
   end
 
   defp get_models_path(world_id) do
-    Path.join(["priv", "training_worlds", world_id, "models"])
+    # Use WorldPersistence.world_path() for consistency with runtime paths
+    world_path = ChatBot.Learning.WorldPersistence.world_path(world_id)
+    Path.join(world_path, "models")
   end
 
   defp run_intent_training(models_path) do

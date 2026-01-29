@@ -140,14 +140,17 @@ defmodule ChatBotWeb.WorldContext do
 
   defp handle_world_info({:world_changed, world_id}, socket) do
     # Another LiveView in this session changed the world - sync up
-    if socket.assigns.current_world_id != world_id do
-      # Update cache for consistency
-      cache_world_id(socket.assigns.world_session_id, world_id)
+    socket =
+      if socket.assigns.current_world_id != world_id do
+        # Update cache for consistency
+        cache_world_id(socket.assigns.world_session_id, world_id)
 
-      socket = assign(socket, :current_world_id, world_id)
-      # Let the LiveView handle the world change for page-specific data reload
-      send(self(), {:world_context_changed, world_id})
-    end
+        # Let the LiveView handle the world change for page-specific data reload
+        send(self(), {:world_context_changed, world_id})
+        assign(socket, :current_world_id, world_id)
+      else
+        socket
+      end
 
     # Halt to prevent the raw PubSub message from reaching the LiveView
     # The LiveView will receive {:world_context_changed, world_id} instead
@@ -158,13 +161,16 @@ defmodule ChatBotWeb.WorldContext do
     # Global broadcast from another session - check if same session
     # We receive this because we subscribe to global, but we filter by our session
     # For now, we also sync to this world if it changed (cross-tab sync)
-    if socket.assigns.current_world_id != world_id do
-      # Update cache
-      cache_world_id(socket.assigns.world_session_id, world_id)
+    socket =
+      if socket.assigns.current_world_id != world_id do
+        # Update cache
+        cache_world_id(socket.assigns.world_session_id, world_id)
 
-      socket = assign(socket, :current_world_id, world_id)
-      send(self(), {:world_context_changed, world_id})
-    end
+        send(self(), {:world_context_changed, world_id})
+        assign(socket, :current_world_id, world_id)
+      else
+        socket
+      end
 
     {:halt, socket}
   end

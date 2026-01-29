@@ -106,6 +106,54 @@ defmodule ChatBot.Analysis.IntentRegistry do
   @doc "Returns true if intent is a meta-cognitive intent."
   def meta_intent?(intent), do: domain(intent) == :meta
 
+  @doc "Returns true if intent is an introduction/self-identification intent."
+  def introduction_intent?(intent), do: domain(intent) == :introduction
+
+  # Entity mapping functions
+
+  @doc """
+  Returns list of entity types expected by an intent based on entity_mappings.
+
+  This is used by EntityDisambiguator to dynamically determine which entity
+  types should be preferred for a given intent, rather than hardcoding
+  context preferences for each domain.
+
+  ## Examples
+
+      iex> IntentRegistry.expected_entity_types("device.control")
+      ["device", "lights", "heating", "locks-status", "room", "color", "condition"]
+
+      iex> IntentRegistry.expected_entity_types("weather.query")
+      ["location", "room", "city", "ambiguous_name_location", "date", "relative_date", "sys-date", "time", "sys-time", "unit-temperature"]
+
+      iex> IntentRegistry.expected_entity_types("unknown")
+      []
+  """
+  def expected_entity_types(intent) do
+    case get(intent) do
+      nil -> []
+      meta ->
+        meta
+        |> Map.get("entity_mappings", %{})
+        |> Map.values()
+        |> List.flatten()
+        |> Enum.uniq()
+    end
+  end
+
+  @doc """
+  Returns a map of slot names to their expected entity types for an intent.
+
+  This provides more granular information than expected_entity_types/1,
+  preserving the relationship between slots and entity types.
+  """
+  def entity_mappings(intent) do
+    case get(intent) do
+      nil -> %{}
+      meta -> Map.get(meta, "entity_mappings", %{})
+    end
+  end
+
   # Category predicates
 
   @doc "Returns true if intent is expressive (greeting, farewell, thanks, etc.)."
@@ -206,14 +254,6 @@ defmodule ChatBot.Analysis.IntentRegistry do
     case get(intent) do
       nil -> []
       meta -> meta["optional"] || []
-    end
-  end
-
-  @doc "Get entity mappings for an intent."
-  def entity_mappings(intent) do
-    case get(intent) do
-      nil -> %{}
-      meta -> meta["entity_mappings"] || %{}
     end
   end
 

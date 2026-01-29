@@ -169,7 +169,7 @@ defmodule Mix.Tasks.MigrateFacts do
 
   defp deduplicate_facts(facts) do
     # Deduplicate based on entity + fact text
-    {unique_facts, seen} =
+    {unique_facts, _seen} =
       Enum.reduce(facts, {[], MapSet.new()}, fn fact, {acc, seen} ->
         key = {
           String.downcase(fact["entity"] || ""),

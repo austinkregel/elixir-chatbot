@@ -34,3 +34,6 @@ config :phoenix, :stacktrace_depth, 20
 
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
+
+# Enable dev routes for dashboard and mailbox
+config :chat_bot, dev_routes: true

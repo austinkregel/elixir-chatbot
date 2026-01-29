@@ -17,6 +17,7 @@ defmodule ChatBot.Epistemic.BeliefStore do
   use GenServer
 
   alias ChatBot.Epistemic.Types.{Belief, Config}
+  alias ChatBot.Telemetry
 
   require Logger
 
@@ -36,11 +37,13 @@ defmodule ChatBot.Epistemic.BeliefStore do
   Returns {:ok, belief_id} on success.
   """
   def add_belief(%Belief{} = belief) do
-    if Config.enabled?() do
-      GenServer.call(__MODULE__, {:add_belief, belief})
-    else
-      {:ok, belief.id}
-    end
+    Telemetry.span(:belief_operation, %{operation: :add, subject: belief.subject}, fn ->
+      if Config.enabled?() do
+        GenServer.call(__MODULE__, {:add_belief, belief})
+      else
+        {:ok, belief.id}
+      end
+    end)
   end
 
   @doc """
@@ -79,7 +82,9 @@ defmodule ChatBot.Epistemic.BeliefStore do
   - :source - Filter by source (:explicit, :inferred, etc.)
   """
   def query_beliefs(opts \\ []) do
-    GenServer.call(__MODULE__, {:query_beliefs, opts})
+    Telemetry.span(:belief_operation, %{operation: :query, filters: opts}, fn ->
+      GenServer.call(__MODULE__, {:query_beliefs, opts})
+    end)
   end
 
   @doc """

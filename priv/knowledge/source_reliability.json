@@ -1,0 +1,176 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-01-28",
+  "description": "Bootstrap source reliability data based on MediaBiasFactCheck and AllSides ratings",
+  "sources": {
+    "wikipedia.org": {
+      "factual_accuracy": 0.85,
+      "bias_rating": "center",
+      "trust_tier": "verified",
+      "notes": "Crowdsourced encyclopedia, generally reliable for non-controversial topics"
+    },
+    "britannica.com": {
+      "factual_accuracy": 0.95,
+      "bias_rating": "center",
+      "trust_tier": "verified",
+      "notes": "Professional encyclopedia with editorial oversight"
+    },
+    "reuters.com": {
+      "factual_accuracy": 0.92,
+      "bias_rating": "center",
+      "trust_tier": "verified",
+      "notes": "International news agency, high factual reporting"
+    },
+    "apnews.com": {
+      "factual_accuracy": 0.92,
+      "bias_rating": "center",
+      "trust_tier": "verified",
+      "notes": "Associated Press, high factual reporting"
+    },
+    "bbc.com": {
+      "factual_accuracy": 0.88,
+      "bias_rating": "center_left",
+      "trust_tier": "verified",
+      "notes": "British Broadcasting Corporation, high factual reporting"
+    },
+    "npr.org": {
+      "factual_accuracy": 0.88,
+      "bias_rating": "center_left",
+      "trust_tier": "verified",
+      "notes": "National Public Radio, high factual reporting"
+    },
+    "pbs.org": {
+      "factual_accuracy": 0.90,
+      "bias_rating": "center",
+      "trust_tier": "verified",
+      "notes": "Public Broadcasting Service, high factual reporting"
+    },
+    "nature.com": {
+      "factual_accuracy": 0.95,
+      "bias_rating": "center",
+      "trust_tier": "verified",
+      "notes": "Scientific journal, peer-reviewed content"
+    },
+    "science.org": {
+      "factual_accuracy": 0.95,
+      "bias_rating": "center",
+      "trust_tier": "verified",
+      "notes": "AAAS Science journal, peer-reviewed content"
+    },
+    "gov": {
+      "factual_accuracy": 0.85,
+      "bias_rating": "center",
+      "trust_tier": "verified",
+      "notes": "US Government domains, official sources"
+    },
+    "edu": {
+      "factual_accuracy": 0.80,
+      "bias_rating": "center",
+      "trust_tier": "verified",
+      "notes": "Educational institutions"
+    },
+    "nytimes.com": {
+      "factual_accuracy": 0.85,
+      "bias_rating": "center_left",
+      "trust_tier": "verified",
+      "notes": "New York Times, high factual reporting with left-center bias"
+    },
+    "washingtonpost.com": {
+      "factual_accuracy": 0.85,
+      "bias_rating": "center_left",
+      "trust_tier": "verified",
+      "notes": "Washington Post, high factual reporting with left-center bias"
+    },
+    "wsj.com": {
+      "factual_accuracy": 0.85,
+      "bias_rating": "center_right",
+      "trust_tier": "verified",
+      "notes": "Wall Street Journal, high factual reporting with right-center bias"
+    },
+    "economist.com": {
+      "factual_accuracy": 0.88,
+      "bias_rating": "center",
+      "trust_tier": "verified",
+      "notes": "The Economist, high factual reporting"
+    },
+    "snopes.com": {
+      "factual_accuracy": 0.90,
+      "bias_rating": "center",
+      "trust_tier": "verified",
+      "notes": "Fact-checking website"
+    },
+    "factcheck.org": {
+      "factual_accuracy": 0.92,
+      "bias_rating": "center",
+      "trust_tier": "verified",
+      "notes": "Annenberg Public Policy Center fact-checking"
+    },
+    "politifact.com": {
+      "factual_accuracy": 0.88,
+      "bias_rating": "center_left",
+      "trust_tier": "verified",
+      "notes": "Political fact-checking, slight left-center bias"
+    },
+    "cnn.com": {
+      "factual_accuracy": 0.75,
+      "bias_rating": "left",
+      "trust_tier": "neutral",
+      "notes": "Cable news, mixed factual reporting with left bias"
+    },
+    "foxnews.com": {
+      "factual_accuracy": 0.65,
+      "bias_rating": "right",
+      "trust_tier": "neutral",
+      "notes": "Cable news, mixed factual reporting with right bias"
+    },
+    "msnbc.com": {
+      "factual_accuracy": 0.70,
+      "bias_rating": "left",
+      "trust_tier": "neutral",
+      "notes": "Cable news, mixed factual reporting with left bias"
+    },
+    "breitbart.com": {
+      "factual_accuracy": 0.45,
+      "bias_rating": "right",
+      "trust_tier": "untrusted",
+      "notes": "Far-right news, mixed to low factual reporting"
+    },
+    "huffpost.com": {
+      "factual_accuracy": 0.65,
+      "bias_rating": "left",
+      "trust_tier": "neutral",
+      "notes": "Left-leaning news and opinion"
+    },
+    "buzzfeed.com": {
+      "factual_accuracy": 0.60,
+      "bias_rating": "center_left",
+      "trust_tier": "neutral",
+      "notes": "Mixed content quality, news division has higher accuracy"
+    },
+    "dailymail.co.uk": {
+      "factual_accuracy": 0.50,
+      "bias_rating": "right",
+      "trust_tier": "untrusted",
+      "notes": "UK tabloid, low factual reporting"
+    },
+    "theonion.com": {
+      "factual_accuracy": 0.0,
+      "bias_rating": "center",
+      "trust_tier": "blocked",
+      "notes": "Satire website, not a factual source"
+    },
+    "babylonbee.com": {
+      "factual_accuracy": 0.0,
+      "bias_rating": "right",
+      "trust_tier": "blocked",
+      "notes": "Satire website, not a factual source"
+    }
+  },
+  "blocked_domains": [
+    "theonion.com",
+    "babylonbee.com",
+    "clickhole.com",
+    "newsthump.com",
+    "waterfordwhispersnews.com"
+  ]
+}

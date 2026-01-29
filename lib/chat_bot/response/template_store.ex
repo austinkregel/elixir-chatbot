@@ -17,7 +17,6 @@ defmodule ChatBot.Response.TemplateStore do
   require Logger
 
   alias ChatBot.Memory.Embedder
-  alias ChatBot.ML.Tokenizer
   alias ChatBot.Analysis.IntentRegistry
 
   @intents_path "data/intents"

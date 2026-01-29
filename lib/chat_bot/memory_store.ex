@@ -7,26 +7,75 @@ defmodule ChatBot.MemoryStore do
   use GenServer
   require Logger
 
+  # ============================================================================
   # Client API
+  # ============================================================================
 
+  @doc """
+  Starts the MemoryStore GenServer.
+
+  ## Options
+    - `:name` - The name to register under (default: `#{__MODULE__}`)
+  """
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
-  def load_all(persona_name) do
-    GenServer.call(__MODULE__, {:load_all, persona_name})
+  @doc """
+  Loads all memory for a persona.
+
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
+  """
+  def load_all(persona_name, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:load_all, persona_name})
   end
 
-  def append_thought(persona_name, role, text, tags \\ []) do
-    GenServer.call(__MODULE__, {:append_thought, persona_name, role, text, tags})
+  @doc """
+  Appends a thought to memory.
+
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
+  """
+  def append_thought(persona_name, role, text, tags \\ [], opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:append_thought, persona_name, role, text, tags})
   end
 
-  def get_memory_window(persona_name, max_entries \\ 100) do
-    GenServer.call(__MODULE__, {:get_memory_window, persona_name, max_entries})
+  @doc """
+  Gets a window of recent memory entries.
+
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
+  """
+  def get_memory_window(persona_name, max_entries \\ 100, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:get_memory_window, persona_name, max_entries})
   end
 
-  def clear_memory(persona_name) do
-    GenServer.call(__MODULE__, {:clear_memory, persona_name})
+  @doc """
+  Clears all memory for a persona.
+
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
+  """
+  def clear_memory(persona_name, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:clear_memory, persona_name})
+  end
+
+  @doc """
+  Checks if the memory store is ready.
+  """
+  def ready? do
+    try do
+      GenServer.call(__MODULE__, :ready?, 100)
+    catch
+      :exit, {:timeout, _} -> false
+      :exit, {:noproc, _} -> false
+    end
   end
 
   # Server Callbacks
@@ -116,6 +165,11 @@ defmodule ChatBot.MemoryStore do
         Logger.error("Failed to clear memory", %{persona_name: persona_name, reason: reason})
         {:reply, {:error, reason}, state}
     end
+  end
+
+  @impl true
+  def handle_call(:ready?, _from, state) do
+    {:reply, true, state}
   end
 
   # Private Functions

@@ -154,38 +154,18 @@ defmodule ChatBot.Analysis.BacktrackController do
     end
   end
 
-  defp check_entity_mismatch(%Interpretation{} = interp) do
-    # Check if entities don't make sense for the intent
-    entities = interp.entities || []
-    intent = interp.intent
-
-    mismatches =
-      cond do
-        # Weather intent but no location, time entities
-        IntentRegistry.weather_intent?(intent) and
-            not has_entity_type?(entities, ["location", "city", "place-name"]) ->
-          # This is borderline - might be clarification-worthy but not a hard contradiction
-          nil
-
-        # Device control but no device entity
-        IntentRegistry.device_intent?(intent) and
-            not has_entity_type?(entities, ["device", "light", "switch"]) ->
-          {:entity_mismatch, "device intent without device entity"}
-
-        # Music intent with location entity (suspicious)
-        IntentRegistry.music_intent?(intent) and
-          has_entity_type?(entities, ["location"]) and
-            not has_entity_type?(entities, ["music-artist", "song", "album"]) ->
-          {:entity_mismatch, "music intent with location but no music entities"}
-
-        true ->
-          nil
-      end
-
-    case mismatches do
-      nil -> :ok
-      reason -> {:contradiction, reason}
-    end
+  defp check_entity_mismatch(%Interpretation{} = _interp) do
+    # Entity-based contradiction checking has been disabled.
+    #
+    # The trained intent classifier is the source of truth for intent detection.
+    # Entity mismatch checks were causing incorrect backtracking:
+    # - "Turn on the lights" was rejected because "lights" wasn't in Gazetteer as a device
+    # - "Play some music" was rejected and overridden with news.query
+    #
+    # The classifier is trained on actual user patterns and should be trusted.
+    # If entity detection needs improvement, fix the training data/Gazetteer,
+    # don't override the classifier.
+    :ok
   end
 
   defp check_confidence_drop(%Interpretation{activation: activation}) do
@@ -195,13 +175,6 @@ defmodule ChatBot.Analysis.BacktrackController do
     else
       :ok
     end
-  end
-
-  defp has_entity_type?(entities, types) when is_list(types) do
-    Enum.any?(entities, fn e ->
-      entity_type = e[:entity_type]
-      entity_type in types
-    end)
   end
 
   # Private functions - Backtracking

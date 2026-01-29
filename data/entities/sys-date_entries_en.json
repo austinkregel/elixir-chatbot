@@ -1,15 +1,138 @@
 [
   {
-    "value": "2025-07-07",
-    "synonyms": ["today", "now", "current date"]
+    "value": "today",
+    "synonyms": ["today", "now", "current date", "this day"]
   },
   {
-    "value": "2025-07-06",
-    "synonyms": ["yesterday"]
+    "value": "yesterday",
+    "synonyms": ["yesterday", "previous day", "the day before"]
   },
   {
-    "value": "2025-07-08",
-    "synonyms": ["tomorrow"]
+    "value": "tomorrow",
+    "synonyms": ["tomorrow", "next day", "the day after"]
+  },
+  {
+    "value": "tonight",
+    "synonyms": ["tonight", "this evening", "this night"]
+  },
+  {
+    "value": "monday",
+    "synonyms": ["monday", "mon"]
+  },
+  {
+    "value": "tuesday",
+    "synonyms": ["tuesday", "tue", "tues"]
+  },
+  {
+    "value": "wednesday",
+    "synonyms": ["wednesday", "wed"]
+  },
+  {
+    "value": "thursday",
+    "synonyms": ["thursday", "thu", "thurs"]
+  },
+  {
+    "value": "friday",
+    "synonyms": ["friday", "fri"]
+  },
+  {
+    "value": "saturday",
+    "synonyms": ["saturday", "sat"]
+  },
+  {
+    "value": "sunday",
+    "synonyms": ["sunday", "sun"]
+  },
+  {
+    "value": "january",
+    "synonyms": ["january", "jan"]
+  },
+  {
+    "value": "february",
+    "synonyms": ["february", "feb"]
+  },
+  {
+    "value": "march",
+    "synonyms": ["march", "mar"]
+  },
+  {
+    "value": "april",
+    "synonyms": ["april", "apr"]
+  },
+  {
+    "value": "may",
+    "synonyms": ["may"]
+  },
+  {
+    "value": "june",
+    "synonyms": ["june", "jun"]
+  },
+  {
+    "value": "july",
+    "synonyms": ["july", "jul"]
+  },
+  {
+    "value": "august",
+    "synonyms": ["august", "aug"]
+  },
+  {
+    "value": "september",
+    "synonyms": ["september", "sep", "sept"]
+  },
+  {
+    "value": "october",
+    "synonyms": ["october", "oct"]
+  },
+  {
+    "value": "november",
+    "synonyms": ["november", "nov"]
+  },
+  {
+    "value": "december",
+    "synonyms": ["december", "dec"]
+  },
+  {
+    "value": "this week",
+    "synonyms": ["this week", "current week"]
+  },
+  {
+    "value": "next week",
+    "synonyms": ["next week", "following week"]
+  },
+  {
+    "value": "last week",
+    "synonyms": ["last week", "previous week"]
+  },
+  {
+    "value": "this month",
+    "synonyms": ["this month", "current month"]
+  },
+  {
+    "value": "next month",
+    "synonyms": ["next month", "following month"]
+  },
+  {
+    "value": "last month",
+    "synonyms": ["last month", "previous month"]
+  },
+  {
+    "value": "this year",
+    "synonyms": ["this year", "current year"]
+  },
+  {
+    "value": "next year",
+    "synonyms": ["next year", "following year"]
+  },
+  {
+    "value": "last year",
+    "synonyms": ["last year", "previous year"]
+  },
+  {
+    "value": "later",
+    "synonyms": ["later", "afterwards", "soon"]
+  },
+  {
+    "value": "weekend",
+    "synonyms": ["weekend", "the weekend", "this weekend", "next weekend"]
   }
 ]
-

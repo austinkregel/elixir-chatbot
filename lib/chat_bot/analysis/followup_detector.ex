@@ -5,15 +5,14 @@ defmodule ChatBot.Analysis.FollowupDetector do
 
   This module helps handle multi-turn conversations where users provide
   additional information (like location) in response to clarifying questions.
+
+  Uses POS tagging for grammatical detection rather than keyword lists.
   """
 
-  # Prepositions that commonly introduce slot-filling responses
-  @location_prepositions ~w(in at for near around)
+  alias ChatBot.ML.POSTagger
 
-  # Maximum word count for a likely follow-up message
+  # Configuration constants
   @max_followup_words 5
-
-  # Time window for considering previous context (5 minutes)
   @context_timeout_ms 5 * 60 * 1000
 
   @doc """
@@ -95,9 +94,31 @@ defmodule ChatBot.Analysis.FollowupDetector do
 
   defp is_short_prepositional_phrase?(text) do
     words = String.split(String.trim(text))
-    first_word = words |> List.first() |> to_string() |> String.downcase()
 
-    length(words) <= @max_followup_words and first_word in @location_prepositions
+    # Use POS tagger to detect if first word is a preposition (ADP)
+    length(words) <= @max_followup_words and starts_with_preposition?(words)
+  end
+
+  defp starts_with_preposition?(words) do
+    case words do
+      [] ->
+        false
+
+      _ ->
+        case POSTagger.load_model() do
+          {:ok, model} ->
+            predictions = POSTagger.predict(Enum.take(words, 2), model)
+
+            case predictions do
+              [{_word, "ADP"} | _] -> true
+              _ -> false
+            end
+
+          {:error, _} ->
+            # Model not loaded, can't determine
+            false
+        end
+    end
   end
 
   defp is_bare_location?(text) do
@@ -118,10 +139,16 @@ defmodule ChatBot.Analysis.FollowupDetector do
   end
 
   defp contains_verb?(words) do
-    common_verbs =
-      ~w(is are was were do does did can could will would should have has had am be been)
+    # Use POS tagger to detect verbs (VERB or AUX)
+    case POSTagger.load_model() do
+      {:ok, model} ->
+        predictions = POSTagger.predict(words, model)
+        Enum.any?(predictions, fn {_word, tag} -> tag in ["VERB", "AUX"] end)
 
-    Enum.any?(words, fn w -> String.downcase(w) in common_verbs end)
+      {:error, _} ->
+        # Model not loaded, assume no verb for safety
+        false
+    end
   end
 
   defp needs_location?(context) do

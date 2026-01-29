@@ -69,12 +69,26 @@ defmodule ChatBot.KnowledgeStore do
 
   # Client API
 
+  @doc """
+  Starts the KnowledgeStore GenServer.
+
+  ## Options
+    - `:name` - The name to register under (default: `#{__MODULE__}`)
+  """
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
-  def load_knowledge(persona_name) do
-    GenServer.call(__MODULE__, {:load_knowledge, persona_name})
+  @doc """
+  Loads knowledge for a persona.
+
+  ## Options
+    - `:server` - The server to call (default: `#{__MODULE__}`)
+  """
+  def load_knowledge(persona_name, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:load_knowledge, persona_name})
   end
 
   def save_knowledge(persona_name, knowledge) do
@@ -141,6 +155,18 @@ defmodule ChatBot.KnowledgeStore do
   """
   def clear(persona_name) do
     GenServer.call(__MODULE__, {:clear, persona_name})
+  end
+
+  @doc """
+  Checks if the knowledge store is ready.
+  """
+  def ready? do
+    try do
+      GenServer.call(__MODULE__, :ready?, 100)
+    catch
+      :exit, {:timeout, _} -> false
+      :exit, {:noproc, _} -> false
+    end
   end
 
   # Server Callbacks
@@ -459,6 +485,11 @@ defmodule ChatBot.KnowledgeStore do
     {:reply, :ok, state}
   end
 
+  @impl true
+  def handle_call(:ready?, _from, state) do
+    {:reply, true, state}
+  end
+
   # ============================================================================
   # World-Scoped Server Callbacks
   # ============================================================================
@@ -486,7 +517,12 @@ defmodule ChatBot.KnowledgeStore do
   def handle_call({:add_to_world, world_id, category, key, value}, _from, state) do
     knowledge = load_world_knowledge_data(world_id)
 
-    category_data = Map.get(knowledge, category, %{})
+    # Ensure category_data is a map (handle legacy list format)
+    category_data = 
+      case Map.get(knowledge, category, %{}) do
+        data when is_map(data) -> data
+        _ -> %{}
+      end
     updated_category = Map.put(category_data, key, value)
     updated_knowledge = Map.put(knowledge, category, updated_category)
 
@@ -541,7 +577,8 @@ defmodule ChatBot.KnowledgeStore do
 
   @impl true
   def handle_call(:list_knowledge_worlds, _from, state) do
-    worlds_dir = "priv/training_worlds"
+    # Use WorldPersistence.base_path() to respect test environment isolation
+    worlds_dir = ChatBot.Learning.WorldPersistence.base_path()
 
     worlds =
       if File.dir?(worlds_dir) do
@@ -591,7 +628,8 @@ defmodule ChatBot.KnowledgeStore do
   # World-scoped knowledge helpers
 
   defp get_world_knowledge_path(world_id) do
-    Path.join(["priv", "training_worlds", world_id, "knowledge.json"])
+    # Use WorldPersistence.world_path() to respect test environment isolation
+    Path.join(ChatBot.Learning.WorldPersistence.world_path(world_id), "knowledge.json")
   end
 
   defp load_world_knowledge_data(world_id) do
@@ -600,7 +638,9 @@ defmodule ChatBot.KnowledgeStore do
     case File.read(file_path) do
       {:ok, content} ->
         case Jason.decode(content) do
-          {:ok, json} -> json
+          {:ok, json} when is_map(json) -> json
+          # Handle corrupt or list data
+          {:ok, _non_map} -> %{}
           {:error, _} -> %{}
         end
 

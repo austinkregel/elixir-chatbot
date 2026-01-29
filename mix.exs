@@ -58,6 +58,7 @@ defmodule ChatBot.MixProject do
       {:swoosh, "~> 1.16"},
       {:hackney, "~> 1.9"},
       {:req, "~> 0.5"},
+      {:floki, "~> 0.36"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 0.26"},
@@ -110,6 +111,7 @@ defmodule ChatBot.MixProject do
       "world.clear": ["training_world.destroy default"],
       "test.coverage": ["coveralls.html"],
       "test.coverage.json": ["coveralls.json"],
+      "test.update_snapshots": ["cmd UPDATE_SNAPSHOTS=true mix test --only snapshot"],
       "world.reset": [
         "training_world.destroy default",
         "training_world.create default --mode=persistent"

@@ -94,9 +94,9 @@ defmodule ChatBot.ConversationSimulationTest do
     } do
       # Turn 1: Greeting
       {:ok, response1} = Brain.evaluate(conv_id, "Hello!", user_id: user_id)
-      # Positive: Should be greeting response (broad patterns)
-      assert response1 =~ ~r/hello|hi|hey|welcome|nice|meet|how.*you|good|day|going|wuz/i,
-             "Expected greeting response, got: #{response1}"
+      # Verify Brain's response is interpreted as a greeting by analyzing it through Pipeline
+      # This confirms Brain "understands" what it responded with
+      assert_response_is_greeting(response1)
 
       # Turn 2: Statement
       {:ok, response2} = Brain.evaluate(conv_id, "I like coffee", user_id: user_id)

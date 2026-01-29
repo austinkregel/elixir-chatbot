@@ -21,7 +21,7 @@ defmodule ChatBotWeb.DashboardLive do
   # Refresh interval in milliseconds
   @refresh_interval_ms 2_000
 
-  @default_expanded [:core, :epistemic, :analysis, :ml, :learning, :storage, :metrics]
+  @default_expanded [:core, :epistemic, :analysis, :ml, :knowledge, :learning, :storage, :metrics]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -144,13 +144,6 @@ defmodule ChatBotWeb.DashboardLive do
     {:noreply, socket}
   end
 
-  defp reload_world_data(socket, world_id) do
-    socket
-    |> assign(:world_memory_stats, load_world_memory_stats(world_id))
-    |> assign(:world_models_status, load_world_models_status(world_id))
-    |> assign(:readiness_details, load_readiness_details(world_id))
-  end
-
   def handle_event("toggle_category", %{"category" => category}, socket) do
     category = String.to_existing_atom(category)
     expanded = socket.assigns.expanded_categories
@@ -178,6 +171,13 @@ defmodule ChatBotWeb.DashboardLive do
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, "Failed to reload: #{inspect(reason)}")}
     end
+  end
+
+  defp reload_world_data(socket, world_id) do
+    socket
+    |> assign(:world_memory_stats, load_world_memory_stats(world_id))
+    |> assign(:world_models_status, load_world_models_status(world_id))
+    |> assign(:readiness_details, load_readiness_details(world_id))
   end
 
   # ============================================================================
@@ -220,6 +220,7 @@ defmodule ChatBotWeb.DashboardLive do
   def category_label(:epistemic), do: "Epistemic System"
   def category_label(:analysis), do: "Analysis System"
   def category_label(:ml), do: "Machine Learning"
+  def category_label(:knowledge), do: "Knowledge Expansion"
   def category_label(:learning), do: "Training Worlds"
   def category_label(:storage), do: "Storage"
   def category_label(:metrics), do: "Metrics & Telemetry"
@@ -229,6 +230,7 @@ defmodule ChatBotWeb.DashboardLive do
   def category_icon(:epistemic), do: "hero-light-bulb"
   def category_icon(:analysis), do: "hero-chart-bar"
   def category_icon(:ml), do: "hero-sparkles"
+  def category_icon(:knowledge), do: "hero-book-open"
   def category_icon(:learning), do: "hero-academic-cap"
   def category_icon(:storage), do: "hero-circle-stack"
   def category_icon(:metrics), do: "hero-chart-pie"
@@ -333,6 +335,7 @@ defmodule ChatBotWeb.DashboardLive do
   def category_bg_class(:epistemic), do: "bg-secondary/10"
   def category_bg_class(:analysis), do: "bg-accent/10"
   def category_bg_class(:ml), do: "bg-warning/10"
+  def category_bg_class(:knowledge), do: "bg-cyan-500/10"
   def category_bg_class(:learning), do: "bg-error/10"
   def category_bg_class(:storage), do: "bg-info/10"
   def category_bg_class(:metrics), do: "bg-success/10"
@@ -342,6 +345,7 @@ defmodule ChatBotWeb.DashboardLive do
   def category_text_class(:epistemic), do: "text-secondary"
   def category_text_class(:analysis), do: "text-accent"
   def category_text_class(:ml), do: "text-warning"
+  def category_text_class(:knowledge), do: "text-cyan-500"
   def category_text_class(:learning), do: "text-error"
   def category_text_class(:storage), do: "text-info"
   def category_text_class(:metrics), do: "text-success"
@@ -444,7 +448,7 @@ defmodule ChatBotWeb.DashboardLive do
 
   # Get all categories including learning and metrics categories
   def all_categories do
-    [:core, :epistemic, :analysis, :ml, :learning, :storage, :metrics]
+    [:core, :epistemic, :analysis, :ml, :knowledge, :learning, :storage, :metrics]
   end
 
   # ============================================================================

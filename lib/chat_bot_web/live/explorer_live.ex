@@ -175,10 +175,6 @@ defmodule ChatBotWeb.ExplorerLive do
     {:noreply, socket}
   end
 
-  defp reload_for_world(socket, world_id) do
-    load_world_data(socket, world_id) |> apply_filters()
-  end
-
   def handle_event("switch_tab", %{"tab" => tab}, socket) do
     params =
       build_url_params(assign(socket, :tab, String.to_existing_atom(tab)) |> assign(:page, 1))
@@ -230,6 +226,10 @@ defmodule ChatBotWeb.ExplorerLive do
     world_id = socket.assigns.current_world_id
     socket = load_world_data(socket, world_id) |> apply_filters()
     {:noreply, socket}
+  end
+
+  defp reload_for_world(socket, world_id) do
+    load_world_data(socket, world_id) |> apply_filters()
   end
 
   @impl true

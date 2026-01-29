@@ -26,6 +26,7 @@ defmodule ChatBot.Epistemic.JTMS do
   use GenServer
 
   alias ChatBot.Epistemic.Types.{Node, Justification, Config}
+  alias ChatBot.Telemetry
 
   require Logger
 
@@ -91,11 +92,13 @@ defmodule ChatBot.Epistemic.JTMS do
   Returns {:ok, justification_id}
   """
   def justify_node(in_list, out_list, conclusion_id, informant) do
-    if Config.enabled?() do
-      GenServer.call(__MODULE__, {:justify_node, in_list, out_list, conclusion_id, informant})
-    else
-      {:ok, generate_id()}
-    end
+    Telemetry.span(:jtms_justify, %{conclusion_id: conclusion_id, informant: informant}, fn ->
+      if Config.enabled?() do
+        GenServer.call(__MODULE__, {:justify_node, in_list, out_list, conclusion_id, informant})
+      else
+        {:ok, generate_id()}
+      end
+    end)
   end
 
   @doc """

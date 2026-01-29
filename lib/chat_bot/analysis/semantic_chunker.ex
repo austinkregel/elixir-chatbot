@@ -339,7 +339,10 @@ defmodule ChatBot.Analysis.SemanticChunker do
   end
 
   defp count_words(text) do
+    # Expand contractions before counting so "I'm" counts as 2 words ("I am")
+    # This ensures short sentences like "I'm Austin." (3 words) aren't merged
     text
+    |> Tokenizer.expand_contractions()
     |> Tokenizer.split_words()
     |> Enum.count()
   end

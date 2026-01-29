@@ -126,7 +126,9 @@ defmodule ChatBot.Learning.WorldModelRegistry do
   Returns the path where a world's models are stored.
   """
   def models_dir(world_id) do
-    Path.join(["priv", "training_worlds", world_id, "models"])
+    # Use WorldPersistence.base_path() to respect test environment isolation
+    base = ChatBot.Learning.WorldPersistence.base_path()
+    Path.join([base, world_id, "models"])
   end
 
   @doc """
@@ -431,13 +433,18 @@ defmodule ChatBot.Learning.WorldModelRegistry do
       entity_model: load_model_file(world_id, :entity_model)
     }
 
-    # Also preload gazetteer overlay
-    preload_gazetteer_overlay(world_id)
+    # Check if we got any valid models
+    if Enum.all?(Map.values(models), &is_nil/1) do
+      {:error, :no_models_found}
+    else
+      # Also preload gazetteer overlay
+      preload_gazetteer_overlay(world_id)
 
-    # Also ensure world embedder is initialized
-    ensure_world_embedder(world_id)
+      # Also ensure world embedder is initialized
+      ensure_world_embedder(world_id)
 
-    {:ok, models}
+      {:ok, models}
+    end
   end
 
   defp load_model_file(world_id, model_type) do
@@ -506,7 +513,8 @@ defmodule ChatBot.Learning.WorldModelRegistry do
 
   defp preload_gazetteer_overlay(world_id) do
     # Load the world's gazetteer overlay into ETS
-    overlay_path = Path.join(["priv", "training_worlds", world_id, "gazetteer_overlay.json"])
+    # Use WorldPersistence.world_path() to respect test environment isolation
+    overlay_path = Path.join(ChatBot.Learning.WorldPersistence.world_path(world_id), "gazetteer_overlay.json")
 
     if File.exists?(overlay_path) do
       try do

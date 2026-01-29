@@ -962,6 +962,35 @@
                           <.icon name="hero-queue-list" class="size-3" />
                           <span>Q: {status.message_queue_len || 0}</span>
                         </div>
+                        <!-- Utilization indicator -->
+                        <%= case Map.get(status, :utilization_status, :normal) do %>
+                          <% :idle -> %>
+                            <.badge variant={:warning} size={:xs}>
+                              <.icon name="hero-pause" class="size-2.5 mr-0.5" />
+                              Idle
+                            </.badge>
+                          <% :never_used -> %>
+                            <.badge variant={:info} size={:xs}>
+                              <.icon name="hero-question-mark-circle" class="size-2.5 mr-0.5" />
+                              Never Used
+                            </.badge>
+                          <% :high_cost -> %>
+                            <.badge variant={:error} size={:xs}>
+                              <.icon name="hero-exclamation-triangle" class="size-2.5 mr-0.5" />
+                              High Cost
+                            </.badge>
+                          <% :low_usage -> %>
+                            <span class="text-base-content/40 flex items-center gap-0.5">
+                              <.icon name="hero-arrow-trending-down" class="size-2.5" />
+                              {format_rate(Map.get(status, :rate_per_minute, 0))}
+                            </span>
+                          <% _ -> %>
+                            <%= if Map.get(status, :rate_per_minute, 0) > 0 do %>
+                              <span class="text-success/70 font-mono">
+                                {format_rate(Map.get(status, :rate_per_minute, 0))}
+                              </span>
+                            <% end %>
+                        <% end %>
                       </div>
 
                       <%= if status.stats && is_map(status.stats) && map_size(status.stats) > 0 do %>

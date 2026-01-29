@@ -148,6 +148,21 @@ defmodule ChatBotWeb.AppShell do
               />
             </ul>
           </div>
+
+          <!-- Admin Section -->
+          <div>
+            <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-2">
+              Admin
+            </div>
+            <ul class="space-y-1">
+              <.nav_item
+                href={~p"/knowledge-review"}
+                icon="hero-academic-cap"
+                label="Knowledge Review"
+                active={String.starts_with?(@current_path, "/knowledge-review")}
+              />
+            </ul>
+          </div>
         </nav>
         
     <!-- Status Footer -->

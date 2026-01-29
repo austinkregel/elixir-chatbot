@@ -29,6 +29,7 @@ defmodule ChatBotWeb.Router do
       live "/explorer", ExplorerLive
       live "/dashboard", DashboardLive
       live "/settings", SettingsLive
+      live "/knowledge-review", Admin.KnowledgeReviewLive
     end
 
     # Legacy route redirects

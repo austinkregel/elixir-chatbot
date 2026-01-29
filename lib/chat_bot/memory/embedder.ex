@@ -36,8 +36,15 @@ defmodule ChatBot.Memory.Embedder do
   # Client API
   # ============================================================================
 
+  @doc """
+  Starts the Embedder GenServer.
+
+  ## Options
+    - `:name` - The name to register under (default: `#{__MODULE__}`)
+  """
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   @doc """
@@ -85,12 +92,9 @@ defmodule ChatBot.Memory.Embedder do
         {:ok, embedding} ->
           {:ok, embedding}
 
-        {:error, :not_ready} ->
-          # Fall back to global embedder
-          embed(text)
-
-        {:error, :no_training_data} ->
-          # Fall back to global embedder
+        {:error, reason}
+        when reason in [:no_training_data, :vocabulary_building, :not_initialized, :table_not_ready] ->
+          # Fall back to global embedder for any "not ready" state
           embed(text)
 
         error ->
