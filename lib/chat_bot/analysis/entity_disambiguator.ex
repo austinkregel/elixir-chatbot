@@ -258,11 +258,19 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
   
   Fallback: TypeInferrer's learned patterns when no intent context or
   when TypeInferrer returns a type that matches expected types.
+
+  Requires world_id in context for proper data isolation.
   """
   def infer_type_with_type_inferrer(entity, pos_tagged, context) do
     entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
     original_type = Map.get(entity, :entity_type) || ""
     intent = Map.get(context, :intent, "")
+    world_id = Map.get(context, :world_id)
+
+    # Require world_id for data isolation
+    unless world_id do
+      raise ArgumentError, "world_id is required in context for infer_type_with_type_inferrer/3"
+    end
 
     # Get expected entity types from IntentRegistry
     expected_types = IntentRegistry.expected_entity_types(intent)
@@ -279,9 +287,9 @@ defmodule ChatBot.Analysis.EntityDisambiguator do
           {[], []}
       end
 
-    # Use TypeInferrer to infer the type from context patterns
+    # Use TypeInferrer to infer the type from context patterns (world-scoped)
     {inferred_type, type_confidence} =
-      TypeInferrer.infer_type(entity_value, context_tokens, context_tags)
+      TypeInferrer.infer_type(entity_value, context_tokens, context_tags, world_id)
 
     # Determine final type based on intent context
     # Intent context takes priority over TypeInferrer for ambiguous cases

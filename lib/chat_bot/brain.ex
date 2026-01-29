@@ -1344,17 +1344,25 @@ defmodule ChatBot.Brain do
     })
 
     # Build context for storage (include speech_act for response optionality)
+    speech_act_info =
+      if(best_analysis, do: extract_speech_act_info(best_analysis.speech_act), else: nil)
+
     context = %{
       intent: intent,
       entities: entities,
       slots: extract_filled_slots(slots_info),
       missing_slots: missing_slots,
-      speech_act:
-        if(best_analysis, do: extract_speech_act_info(best_analysis.speech_act), else: nil)
+      speech_act: speech_act_info
     }
 
-    # Learn from extraction
-    ChatBot.Learner.learn_from_classical_extraction(persona.name, entities, input)
+    # Learn from conversation - extracts both entities AND facts from assertive statements
+    analysis_for_learning = %{
+      entities: entities,
+      speech_act: speech_act_info,
+      intent: intent
+    }
+
+    ChatBot.Learner.learn_from_conversation(persona.name, input, analysis_for_learning)
 
     # Determine response type (domain vs smalltalk)
     {response, response_type} =

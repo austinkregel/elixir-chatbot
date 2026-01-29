@@ -44,15 +44,10 @@ defmodule ChatBot.Analysis.LearningStoreTest do
 
   describe "update_params/3" do
     test "updates component parameters" do
-      _original = LearningStore.get_params("chunker")
-
       :ok = LearningStore.update_params("chunker", %{"max_chunk_words" => 60})
 
       {:ok, updated} = LearningStore.get_params("chunker")
       assert updated["max_chunk_words"] == 60
-
-      # Restore original
-      :ok = LearningStore.update_params("chunker", %{"max_chunk_words" => 50})
     end
 
     test "sets learned_at timestamp" do
@@ -60,9 +55,6 @@ defmodule ChatBot.Analysis.LearningStoreTest do
 
       {:ok, params} = LearningStore.get_params("speech_acts")
       assert params["learned_at"] != nil
-
-      # Restore
-      :ok = LearningStore.update_params("speech_acts", %{"confidence_threshold" => 0.3})
     end
   end
 
@@ -90,13 +82,8 @@ defmodule ChatBot.Analysis.LearningStoreTest do
       {:ok, params} = LearningStore.get_params("discourse")
       assert "test" in params["bot_names"]
 
-      # Cleanup
+      # Unlock for other tests (test isolation via config means we don't pollute production)
       :ok = LearningStore.unlock_params("discourse")
-
-      :ok =
-        LearningStore.update_params("discourse", %{
-          "bot_names" => ["companion", "bot", "assistant", "ai", "echo"]
-        })
     end
   end
 

@@ -359,11 +359,13 @@ defmodule ChatBot.Learning.TrainingWorldTest do
   end
 
   describe "TypeInferrer" do
+    @test_world_id "test_type_inferrer_world"
+
     test "learns and infers from context" do
       # Initialize the type inferrer
       TypeInferrer.init()
 
-      # Learn from a known entity context
+      # Learn from a known entity context (world-scoped)
       context_tokens = [
         %{text: "Captain"},
         %{text: "Marcus"},
@@ -373,11 +375,11 @@ defmodule ChatBot.Learning.TrainingWorldTest do
 
       context_tags = ["PROPN", "PROPN", "VERB", "ADP"]
 
-      TypeInferrer.learn_from_known_entity("person", context_tokens, context_tags)
+      TypeInferrer.learn_from_known_entity("person", context_tokens, context_tags, @test_world_id)
 
-      # Now try to infer from similar context
+      # Now try to infer from similar context (world-scoped)
       {inferred_type, confidence} =
-        TypeInferrer.infer_type("Unknown", context_tokens, context_tags)
+        TypeInferrer.infer_type("Unknown", context_tokens, context_tags, @test_world_id)
 
       # Should have some inference (may not be person depending on limited training)
       assert is_binary(inferred_type)
@@ -388,8 +390,8 @@ defmodule ChatBot.Learning.TrainingWorldTest do
       TypeInferrer.init()
       TypeInferrer.clear()
 
-      # Learn something
-      TypeInferrer.learn_from_known_entity("location", [%{text: "in"}], ["ADP"])
+      # Learn something (world-scoped)
+      TypeInferrer.learn_from_known_entity("location", [%{text: "in"}], ["ADP"], @test_world_id)
 
       # Export
       exported = TypeInferrer.export_learned_data()
@@ -399,8 +401,8 @@ defmodule ChatBot.Learning.TrainingWorldTest do
       TypeInferrer.clear()
       TypeInferrer.import_learned_data(exported)
 
-      # Should have patterns again
-      patterns = TypeInferrer.get_patterns_for_type("location")
+      # Should have patterns again (world-scoped)
+      patterns = TypeInferrer.get_patterns_for_type("location", @test_world_id)
       assert map_size(patterns) > 0
     end
   end

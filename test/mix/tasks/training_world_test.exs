@@ -1,8 +1,6 @@
 defmodule Mix.Tasks.TrainingWorldTest do
   use ExUnit.Case, async: false
 
-  import ExUnit.CaptureIO
-
   @moduletag :mix_task
   @moduletag timeout: 30_000
 
@@ -14,6 +12,13 @@ defmodule Mix.Tasks.TrainingWorldTest do
 
     # Setup world sandbox for automatic cleanup
     setup_world_sandbox()
+
+    # Capture Mix.shell output to prevent test pollution
+    Mix.shell(Mix.Shell.Process)
+
+    on_exit(fn ->
+      Mix.shell(Mix.Shell.IO)
+    end)
 
     :ok
   end

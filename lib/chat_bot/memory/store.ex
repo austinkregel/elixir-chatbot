@@ -210,7 +210,9 @@ defmodule ChatBot.Memory.Store do
 
   @impl true
   def init(opts) do
-    persistence_path = Keyword.get(opts, :persistence_path, @default_persistence_path)
+    # Check opts first, then config, then default
+    config_path = Application.get_env(:chat_bot, :memory_store_path, @default_persistence_path)
+    persistence_path = Keyword.get(opts, :persistence_path, config_path)
 
     # Create ETS tables for vector indices
     episode_index = VectorIndex.new(:memory_episode_index)

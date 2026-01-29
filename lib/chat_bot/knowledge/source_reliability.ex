@@ -30,7 +30,11 @@ defmodule ChatBot.Knowledge.SourceReliability do
   alias ChatBot.Knowledge.Types.{SourceInfo, SourceProfile}
 
   @bootstrap_file "priv/knowledge/source_reliability.json"
-  @persistence_file "priv/data/source_reliability_learned.term"
+  @default_persistence_file "priv/data/source_reliability_learned.term"
+
+  defp persistence_file do
+    Application.get_env(:chat_bot, :source_reliability_path, @default_persistence_file)
+  end
 
   # ============================================================================
   # Client API
@@ -350,7 +354,7 @@ defmodule ChatBot.Knowledge.SourceReliability do
   defp parse_trust_tier(_), do: :neutral
 
   defp load_learned_data(state) do
-    persistence_path = Path.join(File.cwd!(), @persistence_file)
+    persistence_path = Path.join(File.cwd!(), persistence_file())
 
     if File.exists?(persistence_path) do
       case File.read(persistence_path) do
@@ -381,7 +385,7 @@ defmodule ChatBot.Knowledge.SourceReliability do
   end
 
   defp persist_learned_data(state) do
-    persistence_path = Path.join(File.cwd!(), @persistence_file)
+    persistence_path = Path.join(File.cwd!(), persistence_file())
 
     # Only persist sources with admin decisions (learned adjustments)
     learned_sources =

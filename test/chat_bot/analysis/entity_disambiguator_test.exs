@@ -4,27 +4,29 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
   alias ChatBot.Analysis.EntityDisambiguator
   alias ChatBot.Learning.TypeInferrer
 
+  @test_world_id "test_disambiguator_world"
+
   setup do
     # Initialize TypeInferrer ETS tables
     TypeInferrer.init()
 
     # Teach TypeInferrer about introduction patterns for "person" type
     # Pattern: PRON + VERB + PROPN (e.g., "I am John")
-    TypeInferrer.learn_from_known_entity("person", ["I", "am", "John"], ["PRON", "VERB", "PROPN"])
+    TypeInferrer.learn_from_known_entity("person", ["I", "am", "John"], ["PRON", "VERB", "PROPN"], @test_world_id)
 
     # Teach about location patterns
     # Pattern: ADP + PROPN (e.g., "in Austin")
-    TypeInferrer.learn_from_known_entity("location", ["in", "Austin"], ["ADP", "PROPN"])
+    TypeInferrer.learn_from_known_entity("location", ["in", "Austin"], ["ADP", "PROPN"], @test_world_id)
 
     on_exit(fn ->
       TypeInferrer.clear()
     end)
 
-    :ok
+    %{world_id: @test_world_id}
   end
 
   describe "disambiguate/3" do
-    test "returns entities unchanged when only one type" do
+    test "returns entities unchanged when only one type", %{world_id: world_id} do
       entities = [
         %{entity_type: "person", value: "John", match: "John", start_pos: 0, end_pos: 4}
       ]
@@ -34,7 +36,8 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
       # Provide proper introduction context for "I am John" pattern
       context = %{
         discourse: %{indicators: ["self_referential"]},
-        speech_act: %{category: :expressive, sub_type: :greeting}
+        speech_act: %{category: :expressive, sub_type: :greeting},
+        world_id: world_id
       }
 
       result = EntityDisambiguator.disambiguate(entities, pos_tagged, context)
@@ -43,7 +46,7 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
       assert hd(result).entity_type == "person"
     end
 
-    test "disambiguates entity with multiple types" do
+    test "disambiguates entity with multiple types", %{world_id: world_id} do
       person_info = %{entity_type: "person", value: "Austin"}
       location_info = %{entity_type: "location", value: "Austin"}
 
@@ -61,7 +64,8 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
 
       context = %{
         discourse: %{indicators: ["self_referential"]},
-        speech_act: %{category: :expressive, sub_type: :greeting}
+        speech_act: %{category: :expressive, sub_type: :greeting},
+        world_id: world_id
       }
 
       result = EntityDisambiguator.disambiguate(entities, pos_tagged, context)
@@ -71,7 +75,7 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
       assert hd(result).entity_type == "person"
     end
 
-    test "prefers location for weather intents" do
+    test "prefers location for weather intents", %{world_id: world_id} do
       person_info = %{entity_type: "person", value: "Austin"}
       location_info = %{entity_type: "location", value: "Austin"}
 
@@ -97,7 +101,8 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
       context = %{
         discourse: %{indicators: []},
         speech_act: %{category: :directive, sub_type: :question},
-        intent: "weather.query"
+        intent: "weather.query",
+        world_id: world_id
       }
 
       result = EntityDisambiguator.disambiguate(entities, pos_tagged, context)
@@ -107,7 +112,7 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
       assert hd(result).entity_type == "location"
     end
 
-    test "prefers music-artist for music intents" do
+    test "prefers music-artist for music intents", %{world_id: world_id} do
       person_info = %{entity_type: "person", value: "Prince"}
       artist_info = %{entity_type: "music-artist", value: "Prince"}
 
@@ -126,7 +131,8 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
       context = %{
         discourse: %{indicators: []},
         speech_act: %{category: :directive, sub_type: :command},
-        intent: "music.play"
+        intent: "music.play",
+        world_id: world_id
       }
 
       result = EntityDisambiguator.disambiguate(entities, pos_tagged, context)
@@ -136,21 +142,22 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
       assert hd(result).entity_type == "music-artist"
     end
 
-    test "handles empty entities list" do
-      result = EntityDisambiguator.disambiguate([], [], %{})
+    test "handles empty entities list", %{world_id: world_id} do
+      result = EntityDisambiguator.disambiguate([], [], %{world_id: world_id})
       assert result == []
     end
   end
 
   describe "disambiguate_single/3" do
-    test "preserves entity when no types field" do
+    test "preserves entity when no types field", %{world_id: world_id} do
       entity = %{entity_type: "person", value: "John"}
       pos_tagged = [{"I", "PRON"}, {"am", "VERB"}, {"John", "PROPN"}]
 
       # Provide introduction context so the person type is preserved
       context = %{
         discourse: %{indicators: ["self_referential"]},
-        speech_act: %{category: :expressive, sub_type: :greeting}
+        speech_act: %{category: :expressive, sub_type: :greeting},
+        world_id: world_id
       }
 
       result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
@@ -158,7 +165,7 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
       assert result.entity_type == "person"
     end
 
-    test "selects best type and removes types field" do
+    test "selects best type and removes types field", %{world_id: world_id} do
       person_info = %{entity_type: "person", value: "Austin"}
       location_info = %{entity_type: "location", value: "Austin"}
 
@@ -172,7 +179,8 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
 
       context = %{
         discourse: %{indicators: ["self_referential"]},
-        speech_act: %{category: :expressive, sub_type: :greeting}
+        speech_act: %{category: :expressive, sub_type: :greeting},
+        world_id: world_id
       }
 
       result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
@@ -189,13 +197,14 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
   end
 
   describe "introduction_confidence/3" do
-    test "high confidence for PRON+VERB pattern with self-referential discourse" do
+    test "high confidence for PRON+VERB pattern with self-referential discourse", %{world_id: world_id} do
       pos_tagged = [{"I", "PRON"}, {"am", "VERB"}, {"Austin", "PROPN"}]
       entity_position = 2
 
       context = %{
         discourse: %{indicators: ["self_referential"]},
-        speech_act: %{category: :expressive, sub_type: :greeting}
+        speech_act: %{category: :expressive, sub_type: :greeting},
+        world_id: world_id
       }
 
       confidence =
@@ -205,13 +214,14 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
       assert confidence >= 0.8
     end
 
-    test "medium confidence with only PRON+VERB pattern" do
+    test "medium confidence with only PRON+VERB pattern", %{world_id: world_id} do
       pos_tagged = [{"I", "PRON"}, {"am", "VERB"}, {"Austin", "PROPN"}]
       entity_position = 2
 
       context = %{
         discourse: %{indicators: []},
-        speech_act: nil
+        speech_act: nil,
+        world_id: world_id
       }
 
       confidence =
@@ -222,13 +232,14 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
       assert confidence < 0.8
     end
 
-    test "low confidence without introduction patterns" do
+    test "low confidence without introduction patterns", %{world_id: world_id} do
       pos_tagged = [{"The", "DET"}, {"weather", "NOUN"}, {"in", "ADP"}, {"Austin", "PROPN"}]
       entity_position = 3
 
       context = %{
         discourse: %{indicators: []},
-        speech_act: nil
+        speech_act: nil,
+        world_id: world_id
       }
 
       confidence =
@@ -240,7 +251,7 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
   end
 
   describe "context detection" do
-    test "detects self-referential from discourse indicators" do
+    test "detects self-referential from discourse indicators", %{world_id: world_id} do
       person_info = %{entity_type: "person", value: "Test"}
       location_info = %{entity_type: "location", value: "Test"}
 
@@ -255,7 +266,8 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
       # With self_referential indicator
       context_with = %{
         discourse: %{indicators: ["self_referential"]},
-        speech_act: %{category: :expressive, sub_type: :greeting}
+        speech_act: %{category: :expressive, sub_type: :greeting},
+        world_id: world_id
       }
 
       result_with = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context_with)
@@ -263,7 +275,8 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
       # Without self_referential indicator
       context_without = %{
         discourse: %{indicators: []},
-        speech_act: nil
+        speech_act: nil,
+        world_id: world_id
       }
 
       _result_without =
@@ -274,7 +287,7 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
       assert result_with.entity_type == "person"
     end
 
-    test "handles nil context values" do
+    test "handles nil context values", %{world_id: world_id} do
       entity = %{
         value: "Test",
         types: [%{entity_type: "a"}, %{entity_type: "b"}],
@@ -285,7 +298,8 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
       result =
         EntityDisambiguator.disambiguate_single(entity, [], %{
           discourse: nil,
-          speech_act: nil
+          speech_act: nil,
+          world_id: world_id
         })
 
       assert result.entity_type in ["a", "b"]
@@ -293,7 +307,7 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
   end
 
   describe "POS pattern detection" do
-    test "detects PRON VERB pattern before entity" do
+    test "detects PRON VERB pattern before entity", %{world_id: world_id} do
       pos_tagged = [{"I", "PRON"}, {"am", "VERB"}, {"Austin", "PROPN"}]
       entity_position = 2
 
@@ -301,21 +315,23 @@ defmodule ChatBot.Analysis.EntityDisambiguatorTest do
       confidence =
         EntityDisambiguator.introduction_confidence(pos_tagged, entity_position, %{
           discourse: %{indicators: []},
-          speech_act: nil
+          speech_act: nil,
+          world_id: world_id
         })
 
       # PRON+VERB pattern should contribute to confidence
       assert confidence >= 0.4
     end
 
-    test "does not detect pattern when entity is first" do
+    test "does not detect pattern when entity is first", %{world_id: world_id} do
       pos_tagged = [{"Austin", "PROPN"}, {"is", "VERB"}, {"nice", "ADJ"}]
       entity_position = 0
 
       confidence =
         EntityDisambiguator.introduction_confidence(pos_tagged, entity_position, %{
           discourse: %{indicators: []},
-          speech_act: nil
+          speech_act: nil,
+          world_id: world_id
         })
 
       # No preceding pattern possible

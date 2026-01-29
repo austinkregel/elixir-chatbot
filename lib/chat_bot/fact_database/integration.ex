@@ -200,8 +200,9 @@ defmodule ChatBot.FactDatabase.Integration do
   # Private Functions
 
   defp store_learned_fact(%Fact{} = fact) do
-    # Store learned facts in a separate file
-    learned_file = Path.join([File.cwd!(), "data/facts/learned.json"])
+    # Store learned facts in a separate file (configurable for test isolation)
+    default_path = Path.join([File.cwd!(), "data/facts/learned.json"])
+    learned_file = Application.get_env(:chat_bot, :learned_facts_path, default_path)
 
     existing_facts =
       if File.exists?(learned_file) do

@@ -33,7 +33,11 @@ defmodule ChatBot.Knowledge.ReviewQueue do
   alias ChatBot.Telemetry
 
   @ets_table :knowledge_review_queue
-  @persistence_path "priv/data/review_queue.term"
+  @default_persistence_path "priv/data/review_queue.term"
+
+  defp persistence_path do
+    Application.get_env(:chat_bot, :review_queue_path, @default_persistence_path)
+  end
 
   # ============================================================================
   # Client API
@@ -723,7 +727,7 @@ defmodule ChatBot.Knowledge.ReviewQueue do
   end
 
   defp load_from_disk(state) do
-    path = Path.join(File.cwd!(), @persistence_path)
+    path = Path.join(File.cwd!(), persistence_path())
 
     if File.exists?(path) do
       case File.read(path) do
@@ -757,7 +761,7 @@ defmodule ChatBot.Knowledge.ReviewQueue do
   end
 
   defp persist_to_disk(state) do
-    path = Path.join(File.cwd!(), @persistence_path)
+    path = Path.join(File.cwd!(), persistence_path())
 
     candidates = :ets.tab2list(@ets_table)
 

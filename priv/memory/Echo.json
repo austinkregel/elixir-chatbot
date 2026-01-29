@@ -498,5 +498,45 @@
     ],
     "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, my name is Austin Kregel. I live in Owosso, Michigan. I work at Cars.com. Can you tell me what their latest stock price was?",
     "timestamp": 1769718913779
+  },
+  {
+    "id": "49a14ca48d3d7c25",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 1 facts from: Paris is the capital of France",
+    "timestamp": 1769730360965
+  },
+  {
+    "id": "ed1e8bb382dcdb20",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am from Austin",
+    "timestamp": 1769730371986
+  },
+  {
+    "id": "9fd239abc0375f7b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What is the population of Tokyo?",
+    "timestamp": 1769730371991
+  },
+  {
+    "id": "06a75b47d8ced999",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 1 facts from: Mount Everest is the tallest mountain in the world",
+    "timestamp": 1769730371996
   }
 ]

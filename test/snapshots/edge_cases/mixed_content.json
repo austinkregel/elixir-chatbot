@@ -36,7 +36,7 @@
       "index": 2,
       "text": "Turn on the lights.",
       "entities": [],
-      "response_strategy": "can_respond",
+      "response_strategy": "needs_clarification",
       "detected_intent": "smarthome.lights.switch.on",
       "speech_act_category": "directive",
       "speech_act_type": "command",
@@ -44,7 +44,9 @@
       "discourse_addressee": "bot",
       "discourse_self_referential": "false",
       "slots_filled": [],
-      "slots_missing": []
+      "slots_missing": [
+        "action"
+      ]
     }
   ],
   "overall_strategy": "partial_response_with_clarification",

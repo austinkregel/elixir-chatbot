@@ -22,6 +22,11 @@ erl_crash.dump
 # Temporary files, for example, from tests.
 /tmp/
 
+# Test-generated memory and knowledge files
+/test/memory/
+/test/knowledge/
+
+
 # Ignore package tarball (built via "mix hex.build").
 chat_bot-*.tar
 

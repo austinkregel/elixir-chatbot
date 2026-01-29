@@ -38,19 +38,25 @@ defmodule ChatBot.Learning.TypeInferrer do
 
   Uses learned patterns from previous observations. Returns
   {inferred_type, confidence} where confidence is 0.0 to 1.0.
+
+  Requires world_id to ensure proper data isolation.
   """
-  def infer_type(value, context_tokens, context_tags, world_id \\ nil) do
+  def infer_type(value, context_tokens, context_tags, world_id) when is_binary(world_id) do
     # Build context features from POS tags
     context_features = build_context_features(context_tokens, context_tags)
 
-    # Check learned patterns
-    pattern_match = match_learned_patterns(context_features)
+    # Check learned patterns (world-scoped)
+    pattern_match = match_learned_patterns(context_features, world_id)
 
-    # Check co-occurrence with known entities
+    # Check co-occurrence with known entities (world-scoped)
     cooccurrence_match = match_cooccurrences(context_tokens, world_id)
 
     # Combine evidence
     combine_evidence(value, pattern_match, cooccurrence_match)
+  end
+
+  def infer_type(_value, _context_tokens, _context_tags, nil) do
+    raise ArgumentError, "world_id is required for infer_type/4 to ensure data isolation"
   end
 
   @doc """
@@ -58,37 +64,46 @@ defmodule ChatBot.Learning.TypeInferrer do
 
   Call this when you see a known entity in context - it will
   learn to associate that context pattern with the entity type.
+
+  Requires world_id to ensure proper data isolation.
   """
-  def learn_from_known_entity(entity_type, context_tokens, context_tags, world_id \\ nil) do
+  def learn_from_known_entity(entity_type, context_tokens, context_tags, world_id)
+      when is_binary(world_id) do
     # Extract context features
     context_features = build_context_features(context_tokens, context_tags)
 
-    # Update pattern counts
-    update_pattern_counts(entity_type, context_features)
+    # Update pattern counts (world-scoped)
+    update_pattern_counts(entity_type, context_features, world_id)
 
-    # Learn co-occurrence with other entities in context
+    # Learn co-occurrence with other entities in context (world-scoped)
     learn_cooccurrences(entity_type, context_tokens, world_id)
 
     # Emit learning event
-    if world_id do
-      WorldManager.record_event(world_id, :context_pattern_learned, %{
-        entity_type: entity_type,
-        features: context_features
-      })
-    end
+    WorldManager.record_event(world_id, :context_pattern_learned, %{
+      entity_type: entity_type,
+      features: context_features
+    })
 
     :ok
+  end
+
+  def learn_from_known_entity(_entity_type, _context_tokens, _context_tags, nil) do
+    raise ArgumentError, "world_id is required for learn_from_known_entity/4 to ensure data isolation"
   end
 
   @doc """
   Gets the current learned patterns for an entity type.
   Useful for debugging and introspection.
+
+  Requires world_id to ensure proper data isolation.
   """
-  def get_patterns_for_type(entity_type) do
+  def get_patterns_for_type(entity_type, world_id) when is_binary(world_id) do
+    key = {world_id, entity_type}
+
     try do
-      :ets.lookup(@ets_patterns, entity_type)
+      :ets.lookup(@ets_patterns, key)
       |> case do
-        [{^entity_type, patterns}] -> patterns
+        [{^key, patterns}] -> patterns
         [] -> %{}
       end
     rescue
@@ -96,31 +111,50 @@ defmodule ChatBot.Learning.TypeInferrer do
     end
   end
 
+  def get_patterns_for_type(_entity_type, nil) do
+    raise ArgumentError, "world_id is required for get_patterns_for_type/2 to ensure data isolation"
+  end
+
   @doc """
-  Gets all learned entity types.
+  Gets all learned entity types for a world.
+
+  Requires world_id to ensure proper data isolation.
   """
-  def get_learned_types do
+  def get_learned_types(world_id) when is_binary(world_id) do
     try do
       :ets.tab2list(@ets_patterns)
-      |> Enum.map(fn {type, _patterns} -> type end)
+      |> Enum.filter(fn {{w, _type}, _patterns} -> w == world_id end)
+      |> Enum.map(fn {{_world, type}, _patterns} -> type end)
     rescue
       ArgumentError -> []
     end
   end
 
+  def get_learned_types(nil) do
+    raise ArgumentError, "world_id is required for get_learned_types/1 to ensure data isolation"
+  end
+
   @doc """
   Gets co-occurrence statistics for an entity type.
+
+  Requires world_id to ensure proper data isolation.
   """
-  def get_cooccurrences(entity_type) do
+  def get_cooccurrences(entity_type, world_id) when is_binary(world_id) do
+    key = {world_id, entity_type}
+
     try do
-      :ets.lookup(@ets_cooccurrence, entity_type)
+      :ets.lookup(@ets_cooccurrence, key)
       |> case do
-        [{^entity_type, cooccurrences}] -> cooccurrences
+        [{^key, cooccurrences}] -> cooccurrences
         [] -> %{}
       end
     rescue
       ArgumentError -> %{}
     end
+  end
+
+  def get_cooccurrences(_entity_type, nil) do
+    raise ArgumentError, "world_id is required for get_cooccurrences/2 to ensure data isolation"
   end
 
   @doc """
@@ -269,11 +303,12 @@ defmodule ChatBot.Learning.TypeInferrer do
     end)
   end
 
-  defp match_learned_patterns(context_features) do
-    # Score each known entity type against the features
+  defp match_learned_patterns(context_features, world_id) do
+    # Score each known entity type against the features (world-scoped)
     try do
       :ets.tab2list(@ets_patterns)
-      |> Enum.map(fn {entity_type, patterns} ->
+      |> Enum.filter(fn {{w, _type}, _patterns} -> w == world_id end)
+      |> Enum.map(fn {{_world, entity_type}, patterns} ->
         score = calculate_pattern_score(context_features, patterns)
         {entity_type, score}
       end)
@@ -313,16 +348,11 @@ defmodule ChatBot.Learning.TypeInferrer do
         if is_map(token), do: Map.get(token, :text, ""), else: to_string(token)
       end)
 
-    # Look up each token in gazetteer
+    # Look up each token in gazetteer (world-scoped)
     known_entities =
       token_texts
       |> Enum.flat_map(fn text ->
-        types =
-          if world_id do
-            Gazetteer.lookup_all_types(text, world_id)
-          else
-            Gazetteer.lookup_all_types(text)
-          end
+        types = Gazetteer.lookup_all_types(text, world_id)
 
         Enum.map(types, fn info ->
           Map.get(info, :entity_type) || Map.get(info, :type)
@@ -331,13 +361,14 @@ defmodule ChatBot.Learning.TypeInferrer do
       |> Enum.filter(&(&1 != nil))
       |> Enum.frequencies()
 
-    # Score based on co-occurrence patterns
+    # Score based on co-occurrence patterns (world-scoped)
     if map_size(known_entities) == 0 do
       []
     else
       try do
         :ets.tab2list(@ets_cooccurrence)
-        |> Enum.map(fn {entity_type, cooc_counts} ->
+        |> Enum.filter(fn {{w, _type}, _cooc_counts} -> w == world_id end)
+        |> Enum.map(fn {{_world, entity_type}, cooc_counts} ->
           # Score based on how often this type co-occurs with found types
           score =
             Enum.reduce(known_entities, 0.0, fn {found_type, count}, acc ->
@@ -414,35 +445,37 @@ defmodule ChatBot.Learning.TypeInferrer do
     min(base_confidence + margin_bonus + evidence_bonus, 1.0)
   end
 
-  defp update_pattern_counts(entity_type, context_features) do
+  defp update_pattern_counts(entity_type, context_features, world_id) do
+    key = {world_id, entity_type}
+
     try do
       current =
-        case :ets.lookup(@ets_patterns, entity_type) do
-          [{^entity_type, patterns}] -> patterns
+        case :ets.lookup(@ets_patterns, key) do
+          [{^key, patterns}] -> patterns
           [] -> %{_total: 0}
         end
 
       # Increment counts for each feature
       updated =
         Enum.reduce(context_features, current, fn feature, acc ->
-          key = feature_to_key(feature)
-          Map.update(acc, key, 1, &(&1 + 1))
+          feature_key = feature_to_key(feature)
+          Map.update(acc, feature_key, 1, &(&1 + 1))
         end)
 
       # Increment total
       updated = Map.update(updated, :_total, 1, &(&1 + 1))
 
-      :ets.insert(@ets_patterns, {entity_type, updated})
+      :ets.insert(@ets_patterns, {key, updated})
       :ok
     rescue
       ArgumentError ->
         create_tables()
-        update_pattern_counts(entity_type, context_features)
+        update_pattern_counts(entity_type, context_features, world_id)
     end
   end
 
   defp learn_cooccurrences(entity_type, context_tokens, world_id) do
-    # Find other known entities in context
+    # Find other known entities in context (world-scoped)
     token_texts =
       Enum.map(context_tokens, fn token ->
         if is_map(token), do: Map.get(token, :text, ""), else: to_string(token)
@@ -451,12 +484,7 @@ defmodule ChatBot.Learning.TypeInferrer do
     other_types =
       token_texts
       |> Enum.flat_map(fn text ->
-        types =
-          if world_id do
-            Gazetteer.lookup_all_types(text, world_id)
-          else
-            Gazetteer.lookup_all_types(text)
-          end
+        types = Gazetteer.lookup_all_types(text, world_id)
 
         Enum.map(types, fn info ->
           Map.get(info, :entity_type) || Map.get(info, :type)
@@ -466,10 +494,12 @@ defmodule ChatBot.Learning.TypeInferrer do
       |> Enum.frequencies()
 
     if map_size(other_types) > 0 do
+      key = {world_id, entity_type}
+
       try do
         current =
-          case :ets.lookup(@ets_cooccurrence, entity_type) do
-            [{^entity_type, coocs}] -> coocs
+          case :ets.lookup(@ets_cooccurrence, key) do
+            [{^key, coocs}] -> coocs
             [] -> %{}
           end
 
@@ -478,7 +508,7 @@ defmodule ChatBot.Learning.TypeInferrer do
             Map.update(acc, other_type, count, &(&1 + count))
           end)
 
-        :ets.insert(@ets_cooccurrence, {entity_type, updated})
+        :ets.insert(@ets_cooccurrence, {key, updated})
       rescue
         ArgumentError ->
           create_tables()

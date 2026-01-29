@@ -20,4 +20,10 @@ config :chat_bot,
   knowledge_dir: "test/knowledge",
   memory_dir: "test/memory",
   # Enable test world sandbox for isolated test worlds
-  test_world_sandbox: true
+  test_world_sandbox: true,
+  # Isolated learned data paths to prevent test pollution
+  learning_params_path: "test/data/learned_params.json",
+  learned_facts_path: "test/data/learned.json",
+  review_queue_path: "test/data/review_queue.term",
+  source_reliability_path: "test/data/source_reliability_learned.term",
+  memory_store_path: "test/data/memory_store.term"

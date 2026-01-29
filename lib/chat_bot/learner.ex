@@ -115,6 +115,140 @@ defmodule ChatBot.Learner do
     {:ok, extracted_data}
   end
 
+  @doc """
+  Learn from a conversation turn with full analysis context.
+
+  This is the primary entry point for conversational learning. When a user makes
+  an assertive statement (e.g., "Paris is the capital of France"), we extract
+  the claim as a learnable fact.
+
+  ## Parameters
+    - persona_name: The bot persona name
+    - input: The user's input text
+    - analysis: The full analysis result from the Pipeline
+    - opts: Options including :user_id for user-specific learning
+
+  ## Returns
+    - {:ok, %{entities: [...], facts: [...], learned: boolean}}
+  """
+  def learn_from_conversation(persona_name, input, analysis, opts \\ []) do
+    Logger.debug("Learner.learn_from_conversation called", %{
+      persona_name: persona_name,
+      input: input,
+      has_analysis: analysis != nil
+    })
+
+    entities = Map.get(analysis, :entities, [])
+    speech_act = Map.get(analysis, :speech_act, %{})
+
+    # Convert entities to extracted format
+    extracted_entities =
+      Enum.map(entities, fn entity ->
+        %{
+          "name" => get_entity_field(entity, [:value, "value"]),
+          "type" => get_entity_field(entity, [:entity, "entity", :entity_type, "entity_type", :type, "type"]),
+          "properties" => %{},
+          "confidence" => get_entity_field(entity, [:confidence, "confidence"]) || 0.9
+        }
+      end)
+
+    # Extract facts from assertive statements
+    extracted_facts = extract_facts_from_statement(input, entities, speech_act, opts)
+
+    extracted_data = %{
+      "entities" => extracted_entities,
+      "relationships" => [],
+      "facts" => extracted_facts,
+      "context" => input
+    }
+
+    # Process the extracted data (entities, relationships, facts)
+    process_extracted_data(persona_name, extracted_data, input)
+
+    {:ok, %{
+      entities: extracted_entities,
+      facts: extracted_facts,
+      learned: length(extracted_facts) > 0
+    }}
+  end
+
+  # Extract factual claims from assertive statements
+  defp extract_facts_from_statement(input, entities, speech_act, _opts) do
+    category = Map.get(speech_act, :category)
+    sub_type = Map.get(speech_act, :sub_type)
+
+    # Only learn from assertive statements (not questions, commands, etc.)
+    is_assertive = category == :assertive and sub_type == :statement
+
+    # Skip self-referential statements (handled separately by Brain)
+    is_self_referential = is_self_referential_statement?(input)
+
+    # Skip very short or very long statements
+    word_count = input |> String.split(~r/\s+/) |> length()
+    valid_length = word_count >= 3 and word_count <= 30
+
+    if is_assertive and not is_self_referential and valid_length and length(entities) > 0 do
+      # Get the primary entity (highest confidence or first)
+      primary_entity =
+        entities
+        |> Enum.max_by(fn e ->
+          get_entity_field(e, [:confidence, "confidence"]) || 0.5
+        end, fn -> nil end)
+
+      if primary_entity do
+        entity_value = get_entity_field(primary_entity, [:value, "value"]) || ""
+        entity_type = get_entity_field(primary_entity, [:entity, "entity", :entity_type, "entity_type", :type, "type"]) || "unknown"
+
+        # Clean the input as the fact text
+        fact_text = String.trim(input)
+
+        # Calculate confidence based on entity confidence and statement clarity
+        entity_confidence = get_entity_field(primary_entity, [:confidence, "confidence"]) || 0.5
+        fact_confidence = min(entity_confidence * 0.9, 0.85)  # Cap at 0.85 for learned facts
+
+        Logger.debug("Extracted potential fact from conversation", %{
+          entity: entity_value,
+          entity_type: entity_type,
+          fact: String.slice(fact_text, 0, 50),
+          confidence: fact_confidence
+        })
+
+        [
+          %{
+            "entity" => entity_value,
+            "entity_type" => entity_type,
+            "fact" => fact_text,
+            "confidence" => fact_confidence,
+            "source" => "conversation"
+          }
+        ]
+      else
+        []
+      end
+    else
+      []
+    end
+  end
+
+  # Check if a statement is self-referential (about the user)
+  defp is_self_referential_statement?(input) do
+    lower = String.downcase(input)
+
+    # Patterns that indicate the user is talking about themselves
+    self_patterns = [
+      ~r/^i\s+(am|was|have|had|will|would|like|love|hate|work|live|think|feel|want|need)\b/,
+      ~r/^my\s+(name|age|job|work|location|home|favorite|preference)\b/,
+      ~r/^i'm\b/,
+      ~r/^i've\b/,
+      ~r/\bmy\s+name\s+is\b/,
+      ~r/\bi\s+am\s+from\b/,
+      ~r/\bi\s+live\s+in\b/,
+      ~r/\bcall\s+me\b/
+    ]
+
+    Enum.any?(self_patterns, &Regex.match?(&1, lower))
+  end
+
   # Helper to safely get a field from an entity (map or struct)
   defp get_entity_field(entity, keys) when is_list(keys) do
     Enum.find_value(keys, fn key ->

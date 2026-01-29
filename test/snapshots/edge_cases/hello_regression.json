@@ -14,7 +14,7 @@
       "detected_intent": "smalltalk.greetings.hello",
       "speech_act_category": "expressive",
       "speech_act_type": "greeting",
-      "speech_act_confidence": 0.69,
+      "speech_act_confidence": 0.72,
       "discourse_addressee": "bot",
       "discourse_self_referential": "false",
       "slots_filled": [

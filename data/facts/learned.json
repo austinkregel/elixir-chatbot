@@ -4,6 +4,286 @@
   "facts": [
     {
       "category": "learned",
+      "confidence": 0.7,
+      "entity": "Test",
+      "entity_type": "location",
+      "fact": "Test claim",
+      "id": "learned_78ac1f5ed9b07ac4",
+      "learned_at": 1769726743,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Entity3",
+      "entity_type": "location",
+      "fact": "Claim 3",
+      "id": "learned_e0a720bbe4fe2176",
+      "learned_at": 1769726743,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Entity2",
+      "entity_type": "location",
+      "fact": "Claim 2",
+      "id": "learned_16f3a5f56038687f",
+      "learned_at": 1769726743,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Entity1",
+      "entity_type": "location",
+      "fact": "Claim 1",
+      "id": "learned_343e8aeb9771d5bb",
+      "learned_at": 1769726743,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Test",
+      "entity_type": "location",
+      "fact": "Test claim",
+      "id": "learned_a9a7b0da0f115399",
+      "learned_at": 1769726743,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "entity_type": "learned",
+      "fact": "The capital is Paris",
+      "id": "learned_2fbd1c5cfe77f52d",
+      "learned_at": 1769726739,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "France",
+      "entity_type": "location",
+      "fact": "Paris is the capital",
+      "id": "learned_0d45858a79574c5f",
+      "learned_at": 1769726102,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Test",
+      "entity_type": "location",
+      "fact": "Test claim",
+      "id": "learned_e6a7408ae0d3a26a",
+      "learned_at": 1769726102,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Entity5",
+      "entity_type": "location",
+      "fact": "Claim 5",
+      "id": "learned_7edfab6ddb734fdf",
+      "learned_at": 1769726102,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Entity4",
+      "entity_type": "location",
+      "fact": "Claim 4",
+      "id": "learned_6779418de4afffa2",
+      "learned_at": 1769726102,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Entity3",
+      "entity_type": "location",
+      "fact": "Claim 3",
+      "id": "learned_2a69b9013e03f0e5",
+      "learned_at": 1769726102,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Entity2",
+      "entity_type": "location",
+      "fact": "Claim 2",
+      "id": "learned_f4f676228c650fef",
+      "learned_at": 1769726102,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Entity1",
+      "entity_type": "location",
+      "fact": "Claim 1",
+      "id": "learned_0d5c860bc3c4f982",
+      "learned_at": 1769726102,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.8,
+      "entity": "TestAddEntity",
+      "entity_type": "learned",
+      "fact": "is a test entity",
+      "id": "learned_f0e74e6a9fcf3a97",
+      "learned_at": 1769726089,
+      "verification_source": "manual_entry"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.8,
+      "entity": "TestAddEntity",
+      "entity_type": "learned",
+      "fact": "is a test entity",
+      "id": "learned_8a01c136671ddb99",
+      "learned_at": 1769724938,
+      "verification_source": "manual_entry"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Entity5",
+      "entity_type": "location",
+      "fact": "Claim 5",
+      "id": "learned_502a7b4b24baf0b1",
+      "learned_at": 1769724647,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Entity4",
+      "entity_type": "location",
+      "fact": "Claim 4",
+      "id": "learned_ef8fa6b78d4a9272",
+      "learned_at": 1769724647,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Entity3",
+      "entity_type": "location",
+      "fact": "Claim 3",
+      "id": "learned_d13bad879c5311c6",
+      "learned_at": 1769724647,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Entity2",
+      "entity_type": "location",
+      "fact": "Claim 2",
+      "id": "learned_bb350ea6ec744abb",
+      "learned_at": 1769724647,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Entity1",
+      "entity_type": "location",
+      "fact": "Claim 1",
+      "id": "learned_96a9e5c400e80f8b",
+      "learned_at": 1769724647,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "France",
+      "entity_type": "location",
+      "fact": "Paris is the capital",
+      "id": "learned_0a80724ccd4ce4fa",
+      "learned_at": 1769724647,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Test",
+      "entity_type": "location",
+      "fact": "Test claim",
+      "id": "learned_fb62aef9bfcac88f",
+      "learned_at": 1769724647,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Entity3",
+      "entity_type": "location",
+      "fact": "Claim 3",
+      "id": "learned_930228cabbe6bdf5",
+      "learned_at": 1769724547,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Entity2",
+      "entity_type": "location",
+      "fact": "Claim 2",
+      "id": "learned_bf7a77a81388ccde",
+      "learned_at": 1769724547,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Entity1",
+      "entity_type": "location",
+      "fact": "Claim 1",
+      "id": "learned_fc6a50e07797fc11",
+      "learned_at": 1769724547,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Test",
+      "entity_type": "location",
+      "fact": "Test claim",
+      "id": "learned_23a717e7277fa7f4",
+      "learned_at": 1769724547,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Test",
+      "entity_type": "location",
+      "fact": "Test claim",
+      "id": "learned_10fc0da3a8f6602e",
+      "learned_at": 1769724547,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.9,
+      "entity": "france",
+      "entity_type": "learned",
+      "fact": "The capital is Paris",
+      "id": "learned_c7a3196466679adb",
+      "learned_at": 1769724535,
+      "verification_source": "learned_from_conversation"
+    },
+    {
+      "category": "learned",
       "confidence": 0.9,
       "entity": "france",
       "entity_type": "learned",
