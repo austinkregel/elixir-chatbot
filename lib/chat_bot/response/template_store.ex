@@ -5,12 +5,23 @@ defmodule ChatBot.Response.TemplateStore do
   This module:
   - Loads response templates from data/intents/*.json files at startup
   - Loads custom smalltalk responses from data/customSmalltalkResponses_en.json
-  - Builds TF-IDF embeddings for similarity-based template selection
+  - Builds TF-IDF embeddings per-template for similarity-based selection
+  - Evaluates conditions for context-aware template selection
   - Provides slot-aware template matching and substitution
   - Supports enrichment hooks for real-time data integration
 
   Templates are categorized by intent and can include slot placeholders
   like $location, $artist, etc. that are substituted with entity values.
+
+  ## Conditional Template Selection
+
+  Templates can specify conditions that must match for selection:
+  - `has_entity:person` - Entity of type "person" is present
+  - `missing_entity:location` - No location entity
+  - `slot_filled:address` - Slot has a value
+  - `confidence:high` - Confidence >= 0.8
+
+  When multiple templates match, semantic similarity to the query is used for ranking.
   """
 
   use GenServer
@@ -18,9 +29,16 @@ defmodule ChatBot.Response.TemplateStore do
 
   alias ChatBot.Memory.Embedder
   alias ChatBot.Analysis.IntentRegistry
+  alias ChatBot.Response.ConditionEvaluator
 
   @intents_path "data/intents"
   @custom_smalltalk_path "data/customSmalltalkResponses_en.json"
+
+  # Template struct with text, condition, and embedding
+  defmodule Template do
+    @moduledoc false
+    defstruct [:text, :condition, :embedding, :intent]
+  end
 
   # Fallback responses for expressive speech acts when templates aren't available
   @expressive_fallbacks %{
@@ -64,6 +82,65 @@ defmodule ChatBot.Response.TemplateStore do
       [] -> nil
       templates -> Enum.random(templates)
     end
+  end
+
+  @doc """
+  Get the best template for an intent using conditions and semantic ranking.
+
+  This is the main entry point for context-aware template selection:
+  1. Filter templates by conditions that match the context
+  2. Rank matching templates by semantic similarity to the query
+  3. Fall back to cross-intent semantic search if no conditions match
+
+  ## Parameters
+  - `intent` - The classified intent name
+  - `query_text` - The original user query (for semantic ranking)
+  - `context` - Map with entities, filled_slots, missing_slots, confidence, speech_act
+
+  ## Returns
+  - `{:ok, template_text}` - Best matching template
+  - `{:ok, template_text, :fallback}` - Template found via cross-intent fallback
+  - `{:error, :no_template}` - No suitable template found
+  """
+  def get_best_template(intent, query_text, context) do
+    GenServer.call(__MODULE__, {:get_best_template, intent, query_text, context}, 5000)
+  end
+
+  @doc """
+  Get structured templates with conditions for an intent.
+  Returns a list of %Template{} structs.
+  """
+  def get_structured_templates(intent) do
+    GenServer.call(__MODULE__, {:get_structured_templates, intent})
+  end
+
+  @doc """
+  Filter templates by conditions that match the given context.
+  """
+  def filter_by_conditions(templates, context) when is_list(templates) do
+    Enum.filter(templates, fn template ->
+      ConditionEvaluator.evaluate(template.condition, context)
+    end)
+  end
+
+  @doc """
+  Rank templates by semantic similarity to the query.
+  Returns templates sorted by similarity (highest first).
+  """
+  def rank_by_similarity(templates, query_embedding) when is_list(templates) do
+    templates
+    |> Enum.map(fn template ->
+      similarity =
+        if template.embedding do
+          cosine_similarity(query_embedding, template.embedding)
+        else
+          0.0
+        end
+
+      {template, similarity}
+    end)
+    |> Enum.sort_by(fn {_, sim} -> -sim end)
+    |> Enum.map(fn {template, _} -> template end)
   end
 
   @doc """
@@ -171,8 +248,10 @@ defmodule ChatBot.Response.TemplateStore do
      %{
        ready: false,
        templates: %{},
+       structured_templates: %{},
        parameters: %{},
        embeddings: %{},
+       all_template_structs: [],
        loading: true
      }}
   end
@@ -201,6 +280,26 @@ defmodule ChatBot.Response.TemplateStore do
     {:reply, params, state}
   end
 
+  def handle_call({:get_structured_templates, intent}, _from, state) do
+    templates = Map.get(state.structured_templates, intent, [])
+
+    # Also try parent intent if no templates found
+    templates =
+      if templates == [] do
+        parent = get_parent_intent(intent)
+        Map.get(state.structured_templates, parent, [])
+      else
+        templates
+      end
+
+    {:reply, templates, state}
+  end
+
+  def handle_call({:get_best_template, intent, query_text, context}, _from, state) do
+    result = do_get_best_template(intent, query_text, context, state)
+    {:reply, result, state}
+  end
+
   def handle_call({:find_similar, query_text, opts}, _from, state) do
     result = do_find_similar(query_text, opts, state)
     {:reply, result, state}
@@ -215,6 +314,7 @@ defmodule ChatBot.Response.TemplateStore do
     stats = %{
       intent_count: map_size(state.templates),
       template_count: state.templates |> Map.values() |> List.flatten() |> length(),
+      structured_template_count: length(state.all_template_structs),
       with_embeddings: map_size(state.embeddings),
       ready: state.ready
     }
@@ -222,11 +322,82 @@ defmodule ChatBot.Response.TemplateStore do
     {:reply, stats, state}
   end
 
+  # ============================================================================
+  # Best Template Selection Logic
+  # ============================================================================
+
+  defp do_get_best_template(intent, query_text, context, state) do
+    # Get structured templates for this intent
+    templates = Map.get(state.structured_templates, intent, [])
+
+    # Also try parent intent if no templates found
+    templates =
+      if templates == [] do
+        parent = get_parent_intent(intent)
+        Map.get(state.structured_templates, parent, [])
+      else
+        templates
+      end
+
+    # Step 1: Filter by conditions
+    matching = filter_by_conditions(templates, context)
+
+    case matching do
+      [] ->
+        # Fallback: semantic search across all intents
+        fallback_semantic_search(query_text, state)
+
+      [single] ->
+        # Only one match, use it
+        {:ok, single.text}
+
+      multiple ->
+        # Step 2: Rank by similarity to query
+        case Embedder.embed(query_text) do
+          {:ok, query_embedding} ->
+            best = rank_by_similarity(multiple, query_embedding) |> List.first()
+            {:ok, best.text}
+
+          _ ->
+            # Embedder not ready, pick random
+            {:ok, Enum.random(multiple).text}
+        end
+    end
+  end
+
+  defp fallback_semantic_search(query_text, state) do
+    case Embedder.embed(query_text) do
+      {:ok, query_embedding} ->
+        # Search across all templates
+        best =
+          state.all_template_structs
+          |> Enum.filter(& &1.embedding)
+          |> Enum.map(fn template ->
+            similarity = cosine_similarity(query_embedding, template.embedding)
+            {template, similarity}
+          end)
+          |> Enum.filter(fn {_, sim} -> sim > 0.1 end)
+          |> Enum.sort_by(fn {_, sim} -> -sim end)
+          |> List.first()
+
+        case best do
+          {template, _similarity} ->
+            {:ok, template.text, :fallback}
+
+          nil ->
+            {:error, :no_template}
+        end
+
+      _ ->
+        {:error, :embedder_not_ready}
+    end
+  end
+
   @impl true
   def handle_info(:load_templates, state) do
     Logger.info("Loading response templates from intent files...")
 
-    {templates, parameters} = load_all_intent_files()
+    {templates, parameters, structured_templates} = load_all_intent_files_with_conditions()
 
     Logger.info("Loaded templates for #{map_size(templates)} intents")
 
@@ -234,17 +405,30 @@ defmodule ChatBot.Response.TemplateStore do
     custom_smalltalk = load_custom_smalltalk_responses()
     merged_templates = merge_custom_responses(templates, custom_smalltalk)
 
+    # Also merge into structured templates (custom templates have no conditions)
+    merged_structured = merge_custom_structured_responses(structured_templates, custom_smalltalk)
+
     Logger.info("Merged #{map_size(custom_smalltalk)} custom smalltalk responses")
 
-    # Build embeddings for templates that have content
+    # Build embeddings for templates that have content (legacy)
     embeddings = build_template_embeddings(merged_templates)
+
+    # Build per-template embeddings for structured templates
+    all_template_structs = build_per_template_embeddings(merged_structured)
+
+    # Update structured_templates with embedded versions
+    structured_with_embeddings = group_templates_by_intent(all_template_structs)
+
+    Logger.info("Built embeddings for #{length(all_template_structs)} individual templates")
 
     {:noreply,
      %{
        state
        | templates: merged_templates,
+         structured_templates: structured_with_embeddings,
          parameters: parameters,
          embeddings: embeddings,
+         all_template_structs: all_template_structs,
          ready: true,
          loading: false
      }}
@@ -252,42 +436,38 @@ defmodule ChatBot.Response.TemplateStore do
 
   # Private Functions
 
-  defp load_all_intent_files do
+  defp load_all_intent_files_with_conditions do
     intent_files =
       Path.join(@intents_path, "*.json")
       |> Path.wildcard()
       |> Enum.reject(&String.contains?(&1, "usersays"))
 
-    Enum.reduce(intent_files, {%{}, %{}}, fn file_path, {templates_acc, params_acc} ->
-      case load_intent_file(file_path) do
-        {:ok, intent_name, speech_templates, parameters} ->
+    Enum.reduce(intent_files, {%{}, %{}, %{}}, fn file_path, {templates_acc, params_acc, structured_acc} ->
+      case load_intent_file_with_conditions(file_path) do
+        {:ok, intent_name, speech_templates, parameters, structured_templates} ->
           templates_acc = Map.put(templates_acc, intent_name, speech_templates)
           params_acc = Map.put(params_acc, intent_name, parameters)
-          {templates_acc, params_acc}
+          structured_acc = Map.put(structured_acc, intent_name, structured_templates)
+          {templates_acc, params_acc, structured_acc}
 
         {:error, _reason} ->
-          {templates_acc, params_acc}
+          {templates_acc, params_acc, structured_acc}
       end
     end)
   end
 
-  defp load_intent_file(file_path) do
+  defp load_intent_file_with_conditions(file_path) do
     with {:ok, content} <- File.read(file_path),
          {:ok, data} <- Jason.decode(content) do
       intent_name = Map.get(data, "name", Path.basename(file_path, ".json"))
 
-      # Extract speech templates from responses
-      speech_templates =
-        data
-        |> Map.get("responses", [])
-        |> Enum.flat_map(fn response ->
-          response
-          |> Map.get("messages", [])
-          |> Enum.flat_map(fn msg ->
-            Map.get(msg, "speech", [])
-          end)
-        end)
-        |> Enum.filter(&(is_binary(&1) and String.length(&1) > 0))
+      # Extract speech templates with conditions from responses
+      {speech_templates, structured_templates} = extract_templates_with_conditions(data, intent_name)
+
+      # Also extract from conditionalResponses
+      conditional_structured = extract_conditional_responses(data, intent_name)
+
+      all_structured = structured_templates ++ conditional_structured
 
       # Extract parameter definitions
       parameters =
@@ -306,13 +486,111 @@ defmodule ChatBot.Response.TemplateStore do
           }
         end)
 
-      {:ok, intent_name, speech_templates, parameters}
+      {:ok, intent_name, speech_templates, parameters, all_structured}
     else
       {:error, reason} ->
         Logger.debug("Failed to load intent file #{file_path}: #{inspect(reason)}")
         {:error, reason}
     end
   end
+
+  defp extract_templates_with_conditions(data, intent_name) do
+    responses = Map.get(data, "responses", [])
+
+    {texts, structs} =
+      Enum.reduce(responses, {[], []}, fn response, {texts_acc, structs_acc} ->
+        messages = Map.get(response, "messages", [])
+
+        Enum.reduce(messages, {texts_acc, structs_acc}, fn msg, {t_acc, s_acc} ->
+          speech_list = Map.get(msg, "speech", [])
+          condition = Map.get(msg, "condition", "")
+
+          # Create Template structs for each speech template
+          new_structs =
+            speech_list
+            |> Enum.filter(&(is_binary(&1) and String.length(&1) > 0))
+            |> Enum.map(fn text ->
+              %Template{
+                text: text,
+                condition: if(condition == "", do: nil, else: condition),
+                embedding: nil,
+                intent: intent_name
+              }
+            end)
+
+          new_texts = Enum.map(new_structs, & &1.text)
+
+          {t_acc ++ new_texts, s_acc ++ new_structs}
+        end)
+      end)
+
+    {texts, structs}
+  end
+
+  defp extract_conditional_responses(data, intent_name) do
+    data
+    |> Map.get("conditionalResponses", [])
+    |> Enum.flat_map(fn cond_response ->
+      condition = Map.get(cond_response, "condition", "")
+      messages = Map.get(cond_response, "messages", [])
+
+      Enum.flat_map(messages, fn msg ->
+        speech_list = Map.get(msg, "speech", [])
+
+        speech_list
+        |> Enum.filter(&(is_binary(&1) and String.length(&1) > 0))
+        |> Enum.map(fn text ->
+          %Template{
+            text: text,
+            condition: if(condition == "", do: nil, else: condition),
+            embedding: nil,
+            intent: intent_name
+          }
+        end)
+      end)
+    end)
+  end
+
+  defp build_per_template_embeddings(structured_templates) do
+    if Embedder.ready?() do
+      structured_templates
+      |> Enum.flat_map(fn {_intent, templates} -> templates end)
+      |> Enum.map(fn template ->
+        case Embedder.embed(template.text) do
+          {:ok, embedding} ->
+            %{template | embedding: embedding}
+
+          _ ->
+            template
+        end
+      end)
+    else
+      # Return templates without embeddings if embedder not ready
+      Enum.flat_map(structured_templates, fn {_intent, templates} -> templates end)
+    end
+  end
+
+  defp group_templates_by_intent(template_structs) do
+    Enum.group_by(template_structs, & &1.intent)
+  end
+
+  defp merge_custom_structured_responses(structured_templates, custom) do
+    Enum.reduce(custom, structured_templates, fn {action, answers}, acc ->
+      new_templates =
+        Enum.map(answers, fn text ->
+          %Template{
+            text: text,
+            condition: nil,
+            embedding: nil,
+            intent: action
+          }
+        end)
+
+      existing = Map.get(acc, action, [])
+      Map.put(acc, action, existing ++ new_templates)
+    end)
+  end
+
 
   defp build_template_embeddings(templates) do
     # Only build embeddings if Embedder is ready

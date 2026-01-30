@@ -240,9 +240,14 @@ defmodule ChatBot.TestHelpers do
     else
       sub_type = Map.get(speech_act, :sub_type)
 
+      # Recognize common greeting-related intents
+      # - greeting/hello/welcome patterns
+      # - smalltalk.greetings.* patterns
+      # - user.introduction patterns
+      # - smalltalk.user.good* (covers "Good morning/afternoon/evening" patterns)
       is_greeting_intent =
         is_binary(intent) and
-          String.match?(intent, ~r/greeting|hello|smalltalk\.greeting|user\.introduction/i)
+          String.match?(intent, ~r/greeting|hello|welcome|smalltalk\.greeting|user\.introduction|smalltalk\.user\.good/i)
 
       is_greeting_speech_act = sub_type == :greeting
 
@@ -444,7 +449,7 @@ defmodule ChatBot.TestHelpers do
 
     is_greeting_intent =
       is_binary(intent) and
-        String.match?(intent, ~r/greeting|hello|smalltalk\.greeting|user\.introduction/i)
+        String.match?(intent, ~r/greeting|hello|welcome|smalltalk\.greeting|user\.introduction|smalltalk\.user\.good/i)
 
     # Also accept any expressive response as valid for greeting (includes "how are you", "nice to meet you", etc.)
     is_expressive = Map.get(speech_act, :category) == :expressive

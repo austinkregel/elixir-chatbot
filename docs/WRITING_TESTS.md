@@ -61,7 +61,7 @@ Pass a tuple with the module and options:
 ```elixir
 setup do
   ensure_started({ChatBot.Memory.Store, persistence_path: "/tmp/test_store.term"})
-  ensure_started({ChatBot.Analysis.HeuristicStore, seeded_path: "priv/heuristics/seeded.json"})
+  ensure_started({ChatBot.Analysis.HeuristicStore, seeded_path: "data/heuristics/seeded_heuristics.json"})
   
   :ok
 end

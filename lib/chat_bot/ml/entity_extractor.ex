@@ -230,6 +230,7 @@ defmodule ChatBot.ML.EntityExtractor do
   - `:discourse` - Discourse analysis result for disambiguation context
   - `:speech_act` - Speech act classification result for disambiguation context
   - `:skip_disambiguation` - If true, skip the disambiguation step (default: false)
+  - `:world_id` - World ID for world-scoped type inference (required for disambiguation)
   """
   def extract_entities(text, opts \\ [])
 
@@ -238,6 +239,7 @@ defmodule ChatBot.ML.EntityExtractor do
     discourse = Keyword.get(opts, :discourse)
     speech_act = Keyword.get(opts, :speech_act)
     skip_disambiguation = Keyword.get(opts, :skip_disambiguation, false)
+    world_id = Keyword.get(opts, :world_id)
 
     # Tokenize the text
     tokens = Tokenizer.tokenize(text)
@@ -261,7 +263,7 @@ defmodule ChatBot.ML.EntityExtractor do
         resolved_entities
       else
         # Pass original text for text-based pattern matching (e.g., introduction detection)
-        disambiguate_entities(resolved_entities, tokens, discourse, speech_act, text)
+        disambiguate_entities(resolved_entities, tokens, discourse, speech_act, text, world_id)
       end
 
     # Filter out entities below confidence threshold
@@ -828,17 +830,19 @@ defmodule ChatBot.ML.EntityExtractor do
   # Entity Disambiguation
   # ============================================================================
 
-  defp disambiguate_entities(entities, tokens, discourse, speech_act, original_text) do
+  defp disambiguate_entities(entities, tokens, discourse, speech_act, original_text, world_id) do
     # Extract classified intent from speech_act indicators
     classified_intent = extract_intent_from_speech_act(speech_act)
 
     # Build context for disambiguation
     # Include original text for text-based pattern matching (e.g., "I'm Austin" detection)
+    # Include world_id for world-scoped type inference
     context = %{
       discourse: discourse,
       speech_act: speech_act,
       intent: classified_intent,
-      original_text: original_text
+      original_text: original_text,
+      world_id: world_id
     }
 
     # Try to get POS tags for better disambiguation

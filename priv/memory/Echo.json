@@ -538,5 +538,25 @@
     ],
     "text": "Learned 1 entities, 0 relationships, 1 facts from: Mount Everest is the tallest mountain in the world",
     "timestamp": 1769730371996
+  },
+  {
+    "id": "397eac0505043377",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: thanks",
+    "timestamp": 1769738674534
+  },
+  {
+    "id": "e56297788d7aeb97",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: What is an earthquake?",
+    "timestamp": 1769741557374
   }
 ]

@@ -16,17 +16,17 @@
         }
       ],
       "response_strategy": "defer_to_user",
+      "slots_filled": [
+        "person",
+        "slot_mappings"
+      ],
+      "slots_missing": [],
       "detected_intent": "smalltalk.greetings.hello",
       "speech_act_category": "directive",
       "speech_act_type": "command",
       "speech_act_confidence": 0.71,
       "discourse_addressee": "ambiguous",
-      "discourse_self_referential": "false",
-      "slots_filled": [
-        "person",
-        "slot_mappings"
-      ],
-      "slots_missing": []
+      "discourse_self_referential": "false"
     }
   ],
   "overall_strategy": "defer_to_user",

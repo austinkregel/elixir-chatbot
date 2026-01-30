@@ -341,7 +341,7 @@ defmodule ChatBot.Analysis.AdaptiveProcessingTest do
   describe "HeuristicStore" do
     setup do
       # Start heuristic store under ExUnit supervision
-      ensure_started({HeuristicStore, seeded_path: "priv/heuristics/seeded.json"})
+      ensure_started({HeuristicStore, seeded_path: "data/heuristics/seeded_heuristics.json"})
       :ok
     end
 
@@ -478,7 +478,7 @@ defmodule ChatBot.Analysis.AdaptiveProcessingTest do
   describe "OutcomeLearner" do
     setup do
       # Start stores under ExUnit supervision
-      ensure_started({HeuristicStore, seeded_path: "priv/heuristics/seeded.json"})
+      ensure_started({HeuristicStore, seeded_path: "data/heuristics/seeded_heuristics.json"})
       ensure_started(AnalyzerCalibration)
 
       :ok

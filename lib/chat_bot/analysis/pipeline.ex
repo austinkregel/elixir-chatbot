@@ -23,7 +23,8 @@ defmodule ChatBot.Analysis.Pipeline do
     ContextResolver,
     AnaphoraResolver,
     LearningStore,
-    Progress
+    Progress,
+    IntentRegistry
   }
 
   alias ChatBot.ML.EntityExtractor
@@ -410,56 +411,44 @@ defmodule ChatBot.Analysis.Pipeline do
   end
 
   defp infer_intent_from_speech_act(speech_act, _text) do
-    # Infer intent purely from speech act classification
-    # No keyword matching - that bypasses the classification system
-    cond do
-      # Greetings
-      speech_act.sub_type == :greeting ->
-        "smalltalk.greeting"
+    # Use IntentRegistry mapping for canonical intent names
+    # This ensures consistency with TemplateStore
+    case IntentRegistry.intent_for_speech_act(speech_act.sub_type) do
+      canonical_intent when is_binary(canonical_intent) ->
+        # Found a canonical intent in the registry
+        canonical_intent
 
-      # Farewells
-      speech_act.sub_type == :farewell ->
-        "smalltalk.farewell"
+      nil ->
+        # Fallback for unmapped speech acts
+        cond do
+          # Question
+          speech_act.is_question ->
+            "question.factual"
 
-      # Thanks
-      speech_act.sub_type == :thanks ->
-        "smalltalk.thanks"
+          # Command/directive
+          speech_act.sub_type == :command ->
+            "action.request"
 
-      # Apology
-      speech_act.sub_type == :apology ->
-        "smalltalk.apology"
+          # Request for action
+          speech_act.sub_type == :request_action ->
+            "action.request"
 
-      # Backchannel
-      speech_act.sub_type == :backchannel ->
-        "smalltalk.backchannel"
+          # Request for information
+          speech_act.sub_type == :request_information ->
+            "information.request"
 
-      # Question
-      speech_act.is_question ->
-        "question.factual"
+          # General expressive
+          speech_act.category == :expressive ->
+            "smalltalk.general"
 
-      # Command/directive
-      speech_act.sub_type == :command ->
-        "action.request"
+          # Assertive statement
+          speech_act.category == :assertive ->
+            "unknown"
 
-      # Request for action
-      speech_act.sub_type == :request_action ->
-        "action.request"
-
-      # Request for information
-      speech_act.sub_type == :request_information ->
-        "information.request"
-
-      # General expressive
-      speech_act.category == :expressive ->
-        "smalltalk.general"
-
-      # Assertive statement
-      speech_act.category == :assertive ->
-        "unknown"
-
-      # Unknown
-      true ->
-        "unknown"
+          # Unknown
+          true ->
+            "unknown"
+        end
     end
   end
 

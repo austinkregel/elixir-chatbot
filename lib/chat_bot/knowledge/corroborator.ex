@@ -2,11 +2,26 @@ defmodule ChatBot.Knowledge.Corroborator do
   @moduledoc """
   Analyzes findings for cross-source agreement and conflict detection.
 
-  The Corroborator:
+  The Corroborator implements the **evidence evaluation** phase of the
+  scientific method:
+
+  ## Scientific Method Integration
+
+  1. **Hypothesis Testing**: Evaluates hypotheses against gathered evidence
+  2. **Falsifiability**: Contradicting evidence can falsify hypotheses
+  3. **Support**: Agreeing evidence supports (but doesn't prove) hypotheses
+  4. **Independent Verification**: Requires 2+ independent sources
+
+  Key principle: "We cannot prove a hypothesis true, only support it with
+  evidence or falsify it with contradicting evidence."
+
+  ## Features
+
   - Groups findings by semantic similarity using TF-IDF embeddings
   - Requires 2+ independent sources for high-confidence facts
   - Detects conflicting claims between sources
   - Computes aggregate confidence scores based on corroboration
+  - Evaluates hypotheses and determines if they are supported/falsified
 
   ## Example
 
@@ -17,12 +32,15 @@ defmodule ChatBot.Knowledge.Corroborator do
 
       {:ok, candidates} = Corroborator.corroborate(findings)
       # => Single ReviewCandidate with 2 corroborating sources
+
+      # Or with hypothesis testing:
+      {:ok, investigation} = Corroborator.test_hypotheses(investigation, findings)
   """
 
   require Logger
 
   alias ChatBot.Memory.Embedder
-  alias ChatBot.Knowledge.Types.{Finding, ReviewCandidate}
+  alias ChatBot.Knowledge.Types.{Finding, ReviewCandidate, Hypothesis, Investigation}
   alias ChatBot.Telemetry
 
   # Cosine similarity threshold for considering claims as "the same"
@@ -118,6 +136,190 @@ defmodule ChatBot.Knowledge.Corroborator do
     |> Enum.filter(fn existing ->
       same_entity?(finding, existing) and contradicts?(finding.claim, existing.claim)
     end)
+  end
+
+  # ============================================================================
+  # Hypothesis Testing API (Scientific Method)
+  # ============================================================================
+
+  @doc """
+  Tests hypotheses in an investigation against gathered evidence.
+
+  This is the core of the scientific method implementation:
+  1. For each hypothesis, find relevant evidence
+  2. Classify evidence as supporting or contradicting
+  3. Apply falsifiability rules
+  4. Update hypothesis status
+
+  ## Falsifiability Rules
+
+  A hypothesis is **falsified** if:
+  - Reliable contradicting evidence exists (reliability >= 0.6)
+  - The contradicting source is independent
+
+  A hypothesis is **supported** if:
+  - 2+ independent sources provide agreeing evidence
+  - No reliable contradicting evidence exists
+
+  ## Returns
+
+  Updated investigation with evaluated hypotheses.
+  """
+  @spec test_hypotheses(Investigation.t(), [Finding.t()]) :: {:ok, Investigation.t()}
+  def test_hypotheses(%Investigation{} = investigation, findings) when is_list(findings) do
+    # Using :knowledge_corroborate span since hypothesis testing is part of corroboration
+    Telemetry.span(:knowledge_corroborate, %{
+      hypothesis_count: length(investigation.hypotheses),
+      evidence_count: length(findings)
+    }, fn ->
+      do_test_hypotheses(investigation, findings)
+    end)
+  end
+
+  defp do_test_hypotheses(%Investigation{} = investigation, findings) do
+    Logger.debug("Testing hypotheses",
+      hypotheses: length(investigation.hypotheses),
+      findings: length(findings)
+    )
+
+    # Record evidence in the investigation
+    investigation = Investigation.record_evidence(investigation, findings)
+
+    # Conclude the investigation (evaluates all hypotheses)
+    concluded = Investigation.conclude(investigation)
+
+    Logger.info("Hypothesis testing completed",
+      supported: Enum.count(concluded.hypotheses, &(&1.status == :supported)),
+      falsified: Enum.count(concluded.hypotheses, &(&1.status == :falsified)),
+      inconclusive: Enum.count(concluded.hypotheses, &(&1.status == :inconclusive))
+    )
+
+    {:ok, concluded}
+  end
+
+  @doc """
+  Evaluates a single hypothesis against a set of findings.
+
+  Returns the hypothesis with updated status and evidence.
+  """
+  @spec evaluate_hypothesis(Hypothesis.t(), [Finding.t()]) :: Hypothesis.t()
+  def evaluate_hypothesis(%Hypothesis{} = hypothesis, findings) when is_list(findings) do
+    # Find relevant evidence for this hypothesis
+    {supporting, contradicting} = partition_evidence(hypothesis, findings)
+
+    # Add evidence to hypothesis
+    hypothesis =
+      supporting
+      |> Enum.reduce(hypothesis, fn finding, hyp ->
+        Hypothesis.add_supporting_evidence(hyp, finding)
+      end)
+
+    hypothesis =
+      contradicting
+      |> Enum.reduce(hypothesis, fn finding, hyp ->
+        Hypothesis.add_contradicting_evidence(hyp, finding)
+      end)
+
+    # Evaluate and return
+    Hypothesis.evaluate(hypothesis)
+  end
+
+  @doc """
+  Determines if evidence supports or contradicts a hypothesis.
+
+  Uses semantic similarity and negation detection.
+  """
+  @spec classify_evidence(Hypothesis.t(), Finding.t()) :: :supporting | :contradicting | :irrelevant
+  def classify_evidence(%Hypothesis{} = hypothesis, %Finding{} = finding) do
+    # Check semantic similarity
+    case compare_claims(hypothesis.claim, finding.claim) do
+      {:ok, similarity} when similarity >= @similarity_threshold ->
+        # High similarity - check for contradiction
+        if contradicts?(hypothesis.claim, finding.claim) do
+          :contradicting
+        else
+          :supporting
+        end
+
+      {:ok, _low_similarity} ->
+        :irrelevant
+
+      {:error, _} ->
+        :irrelevant
+    end
+  end
+
+  @doc """
+  Converts supported hypotheses from an investigation into ReviewCandidates.
+
+  Only hypotheses that are:
+  1. Supported (not falsified)
+  2. High confidence (>= 0.7)
+  3. Have 2+ independent sources
+
+  are converted to candidates for admin review.
+  """
+  @spec hypotheses_to_candidates(Investigation.t(), keyword()) :: [ReviewCandidate.t()]
+  def hypotheses_to_candidates(%Investigation{} = investigation, opts \\ []) do
+    session_id = Keyword.get(opts, :session_id)
+
+    investigation
+    |> Investigation.promotable_hypotheses()
+    |> Enum.map(fn hypothesis ->
+      # Use the first supporting evidence as the primary finding
+      primary_finding = build_finding_from_hypothesis(hypothesis)
+
+      # Gather corroborating sources
+      corroborating_sources =
+        hypothesis.supporting_evidence
+        |> Enum.map(& &1.source)
+        |> Enum.uniq_by(& &1.domain)
+
+      ReviewCandidate.new(primary_finding,
+        corroborating_sources: corroborating_sources,
+        conflicting_findings: hypothesis.contradicting_evidence,
+        aggregate_confidence: hypothesis.confidence,
+        session_id: session_id
+      )
+    end)
+  end
+
+  # ============================================================================
+  # Private Functions - Hypothesis Testing
+  # ============================================================================
+
+  defp partition_evidence(%Hypothesis{} = hypothesis, findings) do
+    findings
+    |> Enum.reduce({[], []}, fn finding, {supporting, contradicting} ->
+      case classify_evidence(hypothesis, finding) do
+        :supporting -> {[finding | supporting], contradicting}
+        :contradicting -> {supporting, [finding | contradicting]}
+        :irrelevant -> {supporting, contradicting}
+      end
+    end)
+  end
+
+  defp build_finding_from_hypothesis(%Hypothesis{} = hypothesis) do
+    # Create a Finding from the hypothesis for the review queue
+    # Use the best supporting evidence as the source
+    best_source =
+      hypothesis.supporting_evidence
+      |> Enum.max_by(fn f -> f.source.reliability_score end, fn -> nil end)
+
+    source = if best_source, do: best_source.source, else: default_source()
+
+    Finding.new(
+      hypothesis.claim,
+      hypothesis.entity || "unknown",
+      source,
+      confidence: hypothesis.confidence,
+      raw_context: hypothesis.derived_from || ""
+    )
+  end
+
+  defp default_source do
+    alias ChatBot.Knowledge.Types.SourceInfo
+    SourceInfo.new("internal://hypothesis", title: "Hypothesis-derived")
   end
 
   # ============================================================================

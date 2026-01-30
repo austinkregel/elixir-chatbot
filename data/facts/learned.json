@@ -4,6 +4,5306 @@
   "facts": [
     {
       "category": "learned",
+      "confidence": 0.4861353116146786,
+      "entity": "Passage: The French",
+      "entity_type": "question_answer",
+      "fact": "2 million",
+      "id": "learned_28aab71f3a011be8",
+      "learned_at": 1769741277,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.4861353116146786,
+      "entity": "Passage: The French",
+      "entity_type": "question_answer",
+      "fact": "2 million",
+      "id": "learned_defb9f273d436268",
+      "learned_at": 1769741277,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "4, 5.",
+      "id": "learned_ac19061718f42775",
+      "learned_at": 1769741276,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "3.",
+      "id": "learned_e8dc1d87b355c890",
+      "learned_at": 1769741276,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "21.",
+      "id": "learned_153e6f19a45a0bd1",
+      "learned_at": 1769741276,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "2.",
+      "id": "learned_9cb078924e6c8ffe",
+      "learned_at": 1769741276,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 2, 3, 5, 6, 8, 10.",
+      "id": "learned_ccf6cbdab664d5ee",
+      "learned_at": 1769741276,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The French",
+      "entity_type": "question_answer",
+      "fact": "British America and New France",
+      "id": "learned_f6f510c3768a9384",
+      "learned_at": 1769741276,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: Volcanic ash",
+      "entity_type": "question_answer",
+      "fact": "Slow plant growth.",
+      "id": "learned_e021fd0cf2583504",
+      "learned_at": 1769741276,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: British newspapers",
+      "entity_type": "question_answer",
+      "fact": "C",
+      "id": "learned_d3bcd98bbce51834",
+      "learned_at": 1769741276,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: pesticides can",
+      "entity_type": "question_answer",
+      "fact": "Plastic.",
+      "id": "learned_c1286349f875dd9f",
+      "learned_at": 1769741276,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Philip Arnold",
+      "entity_type": "question_answer",
+      "fact": "Heseltine.",
+      "id": "learned_5a5e613bb6c7ec19",
+      "learned_at": 1769741276,
+      "verification_source": "task://task002_quoref_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "4, 5.",
+      "id": "learned_cfd0c52086802f47",
+      "learned_at": 1769741276,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Locating survivors.",
+      "id": "learned_f3975f04fe65aa62",
+      "learned_at": 1769741276,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: you see",
+      "entity_type": "question_answer",
+      "fact": "I broke up with my friend.",
+      "id": "learned_b33928f869668186",
+      "learned_at": 1769741276,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: earthquake causes",
+      "entity_type": "question_answer",
+      "fact": "The shaking of the ground causes damage to buildings.",
+      "id": "learned_31215f4485ebeab2",
+      "learned_at": 1769741276,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: rain helps",
+      "entity_type": "question_answer",
+      "fact": "survived.",
+      "id": "learned_7bd8571ea31a48eb",
+      "learned_at": 1769741276,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Earthquakes and tsunamis.",
+      "id": "learned_f882ddf64ca258d5",
+      "learned_at": 1769741276,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: Volcanic activity",
+      "entity_type": "question_answer",
+      "fact": "Ash clouds.",
+      "id": "learned_414d63af4043da8b",
+      "learned_at": 1769741276,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Philip Arnold",
+      "entity_type": "question_answer",
+      "fact": "Heseltine.",
+      "id": "learned_36d71517a949dab2",
+      "learned_at": 1769741276,
+      "verification_source": "task://task002_quoref_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "7, 8.",
+      "id": "learned_98a471dcce7bca90",
+      "learned_at": 1769741276,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Discover Artistic",
+      "entity_type": "question_answer",
+      "fact": "A",
+      "id": "learned_508fed585d4a46f8",
+      "learned_at": 1769741276,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Ethan entered bedroom",
+      "entity_type": "question_answer",
+      "fact": "green_basket",
+      "id": "learned_951cd784d1e7b4ad",
+      "learned_at": 1769741276,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "James entered cellar",
+      "entity_type": "question_answer",
+      "fact": "green_suitcase",
+      "id": "learned_d461c90acc994236",
+      "learned_at": 1769741276,
+      "verification_source": "task://task154_tomqa_find_location_hard_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The French",
+      "entity_type": "question_answer",
+      "fact": "1754-1763",
+      "id": "learned_5ed0ed13649c4f27",
+      "learned_at": 1769741275,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: After wrapping",
+      "entity_type": "question_answer",
+      "fact": "Oujda, Tangier and Erfoud",
+      "id": "learned_097ba210b2e29c5a",
+      "learned_at": 1769741275,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Discussion of a strategy to promote \"gun rights\" for white people was discussed by NRS and KKK.",
+      "id": "learned_d310876278451446",
+      "learned_at": 1769741275,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Locating survivors.",
+      "id": "learned_5b7168087c6f94ce",
+      "learned_at": 1769741275,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "4, 5, 16, 17.",
+      "id": "learned_e95bd7646b6f04cb",
+      "learned_at": 1769741275,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: rain helps",
+      "entity_type": "question_answer",
+      "fact": "survive.",
+      "id": "learned_8115a5acd35b35ec",
+      "learned_at": 1769741275,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: I mean",
+      "entity_type": "question_answer",
+      "fact": "The company hiring the temp workers might have had a change of mind .",
+      "id": "learned_6634a67d503ff4c5",
+      "learned_at": 1769741275,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "James entered living_room",
+      "entity_type": "question_answer",
+      "fact": "red_box",
+      "id": "learned_3078dab1b612a04e",
+      "learned_at": 1769741275,
+      "verification_source": "task://task154_tomqa_find_location_hard_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 2.",
+      "id": "learned_642552556fcc3560",
+      "learned_at": 1769741275,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: But thing",
+      "entity_type": "question_answer",
+      "fact": "It is her favorite church and I do n't want to hurt her feelings .",
+      "id": "learned_80f19dc888d6a05f",
+      "learned_at": 1769741275,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: Alpine",
+      "entity_type": "question_answer",
+      "fact": "Lake Smith.",
+      "id": "learned_f2be9758f29c1ebb",
+      "learned_at": 1769741275,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: This July",
+      "entity_type": "question_answer",
+      "fact": "aggressive and menacing.",
+      "id": "learned_8fc1e18ae3d82f34",
+      "learned_at": 1769741275,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Jackson entered hall",
+      "entity_type": "question_answer",
+      "fact": "red_envelope",
+      "id": "learned_42d4ded57f612782",
+      "learned_at": 1769741275,
+      "verification_source": "task://task154_tomqa_find_location_hard_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "\"capturing Chandarnagore\"",
+      "id": "learned_244f43679c9e47b8",
+      "learned_at": 1769741275,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "United States Courthouse",
+      "id": "learned_921ceecfa2051247",
+      "learned_at": 1769741275,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "\"capturing Chandarnagore\"",
+      "id": "learned_8c1aa27e6568b6cb",
+      "learned_at": 1769741275,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Successful rescue of survivors.",
+      "id": "learned_7573b52e2fb6ea13",
+      "learned_at": 1769741275,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "2.",
+      "id": "learned_60cf995e4e88096f",
+      "learned_at": 1769741275,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Earthquakes.",
+      "id": "learned_58f5932f8c1cc5d6",
+      "learned_at": 1769741275,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: Let me",
+      "entity_type": "question_answer",
+      "fact": "We were able to spend time together just talking and that helped us to connect better.",
+      "id": "learned_094192f1fd7aaafa",
+      "learned_at": 1769741275,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Offensive Counterair",
+      "entity_type": "question_answer",
+      "fact": "offensive operations to destroy, disrupt, or neutralize enemy aircraft, missiles, launch platforms",
+      "id": "learned_c297d1d3b8d4b6a5",
+      "learned_at": 1769741275,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Ethan entered bedroom",
+      "entity_type": "question_answer",
+      "fact": "green_cupboard",
+      "id": "learned_503796de4aed1437",
+      "learned_at": 1769741275,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: WHAT could",
+      "entity_type": "question_answer",
+      "fact": "Pornographic implies something forbidden , this person was exited by the thought .",
+      "id": "learned_444b7e49b7ba8cb5",
+      "learned_at": 1769741274,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Olivia entered staircase",
+      "entity_type": "question_answer",
+      "fact": "red_suitcase",
+      "id": "learned_4e13824149ca1661",
+      "learned_at": 1769741274,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: You could",
+      "entity_type": "question_answer",
+      "fact": "A",
+      "id": "learned_13135762cccc179e",
+      "learned_at": 1769741274,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "\"Chandernagore\", \"Pondicherry\"",
+      "id": "learned_4cf6c51e3e643d1a",
+      "learned_at": 1769741274,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "From pack of",
+      "entity_type": "question_answer",
+      "fact": "Option C",
+      "id": "learned_f2c7c1623eee340f",
+      "learned_at": 1769741274,
+      "verification_source": "task://task750_aqua_multiple_choice_answering"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: rain helps",
+      "entity_type": "question_answer",
+      "fact": "survive.",
+      "id": "learned_1b8776b60427cc75",
+      "learned_at": 1769741274,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: lightning can",
+      "entity_type": "question_answer",
+      "fact": "lightning.",
+      "id": "learned_0c7dc95b6867d872",
+      "learned_at": 1769741274,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The 2010",
+      "entity_type": "question_answer",
+      "fact": "30.0%",
+      "id": "learned_5bfef68e655ef5a1",
+      "learned_at": 1769741274,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 2.",
+      "id": "learned_360c42c4a1b6876e",
+      "learned_at": 1769741274,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "The war on drugs began with the Nixon administration and it was an animated story of the US that covered gun rights and other matters.",
+      "id": "learned_aab186e535ed8f6d",
+      "learned_at": 1769741274,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: Good Old",
+      "entity_type": "question_answer",
+      "fact": "This person likes music and likes to see the show , they will see other bands play .",
+      "id": "learned_1474d9d2d34272ea",
+      "learned_at": 1769741274,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: Damming river",
+      "entity_type": "question_answer",
+      "fact": "stream blockages.",
+      "id": "learned_81c7e474b32cd168",
+      "learned_at": 1769741274,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "China has been very irritated by contradictory statements.",
+      "id": "learned_381ae25320d7778b",
+      "learned_at": 1769741274,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Honolulu.",
+      "id": "learned_068d970b7457b0fb",
+      "learned_at": 1769741274,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: The",
+      "entity_type": "question_answer",
+      "fact": "less.",
+      "id": "learned_5d8cb06f7697c332",
+      "learned_at": 1769741274,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Every day",
+      "entity_type": "question_answer",
+      "fact": "Correct",
+      "id": "learned_5df6bee63534b8a6",
+      "learned_at": 1769741274,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Sent 1, Sent 2.",
+      "id": "learned_a82d2fd86da86965",
+      "learned_at": 1769741274,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Because many passengers aboard the aircraft were from Chine and Vietnam.",
+      "id": "learned_c92e2830a195b164",
+      "learned_at": 1769741274,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "17.",
+      "id": "learned_d24dca635b5324e1",
+      "learned_at": 1769741274,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "2, 4.",
+      "id": "learned_97183679bf48e9e5",
+      "learned_at": 1769741274,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Because many passengers aboard the aircraft were from Chine and Vietnam.",
+      "id": "learned_12a422b213b1629d",
+      "learned_at": 1769741274,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1 and 2.",
+      "id": "learned_7c3b2e8c0cba79b4",
+      "learned_at": 1769741274,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "The strategy to promote \"gun rights\" for white people while outlawing it for black people allowed racisim to continue without allowing to KKK to flourish.",
+      "id": "learned_9cf42e70cd90759e",
+      "learned_at": 1769741273,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: shaking of",
+      "entity_type": "question_answer",
+      "fact": "The ground.",
+      "id": "learned_8bdd03187aa71e7b",
+      "learned_at": 1769741273,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "4, 5.",
+      "id": "learned_612bcad046a8e19e",
+      "learned_at": 1769741273,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: We can",
+      "entity_type": "question_answer",
+      "fact": "No",
+      "id": "learned_c2f752eb69cb7b66",
+      "learned_at": 1769741273,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: pesticides can",
+      "entity_type": "question_answer",
+      "fact": "Plastic.",
+      "id": "learned_142cb31e96defa66",
+      "learned_at": 1769741273,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "2",
+      "id": "learned_e6df716a41c0a99c",
+      "learned_at": 1769741273,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "11.",
+      "id": "learned_dd5e2cd5a8a0d086",
+      "learned_at": 1769741273,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: protractor can",
+      "entity_type": "question_answer",
+      "fact": "a protractor.",
+      "id": "learned_c972eba1117a0506",
+      "learned_at": 1769741273,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 2.",
+      "id": "learned_da397e55d801665a",
+      "learned_at": 1769741273,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: This new",
+      "entity_type": "question_answer",
+      "fact": "Jean Buridan, Nicole Oresme and the Oxford Calculators",
+      "id": "learned_6d6845db11f84dd8",
+      "learned_at": 1769741273,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Recall that",
+      "entity_type": "question_answer",
+      "fact": "impedance",
+      "id": "learned_ba6d0eca00ac942e",
+      "learned_at": 1769741273,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "4, 5.",
+      "id": "learned_7e8d00388ba55764",
+      "learned_at": 1769741273,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: Sadly he",
+      "entity_type": "question_answer",
+      "fact": "His music is average .",
+      "id": "learned_8e4913f39bdbb52d",
+      "learned_at": 1769741273,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "7, 8.",
+      "id": "learned_746cca66ab2c76e1",
+      "learned_at": 1769741273,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: Until we",
+      "entity_type": "question_answer",
+      "fact": "Because the writer is interested in learning how to cook crepes .",
+      "id": "learned_878c7a3866c2135c",
+      "learned_at": 1769741273,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Nearing London,",
+      "entity_type": "question_answer",
+      "fact": "Oliver.",
+      "id": "learned_db0210b3817188b4",
+      "learned_at": 1769741273,
+      "verification_source": "task://task002_quoref_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "\"British successfully defended Madras\"",
+      "id": "learned_f18fd7424835b1f0",
+      "learned_at": 1769741273,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: This July",
+      "entity_type": "question_answer",
+      "fact": "He was on foot .",
+      "id": "learned_d06f7189af975eef",
+      "learned_at": 1769741273,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "China was critical.",
+      "id": "learned_3b213326a7ced37c",
+      "learned_at": 1769741273,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: pesticides can",
+      "entity_type": "question_answer",
+      "fact": "pesticides.",
+      "id": "learned_e93cb2923dd6b006",
+      "learned_at": 1769741273,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 2.",
+      "id": "learned_33578c91e7e22b9d",
+      "learned_at": 1769741273,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "4, 5.",
+      "id": "learned_693976c6c40e404e",
+      "learned_at": 1769741273,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 2.",
+      "id": "learned_5ee4e0c86ea9a649",
+      "learned_at": 1769741273,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: Alpine",
+      "entity_type": "question_answer",
+      "fact": "Lake Schmitz.",
+      "id": "learned_4c7a96639645c138",
+      "learned_at": 1769741272,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 2.",
+      "id": "learned_0769e78f0a943b5f",
+      "learned_at": 1769741272,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Owen entered living_room",
+      "entity_type": "question_answer",
+      "fact": "blue_bathtub",
+      "id": "learned_f267b85c6f690cbb",
+      "learned_at": 1769741272,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Six.",
+      "id": "learned_f24eb17e6abbb2ee",
+      "learned_at": 1769741272,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "\"British forces capturing\", \"the French\"",
+      "id": "learned_d90aa3e16019abf2",
+      "learned_at": 1769741272,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The French",
+      "entity_type": "question_answer",
+      "fact": "2000000",
+      "id": "learned_eaeb26167d6b5043",
+      "learned_at": 1769741272,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: earthquakes can",
+      "entity_type": "question_answer",
+      "fact": "earthquakes.",
+      "id": "learned_db581c2e05df3861",
+      "learned_at": 1769741272,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Early in",
+      "entity_type": "question_answer",
+      "fact": "\"Sheriff of Cornwall\", \"Justice of the Peace for Devon, Exeter\", \"commander in the English army\"",
+      "id": "learned_129178b144448394",
+      "learned_at": 1769741272,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Lucas entered kitchen",
+      "entity_type": "question_answer",
+      "fact": "red_drawer",
+      "id": "learned_68812e9696a92f7f",
+      "learned_at": 1769741272,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "They've issued contradictory statements, mishandled key evidence, and wasted time that could have been spent looking for survivors.",
+      "id": "learned_45f5f5a0854b5393",
+      "learned_at": 1769741272,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "James entered cellar",
+      "entity_type": "question_answer",
+      "fact": "green_suitcase",
+      "id": "learned_6316556b65343994",
+      "learned_at": 1769741272,
+      "verification_source": "task://task154_tomqa_find_location_hard_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "Germany ",
+      "id": "learned_a1306829a7e4ee87",
+      "learned_at": 1769741272,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Time has been wasted for saving passengers.",
+      "id": "learned_cbfdbf94c025b73f",
+      "learned_at": 1769741272,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "Germany ",
+      "id": "learned_fc9f016f9b217f73",
+      "learned_at": 1769741272,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: Good Old",
+      "entity_type": "question_answer",
+      "fact": "This person likes music and likes to see the show , they will see other bands play .",
+      "id": "learned_6872f2940d5c14de",
+      "learned_at": 1769741272,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Jacob entered dining_room",
+      "entity_type": "question_answer",
+      "fact": "blue_pantry",
+      "id": "learned_c91383fdf79a8127",
+      "learned_at": 1769741272,
+      "verification_source": "task://task154_tomqa_find_location_hard_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: A",
+      "entity_type": "question_answer",
+      "fact": "New York.",
+      "id": "learned_56dd70edde24a2ee",
+      "learned_at": 1769741272,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Lawmakers in",
+      "entity_type": "question_answer",
+      "fact": "No",
+      "id": "learned_a1f2c84bb2709135",
+      "learned_at": 1769741272,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "The Malaysian government has not done well.",
+      "id": "learned_1a8b0345275e5b40",
+      "learned_at": 1769741272,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Lawmakers in",
+      "entity_type": "question_answer",
+      "fact": "C",
+      "id": "learned_1e9ec9147c6a4919",
+      "learned_at": 1769741272,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The French",
+      "entity_type": "question_answer",
+      "fact": "roughly 60,000",
+      "id": "learned_f4c9a99ed91bd634",
+      "learned_at": 1769741272,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "It is an animated history of the US and one of the key messages is  to continue the racism of the KKK.",
+      "id": "learned_6d8ec396f48445a9",
+      "learned_at": 1769741272,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Discover Artistic",
+      "entity_type": "question_answer",
+      "fact": "A",
+      "id": "learned_86b333e296069c33",
+      "learned_at": 1769741272,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Ineffective rescue efforts.",
+      "id": "learned_7a8a956802950ab0",
+      "learned_at": 1769741272,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "James entered living_room",
+      "entity_type": "question_answer",
+      "fact": "red_box",
+      "id": "learned_48cb421c75e27b90",
+      "learned_at": 1769741272,
+      "verification_source": "task://task154_tomqa_find_location_hard_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: It has",
+      "entity_type": "question_answer",
+      "fact": "Because I 've been busy with other things .",
+      "id": "learned_66d69f04c274bc50",
+      "learned_at": 1769741271,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: Last night",
+      "entity_type": "question_answer",
+      "fact": "I was burnt out from too much work .",
+      "id": "learned_4dd6abe335f5b0c6",
+      "learned_at": 1769741271,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "The war on drugs began with the Nixon administration and it was an animated story of the US that covered gun rights and other matters.",
+      "id": "learned_1db73caf66e037f8",
+      "learned_at": 1769741271,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Phone rang Emily",
+      "entity_type": "question_answer",
+      "fact": "red_treasure_chest",
+      "id": "learned_d684142d19f93e53",
+      "learned_at": 1769741271,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: We've all",
+      "entity_type": "question_answer",
+      "fact": "A",
+      "id": "learned_c242d878494ccea9",
+      "learned_at": 1769741271,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The French",
+      "entity_type": "question_answer",
+      "fact": "1756",
+      "id": "learned_99ac23717845ded7",
+      "learned_at": 1769741271,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: This July",
+      "entity_type": "question_answer",
+      "fact": "He was walking or standing on street .",
+      "id": "learned_e65250b4c8843049",
+      "learned_at": 1769741271,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: On 12",
+      "entity_type": "question_answer",
+      "fact": "wider interpretation of genocide",
+      "id": "learned_bf86bd44b2747648",
+      "learned_at": 1769741271,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Animated history of the US and one of the key messages is continuing the racist goals of the KKK.",
+      "id": "learned_e002c152e01fbe33",
+      "learned_at": 1769741271,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Six.",
+      "id": "learned_403ddc2845d92fc3",
+      "learned_at": 1769741271,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Honolulu.",
+      "id": "learned_0197f6d624e36376",
+      "learned_at": 1769741271,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Homework can",
+      "entity_type": "question_answer",
+      "fact": "B",
+      "id": "learned_649310e2804d7205",
+      "learned_at": 1769741271,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: When I",
+      "entity_type": "question_answer",
+      "fact": "B",
+      "id": "learned_37229053c3ebe16f",
+      "learned_at": 1769741271,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: Leaving my",
+      "entity_type": "question_answer",
+      "fact": "Someone was running from the cops and got into a wreck .",
+      "id": "learned_a35d59d157e4f9e4",
+      "learned_at": 1769741271,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "2.",
+      "id": "learned_4a1bd4aec6b6790d",
+      "learned_at": 1769741271,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "\"Chandernagore\", \"Pondicherry\"",
+      "id": "learned_52525a85770322f9",
+      "learned_at": 1769741271,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Animated, key message: how gun rights are promoted for whites, outlawed for blacks.",
+      "id": "learned_5d0e1b9e8d033207",
+      "learned_at": 1769741271,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Ethan entered bedroom",
+      "entity_type": "question_answer",
+      "fact": "green_basket",
+      "id": "learned_6d130b357170c5de",
+      "learned_at": 1769741271,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: A",
+      "entity_type": "question_answer",
+      "fact": "Increase.",
+      "id": "learned_fccbc2438a6428bd",
+      "learned_at": 1769741271,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "CIA tolerated crack sales, which raises questions about how the epidemic spread in the U.S.",
+      "id": "learned_41d7db1313d822c1",
+      "learned_at": 1769741271,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Liam entered office",
+      "entity_type": "question_answer",
+      "fact": "green_pantry",
+      "id": "learned_0a1c2a9180df1ee7",
+      "learned_at": 1769741271,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "\"Saving possible survivors\".",
+      "id": "learned_e3c7870c2c6d8f45",
+      "learned_at": 1769741271,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "16.",
+      "id": "learned_8cde10b76cb3df07",
+      "learned_at": 1769741271,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Recall that",
+      "entity_type": "question_answer",
+      "fact": "impedance",
+      "id": "learned_0490044ad954f0aa",
+      "learned_at": 1769741271,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: It 11",
+      "entity_type": "question_answer",
+      "fact": "No",
+      "id": "learned_2744d5d084f57e35",
+      "learned_at": 1769741271,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Lucas entered dining_room",
+      "entity_type": "question_answer",
+      "fact": "green_bucket",
+      "id": "learned_92dc4eb945660da9",
+      "learned_at": 1769741271,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Nearing London,",
+      "entity_type": "question_answer",
+      "fact": "Saffron Hill.",
+      "id": "learned_c1a7d10a21da3bab",
+      "learned_at": 1769741271,
+      "verification_source": "task://task002_quoref_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "It is believed the CIA tolerated crack sales, raising other questions \"Why do people deal drugs\" and \"do they do it because it is fun\"?.",
+      "id": "learned_f07d7c3352d2b2fb",
+      "learned_at": 1769741271,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "4, 5, 16, 17.",
+      "id": "learned_f4952ce5c59a007e",
+      "learned_at": 1769741270,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Lucas entered master_bedroom",
+      "entity_type": "question_answer",
+      "fact": "green_drawer",
+      "id": "learned_4daeff43b3b95da4",
+      "learned_at": 1769741270,
+      "verification_source": "task://task154_tomqa_find_location_hard_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "The discussion of gun rights being promoted by the NRA.",
+      "id": "learned_a316527482eb3c3a",
+      "learned_at": 1769741270,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: In 1955,",
+      "entity_type": "question_answer",
+      "fact": "B",
+      "id": "learned_0ee50ca5000360fc",
+      "learned_at": 1769741270,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Almost five",
+      "entity_type": "question_answer",
+      "fact": "D",
+      "id": "learned_ad7e15f0b9370cfb",
+      "learned_at": 1769741270,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: rain can",
+      "entity_type": "question_answer",
+      "fact": "soil and trees.",
+      "id": "learned_896bc13fc972d9f5",
+      "learned_at": 1769741270,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Contradictory statements by Malaysian officials.",
+      "id": "learned_c5c2c8379b44af81",
+      "learned_at": 1769741270,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Sent 1, Sent 2.",
+      "id": "learned_fa537218d2358467",
+      "learned_at": 1769741270,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Homework can",
+      "entity_type": "question_answer",
+      "fact": "Yes, answer is B.",
+      "id": "learned_3820851a56729de4",
+      "learned_at": 1769741270,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "Chandernagore",
+      "id": "learned_1cf202d90c7f15b9",
+      "learned_at": 1769741270,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Typical right-wing reaction.",
+      "id": "learned_d09fdd28076f5813",
+      "learned_at": 1769741270,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Eritrea multilingual",
+      "entity_type": "question_answer",
+      "fact": "The nation has no official language",
+      "id": "learned_72c2a6b243be2788",
+      "learned_at": 1769741270,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "\"Union Bank of Switzerland\", \"Hamburger Bahnhof in Berlin\", \"Institut Arbeit und Technik\"",
+      "id": "learned_e5e0b0e9255459fa",
+      "learned_at": 1769741270,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "\"capturing Chandarnagore\"",
+      "id": "learned_57e90ce9f5714305",
+      "learned_at": 1769741270,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Nearing London,",
+      "entity_type": "question_answer",
+      "fact": "the \"Artful Dodger\".",
+      "id": "learned_e0d56f0593035713",
+      "learned_at": 1769741270,
+      "verification_source": "task://task002_quoref_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "\"war on drugs\" begun under the Nixon administration.",
+      "id": "learned_c49470a58afcfee1",
+      "learned_at": 1769741270,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Phone rang Emily",
+      "entity_type": "question_answer",
+      "fact": "red_treasure_chest",
+      "id": "learned_1303b40ce780b814",
+      "learned_at": 1769741270,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1.",
+      "id": "learned_1bd9cc7ce931067f",
+      "learned_at": 1769741270,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "6 years old.",
+      "id": "learned_1157ff274ea8726c",
+      "learned_at": 1769741270,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "29.",
+      "id": "learned_956e858e608a501b",
+      "learned_at": 1769741270,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: Let me",
+      "entity_type": "question_answer",
+      "fact": "We were able to spend time together just talking and that helped us to connect better.",
+      "id": "learned_b53dfbaa2ce74053",
+      "learned_at": 1769741270,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "\"British forces capturing\", \"the French\"",
+      "id": "learned_ace793139688c372",
+      "learned_at": 1769741270,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Lawmakers in",
+      "entity_type": "question_answer",
+      "fact": "No, correct answer is C.",
+      "id": "learned_2e447e7ff309ccb6",
+      "learned_at": 1769741270,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1.",
+      "id": "learned_ad40ff8e638c1ff3",
+      "learned_at": 1769741270,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "3.",
+      "id": "learned_80b2772ef42bfbc0",
+      "learned_at": 1769741270,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 2.",
+      "id": "learned_3307ba429ccf1855",
+      "learned_at": 1769741270,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: Lakes formed",
+      "entity_type": "question_answer",
+      "fact": "What animals form lakes? (A) beavers.",
+      "id": "learned_868710649075510a",
+      "learned_at": 1769741269,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Olivia entered staircase",
+      "entity_type": "question_answer",
+      "fact": "red_suitcase",
+      "id": "learned_a66ea17ee0261ead",
+      "learned_at": 1769741269,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1.",
+      "id": "learned_f2ff952b535f79b4",
+      "learned_at": 1769741269,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: John wanted",
+      "entity_type": "question_answer",
+      "fact": "Reginald and John de Gray",
+      "id": "learned_19e867f5b90e05a4",
+      "learned_at": 1769741269,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Homework can",
+      "entity_type": "question_answer",
+      "fact": "B",
+      "id": "learned_548d584582d8103b",
+      "learned_at": 1769741269,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: A",
+      "entity_type": "question_answer",
+      "fact": "New York.",
+      "id": "learned_37c585e1aa078298",
+      "learned_at": 1769741269,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Poet William",
+      "entity_type": "question_answer",
+      "fact": "B",
+      "id": "learned_ebd4ce46a2c42d78",
+      "learned_at": 1769741269,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: We've all",
+      "entity_type": "question_answer",
+      "fact": "A",
+      "id": "learned_d8e17766c3a3fccd",
+      "learned_at": 1769741269,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "Chandernagore",
+      "id": "learned_9c4d1e5d5ce38f0b",
+      "learned_at": 1769741269,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: A",
+      "entity_type": "question_answer",
+      "fact": "Seattle.",
+      "id": "learned_5b8211efb5da23d3",
+      "learned_at": 1769741269,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: earthquake causes",
+      "entity_type": "question_answer",
+      "fact": "The shaking of the ground causes damage to buildings.",
+      "id": "learned_b94a9bacd9543734",
+      "learned_at": 1769741269,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: lightning can",
+      "entity_type": "question_answer",
+      "fact": "lightning.",
+      "id": "learned_b3634551bb7f384b",
+      "learned_at": 1769741269,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Early in",
+      "entity_type": "question_answer",
+      "fact": "\"cornwall\"",
+      "id": "learned_c486bcadb6ff3267",
+      "learned_at": 1769741269,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: Acidity",
+      "entity_type": "question_answer",
+      "fact": "Pittsburgh.",
+      "id": "learned_721622398cb956d6",
+      "learned_at": 1769741269,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "2.",
+      "id": "learned_662bff5ac4df5bf7",
+      "learned_at": 1769741269,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: shaking of",
+      "entity_type": "question_answer",
+      "fact": "The ground.",
+      "id": "learned_beb64c6aad623992",
+      "learned_at": 1769741269,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "\"capturing Chandarnagore\"",
+      "id": "learned_e503abf4005955c3",
+      "learned_at": 1769741269,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Because of its geography.",
+      "id": "learned_3dc48b42d5bcdb59",
+      "learned_at": 1769741269,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "Germany ",
+      "id": "learned_94acd1b0d42c12b6",
+      "learned_at": 1769741269,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: I told",
+      "entity_type": "question_answer",
+      "fact": "I will have shoes.",
+      "id": "learned_6e59f3a085383861",
+      "learned_at": 1769741269,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "16.",
+      "id": "learned_80833be4f07cb221",
+      "learned_at": 1769741269,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Discussion of a strategy to promote \"gun rights\" for white people was discussed by NRS and KKK.",
+      "id": "learned_45886014322370a2",
+      "learned_at": 1769741269,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: Until we",
+      "entity_type": "question_answer",
+      "fact": "Because the writer is interested in learning how to cook crepes .",
+      "id": "learned_6a2a6adb890958c9",
+      "learned_at": 1769741269,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "China and Vietnam, as well as passengers' families.",
+      "id": "learned_d02e26376335b335",
+      "learned_at": 1769741269,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "United States Courthouse",
+      "id": "learned_c17022a92ef2b2aa",
+      "learned_at": 1769741269,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: rain can",
+      "entity_type": "question_answer",
+      "fact": "soil.",
+      "id": "learned_def8e3480f4a8df6",
+      "learned_at": 1769741269,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Oliver entered porch",
+      "entity_type": "question_answer",
+      "fact": "red_crate",
+      "id": "learned_f9e45f9ebbfcb7a2",
+      "learned_at": 1769741269,
+      "verification_source": "task://task154_tomqa_find_location_hard_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Because Malaysia stated that the plane may have been flown into the Indian Ocean.",
+      "id": "learned_99d279fec58b8cbf",
+      "learned_at": 1769741269,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "They have irritated China.",
+      "id": "learned_f7a89a828a28e19f",
+      "learned_at": 1769741268,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: A new",
+      "entity_type": "question_answer",
+      "fact": "D",
+      "id": "learned_fb5f130fe386fa37",
+      "learned_at": 1769741268,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Nearing London,",
+      "entity_type": "question_answer",
+      "fact": "Jack Dawkins; Charley Bates.",
+      "id": "learned_300fac43c64033aa",
+      "learned_at": 1769741268,
+      "verification_source": "task://task002_quoref_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 2.",
+      "id": "learned_6b169cd9e51c54d2",
+      "learned_at": 1769741268,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "17.",
+      "id": "learned_035cc9694792bf0c",
+      "learned_at": 1769741268,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Lucas entered kitchen",
+      "entity_type": "question_answer",
+      "fact": "red_drawer",
+      "id": "learned_9ee3499133288a60",
+      "learned_at": 1769741268,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Because of its geography.",
+      "id": "learned_0e0642e04a143770",
+      "learned_at": 1769741268,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: So ,",
+      "entity_type": "question_answer",
+      "fact": "Because I enjoy talking to him .",
+      "id": "learned_84afa91f5005052e",
+      "learned_at": 1769741268,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "They've issued contradictory statements, mishandled key evidence, and wasted time that could have been spent looking for survivors.",
+      "id": "learned_83d3c140ddf44271",
+      "learned_at": 1769741268,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "29 November 1997 ",
+      "id": "learned_2a3b70562eedffc7",
+      "learned_at": 1769741268,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: I consider",
+      "entity_type": "question_answer",
+      "fact": "No",
+      "id": "learned_7a4d2cb7db07484c",
+      "learned_at": 1769741268,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: Creating lake",
+      "entity_type": "question_answer",
+      "fact": "Using them to create a lake.",
+      "id": "learned_9a240f18e8ad94a0",
+      "learned_at": 1769741268,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The French",
+      "entity_type": "question_answer",
+      "fact": "1756",
+      "id": "learned_c23571ba6ae91a7e",
+      "learned_at": 1769741268,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: I ask",
+      "entity_type": "question_answer",
+      "fact": "I might continue to critique the business idea to discover the weaknesses .",
+      "id": "learned_0cf8dffb13a7cc46",
+      "learned_at": 1769741268,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: A",
+      "entity_type": "question_answer",
+      "fact": "Vancouver.",
+      "id": "learned_0e50e8719fb64eba",
+      "learned_at": 1769741268,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Nearing London,",
+      "entity_type": "question_answer",
+      "fact": "Oliver believes Fagin's gang make wallets and handkerchiefs.",
+      "id": "learned_bd93a67bf64d8dd9",
+      "learned_at": 1769741268,
+      "verification_source": "task://task002_quoref_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "29 November 1997 ",
+      "id": "learned_42da4d706bc28722",
+      "learned_at": 1769741268,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Nearing London,",
+      "entity_type": "question_answer",
+      "fact": "the \"old gentleman's\" residence.",
+      "id": "learned_9f722d9a79a4ba64",
+      "learned_at": 1769741268,
+      "verification_source": "task://task002_quoref_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Compared to",
+      "entity_type": "question_answer",
+      "fact": "No",
+      "id": "learned_3fb481844b18a220",
+      "learned_at": 1769741268,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "3.",
+      "id": "learned_c75e2deee517c46e",
+      "learned_at": 1769741268,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "2, 4.",
+      "id": "learned_17c09b6c6acf417e",
+      "learned_at": 1769741268,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Early in",
+      "entity_type": "question_answer",
+      "fact": "\"cornwall\"",
+      "id": "learned_f37c8fa291764b76",
+      "learned_at": 1769741268,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Ethan entered bedroom",
+      "entity_type": "question_answer",
+      "fact": "green_cupboard",
+      "id": "learned_269a311d433847a9",
+      "learned_at": 1769741268,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: A",
+      "entity_type": "question_answer",
+      "fact": "Seattle will have an increase in demand for gas.",
+      "id": "learned_2d58a417fbb0cd46",
+      "learned_at": 1769741268,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1.",
+      "id": "learned_3a2fe267c4865159",
+      "learned_at": 1769741268,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Eritrea multilingual",
+      "entity_type": "question_answer",
+      "fact": "The nation has no official language",
+      "id": "learned_2a499bd5a803270e",
+      "learned_at": 1769741268,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: It has",
+      "entity_type": "question_answer",
+      "fact": "Because I 've been busy with other things .",
+      "id": "learned_6fb29cfc3aa506db",
+      "learned_at": 1769741268,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: I watch",
+      "entity_type": "question_answer",
+      "fact": "No",
+      "id": "learned_7baf94e91a63b880",
+      "learned_at": 1769741268,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "17.",
+      "id": "learned_d5247bf4b8348edb",
+      "learned_at": 1769741268,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: radio converts",
+      "entity_type": "question_answer",
+      "fact": "sound.",
+      "id": "learned_e02abd8b8d81213e",
+      "learned_at": 1769741267,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Uphold, and continue.",
+      "id": "learned_253575c4f38ae867",
+      "learned_at": 1769741267,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: On 12",
+      "entity_type": "question_answer",
+      "fact": "wider interpretation of genocide",
+      "id": "learned_7c183835112ae0f1",
+      "learned_at": 1769741267,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "From pack of",
+      "entity_type": "question_answer",
+      "fact": "Option C",
+      "id": "learned_7945f3ee4b2654da",
+      "learned_at": 1769741267,
+      "verification_source": "task://task750_aqua_multiple_choice_answering"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Liam entered office",
+      "entity_type": "question_answer",
+      "fact": "green_pantry",
+      "id": "learned_7f31a17a93263281",
+      "learned_at": 1769741267,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "\"Union Bank of Switzerland\", \"Hamburger Bahnhof in Berlin\", \"Institut Arbeit und Technik\"",
+      "id": "learned_784f64ba082984b5",
+      "learned_at": 1769741267,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Almost five",
+      "entity_type": "question_answer",
+      "fact": "D",
+      "id": "learned_a334f2b7331efedf",
+      "learned_at": 1769741267,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: Lakes formed",
+      "entity_type": "question_answer",
+      "fact": "What animals form lakes? (A) beavers.",
+      "id": "learned_4c43e3c9f68a32b6",
+      "learned_at": 1769741267,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "29.",
+      "id": "learned_c12f326f71de3dee",
+      "learned_at": 1769741267,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Every day",
+      "entity_type": "question_answer",
+      "fact": "B",
+      "id": "learned_530c32412b1aa38d",
+      "learned_at": 1769741267,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "Chandernagore",
+      "id": "learned_266e0ab347bb68ee",
+      "learned_at": 1769741267,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: I told,",
+      "entity_type": "question_answer",
+      "fact": "I will return the shoes and get back the money.",
+      "id": "learned_751ec08c06ba9a2c",
+      "learned_at": 1769741267,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: Volcanic activity",
+      "entity_type": "question_answer",
+      "fact": "Ash clouds.",
+      "id": "learned_3802da96c27f23d1",
+      "learned_at": 1769741267,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "2",
+      "id": "learned_c1754ea8cb9e17c8",
+      "learned_at": 1769741267,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Amelia entered hall",
+      "entity_type": "question_answer",
+      "fact": "blue_box",
+      "id": "learned_11085d8fd5dfb916",
+      "learned_at": 1769741267,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "The Malaysian government has not done well.",
+      "id": "learned_ca14f87857b69fbb",
+      "learned_at": 1769741267,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Nearing London,",
+      "entity_type": "question_answer",
+      "fact": "the \"old gentleman's\" residence.",
+      "id": "learned_21bf21e8404c2eba",
+      "learned_at": 1769741267,
+      "verification_source": "task://task002_quoref_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "\"China\".",
+      "id": "learned_339d337b8a68152e",
+      "learned_at": 1769741267,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "China and Vietnam, as well as passengers' families.",
+      "id": "learned_8b0ecdb639f4155a",
+      "learned_at": 1769741267,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 2, 3, 5, 6, 8, 10.",
+      "id": "learned_271df572e922cf81",
+      "learned_at": 1769741267,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Nearing London,",
+      "entity_type": "question_answer",
+      "fact": "Jack Dawkins; Charley Bates.",
+      "id": "learned_e4e357709e84dfec",
+      "learned_at": 1769741267,
+      "verification_source": "task://task002_quoref_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Homework can",
+      "entity_type": "question_answer",
+      "fact": "Yes, answer is B.",
+      "id": "learned_51a14b6596ced60b",
+      "learned_at": 1769741267,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: I told",
+      "entity_type": "question_answer",
+      "fact": "I will have shoes.",
+      "id": "learned_32f607def814eca1",
+      "learned_at": 1769741267,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "China has been very irritated by contradictory statements.",
+      "id": "learned_d6bc25a78709b751",
+      "learned_at": 1769741267,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The earthquake",
+      "entity_type": "question_answer",
+      "fact": "Catherine.",
+      "id": "learned_a6a69ec80a0c9aec",
+      "learned_at": 1769741267,
+      "verification_source": "task://task002_quoref_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The French",
+      "entity_type": "question_answer",
+      "fact": "1754-1763",
+      "id": "learned_338d1126072321b3",
+      "learned_at": 1769741267,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: Alpine",
+      "entity_type": "question_answer",
+      "fact": "Lake Schmitz.",
+      "id": "learned_f57d6cb265a86269",
+      "learned_at": 1769741267,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "7",
+      "id": "learned_9769967d72850557",
+      "learned_at": 1769741267,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Amelia entered hall",
+      "entity_type": "question_answer",
+      "fact": "blue_box",
+      "id": "learned_2f525252ed80d40b",
+      "learned_at": 1769741267,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Joe Temper",
+      "entity_type": "question_answer",
+      "fact": "C",
+      "id": "learned_81998489195a4c8f",
+      "learned_at": 1769741266,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: A",
+      "entity_type": "question_answer",
+      "fact": "Decrease.",
+      "id": "learned_93f24efea056b42f",
+      "learned_at": 1769741266,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "4, 5, 16, 17.",
+      "id": "learned_21fc2e31254239a1",
+      "learned_at": 1769741266,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: The first",
+      "entity_type": "question_answer",
+      "fact": "No",
+      "id": "learned_c5ebff3f368a94d7",
+      "learned_at": 1769741266,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "11.",
+      "id": "learned_3b6201ab47a5deb7",
+      "learned_at": 1769741266,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "\"No\".",
+      "id": "learned_d21edc08ca2f6c1f",
+      "learned_at": 1769741266,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Dear son,",
+      "entity_type": "question_answer",
+      "fact": "D",
+      "id": "learned_0e13567d77d645bc",
+      "learned_at": 1769741266,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "6 years old.",
+      "id": "learned_64da3d76bee5ca18",
+      "learned_at": 1769741266,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Animated, key message: how gun rights are promoted for whites, outlawed for blacks.",
+      "id": "learned_925b4f50e98b69a1",
+      "learned_at": 1769741266,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Early in",
+      "entity_type": "question_answer",
+      "fact": "\"Sheriff of Cornwall\", \"Justice of the Peace for Devon, Exeter\", \"commander in the English army\"",
+      "id": "learned_1a5a8e35a59702f7",
+      "learned_at": 1769741266,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Offensive Counterair",
+      "entity_type": "question_answer",
+      "fact": "offensive operations to destroy, disrupt, or neutralize enemy aircraft, missiles, launch platforms",
+      "id": "learned_9ff9d949c4f153f4",
+      "learned_at": 1769741266,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Although little",
+      "entity_type": "question_answer",
+      "fact": "to study general characteristics of the signals",
+      "id": "learned_fbecc7aefb27c2da",
+      "learned_at": 1769741266,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: radio converts",
+      "entity_type": "question_answer",
+      "fact": "sound.",
+      "id": "learned_5851daa86fbdacab",
+      "learned_at": 1769741266,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Jacob entered dining_room",
+      "entity_type": "question_answer",
+      "fact": "blue_pantry",
+      "id": "learned_38e0e5abcd3fa0f1",
+      "learned_at": 1769741266,
+      "verification_source": "task://task154_tomqa_find_location_hard_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The French",
+      "entity_type": "question_answer",
+      "fact": "roughly 60,000",
+      "id": "learned_a01492e170593c66",
+      "learned_at": 1769741266,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Oliver entered porch",
+      "entity_type": "question_answer",
+      "fact": "red_crate",
+      "id": "learned_a116c83d8025ec4e",
+      "learned_at": 1769741266,
+      "verification_source": "task://task154_tomqa_find_location_hard_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: Hi there",
+      "entity_type": "question_answer",
+      "fact": "I would think that it 's pleasant .",
+      "id": "learned_b0fd98c0f1092abd",
+      "learned_at": 1769741266,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Many people",
+      "entity_type": "question_answer",
+      "fact": "C",
+      "id": "learned_02718fe9cd05fa6f",
+      "learned_at": 1769741266,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "United States Courthouse",
+      "id": "learned_fa7d367ea7946eeb",
+      "learned_at": 1769741266,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "\"China\".",
+      "id": "learned_259d0c7d41d6a6ab",
+      "learned_at": 1769741266,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: Ms Mumma",
+      "entity_type": "question_answer",
+      "fact": "Because I had an intense emotional response to the new development .",
+      "id": "learned_5b2132c476f31435",
+      "learned_at": 1769741266,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "29.",
+      "id": "learned_8e8da946498b1953",
+      "learned_at": 1769741266,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Sent 1, Sent 2.",
+      "id": "learned_76d4499ff27ae42b",
+      "learned_at": 1769741266,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "2.",
+      "id": "learned_0b40bbfb2bb84710",
+      "learned_at": 1769741266,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Although little",
+      "entity_type": "question_answer",
+      "fact": "to study general characteristics of the signals",
+      "id": "learned_38f15994d7d0000f",
+      "learned_at": 1769741266,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: These types",
+      "entity_type": "question_answer",
+      "fact": "copyrighted content",
+      "id": "learned_21933f229d2221cd",
+      "learned_at": 1769741266,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: The",
+      "entity_type": "question_answer",
+      "fact": "more.",
+      "id": "learned_9a58bd57aa1c63ba",
+      "learned_at": 1769741266,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Uphold, and continue.",
+      "id": "learned_a57a09a4af457d1e",
+      "learned_at": 1769741266,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "CIA tolerated crack sales in US cities to fund the operation of South American \"contras\".",
+      "id": "learned_c9a1a399c0fca7d7",
+      "learned_at": 1769741266,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "\"Chandernagore\", \"Pondicherry\"",
+      "id": "learned_f9cb308b22254296",
+      "learned_at": 1769741265,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: The first",
+      "entity_type": "question_answer",
+      "fact": "No",
+      "id": "learned_627abf52cf5d94c1",
+      "learned_at": 1769741265,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: The",
+      "entity_type": "question_answer",
+      "fact": "A.",
+      "id": "learned_eec05d3fd45c3817",
+      "learned_at": 1769741265,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: rain can",
+      "entity_type": "question_answer",
+      "fact": "soil.",
+      "id": "learned_7ac273ec5ebb9b70",
+      "learned_at": 1769741265,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "16.",
+      "id": "learned_970c351371ad2bbc",
+      "learned_at": 1769741265,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Ineffective rescue efforts.",
+      "id": "learned_648ad996ee2afdf4",
+      "learned_at": 1769741265,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: It true",
+      "entity_type": "question_answer",
+      "fact": "D",
+      "id": "learned_ce0d849edca80670",
+      "learned_at": 1769741265,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "21.",
+      "id": "learned_41cd97a505c59453",
+      "learned_at": 1769741265,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 2, 6, 7.",
+      "id": "learned_4c68e603ddb0af96",
+      "learned_at": 1769741265,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: Ms Mumma",
+      "entity_type": "question_answer",
+      "fact": "Because I had an intense emotional response to the new development .",
+      "id": "learned_4cb8a1cbf02a6e29",
+      "learned_at": 1769741265,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Earthquakes.",
+      "id": "learned_7d571dddabbbf686",
+      "learned_at": 1769741265,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 4.",
+      "id": "learned_cdc124aa4d355e75",
+      "learned_at": 1769741265,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: protractor can",
+      "entity_type": "question_answer",
+      "fact": "a protractor.",
+      "id": "learned_878930a423f3e3e0",
+      "learned_at": 1769741265,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: When I",
+      "entity_type": "question_answer",
+      "fact": "B",
+      "id": "learned_0d0817da41d5cae4",
+      "learned_at": 1769741265,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: This July",
+      "entity_type": "question_answer",
+      "fact": "He was on foot .",
+      "id": "learned_145ac8267a3e7ea9",
+      "learned_at": 1769741265,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Philip Arnold",
+      "entity_type": "question_answer",
+      "fact": "Philip.",
+      "id": "learned_6aabd80dace40338",
+      "learned_at": 1769741265,
+      "verification_source": "task://task002_quoref_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "4, 5.",
+      "id": "learned_74d80d4ff9ce02f4",
+      "learned_at": 1769741265,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "They have irritated China.",
+      "id": "learned_3dafb0b4bbee23e9",
+      "learned_at": 1769741265,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: While Armenian",
+      "entity_type": "question_answer",
+      "fact": "Armenian Apostolic Church",
+      "id": "learned_49a0e37b8e06a7ea",
+      "learned_at": 1769741265,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Animated history of the US and one of the key messages is continuing the racist goals of the KKK.",
+      "id": "learned_483a6eea26330a5b",
+      "learned_at": 1769741265,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: When I",
+      "entity_type": "question_answer",
+      "fact": "No",
+      "id": "learned_63889dec3256a6b4",
+      "learned_at": 1769741265,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Bastard.",
+      "id": "learned_03669785ffa278b8",
+      "learned_at": 1769741265,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Because Malaysia stated that the plane may have been flown into the Indian Ocean.",
+      "id": "learned_fe81de7968c1343a",
+      "learned_at": 1769741265,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: In 1955,",
+      "entity_type": "question_answer",
+      "fact": "B",
+      "id": "learned_8b3d4c0384e0e425",
+      "learned_at": 1769741265,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "2.",
+      "id": "learned_a8e3ac9e2d627ee7",
+      "learned_at": 1769741265,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "3.",
+      "id": "learned_5ea470ee99090eee",
+      "learned_at": 1769741265,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "29.",
+      "id": "learned_000b808c3d10638e",
+      "learned_at": 1769741265,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "16.",
+      "id": "learned_7987617323ddb76e",
+      "learned_at": 1769741265,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Compared to",
+      "entity_type": "question_answer",
+      "fact": "No",
+      "id": "learned_16e83fa9c91c21b2",
+      "learned_at": 1769741265,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Early in",
+      "entity_type": "question_answer",
+      "fact": "\"Sheriff of Cornwall\", \"Justice of the Peace for Devon, Exeter\", \"commander in the English army\"",
+      "id": "learned_a7b9a12fb08d7e50",
+      "learned_at": 1769741265,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Lucas entered master_bedroom",
+      "entity_type": "question_answer",
+      "fact": "green_drawer",
+      "id": "learned_eb905a84fb21bdf1",
+      "learned_at": 1769741264,
+      "verification_source": "task://task154_tomqa_find_location_hard_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "17.",
+      "id": "learned_d56cef1f48b76eb6",
+      "learned_at": 1769741264,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: The",
+      "entity_type": "question_answer",
+      "fact": "less.",
+      "id": "learned_c7ed67cca6913247",
+      "learned_at": 1769741264,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Lawmakers in",
+      "entity_type": "question_answer",
+      "fact": "D",
+      "id": "learned_49ba4435b430893d",
+      "learned_at": 1769741264,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: So ,",
+      "entity_type": "question_answer",
+      "fact": "Because I enjoy talking to him .",
+      "id": "learned_3b595310d0a0fbe8",
+      "learned_at": 1769741264,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: The",
+      "entity_type": "question_answer",
+      "fact": "A.",
+      "id": "learned_68e325fe83048f2d",
+      "learned_at": 1769741264,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Homework can",
+      "entity_type": "question_answer",
+      "fact": "A",
+      "id": "learned_91b65e3fa46efe17",
+      "learned_at": 1769741264,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "7",
+      "id": "learned_5460cd23b4947fdc",
+      "learned_at": 1769741264,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "11.",
+      "id": "learned_ab1341d17daceef7",
+      "learned_at": 1769741264,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Lawmakers in",
+      "entity_type": "question_answer",
+      "fact": "No",
+      "id": "learned_bfde431ea5c1244c",
+      "learned_at": 1769741264,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: Acidity",
+      "entity_type": "question_answer",
+      "fact": "Pittsburgh.",
+      "id": "learned_7cb52b3174a03490",
+      "learned_at": 1769741264,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "2.",
+      "id": "learned_9cc5a5291d70f4c5",
+      "learned_at": 1769741264,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "2.",
+      "id": "learned_4b3eed903ebbef2a",
+      "learned_at": 1769741264,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Tsunamis.",
+      "id": "learned_7790dff06a4c7890",
+      "learned_at": 1769741264,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: A new",
+      "entity_type": "question_answer",
+      "fact": "D",
+      "id": "learned_00e6dadf26f46d82",
+      "learned_at": 1769741264,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Beijing officials.",
+      "id": "learned_c32c16536f5cf080",
+      "learned_at": 1769741264,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "3.",
+      "id": "learned_7c9391eff9c6a787",
+      "learned_at": 1769741264,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "\"British successfully defended Madras\"",
+      "id": "learned_eca58381b58dd889",
+      "learned_at": 1769741264,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "The right wing.",
+      "id": "learned_2c07ea736b595fd5",
+      "learned_at": 1769741264,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Early in",
+      "entity_type": "question_answer",
+      "fact": "\"cornwall\"",
+      "id": "learned_890605593a183c5d",
+      "learned_at": 1769741264,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "\"Saving possible survivors\".",
+      "id": "learned_8898c1554181c61b",
+      "learned_at": 1769741264,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Homework can",
+      "entity_type": "question_answer",
+      "fact": "A",
+      "id": "learned_ac697c6456e51c0b",
+      "learned_at": 1769741264,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Joe Temper",
+      "entity_type": "question_answer",
+      "fact": "C",
+      "id": "learned_ba80b3556ed41b9f",
+      "learned_at": 1769741264,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: chopping down",
+      "entity_type": "question_answer",
+      "fact": "chopping down trees.",
+      "id": "learned_fdaeb1af223564a3",
+      "learned_at": 1769741264,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: It 11",
+      "entity_type": "question_answer",
+      "fact": "No",
+      "id": "learned_8f7f67a58639a169",
+      "learned_at": 1769741264,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "\"war on drugs\" begun under the Nixon administration.",
+      "id": "learned_6ab8e6b78f556ca7",
+      "learned_at": 1769741264,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "20.",
+      "id": "learned_26b48aadc0917731",
+      "learned_at": 1769741264,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1 and 2.",
+      "id": "learned_800f5b20d00fb520",
+      "learned_at": 1769741264,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "4, 5.",
+      "id": "learned_b37ce4c3fa2b78e3",
+      "learned_at": 1769741264,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The earthquake",
+      "entity_type": "question_answer",
+      "fact": "Catherine.",
+      "id": "learned_9a776c7a7c264e1a",
+      "learned_at": 1769741264,
+      "verification_source": "task://task002_quoref_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: Hi there",
+      "entity_type": "question_answer",
+      "fact": "I would think that it 's pleasant .",
+      "id": "learned_920b65f8bbac1baa",
+      "learned_at": 1769741264,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "The right wing.",
+      "id": "learned_156b0ce535abcb3b",
+      "learned_at": 1769741264,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: A",
+      "entity_type": "question_answer",
+      "fact": "Seattle will have an increase in demand for gas.",
+      "id": "learned_cfe2a7a7891aab11",
+      "learned_at": 1769741263,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "\"Chandernagore\", \"Pondicherry\"",
+      "id": "learned_45f7bd5252144d51",
+      "learned_at": 1769741263,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Nearing London,",
+      "entity_type": "question_answer",
+      "fact": "Jack Dawkins.",
+      "id": "learned_f7a12dce671a8953",
+      "learned_at": 1769741263,
+      "verification_source": "task://task002_quoref_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: We can",
+      "entity_type": "question_answer",
+      "fact": "No",
+      "id": "learned_6a03cb823154224e",
+      "learned_at": 1769741263,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "\"British successfully defended Madras\"",
+      "id": "learned_fa4dc8187db4cc51",
+      "learned_at": 1769741263,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: I watch",
+      "entity_type": "question_answer",
+      "fact": "No",
+      "id": "learned_fef43e88b8871d8d",
+      "learned_at": 1769741263,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "4, 5, 16, 17.",
+      "id": "learned_267f6ec134c92698",
+      "learned_at": 1769741263,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: I consider",
+      "entity_type": "question_answer",
+      "fact": "No",
+      "id": "learned_483bd5f1dd4c4720",
+      "learned_at": 1769741263,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "The strategy to promote \"gun rights\" for white people while outlawing it for black people allowed racisim to continue without allowing to KKK to flourish.",
+      "id": "learned_d0c85eea15cf2177",
+      "learned_at": 1769741263,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Beijing officials.",
+      "id": "learned_98877c8042d6f0db",
+      "learned_at": 1769741263,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: you see",
+      "entity_type": "question_answer",
+      "fact": "I broke up with my friend.",
+      "id": "learned_82ab8da529cbfead",
+      "learned_at": 1769741263,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Every day",
+      "entity_type": "question_answer",
+      "fact": "C",
+      "id": "learned_0cd9888b136aa082",
+      "learned_at": 1769741263,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 2, 6, 7.",
+      "id": "learned_2cda18393f09c3e9",
+      "learned_at": 1769741263,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: British newspapers",
+      "entity_type": "question_answer",
+      "fact": "C",
+      "id": "learned_03951664770927ef",
+      "learned_at": 1769741263,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: You could",
+      "entity_type": "question_answer",
+      "fact": "A",
+      "id": "learned_589417263e2c0377",
+      "learned_at": 1769741263,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "\"British successfully defended Madras\"",
+      "id": "learned_c3b276bd8376218f",
+      "learned_at": 1769741263,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Owen entered living_room",
+      "entity_type": "question_answer",
+      "fact": "blue_bathtub",
+      "id": "learned_4a93f7f52cb288c4",
+      "learned_at": 1769741263,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "2.",
+      "id": "learned_fc5acaa4aafc6ce5",
+      "learned_at": 1769741263,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "21.",
+      "id": "learned_23f5fab1874ba52d",
+      "learned_at": 1769741263,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 2, 3, 5, 6, 8, 10.",
+      "id": "learned_9d08712b3134ac99",
+      "learned_at": 1769741263,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "\"No\".",
+      "id": "learned_ad09a9c66343c591",
+      "learned_at": 1769741263,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 2.",
+      "id": "learned_0e1d89390e01109c",
+      "learned_at": 1769741263,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "4, 5.",
+      "id": "learned_1e5644cd382aca49",
+      "learned_at": 1769741263,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Amelia entered living_room",
+      "entity_type": "question_answer",
+      "fact": "green_crate",
+      "id": "learned_a9b081c791642dc8",
+      "learned_at": 1769741263,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 2, 6, 7.",
+      "id": "learned_a24f0beb40d7fff4",
+      "learned_at": 1769741263,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: Last night",
+      "entity_type": "question_answer",
+      "fact": "I was burnt out from too much work .",
+      "id": "learned_40a2a35cdf762113",
+      "learned_at": 1769741263,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Every day",
+      "entity_type": "question_answer",
+      "fact": "Correct",
+      "id": "learned_32c7f231eca01561",
+      "learned_at": 1769741263,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "\"Union Bank of Switzerland\", \"Hamburger Bahnhof in Berlin\", \"Institut Arbeit und Technik\"",
+      "id": "learned_79078630d8742d55",
+      "learned_at": 1769741263,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "2.",
+      "id": "learned_46e2536b48ced290",
+      "learned_at": 1769741263,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The French",
+      "entity_type": "question_answer",
+      "fact": "population of roughly 60,000 European settlers",
+      "id": "learned_6d773a7e2ba3b4a8",
+      "learned_at": 1769741263,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Ernest Bower, China, Vietnam.",
+      "id": "learned_a2011a4b7c9387cd",
+      "learned_at": 1769741263,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "19.",
+      "id": "learned_e3f3ae39b4822a0c",
+      "learned_at": 1769741263,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: But thing",
+      "entity_type": "question_answer",
+      "fact": "It is her favorite church and I do n't want to hurt her feelings .",
+      "id": "learned_b75c2616ce03d8a0",
+      "learned_at": 1769741262,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 4.",
+      "id": "learned_e0b1434e3d69067d",
+      "learned_at": 1769741262,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "21.",
+      "id": "learned_9f75d22f064f623f",
+      "learned_at": 1769741262,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Dear son,",
+      "entity_type": "question_answer",
+      "fact": "D",
+      "id": "learned_b7b2a03d358f32be",
+      "learned_at": 1769741262,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "No, it has failed.",
+      "id": "learned_dfc1175d6e0d88ef",
+      "learned_at": 1769741262,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Many people",
+      "entity_type": "question_answer",
+      "fact": "C",
+      "id": "learned_37a6600c91857c46",
+      "learned_at": 1769741262,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Lawmakers in",
+      "entity_type": "question_answer",
+      "fact": "C",
+      "id": "learned_48daf3e8da35f65b",
+      "learned_at": 1769741262,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Sent 1, Sent 2.",
+      "id": "learned_38aa4695a94b7547",
+      "learned_at": 1769741262,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: Volcanic ash",
+      "entity_type": "question_answer",
+      "fact": "volcanic ash.",
+      "id": "learned_d3549a52cbf767b0",
+      "learned_at": 1769741262,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Philip Arnold",
+      "entity_type": "question_answer",
+      "fact": "Philip.",
+      "id": "learned_f35b4e20f48cd62b",
+      "learned_at": 1769741262,
+      "verification_source": "task://task002_quoref_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Nearing London,",
+      "entity_type": "question_answer",
+      "fact": "Saffron Hill.",
+      "id": "learned_649c9331de3b28d6",
+      "learned_at": 1769741262,
+      "verification_source": "task://task002_quoref_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Contradictory statements by Malaysian officials.",
+      "id": "learned_da847dcbed314861",
+      "learned_at": 1769741262,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "2",
+      "id": "learned_5c00d13dfa74ef41",
+      "learned_at": 1769741262,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: WHAT could",
+      "entity_type": "question_answer",
+      "fact": "The misread label made the person think the package contains something forbidden , the truth was dull .",
+      "id": "learned_7059467b31700d33",
+      "learned_at": 1769741262,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "Germany ",
+      "id": "learned_d8048fcb895ab202",
+      "learned_at": 1769741262,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: Creating lake",
+      "entity_type": "question_answer",
+      "fact": "Using them to create a lake.",
+      "id": "learned_3edb911a7d819dcf",
+      "learned_at": 1769741262,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: These types",
+      "entity_type": "question_answer",
+      "fact": "copyrighted content",
+      "id": "learned_b57a9bb505b01770",
+      "learned_at": 1769741262,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: While Armenian",
+      "entity_type": "question_answer",
+      "fact": "Armenian Apostolic Church",
+      "id": "learned_97696da387409cee",
+      "learned_at": 1769741262,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Nearing London,",
+      "entity_type": "question_answer",
+      "fact": "Jack Dawkins.",
+      "id": "learned_f37ceb450a91bc62",
+      "learned_at": 1769741262,
+      "verification_source": "task://task002_quoref_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "2.",
+      "id": "learned_6e95e4111f3c066b",
+      "learned_at": 1769741262,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Amelia entered living_room",
+      "entity_type": "question_answer",
+      "fact": "green_crate",
+      "id": "learned_20b05516e0ff1213",
+      "learned_at": 1769741262,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "29.",
+      "id": "learned_3e4a6670436d91e6",
+      "learned_at": 1769741262,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "20.",
+      "id": "learned_5f0e9a4be5101153",
+      "learned_at": 1769741262,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "29 November 1997 ",
+      "id": "learned_e897ef1134ad7349",
+      "learned_at": 1769741262,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Time has been wasted for saving passengers.",
+      "id": "learned_45eb4484d488eeb9",
+      "learned_at": 1769741262,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: This new",
+      "entity_type": "question_answer",
+      "fact": "Jean Buridan, Nicole Oresme and the Oxford Calculators",
+      "id": "learned_4084e63fa112f674",
+      "learned_at": 1769741262,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "CIA tolerated crack sales in US cities to fund the operation of South American \"contras\".",
+      "id": "learned_9db0d5d140e73bf5",
+      "learned_at": 1769741262,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "4, 5.",
+      "id": "learned_712d6691d722b8d2",
+      "learned_at": 1769741262,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 4.",
+      "id": "learned_f6c19e70cf100877",
+      "learned_at": 1769741262,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 2.",
+      "id": "learned_13fcba74ac852997",
+      "learned_at": 1769741262,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "It is believed the CIA tolerated crack sales, raising other questions \"Why do people deal drugs\" and \"do they do it because it is fun\"?.",
+      "id": "learned_f7a8e629f803a5f6",
+      "learned_at": 1769741262,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: I told,",
+      "entity_type": "question_answer",
+      "fact": "I will return the shoes and get back the money.",
+      "id": "learned_cd927bd058e6f2a2",
+      "learned_at": 1769741262,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "3.",
+      "id": "learned_e4d5203b260782eb",
+      "learned_at": 1769741262,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 2.",
+      "id": "learned_8ee2f0a5b11f6310",
+      "learned_at": 1769741262,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: rain helps",
+      "entity_type": "question_answer",
+      "fact": "survived.",
+      "id": "learned_83a281bf1644efcb",
+      "learned_at": 1769741261,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: Sadly he",
+      "entity_type": "question_answer",
+      "fact": "His music is average .",
+      "id": "learned_64efb544be8731e1",
+      "learned_at": 1769741261,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1.",
+      "id": "learned_f6bfb49fc8497c2e",
+      "learned_at": 1769741261,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Kansas.",
+      "id": "learned_8ee6b16bae35e951",
+      "learned_at": 1769741261,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: It true",
+      "entity_type": "question_answer",
+      "fact": "D",
+      "id": "learned_8c921fe197e34306",
+      "learned_at": 1769741261,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "7, 8.",
+      "id": "learned_279ff0080d9fe669",
+      "learned_at": 1769741261,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: The ground",
+      "entity_type": "question_answer",
+      "fact": "ground shaking.",
+      "id": "learned_2cb3636ce2bd550e",
+      "learned_at": 1769741261,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "\"Union Bank of Switzerland\", \"Hamburger Bahnhof in Berlin\", \"Institut Arbeit und Technik\"",
+      "id": "learned_73e766ef8a98d9c1",
+      "learned_at": 1769741261,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: you see",
+      "entity_type": "question_answer",
+      "fact": "I was wrong.",
+      "id": "learned_76dd5633d2b504ea",
+      "learned_at": 1769741261,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "The discussion of gun rights being promoted by the NRA.",
+      "id": "learned_210017fe7b2d32fc",
+      "learned_at": 1769741261,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "Chandernagore",
+      "id": "learned_0d4f5dd4c50945d2",
+      "learned_at": 1769741261,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "2, 4.",
+      "id": "learned_87f89a38eb10140b",
+      "learned_at": 1769741261,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: The",
+      "entity_type": "question_answer",
+      "fact": "B.",
+      "id": "learned_f52283be9409f0de",
+      "learned_at": 1769741261,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Every day",
+      "entity_type": "question_answer",
+      "fact": "C",
+      "id": "learned_4feeab863b7bb5c2",
+      "learned_at": 1769741261,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Nixon.",
+      "id": "learned_a5fd9a24d42eac62",
+      "learned_at": 1769741261,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Tsunamis.",
+      "id": "learned_a0702e317767a3c4",
+      "learned_at": 1769741261,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: A",
+      "entity_type": "question_answer",
+      "fact": "Seattle.",
+      "id": "learned_5121274e8944955a",
+      "learned_at": 1769741261,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Jackson entered hall",
+      "entity_type": "question_answer",
+      "fact": "red_envelope",
+      "id": "learned_6990a140398102fd",
+      "learned_at": 1769741261,
+      "verification_source": "task://task154_tomqa_find_location_hard_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "29 November 1997 ",
+      "id": "learned_eba5c51e1fd910b6",
+      "learned_at": 1769741261,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Nearing London,",
+      "entity_type": "question_answer",
+      "fact": "the \"Artful Dodger\".",
+      "id": "learned_cd9666679ca5ff68",
+      "learned_at": 1769741261,
+      "verification_source": "task://task002_quoref_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: John wanted",
+      "entity_type": "question_answer",
+      "fact": "Reginald and John de Gray",
+      "id": "learned_9fc00dbd3e98981c",
+      "learned_at": 1769741261,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: I mean",
+      "entity_type": "question_answer",
+      "fact": "The company hiring the temp workers might have had a change of mind .",
+      "id": "learned_decb48655b8baa77",
+      "learned_at": 1769741261,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1 and 2.",
+      "id": "learned_1d33a8d691964c4c",
+      "learned_at": 1769741261,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: A",
+      "entity_type": "question_answer",
+      "fact": "Increase.",
+      "id": "learned_1ef11d11116120e0",
+      "learned_at": 1769741261,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: A",
+      "entity_type": "question_answer",
+      "fact": "Decrease.",
+      "id": "learned_32fd5e9cc3738f00",
+      "learned_at": 1769741261,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1 and 2.",
+      "id": "learned_6b66d1982ff2d5ec",
+      "learned_at": 1769741261,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Ernest Bower, China, Vietnam.",
+      "id": "learned_427360d06b8a4c48",
+      "learned_at": 1769741261,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: you see",
+      "entity_type": "question_answer",
+      "fact": "I was wrong.",
+      "id": "learned_ea97282497ff1b09",
+      "learned_at": 1769741261,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "4, 5.",
+      "id": "learned_b31b08cd0c1f58f0",
+      "learned_at": 1769741261,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Jackson entered pantry",
+      "entity_type": "question_answer",
+      "fact": "red_bucket",
+      "id": "learned_e7aa90fad3dd765d",
+      "learned_at": 1769741261,
+      "verification_source": "task://task154_tomqa_find_location_hard_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Jackson entered pantry",
+      "entity_type": "question_answer",
+      "fact": "red_bucket",
+      "id": "learned_3c1f6ed77b1130e5",
+      "learned_at": 1769741261,
+      "verification_source": "task://task154_tomqa_find_location_hard_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Early in",
+      "entity_type": "question_answer",
+      "fact": "\"Sheriff of Cornwall\", \"Justice of the Peace for Devon, Exeter\", \"commander in the English army\"",
+      "id": "learned_2f94f4ee69f56f34",
+      "learned_at": 1769741261,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Nearing London,",
+      "entity_type": "question_answer",
+      "fact": "Oliver believes Fagin's gang make wallets and handkerchiefs.",
+      "id": "learned_144b2730f963186e",
+      "learned_at": 1769741261,
+      "verification_source": "task://task002_quoref_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "3.",
+      "id": "learned_393bf392939b691d",
+      "learned_at": 1769741261,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Every day",
+      "entity_type": "question_answer",
+      "fact": "B",
+      "id": "learned_eeeeaa7644f15341",
+      "learned_at": 1769741261,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: After wrapping",
+      "entity_type": "question_answer",
+      "fact": "Oujda, Tangier and Erfoud",
+      "id": "learned_577095bcdb28d408",
+      "learned_at": 1769741260,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: pesticides can",
+      "entity_type": "question_answer",
+      "fact": "pesticides.",
+      "id": "learned_0383ebc3c43eccca",
+      "learned_at": 1769741260,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Finally, I",
+      "entity_type": "question_answer",
+      "fact": "A",
+      "id": "learned_242bdfe395b95349",
+      "learned_at": 1769741260,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Lucas entered dining_room",
+      "entity_type": "question_answer",
+      "fact": "green_bucket",
+      "id": "learned_d835e17485248582",
+      "learned_at": 1769741260,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "It is an animated history of the US and one of the key messages is  to continue the racism of the KKK.",
+      "id": "learned_f724812e01314957",
+      "learned_at": 1769741260,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Earthquakes and tsunamis.",
+      "id": "learned_5b495faf5455fc23",
+      "learned_at": 1769741260,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: chopping down",
+      "entity_type": "question_answer",
+      "fact": "chopping down trees.",
+      "id": "learned_b4afea832cc4c261",
+      "learned_at": 1769741260,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "29.",
+      "id": "learned_3c4cd5c5e6dccd08",
+      "learned_at": 1769741260,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: WHAT could",
+      "entity_type": "question_answer",
+      "fact": "Pornographic implies something forbidden , this person was exited by the thought .",
+      "id": "learned_113f0542f1b20897",
+      "learned_at": 1769741260,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The French",
+      "entity_type": "question_answer",
+      "fact": "population of roughly 60,000 European settlers",
+      "id": "learned_f2b49376473a18a2",
+      "learned_at": 1769741260,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "19.",
+      "id": "learned_2bc94ebf0cffc7f9",
+      "learned_at": 1769741260,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1.",
+      "id": "learned_c8c7d3b047317c9d",
+      "learned_at": 1769741260,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Kansas.",
+      "id": "learned_1fad178f5634d465",
+      "learned_at": 1769741260,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "2.",
+      "id": "learned_9e5dc927f9d02991",
+      "learned_at": 1769741260,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The French",
+      "entity_type": "question_answer",
+      "fact": "2000000",
+      "id": "learned_b94eb30fcb01eb10",
+      "learned_at": 1769741260,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: The ground",
+      "entity_type": "question_answer",
+      "fact": "ground shaking.",
+      "id": "learned_2a1c3214d9b0c976",
+      "learned_at": 1769741260,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "\"British forces capturing\", \"the French\"",
+      "id": "learned_fc86f428cc419040",
+      "learned_at": 1769741260,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Phone rang Liam",
+      "entity_type": "question_answer",
+      "fact": "green_treasure_chest",
+      "id": "learned_50e37f41a0e1db99",
+      "learned_at": 1769741260,
+      "verification_source": "task://task154_tomqa_find_location_hard_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1.",
+      "id": "learned_ef01bdad761edd9b",
+      "learned_at": 1769741260,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: earthquakes can",
+      "entity_type": "question_answer",
+      "fact": "earthquakes.",
+      "id": "learned_584b134d62a31e0b",
+      "learned_at": 1769741260,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "2",
+      "id": "learned_9bdd8237d0efe66e",
+      "learned_at": 1769741260,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: Leaving my",
+      "entity_type": "question_answer",
+      "fact": "Someone was running from the cops and got into a wreck .",
+      "id": "learned_90afe9089b40ea41",
+      "learned_at": 1769741260,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: From 1975,",
+      "entity_type": "question_answer",
+      "fact": "United States Courthouse",
+      "id": "learned_d8347daa99487696",
+      "learned_at": 1769741260,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "7, 8.",
+      "id": "learned_2202dc5e52546c6e",
+      "learned_at": 1769741260,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Lawmakers in",
+      "entity_type": "question_answer",
+      "fact": "No, correct answer is C.",
+      "id": "learned_8773b066ad801a87",
+      "learned_at": 1769741260,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: This July",
+      "entity_type": "question_answer",
+      "fact": "He was walking or standing on street .",
+      "id": "learned_b2b18535d7c0e6da",
+      "learned_at": 1769741260,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 2.",
+      "id": "learned_cfdcca1d2240efbb",
+      "learned_at": 1769741260,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 4.",
+      "id": "learned_33bb4782bdfa8fc0",
+      "learned_at": 1769741260,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: This July",
+      "entity_type": "question_answer",
+      "fact": "aggressive and menacing.",
+      "id": "learned_395c2677feff7efc",
+      "learned_at": 1769741260,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Nixon.",
+      "id": "learned_c31de5e4e62b882e",
+      "learned_at": 1769741260,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: Damming river",
+      "entity_type": "question_answer",
+      "fact": "stream blockages.",
+      "id": "learned_0ee5292c63b23f20",
+      "learned_at": 1769741260,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "7",
+      "id": "learned_dc11dfe77928553d",
+      "learned_at": 1769741260,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "2, 4.",
+      "id": "learned_98167f115704b80b",
+      "learned_at": 1769741259,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "\"British forces capturing\", \"the French\"",
+      "id": "learned_dff7a72e0904360d",
+      "learned_at": 1769741259,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Though researchers",
+      "entity_type": "question_answer",
+      "fact": "a combination of genetic, hormonal, and environmental influences",
+      "id": "learned_2eca501f25bab6ca",
+      "learned_at": 1769741259,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: rain can",
+      "entity_type": "question_answer",
+      "fact": "soil and trees.",
+      "id": "learned_94ac5c34670e895d",
+      "learned_at": 1769741259,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Nearing London,",
+      "entity_type": "question_answer",
+      "fact": "Oliver.",
+      "id": "learned_a9222c541eba3e5e",
+      "learned_at": 1769741259,
+      "verification_source": "task://task002_quoref_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: The",
+      "entity_type": "question_answer",
+      "fact": "B.",
+      "id": "learned_aa1ff07b5ab20251",
+      "learned_at": 1769741259,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "4, 5.",
+      "id": "learned_4f2c721e4a6ab094",
+      "learned_at": 1769741259,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "3.",
+      "id": "learned_b8f5d2b1ed5bef18",
+      "learned_at": 1769741259,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 2, 3, 5, 6, 8, 10.",
+      "id": "learned_fa5430e6ded6e407",
+      "learned_at": 1769741259,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "29.",
+      "id": "learned_6aaa4b48f7371b89",
+      "learned_at": 1769741259,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "CIA tolerated crack sales, which raises questions about how the epidemic spread in the U.S.",
+      "id": "learned_2fdffa280c681d23",
+      "learned_at": 1769741259,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Typical right-wing reaction.",
+      "id": "learned_c8de08e9c4c6b89e",
+      "learned_at": 1769741259,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: Volcanic ash",
+      "entity_type": "question_answer",
+      "fact": "Slow plant growth.",
+      "id": "learned_ebc2385974f8cd31",
+      "learned_at": 1769741259,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: The",
+      "entity_type": "question_answer",
+      "fact": "more.",
+      "id": "learned_8a7462693ec3941f",
+      "learned_at": 1769741259,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Poet William",
+      "entity_type": "question_answer",
+      "fact": "B",
+      "id": "learned_be643bacfbfd1f3f",
+      "learned_at": 1769741259,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Successful rescue of survivors.",
+      "id": "learned_f2f42d94f5e256a6",
+      "learned_at": 1769741259,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: I ask",
+      "entity_type": "question_answer",
+      "fact": "I might continue to critique the business idea to discover the weaknesses .",
+      "id": "learned_ddf8d6705f73cd4f",
+      "learned_at": 1769741259,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1, 2, 6, 7.",
+      "id": "learned_cda295d2421ffa48",
+      "learned_at": 1769741259,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: Alpine",
+      "entity_type": "question_answer",
+      "fact": "Lake Smith.",
+      "id": "learned_859c0899866879f1",
+      "learned_at": 1769741259,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Fact: Volcanic ash",
+      "entity_type": "question_answer",
+      "fact": "volcanic ash.",
+      "id": "learned_a397ae0b3e835a83",
+      "learned_at": 1769741259,
+      "verification_source": "task://task041_qasc_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "Bastard.",
+      "id": "learned_89e4a15f3f84c848",
+      "learned_at": 1769741259,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "No, it has failed.",
+      "id": "learned_144da81c9565a836",
+      "learned_at": 1769741259,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "1.",
+      "id": "learned_43aa674ee558711e",
+      "learned_at": 1769741259,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "China was critical.",
+      "id": "learned_d323875817b2b134",
+      "learned_at": 1769741259,
+      "verification_source": "task://task054_multirc_write_correct_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The outbreak",
+      "entity_type": "question_answer",
+      "fact": "7",
+      "id": "learned_a613172a9cf3fe69",
+      "learned_at": 1769741259,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Though researchers",
+      "entity_type": "question_answer",
+      "fact": "a combination of genetic, hormonal, and environmental influences",
+      "id": "learned_a95a94d7acbd1c37",
+      "learned_at": 1769741259,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "4, 5.",
+      "id": "learned_4936d2d63dfca2b6",
+      "learned_at": 1769741259,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Finally, I",
+      "entity_type": "question_answer",
+      "fact": "A",
+      "id": "learned_b300e9b0fb752944",
+      "learned_at": 1769741259,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: When I",
+      "entity_type": "question_answer",
+      "fact": "No",
+      "id": "learned_37d0464901833f04",
+      "learned_at": 1769741259,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The French",
+      "entity_type": "question_answer",
+      "fact": "British America and New France",
+      "id": "learned_894f85be50663204",
+      "learned_at": 1769741259,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Early in",
+      "entity_type": "question_answer",
+      "fact": "\"cornwall\"",
+      "id": "learned_267dd87a6692e84c",
+      "learned_at": 1769741259,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Phone rang Liam",
+      "entity_type": "question_answer",
+      "fact": "green_treasure_chest",
+      "id": "learned_1b6a0695c5a5283e",
+      "learned_at": 1769741259,
+      "verification_source": "task://task154_tomqa_find_location_hard_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: Hoping to",
+      "entity_type": "question_answer",
+      "fact": "29.",
+      "id": "learned_efa5868c209b5751",
+      "learned_at": 1769741259,
+      "verification_source": "task://task028_drop_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Paragraph- Sent 1:",
+      "entity_type": "question_answer",
+      "fact": "11.",
+      "id": "learned_9f30b1dfe245485e",
+      "learned_at": 1769741259,
+      "verification_source": "task://task049_multirc_questions_needed_to_answer"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Passage: The 2010",
+      "entity_type": "question_answer",
+      "fact": "30.0%",
+      "id": "learned_92ad4b86cd37ae0c",
+      "learned_at": 1769741259,
+      "verification_source": "task://task075_squad1.1_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Context: WHAT could",
+      "entity_type": "question_answer",
+      "fact": "The misread label made the person think the package contains something forbidden , the truth was dull .",
+      "id": "learned_34be7e108243f08e",
+      "learned_at": 1769741259,
+      "verification_source": "task://task024_cosmosqa_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Background Paragraph: A",
+      "entity_type": "question_answer",
+      "fact": "Vancouver.",
+      "id": "learned_705a20fd7f1aa2ac",
+      "learned_at": 1769741259,
+      "verification_source": "task://task061_ropes_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.5861353116146786,
+      "entity": "Article: Lawmakers in",
+      "entity_type": "question_answer",
+      "fact": "D",
+      "id": "learned_55072be714c04ff3",
+      "learned_at": 1769741258,
+      "verification_source": "task://task309_race_answer_generation"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.636521238897197,
+      "entity": "Owen entered office",
+      "entity_type": "question_answer",
+      "fact": "green_bottle",
+      "id": "learned_1b083ac12dcd1b08",
+      "learned_at": 1769741258,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.636521238897197,
+      "entity": "Mason entered garage",
+      "entity_type": "question_answer",
+      "fact": "green_envelope",
+      "id": "learned_d659819c663f0c4b",
+      "learned_at": 1769741258,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.636521238897197,
+      "entity": "Article: Homework can",
+      "entity_type": "question_answer",
+      "fact": "Yes",
+      "id": "learned_030d6356855c79fc",
+      "learned_at": 1769741258,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.636521238897197,
+      "entity": "Abigail entered TV_room",
+      "entity_type": "question_answer",
+      "fact": "blue_envelope",
+      "id": "learned_382e7a5dda76ff5d",
+      "learned_at": 1769741258,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.636521238897197,
+      "entity": "Avery entered hallway",
+      "entity_type": "question_answer",
+      "fact": "blue_suitcase",
+      "id": "learned_f46dac9b293202f3",
+      "learned_at": 1769741258,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.636521238897197,
+      "entity": "Isabella entered hall",
+      "entity_type": "question_answer",
+      "fact": "blue_treasure_chest",
+      "id": "learned_6a51edc1cb3c3d5b",
+      "learned_at": 1769741258,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.636521238897197,
+      "entity": "Owen entered office",
+      "entity_type": "question_answer",
+      "fact": "green_bottle",
+      "id": "learned_baa170578f107a9f",
+      "learned_at": 1769741258,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.636521238897197,
+      "entity": "Abigail entered TV_room",
+      "entity_type": "question_answer",
+      "fact": "blue_envelope",
+      "id": "learned_91e0b1a8ef0525a3",
+      "learned_at": 1769741258,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.636521238897197,
+      "entity": "Mason entered garage",
+      "entity_type": "question_answer",
+      "fact": "green_envelope",
+      "id": "learned_b2ef6f2ff327834b",
+      "learned_at": 1769741258,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.636521238897197,
+      "entity": "Avery entered hallway",
+      "entity_type": "question_answer",
+      "fact": "blue_suitcase",
+      "id": "learned_2bfd5ef2a2de187e",
+      "learned_at": 1769741258,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.636521238897197,
+      "entity": "Article: Homework can",
+      "entity_type": "question_answer",
+      "fact": "Yes",
+      "id": "learned_0eace94c4fb82396",
+      "learned_at": 1769741258,
+      "verification_source": "task://task310_race_classification"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.636521238897197,
+      "entity": "Isabella entered hall",
+      "entity_type": "question_answer",
+      "fact": "blue_treasure_chest",
+      "id": "learned_3ee31a06c9711ccd",
+      "learned_at": 1769741258,
+      "verification_source": "task://task152_tomqa_find_location_easy_noise"
+    },
+    {
+      "category": "learned",
       "confidence": 0.7,
       "entity": "Test",
       "entity_type": "location",

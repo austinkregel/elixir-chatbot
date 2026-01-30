@@ -1,0 +1,214 @@
+defmodule ChatBot.Response.ConditionEvaluator do
+  @moduledoc """
+  Evaluates condition expressions for conditional template selection.
+
+  Supports simple expressions that reference context signals:
+  - `has_entity:type` - Entity of specified type is present
+  - `missing_entity:type` - Entity is not present
+  - `slot_filled:name` - Slot has a value
+  - `slot_missing:name` - Slot is empty
+  - `confidence:high/medium/low` - Confidence threshold
+  - `speech_act:sub_type` - Speech act matches
+
+  Compound expressions with AND / OR:
+  - `has_entity:person AND confidence:high`
+  - `slot_missing:address OR slot_missing:date-time`
+
+  ## Usage
+
+      context = %{
+        entities: [%{entity_type: "person", value: "Austin"}],
+        filled_slots: ["person"],
+        missing_slots: ["location"],
+        confidence: 0.85,
+        speech_act: %{category: :expressive, sub_type: :greeting}
+      }
+
+      ConditionEvaluator.evaluate("has_entity:person", context)
+      # => true
+
+      ConditionEvaluator.evaluate("has_entity:person AND confidence:high", context)
+      # => true
+  """
+
+  require Logger
+
+  @confidence_thresholds %{
+    high: 0.8,
+    medium: 0.5,
+    low: 0.3
+  }
+
+  # ============================================================================
+  # Public API
+  # ============================================================================
+
+  @doc """
+  Evaluates a condition expression against the given context.
+
+  Returns `true` if the condition matches, `false` otherwise.
+  Empty or nil conditions always return `true` (backward compatible).
+  """
+  def evaluate(nil, _context), do: true
+  def evaluate("", _context), do: true
+
+  def evaluate(condition, context) when is_binary(condition) do
+    condition
+    |> String.trim()
+    |> parse()
+    |> eval_ast(context)
+  rescue
+    e ->
+      Logger.warning("Failed to evaluate condition '#{condition}': #{Exception.message(e)}")
+      false
+  end
+
+  @doc """
+  Parses a condition string into an AST.
+
+  Returns a tuple representing the parsed condition:
+  - `{:and, left, right}` - AND expression
+  - `{:or, left, right}` - OR expression
+  - `{:condition, type, value}` - Simple condition
+  """
+  def parse(condition) when is_binary(condition) do
+    condition = String.trim(condition)
+
+    cond do
+      condition == "" ->
+        {:always, true}
+
+      String.contains?(condition, " OR ") ->
+        parse_or(condition)
+
+      String.contains?(condition, " AND ") ->
+        parse_and(condition)
+
+      true ->
+        parse_simple(condition)
+    end
+  end
+
+  # ============================================================================
+  # Parsing
+  # ============================================================================
+
+  defp parse_or(condition) do
+    # Split on first OR (left-associative)
+    case String.split(condition, " OR ", parts: 2) do
+      [left, right] ->
+        {:or, parse(String.trim(left)), parse(String.trim(right))}
+
+      _ ->
+        parse_simple(condition)
+    end
+  end
+
+  defp parse_and(condition) do
+    # Split on first AND (left-associative)
+    case String.split(condition, " AND ", parts: 2) do
+      [left, right] ->
+        {:and, parse(String.trim(left)), parse(String.trim(right))}
+
+      _ ->
+        parse_simple(condition)
+    end
+  end
+
+  defp parse_simple(condition) do
+    case String.split(condition, ":", parts: 2) do
+      [type, value] ->
+        {:condition, String.trim(type), String.trim(value)}
+
+      [type] ->
+        {:condition, String.trim(type), nil}
+    end
+  end
+
+  # ============================================================================
+  # Evaluation
+  # ============================================================================
+
+  defp eval_ast({:always, value}, _context), do: value
+
+  defp eval_ast({:and, left, right}, context) do
+    eval_ast(left, context) and eval_ast(right, context)
+  end
+
+  defp eval_ast({:or, left, right}, context) do
+    eval_ast(left, context) or eval_ast(right, context)
+  end
+
+  defp eval_ast({:condition, type, value}, context) do
+    eval_condition(type, value, context)
+  end
+
+  # ============================================================================
+  # Condition Type Handlers
+  # ============================================================================
+
+  defp eval_condition("has_entity", entity_type, context) do
+    entities = Map.get(context, :entities, [])
+
+    Enum.any?(entities, fn entity ->
+      get_entity_type(entity) == entity_type
+    end)
+  end
+
+  defp eval_condition("missing_entity", entity_type, context) do
+    not eval_condition("has_entity", entity_type, context)
+  end
+
+  defp eval_condition("slot_filled", slot_name, context) do
+    filled_slots = Map.get(context, :filled_slots, [])
+    slot_name in filled_slots
+  end
+
+  defp eval_condition("slot_missing", slot_name, context) do
+    missing_slots = Map.get(context, :missing_slots, [])
+    slot_name in missing_slots
+  end
+
+  defp eval_condition("confidence", level, context) do
+    confidence = Map.get(context, :confidence, 0.0)
+    threshold = Map.get(@confidence_thresholds, String.to_atom(level), 0.5)
+
+    case level do
+      "high" -> confidence >= threshold
+      "medium" -> confidence >= threshold and confidence < @confidence_thresholds.high
+      "low" -> confidence < @confidence_thresholds.medium
+      _ -> confidence >= threshold
+    end
+  end
+
+  defp eval_condition("speech_act", sub_type, context) do
+    speech_act = Map.get(context, :speech_act, %{})
+    actual_sub_type = Map.get(speech_act, :sub_type)
+
+    cond do
+      is_atom(actual_sub_type) ->
+        Atom.to_string(actual_sub_type) == sub_type
+
+      is_binary(actual_sub_type) ->
+        actual_sub_type == sub_type
+
+      true ->
+        false
+    end
+  end
+
+  defp eval_condition(unknown_type, _value, _context) do
+    Logger.warning("Unknown condition type: #{unknown_type}")
+    false
+  end
+
+  # ============================================================================
+  # Helpers
+  # ============================================================================
+
+  defp get_entity_type(entity) when is_map(entity) do
+    entity[:entity_type] || entity["entity_type"] || ""
+  end
+
+  defp get_entity_type(_), do: ""
+end

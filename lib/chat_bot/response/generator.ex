@@ -14,7 +14,7 @@ defmodule ChatBot.Response.Generator do
 
   require Logger
 
-  alias ChatBot.Response.{TemplateStore, MemoryAugmented, FactRetriever, Composer}
+  alias ChatBot.Response.{TemplateStore, MemoryAugmented, FactRetriever, Composer, TemplateBlender}
   alias ChatBot.Analysis.IntentRegistry
 
   # ============================================================================
@@ -52,6 +52,188 @@ defmodule ChatBot.Response.Generator do
             end
         end
     end
+  end
+
+  @doc """
+  Generate a response with full path tracking for debugging/inspection.
+
+  Returns:
+  - {:ok, response, response_type, path} where path is a list of steps taken
+
+  The path shows exactly how the response was reached:
+  - Which handlers were tried
+  - Why each was skipped or selected
+  - What data stores were accessed
+  """
+  def generate_with_path(intent, entities, query_text \\ nil) do
+    path = []
+
+    # Step 1: Try domain-specific handlers
+    {path, domain_result} = try_domain_with_path(intent, entities, query_text, path)
+
+    case domain_result do
+      {:ok, response, handler} ->
+        path = path ++ [%{step: :selected, handler: handler, reason: "domain handler matched"}]
+        {:ok, response, :domain, path}
+
+      :not_handled ->
+        # Step 2: Try memory-augmented
+        {path, memory_result} = try_memory_with_path(intent, entities, path)
+
+        case memory_result do
+          {:ok, response} ->
+            path = path ++ [%{step: :selected, handler: :memory_augmented, reason: "similar episodes found"}]
+            {:ok, response, :memory_augmented, path}
+
+          :not_handled ->
+            # Step 3: Try template-based
+            {path, template_result} = try_template_with_path(intent, entities, path)
+
+            case template_result do
+              {:ok, response} ->
+                path = path ++ [%{step: :selected, handler: :template, reason: "template found for intent"}]
+                {:ok, response, :template, path}
+
+              :not_handled ->
+                # Step 4: Fallback
+                response = generate_fallback(intent, entities)
+                path = path ++ [%{step: :selected, handler: :fallback, reason: "no handlers matched"}]
+                {:ok, response, :fallback, path}
+            end
+        end
+    end
+  end
+
+  defp try_domain_with_path(intent, entities, query_text, path) do
+    path = path ++ [%{step: :try, handler: :domain, intent: intent}]
+
+    case generate_domain_response(intent, entities, query_text) do
+      {:ok, response} ->
+        handler = determine_domain_handler(intent)
+        {path, {:ok, response, handler}}
+
+      :not_handled ->
+        path = path ++ [%{step: :skip, handler: :domain, reason: "no domain handler for intent"}]
+        {path, :not_handled}
+    end
+  end
+
+  defp try_memory_with_path(intent, entities, path) do
+    path = path ++ [%{step: :try, handler: :memory_augmented, store: "Memory.Store"}]
+
+    case try_memory_augmented(intent, entities) do
+      {:ok, response} ->
+        {path, {:ok, response}}
+
+      :not_handled ->
+        path = path ++ [%{step: :skip, handler: :memory_augmented, reason: "no similar episodes or embedder not ready"}]
+        {path, :not_handled}
+    end
+  end
+
+  defp try_template_with_path(intent, entities, path) do
+    path = path ++ [%{step: :try, handler: :template, store: "TemplateStore", intent: intent}]
+
+    case try_template_response(intent, entities) do
+      {:ok, response} ->
+        {path, {:ok, response}}
+
+      :not_handled ->
+        path = path ++ [%{step: :skip, handler: :template, reason: "no template for intent"}]
+        {path, :not_handled}
+    end
+  end
+
+  defp determine_domain_handler(intent) when is_binary(intent) do
+    cond do
+      String.starts_with?(intent, "weather") -> :weather_handler
+      String.starts_with?(intent, "music") -> :music_handler
+      String.starts_with?(intent, "smarthome") -> :device_handler
+      String.starts_with?(intent, "news") -> :news_handler
+      String.starts_with?(intent, "reminder") -> :reminder_handler
+      String.starts_with?(intent, "question.factual") -> :fact_retriever
+      true -> :domain_generic
+    end
+  end
+
+  defp determine_domain_handler(_), do: :domain_generic
+
+  @doc """
+  Generate a response using context-aware template selection.
+
+  This uses conditional template matching and semantic ranking:
+  1. Filter templates by conditions that match the context
+  2. Rank matching templates by similarity to the query
+  3. Fall back to cross-intent semantic search if needed
+
+  ## Parameters
+  - `intent` - The classified intent name
+  - `entities` - List of extracted entities
+  - `query_text` - The original user query
+  - `context` - Additional context (filled_slots, missing_slots, confidence, speech_act)
+
+  ## Returns
+  - {:ok, response, :conditional_template} for condition-matched templates
+  - {:ok, response, :semantic_fallback} for cross-intent semantic match
+  - Falls back to regular generate/3 if conditional selection fails
+  """
+  def generate_with_context(intent, entities, query_text, context \\ %{}) do
+    # Build full context with entities
+    full_context = build_template_context(entities, context)
+
+    # Try domain-specific first
+    case generate_domain_response(intent, entities, query_text) do
+      {:ok, response} ->
+        {:ok, response, :domain}
+
+      :not_handled ->
+        # Try context-aware template selection
+        case try_conditional_template(intent, query_text, entities, full_context) do
+          {:ok, response, type} ->
+            {:ok, response, type}
+
+          :not_handled ->
+            # Try template blending for novel responses
+            case try_blended_response(query_text, full_context) do
+              {:ok, response} ->
+                {:ok, response, :blended}
+
+              :not_handled ->
+                # Fall back to memory-augmented
+                case try_memory_augmented(intent, entities) do
+                  {:ok, response} ->
+                    {:ok, response, :memory_augmented}
+
+                  :not_handled ->
+                    # Fall back to regular template
+                    case try_template_response(intent, entities) do
+                      {:ok, response} ->
+                        {:ok, response, :template}
+
+                      :not_handled ->
+                        response = generate_fallback(intent, entities)
+                        {:ok, response, :fallback}
+                    end
+                end
+            end
+        end
+    end
+  end
+
+  @doc """
+  Builds the context map for conditional template selection from entities and analysis.
+  """
+  def build_template_context(entities, additional_context \\ %{}) do
+    entity_types = Enum.map(entities, fn e -> e[:entity_type] || e["entity_type"] end)
+
+    %{
+      entities: entities,
+      entity_types: entity_types,
+      filled_slots: Map.get(additional_context, :filled_slots, []),
+      missing_slots: Map.get(additional_context, :missing_slots, []),
+      confidence: Map.get(additional_context, :confidence, 0.5),
+      speech_act: Map.get(additional_context, :speech_act, %{})
+    }
   end
 
   @doc """
@@ -241,9 +423,53 @@ defmodule ChatBot.Response.Generator do
   end
 
   defp generate_domain_response("question.factual", entities, query_text) do
+    generate_factual_with_semantic_search(entities, query_text)
+  end
+
+  # Also handle general questions with semantic search
+  defp generate_domain_response("question" <> _, entities, query_text) do
+    generate_factual_with_semantic_search(entities, query_text)
+  end
+
+  # Handle "what is X" type questions
+  defp generate_domain_response("knowledge.query", entities, query_text) do
+    generate_factual_with_semantic_search(entities, query_text)
+  end
+
+  # Catch-all for unhandled intents - must be last generate_domain_response clause
+  defp generate_domain_response(_intent, _entities, _query_text) do
+    :not_handled
+  end
+
+  # ============================================================================
+  # Semantic Fact Retrieval Helpers
+  # ============================================================================
+
+  defp generate_factual_with_semantic_search(entities, query_text) do
+    alias ChatBot.Response.SemanticFactRetriever
+
+    query_str = query_text || ""
+
+    # Try semantic search first (data-driven approach)
+    if SemanticFactRetriever.ready?() and query_str != "" do
+      results = SemanticFactRetriever.search(query_str, limit: 3, threshold: 0.25)
+
+      if results != [] do
+        response = format_semantic_results(query_str, results)
+        {:ok, response}
+      else
+        # Fall back to old method if no semantic matches
+        try_keyword_fact_retrieval(entities, query_str)
+      end
+    else
+      # Fall back to keyword search if semantic retriever not ready
+      try_keyword_fact_retrieval(entities, query_str)
+    end
+  end
+
+  defp try_keyword_fact_retrieval(entities, query_str) do
     if FactRetriever.available?() do
       entity_names = extract_entity_names_for_facts(entities)
-      query_str = query_text || ""
       facts = FactRetriever.get_facts_for_query(query_str, entity_names)
 
       if facts != [] do
@@ -257,8 +483,20 @@ defmodule ChatBot.Response.Generator do
     end
   end
 
-  defp generate_domain_response(_intent, _entities, _query_text) do
-    :not_handled
+  defp format_semantic_results(_query_text, results) do
+    # Get the best matching fact
+    best = List.first(results)
+    fact = best.fact
+    similarity = best.similarity
+
+    # Format based on confidence
+    if similarity > 0.6 do
+      # High confidence - present as knowledge
+      "#{fact.fact}"
+    else
+      # Lower confidence - hedged response
+      "Based on what I know: #{fact.fact}"
+    end
   end
 
   # ============================================================================
@@ -284,6 +522,39 @@ defmodule ChatBot.Response.Generator do
         template ->
           response = TemplateStore.substitute_slots(template, entities)
           {:ok, response}
+      end
+    else
+      :not_handled
+    end
+  end
+
+  defp try_conditional_template(intent, query_text, entities, context) do
+    if TemplateStore.ready?() do
+      case TemplateStore.get_best_template(intent, query_text, context) do
+        {:ok, template} ->
+          response = TemplateStore.substitute_slots(template, entities)
+          {:ok, response, :conditional_template}
+
+        {:ok, template, :fallback} ->
+          response = TemplateStore.substitute_slots(template, entities)
+          {:ok, response, :semantic_fallback}
+
+        {:error, _reason} ->
+          :not_handled
+      end
+    else
+      :not_handled
+    end
+  end
+
+  defp try_blended_response(query_text, context) do
+    if TemplateBlender.ready?() do
+      case TemplateBlender.blend(query_text, context) do
+        {:ok, response} when is_binary(response) and response != "" ->
+          {:ok, response}
+
+        _ ->
+          :not_handled
       end
     else
       :not_handled

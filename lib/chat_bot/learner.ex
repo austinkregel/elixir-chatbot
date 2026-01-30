@@ -19,6 +19,7 @@ defmodule ChatBot.Learner do
   Options:
   - `:discourse` - Discourse analysis result for entity disambiguation
   - `:speech_act` - Speech act classification result for entity disambiguation
+  - `:world_id` - World ID for world-scoped type inference (required for disambiguation)
   """
   def learn_from_input(persona_name, input, opts \\ []) do
     Logger.debug("Learner.learn_from_input called", %{persona_name: persona_name, input: input})
@@ -27,10 +28,15 @@ defmodule ChatBot.Learner do
     # This ensures entities are disambiguated correctly for learning
     discourse = Keyword.get(opts, :discourse)
     speech_act = Keyword.get(opts, :speech_act)
+    world_id = Keyword.get(opts, :world_id)
+
+    # If no world_id provided, skip disambiguation to avoid errors
+    # Entity extraction will still work, just without type inference
+    skip_disambiguation = is_nil(world_id)
 
     entity_opts =
       if discourse || speech_act do
-        opts
+        opts ++ [skip_disambiguation: skip_disambiguation]
       else
         # Try to extract context for better disambiguation
         discourse_result =
@@ -51,7 +57,7 @@ defmodule ChatBot.Learner do
             _ -> nil
           end
 
-        opts ++ [discourse: discourse_result, speech_act: speech_act_result]
+        opts ++ [discourse: discourse_result, speech_act: speech_act_result, skip_disambiguation: skip_disambiguation]
       end
 
     # Use classical NLP pipeline to extract entities with disambiguation context

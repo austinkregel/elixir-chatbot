@@ -53,14 +53,20 @@ defmodule ChatBot.Analysis.OutcomeLearner do
   Records the outcome of a conversation turn for learning.
 
   Options:
+  - :world_id - Required. Training world ID for world-scoped heuristics
   - :user_id - User ID for user-scoped learning
   - :cohort_id - Cohort ID for cohort-scoped learning
   - :user_feedback - Explicit feedback (:positive, :negative, :correction, nil)
   """
   def learn_from_outcome(%Interpretation{} = interp, response, opts \\ []) do
+    world_id = Keyword.get(opts, :world_id)
     user_id = Keyword.get(opts, :user_id)
     cohort_id = Keyword.get(opts, :cohort_id)
     user_feedback = Keyword.get(opts, :user_feedback)
+
+    if is_nil(world_id) do
+      Logger.warning("OutcomeLearner.learn_from_outcome called without world_id")
+    end
 
     # 1. Assess outcome
     outcome = assess_outcome(interp, response, user_feedback)
@@ -68,6 +74,7 @@ defmodule ChatBot.Analysis.OutcomeLearner do
     Logger.debug("Learning from outcome", %{
       intent: interp.intent,
       outcome: outcome,
+      world_id: world_id,
       from_heuristic: Interpretation.from_heuristic?(interp)
     })
 
@@ -81,7 +88,7 @@ defmodule ChatBot.Analysis.OutcomeLearner do
 
     # 4. Maybe create new heuristic from successful slow-path
     if outcome == :success and not Interpretation.from_heuristic?(interp) do
-      maybe_create_heuristic(interp, user_id, cohort_id)
+      maybe_create_heuristic(interp, world_id, user_id, cohort_id)
     end
 
     # 5. Track for pattern detection
@@ -229,11 +236,12 @@ defmodule ChatBot.Analysis.OutcomeLearner do
     end
   end
 
-  defp maybe_create_heuristic(%Interpretation{} = interp, user_id, cohort_id) do
+  defp maybe_create_heuristic(%Interpretation{} = interp, world_id, user_id, cohort_id) do
     {pattern, conclusion} = extract_pattern(interp)
 
-    # Only create if pattern is substantial
-    if map_size(pattern) >= 1 do
+    # Only create if pattern is substantial and we have a world_id
+    if map_size(pattern) >= 1 and world_id do
+      # For learned heuristics, default to world scope unless user/cohort specified
       scope = determine_scope(pattern, user_id, cohort_id)
       scope_id = get_scope_id(scope, user_id, cohort_id)
 
@@ -246,7 +254,7 @@ defmodule ChatBot.Analysis.OutcomeLearner do
         min_required = Map.get(@min_successes_for_heuristic, scope, 5)
 
         if success_count >= min_required do
-          create_heuristic(pattern, conclusion, scope, scope_id)
+          create_heuristic(pattern, conclusion, world_id, scope, scope_id)
         else
           # Track this success for future heuristic creation
           increment_pattern_success(examples_key)
@@ -255,8 +263,9 @@ defmodule ChatBot.Analysis.OutcomeLearner do
     end
   end
 
-  defp create_heuristic(pattern, conclusion, scope, scope_id) do
+  defp create_heuristic(pattern, conclusion, world_id, scope, scope_id) do
     opts = [
+      world_id: world_id,
       scope: scope,
       scope_id: scope_id,
       source: :learned
@@ -266,6 +275,7 @@ defmodule ChatBot.Analysis.OutcomeLearner do
       {:ok, heuristic} ->
         Logger.info("Created new heuristic from learning", %{
           id: heuristic.id,
+          world_id: world_id,
           scope: scope,
           pattern: pattern,
           intent: conclusion.intent

@@ -25,7 +25,7 @@ defmodule ChatBot.Knowledge.LearningCenter do
   require Logger
 
   alias ChatBot.Knowledge.{ResearchAgent, Corroborator, ReviewQueue}
-  alias ChatBot.Knowledge.Types.{ResearchGoal, LearningSession}
+  alias ChatBot.Knowledge.Types.{ResearchGoal, LearningSession, Investigation}
   alias ChatBot.Epistemic.BeliefStore
 
   @max_concurrent_agents 5
@@ -51,6 +51,29 @@ defmodule ChatBot.Knowledge.LearningCenter do
   @spec start_session(String.t(), keyword()) :: {:ok, LearningSession.t()} | {:error, term()}
   def start_session(topic, opts \\ []) when is_binary(topic) do
     GenServer.call(__MODULE__, {:start_session, topic, opts})
+  end
+
+  @doc """
+  Starts a training session using domain-specific NLP tasks.
+
+  This uses curated benchmark tasks (Question Answering, Commonsense, etc.)
+  instead of web sources, providing high-quality training data for child agents.
+
+  ## Options
+    - :capability - Training capability (:question_answering, :commonsense, :sentiment, :all)
+    - :max_tasks - Maximum task files to use (default: 5)
+    - :max_instances - Maximum instances per task (default: 20)
+
+  ## Example
+
+      {:ok, session} = LearningCenter.start_task_training(:commonsense)
+      {:ok, session} = LearningCenter.start_task_training(:question_answering, max_tasks: 10)
+  """
+  @spec start_task_training(atom(), keyword()) :: {:ok, LearningSession.t()} | {:error, term()}
+  def start_task_training(capability \\ :all, opts \\ []) do
+    topic = "task_training:#{capability}"
+    task_opts = Keyword.merge(opts, sources: [:task], capability: capability)
+    start_session(topic, task_opts)
   end
 
   @doc """
@@ -138,7 +161,6 @@ defmodule ChatBot.Knowledge.LearningCenter do
   @impl true
   def handle_call({:start_session, topic, opts}, _from, state) do
     session = LearningSession.new(topic: topic)
-    mock? = Keyword.get(opts, :mock, false)
 
     # Decompose topic into research goals
     goals = decompose_topic(topic, opts)
@@ -148,8 +170,8 @@ defmodule ChatBot.Knowledge.LearningCenter do
         LearningSession.add_goal(sess, goal)
       end)
 
-    # Start research agents for each goal
-    {agent_refs, updated_state} = dispatch_agents(goals, session.id, mock?, state)
+    # Start research agents for each goal (pass full opts for sources, etc.)
+    {agent_refs, updated_state} = dispatch_agents(goals, session.id, opts, state)
 
     # Update state with session and agent refs
     new_state = %{
@@ -181,8 +203,8 @@ defmodule ChatBot.Knowledge.LearningCenter do
         updated_session = LearningSession.add_goal(session, goal)
         new_sessions = Map.put(state.sessions, session_id, updated_session)
 
-        # Dispatch agent for the new goal
-        {agent_refs, updated_state} = dispatch_agents([goal], session_id, false, state)
+        # Dispatch agent for the new goal (use default opts)
+        {agent_refs, updated_state} = dispatch_agents([goal], session_id, [], state)
 
         new_state = %{
           updated_state
@@ -279,20 +301,20 @@ defmodule ChatBot.Knowledge.LearningCenter do
           findings: length(findings)
         )
 
-        # Process findings through corroboration
-        {:ok, candidates} = Corroborator.corroborate(findings, include_uncorroborated: true)
+        # === SCIENTIFIC METHOD APPROACH ===
+        # 1. Create investigation from goal
+        # 2. Test hypotheses against evidence (findings)
+        # 3. Convert supported hypotheses to review candidates
+        # 4. Track falsified hypotheses for learning
 
-        # Check for contradictions with existing beliefs
-        candidates = check_contradictions(candidates)
-
-        # Add to review queue
-        Enum.each(candidates, fn candidate ->
-          ReviewQueue.add(%{candidate | session_id: session_id})
-        end)
-
-        # Update session metrics
-        new_state = update_session_metrics(state, session_id, goal_id, findings, candidates)
-        new_state = %{new_state | agent_tasks: remaining_tasks}
+        new_state =
+          process_findings_scientifically(
+            state,
+            session_id,
+            goal_id,
+            findings,
+            remaining_tasks
+          )
 
         # Check if session is complete
         new_state = maybe_complete_session(new_state, session_id)
@@ -386,6 +408,105 @@ defmodule ChatBot.Knowledge.LearningCenter do
     end
   end
 
+  # Scientific investigation logging
+  defp log_investigation_results(investigation) do
+    summary = Investigation.summary(investigation)
+
+    Logger.info("Investigation concluded",
+      topic: summary.topic,
+      hypotheses_tested: summary.total_hypotheses,
+      supported: summary.supported,
+      falsified: summary.falsified,
+      inconclusive: summary.inconclusive,
+      promotable: summary.promotable,
+      conclusion: summary.conclusion
+    )
+
+    # Log any falsified hypotheses for learning
+    investigation.hypotheses
+    |> Enum.filter(&(&1.status == :falsified))
+    |> Enum.each(fn hyp ->
+      Logger.debug("Hypothesis falsified",
+        claim: hyp.claim,
+        contradicting_sources: length(hyp.contradicting_evidence)
+      )
+    end)
+  end
+
+  defp find_goal(nil, _goal_id), do: nil
+  defp find_goal(session, goal_id) do
+    Enum.find(session.goals, &(&1.id == goal_id))
+  end
+
+  # Process findings using the scientific method
+  defp process_findings_scientifically(state, session_id, goal_id, findings, remaining_tasks) do
+    session = Map.get(state.sessions, session_id)
+    goal = find_goal(session, goal_id)
+
+    if goal do
+      # Create investigation from goal's questions
+      investigation = ResearchGoal.to_investigation(goal)
+
+      Logger.info("Starting scientific investigation",
+        session_id: session_id,
+        hypotheses: length(investigation.hypotheses),
+        evidence: length(findings)
+      )
+
+      # Test hypotheses against the evidence
+      {:ok, concluded} = Corroborator.test_hypotheses(investigation, findings)
+
+      # Log scientific outcomes
+      log_investigation_results(concluded)
+
+      # Convert supported hypotheses to review candidates
+      candidates = Corroborator.hypotheses_to_candidates(concluded, session_id: session_id)
+
+      # Check for contradictions with existing beliefs
+      candidates = check_contradictions(candidates)
+
+      # Add to review queue
+      Enum.each(candidates, fn candidate ->
+        ReviewQueue.add(%{candidate | session_id: session_id})
+      end)
+
+      # Update session with investigation results
+      updated_session = LearningSession.add_investigation(session, concluded)
+      updated_session = LearningSession.record_findings(updated_session, length(findings))
+
+      # Update state
+      new_sessions = Map.put(state.sessions, session_id, updated_session)
+      new_stats = %{state.stats | total_findings: state.stats.total_findings + length(findings)}
+
+      %{state |
+        sessions: new_sessions,
+        stats: new_stats,
+        agent_tasks: remaining_tasks
+      }
+    else
+      # Fallback to traditional corroboration if goal not found
+      process_findings_traditional(state, session_id, goal_id, findings, remaining_tasks)
+    end
+  end
+
+  # Traditional corroboration (fallback)
+  defp process_findings_traditional(state, session_id, goal_id, findings, remaining_tasks) do
+    # Process findings through corroboration
+    {:ok, candidates} = Corroborator.corroborate(findings, include_uncorroborated: true)
+
+    # Check for contradictions with existing beliefs
+    candidates = check_contradictions(candidates)
+
+    # Add to review queue
+    Enum.each(candidates, fn candidate ->
+      ReviewQueue.add(%{candidate | session_id: session_id})
+    end)
+
+    # Update session metrics
+    new_state = update_session_metrics(state, session_id, goal_id, findings, candidates)
+    %{new_state | agent_tasks: remaining_tasks}
+  end
+
   defp decompose_topic(topic, opts) do
     questions = Keyword.get(opts, :questions, [])
     max_goals = Keyword.get(opts, :max_goals, 3)
@@ -418,18 +539,133 @@ defmodule ChatBot.Knowledge.LearningCenter do
   end
 
   defp generate_default_questions(topic) do
-    # Generate common questions about a topic
-    [
-      "What is #{topic}?",
-      "What are the key facts about #{topic}?",
-      "What is the history of #{topic}?"
-    ]
+    # Generate questions using data-driven approaches
+    # 1. Find similar past questions from memory
+    # 2. Extract question patterns from the topic using POS tagging
+    # 3. Fall back to minimal defaults only if needed
+
+    memory_questions = extract_questions_from_memory(topic)
+    pos_questions = generate_questions_with_pos(topic)
+
+    # Combine unique questions, preferring memory-based ones
+    combined = (memory_questions ++ pos_questions) |> Enum.uniq()
+
+    if Enum.empty?(combined) do
+      # Minimal fallback - just the topic as a query
+      [topic]
+    else
+      Enum.take(combined, 5)
+    end
   end
 
-  defp dispatch_agents(goals, session_id, mock?, state) do
+  # Search memory for similar topics and extract question patterns
+  defp extract_questions_from_memory(topic) do
+    alias ChatBot.Memory.Store
+
+    case Store.query_similar(topic, 10) do
+      {:ok, episodes} ->
+        episodes
+        |> Enum.flat_map(fn {episode, _similarity} ->
+          # Extract question-like text from episode state
+          extract_questions_from_text(episode.state)
+        end)
+        |> Enum.uniq()
+        |> Enum.take(3)
+
+      {:error, _} ->
+        []
+    end
+  end
+
+  # Extract question sentences from text using tokenizer
+  defp extract_questions_from_text(text) when is_binary(text) do
+    alias ChatBot.ML.Tokenizer
+
+    # Split into sentences and find questions
+    text
+    |> Tokenizer.split_sentences()
+    |> Enum.filter(&Tokenizer.ends_with_question?/1)
+    |> Enum.take(2)
+  end
+
+  defp extract_questions_from_text(_), do: []
+
+  # Generate question variations using POS tagging to understand topic structure
+  defp generate_questions_with_pos(topic) do
+    alias ChatBot.ML.{Tokenizer, POSTagger}
+
+    tokens = Tokenizer.tokenize_words(topic)
+
+    case POSTagger.load_model() do
+      {:ok, model} ->
+        tags = POSTagger.predict_tags(tokens, model)
+        generate_questions_from_pos_analysis(tokens, tags, topic)
+
+      {:error, _} ->
+        # If POS tagger unavailable, use topic directly
+        [topic]
+    end
+  end
+
+  # Generate contextually appropriate questions based on POS analysis
+  defp generate_questions_from_pos_analysis(tokens, tags, topic) do
+    token_tags = Enum.zip(tokens, tags)
+
+    # Find the main noun(s) in the topic
+    nouns =
+      token_tags
+      |> Enum.filter(fn {_token, tag} -> tag in ["NOUN", "PROPN"] end)
+      |> Enum.map(fn {token, _tag} -> token end)
+
+    # Find verbs if present (for process/action topics)
+    verbs =
+      token_tags
+      |> Enum.filter(fn {_token, tag} -> tag == "VERB" end)
+      |> Enum.map(fn {token, _tag} -> token end)
+
+    # Build questions based on what we found
+    questions = []
+
+    # If we have nouns, they're likely the subject
+    questions =
+      if length(nouns) > 0 do
+        main_noun = Enum.join(nouns, " ")
+        questions ++ ["#{main_noun}"]
+      else
+        questions
+      end
+
+    # If we have verbs, the topic might be about a process
+    questions =
+      if length(verbs) > 0 do
+        questions ++ [topic]
+      else
+        questions
+      end
+
+    # Add the full topic as-is if it's substantive
+    questions =
+      if length(tokens) > 1 do
+        questions ++ [topic]
+      else
+        questions
+      end
+
+    Enum.uniq(questions)
+  end
+
+  defp dispatch_agents(goals, session_id, opts, state) do
     # Limit concurrent agents
     available_slots = @max_concurrent_agents - map_size(state.agent_tasks)
     goals_to_dispatch = Enum.take(goals, available_slots)
+
+    # Extract research options (sources, mock, etc.)
+    research_opts = [
+      mock: Keyword.get(opts, :mock, false),
+      sources: Keyword.get(opts, :sources, [:web]),
+      max_pages: Keyword.get(opts, :max_tasks, 5),
+      max_instances: Keyword.get(opts, :max_instances, 20)
+    ]
 
     agent_refs =
       goals_to_dispatch
@@ -440,7 +676,7 @@ defmodule ChatBot.Knowledge.LearningCenter do
         task =
           Task.Supervisor.async_nolink(
             ChatBot.Knowledge.AgentSupervisor,
-            fn -> ResearchAgent.research(updated_goal, mock: mock?) end
+            fn -> ResearchAgent.research(updated_goal, research_opts) end
           )
 
         {task.ref, {session_id, goal.id}}

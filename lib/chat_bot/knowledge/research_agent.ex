@@ -72,13 +72,16 @@ defmodule ChatBot.Knowledge.ResearchAgent do
       # Generate search queries from goal
       queries = expand_goal_to_queries(goal)
 
+      # Include goal in opts for task source
+      opts_with_goal = Keyword.put(opts, :goal, goal)
+
       # Fetch from each source type
       raw_results =
         if mock? do
           generate_mock_results(goal, max_pages)
         else
           sources
-          |> Enum.flat_map(&fetch_from_source(&1, queries, max_pages, opts))
+          |> Enum.flat_map(&fetch_from_source(&1, queries, max_pages, opts_with_goal))
         end
 
       # Extract claims using Pipeline
@@ -205,6 +208,37 @@ defmodule ChatBot.Knowledge.ResearchAgent do
     end)
   end
 
+  defp fetch_from_source(:task, _queries, max_pages, opts) do
+    # Fetch from domain-specific NLP tasks
+    # This provides high-quality, curated training data
+    goal = Keyword.get(opts, :goal)
+
+    if goal do
+      alias ChatBot.Knowledge.TaskSource
+
+      case TaskSource.fetch_for_goal(goal, max_tasks: max_pages, max_instances: 20) do
+        {:ok, findings} ->
+          # Convert findings to the expected raw result format
+          # Note: Finding struct uses entity_type for task metadata, source.title for task_id
+          Enum.map(findings, fn finding ->
+            task_id = finding.source.title || "unknown"
+
+            %{
+              url: "task://#{task_id}",
+              content: "#{finding.raw_context}\n\nAnswer: #{finding.claim}",
+              source: finding.source,
+              finding: finding
+            }
+          end)
+
+        {:error, _reason} ->
+          []
+      end
+    else
+      []
+    end
+  end
+
   defp fetch_from_source(_source, _queries, _max_pages, _opts) do
     # Unknown source type
     []
@@ -293,6 +327,11 @@ defmodule ChatBot.Knowledge.ResearchAgent do
   # ============================================================================
   # Private Functions - Extraction
   # ============================================================================
+
+  # Handle pre-extracted findings from TaskSource
+  defp extract_findings(%{finding: finding}) when is_map(finding) do
+    [finding]
+  end
 
   defp extract_findings(%{content: content, source: source}) when is_binary(content) do
     # Clean HTML content if present

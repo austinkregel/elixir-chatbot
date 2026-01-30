@@ -657,7 +657,11 @@ defmodule ChatBotWeb.ChatLive do
               Map.get(payload, :nlp_confidence) || Map.get(payload, "nlp_confidence"),
             base_method: Map.get(payload, :base_method) || Map.get(payload, "base_method"),
             prompts_count:
-              Map.get(payload, :prompts_count) || Map.get(payload, "prompts_count") || 0
+              Map.get(payload, :prompts_count) || Map.get(payload, "prompts_count") || 0,
+            response_path:
+              Map.get(payload, :response_path) || Map.get(payload, "response_path"),
+            reason: Map.get(payload, :reason) || Map.get(payload, "reason"),
+            source: Map.get(payload, :source) || Map.get(payload, "source")
           })
 
         _ ->
@@ -1220,4 +1224,69 @@ defmodule ChatBotWeb.ChatLive do
   end
 
   defp format_epistemic_bounds(_), do: []
+
+  @doc """
+  Returns a list of data stores that were accessed for a given response type.
+  """
+  def get_stores_accessed(response_type) do
+    case response_type do
+      :domain ->
+        [
+          %{name: "FactDatabase", purpose: "Query facts for domain response"},
+          %{name: "KnowledgeStore", purpose: "Query world knowledge"}
+        ]
+
+      :memory_augmented ->
+        [
+          %{name: "Memory.Store", purpose: "Query similar episodes"},
+          %{name: "Embedder", purpose: "Generate TF-IDF embeddings"}
+        ]
+
+      :template ->
+        [
+          %{name: "TemplateStore", purpose: "Load response templates"}
+        ]
+
+      :conditional_template ->
+        [
+          %{name: "TemplateStore", purpose: "Load templates with conditions"},
+          %{name: "Embedder", purpose: "Semantic ranking of templates"}
+        ]
+
+      :blended ->
+        [
+          %{name: "TemplateStore", purpose: "Segment templates into chunks"},
+          %{name: "ChunkCompatibility", purpose: "Score chunk compatibility"},
+          %{name: "Embedder", purpose: "Embed query for chunk selection"}
+        ]
+
+      :smalltalk ->
+        [
+          %{name: "TemplateStore", purpose: "Load smalltalk templates"}
+        ]
+
+      :expressive ->
+        [
+          %{name: "TemplateStore", purpose: "Load expressive templates"}
+        ]
+
+      :fast_path ->
+        [
+          %{name: "HeuristicStore", purpose: "Match learned heuristics"},
+          %{name: "Memory.Store", purpose: "Query similar episodes"}
+        ]
+
+      :clarification ->
+        []
+
+      :fallback ->
+        []
+
+      :deferred ->
+        []
+
+      _ ->
+        []
+    end
+  end
 end

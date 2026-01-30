@@ -63,7 +63,10 @@ defmodule ChatBotWeb.Router do
     scope "/dev" do
       pipe_through :browser
 
-      live_dashboard "/dashboard", metrics: ChatBotWeb.Telemetry
+      live_dashboard "/dashboard",
+        metrics: ChatBotWeb.Telemetry,
+        router: ChatBotWeb.Router
+
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
   end

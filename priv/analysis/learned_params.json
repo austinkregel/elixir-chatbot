@@ -30,12 +30,12 @@
     "second_person_weight": 0.3
   },
   "feedback_stats": {
-    "clarifications_needed": 462,
+    "clarifications_needed": 493,
     "fallback_to_llm": 0,
-    "successful_responses": 12536,
-    "total_interactions": 12998
+    "successful_responses": 12641,
+    "total_interactions": 13134
   },
-  "last_updated": "2026-01-29T22:41:07.835012Z",
+  "last_updated": "2026-01-30T04:13:03.005287Z",
   "response_optionality": {
     "acknowledgment_defer_confidence": 0.7,
     "admin_locked": false,

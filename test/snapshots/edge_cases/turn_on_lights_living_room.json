@@ -11,16 +11,16 @@
         }
       ],
       "response_strategy": "can_respond",
+      "slots_filled": [
+        "room"
+      ],
+      "slots_missing": [],
       "detected_intent": "smarthome.context_room.comment_specify.or.change.room",
       "speech_act_category": "directive",
       "speech_act_type": "command",
       "speech_act_confidence": 0.88,
       "discourse_addressee": "bot",
-      "discourse_self_referential": "false",
-      "slots_filled": [
-        "room"
-      ],
-      "slots_missing": []
+      "discourse_self_referential": "false"
     }
   ],
   "overall_strategy": "can_respond",

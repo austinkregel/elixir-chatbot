@@ -157,6 +157,16 @@ defmodule ChatBot.Knowledge.ReviewQueue do
   end
 
   @doc """
+  Recalculates stats from actual items in the queue.
+
+  Useful after cleanup operations that may have left stats out of sync.
+  """
+  @spec recalculate_stats() :: {:ok, map()}
+  def recalculate_stats do
+    GenServer.call(__MODULE__, :recalculate_stats)
+  end
+
+  @doc """
   Adds a contradiction for review.
 
   Used when JTMS detects a conflict between new knowledge and existing beliefs.
@@ -187,6 +197,36 @@ defmodule ChatBot.Knowledge.ReviewQueue do
   @spec cleanup_html_fragments() :: {:ok, non_neg_integer()}
   def cleanup_html_fragments do
     GenServer.call(__MODULE__, :cleanup_html_fragments, 120_000)
+  end
+
+  @doc """
+  Cleans up the queue by removing items from benchmark/test sources.
+
+  These are sources with URLs like "task://..." or "test://..." which are
+  benchmark data that should not be treated as discoverable facts.
+
+  Returns the number of items removed.
+  """
+  @spec cleanup_benchmark_data() :: {:ok, non_neg_integer()}
+  def cleanup_benchmark_data do
+    GenServer.call(__MODULE__, :cleanup_benchmark_data, 120_000)
+  end
+
+  @doc """
+  Checks if a candidate is from a benchmark/test source.
+  """
+  @spec is_benchmark_source?(ReviewCandidate.t()) :: boolean()
+  def is_benchmark_source?(%ReviewCandidate{} = candidate) do
+    case candidate do
+      %{finding: %{source: %{url: url}}} when is_binary(url) ->
+        String.starts_with?(url, "task://") or String.starts_with?(url, "test://")
+
+      %{finding: %{source: %{domain: domain}}} when is_binary(domain) ->
+        String.starts_with?(domain, "task") or String.starts_with?(domain, "test://")
+
+      _ ->
+        false
+    end
   end
 
   @doc """
@@ -272,18 +312,26 @@ defmodule ChatBot.Knowledge.ReviewQueue do
 
   @impl true
   def handle_call({:add, candidate}, _from, state) do
-    :ets.insert(@ets_table, {candidate.id, candidate})
+    # Filter out benchmark/test data - these should not become facts
+    if is_benchmark_source?(candidate) do
+      Logger.debug("Rejected benchmark source from review queue",
+        source: get_source_url(candidate)
+      )
+      {:reply, {:error, :benchmark_source}, state}
+    else
+      :ets.insert(@ets_table, {candidate.id, candidate})
 
-    new_stats = %{state.stats | pending: state.stats.pending + 1}
-    new_state = %{state | stats: new_stats}
+      new_stats = %{state.stats | pending: state.stats.pending + 1}
+      new_state = %{state | stats: new_stats}
 
-    # Auto-persist
-    persist_to_disk(new_state)
+      # Auto-persist
+      persist_to_disk(new_state)
 
-    # Broadcast update
-    broadcast_update(:candidate_added, candidate)
+      # Broadcast update
+      broadcast_update(:candidate_added, candidate)
 
-    {:reply, {:ok, candidate.id}, new_state}
+      {:reply, {:ok, candidate.id}, new_state}
+    end
   end
 
   @impl true
@@ -537,6 +585,30 @@ defmodule ChatBot.Knowledge.ReviewQueue do
   end
 
   @impl true
+  def handle_call(:recalculate_stats, _from, state) do
+    # Count actual items by status
+    counts =
+      :ets.tab2list(@ets_table)
+      |> Enum.reduce(%{pending: 0, approved: 0, rejected: 0, deferred: 0}, fn {_id, candidate}, acc ->
+        Map.update(acc, candidate.status, 1, &(&1 + 1))
+      end)
+
+    new_stats = %{
+      state.stats
+      | pending: counts.pending,
+        approved: counts.approved,
+        rejected: counts.rejected,
+        deferred: counts.deferred
+    }
+
+    new_state = %{state | stats: new_stats}
+    persist_to_disk(new_state)
+
+    Logger.info("Recalculated review queue stats", stats: counts)
+    {:reply, {:ok, new_stats}, new_state}
+  end
+
+  @impl true
   def handle_call({:add_contradiction, new_fact, existing_belief}, _from, state) do
     # Create a special candidate for contradiction review
     finding = %Types.Finding{
@@ -613,9 +685,56 @@ defmodule ChatBot.Knowledge.ReviewQueue do
     {:reply, {:ok, rejected_count}, new_state}
   end
 
+  @impl true
+  def handle_call(:cleanup_benchmark_data, _from, state) do
+    # Find all items from benchmark/test sources
+    benchmark_items =
+      :ets.tab2list(@ets_table)
+      |> Enum.filter(fn {_id, candidate} ->
+        is_benchmark_source?(candidate)
+      end)
+
+    # Count by status before deletion
+    status_counts =
+      Enum.reduce(benchmark_items, %{pending: 0, approved: 0, rejected: 0, deferred: 0}, fn {_id, candidate}, acc ->
+        Map.update(acc, candidate.status, 1, &(&1 + 1))
+      end)
+
+    # Delete them entirely
+    Enum.each(benchmark_items, fn {id, _} ->
+      :ets.delete(@ets_table, id)
+    end)
+
+    # Update stats
+    new_stats = %{
+      state.stats
+      | pending: max(0, state.stats.pending - status_counts.pending),
+        approved: max(0, state.stats.approved - status_counts.approved),
+        rejected: max(0, state.stats.rejected - status_counts.rejected),
+        deferred: max(0, state.stats.deferred - status_counts.deferred),
+        approved_today: max(0, state.stats.approved_today - status_counts.approved),
+        rejected_today: max(0, state.stats.rejected_today - status_counts.rejected)
+    }
+
+    Logger.info("Cleaned up benchmark data from review queue",
+      deleted: length(benchmark_items),
+      by_status: status_counts
+    )
+
+    # Persist changes
+    new_state = %{state | stats: new_stats}
+    persist_to_disk(new_state)
+
+    {:reply, {:ok, length(benchmark_items)}, new_state}
+  end
+
   # ============================================================================
   # Private Functions
   # ============================================================================
+
+  defp get_source_url(%ReviewCandidate{finding: %{source: %{url: url}}}), do: url
+  defp get_source_url(%ReviewCandidate{finding: %{source: %{domain: domain}}}), do: domain
+  defp get_source_url(_), do: "unknown"
 
   defp maybe_reset_daily_stats(state) do
     today = Date.utc_today()

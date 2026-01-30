@@ -1191,11 +1191,13 @@
 
           <%= if active_tab == "response" do %>
             <% resp = dev[:response] || %{} %>
+            <% path = resp[:response_path] || %{} %>
+            <% path_steps = path[:steps] || [] %>
             <div class="space-y-3 max-h-[600px] overflow-y-auto">
               <.card>
                 <.card_body class="p-3">
                   <div class="text-xs font-semibold text-base-content mb-2">
-                    Response Generation
+                    Response Generation Summary
                   </div>
                   <div class="text-xs text-base-content/70 space-y-2">
                     <div class="flex justify-between">
@@ -1206,6 +1208,10 @@
                             :domain -> :success
                             :smalltalk -> :info
                             :expressive -> :secondary
+                            :conditional_template -> :success
+                            :blended -> :info
+                            :template -> :default
+                            :memory_augmented -> :info
                             :epistemic -> :warning
                             :clarification -> :warning
                             :fallback -> :error
@@ -1241,45 +1247,157 @@
                         <span>{resp.entities_count}</span>
                       </div>
                     <% end %>
-                    <%= if resp[:nlp_confidence] do %>
+                    <%= if resp[:reason] do %>
                       <div class="flex justify-between">
-                        <span class="font-medium">NLP Confidence:</span>
-                        <span>{Float.round(resp.nlp_confidence * 100, 1)}%</span>
-                      </div>
-                    <% end %>
-                    <%= if resp[:prompts_count] && resp.prompts_count > 0 do %>
-                      <div class="flex justify-between">
-                        <span class="font-medium">Clarification Prompts:</span>
-                        <span>{resp.prompts_count}</span>
+                        <span class="font-medium">Reason:</span>
+                        <span class="text-base-content/60">{resp.reason}</span>
                       </div>
                     <% end %>
                   </div>
                 </.card_body>
               </.card>
               
-<!-- Response Path Visualization -->
+<!-- Response Path Visualization - Detailed -->
+              <.card>
+                <.card_body class="p-3">
+                  <div class="text-xs font-semibold text-base-content mb-3">
+                    Response Generation Path
+                  </div>
+                  
+                  <%= if length(path_steps) > 0 do %>
+                    <div class="space-y-2">
+                      <%= for step <- path_steps do %>
+                        <div class="relative pl-6 pb-2">
+                          <!-- Vertical line connector -->
+                          <div class="absolute left-2 top-3 bottom-0 w-0.5 bg-base-300"></div>
+                          
+                          <!-- Step indicator -->
+                          <div class={[
+                            "absolute left-0 top-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold",
+                            case step[:status] do
+                              :completed -> "bg-success text-success-content"
+                              :skipped -> "bg-base-300 text-base-content/50"
+                              _ -> "bg-primary text-primary-content"
+                            end
+                          ]}>
+                            {step[:step]}
+                          </div>
+                          
+                          <!-- Step content -->
+                          <div class="bg-base-200/50 rounded p-2">
+                            <div class="flex items-center justify-between mb-1">
+                              <span class="font-medium text-xs text-base-content">
+                                {step[:name]}
+                              </span>
+                              <.badge 
+                                variant={if step[:status] == :completed, do: :success, else: :default} 
+                                size={:xs}
+                              >
+                                {step[:status]}
+                              </.badge>
+                            </div>
+                            <div class="text-[11px] text-base-content/70">
+                              {step[:detail]}
+                            </div>
+                            
+                            <!-- Handler details if present -->
+                            <%= if step[:handlers_tried] do %>
+                              <div class="mt-2 space-y-1">
+                                <%= for handler <- step.handlers_tried do %>
+                                  <div class={[
+                                    "flex items-center gap-2 text-[10px] p-1.5 rounded",
+                                    if handler[:selected] do
+                                      "bg-success/20 border border-success/30"
+                                    else
+                                      "bg-base-300/50"
+                                    end
+                                  ]}>
+                                    <%= if handler[:selected] do %>
+                                      <.icon name="hero-check-circle" class="size-3 text-success" />
+                                    <% else %>
+                                      <%= if handler[:tried] do %>
+                                        <.icon name="hero-x-circle" class="size-3 text-base-content/40" />
+                                      <% else %>
+                                        <.icon name="hero-minus-circle" class="size-3 text-base-content/30" />
+                                      <% end %>
+                                    <% end %>
+                                    <span class={[
+                                      "font-mono",
+                                      if(handler[:selected], do: "text-success font-medium", else: "text-base-content/60")
+                                    ]}>
+                                      {handler[:handler]}
+                                    </span>
+                                    <span class="text-base-content/50 flex-1 truncate">
+                                      {handler[:reason]}
+                                    </span>
+                                  </div>
+                                <% end %>
+                              </div>
+                            <% end %>
+                            
+                            <!-- Entities if present -->
+                            <%= if step[:entities] && length(step.entities) > 0 do %>
+                              <div class="mt-2 flex flex-wrap gap-1">
+                                <%= for entity <- step.entities do %>
+                                  <span class="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px]">
+                                    {entity[:type]}: {entity[:value]}
+                                  </span>
+                                <% end %>
+                              </div>
+                            <% end %>
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
+                  <% else %>
+                    <!-- Simple path visualization when detailed path not available -->
+                    <div class="flex items-center gap-2 text-xs flex-wrap">
+                      <span class="px-2 py-1 bg-base-200 rounded">Input</span>
+                      <.icon name="hero-arrow-right" class="size-3 text-base-content/40" />
+                      <span class="px-2 py-1 bg-base-200 rounded">Analysis</span>
+                      <.icon name="hero-arrow-right" class="size-3 text-base-content/40" />
+                      <span class={[
+                        "px-2 py-1 rounded",
+                        case resp[:response_type] do
+                          :domain -> "bg-success/20 text-success"
+                          :conditional_template -> "bg-success/20 text-success"
+                          :template -> "bg-info/20 text-info"
+                          :memory_augmented -> "bg-info/20 text-info"
+                          :blended -> "bg-info/20 text-info"
+                          :smalltalk -> "bg-info/20 text-info"
+                          :expressive -> "bg-secondary/20 text-secondary"
+                          :clarification -> "bg-warning/20 text-warning"
+                          :fallback -> "bg-error/20 text-error"
+                          _ -> "bg-base-200"
+                        end
+                      ]}>
+                        {resp[:response_type] || "Response"}
+                      </span>
+                    </div>
+                  <% end %>
+                </.card_body>
+              </.card>
+
+              <!-- Data Stores Accessed -->
               <.card>
                 <.card_body class="p-3">
                   <div class="text-xs font-semibold text-base-content mb-2">
-                    Response Path
+                    Data Stores Accessed
                   </div>
-                  <div class="flex items-center gap-2 text-xs">
-                    <span class="px-2 py-1 bg-base-200 rounded">Input</span>
-                    <.icon name="hero-arrow-right" class="size-3 text-base-content/40" />
-                    <span class="px-2 py-1 bg-base-200 rounded">Analysis</span>
-                    <.icon name="hero-arrow-right" class="size-3 text-base-content/40" />
-                    <span class={[
-                      "px-2 py-1 rounded",
-                      case resp[:response_type] do
-                        :domain -> "bg-success/20 text-success"
-                        :smalltalk -> "bg-info/20 text-info"
-                        :clarification -> "bg-warning/20 text-warning"
-                        :fallback -> "bg-error/20 text-error"
-                        _ -> "bg-base-200"
-                      end
-                    ]}>
-                      {resp[:response_type] || "Response"}
-                    </span>
+                  <div class="space-y-1 text-xs">
+                    <% stores_accessed = get_stores_accessed(resp[:response_type]) %>
+                    <%= for store <- stores_accessed do %>
+                      <div class="flex items-center gap-2 p-1.5 bg-base-200/50 rounded">
+                        <.icon name="hero-circle-stack" class="size-3 text-primary" />
+                        <span class="font-mono text-primary">{store.name}</span>
+                        <span class="text-base-content/50">{store.purpose}</span>
+                      </div>
+                    <% end %>
+                    <%= if length(stores_accessed) == 0 do %>
+                      <div class="text-base-content/40 italic p-2">
+                        No data stores accessed
+                      </div>
+                    <% end %>
                   </div>
                 </.card_body>
               </.card>

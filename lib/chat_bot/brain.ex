@@ -343,6 +343,7 @@ defmodule ChatBot.Brain do
             interpretation = build_interpretation_from_context(input, context)
 
             OutcomeLearner.learn_from_outcome(interpretation, learning_response,
+              world_id: world_id,
               user_id: user_id,
               cohort_id: nil
             )
@@ -786,6 +787,7 @@ defmodule ChatBot.Brain do
 
   defp process_new_message(persona, input, memory, opts) do
     user_id = Keyword.get(opts, :user_id)
+    world_id = Keyword.get(opts, :world_id, "default")
 
     # First, check for meta-cognitive queries (epistemic self-knowledge)
     if Config.enabled?() and SelfKnowledgeAnalyzer.is_self_knowledge_query?(input) do
@@ -793,7 +795,7 @@ defmodule ChatBot.Brain do
     else
       # Check for fast-path via RacingAnalyzer before running full pipeline
       # This uses heuristics and memory similarity for quick responses
-      case RacingAnalyzer.check_fast_path(input, user_id, nil) do
+      case RacingAnalyzer.check_fast_path(input, world_id, user_id, nil) do
         {:fast_path, interpretation} ->
           Logger.debug("Fast path hit", %{
             intent: interpretation.intent,
@@ -1267,14 +1269,18 @@ defmodule ChatBot.Brain do
     missing_slots = if best_analysis, do: Map.get(best_analysis, :missing_context, []), else: []
 
     # Extract discourse and speech_act context for disambiguation
+    # Include world_id for world-scoped type inference
+    world_id = Keyword.get(opts, :world_id, "default")
+
     disambiguation_opts =
       if best_analysis do
         [
           discourse: Map.get(best_analysis, :discourse),
-          speech_act: Map.get(best_analysis, :speech_act)
+          speech_act: Map.get(best_analysis, :speech_act),
+          world_id: world_id
         ]
       else
-        []
+        [world_id: world_id]
       end
 
     # Collect ALL entities from ALL chunks for conflict detection
@@ -1368,13 +1374,15 @@ defmodule ChatBot.Brain do
     {response, response_type} =
       generate_analysis_response_with_type(intent, entities, analysis_model, persona, input)
 
-    # Report response generation details
+    # Report response generation details with full path
     Progress.report(opts, :response_generated, %{
       response_type: response_type,
       strategy: :can_respond,
       method: method,
       intent: intent,
-      entities_count: length(entities)
+      entities_count: length(entities),
+      # Response path shows decision flow
+      response_path: build_response_path(method, response_type, intent, entities)
     })
 
     {response, method, context}
@@ -1491,6 +1499,131 @@ defmodule ChatBot.Brain do
       _ ->
         "I'm #{persona.name}. You said: #{input}"
     end
+  end
+
+  # Builds a detailed response path for inspector display
+  defp build_response_path(method, response_type, intent, entities) do
+    steps = []
+
+    # Step 1: Entry point
+    steps = steps ++ [%{
+      step: 1,
+      name: "Brain.evaluate",
+      status: :completed,
+      detail: "Received user input"
+    }]
+
+    # Step 2: Analysis method
+    analysis_detail = case method do
+      :analysis_only -> "Multi-chunk: used per-chunk analysis only"
+      :analysis_enhanced -> "Single-chunk: NLPPipeline enhanced analysis"
+      :classical_low_confidence -> "NLP had low confidence, used analysis"
+      _ -> "Standard analysis pipeline"
+    end
+
+    steps = steps ++ [%{
+      step: 2,
+      name: "try_nlp_with_analysis",
+      status: :completed,
+      detail: analysis_detail,
+      method: method
+    }]
+
+    # Step 3: Intent determination
+    steps = steps ++ [%{
+      step: 3,
+      name: "Intent Classification",
+      status: if(intent, do: :completed, else: :skipped),
+      detail: if(intent, do: "Classified as: #{intent}", else: "No intent detected"),
+      intent: intent
+    }]
+
+    # Step 4: Entity extraction
+    entity_count = length(entities)
+    steps = steps ++ [%{
+      step: 4,
+      name: "Entity Extraction",
+      status: if(entity_count > 0, do: :completed, else: :skipped),
+      detail: "Extracted #{entity_count} entities",
+      entities: Enum.map(entities, fn e -> 
+        %{type: e[:entity_type], value: e[:value]}
+      end)
+    }]
+
+    # Step 5: Response generation path
+    {gen_steps, gen_status} = case response_type do
+      :domain ->
+        {[
+          %{handler: :domain, tried: true, selected: true, reason: "Domain handler matched intent"},
+          %{handler: :memory_augmented, tried: false, selected: false, reason: "Skipped (domain handled)"},
+          %{handler: :template, tried: false, selected: false, reason: "Skipped (domain handled)"}
+        ], "Domain-specific handler"}
+      
+      :memory_augmented ->
+        {[
+          %{handler: :domain, tried: true, selected: false, reason: "No domain handler for intent"},
+          %{handler: :memory_augmented, tried: true, selected: true, reason: "Similar episodes found in Memory.Store"},
+          %{handler: :template, tried: false, selected: false, reason: "Skipped (memory handled)"}
+        ], "Memory-augmented response"}
+      
+      :template ->
+        {[
+          %{handler: :domain, tried: true, selected: false, reason: "No domain handler for intent"},
+          %{handler: :memory_augmented, tried: true, selected: false, reason: "No similar episodes found"},
+          %{handler: :template, tried: true, selected: true, reason: "Template found in TemplateStore"}
+        ], "Template-based response"}
+      
+      :conditional_template ->
+        {[
+          %{handler: :domain, tried: true, selected: false, reason: "No domain handler for intent"},
+          %{handler: :conditional_template, tried: true, selected: true, reason: "Condition matched, semantic ranking applied"}
+        ], "Conditional template with semantic ranking"}
+
+      :blended ->
+        {[
+          %{handler: :domain, tried: true, selected: false, reason: "No domain handler for intent"},
+          %{handler: :conditional_template, tried: true, selected: false, reason: "No matching conditions"},
+          %{handler: :template_blender, tried: true, selected: true, reason: "Blended chunks from multiple templates"}
+        ], "Template blending"}
+      
+      :smalltalk ->
+        {[
+          %{handler: :expressive, tried: true, selected: true, reason: "Expressive speech act (greeting/farewell/etc)"}
+        ], "Expressive/smalltalk response"}
+
+      :expressive ->
+        {[
+          %{handler: :expressive, tried: true, selected: true, reason: "Expressive speech act"}
+        ], "Expressive response"}
+      
+      :fallback ->
+        {[
+          %{handler: :domain, tried: true, selected: false, reason: "No domain handler for intent"},
+          %{handler: :memory_augmented, tried: true, selected: false, reason: "No similar episodes found"},
+          %{handler: :template, tried: true, selected: false, reason: "No template for intent"},
+          %{handler: :fallback, tried: true, selected: true, reason: "All handlers exhausted"}
+        ], "Fallback response"}
+      
+      _ ->
+        {[%{handler: :unknown, tried: true, selected: true, reason: "Unknown response type"}], "Unknown"}
+    end
+
+    steps = steps ++ [%{
+      step: 5,
+      name: "Response Generation",
+      status: :completed,
+      detail: gen_status,
+      response_type: response_type,
+      handlers_tried: gen_steps
+    }]
+
+    %{
+      steps: steps,
+      final_handler: response_type,
+      method: method,
+      intent: intent,
+      entity_count: entity_count
+    }
   end
 
   defp generate_conversation_id do

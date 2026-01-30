@@ -159,11 +159,12 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
   @doc """
   Checks if any fast path trigger fires.
 
+  Requires world_id for proper world isolation of learned heuristics.
   Returns {:fast_path, interpretation} or :no_match
   """
-  def check_fast_path(text, user_id, cohort_id) do
+  def check_fast_path(text, world_id, user_id, cohort_id) do
     # Check heuristics first (fastest)
-    case check_heuristics(text, user_id, cohort_id) do
+    case check_heuristics(text, world_id, user_id, cohort_id) do
       {:ok, heuristic, confidence} when confidence >= @fast_path_threshold ->
         interpretation =
           Interpretation.new(heuristic.conclusion.intent, text, confidence, :heuristic)
@@ -184,11 +185,17 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
     end
   end
 
+  # Backward compatibility - will be removed
+  def check_fast_path(text, user_id, cohort_id) do
+    Logger.warning("check_fast_path/3 is deprecated, use check_fast_path/4 with world_id")
+    check_fast_path(text, "default", user_id, cohort_id)
+  end
+
   # Private functions
 
-  defp check_heuristics(text, user_id, cohort_id) do
+  defp check_heuristics(text, world_id, user_id, cohort_id) do
     if Process.whereis(HeuristicStore) do
-      HeuristicStore.match_best(text, user_id, cohort_id)
+      HeuristicStore.match_best(text, world_id, user_id, cohort_id)
     else
       {:error, :store_not_running}
     end
@@ -384,7 +391,7 @@ defmodule ChatBot.Analysis.RacingAnalyzer do
           {"command.general", 0.70, ["imperative_verb"]}
 
         length(words) <= 3 and first_word in ~w(hi hello hey) ->
-          {"smalltalk.greeting", 0.80, ["short_utterance", "greeting_word"]}
+          {"smalltalk.greetings.hello", 0.80, ["short_utterance", "greeting_word"]}
 
         true ->
           {"statement.general", 0.40, ["declarative"]}
