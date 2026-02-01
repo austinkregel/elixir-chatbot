@@ -99,72 +99,52 @@ confidence = pass_rate * 0.6 +        # Primary: what % of evidence supports
 - `low` - >= 25%
 - `none` - < 25%
 
-## Capability Testing
+## Task-Based Training
 
-The `ChatBot.Testing.CapabilityTest` module uses the scientific method to evaluate NLP capabilities.
+The system uses domain-specific benchmark tasks via `LearningCenter` for training:
 
-### Available Capabilities
+### Available Task Categories
 
-| Capability | Description |
-|------------|-------------|
-| `question_answering` | Extract answers from passages |
-| `entity_recognition` | Identify named entities |
-| `sentiment` | Detect emotional tone |
-| `classification` | Categorize text by intent |
-| `temporal_reasoning` | Understand time relationships |
-| `coreference` | Resolve pronouns to entities |
-| `commonsense` | Apply common knowledge reasoning |
+| Category | Description |
+|----------|-------------|
+| `question_answering` | Factual Q&A pairs |
+| `commonsense` | Reasoning with explanations |
+| `sentiment` | Emotion detection |
+| `explanation` | Reasoning patterns |
 
-### Running Tests
+### Starting Task Training
 
 ```elixir
-alias ChatBot.Testing.CapabilityTest
+alias ChatBot.Knowledge.LearningCenter
 
-# Test a single capability
-{:ok, investigation} = CapabilityTest.test_capability(:question_answering,
-  limit: 10,      # instances per task
-  max_tasks: 3,   # task files to use
-  verbose: true   # log each test result
+# Start task-based training
+{:ok, session} = LearningCenter.start_task_training(:question_answering,
+  max_tasks: 10,
+  max_instances: 20
 )
 
-# View results
-Investigation.summary(investigation)
-# => %{
-#      topic: "Capability: question_answering",
-#      total_hypotheses: 3,
-#      supported: 0,
-#      falsified: 3,
-#      inconclusive: 0,
-#      conclusion: :hypotheses_falsified
-#    }
-
-# Run full benchmark
-{:ok, results} = CapabilityTest.run_benchmark(
-  capabilities: [:sentiment, :entity_recognition],
-  limit: 10,
-  max_tasks: 3
-)
+# Train on all categories
+{:ok, session} = LearningCenter.start_task_training(:all)
 ```
 
-### Test Flow
+### Training Flow
 
-1. **Create Investigation** for the capability
-2. **For each task file:**
-   - Create hypothesis: "System can perform {capability} on {task}"
-   - Run test instances
-   - Each passed test → supporting evidence
-   - Each failed test → contradicting evidence
-   - Evaluate hypothesis
-3. **Conclude Investigation** with overall result
+1. **Load task files** from `data/domain_specific_tasks/`
+2. **Transform tasks** to training format via `TaskTransformer`
+3. **Process each instance:**
+   - Extract question/answer pairs
+   - Add to fact database
+   - Update knowledge store
+4. **Track metrics** for the training session
 
-### Interpreting Results
+### Task Source Benefits
 
-| Conclusion | Meaning | Action |
-|------------|---------|--------|
-| `:hypotheses_supported` | All tests passed sufficiently | Capability is working |
-| `:hypotheses_falsified` | Tests failed significantly | Needs improvement |
-| `:inconclusive` | Mixed or insufficient results | More testing needed |
-| `:mixed` | Some supported, some falsified | Partial capability |
+| Aspect | Web Sources | Task Sources |
+|--------|-------------|--------------|
+| Quality | Variable | Human-verified |
+| Speed | Network-bound | Local files |
+| Reproducibility | Varies | Consistent |
+| Coverage | Broad | Focused domains |
 
 ## Knowledge Expansion with Scientific Method
 
@@ -202,17 +182,9 @@ LearningSession.scientific_summary(session)
 
 ## UI Integration
 
-### Testing Tab (`/settings?section=testing`)
+### Settings Page (`/settings`)
 
-The Settings page includes a Testing tab with:
-
-1. **Scientific Method Overview** - Visual explanation of the process
-2. **Run Capability Test** - Select capability and run tests
-3. **Test Results Panel** - Shows:
-   - Summary stats (hypotheses, supported, falsified)
-   - Conclusion badge (color-coded)
-   - Individual hypothesis details with confidence
-4. **Task Category Statistics** - Available benchmark tasks
+The Settings page includes training configuration options.
 
 ### Training Sessions
 
@@ -220,21 +192,27 @@ Training sessions display scientific outcomes:
 - Number of hypotheses tested
 - Count of supported hypotheses (green)
 - Count of falsified hypotheses (red)
+- Session progress and metrics
+
+### Dashboard (`/ops/dashboard`)
+
+The operations dashboard shows:
+- Active training sessions
+- Knowledge expansion progress
+- Review queue status
 
 ## Data Sources
 
 ### Domain-Specific Tasks
 
-1600+ benchmark tasks in `data/domain_specific_tasks/`:
+Benchmark tasks are stored in `data/domain_specific_tasks/`:
 
 ```elixir
-CapabilityTest.task_stats()
-# => %{
-#      "Question Answering" => 206,
-#      "Text Categorization" => 46,
-#      "Sentiment Analysis" => 22,
-#      ...
-#    }
+TaskSource.list_categories()
+# => ["Question Answering", "Text Categorization", "Sentiment Analysis", ...]
+
+TaskSource.list_tasks(:question_answering)
+# => [%{path: "...", domains: ["Wikipedia"], ...}, ...]
 ```
 
 ### Task Structure
@@ -273,13 +251,23 @@ Based on "An Introduction to Scientific Investigation":
 | `ChatBot.Knowledge.Types.Hypothesis` | Testable claim with evidence tracking |
 | `ChatBot.Knowledge.Types.Investigation` | Scientific investigation container |
 | `ChatBot.Knowledge.Corroborator` | Hypothesis testing and evaluation |
-| `ChatBot.Testing.CapabilityTest` | NLP capability benchmarking |
 | `ChatBot.Knowledge.LearningCenter` | Orchestrates scientific investigations |
+| `ChatBot.Knowledge.TaskSource` | Provides NLP benchmark tasks |
+| `ChatBot.Learning.TaskAnalyzer` | Analyzes task file structure |
+| `ChatBot.Learning.TaskTransformer` | Transforms tasks to training format |
 
 ## Future Enhancements
 
 - [ ] Track hypothesis evolution over time
-- [ ] Implement A/B testing for pipeline improvements
+- [ ] Implement A/B testing for pipeline improvements (requires summarization system)
 - [ ] Add statistical significance testing
 - [ ] Create improvement recommendations from falsified hypotheses
 - [ ] Build learning curves from repeated tests
+
+---
+
+## See Also
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Main contributor guide
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture with knowledge expansion diagrams
+- [SUBSYSTEM_INTEGRATION_REVIEW.md](SUBSYSTEM_INTEGRATION_REVIEW.md) - Knowledge expansion limitations and status

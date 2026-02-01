@@ -73,7 +73,7 @@ For integration tests that need multiple services:
 
 ```elixir
 setup do
-  start_test_services()  # Starts PubSub, Gazetteer, IntentClassifier, etc.
+  start_test_services()  # Starts PubSub, Gazetteer, IntentClassifierSimple, etc.
   :ok
 end
 ```
@@ -406,3 +406,11 @@ end
 | Ensure PubSub running | `ensure_pubsub_started()` |
 | Create test world | `create_test_world(name)` |
 | Setup world cleanup | `setup_world_sandbox()` |
+
+---
+
+## See Also
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Main contributor guide
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture overview
+- [PIPELINE_ORDER.md](PIPELINE_ORDER.md) - Pipeline execution order

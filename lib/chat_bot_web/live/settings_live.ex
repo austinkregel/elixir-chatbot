@@ -15,8 +15,6 @@ defmodule ChatBotWeb.SettingsLive do
 
   alias ChatBot.Learning.{WorldManager, WorldPersistence}
   alias ChatBot.Knowledge.{LearningCenter, TaskSource}
-  alias ChatBot.Knowledge.Types.Investigation
-  alias ChatBot.Testing.CapabilityTest
   alias ChatBot.ML.Gazetteer
 
   @impl true
@@ -32,7 +30,6 @@ defmodule ChatBotWeb.SettingsLive do
         "entities" -> :entities
         "worlds" -> :worlds
         "training" -> :training
-        "testing" -> :testing
         _ -> :worlds
       end
 
@@ -54,11 +51,6 @@ defmodule ChatBotWeb.SettingsLive do
       |> assign(:starting_training, false)
       |> assign(:tasks_loading, false)
       |> assign(:lc_stats, %{total_sessions: 0, active_agents: 0})
-      # Testing section assigns
-      |> assign(:test_capability, :question_answering)
-      |> assign(:running_test, false)
-      |> assign(:test_results, nil)
-      |> assign(:capability_stats, %{})
       |> load_section_data()
 
     {:noreply, socket}
@@ -69,7 +61,7 @@ defmodule ChatBotWeb.SettingsLive do
       :worlds -> load_worlds_data(socket)
       :entities -> load_entities_data(socket)
       :training -> load_training_data(socket)
-      :testing -> load_testing_data(socket)
+      _ -> socket
     end
   end
 
@@ -183,23 +175,6 @@ defmodule ChatBotWeb.SettingsLive do
     end
 
     socket
-  end
-
-  defp load_testing_data(socket) do
-    # Load capability statistics
-    capability_stats =
-      try do
-        CapabilityTest.task_stats()
-      rescue
-        _ -> %{}
-      catch
-        :exit, _ -> %{}
-      end
-
-    socket
-    |> assign(:capability_stats, capability_stats)
-    |> assign(:test_results, nil)
-    |> assign(:running_test, false)
   end
 
   # ============================================================================
@@ -406,46 +381,6 @@ defmodule ChatBotWeb.SettingsLive do
     end
   end
 
-  # ============================================================================
-  # Event Handlers - Capability Testing
-  # ============================================================================
-
-  def handle_event("select_test_capability", %{"capability" => capability}, socket) do
-    capability_atom = String.to_existing_atom(capability)
-    {:noreply, assign(socket, :test_capability, capability_atom)}
-  end
-
-  def handle_event("run_capability_test", _params, socket) do
-    capability = socket.assigns.test_capability
-    socket = assign(socket, :running_test, true)
-
-    # Run test async to not block UI
-    self_pid = self()
-
-    Task.start(fn ->
-      result =
-        try do
-          CapabilityTest.test_capability(capability,
-            limit: 10,
-            max_tasks: 3,
-            verbose: false
-          )
-        rescue
-          e -> {:error, Exception.message(e)}
-        catch
-          :exit, reason -> {:error, inspect(reason)}
-        end
-
-      send(self_pid, {:test_complete, result})
-    end)
-
-    {:noreply, socket}
-  end
-
-  def handle_event("clear_test_results", _params, socket) do
-    {:noreply, assign(socket, :test_results, nil)}
-  end
-
   @impl true
   def handle_info({:world_context_changed, _world_id}, socket) do
     # World was changed from another LiveView or tab
@@ -457,28 +392,6 @@ defmodule ChatBotWeb.SettingsLive do
      socket
      |> assign(:available_tasks, available)
      |> assign(:tasks_loading, false)}
-  end
-
-  def handle_info({:test_complete, result}, socket) do
-    case result do
-      {:ok, investigation} ->
-        summary = Investigation.summary(investigation)
-
-        {:noreply,
-         socket
-         |> assign(:running_test, false)
-         |> assign(:test_results, %{
-           investigation: investigation,
-           summary: summary
-         })
-         |> put_flash(:info, "Capability test complete")}
-
-      {:error, reason} ->
-        {:noreply,
-         socket
-         |> assign(:running_test, false)
-         |> put_flash(:error, "Test failed: #{inspect(reason)}")}
-    end
   end
 
   # ============================================================================
@@ -531,13 +444,6 @@ defmodule ChatBotWeb.SettingsLive do
           >
             <.icon name="hero-academic-cap" class="size-4" /> Training
           </button>
-          <button
-            phx-click="switch_section"
-            phx-value-section="testing"
-            class={["tab gap-1", if(@section == :testing, do: "tab-active", else: "")]}
-          >
-            <.icon name="hero-beaker" class="size-4" /> Testing
-          </button>
         </div>
         
     <!-- Content -->
@@ -570,13 +476,6 @@ defmodule ChatBotWeb.SettingsLive do
               starting_training={@starting_training}
               tasks_loading={@tasks_loading}
               lc_stats={@lc_stats}
-            />
-          <% :testing -> %>
-            <.testing_section
-              test_capability={@test_capability}
-              running_test={@running_test}
-              test_results={@test_results}
-              capability_stats={@capability_stats}
             />
         <% end %>
       </div>
@@ -1027,269 +926,6 @@ defmodule ChatBotWeb.SettingsLive do
     </div>
     """
   end
-
-  defp testing_section(assigns) do
-    ~H"""
-    <div class="space-y-6">
-      <!-- Scientific Method Overview -->
-      <div class="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl border border-base-300/50 p-6">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
-            <.icon name="hero-beaker" class="size-6 text-primary" />
-          </div>
-          <div>
-            <h2 class="text-xl font-bold">Capability Testing</h2>
-            <p class="text-sm text-base-content/60">
-              Test NLP capabilities using the scientific method
-            </p>
-          </div>
-        </div>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <div class="bg-base-100/50 rounded-lg p-3">
-            <div class="font-medium text-primary">Hypothesis</div>
-            <div class="text-xs text-base-content/60">Testable claim from question</div>
-          </div>
-          <div class="bg-base-100/50 rounded-lg p-3">
-            <div class="font-medium text-warning">Evidence</div>
-            <div class="text-xs text-base-content/60">Test results from tasks</div>
-          </div>
-          <div class="bg-base-100/50 rounded-lg p-3">
-            <div class="font-medium text-success">Supported</div>
-            <div class="text-xs text-base-content/60">Evidence confirms hypothesis</div>
-          </div>
-          <div class="bg-base-100/50 rounded-lg p-3">
-            <div class="font-medium text-error">Falsified</div>
-            <div class="text-xs text-base-content/60">Evidence contradicts hypothesis</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Run Capability Test -->
-      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-        <h3 class="font-semibold mb-4">Run Capability Test</h3>
-        <p class="text-sm text-base-content/60 mb-4">
-          Test a specific NLP capability against curated benchmark tasks. 
-          Results are evaluated using the scientific method.
-        </p>
-        <div class="flex flex-wrap gap-4 items-end">
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text">Capability to Test</span>
-            </label>
-            <select
-              phx-change="select_test_capability"
-              name="capability"
-              class="select select-bordered"
-            >
-              <option value="question_answering" selected={@test_capability == :question_answering}>
-                Question Answering
-              </option>
-              <option value="entity_recognition" selected={@test_capability == :entity_recognition}>
-                Entity Recognition
-              </option>
-              <option value="sentiment" selected={@test_capability == :sentiment}>
-                Sentiment Analysis
-              </option>
-              <option value="classification" selected={@test_capability == :classification}>
-                Classification
-              </option>
-              <option value="temporal_reasoning" selected={@test_capability == :temporal_reasoning}>
-                Temporal Reasoning
-              </option>
-              <option value="coreference" selected={@test_capability == :coreference}>
-                Coreference Resolution
-              </option>
-              <option value="commonsense" selected={@test_capability == :commonsense}>
-                Commonsense Reasoning
-              </option>
-            </select>
-          </div>
-          <button
-            phx-click="run_capability_test"
-            class="btn btn-primary"
-            disabled={@running_test}
-          >
-            <%= if @running_test do %>
-              <span class="loading loading-spinner loading-sm"></span>
-              Running Test...
-            <% else %>
-              <.icon name="hero-play" class="size-4" />
-              Run Test
-            <% end %>
-          </button>
-        </div>
-      </div>
-
-      <!-- Test Results -->
-      <%= if @test_results do %>
-        <.test_results_panel results={@test_results} />
-      <% end %>
-
-      <!-- Available Task Categories -->
-      <div class="bg-base-100 rounded-xl border border-base-300/50">
-        <div class="p-4 border-b border-base-300">
-          <h3 class="font-semibold">Task Category Statistics</h3>
-          <p class="text-sm text-base-content/60">
-            <%= map_size(@capability_stats) %> categories across 1600+ benchmark tasks
-          </p>
-        </div>
-        <%= if map_size(@capability_stats) > 0 do %>
-          <div class="p-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-64 overflow-y-auto">
-            <%= for {category, count} <- Enum.sort_by(@capability_stats, fn {_, c} -> -c end) |> Enum.take(16) do %>
-              <div class="flex items-center justify-between bg-base-200/50 rounded-lg px-3 py-2">
-                <span class="text-sm truncate" title={category}>{category}</span>
-                <span class="badge badge-sm badge-primary">{count}</span>
-              </div>
-            <% end %>
-          </div>
-        <% else %>
-          <div class="p-8 text-center text-base-content/50">
-            <p>Loading task statistics...</p>
-          </div>
-        <% end %>
-      </div>
-    </div>
-    """
-  end
-
-  defp test_results_panel(assigns) do
-    ~H"""
-    <div class="bg-base-100 rounded-xl border border-base-300/50">
-      <div class="p-4 border-b border-base-300 flex items-center justify-between">
-        <div>
-          <h3 class="font-semibold">Investigation Results</h3>
-          <p class="text-sm text-base-content/60">{@results.summary.topic}</p>
-        </div>
-        <button
-          phx-click="clear_test_results"
-          class="btn btn-ghost btn-xs"
-        >
-          <.icon name="hero-x-mark" class="size-4" /> Clear
-        </button>
-      </div>
-      
-      <!-- Scientific Summary -->
-      <div class="p-4 grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div class="text-center">
-          <div class="text-2xl font-bold">{@results.summary.total_hypotheses}</div>
-          <div class="text-xs text-base-content/60">Hypotheses</div>
-        </div>
-        <div class="text-center">
-          <div class="text-2xl font-bold text-success">{@results.summary.supported}</div>
-          <div class="text-xs text-base-content/60">Supported</div>
-        </div>
-        <div class="text-center">
-          <div class="text-2xl font-bold text-error">{@results.summary.falsified}</div>
-          <div class="text-xs text-base-content/60">Falsified</div>
-        </div>
-        <div class="text-center">
-          <div class="text-2xl font-bold text-warning">{@results.summary.inconclusive}</div>
-          <div class="text-xs text-base-content/60">Inconclusive</div>
-        </div>
-        <div class="text-center">
-          <div class="text-2xl font-bold">{@results.summary.evidence_count}</div>
-          <div class="text-xs text-base-content/60">Evidence</div>
-        </div>
-      </div>
-      
-      <!-- Conclusion Badge -->
-      <div class="px-4 pb-4">
-        <div class={[
-          "alert",
-          conclusion_alert_class(@results.summary.conclusion)
-        ]}>
-          <.icon name={conclusion_icon(@results.summary.conclusion)} class="size-5" />
-          <div>
-            <div class="font-medium">Conclusion: {format_conclusion(@results.summary.conclusion)}</div>
-            <div class="text-sm opacity-75">
-              <%= case @results.summary.conclusion do %>
-                <% :hypotheses_supported -> %>
-                  All tested hypotheses are supported by evidence
-                <% :hypotheses_falsified -> %>
-                  Evidence contradicts the hypotheses - improvement needed
-                <% :inconclusive -> %>
-                  Insufficient or mixed evidence - more testing required
-                <% :mixed -> %>
-                  Some hypotheses supported, others falsified
-                <% _ -> %>
-                  Test completed
-              <% end %>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Hypothesis Details -->
-      <div class="border-t border-base-300 divide-y divide-base-300/50">
-        <%= for hypothesis <- @results.investigation.hypotheses do %>
-          <div class="p-4 flex items-start gap-4">
-            <div class={[
-              "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
-              hypothesis_badge_bg(hypothesis.status)
-            ]}>
-              <.icon name={hypothesis_icon(hypothesis.status)} class="size-4" />
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="font-medium truncate" title={hypothesis.claim}>{hypothesis.claim}</div>
-              <div class="text-sm text-base-content/60">
-                Derived from: {hypothesis.derived_from || "N/A"}
-              </div>
-              <div class="flex flex-wrap gap-2 mt-2">
-                <span class={["badge badge-sm", hypothesis_badge(hypothesis.status)]}>
-                  {hypothesis.status}
-                </span>
-                <span class="badge badge-sm badge-ghost">
-                  Confidence: {Float.round(hypothesis.confidence * 100, 1)}%
-                </span>
-                <span class="badge badge-sm badge-ghost">
-                  Sources: {hypothesis.source_count}
-                </span>
-              </div>
-            </div>
-          </div>
-        <% end %>
-      </div>
-    </div>
-    """
-  end
-
-  # Result styling helpers
-  defp conclusion_alert_class(:hypotheses_supported), do: "alert-success"
-  defp conclusion_alert_class(:hypotheses_falsified), do: "alert-error"
-  defp conclusion_alert_class(:inconclusive), do: "alert-warning"
-  defp conclusion_alert_class(:mixed), do: "alert-info"
-  defp conclusion_alert_class(_), do: "alert-info"
-
-  defp conclusion_icon(:hypotheses_supported), do: "hero-check-circle"
-  defp conclusion_icon(:hypotheses_falsified), do: "hero-x-circle"
-  defp conclusion_icon(:inconclusive), do: "hero-question-mark-circle"
-  defp conclusion_icon(:mixed), do: "hero-exclamation-triangle"
-  defp conclusion_icon(_), do: "hero-information-circle"
-
-  defp format_conclusion(:hypotheses_supported), do: "Supported"
-  defp format_conclusion(:hypotheses_falsified), do: "Falsified"
-  defp format_conclusion(:inconclusive), do: "Inconclusive"
-  defp format_conclusion(:mixed), do: "Mixed Results"
-  defp format_conclusion(other), do: to_string(other)
-
-  defp hypothesis_icon(:supported), do: "hero-check"
-  defp hypothesis_icon(:falsified), do: "hero-x-mark"
-  defp hypothesis_icon(:inconclusive), do: "hero-question-mark-circle"
-  defp hypothesis_icon(:testing), do: "hero-arrow-path"
-  defp hypothesis_icon(:untested), do: "hero-minus"
-  defp hypothesis_icon(_), do: "hero-minus"
-
-  defp hypothesis_badge(:supported), do: "badge-success"
-  defp hypothesis_badge(:falsified), do: "badge-error"
-  defp hypothesis_badge(:inconclusive), do: "badge-warning"
-  defp hypothesis_badge(:testing), do: "badge-info"
-  defp hypothesis_badge(_), do: "badge-ghost"
-
-  defp hypothesis_badge_bg(:supported), do: "bg-success/20 text-success"
-  defp hypothesis_badge_bg(:falsified), do: "bg-error/20 text-error"
-  defp hypothesis_badge_bg(:inconclusive), do: "bg-warning/20 text-warning"
-  defp hypothesis_badge_bg(:testing), do: "bg-info/20 text-info"
-  defp hypothesis_badge_bg(_), do: "bg-base-200 text-base-content/50"
 
   defp session_status_badge(:active), do: "badge-warning"
   defp session_status_badge(:completed), do: "badge-success"

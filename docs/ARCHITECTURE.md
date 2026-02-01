@@ -14,7 +14,7 @@ The ChatBot is a **classical NLP chatbot** (no LLMs) built on several interconne
 | **Learning System** | Training worlds, entity discovery, heuristic learning |
 | **Knowledge Expansion** | Scientific method research, hypothesis testing, admin review |
 | **Response Generation** | Template-based, semantic fact retrieval, memory-augmented responses |
-| **Capability Testing** | Scientific benchmarking of NLP capabilities against 1600+ tasks |
+| **Task Training** | Domain-specific task training via LearningCenter |
 
 ## High-Level Overview
 
@@ -129,7 +129,7 @@ flowchart TD
             DISC --> ENTITY["EntityExtractor.extract_entities"]
             SPEECH --> ENTITY
             ANAPH --> ENTITY
-            ENTITY --> INTENT["IntentClassifier.classify"]
+            ENTITY --> INTENT["IntentClassifierSimple.classify"]
             INTENT --> SLOTS["SlotDetector.detect"]
             SLOTS --> CTX["ContextResolver.resolve"]
             CTX --> CONF["calculate_confidence"]
@@ -254,7 +254,7 @@ flowchart TD
     LEARN_CONV -.->|store| KNOW_STORE[("KnowledgeStore")]
     
     %% ML Layer access
-    SPEECH -.-> IC_MODEL[("IntentClassifier")]
+    SPEECH -.-> IC_MODEL[("IntentClassifierSimple")]
     ENTITY -.-> POS_MODEL[("POSTagger")]
     MEM_SIM -.-> EMBED[("Embedder")]
     MEM_AUG -.-> EMBED
@@ -325,7 +325,7 @@ flowchart TB
     subgraph ML["ML Layer"]
         TOK["Tokenizer"]
         POS["POSTagger"]
-        IC["IntentClassifier"]
+        IC["IntentClassifierSimple"]
         EE["EntityExtractor"]
         GAZ["Gazetteer"]
     end
@@ -1681,7 +1681,7 @@ flowchart LR
         TOK["Tokenizer<br/>(No Regex!)"]
         POS["POSTagger<br/>(HMM-based)"]
         GAZ["Gazetteer<br/>(Entity Lookup)"]
-        IC["IntentClassifier<br/>(TF-IDF + Cosine)"]
+        IC["IntentClassifierSimple<br/>(TF-IDF + Cosine, World-Scoped)"]
         EE["EntityExtractor"]
         NLP["NLPPipeline"]
     end
@@ -1768,126 +1768,81 @@ Orchestrates autonomous knowledge gathering using the scientific method. Creates
 ### OutcomeLearner
 Learns from conversation outcomes to create/update heuristics. Scoped by user/cohort/global.
 
-## Capability Testing System
+## Task-Based Training
 
-The system includes a scientific benchmarking framework for evaluating NLP capabilities.
+The system can train on domain-specific NLP benchmark tasks via `LearningCenter`:
 
 ```mermaid
 flowchart TB
-    subgraph Testing["Capability Testing"]
-        CT["CapabilityTest"]
-        INV["Investigation"]
-        HYP["Hypothesis"]
+    subgraph Training["Task Training"]
+        LC["LearningCenter"]
+        TS["TaskSource"]
+        TA["TaskAnalyzer"]
+        TT["TaskTransformer"]
     end
 
     subgraph Tasks["Benchmark Tasks"]
-        TASKS[("1600+ Task Files<br/>data/domain_specific_tasks/")]
+        TASKS[("Task Files<br/>data/domain_specific_tasks/")]
     end
 
-    subgraph Capabilities
+    subgraph Categories
         QA["Question Answering"]
-        NER["Entity Recognition"]
         SENT["Sentiment Analysis"]
-        CLASS["Classification"]
-        TEMP["Temporal Reasoning"]
-        COREF["Coreference"]
         COMM["Commonsense"]
+        EXPL["Explanation"]
     end
 
     subgraph Pipeline["NLP Pipeline"]
         TOK["Tokenizer"]
         POS["POSTagger"]
         GAZ["Gazetteer"]
-        IC["IntentClassifier"]
+        IC["IntentClassifierSimple"]
     end
 
-    CT -->|creates| INV
-    INV -->|contains| HYP
-    CT -->|loads| TASKS
-    TASKS --> QA & NER & SENT & CLASS & TEMP & COREF & COMM
+    LC -->|uses| TS
+    TS -->|loads| TASKS
+    TA -->|analyzes| TASKS
+    TT -->|transforms| TASKS
+    TASKS --> QA & SENT & COMM & EXPL
     QA --> Pipeline
-    NER --> Pipeline
-    SENT --> Pipeline
 
-    style CT fill:#f9f,stroke:#333,stroke-width:2px
-    style INV fill:#bbf,stroke:#333,stroke-width:2px
+    style LC fill:#f9f,stroke:#333,stroke-width:2px
+    style TS fill:#bbf,stroke:#333,stroke-width:2px
 ```
 
-### Scientific Method in Testing
-
-Each capability test follows the scientific method:
-
-| Step | Implementation |
-|------|---------------|
-| **Hypothesis** | "System can perform {capability} on {task}" |
-| **Prediction** | "If capable, test instances will pass" |
-| **Evidence** | Passed tests = supporting, Failed tests = contradicting |
-| **Conclusion** | Supported (>70% pass), Falsified (<50% pass), Inconclusive (mixed) |
-
-### Running Capability Tests
+### Starting Task Training
 
 ```elixir
-# Test a single capability
-{:ok, investigation} = CapabilityTest.test_capability(:question_answering,
-  limit: 10,      # instances per task
-  max_tasks: 3,   # task files to use
-  verbose: true   # log results
+# Start task-based training
+{:ok, session} = LearningCenter.start_task_training(:question_answering,
+  max_tasks: 10,
+  max_instances: 20
 )
 
-# View scientific summary
-Investigation.summary(investigation)
-# => %{
-#      supported: 0,
-#      falsified: 2,
-#      conclusion: :hypotheses_falsified,
-#      total_hypotheses: 2
-#    }
-
-# Run full benchmark
-{:ok, results} = CapabilityTest.run_benchmark(
-  capabilities: [:sentiment, :entity_recognition],
-  limit: 10
-)
+# Available categories
+LearningCenter.start_task_training(:commonsense)
+LearningCenter.start_task_training(:sentiment)
+LearningCenter.start_task_training(:all)
 ```
 
-### Interpreting Results
+### Task Sources
 
-| Status | Meaning | Action |
-|--------|---------|--------|
-| `:supported` | Hypothesis has strong evidence | Capability working |
-| `:falsified` | Contradicting evidence outweighs | Needs improvement |
-| `:inconclusive` | Mixed or insufficient evidence | More testing needed |
+Task sources provide curated NLP benchmark data:
 
-### Confidence Calculation
+| Category | Description | Usage |
+|----------|-------------|-------|
+| Question Answering | Factual Q&A pairs | Train fact retrieval |
+| Commonsense | Reasoning with explanations | Train inference |
+| Sentiment Analysis | Emotion detection | Train classification |
+| Explanation | Reasoning patterns | Train response generation |
 
-```
-confidence = pass_rate × 0.6 +        # Primary factor
-             source_reliability × 0.2 + # Quality
-             sample_size_factor × 0.1 + # Need 5+ samples
-             source_diversity × 0.1    # Multiple sources
-```
+Benefits over web sources:
+- High-quality, human-verified data
+- No network latency or rate limiting
+- Reproducible training
+- Diverse domains (Wikipedia, Science, News)
 
-### Available Capabilities
-
-| Capability | Description | Uses |
-|------------|-------------|------|
-| `question_answering` | Extract answers from passages | Pipeline, Tokenizer |
-| `entity_recognition` | Identify named entities | Gazetteer, POSTagger |
-| `sentiment` | Detect emotional tone | Keyword analysis |
-| `classification` | Categorize by intent | IntentClassifier |
-| `temporal_reasoning` | Time relationships | Tokenizer |
-| `coreference` | Resolve pronouns | POSTagger |
-| `commonsense` | Common knowledge | Pipeline |
-
-### UI Integration
-
-The Settings page (`/settings?section=testing`) provides:
-- Capability selection dropdown
-- Run test button with async execution
-- Results panel with scientific summary
-- Hypothesis details with confidence percentages
-
-See [SCIENTIFIC_METHOD.md](SCIENTIFIC_METHOD.md) for detailed documentation.
+See [SCIENTIFIC_METHOD.md](SCIENTIFIC_METHOD.md) for the scientific method used in knowledge expansion.
 
 ## Confirming Pipeline Order
 
@@ -1907,3 +1862,13 @@ To verify the actual execution order at runtime, you can:
    - `Pipeline.process/2` → `do_process/2` runs stages sequentially
    - `analyze_single_chunk/2` runs stages 2a/2b in parallel, then 2c-5 sequentially
    - `InternalModel.determine_strategy/1` runs after all chunks are analyzed
+
+---
+
+## See Also
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Main contributor guide with module API reference
+- [PIPELINE_ORDER.md](PIPELINE_ORDER.md) - Detailed pipeline execution order
+- [SUBSYSTEM_INTEGRATION_REVIEW.md](SUBSYSTEM_INTEGRATION_REVIEW.md) - Disconnected subsystems and scoping evolution
+- [WRITING_TESTS.md](WRITING_TESTS.md) - Testing guide
+- [SCIENTIFIC_METHOD.md](SCIENTIFIC_METHOD.md) - Scientific method in knowledge expansion

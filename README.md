@@ -71,6 +71,28 @@ iex -S mix phx.server
 
 ---
 
+## Documentation
+
+For detailed documentation, see the `docs/` folder:
+
+- **[CONTRIBUTING.md](docs/CONTRIBUTING.md)**: Comprehensive contributor guide with project philosophy, module APIs, and development workflow
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**: Visual architecture diagrams and end-to-end flow documentation
+- **[PIPELINE_ORDER.md](docs/PIPELINE_ORDER.md)**: Detailed pipeline execution order reference
+- **[SUBSYSTEM_INTEGRATION_REVIEW.md](docs/SUBSYSTEM_INTEGRATION_REVIEW.md)**: Disconnected subsystems, scoping evolution, and integration recommendations
+- **[WRITING_TESTS.md](docs/WRITING_TESTS.md)**: Testing guidelines and best practices
+- **[SCIENTIFIC_METHOD.md](docs/SCIENTIFIC_METHOD.md)**: Knowledge expansion system methodology
+
+### Key Concepts
+
+| Concept | Description |
+|---------|-------------|
+| **Two-Tier Analysis** | RacingAnalyzer (fast path) vs Pipeline (deep analysis) |
+| **World-Scoping** | Directory-scoped embeddings for specialized domains |
+| **Memory Types** | MemoryStore (persona) vs Memory.Store (episodic) |
+| **No Regex** | All NLP uses classical ML, not string matching |
+
+---
+
 ## Web routes
 
 - **`/`**: home page

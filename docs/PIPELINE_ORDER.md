@@ -108,6 +108,7 @@ User Input
 │  │  POSTagger       │  │  LearningCenter  │  │  FactRetriever         │    │
 │  │  Gazetteer       │  │  ResearchAgent   │  │  MemoryAugmented       │    │
 │  │  IntentClassifier│  │  Corroborator    │  │  Composer              │    │
+│  │  Simple (Active) │  │                  │  │                        │    │
 │  │  EntityExtractor │  │  SourceReliability│ │  Synthesizer           │    │
 │  │  NLPPipeline     │  │  ReviewQueue     │  │                        │    │
 │  └──────────────────┘  └──────────────────┘  └────────────────────────┘    │
@@ -135,9 +136,10 @@ Brain.evaluate(conversation_id, input, opts)
   ├─→ Check: SelfKnowledgeAnalyzer.is_self_knowledge_query?(input)
   │     └─→ If YES: handle_meta_cognitive_query() → skip pipeline
   │
-  ├─→ Check: RacingAnalyzer.check_fast_path(input, user_id, cohort_id)
+  ├─→ Check: RacingAnalyzer.check_fast_path(input, world_id, user_id, cohort_id)
   │     ├─→ HeuristicStore.match_best() → if confidence >= 0.85 → fast path
   │     └─→ MemoryStore.query_similar() → if similarity >= 0.85 → fast path
+  │     NOTE: check_fast_path/3 (without world_id) is deprecated
   │
   └─→ If no fast path: process_standard_message()
 ```
@@ -607,3 +609,12 @@ Label Propagation (IN/OUT)
 - **Assumption**: Can be enabled/retracted
 - **Derived**: IN if any valid justification
 - **Contradiction**: Triggers handler when IN
+
+---
+
+## See Also
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Main contributor guide with module API reference
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Visual architecture diagrams
+- [SUBSYSTEM_INTEGRATION_REVIEW.md](SUBSYSTEM_INTEGRATION_REVIEW.md) - Scoping evolution and disconnected subsystems
+- [WRITING_TESTS.md](WRITING_TESTS.md) - Testing guide

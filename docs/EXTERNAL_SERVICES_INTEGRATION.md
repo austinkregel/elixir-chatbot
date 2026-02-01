@@ -594,3 +594,11 @@ end
 7. [ ] Add caching layer (ETS or Cachex)
 8. [ ] Set up API keys in environment
 9. [ ] Write tests with mocked HTTP responses
+
+---
+
+## See Also
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Main contributor guide
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture overview
+- [PIPELINE_ORDER.md](PIPELINE_ORDER.md) - How input flows through the system
