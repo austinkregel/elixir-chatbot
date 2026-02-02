@@ -33,7 +33,7 @@ The fact database can grow as the system learns:
 
 ```elixir
 # Add a new learned fact
-ChatBot.FactDatabase.Integration.add_fact(
+Brain.FactDatabase.Integration.add_fact(
   "water",
   "Water is composed of two hydrogen atoms and one oxygen atom",
   category: "science",
@@ -55,10 +55,10 @@ Facts are integrated with the epistemic system:
 
 ```elixir
 # Sync all facts to beliefs
-ChatBot.FactDatabase.Integration.sync_facts_to_beliefs()
+Brain.FactDatabase.Integration.sync_facts_to_beliefs()
 
 # Verify a fact against existing beliefs
-case ChatBot.FactDatabase.Integration.verify_fact("France", "The capital is Paris") do
+case Brain.FactDatabase.Integration.verify_fact("France", "The capital is Paris") do
   {:verified, confidence} -> # Fact is consistent
   {:contradicted, conflicts} -> # Fact contradicts existing beliefs
   {:uncertain, reason} -> # Cannot verify
@@ -76,7 +76,7 @@ Facts can be verified and checked for contradictions:
 
 ```elixir
 # Check for contradictions
-case ChatBot.FactDatabase.Integration.check_contradiction("France", "The capital is London") do
+case Brain.FactDatabase.Integration.check_contradiction("France", "The capital is London") do
   {:contradiction, conflicting_beliefs} -> # Contradiction detected
   :consistent -> # No contradiction
   :no_data -> # No existing data to check against
@@ -95,13 +95,13 @@ end
 
 ```elixir
 # Get facts about an entity
-ChatBot.FactDatabase.get_entity_facts("France")
+Brain.FactDatabase.get_entity_facts("France")
 
 # Search facts by keyword
-ChatBot.FactDatabase.query(search: "capital", limit: 5)
+Brain.FactDatabase.query(search: "capital", limit: 5)
 
 # Get facts by category
-ChatBot.FactDatabase.get_category_facts("geography")
+Brain.FactDatabase.get_category_facts("geography")
 ```
 
 ### Adding Learned Facts
@@ -110,7 +110,7 @@ ChatBot.FactDatabase.get_category_facts("geography")
 # The Learner automatically adds facts when learning from conversations
 # But you can also add facts manually:
 
-ChatBot.FactDatabase.Integration.add_fact(
+Brain.FactDatabase.Integration.add_fact(
   "Einstein",
   "Albert Einstein developed the theory of relativity",
   category: "science",
@@ -125,10 +125,10 @@ ChatBot.FactDatabase.Integration.add_fact(
 
 ```elixir
 # Before adding a fact, verify it
-case ChatBot.FactDatabase.Integration.verify_fact("water", "Water boils at 100C") do
+case Brain.FactDatabase.Integration.verify_fact("water", "Water boils at 100C") do
   {:verified, conf} when conf >= 0.8 ->
     # Safe to add
-    ChatBot.FactDatabase.Integration.add_fact(...)
+    Brain.FactDatabase.Integration.add_fact(...)
   
   {:contradicted, conflicts} ->
     # Handle contradiction
