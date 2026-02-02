@@ -1,0 +1,31 @@
+{
+  "devices": {},
+  "events": {},
+  "facts": [
+    {
+      "confidence": 0.85,
+      "entity": "Paris",
+      "fact": "Paris is the capital of France",
+      "timestamp": 1769730360960
+    },
+    {
+      "confidence": 0.85,
+      "entity": "Mount Everest",
+      "fact": "Mount Everest is the tallest mountain in the world",
+      "timestamp": 1769730371992
+    }
+  ],
+  "people": {
+    "Austin": {
+      "confidence": 0.73,
+      "name": "Austin",
+      "type": "person"
+    }
+  },
+  "pets": {},
+  "places": {},
+  "preferences": {},
+  "relationships": [],
+  "rooms": {},
+  "tasks": {}
+}

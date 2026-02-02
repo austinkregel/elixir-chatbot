@@ -1,0 +1,18 @@
+{
+  "id": "ss1xzD5i8dQ",
+  "name": "persistent_test",
+  "mode": "persistent",
+  "config": {
+    "confidence_threshold": 0.7,
+    "batch_size": 100,
+    "emit_telemetry": true,
+    "max_candidates": 10000,
+    "promotion_threshold": 3
+  },
+  "metadata": {
+    "test": true,
+    "test_pid": "#PID<0.5929.0>"
+  },
+  "created_at": "2026-02-02T13:36:41.816095Z",
+  "base_world": null
+}

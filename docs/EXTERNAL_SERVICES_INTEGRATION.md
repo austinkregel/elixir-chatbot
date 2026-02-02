@@ -56,7 +56,7 @@ The system recognizes these service-related intents (see `priv/analysis/slot_sch
 
 ### 2. Entity Extraction
 
-The Gazetteer (`ChatBot.ML.Gazetteer`) extracts entities like:
+The Gazetteer (`Brain.ML.Gazetteer`) extracts entities like:
 - Locations (cities, countries, regions)
 - Devices (lights, thermostat, etc.)
 - Times/Dates
@@ -83,12 +83,12 @@ Create a centralized dispatcher that routes fulfilled intents to appropriate ser
 **File:** `lib/chat_bot/services/dispatcher.ex`
 
 ```elixir
-defmodule ChatBot.Services.Dispatcher do
+defmodule Brain.Services.Dispatcher do
   @moduledoc """
   Routes fulfilled intents to external service handlers.
   """
   
-  alias ChatBot.Services.{Weather, Geocoding, News}
+  alias Brain.Services.{Weather, Geocoding, News}
   
   @doc """
   Dispatch an intent with filled slots to the appropriate service.
@@ -159,7 +159,7 @@ end
 **File:** `lib/chat_bot/services/weather.ex`
 
 ```elixir
-defmodule ChatBot.Services.Weather do
+defmodule Brain.Services.Weather do
   @moduledoc """
   Weather service integration.
   Supports multiple providers: OpenWeatherMap, WeatherAPI, etc.
@@ -258,7 +258,7 @@ end
 **File:** `lib/chat_bot/services/geocoding.ex`
 
 ```elixir
-defmodule ChatBot.Services.Geocoding do
+defmodule Brain.Services.Geocoding do
   @moduledoc """
   Geocoding service for resolving location names to coordinates.
   Supports caching to reduce API calls.
@@ -438,7 +438,7 @@ Modify the Brain's response generation to use the service dispatcher.
 ```elixir
 defp generate_response_for_intent(intent, slots, analysis, state) do
   # Try external service first
-  case ChatBot.Services.Dispatcher.dispatch(intent, slots, %{persona: state.persona}) do
+  case Brain.Services.Dispatcher.dispatch(intent, slots, %{persona: state.persona}) do
     {:ok, service_response} ->
       # Service handled it - use the response
       {:ok, service_response.text}
@@ -463,16 +463,16 @@ end
 
 ```elixir
 # Start a conversation
-{:ok, conversation_id} = ChatBot.Brain.create_conversation()
+{:ok, conversation_id} = Brain.create_conversation()
 
 # Send a message
-{:ok, response} = ChatBot.Brain.evaluate(conversation_id, "What's the weather in NYC?")
+{:ok, response} = Brain.evaluate(conversation_id, "What's the weather in NYC?")
 
 # End conversation
-:ok = ChatBot.Brain.end_conversation(conversation_id)
+:ok = Brain.end_conversation(conversation_id)
 
 # Get conversation history
-{:ok, conversation} = ChatBot.Brain.get_conversation(conversation_id)
+{:ok, conversation} = Brain.get_conversation(conversation_id)
 ```
 
 ### REST API (HTTP)
@@ -494,7 +494,7 @@ end
 2. **Add intent/slots** to `priv/analysis/slot_schemas.json` if needed
 3. **Add training data** to `data/intents/` for the intent
 4. **Add entity types** to `data/entities/` for new entity types
-5. **Add dispatch handler** in `ChatBot.Services.Dispatcher`
+5. **Add dispatch handler** in `Brain.Services.Dispatcher`
 6. **Add config** to `config/config.exs`
 7. **Re-train models**: `mix train_models`
 
@@ -502,7 +502,7 @@ end
 
 ```elixir
 # 1. lib/chat_bot/services/stocks.ex
-defmodule ChatBot.Services.Stocks do
+defmodule Brain.Services.Stocks do
   def get_price(symbol) do
     # Implementation
   end
@@ -559,7 +559,7 @@ end
 
 ```elixir
 # test/chat_bot/services/weather_test.exs
-defmodule ChatBot.Services.WeatherTest do
+defmodule Brain.Services.WeatherTest do
   use ExUnit.Case, async: true
   
   import Mox
@@ -568,12 +568,12 @@ defmodule ChatBot.Services.WeatherTest do
   
   describe "get_current/2" do
     test "returns weather data for valid coordinates" do
-      expect(ChatBot.HTTPMock, :get, fn url ->
+      expect(Brain.HTTPMock, :get, fn url ->
         assert url =~ "lat=40.7128"
         {:ok, %{status: 200, body: weather_fixture()}}
       end)
       
-      assert {:ok, weather} = ChatBot.Services.Weather.get_current({40.7128, -74.0060})
+      assert {:ok, weather} = Brain.Services.Weather.get_current({40.7128, -74.0060})
       assert weather.temp == 72.5
       assert weather.condition == "Clear"
     end

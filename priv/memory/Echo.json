@@ -1,562 +1,62 @@
 [
   {
-    "id": "5a26afcb96a4812d",
+    "id": "7392e4ba9eb4909e",
     "role": "system",
     "tags": [
       "learning",
       "context"
     ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
-    "timestamp": 1769283861443
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It's nice to meet you.",
+    "timestamp": 1770043481380
   },
   {
-    "id": "4e76069b7db30ba4",
+    "id": "c95af3f943dc537d",
     "role": "system",
     "tags": [
       "learning",
       "context"
     ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
-    "timestamp": 1769284767994
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: I am your Administrator",
+    "timestamp": 1770043501885
   },
   {
-    "id": "d974d5a305278390",
+    "id": "152b239ed75219e9",
     "role": "system",
     "tags": [
       "learning",
       "context"
     ],
-    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello, I'm Nice.",
-    "timestamp": 1769284812395
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Everything was going wrong! So I prevented it! Then everything went wrong! So I fixed it! But  everything went wrong! So whined at Amazon's awful customer service! Then everything went perfectly! Then everything went wrong! This is a video about how to take an old, unwanted e-waste PC that's collecting dust, and upgrade it into a super-safe NAS server. Everything goes wrong.",
+    "timestamp": 1770043556408
   },
   {
-    "id": "fdf65c098661f9b6",
+    "id": "573538b8849f90fb",
     "role": "system",
     "tags": [
       "learning",
       "context"
     ],
-    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello there, I'm Nice.",
-    "timestamp": 1769285435594
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, I'm Austin Kregel. It's nice to meet you.",
+    "timestamp": 1770044304575
   },
   {
-    "id": "d1b64916f0b5464e",
+    "id": "1379a570ad0069c0",
     "role": "system",
     "tags": [
       "learning",
       "context"
     ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
-    "timestamp": 1769285505800
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Can you tell me about the weather in Owosso, michigan?",
+    "timestamp": 1770044523274
   },
   {
-    "id": "f86550b0edb7a222",
+    "id": "804a1dbc13d51e5e",
     "role": "system",
     "tags": [
       "learning",
       "context"
     ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: Owosso Michigan",
-    "timestamp": 1769285561559
-  },
-  {
-    "id": "76276154ce6997c3",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: What can you tell me about the news?",
-    "timestamp": 1769285587169
-  },
-  {
-    "id": "0c6792ebc743fe99",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather in Owosso Michigan?",
-    "timestamp": 1769286042321
-  },
-  {
-    "id": "58518baba1c2afec",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you!",
-    "timestamp": 1769286061703
-  },
-  {
-    "id": "2c4543a41546f3a8",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello there, I'm Nice.",
-    "timestamp": 1769286108510
-  },
-  {
-    "id": "f763c8e5d3a80312",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
-    "timestamp": 1769286258563
-  },
-  {
-    "id": "e84bdae254f8d47f",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
-    "timestamp": 1769286535729
-  },
-  {
-    "id": "44c51077c3398efc",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello! I am John, I am 30 years old, and I have a cat named Fluffy who is 3 years old",
-    "timestamp": 1769286580266
-  },
-  {
-    "id": "c06ffe8a87ff75cd",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: I'm Austin",
-    "timestamp": 1769286646166
-  },
-  {
-    "id": "0bc692b5bee96bf6",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: Are there 8 days in a week?",
-    "timestamp": 1769286713113
-  },
-  {
-    "id": "ea3c8893250213e4",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: You are aboard the Imperial Romulan Warbird Khazara. I am Subcommander N'Vek.",
-    "timestamp": 1769315593385
-  },
-  {
-    "id": "4d2414e140ded02c",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: Have you seen Nadine?",
-    "timestamp": 1769315709243
-  },
-  {
-    "id": "9c9c5655551d987d",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: Sorry to disturb you sir, but I have an incoming transmission from Starfleet Command. It's Admiral Forrest.",
-    "timestamp": 1769318408315
-  },
-  {
-    "id": "bca4c0ef0d1f56e7",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi I'm Austin",
-    "timestamp": 1769321978816
-  },
-  {
-    "id": "8e54dc5fa408d359",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: I have a friend named Badga. He lives in Australia. Can you tell me the weather there?",
-    "timestamp": 1769322016835
-  },
-  {
-    "id": "2159b185621b9a71",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
-    "timestamp": 1769322100316
-  },
-  {
-    "id": "f95f52f95a898fba",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
-    "timestamp": 1769322382129
-  },
-  {
-    "id": "a44d1e65068325b7",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: Here's what I know: The capital of Australia is Canberra. The capital of Canada is Ottawa. Good day!",
-    "timestamp": 1769322438818
-  },
-  {
-    "id": "9549d4a16e796d37",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
-    "timestamp": 1769322472776
-  },
-  {
-    "id": "271c025e48e3543d",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
-    "timestamp": 1769351847406
-  },
-  {
-    "id": "1acf23ced78f2d1c",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
-    "timestamp": 1769352287835
-  },
-  {
-    "id": "620c4d4db3ef46ca",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
-    "timestamp": 1769352528808
-  },
-  {
-    "id": "c236eb880ffbb3e0",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello",
-    "timestamp": 1769353092082
-  },
-  {
-    "id": "0c8cd3343153f269",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, I'm Austin. What's the weather like in Owosso, MI?",
-    "timestamp": 1769353118978
-  },
-  {
-    "id": "74bb7259eed35f50",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello",
-    "timestamp": 1769354862476
-  },
-  {
-    "id": "95c2c264b9e3b9f8",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: I'm Paris",
-    "timestamp": 1769356647633
-  },
-  {
-    "id": "ed0f30135315e59c",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello",
-    "timestamp": 1769357617069
-  },
-  {
-    "id": "5646e0556cd6f576",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: tell Odo that we need Security in the Promonade",
-    "timestamp": 1769357637479
-  },
-  {
-    "id": "4a6ea80fc3d57c4d",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello",
-    "timestamp": 1769398656302
-  },
-  {
-    "id": "add026e570ff1d3d",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: I'm Austin",
-    "timestamp": 1769398664539
-  },
-  {
-    "id": "79fd150e658f6de8",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello, I'm Austin",
-    "timestamp": 1769398752224
-  },
-  {
-    "id": "7f383707f0f5ba89",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello",
-    "timestamp": 1769408578859
-  },
-  {
-    "id": "2311cfc5763c5828",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi! I'm Austin. What's the weather?",
-    "timestamp": 1769702595352
-  },
-  {
-    "id": "b70092d5c966ffef",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi! I'm Austin. What's the weather?",
-    "timestamp": 1769702791477
-  },
-  {
-    "id": "92d9c6aac7171f1d",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hi! I'm Austin. What's the weather?",
-    "timestamp": 1769702902005
-  },
-  {
-    "id": "3ba5623c8753454a",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It is nice to meet you.",
-    "timestamp": 1769711871473
-  },
-  {
-    "id": "343e7dd00db91e90",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: Can you tell Odo we need security on the Prominade?",
-    "timestamp": 1769711921728
-  },
-  {
-    "id": "6ae380dc80cbe930",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 2 entities, 0 relationships, 0 facts from: Thank you for receiving us, Captain Georgiou.",
-    "timestamp": 1769716439620
-  },
-  {
-    "id": "2213dc571b7d957d",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: How are you this afternoon?",
-    "timestamp": 1769716471484
-  },
-  {
-    "id": "42790f0ea27f3edc",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: HELP",
-    "timestamp": 1769716510291
-  },
-  {
-    "id": "e6c07eceeccae5be",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: There are 8 days in a week",
-    "timestamp": 1769716533818
-  },
-  {
-    "id": "051033f3161ca5d7",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: The sky is green",
-    "timestamp": 1769716640381
-  },
-  {
-    "id": "c31409e1e4f7acfb",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: Dallas Texas",
-    "timestamp": 1769716797406
-  },
-  {
-    "id": "1323b9957903a4df",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 4 entities, 0 relationships, 0 facts from: Hello, my name is Austin Kregel. I live in Owosso, Michigan. I work at Cars.com. Can you tell me what their latest stock price was?",
-    "timestamp": 1769718631080
-  },
-  {
-    "id": "a9880f4fc6e22f1d",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, my name is Austin Kregel. I live in Owosso, Michigan. I work at Cars.com. Can you tell me what their latest stock price was?",
-    "timestamp": 1769718913779
-  },
-  {
-    "id": "49a14ca48d3d7c25",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 1 facts from: Paris is the capital of France",
-    "timestamp": 1769730360965
-  },
-  {
-    "id": "ed1e8bb382dcdb20",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am from Austin",
-    "timestamp": 1769730371986
-  },
-  {
-    "id": "9fd239abc0375f7b",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 0 facts from: What is the population of Tokyo?",
-    "timestamp": 1769730371991
-  },
-  {
-    "id": "06a75b47d8ced999",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 1 entities, 0 relationships, 1 facts from: Mount Everest is the tallest mountain in the world",
-    "timestamp": 1769730371996
-  },
-  {
-    "id": "397eac0505043377",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: thanks",
-    "timestamp": 1769738674534
-  },
-  {
-    "id": "e56297788d7aeb97",
-    "role": "system",
-    "tags": [
-      "learning",
-      "context"
-    ],
-    "text": "Learned 0 entities, 0 relationships, 0 facts from: What is an earthquake?",
-    "timestamp": 1769741557374
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Can you tell me about the weather in Owosso?",
+    "timestamp": 1770044565084
   }
 ]

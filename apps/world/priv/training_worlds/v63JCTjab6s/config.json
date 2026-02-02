@@ -1,0 +1,18 @@
+{
+  "id": "v63JCTjab6s",
+  "name": "persistence_test",
+  "mode": "persistent",
+  "config": {
+    "confidence_threshold": 0.7,
+    "batch_size": 100,
+    "emit_telemetry": true,
+    "max_candidates": 10000,
+    "promotion_threshold": 3
+  },
+  "metadata": {
+    "test": true,
+    "test_pid": "#PID<0.5177.0>"
+  },
+  "created_at": "2026-02-02T00:09:21.543342Z",
+  "base_world": null
+}

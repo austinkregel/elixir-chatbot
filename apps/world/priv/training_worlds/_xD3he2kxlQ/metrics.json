@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-02-02T00:22:34.649651Z",
+  "last_updated": "2026-02-02T00:22:34.657649Z",
+  "ambiguous_entities": [],
+  "anomalies": [],
+  "confidence_histogram": {
+    "0.5": 1
+  },
+  "cooccurrence_counts": {},
+  "documents_processed": 0,
+  "entities_by_type": {
+    "person": 1
+  },
+  "entities_discovered": 1,
+  "entities_promoted": 0,
+  "high_confidence_entities": [],
+  "low_confidence_entities": [],
+  "processing_time_ms": 0,
+  "total_sentences": 0,
+  "total_tokens": 0,
+  "type_conflicts": []
+}

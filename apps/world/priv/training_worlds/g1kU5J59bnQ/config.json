@@ -1,0 +1,18 @@
+{
+  "id": "g1kU5J59bnQ",
+  "name": "persistence_test",
+  "mode": "persistent",
+  "config": {
+    "confidence_threshold": 0.7,
+    "batch_size": 100,
+    "max_candidates": 10000,
+    "emit_telemetry": true,
+    "promotion_threshold": 3
+  },
+  "metadata": {
+    "test": true,
+    "test_pid": "#PID<0.11949.0>"
+  },
+  "created_at": "2026-02-02T00:13:57.315519Z",
+  "base_world": null
+}

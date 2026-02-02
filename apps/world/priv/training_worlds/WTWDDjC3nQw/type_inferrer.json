@@ -1,0 +1,34 @@
+{
+  "patterns": {
+    "person": {
+      "_total": 1,
+      "bigram:PROPN:PROPN": 1,
+      "bigram:PROPN:VERB": 1,
+      "bigram:VERB:ADP": 1,
+      "has_det:false": 1,
+      "has_prep:true": 1,
+      "has_verb:true": 1,
+      "next_tag:1:ADP": 1,
+      "prev_tag:-1:PROPN": 1,
+      "prev_tag:-2:PROPN": 1,
+      "token_allcaps:0:false": 1,
+      "token_allcaps:1:false": 1,
+      "token_allcaps:2:false": 1,
+      "token_allcaps:3:false": 1,
+      "token_cap:0:true": 1,
+      "token_cap:1:true": 1,
+      "token_cap:2:false": 1,
+      "token_cap:3:false": 1,
+      "token_len:0:7": 1,
+      "token_len:1:6": 1,
+      "token_len:2:6": 1,
+      "token_len:3:6": 1
+    }
+  },
+  "cooccurrences": {
+    "person": {
+      "location": 1
+    }
+  },
+  "exported_at": "2026-01-25T05:18:43.383359Z"
+}

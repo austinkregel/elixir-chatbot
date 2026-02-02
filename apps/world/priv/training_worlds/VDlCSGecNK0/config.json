@@ -1,0 +1,18 @@
+{
+  "id": "VDlCSGecNK0",
+  "name": "persistence_test",
+  "mode": "persistent",
+  "config": {
+    "confidence_threshold": 0.7,
+    "batch_size": 100,
+    "emit_telemetry": true,
+    "max_candidates": 10000,
+    "promotion_threshold": 3
+  },
+  "metadata": {
+    "test": true,
+    "test_pid": "#PID<0.7868.0>"
+  },
+  "created_at": "2026-02-02T00:08:45.532781Z",
+  "base_world": null
+}

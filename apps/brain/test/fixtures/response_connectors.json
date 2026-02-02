@@ -1,0 +1,13 @@
+{
+  "description": "Minimal response connectors for testing",
+  "connectors": {
+    "default": [" "]
+  },
+  "response_starters": {
+    "high_confidence": [""],
+    "medium_confidence": [""],
+    "low_confidence": [""]
+  },
+  "clarification_prefixes": [""],
+  "partial_response_connectors": [" "]
+}

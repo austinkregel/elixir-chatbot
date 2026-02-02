@@ -45,8 +45,8 @@ iex -S mix phx.server
 
 ### Core flow
 
-1. **Input** arrives at `ChatBot.Brain` (GenServer).
-2. The **analysis pipeline** (`ChatBot.Analysis.Pipeline`) runs:
+1. **Input** arrives at `Brain` (GenServer in the brain app).
+2. The **analysis pipeline** (`Brain.Analysis.Pipeline`) runs:
    - semantic chunking (multi-sentence handling)
    - discourse + speech act classification (parallel)
    - anaphora resolution (uses recent conversation history)
@@ -60,14 +60,26 @@ iex -S mix phx.server
    - cognitive memory store (episodes + consolidation into semantic facts)
    - epistemic user model (optional, based on config)
 
+### Umbrella Apps
+
+This is an umbrella project with five apps:
+
+| App | Location | Purpose |
+|-----|----------|---------|
+| **nerve** | `apps/nerve/` | Telemetry, metrics, system status |
+| **brain** | `apps/brain/` | Core NLP, ML, Memory, Epistemic, Response |
+| **world** | `apps/world/` | Training worlds, entity discovery |
+| **tasks** | `apps/tasks/` | Task data curation system |
+| **chat_web** | `apps/chat_web/` | Phoenix web layer, LiveViews |
+
 ### Notable subsystems
 
-- **ML/NLP** (`lib/chat_bot/ml/`): intent classifier, gazetteer, tokenizer, entity extractor, POS tagger.
-- **Analysis** (`lib/chat_bot/analysis/`): pipeline orchestration, slot schemas, context/anaphora resolution, heuristics.
-- **Memory** (`lib/chat_bot/memory/`): TF‑IDF embedder, vector index, store, consolidation, high-level API (`Think`).
-- **Epistemic** (`lib/chat_bot/epistemic/`): user facts/beliefs + contradiction handling.
-- **Learning** (`lib/chat_bot/learning/`): training worlds, entity discovery, type inference, document ingestion, world metrics.
-- **Responses** (`lib/chat_bot/response/`): templates, response composition/connectors, memory augmentation.
+- **ML/NLP** (`apps/brain/lib/brain/ml/`): intent classifier, gazetteer, tokenizer, entity extractor, POS tagger.
+- **Analysis** (`apps/brain/lib/brain/analysis/`): pipeline orchestration, slot schemas, context/anaphora resolution, heuristics.
+- **Memory** (`apps/brain/lib/brain/memory/`): TF-IDF embedder, vector index, store, consolidation, high-level API (`Think`).
+- **Epistemic** (`apps/brain/lib/brain/epistemic/`): user facts/beliefs + contradiction handling.
+- **World** (`apps/world/lib/world/`): training worlds, entity discovery, type inference, document ingestion, world metrics.
+- **Responses** (`apps/brain/lib/brain/response/`): templates, response composition/connectors, memory augmentation.
 
 ---
 
@@ -155,9 +167,26 @@ This section lists the **project-specific** tasks/scripts, plus the **most usefu
 - **`mix setup`**: installs deps + sets up/builds assets (alias: `deps.get`, `assets.setup`, `assets.build`)
 - **`mix phx.server`**: run the web server on `http://localhost:4000`
 - **`iex -S mix phx.server`**: run server with an interactive shell
-- **`mix test`**: run tests
+- **`mix test`**: run fast tests (excludes slow/integration/training by default)
+- **`mix test --include slow`**: include slow tests
+- **`mix test --include integration`**: include integration tests
+- **`mix test --include training`**: include model training tests
+- **`mix test --include slow --include integration --include training`**: run full suite
 - **`mix format`**: format code
 - **`mix precommit`**: runs `compile --warning-as-errors`, `deps.unlock --unused`, `format`, `test`
+
+#### Test Tags
+
+Tests are tagged for CI optimization:
+
+| Tag | Purpose |
+|-----|---------|
+| `:slow` | Tests that take >5 seconds |
+| `:integration` | Tests requiring full application stack |
+| `:training` | Tests that train ML models |
+| `:requires_pos_model` | Tests needing POS tagger model |
+| `:smoke` | Quick smoke tests for route rendering |
+| `:wip` | Work-in-progress tests (excluded) |
 
 Assets (aliases defined in `mix.exs`):
 

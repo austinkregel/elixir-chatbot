@@ -37,17 +37,17 @@ This is **critical** for tests that use named GenServers (like `Embedder`, `Inte
 
 ### Use `ensure_started/1` for All GenServers
 
-Always use the `ensure_started/1` helper from `ChatBot.TestHelpers`:
+Always use the `ensure_started/1` helper from `Brain.TestHelpers`:
 
 ```elixir
 defmodule MyTest do
   use ExUnit.Case, async: false
-  import ChatBot.TestHelpers
+  import Brain.TestHelpers
 
   setup do
     # Start services under ExUnit supervision
-    ensure_started(ChatBot.Memory.Embedder)
-    ensure_started(ChatBot.ML.IntentClassifierSimple)
+    ensure_started(Brain.Memory.Embedder)
+    ensure_started(Brain.ML.IntentClassifierSimple)
     
     :ok
   end
@@ -60,8 +60,8 @@ Pass a tuple with the module and options:
 
 ```elixir
 setup do
-  ensure_started({ChatBot.Memory.Store, persistence_path: "/tmp/test_store.term"})
-  ensure_started({ChatBot.Analysis.HeuristicStore, seeded_path: "data/heuristics/seeded_heuristics.json"})
+  ensure_started({Brain.Memory.Store, persistence_path: "/tmp/test_store.term"})
+  ensure_started({Brain.Analysis.HeuristicStore, seeded_path: "data/heuristics/seeded_heuristics.json"})
   
   :ok
 end
@@ -94,11 +94,11 @@ end
 ### Pattern 1: Basic Unit Test with GenServer
 
 ```elixir
-defmodule ChatBot.Memory.EmbedderTest do
+defmodule Brain.Memory.EmbedderTest do
   use ExUnit.Case, async: false
-  import ChatBot.TestHelpers
+  import Brain.TestHelpers
 
-  alias ChatBot.Memory.Embedder
+  alias Brain.Memory.Embedder
 
   setup do
     ensure_pubsub_started()
@@ -119,11 +119,11 @@ end
 ### Pattern 2: Test with Data Cleanup
 
 ```elixir
-defmodule ChatBot.Epistemic.BeliefStoreTest do
+defmodule Brain.Epistemic.BeliefStoreTest do
   use ExUnit.Case, async: false
-  import ChatBot.TestHelpers
+  import Brain.TestHelpers
 
-  alias ChatBot.Epistemic.BeliefStore
+  alias Brain.Epistemic.BeliefStore
 
   setup do
     ensure_pubsub_started()
@@ -140,13 +140,13 @@ end
 ### Pattern 3: Integration Test with Multiple Services
 
 ```elixir
-defmodule ChatBot.Analysis.PipelineTest do
+defmodule Brain.Analysis.PipelineTest do
   use ExUnit.Case, async: false
-  import ChatBot.TestHelpers
+  import Brain.TestHelpers
 
   setup do
     start_test_services()
-    ChatBot.ML.EntityExtractor.load_entity_maps()
+    Brain.ML.EntityExtractor.load_entity_maps()
     :ok
   end
 end
@@ -156,10 +156,10 @@ end
 
 ```elixir
 setup do
-  ensure_started(ChatBot.Memory.Embedder)
+  ensure_started(Brain.Memory.Embedder)
   
   texts = ["training text 1", "training text 2"]
-  ChatBot.Memory.Embedder.build_vocabulary(texts)
+  Brain.Memory.Embedder.build_vocabulary(texts)
   
   # Return context for tests
   {:ok, vocabulary_size: length(texts)}
@@ -258,7 +258,7 @@ end
 
 **Symptom:**
 ```
-** (exit) exited in: GenServer.call(ChatBot.ML.IntentClassifierSimple, ...)
+** (exit) exited in: GenServer.call(Brain.ML.IntentClassifierSimple, ...)
     ** (EXIT) no process: the process is not alive
 ```
 
@@ -267,7 +267,7 @@ end
 **Fix:** Ensure the service is started in your test's `setup`:
 ```elixir
 setup do
-  ensure_started(ChatBot.ML.IntentClassifierSimple)
+  ensure_started(Brain.ML.IntentClassifierSimple)
   :ok
 end
 ```
@@ -276,7 +276,7 @@ end
 
 **Symptom:**
 ```
-** (exit) exited in: GenServer.call(ChatBot.Memory.Embedder, ...)
+** (exit) exited in: GenServer.call(Brain.Memory.Embedder, ...)
     ** (EXIT) shutdown
 ```
 
@@ -329,11 +329,11 @@ ensure_started(Embedder)
 ### Example Test Module Structure
 
 ```elixir
-defmodule ChatBot.MyModuleTest do
+defmodule Brain.MyModuleTest do
   use ExUnit.Case, async: false  # Use false for GenServer tests
-  import ChatBot.TestHelpers
+  import Brain.TestHelpers
 
-  alias ChatBot.MyModule
+  alias Brain.MyModule
 
   # Setup runs before each test
   setup do
@@ -373,9 +373,9 @@ end
 For tests involving training worlds, use the sandbox:
 
 ```elixir
-defmodule ChatBot.Learning.MyWorldTest do
+defmodule World.MyWorldTest do
   use ExUnit.Case, async: false
-  import ChatBot.TestHelpers
+  import Brain.TestHelpers
 
   setup do
     start_world_test_services()

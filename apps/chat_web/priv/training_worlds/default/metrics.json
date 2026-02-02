@@ -1,0 +1,18 @@
+{
+  "started_at": "2026-02-02T01:03:57.793135Z",
+  "documents_processed": 0,
+  "total_tokens": 0,
+  "total_sentences": 0,
+  "entities_discovered": 0,
+  "entities_promoted": 0,
+  "entities_by_type": {},
+  "ambiguous_entities": [],
+  "confidence_histogram": {},
+  "low_confidence_entities": [],
+  "high_confidence_entities": [],
+  "cooccurrence_counts": {},
+  "anomalies": [],
+  "type_conflicts": [],
+  "last_updated": "2026-02-02T01:03:57.793136Z",
+  "processing_time_ms": 0
+}

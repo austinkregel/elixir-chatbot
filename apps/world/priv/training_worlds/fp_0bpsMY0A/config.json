@@ -1,0 +1,18 @@
+{
+  "id": "fp_0bpsMY0A",
+  "name": "persistent_test",
+  "mode": "persistent",
+  "config": {
+    "confidence_threshold": 0.7,
+    "batch_size": 100,
+    "emit_telemetry": true,
+    "max_candidates": 10000,
+    "promotion_threshold": 3
+  },
+  "metadata": {
+    "test": true,
+    "test_pid": "#PID<0.5176.0>"
+  },
+  "created_at": "2026-02-02T01:15:39.892328Z",
+  "base_world": null
+}

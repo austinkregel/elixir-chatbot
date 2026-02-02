@@ -22,7 +22,7 @@ The Knowledge Expansion System follows the scientific method as outlined in "An 
 A hypothesis is a tentative explanation that can be tested and potentially falsified.
 
 ```elixir
-alias ChatBot.Knowledge.Types.Hypothesis
+alias Brain.Knowledge.Types.Hypothesis
 
 hypothesis = Hypothesis.new(
   "Paris is the capital of France",
@@ -47,7 +47,7 @@ hypothesis = Hypothesis.new(
 An investigation tests one or more hypotheses using the scientific method.
 
 ```elixir
-alias ChatBot.Knowledge.Types.Investigation
+alias Brain.Knowledge.Types.Investigation
 
 investigation = Investigation.new("European Capitals",
   hypotheses: [hypothesis1, hypothesis2]
@@ -115,7 +115,7 @@ The system uses domain-specific benchmark tasks via `LearningCenter` for trainin
 ### Starting Task Training
 
 ```elixir
-alias ChatBot.Knowledge.LearningCenter
+alias Brain.Knowledge.LearningCenter
 
 # Start task-based training
 {:ok, session} = LearningCenter.start_task_training(:question_answering,
@@ -248,13 +248,13 @@ Based on "An Introduction to Scientific Investigation":
 
 | Module | Purpose |
 |--------|---------|
-| `ChatBot.Knowledge.Types.Hypothesis` | Testable claim with evidence tracking |
-| `ChatBot.Knowledge.Types.Investigation` | Scientific investigation container |
-| `ChatBot.Knowledge.Corroborator` | Hypothesis testing and evaluation |
-| `ChatBot.Knowledge.LearningCenter` | Orchestrates scientific investigations |
-| `ChatBot.Knowledge.TaskSource` | Provides NLP benchmark tasks |
-| `ChatBot.Learning.TaskAnalyzer` | Analyzes task file structure |
-| `ChatBot.Learning.TaskTransformer` | Transforms tasks to training format |
+| `Brain.Knowledge.Types.Hypothesis` | Testable claim with evidence tracking |
+| `Brain.Knowledge.Types.Investigation` | Scientific investigation container |
+| `Brain.Knowledge.Corroborator` | Hypothesis testing and evaluation |
+| `Brain.Knowledge.LearningCenter` | Orchestrates scientific investigations |
+| `Tasks.Source` | Provides NLP benchmark tasks |
+| `Tasks.Analyzer` | Analyzes task file structure |
+| `Tasks.Transformer` | Transforms tasks to training format |
 
 ## Future Enhancements
 

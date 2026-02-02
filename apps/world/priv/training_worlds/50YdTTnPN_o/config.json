@@ -1,0 +1,18 @@
+{
+  "id": "50YdTTnPN_o",
+  "name": "persistent_test",
+  "mode": "persistent",
+  "config": {
+    "confidence_threshold": 0.7,
+    "batch_size": 100,
+    "max_candidates": 10000,
+    "emit_telemetry": true,
+    "promotion_threshold": 3
+  },
+  "metadata": {
+    "test": true,
+    "test_pid": "#PID<0.13995.0>"
+  },
+  "created_at": "2026-02-02T00:07:47.604812Z",
+  "base_world": null
+}

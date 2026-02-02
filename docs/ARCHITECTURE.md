@@ -488,7 +488,7 @@ flowchart TD
     end
 
     subgraph Main["Main Components"]
-        BRAIN[ChatBot.Brain]
+        BRAIN[Brain]
         EP[ChatBotWeb.Endpoint]
     end
 
@@ -1336,19 +1336,19 @@ flowchart TB
 
 | Store | Module | Persistence | Purpose |
 |-------|--------|-------------|---------|
-| **Memory.Store** | `ChatBot.Memory.Store` | GenServer + File | Episodic memory of user interactions |
-| **FactDatabase** | `ChatBot.FactDatabase` | GenServer + File | Verified facts (geography, science, history, learned) |
-| **SemanticFactRetriever** | `ChatBot.Response.SemanticFactRetriever` | GenServer + ETS | TF-IDF indexed semantic search over facts |
-| **KnowledgeStore** | `ChatBot.KnowledgeStore` | GenServer + File | Structured world knowledge (entities, relationships) |
-| **TemplateStore** | `ChatBot.Response.TemplateStore` | GenServer (in-memory) | Response templates loaded from JSON files |
-| **LearningStore** | `ChatBot.Analysis.LearningStore` | GenServer + File | Analysis patterns learned from conversations |
-| **HeuristicStore** | `ChatBot.Analysis.HeuristicStore` | GenServer + JSON | Fast-path patterns for common queries |
-| **BeliefStore** | `ChatBot.Epistemic.BeliefStore` | GenServer | User beliefs maintained by JTMS |
-| **UserModelStore** | `ChatBot.Epistemic.UserModelStore` | GenServer | Per-user preferences and context |
-| **TypeInferrer** | `ChatBot.Learning.TypeInferrer` | ETS | Entity type patterns (world-scoped) |
-| **WorldManager** | `ChatBot.Learning.WorldManager` | GenServer + Files | Training world configurations and data |
-| **ReviewQueue** | `ChatBot.Knowledge.ReviewQueue` | GenServer + File | Facts pending admin approval |
-| **TaskSource** | `ChatBot.Knowledge.TaskSource` | Stateless | NLP benchmark task data for training |
+| **Memory.Store** | `Brain.Memory.Store` | GenServer + File | Episodic memory of user interactions |
+| **FactDatabase** | `Brain.FactDatabase` | GenServer + File | Verified facts (geography, science, history, learned) |
+| **SemanticFactRetriever** | `Brain.Response.SemanticFactRetriever` | GenServer + ETS | TF-IDF indexed semantic search over facts |
+| **KnowledgeStore** | `Brain.KnowledgeStore` | GenServer + File | Structured world knowledge (entities, relationships) |
+| **TemplateStore** | `Brain.Response.TemplateStore` | GenServer (in-memory) | Response templates loaded from JSON files |
+| **LearningStore** | `Brain.Analysis.LearningStore` | GenServer + File | Analysis patterns learned from conversations |
+| **HeuristicStore** | `Brain.Analysis.HeuristicStore` | GenServer + JSON | Fast-path patterns for common queries |
+| **BeliefStore** | `Brain.Epistemic.BeliefStore` | GenServer | User beliefs maintained by JTMS |
+| **UserModelStore** | `Brain.Epistemic.UserModelStore` | GenServer | Per-user preferences and context |
+| **TypeInferrer** | `World.TypeInferrer` | ETS | Entity type patterns (world-scoped) |
+| **WorldManager** | `World.Manager` | GenServer + Files | Training world configurations and data |
+| **ReviewQueue** | `Brain.Knowledge.ReviewQueue` | GenServer + File | Facts pending admin approval |
+| **TaskSource** | `Tasks.Source` | Stateless | NLP benchmark task data for training |
 
 ### Store Access During Response Generation
 

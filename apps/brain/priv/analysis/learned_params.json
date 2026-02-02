@@ -1,0 +1,67 @@
+{
+  "chunker": {
+    "admin_locked": false,
+    "learned_at": null,
+    "max_chunk_words": 50,
+    "min_chunk_words": 3,
+    "split_on_conjunctions": true
+  },
+  "context_resolver": {
+    "admin_locked": false,
+    "decay_rate": 0.08,
+    "history_depth": 5,
+    "learned_at": null,
+    "min_confidence_from_history": 0.5
+  },
+  "discourse": {
+    "address_weight": 0.5,
+    "admin_locked": false,
+    "bot_names": [
+      "companion",
+      "bot",
+      "assistant",
+      "ai",
+      "echo"
+    ],
+    "confidence_threshold": 0.4,
+    "imperative_weight": 0.25,
+    "learned_at": "2026-01-29T22:34:53.823064Z",
+    "question_weight": 0.2,
+    "second_person_weight": 0.3
+  },
+  "feedback_stats": {
+    "clarifications_needed": 493,
+    "fallback_to_llm": 0,
+    "successful_responses": 12647,
+    "total_interactions": 13140
+  },
+  "last_updated": "2026-02-02T15:02:50.034280Z",
+  "response_optionality": {
+    "acknowledgment_defer_confidence": 0.7,
+    "admin_locked": false,
+    "backchannel_defer_confidence": 0.8,
+    "compliment_defer_confidence": 0.6,
+    "continuation_defer_confidence": 0.9,
+    "default_defer_threshold": 0.7,
+    "gratitude_loop_threshold": 2,
+    "learned_at": null
+  },
+  "speech_acts": {
+    "admin_locked": false,
+    "confidence_threshold": 0.3,
+    "learned_at": "2026-01-29T22:34:53.822625Z",
+    "question_indicators": {
+      "?": 0.4,
+      "inversion_pattern": 0.2,
+      "modal_you_pattern": 0.25,
+      "question_word": 0.35
+    },
+    "request_indicators": {
+      "desire_pattern": 0.25,
+      "imperative_verb": 0.4,
+      "modal_you_verb": 0.3,
+      "please_modifier": 0.2
+    }
+  },
+  "version": "1.0.0"
+}

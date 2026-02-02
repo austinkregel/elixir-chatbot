@@ -1,0 +1,23 @@
+{
+  "facts": [
+    {
+      "confidence": 0.7110000000000001,
+      "entity": "Austin",
+      "fact": "Hello, I'm Austin. It is nice to meet you.",
+      "timestamp": 1770039274065
+    },
+    {
+      "confidence": 0.7110000000000001,
+      "entity": "Austin",
+      "fact": "Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+      "timestamp": 1770039322027
+    }
+  ],
+  "people": {
+    "Austin": {
+      "confidence": 0.73,
+      "name": "Austin",
+      "type": "person"
+    }
+  }
+}

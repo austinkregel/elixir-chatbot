@@ -203,7 +203,7 @@ analysis_model = Pipeline.process(input, opts)
 
 ### Core Processing (Brain)
 
-The `ChatBot.Brain` module is the main orchestrator that manages conversations, processes input, and coordinates all subsystems.
+The `Brain` module is the main orchestrator that manages conversations, processes input, and coordinates all subsystems.
 
 **Location**: `lib/chat_bot/brain.ex`
 
@@ -230,7 +230,7 @@ status = Brain.get_status()
 
 | Option | Description |
 |--------|-------------|
-| `:server` | The server to call (default: `ChatBot.Brain`) |
+| `:server` | The server to call (default: `Brain`) |
 | `:timeout` | Call timeout in ms (default: 90,000) |
 | `:world_id` | Training world to use (default: "default") |
 | `:user_id` | User ID for epistemic tracking |
@@ -260,7 +260,7 @@ subprocesses = Brain.list_subprocesses()
 
 The analysis pipeline orchestrates text understanding through multiple stages.
 
-#### Pipeline (`ChatBot.Analysis.Pipeline`)
+#### Pipeline (`Brain.Analysis.Pipeline`)
 
 **Location**: `lib/chat_bot/analysis/pipeline.ex`
 
@@ -283,7 +283,7 @@ chunk_analysis = Pipeline.analyze_chunk("What's the weather?", opts)
 - `overall_strategy` - `:can_respond`, `:needs_clarification`, `:defer_to_user`, `:cannot_respond`
 - `suggested_prompts` - Clarification prompts if needed
 
-#### RacingAnalyzer (`ChatBot.Analysis.RacingAnalyzer`)
+#### RacingAnalyzer (`Brain.Analysis.RacingAnalyzer`)
 
 **Location**: `lib/chat_bot/analysis/racing_analyzer.ex`
 
@@ -303,7 +303,7 @@ interpretation = RacingAnalyzer.race(text,
 
 **Note**: `check_fast_path/3` is deprecated - use `check_fast_path/4` with `world_id`.
 
-#### ResponseGate (`ChatBot.Analysis.ResponseGate`)
+#### ResponseGate (`Brain.Analysis.ResponseGate`)
 
 Evaluates whether a response is appropriate based on speech act sequences.
 
@@ -338,7 +338,7 @@ end
 
 The response system assembles context-aware responses from all subsystems.
 
-#### Generator (`ChatBot.Response.Generator`)
+#### Generator (`Brain.Response.Generator`)
 
 **Location**: `lib/chat_bot/response/generator.ex`
 
@@ -383,7 +383,7 @@ The memory system uses a human analogy:
 | `Memory.Consolidation` | Memory compression | Clusters episodes into semantic facts |
 | `Memory.Think` | Conscious memory access | High-level API for memory operations |
 
-#### Memory.Think (`ChatBot.Memory.Think`)
+#### Memory.Think (`Brain.Memory.Think`)
 
 **Location**: `lib/chat_bot/memory/think.ex`
 
@@ -421,8 +421,8 @@ The memory system uses a human analogy:
 
 **Important**: These are different systems!
 
-- **MemoryStore** (`ChatBot.MemoryStore`): Persona-scoped JSON storage - like personality traits
-- **Memory.Store** (`ChatBot.Memory.Store`): Cognitive episodic memory with TF-IDF embeddings - long-term memory
+- **MemoryStore** (`Brain.MemoryStore`): Persona-scoped JSON storage - like personality traits
+- **Memory.Store** (`Brain.Memory.Store`): Cognitive episodic memory with TF-IDF embeddings - long-term memory
 
 ```elixir
 # MemoryStore - persona traits
@@ -440,7 +440,7 @@ Memory.Store.query_similar(text, k, world_id: "default")
 
 The learning system is world-based - directory-scoped embeddings for specialized domains.
 
-#### WorldContext (`ChatBot.Learning.WorldContext`)
+#### WorldContext (`World.Context`)
 
 **Location**: `lib/chat_bot/learning/world_context.ex`
 
@@ -458,7 +458,7 @@ chain = WorldContext.get_inheritance_chain("my_world")
 WorldContext.add_episode(world_id, input, action, outcome, tags)
 ```
 
-#### WorldManager (`ChatBot.Learning.WorldManager`)
+#### WorldManager (`World.Manager`)
 
 **Location**: `lib/chat_bot/learning/world_manager.ex`
 
@@ -498,7 +498,7 @@ The Knowledge Expansion system implements a teacher/student research model.
 
 **Status**: Experimental - needs summarization system to work properly.
 
-#### LearningCenter (`ChatBot.Knowledge.LearningCenter`)
+#### LearningCenter (`Brain.Knowledge.LearningCenter`)
 
 **Location**: `lib/chat_bot/knowledge/learning_center.ex`
 
@@ -543,7 +543,7 @@ The Knowledge Expansion system implements a teacher/student research model.
 
 The epistemic system provides truth maintenance and belief management. **Always enabled**.
 
-#### BeliefStore (`ChatBot.Epistemic.BeliefStore`)
+#### BeliefStore (`Brain.Epistemic.BeliefStore`)
 
 **Location**: `lib/chat_bot/epistemic/belief_store.ex`
 
@@ -581,7 +581,7 @@ BeliefStore.retract_belief(belief_id)
 
 All ML/NLP components use classical ML - **no regex or string matching**.
 
-#### IntentClassifierSimple (`ChatBot.ML.IntentClassifierSimple`)
+#### IntentClassifierSimple (`Brain.ML.IntentClassifierSimple`)
 
 **Location**: `lib/chat_bot/ml/intent_classifier_simple.ex`
 
@@ -665,7 +665,7 @@ Brain coordinates but subprocesses operate independently.
 
 ```elixir
 # Emit telemetry span
-ChatBot.Telemetry.span(:my_subsystem_operation, %{input: input}, fn ->
+Nerve.Telemetry.span(:my_subsystem_operation, %{input: input}, fn ->
   # Your operation here
   result
 end)
@@ -942,7 +942,7 @@ When adding new subsystems:
 ```elixir
 defmodule MySubsystem do
   def process(input) do
-    ChatBot.Telemetry.span(:my_subsystem, %{input_length: String.length(input)}, fn ->
+    Nerve.Telemetry.span(:my_subsystem, %{input_length: String.length(input)}, fn ->
       # Your processing here
       result
     end)

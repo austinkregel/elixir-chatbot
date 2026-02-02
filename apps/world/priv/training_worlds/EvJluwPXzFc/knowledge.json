@@ -1,0 +1,8 @@
+{
+  "parent_only": {
+    "key2": "parent_only_value"
+  },
+  "shared": {
+    "key1": "parent_value"
+  }
+}
