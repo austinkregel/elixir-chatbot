@@ -173,4 +173,41 @@ defmodule Brain.ML.SimpleClassifier do
       end
     end
   end
+  
+  @doc """
+  Save trained model to disk.
+  """
+  def save_model(model, path \\ nil) do
+    model_path = path || get_model_path()
+    File.mkdir_p!(Path.dirname(model_path))
+    binary = :erlang.term_to_binary(model)
+    File.write!(model_path, binary)
+    Logger.info("Saved SimpleClassifier model", %{path: model_path})
+    :ok
+  end
+  
+  @doc """
+  Load trained model from disk.
+  """
+  def load_model(path \\ nil) do
+    model_path = path || get_model_path()
+    
+    case File.read(model_path) do
+      {:ok, binary} ->
+        try do
+          model = :erlang.binary_to_term(binary)
+          {:ok, model}
+        rescue
+          e -> {:error, "Failed to deserialize model: #{inspect(e)}"}
+        end
+      
+      {:error, reason} ->
+        {:error, "Failed to read model file: #{reason}"}
+    end
+  end
+  
+  defp get_model_path do
+    models_path = Application.get_env(:brain, :ml)[:models_path] || "priv/ml_models"
+    Path.join(models_path, "simple_classifier.term")
+  end
 end

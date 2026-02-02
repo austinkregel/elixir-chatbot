@@ -4,10 +4,6 @@ defmodule World.TrainingWorldTest do
 
   alias World.{
     TrainingWorld,
-    Events,
-    Metrics,
-    Manager,
-    Persistence,
     EntityDiscoverer,
     TypeInferrer,
     DocumentIngestor

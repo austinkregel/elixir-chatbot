@@ -28,7 +28,19 @@ config :brain,
   ],
 
   # Intent promotion (novel intent discovery)
-  intent_promotion_enabled: System.get_env("INTENT_PROMOTION_ENABLED", "false") == "true"
+  intent_promotion_enabled: System.get_env("INTENT_PROMOTION_ENABLED", "false") == "true",
+
+  # Seq2Seq LSTM + Attention configuration
+  seq2seq: [
+    hidden_size: 256,
+    embedding_size: 128,
+    vocab_size: 10_000,
+    max_sequence_length: 100,
+    dropout: 0.1
+  ],
+
+  # Abstractive summarization toggle
+  use_abstractive_summarization: System.get_env("USE_ABSTRACTIVE_SUMMARIZATION", "false") == "true"
 
 # ============================================================================
 # World App Configuration

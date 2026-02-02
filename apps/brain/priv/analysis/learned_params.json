@@ -32,10 +32,10 @@
   "feedback_stats": {
     "clarifications_needed": 493,
     "fallback_to_llm": 0,
-    "successful_responses": 12647,
-    "total_interactions": 13140
+    "successful_responses": 12651,
+    "total_interactions": 13144
   },
-  "last_updated": "2026-02-02T15:02:50.034280Z",
+  "last_updated": "2026-02-02T18:33:52.277293Z",
   "response_optionality": {
     "acknowledgment_defer_confidence": 0.7,
     "admin_locked": false,

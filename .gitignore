@@ -82,3 +82,8 @@ erl_crash.dump
 .venv
 .env
 .cursor
+
+
+apps/*/cover/
+
+apps/world/priv/training_worlds/*

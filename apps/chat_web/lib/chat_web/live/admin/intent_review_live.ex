@@ -15,7 +15,6 @@ defmodule ChatWeb.Admin.IntentReviewLive do
   import ChatWeb.AppShell
 
   alias Brain.Analysis.{IntentReviewQueue, IntentRegistry, IntentPromoter}
-  alias Brain.Analysis.Types.IntentReviewCandidate
 
   @refresh_interval_ms 5_000
 

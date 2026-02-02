@@ -239,9 +239,76 @@ defmodule Brain.Knowledge.ResearchAgent do
     end
   end
 
+  defp fetch_from_source(:academic, queries, max_pages, _opts) do
+    # Fetch from academic paper APIs (Semantic Scholar, arXiv, OpenAlex)
+    # This provides high-quality, peer-reviewed data for knowledge expansion
+    alias Brain.Knowledge.Academic.{SemanticScholar, Arxiv, OpenAlex, PaperModelBuilder}
+
+    queries
+    |> Enum.take(max_pages)
+    |> Enum.flat_map(fn query ->
+      # Fetch from all academic sources in parallel
+      tasks = [
+        Task.async(fn -> SemanticScholar.search(query, limit: 5) end),
+        Task.async(fn -> OpenAlex.search_cs(query, limit: 5) end),
+        Task.async(fn -> Arxiv.search(query, limit: 3) end)
+      ]
+
+      papers =
+        tasks
+        |> Task.await_many(20_000)
+        |> Enum.flat_map(fn
+          {:ok, result} -> result
+          {:error, _} -> []
+        end)
+
+      Logger.debug("Fetched academic papers",
+        query: query,
+        paper_count: length(papers)
+      )
+
+      # Ingest papers into epistemic model (builds running model)
+      case PaperModelBuilder.ingest_papers(papers) do
+        {:ok, _node_ids} ->
+          Logger.debug("Ingested papers into epistemic model", count: length(papers))
+
+        {:error, reason} ->
+          Logger.warning("Failed to ingest papers", error: inspect(reason))
+      end
+
+      # Convert papers to raw result format expected by extract_findings
+      Enum.map(papers, &paper_to_raw_result/1)
+    end)
+  end
+
   defp fetch_from_source(_source, _queries, _max_pages, _opts) do
     # Unknown source type
     []
+  end
+
+  defp paper_to_raw_result(paper) do
+    alias Brain.Knowledge.Academic.Paper
+
+    source = Paper.to_source_info(paper)
+
+    content =
+      [
+        "Title: #{paper.title}",
+        if(paper.abstract, do: "\nAbstract: #{paper.abstract}", else: ""),
+        "\nAuthors: #{Paper.author_string(paper)}",
+        if(paper.venue, do: "\nVenue: #{paper.venue}", else: ""),
+        if(paper.year, do: "\nYear: #{paper.year}", else: ""),
+        "\nCitations: #{paper.citation_count}"
+      ]
+      |> Enum.reject(&(&1 == ""))
+      |> Enum.join("")
+
+    %{
+      url: paper.url || "academic://#{paper.source}/#{paper.id}",
+      content: content,
+      source: source,
+      paper: paper
+    }
   end
 
   defp generate_source_urls(query) do

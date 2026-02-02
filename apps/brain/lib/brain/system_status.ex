@@ -531,7 +531,9 @@ defmodule Brain.SystemStatus do
   end
 
   defp build_world_embedder_label(%{phase: phase, phase_label: label}) when is_binary(label) do
-    label
+    # Include phase information in the label for better debugging
+    phase_str = phase |> to_string() |> String.replace("_", " ") |> String.capitalize()
+    "#{phase_str}: #{label}"
   end
 
   defp build_world_embedder_label(_), do: "Unknown status"

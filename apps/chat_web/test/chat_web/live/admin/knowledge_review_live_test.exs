@@ -131,7 +131,7 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
       assert html =~ "Approve Selected (1)"
     end
 
-    test "bulk approve processes multiple candidates", %{conn: conn} do
+    test "bulk approve processes multiple candidates", %{conn: _conn} do
       candidates = for i <- 1..3 do
         c = build_test_candidate("Entity#{i}", "Claim #{i}")
         ReviewQueue.add(c)

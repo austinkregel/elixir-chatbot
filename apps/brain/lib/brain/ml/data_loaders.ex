@@ -513,6 +513,414 @@ defmodule Brain.ML.DataLoaders do
   end
 
   # ============================================================================
+  # LSTM Multi-Task Training Data Loading
+  # ============================================================================
+
+  @doc """
+  Load intent training data formatted for LSTM training.
+  
+  Returns a list of training examples with tokenized text, intent labels,
+  and entity annotations in BIO format.
+  
+  ## Options
+  - `:include_negative` - Include negative examples (default: true)
+  - `:tokenizer` - Tokenizer function (default: Brain.ML.Tokenizer.tokenize/1)
+  
+  ## Returns
+  `{:ok, examples}` where each example is:
+  ```
+  %{
+    tokens: ["what", "is", "the", "weather"],
+    intent: "weather.query",
+    entities: [%{text: "London", type: "location", start: 5, end: 5}],
+    bio_tags: ["O", "O", "O", "O", "B-LOC"],  # For NER training
+    negative_for: nil | "meta.self_knowledge"  # If this is a negative example
+  }
+  ```
+  """
+  def load_intent_training_data_for_lstm(opts \\ []) do
+    include_negative = Keyword.get(opts, :include_negative, true)
+    tokenizer = Keyword.get(opts, :tokenizer, &Brain.ML.Tokenizer.tokenize/1)
+    
+    with {:ok, positive_examples} <- load_all_intents(),
+         {:ok, negative_examples} <- load_negative_examples() do
+      
+      # Process positive examples
+      processed_positives = 
+        positive_examples
+        |> Enum.map(fn example -> 
+          process_example_for_lstm(example, tokenizer, nil)
+        end)
+        |> Enum.filter(&(&1 != nil))
+      
+      # Process negative examples if requested
+      processed_negatives = 
+        if include_negative do
+          negative_examples
+          |> Enum.map(fn example -> 
+            process_example_for_lstm(example, tokenizer, example[:negative_for])
+          end)
+          |> Enum.filter(&(&1 != nil))
+        else
+          []
+        end
+      
+      all_examples = processed_positives ++ processed_negatives
+      
+      Logger.info("Loaded LSTM training data", %{
+        positive_examples: length(processed_positives),
+        negative_examples: length(processed_negatives),
+        total: length(all_examples)
+      })
+      
+      {:ok, all_examples}
+    end
+  end
+  
+  @doc """
+  Load negative training examples from *_negative_en.json files.
+  
+  Negative examples are phrases that should NOT be classified as a particular intent.
+  They help the model learn to distinguish between similar-sounding but semantically
+  different inputs (e.g., "tell me about the weather" should NOT be meta.self_knowledge).
+  
+  ## Format
+  Each negative example file contains:
+  ```json
+  [
+    {"text": "tell me about the weather", "correct_intent": "weather.query"},
+    {"text": "what can you tell me about music", "correct_intent": "music.search"}
+  ]
+  ```
+  
+  The filename indicates what intent these are negative for (e.g., meta.self_knowledge_negative_en.json).
+  """
+  def load_negative_examples(path \\ nil) do
+    negative_dir = path || get_data_path("intents/negative_examples")
+    
+    case File.ls(negative_dir) do
+      {:ok, files} ->
+        negative_files = Enum.filter(files, &String.ends_with?(&1, ".json"))
+        
+        examples =
+          Enum.flat_map(negative_files, fn file ->
+            file_path = Path.join(negative_dir, file)
+            negative_for = extract_negative_intent_name(file)
+            
+            case load_negative_file(file_path, negative_for) do
+              {:ok, file_examples} -> file_examples
+              {:error, _} -> []
+            end
+          end)
+        
+        Logger.info("Loaded negative examples", %{
+          files: length(negative_files),
+          examples: length(examples)
+        })
+        
+        {:ok, examples}
+      
+      {:error, reason} ->
+        Logger.warning("Failed to list intents directory for negatives", %{reason: reason})
+        {:ok, []}  # Return empty list, not an error (negatives are optional)
+    end
+  end
+  
+  @doc """
+  Load a single negative examples file.
+  """
+  def load_negative_file(path, negative_for) do
+    case File.read(path) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, data} when is_list(data) ->
+            examples = 
+              Enum.map(data, fn item ->
+                %{
+                  text: Map.get(item, "text", ""),
+                  intent: Map.get(item, "correct_intent", "unknown"),
+                  entities: [],
+                  negative_for: negative_for
+                }
+              end)
+              |> Enum.filter(fn ex -> ex.text != "" end)
+            
+            {:ok, examples}
+          
+          {:error, reason} ->
+            {:error, reason}
+        end
+      
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+  
+  @doc """
+  Build vocabulary from LSTM training examples.
+  
+  Returns a map of token -> index.
+  Special tokens:
+  - 0: <PAD>
+  - 1: <UNK>
+  - 2: <BOS> (beginning of sequence)
+  - 3: <EOS> (end of sequence)
+  """
+  def build_lstm_vocabulary(examples, opts \\ []) do
+    min_freq = Keyword.get(opts, :min_freq, 2)
+    max_vocab = Keyword.get(opts, :max_vocab, 10000)
+    
+    # Count token frequencies
+    token_freqs =
+      examples
+      |> Enum.flat_map(fn ex -> ex.tokens end)
+      |> Enum.frequencies()
+    
+    # Filter by frequency and take top tokens
+    tokens =
+      token_freqs
+      |> Enum.filter(fn {_token, freq} -> freq >= min_freq end)
+      |> Enum.sort_by(fn {_token, freq} -> -freq end)
+      |> Enum.take(max_vocab - 4)  # Reserve space for special tokens
+      |> Enum.map(fn {token, _freq} -> token end)
+    
+    # Build vocabulary with special tokens
+    special_tokens = ["<PAD>", "<UNK>", "<BOS>", "<EOS>"]
+    all_tokens = special_tokens ++ tokens
+    
+    vocab =
+      all_tokens
+      |> Enum.with_index()
+      |> Enum.into(%{})
+    
+    Logger.info("Built LSTM vocabulary", %{
+      size: map_size(vocab),
+      unique_tokens: length(tokens)
+    })
+    
+    vocab
+  end
+  
+  @doc """
+  Build intent label vocabulary from training examples.
+  
+  Returns `{label_to_idx, idx_to_label}` maps.
+  """
+  def build_intent_vocabulary(examples) do
+    intents =
+      examples
+      |> Enum.map(fn ex -> ex.intent end)
+      |> Enum.uniq()
+      |> Enum.sort()
+    
+    label_to_idx = 
+      intents
+      |> Enum.with_index()
+      |> Enum.into(%{})
+    
+    idx_to_label =
+      label_to_idx
+      |> Enum.map(fn {k, v} -> {v, k} end)
+      |> Enum.into(%{})
+    
+    Logger.info("Built intent vocabulary", %{num_intents: length(intents)})
+    
+    {label_to_idx, idx_to_label}
+  end
+  
+  @doc """
+  Build BIO tag vocabulary for NER training.
+  
+  Extracts all entity types from training data and creates BIO tags.
+  """
+  def build_bio_vocabulary(examples) do
+    entity_types =
+      examples
+      |> Enum.flat_map(fn ex -> 
+        Enum.map(ex.entities || [], fn e -> 
+          e[:type] || e["type"] || "unknown"
+        end)
+      end)
+      |> Enum.uniq()
+      |> Enum.sort()
+    
+    # Build BIO tags: O, B-TYPE, I-TYPE for each type
+    bio_tags = ["O"] ++ Enum.flat_map(entity_types, fn type ->
+      ["B-#{type}", "I-#{type}"]
+    end)
+    
+    bio_to_idx =
+      bio_tags
+      |> Enum.with_index()
+      |> Enum.into(%{})
+    
+    idx_to_bio =
+      bio_to_idx
+      |> Enum.map(fn {k, v} -> {v, k} end)
+      |> Enum.into(%{})
+    
+    Logger.info("Built BIO vocabulary", %{
+      entity_types: length(entity_types),
+      bio_tags: length(bio_tags)
+    })
+    
+    {bio_to_idx, idx_to_bio}
+  end
+  
+  @doc """
+  Convert tokens to indices using vocabulary.
+  
+  Unknown tokens are mapped to <UNK> (index 1).
+  """
+  def tokens_to_indices(tokens, vocab) do
+    unk_idx = Map.get(vocab, "<UNK>", 1)
+    Enum.map(tokens, fn token -> Map.get(vocab, token, unk_idx) end)
+  end
+  
+  @doc """
+  Pad or truncate sequence to target length.
+  """
+  def pad_sequence(indices, target_length, pad_idx \\ 0) do
+    current_length = length(indices)
+    
+    cond do
+      current_length == target_length -> indices
+      current_length > target_length -> Enum.take(indices, target_length)
+      true -> indices ++ List.duplicate(pad_idx, target_length - current_length)
+    end
+  end
+  
+  # Process a single example for LSTM training
+  defp process_example_for_lstm(example, tokenizer, negative_for) do
+    text = example[:text] || example["text"] || ""
+    intent = example[:intent] || example["intent"] || "unknown"
+    entities = example[:entities] || example["entities"] || []
+    
+    if text == "" do
+      nil
+    else
+      raw_tokens = tokenizer.(text)
+      
+      # Normalize tokens to strings (tokenizer may return maps or strings)
+      tokens = Enum.map(raw_tokens, fn token ->
+        cond do
+          is_binary(token) -> token
+          is_map(token) -> token[:text] || token["text"] || to_string(token)
+          true -> to_string(token)
+        end
+      end)
+      
+      bio_tags = generate_bio_tags(tokens, text, entities)
+      
+      %{
+        tokens: tokens,
+        intent: intent,
+        entities: entities,
+        bio_tags: bio_tags,
+        negative_for: negative_for
+      }
+    end
+  end
+  
+  # Generate BIO tags for tokens based on entity annotations
+  defp generate_bio_tags(tokens, text, entities) when is_binary(text) do
+    # Filter to only binary tokens and build character-to-entity mapping
+    valid_tokens = Enum.filter(tokens, &is_binary/1)
+    char_entities = build_char_entity_map(text, entities)
+    
+    # Map tokens to BIO tags
+    {bio_tags, _pos} = 
+      Enum.map_reduce(valid_tokens, 0, fn token, pos ->
+        # Find token position in text (simple approach)
+        token_start = find_token_position(text, token, pos)
+        token_len = String.length(token)
+        token_end = token_start + max(token_len - 1, 0)
+        
+        # Check if token overlaps with any entity
+        tag = get_bio_tag_for_range(char_entities, token_start, token_end)
+        
+        {tag, token_end + 1}
+      end)
+    
+    # Pad back to original length if we filtered any tokens
+    if length(bio_tags) < length(tokens) do
+      bio_tags ++ List.duplicate("O", length(tokens) - length(bio_tags))
+    else
+      bio_tags
+    end
+  end
+  
+  defp generate_bio_tags(tokens, _text, _entities) do
+    # Fallback - all tokens are O if text is not valid
+    List.duplicate("O", length(tokens))
+  end
+  
+  defp build_char_entity_map(text, entities) do
+    text_length = String.length(text)
+    
+    # Initialize all positions as "O"
+    initial_map = for i <- 0..(text_length - 1), into: %{}, do: {i, {"O", nil}}
+    
+    # Mark entity positions
+    Enum.reduce(entities, initial_map, fn entity, acc ->
+      start_pos = entity[:start_pos] || entity["start_pos"] || -1
+      end_pos = entity[:end_pos] || entity["end_pos"] || -1
+      entity_type = entity[:type] || entity["type"] || "unknown"
+      
+      if start_pos >= 0 and end_pos >= 0 do
+        Enum.reduce(start_pos..end_pos, acc, fn pos, inner_acc ->
+          tag = if pos == start_pos, do: "B", else: "I"
+          Map.put(inner_acc, pos, {tag, entity_type})
+        end)
+      else
+        acc
+      end
+    end)
+  end
+  
+  defp find_token_position(text, token, start_from) when is_binary(text) and is_binary(token) do
+    text_lower = String.downcase(text)
+    token_lower = String.downcase(token)
+    text_byte_size = byte_size(text_lower)
+    
+    # Guard against invalid scope
+    if start_from >= text_byte_size or token_lower == "" do
+      start_from
+    else
+      remaining_size = text_byte_size - start_from
+      
+      case :binary.match(text_lower, token_lower, scope: {start_from, remaining_size}) do
+        {pos, _len} -> pos
+        :nomatch -> start_from
+      end
+    end
+  end
+  
+  defp find_token_position(_text, _token, start_from), do: start_from
+  
+  defp get_bio_tag_for_range(char_entities, start_pos, _end_pos) do
+    # Check the first character of the token range
+    case Map.get(char_entities, start_pos, {"O", nil}) do
+      {"O", _} -> "O"
+      {"B", type} -> "B-#{type}"
+      {"I", type} ->
+        # Check if we should use B (token starts inside entity but is first token of entity span)
+        prev_pos = max(0, start_pos - 1)
+        case Map.get(char_entities, prev_pos, {"O", nil}) do
+          {_, ^type} -> "I-#{type}"  # Same entity continues
+          _ -> "B-#{type}"  # New entity token
+        end
+    end
+  end
+  
+  defp extract_negative_intent_name(filename) do
+    filename
+    |> String.replace("_negative_en.json", "")
+    |> String.replace("_negative.json", "")
+    |> String.replace(" ", ".")
+  end
+
+  # ============================================================================
   # Private Functions
   # ============================================================================
 

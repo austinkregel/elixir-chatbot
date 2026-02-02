@@ -58,5 +58,45 @@
     ],
     "text": "Learned 1 entities, 0 relationships, 0 facts from: Can you tell me about the weather in Owosso?",
     "timestamp": 1770044565084
+  },
+  {
+    "id": "768f3198db614180",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 1 facts from: Hello, I'm Austin! Can you tell me about the weather?",
+    "timestamp": 1770048412962
+  },
+  {
+    "id": "ee08663c1d2260e4",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Have you looked outside recently? The sky is red!",
+    "timestamp": 1770050326421
+  },
+  {
+    "id": "6ab7bd5682d627d5",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 1 facts from: Hello, I'm Austin. Can you please tell me about the weather?",
+    "timestamp": 1770052537480
+  },
+  {
+    "id": "705d603c7c04f0c4",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It's nice to meet you! Can you tell me about the weather?",
+    "timestamp": 1770057227275
   }
 ]

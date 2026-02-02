@@ -88,6 +88,12 @@ defmodule Brain.TestHelpers do
     # Start the IntentClassifierSimple GenServer before loading models
     {:ok, _} = ensure_started(Brain.ML.IntentClassifierSimple)
 
+    # Load gazetteer data (cities, artists, entities, etc.)
+    # This must be done after the Gazetteer GenServer is started
+    if Brain.ML.Gazetteer.is_loaded?() == false do
+      Brain.ML.Gazetteer.load_all()
+    end
+
     # Load entity maps
     Brain.ML.EntityExtractor.load_entity_maps()
 

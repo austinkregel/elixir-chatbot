@@ -40,6 +40,10 @@ defmodule Brain.Application do
 
       # ML classifiers
       Brain.ML.IntentClassifierSimple,
+      
+      # Seq2Seq LSTM + Attention system
+      Brain.ML.Seq2Seq.Vocabulary,
+      Brain.ML.Seq2Seq,
 
       # Response system
       Brain.Response.TemplateStore,

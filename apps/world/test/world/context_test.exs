@@ -1,7 +1,6 @@
 defmodule World.ContextTest do
   use ExUnit.Case, async: false
 
-  alias World.{Context, Manager, TrainingWorld}
   alias Brain.ML.Gazetteer
   import Brain.TestHelpers
 

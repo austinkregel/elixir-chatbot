@@ -33,11 +33,14 @@ defmodule Brain.MixProject do
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:nx, "~> 0.7"},
+      {:axon, "~> 0.6"},
+      {:exla, "~> 0.7"},
       {:scholar, "~> 0.3"},
       {:tokenizers, "~> 0.4"},
       {:jason, "~> 1.2"},
       {:req, "~> 0.5"},
-      {:floki, "~> 0.36"}
+      {:floki, "~> 0.36"},
+      {:bandit, "~> 1.0"}
     ]
   end
 end

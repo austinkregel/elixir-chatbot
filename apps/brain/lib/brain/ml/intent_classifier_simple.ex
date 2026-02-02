@@ -306,7 +306,7 @@ defmodule Brain.ML.IntentClassifierSimple do
     Path.join([world_path, "models", "classifier.term"])
   end
 
-  defp do_classify(text, model, with_details \\ false, top_k \\ 5) do
+  defp do_classify(text, model, with_details, top_k) do
     if with_details do
       case Brain.ML.SimpleClassifier.classify_with_details(text, model, top_k: top_k) do
         {:ok, label, score, details} ->

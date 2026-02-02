@@ -24,7 +24,8 @@ defmodule Brain.Summarization.Pipeline do
     EventExtractor,
     ReferenceResolver,
     FactRanker,
-    SummaryBuilder
+    SummaryBuilder,
+    AbstractiveSummarizer
   }
   alias Brain.Summarization.Types.Summary
 
@@ -67,11 +68,18 @@ defmodule Brain.Summarization.Pipeline do
         ranked_facts = FactRanker.rank(resolved_events)
         if verbose, do: log_step("Ranked", "#{length(ranked_facts)} facts, top score: #{top_score(ranked_facts)}")
 
-        # Step 6: Build summary
-        summary = SummaryBuilder.build(ranked_facts,
-          max_facts: max_facts,
-          participants: participants
-        )
+        # Step 6: Build summary (use abstractive if enabled)
+        summary = if Application.get_env(:brain, :use_abstractive_summarization, false) do
+          AbstractiveSummarizer.summarize(ranked_facts,
+            max_facts: max_facts,
+            participants: participants
+          )
+        else
+          SummaryBuilder.build(ranked_facts,
+            max_facts: max_facts,
+            participants: participants
+          )
+        end
         if verbose, do: log_step("Built", "summary: #{summary.text}")
 
         {:ok, summary}

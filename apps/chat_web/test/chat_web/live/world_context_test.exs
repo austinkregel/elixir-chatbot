@@ -13,7 +13,6 @@ defmodule ChatWeb.WorldContextTest do
   import Brain.TestHelpers
 
   alias Brain.Memory.Store, as: MemoryStore
-  alias World.Manager
   alias World.Manager, as: WorldManager
 
   setup do

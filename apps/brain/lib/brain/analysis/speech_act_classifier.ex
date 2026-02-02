@@ -21,6 +21,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
 
   alias Brain.Analysis.{SpeechActResult, IntentRegistry}
   alias Brain.ML.{IntentClassifierSimple, POSTagger, Tokenizer}
+  alias Brain.ML.LSTM.MultiTaskModel
 
   require Logger
 
@@ -152,7 +153,57 @@ defmodule Brain.Analysis.SpeechActClassifier do
   end
 
   # Pass 1: Intent Model Classification
+  # Tries LSTM model first, falls back to TF-IDF if not available
   defp analyze_with_intent_model(text) do
+    case classify_with_lstm(text) do
+      {:ok, result} -> result
+      {:error, _} -> classify_with_tfidf(text)
+    end
+  end
+  
+  # Try LSTM multi-task model first (better accuracy on confusable cases)
+  defp classify_with_lstm(text) do
+    if lstm_available?() do
+      case MultiTaskModel.classify_intent(text) do
+        {:ok, %{label: intent, confidence: confidence, scores: scores}} ->
+          {category, sub_type} = intent_to_speech_act(intent)
+          
+          # Convert scores to top_k format
+          top_k = 
+            scores
+            |> Enum.sort_by(fn {_label, score} -> -score end)
+            |> Enum.take(5)
+            |> Enum.map(fn {label, score} -> %{intent: label, score: score} end)
+          
+          second_score = 
+            case top_k do
+              [_, %{score: s} | _] -> s
+              _ -> 0.0
+            end
+          
+          result = %{
+            intent: intent,
+            category: category,
+            sub_type: sub_type,
+            confidence: confidence,
+            second_score: second_score,
+            margin: confidence - second_score,
+            top_k: top_k,
+            source: :lstm
+          }
+          
+          {:ok, result}
+        
+        {:error, _} = error ->
+          error
+      end
+    else
+      {:error, :lstm_not_available}
+    end
+  end
+  
+  # Fall back to TF-IDF centroid classifier
+  defp classify_with_tfidf(text) do
     case IntentClassifierSimple.classify(text, with_details: true, top_k: 5) do
       {:ok, %{intent: intent, confidence: confidence} = result} ->
         {category, sub_type} = intent_to_speech_act(intent)
@@ -165,7 +216,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
           second_score: Map.get(result, :second_score, 0.0),
           margin: Map.get(result, :margin, 0.0),
           top_k: Map.get(result, :top_k, []),
-          source: :model
+          source: :tfidf
         }
 
       {:error, _} ->
@@ -177,8 +228,37 @@ defmodule Brain.Analysis.SpeechActClassifier do
           second_score: 0.0,
           margin: 0.0,
           top_k: [],
-          source: :model
+          source: :tfidf
         }
+    end
+  end
+  
+  # Check if LSTM model is available (with memoization via process dictionary)
+  defp lstm_available? do
+    case Process.get(:lstm_available_check) do
+      nil ->
+        # Check if MultiTaskModel GenServer is running and has a model
+        available = 
+          try do
+            Code.ensure_loaded?(MultiTaskModel) and MultiTaskModel.ready?()
+          rescue
+            _ -> false
+          catch
+            _, _ -> false
+          end
+        
+        # Cache result for 10 seconds
+        Process.put(:lstm_available_check, {available, System.monotonic_time(:second)})
+        available
+      
+      {cached_result, checked_at} ->
+        # Re-check every 10 seconds
+        if System.monotonic_time(:second) - checked_at > 10 do
+          Process.delete(:lstm_available_check)
+          lstm_available?()
+        else
+          cached_result
+        end
     end
   end
 

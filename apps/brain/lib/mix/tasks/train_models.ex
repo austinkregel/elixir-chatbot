@@ -15,6 +15,11 @@ defmodule Mix.Tasks.TrainModels do
     --gazetteer-only Build only the gazetteer lookup tables
     --skip-gazetteer Skip gazetteer building (faster training)
     --skip-pos       Skip POS tagger training
+    --lstm-only      Train ONLY the LSTM multi-task model
+    --lstm-intent    Train LSTM intent classifier only
+    --lstm-joint     Train LSTM joint model (intent + NER)
+    --lstm-epochs N  Number of epochs for LSTM training (default: 10)
+    --skip-lstm      Skip LSTM training (train only TF-IDF models)
 
   ## World-Specific Training
 
@@ -35,6 +40,18 @@ defmodule Mix.Tasks.TrainModels do
       # Train only intent classifier for a world
       mix train_models --world my_world --intent-only
 
+      # Train all models (TF-IDF + LSTM, default behavior)
+      mix train_models
+
+      # Train with more LSTM epochs
+      mix train_models --lstm-epochs 20
+
+      # Skip LSTM training (faster, TF-IDF only)
+      mix train_models --skip-lstm
+
+      # Train ONLY the LSTM model (skip TF-IDF)
+      mix train_models --lstm-only
+
   This task will:
   - Load intent training data from data/intents/ (or data/training/intents/)
   - Load entity definitions from data/entities/
@@ -51,6 +68,7 @@ defmodule Mix.Tasks.TrainModels do
   require Logger
   alias Brain.ML.Trainer
   alias Brain.ML.POSTagger
+  alias Brain.ML.LSTM.Trainer, as: LSTMTrainer
 
   @shortdoc "Train ML models from training data"
 
@@ -65,7 +83,12 @@ defmodule Mix.Tasks.TrainModels do
           pos_only: :boolean,
           gazetteer_only: :boolean,
           skip_gazetteer: :boolean,
-          skip_pos: :boolean
+          skip_pos: :boolean,
+          lstm_only: :boolean,
+          lstm_intent: :boolean,
+          lstm_joint: :boolean,
+          lstm_epochs: :integer,
+          skip_lstm: :boolean
         ]
       )
 
@@ -102,9 +125,24 @@ defmodule Mix.Tasks.TrainModels do
     # Start training
     start_time = System.monotonic_time(:millisecond)
 
+    # Get LSTM training options
+    lstm_epochs = Keyword.get(opts, :lstm_epochs, 10)
+    skip_lstm = Keyword.get(opts, :skip_lstm, false)
+
     # Pass models_path to training functions
     result =
       cond do
+        # LSTM-only training options (skip TF-IDF models)
+        Keyword.get(opts, :lstm_only, false) ->
+          run_lstm_multitask_training(lstm_epochs)
+
+        Keyword.get(opts, :lstm_intent, false) ->
+          run_lstm_intent_training(lstm_epochs)
+
+        Keyword.get(opts, :lstm_joint, false) ->
+          run_lstm_joint_training(lstm_epochs)
+
+        # Legacy/specific training options
         Keyword.get(opts, :intent_only, false) ->
           run_intent_training(models_path)
 
@@ -121,9 +159,9 @@ defmodule Mix.Tasks.TrainModels do
           run_training_without_gazetteer(models_path)
 
         true ->
-          # Full training pipeline
+          # Full training pipeline (TF-IDF + LSTM by default)
           skip_pos = Keyword.get(opts, :skip_pos, false)
-          run_full_training(skip_pos, models_path)
+          run_full_training(skip_pos, skip_lstm, lstm_epochs, models_path)
       end
 
     end_time = System.monotonic_time(:millisecond)
@@ -193,21 +231,34 @@ defmodule Mix.Tasks.TrainModels do
     end
   end
 
-  defp run_full_training(skip_pos, models_path) do
-    # Run standard training with custom models path
+  defp run_full_training(skip_pos, skip_lstm, lstm_epochs, models_path) do
+    # Run standard TF-IDF training with custom models path
     case Trainer.train_and_save(models_path: models_path) do
       {:ok, stats} ->
-        # Also train POS tagger if data is available and not skipped
-        if skip_pos do
+        # Train POS tagger if data is available and not skipped
+        stats =
+          if skip_pos do
+            stats
+          else
+            case run_pos_training_internal(models_path) do
+              {:ok, pos_stats} -> Map.merge(stats, pos_stats)
+              {:error, _reason} -> stats
+            end
+          end
+
+        # Train LSTM multi-task model (default behavior)
+        if skip_lstm do
           {:ok, stats}
         else
-          case run_pos_training_internal(models_path) do
-            {:ok, pos_stats} ->
-              {:ok, Map.merge(stats, pos_stats)}
+          Mix.shell().info("")
+          Mix.shell().info("Now training LSTM models...")
 
-            {:error, _reason} ->
-              # POS training is optional, don't fail the whole pipeline
-              {:ok, stats}
+          case run_lstm_multitask_training(lstm_epochs) do
+            {:ok, lstm_stats} ->
+              {:ok, Map.merge(stats, lstm_stats)}
+
+            {:error, reason} ->
+              {:error, {:lstm_training_failed, reason}}
           end
         end
 
@@ -219,6 +270,91 @@ defmodule Mix.Tasks.TrainModels do
   defp run_pos_training(models_path) do
     Mix.shell().info("Training POS tagger model only...")
     run_pos_training_internal(models_path)
+  end
+
+  # ============================================================================
+  # LSTM Training Functions
+  # ============================================================================
+
+  defp run_lstm_multitask_training(epochs) do
+    Mix.shell().info("")
+    Mix.shell().info("=" |> String.duplicate(50))
+    Mix.shell().info("Training LSTM Multi-Task Model (Intent + NER + POS)")
+    Mix.shell().info("=" |> String.duplicate(50))
+    Mix.shell().info("")
+    Mix.shell().info("Configuration:")
+    Mix.shell().info("  Epochs: #{epochs}")
+    Mix.shell().info("")
+
+    case LSTMTrainer.train_multitask(epochs: epochs) do
+      {:ok, model} ->
+        stats = build_lstm_stats(model, :multitask)
+        {:ok, stats}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp run_lstm_intent_training(epochs) do
+    Mix.shell().info("")
+    Mix.shell().info("=" |> String.duplicate(50))
+    Mix.shell().info("Training LSTM Intent Classifier")
+    Mix.shell().info("=" |> String.duplicate(50))
+    Mix.shell().info("")
+    Mix.shell().info("Configuration:")
+    Mix.shell().info("  Epochs: #{epochs}")
+    Mix.shell().info("")
+
+    case LSTMTrainer.train_intent_classifier(epochs: epochs) do
+      {:ok, model} ->
+        stats = build_lstm_stats(model, :intent)
+        {:ok, stats}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp run_lstm_joint_training(epochs) do
+    Mix.shell().info("")
+    Mix.shell().info("=" |> String.duplicate(50))
+    Mix.shell().info("Training LSTM Joint Model (Intent + NER)")
+    Mix.shell().info("=" |> String.duplicate(50))
+    Mix.shell().info("")
+    Mix.shell().info("Configuration:")
+    Mix.shell().info("  Epochs: #{epochs}")
+    Mix.shell().info("")
+
+    case LSTMTrainer.train_joint(epochs: epochs) do
+      {:ok, model} ->
+        stats = build_lstm_stats(model, :joint)
+        {:ok, stats}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp build_lstm_stats(model, type) do
+    base_stats = %{
+      lstm_model_type: type,
+      lstm_vocab_size: map_size(model.vocabularies.token_vocab),
+      lstm_num_intents: map_size(model.vocabularies.intent_to_idx),
+      lstm_epochs_trained: length(model.metrics),
+      lstm_embedding_size: model.config.embedding_size,
+      lstm_hidden_size: model.config.hidden_size
+    }
+
+    # Add final metrics
+    final_metrics = List.last(model.metrics) || %{}
+
+    Map.merge(base_stats, %{
+      lstm_final_train_loss: Map.get(final_metrics, :train_loss, 0),
+      lstm_final_val_loss: Map.get(final_metrics, :val_loss, 0),
+      lstm_final_train_acc: Map.get(final_metrics, :train_acc, 0),
+      lstm_final_val_acc: Map.get(final_metrics, :val_acc, 0)
+    })
   end
 
   defp run_pos_training_internal(models_path) do
@@ -464,6 +600,21 @@ defmodule Mix.Tasks.TrainModels do
       Mix.shell().info("    - Feature count:    #{Map.get(stats, :pos_feature_count, 0)}")
     end
 
+    if Map.has_key?(stats, :lstm_model_type) do
+      Mix.shell().info("  LSTM Multi-Task Model:")
+      Mix.shell().info("    - Model type:       #{stats.lstm_model_type}")
+      Mix.shell().info("    - Vocabulary size:  #{stats.lstm_vocab_size}")
+      Mix.shell().info("    - Intent classes:   #{stats.lstm_num_intents}")
+      Mix.shell().info("    - Embedding size:   #{stats.lstm_embedding_size}")
+      Mix.shell().info("    - Hidden size:      #{stats.lstm_hidden_size}")
+      Mix.shell().info("    - Epochs trained:   #{stats.lstm_epochs_trained}")
+
+      if stats.lstm_final_val_acc > 0 do
+        Mix.shell().info("    - Final train acc:  #{Float.round(stats.lstm_final_train_acc * 100, 1)}%")
+        Mix.shell().info("    - Final val acc:    #{Float.round(stats.lstm_final_val_acc * 100, 1)}%")
+      end
+    end
+
     if Map.has_key?(stats, :gazetteer_entries) and stats.gazetteer_entries > 0 do
       Mix.shell().info("  Gazetteer:")
       Mix.shell().info("    - Total entries:    #{stats.gazetteer_entries}")
@@ -484,6 +635,12 @@ defmodule Mix.Tasks.TrainModels do
     display_model_file(models_path, "gazetteer.term", "Gazetteer")
     display_model_file(models_path, "vectorizer.term", "TF-IDF Vectorizer")
     display_model_file(models_path, "embedder.term", "Embedder Vocabulary")
+
+    # LSTM model files
+    lstm_path = Path.join(models_path, "lstm")
+    display_model_file(lstm_path, "lstm_intent.term", "LSTM Intent Classifier")
+    display_model_file(lstm_path, "lstm_joint.term", "LSTM Joint Model")
+    display_model_file(lstm_path, "lstm_multitask.term", "LSTM Multi-Task Model")
 
     Mix.shell().info("")
     Mix.shell().info("Models saved to: #{models_path}")

@@ -13,13 +13,13 @@
       "confidence": 0.81,
       "entity": "1",
       "fact": "History test message 1",
-      "timestamp": 1770039428456
+      "timestamp": 1770052296906
     },
     {
       "confidence": 0.81,
       "entity": "2",
       "fact": "History test message 2",
-      "timestamp": 1770039428588
+      "timestamp": 1770052297013
     }
   ],
   "people": {

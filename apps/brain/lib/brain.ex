@@ -844,7 +844,16 @@ defmodule Brain do
   # Handles responses when RacingAnalyzer finds a fast-path match
   defp handle_fast_path_response(_persona, interpretation, _memory, opts) do
     intent = interpretation.intent
-    entities = interpretation.entities || []
+    text = interpretation.text
+    
+    # Extract entities even in fast path - interpretation may not have them
+    # This ensures slots can be filled for weather, music, etc. queries
+    entities = 
+      case interpretation.entities do
+        nil -> extract_entities_for_fast_path(text, intent, opts)
+        [] -> extract_entities_for_fast_path(text, intent, opts)
+        existing when is_list(existing) -> existing
+      end
 
     # Generate response using existing Generator
     # Generator.generate always returns {:ok, response, type} with fallback if needed
@@ -860,7 +869,8 @@ defmodule Brain do
 
     Logger.info("Fast path response generated", %{
       intent: intent,
-      response_type: response_type
+      response_type: response_type,
+      entity_count: length(entities)
     })
 
     Progress.report(opts, :response_generated, %{
@@ -871,6 +881,23 @@ defmodule Brain do
     })
 
     {response, :fast_path, context}
+  end
+  
+  # Extract entities for fast path responses
+  defp extract_entities_for_fast_path(text, intent, opts) do
+    try do
+      # Include intent context for better disambiguation
+      entity_opts = Keyword.merge(opts, [
+        intent: intent,
+        world_id: Keyword.get(opts, :world_id, "default")
+      ])
+      
+      Brain.ML.EntityExtractor.extract_entities(text, entity_opts)
+    rescue
+      _ -> []
+    catch
+      :exit, _ -> []
+    end
   end
 
   defp process_standard_message(persona, input, memory, opts) do

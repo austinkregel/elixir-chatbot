@@ -265,12 +265,8 @@ defmodule Brain.Analysis.EntityDisambiguator do
     entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
     original_type = Map.get(entity, :entity_type) || ""
     intent = Map.get(context, :intent, "")
-    world_id = Map.get(context, :world_id)
-
-    # Require world_id for data isolation
-    unless world_id do
-      raise ArgumentError, "world_id is required in context for infer_type_with_type_inferrer/3"
-    end
+    # Use "default" world_id if none is provided for backward compatibility
+    world_id = Map.get(context, :world_id) || "default"
 
     # Get expected entity types from IntentRegistry
     expected_types = IntentRegistry.expected_entity_types(intent)

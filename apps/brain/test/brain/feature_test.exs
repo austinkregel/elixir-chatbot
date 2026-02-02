@@ -357,10 +357,11 @@ defmodule Brain.FeatureTest do
       entities = Map.get(context, :entities, [])
 
       # Location might be in slots, entities, or mentioned in the response
-      location_in_slots = get_in(slots, [:location]) =~ ~r/dallas/i
+      location_value = get_in(slots, [:location])
+      location_in_slots = is_binary(location_value) and location_value =~ ~r/dallas/i
       location_in_entities = Enum.any?(entities, fn e ->
-        entity_text = e[:text] || e["text"] || to_string(e)
-        String.downcase(entity_text) =~ "dallas"
+        entity_text = e[:text] || e["text"] || e[:value] || e["value"] || e[:match] || ""
+        is_binary(entity_text) and String.downcase(entity_text) =~ "dallas"
       end)
       location_in_response = response =~ ~r/dallas/i
 
@@ -371,7 +372,7 @@ defmodule Brain.FeatureTest do
     end
 
     test "multi-sentence greeting + weather responds to BOTH parts", %{conversation_id: conv_id} do
-      {:ok, response, context} = evaluate_with_context(conv_id, "Hello! What's the weather in NYC?")
+      {:ok, response, _context} = evaluate_with_context(conv_id, "Hello! What's the weather in NYC?")
 
       # Should handle both the greeting AND the weather query
       # The response should acknowledge the greeting or be polite, AND address weather/NYC
@@ -400,8 +401,8 @@ defmodule Brain.FeatureTest do
       artist_in_slots = is_binary(get_in(slots, [:artist])) and
                         String.downcase(slots[:artist]) =~ "taylor"
       artist_in_entities = Enum.any?(entities, fn e ->
-        entity_text = e[:text] || e["text"] || to_string(e)
-        String.downcase(entity_text) =~ "taylor"
+        entity_text = e[:text] || e["text"] || e[:value] || e["value"] || e[:match] || ""
+        is_binary(entity_text) and String.downcase(entity_text) =~ "taylor"
       end)
       artist_in_response = response =~ ~r/taylor/i
 
@@ -424,8 +425,8 @@ defmodule Brain.FeatureTest do
       song_in_slots = is_binary(get_in(slots, [:song])) and
                       String.downcase(slots[:song]) =~ "bohemian"
       song_in_entities = Enum.any?(entities, fn e ->
-        entity_text = e[:text] || e["text"] || to_string(e)
-        String.downcase(entity_text) =~ "bohemian"
+        entity_text = e[:text] || e["text"] || e[:value] || e["value"] || e[:match] || ""
+        is_binary(entity_text) and String.downcase(entity_text) =~ "bohemian"
       end)
       song_in_response = response =~ ~r/bohemian/i
 
