@@ -44,6 +44,15 @@ defmodule Brain.Telemetry do
 
   - `[:chat_bot, :analysis, :racing, :start | :stop | :exception]` - Racing analyzer parallel processing
   - `[:chat_bot, :analysis, :racing, :early_exit]` - Racing analyzer early exit (fast path)
+
+  ## Code Analysis Events
+
+  - `[:chat_bot, :code, :parse, :start | :stop | :exception]` - Code parsing operations
+  - `[:chat_bot, :code, :extract, :start | :stop | :exception]` - Symbol extraction operations
+  - `[:chat_bot, :code, :pipeline, :start | :stop | :exception]` - Full code analysis pipeline
+  - `[:chat_bot, :code, :gazetteer, :lookup, :stop]` - Code gazetteer lookups
+  - `[:chat_bot, :code, :gazetteer, :add, :stop]` - Code gazetteer additions
+  - `[:chat_bot, :code, :file_processed]` - Code file processed event
   """
 
   require Logger
@@ -84,6 +93,14 @@ defmodule Brain.Telemetry do
   # Analysis Events
   @racing_analysis [:chat_bot, :analysis, :racing]
   @racing_early_exit [:chat_bot, :analysis, :racing, :early_exit]
+
+  # Code Analysis Events
+  @code_parse [:chat_bot, :code, :parse]
+  @code_extract [:chat_bot, :code, :extract]
+  @code_pipeline [:chat_bot, :code, :pipeline]
+  @code_gazetteer_lookup [:chat_bot, :code, :gazetteer, :lookup]
+  @code_gazetteer_add [:chat_bot, :code, :gazetteer, :add]
+  @code_file_processed [:chat_bot, :code, :file_processed]
 
   # ============================================================================
   # Public API - Attach Handlers
@@ -180,7 +197,27 @@ defmodule Brain.Telemetry do
        %{metric: :racing_analysis}},
       {"chatbot-racing-analysis-exception", @racing_analysis ++ [:exception],
        &__MODULE__.handle_span_exception/4, %{metric: :racing_analysis}},
-      {"chatbot-racing-early-exit", @racing_early_exit, &__MODULE__.handle_racing_early_exit/4, %{}}
+      {"chatbot-racing-early-exit", @racing_early_exit, &__MODULE__.handle_racing_early_exit/4, %{}},
+
+      # Code Analysis handlers
+      {"chatbot-code-parse-stop", @code_parse ++ [:stop], &__MODULE__.handle_span_stop/4,
+       %{metric: :code_parse}},
+      {"chatbot-code-parse-exception", @code_parse ++ [:exception],
+       &__MODULE__.handle_span_exception/4, %{metric: :code_parse}},
+      {"chatbot-code-extract-stop", @code_extract ++ [:stop], &__MODULE__.handle_span_stop/4,
+       %{metric: :code_extract}},
+      {"chatbot-code-extract-exception", @code_extract ++ [:exception],
+       &__MODULE__.handle_span_exception/4, %{metric: :code_extract}},
+      {"chatbot-code-pipeline-stop", @code_pipeline ++ [:stop], &__MODULE__.handle_span_stop/4,
+       %{metric: :code_pipeline}},
+      {"chatbot-code-pipeline-exception", @code_pipeline ++ [:exception],
+       &__MODULE__.handle_span_exception/4, %{metric: :code_pipeline}},
+      {"chatbot-code-gazetteer-lookup-stop", @code_gazetteer_lookup ++ [:stop],
+       &__MODULE__.handle_span_stop/4, %{metric: :code_gazetteer_lookup}},
+      {"chatbot-code-gazetteer-add-stop", @code_gazetteer_add ++ [:stop],
+       &__MODULE__.handle_span_stop/4, %{metric: :code_gazetteer_add}},
+      {"chatbot-code-file-processed", @code_file_processed,
+       &__MODULE__.handle_code_file_processed/4, %{}}
     ]
 
     Enum.each(handlers, fn {id, event, handler, config} ->
@@ -231,7 +268,17 @@ defmodule Brain.Telemetry do
       # Racing analyzer events
       "chatbot-racing-analysis-stop",
       "chatbot-racing-analysis-exception",
-      "chatbot-racing-early-exit"
+      "chatbot-racing-early-exit",
+      # Code analysis events
+      "chatbot-code-parse-stop",
+      "chatbot-code-parse-exception",
+      "chatbot-code-extract-stop",
+      "chatbot-code-extract-exception",
+      "chatbot-code-pipeline-stop",
+      "chatbot-code-pipeline-exception",
+      "chatbot-code-gazetteer-lookup-stop",
+      "chatbot-code-gazetteer-add-stop",
+      "chatbot-code-file-processed"
     ]
 
     Enum.each(handler_ids, fn id ->
@@ -343,6 +390,54 @@ defmodule Brain.Telemetry do
       result = fun.()
       {result, %{}}
     end)
+  end
+
+  # Code Analysis spans
+
+  def span(:code_parse, metadata, fun) do
+    :telemetry.span(@code_parse, metadata, fn ->
+      result = fun.()
+      {result, %{}}
+    end)
+  end
+
+  def span(:code_extract, metadata, fun) do
+    :telemetry.span(@code_extract, metadata, fn ->
+      result = fun.()
+      {result, %{}}
+    end)
+  end
+
+  def span(:code_pipeline, metadata, fun) do
+    :telemetry.span(@code_pipeline, metadata, fn ->
+      result = fun.()
+      {result, %{}}
+    end)
+  end
+
+  def span(:code_gazetteer_lookup, metadata, fun) do
+    :telemetry.span(@code_gazetteer_lookup, metadata, fn ->
+      result = fun.()
+      {result, %{}}
+    end)
+  end
+
+  def span(:code_gazetteer_add, metadata, fun) do
+    :telemetry.span(@code_gazetteer_add, metadata, fn ->
+      result = fun.()
+      {result, %{}}
+    end)
+  end
+
+  @doc """
+  Emits a code file processed event.
+  """
+  def emit_code_file_processed(file_path, language, symbols_count, relations_count, duration_ms) do
+    :telemetry.execute(
+      @code_file_processed,
+      %{symbols_count: symbols_count, relations_count: relations_count, duration_ms: duration_ms},
+      %{file_path: file_path, language: language, timestamp: System.monotonic_time(:millisecond)}
+    )
   end
 
   @doc """
@@ -488,6 +583,17 @@ defmodule Brain.Telemetry do
         Brain.Metrics.Aggregator,
         {:record_racing_early_exit, metadata[:analyzer], measurements[:confidence],
          measurements[:duration_ms]}
+      )
+    end
+  end
+
+  @doc false
+  def handle_code_file_processed(_event, measurements, metadata, _config) do
+    if Process.whereis(Brain.Metrics.Aggregator) do
+      GenServer.cast(
+        Brain.Metrics.Aggregator,
+        {:record_code_file_processed, metadata[:file_path], metadata[:language],
+         measurements[:symbols_count], measurements[:relations_count], measurements[:duration_ms]}
       )
     end
   end

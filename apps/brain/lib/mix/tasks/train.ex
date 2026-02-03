@@ -43,9 +43,6 @@ defmodule Mix.Tasks.Train do
   4. **Response Scorer** (GPU accelerated, ~1-2 minutes)
      - Query-response pair scoring
 
-  5. **Seq2Seq Model** (GPU accelerated, ~3-5 minutes)
-     - LSTM + Attention for text generation
-
   ## Examples
 
       # Train everything
@@ -97,13 +94,6 @@ defmodule Mix.Tasks.Train do
       task: :response,
       duration: "~1-2 minutes (GPU)",
       outputs: ["lstm/response_scorer.term"]
-    },
-    %{
-      name: "Seq2Seq",
-      description: "LSTM + Attention for text generation",
-      task: :seq2seq,
-      duration: "~3-5 minutes (GPU)",
-      outputs: ["training_worlds/{world}/models/seq2seq.axon"]
     }
   ]
 
@@ -298,24 +288,13 @@ defmodule Mix.Tasks.Train do
         [{:response, result, duration} | results]
       end
 
-    # 5. Seq2Seq Model
-    results =
-      if :seq2seq in skip_list do
-        [{:seq2seq, :skipped, 0} | results]
-      else
-        start = System.monotonic_time(:second)
-        result = train_seq2seq(world_id, epochs, batch_size)
-        duration = System.monotonic_time(:second) - start
-        [{:seq2seq, result, duration} | results]
-      end
-
     Enum.reverse(results)
   end
 
   defp train_tfidf_models(opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 1/5: TF-IDF Models")
+    Mix.shell().info("  Stage 1/4: TF-IDF Models")
     Mix.shell().info("=" |> String.duplicate(70))
 
     models_path = get_models_path(opts[:world])
@@ -336,7 +315,7 @@ defmodule Mix.Tasks.Train do
   defp train_pos_model(opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 2/5: POS Tagger")
+    Mix.shell().info("  Stage 2/4: POS Tagger")
     Mix.shell().info("=" |> String.duplicate(70))
 
     models_path = get_models_path(opts[:world])
@@ -378,7 +357,7 @@ defmodule Mix.Tasks.Train do
   defp train_unified_lstm(epochs, batch_size, hidden_size) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 3/5: Unified LSTM Model (GPU Accelerated)")
+    Mix.shell().info("  Stage 3/4: Unified LSTM Model (GPU Accelerated)")
     Mix.shell().info("=" |> String.duplicate(70))
     Mix.shell().info("")
     Mix.shell().info("  Training multi-task model for:")
@@ -412,7 +391,7 @@ defmodule Mix.Tasks.Train do
   defp train_response_scorer(epochs, batch_size, hidden_size) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 4/5: Response Scorer (GPU Accelerated)")
+    Mix.shell().info("  Stage 4/4: Response Scorer (GPU Accelerated)")
     Mix.shell().info("=" |> String.duplicate(70))
     Mix.shell().info("")
     Mix.shell().info("  Training query-response scoring model...")
@@ -435,36 +414,6 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  defp train_seq2seq(world_id, epochs, batch_size) do
-    Mix.shell().info("")
-    Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 5/5: Seq2Seq Model (GPU Accelerated)")
-    Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("")
-    Mix.shell().info("  Training LSTM + Attention generation model for world: #{world_id}")
-    Mix.shell().info("")
-
-    case Brain.ML.Seq2Seq.Trainer.train(world_id,
-           epochs: epochs,
-           batch_size: batch_size,
-           learning_rate: 0.001
-         ) do
-      {:ok, _model} ->
-        case Brain.ML.Seq2Seq.save_model(world_id) do
-          :ok ->
-            Mix.shell().info("  Seq2Seq training complete!")
-            {:ok, %{world_id: world_id}}
-
-          {:error, reason} ->
-            {:error, reason}
-        end
-
-      {:error, reason} ->
-        Mix.shell().error("  Seq2Seq training failed: #{inspect(reason)}")
-        {:error, reason}
-    end
-  end
-
   defp display_summary(results, total_duration) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
@@ -476,8 +425,7 @@ defmodule Mix.Tasks.Train do
       tfidf: "TF-IDF Models",
       pos: "POS Tagger",
       unified: "Unified LSTM",
-      response: "Response Scorer",
-      seq2seq: "Seq2Seq Model"
+      response: "Response Scorer"
     }
 
     for {task, result, duration} <- results do

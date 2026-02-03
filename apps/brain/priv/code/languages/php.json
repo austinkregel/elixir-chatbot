@@ -1,0 +1,41 @@
+{
+  "language": "php",
+  "version": "8.0+",
+  "keywords": [
+    "abstract", "and", "array", "as", "break", "callable", "case", "catch",
+    "class", "clone", "const", "continue", "declare", "default", "die", "do",
+    "echo", "else", "elseif", "empty", "enddeclare", "endfor", "endforeach",
+    "endif", "endswitch", "endwhile", "eval", "exit", "extends", "final",
+    "finally", "fn", "for", "foreach", "function", "global", "goto", "if",
+    "implements", "include", "include_once", "instanceof", "insteadof",
+    "interface", "isset", "list", "match", "namespace", "new", "or", "print",
+    "private", "protected", "public", "readonly", "require", "require_once",
+    "return", "static", "switch", "throw", "trait", "try", "unset", "use",
+    "var", "while", "xor", "yield", "yield from", "true", "false", "null",
+    "self", "parent", "enum"
+  ],
+  "builtins": [
+    "array", "array_push", "array_pop", "array_shift", "array_unshift",
+    "array_merge", "array_map", "array_filter", "array_reduce", "array_keys",
+    "array_values", "array_search", "in_array", "count", "sizeof", "sort",
+    "rsort", "asort", "arsort", "ksort", "krsort", "usort", "strlen",
+    "strpos", "substr", "str_replace", "strtolower", "strtoupper", "trim",
+    "ltrim", "rtrim", "explode", "implode", "sprintf", "printf", "print_r",
+    "var_dump", "echo", "print", "isset", "empty", "is_null", "is_array",
+    "is_string", "is_int", "is_float", "is_bool", "is_object", "is_callable",
+    "gettype", "settype", "intval", "floatval", "strval", "boolval",
+    "json_encode", "json_decode", "file_get_contents", "file_put_contents",
+    "fopen", "fclose", "fread", "fwrite", "fgets", "file_exists", "is_file",
+    "is_dir", "mkdir", "rmdir", "unlink", "copy", "rename", "date", "time",
+    "strtotime", "mktime", "DateTime", "DateInterval", "DatePeriod",
+    "Exception", "Error", "Throwable", "PDO", "mysqli", "preg_match",
+    "preg_replace", "preg_match_all", "header", "session_start", "setcookie"
+  ],
+  "types": [
+    "int", "float", "string", "bool", "array", "object", "callable", "iterable",
+    "void", "null", "mixed", "never", "true", "false", "self", "parent",
+    "static", "resource", "Closure", "Generator", "Iterator", "IteratorAggregate",
+    "Traversable", "ArrayAccess", "Countable", "Stringable", "Serializable",
+    "JsonSerializable", "Throwable", "Exception", "Error", "stdClass"
+  ]
+}

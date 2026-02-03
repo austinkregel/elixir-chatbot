@@ -14,6 +14,8 @@ defmodule ChatWeb.AppShell do
   use ChatWeb, :verified_routes
   import ChatWeb.CoreComponents
 
+  alias Phoenix.LiveView.JS
+
   # ============================================================================
   # App Shell Layout
   # ============================================================================
@@ -128,7 +130,7 @@ defmodule ChatWeb.AppShell do
             </ul>
           </div>
           
-    <!-- System Section -->
+          <!-- System Section -->
           <div>
             <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-2">
               System
@@ -139,6 +141,12 @@ defmodule ChatWeb.AppShell do
                 icon="hero-chart-bar"
                 label="Dashboard"
                 active={String.starts_with?(@current_path, "/dashboard")}
+              />
+              <.nav_item
+                href={~p"/code"}
+                icon="hero-code-bracket"
+                label="Code Analysis"
+                active={String.starts_with?(@current_path, "/code")}
               />
               <.nav_item
                 href={~p"/settings"}
@@ -260,7 +268,7 @@ defmodule ChatWeb.AppShell do
     <div class="flex items-center gap-1 bg-base-200 rounded-lg p-1">
       <button
         class="p-1.5 rounded hover:bg-base-300 transition-colors"
-        phx-click={Phoenix.LiveView.JS.dispatch("phx:set-theme")}
+        phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="system"
         title="System"
       >
@@ -268,7 +276,7 @@ defmodule ChatWeb.AppShell do
       </button>
       <button
         class="p-1.5 rounded hover:bg-base-300 transition-colors"
-        phx-click={Phoenix.LiveView.JS.dispatch("phx:set-theme")}
+        phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="light"
         title="Light"
       >
@@ -276,7 +284,7 @@ defmodule ChatWeb.AppShell do
       </button>
       <button
         class="p-1.5 rounded hover:bg-base-300 transition-colors"
-        phx-click={Phoenix.LiveView.JS.dispatch("phx:set-theme")}
+        phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="dark"
         title="Dark"
       >
@@ -306,8 +314,8 @@ defmodule ChatWeb.AppShell do
   # ============================================================================
 
   defp toggle_sidebar do
-    Phoenix.LiveView.JS.toggle(to: "#app-sidebar", display: "flex")
-    |> Phoenix.LiveView.JS.toggle(to: "#sidebar-backdrop")
+    JS.toggle(to: "#app-sidebar", display: "flex")
+    |> JS.toggle(to: "#sidebar-backdrop")
   end
 
   # ============================================================================

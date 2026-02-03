@@ -1,0 +1,43 @@
+{
+  "language": "csharp",
+  "version": "10+",
+  "keywords": [
+    "abstract", "as", "base", "bool", "break", "byte", "case", "catch",
+    "char", "checked", "class", "const", "continue", "decimal", "default",
+    "delegate", "do", "double", "else", "enum", "event", "explicit", "extern",
+    "false", "finally", "fixed", "float", "for", "foreach", "goto", "if",
+    "implicit", "in", "int", "interface", "internal", "is", "lock", "long",
+    "namespace", "new", "null", "object", "operator", "out", "override",
+    "params", "private", "protected", "public", "readonly", "ref", "return",
+    "sbyte", "sealed", "short", "sizeof", "stackalloc", "static", "string",
+    "struct", "switch", "this", "throw", "true", "try", "typeof", "uint",
+    "ulong", "unchecked", "unsafe", "ushort", "using", "virtual", "void",
+    "volatile", "while", "add", "alias", "ascending", "async", "await",
+    "by", "descending", "dynamic", "equals", "from", "get", "global",
+    "group", "into", "join", "let", "nameof", "on", "orderby", "partial",
+    "remove", "select", "set", "value", "var", "when", "where", "with",
+    "yield", "record", "init", "required", "file", "scoped"
+  ],
+  "builtins": [
+    "Console", "String", "Object", "Type", "Array", "List", "Dictionary",
+    "HashSet", "Queue", "Stack", "LinkedList", "SortedList", "SortedSet",
+    "SortedDictionary", "StringBuilder", "Math", "Convert", "DateTime",
+    "TimeSpan", "DateOnly", "TimeOnly", "Guid", "Random", "Enum", "Tuple",
+    "ValueTuple", "Task", "Thread", "Mutex", "Semaphore", "Monitor",
+    "Interlocked", "Parallel", "CancellationToken", "Exception", "Action",
+    "Func", "Predicate", "Comparison", "IEnumerable", "IEnumerator",
+    "ICollection", "IList", "IDictionary", "IDisposable", "IComparable",
+    "IEquatable", "ICloneable", "Stream", "StreamReader", "StreamWriter",
+    "File", "Directory", "Path", "FileStream", "MemoryStream", "BinaryReader",
+    "BinaryWriter", "TextReader", "TextWriter", "Encoding", "Regex"
+  ],
+  "types": [
+    "bool", "byte", "sbyte", "char", "decimal", "double", "float", "int",
+    "uint", "long", "ulong", "short", "ushort", "object", "string", "void",
+    "dynamic", "nint", "nuint", "var", "Object", "String", "Boolean",
+    "Char", "Byte", "SByte", "Int16", "UInt16", "Int32", "UInt32", "Int64",
+    "UInt64", "Single", "Double", "Decimal", "IntPtr", "UIntPtr", "DateTime",
+    "TimeSpan", "Guid", "Type", "Array", "Exception", "Nullable", "Span",
+    "Memory", "ReadOnlySpan", "ReadOnlyMemory", "ValueTask", "Task"
+  ]
+}

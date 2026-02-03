@@ -818,6 +818,9 @@ defmodule Brain do
     user_id = Keyword.get(opts, :user_id)
     world_id = Keyword.get(opts, :world_id, "default")
 
+    # Store world_id in process dictionary for downstream components (e.g., code queries)
+    Process.put(:current_world_id, world_id)
+
     # First, check for meta-cognitive queries (epistemic self-knowledge)
     if Config.enabled?() and SelfKnowledgeAnalyzer.is_self_knowledge_query?(input) do
       handle_meta_cognitive_query(persona, input, user_id, opts)

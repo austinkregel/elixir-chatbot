@@ -370,11 +370,13 @@ defmodule Brain.Analysis.Pipeline do
     type = Map.get(entity, :entity_type)
     value = Map.get(entity, :value)
     conf = Map.get(entity, :confidence)
+    source = Map.get(entity, :source)
 
     %{
       type: type,
       value: value,
-      confidence: conf
+      confidence: conf,
+      source: source
     }
     |> Enum.reject(fn {_k, v} -> is_nil(v) end)
     |> Map.new()

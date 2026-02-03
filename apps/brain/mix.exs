@@ -40,9 +40,10 @@ defmodule Brain.MixProject do
       {:jason, "~> 1.2"},
       {:req, "~> 0.5"},
       {:floki, "~> 0.36"},
-      {:bandit, "~> 1.0"},
-      # Tree-sitter for code parsing
-      {:tree_sitter, "~> 0.2", hex: :tree_sitter_elixir}
+      {:bandit, "~> 1.0"}
+      # Tree-sitter for code parsing - requires tree-sitter C library to be installed
+      # Uncomment if you have tree-sitter installed:
+      # {:treesitter_elixir, "~> 0.1", optional: true}
     ]
   end
 end

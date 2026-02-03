@@ -1,0 +1,36 @@
+{
+  "language": "java",
+  "version": "17+",
+  "keywords": [
+    "abstract", "assert", "boolean", "break", "byte", "case", "catch",
+    "char", "class", "const", "continue", "default", "do", "double",
+    "else", "enum", "extends", "final", "finally", "float", "for",
+    "goto", "if", "implements", "import", "instanceof", "int", "interface",
+    "long", "native", "new", "package", "private", "protected", "public",
+    "return", "short", "static", "strictfp", "super", "switch", "synchronized",
+    "this", "throw", "throws", "transient", "try", "void", "volatile",
+    "while", "true", "false", "null", "var", "yield", "record", "sealed",
+    "permits", "non-sealed"
+  ],
+  "builtins": [
+    "System", "String", "Object", "Class", "Integer", "Long", "Double",
+    "Float", "Boolean", "Character", "Byte", "Short", "Math", "StringBuilder",
+    "StringBuffer", "Thread", "Runnable", "Exception", "RuntimeException",
+    "Error", "Throwable", "Comparable", "Iterable", "Iterator", "Collection",
+    "List", "ArrayList", "LinkedList", "Set", "HashSet", "TreeSet", "Map",
+    "HashMap", "TreeMap", "Queue", "Deque", "Stack", "Optional", "Stream",
+    "Collectors", "Arrays", "Collections", "Objects", "Files", "Path",
+    "Paths", "File", "InputStream", "OutputStream", "Reader", "Writer",
+    "BufferedReader", "BufferedWriter", "PrintStream", "Scanner", "Pattern",
+    "Matcher", "Date", "LocalDate", "LocalTime", "LocalDateTime", "Instant",
+    "Duration", "Period", "ZonedDateTime", "DateTimeFormatter"
+  ],
+  "types": [
+    "boolean", "byte", "char", "short", "int", "long", "float", "double",
+    "void", "String", "Object", "Integer", "Long", "Double", "Float",
+    "Boolean", "Character", "Byte", "Short", "Number", "Comparable",
+    "Serializable", "Cloneable", "Runnable", "Callable", "Future",
+    "Optional", "List", "Set", "Map", "Collection", "Iterable", "Iterator",
+    "Stream", "Consumer", "Supplier", "Function", "Predicate", "BiFunction"
+  ]
+}

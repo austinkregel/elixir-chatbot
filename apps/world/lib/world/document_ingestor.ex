@@ -7,6 +7,15 @@ defmodule World.DocumentIngestor do
   - Streaming processing to avoid memory issues
   - Progress tracking and reporting
   - Batch entity discovery
+  - **Code file analysis** (routes to Brain.Code.Pipeline)
+
+  ## Code File Support
+
+  When processing files with code extensions (.py, .ex, .go, etc.), the
+  ingestor automatically routes them to `Brain.Code.Pipeline` for proper
+  AST-based analysis instead of NLP-based processing.
+
+  Supported code extensions: .c, .h, .cpp, .cc, .java, .cs, .php, .py, .rb, .ex, .exs, .go
   """
 
   require Logger
@@ -15,6 +24,9 @@ defmodule World.DocumentIngestor do
   alias World.{EntityDiscoverer, TypeInferrer}
   alias World.Manager, as: WorldManager, as: WorldManager
   alias World.Metrics, as: WorldMetrics
+
+  # Code file extensions - route these to Brain.Code.Pipeline
+  @code_extensions ~w(.c .h .cpp .cc .cxx .hpp .java .cs .php .py .pyw .rb .ex .exs .go)
 
   @type ingest_opts :: [
           chunk_size: pos_integer(),
@@ -43,14 +55,100 @@ defmodule World.DocumentIngestor do
   @doc """
   Ingests a single file into a training world.
 
+  For code files (.py, .ex, .go, etc.), automatically routes to
+  `Brain.Code.Pipeline` for AST-based analysis.
+
+  For text/document files, uses NLP-based chunking and entity discovery.
+
   ## Options
     - `:chunk_size` - Characters per chunk (default: 5000)
     - `:overlap` - Overlap between chunks (default: 200)
     - `:progress_callback` - Function called with progress updates
     - `:learn_types` - Whether to learn type patterns from known entities (default: true)
+    - `:force_text` - Force text processing even for code files (default: false)
   """
   def ingest_file(world_id, file_path, opts \\ [])
       when is_binary(world_id) and is_binary(file_path) do
+    force_text = Keyword.get(opts, :force_text, false)
+
+    if is_code_file?(file_path) and not force_text do
+      ingest_code_file(world_id, file_path, opts)
+    else
+      ingest_text_file(world_id, file_path, opts)
+    end
+  end
+
+  @doc """
+  Checks if a file is a code file based on its extension.
+  """
+  @spec is_code_file?(String.t()) :: boolean()
+  def is_code_file?(file_path) do
+    ext = Path.extname(file_path) |> String.downcase()
+    ext in @code_extensions
+  end
+
+  # Handles code file ingestion via Brain.Code.Pipeline
+  defp ingest_code_file(world_id, file_path, opts) do
+    start_time = System.monotonic_time(:millisecond)
+    progress_callback = Keyword.get(opts, :progress_callback)
+
+    # Report starting code analysis
+    if progress_callback do
+      progress_callback.(%{
+        type: :code_analysis_started,
+        file: file_path
+      })
+    end
+
+    case Brain.Code.Pipeline.process_file(file_path, world_id: world_id, store: true) do
+      {:ok, result} ->
+        duration = System.monotonic_time(:millisecond) - start_time
+
+        # Record code file processed event
+        WorldManager.record_event(world_id, :code_file_processed, %{
+          file_path: file_path,
+          language: result.language,
+          symbols: result.stats.symbol_count,
+          relations: result.stats.relation_count,
+          duration_ms: duration
+        })
+
+        # Report completion
+        if progress_callback do
+          progress_callback.(%{
+            type: :code_analysis_completed,
+            file: file_path,
+            result: result
+          })
+        end
+
+        # Convert to standard ingest result format
+        {:ok, %{
+          documents_processed: 1,
+          total_chunks: 1,
+          total_tokens: result.stats.symbol_count,
+          entities_discovered: result.stats.symbol_count,
+          processing_time_ms: duration,
+          code_analysis: result
+        }}
+
+      {:error, reason} ->
+        Logger.warning("Code file analysis failed", %{file: file_path, reason: reason})
+
+        if progress_callback do
+          progress_callback.(%{
+            type: :code_analysis_failed,
+            file: file_path,
+            error: reason
+          })
+        end
+
+        {:error, {:code_analysis_failed, reason}}
+    end
+  end
+
+  # Handles text file ingestion (original logic)
+  defp ingest_text_file(world_id, file_path, opts) do
     start_time = System.monotonic_time(:millisecond)
 
     case File.read(file_path) do
@@ -154,17 +252,95 @@ defmodule World.DocumentIngestor do
   Ingests a directory of files matching a pattern.
 
   Uses Path.wildcard for pattern matching.
+
+  ## Options
+    - `:include_code` - Include code files in processing (default: true)
+    - `:recursive` - Process subdirectories (default: false for pattern, true for code)
+    - All other options are passed to `ingest_file/3`
   """
   def ingest_directory(world_id, dir_path, pattern \\ "*.txt", opts \\ []) do
-    full_pattern = Path.join(dir_path, pattern)
-    files = Path.wildcard(full_pattern)
+    include_code = Keyword.get(opts, :include_code, true)
+    recursive = Keyword.get(opts, :recursive, false)
 
-    if length(files) == 0 do
+    # Get text files matching pattern
+    full_pattern = if recursive do
+      Path.join([dir_path, "**", pattern])
+    else
+      Path.join(dir_path, pattern)
+    end
+
+    text_files = Path.wildcard(full_pattern)
+
+    # Get code files if requested
+    code_files = if include_code do
+      find_code_files(dir_path, recursive)
+    else
+      []
+    end
+
+    all_files = Enum.uniq(text_files ++ code_files)
+
+    if length(all_files) == 0 do
       {:error, :no_files_found}
     else
-      Logger.info("Found files to ingest", %{count: length(files), pattern: full_pattern})
+      text_count = length(text_files)
+      code_count = length(code_files)
+      Logger.info("Found files to ingest", %{
+        total: length(all_files),
+        text_files: text_count,
+        code_files: code_count,
+        pattern: full_pattern
+      })
+      ingest_files(world_id, all_files, opts)
+    end
+  end
+
+  @doc """
+  Ingests only code files from a directory.
+
+  This is a convenience function for analyzing codebases.
+
+  ## Options
+    - `:recursive` - Process subdirectories (default: true)
+    - `:extensions` - Code extensions to include (default: all supported)
+    - `:exclude` - Patterns to exclude (default: ["node_modules", ".git", "_build"])
+  """
+  def ingest_codebase(world_id, dir_path, opts \\ []) do
+    recursive = Keyword.get(opts, :recursive, true)
+    extensions = Keyword.get(opts, :extensions, @code_extensions)
+    exclude = Keyword.get(opts, :exclude, ["node_modules", ".git", "_build", "deps", "__pycache__", "vendor"])
+
+    files = find_code_files(dir_path, recursive, extensions, exclude)
+
+    if length(files) == 0 do
+      {:error, :no_code_files_found}
+    else
+      Logger.info("Found code files to analyze", %{count: length(files), dir: dir_path})
       ingest_files(world_id, files, opts)
     end
+  end
+
+  # Find code files in a directory
+  defp find_code_files(dir_path, recursive, extensions \\ @code_extensions, exclude \\ []) do
+    pattern = if recursive do
+      Path.join(dir_path, "**/*")
+    else
+      Path.join(dir_path, "*")
+    end
+
+    Path.wildcard(pattern)
+    |> Enum.filter(fn path ->
+      File.regular?(path) and
+        Path.extname(path) in extensions and
+        not excluded?(path, exclude)
+    end)
+    |> Enum.sort()
+  end
+
+  defp excluded?(path, exclude_patterns) do
+    Enum.any?(exclude_patterns, fn pattern ->
+      String.contains?(path, pattern)
+    end)
   end
 
   @doc """

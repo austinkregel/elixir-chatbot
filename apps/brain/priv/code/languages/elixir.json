@@ -1,0 +1,34 @@
+{
+  "language": "elixir",
+  "version": "1.15+",
+  "keywords": [
+    "def", "defp", "defmodule", "defstruct", "defexception", "defprotocol",
+    "defimpl", "defmacro", "defmacrop", "defguard", "defguardp", "defdelegate",
+    "do", "end", "fn", "case", "cond", "if", "else", "unless", "when",
+    "with", "for", "receive", "after", "try", "catch", "rescue", "raise",
+    "throw", "exit", "spawn", "spawn_link", "send", "self", "import",
+    "require", "use", "alias", "quote", "unquote", "unquote_splicing",
+    "and", "or", "not", "in", "true", "false", "nil", "super", "__MODULE__",
+    "__ENV__", "__DIR__", "__CALLER__", "__STACKTRACE__"
+  ],
+  "builtins": [
+    "Kernel", "Enum", "List", "Map", "String", "IO", "File", "Path",
+    "Process", "Agent", "GenServer", "Supervisor", "Task", "Registry",
+    "ETS", "Logger", "Calendar", "Date", "Time", "DateTime", "NaiveDateTime",
+    "Regex", "URI", "Stream", "Range", "Tuple", "Keyword", "MapSet",
+    "Access", "Behaviour", "Protocol", "Macro", "Module", "Code",
+    "Exception", "Inspect", "Integer", "Float", "Atom", "Function",
+    "Port", "Reference", "PID", "Node", "System", "Application",
+    "hd", "tl", "length", "elem", "put_elem", "tuple_size", "map_size",
+    "is_atom", "is_binary", "is_bitstring", "is_boolean", "is_float",
+    "is_function", "is_integer", "is_list", "is_map", "is_nil", "is_number",
+    "is_pid", "is_port", "is_reference", "is_tuple", "abs", "ceil", "floor",
+    "round", "trunc", "div", "rem", "max", "min", "to_string", "inspect"
+  ],
+  "types": [
+    "atom", "binary", "bitstring", "boolean", "float", "integer", "list",
+    "map", "number", "pid", "port", "reference", "tuple", "any", "term",
+    "none", "no_return", "struct", "exception", "iodata", "iolist",
+    "charlist", "keyword", "mfa", "module", "node", "timeout", "as_boolean"
+  ]
+}

@@ -36,6 +36,10 @@ defmodule Brain.SystemStatus do
       {World.Manager, "World Manager", :has_ready},
       {World.ModelRegistry, "World Model Registry", :has_ready}
     ],
+    code_analysis: [
+      {Brain.Code.CodeGazetteer, "Code Gazetteer", :has_stats},
+      {Brain.Code.LanguageGrammar, "Language Grammar", :has_ready}
+    ],
     storage: [
       {Brain.KnowledgeStore, "Knowledge Store", :has_ready},
       {Brain.MemoryStore, "Memory Store (Legacy)", :has_ready},
@@ -58,7 +62,12 @@ defmodule Brain.SystemStatus do
     Brain.Knowledge.ReviewQueue => :knowledge_review,
     Brain.Epistemic.JTMS => :jtms_justify,
     Brain.Epistemic.BeliefStore => :belief_operation,
-    Brain.Analysis.RacingAnalyzer => :racing_analysis
+    Brain.Analysis.RacingAnalyzer => :racing_analysis,
+    # Code analysis modules
+    Brain.Code.CodeGazetteer => :code_gazetteer_lookup,
+    Brain.Code.Pipeline => :code_pipeline,
+    Brain.Code.Parser => :code_parse,
+    Brain.Code.SymbolExtractor => :code_extract
   }
 
   # ============================================================================
@@ -371,6 +380,103 @@ defmodule Brain.SystemStatus do
       intent_classifier: get_agent_status(Brain.ML.IntentClassifierSimple),
       entity_extractor: get_agent_status(Brain.ML.EntityExtractor),
       checked_at: DateTime.utc_now()
+    }
+  end
+
+  @doc """
+  Returns code analysis system status.
+  """
+  def get_code_analysis_status do
+    gazetteer_status = get_code_gazetteer_status()
+    grammar_status = get_language_grammar_status()
+
+    %{
+      code_gazetteer: gazetteer_status,
+      language_grammar: grammar_status,
+      ready: gazetteer_status.ready and grammar_status.ready,
+      checked_at: DateTime.utc_now()
+    }
+  end
+
+  @doc """
+  Returns CodeGazetteer status.
+  """
+  def get_code_gazetteer_status do
+    if Code.ensure_loaded?(Brain.Code.CodeGazetteer) and Process.whereis(Brain.Code.CodeGazetteer) do
+      try do
+        stats = Brain.Code.CodeGazetteer.stats()
+        ready = Brain.Code.CodeGazetteer.ready?()
+
+        %{
+          running: true,
+          ready: ready,
+          status: if(ready, do: :ready, else: :initializing),
+          label: if(ready, do: "Ready", else: "Initializing"),
+          stats: %{
+            total_symbols: Map.get(stats, :symbols, 0),
+            total_relations: Map.get(stats, :relations, 0),
+            total_files: Map.get(stats, :files, 0),
+            total_languages: Map.get(stats, :languages, 0),
+            language_list: Map.get(stats, :language_list, []),
+            worlds_tracked: Map.get(stats, :worlds, 0)
+          }
+        }
+      catch
+        :exit, _ -> default_code_gazetteer_status()
+      end
+    else
+      default_code_gazetteer_status()
+    end
+  end
+
+  defp default_code_gazetteer_status do
+    %{
+      running: false,
+      ready: false,
+      status: :not_started,
+      label: "Not started",
+      stats: %{total_symbols: 0, total_relations: 0, total_files: 0, total_languages: 0, language_list: [], worlds_tracked: 0}
+    }
+  end
+
+  @doc """
+  Returns LanguageGrammar status.
+  """
+  def get_language_grammar_status do
+    if Code.ensure_loaded?(Brain.Code.LanguageGrammar) and Process.whereis(Brain.Code.LanguageGrammar) do
+      try do
+        ready = Brain.Code.LanguageGrammar.ready?()
+        languages = Brain.Code.LanguageGrammar.list_languages()
+
+        available_count = Enum.count(languages, & &1.available)
+        total_count = length(languages)
+
+        %{
+          running: true,
+          ready: ready,
+          status: if(ready, do: :ready, else: :initializing),
+          label: if(ready, do: "Ready (#{available_count}/#{total_count} grammars)", else: "Initializing"),
+          stats: %{
+            available_grammars: available_count,
+            total_grammars: total_count,
+            languages: Enum.map(languages, & &1.language)
+          }
+        }
+      catch
+        :exit, _ -> default_language_grammar_status()
+      end
+    else
+      default_language_grammar_status()
+    end
+  end
+
+  defp default_language_grammar_status do
+    %{
+      running: false,
+      ready: false,
+      status: :not_started,
+      label: "Not started",
+      stats: %{available_grammars: 0, total_grammars: 0, languages: []}
     }
   end
 

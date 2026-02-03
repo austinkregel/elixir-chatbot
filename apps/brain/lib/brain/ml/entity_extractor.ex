@@ -484,7 +484,8 @@ defmodule Brain.ML.EntityExtractor do
             start_pos: start_token.start_pos,
             end_pos: end_token.end_pos,
             confidence: calculate_confidence(match_text, primary_type, entity_value),
-            types: infos
+            types: infos,
+            source: :gazetteer
           }
 
         [single_info] ->
@@ -498,7 +499,8 @@ defmodule Brain.ML.EntityExtractor do
             match: match_text,
             start_pos: start_token.start_pos,
             end_pos: end_token.end_pos,
-            confidence: calculate_confidence(match_text, entity_type, entity_value)
+            confidence: calculate_confidence(match_text, entity_type, entity_value),
+            source: :gazetteer
           }
 
         single_info when is_map(single_info) ->
@@ -512,7 +514,8 @@ defmodule Brain.ML.EntityExtractor do
             match: match_text,
             start_pos: start_token.start_pos,
             end_pos: end_token.end_pos,
-            confidence: calculate_confidence(match_text, entity_type, entity_value)
+            confidence: calculate_confidence(match_text, entity_type, entity_value),
+            source: :gazetteer
           }
 
         _ ->
@@ -523,7 +526,8 @@ defmodule Brain.ML.EntityExtractor do
             match: match_text,
             start_pos: start_token.start_pos,
             end_pos: end_token.end_pos,
-            confidence: 0.5
+            confidence: 0.5,
+            source: :gazetteer
           }
       end
     end)
@@ -563,7 +567,8 @@ defmodule Brain.ML.EntityExtractor do
               match: match_text,
               start_pos: start_token.start_pos,
               end_pos: end_token.end_pos,
-              confidence: calculate_confidence(match_text, entity_type, entity_value)
+              confidence: calculate_confidence(match_text, entity_type, entity_value),
+              source: :gazetteer
             }
           end)
 
@@ -624,7 +629,8 @@ defmodule Brain.ML.EntityExtractor do
         match: token.text,
         start_pos: token.start_pos,
         end_pos: token.end_pos,
-        confidence: 0.9
+        confidence: 0.9,
+        source: :system
       }
     end)
   end
@@ -675,12 +681,13 @@ defmodule Brain.ML.EntityExtractor do
                         match: token.text,
                         start_pos: token.start_pos,
                         end_pos: token.end_pos,
-                        confidence: 0.8
+                        confidence: 0.8,
+                        source: :system
                       }
                     ]
 
                   date_entity ->
-                    [date_entity]
+                    [Map.put(date_entity, :source, :system)]
                 end
               else
                 [
@@ -690,7 +697,8 @@ defmodule Brain.ML.EntityExtractor do
                     match: token.text,
                     start_pos: token.start_pos,
                     end_pos: token.end_pos,
-                    confidence: 0.9
+                    confidence: 0.9,
+                    source: :system
                   }
                 ]
               end

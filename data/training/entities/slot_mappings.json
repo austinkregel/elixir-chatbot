@@ -479,6 +479,26 @@
         "entity_types": ["resource_type"],
         "description": "Type of system resource"
       }
+    },
+    {
+      "value": "code_symbol",
+      "synonyms": ["symbol", "function_name", "method_name", "class_name", "module_name"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["code_symbol", "symbol"],
+        "entity_types": ["code.symbol", "code.function", "code.class", "code.module"],
+        "description": "Code symbol (function, class, module, variable name)"
+      }
+    },
+    {
+      "value": "code_file",
+      "synonyms": ["file", "source_file", "filename"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["code_file", "file"],
+        "entity_types": ["code.file"],
+        "description": "Source code file path or name"
+      }
     }
   ]
 }

@@ -19,6 +19,7 @@ defmodule Brain.Response.Generator do
   alias Brain.Response.{TemplateStore, MemoryAugmented, FactRetriever, Composer, TemplateBlender}
   alias Brain.Response.{LSTMResponse, ResponseQuality}
   alias Brain.Analysis.IntentRegistry
+  alias Brain.Code.QueryHandler
 
   # ============================================================================
   # Public API
@@ -204,6 +205,7 @@ defmodule Brain.Response.Generator do
       String.starts_with?(intent, "news") -> :news_handler
       String.starts_with?(intent, "reminder") -> :reminder_handler
       String.starts_with?(intent, "question.factual") -> :fact_retriever
+      String.starts_with?(intent, "code.") -> :code_handler
       true -> :domain_generic
     end
   end
@@ -488,9 +490,67 @@ defmodule Brain.Response.Generator do
     generate_factual_with_semantic_search(entities, query_text)
   end
 
+  # ============================================================================
+  # Code-Related Intent Handlers
+  # ============================================================================
+
+  # Delegate all code.* intents to the QueryHandler
+  defp generate_domain_response("code." <> _ = intent, entities, query_text) do
+    world_id = get_code_world_id()
+    
+    case QueryHandler.handle(intent, entities, world_id: world_id, query_text: query_text) do
+      {:ok, response} -> {:ok, response}
+      :not_handled -> :not_handled
+    end
+  end
+
   # Catch-all for unhandled intents - must be last generate_domain_response clause
   defp generate_domain_response(_intent, _entities, _query_text) do
     :not_handled
+  end
+
+  # ============================================================================
+  # Code Response Helpers
+  # ============================================================================
+
+  defp get_code_world_id do
+    # Try to get the current world from the conversation context
+    # Fall back to default if not available
+    case Process.get(:current_world_id) do
+      nil -> "default"
+      world_id -> world_id
+    end
+  end
+
+  @doc """
+  Formats a code snippet for display in a response.
+
+  ## Options
+    - `:language` - The programming language for syntax highlighting
+    - `:start_line` - Starting line number
+    - `:max_lines` - Maximum lines to show (default: 20)
+  """
+  def format_code_snippet(code, opts \\ []) do
+    language = Keyword.get(opts, :language, "")
+    max_lines = Keyword.get(opts, :max_lines, 20)
+
+    lines = String.split(code, "\n")
+    
+    truncated = if length(lines) > max_lines do
+      shown = Enum.take(lines, max_lines)
+      remaining = length(lines) - max_lines
+      shown ++ ["# ... #{remaining} more lines"]
+    else
+      lines
+    end
+
+    code_block = Enum.join(truncated, "\n")
+    
+    """
+    ```#{language}
+    #{code_block}
+    ```
+    """
   end
 
   # ============================================================================

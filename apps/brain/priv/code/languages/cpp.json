@@ -1,0 +1,43 @@
+{
+  "language": "cpp",
+  "version": "C++17/C++20",
+  "keywords": [
+    "alignas", "alignof", "and", "and_eq", "asm", "auto", "bitand", "bitor",
+    "bool", "break", "case", "catch", "char", "char8_t", "char16_t", "char32_t",
+    "class", "compl", "concept", "const", "consteval", "constexpr", "constinit",
+    "const_cast", "continue", "co_await", "co_return", "co_yield", "decltype",
+    "default", "delete", "do", "double", "dynamic_cast", "else", "enum",
+    "explicit", "export", "extern", "false", "float", "for", "friend", "goto",
+    "if", "inline", "int", "long", "mutable", "namespace", "new", "noexcept",
+    "not", "not_eq", "nullptr", "operator", "or", "or_eq", "private",
+    "protected", "public", "register", "reinterpret_cast", "requires",
+    "return", "short", "signed", "sizeof", "static", "static_assert",
+    "static_cast", "struct", "switch", "template", "this", "thread_local",
+    "throw", "true", "try", "typedef", "typeid", "typename", "union",
+    "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while",
+    "xor", "xor_eq", "override", "final"
+  ],
+  "builtins": [
+    "std::cout", "std::cin", "std::cerr", "std::endl", "std::string",
+    "std::vector", "std::map", "std::set", "std::unordered_map",
+    "std::unordered_set", "std::list", "std::deque", "std::queue",
+    "std::stack", "std::priority_queue", "std::array", "std::pair",
+    "std::tuple", "std::optional", "std::variant", "std::any",
+    "std::unique_ptr", "std::shared_ptr", "std::weak_ptr", "std::make_unique",
+    "std::make_shared", "std::move", "std::forward", "std::swap",
+    "std::sort", "std::find", "std::copy", "std::transform", "std::accumulate",
+    "std::for_each", "std::begin", "std::end", "std::size", "std::to_string",
+    "std::stoi", "std::stof", "std::stod", "std::thread", "std::mutex",
+    "std::lock_guard", "std::unique_lock", "std::condition_variable",
+    "std::async", "std::future", "std::promise", "std::exception",
+    "std::runtime_error", "std::logic_error", "std::function", "std::bind"
+  ],
+  "types": [
+    "bool", "char", "short", "int", "long", "float", "double", "void",
+    "wchar_t", "char8_t", "char16_t", "char32_t", "size_t", "ptrdiff_t",
+    "nullptr_t", "int8_t", "int16_t", "int32_t", "int64_t", "uint8_t",
+    "uint16_t", "uint32_t", "uint64_t", "string", "string_view", "vector",
+    "map", "set", "list", "deque", "array", "span", "optional", "variant",
+    "any", "tuple", "pair", "unique_ptr", "shared_ptr", "weak_ptr"
+  ]
+}

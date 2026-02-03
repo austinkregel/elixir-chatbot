@@ -21,7 +21,7 @@ defmodule ChatWeb.DashboardLive do
   # Refresh interval in milliseconds
   @refresh_interval_ms 2_000
 
-  @default_expanded [:core, :epistemic, :analysis, :ml, :knowledge, :learning, :storage, :metrics]
+  @default_expanded [:core, :epistemic, :analysis, :ml, :knowledge, :learning, :storage, :metrics, :code_analysis]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -48,6 +48,7 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:training_worlds_status, load_training_worlds_status())
       |> assign(:world_memory_stats, load_world_memory_stats(world_id))
       |> assign(:world_models_status, load_world_models_status(world_id))
+      |> assign(:code_analysis_status, load_code_analysis_status())
       |> assign(:last_updated, DateTime.utc_now())
       |> assign(:expanded_categories, MapSet.new(@default_expanded))
       |> assign(:auto_refresh, true)
@@ -96,6 +97,7 @@ defmodule ChatWeb.DashboardLive do
         |> assign(:training_worlds_status, load_training_worlds_status())
         |> assign(:world_memory_stats, load_world_memory_stats(world_id))
         |> assign(:world_models_status, load_world_models_status(world_id))
+        |> assign(:code_analysis_status, load_code_analysis_status())
         |> assign(:last_updated, DateTime.utc_now())
 
       {:noreply, socket}
@@ -128,6 +130,7 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:training_worlds_status, load_training_worlds_status())
       |> assign(:world_memory_stats, load_world_memory_stats(world_id))
       |> assign(:world_models_status, load_world_models_status(world_id))
+      |> assign(:code_analysis_status, load_code_analysis_status())
       |> assign(:last_updated, DateTime.utc_now())
 
     {:noreply, socket}
@@ -212,6 +215,10 @@ defmodule ChatWeb.DashboardLive do
     Brain.SystemStatus.get_world_models_status(world_id)
   end
 
+  defp load_code_analysis_status do
+    Brain.SystemStatus.get_code_analysis_status()
+  end
+
   # ============================================================================
   # Helper Functions for Template
   # ============================================================================
@@ -224,6 +231,7 @@ defmodule ChatWeb.DashboardLive do
   def category_label(:learning), do: "Training Worlds"
   def category_label(:storage), do: "Storage"
   def category_label(:metrics), do: "Metrics & Telemetry"
+  def category_label(:code_analysis), do: "Code Analysis"
   def category_label(other), do: to_string(other) |> String.capitalize()
 
   def category_icon(:core), do: "hero-cpu-chip"
@@ -234,6 +242,7 @@ defmodule ChatWeb.DashboardLive do
   def category_icon(:learning), do: "hero-academic-cap"
   def category_icon(:storage), do: "hero-circle-stack"
   def category_icon(:metrics), do: "hero-chart-pie"
+  def category_icon(:code_analysis), do: "hero-code-bracket"
   def category_icon(_), do: "hero-cube"
 
   def status_color(:ready), do: "text-success"
@@ -339,6 +348,7 @@ defmodule ChatWeb.DashboardLive do
   def category_bg_class(:learning), do: "bg-error/10"
   def category_bg_class(:storage), do: "bg-info/10"
   def category_bg_class(:metrics), do: "bg-success/10"
+  def category_bg_class(:code_analysis), do: "bg-violet-500/10"
   def category_bg_class(_), do: "bg-base-200"
 
   def category_text_class(:core), do: "text-primary"
@@ -349,6 +359,7 @@ defmodule ChatWeb.DashboardLive do
   def category_text_class(:learning), do: "text-error"
   def category_text_class(:storage), do: "text-info"
   def category_text_class(:metrics), do: "text-success"
+  def category_text_class(:code_analysis), do: "text-violet-500"
   def category_text_class(_), do: "text-base-content"
 
   # Badge variant based on status
@@ -446,9 +457,9 @@ defmodule ChatWeb.DashboardLive do
     Map.get(performance_metrics, :training, %{})
   end
 
-  # Get all categories including learning and metrics categories
+  # Get all categories including learning, metrics, and code_analysis categories
   def all_categories do
-    [:core, :epistemic, :analysis, :ml, :knowledge, :learning, :storage, :metrics]
+    [:core, :epistemic, :analysis, :ml, :knowledge, :learning, :storage, :metrics, :code_analysis]
   end
 
   # ============================================================================

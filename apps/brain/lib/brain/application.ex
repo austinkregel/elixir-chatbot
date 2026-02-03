@@ -42,12 +42,12 @@ defmodule Brain.Application do
       Brain.ML.IntentClassifierSimple,
       Brain.ML.EntityExtractor,
 
+      # Code analysis components
+      Brain.Code.LanguageGrammar,
+      Brain.Code.CodeGazetteer,
+
       # LSTM unified model (NER, intent, sentiment, speech act)
       Brain.ML.LSTM.UnifiedModel,
-      
-      # Seq2Seq LSTM + Attention system
-      Brain.ML.Seq2Seq.Vocabulary,
-      Brain.ML.Seq2Seq,
 
       # Response system
       Brain.Response.TemplateStore,

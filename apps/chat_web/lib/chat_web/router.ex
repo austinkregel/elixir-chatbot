@@ -29,6 +29,7 @@ defmodule ChatWeb.Router do
       live "/explorer", ExplorerLive
       live "/dashboard", DashboardLive
       live "/settings", SettingsLive
+      live "/code", CodeAnalysisLive
       live "/knowledge-review", Admin.KnowledgeReviewLive
       live "/intent-review", Admin.IntentReviewLive
     end

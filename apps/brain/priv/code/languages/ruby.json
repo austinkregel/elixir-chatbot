@@ -1,0 +1,29 @@
+{
+  "language": "ruby",
+  "version": "3.0+",
+  "keywords": [
+    "BEGIN", "END", "__ENCODING__", "__END__", "__FILE__", "__LINE__",
+    "alias", "and", "begin", "break", "case", "class", "def", "defined?",
+    "do", "else", "elsif", "end", "ensure", "false", "for", "if", "in",
+    "module", "next", "nil", "not", "or", "redo", "rescue", "retry",
+    "return", "self", "super", "then", "true", "undef", "unless", "until",
+    "when", "while", "yield"
+  ],
+  "builtins": [
+    "Array", "Binding", "Class", "Comparable", "Complex", "Dir",
+    "Encoding", "Enumerable", "Enumerator", "Errno", "Exception",
+    "FalseClass", "Fiber", "File", "FileTest", "Float", "GC", "Hash",
+    "IO", "Integer", "Kernel", "Marshal", "MatchData", "Math", "Method",
+    "Module", "Mutex", "NilClass", "Numeric", "Object", "ObjectSpace",
+    "Proc", "Process", "Queue", "Random", "Range", "Rational", "Regexp",
+    "Set", "Signal", "String", "Struct", "Symbol", "Thread", "Time",
+    "TrueClass", "UnboundMethod", "attr", "attr_accessor", "attr_reader",
+    "attr_writer", "include", "extend", "prepend", "require", "require_relative",
+    "puts", "print", "p", "gets", "raise", "lambda", "proc", "loop"
+  ],
+  "types": [
+    "String", "Integer", "Float", "Array", "Hash", "Symbol", "TrueClass",
+    "FalseClass", "NilClass", "Regexp", "Range", "Proc", "Method",
+    "Object", "Class", "Module", "Struct", "OpenStruct"
+  ]
+}

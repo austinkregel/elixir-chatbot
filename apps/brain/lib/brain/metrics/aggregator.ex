@@ -407,6 +407,34 @@ defmodule Brain.Metrics.Aggregator do
   end
 
   @impl true
+  def handle_cast({:record_code_file_processed, file_path, language, symbols_count, relations_count, duration_ms}, state) do
+    now = System.monotonic_time(:millisecond)
+
+    # Track overall code analysis metrics
+    add_raw_data_point(:code_pipeline, duration_ms, now)
+    increment_counter(:code_pipeline, :count)
+
+    # Track per-language metrics
+    lang_key = {:code_language, language}
+    increment_counter(lang_key, :count)
+
+    # Update aggregate code analysis stats
+    :ets.insert(
+      @metrics_table,
+      {{:code_file_last, language},
+       %{
+         file_path: file_path,
+         symbols_count: symbols_count,
+         relations_count: relations_count,
+         duration_ms: duration_ms,
+         timestamp: now
+       }}
+    )
+
+    {:noreply, state}
+  end
+
+  @impl true
   def handle_call(:reset, _from, state) do
     :ets.delete_all_objects(@metrics_table)
     :ets.delete_all_objects(@raw_data_table)
@@ -442,7 +470,12 @@ defmodule Brain.Metrics.Aggregator do
       :jtms_justify,
       :belief_operation,
       # Analysis operations
-      :racing_analysis
+      :racing_analysis,
+      # Code analysis operations
+      :code_pipeline,
+      :code_parse,
+      :code_extract,
+      :code_gazetteer_lookup
     ]
 
     Enum.each(default_metrics, fn name ->
@@ -539,7 +572,12 @@ defmodule Brain.Metrics.Aggregator do
       :pipeline_process,
       :memory_query,
       :memory_embed,
-      :gazetteer_lookup
+      :gazetteer_lookup,
+      # Code analysis
+      :code_pipeline,
+      :code_parse,
+      :code_extract,
+      :code_gazetteer_lookup
     ]
 
     Enum.each(metrics, fn metric_name ->

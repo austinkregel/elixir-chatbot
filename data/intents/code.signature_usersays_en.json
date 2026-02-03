@@ -1,0 +1,410 @@
+[
+  {
+    "id": "code-sig-001",
+    "data": [
+      {
+        "text": "what parameters does ",
+        "userDefined": false
+      },
+      {
+        "text": "calculate_tax",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " take",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-sig-002",
+    "data": [
+      {
+        "text": "show me the signature of ",
+        "userDefined": false
+      },
+      {
+        "text": "process_order",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-sig-003",
+    "data": [
+      {
+        "text": "what arguments does ",
+        "userDefined": false
+      },
+      {
+        "text": "send_email",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " accept",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-sig-004",
+    "data": [
+      {
+        "text": "how do I call ",
+        "userDefined": false
+      },
+      {
+        "text": "create_user",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-sig-005",
+    "data": [
+      {
+        "text": "what does ",
+        "userDefined": false
+      },
+      {
+        "text": "validate_input",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " return",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-sig-006",
+    "data": [
+      {
+        "text": "function signature for ",
+        "userDefined": false
+      },
+      {
+        "text": "authenticate_user",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-sig-007",
+    "data": [
+      {
+        "text": "what type does ",
+        "userDefined": false
+      },
+      {
+        "text": "get_user_by_id",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " return",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-sig-008",
+    "data": [
+      {
+        "text": "show the definition of ",
+        "userDefined": false
+      },
+      {
+        "text": "parse_json",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-sig-009",
+    "data": [
+      {
+        "text": "what inputs does ",
+        "userDefined": false
+      },
+      {
+        "text": "calculate_discount",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " need",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-sig-010",
+    "data": [
+      {
+        "text": "method signature of ",
+        "userDefined": false
+      },
+      {
+        "text": "save_to_database",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-sig-011",
+    "data": [
+      {
+        "text": "what are the parameters for ",
+        "userDefined": false
+      },
+      {
+        "text": "format_date",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-sig-012",
+    "data": [
+      {
+        "text": "how to use ",
+        "userDefined": false
+      },
+      {
+        "text": "HttpClient",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-sig-013",
+    "data": [
+      {
+        "text": "return type of ",
+        "userDefined": false
+      },
+      {
+        "text": "fetch_data",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-sig-014",
+    "data": [
+      {
+        "text": "what's the arity of ",
+        "userDefined": false
+      },
+      {
+        "text": "process_items",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-sig-015",
+    "data": [
+      {
+        "text": "function definition for ",
+        "userDefined": false
+      },
+      {
+        "text": "init",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-sig-016",
+    "data": [
+      {
+        "text": "signature of the method ",
+        "userDefined": false
+      },
+      {
+        "text": "render",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-sig-017",
+    "data": [
+      {
+        "text": "how many arguments does ",
+        "userDefined": false
+      },
+      {
+        "text": "connect",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " take",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-sig-018",
+    "data": [
+      {
+        "text": "what's the interface for ",
+        "userDefined": false
+      },
+      {
+        "text": "Logger",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-sig-019",
+    "data": [
+      {
+        "text": "API for ",
+        "userDefined": false
+      },
+      {
+        "text": "Cache",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " class",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-sig-020",
+    "data": [
+      {
+        "text": "show the prototype of ",
+        "userDefined": false
+      },
+      {
+        "text": "handle_error",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  }
+]

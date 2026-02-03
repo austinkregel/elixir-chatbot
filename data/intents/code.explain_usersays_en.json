@@ -1,0 +1,810 @@
+[
+  {
+    "id": "code-explain-001",
+    "data": [
+      {
+        "text": "what does the function ",
+        "userDefined": false
+      },
+      {
+        "text": "calculate_tax",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " do",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-002",
+    "data": [
+      {
+        "text": "explain the ",
+        "userDefined": false
+      },
+      {
+        "text": "UserController",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " class",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-003",
+    "data": [
+      {
+        "text": "what is ",
+        "userDefined": false
+      },
+      {
+        "text": "process_order",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " used for",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-004",
+    "data": [
+      {
+        "text": "can you explain ",
+        "userDefined": false
+      },
+      {
+        "text": "handle_request",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-005",
+    "data": [
+      {
+        "text": "tell me about the ",
+        "userDefined": false
+      },
+      {
+        "text": "DatabaseConnection",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " class",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-006",
+    "data": [
+      {
+        "text": "how does ",
+        "userDefined": false
+      },
+      {
+        "text": "authenticate_user",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " work",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-007",
+    "data": [
+      {
+        "text": "describe the function ",
+        "userDefined": false
+      },
+      {
+        "text": "send_email",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-008",
+    "data": [
+      {
+        "text": "what's the purpose of ",
+        "userDefined": false
+      },
+      {
+        "text": "validate_input",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-009",
+    "data": [
+      {
+        "text": "explain this code",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-010",
+    "data": [
+      {
+        "text": "what does this function do",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-011",
+    "data": [
+      {
+        "text": "help me understand ",
+        "userDefined": false
+      },
+      {
+        "text": "parse_json",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-012",
+    "data": [
+      {
+        "text": "what is the ",
+        "userDefined": false
+      },
+      {
+        "text": "Config",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " module for",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-013",
+    "data": [
+      {
+        "text": "explain how ",
+        "userDefined": false
+      },
+      {
+        "text": "sort_items",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " works",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-014",
+    "data": [
+      {
+        "text": "describe what ",
+        "userDefined": false
+      },
+      {
+        "text": "fetch_data",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " does",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-015",
+    "data": [
+      {
+        "text": "I want to understand the ",
+        "userDefined": false
+      },
+      {
+        "text": "OrderService",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " class",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-016",
+    "data": [
+      {
+        "text": "walk me through ",
+        "userDefined": false
+      },
+      {
+        "text": "process_payment",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-017",
+    "data": [
+      {
+        "text": "explain the method ",
+        "userDefined": false
+      },
+      {
+        "text": "get_user_by_id",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-018",
+    "data": [
+      {
+        "text": "what's happening in ",
+        "userDefined": false
+      },
+      {
+        "text": "main.py",
+        "meta": "@code.file",
+        "alias": "file",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-019",
+    "data": [
+      {
+        "text": "summarize the ",
+        "userDefined": false
+      },
+      {
+        "text": "Router",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " module",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-020",
+    "data": [
+      {
+        "text": "give me an overview of ",
+        "userDefined": false
+      },
+      {
+        "text": "cache_manager",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-021",
+    "data": [
+      {
+        "text": "what does the ",
+        "userDefined": false
+      },
+      {
+        "text": "Brain",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " module do",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-022",
+    "data": [
+      {
+        "text": "what does the ",
+        "userDefined": false
+      },
+      {
+        "text": "Parser",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " module do",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-023",
+    "data": [
+      {
+        "text": "what does the ",
+        "userDefined": false
+      },
+      {
+        "text": "Generator",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " module do",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-024",
+    "data": [
+      {
+        "text": "what does ",
+        "userDefined": false
+      },
+      {
+        "text": "Brain.evaluate",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " do",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-025",
+    "data": [
+      {
+        "text": "explain the ",
+        "userDefined": false
+      },
+      {
+        "text": "Pipeline",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " module",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-026",
+    "data": [
+      {
+        "text": "tell me about the ",
+        "userDefined": false
+      },
+      {
+        "text": "World",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " module",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-027",
+    "data": [
+      {
+        "text": "how does the ",
+        "userDefined": false
+      },
+      {
+        "text": "Tokenizer",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " module work",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-028",
+    "data": [
+      {
+        "text": "describe the ",
+        "userDefined": false
+      },
+      {
+        "text": "Embedder",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " module",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-029",
+    "data": [
+      {
+        "text": "what is the purpose of the ",
+        "userDefined": false
+      },
+      {
+        "text": "CodeGazetteer",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " module",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-030",
+    "data": [
+      {
+        "text": "explain what the ",
+        "userDefined": false
+      },
+      {
+        "text": "ResponseGenerator",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " does",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-031",
+    "data": [
+      {
+        "text": "what does this module do",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-032",
+    "data": [
+      {
+        "text": "what does this class do",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-033",
+    "data": [
+      {
+        "text": "what does this method do",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-034",
+    "data": [
+      {
+        "text": "explain the code in ",
+        "userDefined": false
+      },
+      {
+        "text": "brain.ex",
+        "meta": "@code.file",
+        "alias": "file",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-035",
+    "data": [
+      {
+        "text": "what is ",
+        "userDefined": false
+      },
+      {
+        "text": "Brain.Code.QueryHandler",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-036",
+    "data": [
+      {
+        "text": "what is the ",
+        "userDefined": false
+      },
+      {
+        "text": "Gazetteer",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-037",
+    "data": [
+      {
+        "text": "how does ",
+        "userDefined": false
+      },
+      {
+        "text": "World.DocumentIngestor",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      },
+      {
+        "text": " work",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-038",
+    "data": [
+      {
+        "text": "tell me about ",
+        "userDefined": false
+      },
+      {
+        "text": "Brain.ML.Trainer",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-039",
+    "data": [
+      {
+        "text": "describe ",
+        "userDefined": false
+      },
+      {
+        "text": "Brain.Analysis.Pipeline",
+        "meta": "@code.symbol",
+        "alias": "symbol",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "code-explain-040",
+    "data": [
+      {
+        "text": "what does the codebase do",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  }
+]

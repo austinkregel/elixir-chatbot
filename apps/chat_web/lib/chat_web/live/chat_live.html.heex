@@ -742,6 +742,7 @@
                             <% entity_type = e[:type] || e["type"] || "unknown"
                             entity_value = e[:value] || e["value"] || ""
                             confidence = e[:confidence] || e["confidence"]
+                            source = e[:source] || e["source"]
 
                             confidence_percent =
                               if confidence, do: Float.round(confidence * 100, 1), else: nil
@@ -752,12 +753,26 @@
                                 confidence && confidence >= 0.6 -> :warning
                                 confidence -> :error
                                 true -> :default
-                              end %>
+                              end
+                              
+                            source_label = case source do
+                              :lstm_ner -> "LSTM"
+                              :gazetteer -> "Gaz"
+                              :pos_tagger -> "POS"
+                              :system -> "Sys"
+                              nil -> nil
+                              other -> to_string(other) |> String.slice(0..3)
+                            end %>
                             <div class="flex items-center justify-between p-2 bg-base-200/50 rounded text-xs gap-2">
                               <div class="flex items-center gap-2 flex-1 min-w-0">
                                 <span class="font-mono text-primary">
                                   {entity_type}
                                 </span>
+                                <%= if source_label do %>
+                                  <.badge variant={:info} size={:xs} class="opacity-70">
+                                    {source_label}
+                                  </.badge>
+                                <% end %>
                                 <%= if confidence_percent do %>
                                   <.badge variant={confidence_variant} size={:xs}>
                                     {confidence_percent}%

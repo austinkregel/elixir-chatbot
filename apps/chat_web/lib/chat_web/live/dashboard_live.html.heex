@@ -837,7 +837,110 @@
       </div>
     </section>
     
-<!-- Memory Explorer Quick Access -->
+<!-- Code Analysis Status -->
+    <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+      <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-xl bg-gradient-to-br from-violet-500/20 to-violet-500/5">
+              <.icon name="hero-code-bracket" class="size-5 text-violet-500" />
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-base-content">Code Analysis</h2>
+              <p class="text-xs text-base-content/60">
+                Programming language understanding system
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <.link navigate={~p"/code"} class="btn btn-xs btn-ghost">
+              <.icon name="hero-arrow-right" class="size-3" /> Open
+            </.link>
+            <.badge
+              variant={if @code_analysis_status.ready, do: :success, else: :warning}
+              size={:sm}
+            >
+              <%= if @code_analysis_status.ready do %>
+                <.icon name="hero-check-circle" class="size-3 mr-1" /> Ready
+              <% else %>
+                <.icon name="hero-clock" class="size-3 mr-1" /> Initializing
+              <% end %>
+            </.badge>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <!-- Code Gazetteer -->
+          <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-semibold text-xs text-base-content">Code Gazetteer</span>
+              <.status_dot status={
+                if @code_analysis_status.code_gazetteer.ready, do: :ready, else: :not_started
+              } />
+            </div>
+            <div class="text-[10px] text-base-content/60 space-y-1">
+              <div class="flex justify-between">
+                <span>Symbols</span>
+                <span class="font-mono">{@code_analysis_status.code_gazetteer.stats.total_symbols}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Relations</span>
+                <span class="font-mono">{@code_analysis_status.code_gazetteer.stats.total_relations}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Files</span>
+                <span class="font-mono">{@code_analysis_status.code_gazetteer.stats.total_files}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Language Grammar -->
+          <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-semibold text-xs text-base-content">Language Grammar</span>
+              <.status_dot status={
+                if @code_analysis_status.language_grammar.ready, do: :ready, else: :not_started
+              } />
+            </div>
+            <div class="text-[10px] text-base-content/60 space-y-1">
+              <div class="flex justify-between">
+                <span>Grammars</span>
+                <span class="font-mono">{@code_analysis_status.language_grammar.stats.available_grammars}/{@code_analysis_status.language_grammar.stats.total_grammars}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Supported Languages -->
+          <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 col-span-2">
+            <div class="flex items-center gap-2 mb-2">
+              <.icon name="hero-language" class="size-4 text-violet-500" />
+              <span class="font-semibold text-xs text-base-content">Supported Languages</span>
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <%= for lang <- @code_analysis_status.language_grammar.stats.languages do %>
+                <.badge variant={:default} size={:xs}>
+                  {lang |> to_string() |> String.capitalize()}
+                </.badge>
+              <% end %>
+              <%= if @code_analysis_status.language_grammar.stats.languages == [] do %>
+                <span class="text-[10px] text-base-content/40 italic">No languages loaded</span>
+              <% end %>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-3 text-[10px] text-base-content/50">
+          Analyze code with:
+          <code class="px-1 bg-base-200 rounded">
+            World.DocumentIngestor.ingest_codebase("world_id", "/path/to/project")
+          </code>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Memory Explorer Quick Access -->
     <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
       <div class="p-4 bg-gradient-to-r from-base-100 to-base-200/30">
         <div class="flex items-center justify-between">
@@ -897,10 +1000,10 @@
                       {category_label(category)}
                     </h3>
                     <p class="text-xs text-base-content/50">
-                      {count_running_in_category(@genserver_status.categories, category)} / {count_total_in_category(
+                      {Integer.to_string(count_running_in_category(@genserver_status.categories, category))} / {Integer.to_string(count_total_in_category(
                         @genserver_status.categories,
                         category
-                      )} running
+                      ))} running
                     </p>
                   </div>
                 </div>
@@ -916,7 +1019,7 @@
                       </div>
                     <% end %>
                     <%= if total > 6 do %>
-                      <span class="text-[10px] text-base-content/40">+{total - 6}</span>
+                      <span class="text-[10px] text-base-content/40">+{Integer.to_string(total - 6)}</span>
                     <% end %>
                   </div>
                   <.icon
