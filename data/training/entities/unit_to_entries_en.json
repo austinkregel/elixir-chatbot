@@ -1,0 +1,66 @@
+[
+  {
+    "value": "miles",
+    "synonyms": ["miles", "mile", "mi"]
+  },
+  {
+    "value": "kilometers",
+    "synonyms": ["kilometers", "kilometer", "km", "kilometres"]
+  },
+  {
+    "value": "pounds",
+    "synonyms": ["pounds", "pound", "lb", "lbs"]
+  },
+  {
+    "value": "kilograms",
+    "synonyms": ["kilograms", "kilogram", "kg", "kilos"]
+  },
+  {
+    "value": "Fahrenheit",
+    "synonyms": ["Fahrenheit", "degrees Fahrenheit", "F", "°F"]
+  },
+  {
+    "value": "Celsius",
+    "synonyms": ["Celsius", "degrees Celsius", "C", "°C", "centigrade"]
+  },
+  {
+    "value": "feet",
+    "synonyms": ["feet", "foot", "ft"]
+  },
+  {
+    "value": "meters",
+    "synonyms": ["meters", "meter", "m", "metres"]
+  },
+  {
+    "value": "inches",
+    "synonyms": ["inches", "inch", "in"]
+  },
+  {
+    "value": "centimeters",
+    "synonyms": ["centimeters", "centimeter", "cm", "centimetres"]
+  },
+  {
+    "value": "gallons",
+    "synonyms": ["gallons", "gallon", "gal"]
+  },
+  {
+    "value": "liters",
+    "synonyms": ["liters", "liter", "L", "litres"]
+  },
+  {
+    "value": "ounces",
+    "synonyms": ["ounces", "ounce", "oz"]
+  },
+  {
+    "value": "grams",
+    "synonyms": ["grams", "gram", "g"]
+  },
+  {
+    "value": "mph",
+    "synonyms": ["mph", "miles per hour"]
+  },
+  {
+    "value": "kph",
+    "synonyms": ["kph", "kilometers per hour", "kmh"]
+  }
+]

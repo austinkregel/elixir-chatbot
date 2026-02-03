@@ -78,7 +78,7 @@ defmodule Brain.Knowledge.Academic.Paper do
   @spec to_finding(t()) :: Finding.t() | nil
   def to_finding(%__MODULE__{abstract: nil}), do: nil
 
-  def to_finding(%__MODULE__{abstract: abstract} = paper) when byte_size(abstract) < 50 do
+  def to_finding(%__MODULE__{abstract: abstract}) when byte_size(abstract) < 50 do
     # Abstract too short to be useful
     nil
   end

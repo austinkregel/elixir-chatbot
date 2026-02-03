@@ -8,12 +8,22 @@ defmodule Brain.ML.EntityExtractor do
   - Token-based pattern matching for system entities (dates, numbers)
 
   Avoids regex in favor of tokenizer-based approaches.
+
+  ## Process Lifecycle
+
+  This module runs as a GenServer that starts with the application,
+  ensuring the entity maps are always loaded and the process is always
+  registered. This allows the ops dashboard to correctly report the
+  loaded status.
   """
 
+  use GenServer
   require Logger
 
   alias Brain.ML.{Gazetteer, Tokenizer, EntityTrainer, POSTagger}
+  alias Brain.ML.LSTM.UnifiedModel
   alias Brain.Analysis.{EntityDisambiguator, IntentRegistry}
+  alias Brain.Telemetry
 
   @type entity_match :: %{
           entity: String.t(),
@@ -68,57 +78,139 @@ defmodule Brain.ML.EntityExtractor do
   end
 
   # ============================================================================
+  # GenServer Callbacks
+  # ============================================================================
+
+  @doc """
+  Starts the entity extractor GenServer.
+
+  ## Options
+    - `:name` - The name to register the GenServer under (default: `#{__MODULE__}`)
+  """
+  def start_link(opts \\ []) do
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
+  end
+
+  @impl true
+  def init(_opts) do
+    # Load entity maps asynchronously to avoid blocking startup
+    send(self(), :load_entity_maps)
+
+    {:ok, %{entity_maps: %{}, loaded: false, loading: true}}
+  end
+
+  @impl true
+  def handle_info(:load_entity_maps, state) do
+    entity_maps = do_load_entity_maps()
+    
+    Logger.info("EntityExtractor: Entity maps loaded", %{
+      entities_count: map_size(entity_maps)
+    })
+
+    {:noreply, %{state | entity_maps: entity_maps, loaded: true, loading: false}}
+  end
+
+  @impl true
+  def handle_call(:get_entity_maps, _from, state) do
+    {:reply, state.entity_maps, state}
+  end
+
+  @impl true
+  def handle_call(:is_loaded?, _from, state) do
+    {:reply, state.loaded, state}
+  end
+
+  @impl true
+  def handle_call(:get_status, _from, state) do
+    status = %{
+      loaded: state.loaded,
+      loading: state.loading,
+      entities_count: map_size(state.entity_maps)
+    }
+    {:reply, status, state}
+  end
+
+  @impl true
+  def handle_call({:reload}, _from, state) do
+    entity_maps = do_load_entity_maps()
+    
+    Logger.info("EntityExtractor: Entity maps reloaded", %{
+      entities_count: map_size(entity_maps)
+    })
+
+    {:reply, {:ok, entity_maps}, %{state | entity_maps: entity_maps, loaded: true, loading: false}}
+  end
+
+  # ============================================================================
   # Client API
   # ============================================================================
 
   @doc """
+  Returns true if entity maps are loaded.
+  """
+  def is_loaded?(opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    
+    try do
+      GenServer.call(server, :is_loaded?, 100)
+    catch
+      :exit, _ -> false
+    end
+  end
+
+  @doc """
+  Returns the current status of the entity extractor.
+  """
+  def get_status(opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    
+    try do
+      GenServer.call(server, :get_status, 100)
+    catch
+      :exit, _ -> %{loaded: false, loading: false, entities_count: 0}
+    end
+  end
+
+  @doc """
   Load entity maps from saved gazetteer or build fresh.
   Returns {:ok, maps} or {:error, reason}.
+  
+  Note: With the GenServer implementation, entity maps are loaded automatically
+  on startup. This function now reloads the maps if called explicitly.
   """
-  def load_entity_maps do
-    # Try to load from saved gazetteer file
+  def load_entity_maps(opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    
+    try do
+      GenServer.call(server, {:reload}, 30_000)
+    catch
+      :exit, _ -> 
+        # Fallback to direct loading if GenServer not available
+        {:ok, do_load_entity_maps()}
+    end
+  end
+
+  # Internal function to load entity maps (used by GenServer)
+  defp do_load_entity_maps do
     models_path = Application.get_env(:brain, :ml)[:models_path]
-    gazetteer_path = Path.join(models_path, "gazetteer.term")
+    gazetteer_path = Path.join(models_path || Brain.priv_path("ml_models"), "gazetteer.term")
 
     case File.read(gazetteer_path) do
       {:ok, binary} ->
         try do
-          entity_maps = :erlang.binary_to_term(binary)
-
-          # Store in Agent for fast access
-          case start_agent(entity_maps) do
-            {:ok, _} -> {:ok, entity_maps}
-            {:error, reason} -> {:error, reason}
-          end
+          :erlang.binary_to_term(binary)
         rescue
           e ->
             Logger.warning("Failed to load gazetteer, falling back to legacy", %{
               error: inspect(e)
             })
-
-            load_entity_maps_legacy()
+            do_load_entity_maps_legacy()
         end
 
       {:error, _} ->
         # Fall back to legacy loading
-        load_entity_maps_legacy()
-    end
-  end
-
-  defp start_agent(entity_maps) do
-    case Agent.start_link(fn -> entity_maps end, name: __MODULE__) do
-      {:ok, pid} ->
-        Logger.info("Entity maps loaded successfully", %{entities_count: map_size(entity_maps)})
-        {:ok, pid}
-
-      {:error, {:already_started, _pid}} ->
-        # Update existing agent
-        Agent.update(__MODULE__, fn _ -> entity_maps end)
-        {:ok, :updated}
-
-      {:error, reason} ->
-        Logger.error("Failed to start Agent", %{reason: reason})
-        {:error, reason}
+        do_load_entity_maps_legacy()
     end
   end
 
@@ -126,44 +218,42 @@ defmodule Brain.ML.EntityExtractor do
   Legacy entity loading (for backward compatibility).
   """
   def load_entity_maps_legacy do
+    {:ok, do_load_entity_maps_legacy()}
+  end
+
+  defp do_load_entity_maps_legacy do
     base_path = Application.get_env(:brain, :ml)[:training_data_path]
-    entities_dir = Path.join(base_path, "entities")
+    entities_dir = Path.join(base_path || "data", "entities")
 
-    dir_maps =
-      case File.ls(entities_dir) do
-        {:ok, files} ->
-          Enum.reduce(files, %{}, fn file, acc ->
-            if String.ends_with?(file, ".json") do
-              file_path = Path.join(entities_dir, file)
+    case File.ls(entities_dir) do
+      {:ok, files} ->
+        Enum.reduce(files, %{}, fn file, acc ->
+          if String.ends_with?(file, ".json") do
+            file_path = Path.join(entities_dir, file)
 
-              case File.read(file_path) do
-                {:ok, content} ->
-                  case Jason.decode(content) do
-                    {:ok, %{"entries" => entries}} when is_list(entries) ->
-                      merge_entries_map(acc, base_name(file), entries)
+            case File.read(file_path) do
+              {:ok, content} ->
+                case Jason.decode(content) do
+                  {:ok, %{"entries" => entries}} when is_list(entries) ->
+                    merge_entries_map(acc, base_name(file), entries)
 
-                    {:ok, list} when is_list(list) ->
-                      merge_entries_map(acc, base_name(file), list)
+                  {:ok, list} when is_list(list) ->
+                    merge_entries_map(acc, base_name(file), list)
 
-                    _ ->
-                      acc
-                  end
+                  _ ->
+                    acc
+                end
 
-                _ ->
-                  acc
-              end
-            else
-              acc
+              _ ->
+                acc
             end
-          end)
+          else
+            acc
+          end
+        end)
 
-        _ ->
-          %{}
-      end
-
-    case start_agent(dir_maps) do
-      {:ok, _} -> {:ok, dir_maps}
-      {:error, reason} -> {:error, reason}
+      _ ->
+        %{}
     end
   end
 
@@ -199,11 +289,13 @@ defmodule Brain.ML.EntityExtractor do
   defp base_name(file), do: file |> String.replace_suffix(".json", "")
 
   @doc """
-  Get entity maps from Agent or load fresh.
+  Get entity maps from GenServer.
   """
-  def get_entity_maps do
+  def get_entity_maps(opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    
     try do
-      Agent.get(__MODULE__, & &1)
+      GenServer.call(server, :get_entity_maps, 100)
     rescue
       _e ->
         load_entity_maps_fallback()
@@ -214,10 +306,8 @@ defmodule Brain.ML.EntityExtractor do
   end
 
   defp load_entity_maps_fallback do
-    case load_entity_maps() do
-      {:ok, maps} -> maps
-      {:error, _} -> %{}
-    end
+    # Direct load without GenServer
+    do_load_entity_maps()
   end
 
   @doc """
@@ -235,6 +325,21 @@ defmodule Brain.ML.EntityExtractor do
   def extract_entities(text, opts \\ [])
 
   def extract_entities(text, opts) when is_list(opts) do
+    Telemetry.span(:entity_extract, %{text_length: String.length(text || "")}, fn ->
+      do_extract_entities(text, opts)
+    end)
+  end
+
+  # Legacy support: entity_maps passed directly
+  def extract_entities(text, entity_maps) when is_map(entity_maps) do
+    extract_entities(text, entity_maps: entity_maps)
+  end
+
+  def extract_entities(text, nil) do
+    extract_entities(text, [])
+  end
+
+  defp do_extract_entities(text, opts) do
     entity_maps = Keyword.get(opts, :entity_maps) || get_entity_maps()
     discourse = Keyword.get(opts, :discourse)
     speech_act = Keyword.get(opts, :speech_act)
@@ -253,8 +358,11 @@ defmodule Brain.ML.EntityExtractor do
     # Extract location hints from context
     location_entities = extract_location_hints(tokens, entity_maps)
 
+    # Extract proper noun hints using POS tagger (novel names, etc.)
+    proper_noun_entities = extract_proper_noun_hints(tokens, entity_maps)
+
     # Combine and resolve conflicts
-    all_entities = gazetteer_entities ++ system_entities ++ location_entities
+    all_entities = gazetteer_entities ++ system_entities ++ location_entities ++ proper_noun_entities
     resolved_entities = resolve_entity_conflicts(all_entities)
 
     # Disambiguate entities with multiple types if context is available
@@ -269,15 +377,6 @@ defmodule Brain.ML.EntityExtractor do
     # Filter out entities below confidence threshold
     min_confidence = Keyword.get(opts, :min_confidence) || get_min_confidence_threshold()
     filter_by_confidence(disambiguated_entities, min_confidence)
-  end
-
-  # Legacy support: entity_maps passed directly
-  def extract_entities(text, entity_maps) when is_map(entity_maps) do
-    extract_entities(text, entity_maps: entity_maps)
-  end
-
-  def extract_entities(text, nil) do
-    extract_entities(text, [])
   end
 
   # Get minimum confidence threshold from application config
@@ -700,6 +799,161 @@ defmodule Brain.ML.EntityExtractor do
     else
       []
     end
+  end
+
+  # ============================================================================
+  # Proper Noun Extraction (using LSTM NER or POS Tagger fallback)
+  # ============================================================================
+
+  @doc """
+  Extract proper nouns that aren't in the gazetteer using the LSTM NER model.
+  
+  This handles novel names like "Ephbaum" that the gazetteer doesn't know about.
+  The LSTM NER model is trained to recognize named entities based on context,
+  falling back to POS tagger if LSTM is not available.
+  """
+  defp extract_proper_noun_hints(tokens, entity_maps) do
+    # Try LSTM NER first (more accurate, context-aware)
+    case extract_with_lstm_ner(tokens, entity_maps) do
+      {:ok, entities} when entities != [] ->
+        entities
+        
+      _ ->
+        # Fall back to POS tagger
+        extract_with_pos_tagger(tokens, entity_maps)
+    end
+  end
+
+  # Extract entities using LSTM NER model
+  defp extract_with_lstm_ner(tokens, entity_maps) do
+    if UnifiedModel.ready?() do
+      # Reconstruct text from tokens for LSTM
+      text = Enum.map(tokens, & &1.text) |> Enum.join(" ")
+      
+      result = try do
+        UnifiedModel.extract_entities(text)
+      catch
+        :exit, _ -> {:error, :lstm_call_failed}
+        _, _ -> {:error, :lstm_exception}
+      end
+      
+      case result do
+        {:ok, lstm_entities} when is_list(lstm_entities) ->
+          # Filter out entities already in gazetteer and convert format
+          filtered = 
+            lstm_entities
+            |> Enum.filter(fn e -> 
+              value = Map.get(e, :value) || Map.get(e, "value", "")
+              not in_gazetteer?(value, entity_maps)
+            end)
+            |> Enum.map(fn e ->
+              value = Map.get(e, :value) || Map.get(e, "value", "")
+              entity_type = Map.get(e, :type) || Map.get(e, :entity_type) || Map.get(e, "type", "person")
+              confidence = Map.get(e, :confidence) || Map.get(e, "confidence", 0.7)
+              
+              # Find token positions for this entity
+              {start_pos, end_pos} = find_entity_positions(tokens, value)
+              
+              %{
+                entity_type: normalize_lstm_entity_type(entity_type),
+                value: value,
+                match: value,
+                start_pos: start_pos,
+                end_pos: end_pos,
+                confidence: confidence,
+                source: :lstm_ner
+              }
+            end)
+            
+          {:ok, filtered}
+          
+        _ ->
+          {:error, :no_entities}
+      end
+    else
+      {:error, :lstm_not_ready}
+    end
+  end
+  
+  # Normalize LSTM entity types to our standard types
+  defp normalize_lstm_entity_type(type) when is_binary(type) do
+    case String.downcase(type) do
+      "per" -> "person"
+      "person" -> "person"
+      "loc" -> "location"
+      "location" -> "location"
+      "org" -> "organization"
+      "organization" -> "organization"
+      "gpe" -> "location"  # Geo-Political Entity
+      "date" -> "date"
+      "time" -> "time"
+      _ -> type
+    end
+  end
+  defp normalize_lstm_entity_type(type), do: to_string(type)
+  
+  # Find start/end positions of an entity value in the token list
+  defp find_entity_positions(tokens, value) do
+    # Simple approach: find first token that matches the start of the value
+    value_lower = String.downcase(value)
+    value_tokens = String.split(value)
+    
+    case Enum.find_index(tokens, fn t -> 
+      String.downcase(t.text) == String.downcase(List.first(value_tokens) || "")
+    end) do
+      nil -> 
+        {0, String.length(value)}
+      idx ->
+        start_token = Enum.at(tokens, idx)
+        # For multi-word entities, find the end token
+        end_idx = idx + length(value_tokens) - 1
+        end_token = Enum.at(tokens, end_idx) || start_token
+        {start_token.start_pos, end_token.end_pos}
+    end
+  end
+  
+  # Fall back to POS tagger for proper noun extraction
+  defp extract_with_pos_tagger(tokens, entity_maps) do
+    case POSTagger.load_model() do
+      {:ok, model} ->
+        token_texts = Enum.map(tokens, & &1.text)
+        predictions = POSTagger.predict(token_texts, model)
+        
+        # Find tokens tagged as PROPN that aren't already in gazetteer
+        predictions
+        |> Enum.with_index()
+        |> Enum.flat_map(fn {{word, tag}, idx} ->
+          if tag == "PROPN" and not in_gazetteer?(word, entity_maps) do
+            token = Enum.at(tokens, idx)
+            
+            # Only include if capitalized (proper noun characteristic)
+            if capitalized?(word) do
+              [%{
+                entity_type: "person",
+                value: word,
+                match: word,
+                start_pos: token.start_pos,
+                end_pos: token.end_pos,
+                confidence: 0.65,
+                source: :pos_tagger_propn
+              }]
+            else
+              []
+            end
+          else
+            []
+          end
+        end)
+
+      {:error, _} ->
+        []
+    end
+  end
+
+  # Check if a word is already in the gazetteer (avoid duplicates)
+  defp in_gazetteer?(word, entity_maps) do
+    normalized = String.downcase(word)
+    Map.has_key?(entity_maps, normalized) or Gazetteer.lookup(normalized) != :not_found
   end
 
   # ============================================================================

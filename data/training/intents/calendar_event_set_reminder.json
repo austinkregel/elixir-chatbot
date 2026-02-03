@@ -1,0 +1,1812 @@
+[
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "dentist appointment",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "dentist",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "appointment",
+        "type": "event_title"
+      }
+    ],
+    "id": "b5e85e38-1f9c-4819-839c-003da5bc8442",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "add a reminder for dentist appointment",
+    "tokens": [
+      "add",
+      "a",
+      "reminder",
+      "for",
+      "dentist",
+      "appointment"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "3a66e300-8c95-4892-9092-f24c9072e599",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "add a reminder for meeting",
+    "tokens": [
+      "add",
+      "a",
+      "reminder",
+      "for",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "interview",
+        "type": "event_title"
+      }
+    ],
+    "id": "379e1891-d17e-453b-8b85-4a638244da83",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "add a reminder for interview",
+    "tokens": [
+      "add",
+      "a",
+      "reminder",
+      "for",
+      "interview"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "lunch",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 5,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "aaca4b3c-7efe-42ee-8482-433abece17cf",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NUM",
+      "NOUN",
+      "ADP"
+    ],
+    "text": "set a reminder for lunch 15 minutes before",
+    "tokens": [
+      "set",
+      "a",
+      "reminder",
+      "for",
+      "lunch",
+      "15",
+      "minutes",
+      "before"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "presentation",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 5,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "b15483de-c114-4291-a385-a9049d25d17b",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NUM",
+      "NOUN",
+      "ADP"
+    ],
+    "text": "set a reminder for presentation 15 minutes before",
+    "tokens": [
+      "set",
+      "a",
+      "reminder",
+      "for",
+      "presentation",
+      "15",
+      "minutes",
+      "before"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "workout",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "1 hour",
+        "type": "duration"
+      }
+    ],
+    "id": "30697080-3583-4136-b715-3a696e36799c",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "NUM",
+      "NOUN",
+      "ADP"
+    ],
+    "text": "remind me about workout 1 hour before",
+    "tokens": [
+      "remind",
+      "me",
+      "about",
+      "workout",
+      "1",
+      "hour",
+      "before"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "lunch",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "e4bb1bbe-ef61-4170-b52b-39420952398d",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "NUM",
+      "NOUN",
+      "ADP"
+    ],
+    "text": "remind me about lunch 2 hours before",
+    "tokens": [
+      "remind",
+      "me",
+      "about",
+      "lunch",
+      "2",
+      "hours",
+      "before"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "conference call",
+        "type": "event_title"
+      },
+      {
+        "end": 3,
+        "start": 3,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 5,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "897905bc-63ec-4fd2-b072-d992b5d379a2",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "VERB",
+      "NUM",
+      "NOUN",
+      "ADP"
+    ],
+    "text": "remind me about conference call 15 minutes before",
+    "tokens": [
+      "remind",
+      "me",
+      "about",
+      "conference",
+      "call",
+      "15",
+      "minutes",
+      "before"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "presentation",
+        "type": "event_title"
+      },
+      {
+        "end": 3,
+        "start": 2,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "b87a0915-ccb7-4e19-b497-848eea70f8ba",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "add a 2 hours reminder to presentation",
+    "tokens": [
+      "add",
+      "a",
+      "2",
+      "hours",
+      "reminder",
+      "to",
+      "presentation"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 3,
+        "start": 2,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "94c229c3-adc5-438e-b010-e4ea3edb5a26",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "add a 2 hours reminder to meeting",
+    "tokens": [
+      "add",
+      "a",
+      "2",
+      "hours",
+      "reminder",
+      "to",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "interview",
+        "type": "event_title"
+      },
+      {
+        "end": 3,
+        "start": 2,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "13394a99-a771-416b-b49d-0177de042ae9",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "add a 2 hours reminder to interview",
+    "tokens": [
+      "add",
+      "a",
+      "2",
+      "hours",
+      "reminder",
+      "to",
+      "interview"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "dentist appointment",
+        "type": "event_title"
+      },
+      {
+        "end": 3,
+        "start": 3,
+        "text": "dentist",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "appointment",
+        "type": "event_title"
+      }
+    ],
+    "id": "c472589f-2cbf-4036-a125-b6a559aa1849",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set reminder for dentist appointment",
+    "tokens": [
+      "set",
+      "reminder",
+      "for",
+      "dentist",
+      "appointment"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "conference call",
+        "type": "event_title"
+      },
+      {
+        "end": 3,
+        "start": 3,
+        "text": "conference",
+        "type": "event_title"
+      }
+    ],
+    "id": "92c4d75f-ceff-4c70-a5d1-33416c218959",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "set reminder for conference call",
+    "tokens": [
+      "set",
+      "reminder",
+      "for",
+      "conference",
+      "call"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "lunch",
+        "type": "event_title"
+      }
+    ],
+    "id": "769a12ff-7be4-4430-b124-eccc18cb3a6a",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set reminder for lunch",
+    "tokens": [
+      "set",
+      "reminder",
+      "for",
+      "lunch"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "standup",
+        "type": "event_title"
+      }
+    ],
+    "id": "e9af72ad-8fd7-4bf4-99dc-42fad3e425fe",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "I want a reminder for standup",
+    "tokens": [
+      "i",
+      "want",
+      "a",
+      "reminder",
+      "for",
+      "standup"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "presentation",
+        "type": "event_title"
+      }
+    ],
+    "id": "41bea118-331b-4664-8379-c7b9cf26305c",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "I want a reminder for presentation",
+    "tokens": [
+      "i",
+      "want",
+      "a",
+      "reminder",
+      "for",
+      "presentation"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "lunch",
+        "type": "event_title"
+      }
+    ],
+    "id": "f10055e8-0e05-4b46-b797-4814bea30a90",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "I want a reminder for lunch",
+    "tokens": [
+      "i",
+      "want",
+      "a",
+      "reminder",
+      "for",
+      "lunch"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "interview",
+        "type": "event_title"
+      },
+      {
+        "end": 3,
+        "start": 2,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "86f94f93-e0db-4419-911b-417148e70eb4",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "notify me 30 minutes before interview",
+    "tokens": [
+      "notify",
+      "me",
+      "30",
+      "minutes",
+      "before",
+      "interview"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "workout",
+        "type": "event_title"
+      },
+      {
+        "end": 3,
+        "start": 2,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "e77edfed-d7ea-42e7-acc2-9d6f3a43d1d6",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "notify me 30 minutes before workout",
+    "tokens": [
+      "notify",
+      "me",
+      "30",
+      "minutes",
+      "before",
+      "workout"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "6676786b-80bf-4276-b57c-b03f3bd84b48",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "add notification for meeting",
+    "tokens": [
+      "add",
+      "notification",
+      "for",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "standup",
+        "type": "event_title"
+      }
+    ],
+    "id": "789ca388-7c4b-408b-b90f-97fde4756ec4",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "add notification for standup",
+    "tokens": [
+      "add",
+      "notification",
+      "for",
+      "standup"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "standup",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "1 hour",
+        "type": "duration"
+      }
+    ],
+    "id": "c634b08e-9751-498d-9e9c-976cb5db8fca",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "alert me about standup 1 hour ahead",
+    "tokens": [
+      "alert",
+      "me",
+      "about",
+      "standup",
+      "1",
+      "hour",
+      "ahead"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "interview",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "e8aafe8f-56bc-40d8-a51b-827ff99d5ba0",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "alert me about interview 30 minutes ahead",
+    "tokens": [
+      "alert",
+      "me",
+      "about",
+      "interview",
+      "30",
+      "minutes",
+      "ahead"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "9c290249-4c40-4adf-923e-70a8bf516cdd",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "alert me about meeting 2 hours ahead",
+    "tokens": [
+      "alert",
+      "me",
+      "about",
+      "meeting",
+      "2",
+      "hours",
+      "ahead"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "workout",
+        "type": "event_title"
+      }
+    ],
+    "id": "7c87f357-2276-4b03-bb30-fe708ec13256",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set up a reminder for workout",
+    "tokens": [
+      "set",
+      "up",
+      "a",
+      "reminder",
+      "for",
+      "workout"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "interview",
+        "type": "event_title"
+      }
+    ],
+    "id": "43f852d0-4127-4b10-925a-18eab956ca78",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set up a reminder for interview",
+    "tokens": [
+      "set",
+      "up",
+      "a",
+      "reminder",
+      "for",
+      "interview"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "conference call",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 3,
+        "start": 2,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "44a736fd-132e-48f4-8d81-84ab41518cba",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "remind me 15 minutes before conference call",
+    "tokens": [
+      "remind",
+      "me",
+      "15",
+      "minutes",
+      "before",
+      "conference",
+      "call"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 3,
+        "start": 2,
+        "text": "1 hour",
+        "type": "duration"
+      }
+    ],
+    "id": "dc8a0143-8f42-4104-8f96-7f8ea04d221c",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me 1 hour before meeting",
+    "tokens": [
+      "remind",
+      "me",
+      "1",
+      "hour",
+      "before",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "lunch",
+        "type": "event_title"
+      },
+      {
+        "end": 3,
+        "start": 2,
+        "text": "1 hour",
+        "type": "duration"
+      }
+    ],
+    "id": "f22ca4e6-ac6a-461f-a17b-b1af8618aa5a",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me 1 hour before lunch",
+    "tokens": [
+      "remind",
+      "me",
+      "1",
+      "hour",
+      "before",
+      "lunch"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "workout",
+        "type": "event_title"
+      }
+    ],
+    "id": "757179b5-6239-42f5-98f1-a308fa52e87c",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "add a heads up for workout",
+    "tokens": [
+      "add",
+      "a",
+      "heads",
+      "up",
+      "for",
+      "workout"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "lunch",
+        "type": "event_title"
+      }
+    ],
+    "id": "54764339-d03b-4ec9-bddd-2619f4c8daeb",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "add a heads up for lunch",
+    "tokens": [
+      "add",
+      "a",
+      "heads",
+      "up",
+      "for",
+      "lunch"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "workout",
+        "type": "event_title"
+      }
+    ],
+    "id": "fc79117d-a3a2-4bd9-a7ac-6cac321bbc5e",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set an alert for workout",
+    "tokens": [
+      "set",
+      "an",
+      "alert",
+      "for",
+      "workout"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "dentist appointment",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "dentist",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "appointment",
+        "type": "event_title"
+      }
+    ],
+    "id": "0d32a4ff-6a45-4e70-a932-605a1c258a96",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set an alert for dentist appointment",
+    "tokens": [
+      "set",
+      "an",
+      "alert",
+      "for",
+      "dentist",
+      "appointment"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "interview",
+        "type": "event_title"
+      }
+    ],
+    "id": "e543a4e2-569a-4312-ad94-094532fdfab6",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set an alert for interview",
+    "tokens": [
+      "set",
+      "an",
+      "alert",
+      "for",
+      "interview"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "lunch",
+        "type": "event_title"
+      }
+    ],
+    "id": "2e2858ba-e284-457e-b6f4-fc126d7d4a71",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "give me a reminder for lunch",
+    "tokens": [
+      "give",
+      "me",
+      "a",
+      "reminder",
+      "for",
+      "lunch"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "dentist appointment",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "dentist",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "appointment",
+        "type": "event_title"
+      }
+    ],
+    "id": "6e0a4aa8-49ec-4046-8f3a-89f1f094c7f4",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "give me a reminder for dentist appointment",
+    "tokens": [
+      "give",
+      "me",
+      "a",
+      "reminder",
+      "for",
+      "dentist",
+      "appointment"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "presentation",
+        "type": "event_title"
+      }
+    ],
+    "id": "672f2558-58e4-41ff-a536-fc4e0ba40c0e",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "give me a reminder for presentation",
+    "tokens": [
+      "give",
+      "me",
+      "a",
+      "reminder",
+      "for",
+      "presentation"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "presentation",
+        "type": "event_title"
+      }
+    ],
+    "id": "2e3fc5f4-7f45-4684-816f-1a2b12f49ffd",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "remind me about the presentation",
+    "tokens": [
+      "remind",
+      "me",
+      "about",
+      "the",
+      "presentation"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "1c739f41-28d4-495b-9293-04c237a25a78",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "remind me about the meeting",
+    "tokens": [
+      "remind",
+      "me",
+      "about",
+      "the",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "standup",
+        "type": "event_title"
+      }
+    ],
+    "id": "05ebb9a4-171a-473c-9f73-019545c056fd",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "remind me about the standup",
+    "tokens": [
+      "remind",
+      "me",
+      "about",
+      "the",
+      "standup"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 6,
+        "text": "dentist appointment",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "dentist",
+        "type": "event_title"
+      },
+      {
+        "end": 7,
+        "start": 7,
+        "text": "appointment",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 1,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "1d9a7ebe-c3f4-446e-9c43-61a7c8bf4f5d",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "NUM",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "add 30 minutes advance notice for dentist appointment",
+    "tokens": [
+      "add",
+      "30",
+      "minutes",
+      "advance",
+      "notice",
+      "for",
+      "dentist",
+      "appointment"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 6,
+        "text": "conference call",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 1,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "40bc76fe-6cb6-4b4c-b727-afcb8674027d",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "NUM",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "add 15 minutes advance notice for conference call",
+    "tokens": [
+      "add",
+      "15",
+      "minutes",
+      "advance",
+      "notice",
+      "for",
+      "conference",
+      "call"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "standup",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 1,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "87ccf118-98ac-44a4-9fb4-4ec11c7a4042",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "NUM",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "add 2 hours advance notice for standup",
+    "tokens": [
+      "add",
+      "2",
+      "hours",
+      "advance",
+      "notice",
+      "for",
+      "standup"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "presentation",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 3,
+        "text": "1 hour",
+        "type": "duration"
+      }
+    ],
+    "id": "c036e401-f3bc-4fd8-9b86-0783017efd8a",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set a notification 1 hour before presentation",
+    "tokens": [
+      "set",
+      "a",
+      "notification",
+      "1",
+      "hour",
+      "before",
+      "presentation"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 6,
+        "text": "dentist appointment",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "dentist",
+        "type": "event_title"
+      },
+      {
+        "end": 7,
+        "start": 7,
+        "text": "appointment",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 3,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "dc9eae3a-ae27-4994-85f3-ca8c3c993b10",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set a notification 30 minutes before dentist appointment",
+    "tokens": [
+      "set",
+      "a",
+      "notification",
+      "30",
+      "minutes",
+      "before",
+      "dentist",
+      "appointment"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "presentation",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 3,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "c732d540-c6e3-4d9c-9461-9aee0afb8239",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set a notification 15 minutes before presentation",
+    "tokens": [
+      "set",
+      "a",
+      "notification",
+      "15",
+      "minutes",
+      "before",
+      "presentation"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "presentation",
+        "type": "event_title"
+      }
+    ],
+    "id": "cf582237-8540-4544-99b5-9f682df41008",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "create a reminder for presentation",
+    "tokens": [
+      "create",
+      "a",
+      "reminder",
+      "for",
+      "presentation"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "standup",
+        "type": "event_title"
+      }
+    ],
+    "id": "119bb8a4-059e-4144-a41c-77488c624f90",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "create a reminder for standup",
+    "tokens": [
+      "create",
+      "a",
+      "reminder",
+      "for",
+      "standup"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "ef0568f0-131b-4d96-949c-e1b34f6a9d57",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "CONJ",
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remind me when meeting is coming up",
+    "tokens": [
+      "remind",
+      "me",
+      "when",
+      "meeting",
+      "is",
+      "coming",
+      "up"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "presentation",
+        "type": "event_title"
+      }
+    ],
+    "id": "afd3ec81-ac66-492f-bfbe-1da660118d3d",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "CONJ",
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remind me when presentation is coming up",
+    "tokens": [
+      "remind",
+      "me",
+      "when",
+      "presentation",
+      "is",
+      "coming",
+      "up"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "workout",
+        "type": "event_title"
+      }
+    ],
+    "id": "7889c644-7279-47a7-af58-114157b22939",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "CONJ",
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remind me when workout is coming up",
+    "tokens": [
+      "remind",
+      "me",
+      "when",
+      "workout",
+      "is",
+      "coming",
+      "up"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "interview",
+        "type": "event_title"
+      }
+    ],
+    "id": "eb78b1c7-05cb-48fe-8c72-be8d73e29ea9",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "add advance warning for interview",
+    "tokens": [
+      "add",
+      "advance",
+      "warning",
+      "for",
+      "interview"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "d1489628-9b67-4dca-96db-97387e335c29",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "add advance warning for meeting",
+    "tokens": [
+      "add",
+      "advance",
+      "warning",
+      "for",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "presentation",
+        "type": "event_title"
+      }
+    ],
+    "id": "3eee2db1-4c6a-4ea7-9f13-63d37cf0d427",
+    "intent": "calendar.event.set_reminder",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "add advance warning for presentation",
+    "tokens": [
+      "add",
+      "advance",
+      "warning",
+      "for",
+      "presentation"
+    ]
+  }
+]

@@ -1,0 +1,316 @@
+[
+  {
+    "entities": [],
+    "id": "d2266c50-79ca-449e-9f9b-23a7d70cd68c",
+    "intent": "todo.complete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "mark {task_content} as done",
+    "tokens": [
+      "mark",
+      "task_content",
+      "as",
+      "done"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "03650101-6b64-4a8a-95a7-9a8041495291",
+    "intent": "todo.complete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "complete {task_content}",
+    "tokens": [
+      "complete",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3ce1fedf-0153-4d50-8759-4f37de6bab55",
+    "intent": "todo.complete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "check off {task_content}",
+    "tokens": [
+      "check",
+      "off",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0f7bfa27-1eee-428a-b055-481d47a8bdd0",
+    "intent": "todo.complete",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "I finished {task_content}",
+    "tokens": [
+      "i",
+      "finished",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a6fb9062-e3ba-4569-8663-53078ed31404",
+    "intent": "todo.complete",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "done with {task_content}",
+    "tokens": [
+      "done",
+      "with",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7b11852a-b821-4e31-ad81-ec1fd4c4c64e",
+    "intent": "todo.complete",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN"
+    ],
+    "text": "{task_content} is done",
+    "tokens": [
+      "task_content",
+      "is",
+      "done"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1e5b4d2b-ce95-40f1-a050-775766a606f1",
+    "intent": "todo.complete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "mark {task_content} complete",
+    "tokens": [
+      "mark",
+      "task_content",
+      "complete"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1fda7d97-5797-4857-b162-e2c4f0ec9d75",
+    "intent": "todo.complete",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "I completed {task_content}",
+    "tokens": [
+      "i",
+      "completed",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ed67e08a-7587-417f-9c97-a399bbe0e0a1",
+    "intent": "todo.complete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "finish {task_content}",
+    "tokens": [
+      "finish",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "95ccb383-7606-446d-a2df-04ff17e121ba",
+    "intent": "todo.complete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "tick off {task_content}",
+    "tokens": [
+      "tick",
+      "off",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b9f0fa58-842b-40fd-81b2-b3aa0d4e57f7",
+    "intent": "todo.complete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "complete task {task_content}",
+    "tokens": [
+      "complete",
+      "task",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "25c2352c-7475-47f1-82b1-c240d77ea4c3",
+    "intent": "todo.complete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "{task_content} completed",
+    "tokens": [
+      "task_content",
+      "completed"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f97a393f-53fd-40c8-9bc7-567a118e0af9",
+    "intent": "todo.complete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "mark {task_content} as complete",
+    "tokens": [
+      "mark",
+      "task_content",
+      "as",
+      "complete"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "232c7d8d-4447-48ef-8381-af2d5d6ffaeb",
+    "intent": "todo.complete",
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "NOUN"
+    ],
+    "text": "I did {task_content}",
+    "tokens": [
+      "i",
+      "did",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3d441fb0-7eec-4ba1-9439-a14509af4b37",
+    "intent": "todo.complete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "check {task_content} off",
+    "tokens": [
+      "check",
+      "task_content",
+      "off"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8b5ec070-012a-4df6-9ae4-91b97ccfa8cb",
+    "intent": "todo.complete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "done {task_content}",
+    "tokens": [
+      "done",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "65a47443-30e3-493d-bd96-e0990f7ac322",
+    "intent": "todo.complete",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN"
+    ],
+    "text": "{task_content} is finished",
+    "tokens": [
+      "task_content",
+      "is",
+      "finished"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "188e86d7-4253-4913-af30-73e5ebba11ae",
+    "intent": "todo.complete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "mark done {task_content}",
+    "tokens": [
+      "mark",
+      "done",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ba9b2376-7fbb-4a22-9998-1872a62a42ad",
+    "intent": "todo.complete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "completed {task_content}",
+    "tokens": [
+      "completed",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "698d5f60-9d29-4610-84a4-74c3d81a01f2",
+    "intent": "todo.complete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "finish task {task_content}",
+    "tokens": [
+      "finish",
+      "task",
+      "task_content"
+    ]
+  }
+]

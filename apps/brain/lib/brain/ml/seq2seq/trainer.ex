@@ -132,8 +132,9 @@ defmodule Brain.ML.Seq2Seq.Trainer do
     {hid_init_fn, _hid_predict_fn} = Axon.build(hidden_model, compiler: EXLA)
     
     # Create template inputs for initialization
+    # NOTE: Encoder uses "input", Decoder uses "decoder_input", "encoder_outputs", "decoder_hidden"
     template = %{
-      "encoder_input" => Nx.template({1, 10}, :s64),
+      "input" => Nx.template({1, 10}, :s64),
       "decoder_input" => Nx.template({1, 10}, :s64),
       "encoder_outputs" => Nx.template({1, 10, 512}, :f32),
       "decoder_hidden" => Nx.template({1, 512}, :f32)
@@ -244,7 +245,8 @@ defmodule Brain.ML.Seq2Seq.Trainer do
               batch_target = Nx.take(target_tensor, Nx.tensor(batch_indices))
               
               # Forward pass through encoder
-              enc_inputs = %{"encoder_input" => batch_source}
+              # NOTE: Encoder uses "input" as the input name
+              enc_inputs = %{"input" => batch_source}
               encoder_outputs = enc_out_predict.(ep, enc_inputs)
               encoder_hidden = enc_hid_predict.(ep, enc_inputs)
               

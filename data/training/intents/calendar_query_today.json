@@ -1,0 +1,452 @@
+[
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "today",
+        "type": "date_time"
+      }
+    ],
+    "id": "7bfe6b94-e974-4bd8-8048-13fb47348df4",
+    "intent": "calendar.query.today",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's on my calendar today",
+    "tokens": [
+      "what's",
+      "on",
+      "my",
+      "calendar",
+      "today"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "today",
+        "type": "date_time"
+      }
+    ],
+    "id": "113d32cc-04bf-4616-be03-67b038ea31e6",
+    "intent": "calendar.query.today",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN"
+    ],
+    "text": "what do I have today",
+    "tokens": [
+      "what",
+      "do",
+      "i",
+      "have",
+      "today"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "75cfa3d4-7928-4f5b-ab12-39223918637c",
+    "intent": "calendar.query.today",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "show me today's schedule",
+    "tokens": [
+      "show",
+      "me",
+      "today's",
+      "schedule"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "today",
+        "type": "date_time"
+      }
+    ],
+    "id": "ca1e7939-5aad-426e-b2a8-ac303dec5b0e",
+    "intent": "calendar.query.today",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what are my events today",
+    "tokens": [
+      "what",
+      "are",
+      "my",
+      "events",
+      "today"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "12db2871-e015-497a-8145-35b579ca85ff",
+    "intent": "calendar.query.today",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "today's calendar",
+    "tokens": [
+      "today's",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "today",
+        "type": "date_time"
+      }
+    ],
+    "id": "4be6485e-7781-4aa6-a6fb-f61a192e75c9",
+    "intent": "calendar.query.today",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what's scheduled for today",
+    "tokens": [
+      "what's",
+      "scheduled",
+      "for",
+      "today"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "today",
+        "type": "date_time"
+      }
+    ],
+    "id": "9bbb2437-1ab0-47c7-9e0f-f454a4792ca2",
+    "intent": "calendar.query.today",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "do I have anything today",
+    "tokens": [
+      "do",
+      "i",
+      "have",
+      "anything",
+      "today"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "dc8cd1dc-1a9c-46e9-b647-4b43c160dec1",
+    "intent": "calendar.query.today",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show today's events",
+    "tokens": [
+      "show",
+      "today's",
+      "events"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "today",
+        "type": "date_time"
+      }
+    ],
+    "id": "28a0774a-976f-497e-adc7-2196c6a79ba2",
+    "intent": "calendar.query.today",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's happening today",
+    "tokens": [
+      "what's",
+      "happening",
+      "today"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "today",
+        "type": "date_time"
+      }
+    ],
+    "id": "38939f7a-f411-4a96-9ce9-3f5eb3e3e76a",
+    "intent": "calendar.query.today",
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "my schedule for today",
+    "tokens": [
+      "my",
+      "schedule",
+      "for",
+      "today"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "db6d910e-17c6-466c-9e14-82ed056ffcdc",
+    "intent": "calendar.query.today",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "today's appointments",
+    "tokens": [
+      "today's",
+      "appointments"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "today",
+        "type": "date_time"
+      }
+    ],
+    "id": "e830e5db-2e54-4a4f-8389-2142bf489bed",
+    "intent": "calendar.query.today",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN"
+    ],
+    "text": "what meetings do I have today",
+    "tokens": [
+      "what",
+      "meetings",
+      "do",
+      "i",
+      "have",
+      "today"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "748d9956-c73d-4932-96e7-460558ed588c",
+    "intent": "calendar.query.today",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "list today's events",
+    "tokens": [
+      "list",
+      "today's",
+      "events"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a68d676d-7b49-4e98-8a70-15531c6c2274",
+    "intent": "calendar.query.today",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's my day look like",
+    "tokens": [
+      "what's",
+      "my",
+      "day",
+      "look",
+      "like"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "today",
+        "type": "date_time"
+      }
+    ],
+    "id": "7d9a043b-16d0-49ae-939d-10d4cc6dbae8",
+    "intent": "calendar.query.today",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "anything on the calendar today",
+    "tokens": [
+      "anything",
+      "on",
+      "the",
+      "calendar",
+      "today"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "today",
+        "type": "date_time"
+      }
+    ],
+    "id": "e8591dd6-8f37-4e19-a432-d201cb2b02b4",
+    "intent": "calendar.query.today",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what do I have going on today",
+    "tokens": [
+      "what",
+      "do",
+      "i",
+      "have",
+      "going",
+      "on",
+      "today"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "82e72967-02a1-46f8-827f-71ced3141b01",
+    "intent": "calendar.query.today",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "today's agenda",
+    "tokens": [
+      "today's",
+      "agenda"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d2843999-e2ef-4d1c-860a-df96f5c7eee1",
+    "intent": "calendar.query.today",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "give me today's schedule",
+    "tokens": [
+      "give",
+      "me",
+      "today's",
+      "schedule"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "today",
+        "type": "date_time"
+      }
+    ],
+    "id": "8c1c72a4-9cf4-40fe-b2b1-e6e1879b1038",
+    "intent": "calendar.query.today",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's today looking like",
+    "tokens": [
+      "what's",
+      "today",
+      "looking",
+      "like"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "today",
+        "type": "date_time"
+      }
+    ],
+    "id": "c20038bf-a102-4915-9722-a498af98665f",
+    "intent": "calendar.query.today",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "show me what's on today",
+    "tokens": [
+      "show",
+      "me",
+      "what's",
+      "on",
+      "today"
+    ]
+  }
+]

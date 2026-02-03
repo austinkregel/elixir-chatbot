@@ -1,0 +1,362 @@
+[
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "f401e9aa-b08b-4a74-8067-833d8c48ffd4",
+    "intent": "display.zoom_out",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "zoom out",
+    "tokens": [
+      "zoom",
+      "out"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0a5992bf-0bce-43d8-b206-fde81b517cd2",
+    "intent": "display.zoom_out",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "pull back",
+    "tokens": [
+      "pull",
+      "back"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e58788a8-a88e-4c86-ba4c-3f5a7b7de4a4",
+    "intent": "display.zoom_out",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "wider view",
+    "tokens": [
+      "wider",
+      "view"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "5039b002-2582-40ff-8a38-8cb97d1e1f25",
+    "intent": "display.zoom_out",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "zoom out more",
+    "tokens": [
+      "zoom",
+      "out",
+      "more"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "85887722-c4d6-4a7a-8632-b4c2532576e8",
+    "intent": "display.zoom_out",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "decrease zoom",
+    "tokens": [
+      "decrease",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d38e6909-a319-47ec-9668-3fe85528fc62",
+    "intent": "display.zoom_out",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "step back",
+    "tokens": [
+      "step",
+      "back"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7cb16ff0-a1f5-4dca-96a0-c683a92607d7",
+    "intent": "display.zoom_out",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "full view",
+    "tokens": [
+      "full",
+      "view"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "bb9948a1-fa1c-4484-8e16-938567ad0dcb",
+    "intent": "display.zoom_out",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "zoom out please",
+    "tokens": [
+      "zoom",
+      "out",
+      "please"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3ee7c19d-a9c2-4a30-947a-b0e0497852ac",
+    "intent": "display.zoom_out",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "wider shot",
+    "tokens": [
+      "wider",
+      "shot"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "bd0d9716-eb2c-4dff-a857-f86ad7d5526b",
+    "intent": "display.zoom_out",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "back out",
+    "tokens": [
+      "back",
+      "out"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "0efdcc82-ce04-467e-be4d-b2a381ca82ec",
+    "intent": "display.zoom_out",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "reduce zoom",
+    "tokens": [
+      "reduce",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "206e2f1b-837b-4d29-8144-235ca1df8324",
+    "intent": "display.zoom_out",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "zoom out to see more",
+    "tokens": [
+      "zoom",
+      "out",
+      "to",
+      "see",
+      "more"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2e51589c-dc7f-46bb-8789-32903193302d",
+    "intent": "display.zoom_out",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "pull back the view",
+    "tokens": [
+      "pull",
+      "back",
+      "the",
+      "view"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "03569f2b-8a8a-4eec-bf1e-3cd4350acdeb",
+    "intent": "display.zoom_out",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "expand view",
+    "tokens": [
+      "expand",
+      "view"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d75742b9-ef20-4bc8-9b6b-7c5e9fd6deed",
+    "intent": "display.zoom_out",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "show more",
+    "tokens": [
+      "show",
+      "more"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "f8278308-4876-4e64-8245-4d59166fd1be",
+    "intent": "display.zoom_out",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "zoom all the way out",
+    "tokens": [
+      "zoom",
+      "all",
+      "the",
+      "way",
+      "out"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9c888cfe-4629-44db-af6a-7a95936459ef",
+    "intent": "display.zoom_out",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "full screen view",
+    "tokens": [
+      "full",
+      "screen",
+      "view"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "afdb9cf1-6111-49fc-a68c-4a7184f1a8f0",
+    "intent": "display.zoom_out",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "overall view",
+    "tokens": [
+      "overall",
+      "view"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8622eb3a-c564-4624-88c7-e93f82f47107",
+    "intent": "display.zoom_out",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "complete picture",
+    "tokens": [
+      "complete",
+      "picture"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "d0d0e786-58a9-4e27-a8ae-12e1c1a4bf29",
+    "intent": "display.zoom_out",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "zoom out further",
+    "tokens": [
+      "zoom",
+      "out",
+      "further"
+    ]
+  }
+]

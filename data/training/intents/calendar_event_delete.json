@@ -1,0 +1,1537 @@
+[
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "presentation",
+        "type": "event_title"
+      }
+    ],
+    "id": "a981a086-54d1-4393-8488-70e9eead763d",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "delete the presentation event",
+    "tokens": [
+      "delete",
+      "the",
+      "presentation",
+      "event"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "dentist appointment",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 2,
+        "text": "dentist",
+        "type": "event_title"
+      },
+      {
+        "end": 3,
+        "start": 3,
+        "text": "appointment",
+        "type": "event_title"
+      }
+    ],
+    "id": "29ea7e6f-8bbe-4fed-aa16-2fe579fa8804",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "delete the dentist appointment event",
+    "tokens": [
+      "delete",
+      "the",
+      "dentist",
+      "appointment",
+      "event"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "lunch",
+        "type": "event_title"
+      }
+    ],
+    "id": "fab089f4-4cb2-446b-bcdc-d940c6b3dc30",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "delete the lunch event",
+    "tokens": [
+      "delete",
+      "the",
+      "lunch",
+      "event"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "0e66a2c9-3bbc-45aa-b37b-cb174c751975",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "remove meeting from my calendar",
+    "tokens": [
+      "remove",
+      "meeting",
+      "from",
+      "my",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "presentation",
+        "type": "event_title"
+      }
+    ],
+    "id": "41a35f3c-9e2f-468f-a738-683ba875100b",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "remove presentation from my calendar",
+    "tokens": [
+      "remove",
+      "presentation",
+      "from",
+      "my",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "interview",
+        "type": "event_title"
+      }
+    ],
+    "id": "c158f582-d3c7-45d8-bb8e-508a3a396eb1",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "cancel the interview",
+    "tokens": [
+      "cancel",
+      "the",
+      "interview"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "conference call",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 2,
+        "text": "conference",
+        "type": "event_title"
+      }
+    ],
+    "id": "0499b7d1-f5d9-41d2-a7d9-ae3ccfeda9c1",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "cancel the conference call",
+    "tokens": [
+      "cancel",
+      "the",
+      "conference",
+      "call"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "lunch",
+        "type": "event_title"
+      }
+    ],
+    "id": "54e2706f-f485-4622-a848-ba8bb179ca74",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "cancel the lunch",
+    "tokens": [
+      "cancel",
+      "the",
+      "lunch"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "lunch",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "855734de-69ff-4bf8-ae38-a047634c539f",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "delete my lunch on next Monday",
+    "tokens": [
+      "delete",
+      "my",
+      "lunch",
+      "on",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "lunch",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 4,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "8b6f65cb-7269-436b-bcd4-5ff29e6b0924",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "delete my lunch on tomorrow at 2pm",
+    "tokens": [
+      "delete",
+      "my",
+      "lunch",
+      "on",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "lunch",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 4,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 5,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "b3303762-1332-4a5b-a181-3536e2143f7c",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "delete my lunch on in 2 hours",
+    "tokens": [
+      "delete",
+      "my",
+      "lunch",
+      "on",
+      "in",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 3,
+        "start": 3,
+        "text": "appointment",
+        "type": "event_title"
+      }
+    ],
+    "id": "59e89e7c-c72a-49e8-8635-98479de11262",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remove the meeting appointment",
+    "tokens": [
+      "remove",
+      "the",
+      "meeting",
+      "appointment"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "dentist appointment",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 2,
+        "text": "dentist",
+        "type": "event_title"
+      },
+      {
+        "end": 3,
+        "start": 3,
+        "text": "appointment",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "appointment",
+        "type": "event_title"
+      }
+    ],
+    "id": "738edcf8-e310-4508-adf4-7acc93e541f7",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remove the dentist appointment appointment",
+    "tokens": [
+      "remove",
+      "the",
+      "dentist",
+      "appointment",
+      "appointment"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "presentation",
+        "type": "event_title"
+      }
+    ],
+    "id": "3b37e1a3-89b3-43c0-8657-e47a2e318442",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "cancel my presentation",
+    "tokens": [
+      "cancel",
+      "my",
+      "presentation"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "workout",
+        "type": "event_title"
+      }
+    ],
+    "id": "c280cf77-3a15-4614-91dd-78cf75f261f6",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "cancel my workout",
+    "tokens": [
+      "cancel",
+      "my",
+      "workout"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "presentation",
+        "type": "event_title"
+      }
+    ],
+    "id": "749ab136-785b-438e-b951-6d6d2d37757e",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "get rid of the presentation event",
+    "tokens": [
+      "get",
+      "rid",
+      "of",
+      "the",
+      "presentation",
+      "event"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "dentist appointment",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "dentist",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "appointment",
+        "type": "event_title"
+      }
+    ],
+    "id": "81f20d43-b60c-48e4-87f5-c25da486a4d0",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "get rid of the dentist appointment event",
+    "tokens": [
+      "get",
+      "rid",
+      "of",
+      "the",
+      "dentist",
+      "appointment",
+      "event"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "67af4691-3983-49de-a623-391d90d41e1b",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "ADP",
+      "VERB",
+      "NOUN"
+    ],
+    "text": "I need to delete meeting",
+    "tokens": [
+      "i",
+      "need",
+      "to",
+      "delete",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "conference call",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "conference",
+        "type": "event_title"
+      }
+    ],
+    "id": "dfb90b23-7a18-4c38-aad2-637c2cd73001",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "ADP",
+      "VERB",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "I need to delete conference call",
+    "tokens": [
+      "i",
+      "need",
+      "to",
+      "delete",
+      "conference",
+      "call"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "presentation",
+        "type": "event_title"
+      }
+    ],
+    "id": "f107ca4b-1d95-47cb-99a2-bb88d8f341dd",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "ADP",
+      "VERB",
+      "NOUN"
+    ],
+    "text": "I need to delete presentation",
+    "tokens": [
+      "i",
+      "need",
+      "to",
+      "delete",
+      "presentation"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "standup",
+        "type": "event_title"
+      }
+    ],
+    "id": "73f93161-11e6-497f-b6bc-8e8bc3833dc0",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "VERB"
+    ],
+    "text": "please remove standup from my schedule",
+    "tokens": [
+      "please",
+      "remove",
+      "standup",
+      "from",
+      "my",
+      "schedule"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "interview",
+        "type": "event_title"
+      }
+    ],
+    "id": "73d30ca0-009a-4227-a80a-fa1d8f77d435",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "VERB"
+    ],
+    "text": "please remove interview from my schedule",
+    "tokens": [
+      "please",
+      "remove",
+      "interview",
+      "from",
+      "my",
+      "schedule"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "lunch",
+        "type": "event_title"
+      }
+    ],
+    "id": "3381e57d-de98-4154-8933-3f8abb943a8f",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "cancel the event called lunch",
+    "tokens": [
+      "cancel",
+      "the",
+      "event",
+      "called",
+      "lunch"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "workout",
+        "type": "event_title"
+      }
+    ],
+    "id": "0af02937-2c99-4517-8656-ea8800b9b34f",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "cancel the event called workout",
+    "tokens": [
+      "cancel",
+      "the",
+      "event",
+      "called",
+      "workout"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "workout",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 2,
+        "text": "appointment",
+        "type": "event_title"
+      }
+    ],
+    "id": "467b4b14-615d-488c-aa71-2a5ca3d0d39f",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "delete the appointment for workout",
+    "tokens": [
+      "delete",
+      "the",
+      "appointment",
+      "for",
+      "workout"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "dentist appointment",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "dentist",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 2,
+        "text": "appointment",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "appointment",
+        "type": "event_title"
+      }
+    ],
+    "id": "2c50a9b9-5bae-49b6-9dfd-672a89c849ad",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "delete the appointment for dentist appointment",
+    "tokens": [
+      "delete",
+      "the",
+      "appointment",
+      "for",
+      "dentist",
+      "appointment"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "lunch",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 2,
+        "text": "appointment",
+        "type": "event_title"
+      }
+    ],
+    "id": "b6f71420-f05f-4a60-aca0-85d12df3c527",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "delete the appointment for lunch",
+    "tokens": [
+      "delete",
+      "the",
+      "appointment",
+      "for",
+      "lunch"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "workout",
+        "type": "event_title"
+      }
+    ],
+    "id": "500e5b92-067f-4184-836d-44985d6f9866",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "take workout off my calendar",
+    "tokens": [
+      "take",
+      "workout",
+      "off",
+      "my",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 1,
+        "text": "conference call",
+        "type": "event_title"
+      },
+      {
+        "end": 1,
+        "start": 1,
+        "text": "conference",
+        "type": "event_title"
+      }
+    ],
+    "id": "f90feb8c-25f2-4cbb-90ed-6b69ce9bd9cd",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "VERB",
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "take conference call off my calendar",
+    "tokens": [
+      "take",
+      "conference",
+      "call",
+      "off",
+      "my",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "standup",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 2,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 3,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "4e9e8072-2c48-4600-be73-0b9e74e487c3",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remove my in 2 hours standup",
+    "tokens": [
+      "remove",
+      "my",
+      "in",
+      "2",
+      "hours",
+      "standup"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "lunch",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 2,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 2,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "3acbd1a2-ae53-4f05-b77d-242e88824174",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remove my tomorrow at 2pm lunch",
+    "tokens": [
+      "remove",
+      "my",
+      "tomorrow",
+      "at",
+      "2pm",
+      "lunch"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 2,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 3,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "9e3bc2eb-bcd7-42b4-9821-01e8e52718be",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remove my in 2 hours meeting",
+    "tokens": [
+      "remove",
+      "my",
+      "in",
+      "2",
+      "hours",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "dentist appointment",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "dentist",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "appointment",
+        "type": "event_title"
+      }
+    ],
+    "id": "690670c1-21c5-4c45-8c42-e047cffa3ef1",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "ADP",
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "I want to cancel dentist appointment",
+    "tokens": [
+      "i",
+      "want",
+      "to",
+      "cancel",
+      "dentist",
+      "appointment"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "workout",
+        "type": "event_title"
+      }
+    ],
+    "id": "5c4afeae-dc18-42a7-9bad-39298c261284",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "ADP",
+      "VERB",
+      "NOUN"
+    ],
+    "text": "I want to cancel workout",
+    "tokens": [
+      "i",
+      "want",
+      "to",
+      "cancel",
+      "workout"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "7367eee5-298d-43b1-9dc1-be76a0b36fd8",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "ADP",
+      "VERB",
+      "NOUN"
+    ],
+    "text": "I want to cancel meeting",
+    "tokens": [
+      "i",
+      "want",
+      "to",
+      "cancel",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "workout",
+        "type": "event_title"
+      }
+    ],
+    "id": "ed59b3b0-bd1e-4001-9ed4-b912976c0340",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "VERB"
+    ],
+    "text": "delete workout from my schedule",
+    "tokens": [
+      "delete",
+      "workout",
+      "from",
+      "my",
+      "schedule"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "interview",
+        "type": "event_title"
+      }
+    ],
+    "id": "5e125a3d-b47b-46d5-9503-df157ba34910",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "VERB"
+    ],
+    "text": "delete interview from my schedule",
+    "tokens": [
+      "delete",
+      "interview",
+      "from",
+      "my",
+      "schedule"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "dentist appointment",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "dentist",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "appointment",
+        "type": "event_title"
+      }
+    ],
+    "id": "27a136f5-8cbb-4df5-ac20-d5013789fd5a",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "can you remove the dentist appointment",
+    "tokens": [
+      "can",
+      "you",
+      "remove",
+      "the",
+      "dentist",
+      "appointment"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "interview",
+        "type": "event_title"
+      }
+    ],
+    "id": "01334705-ef5a-4aea-b593-e8b857f9a588",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "can you remove the interview",
+    "tokens": [
+      "can",
+      "you",
+      "remove",
+      "the",
+      "interview"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "standup",
+        "type": "event_title"
+      }
+    ],
+    "id": "e6966741-ce51-475b-b3d8-d2d05b0734b9",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "can you remove the standup",
+    "tokens": [
+      "can",
+      "you",
+      "remove",
+      "the",
+      "standup"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "b5cbf175-7b87-4a5d-af2e-02d49df3b8b5",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "unschedule meeting",
+    "tokens": [
+      "unschedule",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "presentation",
+        "type": "event_title"
+      }
+    ],
+    "id": "db9b1b1f-22e0-4f31-bb3b-b1a766182ba5",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "unschedule presentation",
+    "tokens": [
+      "unschedule",
+      "presentation"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 1,
+        "text": "conference call",
+        "type": "event_title"
+      },
+      {
+        "end": 1,
+        "start": 1,
+        "text": "conference",
+        "type": "event_title"
+      }
+    ],
+    "id": "07bf144a-bdc2-4130-8ffa-1f70f65cb3f9",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "unschedule conference call",
+    "tokens": [
+      "unschedule",
+      "conference",
+      "call"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 1,
+        "text": "conference call",
+        "type": "event_title"
+      },
+      {
+        "end": 1,
+        "start": 1,
+        "text": "conference",
+        "type": "event_title"
+      }
+    ],
+    "id": "98c10896-1188-428f-a600-a425ad135fd8",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "clear conference call from my calendar",
+    "tokens": [
+      "clear",
+      "conference",
+      "call",
+      "from",
+      "my",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 1,
+        "text": "dentist appointment",
+        "type": "event_title"
+      },
+      {
+        "end": 1,
+        "start": 1,
+        "text": "dentist",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 2,
+        "text": "appointment",
+        "type": "event_title"
+      }
+    ],
+    "id": "19a01e36-8cd4-4238-877d-24d636e5cb05",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "clear dentist appointment from my calendar",
+    "tokens": [
+      "clear",
+      "dentist",
+      "appointment",
+      "from",
+      "my",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "07ceb24f-d935-4bf7-a482-0618cee9597c",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "erase the meeting event",
+    "tokens": [
+      "erase",
+      "the",
+      "meeting",
+      "event"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "workout",
+        "type": "event_title"
+      }
+    ],
+    "id": "70c54676-2f87-4a41-a84c-1a7cef43e5a2",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "erase the workout event",
+    "tokens": [
+      "erase",
+      "the",
+      "workout",
+      "event"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "standup",
+        "type": "event_title"
+      }
+    ],
+    "id": "5074559b-5f70-4585-acee-011fe38baae3",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "erase the standup event",
+    "tokens": [
+      "erase",
+      "the",
+      "standup",
+      "event"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "workout",
+        "type": "event_title"
+      }
+    ],
+    "id": "1fb4bc43-94db-4b29-a7a5-582820745422",
+    "intent": "calendar.event.delete",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "I don't need the workout anymore",
+    "tokens": [
+      "i",
+      "don't",
+      "need",
+      "the",
+      "workout",
+      "anymore"
+    ]
+  }
+]

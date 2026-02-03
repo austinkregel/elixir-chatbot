@@ -1,0 +1,592 @@
+[
+  {
+    "entities": [],
+    "id": "4d977d69-41ff-4a8f-bf17-e169a429569b",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "do I have any reminders",
+    "tokens": [
+      "do",
+      "i",
+      "have",
+      "any",
+      "reminders"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a57249d8-5112-4e74-a748-f99acff788f2",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "AUX",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "are there any reminders",
+    "tokens": [
+      "are",
+      "there",
+      "any",
+      "reminders"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f8154025-99c7-4ec3-b36d-6ffe265fec0c",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "check for reminders",
+    "tokens": [
+      "check",
+      "for",
+      "reminders"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0fabf8c5-ed83-490e-8b9c-9d0b3061f8d1",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "any reminders set",
+    "tokens": [
+      "any",
+      "reminders",
+      "set"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 7,
+        "start": 5,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "06be6f48-73ff-4b66-bfca-046eef1b45b1",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "do I have reminders for tomorrow at 2pm",
+    "tokens": [
+      "do",
+      "i",
+      "have",
+      "reminders",
+      "for",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "f78260e7-0236-47a7-a70e-30decd9f2e50",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "do I have reminders for next Monday",
+    "tokens": [
+      "do",
+      "i",
+      "have",
+      "reminders",
+      "for",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 5,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 7,
+        "start": 6,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "63493463-d7e3-41bf-b662-3d7e008d9e21",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "do I have reminders for in 2 hours",
+    "tokens": [
+      "do",
+      "i",
+      "have",
+      "reminders",
+      "for",
+      "in",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "8cb3b1b2-9178-4f35-b3a7-b064f5f6f43c",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "check my reminders for next Monday",
+    "tokens": [
+      "check",
+      "my",
+      "reminders",
+      "for",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 4,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 5,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "fbddce76-5af5-46ae-8a01-e740235a9b44",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "check my reminders for in 2 hours",
+    "tokens": [
+      "check",
+      "my",
+      "reminders",
+      "for",
+      "in",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "today",
+        "type": "date_time"
+      }
+    ],
+    "id": "5c1a4635-3626-4c2e-a4f6-d9093a076b2e",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "any reminders today",
+    "tokens": [
+      "any",
+      "reminders",
+      "today"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "today",
+        "type": "date_time"
+      }
+    ],
+    "id": "08820912-1c25-424a-bb5c-cf0593ba20de",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "do I have any reminders today",
+    "tokens": [
+      "do",
+      "i",
+      "have",
+      "any",
+      "reminders",
+      "today"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "tomorrow",
+        "type": "date_time"
+      }
+    ],
+    "id": "87d5cfdd-8240-4398-b69b-47ac42898190",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "AUX",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "are there reminders for tomorrow",
+    "tokens": [
+      "are",
+      "there",
+      "reminders",
+      "for",
+      "tomorrow"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "64c2ac04-34a5-4cdb-8101-ceccc667a3b2",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "VERB",
+      "CONJ",
+      "PRON",
+      "AUX",
+      "NOUN"
+    ],
+    "text": "check if I have reminders",
+    "tokens": [
+      "check",
+      "if",
+      "i",
+      "have",
+      "reminders"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c3b152c6-5736-4cc5-bc1f-3a08501570ab",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "any upcoming reminders",
+    "tokens": [
+      "any",
+      "upcoming",
+      "reminders"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 2,
+        "text": "friday at 3pm",
+        "type": "date_time"
+      },
+      {
+        "end": 2,
+        "start": 2,
+        "text": "friday",
+        "type": "date_time"
+      }
+    ],
+    "id": "357c7f0a-d621-447e-ad56-e4776a1d3058",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "reminders for Friday at 3pm",
+    "tokens": [
+      "reminders",
+      "for",
+      "friday",
+      "at",
+      "3pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 2,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "402f73fb-704b-4319-aae7-8b4f4bc42569",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "reminders for tomorrow at 2pm",
+    "tokens": [
+      "reminders",
+      "for",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d8ec7d1e-83f4-4d96-bdfa-08bfd4cf4a6b",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "AUX",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "do I have a reminder to {reminder_content}",
+    "tokens": [
+      "do",
+      "i",
+      "have",
+      "a",
+      "reminder",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5acb5c70-cacc-4b05-a5b1-6256750ba847",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "AUX",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "is there a reminder for {reminder_content}",
+    "tokens": [
+      "is",
+      "there",
+      "a",
+      "reminder",
+      "for",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1f4b22c2-2d3e-4b85-822f-2d4d40798f95",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "check for {reminder_content} reminder",
+    "tokens": [
+      "check",
+      "for",
+      "reminder_content",
+      "reminder"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4e930728-a027-4e60-bc29-1ac604b23950",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "any reminders coming up",
+    "tokens": [
+      "any",
+      "reminders",
+      "coming",
+      "up"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e6340a7c-de82-4b31-91ad-cfc67dbaad63",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "have I set any reminders",
+    "tokens": [
+      "have",
+      "i",
+      "set",
+      "any",
+      "reminders"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "94343242-0a68-4007-bca8-d18b982e7b7a",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "do I have pending reminders",
+    "tokens": [
+      "do",
+      "i",
+      "have",
+      "pending",
+      "reminders"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "799b3a7b-d0e4-4cea-ae62-9b47ff64c503",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "check reminders",
+    "tokens": [
+      "check",
+      "reminders"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1fa410ec-667d-460e-ab36-460ade152382",
+    "intent": "reminder.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "any active reminders",
+    "tokens": [
+      "any",
+      "active",
+      "reminders"
+    ]
+  }
+]

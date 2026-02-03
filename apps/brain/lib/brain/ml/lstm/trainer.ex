@@ -1563,7 +1563,7 @@ defmodule Brain.ML.LSTM.Trainer do
   end
   
   defp get_model_path(filename) do
-    models_path = Application.get_env(:brain, :ml)[:models_path] || "priv/ml_models"
+    models_path = Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")
     Path.join([models_path, "lstm", filename])
   end
   

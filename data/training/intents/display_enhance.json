@@ -1,0 +1,304 @@
+[
+  {
+    "entities": [],
+    "id": "87d19ff4-db77-41f2-863c-d014df8176a6",
+    "intent": "display.enhance",
+    "pos_tags": [
+      "NOUN"
+    ],
+    "text": "enhance",
+    "tokens": [
+      "enhance"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7adaf362-2d90-427b-be1e-244140e72566",
+    "intent": "display.enhance",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "enhance that section",
+    "tokens": [
+      "enhance",
+      "that",
+      "section"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e05a3e6b-5567-4b66-a2e3-61ee35874f5a",
+    "intent": "display.enhance",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "enhance the image",
+    "tokens": [
+      "enhance",
+      "the",
+      "image"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "48db171e-8cf4-4a33-8b9c-a1cfcf4443ba",
+    "intent": "display.enhance",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "improve the image",
+    "tokens": [
+      "improve",
+      "the",
+      "image"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "804597e6-0125-4904-b4cd-bfe86f844eaa",
+    "intent": "display.enhance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "enhance {section_id}",
+    "tokens": [
+      "enhance",
+      "section_id"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e229234e-b56d-4095-bd60-3f566b77bcd4",
+    "intent": "display.enhance",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "sharpen the image",
+    "tokens": [
+      "sharpen",
+      "the",
+      "image"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b4fba579-3aaa-4c53-953a-47475ee6a8d6",
+    "intent": "display.enhance",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "clarify the image",
+    "tokens": [
+      "clarify",
+      "the",
+      "image"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7af6463d-225d-4b86-af16-5a3131f29382",
+    "intent": "display.enhance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "enhance resolution",
+    "tokens": [
+      "enhance",
+      "resolution"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6b836c9d-0728-44d6-af41-2841e956b831",
+    "intent": "display.enhance",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "make it clearer",
+    "tokens": [
+      "make",
+      "it",
+      "clearer"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "50396be9-31ae-4d36-92bd-b964b95fa6a5",
+    "intent": "display.enhance",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "enhance that area",
+    "tokens": [
+      "enhance",
+      "that",
+      "area"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5bf69e32-979e-4ff1-b77f-f3a6671e16f9",
+    "intent": "display.enhance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "improve clarity",
+    "tokens": [
+      "improve",
+      "clarity"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7ff2c481-2d37-4707-9094-5043ae9dfc77",
+    "intent": "display.enhance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "enhance detail",
+    "tokens": [
+      "enhance",
+      "detail"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f8602802-c548-4d0c-9cfd-cde18931c66c",
+    "intent": "display.enhance",
+    "pos_tags": [
+      "NOUN",
+      "DET"
+    ],
+    "text": "sharpen that",
+    "tokens": [
+      "sharpen",
+      "that"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ad8efe11-8fc6-4320-895e-91081353c00a",
+    "intent": "display.enhance",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "make it sharper",
+    "tokens": [
+      "make",
+      "it",
+      "sharper"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b9abedcb-f8f9-4dce-a702-065c2ce993d6",
+    "intent": "display.enhance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "enhance quality",
+    "tokens": [
+      "enhance",
+      "quality"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "91adf0c8-4372-4edf-98f0-736681f5b86c",
+    "intent": "display.enhance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "better resolution",
+    "tokens": [
+      "better",
+      "resolution"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "626dfe7b-e6ba-4ec2-951f-b050d6fd5478",
+    "intent": "display.enhance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "clean up the image",
+    "tokens": [
+      "clean",
+      "up",
+      "the",
+      "image"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "43088e8d-06b7-4791-885e-32c11d58fa9b",
+    "intent": "display.enhance",
+    "pos_tags": [
+      "NOUN",
+      "CONJ",
+      "NOUN"
+    ],
+    "text": "enhance and clarify",
+    "tokens": [
+      "enhance",
+      "and",
+      "clarify"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "973bcf9e-8fbc-409b-ad2d-630364d1e721",
+    "intent": "display.enhance",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "improve the picture",
+    "tokens": [
+      "improve",
+      "the",
+      "picture"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0048ccab-ab6e-41f2-90f1-7a4fc7c226f0",
+    "intent": "display.enhance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "detail enhance",
+    "tokens": [
+      "detail",
+      "enhance"
+    ]
+  }
+]

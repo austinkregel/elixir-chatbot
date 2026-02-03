@@ -1,0 +1,322 @@
+[
+  {
+    "entities": [],
+    "id": "0116bf44-1c43-43a0-a2d9-018cff6af523",
+    "intent": "compute.elapsed_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "AUX"
+    ],
+    "text": "how long has it been",
+    "tokens": [
+      "how",
+      "long",
+      "has",
+      "it",
+      "been"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "deb22ee3-6f81-4d08-97d4-114e6d68168b",
+    "intent": "compute.elapsed_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "elapsed time",
+    "tokens": [
+      "elapsed",
+      "time"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "010be670-cbdc-4112-867c-175e22555b08",
+    "intent": "compute.elapsed_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "time elapsed",
+    "tokens": [
+      "time",
+      "elapsed"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a5c3cb0e-989d-40ea-8a43-dfaea8300b05",
+    "intent": "compute.elapsed_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "NOUN"
+    ],
+    "text": "how much time has passed",
+    "tokens": [
+      "how",
+      "much",
+      "time",
+      "has",
+      "passed"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "474db9ce-ef15-4094-8847-83032c0c3b78",
+    "intent": "compute.elapsed_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "time since {query_term}",
+    "tokens": [
+      "time",
+      "since",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d47b2557-3c80-424f-ae06-af882645758a",
+    "intent": "compute.elapsed_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "duration so far",
+    "tokens": [
+      "duration",
+      "so",
+      "far"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7d050b5b-226a-42ee-a82a-ef682a46452f",
+    "intent": "compute.elapsed_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how long since",
+    "tokens": [
+      "how",
+      "long",
+      "since"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e6dcac75-46b0-44e4-8e1e-fe5656dd335f",
+    "intent": "compute.elapsed_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "elapsed duration",
+    "tokens": [
+      "elapsed",
+      "duration"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "49685b55-631e-42a5-ae86-faf9e6544d30",
+    "intent": "compute.elapsed_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "time running",
+    "tokens": [
+      "time",
+      "running"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "138b7577-66d9-4cc2-884d-b05efb1fd678",
+    "intent": "compute.elapsed_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how long ago",
+    "tokens": [
+      "how",
+      "long",
+      "ago"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7eb6e06d-10e0-4237-8b66-ff51a89943a5",
+    "intent": "compute.elapsed_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "time passed",
+    "tokens": [
+      "time",
+      "passed"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "00afecac-dc62-4701-a8bb-99e007185e8a",
+    "intent": "compute.elapsed_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "elapsed time since {query_term}",
+    "tokens": [
+      "elapsed",
+      "time",
+      "since",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "25bd485c-86e8-4e0a-bbe3-3ccdbf88195f",
+    "intent": "compute.elapsed_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "running time",
+    "tokens": [
+      "running",
+      "time"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "bd866755-bce5-43c9-aa0c-72eb96ae5886",
+    "intent": "compute.elapsed_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how long elapsed",
+    "tokens": [
+      "how",
+      "long",
+      "elapsed"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "bb47d26b-b8d2-4068-aad9-492a4224f886",
+    "intent": "compute.elapsed_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "time since start",
+    "tokens": [
+      "time",
+      "since",
+      "start"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7511afb6-0be3-45d6-836c-f3dd7a6d799c",
+    "intent": "compute.elapsed_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "duration elapsed",
+    "tokens": [
+      "duration",
+      "elapsed"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7bc1c64f-8b65-40a7-80a3-c9d78c19bbdf",
+    "intent": "compute.elapsed_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how much time elapsed",
+    "tokens": [
+      "how",
+      "much",
+      "time",
+      "elapsed"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f9b80648-f804-4820-aa17-0ee0f588125b",
+    "intent": "compute.elapsed_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "elapsed since {query_term}",
+    "tokens": [
+      "elapsed",
+      "since",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b949d93a-8a6e-46df-8dc7-21f6bdb682e6",
+    "intent": "compute.elapsed_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "total elapsed time",
+    "tokens": [
+      "total",
+      "elapsed",
+      "time"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "28a66696-5cde-4fb0-9895-1997b48bf164",
+    "intent": "compute.elapsed_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "time duration so far",
+    "tokens": [
+      "time",
+      "duration",
+      "so",
+      "far"
+    ]
+  }
+]

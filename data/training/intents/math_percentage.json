@@ -1,0 +1,348 @@
+[
+  {
+    "entities": [],
+    "id": "92a551b2-32cc-4fe8-92c1-8242a3131dff",
+    "intent": "math.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what's {number} percent of {number}",
+    "tokens": [
+      "what's",
+      "number",
+      "percent",
+      "of",
+      "number"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6c8be364-5d47-43e4-bbbc-485a404d3603",
+    "intent": "math.percentage",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "{number}% of {number}",
+    "tokens": [
+      "number",
+      "of",
+      "number"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ea948a5a-d688-48f6-b3be-1723d4a41e24",
+    "intent": "math.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "calculate {number} percent",
+    "tokens": [
+      "calculate",
+      "number",
+      "percent"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f11c8d85-99af-4ca8-adb9-d5ab33b75468",
+    "intent": "math.percentage",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "percentage of {number}",
+    "tokens": [
+      "percentage",
+      "of",
+      "number"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "35048dce-a77b-43c1-a512-679894c3a675",
+    "intent": "math.percentage",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what is {number} percent of {number}",
+    "tokens": [
+      "what",
+      "is",
+      "number",
+      "percent",
+      "of",
+      "number"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a53cd7a8-5259-49fa-ac60-cf2432a56f00",
+    "intent": "math.percentage",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "find {number}% of {number}",
+    "tokens": [
+      "find",
+      "number",
+      "of",
+      "number"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "80e6b1bf-32cd-411e-80c2-97c04b9cbf73",
+    "intent": "math.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "compute {number} percent of {number}",
+    "tokens": [
+      "compute",
+      "number",
+      "percent",
+      "of",
+      "number"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5fb1eeba-17e3-4828-ab4d-363d849197a5",
+    "intent": "math.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "AUX"
+    ],
+    "text": "{number} percent of {number} is",
+    "tokens": [
+      "number",
+      "percent",
+      "of",
+      "number",
+      "is"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e6012e08-8ae8-435c-b6b3-5a09e3346935",
+    "intent": "math.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "work out {number}%",
+    "tokens": [
+      "work",
+      "out",
+      "number"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e1c59762-59f9-4f02-ab2c-1227bdd6cd7c",
+    "intent": "math.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "figure {number} percent",
+    "tokens": [
+      "figure",
+      "number",
+      "percent"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "77737bb7-01cf-415c-9adc-7d76e9121a07",
+    "intent": "math.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "how much is {number}% of {number}",
+    "tokens": [
+      "how",
+      "much",
+      "is",
+      "number",
+      "of",
+      "number"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "dce4a271-4480-48e3-9725-e9a1b2073c63",
+    "intent": "math.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "{number} percentage of {number}",
+    "tokens": [
+      "number",
+      "percentage",
+      "of",
+      "number"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c63b2f92-29ab-4344-a18c-26a960304b19",
+    "intent": "math.percentage",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "what's the percentage",
+    "tokens": [
+      "what's",
+      "the",
+      "percentage"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "724ede74-408e-45fc-8f29-4fcfc55d5b84",
+    "intent": "math.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "calculate percentage",
+    "tokens": [
+      "calculate",
+      "percentage"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "624bea96-ff37-4cc0-9488-63ae5f7342cb",
+    "intent": "math.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "percent calculation",
+    "tokens": [
+      "percent",
+      "calculation"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e85dbb8e-13e7-4afa-8244-efe8dc3607cc",
+    "intent": "math.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "{number}% calculation",
+    "tokens": [
+      "number",
+      "calculation"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e2b55f36-1cb0-40d4-a8ba-c181aaf64a21",
+    "intent": "math.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what percentage is {number} of {number}",
+    "tokens": [
+      "what",
+      "percentage",
+      "is",
+      "number",
+      "of",
+      "number"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7c766493-4946-4de4-bb5c-87bec23d5fc1",
+    "intent": "math.percentage",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "find the percentage",
+    "tokens": [
+      "find",
+      "the",
+      "percentage"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b4ce93aa-127b-4504-9828-ee24f158cb4f",
+    "intent": "math.percentage",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "percent of {number}",
+    "tokens": [
+      "percent",
+      "of",
+      "number"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8d235b4d-6712-4a5b-b4fa-7f26f993eeb2",
+    "intent": "math.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "percentage calculator",
+    "tokens": [
+      "percentage",
+      "calculator"
+    ]
+  }
+]

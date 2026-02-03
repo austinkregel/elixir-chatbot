@@ -44,19 +44,28 @@ defmodule ChatBot.Umbrella.MixProject do
       "test.coverage": ["coveralls.html"],
       "test.coverage.json": ["coveralls.json"],
 
-      # Training world shortcuts
-      "world.list": ["cmd --app world mix training_world.list"],
-      "world.status": ["cmd --app world mix training_world.metrics default"],
-      "world.setup": ["cmd --app world mix training_world.create default --mode=persistent"],
-      "world.clear": ["cmd --app world mix training_world.destroy default"],
+      # Training world shortcuts (using mix do --app instead of deprecated cmd --app)
+      "world.list": ["do --app world training_world.list"],
+      "world.status": ["do --app world training_world.metrics default"],
+      "world.setup": ["do --app world training_world.create default --mode=persistent"],
+      "world.clear": ["do --app world training_world.destroy default"],
       "world.reset": [
-        "cmd --app world mix training_world.destroy default",
-        "cmd --app world mix training_world.create default --mode=persistent"
+        "do --app world training_world.destroy default",
+        "do --app world training_world.create default --mode=persistent"
       ],
 
-      # ML training shortcuts
-      train: ["cmd --app brain mix train_models"],
-      "train.fast": ["cmd --app brain mix train_models --skip-gazetteer --skip-pos"]
+      # ML training shortcuts (using mix do --app instead of deprecated cmd --app)
+      # Master training pipeline - trains ALL models
+      train: ["do --app brain train"],
+      # Quick training - skip slow optional models
+      "train.quick": ["do --app brain train --quick"],
+      # Fast TF-IDF only (legacy)
+      "train.tfidf": ["do --app brain train_models --skip-lstm"],
+      # Individual model training
+      "train.unified": ["do --app brain train_unified"],
+      "train.response": ["do --app brain train_response"],
+      "train.seq2seq": ["do --app brain train_seq2seq"],
+      "train.lstm": ["do --app brain train_lstm"]
     ]
   end
 

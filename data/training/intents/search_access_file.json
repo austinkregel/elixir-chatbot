@@ -1,0 +1,322 @@
+[
+  {
+    "entities": [],
+    "id": "40eae44f-3736-4335-a29f-261da0d05560",
+    "intent": "search.access_file",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "access the {file_name}",
+    "tokens": [
+      "access",
+      "the",
+      "file_name"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e53bddfd-a21f-4ab9-9551-c73a55f5b87f",
+    "intent": "search.access_file",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "open {file_name}",
+    "tokens": [
+      "open",
+      "file_name"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9e52503f-9030-4d7f-b348-5766a19a7ee4",
+    "intent": "search.access_file",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "retrieve {file_name}",
+    "tokens": [
+      "retrieve",
+      "file_name"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "25c1647b-3acc-4c83-91dd-70f866c480ab",
+    "intent": "search.access_file",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "get access to {file_name}",
+    "tokens": [
+      "get",
+      "access",
+      "to",
+      "file_name"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "dcccedd2-7cff-4fe3-a309-93ee79fcff86",
+    "intent": "search.access_file",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "access {file_name} file",
+    "tokens": [
+      "access",
+      "file_name",
+      "file"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1bf5da16-6d8e-4edf-9c2d-d4037a0fbc36",
+    "intent": "search.access_file",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "open the {file_name} file",
+    "tokens": [
+      "open",
+      "the",
+      "file_name",
+      "file"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0d96a276-613e-43ed-b063-cccb405c843e",
+    "intent": "search.access_file",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "load {file_name}",
+    "tokens": [
+      "load",
+      "file_name"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ef1650ee-0cbc-4f58-af56-4e46c4e7aba3",
+    "intent": "search.access_file",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "access the {file_name} document",
+    "tokens": [
+      "access",
+      "the",
+      "file_name",
+      "document"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3f9c680b-7430-4556-995b-e33d1ba2a07f",
+    "intent": "search.access_file",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "retrieve the {file_name}",
+    "tokens": [
+      "retrieve",
+      "the",
+      "file_name"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "50ca04b0-54bf-479f-997b-57c695c06dea",
+    "intent": "search.access_file",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "get {file_name}",
+    "tokens": [
+      "get",
+      "file_name"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e590f7b3-da81-4870-a9cf-e52f97d5f21c",
+    "intent": "search.access_file",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "open file {file_name}",
+    "tokens": [
+      "open",
+      "file",
+      "file_name"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9006a6b3-017c-4313-a797-bfa8af08f463",
+    "intent": "search.access_file",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "access file {file_name}",
+    "tokens": [
+      "access",
+      "file",
+      "file_name"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "fb5d57d9-3331-421e-a8de-cdec74c26c12",
+    "intent": "search.access_file",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "pull {file_name}",
+    "tokens": [
+      "pull",
+      "file_name"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b63c5fd2-ff58-4736-ad29-c93fe1bd271f",
+    "intent": "search.access_file",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "access record {file_name}",
+    "tokens": [
+      "access",
+      "record",
+      "file_name"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9e180b64-9947-4955-8a2d-b6aac06bf825",
+    "intent": "search.access_file",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "retrieve file {file_name}",
+    "tokens": [
+      "retrieve",
+      "file",
+      "file_name"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ad26fca0-afc3-4c20-977c-d81300669996",
+    "intent": "search.access_file",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "load the {file_name}",
+    "tokens": [
+      "load",
+      "the",
+      "file_name"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2db14b51-f809-42b3-bac3-ecaab97a8cc2",
+    "intent": "search.access_file",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "access document {file_name}",
+    "tokens": [
+      "access",
+      "document",
+      "file_name"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c5b2d9ab-5afc-419f-90d3-9f3da8d8f9b5",
+    "intent": "search.access_file",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "open record {file_name}",
+    "tokens": [
+      "open",
+      "record",
+      "file_name"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "df2697ab-9af9-4824-83c4-005a18e36e4a",
+    "intent": "search.access_file",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "get the {file_name} file",
+    "tokens": [
+      "get",
+      "the",
+      "file_name",
+      "file"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e9d678c7-3584-476d-b0ee-5d080a590c9f",
+    "intent": "search.access_file",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "access the {file_name} record",
+    "tokens": [
+      "access",
+      "the",
+      "file_name",
+      "record"
+    ]
+  }
+]

@@ -1,0 +1,340 @@
+[
+  {
+    "entities": [],
+    "id": "2d3da590-b268-4807-a696-cce903b3a0f4",
+    "intent": "shopping.remove",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "remove {task_content} from my shopping list",
+    "tokens": [
+      "remove",
+      "task_content",
+      "from",
+      "my",
+      "shopping",
+      "list"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b1dc658f-2a9f-4269-9edb-323502d622de",
+    "intent": "shopping.remove",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "take {task_content} off shopping list",
+    "tokens": [
+      "take",
+      "task_content",
+      "off",
+      "shopping",
+      "list"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "99641dd1-263c-4571-8935-dd5dc829d278",
+    "intent": "shopping.remove",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "delete {task_content} from shopping",
+    "tokens": [
+      "delete",
+      "task_content",
+      "from",
+      "shopping"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1af1eb56-b666-482e-b2b4-a037e0c72db0",
+    "intent": "shopping.remove",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "I don't need {task_content}",
+    "tokens": [
+      "i",
+      "don't",
+      "need",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7d852766-d12b-47a0-801a-920822831297",
+    "intent": "shopping.remove",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remove {task_content} from groceries",
+    "tokens": [
+      "remove",
+      "task_content",
+      "from",
+      "groceries"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "316b90de-0c80-4150-b7b4-84abac440f5a",
+    "intent": "shopping.remove",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "take off {task_content}",
+    "tokens": [
+      "take",
+      "off",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "189ac8fb-3e15-4951-9367-c5c0afcb0b81",
+    "intent": "shopping.remove",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "remove {task_content}",
+    "tokens": [
+      "remove",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ddf2e155-15a6-484e-9444-d849d7a96082",
+    "intent": "shopping.remove",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "DET",
+      "VERB"
+    ],
+    "text": "delete {task_content} from the list",
+    "tokens": [
+      "delete",
+      "task_content",
+      "from",
+      "the",
+      "list"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5cec2911-c498-4f0d-8a8b-a25f9ec9b1a9",
+    "intent": "shopping.remove",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "don't need {task_content} anymore",
+    "tokens": [
+      "don't",
+      "need",
+      "task_content",
+      "anymore"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "407f4382-4f86-4847-9368-46d43062effb",
+    "intent": "shopping.remove",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "cross off {task_content}",
+    "tokens": [
+      "cross",
+      "off",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7bad1c7a-0933-451a-8e38-0b34c6ab5bc7",
+    "intent": "shopping.remove",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "scratch {task_content}",
+    "tokens": [
+      "scratch",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8bd4c38b-5804-4923-9533-0bb6ae1d6490",
+    "intent": "shopping.remove",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "VERB"
+    ],
+    "text": "remove {task_content} from list",
+    "tokens": [
+      "remove",
+      "task_content",
+      "from",
+      "list"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c44bc17f-ed05-459f-8ecd-272e50aff501",
+    "intent": "shopping.remove",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "take {task_content} off",
+    "tokens": [
+      "take",
+      "task_content",
+      "off"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2bb203bd-351d-4faa-9da0-71a4d8cb48a1",
+    "intent": "shopping.remove",
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NOUN"
+    ],
+    "text": "shopping remove {task_content}",
+    "tokens": [
+      "shopping",
+      "remove",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "eea255a6-3edf-420b-ac08-0e8646803140",
+    "intent": "shopping.remove",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "got {task_content} already",
+    "tokens": [
+      "got",
+      "task_content",
+      "already"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0c7db23e-40a5-437a-8bfa-2e27943443df",
+    "intent": "shopping.remove",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN"
+    ],
+    "text": "already have {task_content}",
+    "tokens": [
+      "already",
+      "have",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7c1e4456-9703-4650-a15d-465b12948202",
+    "intent": "shopping.remove",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "don't buy {task_content}",
+    "tokens": [
+      "don't",
+      "buy",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f8eae8fd-acb6-40e6-a9db-6f3f91a1a197",
+    "intent": "shopping.remove",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "skip {task_content}",
+    "tokens": [
+      "skip",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9a5bf6f5-df5a-4540-b705-657905ea4c42",
+    "intent": "shopping.remove",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "cancel {task_content}",
+    "tokens": [
+      "cancel",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "91161d25-e9e4-4f17-95bf-3e40134e4e93",
+    "intent": "shopping.remove",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "delete shopping item {task_content}",
+    "tokens": [
+      "delete",
+      "shopping",
+      "item",
+      "task_content"
+    ]
+  }
+]

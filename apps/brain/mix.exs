@@ -19,7 +19,7 @@ defmodule Brain.MixProject do
   def application do
     [
       mod: {Brain.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :xmerl]
     ]
   end
 
@@ -40,7 +40,9 @@ defmodule Brain.MixProject do
       {:jason, "~> 1.2"},
       {:req, "~> 0.5"},
       {:floki, "~> 0.36"},
-      {:bandit, "~> 1.0"}
+      {:bandit, "~> 1.0"},
+      # Tree-sitter for code parsing
+      {:tree_sitter, "~> 0.2", hex: :tree_sitter_elixir}
     ]
   end
 end

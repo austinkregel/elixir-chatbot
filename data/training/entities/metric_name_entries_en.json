@@ -1,0 +1,42 @@
+[
+  {
+    "value": "CPU usage",
+    "synonyms": ["CPU usage", "processor usage", "CPU load", "processor load"]
+  },
+  {
+    "value": "response time",
+    "synonyms": ["response time", "latency", "load time"]
+  },
+  {
+    "value": "memory usage",
+    "synonyms": ["memory usage", "RAM usage", "memory consumption"]
+  },
+  {
+    "value": "disk usage",
+    "synonyms": ["disk usage", "storage usage", "disk space"]
+  },
+  {
+    "value": "error rate",
+    "synonyms": ["error rate", "failure rate", "error percentage"]
+  },
+  {
+    "value": "throughput",
+    "synonyms": ["throughput", "transactions per second", "TPS"]
+  },
+  {
+    "value": "uptime",
+    "synonyms": ["uptime", "availability", "system uptime"]
+  },
+  {
+    "value": "bandwidth",
+    "synonyms": ["bandwidth", "network bandwidth", "network usage"]
+  },
+  {
+    "value": "conversion rate",
+    "synonyms": ["conversion rate", "conversions", "conversion percentage"]
+  },
+  {
+    "value": "bounce rate",
+    "synonyms": ["bounce rate", "exit rate"]
+  }
+]

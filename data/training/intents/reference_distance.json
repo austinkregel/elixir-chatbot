@@ -1,0 +1,1721 @@
+[
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 3,
+        "text": "the coffee shop",
+        "type": "location"
+      },
+      {
+        "end": 9,
+        "start": 7,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "c30ad0e1-d6be-417b-ac7c-db8877f9c9df",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how far is the coffee shop from the coffee shop",
+    "tokens": [
+      "how",
+      "far",
+      "is",
+      "the",
+      "coffee",
+      "shop",
+      "from",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 7,
+        "start": 7,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 3,
+        "text": "conference room a",
+        "type": "location"
+      },
+      {
+        "end": 9,
+        "start": 7,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "6b01e916-70aa-4da0-84e9-ba2396157a21",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "NOUN",
+      "DET",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET"
+    ],
+    "text": "how far is conference room A from conference room A",
+    "tokens": [
+      "how",
+      "far",
+      "is",
+      "conference",
+      "room",
+      "a",
+      "from",
+      "conference",
+      "room",
+      "a"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "downtown",
+        "type": "location"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "69234e80-cd30-4ed9-a0fb-4fd55697a1c9",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "how far is downtown from downtown",
+    "tokens": [
+      "how",
+      "far",
+      "is",
+      "downtown",
+      "from",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "zoom",
+        "type": "location"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "d2dbf0cc-f5e6-4fa2-a394-d6ac1aa16764",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "CONJ",
+      "NOUN"
+    ],
+    "text": "distance between Zoom and Zoom",
+    "tokens": [
+      "distance",
+      "between",
+      "zoom",
+      "and",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "ecb4fad9-1eff-4570-aace-52fc7714bf52",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "how far is it to Zoom",
+    "tokens": [
+      "how",
+      "far",
+      "is",
+      "it",
+      "to",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 7,
+        "start": 5,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "49fc6934-faa9-4222-85b9-8641c8c21d43",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET"
+    ],
+    "text": "how far is it to conference room A",
+    "tokens": [
+      "how",
+      "far",
+      "is",
+      "it",
+      "to",
+      "conference",
+      "room",
+      "a"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 5,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "a88d0bc8-3d35-4a8c-95a6-9caffbef9f49",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how far is it to the coffee shop",
+    "tokens": [
+      "how",
+      "far",
+      "is",
+      "it",
+      "to",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 3,
+        "start": 3,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "ebceac14-41d4-476e-ae5f-d8a6a64257b3",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "distance to the office",
+    "tokens": [
+      "distance",
+      "to",
+      "the",
+      "office"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "cc188891-634d-43a1-8740-4aa38721b352",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "distance to downtown",
+    "tokens": [
+      "distance",
+      "to",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 2,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "ffb69a7f-7b87-4894-a131-d75e7a479a4e",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "distance to the coffee shop",
+    "tokens": [
+      "distance",
+      "to",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 0,
+        "text": "conference room a",
+        "type": "location"
+      },
+      {
+        "end": 6,
+        "start": 4,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "641b16d5-3349-437a-b112-fc335ec310cf",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "DET",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "conference room A to conference room A distance",
+    "tokens": [
+      "conference",
+      "room",
+      "a",
+      "to",
+      "conference",
+      "room",
+      "a",
+      "distance"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "downtown",
+        "type": "location"
+      },
+      {
+        "end": 2,
+        "start": 2,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "9372175f-99e4-4b1c-91da-c3644e16bc69",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "downtown to downtown distance",
+    "tokens": [
+      "downtown",
+      "to",
+      "downtown",
+      "distance"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 0,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 4,
+        "start": 3,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 1,
+        "start": 1,
+        "text": "office",
+        "type": "location"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "bf3440e3-17d9-49fb-ba98-c0f942f6c6da",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "the office to the office distance",
+    "tokens": [
+      "the",
+      "office",
+      "to",
+      "the",
+      "office",
+      "distance"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 4,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "b6bd15bd-bd81-46cc-bbc9-64cca8b13280",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET"
+    ],
+    "text": "how many miles to conference room A",
+    "tokens": [
+      "how",
+      "many",
+      "miles",
+      "to",
+      "conference",
+      "room",
+      "a"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 4,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "4839fa77-a7d4-4e1e-909c-e2329f7064b0",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how many miles to the coffee shop",
+    "tokens": [
+      "how",
+      "many",
+      "miles",
+      "to",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 7,
+        "start": 5,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "4c946282-fc66-415b-b330-c54677848981",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET"
+    ],
+    "text": "how far from here to conference room A",
+    "tokens": [
+      "how",
+      "far",
+      "from",
+      "here",
+      "to",
+      "conference",
+      "room",
+      "a"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "747b8527-7b93-4312-beb6-d055fa6cd20f",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "how far from here to Zoom",
+    "tokens": [
+      "how",
+      "far",
+      "from",
+      "here",
+      "to",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 3,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "431dee66-15ef-49b8-85e5-3edf595de2a1",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET"
+    ],
+    "text": "travel distance to conference room A",
+    "tokens": [
+      "travel",
+      "distance",
+      "to",
+      "conference",
+      "room",
+      "a"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 3,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "9d923daa-7729-477b-9c52-553b9ddccdf9",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "travel distance to the coffee shop",
+    "tokens": [
+      "travel",
+      "distance",
+      "to",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "a62b7c07-4d7a-4e45-b55b-456415873ecd",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what's the distance to downtown",
+    "tokens": [
+      "what's",
+      "the",
+      "distance",
+      "to",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "93949868-7030-40b5-85e3-7414bb5ffdbb",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what's the distance to Zoom",
+    "tokens": [
+      "what's",
+      "the",
+      "distance",
+      "to",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 6,
+        "start": 5,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 3,
+        "start": 3,
+        "text": "office",
+        "type": "location"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "a3b0d44a-0cbc-4fea-9398-0b28ec2a1999",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "km from the office to the office",
+    "tokens": [
+      "km",
+      "from",
+      "the",
+      "office",
+      "to",
+      "the",
+      "office"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 2,
+        "text": "the coffee shop",
+        "type": "location"
+      },
+      {
+        "end": 8,
+        "start": 6,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "2702d361-7840-4f85-93ca-d34cda5d9eea",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "km from the coffee shop to the coffee shop",
+    "tokens": [
+      "km",
+      "from",
+      "the",
+      "coffee",
+      "shop",
+      "to",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 6,
+        "start": 5,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 3,
+        "start": 3,
+        "text": "office",
+        "type": "location"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "659c6a59-5ec5-49de-8472-5d47511c854a",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "CONJ",
+      "DET",
+      "NOUN"
+    ],
+    "text": "miles between the office and the office",
+    "tokens": [
+      "miles",
+      "between",
+      "the",
+      "office",
+      "and",
+      "the",
+      "office"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 2,
+        "text": "conference room a",
+        "type": "location"
+      },
+      {
+        "end": 8,
+        "start": 6,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "0b414174-6613-4953-bae6-385f625590ed",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET",
+      "CONJ",
+      "NOUN",
+      "NOUN",
+      "DET"
+    ],
+    "text": "miles between conference room A and conference room A",
+    "tokens": [
+      "miles",
+      "between",
+      "conference",
+      "room",
+      "a",
+      "and",
+      "conference",
+      "room",
+      "a"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 4,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "76275177-2497-46b6-8663-defcfe576c82",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how far away is the coffee shop",
+    "tokens": [
+      "how",
+      "far",
+      "away",
+      "is",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 4,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "3f393afa-d0ab-437b-b7c3-a0cf5cc6b25d",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "NOUN",
+      "DET"
+    ],
+    "text": "how far away is conference room A",
+    "tokens": [
+      "how",
+      "far",
+      "away",
+      "is",
+      "conference",
+      "room",
+      "a"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "b154b982-6a97-4a2e-b42d-44dfaa1cc66d",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "DET",
+      "NOUN"
+    ],
+    "text": "how far away is the office",
+    "tokens": [
+      "how",
+      "far",
+      "away",
+      "is",
+      "the",
+      "office"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "dcf3f31e-1ba6-4790-961c-9450dadd27e9",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "distance from Zoom",
+    "tokens": [
+      "distance",
+      "from",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 2,
+        "text": "conference room a",
+        "type": "location"
+      },
+      {
+        "end": 8,
+        "start": 6,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "04d0e2ef-2c64-47d9-b1af-6ae75e6e3bb6",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET"
+    ],
+    "text": "length from conference room A to conference room A",
+    "tokens": [
+      "length",
+      "from",
+      "conference",
+      "room",
+      "a",
+      "to",
+      "conference",
+      "room",
+      "a"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "downtown",
+        "type": "location"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "ef2e2a30-af1c-45d7-9df9-ae8bc3c53d1d",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "length from downtown to downtown",
+    "tokens": [
+      "length",
+      "from",
+      "downtown",
+      "to",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 6,
+        "start": 5,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 3,
+        "start": 3,
+        "text": "office",
+        "type": "location"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "3fef1a6e-c330-4ab2-99e1-a0c05e7b320a",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "length from the office to the office",
+    "tokens": [
+      "length",
+      "from",
+      "the",
+      "office",
+      "to",
+      "the",
+      "office"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 8,
+        "start": 6,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "158b14de-eaea-4e0f-9985-93aba9cca4fa",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how long is the drive to the coffee shop",
+    "tokens": [
+      "how",
+      "long",
+      "is",
+      "the",
+      "drive",
+      "to",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "0823078f-22ca-4d62-b866-646fa6f10fba",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "how long is the drive to Zoom",
+    "tokens": [
+      "how",
+      "long",
+      "is",
+      "the",
+      "drive",
+      "to",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "83b16a33-9cf5-428d-80fc-58a78c86e4ad",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "how long is the drive to downtown",
+    "tokens": [
+      "how",
+      "long",
+      "is",
+      "the",
+      "drive",
+      "to",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 3,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "851cf2bf-4904-4722-920f-2a57c9a5645e",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET"
+    ],
+    "text": "measure distance to conference room A",
+    "tokens": [
+      "measure",
+      "distance",
+      "to",
+      "conference",
+      "room",
+      "a"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "67ee9187-12c9-4e85-98e8-e88d10056e83",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "measure distance to downtown",
+    "tokens": [
+      "measure",
+      "distance",
+      "to",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "b30e719f-6765-43c2-bb73-be79e3810db7",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "measure distance to Zoom",
+    "tokens": [
+      "measure",
+      "distance",
+      "to",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "c2d90473-a1b9-4222-b47c-e3a1f3ce24ab",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "calculate distance to Zoom",
+    "tokens": [
+      "calculate",
+      "distance",
+      "to",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 3,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "111295c5-5c84-4f3f-a316-e7ad233a904a",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "calculate distance to the coffee shop",
+    "tokens": [
+      "calculate",
+      "distance",
+      "to",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 3,
+        "start": 3,
+        "text": "office",
+        "type": "location"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "71da6901-2c14-484f-a882-59ee0f00f733",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "route distance the office the office",
+    "tokens": [
+      "route",
+      "distance",
+      "the",
+      "office",
+      "the",
+      "office"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 2,
+        "text": "the coffee shop",
+        "type": "location"
+      },
+      {
+        "end": 7,
+        "start": 5,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "c7a4caaa-ff89-439b-b2ba-e0980445a384",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "route distance the coffee shop the coffee shop",
+    "tokens": [
+      "route",
+      "distance",
+      "the",
+      "coffee",
+      "shop",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "zoom",
+        "type": "location"
+      },
+      {
+        "end": 3,
+        "start": 3,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "8295366b-800f-4ce3-a370-fa148f2532e4",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "route distance Zoom Zoom",
+    "tokens": [
+      "route",
+      "distance",
+      "zoom",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "870b21ac-8069-49cf-acca-59a57e8a8304",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "how far to travel to downtown",
+    "tokens": [
+      "how",
+      "far",
+      "to",
+      "travel",
+      "to",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "5eda9a3e-77e5-40ce-a4d1-71fd7da91f66",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "how far to travel to the office",
+    "tokens": [
+      "how",
+      "far",
+      "to",
+      "travel",
+      "to",
+      "the",
+      "office"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 5,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "fb631355-cd39-4eb0-a491-8c35ded7374a",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how far to travel to the coffee shop",
+    "tokens": [
+      "how",
+      "far",
+      "to",
+      "travel",
+      "to",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 2,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "8e9ff511-213d-4924-b28d-4e9d2684a203",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "distance calculator the coffee shop",
+    "tokens": [
+      "distance",
+      "calculator",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "f5d91575-a19f-464a-bfda-1cb8f5c7c5b2",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "distance calculator Zoom",
+    "tokens": [
+      "distance",
+      "calculator",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 2,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "4955f013-1b19-459a-b620-04fefbd9596e",
+    "intent": "reference.distance",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "DET"
+    ],
+    "text": "distance calculator conference room A",
+    "tokens": [
+      "distance",
+      "calculator",
+      "conference",
+      "room",
+      "a"
+    ]
+  }
+]

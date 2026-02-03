@@ -1,0 +1,807 @@
+[
+  {
+    "entities": [],
+    "id": "92572fda-1e86-4211-aeef-f45ca6307faf",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me to {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8d4d9aa0-3a0f-4c3c-abb0-16703e6a4e0c",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set a reminder to {reminder_content}",
+    "tokens": [
+      "set",
+      "a",
+      "reminder",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5da5f1cb-fe98-4b74-b1e2-996feff8314b",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me about {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "about",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "90baf8e8-68fa-4558-b0f3-8894d1210ac2",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "create a reminder for {reminder_content}",
+    "tokens": [
+      "create",
+      "a",
+      "reminder",
+      "for",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "next week",
+        "type": "date_time"
+      }
+    ],
+    "id": "4c7df703-8f67-438d-acf0-cce17ded991a",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remind me to {reminder_content} at next week",
+    "tokens": [
+      "remind",
+      "me",
+      "to",
+      "reminder_content",
+      "at",
+      "next",
+      "week"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 7,
+        "start": 5,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "a188c7e7-d2de-4338-9fd7-9809040aa079",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me to {reminder_content} at tomorrow at 2pm",
+    "tokens": [
+      "remind",
+      "me",
+      "to",
+      "reminder_content",
+      "at",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "60ad63cf-4f49-418e-a52f-810ba4fac7a0",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remind me to {reminder_content} at next Monday",
+    "tokens": [
+      "remind",
+      "me",
+      "to",
+      "reminder_content",
+      "at",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 8,
+        "start": 6,
+        "text": "friday at 3pm",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "friday",
+        "type": "date_time"
+      }
+    ],
+    "id": "f5fa36ac-6ef8-4fed-a570-219b240810e3",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set a reminder for {reminder_content} at Friday at 3pm",
+    "tokens": [
+      "set",
+      "a",
+      "reminder",
+      "for",
+      "reminder_content",
+      "at",
+      "friday",
+      "at",
+      "3pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 6,
+        "text": "next week",
+        "type": "date_time"
+      }
+    ],
+    "id": "f02abdf0-d3b6-406e-832b-907b8bb18fc0",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set a reminder for {reminder_content} at next week",
+    "tokens": [
+      "set",
+      "a",
+      "reminder",
+      "for",
+      "reminder_content",
+      "at",
+      "next",
+      "week"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 3,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "e0c33cdd-db7f-4580-9977-961a0ae0fe4a",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me at tomorrow at 2pm to {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "at",
+      "tomorrow",
+      "at",
+      "2pm",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "4bb25a34-abb1-4ebd-8442-efc1e480fff2",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me at next Monday to {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "at",
+      "next",
+      "monday",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "next week",
+        "type": "date_time"
+      }
+    ],
+    "id": "cb8837e4-be35-4610-9416-eacfd158792c",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me at next week to {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "at",
+      "next",
+      "week",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "317d9890-89f9-4bd1-a5a4-d905a70698ce",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "I need a reminder to {reminder_content}",
+    "tokens": [
+      "i",
+      "need",
+      "a",
+      "reminder",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "eed4d1d4-9ada-4d92-b455-d032395f729e",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "can you remind me to {reminder_content}",
+    "tokens": [
+      "can",
+      "you",
+      "remind",
+      "me",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c83a411b-cf2c-4b46-8257-4d9f577f76ae",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "don't let me forget to {reminder_content}",
+    "tokens": [
+      "don't",
+      "let",
+      "me",
+      "forget",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "edf80542-4968-4a30-8d35-2fcd47e31ca2",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "please remind me to {reminder_content}",
+    "tokens": [
+      "please",
+      "remind",
+      "me",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "293cef60-640b-430b-bce9-1ea3e9146b8d",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "add a reminder to {reminder_content}",
+    "tokens": [
+      "add",
+      "a",
+      "reminder",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b634dcc7-f597-427c-875f-16b65f0fc3a7",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "remind me {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9b265cdd-d385-47b7-a0ed-297e925fc249",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set reminder {reminder_content}",
+    "tokens": [
+      "set",
+      "reminder",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9525318e-463d-4910-b7ae-d9e28f87c11d",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "create reminder to {reminder_content}",
+    "tokens": [
+      "create",
+      "reminder",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0461591a-f9a7-445a-87a6-05839c17f8a0",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "ADP",
+      "AUX",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "I want to be reminded to {reminder_content}",
+    "tokens": [
+      "i",
+      "want",
+      "to",
+      "be",
+      "reminded",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3767797f-7492-4a66-8de5-49e8d3c8111d",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "give me a reminder to {reminder_content}",
+    "tokens": [
+      "give",
+      "me",
+      "a",
+      "reminder",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "0e33c5c7-b31e-45ea-9549-2f591e10116e",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me in 30 minutes to {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "in",
+      "30",
+      "minutes",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 2,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 3,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "6760c482-cd2d-44fe-9dfc-e8bc0cfe1c6b",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me in 2 hours to {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "in",
+      "2",
+      "hours",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "7942514a-f3df-419a-a7fb-aaa0935af3d1",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set a reminder in 15 minutes for {reminder_content}",
+    "tokens": [
+      "set",
+      "a",
+      "reminder",
+      "in",
+      "15",
+      "minutes",
+      "for",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "fe846a95-6a30-4c4c-85d2-576dfee8f926",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set a reminder in 30 minutes for {reminder_content}",
+    "tokens": [
+      "set",
+      "a",
+      "reminder",
+      "in",
+      "30",
+      "minutes",
+      "for",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 3,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "943cf39a-3bd8-4150-9f65-53853d75cf4b",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set a reminder in 2 hours for {reminder_content}",
+    "tokens": [
+      "set",
+      "a",
+      "reminder",
+      "in",
+      "2",
+      "hours",
+      "for",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "8e563a10-fe83-4999-b9f9-2776db36f44b",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me 15 minutes from now to {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "15",
+      "minutes",
+      "from",
+      "now",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "684857c8-adc1-4df0-837b-5739200a1dd7",
+    "intent": "reminder.set",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me 2 hours from now to {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "2",
+      "hours",
+      "from",
+      "now",
+      "to",
+      "reminder_content"
+    ]
+  }
+]

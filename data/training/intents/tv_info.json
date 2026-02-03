@@ -1,0 +1,340 @@
+[
+  {
+    "entities": [],
+    "id": "1509bcad-d8ef-45e2-a6f2-9d52f6c1e79e",
+    "intent": "tv.info",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "tell me about {tv_show}",
+    "tokens": [
+      "tell",
+      "me",
+      "about",
+      "tv_show"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "cf583b7d-2a62-4d35-92c7-82142059f08c",
+    "intent": "tv.info",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "info about {tv_show}",
+    "tokens": [
+      "info",
+      "about",
+      "tv_show"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1d04f8d9-3532-4b48-a1ed-190210b7647e",
+    "intent": "tv.info",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "ADP"
+    ],
+    "text": "what is {tv_show} about",
+    "tokens": [
+      "what",
+      "is",
+      "tv_show",
+      "about"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "cc38d0f9-a3a4-4d72-9141-c83e8314fa20",
+    "intent": "tv.info",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "who's in {tv_show}",
+    "tokens": [
+      "who's",
+      "in",
+      "tv_show"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6de00547-26e3-422e-a799-f5f2b3dcf1af",
+    "intent": "tv.info",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "how many seasons of {tv_show}",
+    "tokens": [
+      "how",
+      "many",
+      "seasons",
+      "of",
+      "tv_show"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d5c5e5dd-cdaf-449a-9126-17b0d31eaeda",
+    "intent": "tv.info",
+    "pos_tags": [
+      "CONJ",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "when did {tv_show} start",
+    "tokens": [
+      "when",
+      "did",
+      "tv_show",
+      "start"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d741f423-4d5f-4975-a833-debf8cf64a52",
+    "intent": "tv.info",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "cast of {tv_show}",
+    "tokens": [
+      "cast",
+      "of",
+      "tv_show"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "86103f8a-703b-4172-9354-a73ca0163476",
+    "intent": "tv.info",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "plot of {tv_show}",
+    "tokens": [
+      "plot",
+      "of",
+      "tv_show"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "94a72398-91b6-4a54-ad34-cba56f9d7e16",
+    "intent": "tv.info",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP"
+    ],
+    "text": "what's {tv_show} about",
+    "tokens": [
+      "what's",
+      "tv_show",
+      "about"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "360143c9-0fc1-407e-ac67-fcc365238871",
+    "intent": "tv.info",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "details about {tv_show}",
+    "tokens": [
+      "details",
+      "about",
+      "tv_show"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e6218c1b-876a-4aad-929b-0301dd557dd1",
+    "intent": "tv.info",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "{tv_show} information",
+    "tokens": [
+      "tv_show",
+      "information"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ad0180b6-0f80-4c17-960d-fe8bff1584ab",
+    "intent": "tv.info",
+    "pos_tags": [
+      "AUX",
+      "NOUN",
+      "NOUN",
+      "ADP"
+    ],
+    "text": "is {tv_show} still on",
+    "tokens": [
+      "is",
+      "tv_show",
+      "still",
+      "on"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "603fedb3-a3cd-4e64-92d6-23d4cc25f1f9",
+    "intent": "tv.info",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "who stars in {tv_show}",
+    "tokens": [
+      "who",
+      "stars",
+      "in",
+      "tv_show"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "02611496-ed77-4100-be3f-f56c24e21b1b",
+    "intent": "tv.info",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "synopsis of {tv_show}",
+    "tokens": [
+      "synopsis",
+      "of",
+      "tv_show"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "13439b45-637a-4980-90eb-190d1537fa23",
+    "intent": "tv.info",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "summary of {tv_show}",
+    "tokens": [
+      "summary",
+      "of",
+      "tv_show"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7862e0fd-9589-4630-831e-4ee35e43c312",
+    "intent": "tv.info",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "reviews of {tv_show}",
+    "tokens": [
+      "reviews",
+      "of",
+      "tv_show"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "baccd557-7932-44b1-a0f7-eb53fd45842c",
+    "intent": "tv.info",
+    "pos_tags": [
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "is {tv_show} good",
+    "tokens": [
+      "is",
+      "tv_show",
+      "good"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "479df170-5812-4004-a915-32f448d9f0e1",
+    "intent": "tv.info",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "where can I watch {tv_show}",
+    "tokens": [
+      "where",
+      "can",
+      "i",
+      "watch",
+      "tv_show"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "78c63789-14a2-4fbd-b5a2-760b6b4c5f8e",
+    "intent": "tv.info",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "episodes of {tv_show}",
+    "tokens": [
+      "episodes",
+      "of",
+      "tv_show"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ab5d445a-6fef-46a7-b1a5-0f14f823046b",
+    "intent": "tv.info",
+    "pos_tags": [
+      "CONJ",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "when does {tv_show} air",
+    "tokens": [
+      "when",
+      "does",
+      "tv_show",
+      "air"
+    ]
+  }
+]

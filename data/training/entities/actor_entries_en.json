@@ -1,0 +1,42 @@
+[
+  {
+    "value": "Tom Hanks",
+    "synonyms": ["Tom Hanks", "Thomas Hanks"]
+  },
+  {
+    "value": "Meryl Streep",
+    "synonyms": ["Meryl Streep"]
+  },
+  {
+    "value": "Leonardo DiCaprio",
+    "synonyms": ["Leonardo DiCaprio", "Leo DiCaprio", "DiCaprio"]
+  },
+  {
+    "value": "Denzel Washington",
+    "synonyms": ["Denzel Washington", "Denzel"]
+  },
+  {
+    "value": "Robert De Niro",
+    "synonyms": ["Robert De Niro", "De Niro"]
+  },
+  {
+    "value": "Jennifer Lawrence",
+    "synonyms": ["Jennifer Lawrence", "J-Law"]
+  },
+  {
+    "value": "Brad Pitt",
+    "synonyms": ["Brad Pitt"]
+  },
+  {
+    "value": "Scarlett Johansson",
+    "synonyms": ["Scarlett Johansson", "Scarlett"]
+  },
+  {
+    "value": "Dwayne Johnson",
+    "synonyms": ["Dwayne Johnson", "The Rock", "Dwayne The Rock Johnson"]
+  },
+  {
+    "value": "Margot Robbie",
+    "synonyms": ["Margot Robbie"]
+  }
+]

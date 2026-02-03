@@ -1,0 +1,404 @@
+[
+  {
+    "entities": [],
+    "id": "b8aeee92-4aac-46d0-a8ef-23e72b6f71c9",
+    "intent": "calendar.query.next",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's my next event",
+    "tokens": [
+      "what's",
+      "my",
+      "next",
+      "event"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "db27be3e-1432-4794-af5d-0e6ee0dc9e42",
+    "intent": "calendar.query.next",
+    "pos_tags": [
+      "CONJ",
+      "AUX",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "when is my next meeting",
+    "tokens": [
+      "when",
+      "is",
+      "my",
+      "next",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9967218f-b079-4038-b5c8-d5f925ec88f8",
+    "intent": "calendar.query.next",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's coming up next",
+    "tokens": [
+      "what's",
+      "coming",
+      "up",
+      "next"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "appointment",
+        "type": "event_title"
+      }
+    ],
+    "id": "179e5eb8-7e5a-44aa-9d38-5c926dd32e14",
+    "intent": "calendar.query.next",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "my next appointment",
+    "tokens": [
+      "my",
+      "next",
+      "appointment"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ff442198-fde3-4d98-a448-1c4356d21e51",
+    "intent": "calendar.query.next",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "what's next on my calendar",
+    "tokens": [
+      "what's",
+      "next",
+      "on",
+      "my",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "71da1ae0-4bf3-4768-8a72-563ef837c9de",
+    "intent": "calendar.query.next",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "next event",
+    "tokens": [
+      "next",
+      "event"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9e1c3e79-ea9d-4bc3-9fce-ef95ba91c342",
+    "intent": "calendar.query.next",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "when's my next event",
+    "tokens": [
+      "when's",
+      "my",
+      "next",
+      "event"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "cca5a71b-9843-4767-a271-ad8ada72842f",
+    "intent": "calendar.query.next",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show me my next meeting",
+    "tokens": [
+      "show",
+      "me",
+      "my",
+      "next",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3a7d231f-7454-4dea-ae47-386b732bbe9f",
+    "intent": "calendar.query.next",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN"
+    ],
+    "text": "what do I have next",
+    "tokens": [
+      "what",
+      "do",
+      "i",
+      "have",
+      "next"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "601a0f53-6650-4de0-890b-5b06351f830c",
+    "intent": "calendar.query.next",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON",
+      "VERB"
+    ],
+    "text": "next on my schedule",
+    "tokens": [
+      "next",
+      "on",
+      "my",
+      "schedule"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0f6462a7-9299-43d8-9fdc-93a188b8005c",
+    "intent": "calendar.query.next",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's up next",
+    "tokens": [
+      "what's",
+      "up",
+      "next"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "350aa8a8-4b87-49f4-93b7-c0c13b48c3d8",
+    "intent": "calendar.query.next",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "my upcoming event",
+    "tokens": [
+      "my",
+      "upcoming",
+      "event"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "cb305b5b-5948-4527-a4a0-1e0647959645",
+    "intent": "calendar.query.next",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "next scheduled event",
+    "tokens": [
+      "next",
+      "scheduled",
+      "event"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "15aef5a2-83a1-48b5-9c08-21d4974ea865",
+    "intent": "calendar.query.next",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "what's the next thing on my calendar",
+    "tokens": [
+      "what's",
+      "the",
+      "next",
+      "thing",
+      "on",
+      "my",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "appointment",
+        "type": "event_title"
+      }
+    ],
+    "id": "cc6b6059-7f75-478d-bd0a-efed6739000c",
+    "intent": "calendar.query.next",
+    "pos_tags": [
+      "CONJ",
+      "AUX",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "when is my next appointment",
+    "tokens": [
+      "when",
+      "is",
+      "my",
+      "next",
+      "appointment"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8a79e739-a253-4dbb-bf33-8d1a90658faa",
+    "intent": "calendar.query.next",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show next event",
+    "tokens": [
+      "show",
+      "next",
+      "event"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "57e29c2e-ee0a-4a15-ab33-e96e5ced6828",
+    "intent": "calendar.query.next",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "next meeting",
+    "tokens": [
+      "next",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "49dbcffd-75e3-4722-8c4f-34d025627ff4",
+    "intent": "calendar.query.next",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's my next scheduled item",
+    "tokens": [
+      "what's",
+      "my",
+      "next",
+      "scheduled",
+      "item"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "appointment",
+        "type": "event_title"
+      }
+    ],
+    "id": "8ec8ab85-b629-4979-9c1b-df18421ad861",
+    "intent": "calendar.query.next",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "upcoming appointment",
+    "tokens": [
+      "upcoming",
+      "appointment"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d82402a5-8c9f-4d71-ade2-d2ee5e670864",
+    "intent": "calendar.query.next",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "what's immediately next on my calendar",
+    "tokens": [
+      "what's",
+      "immediately",
+      "next",
+      "on",
+      "my",
+      "calendar"
+    ]
+  }
+]

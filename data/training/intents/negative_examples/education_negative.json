@@ -1,0 +1,42 @@
+[
+  {
+    "text": "remind me to study",
+    "correct_intent": "reminder.set"
+  },
+  {
+    "text": "schedule a class",
+    "correct_intent": "calendar.event.create"
+  },
+  {
+    "text": "play educational music",
+    "correct_intent": "music.play"
+  },
+  {
+    "text": "search for schools",
+    "correct_intent": "websearch.query"
+  },
+  {
+    "text": "add homework to my list",
+    "correct_intent": "todo.add"
+  },
+  {
+    "text": "call my teacher",
+    "correct_intent": "call.make"
+  },
+  {
+    "text": "what's the weather",
+    "correct_intent": "weather"
+  },
+  {
+    "text": "turn on the lights",
+    "correct_intent": "smarthome.lights.on"
+  },
+  {
+    "text": "set a study timer",
+    "correct_intent": "timer.set"
+  },
+  {
+    "text": "send an email to professor",
+    "correct_intent": "email.compose"
+  }
+]

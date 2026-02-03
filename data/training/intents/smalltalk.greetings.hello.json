@@ -624,5 +624,87 @@
     "entities": [],
     "id": "6d5f95b1-ce37-474a-96d2-355d3cc9d558",
     "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "howdy there",
+    "tokens": [
+      "howdy",
+      "there"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "a1b2c3d4-howdy-001",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "howdy partner",
+    "tokens": [
+      "howdy",
+      "partner"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "a1b2c3d4-howdy-002",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "howdy!",
+    "tokens": [
+      "howdy",
+      "!"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PUNCT"
+    ],
+    "entities": [],
+    "id": "a1b2c3d4-howdy-003",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "howdy y'all",
+    "tokens": [
+      "howdy",
+      "y'all"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "a1b2c3d4-howdy-004",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "hia",
+    "tokens": [
+      "hia"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "a1b2c3d4-hia-001",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "hia there",
+    "tokens": [
+      "hia",
+      "there"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "a1b2c3d4-hia-002",
+    "intent": "smalltalk.greetings.hello"
   }
 ]

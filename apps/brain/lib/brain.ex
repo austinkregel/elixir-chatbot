@@ -822,55 +822,66 @@ defmodule Brain do
     if Config.enabled?() and SelfKnowledgeAnalyzer.is_self_knowledge_query?(input) do
       handle_meta_cognitive_query(persona, input, user_id, opts)
     else
-      # Check for fast-path via RacingAnalyzer before running full pipeline
-      # This uses heuristics and memory similarity for quick responses
+      # Check for fast-path via RacingAnalyzer
+      # IMPORTANT: Fast path is ONLY for simple smalltalk intents that don't need
+      # entity extraction (greetings, thanks, farewells, etc.).
+      # All other intents (device.control, weather.query, music.play, etc.) MUST
+      # go through the full pipeline for entity extraction, slot detection, and
+      # proper response generation.
       case RacingAnalyzer.check_fast_path(input, world_id, user_id, nil) do
         {:fast_path, interpretation} ->
-          Logger.debug("Fast path hit", %{
-            intent: interpretation.intent,
-            source: interpretation.source,
-            activation: interpretation.activation
-          })
+          # Only use fast path for simple smalltalk intents
+          # These intents don't benefit from entity extraction
+          intent_domain = IntentRegistry.domain(interpretation.intent)
+          is_simple_smalltalk = intent_domain == :smalltalk
 
-          handle_fast_path_response(persona, interpretation, memory, opts)
+          if is_simple_smalltalk do
+            # Simple smalltalk (greetings, thanks, farewells) - safe to use fast path
+            Logger.debug("Fast path hit (simple smalltalk)", %{
+              intent: interpretation.intent,
+              source: interpretation.source,
+              activation: interpretation.activation
+            })
+
+            handle_fast_path_response(persona, interpretation, memory, opts)
+          else
+            # Non-smalltalk intent - MUST run full pipeline
+            # This ensures entity extraction happens for weather, music, device, etc.
+            Logger.debug("Fast path bypassed (needs entity extraction)", %{
+              intent: interpretation.intent,
+              domain: intent_domain
+            })
+
+            process_standard_message(persona, input, memory, opts)
+          end
 
         :no_match ->
-          # No fast path - run standard analysis pipeline
+          # No fast path match - run standard analysis pipeline
           process_standard_message(persona, input, memory, opts)
       end
     end
   end
 
-  # Handles responses when RacingAnalyzer finds a fast-path match
+  # Handles responses when RacingAnalyzer finds a fast-path match for smalltalk intents
+  # (greetings, thanks, farewells, etc. - intents that don't need entity extraction)
   defp handle_fast_path_response(_persona, interpretation, _memory, opts) do
     intent = interpretation.intent
-    text = interpretation.text
-    
-    # Extract entities even in fast path - interpretation may not have them
-    # This ensures slots can be filled for weather, music, etc. queries
-    entities = 
-      case interpretation.entities do
-        nil -> extract_entities_for_fast_path(text, intent, opts)
-        [] -> extract_entities_for_fast_path(text, intent, opts)
-        existing when is_list(existing) -> existing
-      end
 
     # Generate response using existing Generator
-    # Generator.generate always returns {:ok, response, type} with fallback if needed
-    {:ok, response, response_type} = Generator.generate(intent, entities, nil)
+    # No entities needed for intents without required slots
+    {:ok, response, response_type} = Generator.generate(intent, [], nil)
 
     context = %{
       intent: intent,
       source: interpretation.source,
       fast_path: true,
       activation: interpretation.activation,
-      entities: entities
+      entities: []
     }
 
     Logger.info("Fast path response generated", %{
       intent: intent,
-      response_type: response_type,
-      entity_count: length(entities)
+      response_type: response_type
     })
 
     Progress.report(opts, :response_generated, %{
@@ -881,23 +892,6 @@ defmodule Brain do
     })
 
     {response, :fast_path, context}
-  end
-  
-  # Extract entities for fast path responses
-  defp extract_entities_for_fast_path(text, intent, opts) do
-    try do
-      # Include intent context for better disambiguation
-      entity_opts = Keyword.merge(opts, [
-        intent: intent,
-        world_id: Keyword.get(opts, :world_id, "default")
-      ])
-      
-      Brain.ML.EntityExtractor.extract_entities(text, entity_opts)
-    rescue
-      _ -> []
-    catch
-      :exit, _ -> []
-    end
   end
 
   defp process_standard_message(persona, input, memory, opts) do

@@ -1,0 +1,308 @@
+[
+  {
+    "entities": [],
+    "id": "ed471ca1-67f4-47f8-bf51-75bd18c05c19",
+    "intent": "analyze.compare",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "compare the datasets",
+    "tokens": [
+      "compare",
+      "the",
+      "datasets"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "84de268a-d27a-4157-91b9-5cc22346e9f0",
+    "intent": "analyze.compare",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "compare {query_term} with {query_term}",
+    "tokens": [
+      "compare",
+      "query_term",
+      "with",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9f481f91-b2fa-4196-a8b3-8e69ab73572c",
+    "intent": "analyze.compare",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "comparison analysis",
+    "tokens": [
+      "comparison",
+      "analysis"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "79b074c6-e8c9-4a44-9fe5-5e55738994e4",
+    "intent": "analyze.compare",
+    "pos_tags": [
+      "NOUN",
+      "CONJ",
+      "NOUN"
+    ],
+    "text": "analyze and compare",
+    "tokens": [
+      "analyze",
+      "and",
+      "compare"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "fee451b2-11da-4946-ba4b-92d5e27f2eee",
+    "intent": "analyze.compare",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "compare these two",
+    "tokens": [
+      "compare",
+      "these",
+      "two"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d60b421c-a266-46d3-bbce-dd22ee83c212",
+    "intent": "analyze.compare",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "run comparison",
+    "tokens": [
+      "run",
+      "comparison"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "68b2fcf2-aa59-42c0-8ad2-693b68e0ce4c",
+    "intent": "analyze.compare",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "compare the data",
+    "tokens": [
+      "compare",
+      "the",
+      "data"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "dd3b7ba1-b978-45ef-9a40-3fb9674deb04",
+    "intent": "analyze.compare",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "side by side comparison",
+    "tokens": [
+      "side",
+      "by",
+      "side",
+      "comparison"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d20715b2-b1ac-416e-95f7-06fd26e95b4d",
+    "intent": "analyze.compare",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "comparative analysis",
+    "tokens": [
+      "comparative",
+      "analysis"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8a656a08-36cf-4cf7-bd96-23aeb2a57c32",
+    "intent": "analyze.compare",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "compare {data_source}",
+    "tokens": [
+      "compare",
+      "data_source"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3c424992-00be-4a8f-925d-8d0f0efd5b3b",
+    "intent": "analyze.compare",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "compare the values",
+    "tokens": [
+      "compare",
+      "the",
+      "values"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3bf7001e-5875-4977-938e-089b8be2173d",
+    "intent": "analyze.compare",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "analyze differences",
+    "tokens": [
+      "analyze",
+      "differences"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "81666b3f-b022-4cb2-84a8-9674491e7adb",
+    "intent": "analyze.compare",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "compare metrics",
+    "tokens": [
+      "compare",
+      "metrics"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a0857489-345e-44d2-8ab8-a503b5ff9269",
+    "intent": "analyze.compare",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "comparison of {query_term}",
+    "tokens": [
+      "comparison",
+      "of",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2d86e300-9eab-4c96-ab3a-9b2e4b8e08cd",
+    "intent": "analyze.compare",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "compare the results",
+    "tokens": [
+      "compare",
+      "the",
+      "results"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0b7193fc-eaf7-4cc4-a6c0-a7314233b261",
+    "intent": "analyze.compare",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "analyze both",
+    "tokens": [
+      "analyze",
+      "both"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "51c6fd90-952e-4b93-abe0-3da2b4e95cb9",
+    "intent": "analyze.compare",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "compare {comparison_target}",
+    "tokens": [
+      "compare",
+      "comparison_target"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6edba8bd-741c-40c7-898b-6a12b9abb686",
+    "intent": "analyze.compare",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "run a comparison",
+    "tokens": [
+      "run",
+      "a",
+      "comparison"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "41a47fdb-7ad1-4731-9745-b75dde40e6fd",
+    "intent": "analyze.compare",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "compare these datasets",
+    "tokens": [
+      "compare",
+      "these",
+      "datasets"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "719786ce-bc7f-42cc-87ea-0ba96eed94f7",
+    "intent": "analyze.compare",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "difference comparison",
+    "tokens": [
+      "difference",
+      "comparison"
+    ]
+  }
+]

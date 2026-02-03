@@ -19,6 +19,9 @@ defmodule Mix.Tasks.TrainModels do
     --lstm-intent    Train LSTM intent classifier only
     --lstm-joint     Train LSTM joint model (intent + NER)
     --lstm-epochs N  Number of epochs for LSTM training (default: 10)
+    --hidden-size N  LSTM hidden dimension (default: 128)
+    --embedding-size N  LSTM embedding dimension (default: 128)
+    --batch-size N   Training batch size (default: 32)
     --skip-lstm      Skip LSTM training (train only TF-IDF models)
 
   ## World-Specific Training
@@ -68,7 +71,7 @@ defmodule Mix.Tasks.TrainModels do
   require Logger
   alias Brain.ML.Trainer
   alias Brain.ML.POSTagger
-  alias Brain.ML.LSTM.Trainer, as: LSTMTrainer
+  alias Brain.ML.LSTM.UnifiedModel
 
   @shortdoc "Train ML models from training data"
 
@@ -88,10 +91,16 @@ defmodule Mix.Tasks.TrainModels do
           lstm_intent: :boolean,
           lstm_joint: :boolean,
           lstm_epochs: :integer,
+          hidden_size: :integer,
+          embedding_size: :integer,
+          batch_size: :integer,
           skip_lstm: :boolean
         ]
       )
 
+    # Skip async ML init during training to avoid conflicts
+    Application.put_env(:brain, :skip_ml_init, true)
+    
     # Ensure we're in the right environment
     Mix.Task.run("app.start")
 
@@ -126,7 +135,12 @@ defmodule Mix.Tasks.TrainModels do
     start_time = System.monotonic_time(:millisecond)
 
     # Get LSTM training options
-    lstm_epochs = Keyword.get(opts, :lstm_epochs, 10)
+    lstm_opts = %{
+      epochs: Keyword.get(opts, :lstm_epochs, 60),
+      hidden_size: Keyword.get(opts, :hidden_size, 128),
+      embedding_size: Keyword.get(opts, :embedding_size, 128),
+      batch_size: Keyword.get(opts, :batch_size, 32)
+    }
     skip_lstm = Keyword.get(opts, :skip_lstm, false)
 
     # Pass models_path to training functions
@@ -134,13 +148,13 @@ defmodule Mix.Tasks.TrainModels do
       cond do
         # LSTM-only training options (skip TF-IDF models)
         Keyword.get(opts, :lstm_only, false) ->
-          run_lstm_multitask_training(lstm_epochs)
+          run_lstm_multitask_training(lstm_opts)
 
         Keyword.get(opts, :lstm_intent, false) ->
-          run_lstm_intent_training(lstm_epochs)
+          run_lstm_intent_training(lstm_opts)
 
         Keyword.get(opts, :lstm_joint, false) ->
-          run_lstm_joint_training(lstm_epochs)
+          run_lstm_joint_training(lstm_opts)
 
         # Legacy/specific training options
         Keyword.get(opts, :intent_only, false) ->
@@ -161,7 +175,7 @@ defmodule Mix.Tasks.TrainModels do
         true ->
           # Full training pipeline (TF-IDF + LSTM by default)
           skip_pos = Keyword.get(opts, :skip_pos, false)
-          run_full_training(skip_pos, skip_lstm, lstm_epochs, models_path)
+          run_full_training(skip_pos, skip_lstm, lstm_opts, models_path)
       end
 
     end_time = System.monotonic_time(:millisecond)
@@ -231,7 +245,7 @@ defmodule Mix.Tasks.TrainModels do
     end
   end
 
-  defp run_full_training(skip_pos, skip_lstm, lstm_epochs, models_path) do
+  defp run_full_training(skip_pos, skip_lstm, lstm_opts, models_path) do
     # Run standard TF-IDF training with custom models path
     case Trainer.train_and_save(models_path: models_path) do
       {:ok, stats} ->
@@ -246,14 +260,14 @@ defmodule Mix.Tasks.TrainModels do
             end
           end
 
-        # Train LSTM multi-task model (default behavior)
+        # Train LSTM multi-task model (default behavior, GPU accelerated)
         if skip_lstm do
           {:ok, stats}
         else
           Mix.shell().info("")
-          Mix.shell().info("Now training LSTM models...")
+          Mix.shell().info("Now training LSTM models (GPU accelerated)...")
 
-          case run_lstm_multitask_training(lstm_epochs) do
+          case run_lstm_multitask_training(lstm_opts) do
             {:ok, lstm_stats} ->
               {:ok, Map.merge(stats, lstm_stats)}
 
@@ -273,22 +287,59 @@ defmodule Mix.Tasks.TrainModels do
   end
 
   # ============================================================================
-  # LSTM Training Functions
+  # LSTM Training Functions (GPU Accelerated via EXLA)
   # ============================================================================
 
-  defp run_lstm_multitask_training(epochs) do
+  defp run_lstm_multitask_training(lstm_opts) do
+    run_lstm_unified_training(lstm_opts, :multitask)
+  end
+
+  defp run_lstm_intent_training(lstm_opts) do
+    run_lstm_unified_training(lstm_opts, :intent)
+  end
+
+  defp run_lstm_joint_training(lstm_opts) do
+    run_lstm_unified_training(lstm_opts, :joint)
+  end
+
+  defp run_lstm_unified_training(lstm_opts, type) do
+    epochs = Map.get(lstm_opts, :epochs, 10)
+    hidden_size = Map.get(lstm_opts, :hidden_size, 128)
+    embedding_size = Map.get(lstm_opts, :embedding_size, 128)
+    batch_size = Map.get(lstm_opts, :batch_size, 32)
+
     Mix.shell().info("")
-    Mix.shell().info("=" |> String.duplicate(50))
-    Mix.shell().info("Training LSTM Multi-Task Model (Intent + NER + POS)")
-    Mix.shell().info("=" |> String.duplicate(50))
+    Mix.shell().info("=" |> String.duplicate(60))
+    Mix.shell().info("Training LSTM Model (EXLA GPU Accelerated)")
+    Mix.shell().info("=" |> String.duplicate(60))
+    Mix.shell().info("")
+    Mix.shell().info("This model powers:")
+    Mix.shell().info("  - Intent Classification")
+    Mix.shell().info("  - Named Entity Recognition")
+    Mix.shell().info("  - Sentiment Analysis")
+    Mix.shell().info("  - Speech Act Classification")
     Mix.shell().info("")
     Mix.shell().info("Configuration:")
     Mix.shell().info("  Epochs: #{epochs}")
+    Mix.shell().info("  Hidden size: #{hidden_size}")
+    Mix.shell().info("  Embedding size: #{embedding_size}")
+    Mix.shell().info("  Batch size: #{batch_size}")
+    Mix.shell().info("  Model type: #{type}")
+    Mix.shell().info("  Backend: EXLA (GPU accelerated)")
     Mix.shell().info("")
 
-    case LSTMTrainer.train_multitask(epochs: epochs) do
+    # Build config for the unified model
+    config = [
+      epochs: epochs,
+      hidden_size: hidden_size,
+      embedding_size: embedding_size,
+      batch_size: batch_size,
+      learning_rate: 0.001
+    ]
+
+    case UnifiedModel.train(config) do
       {:ok, model} ->
-        stats = build_lstm_stats(model, :multitask)
+        stats = build_lstm_stats(model, type)
         {:ok, stats}
 
       {:error, reason} ->
@@ -296,60 +347,24 @@ defmodule Mix.Tasks.TrainModels do
     end
   end
 
-  defp run_lstm_intent_training(epochs) do
-    Mix.shell().info("")
-    Mix.shell().info("=" |> String.duplicate(50))
-    Mix.shell().info("Training LSTM Intent Classifier")
-    Mix.shell().info("=" |> String.duplicate(50))
-    Mix.shell().info("")
-    Mix.shell().info("Configuration:")
-    Mix.shell().info("  Epochs: #{epochs}")
-    Mix.shell().info("")
+  defp build_lstm_stats(result, type) do
+    # The result from UnifiedModel.train/1 has the structure:
+    # %{model: model, params: trained_params, vocabularies: vocabularies}
+    vocabularies = result.vocabularies
 
-    case LSTMTrainer.train_intent_classifier(epochs: epochs) do
-      {:ok, model} ->
-        stats = build_lstm_stats(model, :intent)
-        {:ok, stats}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
-  defp run_lstm_joint_training(epochs) do
-    Mix.shell().info("")
-    Mix.shell().info("=" |> String.duplicate(50))
-    Mix.shell().info("Training LSTM Joint Model (Intent + NER)")
-    Mix.shell().info("=" |> String.duplicate(50))
-    Mix.shell().info("")
-    Mix.shell().info("Configuration:")
-    Mix.shell().info("  Epochs: #{epochs}")
-    Mix.shell().info("")
-
-    case LSTMTrainer.train_joint(epochs: epochs) do
-      {:ok, model} ->
-        stats = build_lstm_stats(model, :joint)
-        {:ok, stats}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
-  defp build_lstm_stats(model, type) do
     base_stats = %{
       lstm_model_type: type,
-      lstm_vocab_size: map_size(model.vocabularies.token_vocab),
-      lstm_num_intents: map_size(model.vocabularies.intent_to_idx),
-      lstm_epochs_trained: length(model.metrics),
-      lstm_embedding_size: model.config.embedding_size,
-      lstm_hidden_size: model.config.hidden_size
+      lstm_vocab_size: map_size(vocabularies.token_vocab),
+      lstm_num_intents: map_size(vocabularies.intent_to_idx),
+      lstm_num_bio_tags: map_size(vocabularies.bio_to_idx)
     }
 
-    # Add final metrics
-    final_metrics = List.last(model.metrics) || %{}
+    # Add metrics if available (they may not be in the current implementation)
+    metrics = Map.get(result, :metrics, [])
+    final_metrics = if is_list(metrics) and length(metrics) > 0, do: List.last(metrics), else: %{}
 
     Map.merge(base_stats, %{
+      lstm_epochs_trained: if(is_list(metrics), do: length(metrics), else: 0),
       lstm_final_train_loss: Map.get(final_metrics, :train_loss, 0),
       lstm_final_val_loss: Map.get(final_metrics, :val_loss, 0),
       lstm_final_train_acc: Map.get(final_metrics, :train_acc, 0),
@@ -603,15 +618,15 @@ defmodule Mix.Tasks.TrainModels do
     if Map.has_key?(stats, :lstm_model_type) do
       Mix.shell().info("  LSTM Multi-Task Model:")
       Mix.shell().info("    - Model type:       #{stats.lstm_model_type}")
-      Mix.shell().info("    - Vocabulary size:  #{stats.lstm_vocab_size}")
-      Mix.shell().info("    - Intent classes:   #{stats.lstm_num_intents}")
-      Mix.shell().info("    - Embedding size:   #{stats.lstm_embedding_size}")
-      Mix.shell().info("    - Hidden size:      #{stats.lstm_hidden_size}")
-      Mix.shell().info("    - Epochs trained:   #{stats.lstm_epochs_trained}")
+      Mix.shell().info("    - Vocabulary size:  #{Map.get(stats, :lstm_vocab_size, 0)}")
+      Mix.shell().info("    - Intent classes:   #{Map.get(stats, :lstm_num_intents, 0)}")
+      Mix.shell().info("    - BIO tag classes:  #{Map.get(stats, :lstm_num_bio_tags, 0)}")
+      Mix.shell().info("    - Epochs trained:   #{Map.get(stats, :lstm_epochs_trained, 0)}")
 
-      if stats.lstm_final_val_acc > 0 do
-        Mix.shell().info("    - Final train acc:  #{Float.round(stats.lstm_final_train_acc * 100, 1)}%")
-        Mix.shell().info("    - Final val acc:    #{Float.round(stats.lstm_final_val_acc * 100, 1)}%")
+      final_val_acc = Map.get(stats, :lstm_final_val_acc, 0)
+      if final_val_acc > 0 do
+        Mix.shell().info("    - Final train acc:  #{Float.round(Map.get(stats, :lstm_final_train_acc, 0) * 100, 1)}%")
+        Mix.shell().info("    - Final val acc:    #{Float.round(final_val_acc * 100, 1)}%")
       end
     end
 

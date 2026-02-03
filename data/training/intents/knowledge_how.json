@@ -1,0 +1,356 @@
+[
+  {
+    "entities": [],
+    "id": "6e6d304c-bbfd-43b4-b165-8c388ccd0fca",
+    "intent": "knowledge.how",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how does {topic} work",
+    "tokens": [
+      "how",
+      "does",
+      "topic",
+      "work"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7b64e580-5983-446c-94cc-f33c5d0e23a4",
+    "intent": "knowledge.how",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how do {topic} work",
+    "tokens": [
+      "how",
+      "do",
+      "topic",
+      "work"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8b25ca65-fd82-4757-a0da-dd7f94283171",
+    "intent": "knowledge.how",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "explain how {topic} works",
+    "tokens": [
+      "explain",
+      "how",
+      "topic",
+      "works"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ab94c18e-1021-43cf-854c-d835daf4216a",
+    "intent": "knowledge.how",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how is {topic} made",
+    "tokens": [
+      "how",
+      "is",
+      "topic",
+      "made"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5fc8a625-8204-4440-be55-edc1c0d75b4e",
+    "intent": "knowledge.how",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "how to {topic}",
+    "tokens": [
+      "how",
+      "to",
+      "topic"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "02d3882e-c07a-49e4-a95a-a7afab954fc6",
+    "intent": "knowledge.how",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "how can I {topic}",
+    "tokens": [
+      "how",
+      "can",
+      "i",
+      "topic"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "53d2bee9-2556-4ec5-84ac-a0a0280ba40c",
+    "intent": "knowledge.how",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how did {topic} happen",
+    "tokens": [
+      "how",
+      "did",
+      "topic",
+      "happen"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "dbb0ed21-1a27-4c41-a07c-075e9224d0de",
+    "intent": "knowledge.how",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "process of {topic}",
+    "tokens": [
+      "process",
+      "of",
+      "topic"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7cecc7e2-c736-41d7-9c9a-d2eb200fee7f",
+    "intent": "knowledge.how",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how is {topic} done",
+    "tokens": [
+      "how",
+      "is",
+      "topic",
+      "done"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "69c14b9d-3b66-40dd-9349-21363e77cb65",
+    "intent": "knowledge.how",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "steps for {topic}",
+    "tokens": [
+      "steps",
+      "for",
+      "topic"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "096ae8c4-883f-438d-904f-6407460e5cff",
+    "intent": "knowledge.how",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "how do you {topic}",
+    "tokens": [
+      "how",
+      "do",
+      "you",
+      "topic"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6349bec9-9bb5-4846-b6dd-3b32e86476a0",
+    "intent": "knowledge.how",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how does {topic} function",
+    "tokens": [
+      "how",
+      "does",
+      "topic",
+      "function"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8575a8d4-88c0-4e35-afcb-9ecf0f5e7e35",
+    "intent": "knowledge.how",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "mechanism of {topic}",
+    "tokens": [
+      "mechanism",
+      "of",
+      "topic"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "cb6e6edc-8afc-4520-867d-5164d9c748a9",
+    "intent": "knowledge.how",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how was {topic} created",
+    "tokens": [
+      "how",
+      "was",
+      "topic",
+      "created"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8205f638-8050-4336-9eb6-406286bc30b3",
+    "intent": "knowledge.how",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how is {topic} produced",
+    "tokens": [
+      "how",
+      "is",
+      "topic",
+      "produced"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "cad73853-63c3-4f7c-a1b9-341f3b1a6efa",
+    "intent": "knowledge.how",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "how do I {topic}",
+    "tokens": [
+      "how",
+      "do",
+      "i",
+      "topic"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7e6badb9-3482-45ea-a0f7-644bde5f0630",
+    "intent": "knowledge.how",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "explain the process of {topic}",
+    "tokens": [
+      "explain",
+      "the",
+      "process",
+      "of",
+      "topic"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "648a59c8-483c-439d-ab56-6c0712913e9f",
+    "intent": "knowledge.how",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how does {topic} operate",
+    "tokens": [
+      "how",
+      "does",
+      "topic",
+      "operate"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7a60c412-7974-4cd9-a21c-8aa05fd7b9e4",
+    "intent": "knowledge.how",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "AUX",
+      "NOUN"
+    ],
+    "text": "how can {topic} be done",
+    "tokens": [
+      "how",
+      "can",
+      "topic",
+      "be",
+      "done"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "34b537c6-00f8-40cb-8bdc-02c9081db168",
+    "intent": "knowledge.how",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "way to {topic}",
+    "tokens": [
+      "way",
+      "to",
+      "topic"
+    ]
+  }
+]

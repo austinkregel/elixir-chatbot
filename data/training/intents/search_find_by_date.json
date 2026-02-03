@@ -1,0 +1,332 @@
+[
+  {
+    "entities": [],
+    "id": "650c423f-802c-4a88-a990-1814d29c03a7",
+    "intent": "search.find_by_date",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "find entries from {date_range}",
+    "tokens": [
+      "find",
+      "entries",
+      "from",
+      "date_range"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "dfc8d592-8b36-49c5-826c-d92ab80001e6",
+    "intent": "search.find_by_date",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "search records from {date_range}",
+    "tokens": [
+      "search",
+      "records",
+      "from",
+      "date_range"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8055ba9c-88ad-4ae2-af56-48a6c1523355",
+    "intent": "search.find_by_date",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "show entries from {date_range}",
+    "tokens": [
+      "show",
+      "entries",
+      "from",
+      "date_range"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d2d7d9b3-457f-4515-9344-dcbbff6ecb07",
+    "intent": "search.find_by_date",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "find items from {date_range}",
+    "tokens": [
+      "find",
+      "items",
+      "from",
+      "date_range"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ddbff22e-bf27-4daf-83d0-b986bfd60ef7",
+    "intent": "search.find_by_date",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "search by date {date_range}",
+    "tokens": [
+      "search",
+      "by",
+      "date",
+      "date_range"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6f0cc5d4-13cc-4ea7-b2f3-610c1554e66f",
+    "intent": "search.find_by_date",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "get records from {date_range}",
+    "tokens": [
+      "get",
+      "records",
+      "from",
+      "date_range"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8f4f93a6-f230-460e-a76e-d01739f9be37",
+    "intent": "search.find_by_date",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "entries dated {date_range}",
+    "tokens": [
+      "entries",
+      "dated",
+      "date_range"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "04936160-85d7-46a4-ba14-a6c3d624ef10",
+    "intent": "search.find_by_date",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "find {date_range} records",
+    "tokens": [
+      "find",
+      "date_range",
+      "records"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c6a73bd8-48f5-41f9-98c5-9027991948dd",
+    "intent": "search.find_by_date",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "search {date_range}",
+    "tokens": [
+      "search",
+      "date_range"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "96bf7296-e307-4ac3-8582-147bc1f18d06",
+    "intent": "search.find_by_date",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "items from {date_range}",
+    "tokens": [
+      "items",
+      "from",
+      "date_range"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "174c1814-6d44-4368-8988-a6a53da0852e",
+    "intent": "search.find_by_date",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "data from {date_range}",
+    "tokens": [
+      "data",
+      "from",
+      "date_range"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "09e40384-4d7d-43a5-8f7e-0bfdde84d4b9",
+    "intent": "search.find_by_date",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "records dated {date_range}",
+    "tokens": [
+      "records",
+      "dated",
+      "date_range"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d22c373a-2407-44cc-a8fd-048b03ed2118",
+    "intent": "search.find_by_date",
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "find from {date_range}",
+    "tokens": [
+      "find",
+      "from",
+      "date_range"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c82df093-756a-4b87-abc7-11bb3b6d0fa0",
+    "intent": "search.find_by_date",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "search {date_range} data",
+    "tokens": [
+      "search",
+      "date_range",
+      "data"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0780d8f7-aec7-448d-9da9-0683413cd85a",
+    "intent": "search.find_by_date",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show {date_range} entries",
+    "tokens": [
+      "show",
+      "date_range",
+      "entries"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e6e145db-934a-44e3-8212-33c01bd68281",
+    "intent": "search.find_by_date",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "pull {date_range} records",
+    "tokens": [
+      "pull",
+      "date_range",
+      "records"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d6042824-fcd8-4fba-9bdc-f4e3b6d2ee8d",
+    "intent": "search.find_by_date",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "filter by {date_range}",
+    "tokens": [
+      "filter",
+      "by",
+      "date_range"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "66193cc1-1225-4a17-a9f0-97c539e57051",
+    "intent": "search.find_by_date",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "date range {date_range}",
+    "tokens": [
+      "date",
+      "range",
+      "date_range"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8b98ba24-1541-4951-8e46-60a272e3035f",
+    "intent": "search.find_by_date",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "get {date_range} data",
+    "tokens": [
+      "get",
+      "date_range",
+      "data"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "72806dca-3396-4e9b-897e-5c72bb96cc9c",
+    "intent": "search.find_by_date",
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "find during {date_range}",
+    "tokens": [
+      "find",
+      "during",
+      "date_range"
+    ]
+  }
+]

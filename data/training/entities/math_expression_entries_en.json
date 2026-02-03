@@ -1,0 +1,30 @@
+[
+  {
+    "value": "15 * 23",
+    "synonyms": ["15 * 23", "15 times 23", "15 multiplied by 23", "fifteen times twenty three"]
+  },
+  {
+    "value": "sqrt(144)",
+    "synonyms": ["sqrt(144)", "square root of 144", "√144"]
+  },
+  {
+    "value": "25 + 17",
+    "synonyms": ["25 + 17", "25 plus 17", "twenty five plus seventeen"]
+  },
+  {
+    "value": "100 / 4",
+    "synonyms": ["100 / 4", "100 divided by 4", "one hundred divided by four"]
+  },
+  {
+    "value": "2^10",
+    "synonyms": ["2^10", "2 to the power of 10", "2 to the 10th"]
+  },
+  {
+    "value": "50 - 23",
+    "synonyms": ["50 - 23", "50 minus 23", "fifty minus twenty three"]
+  },
+  {
+    "value": "15% of 200",
+    "synonyms": ["15% of 200", "15 percent of 200", "fifteen percent of two hundred"]
+  }
+]

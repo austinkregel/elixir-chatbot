@@ -57,6 +57,7 @@ defmodule Brain.Telemetry do
   @memory_query [:chat_bot, :memory, :query]
   @memory_embed [:chat_bot, :memory, :embed]
   @gazetteer_lookup [:chat_bot, :gazetteer, :lookup]
+  @entity_extract [:chat_bot, :entity, :extract]
   @ml_train [:chat_bot, :ml, :train]
   @model_load [:chat_bot, :ml, :load]
   @message_queue [:chat_bot, :genserver, :message_queue]
@@ -116,6 +117,10 @@ defmodule Brain.Telemetry do
       # Gazetteer lookup handlers
       {"chatbot-gazetteer-lookup-stop", @gazetteer_lookup ++ [:stop],
        &__MODULE__.handle_span_stop/4, %{metric: :gazetteer_lookup}},
+
+      # Entity extraction handlers
+      {"chatbot-entity-extract-stop", @entity_extract ++ [:stop],
+       &__MODULE__.handle_span_stop/4, %{metric: :entity_extract}},
 
       # ML Training handlers
       {"chatbot-ml-train-start", @ml_train ++ [:start], &__MODULE__.handle_training_start/4, %{}},
@@ -197,6 +202,7 @@ defmodule Brain.Telemetry do
       "chatbot-memory-query-stop",
       "chatbot-memory-embed-stop",
       "chatbot-gazetteer-lookup-stop",
+      "chatbot-entity-extract-stop",
       "chatbot-ml-train-start",
       "chatbot-ml-train-stop",
       "chatbot-ml-train-exception",
@@ -279,6 +285,13 @@ defmodule Brain.Telemetry do
 
   def span(:gazetteer_lookup, metadata, fun) do
     :telemetry.span(@gazetteer_lookup, metadata, fn ->
+      result = fun.()
+      {result, %{}}
+    end)
+  end
+
+  def span(:entity_extract, metadata, fun) do
+    :telemetry.span(@entity_extract, metadata, fn ->
       result = fun.()
       {result, %{}}
     end)

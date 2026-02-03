@@ -1,0 +1,324 @@
+[
+  {
+    "entities": [],
+    "id": "00c7bde0-d18b-45cd-a2ff-a34f9c3c8285",
+    "intent": "alarm.list",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "show my alarms",
+    "tokens": [
+      "show",
+      "my",
+      "alarms"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9e647b23-5c8f-4311-85b2-c6dfc88bc6ec",
+    "intent": "alarm.list",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "list my alarms",
+    "tokens": [
+      "list",
+      "my",
+      "alarms"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c7bac0c5-7384-4df1-9339-30d74f3b0807",
+    "intent": "alarm.list",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "AUX"
+    ],
+    "text": "what alarms do I have",
+    "tokens": [
+      "what",
+      "alarms",
+      "do",
+      "i",
+      "have"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "41bc3cd8-1e8e-42a7-866a-172fd92dca3a",
+    "intent": "alarm.list",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show all alarms",
+    "tokens": [
+      "show",
+      "all",
+      "alarms"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c5a48529-b218-424e-b899-be0feb016825",
+    "intent": "alarm.list",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "list all my alarms",
+    "tokens": [
+      "list",
+      "all",
+      "my",
+      "alarms"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "62ab7832-f466-4652-a240-7c8b4924b50c",
+    "intent": "alarm.list",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "display my alarms",
+    "tokens": [
+      "display",
+      "my",
+      "alarms"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "30d3dd2f-522d-44a5-a782-d48b540d0985",
+    "intent": "alarm.list",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "view my alarms",
+    "tokens": [
+      "view",
+      "my",
+      "alarms"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "207d2ba2-db74-48a5-a3d0-4b0a685c6636",
+    "intent": "alarm.list",
+    "pos_tags": [
+      "PRON",
+      "NOUN"
+    ],
+    "text": "my alarms",
+    "tokens": [
+      "my",
+      "alarms"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a9701870-fed0-482f-982b-8f961073f7a4",
+    "intent": "alarm.list",
+    "pos_tags": [
+      "NOUN",
+      "VERB"
+    ],
+    "text": "alarms list",
+    "tokens": [
+      "alarms",
+      "list"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f42352fd-ce29-405b-a75d-8e2b6b302bb6",
+    "intent": "alarm.list",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "show alarms",
+    "tokens": [
+      "show",
+      "alarms"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f5dcbee0-c85c-45f9-9e4e-e3b93876e0c3",
+    "intent": "alarm.list",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "what are my alarms",
+    "tokens": [
+      "what",
+      "are",
+      "my",
+      "alarms"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ff9a56f6-c804-4a00-bfcc-abedaf4681f3",
+    "intent": "alarm.list",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "get my alarms",
+    "tokens": [
+      "get",
+      "my",
+      "alarms"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1ce70d71-36b9-4fb5-b3d5-0108e95e8385",
+    "intent": "alarm.list",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "all alarms",
+    "tokens": [
+      "all",
+      "alarms"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "13bc2996-e6dc-4291-9dac-f645bda7989e",
+    "intent": "alarm.list",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "show me my alarms",
+    "tokens": [
+      "show",
+      "me",
+      "my",
+      "alarms"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0de8eaec-3517-45af-bb2e-186fcbefa6b8",
+    "intent": "alarm.list",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "list alarms",
+    "tokens": [
+      "list",
+      "alarms"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4a21c157-22e7-4b0d-afa9-afc5347b2173",
+    "intent": "alarm.list",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "display alarms",
+    "tokens": [
+      "display",
+      "alarms"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4fecadbe-848f-4714-8fcd-1b22e0c4f5ab",
+    "intent": "alarm.list",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "see my alarms",
+    "tokens": [
+      "see",
+      "my",
+      "alarms"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "00ee337b-02d6-4e8a-9def-27cc00c697ee",
+    "intent": "alarm.list",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "check my alarms",
+    "tokens": [
+      "check",
+      "my",
+      "alarms"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ec550af9-114f-45dc-a5f4-47688552b28c",
+    "intent": "alarm.list",
+    "pos_tags": [
+      "NOUN",
+      "VERB"
+    ],
+    "text": "alarm schedule",
+    "tokens": [
+      "alarm",
+      "schedule"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "667ade5c-dee7-49c3-a51b-50e431e32ccf",
+    "intent": "alarm.list",
+    "pos_tags": [
+      "CONJ",
+      "AUX",
+      "PRON",
+      "NOUN",
+      "VERB",
+      "ADP"
+    ],
+    "text": "when are my alarms set for",
+    "tokens": [
+      "when",
+      "are",
+      "my",
+      "alarms",
+      "set",
+      "for"
+    ]
+  }
+]

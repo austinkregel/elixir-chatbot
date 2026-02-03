@@ -1,0 +1,370 @@
+[
+  {
+    "entities": [],
+    "id": "bf9cf048-1de9-4bad-bfd1-4c1d768ebc36",
+    "intent": "movie.recommend",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "recommend a movie",
+    "tokens": [
+      "recommend",
+      "a",
+      "movie"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "699f1238-2508-45c3-842f-cc0fae6ba535",
+    "intent": "movie.recommend",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "suggest a good movie",
+    "tokens": [
+      "suggest",
+      "a",
+      "good",
+      "movie"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3b93cc56-eb36-4c16-ac68-e77beb215069",
+    "intent": "movie.recommend",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "what movie should I watch",
+    "tokens": [
+      "what",
+      "movie",
+      "should",
+      "i",
+      "watch"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d98b50b9-d4bf-430d-8706-f9b31b60341d",
+    "intent": "movie.recommend",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "give me a movie recommendation",
+    "tokens": [
+      "give",
+      "me",
+      "a",
+      "movie",
+      "recommendation"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4192b5ab-8c85-4e32-8182-311c430d35fd",
+    "intent": "movie.recommend",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "recommend a {genre} movie",
+    "tokens": [
+      "recommend",
+      "a",
+      "genre",
+      "movie"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "38cb46f8-d648-47de-a2ae-184bfd6a7fc6",
+    "intent": "movie.recommend",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "suggest something to watch",
+    "tokens": [
+      "suggest",
+      "something",
+      "to",
+      "watch"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a90037c6-9e70-4004-b51e-65753e43e5d0",
+    "intent": "movie.recommend",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's a good movie",
+    "tokens": [
+      "what's",
+      "a",
+      "good",
+      "movie"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "11c0227f-9132-4bce-b781-d4552b0bf269",
+    "intent": "movie.recommend",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "text": "recommend me a film",
+    "tokens": [
+      "recommend",
+      "me",
+      "a",
+      "film"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1ca458ff-d527-4535-bc81-e7e53c5cd02d",
+    "intent": "movie.recommend",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "movie suggestions",
+    "tokens": [
+      "movie",
+      "suggestions"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6a4e55a2-0953-4e2b-82e3-4892cc96cefa",
+    "intent": "movie.recommend",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what should I watch tonight",
+    "tokens": [
+      "what",
+      "should",
+      "i",
+      "watch",
+      "tonight"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2daa4983-8301-4a3f-9790-00b9c944a478",
+    "intent": "movie.recommend",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "suggest a movie for date night",
+    "tokens": [
+      "suggest",
+      "a",
+      "movie",
+      "for",
+      "date",
+      "night"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3907f897-0016-4791-ba49-d8f4923f1808",
+    "intent": "movie.recommend",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "recommend a family movie",
+    "tokens": [
+      "recommend",
+      "a",
+      "family",
+      "movie"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "27c18241-e7de-4d87-8cdf-cd028a4f7f99",
+    "intent": "movie.recommend",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "good movies to watch",
+    "tokens": [
+      "good",
+      "movies",
+      "to",
+      "watch"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "739d59ec-45fb-4e1a-bf58-5a82826a6018",
+    "intent": "movie.recommend",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's a good {genre} film",
+    "tokens": [
+      "what's",
+      "a",
+      "good",
+      "genre",
+      "film"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f5a194e2-a839-408e-8a4f-f463abd6c25a",
+    "intent": "movie.recommend",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "suggest a classic movie",
+    "tokens": [
+      "suggest",
+      "a",
+      "classic",
+      "movie"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b3811c15-9d07-4502-bbab-e9c210d9175e",
+    "intent": "movie.recommend",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "recommend something new",
+    "tokens": [
+      "recommend",
+      "something",
+      "new"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2255b6c0-96d4-487e-be24-7e348ca76d57",
+    "intent": "movie.recommend",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "movie recommendation please",
+    "tokens": [
+      "movie",
+      "recommendation",
+      "please"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "14dde490-64ba-4713-834d-29b6c690faf6",
+    "intent": "movie.recommend",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "what movie do you suggest",
+    "tokens": [
+      "what",
+      "movie",
+      "do",
+      "you",
+      "suggest"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b3cd3bbb-46a1-4438-a6e8-883a81e5a4b8",
+    "intent": "movie.recommend",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "give me a good movie",
+    "tokens": [
+      "give",
+      "me",
+      "a",
+      "good",
+      "movie"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6a84ff52-68a6-4667-95bc-a31de5872ffc",
+    "intent": "movie.recommend",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "recommend a movie like {movie_title}",
+    "tokens": [
+      "recommend",
+      "a",
+      "movie",
+      "like",
+      "movie_title"
+    ]
+  }
+]

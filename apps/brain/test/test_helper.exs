@@ -1,9 +1,16 @@
 # Start Brain application to get PubSub and core services
 {:ok, _} = Application.ensure_all_started(:brain)
 
-# Configure ExUnit to exclude slow/integration tests by default
-# Run with: mix test --include slow --include integration --include training
-# to run the full suite
+# Configure ExUnit
+# By default, only exclude tests that are explicitly marked as:
+# - :slow - Very slow tests (>30s)
+# - :integration - External service integration tests
+# - :training - Tests that train models (expensive)
+# - :wip - Work in progress tests
+# - :skip - Temporarily disabled tests
+#
+# Run with: mix test --include slow --include integration
+# to run the full suite including slow tests
 ExUnit.configure(
   exclude: [:slow, :integration, :training, :wip, :skip],
   timeout: 60_000

@@ -1,0 +1,38 @@
+[
+  {
+    "value": "five minutes in",
+    "synonyms": ["five minutes in", "5 minutes in", "at 5 minutes"]
+  },
+  {
+    "value": "timestamp 3:42",
+    "synonyms": ["timestamp 3:42", "3:42", "three forty two"]
+  },
+  {
+    "value": "beginning",
+    "synonyms": ["beginning", "start", "the beginning", "from the start"]
+  },
+  {
+    "value": "end",
+    "synonyms": ["end", "the end", "at the end"]
+  },
+  {
+    "value": "halfway",
+    "synonyms": ["halfway", "middle", "midpoint", "half way through"]
+  },
+  {
+    "value": "10 seconds",
+    "synonyms": ["10 seconds", "ten seconds", "10 sec"]
+  },
+  {
+    "value": "30 seconds",
+    "synonyms": ["30 seconds", "thirty seconds", "30 sec"]
+  },
+  {
+    "value": "one minute",
+    "synonyms": ["one minute", "1 minute", "1 min"]
+  },
+  {
+    "value": "last 10 seconds",
+    "synonyms": ["last 10 seconds", "final 10 seconds", "last ten seconds"]
+  }
+]

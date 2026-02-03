@@ -1,0 +1,1225 @@
+[
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "77721fb0-5cb1-4e8a-8537-fcf056cc90fa",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "compose an email to Mike",
+    "tokens": [
+      "compose",
+      "an",
+      "email",
+      "to",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "lisa",
+        "type": "person"
+      }
+    ],
+    "id": "c2a76447-36a8-407f-b113-9a01ac3c3a3f",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "compose an email to Lisa",
+    "tokens": [
+      "compose",
+      "an",
+      "email",
+      "to",
+      "lisa"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "d9ef7860-d998-4a24-81b4-f11f316caf94",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "compose an email to Sarah",
+    "tokens": [
+      "compose",
+      "an",
+      "email",
+      "to",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "7090dbb0-4cf6-499c-ad9c-3f4172820dde",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "write an email to Sarah",
+    "tokens": [
+      "write",
+      "an",
+      "email",
+      "to",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "my manager",
+        "type": "person"
+      }
+    ],
+    "id": "60986d22-5ec7-4037-9660-35a5881516c1",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "write an email to my manager",
+    "tokens": [
+      "write",
+      "an",
+      "email",
+      "to",
+      "my",
+      "manager"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "1562c705-0744-49fb-b8de-448ff7d72ff1",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "write an email to John",
+    "tokens": [
+      "write",
+      "an",
+      "email",
+      "to",
+      "john"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "lisa",
+        "type": "person"
+      }
+    ],
+    "id": "6ec09b3b-bb4e-4c54-a3f6-2da0d56d99e7",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "new email to Lisa",
+    "tokens": [
+      "new",
+      "email",
+      "to",
+      "lisa"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "1e784737-ea11-4711-9bce-e4f6a6331542",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "new email to Sarah",
+    "tokens": [
+      "new",
+      "email",
+      "to",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "96d46252-beaa-41a8-b187-5b1c0ec7acfe",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "new email to Mike",
+    "tokens": [
+      "new",
+      "email",
+      "to",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "37e43f6b-c43a-49c4-8184-549559e01cfa",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "start an email to the team",
+    "tokens": [
+      "start",
+      "an",
+      "email",
+      "to",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "f0ff0b0c-e04d-4e16-801d-ee08c016c866",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "start an email to Sarah",
+    "tokens": [
+      "start",
+      "an",
+      "email",
+      "to",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "lisa",
+        "type": "person"
+      }
+    ],
+    "id": "bfb0d132-e6d5-4046-a2c9-40b17e111009",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "start an email to Lisa",
+    "tokens": [
+      "start",
+      "an",
+      "email",
+      "to",
+      "lisa"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "3d46909a-a57d-49ce-ac60-64c44352e625",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "email John",
+    "tokens": [
+      "email",
+      "john"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "lisa",
+        "type": "person"
+      }
+    ],
+    "id": "d86c2da8-2daa-44b5-8528-84c5f32678b1",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "email Lisa",
+    "tokens": [
+      "email",
+      "lisa"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "8f094af3-fa26-43db-a7b0-786624ccc8a5",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "email Sarah",
+    "tokens": [
+      "email",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "4c5fd0b6-f6b8-48b0-8deb-5634e3595dda",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "draft an email to the team",
+    "tokens": [
+      "draft",
+      "an",
+      "email",
+      "to",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "5abba273-b81b-4e12-9c4a-0d553716d48b",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "draft an email to Mike",
+    "tokens": [
+      "draft",
+      "an",
+      "email",
+      "to",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "lisa",
+        "type": "person"
+      }
+    ],
+    "id": "70edb2ae-a0c0-40f0-8a09-ff6e33f1a20a",
+    "intent": "email.compose",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "create an email for Lisa",
+    "tokens": [
+      "create",
+      "an",
+      "email",
+      "for",
+      "lisa"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "b2ae2a40-b679-4599-849a-425306d1f261",
+    "intent": "email.compose",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "create an email for John",
+    "tokens": [
+      "create",
+      "an",
+      "email",
+      "for",
+      "john"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "839eb517-6fc2-4523-967e-56fba7002fd6",
+    "intent": "email.compose",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "create an email for Mike",
+    "tokens": [
+      "create",
+      "an",
+      "email",
+      "for",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "84ecec07-9b2e-4be0-b9ef-8c7cb90f81fd",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "compose email to Sarah",
+    "tokens": [
+      "compose",
+      "email",
+      "to",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "73dbc2e9-9a76-42b7-bc7e-64b85026be9f",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "compose email to the team",
+    "tokens": [
+      "compose",
+      "email",
+      "to",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "71249582-a5e6-496c-b015-8dcc9194d8e7",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "compose email to Mike",
+    "tokens": [
+      "compose",
+      "email",
+      "to",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "9a86d9a9-5f00-408d-b24c-fba973a84c22",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "write email to John",
+    "tokens": [
+      "write",
+      "email",
+      "to",
+      "john"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "7dd214e2-40f0-4e4b-961f-72f6e06c379f",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "write email to Sarah",
+    "tokens": [
+      "write",
+      "email",
+      "to",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "aadd7b56-6e9d-4bcb-8625-cd543de90bb3",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "write email to Mike",
+    "tokens": [
+      "write",
+      "email",
+      "to",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "b5b320da-cbee-4169-b023-4439ea9b6f95",
+    "intent": "email.compose",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "I want to email the team",
+    "tokens": [
+      "i",
+      "want",
+      "to",
+      "email",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "f717bb73-ffba-41c3-b64c-53f01c14595b",
+    "intent": "email.compose",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "I want to email Mike",
+    "tokens": [
+      "i",
+      "want",
+      "to",
+      "email",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "89f984e2-0ca6-4b82-a4d1-9ba56336c355",
+    "intent": "email.compose",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "I want to email Sarah",
+    "tokens": [
+      "i",
+      "want",
+      "to",
+      "email",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "680c3a08-3831-461b-a0b9-609d50941937",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "begin email to Mike",
+    "tokens": [
+      "begin",
+      "email",
+      "to",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "e6274eec-29b5-4e36-8de4-dc5c57c0339a",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "type an email to John",
+    "tokens": [
+      "type",
+      "an",
+      "email",
+      "to",
+      "john"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "19035016-e2bc-473d-9b16-568a98b66a10",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "type an email to Sarah",
+    "tokens": [
+      "type",
+      "an",
+      "email",
+      "to",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ac9f391f-8ee3-499c-bcb1-f6c41fca5024",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "compose new email",
+    "tokens": [
+      "compose",
+      "new",
+      "email"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a77bc756-6b18-4c4c-9e0d-90f6b95c0cb5",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "write a new email",
+    "tokens": [
+      "write",
+      "a",
+      "new",
+      "email"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "a563a9e1-f464-49d5-b747-17c1a865fb2c",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "start email to the team",
+    "tokens": [
+      "start",
+      "email",
+      "to",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "801e5698-a812-4846-965b-80f479ab869c",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "start email to John",
+    "tokens": [
+      "start",
+      "email",
+      "to",
+      "john"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "ec70320d-8009-4756-8c0d-7e291a253293",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "start email to Sarah",
+    "tokens": [
+      "start",
+      "email",
+      "to",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "e289cf94-f083-49d0-a2c0-0f231a4c2140",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "draft email to John",
+    "tokens": [
+      "draft",
+      "email",
+      "to",
+      "john"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "bfae6bed-bf9d-4192-b5d5-53a91290917b",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "draft email to the team",
+    "tokens": [
+      "draft",
+      "email",
+      "to",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "8bc8ad3c-72d1-4d22-afbf-b2b9745c9bbb",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "draft email to Mike",
+    "tokens": [
+      "draft",
+      "email",
+      "to",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "d0ed5bcf-f99b-49ca-8553-b28f95f0d8ee",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "open new email to John",
+    "tokens": [
+      "open",
+      "new",
+      "email",
+      "to",
+      "john"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "0e37e7c0-e170-4f4c-8cc3-581ee44e5648",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "open new email to Mike",
+    "tokens": [
+      "open",
+      "new",
+      "email",
+      "to",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "ab5a4c40-e1fa-4d47-a2a1-4d271fdf3a83",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "new message to Mike",
+    "tokens": [
+      "new",
+      "message",
+      "to",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "73404744-62c0-4b77-aac8-9df50878e734",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "new message to the team",
+    "tokens": [
+      "new",
+      "message",
+      "to",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "77287fe2-ed74-4e54-8023-403a05d50565",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "new message to John",
+    "tokens": [
+      "new",
+      "message",
+      "to",
+      "john"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "eec9d1d5-230e-4971-9224-d8722dc1a702",
+    "intent": "email.compose",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "create email to Sarah",
+    "tokens": [
+      "create",
+      "email",
+      "to",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "cc3dacd7-1160-4b4b-ba30-fb942fd080ba",
+    "intent": "email.compose",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "create email to the team",
+    "tokens": [
+      "create",
+      "email",
+      "to",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2b90d9eb-236c-4fbb-a30e-bb729020e06d",
+    "intent": "email.compose",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "begin composing email",
+    "tokens": [
+      "begin",
+      "composing",
+      "email"
+    ]
+  }
+]

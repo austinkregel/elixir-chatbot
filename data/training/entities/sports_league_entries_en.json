@@ -1,0 +1,42 @@
+[
+  {
+    "value": "NBA",
+    "synonyms": ["NBA", "National Basketball Association", "basketball league"]
+  },
+  {
+    "value": "NFL",
+    "synonyms": ["NFL", "National Football League", "football league"]
+  },
+  {
+    "value": "MLB",
+    "synonyms": ["MLB", "Major League Baseball", "baseball league"]
+  },
+  {
+    "value": "NHL",
+    "synonyms": ["NHL", "National Hockey League", "hockey league"]
+  },
+  {
+    "value": "Premier League",
+    "synonyms": ["Premier League", "EPL", "English Premier League", "the Premier League"]
+  },
+  {
+    "value": "La Liga",
+    "synonyms": ["La Liga", "Spanish League", "la liga"]
+  },
+  {
+    "value": "Bundesliga",
+    "synonyms": ["Bundesliga", "German League", "bundesliga"]
+  },
+  {
+    "value": "Serie A",
+    "synonyms": ["Serie A", "Italian League", "serie a"]
+  },
+  {
+    "value": "MLS",
+    "synonyms": ["MLS", "Major League Soccer", "soccer league"]
+  },
+  {
+    "value": "UEFA Champions League",
+    "synonyms": ["UEFA Champions League", "Champions League", "UCL"]
+  }
+]

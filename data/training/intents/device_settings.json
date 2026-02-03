@@ -1,0 +1,288 @@
+[
+  {
+    "entities": [],
+    "id": "1af71d20-006d-4653-8608-cd76b28fbfe0",
+    "intent": "device.settings",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "open settings",
+    "tokens": [
+      "open",
+      "settings"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "63e9d509-f069-4765-802e-77af8ace624c",
+    "intent": "device.settings",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "go to settings",
+    "tokens": [
+      "go",
+      "to",
+      "settings"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e7e42b1e-9c53-4e3f-a40b-543ffe6d4985",
+    "intent": "device.settings",
+    "pos_tags": [
+      "NOUN"
+    ],
+    "text": "settings",
+    "tokens": [
+      "settings"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a7f86bd0-8f3a-4172-93e3-cc8d8d17f68c",
+    "intent": "device.settings",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "show settings",
+    "tokens": [
+      "show",
+      "settings"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "65dcda92-ae35-4f3a-b8e3-4bb6ad88388f",
+    "intent": "device.settings",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "device settings",
+    "tokens": [
+      "device",
+      "settings"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e5e449ea-a3f5-40f4-9a8b-9158423330a7",
+    "intent": "device.settings",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "open device settings",
+    "tokens": [
+      "open",
+      "device",
+      "settings"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "20c2eb19-bb30-4f81-91ed-ad433d4d494b",
+    "intent": "device.settings",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "system settings",
+    "tokens": [
+      "system",
+      "settings"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6ffe395e-ddc2-41b5-b4c6-7b598ae83114",
+    "intent": "device.settings",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "access settings",
+    "tokens": [
+      "access",
+      "settings"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "069cd979-287e-44c6-8f0b-62795c429209",
+    "intent": "device.settings",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "settings menu",
+    "tokens": [
+      "settings",
+      "menu"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "cabfa364-b563-4963-83df-e06ea2d17ade",
+    "intent": "device.settings",
+    "pos_tags": [
+      "NOUN"
+    ],
+    "text": "configuration",
+    "tokens": [
+      "configuration"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ac850608-4f90-4c73-a645-9050167719b2",
+    "intent": "device.settings",
+    "pos_tags": [
+      "NOUN"
+    ],
+    "text": "preferences",
+    "tokens": [
+      "preferences"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b870761b-99d6-4b83-bafc-403c10783bcd",
+    "intent": "device.settings",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "open preferences",
+    "tokens": [
+      "open",
+      "preferences"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6e0f4986-fa91-4882-9a76-d254d08959b3",
+    "intent": "device.settings",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "phone settings",
+    "tokens": [
+      "phone",
+      "settings"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2f20d3e5-e2f0-4c6b-970b-04abce6c9e73",
+    "intent": "device.settings",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "app settings",
+    "tokens": [
+      "app",
+      "settings"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c49fa980-9d52-41c8-9c40-175089e58e26",
+    "intent": "device.settings",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "general settings",
+    "tokens": [
+      "general",
+      "settings"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "63e441e5-58f7-4630-9250-f8faa01e4142",
+    "intent": "device.settings",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "show me settings",
+    "tokens": [
+      "show",
+      "me",
+      "settings"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9ba3b09c-1c8c-4a70-a630-e4d1ff891f3f",
+    "intent": "device.settings",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "take me to settings",
+    "tokens": [
+      "take",
+      "me",
+      "to",
+      "settings"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c8e3f14f-669c-420f-83c9-07185962e485",
+    "intent": "device.settings",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "launch settings",
+    "tokens": [
+      "launch",
+      "settings"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c359226f-01e9-497c-a9d4-1c7e5e15f2be",
+    "intent": "device.settings",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "settings please",
+    "tokens": [
+      "settings",
+      "please"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "cc50c472-4480-4bb3-aa5b-583dc7a92f0a",
+    "intent": "device.settings",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "open system settings",
+    "tokens": [
+      "open",
+      "system",
+      "settings"
+    ]
+  }
+]

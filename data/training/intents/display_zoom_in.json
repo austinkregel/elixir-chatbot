@@ -1,0 +1,391 @@
+[
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "1b6d8950-43c2-4b3e-b5bb-98a4db76c004",
+    "intent": "display.zoom_in",
+    "pos_tags": [
+      "NOUN",
+      "ADP"
+    ],
+    "text": "zoom in",
+    "tokens": [
+      "zoom",
+      "in"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "dde6415c-b9e0-4393-843d-bc173ba12450",
+    "intent": "display.zoom_in",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "ADP",
+      "DET"
+    ],
+    "text": "zoom in on that",
+    "tokens": [
+      "zoom",
+      "in",
+      "on",
+      "that"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0171c980-1520-46ac-9824-2bbf82c8d8ca",
+    "intent": "display.zoom_in",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "get closer",
+    "tokens": [
+      "get",
+      "closer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "484c11ab-99eb-42b8-96b2-3138d299db38",
+    "intent": "display.zoom_in",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "zoom in on {section_id}",
+    "tokens": [
+      "zoom",
+      "in",
+      "on",
+      "section_id"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c4fa2c02-7497-48e3-bb0c-819cb4a485a6",
+    "intent": "display.zoom_in",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "closer look",
+    "tokens": [
+      "closer",
+      "look"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "a559546a-2d5f-4744-89d5-7dfeaa1b00b2",
+    "intent": "display.zoom_in",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "zoom in more",
+    "tokens": [
+      "zoom",
+      "in",
+      "more"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "193937e3-05f7-4982-b710-f48449c0b017",
+    "intent": "display.zoom_in",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "increase zoom",
+    "tokens": [
+      "increase",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "3bedebbc-cd7a-4fce-8e32-986e42606305",
+    "intent": "display.zoom_in",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "zoom closer",
+    "tokens": [
+      "zoom",
+      "closer"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e9f2f3a8-6ca7-46f6-b170-af72dee4fcb3",
+    "intent": "display.zoom_in",
+    "pos_tags": [
+      "VERB",
+      "ADP"
+    ],
+    "text": "move in",
+    "tokens": [
+      "move",
+      "in"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d94db1a1-4020-42d0-9815-092083df91cf",
+    "intent": "display.zoom_in",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "tighter shot",
+    "tokens": [
+      "tighter",
+      "shot"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "b55f54da-6016-4f09-b2bf-a7b30292ac21",
+    "intent": "display.zoom_in",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "zoom in on the {section_id}",
+    "tokens": [
+      "zoom",
+      "in",
+      "on",
+      "the",
+      "section_id"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c2f57556-4892-442a-9402-14bfecd88886",
+    "intent": "display.zoom_in",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "go closer",
+    "tokens": [
+      "go",
+      "closer"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f049840b-b7a8-475b-b158-31590aa6c9f9",
+    "intent": "display.zoom_in",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "magnify view",
+    "tokens": [
+      "magnify",
+      "view"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "0b803b1c-0ea8-4a2f-b801-1992b900e402",
+    "intent": "display.zoom_in",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "zoom in please",
+    "tokens": [
+      "zoom",
+      "in",
+      "please"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5caa83ab-0e45-4d88-a8cc-a590f6e87ea2",
+    "intent": "display.zoom_in",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "closer view",
+    "tokens": [
+      "closer",
+      "view"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "56461467-2d83-4745-ba78-e14a62a4912d",
+    "intent": "display.zoom_in",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "zoom in to {magnification_level}",
+    "tokens": [
+      "zoom",
+      "in",
+      "to",
+      "magnification_level"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "0ebd5ba0-9e1f-422d-b936-e68a63408bce",
+    "intent": "display.zoom_in",
+    "pos_tags": [
+      "NOUN",
+      "CONJ",
+      "NOUN"
+    ],
+    "text": "enhance and zoom",
+    "tokens": [
+      "enhance",
+      "and",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a016a773-d413-4b6d-bfe1-43851e59badb",
+    "intent": "display.zoom_in",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "tighten the view",
+    "tokens": [
+      "tighten",
+      "the",
+      "view"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "01c378ea-efd7-470d-86c9-1a5a4f4c8708",
+    "intent": "display.zoom_in",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "zoom in further",
+    "tokens": [
+      "zoom",
+      "in",
+      "further"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "36e9cb9e-241b-4758-86e5-4b4c4757575e",
+    "intent": "display.zoom_in",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "get a closer look",
+    "tokens": [
+      "get",
+      "a",
+      "closer",
+      "look"
+    ]
+  }
+]

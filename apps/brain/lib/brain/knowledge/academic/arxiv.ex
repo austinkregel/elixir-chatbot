@@ -180,7 +180,7 @@ defmodule Brain.Knowledge.Academic.Arxiv do
         |> :xmerl_scan.string(quiet: true)
 
       # Extract entries
-      entries = :xmerl_xpath.string('//entry', doc)
+      entries = :xmerl_xpath.string(~c"//entry", doc)
 
       Enum.map(entries, &parse_entry/1)
       |> Enum.reject(&is_nil/1)
@@ -192,27 +192,27 @@ defmodule Brain.Knowledge.Academic.Arxiv do
   end
 
   defp parse_entry(entry) do
-    id = get_text(entry, './id/text()')
+    id = get_text(entry, ~c"./id/text()")
     arxiv_id = extract_arxiv_id(id)
 
     title =
-      get_text(entry, './title/text()')
+      get_text(entry, ~c"./title/text()")
       |> clean_text()
 
     abstract =
-      get_text(entry, './summary/text()')
+      get_text(entry, ~c"./summary/text()")
       |> clean_text()
 
     # Get authors
-    author_nodes = :xmerl_xpath.string('./author', entry)
+    author_nodes = :xmerl_xpath.string(~c"./author", entry)
     authors = Enum.map(author_nodes, &parse_author/1)
 
     # Get published/updated dates
-    published = get_text(entry, './published/text()')
+    published = get_text(entry, ~c"./published/text()")
     year = extract_year(published)
 
     # Get categories
-    category_nodes = :xmerl_xpath.string('./category/@term', entry)
+    category_nodes = :xmerl_xpath.string(~c"./category/@term", entry)
     categories = Enum.map(category_nodes, &extract_attr_value/1)
 
     # Get primary category for venue
@@ -242,7 +242,7 @@ defmodule Brain.Knowledge.Academic.Arxiv do
   end
 
   defp parse_author(author_node) do
-    name = get_text(author_node, './name/text()')
+    name = get_text(author_node, ~c"./name/text()")
     %{id: nil, name: name}
   end
 

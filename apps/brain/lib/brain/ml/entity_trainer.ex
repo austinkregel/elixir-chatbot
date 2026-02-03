@@ -123,7 +123,9 @@ defmodule Brain.ML.EntityTrainer do
   """
   def train_and_save(opts \\ []) do
     models_path =
-      Keyword.get(opts, :models_path, Application.get_env(:brain, :ml)[:models_path])
+      Keyword.get(opts, :models_path) || 
+      Application.get_env(:brain, :ml)[:models_path] || 
+      Brain.priv_path("ml_models")
 
     case train() do
       {:ok, model} ->
@@ -138,7 +140,7 @@ defmodule Brain.ML.EntityTrainer do
   Load a trained entity model from disk.
   """
   def load_model do
-    models_path = Application.get_env(:brain, :ml)[:models_path]
+    models_path = Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")
     model_path = Path.join(models_path, "entity_model.term")
 
     case File.read(model_path) do

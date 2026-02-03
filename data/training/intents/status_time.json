@@ -1,0 +1,310 @@
+[
+  {
+    "entities": [],
+    "id": "25e15352-6bb8-4bc8-9ad1-912199c5a2cb",
+    "intent": "status.time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON"
+    ],
+    "text": "what time is it",
+    "tokens": [
+      "what",
+      "time",
+      "is",
+      "it"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "adb52ae1-a936-4c49-bc4c-f87c390e850a",
+    "intent": "status.time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "current time",
+    "tokens": [
+      "current",
+      "time"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "00bad7c8-42e8-4c6a-9e4f-a986d5676144",
+    "intent": "status.time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "time please",
+    "tokens": [
+      "time",
+      "please"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "78d8b733-0656-4d58-bcdb-854e4ebdca44",
+    "intent": "status.time",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "what's the time",
+    "tokens": [
+      "what's",
+      "the",
+      "time"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1f59aeaa-ebdf-49ea-a4a0-59272f628969",
+    "intent": "status.time",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "text": "tell me the time",
+    "tokens": [
+      "tell",
+      "me",
+      "the",
+      "time"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b3ab610f-513c-4cae-a674-648628a3cbe0",
+    "intent": "status.time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "time now",
+    "tokens": [
+      "time",
+      "now"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "36c1875c-33d4-47d2-b7e7-1891b170bd62",
+    "intent": "status.time",
+    "pos_tags": [
+      "DET",
+      "NOUN"
+    ],
+    "text": "the time",
+    "tokens": [
+      "the",
+      "time"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2cc87146-82af-4755-8e04-38047cdd8f12",
+    "intent": "status.time",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "check the time",
+    "tokens": [
+      "check",
+      "the",
+      "time"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7b817c08-0553-4cf7-823a-8030729cce33",
+    "intent": "status.time",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "text": "give me the time",
+    "tokens": [
+      "give",
+      "me",
+      "the",
+      "time"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d8e694d2-c487-473b-bc38-9165cedd462c",
+    "intent": "status.time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "display time",
+    "tokens": [
+      "display",
+      "time"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3eba64c3-f5c1-4bd7-92f9-c4fad504db2c",
+    "intent": "status.time",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "show time",
+    "tokens": [
+      "show",
+      "time"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "dcd10212-e0d1-47b4-b2ba-30fac429c30c",
+    "intent": "status.time",
+    "pos_tags": [
+      "NOUN",
+      "VERB"
+    ],
+    "text": "time check",
+    "tokens": [
+      "time",
+      "check"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "bfd6872d-a263-4583-ba5f-823bb181fd52",
+    "intent": "status.time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "current time please",
+    "tokens": [
+      "current",
+      "time",
+      "please"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5e393657-c6a0-4556-94b0-55818827d109",
+    "intent": "status.time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "AUX"
+    ],
+    "text": "what time do we have",
+    "tokens": [
+      "what",
+      "time",
+      "do",
+      "we",
+      "have"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ebfbd1e5-29e5-4b57-aea4-f9f24aecccff",
+    "intent": "status.time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "present time",
+    "tokens": [
+      "present",
+      "time"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "fe8a55a7-236d-40d2-a3d1-3bbeb7f0cdb5",
+    "intent": "status.time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "actual time",
+    "tokens": [
+      "actual",
+      "time"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4f7011cb-cac2-42d9-8f42-a8b7567f8ed1",
+    "intent": "status.time",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's the current time",
+    "tokens": [
+      "what's",
+      "the",
+      "current",
+      "time"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a32b469c-bb6b-4c66-a5c5-865c63535bbc",
+    "intent": "status.time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "time status",
+    "tokens": [
+      "time",
+      "status"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "51829e62-74aa-4a26-8a47-c8c7a2b3999a",
+    "intent": "status.time",
+    "pos_tags": [
+      "NOUN",
+      "VERB"
+    ],
+    "text": "clock check",
+    "tokens": [
+      "clock",
+      "check"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "69ea631b-562f-4239-ae49-80c140449c9e",
+    "intent": "status.time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "system time",
+    "tokens": [
+      "system",
+      "time"
+    ]
+  }
+]

@@ -1,0 +1,42 @@
+[
+  {
+    "value": "statistical",
+    "synonyms": ["statistical", "statistical analysis", "stats"]
+  },
+  {
+    "value": "frequency",
+    "synonyms": ["frequency", "frequency analysis", "frequency distribution"]
+  },
+  {
+    "value": "trend",
+    "synonyms": ["trend", "trend analysis", "trending"]
+  },
+  {
+    "value": "correlation",
+    "synonyms": ["correlation", "correlation analysis", "correlations"]
+  },
+  {
+    "value": "regression",
+    "synonyms": ["regression", "regression analysis", "linear regression"]
+  },
+  {
+    "value": "sentiment",
+    "synonyms": ["sentiment", "sentiment analysis", "opinion analysis"]
+  },
+  {
+    "value": "clustering",
+    "synonyms": ["clustering", "cluster analysis", "segmentation"]
+  },
+  {
+    "value": "predictive",
+    "synonyms": ["predictive", "predictive analysis", "forecasting"]
+  },
+  {
+    "value": "comparative",
+    "synonyms": ["comparative", "comparison", "comparative analysis"]
+  },
+  {
+    "value": "root cause",
+    "synonyms": ["root cause", "root cause analysis", "RCA"]
+  }
+]

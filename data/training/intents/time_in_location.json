@@ -1,0 +1,1421 @@
+[
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 5,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "7b7bc0fe-b197-4133-9a25-904c19a0f5cd",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what time is it in the coffee shop",
+    "tokens": [
+      "what",
+      "time",
+      "is",
+      "it",
+      "in",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 7,
+        "start": 5,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "a7e3e52b-357a-4ca1-a4ff-bee93aeac2f8",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET"
+    ],
+    "text": "what time is it in conference room A",
+    "tokens": [
+      "what",
+      "time",
+      "is",
+      "it",
+      "in",
+      "conference",
+      "room",
+      "a"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "c53e3662-5d09-4233-b0f7-ddfa19999405",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what time is it in downtown",
+    "tokens": [
+      "what",
+      "time",
+      "is",
+      "it",
+      "in",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "ebd49057-55c6-4efc-a127-7ca043e904c8",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "time in Zoom",
+    "tokens": [
+      "time",
+      "in",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 3,
+        "start": 3,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "b88b74aa-815f-40ba-ba77-6b3294ffd56c",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "time in the office",
+    "tokens": [
+      "time",
+      "in",
+      "the",
+      "office"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 2,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "1c59837f-28ef-454d-b7f9-ef55814db314",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "time in the coffee shop",
+    "tokens": [
+      "time",
+      "in",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 3,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "26095e37-92db-4c4c-81e9-e6bc4c11b52c",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "current time in the coffee shop",
+    "tokens": [
+      "current",
+      "time",
+      "in",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "62adf575-eff0-4c95-9d8d-3fa07012ecfb",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "current time in downtown",
+    "tokens": [
+      "current",
+      "time",
+      "in",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 0,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "1df4c3f9-0afd-4122-a552-73a4f6158c9a",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "conference room A time",
+    "tokens": [
+      "conference",
+      "room",
+      "a",
+      "time"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "ee32f77d-e182-4068-9009-25a7f2198852",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "Zoom time",
+    "tokens": [
+      "zoom",
+      "time"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 0,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "2174387e-9285-4e36-9e18-85a8cc8fb884",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "the coffee shop time",
+    "tokens": [
+      "the",
+      "coffee",
+      "shop",
+      "time"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "68cd0745-2321-4bd4-a696-3890e6dcf30f",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what's the time in Zoom",
+    "tokens": [
+      "what's",
+      "the",
+      "time",
+      "in",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 4,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "f3d2389b-857b-4877-8661-d853f0e16f88",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's the time in the coffee shop",
+    "tokens": [
+      "what's",
+      "the",
+      "time",
+      "in",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 5,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "6ddb2162-3854-4e28-8edb-2ea69e80fbbd",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "tell me the time in the coffee shop",
+    "tokens": [
+      "tell",
+      "me",
+      "the",
+      "time",
+      "in",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "8a03024e-5f91-470e-87f3-1711a2b67372",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "tell me the time in downtown",
+    "tokens": [
+      "tell",
+      "me",
+      "the",
+      "time",
+      "in",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 7,
+        "start": 5,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "23cd12ba-f12e-49cc-bd49-7a8db5702666",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET"
+    ],
+    "text": "tell me the time in conference room A",
+    "tokens": [
+      "tell",
+      "me",
+      "the",
+      "time",
+      "in",
+      "conference",
+      "room",
+      "a"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 3,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "480d8905-4275-491c-b8f2-0dca941390cd",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "time zone for the coffee shop",
+    "tokens": [
+      "time",
+      "zone",
+      "for",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "3f6f82e7-a76f-4577-b2c1-ffdbf98325bd",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "time zone for Zoom",
+    "tokens": [
+      "time",
+      "zone",
+      "for",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 3,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "475c4bea-9316-4f2c-942f-510a972c3b3b",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET"
+    ],
+    "text": "what time in conference room A",
+    "tokens": [
+      "what",
+      "time",
+      "in",
+      "conference",
+      "room",
+      "a"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "b16f9bf3-4399-464d-8af2-e1450ea6e537",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "what time in the office",
+    "tokens": [
+      "what",
+      "time",
+      "in",
+      "the",
+      "office"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "2e5d2177-093f-4389-90fb-070775d88eab",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what time in Zoom",
+    "tokens": [
+      "what",
+      "time",
+      "in",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "f990953d-8fc2-47a7-b45c-da379b21ee1e",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "downtown current time",
+    "tokens": [
+      "downtown",
+      "current",
+      "time"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 0,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 1,
+        "start": 1,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "a378fa49-da6d-474d-a27c-c62dc4c8e6b6",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "the office current time",
+    "tokens": [
+      "the",
+      "office",
+      "current",
+      "time"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 0,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "dbb2df6d-d2fe-47e0-a577-198f3aa2ab49",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "the coffee shop current time",
+    "tokens": [
+      "the",
+      "coffee",
+      "shop",
+      "current",
+      "time"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "35ea81eb-03b1-4376-8d82-1a3a02136e4f",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "local time in Zoom",
+    "tokens": [
+      "local",
+      "time",
+      "in",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "43fa29d1-e1f3-4ba8-9c68-cf295b16cfeb",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "local time in downtown",
+    "tokens": [
+      "local",
+      "time",
+      "in",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 4,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "15248f87-8892-49e5-a167-55417c7b69a4",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "time right now in the coffee shop",
+    "tokens": [
+      "time",
+      "right",
+      "now",
+      "in",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "2dd762c2-582d-41e6-950a-bcf544bb1953",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "time right now in the office",
+    "tokens": [
+      "time",
+      "right",
+      "now",
+      "in",
+      "the",
+      "office"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 1,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "2a01fe92-c0bf-4dcf-864b-7ba71d47fff6",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's the coffee shop time",
+    "tokens": [
+      "what's",
+      "the",
+      "coffee",
+      "shop",
+      "time"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "ae4f63ca-d373-427b-b1e9-271f0ed1a605",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's Zoom time",
+    "tokens": [
+      "what's",
+      "zoom",
+      "time"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "3f5d2885-6e48-45fe-b53b-5ce00f5c8971",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "give me time in the office",
+    "tokens": [
+      "give",
+      "me",
+      "time",
+      "in",
+      "the",
+      "office"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 4,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "54b892a2-3b43-4093-827d-df2849f1aca3",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "give me time in the coffee shop",
+    "tokens": [
+      "give",
+      "me",
+      "time",
+      "in",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "b1009eb7-54c5-4827-b5fa-1a319ed7196c",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "give me time in downtown",
+    "tokens": [
+      "give",
+      "me",
+      "time",
+      "in",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "e8ae8478-5952-4217-81b0-d475d75ed679",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "check time in Zoom",
+    "tokens": [
+      "check",
+      "time",
+      "in",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 3,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "a908606d-effe-4a24-9ee0-71ba3faaa4a9",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "check time in the coffee shop",
+    "tokens": [
+      "check",
+      "time",
+      "in",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "f262c0c3-6a17-487c-902c-4e0b6fe9e112",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what is the time in Zoom",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "time",
+      "in",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "b86c463a-e367-424f-a8a2-8701adc6fd2b",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what is the time in downtown",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "time",
+      "in",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "907f56ff-b931-432d-9ac7-611f2f5481fc",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "show time in downtown",
+    "tokens": [
+      "show",
+      "time",
+      "in",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 3,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "8a44b277-6d5a-4a22-89ff-fbc6aa157821",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show time in the coffee shop",
+    "tokens": [
+      "show",
+      "time",
+      "in",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 3,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "14a194e2-eb4d-47d1-b2ba-cf797c193237",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET"
+    ],
+    "text": "show time in conference room A",
+    "tokens": [
+      "show",
+      "time",
+      "in",
+      "conference",
+      "room",
+      "a"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "26b6a15f-a66d-46d0-b4d2-86248e5685f2",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "clock in downtown",
+    "tokens": [
+      "clock",
+      "in",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 2,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "9b780046-5f52-4b18-972a-240e79d459bd",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "clock in the coffee shop",
+    "tokens": [
+      "clock",
+      "in",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "bc8cc1dc-5d20-4f39-90fb-da50bd5f444e",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "downtown timezone",
+    "tokens": [
+      "downtown",
+      "timezone"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 0,
+        "start": 0,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 0,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "54051c17-2a6a-4d9c-9f97-0154a4536cb1",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "conference room A timezone",
+    "tokens": [
+      "conference",
+      "room",
+      "a",
+      "timezone"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 0,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 1,
+        "start": 1,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "b23f5e3d-1990-4a12-8a09-143e698e8d5c",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "the office timezone",
+    "tokens": [
+      "the",
+      "office",
+      "timezone"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "d3cc7052-2c1f-42e1-9b92-fa5953a5d4c3",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "how late is it in downtown",
+    "tokens": [
+      "how",
+      "late",
+      "is",
+      "it",
+      "in",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 5,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "9ed56390-9beb-4864-a896-8f31294a943c",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how late is it in the coffee shop",
+    "tokens": [
+      "how",
+      "late",
+      "is",
+      "it",
+      "in",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "1f5bd319-90ad-498e-95ef-1455d7faf58a",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "what hour is it in the office",
+    "tokens": [
+      "what",
+      "hour",
+      "is",
+      "it",
+      "in",
+      "the",
+      "office"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "a79c2da2-5843-4580-949d-77db6c7fcf2b",
+    "intent": "time.in_location",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what hour is it in Zoom",
+    "tokens": [
+      "what",
+      "hour",
+      "is",
+      "it",
+      "in",
+      "zoom"
+    ]
+  }
+]

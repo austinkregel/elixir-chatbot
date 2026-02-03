@@ -1,0 +1,34 @@
+[
+  {
+    "value": "memory",
+    "synonyms": ["memory", "RAM", "system memory"]
+  },
+  {
+    "value": "storage",
+    "synonyms": ["storage", "disk space", "disk storage"]
+  },
+  {
+    "value": "bandwidth",
+    "synonyms": ["bandwidth", "network bandwidth", "network capacity"]
+  },
+  {
+    "value": "CPU",
+    "synonyms": ["CPU", "processor", "processing power"]
+  },
+  {
+    "value": "connections",
+    "synonyms": ["connections", "database connections", "active connections"]
+  },
+  {
+    "value": "threads",
+    "synonyms": ["threads", "worker threads", "thread pool"]
+  },
+  {
+    "value": "file handles",
+    "synonyms": ["file handles", "open files", "file descriptors"]
+  },
+  {
+    "value": "API calls",
+    "synonyms": ["API calls", "API requests", "request quota"]
+  }
+]

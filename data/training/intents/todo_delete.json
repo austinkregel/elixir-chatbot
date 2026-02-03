@@ -1,0 +1,346 @@
+[
+  {
+    "entities": [],
+    "id": "da135518-7ffb-40d1-a038-0f9fac8606b1",
+    "intent": "todo.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "delete task {task_content}",
+    "tokens": [
+      "delete",
+      "task",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8da0b291-9149-4bb9-bd51-e21ada3877d4",
+    "intent": "todo.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "VERB"
+    ],
+    "text": "remove {task_content} from my list",
+    "tokens": [
+      "remove",
+      "task_content",
+      "from",
+      "my",
+      "list"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b6aaebf1-ee41-47a1-ba3f-25d108cdfa8c",
+    "intent": "todo.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "delete {task_content}",
+    "tokens": [
+      "delete",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "33c7f834-fe68-4685-8b79-ae4ba21d6995",
+    "intent": "todo.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remove task {task_content}",
+    "tokens": [
+      "remove",
+      "task",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "11cf8ed3-b9cd-4827-9066-a93205b623c6",
+    "intent": "todo.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "PRON",
+      "VERB"
+    ],
+    "text": "take {task_content} off my list",
+    "tokens": [
+      "take",
+      "task_content",
+      "off",
+      "my",
+      "list"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2411d59b-4033-4280-a1d5-203a2e20e86a",
+    "intent": "todo.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "delete {task_content} from my todos",
+    "tokens": [
+      "delete",
+      "task_content",
+      "from",
+      "my",
+      "todos"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ced5c2c1-e832-4777-a93a-bbebbdbb62a5",
+    "intent": "todo.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "remove {task_content}",
+    "tokens": [
+      "remove",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8621139a-6262-4c58-87f3-b9216051df5d",
+    "intent": "todo.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "get rid of task {task_content}",
+    "tokens": [
+      "get",
+      "rid",
+      "of",
+      "task",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "47bbf62e-cf4f-4ba1-9012-3de962db627c",
+    "intent": "todo.delete",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "delete the {task_content} task",
+    "tokens": [
+      "delete",
+      "the",
+      "task_content",
+      "task"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6e7ae723-47c1-4305-977d-1910077b9221",
+    "intent": "todo.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remove {task_content} from todos",
+    "tokens": [
+      "remove",
+      "task_content",
+      "from",
+      "todos"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "27c025be-63b1-46ec-8585-85c17fed0b53",
+    "intent": "todo.delete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "erase task {task_content}",
+    "tokens": [
+      "erase",
+      "task",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d868040b-2819-40a4-8379-a0becffc9b55",
+    "intent": "todo.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "delete todo {task_content}",
+    "tokens": [
+      "delete",
+      "todo",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f79b3762-54dc-4cf9-9f87-49597beac697",
+    "intent": "todo.delete",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remove the {task_content} item",
+    "tokens": [
+      "remove",
+      "the",
+      "task_content",
+      "item"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ada360de-6aab-4546-97d1-193ca52332f5",
+    "intent": "todo.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "take off {task_content}",
+    "tokens": [
+      "take",
+      "off",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ac4f1243-4890-47e0-b8a5-77f1c9a01c5c",
+    "intent": "todo.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "delete item {task_content}",
+    "tokens": [
+      "delete",
+      "item",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d9893eb2-c54a-4865-9d5c-7b1d0031ea48",
+    "intent": "todo.delete",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remove {task_content} task",
+    "tokens": [
+      "remove",
+      "task_content",
+      "task"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "941b2160-508b-4cc2-875c-a1327330a784",
+    "intent": "todo.delete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "clear task {task_content}",
+    "tokens": [
+      "clear",
+      "task",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6f4dff79-abd4-4e1c-ba88-5331bdad0dce",
+    "intent": "todo.delete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "VERB"
+    ],
+    "text": "drop {task_content} from my list",
+    "tokens": [
+      "drop",
+      "task_content",
+      "from",
+      "my",
+      "list"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "61ef85cc-f3e9-49a4-bfd0-94c8ab5a6ea2",
+    "intent": "todo.delete",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "delete my {task_content} task",
+    "tokens": [
+      "delete",
+      "my",
+      "task_content",
+      "task"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "912359c2-bb11-4de0-819f-2e913402fc9f",
+    "intent": "todo.delete",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "remove my {task_content}",
+    "tokens": [
+      "remove",
+      "my",
+      "task_content"
+    ]
+  }
+]

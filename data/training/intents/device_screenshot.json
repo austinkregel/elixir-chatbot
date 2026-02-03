@@ -1,0 +1,304 @@
+[
+  {
+    "entities": [],
+    "id": "b7b325c9-223f-4a18-8389-88bbff238a9e",
+    "intent": "device.screenshot",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "take a screenshot",
+    "tokens": [
+      "take",
+      "a",
+      "screenshot"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c3f3f8dc-3487-4171-9f75-8386e263bd98",
+    "intent": "device.screenshot",
+    "pos_tags": [
+      "NOUN"
+    ],
+    "text": "screenshot",
+    "tokens": [
+      "screenshot"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7d6b5baa-c6b5-4f52-94c8-1415be17adf4",
+    "intent": "device.screenshot",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "capture screen",
+    "tokens": [
+      "capture",
+      "screen"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e212912c-042d-4c93-9cb6-3668c26b38d6",
+    "intent": "device.screenshot",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "screen capture",
+    "tokens": [
+      "screen",
+      "capture"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1de309ff-551e-4851-b86c-a8bb6f19b9f7",
+    "intent": "device.screenshot",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "take screenshot",
+    "tokens": [
+      "take",
+      "screenshot"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "76be0809-543c-4c3b-8bd5-da3a3711515b",
+    "intent": "device.screenshot",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "grab screenshot",
+    "tokens": [
+      "grab",
+      "screenshot"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ea3aa5dd-9e8f-4eeb-b28d-33c7e3d9c8fb",
+    "intent": "device.screenshot",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "capture the screen",
+    "tokens": [
+      "capture",
+      "the",
+      "screen"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "134ae7fb-8512-4f04-8789-598937f0e4eb",
+    "intent": "device.screenshot",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "screenshot please",
+    "tokens": [
+      "screenshot",
+      "please"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3e064783-8360-48e4-9615-73ef0fb9b052",
+    "intent": "device.screenshot",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "take a screen shot",
+    "tokens": [
+      "take",
+      "a",
+      "screen",
+      "shot"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "58e7ee67-cf9a-452c-9ac8-9ec338666b6a",
+    "intent": "device.screenshot",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "screen shot",
+    "tokens": [
+      "screen",
+      "shot"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8e652399-062a-47cc-ba0d-1ac0b7ca7798",
+    "intent": "device.screenshot",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "capture this screen",
+    "tokens": [
+      "capture",
+      "this",
+      "screen"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a3a7e61e-bfe0-4b1b-9c14-e7f3a344ce8b",
+    "intent": "device.screenshot",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "save screenshot",
+    "tokens": [
+      "save",
+      "screenshot"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f0d3f647-ddf0-4dcf-bf9e-0903ac3e4146",
+    "intent": "device.screenshot",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "snap the screen",
+    "tokens": [
+      "snap",
+      "the",
+      "screen"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "88b52401-06e6-4e9a-8247-a3e66ebf49b9",
+    "intent": "device.screenshot",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "get a screenshot",
+    "tokens": [
+      "get",
+      "a",
+      "screenshot"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "398af618-8c03-4ba7-b5b2-e8166957de4c",
+    "intent": "device.screenshot",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "screenshot now",
+    "tokens": [
+      "screenshot",
+      "now"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0cc9237a-f3a6-4eac-bf8b-d6687344edfb",
+    "intent": "device.screenshot",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "take screen capture",
+    "tokens": [
+      "take",
+      "screen",
+      "capture"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "035e8af3-1cbf-45dc-81b3-ba3692aa04e4",
+    "intent": "device.screenshot",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "capture display",
+    "tokens": [
+      "capture",
+      "display"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a29374b7-c0f6-43db-90a2-f530ce27add4",
+    "intent": "device.screenshot",
+    "pos_tags": [
+      "NOUN",
+      "DET"
+    ],
+    "text": "screenshot this",
+    "tokens": [
+      "screenshot",
+      "this"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a6b7a39b-3dd4-4ccf-973c-2498836f639a",
+    "intent": "device.screenshot",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "screen grab",
+    "tokens": [
+      "screen",
+      "grab"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "edf1132d-c0ff-42ae-88b7-09739a8cda73",
+    "intent": "device.screenshot",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "take a picture of the screen",
+    "tokens": [
+      "take",
+      "a",
+      "picture",
+      "of",
+      "the",
+      "screen"
+    ]
+  }
+]

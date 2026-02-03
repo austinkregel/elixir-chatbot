@@ -1,0 +1,298 @@
+[
+  {
+    "entities": [],
+    "id": "16209f74-d1a8-42a0-bc5f-bb7a3e6e69b4",
+    "intent": "status.progress",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "what's the progress",
+    "tokens": [
+      "what's",
+      "the",
+      "progress"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "07d80134-2ea2-4cb2-bd67-4e59f8ff2c96",
+    "intent": "status.progress",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "progress report",
+    "tokens": [
+      "progress",
+      "report"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1b3d38ae-b3ea-4b30-b183-753cfa019d36",
+    "intent": "status.progress",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "check progress",
+    "tokens": [
+      "check",
+      "progress"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6d25941c-2d4e-4622-9c94-32fd56d7a880",
+    "intent": "status.progress",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how far along",
+    "tokens": [
+      "how",
+      "far",
+      "along"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1b0b27b9-fabc-4215-a33a-429fb7afcb4a",
+    "intent": "status.progress",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "progress status",
+    "tokens": [
+      "progress",
+      "status"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e037c8e2-9137-4413-8bb7-1d09fc10939e",
+    "intent": "status.progress",
+    "pos_tags": [
+      "NOUN",
+      "VERB"
+    ],
+    "text": "progress update",
+    "tokens": [
+      "progress",
+      "update"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5353191b-cd5a-47b5-aa03-2b93c5d14da3",
+    "intent": "status.progress",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "show progress",
+    "tokens": [
+      "show",
+      "progress"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "63c7cccc-4ae0-467d-ae0a-76de7be48fb1",
+    "intent": "status.progress",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "current progress",
+    "tokens": [
+      "current",
+      "progress"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4b3a5a72-813c-4623-b4b9-cfb5bff60a6c",
+    "intent": "status.progress",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "how is it progressing",
+    "tokens": [
+      "how",
+      "is",
+      "it",
+      "progressing"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "466974ec-9811-47fc-883f-e3a2b4054a3b",
+    "intent": "status.progress",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "progress so far",
+    "tokens": [
+      "progress",
+      "so",
+      "far"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "dca2cd11-f2a4-4d13-97d2-518db0565502",
+    "intent": "status.progress",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "completion progress",
+    "tokens": [
+      "completion",
+      "progress"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4993b59d-35c1-4ac6-85ba-7222be7ee4bd",
+    "intent": "status.progress",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "percentage complete",
+    "tokens": [
+      "percentage",
+      "complete"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "94cf28d6-7d34-4d15-82db-6023f24d0853",
+    "intent": "status.progress",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "progress percentage",
+    "tokens": [
+      "progress",
+      "percentage"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b521cab1-9cc8-4956-b10c-d8523ad0a8db",
+    "intent": "status.progress",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how much done",
+    "tokens": [
+      "how",
+      "much",
+      "done"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "54c279e7-0938-4c27-9f7f-0bc8fdee5014",
+    "intent": "status.progress",
+    "pos_tags": [
+      "NOUN",
+      "VERB"
+    ],
+    "text": "progress check",
+    "tokens": [
+      "progress",
+      "check"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b592da9d-b5a9-453a-82ee-7661c10ad3d4",
+    "intent": "status.progress",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "advancement status",
+    "tokens": [
+      "advancement",
+      "status"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "65f70199-ec53-4a2d-9373-a9361d3fafcf",
+    "intent": "status.progress",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show current progress",
+    "tokens": [
+      "show",
+      "current",
+      "progress"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d9affd11-3f7a-40e4-816f-9f2114702ebf",
+    "intent": "status.progress",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "progress indicator",
+    "tokens": [
+      "progress",
+      "indicator"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "711e1bb0-756f-4c91-981b-f8bc715b52b1",
+    "intent": "status.progress",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "track progress",
+    "tokens": [
+      "track",
+      "progress"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "fcb6c955-8492-4fc0-9bad-abeabd03b26a",
+    "intent": "status.progress",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what percentage done",
+    "tokens": [
+      "what",
+      "percentage",
+      "done"
+    ]
+  }
+]

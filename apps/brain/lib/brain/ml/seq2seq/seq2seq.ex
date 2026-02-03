@@ -277,8 +277,8 @@ defmodule Brain.ML.Seq2Seq do
   end
   
   defp do_load_model(world_id) do
-    # Determine model path
-    models_path = Application.get_env(:brain, :ml)[:models_path]
+    # Determine model path - use Brain.priv_path as fallback
+    models_path = Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")
     
     model_path = 
       if world_id == @default_world_id do
@@ -321,7 +321,7 @@ defmodule Brain.ML.Seq2Seq do
   end
   
   defp do_save_model(world_id, model_data) do
-    models_path = Application.get_env(:brain, :ml)[:models_path]
+    models_path = Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")
     
     model_path = 
       if world_id == @default_world_id do

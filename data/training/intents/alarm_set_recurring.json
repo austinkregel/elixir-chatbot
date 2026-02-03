@@ -1,0 +1,1835 @@
+[
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "1a40f451-0daa-4b0b-a109-880000041568",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set a recurring alarm for next Monday",
+    "tokens": [
+      "set",
+      "a",
+      "recurring",
+      "alarm",
+      "for",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 5,
+        "text": "friday at 3pm",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "friday",
+        "type": "date_time"
+      }
+    ],
+    "id": "0ae9dc91-80e5-439f-b9eb-c6a3990a82ae",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set a recurring alarm for Friday at 3pm",
+    "tokens": [
+      "set",
+      "a",
+      "recurring",
+      "alarm",
+      "for",
+      "friday",
+      "at",
+      "3pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 7,
+        "start": 5,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "14f40984-4de7-4f5d-b511-d1f45b920373",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set a recurring alarm for tomorrow at 2pm",
+    "tokens": [
+      "set",
+      "a",
+      "recurring",
+      "alarm",
+      "for",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 3,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "524dda20-8e9c-4b22-a8a0-023ae36203c5",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set alarm for tomorrow at 2pm every day",
+    "tokens": [
+      "set",
+      "alarm",
+      "for",
+      "tomorrow",
+      "at",
+      "2pm",
+      "every",
+      "day"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "next week",
+        "type": "date_time"
+      }
+    ],
+    "id": "ca026dcd-5523-4fcd-941a-9acbc24c6b1f",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set alarm for next week every day",
+    "tokens": [
+      "set",
+      "alarm",
+      "for",
+      "next",
+      "week",
+      "every",
+      "day"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "9545c8d3-07ee-42d6-8580-b1b45ce249c6",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set alarm for next Monday every day",
+    "tokens": [
+      "set",
+      "alarm",
+      "for",
+      "next",
+      "monday",
+      "every",
+      "day"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "tomorrow",
+        "type": "date_time"
+      }
+    ],
+    "id": "76773d05-b25d-4e2f-9289-f6379fa7e92c",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "daily alarm at tomorrow",
+    "tokens": [
+      "daily",
+      "alarm",
+      "at",
+      "tomorrow"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 3,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "11504c67-7d33-4f2e-a1d5-9b112648ae66",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "daily alarm at tomorrow at 2pm",
+    "tokens": [
+      "daily",
+      "alarm",
+      "at",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 8,
+        "start": 6,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "5f606f27-57ef-4f7a-9c10-8a749130ca76",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set alarm for every monthly at tomorrow at 2pm",
+    "tokens": [
+      "set",
+      "alarm",
+      "for",
+      "every",
+      "monthly",
+      "at",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 8,
+        "start": 6,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "dcc83261-3e9d-4778-a51c-75f0f15dd2b0",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set alarm for every weekly at tomorrow at 2pm",
+    "tokens": [
+      "set",
+      "alarm",
+      "for",
+      "every",
+      "weekly",
+      "at",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 8,
+        "start": 6,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 8,
+        "start": 7,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "d3d5a839-93e4-4a12-81b3-c27283d05aaa",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "set alarm for every daily at in 2 hours",
+    "tokens": [
+      "set",
+      "alarm",
+      "for",
+      "every",
+      "daily",
+      "at",
+      "in",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 8,
+        "start": 6,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "dba0558e-5164-499e-a6f5-826482341829",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "wake me up every day at tomorrow at 2pm",
+    "tokens": [
+      "wake",
+      "me",
+      "up",
+      "every",
+      "day",
+      "at",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 8,
+        "start": 6,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 8,
+        "start": 7,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "881c6372-965d-4c6f-9fc8-689109718bd3",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "wake me up every day at in 2 hours",
+    "tokens": [
+      "wake",
+      "me",
+      "up",
+      "every",
+      "day",
+      "at",
+      "in",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "tomorrow",
+        "type": "date_time"
+      }
+    ],
+    "id": "34237f09-0569-42c7-9061-447b7493cf03",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "wake me up every day at tomorrow",
+    "tokens": [
+      "wake",
+      "me",
+      "up",
+      "every",
+      "day",
+      "at",
+      "tomorrow"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "tomorrow",
+        "type": "date_time"
+      }
+    ],
+    "id": "403898b7-49eb-45b2-bd73-82b1f577e179",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "repeating alarm at tomorrow",
+    "tokens": [
+      "repeating",
+      "alarm",
+      "at",
+      "tomorrow"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "71e96cde-222c-4a68-ad1e-ede896cef374",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "repeating alarm at next Monday",
+    "tokens": [
+      "repeating",
+      "alarm",
+      "at",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 3,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "79ac7943-4845-42f2-9013-f7b1396ee4e6",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "repeating alarm at in 2 hours",
+    "tokens": [
+      "repeating",
+      "alarm",
+      "at",
+      "in",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 5,
+        "text": "friday at 3pm",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "friday",
+        "type": "date_time"
+      }
+    ],
+    "id": "6c823e4f-0935-4833-b307-06a7ebf1f807",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set a weekday alarm for Friday at 3pm",
+    "tokens": [
+      "set",
+      "a",
+      "weekday",
+      "alarm",
+      "for",
+      "friday",
+      "at",
+      "3pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "12bf4999-c03a-4e8d-a6c1-3b06d674530a",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set a weekday alarm for next Monday",
+    "tokens": [
+      "set",
+      "a",
+      "weekday",
+      "alarm",
+      "for",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 7,
+        "start": 5,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "e4d50fb8-749b-4f85-bb4c-de48e21d9417",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set a weekday alarm for tomorrow at 2pm",
+    "tokens": [
+      "set",
+      "a",
+      "weekday",
+      "alarm",
+      "for",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 4,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "76f1a21c-05f5-42f1-9622-c19d5bec4234",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "alarm every weekly at tomorrow at 2pm",
+    "tokens": [
+      "alarm",
+      "every",
+      "weekly",
+      "at",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "tomorrow",
+        "type": "date_time"
+      }
+    ],
+    "id": "5c2be205-8575-429e-bf70-3481ed52d8e2",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "alarm every daily at tomorrow",
+    "tokens": [
+      "alarm",
+      "every",
+      "daily",
+      "at",
+      "tomorrow"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "next week",
+        "type": "date_time"
+      }
+    ],
+    "id": "a4f0f1c3-dd1e-4fe3-8b89-281878ad9a23",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "alarm every every weekday at next week",
+    "tokens": [
+      "alarm",
+      "every",
+      "every",
+      "weekday",
+      "at",
+      "next",
+      "week"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "next week",
+        "type": "date_time"
+      }
+    ],
+    "id": "b4588482-9f51-4d1f-a034-624a92693794",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set recurring alarm at next week",
+    "tokens": [
+      "set",
+      "recurring",
+      "alarm",
+      "at",
+      "next",
+      "week"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 4,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "24a254d9-7a35-4718-af2d-f0232c41990b",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set recurring alarm at tomorrow at 2pm",
+    "tokens": [
+      "set",
+      "recurring",
+      "alarm",
+      "at",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "cd12aa48-970d-4389-b770-2551ba94cc26",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set recurring alarm at next Monday",
+    "tokens": [
+      "set",
+      "recurring",
+      "alarm",
+      "at",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 4,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 5,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "f84ee34f-2972-4159-a707-0e5cacdc4ce2",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "create daily alarm for in 2 hours",
+    "tokens": [
+      "create",
+      "daily",
+      "alarm",
+      "for",
+      "in",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 4,
+        "text": "friday at 3pm",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "friday",
+        "type": "date_time"
+      }
+    ],
+    "id": "b8fc322f-c80e-4017-b15c-ebc7cb5fc88d",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "create daily alarm for Friday at 3pm",
+    "tokens": [
+      "create",
+      "daily",
+      "alarm",
+      "for",
+      "friday",
+      "at",
+      "3pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "next week",
+        "type": "date_time"
+      }
+    ],
+    "id": "f5b927cb-7473-430e-b0ae-7fde166339ba",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "create daily alarm for next week",
+    "tokens": [
+      "create",
+      "daily",
+      "alarm",
+      "for",
+      "next",
+      "week"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 7,
+        "start": 5,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "5f4c4d3c-7be6-4550-9fef-a42e180e61fd",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set a daily alarm for tomorrow at 2pm",
+    "tokens": [
+      "set",
+      "a",
+      "daily",
+      "alarm",
+      "for",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 7,
+        "start": 5,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "0cc75aa8-deba-4004-a29f-e90dda974834",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set a monthly alarm for tomorrow at 2pm",
+    "tokens": [
+      "set",
+      "a",
+      "monthly",
+      "alarm",
+      "for",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "da31fc21-ca0f-4656-a09f-b33c3b289b3f",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set a daily alarm for next Monday",
+    "tokens": [
+      "set",
+      "a",
+      "daily",
+      "alarm",
+      "for",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 5,
+        "text": "friday at 3pm",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "friday",
+        "type": "date_time"
+      }
+    ],
+    "id": "cbacac61-40b0-49db-ba69-0dd5fe505269",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "wake me every day at Friday at 3pm",
+    "tokens": [
+      "wake",
+      "me",
+      "every",
+      "day",
+      "at",
+      "friday",
+      "at",
+      "3pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "ef92bcfe-3d15-4409-bae5-dc421be3c557",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "wake me every day at next Monday",
+    "tokens": [
+      "wake",
+      "me",
+      "every",
+      "day",
+      "at",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 5,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 7,
+        "start": 6,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "8e92fa12-28a0-4179-8b6f-851463c6cefa",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "wake me every day at in 2 hours",
+    "tokens": [
+      "wake",
+      "me",
+      "every",
+      "day",
+      "at",
+      "in",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "ce7f79bc-9679-4c88-9ca7-c69f09d52d41",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set up recurring alarm at next Monday",
+    "tokens": [
+      "set",
+      "up",
+      "recurring",
+      "alarm",
+      "at",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 5,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 7,
+        "start": 6,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "0a80fc00-06d2-4088-9837-fedda9043e1b",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "set up recurring alarm at in 2 hours",
+    "tokens": [
+      "set",
+      "up",
+      "recurring",
+      "alarm",
+      "at",
+      "in",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 2,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 3,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "38e38283-685c-40b9-978b-8cb06fa50c4c",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "alarm for in 2 hours on weekdays",
+    "tokens": [
+      "alarm",
+      "for",
+      "in",
+      "2",
+      "hours",
+      "on",
+      "weekdays"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 3,
+        "start": 3,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "ab53fbb4-e4fd-4dc5-be89-98bbffc96d47",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "alarm for next Monday on weekdays",
+    "tokens": [
+      "alarm",
+      "for",
+      "next",
+      "monday",
+      "on",
+      "weekdays"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "next week",
+        "type": "date_time"
+      }
+    ],
+    "id": "c019e3e3-a0bf-409e-bb85-8d02aa6fe146",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "alarm for next week on weekdays",
+    "tokens": [
+      "alarm",
+      "for",
+      "next",
+      "week",
+      "on",
+      "weekdays"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5f259beb-0d2e-474f-b195-5c1238360974",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "repeating alarm every monthly",
+    "tokens": [
+      "repeating",
+      "alarm",
+      "every",
+      "monthly"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "00494e2f-3e73-45bf-8a3b-93212b87d67e",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "repeating alarm every daily",
+    "tokens": [
+      "repeating",
+      "alarm",
+      "every",
+      "daily"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a9e7da81-d3df-49e4-a309-9027fa778ee1",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set alarm to repeat daily",
+    "tokens": [
+      "set",
+      "alarm",
+      "to",
+      "repeat",
+      "daily"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "739ce60b-b8c0-4726-859f-49bd7e545579",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set alarm to repeat monthly",
+    "tokens": [
+      "set",
+      "alarm",
+      "to",
+      "repeat",
+      "monthly"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "993c80cd-9d6b-4563-b956-bdd0ba4b3a6d",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set alarm to repeat every weekday",
+    "tokens": [
+      "set",
+      "alarm",
+      "to",
+      "repeat",
+      "every",
+      "weekday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "next week",
+        "type": "date_time"
+      }
+    ],
+    "id": "154dfb09-09b4-4fea-a89b-c6ae01c7e864",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "make the next week alarm recurring",
+    "tokens": [
+      "make",
+      "the",
+      "next",
+      "week",
+      "alarm",
+      "recurring"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "tomorrow",
+        "type": "date_time"
+      }
+    ],
+    "id": "40d3258f-b85b-41eb-a23a-ed8971979ee5",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "make the tomorrow alarm recurring",
+    "tokens": [
+      "make",
+      "the",
+      "tomorrow",
+      "alarm",
+      "recurring"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 2,
+        "text": "friday at 3pm",
+        "type": "date_time"
+      },
+      {
+        "end": 2,
+        "start": 2,
+        "text": "friday",
+        "type": "date_time"
+      }
+    ],
+    "id": "4b7d6355-5635-4f7c-951a-8949f1bf98e4",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "make the Friday at 3pm alarm recurring",
+    "tokens": [
+      "make",
+      "the",
+      "friday",
+      "at",
+      "3pm",
+      "alarm",
+      "recurring"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "7ce5a26b-d9f3-4a40-81bf-ed9e0541c66c",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "daily wake up alarm at next Monday",
+    "tokens": [
+      "daily",
+      "wake",
+      "up",
+      "alarm",
+      "at",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 5,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 7,
+        "start": 6,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "374bb8cb-ee64-4e33-944e-45f5d9abb0b9",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "daily wake up alarm at in 2 hours",
+    "tokens": [
+      "daily",
+      "wake",
+      "up",
+      "alarm",
+      "at",
+      "in",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "2e0ec5da-8680-4983-bfed-691d53580e3f",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "alarm every morning at next Monday",
+    "tokens": [
+      "alarm",
+      "every",
+      "morning",
+      "at",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 4,
+        "text": "friday at 3pm",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "friday",
+        "type": "date_time"
+      }
+    ],
+    "id": "af913d9a-510f-4198-89db-d39f8dd5dc0d",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "alarm every morning at Friday at 3pm",
+    "tokens": [
+      "alarm",
+      "every",
+      "morning",
+      "at",
+      "friday",
+      "at",
+      "3pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 3,
+        "text": "friday at 3pm",
+        "type": "date_time"
+      },
+      {
+        "end": 3,
+        "start": 3,
+        "text": "friday",
+        "type": "date_time"
+      }
+    ],
+    "id": "ef26a66d-2417-42af-b86d-07547874d138",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set weekday alarm Friday at 3pm",
+    "tokens": [
+      "set",
+      "weekday",
+      "alarm",
+      "friday",
+      "at",
+      "3pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "next week",
+        "type": "date_time"
+      }
+    ],
+    "id": "f94ddc03-3345-47e2-bdb5-014905fed6fc",
+    "intent": "alarm.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set weekday alarm next week",
+    "tokens": [
+      "set",
+      "weekday",
+      "alarm",
+      "next",
+      "week"
+    ]
+  }
+]

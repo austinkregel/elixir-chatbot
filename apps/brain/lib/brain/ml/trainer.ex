@@ -46,7 +46,9 @@ defmodule Brain.ML.Trainer do
   """
   def train_and_save(opts \\ []) do
     models_path =
-      Keyword.get(opts, :models_path, Application.get_env(:brain, :ml)[:models_path])
+      Keyword.get(opts, :models_path) || 
+      Application.get_env(:brain, :ml)[:models_path] || 
+      Brain.priv_path("ml_models")
 
     Logger.info("Starting ML model training pipeline", %{models_path: models_path})
 
@@ -88,7 +90,9 @@ defmodule Brain.ML.Trainer do
   """
   def train_intent_classifier(stats \\ %{}, opts \\ []) do
     models_path =
-      Keyword.get(opts, :models_path, Application.get_env(:brain, :ml)[:models_path])
+      Keyword.get(opts, :models_path) || 
+      Application.get_env(:brain, :ml)[:models_path] || 
+      Brain.priv_path("ml_models")
 
     Logger.info("Training intent classifier...")
 
@@ -151,7 +155,9 @@ defmodule Brain.ML.Trainer do
   """
   def train_entity_model(stats \\ %{}, opts \\ []) do
     models_path =
-      Keyword.get(opts, :models_path, Application.get_env(:brain, :ml)[:models_path])
+      Keyword.get(opts, :models_path) || 
+      Application.get_env(:brain, :ml)[:models_path] || 
+      Brain.priv_path("ml_models")
 
     Logger.info("Training entity recognition model...")
 
@@ -179,7 +185,9 @@ defmodule Brain.ML.Trainer do
     Logger.info("Building gazetteer data...")
 
     models_path =
-      Keyword.get(opts, :models_path, Application.get_env(:brain, :ml)[:models_path])
+      Keyword.get(opts, :models_path) || 
+      Application.get_env(:brain, :ml)[:models_path] || 
+      Brain.priv_path("ml_models")
     File.mkdir_p!(models_path)
 
     gazetteer_data = %{
@@ -440,7 +448,7 @@ defmodule Brain.ML.Trainer do
   Save trained models to disk.
   """
   def save_models(vectorizer, svm_model) do
-    models_path = Application.get_env(:brain, :ml)[:models_path]
+    models_path = Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")
 
     # Ensure directory exists
     File.mkdir_p!(models_path)

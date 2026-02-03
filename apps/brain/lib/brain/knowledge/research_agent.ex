@@ -400,6 +400,16 @@ defmodule Brain.Knowledge.ResearchAgent do
     [finding]
   end
 
+  # Handle academic papers - convert directly to Finding
+  defp extract_findings(%{paper: paper, source: _source}) when is_struct(paper) do
+    alias Brain.Knowledge.Academic.Paper
+
+    case Paper.to_finding(paper) do
+      nil -> []
+      finding -> [finding]
+    end
+  end
+
   defp extract_findings(%{content: content, source: source}) when is_binary(content) do
     # Clean HTML content if present
     clean_content = clean_content(content)

@@ -1,0 +1,715 @@
+[
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "2c226e3a-f4bd-4084-bc00-edcad83e0b58",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "join my meeting",
+    "tokens": [
+      "join",
+      "my",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 3,
+        "start": 3,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "0884c4ec-a272-4610-90e3-d27ff3f5db62",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "join the meeting meeting",
+    "tokens": [
+      "join",
+      "the",
+      "meeting",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 3,
+        "start": 2,
+        "text": "conference call",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 2,
+        "text": "conference",
+        "type": "event_title"
+      }
+    ],
+    "id": "6beed5dc-19bc-46ea-a8f6-d635adfca4e2",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "NOUN"
+    ],
+    "text": "join the conference call meeting",
+    "tokens": [
+      "join",
+      "the",
+      "conference",
+      "call",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "16bfcd72-9ac4-4697-a700-0175710d6a34",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "connect to my meeting",
+    "tokens": [
+      "connect",
+      "to",
+      "my",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b2292ec0-8d80-4cfc-8dfb-64dcda245a80",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "VERB"
+    ],
+    "text": "join the call",
+    "tokens": [
+      "join",
+      "the",
+      "call"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "e8cc115c-a859-46f2-bce3-6f91528e2c5c",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "get me into my meeting",
+    "tokens": [
+      "get",
+      "me",
+      "into",
+      "my",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a52a11b2-fcf9-4a9e-8691-a38e6a4f2bcb",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "join the video call",
+    "tokens": [
+      "join",
+      "the",
+      "video",
+      "call"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "88faa02d-361d-417b-9654-32aa91333645",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "connect me to the meeting",
+    "tokens": [
+      "connect",
+      "me",
+      "to",
+      "the",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 3,
+        "start": 2,
+        "text": "conference call",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 2,
+        "text": "conference",
+        "type": "event_title"
+      }
+    ],
+    "id": "21306098-cc61-4b2a-9871-415912121c91",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "VERB",
+      "NOUN"
+    ],
+    "text": "enter the conference call meeting",
+    "tokens": [
+      "enter",
+      "the",
+      "conference",
+      "call",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 2,
+        "text": "standup",
+        "type": "event_title"
+      }
+    ],
+    "id": "5fd7c4c8-dcce-4cec-8e9c-52fc98691094",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "enter the standup meeting",
+    "tokens": [
+      "enter",
+      "the",
+      "standup",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 2,
+        "text": "lunch",
+        "type": "event_title"
+      }
+    ],
+    "id": "4f5ccb11-bf9b-4d18-bba9-77ea70a239c9",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "enter the lunch meeting",
+    "tokens": [
+      "enter",
+      "the",
+      "lunch",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 2,
+        "text": "tomorrow",
+        "type": "date_time"
+      }
+    ],
+    "id": "358e0b1a-14c3-4bac-82c3-35cf6883a583",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "join my tomorrow meeting",
+    "tokens": [
+      "join",
+      "my",
+      "tomorrow",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 3,
+        "start": 2,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 3,
+        "start": 3,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "0b166281-8226-4af4-8849-224db1ed1a59",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "join my next Monday meeting",
+    "tokens": [
+      "join",
+      "my",
+      "next",
+      "monday",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "30a550aa-a77a-41d9-8870-f27d379b24fa",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "open my meeting",
+    "tokens": [
+      "open",
+      "my",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "d8b17148-d1ae-461b-b6a1-5d85863f8688",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "launch the meeting",
+    "tokens": [
+      "launch",
+      "the",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "5427c098-450f-4a9a-baec-e759deaac07e",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "start my meeting",
+    "tokens": [
+      "start",
+      "my",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "91d5158b-598a-473a-963d-d57c0aea8b93",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "join the zoom call",
+    "tokens": [
+      "join",
+      "the",
+      "zoom",
+      "call"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "lunch",
+        "type": "event_title"
+      }
+    ],
+    "id": "baa2f50f-c8d5-4db2-a906-ad1da3b2aa7c",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "connect to the lunch",
+    "tokens": [
+      "connect",
+      "to",
+      "the",
+      "lunch"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "dentist appointment",
+        "type": "event_title"
+      },
+      {
+        "end": 3,
+        "start": 3,
+        "text": "dentist",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "appointment",
+        "type": "event_title"
+      }
+    ],
+    "id": "c867a306-ed76-4eef-9e22-990f1201bc28",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "connect to the dentist appointment",
+    "tokens": [
+      "connect",
+      "to",
+      "the",
+      "dentist",
+      "appointment"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "interview",
+        "type": "event_title"
+      }
+    ],
+    "id": "efb97052-e34a-4847-8b4a-c04f4abf2c86",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "connect to the interview",
+    "tokens": [
+      "connect",
+      "to",
+      "the",
+      "interview"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2523523b-2c00-46c4-a84a-2ec4b6db1fe8",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "DET",
+      "VERB"
+    ],
+    "text": "get on the call",
+    "tokens": [
+      "get",
+      "on",
+      "the",
+      "call"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "conference call",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 2,
+        "text": "conference",
+        "type": "event_title"
+      }
+    ],
+    "id": "8f44d539-c31e-463b-94dc-8ce437b50125",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "join the conference call",
+    "tokens": [
+      "join",
+      "the",
+      "conference",
+      "call"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "6ddce25a-8c37-42f6-9fa2-6ce6b0d6ccab",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "open the meeting link",
+    "tokens": [
+      "open",
+      "the",
+      "meeting",
+      "link"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "a44df32a-2d5d-4e88-9f59-3f64d4b10dc4",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "join my next meeting",
+    "tokens": [
+      "join",
+      "my",
+      "next",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "69658de4-c901-4d23-8ee1-1cb5b41dfb94",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "connect to the video meeting",
+    "tokens": [
+      "connect",
+      "to",
+      "the",
+      "video",
+      "meeting"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "meeting",
+        "type": "event_title"
+      }
+    ],
+    "id": "a4f93795-f2d8-48ea-8267-222c734df57f",
+    "intent": "calendar.meeting.join",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "take me to my meeting",
+    "tokens": [
+      "take",
+      "me",
+      "to",
+      "my",
+      "meeting"
+    ]
+  }
+]

@@ -1,0 +1,326 @@
+[
+  {
+    "entities": [],
+    "id": "679307f6-a260-4ead-92ef-7c33ca1c45af",
+    "intent": "email.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "do I have any emails",
+    "tokens": [
+      "do",
+      "i",
+      "have",
+      "any",
+      "emails"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "571f57bc-5429-4481-afa9-72f43abbb6b3",
+    "intent": "email.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "any new emails",
+    "tokens": [
+      "any",
+      "new",
+      "emails"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "75941e91-e75c-4246-bc5b-9d20c77c195a",
+    "intent": "email.check",
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "check for emails",
+    "tokens": [
+      "check",
+      "for",
+      "emails"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e21d18a8-f230-4df2-8fc9-eb252ab1f693",
+    "intent": "email.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "new emails",
+    "tokens": [
+      "new",
+      "emails"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "db748815-e3ba-424b-aad0-d3a379c28bb6",
+    "intent": "email.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "any unread emails",
+    "tokens": [
+      "any",
+      "unread",
+      "emails"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f1d5ef8d-3b1b-4e6a-aeec-c116e4348335",
+    "intent": "email.check",
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "check for new emails",
+    "tokens": [
+      "check",
+      "for",
+      "new",
+      "emails"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9fa41a4d-84c6-4d26-95a7-e17e9b37256a",
+    "intent": "email.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "did I get any emails",
+    "tokens": [
+      "did",
+      "i",
+      "get",
+      "any",
+      "emails"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e9bda461-1217-4838-92f0-93f9c4c57f55",
+    "intent": "email.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "email notifications",
+    "tokens": [
+      "email",
+      "notifications"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "292e6bf9-e943-409a-8dad-bd68309d95f0",
+    "intent": "email.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "any incoming emails",
+    "tokens": [
+      "any",
+      "incoming",
+      "emails"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c76b6f9e-98e8-4f15-a629-b8dcc2e5aa94",
+    "intent": "email.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "unread emails",
+    "tokens": [
+      "unread",
+      "emails"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3d90edd0-ff3b-4630-ba31-574aab7ebc16",
+    "intent": "email.check",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "check email inbox",
+    "tokens": [
+      "check",
+      "email",
+      "inbox"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "dc635a69-139a-4932-b788-4aef062d87e3",
+    "intent": "email.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "any messages in email",
+    "tokens": [
+      "any",
+      "messages",
+      "in",
+      "email"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6614bf80-3e64-40f1-a4ab-9ec2060df1ad",
+    "intent": "email.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "new mail",
+    "tokens": [
+      "new",
+      "mail"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "fe4db41f-a981-4eb1-9a45-dacfad246f03",
+    "intent": "email.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "have I got email",
+    "tokens": [
+      "have",
+      "i",
+      "got",
+      "email"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "06b8edab-2ca1-49e5-b869-c6afe0162271",
+    "intent": "email.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "any new mail",
+    "tokens": [
+      "any",
+      "new",
+      "mail"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "bbf9e938-2256-4de2-b21c-9c3ddccf5f76",
+    "intent": "email.check",
+    "pos_tags": [
+      "NOUN",
+      "VERB"
+    ],
+    "text": "email check",
+    "tokens": [
+      "email",
+      "check"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "10cff1de-c80e-4c15-a6f3-c8a5eccc2760",
+    "intent": "email.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN"
+    ],
+    "text": "do I have mail",
+    "tokens": [
+      "do",
+      "i",
+      "have",
+      "mail"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f233cb46-65e6-4fcb-86c2-0bbcbdecb02a",
+    "intent": "email.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "any emails waiting",
+    "tokens": [
+      "any",
+      "emails",
+      "waiting"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0b3227e2-2289-4702-8f06-15af0d1320ee",
+    "intent": "email.check",
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "check for mail",
+    "tokens": [
+      "check",
+      "for",
+      "mail"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "55c1b54a-1996-4c66-831d-8a55845b0388",
+    "intent": "email.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "email updates",
+    "tokens": [
+      "email",
+      "updates"
+    ]
+  }
+]

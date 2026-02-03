@@ -1,0 +1,350 @@
+[
+  {
+    "entities": [],
+    "id": "032df16a-a33e-458a-9813-9db744b2bf9d",
+    "intent": "email.send",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "send the email",
+    "tokens": [
+      "send",
+      "the",
+      "email"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8b23b38e-2b92-4229-a99a-fa6b7fee3d7f",
+    "intent": "email.send",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "send email",
+    "tokens": [
+      "send",
+      "email"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "33f5dc6e-f9d4-4e21-ada3-30ec78ebbc52",
+    "intent": "email.send",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "send this email",
+    "tokens": [
+      "send",
+      "this",
+      "email"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9ac624b7-6416-478e-95ac-6e8d900b3c70",
+    "intent": "email.send",
+    "pos_tags": [
+      "VERB",
+      "PRON"
+    ],
+    "text": "send it",
+    "tokens": [
+      "send",
+      "it"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "70a4be14-fc91-4b3a-8acc-2538395e7966",
+    "intent": "email.send",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "deliver the email",
+    "tokens": [
+      "deliver",
+      "the",
+      "email"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f3830aff-da12-442d-9f3e-e9a5ea0cf074",
+    "intent": "email.send",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "send email now",
+    "tokens": [
+      "send",
+      "email",
+      "now"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "fad7a73a-ad94-4771-893f-00340c9e785e",
+    "intent": "email.send",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "dispatch the email",
+    "tokens": [
+      "dispatch",
+      "the",
+      "email"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5465484b-0e71-40d7-b952-856ad25b995a",
+    "intent": "email.send",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "send my email",
+    "tokens": [
+      "send",
+      "my",
+      "email"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ccc271c7-babd-4283-932b-57fa06ac516f",
+    "intent": "email.send",
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "text": "mail it",
+    "tokens": [
+      "mail",
+      "it"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6afee710-b62b-484e-8582-cd06d64789f2",
+    "intent": "email.send",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "send the message",
+    "tokens": [
+      "send",
+      "the",
+      "message"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "3dab3c88-2497-4a5a-8d2f-531f74a17ec3",
+    "intent": "email.send",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "send email to Mike",
+    "tokens": [
+      "send",
+      "email",
+      "to",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "a64cd642-6362-4f2f-881c-9a326e0f8ac0",
+    "intent": "email.send",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "send email to John",
+    "tokens": [
+      "send",
+      "email",
+      "to",
+      "john"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "12180017-72aa-4fdf-8beb-ffc94dfb5a39",
+    "intent": "email.send",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "deliver email",
+    "tokens": [
+      "deliver",
+      "email"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8e8a777a-7d29-409d-9a96-0978d630fffb",
+    "intent": "email.send",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "post the email",
+    "tokens": [
+      "post",
+      "the",
+      "email"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "cd2ede55-85f9-44e1-be9f-d2488ae5f1c0",
+    "intent": "email.send",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "transmit the email",
+    "tokens": [
+      "transmit",
+      "the",
+      "email"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "718a9241-9091-4226-8b1d-16a561bbf68e",
+    "intent": "email.send",
+    "pos_tags": [
+      "NOUN",
+      "VERB"
+    ],
+    "text": "email send",
+    "tokens": [
+      "email",
+      "send"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4a313041-0448-4369-9cf1-bf18c0cc231a",
+    "intent": "email.send",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "send out the email",
+    "tokens": [
+      "send",
+      "out",
+      "the",
+      "email"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0af62943-58dd-4091-a33d-fdbd991de96a",
+    "intent": "email.send",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "fire off the email",
+    "tokens": [
+      "fire",
+      "off",
+      "the",
+      "email"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8d1d84b0-76c2-4dd1-a60f-da5ba0854978",
+    "intent": "email.send",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "submit the email",
+    "tokens": [
+      "submit",
+      "the",
+      "email"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b2071526-75d8-433f-a060-2599e754f92c",
+    "intent": "email.send",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "complete sending",
+    "tokens": [
+      "complete",
+      "sending"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b5f7ae66-9b7c-4afa-8cdd-116450634b12",
+    "intent": "email.send",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "CONJ",
+      "VERB"
+    ],
+    "text": "go ahead and send",
+    "tokens": [
+      "go",
+      "ahead",
+      "and",
+      "send"
+    ]
+  }
+]

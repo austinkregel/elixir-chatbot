@@ -1,0 +1,308 @@
+[
+  {
+    "entities": [],
+    "id": "5cc8ffcc-3153-478c-9e0c-26523a40ba05",
+    "intent": "compute.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what percentage",
+    "tokens": [
+      "what",
+      "percentage"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9b2a3bf8-abb0-4c44-aaf6-5d588dc8c5fc",
+    "intent": "compute.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "calculate percentage",
+    "tokens": [
+      "calculate",
+      "percentage"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7554b9a2-3409-4dd6-bbc5-f8e5d08b2762",
+    "intent": "compute.percentage",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "percentage of {query_term}",
+    "tokens": [
+      "percentage",
+      "of",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "71af47b0-6d79-4bf1-8ab4-5dfced6e6059",
+    "intent": "compute.percentage",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "find the percentage",
+    "tokens": [
+      "find",
+      "the",
+      "percentage"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5b65b51f-569b-4aca-9dd8-41fb8685a8eb",
+    "intent": "compute.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "percentage calculation",
+    "tokens": [
+      "percentage",
+      "calculation"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d870d3ae-8a54-46a2-8387-b3d3ea0a57ce",
+    "intent": "compute.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "NOUN"
+    ],
+    "text": "what percent is {query_term}",
+    "tokens": [
+      "what",
+      "percent",
+      "is",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e69c4fbf-f015-4b44-b4e1-7d79ecb29ffa",
+    "intent": "compute.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "compute percentage",
+    "tokens": [
+      "compute",
+      "percentage"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "bfcbc6e9-1664-4f8b-9d16-ba0dfa6b0e87",
+    "intent": "compute.percentage",
+    "pos_tags": [
+      "NOUN",
+      "VERB"
+    ],
+    "text": "percentage change",
+    "tokens": [
+      "percentage",
+      "change"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1e909cfb-3031-4f4f-ab0f-174300883ef3",
+    "intent": "compute.percentage",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "calculate the percent",
+    "tokens": [
+      "calculate",
+      "the",
+      "percent"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "927bb13d-05fd-4d3b-9728-a4012b2a3b08",
+    "intent": "compute.percentage",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "percent of total",
+    "tokens": [
+      "percent",
+      "of",
+      "total"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "63c8e5b4-85b8-46d4-8bc0-3063dbf0957f",
+    "intent": "compute.percentage",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "percentage of the whole",
+    "tokens": [
+      "percentage",
+      "of",
+      "the",
+      "whole"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7d748bb7-34dc-4b52-9b0f-ef7b49aef357",
+    "intent": "compute.percentage",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "what's the percentage",
+    "tokens": [
+      "what's",
+      "the",
+      "percentage"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "790570bc-6c09-4af9-a4fe-29be5a3595de",
+    "intent": "compute.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "percentage analysis",
+    "tokens": [
+      "percentage",
+      "analysis"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d5135e2d-7d76-4386-b64d-ec8eb8f5f5cc",
+    "intent": "compute.percentage",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "find the percent",
+    "tokens": [
+      "find",
+      "the",
+      "percent"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5870e099-5d87-436b-bda6-d6fd475ab424",
+    "intent": "compute.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "percentage breakdown",
+    "tokens": [
+      "percentage",
+      "breakdown"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "fe04b3dc-8668-4190-a244-8297bb25b958",
+    "intent": "compute.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "percent calculation",
+    "tokens": [
+      "percent",
+      "calculation"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "bbc98b08-1551-4430-b277-4a8df4e426ae",
+    "intent": "compute.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what percentage of {query_term}",
+    "tokens": [
+      "what",
+      "percentage",
+      "of",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5bc6425b-b289-4f74-a4ee-e339a50656dd",
+    "intent": "compute.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "calculate percent change",
+    "tokens": [
+      "calculate",
+      "percent",
+      "change"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "559e4af6-75a1-454a-bb16-84c15bc3f80c",
+    "intent": "compute.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "percentage value",
+    "tokens": [
+      "percentage",
+      "value"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "aa420ffc-4a7b-4630-8651-88cc01c29ab6",
+    "intent": "compute.percentage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "determine percentage",
+    "tokens": [
+      "determine",
+      "percentage"
+    ]
+  }
+]

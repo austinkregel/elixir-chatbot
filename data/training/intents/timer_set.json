@@ -1,0 +1,1236 @@
+[
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "1 hour",
+        "type": "duration"
+      }
+    ],
+    "id": "d58e92a3-ff09-44ee-85f4-fb5e8b31c9bc",
+    "intent": "timer.set",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "set a timer for 1 hour",
+    "tokens": [
+      "set",
+      "a",
+      "timer",
+      "for",
+      "1",
+      "hour"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "fb6d0afa-cf10-4003-a0ac-bf66f1a63597",
+    "intent": "timer.set",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "set a timer for 30 minutes",
+    "tokens": [
+      "set",
+      "a",
+      "timer",
+      "for",
+      "30",
+      "minutes"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "35c68f3c-463c-49c6-838e-0670f7aa5e08",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "start a 2 hours timer",
+    "tokens": [
+      "start",
+      "a",
+      "2",
+      "hours",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "97e3b0bc-e696-496b-a42a-4d83692b09e4",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "start a 15 minutes timer",
+    "tokens": [
+      "start",
+      "a",
+      "15",
+      "minutes",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "2c6fbdd5-4219-4978-bf40-9da4f1de55ef",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "timer for 15 minutes",
+    "tokens": [
+      "timer",
+      "for",
+      "15",
+      "minutes"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "1 hour",
+        "type": "duration"
+      }
+    ],
+    "id": "05de9aa3-98f8-4eca-a8fc-d68f4144fdbf",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "timer for 1 hour",
+    "tokens": [
+      "timer",
+      "for",
+      "1",
+      "hour"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "6fc056b9-bac0-491e-9004-9bf5d3fb29c2",
+    "intent": "timer.set",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "set timer 2 hours",
+    "tokens": [
+      "set",
+      "timer",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "67282347-a84f-4319-bd58-251d35c24f17",
+    "intent": "timer.set",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "set timer 30 minutes",
+    "tokens": [
+      "set",
+      "timer",
+      "30",
+      "minutes"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "f2c26d2c-3921-47ff-99d7-92fd3ecdf783",
+    "intent": "timer.set",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "set timer 15 minutes",
+    "tokens": [
+      "set",
+      "timer",
+      "15",
+      "minutes"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 0,
+        "text": "1 hour",
+        "type": "duration"
+      }
+    ],
+    "id": "f9a3574a-1eba-45b9-8e4a-67d367061efd",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "1 hour timer",
+    "tokens": [
+      "1",
+      "hour",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 0,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "5300a5bd-ac5a-46c3-823b-5d70fc471a63",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "30 minutes timer",
+    "tokens": [
+      "30",
+      "minutes",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 0,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "67b866c0-1128-4951-aec9-afb4873ae71a",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "15 minutes timer",
+    "tokens": [
+      "15",
+      "minutes",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "96d48071-1cbf-406b-97d6-267c43e92d51",
+    "intent": "timer.set",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "create a timer for 2 hours",
+    "tokens": [
+      "create",
+      "a",
+      "timer",
+      "for",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "43d48ad1-1c46-4cce-91ee-14b718fab291",
+    "intent": "timer.set",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "create a timer for 15 minutes",
+    "tokens": [
+      "create",
+      "a",
+      "timer",
+      "for",
+      "15",
+      "minutes"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "1 hour",
+        "type": "duration"
+      }
+    ],
+    "id": "657e8d15-18c1-4d1d-891b-424669ab3aca",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "start timer for 1 hour",
+    "tokens": [
+      "start",
+      "timer",
+      "for",
+      "1",
+      "hour"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "fc647d8a-d277-4187-8e2f-613ab6cf6653",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "start timer for 15 minutes",
+    "tokens": [
+      "start",
+      "timer",
+      "for",
+      "15",
+      "minutes"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "6db212c2-6715-4142-a953-9cc088ae8d37",
+    "intent": "timer.set",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "I need a 15 minutes timer",
+    "tokens": [
+      "i",
+      "need",
+      "a",
+      "15",
+      "minutes",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "1 hour",
+        "type": "duration"
+      }
+    ],
+    "id": "a5898009-9ce5-4b52-bb3e-54c3a25a48df",
+    "intent": "timer.set",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "I need a 1 hour timer",
+    "tokens": [
+      "i",
+      "need",
+      "a",
+      "1",
+      "hour",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "76f397d3-1908-4334-b88e-98f21bf6afab",
+    "intent": "timer.set",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set a 30 minutes timer",
+    "tokens": [
+      "set",
+      "a",
+      "30",
+      "minutes",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "1 hour",
+        "type": "duration"
+      }
+    ],
+    "id": "35343965-e4d0-4ca3-82a7-2e6a977bd2a5",
+    "intent": "timer.set",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set a 1 hour timer",
+    "tokens": [
+      "set",
+      "a",
+      "1",
+      "hour",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "5ee3cced-a873-4339-903e-923cedd7033b",
+    "intent": "timer.set",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set a 2 hours timer",
+    "tokens": [
+      "set",
+      "a",
+      "2",
+      "hours",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 6,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "e18c366b-893f-475c-81bd-0df3ecbd0ac4",
+    "intent": "timer.set",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "can you set a timer for 2 hours",
+    "tokens": [
+      "can",
+      "you",
+      "set",
+      "a",
+      "timer",
+      "for",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 6,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "0bfcdb42-1ebd-4be6-b4b6-00cf24354eef",
+    "intent": "timer.set",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "can you set a timer for 30 minutes",
+    "tokens": [
+      "can",
+      "you",
+      "set",
+      "a",
+      "timer",
+      "for",
+      "30",
+      "minutes"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "0c4a65ce-743f-4405-8f89-4f09eb460cb2",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "start a timer for 2 hours",
+    "tokens": [
+      "start",
+      "a",
+      "timer",
+      "for",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "1e9303f3-e079-4344-8c9c-b1d36bea71a4",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "start a timer for 15 minutes",
+    "tokens": [
+      "start",
+      "a",
+      "timer",
+      "for",
+      "15",
+      "minutes"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "f487aea4-1fd0-4d56-85f6-3ed4354acde4",
+    "intent": "timer.set",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "give me a 15 minutes timer",
+    "tokens": [
+      "give",
+      "me",
+      "a",
+      "15",
+      "minutes",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "2d50c2f2-760d-466b-9ba7-c0b9812c5a0d",
+    "intent": "timer.set",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "give me a 2 hours timer",
+    "tokens": [
+      "give",
+      "me",
+      "a",
+      "2",
+      "hours",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 1,
+        "text": "1 hour",
+        "type": "duration"
+      }
+    ],
+    "id": "63fd0bee-83ed-41ad-a127-feade885155c",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "time 1 hour",
+    "tokens": [
+      "time",
+      "1",
+      "hour"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 1,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "20bde64c-5685-483d-b934-3a9b5439179f",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "time 30 minutes",
+    "tokens": [
+      "time",
+      "30",
+      "minutes"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 1,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "ceb967e6-b51f-45cf-b30f-610cf4ea72c6",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "countdown 30 minutes",
+    "tokens": [
+      "countdown",
+      "30",
+      "minutes"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 1,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "f871572e-9724-419e-a2bf-7fd5106152fd",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "countdown 15 minutes",
+    "tokens": [
+      "countdown",
+      "15",
+      "minutes"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 1,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "fffe0318-c64d-473b-b937-354a9836d2d3",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "countdown 2 hours",
+    "tokens": [
+      "countdown",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 1,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "64bd5bb5-eac6-419b-ba62-50d4abc066d4",
+    "intent": "timer.set",
+    "pos_tags": [
+      "VERB",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set 2 hours timer",
+    "tokens": [
+      "set",
+      "2",
+      "hours",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 1,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "c901ac34-ac68-4f6b-b8c6-dfd0f2166453",
+    "intent": "timer.set",
+    "pos_tags": [
+      "VERB",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set 30 minutes timer",
+    "tokens": [
+      "set",
+      "30",
+      "minutes",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 1,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "1731809b-5782-4cd5-95ec-4c981e2d7040",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NOUN",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "start 30 minutes timer",
+    "tokens": [
+      "start",
+      "30",
+      "minutes",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 1,
+        "text": "1 hour",
+        "type": "duration"
+      }
+    ],
+    "id": "bd8b7a93-c62a-47d8-9f8a-cde227447ca2",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NOUN",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "start 1 hour timer",
+    "tokens": [
+      "start",
+      "1",
+      "hour",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 1,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "93108a24-7754-496f-90e7-b71d6d30e2ba",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NOUN",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "start 2 hours timer",
+    "tokens": [
+      "start",
+      "2",
+      "hours",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 1,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "24bf41f9-b1f0-47b4-9074-3a1178764bc6",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "timer 2 hours",
+    "tokens": [
+      "timer",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 1,
+        "text": "1 hour",
+        "type": "duration"
+      }
+    ],
+    "id": "950b4c8a-4d69-4b9a-b6de-4051f9176d19",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NOUN",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "timer 1 hour",
+    "tokens": [
+      "timer",
+      "1",
+      "hour"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "1 hour",
+        "type": "duration"
+      }
+    ],
+    "id": "77e27299-2df6-4eb6-9171-29b2a4492560",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "please set a 1 hour timer",
+    "tokens": [
+      "please",
+      "set",
+      "a",
+      "1",
+      "hour",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "5bca2d05-2e15-42e2-b539-86bfe11b51eb",
+    "intent": "timer.set",
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "please set a 15 minutes timer",
+    "tokens": [
+      "please",
+      "set",
+      "a",
+      "15",
+      "minutes",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "1 hour",
+        "type": "duration"
+      }
+    ],
+    "id": "054c4520-210e-4bb5-bccd-a0d37e45ca9e",
+    "intent": "timer.set",
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "put on a timer for 1 hour",
+    "tokens": [
+      "put",
+      "on",
+      "a",
+      "timer",
+      "for",
+      "1",
+      "hour"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "97853a21-18e8-4230-ab8f-fcc835a1e1af",
+    "intent": "timer.set",
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "put on a timer for 30 minutes",
+    "tokens": [
+      "put",
+      "on",
+      "a",
+      "timer",
+      "for",
+      "30",
+      "minutes"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "0511887b-dd0a-472c-978c-f18b54cec0bf",
+    "intent": "timer.set",
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "put on a timer for 15 minutes",
+    "tokens": [
+      "put",
+      "on",
+      "a",
+      "timer",
+      "for",
+      "15",
+      "minutes"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "b3f41aaa-3483-475d-ba10-1afc423ddb51",
+    "intent": "timer.set",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set up a 15 minutes timer",
+    "tokens": [
+      "set",
+      "up",
+      "a",
+      "15",
+      "minutes",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "d909b805-5dbd-4afb-b706-df40adfa749b",
+    "intent": "timer.set",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set up a 30 minutes timer",
+    "tokens": [
+      "set",
+      "up",
+      "a",
+      "30",
+      "minutes",
+      "timer"
+    ]
+  }
+]

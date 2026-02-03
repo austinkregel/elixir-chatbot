@@ -1,0 +1,50 @@
+[
+  {
+    "value": "section one",
+    "synonyms": ["section one", "section 1", "first section"]
+  },
+  {
+    "value": "section two",
+    "synonyms": ["section two", "section 2", "second section"]
+  },
+  {
+    "value": "section three",
+    "synonyms": ["section three", "section 3", "third section"]
+  },
+  {
+    "value": "section four",
+    "synonyms": ["section four", "section 4", "fourth section"]
+  },
+  {
+    "value": "grid alpha",
+    "synonyms": ["grid alpha", "alpha grid", "grid A"]
+  },
+  {
+    "value": "grid beta",
+    "synonyms": ["grid beta", "beta grid", "grid B"]
+  },
+  {
+    "value": "upper left",
+    "synonyms": ["upper left", "top left", "upper left corner"]
+  },
+  {
+    "value": "upper right",
+    "synonyms": ["upper right", "top right", "upper right corner"]
+  },
+  {
+    "value": "lower left",
+    "synonyms": ["lower left", "bottom left", "lower left corner"]
+  },
+  {
+    "value": "lower right",
+    "synonyms": ["lower right", "bottom right", "lower right corner"]
+  },
+  {
+    "value": "center",
+    "synonyms": ["center", "middle", "central area"]
+  },
+  {
+    "value": "quadrant one",
+    "synonyms": ["quadrant one", "quadrant 1", "first quadrant"]
+  }
+]

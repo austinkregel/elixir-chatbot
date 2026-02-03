@@ -1,0 +1,302 @@
+[
+  {
+    "entities": [],
+    "id": "cc55623a-95f0-4f79-af94-0c0c49441852",
+    "intent": "device.storage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "AUX"
+    ],
+    "text": "how much storage do I have",
+    "tokens": [
+      "how",
+      "much",
+      "storage",
+      "do",
+      "i",
+      "have"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f89d0d79-301a-49b1-86fd-5d9374f21479",
+    "intent": "device.storage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "storage space",
+    "tokens": [
+      "storage",
+      "space"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "cab1e281-3e14-447a-b742-6ad7198e04ea",
+    "intent": "device.storage",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "check storage",
+    "tokens": [
+      "check",
+      "storage"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5391f797-2d22-439a-9544-f280d5860f00",
+    "intent": "device.storage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "available storage",
+    "tokens": [
+      "available",
+      "storage"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1bfd9664-8180-47b1-984e-a4308d9ca731",
+    "intent": "device.storage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "storage left",
+    "tokens": [
+      "storage",
+      "left"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "32c35e56-5114-47d3-8736-6d851116d2dd",
+    "intent": "device.storage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how much space left",
+    "tokens": [
+      "how",
+      "much",
+      "space",
+      "left"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a70330cd-024f-4392-a843-8ab2015f63d5",
+    "intent": "device.storage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "disk space",
+    "tokens": [
+      "disk",
+      "space"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "357d70e0-19e1-4fdc-890d-8258f2e3bcb8",
+    "intent": "device.storage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "free space",
+    "tokens": [
+      "free",
+      "space"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d8cf55d6-b7ff-491f-8dcc-004b67cbde2f",
+    "intent": "device.storage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "storage status",
+    "tokens": [
+      "storage",
+      "status"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7ec7d0b8-2427-45da-aaa0-eeb2a540e247",
+    "intent": "device.storage",
+    "pos_tags": [
+      "PRON",
+      "NOUN"
+    ],
+    "text": "my storage",
+    "tokens": [
+      "my",
+      "storage"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ac848bc8-4b49-446b-a873-c5de8cc4bc3b",
+    "intent": "device.storage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "device storage",
+    "tokens": [
+      "device",
+      "storage"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "280594ae-b45c-49f8-b571-5a377d99cbb2",
+    "intent": "device.storage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remaining storage",
+    "tokens": [
+      "remaining",
+      "storage"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2f382ecb-d1c0-455c-a9d6-3e03d43b3b57",
+    "intent": "device.storage",
+    "pos_tags": [
+      "NOUN",
+      "VERB"
+    ],
+    "text": "storage check",
+    "tokens": [
+      "storage",
+      "check"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b2775cd5-a411-4388-88e1-7b86d7a8baea",
+    "intent": "device.storage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "memory space",
+    "tokens": [
+      "memory",
+      "space"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "dded89ec-3c3c-4848-a058-145b780b5f92",
+    "intent": "device.storage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "available space",
+    "tokens": [
+      "available",
+      "space"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1731bf50-4e30-4629-b145-d4a77e8e384d",
+    "intent": "device.storage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "how full is my storage",
+    "tokens": [
+      "how",
+      "full",
+      "is",
+      "my",
+      "storage"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6a8998d7-a237-4462-8c52-3b0f9d183343",
+    "intent": "device.storage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "storage info",
+    "tokens": [
+      "storage",
+      "info"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "868ae5b6-14d8-4a0a-a27a-8836e9a94536",
+    "intent": "device.storage",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "check disk space",
+    "tokens": [
+      "check",
+      "disk",
+      "space"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2e201017-33f4-4c9f-8494-65c09f328474",
+    "intent": "device.storage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "space remaining",
+    "tokens": [
+      "space",
+      "remaining"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e4adadd3-3752-4492-9d99-7fdb78ad8bab",
+    "intent": "device.storage",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "storage available",
+    "tokens": [
+      "storage",
+      "available"
+    ]
+  }
+]

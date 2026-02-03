@@ -1,0 +1,326 @@
+[
+  {
+    "entities": [],
+    "id": "93dbc05c-1972-43e9-ba8c-4b4c2c50f259",
+    "intent": "status.check_process",
+    "pos_tags": [
+      "AUX",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "is the process running",
+    "tokens": [
+      "is",
+      "the",
+      "process",
+      "running"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "59df67d2-d404-4932-a8a9-5126ff907334",
+    "intent": "status.check_process",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "check {process_name} status",
+    "tokens": [
+      "check",
+      "process_name",
+      "status"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d8ed22dd-714a-47d0-96a5-9add9f74fb52",
+    "intent": "status.check_process",
+    "pos_tags": [
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "is {process_name} running",
+    "tokens": [
+      "is",
+      "process_name",
+      "running"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f6c4f105-6111-414e-9e96-259cac293d3d",
+    "intent": "status.check_process",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "process status",
+    "tokens": [
+      "process",
+      "status"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "afdfa3c1-a09e-4833-8696-7fdbe3008efd",
+    "intent": "status.check_process",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "status of {process_name}",
+    "tokens": [
+      "status",
+      "of",
+      "process_name"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9ed3a68b-9c11-412b-8dba-1b57d5238574",
+    "intent": "status.check_process",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "check process",
+    "tokens": [
+      "check",
+      "process"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "35746869-b686-41dd-ad18-7d057636196c",
+    "intent": "status.check_process",
+    "pos_tags": [
+      "AUX",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "is the {process_name} active",
+    "tokens": [
+      "is",
+      "the",
+      "process_name",
+      "active"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e375b8ec-14f3-4707-9e5e-8448bc0f872d",
+    "intent": "status.check_process",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "process running check",
+    "tokens": [
+      "process",
+      "running",
+      "check"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "14e24a98-44a5-49d9-b408-5e738d0a3d77",
+    "intent": "status.check_process",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "NOUN"
+    ],
+    "text": "verify {process_name} is running",
+    "tokens": [
+      "verify",
+      "process_name",
+      "is",
+      "running"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "98209315-08ee-42d6-ad98-034b489241d4",
+    "intent": "status.check_process",
+    "pos_tags": [
+      "VERB",
+      "CONJ",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "check if {process_name} running",
+    "tokens": [
+      "check",
+      "if",
+      "process_name",
+      "running"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9f7a2c54-f393-4489-b2ed-89d245608f01",
+    "intent": "status.check_process",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "process operational",
+    "tokens": [
+      "process",
+      "operational"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "be695ffe-dd35-4d76-b63e-5e96f53bc0b4",
+    "intent": "status.check_process",
+    "pos_tags": [
+      "AUX",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "is {process_name} still running",
+    "tokens": [
+      "is",
+      "process_name",
+      "still",
+      "running"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d2308ef3-a15f-4da4-9d14-8b30150fd2e4",
+    "intent": "status.check_process",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "status of the process",
+    "tokens": [
+      "status",
+      "of",
+      "the",
+      "process"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ad9b79a2-3db9-4a3c-8c39-3ab392f2f3d2",
+    "intent": "status.check_process",
+    "pos_tags": [
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "is {process_name} working",
+    "tokens": [
+      "is",
+      "process_name",
+      "working"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c446f9a5-8e5f-4d2b-9099-8c6fa82b27f6",
+    "intent": "status.check_process",
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "check on {process_name}",
+    "tokens": [
+      "check",
+      "on",
+      "process_name"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9907579d-ceab-4adf-8803-38fe0d51b8ac",
+    "intent": "status.check_process",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "process health",
+    "tokens": [
+      "process",
+      "health"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0513997e-21c5-493c-913d-7c6fc79331fb",
+    "intent": "status.check_process",
+    "pos_tags": [
+      "AUX",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "is the job running",
+    "tokens": [
+      "is",
+      "the",
+      "job",
+      "running"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "51925ce5-fa01-4007-9723-4d7cb707e1ed",
+    "intent": "status.check_process",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "check running processes",
+    "tokens": [
+      "check",
+      "running",
+      "processes"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "15234806-9cda-43f0-ae57-e60056832c28",
+    "intent": "status.check_process",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "{process_name} status check",
+    "tokens": [
+      "process_name",
+      "status",
+      "check"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2689f75d-9f8a-4fcb-b22e-efb2615bf7bb",
+    "intent": "status.check_process",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "task status",
+    "tokens": [
+      "task",
+      "status"
+    ]
+  }
+]

@@ -1,0 +1,22 @@
+[
+  {
+    "value": "high",
+    "synonyms": ["high", "high priority", "urgent", "important", "critical", "top priority", "asap"]
+  },
+  {
+    "value": "medium",
+    "synonyms": ["medium", "medium priority", "normal", "regular", "standard"]
+  },
+  {
+    "value": "low",
+    "synonyms": ["low", "low priority", "not urgent", "whenever", "eventually", "someday"]
+  },
+  {
+    "value": "urgent",
+    "synonyms": ["urgent", "very urgent", "extremely urgent", "rush", "immediately", "right away"]
+  },
+  {
+    "value": "none",
+    "synonyms": ["none", "no priority", "unimportant", "optional"]
+  }
+]

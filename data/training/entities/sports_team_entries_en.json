@@ -1,0 +1,42 @@
+[
+  {
+    "value": "Lakers",
+    "synonyms": ["Lakers", "LA Lakers", "Los Angeles Lakers", "the Lakers"]
+  },
+  {
+    "value": "Yankees",
+    "synonyms": ["Yankees", "NY Yankees", "New York Yankees", "the Yankees"]
+  },
+  {
+    "value": "Patriots",
+    "synonyms": ["Patriots", "New England Patriots", "Pats", "the Patriots"]
+  },
+  {
+    "value": "Manchester United",
+    "synonyms": ["Manchester United", "Man United", "Man U", "United"]
+  },
+  {
+    "value": "Real Madrid",
+    "synonyms": ["Real Madrid", "Madrid", "Real"]
+  },
+  {
+    "value": "Barcelona",
+    "synonyms": ["Barcelona", "Barca", "FC Barcelona"]
+  },
+  {
+    "value": "Golden State Warriors",
+    "synonyms": ["Golden State Warriors", "Warriors", "GSW", "the Warriors"]
+  },
+  {
+    "value": "Dallas Cowboys",
+    "synonyms": ["Dallas Cowboys", "Cowboys", "the Cowboys"]
+  },
+  {
+    "value": "Chicago Bulls",
+    "synonyms": ["Chicago Bulls", "Bulls", "the Bulls"]
+  },
+  {
+    "value": "Liverpool",
+    "synonyms": ["Liverpool", "Liverpool FC", "the Reds"]
+  }
+]

@@ -1,0 +1,42 @@
+[
+  {
+    "text": "remind me to watch a movie",
+    "correct_intent": "reminder.set"
+  },
+  {
+    "text": "schedule movie night",
+    "correct_intent": "calendar.event.create"
+  },
+  {
+    "text": "what's the weather",
+    "correct_intent": "weather"
+  },
+  {
+    "text": "play music",
+    "correct_intent": "music.play"
+  },
+  {
+    "text": "turn on the TV",
+    "correct_intent": "smarthome.tv.on"
+  },
+  {
+    "text": "call John",
+    "correct_intent": "call.make"
+  },
+  {
+    "text": "add to my reading list",
+    "correct_intent": "todo.add"
+  },
+  {
+    "text": "set a game timer",
+    "correct_intent": "timer.set"
+  },
+  {
+    "text": "what time is it",
+    "correct_intent": "time.current"
+  },
+  {
+    "text": "search the web",
+    "correct_intent": "websearch.query"
+  }
+]

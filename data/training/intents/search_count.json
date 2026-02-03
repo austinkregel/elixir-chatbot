@@ -1,0 +1,304 @@
+[
+  {
+    "entities": [],
+    "id": "a4acb888-60dc-4063-bce1-b7190f61080a",
+    "intent": "search.count",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "count the entries",
+    "tokens": [
+      "count",
+      "the",
+      "entries"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3b757dc8-8e65-4621-898f-e684d657b150",
+    "intent": "search.count",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "count {query_term}",
+    "tokens": [
+      "count",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d7000868-c825-4873-a8d0-750db0f32257",
+    "intent": "search.count",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "get the count",
+    "tokens": [
+      "get",
+      "the",
+      "count"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a308a50c-d4a3-40a0-b80c-27fc53200efd",
+    "intent": "search.count",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "tally the results",
+    "tokens": [
+      "tally",
+      "the",
+      "results"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1ca6b8dd-6145-4aa6-8ccc-341e02395504",
+    "intent": "search.count",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "count all",
+    "tokens": [
+      "count",
+      "all"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a643315a-6c33-4281-a990-85baea02d153",
+    "intent": "search.count",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "number of records",
+    "tokens": [
+      "number",
+      "of",
+      "records"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "47e408d0-c748-4e5e-980b-ea5983966216",
+    "intent": "search.count",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "count items",
+    "tokens": [
+      "count",
+      "items"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3c3c61d5-33fb-48c5-966f-8e5f445be0c9",
+    "intent": "search.count",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "total count",
+    "tokens": [
+      "total",
+      "count"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c9d54f36-e9b2-4144-a1a0-1021d5ffbc38",
+    "intent": "search.count",
+    "pos_tags": [
+      "NOUN"
+    ],
+    "text": "enumerate",
+    "tokens": [
+      "enumerate"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "00222157-1080-4f68-a6ef-ccb287c20bcd",
+    "intent": "search.count",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "count matching entries",
+    "tokens": [
+      "count",
+      "matching",
+      "entries"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "eef3990a-670b-4f9a-827b-d8923b4dacb6",
+    "intent": "search.count",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "count the {query_term}",
+    "tokens": [
+      "count",
+      "the",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8de6c988-33bd-4d0c-bf55-be88cd24ca8a",
+    "intent": "search.count",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "total up",
+    "tokens": [
+      "total",
+      "up"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5811c8d8-0815-417a-8884-80a1c8a5568e",
+    "intent": "search.count",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "count records",
+    "tokens": [
+      "count",
+      "records"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a471f1b6-c27d-4e8e-a8da-c7b966072e84",
+    "intent": "search.count",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "get count of {query_term}",
+    "tokens": [
+      "get",
+      "count",
+      "of",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "01e989b1-2b26-4ae9-b9d3-369cc80bfb91",
+    "intent": "search.count",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "sum up the entries",
+    "tokens": [
+      "sum",
+      "up",
+      "the",
+      "entries"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "948d3c2c-7b0d-47d1-b0b0-2dcb4385945d",
+    "intent": "search.count",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "count all {query_term}",
+    "tokens": [
+      "count",
+      "all",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "da1bd777-1941-48c3-85a9-51826e21e521",
+    "intent": "search.count",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "quantity count",
+    "tokens": [
+      "quantity",
+      "count"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c7049724-fae3-4220-bf71-a5120650e160",
+    "intent": "search.count",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "total number",
+    "tokens": [
+      "total",
+      "number"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "167514e5-7c8b-4456-9adb-40f0ebe78756",
+    "intent": "search.count",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "count the matches",
+    "tokens": [
+      "count",
+      "the",
+      "matches"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "eb024da3-e932-4b42-893e-a9cc07d21aab",
+    "intent": "search.count",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "record count",
+    "tokens": [
+      "record",
+      "count"
+    ]
+  }
+]

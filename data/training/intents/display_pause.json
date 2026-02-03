@@ -1,0 +1,290 @@
+[
+  {
+    "entities": [],
+    "id": "ba7197f1-61c0-4819-a87f-f4432e7521d1",
+    "intent": "display.pause",
+    "pos_tags": [
+      "NOUN"
+    ],
+    "text": "pause",
+    "tokens": [
+      "pause"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "41f358d1-4d4e-4e90-9f52-b077ebe51ad9",
+    "intent": "display.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "pause playback",
+    "tokens": [
+      "pause",
+      "playback"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e61cfd0a-f152-46de-9d2e-b96075346cc3",
+    "intent": "display.pause",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "pause the video",
+    "tokens": [
+      "pause",
+      "the",
+      "video"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "52031bd7-b437-4bd6-bfb4-b5970ee93cfb",
+    "intent": "display.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "hold playback",
+    "tokens": [
+      "hold",
+      "playback"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "73ead652-fb70-4901-9983-147f2e99c98d",
+    "intent": "display.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "stop playing temporarily",
+    "tokens": [
+      "stop",
+      "playing",
+      "temporarily"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3da35bca-c8e8-4e06-8a65-63f15a830c9b",
+    "intent": "display.pause",
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "text": "pause it",
+    "tokens": [
+      "pause",
+      "it"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b2e4e550-5a08-4a42-ac84-36cf1d77be55",
+    "intent": "display.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "freeze playback",
+    "tokens": [
+      "freeze",
+      "playback"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3b3c4bdb-329f-4980-884e-3d5c7f0c4dfc",
+    "intent": "display.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "suspend playback",
+    "tokens": [
+      "suspend",
+      "playback"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5dc021ab-4cee-42c7-a484-cf6ae1636486",
+    "intent": "display.pause",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "pause the recording",
+    "tokens": [
+      "pause",
+      "the",
+      "recording"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "49ed9dfc-1e18-4dbf-84f2-4eb2d96685aa",
+    "intent": "display.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "halt playback",
+    "tokens": [
+      "halt",
+      "playback"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7372aed9-f49b-4d2f-988a-822b26fe3fb6",
+    "intent": "display.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "pause here",
+    "tokens": [
+      "pause",
+      "here"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1c97722c-31c1-49c6-80f1-2137d18dc3f3",
+    "intent": "display.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "stop here",
+    "tokens": [
+      "stop",
+      "here"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b19ad97a-c84b-45a6-88d1-c2f1ab88e015",
+    "intent": "display.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "temporary stop",
+    "tokens": [
+      "temporary",
+      "stop"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7deff92f-1c64-4cad-ad46-36d326077fc2",
+    "intent": "display.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "pause display",
+    "tokens": [
+      "pause",
+      "display"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3e165653-5fab-4332-bc03-fa885d8c57b6",
+    "intent": "display.pause",
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "text": "hold it",
+    "tokens": [
+      "hold",
+      "it"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8cef22ef-6719-48ae-b844-0633dd15260a",
+    "intent": "display.pause",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "pause the footage",
+    "tokens": [
+      "pause",
+      "the",
+      "footage"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5b55656b-addd-46d3-bb6a-b0c5fc7a6ebc",
+    "intent": "display.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "stop playback",
+    "tokens": [
+      "stop",
+      "playback"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9e37b3a6-e5de-4afb-a54d-bbc72b3d04c6",
+    "intent": "display.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "break playback",
+    "tokens": [
+      "break",
+      "playback"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f1498e2b-6610-4e2c-81fb-dc067995080f",
+    "intent": "display.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "pause playing",
+    "tokens": [
+      "pause",
+      "playing"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "33dc28bc-9aea-4c3c-a70b-f3275f3912d7",
+    "intent": "display.pause",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "hold the video",
+    "tokens": [
+      "hold",
+      "the",
+      "video"
+    ]
+  }
+]

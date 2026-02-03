@@ -1,0 +1,318 @@
+[
+  {
+    "entities": [],
+    "id": "b451baeb-1d33-4477-b054-18746b0f23b2",
+    "intent": "status.check_complete",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "is it finished",
+    "tokens": [
+      "is",
+      "it",
+      "finished"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a1b4218a-569d-429a-9cfc-96ea1d3a5034",
+    "intent": "status.check_complete",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "is it done",
+    "tokens": [
+      "is",
+      "it",
+      "done"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "99a180c6-3e1a-431b-a4bf-4435f998ed2f",
+    "intent": "status.check_complete",
+    "pos_tags": [
+      "AUX",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "is the task complete",
+    "tokens": [
+      "is",
+      "the",
+      "task",
+      "complete"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "008417d9-0ad1-41d2-ba21-8621ec570bf6",
+    "intent": "status.check_complete",
+    "pos_tags": [
+      "VERB",
+      "CONJ",
+      "NOUN"
+    ],
+    "text": "check if complete",
+    "tokens": [
+      "check",
+      "if",
+      "complete"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3399bfd1-f3f5-4acd-a7b8-a158f2746b90",
+    "intent": "status.check_complete",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "has it finished",
+    "tokens": [
+      "has",
+      "it",
+      "finished"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8eb95994-7a61-4683-a855-e4236cce0815",
+    "intent": "status.check_complete",
+    "pos_tags": [
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "is {process_name} done",
+    "tokens": [
+      "is",
+      "process_name",
+      "done"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0b22d2c3-8be4-4417-8fc1-ba774e876b1b",
+    "intent": "status.check_complete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "completion status",
+    "tokens": [
+      "completion",
+      "status"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2f9e51a8-1bf0-46a3-a482-2339cbbc7d2e",
+    "intent": "status.check_complete",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "is it completed",
+    "tokens": [
+      "is",
+      "it",
+      "completed"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b840a3a4-927b-4daf-b23d-f98d8657ece3",
+    "intent": "status.check_complete",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "check completion",
+    "tokens": [
+      "check",
+      "completion"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "95698169-3385-4514-a113-1650af712a7f",
+    "intent": "status.check_complete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "done yet",
+    "tokens": [
+      "done",
+      "yet"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4a6a88f5-f291-44ec-8d0b-49e82f1db8e4",
+    "intent": "status.check_complete",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "is it over",
+    "tokens": [
+      "is",
+      "it",
+      "over"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d23d7484-29dd-43fc-bde1-3d30066eff09",
+    "intent": "status.check_complete",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "has it completed",
+    "tokens": [
+      "has",
+      "it",
+      "completed"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1c368086-58e9-4ce4-8df8-21f71605ced0",
+    "intent": "status.check_complete",
+    "pos_tags": [
+      "AUX",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "is the process done",
+    "tokens": [
+      "is",
+      "the",
+      "process",
+      "done"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b20c7efc-2d82-4159-b59e-bfc61e9b7ed7",
+    "intent": "status.check_complete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "finished yet",
+    "tokens": [
+      "finished",
+      "yet"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6873f8e5-ecb1-452b-8ed2-756f7ed716e5",
+    "intent": "status.check_complete",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "is it ready",
+    "tokens": [
+      "is",
+      "it",
+      "ready"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "89991a9c-16ca-4a0c-80a1-2fd5c1c8a18d",
+    "intent": "status.check_complete",
+    "pos_tags": [
+      "NOUN",
+      "VERB"
+    ],
+    "text": "completion check",
+    "tokens": [
+      "completion",
+      "check"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "21c569a3-32fb-4053-8a8b-5cbc287a3f8e",
+    "intent": "status.check_complete",
+    "pos_tags": [
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "is {query_term} complete",
+    "tokens": [
+      "is",
+      "query_term",
+      "complete"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7d180317-b970-4170-af94-c1f44a097467",
+    "intent": "status.check_complete",
+    "pos_tags": [
+      "VERB",
+      "CONJ",
+      "NOUN"
+    ],
+    "text": "check if done",
+    "tokens": [
+      "check",
+      "if",
+      "done"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "161c9d5a-5715-49b2-bb90-4affffe00fce",
+    "intent": "status.check_complete",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "is it finished yet",
+    "tokens": [
+      "is",
+      "it",
+      "finished",
+      "yet"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ce077ff2-68c5-4150-b145-1867384fe51b",
+    "intent": "status.check_complete",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "task completion status",
+    "tokens": [
+      "task",
+      "completion",
+      "status"
+    ]
+  }
+]

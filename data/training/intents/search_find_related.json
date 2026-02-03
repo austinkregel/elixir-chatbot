@@ -1,0 +1,298 @@
+[
+  {
+    "entities": [],
+    "id": "0ddca56d-a021-4550-8a5c-35eff1d52e78",
+    "intent": "search.find_related",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "find related entries",
+    "tokens": [
+      "find",
+      "related",
+      "entries"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1514a6bc-3682-4581-b274-02901883063d",
+    "intent": "search.find_related",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show related items",
+    "tokens": [
+      "show",
+      "related",
+      "items"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "62bd543e-e9ce-40da-bdc3-ac530e1079e1",
+    "intent": "search.find_related",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "find similar",
+    "tokens": [
+      "find",
+      "similar"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c061a347-41e9-43a0-98c1-6484112876e3",
+    "intent": "search.find_related",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "related records",
+    "tokens": [
+      "related",
+      "records"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "54f98c87-f88d-4f37-8015-2a086d3c5aaf",
+    "intent": "search.find_related",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "associated entries",
+    "tokens": [
+      "associated",
+      "entries"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8ddd3193-8816-4644-aebd-70a0849532d3",
+    "intent": "search.find_related",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "find connections",
+    "tokens": [
+      "find",
+      "connections"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b3e1e63f-84ec-4c85-a888-95f167ac352b",
+    "intent": "search.find_related",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show related data",
+    "tokens": [
+      "show",
+      "related",
+      "data"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "240dc48a-7c85-4bf1-8d61-d890d4ed89ab",
+    "intent": "search.find_related",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "linked items",
+    "tokens": [
+      "linked",
+      "items"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "032e5959-836c-4448-bbf5-d768ef22858c",
+    "intent": "search.find_related",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "find related to {query_term}",
+    "tokens": [
+      "find",
+      "related",
+      "to",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "36a0274b-e08b-45b1-9182-1c21113f0059",
+    "intent": "search.find_related",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "similar entries",
+    "tokens": [
+      "similar",
+      "entries"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "16c07e93-8fdd-4a85-898e-edffe39fb41d",
+    "intent": "search.find_related",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "related to {query_term}",
+    "tokens": [
+      "related",
+      "to",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7fac7b2c-40de-435f-b12a-76ce45b56bcd",
+    "intent": "search.find_related",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "show associated",
+    "tokens": [
+      "show",
+      "associated"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "043f2b9c-cb94-4718-b076-681d9be23ce5",
+    "intent": "search.find_related",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "find matching entries",
+    "tokens": [
+      "find",
+      "matching",
+      "entries"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e62d438d-3183-4540-8a2c-f65740d43aa0",
+    "intent": "search.find_related",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "related information",
+    "tokens": [
+      "related",
+      "information"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ae497dd7-a04c-456e-a8e6-33941f099e24",
+    "intent": "search.find_related",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "find linked",
+    "tokens": [
+      "find",
+      "linked"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1d8051a3-0fa1-43b3-aefe-fb884b84a9a5",
+    "intent": "search.find_related",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show connected items",
+    "tokens": [
+      "show",
+      "connected",
+      "items"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d3eec6bc-1292-40f4-894c-9638166feecc",
+    "intent": "search.find_related",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "find associations",
+    "tokens": [
+      "find",
+      "associations"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "930218ec-d91a-405a-9f0a-840e67e892ed",
+    "intent": "search.find_related",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "related data",
+    "tokens": [
+      "related",
+      "data"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "265b18b1-d6b0-4d02-95c3-56ff321c8c3c",
+    "intent": "search.find_related",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "show similar",
+    "tokens": [
+      "show",
+      "similar"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e2771349-62a8-4367-ad01-7f84641314ab",
+    "intent": "search.find_related",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "connected records",
+    "tokens": [
+      "connected",
+      "records"
+    ]
+  }
+]

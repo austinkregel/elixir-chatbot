@@ -1,0 +1,38 @@
+[
+  {
+    "value": "2x",
+    "synonyms": ["2x", "two times", "double", "200%"]
+  },
+  {
+    "value": "4x",
+    "synonyms": ["4x", "four times", "quadruple", "400%"]
+  },
+  {
+    "value": "10x",
+    "synonyms": ["10x", "ten times", "1000%"]
+  },
+  {
+    "value": "50%",
+    "synonyms": ["50%", "fifty percent", "half", "half size"]
+  },
+  {
+    "value": "100%",
+    "synonyms": ["100%", "full", "full size", "normal", "actual size"]
+  },
+  {
+    "value": "150%",
+    "synonyms": ["150%", "one and a half times"]
+  },
+  {
+    "value": "maximum",
+    "synonyms": ["maximum", "max", "maximum zoom", "highest"]
+  },
+  {
+    "value": "minimum",
+    "synonyms": ["minimum", "min", "minimum zoom", "lowest"]
+  },
+  {
+    "value": "fit to screen",
+    "synonyms": ["fit to screen", "fit screen", "fit to window"]
+  }
+]

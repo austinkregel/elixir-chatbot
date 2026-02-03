@@ -1,0 +1,42 @@
+[
+  {
+    "text": "play some music",
+    "correct_intent": "music.play"
+  },
+  {
+    "text": "show me the weather",
+    "correct_intent": "weather"
+  },
+  {
+    "text": "turn on the TV",
+    "correct_intent": "smarthome.tv.on"
+  },
+  {
+    "text": "take a screenshot",
+    "correct_intent": "device.screenshot"
+  },
+  {
+    "text": "find a file",
+    "correct_intent": "search.locate_file"
+  },
+  {
+    "text": "analyze the data",
+    "correct_intent": "analyze.data"
+  },
+  {
+    "text": "what time is it",
+    "correct_intent": "time.current"
+  },
+  {
+    "text": "set the brightness",
+    "correct_intent": "device.brightness.set"
+  },
+  {
+    "text": "search for images",
+    "correct_intent": "search.find_by_type"
+  },
+  {
+    "text": "show my calendar",
+    "correct_intent": "calendar.query.today"
+  }
+]

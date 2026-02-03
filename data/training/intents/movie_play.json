@@ -1,0 +1,316 @@
+[
+  {
+    "entities": [],
+    "id": "c9c099a8-ac8d-4407-80ac-6ff7fa72b923",
+    "intent": "movie.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "play {movie_title}",
+    "tokens": [
+      "play",
+      "movie_title"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d6c0d0b8-231b-4f48-bd7e-6aa432a1e905",
+    "intent": "movie.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "start {movie_title}",
+    "tokens": [
+      "start",
+      "movie_title"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2a63365c-ae17-437e-a4a0-fe4310987d7a",
+    "intent": "movie.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "watch {movie_title}",
+    "tokens": [
+      "watch",
+      "movie_title"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5ac23845-adb6-4707-9438-2b6a9ac92e96",
+    "intent": "movie.play",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "play the movie {movie_title}",
+    "tokens": [
+      "play",
+      "the",
+      "movie",
+      "movie_title"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4ceb0243-ab92-4da7-8dd8-26df5bed09a1",
+    "intent": "movie.play",
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "put on {movie_title}",
+    "tokens": [
+      "put",
+      "on",
+      "movie_title"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "de7f57a8-8ab4-43cc-83cd-4ef9c5dc1a9d",
+    "intent": "movie.play",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "I want to watch {movie_title}",
+    "tokens": [
+      "i",
+      "want",
+      "to",
+      "watch",
+      "movie_title"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7062f455-8a96-4102-a21d-eb6345657ac6",
+    "intent": "movie.play",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "can you play {movie_title}",
+    "tokens": [
+      "can",
+      "you",
+      "play",
+      "movie_title"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8e2e97db-ae93-4e06-843f-197b9303c328",
+    "intent": "movie.play",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "show {movie_title}",
+    "tokens": [
+      "show",
+      "movie_title"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e196463c-c3e2-4150-bedb-2f349fc49c85",
+    "intent": "movie.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "stream {movie_title}",
+    "tokens": [
+      "stream",
+      "movie_title"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8f552168-2c6d-45f5-b2a6-4d361ad3ff11",
+    "intent": "movie.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "play movie {movie_title}",
+    "tokens": [
+      "play",
+      "movie",
+      "movie_title"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "22e5e069-cc63-49da-8bdb-b0129d002f9c",
+    "intent": "movie.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "start playing {movie_title}",
+    "tokens": [
+      "start",
+      "playing",
+      "movie_title"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "74eb02c6-c6a9-455f-a48e-b4777fa72605",
+    "intent": "movie.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "let's watch {movie_title}",
+    "tokens": [
+      "let's",
+      "watch",
+      "movie_title"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b04a970a-c9b0-4316-83f5-2cb2845d22bb",
+    "intent": "movie.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "begin {movie_title}",
+    "tokens": [
+      "begin",
+      "movie_title"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3a2bce6f-856b-40ca-8407-f2223b15acf3",
+    "intent": "movie.play",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "turn on {movie_title}",
+    "tokens": [
+      "turn",
+      "on",
+      "movie_title"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b3cfe3a3-a933-4bbe-87e0-535e8b52ece6",
+    "intent": "movie.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "queue up {movie_title}",
+    "tokens": [
+      "queue",
+      "up",
+      "movie_title"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "33c97009-5855-4b12-8052-a584d85be444",
+    "intent": "movie.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "load {movie_title}",
+    "tokens": [
+      "load",
+      "movie_title"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7f911021-478b-4d05-9156-d695553768e6",
+    "intent": "movie.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "open {movie_title}",
+    "tokens": [
+      "open",
+      "movie_title"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c468fb83-465d-47b0-838f-5c5755512ca8",
+    "intent": "movie.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "run {movie_title}",
+    "tokens": [
+      "run",
+      "movie_title"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "354e43a5-3b9e-42e3-a3f4-7c7ceb0843aa",
+    "intent": "movie.play",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "play the film {movie_title}",
+    "tokens": [
+      "play",
+      "the",
+      "film",
+      "movie_title"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "bd80a6fa-a787-455b-ba47-499eeb0a706e",
+    "intent": "movie.play",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "start the movie {movie_title}",
+    "tokens": [
+      "start",
+      "the",
+      "movie",
+      "movie_title"
+    ]
+  }
+]

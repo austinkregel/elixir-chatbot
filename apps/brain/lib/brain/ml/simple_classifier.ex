@@ -207,7 +207,7 @@ defmodule Brain.ML.SimpleClassifier do
   end
   
   defp get_model_path do
-    models_path = Application.get_env(:brain, :ml)[:models_path] || "priv/ml_models"
+    models_path = Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")
     Path.join(models_path, "simple_classifier.term")
   end
 end

@@ -1,0 +1,42 @@
+[
+  {
+    "value": "work",
+    "synonyms": ["work", "work tasks", "job", "office"]
+  },
+  {
+    "value": "home",
+    "synonyms": ["home", "house", "household", "personal"]
+  },
+  {
+    "value": "shopping",
+    "synonyms": ["shopping", "shopping list", "groceries", "to buy"]
+  },
+  {
+    "value": "health",
+    "synonyms": ["health", "fitness", "wellness", "medical"]
+  },
+  {
+    "value": "finance",
+    "synonyms": ["finance", "financial", "money", "bills", "budget"]
+  },
+  {
+    "value": "travel",
+    "synonyms": ["travel", "trip", "vacation", "holiday"]
+  },
+  {
+    "value": "learning",
+    "synonyms": ["learning", "education", "study", "courses"]
+  },
+  {
+    "value": "family",
+    "synonyms": ["family", "kids", "children", "relatives"]
+  },
+  {
+    "value": "urgent",
+    "synonyms": ["urgent", "priority", "asap", "critical"]
+  },
+  {
+    "value": "inbox",
+    "synonyms": ["inbox", "unsorted", "new", "incoming"]
+  }
+]

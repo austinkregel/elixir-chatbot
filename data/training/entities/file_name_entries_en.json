@@ -1,0 +1,38 @@
+[
+  {
+    "value": "quarterly report",
+    "synonyms": ["quarterly report", "Q1 report", "the quarterly report"]
+  },
+  {
+    "value": "config.json",
+    "synonyms": ["config.json", "config file", "configuration file"]
+  },
+  {
+    "value": "budget spreadsheet",
+    "synonyms": ["budget spreadsheet", "budget.xlsx", "the budget"]
+  },
+  {
+    "value": "meeting notes",
+    "synonyms": ["meeting notes", "notes from the meeting", "meeting minutes"]
+  },
+  {
+    "value": "project proposal",
+    "synonyms": ["project proposal", "the proposal", "proposal document"]
+  },
+  {
+    "value": "user data",
+    "synonyms": ["user data", "user database", "users.csv"]
+  },
+  {
+    "value": "log file",
+    "synonyms": ["log file", "logs", "system logs", "error log"]
+  },
+  {
+    "value": "backup",
+    "synonyms": ["backup", "backup file", "the backup"]
+  },
+  {
+    "value": "readme",
+    "synonyms": ["readme", "README", "readme file", "README.md"]
+  }
+]

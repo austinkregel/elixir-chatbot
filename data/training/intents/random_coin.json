@@ -1,0 +1,306 @@
+[
+  {
+    "entities": [],
+    "id": "13b81d4e-7fa0-47a1-b9ab-3809aca2a9ba",
+    "intent": "random.coin",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "flip a coin",
+    "tokens": [
+      "flip",
+      "a",
+      "coin"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "79cf68c0-d6f2-479f-a39e-4a1c6d8d0013",
+    "intent": "random.coin",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "coin flip",
+    "tokens": [
+      "coin",
+      "flip"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "72c556f7-3cbc-4e6c-b8f7-323796f23b07",
+    "intent": "random.coin",
+    "pos_tags": [
+      "NOUN",
+      "CONJ",
+      "NOUN"
+    ],
+    "text": "heads or tails",
+    "tokens": [
+      "heads",
+      "or",
+      "tails"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1d449856-dd7b-49ca-95d0-2ded1263b745",
+    "intent": "random.coin",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "toss a coin",
+    "tokens": [
+      "toss",
+      "a",
+      "coin"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e78ea147-6095-4be9-ad44-cd4dcd511ae4",
+    "intent": "random.coin",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "flip coin",
+    "tokens": [
+      "flip",
+      "coin"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c46db873-a602-46c5-9353-b8eedbf4ce2a",
+    "intent": "random.coin",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "coin toss",
+    "tokens": [
+      "coin",
+      "toss"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "304e1536-0416-4eef-ba93-3b33bbcdd205",
+    "intent": "random.coin",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "random coin flip",
+    "tokens": [
+      "random",
+      "coin",
+      "flip"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ed3ad155-1d63-407f-8f3a-8810d58eb2d8",
+    "intent": "random.coin",
+    "pos_tags": [
+      "NOUN"
+    ],
+    "text": "flip",
+    "tokens": [
+      "flip"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "73a5eb57-cf09-4faa-b249-b75b5a0ca379",
+    "intent": "random.coin",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "toss coin",
+    "tokens": [
+      "toss",
+      "coin"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6ac46db6-4d81-4e6b-bfda-b70af43898af",
+    "intent": "random.coin",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "heads tails",
+    "tokens": [
+      "heads",
+      "tails"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8b57540a-a300-4601-829d-aa75c2b7a0e4",
+    "intent": "random.coin",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "call the coin",
+    "tokens": [
+      "call",
+      "the",
+      "coin"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c0ed56c1-80e4-4673-bffe-153c53fa00eb",
+    "intent": "random.coin",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "throw a coin",
+    "tokens": [
+      "throw",
+      "a",
+      "coin"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "cca2a819-4d14-4104-8b55-e27937b08e62",
+    "intent": "random.coin",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "coin flip please",
+    "tokens": [
+      "coin",
+      "flip",
+      "please"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2f129bde-2916-447a-8562-fb149dbab127",
+    "intent": "random.coin",
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "text": "flip it",
+    "tokens": [
+      "flip",
+      "it"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "15422180-62e7-4d36-8737-59fd7d525e29",
+    "intent": "random.coin",
+    "pos_tags": [
+      "AUX",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "do a coin flip",
+    "tokens": [
+      "do",
+      "a",
+      "coin",
+      "flip"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8603e74f-cc0d-4ad6-8429-61a6cb52ecdb",
+    "intent": "random.coin",
+    "pos_tags": [
+      "NUM",
+      "NUM"
+    ],
+    "text": "50 50",
+    "tokens": [
+      "50",
+      "50"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d88af3e9-335a-4225-9d65-51c61d9c9f90",
+    "intent": "random.coin",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "text": "flip a coin for me",
+    "tokens": [
+      "flip",
+      "a",
+      "coin",
+      "for",
+      "me"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4a98baa0-f95d-4b81-9fe6-770886f51328",
+    "intent": "random.coin",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "let the coin decide",
+    "tokens": [
+      "let",
+      "the",
+      "coin",
+      "decide"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "630c866f-c6b1-42ef-a6bb-823ae9421b6d",
+    "intent": "random.coin",
+    "pos_tags": [
+      "NOUN"
+    ],
+    "text": "coin",
+    "tokens": [
+      "coin"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5a3186da-d502-4937-a90d-14ea538742c8",
+    "intent": "random.coin",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "random flip",
+    "tokens": [
+      "random",
+      "flip"
+    ]
+  }
+]

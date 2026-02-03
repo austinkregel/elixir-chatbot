@@ -1,0 +1,22 @@
+[
+  {
+    "value": "john@example.com",
+    "synonyms": ["john@example.com", "john at example dot com"]
+  },
+  {
+    "value": "jane@company.com",
+    "synonyms": ["jane@company.com", "jane at company dot com"]
+  },
+  {
+    "value": "support@service.com",
+    "synonyms": ["support@service.com", "support at service dot com"]
+  },
+  {
+    "value": "info@business.org",
+    "synonyms": ["info@business.org", "info at business dot org"]
+  },
+  {
+    "value": "contact@domain.net",
+    "synonyms": ["contact@domain.net", "contact at domain dot net"]
+  }
+]

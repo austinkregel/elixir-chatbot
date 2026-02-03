@@ -8,6 +8,8 @@ defmodule Brain.Response.Generator do
   - Delegating to MemoryAugmented for learning-based responses
   - Handling domain-specific response generation
   - Handling expressive speech act responses (greetings, farewells, etc.)
+  - Using LSTM response scoring to select the best response (when available)
+  - Quality checking to catch and improve poor responses
 
   Brain should use this module instead of implementing response logic directly.
   """
@@ -15,6 +17,7 @@ defmodule Brain.Response.Generator do
   require Logger
 
   alias Brain.Response.{TemplateStore, MemoryAugmented, FactRetriever, Composer, TemplateBlender}
+  alias Brain.Response.{LSTMResponse, ResponseQuality}
   alias Brain.Analysis.IntentRegistry
 
   # ============================================================================
@@ -28,11 +31,27 @@ defmodule Brain.Response.Generator do
   - {:ok, response, :domain} for domain-specific responses
   - {:ok, response, :memory_augmented} for memory-based responses
   - {:ok, response, :template} for template-based responses
+  - {:ok, response, :lstm_selected} for LSTM-scored best response
   - {:ok, response, :fallback} for fallback responses
   """
   def generate(intent, entities, query_text \\ nil) do
+    # Try LSTM-enhanced generation first if available and we have query text
+    if query_text && LSTMResponse.ready?() do
+      case LSTMResponse.generate(query_text, intent, entities) do
+        {:ok, response, score} when score > 0.6 ->
+          {:ok, response, :lstm_selected}
+        _ ->
+          generate_standard(intent, entities, query_text)
+      end
+    else
+      generate_standard(intent, entities, query_text)
+    end
+  end
+  
+  # Standard generation pipeline
+  defp generate_standard(intent, entities, query_text) do
     # Try domain-specific first, then memory, then template, then fallback
-    case generate_domain_response(intent, entities, query_text) do
+    result = case generate_domain_response(intent, entities, query_text) do
       {:ok, response} ->
         {:ok, response, :domain}
 
@@ -52,7 +71,40 @@ defmodule Brain.Response.Generator do
             end
         end
     end
+    
+    # Quality check and potentially improve the response
+    maybe_improve_response(result, query_text, intent, entities)
   end
+  
+  # Check response quality and try to improve if needed
+  defp maybe_improve_response({:ok, response, type}, query_text, intent, entities) do
+    # Skip quality check for domain responses (assumed high quality)
+    if type == :domain or is_nil(query_text) do
+      {:ok, response, type}
+    else
+      case ResponseQuality.quick_check(query_text, response) do
+        :ok ->
+          {:ok, response, type}
+          
+        :warning ->
+          # Log but keep the response
+          Logger.debug("Response quality warning for intent #{intent}")
+          {:ok, response, type}
+          
+        :poor ->
+          # Try to get a better response
+          Logger.debug("Poor response quality detected, attempting improvement")
+          case ResponseQuality.improve(query_text, response, intent: intent, entities: entities) do
+            {:improved, better_response, _analysis} ->
+              {:ok, better_response, :quality_improved}
+            _ ->
+              {:ok, response, type}
+          end
+      end
+    end
+  end
+  
+  defp maybe_improve_response(other, _query, _intent, _entities), do: other
 
   @doc """
   Generate a response with full path tracking for debugging/inspection.

@@ -1,0 +1,322 @@
+[
+  {
+    "entities": [],
+    "id": "3c3e1591-d956-4160-ab0b-9782e72e7ad8",
+    "intent": "search.access_log",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "access the log",
+    "tokens": [
+      "access",
+      "the",
+      "log"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4c13df9c-b6a1-4241-920f-cdcec92fd3e4",
+    "intent": "search.access_log",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "show the logs",
+    "tokens": [
+      "show",
+      "the",
+      "logs"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "34159780-9318-4681-bd97-290669d2a152",
+    "intent": "search.access_log",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "open activity log",
+    "tokens": [
+      "open",
+      "activity",
+      "log"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d7e48e63-8710-4f25-82bf-d7be881016ee",
+    "intent": "search.access_log",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "view the log",
+    "tokens": [
+      "view",
+      "the",
+      "log"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0bf4ec96-fb51-49d3-aafe-e6ff5ca63a5d",
+    "intent": "search.access_log",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "access system logs",
+    "tokens": [
+      "access",
+      "system",
+      "logs"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b797e011-5e55-4d1e-b1f9-a1477f3c76f6",
+    "intent": "search.access_log",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show log entries",
+    "tokens": [
+      "show",
+      "log",
+      "entries"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "11294a55-3c3b-467d-b9fa-25e3ced9143f",
+    "intent": "search.access_log",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "open the log file",
+    "tokens": [
+      "open",
+      "the",
+      "log",
+      "file"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "eedd7c3b-9f6f-4221-b5b8-414bbf529509",
+    "intent": "search.access_log",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "access {system_name} logs",
+    "tokens": [
+      "access",
+      "system_name",
+      "logs"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4e6fff94-a7c6-497a-9065-859991ad9e62",
+    "intent": "search.access_log",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "view activity log",
+    "tokens": [
+      "view",
+      "activity",
+      "log"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "df00328d-a49e-46fb-b03a-ec81334c9b0d",
+    "intent": "search.access_log",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "get the logs",
+    "tokens": [
+      "get",
+      "the",
+      "logs"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "fd27baff-4643-42d1-9b19-d712e3891e65",
+    "intent": "search.access_log",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show system logs",
+    "tokens": [
+      "show",
+      "system",
+      "logs"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "12f11dd8-74c5-4631-9b76-cf0b48b32afd",
+    "intent": "search.access_log",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "access log file",
+    "tokens": [
+      "access",
+      "log",
+      "file"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "13ff710e-6dfb-4719-843f-897e1926d3bb",
+    "intent": "search.access_log",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "open logs",
+    "tokens": [
+      "open",
+      "logs"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "25a50cad-51c6-46af-967c-4e07d07eaf44",
+    "intent": "search.access_log",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "retrieve the logs",
+    "tokens": [
+      "retrieve",
+      "the",
+      "logs"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "64594d46-fe56-4307-a5c8-7c5de0f69689",
+    "intent": "search.access_log",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "access {process_name} log",
+    "tokens": [
+      "access",
+      "process_name",
+      "log"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6099422b-bb09-4907-a73c-0fa943ce634d",
+    "intent": "search.access_log",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show the log file",
+    "tokens": [
+      "show",
+      "the",
+      "log",
+      "file"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8694f514-38bf-452a-98b5-2448f0550829",
+    "intent": "search.access_log",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "view logs",
+    "tokens": [
+      "view",
+      "logs"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f57e41ef-39a0-4e88-848d-8257f1af8a74",
+    "intent": "search.access_log",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "access event log",
+    "tokens": [
+      "access",
+      "event",
+      "log"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "86d06f61-b09a-420e-ad0e-a855da1dab6d",
+    "intent": "search.access_log",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "get log entries",
+    "tokens": [
+      "get",
+      "log",
+      "entries"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8227798f-246e-4550-9a1f-64d548ff4f1d",
+    "intent": "search.access_log",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show activity logs",
+    "tokens": [
+      "show",
+      "activity",
+      "logs"
+    ]
+  }
+]

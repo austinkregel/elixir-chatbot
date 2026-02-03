@@ -1,0 +1,296 @@
+[
+  {
+    "entities": [],
+    "id": "d584b74a-ae0b-4f22-b8fa-09844dbdbb14",
+    "intent": "compute.project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "project future values",
+    "tokens": [
+      "project",
+      "future",
+      "values"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "56d7e403-33d0-40cb-adda-e0a1cea284fd",
+    "intent": "compute.project",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "projection for {query_term}",
+    "tokens": [
+      "projection",
+      "for",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5f758476-0d24-495a-a717-6c5119581457",
+    "intent": "compute.project",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "project the trend",
+    "tokens": [
+      "project",
+      "the",
+      "trend"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9e66f3fe-502f-4527-b061-9c12d9bd2a35",
+    "intent": "compute.project",
+    "pos_tags": [
+      "NOUN"
+    ],
+    "text": "forecast",
+    "tokens": [
+      "forecast"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "49838abf-c945-433a-9732-26dffe1ecb8c",
+    "intent": "compute.project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "project forward",
+    "tokens": [
+      "project",
+      "forward"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ab1ab1c9-f436-4152-9135-6b068d8b194d",
+    "intent": "compute.project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "future projection",
+    "tokens": [
+      "future",
+      "projection"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "fba44634-28a8-4ad2-9baa-48b5f7f235e1",
+    "intent": "compute.project",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "project the data",
+    "tokens": [
+      "project",
+      "the",
+      "data"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "18ba83f0-a900-46f3-82b3-043b2539dec3",
+    "intent": "compute.project",
+    "pos_tags": [
+      "NOUN"
+    ],
+    "text": "extrapolate",
+    "tokens": [
+      "extrapolate"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ac075783-603e-40e1-a02f-a709d7470b76",
+    "intent": "compute.project",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "make a projection",
+    "tokens": [
+      "make",
+      "a",
+      "projection"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a0a0f8b9-7f33-4a16-8b69-abf196a2019f",
+    "intent": "compute.project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "project into the future",
+    "tokens": [
+      "project",
+      "into",
+      "the",
+      "future"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "69083b8e-a365-485e-aff6-2211d80b217b",
+    "intent": "compute.project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "trend projection",
+    "tokens": [
+      "trend",
+      "projection"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "96db7fec-fd42-4321-a9bb-a551ff38a89a",
+    "intent": "compute.project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "project next quarter",
+    "tokens": [
+      "project",
+      "next",
+      "quarter"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d83762c0-207e-4697-bfe0-21f6667bc104",
+    "intent": "compute.project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "forecast {query_term}",
+    "tokens": [
+      "forecast",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9262e4aa-c1f6-46ab-9d8e-c7aa5b8fa9db",
+    "intent": "compute.project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "future forecast",
+    "tokens": [
+      "future",
+      "forecast"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4579a2b2-a4fe-41ae-8778-9c4a756f7574",
+    "intent": "compute.project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "project growth",
+    "tokens": [
+      "project",
+      "growth"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "13a3d9c4-f09b-4197-8650-e10f3d5a53f0",
+    "intent": "compute.project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "projection analysis",
+    "tokens": [
+      "projection",
+      "analysis"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1b7b6370-037b-4380-a302-2e7622ad8fbf",
+    "intent": "compute.project",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "project the outcome",
+    "tokens": [
+      "project",
+      "the",
+      "outcome"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3e6d1b81-0fdb-4a08-bb21-e6c631c57a3f",
+    "intent": "compute.project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "predict future",
+    "tokens": [
+      "predict",
+      "future"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a6040ad6-f010-4e4c-86d5-37d59934e9d6",
+    "intent": "compute.project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "project values",
+    "tokens": [
+      "project",
+      "values"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "93c9b752-7fa9-443b-b241-9d1416d5865f",
+    "intent": "compute.project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "forecast ahead",
+    "tokens": [
+      "forecast",
+      "ahead"
+    ]
+  }
+]

@@ -1,0 +1,386 @@
+[
+  {
+    "entities": [],
+    "id": "68e990cb-f97c-4550-814e-6b0d879fed3c",
+    "intent": "calendar.query.week",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "what's on my calendar this week",
+    "tokens": [
+      "what's",
+      "on",
+      "my",
+      "calendar",
+      "this",
+      "week"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3e363b2c-7315-4443-81b4-fd7d3fef7d6e",
+    "intent": "calendar.query.week",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "show me this week's schedule",
+    "tokens": [
+      "show",
+      "me",
+      "this",
+      "week's",
+      "schedule"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a2463fd8-a87a-4cab-b753-2faece0934ae",
+    "intent": "calendar.query.week",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "AUX",
+      "DET",
+      "NOUN"
+    ],
+    "text": "what do I have this week",
+    "tokens": [
+      "what",
+      "do",
+      "i",
+      "have",
+      "this",
+      "week"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b24b9d24-69e8-4e92-a5c2-3be46ba0d12b",
+    "intent": "calendar.query.week",
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "my schedule for the week",
+    "tokens": [
+      "my",
+      "schedule",
+      "for",
+      "the",
+      "week"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "60f9fe57-1575-4d50-87dc-181e9c139dc6",
+    "intent": "calendar.query.week",
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "this week's events",
+    "tokens": [
+      "this",
+      "week's",
+      "events"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f7c6a374-2191-4af8-ac33-dc7681f6f285",
+    "intent": "calendar.query.week",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "what's happening this week",
+    "tokens": [
+      "what's",
+      "happening",
+      "this",
+      "week"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "de96c2db-1f92-4117-a424-8b31a87f66a5",
+    "intent": "calendar.query.week",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "weekly calendar",
+    "tokens": [
+      "weekly",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "80ab9fa1-8a1a-463a-8848-3aff52c8bbcb",
+    "intent": "calendar.query.week",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "show my week",
+    "tokens": [
+      "show",
+      "my",
+      "week"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "73193305-d011-4166-8536-8c3562f9cd16",
+    "intent": "calendar.query.week",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "AUX",
+      "DET",
+      "NOUN"
+    ],
+    "text": "what meetings do I have this week",
+    "tokens": [
+      "what",
+      "meetings",
+      "do",
+      "i",
+      "have",
+      "this",
+      "week"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a7d25f42-66a5-4010-8465-20c743e45158",
+    "intent": "calendar.query.week",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "list this week's events",
+    "tokens": [
+      "list",
+      "this",
+      "week's",
+      "events"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "71e5c596-080a-4fe7-91c9-bfb07667d1de",
+    "intent": "calendar.query.week",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "what's scheduled this week",
+    "tokens": [
+      "what's",
+      "scheduled",
+      "this",
+      "week"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f1d1f210-86f5-4f45-9a6c-4ffb7c3260a5",
+    "intent": "calendar.query.week",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "PRON",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "give me my weekly schedule",
+    "tokens": [
+      "give",
+      "me",
+      "my",
+      "weekly",
+      "schedule"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9de24127-79f0-4da8-8888-a05619f298e8",
+    "intent": "calendar.query.week",
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "this week's agenda",
+    "tokens": [
+      "this",
+      "week's",
+      "agenda"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0fa30a58-3222-463d-baa6-5839eaf7de6f",
+    "intent": "calendar.query.week",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's the week looking like",
+    "tokens": [
+      "what's",
+      "the",
+      "week",
+      "looking",
+      "like"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d263d166-7ce1-436a-990f-9135bd93c63e",
+    "intent": "calendar.query.week",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "anything on my calendar this week",
+    "tokens": [
+      "anything",
+      "on",
+      "my",
+      "calendar",
+      "this",
+      "week"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d55e8043-e2d7-4435-90e6-f392b9a0c066",
+    "intent": "calendar.query.week",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "my events for the week",
+    "tokens": [
+      "my",
+      "events",
+      "for",
+      "the",
+      "week"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1a386e80-d06f-4a57-a62c-3ea9f8bef73c",
+    "intent": "calendar.query.week",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show the week ahead",
+    "tokens": [
+      "show",
+      "the",
+      "week",
+      "ahead"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7e0afc58-8159-494b-a126-7be60515cdc3",
+    "intent": "calendar.query.week",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "what do I have coming up this week",
+    "tokens": [
+      "what",
+      "do",
+      "i",
+      "have",
+      "coming",
+      "up",
+      "this",
+      "week"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e06742e1-6060-4979-9204-7f4d2feebba7",
+    "intent": "calendar.query.week",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "weekly overview",
+    "tokens": [
+      "weekly",
+      "overview"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a509c12e-618f-4f0c-aeba-ae94d19abb6a",
+    "intent": "calendar.query.week",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "what's on for the week",
+    "tokens": [
+      "what's",
+      "on",
+      "for",
+      "the",
+      "week"
+    ]
+  }
+]

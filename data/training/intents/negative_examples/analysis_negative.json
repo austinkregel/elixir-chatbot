@@ -1,0 +1,42 @@
+[
+  {
+    "text": "show me the data",
+    "correct_intent": "display.show"
+  },
+  {
+    "text": "find the file",
+    "correct_intent": "search.locate_file"
+  },
+  {
+    "text": "status report",
+    "correct_intent": "status.report"
+  },
+  {
+    "text": "what time is it",
+    "correct_intent": "time.current"
+  },
+  {
+    "text": "search for records",
+    "correct_intent": "search.find_in_database"
+  },
+  {
+    "text": "verify the information",
+    "correct_intent": "search.verify"
+  },
+  {
+    "text": "play the recording",
+    "correct_intent": "display.play"
+  },
+  {
+    "text": "check system health",
+    "correct_intent": "status.health_check"
+  },
+  {
+    "text": "zoom in",
+    "correct_intent": "display.zoom_in"
+  },
+  {
+    "text": "count the entries",
+    "correct_intent": "search.count"
+  }
+]

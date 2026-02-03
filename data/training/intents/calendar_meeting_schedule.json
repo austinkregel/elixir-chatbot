@@ -1,0 +1,2256 @@
+[
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "my manager",
+        "type": "person"
+      }
+    ],
+    "id": "8cda3dd9-9bb7-45f7-ae9e-fe34880e3988",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "schedule a meeting with my manager",
+    "tokens": [
+      "schedule",
+      "a",
+      "meeting",
+      "with",
+      "my",
+      "manager"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "d8ef350a-8b20-4394-9f1d-e599f7764ceb",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "schedule a meeting with Mike",
+    "tokens": [
+      "schedule",
+      "a",
+      "meeting",
+      "with",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "lisa",
+        "type": "person"
+      }
+    ],
+    "id": "d970d7a0-bb5e-4e8e-bce7-540e25c309ad",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "schedule a meeting with Lisa",
+    "tokens": [
+      "schedule",
+      "a",
+      "meeting",
+      "with",
+      "lisa"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 5,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "33039aa5-aaeb-4bed-8aae-d316e7672224",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "set up a meeting with the team",
+    "tokens": [
+      "set",
+      "up",
+      "a",
+      "meeting",
+      "with",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "32ba0256-2d43-44eb-9363-47227dddb3ed",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set up a meeting with John",
+    "tokens": [
+      "set",
+      "up",
+      "a",
+      "meeting",
+      "with",
+      "john"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "49ced8a9-16f2-454f-a744-6721cf754628",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set up a meeting with Mike",
+    "tokens": [
+      "set",
+      "up",
+      "a",
+      "meeting",
+      "with",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 9,
+        "start": 7,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "my manager",
+        "type": "person"
+      },
+      {
+        "end": 9,
+        "start": 8,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "6ec9fcf0-94e6-436d-aba0-0d69af96147b",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "book a meeting with my manager for in 2 hours",
+    "tokens": [
+      "book",
+      "a",
+      "meeting",
+      "with",
+      "my",
+      "manager",
+      "for",
+      "in",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 7,
+        "start": 6,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 7,
+        "start": 7,
+        "text": "monday",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "lisa",
+        "type": "person"
+      }
+    ],
+    "id": "e8e1e6f1-a339-4d5c-abf1-a2f18e5329a6",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "book a meeting with Lisa for next Monday",
+    "tokens": [
+      "book",
+      "a",
+      "meeting",
+      "with",
+      "lisa",
+      "for",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 7,
+        "start": 6,
+        "text": "next week",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "3912579b-cbee-4319-acb5-cf1491e963a4",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "book a meeting with Sarah for next week",
+    "tokens": [
+      "book",
+      "a",
+      "meeting",
+      "with",
+      "sarah",
+      "for",
+      "next",
+      "week"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "my manager",
+        "type": "person"
+      }
+    ],
+    "id": "0602ab2b-5434-416f-b2bd-b377d766d35d",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "arrange a meeting with my manager",
+    "tokens": [
+      "arrange",
+      "a",
+      "meeting",
+      "with",
+      "my",
+      "manager"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "lisa",
+        "type": "person"
+      }
+    ],
+    "id": "ba6b8524-e006-40ff-ae39-52e20f64e620",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "arrange a meeting with Lisa",
+    "tokens": [
+      "arrange",
+      "a",
+      "meeting",
+      "with",
+      "lisa"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "5b710217-60c0-4f44-9341-5c57c2b43846",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "arrange a meeting with John",
+    "tokens": [
+      "arrange",
+      "a",
+      "meeting",
+      "with",
+      "john"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "8e0ca1b6-5164-4490-afc4-c9f8fddfcc28",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "create a meeting with the team",
+    "tokens": [
+      "create",
+      "a",
+      "meeting",
+      "with",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "lisa",
+        "type": "person"
+      }
+    ],
+    "id": "a3a267e9-55bc-40fa-b083-809cb12947fd",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "create a meeting with Lisa",
+    "tokens": [
+      "create",
+      "a",
+      "meeting",
+      "with",
+      "lisa"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "0456812e-4be0-414d-af77-871c328148d1",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "schedule a call with Sarah",
+    "tokens": [
+      "schedule",
+      "a",
+      "call",
+      "with",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "19ac624c-b9a3-4ee0-ba11-225807281c3e",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "schedule a call with Mike",
+    "tokens": [
+      "schedule",
+      "a",
+      "call",
+      "with",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "cc08b6da-6132-4fdb-8aaa-ff9a4fe4a0a3",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "schedule a call with John",
+    "tokens": [
+      "schedule",
+      "a",
+      "call",
+      "with",
+      "john"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 7,
+        "start": 5,
+        "text": "friday at 3pm",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "friday",
+        "type": "date_time"
+      },
+      {
+        "end": 9,
+        "start": 9,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "b9397b79-f87d-45bf-995f-b67b7500a0ca",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set up a meeting for Friday at 3pm with John",
+    "tokens": [
+      "set",
+      "up",
+      "a",
+      "meeting",
+      "for",
+      "friday",
+      "at",
+      "3pm",
+      "with",
+      "john"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 5,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "monday",
+        "type": "date_time"
+      },
+      {
+        "end": 9,
+        "start": 8,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "9c5f8022-32f1-4852-bcdb-3d4ec879581b",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "set up a meeting for next Monday with the team",
+    "tokens": [
+      "set",
+      "up",
+      "a",
+      "meeting",
+      "for",
+      "next",
+      "monday",
+      "with",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 5,
+        "text": "next week",
+        "type": "date_time"
+      },
+      {
+        "end": 9,
+        "start": 8,
+        "text": "my manager",
+        "type": "person"
+      }
+    ],
+    "id": "45ebd181-9b6a-4f4e-9c15-178ed65e840d",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "set up a meeting for next week with my manager",
+    "tokens": [
+      "set",
+      "up",
+      "a",
+      "meeting",
+      "for",
+      "next",
+      "week",
+      "with",
+      "my",
+      "manager"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 7,
+        "start": 7,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "407f7707-667f-4f2a-bd2c-27aad4ae8508",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "ADP",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "I need to schedule a meeting with Mike",
+    "tokens": [
+      "i",
+      "need",
+      "to",
+      "schedule",
+      "a",
+      "meeting",
+      "with",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 8,
+        "start": 7,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "93f1f050-4e27-4b62-8d5f-171b96767b75",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "ADP",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "I need to schedule a meeting with the team",
+    "tokens": [
+      "i",
+      "need",
+      "to",
+      "schedule",
+      "a",
+      "meeting",
+      "with",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 7,
+        "start": 7,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "98130bb9-19f1-4de8-96d3-4134e447bc66",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "ADP",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "I need to schedule a meeting with Sarah",
+    "tokens": [
+      "i",
+      "need",
+      "to",
+      "schedule",
+      "a",
+      "meeting",
+      "with",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "00d6ac6a-bb20-404f-959c-fe208d71f86c",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "can you schedule a meeting with Mike",
+    "tokens": [
+      "can",
+      "you",
+      "schedule",
+      "a",
+      "meeting",
+      "with",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 7,
+        "start": 6,
+        "text": "my manager",
+        "type": "person"
+      }
+    ],
+    "id": "96b553fd-61ec-47c9-852f-2409f34c266d",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "can you schedule a meeting with my manager",
+    "tokens": [
+      "can",
+      "you",
+      "schedule",
+      "a",
+      "meeting",
+      "with",
+      "my",
+      "manager"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "my manager",
+        "type": "person"
+      }
+    ],
+    "id": "4f1a4c5c-7d30-4fb1-90d0-346aa4ce0773",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "book time with my manager",
+    "tokens": [
+      "book",
+      "time",
+      "with",
+      "my",
+      "manager"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "3bcfad1e-f0d2-49f7-a998-b2de68d105f9",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "book time with Mike",
+    "tokens": [
+      "book",
+      "time",
+      "with",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "f86546ca-c3b8-4a7b-ae26-99a24839aa16",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "book time with Sarah",
+    "tokens": [
+      "book",
+      "time",
+      "with",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "ac2a8034-f534-452d-b0a9-8759109b8134",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "schedule a session with John",
+    "tokens": [
+      "schedule",
+      "a",
+      "session",
+      "with",
+      "john"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "32f96926-1a29-40dc-b05d-713f66fdc325",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "schedule a session with Sarah",
+    "tokens": [
+      "schedule",
+      "a",
+      "session",
+      "with",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "8c8e797e-2ace-4626-9ad7-eda4b1621dfa",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "schedule a session with the team",
+    "tokens": [
+      "schedule",
+      "a",
+      "session",
+      "with",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 7,
+        "start": 6,
+        "text": "next week",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "lisa",
+        "type": "person"
+      }
+    ],
+    "id": "65676555-b4c8-4297-997b-ce2a9ff247a2",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set a meeting with Lisa at next week",
+    "tokens": [
+      "set",
+      "a",
+      "meeting",
+      "with",
+      "lisa",
+      "at",
+      "next",
+      "week"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 7,
+        "start": 7,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 9,
+        "start": 7,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "5a434fcf-ef47-4f08-9645-ab7d5dc23ccb",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set a meeting with the team at tomorrow at 2pm",
+    "tokens": [
+      "set",
+      "a",
+      "meeting",
+      "with",
+      "the",
+      "team",
+      "at",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 8,
+        "start": 6,
+        "text": "friday at 3pm",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "friday",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "16e9e161-705c-49cb-b384-7bd10fc20a79",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set a meeting with Sarah at Friday at 3pm",
+    "tokens": [
+      "set",
+      "a",
+      "meeting",
+      "with",
+      "sarah",
+      "at",
+      "friday",
+      "at",
+      "3pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "9e7cb78d-dff3-46b2-9844-7e70873ebe1e",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "organize a meeting with Sarah",
+    "tokens": [
+      "organize",
+      "a",
+      "meeting",
+      "with",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "my manager",
+        "type": "person"
+      }
+    ],
+    "id": "18c72b59-552e-4a2a-9a9b-fa1dc5df1123",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "organize a meeting with my manager",
+    "tokens": [
+      "organize",
+      "a",
+      "meeting",
+      "with",
+      "my",
+      "manager"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "3a585bbf-15b8-4f65-8d1f-42c423d1b011",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "organize a meeting with Mike",
+    "tokens": [
+      "organize",
+      "a",
+      "meeting",
+      "with",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "1f79009a-1493-4fbe-a73b-ba09f9d309f2",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "plan a meeting with the team",
+    "tokens": [
+      "plan",
+      "a",
+      "meeting",
+      "with",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "my manager",
+        "type": "person"
+      }
+    ],
+    "id": "155b30c9-44e9-4a44-9d4f-a8fe473f6355",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "plan a meeting with my manager",
+    "tokens": [
+      "plan",
+      "a",
+      "meeting",
+      "with",
+      "my",
+      "manager"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "e8b69cfb-653a-4d4c-abee-b81f6b3bdd1e",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "plan a meeting with John",
+    "tokens": [
+      "plan",
+      "a",
+      "meeting",
+      "with",
+      "john"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "2cd34970-8f33-4e60-8936-8697382c8903",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "put a meeting with John on my calendar",
+    "tokens": [
+      "put",
+      "a",
+      "meeting",
+      "with",
+      "john",
+      "on",
+      "my",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "lisa",
+        "type": "person"
+      }
+    ],
+    "id": "e96a7b61-dfce-474f-816e-8a14af5671d2",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "put a meeting with Lisa on my calendar",
+    "tokens": [
+      "put",
+      "a",
+      "meeting",
+      "with",
+      "lisa",
+      "on",
+      "my",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "92e0d748-13e8-4b96-ac2b-507e3ebba558",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "put a meeting with Mike on my calendar",
+    "tokens": [
+      "put",
+      "a",
+      "meeting",
+      "with",
+      "mike",
+      "on",
+      "my",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 6,
+        "text": "next week",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "lisa",
+        "type": "person"
+      }
+    ],
+    "id": "1da74d6d-487e-4c09-9a5e-471aebc6b138",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "VERB",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "book a call with Lisa for next week",
+    "tokens": [
+      "book",
+      "a",
+      "call",
+      "with",
+      "lisa",
+      "for",
+      "next",
+      "week"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 9,
+        "start": 7,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "my manager",
+        "type": "person"
+      },
+      {
+        "end": 9,
+        "start": 8,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "b53877a8-e874-4f8c-92cb-9a1608255015",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "VERB",
+      "ADP",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "book a call with my manager for in 2 hours",
+    "tokens": [
+      "book",
+      "a",
+      "call",
+      "with",
+      "my",
+      "manager",
+      "for",
+      "in",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 6,
+        "text": "next week",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "baf78b79-32a6-405a-ac7b-90dc4b3907ab",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "VERB",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "book a call with Mike for next week",
+    "tokens": [
+      "book",
+      "a",
+      "call",
+      "with",
+      "mike",
+      "for",
+      "next",
+      "week"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "sarah",
+        "type": "person"
+      },
+      {
+        "end": 3,
+        "start": 2,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "99b06413-28ea-4458-b927-6cd977e0b363",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "schedule a 30 minutes meeting with Sarah",
+    "tokens": [
+      "schedule",
+      "a",
+      "30",
+      "minutes",
+      "meeting",
+      "with",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 7,
+        "start": 6,
+        "text": "the team",
+        "type": "person"
+      },
+      {
+        "end": 3,
+        "start": 2,
+        "text": "1 hour",
+        "type": "duration"
+      }
+    ],
+    "id": "cac3b248-d95c-41d5-9766-d68085f06889",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "schedule a 1 hour meeting with the team",
+    "tokens": [
+      "schedule",
+      "a",
+      "1",
+      "hour",
+      "meeting",
+      "with",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "lisa",
+        "type": "person"
+      },
+      {
+        "end": 3,
+        "start": 2,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "7c482b56-52f1-4652-adbb-9efd8a220ad9",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "schedule a 2 hours meeting with Lisa",
+    "tokens": [
+      "schedule",
+      "a",
+      "2",
+      "hours",
+      "meeting",
+      "with",
+      "lisa"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 8,
+        "start": 7,
+        "text": "the team",
+        "type": "person"
+      },
+      {
+        "end": 4,
+        "start": 3,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "dee85036-3a87-4634-b129-582038a6607d",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "set up a 15 minutes meeting with the team",
+    "tokens": [
+      "set",
+      "up",
+      "a",
+      "15",
+      "minutes",
+      "meeting",
+      "with",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 7,
+        "start": 7,
+        "text": "mike",
+        "type": "person"
+      },
+      {
+        "end": 4,
+        "start": 3,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "f4710687-bb1d-4b12-8628-f39e4c85cf2e",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set up a 2 hours meeting with Mike",
+    "tokens": [
+      "set",
+      "up",
+      "a",
+      "2",
+      "hours",
+      "meeting",
+      "with",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 7,
+        "start": 7,
+        "text": "john",
+        "type": "person"
+      },
+      {
+        "end": 4,
+        "start": 3,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "f5cd9c21-a1c2-409e-ae50-e61dab739d88",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "DET",
+      "NUM",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set up a 30 minutes meeting with John",
+    "tokens": [
+      "set",
+      "up",
+      "a",
+      "30",
+      "minutes",
+      "meeting",
+      "with",
+      "john"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 10,
+        "start": 8,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 5,
+        "text": "my manager",
+        "type": "person"
+      },
+      {
+        "end": 10,
+        "start": 9,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "19f3c942-764b-4ad0-b9ea-06525fd730f0",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "I want to meet with my manager on in 2 hours",
+    "tokens": [
+      "i",
+      "want",
+      "to",
+      "meet",
+      "with",
+      "my",
+      "manager",
+      "on",
+      "in",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 9,
+        "start": 7,
+        "text": "friday at 3pm",
+        "type": "date_time"
+      },
+      {
+        "end": 7,
+        "start": 7,
+        "text": "friday",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "807d016a-e9ff-4423-91e8-68ba87962507",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "I want to meet with Sarah on Friday at 3pm",
+    "tokens": [
+      "i",
+      "want",
+      "to",
+      "meet",
+      "with",
+      "sarah",
+      "on",
+      "friday",
+      "at",
+      "3pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 9,
+        "start": 8,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 9,
+        "start": 9,
+        "text": "monday",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 5,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "5b14938b-eaa4-44a7-9d4e-0b7137c4924c",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "I want to meet with the team on next Monday",
+    "tokens": [
+      "i",
+      "want",
+      "to",
+      "meet",
+      "with",
+      "the",
+      "team",
+      "on",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "sarah",
+        "type": "person"
+      },
+      {
+        "end": 3,
+        "start": 2,
+        "text": "15 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "159c8db7-1891-4187-9d3d-14734a04069d",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NUM",
+      "NOUN",
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "arrange a 15 minutes call with Sarah",
+    "tokens": [
+      "arrange",
+      "a",
+      "15",
+      "minutes",
+      "call",
+      "with",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "sarah",
+        "type": "person"
+      },
+      {
+        "end": 3,
+        "start": 2,
+        "text": "30 minutes",
+        "type": "duration"
+      }
+    ],
+    "id": "20cb0aa0-38de-4c06-81dd-4cbcb0f807fe",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NUM",
+      "NOUN",
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "arrange a 30 minutes call with Sarah",
+    "tokens": [
+      "arrange",
+      "a",
+      "30",
+      "minutes",
+      "call",
+      "with",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 6,
+        "text": "my manager",
+        "type": "person"
+      },
+      {
+        "end": 3,
+        "start": 2,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "2cbc10ac-e8bb-41d1-a1a2-5637945292b1",
+    "intent": "calendar.meeting.schedule",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NUM",
+      "NOUN",
+      "VERB",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "arrange a 2 hours call with my manager",
+    "tokens": [
+      "arrange",
+      "a",
+      "2",
+      "hours",
+      "call",
+      "with",
+      "my",
+      "manager"
+    ]
+  }
+]

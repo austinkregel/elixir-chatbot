@@ -1,0 +1,62 @@
+[
+  {
+    "value": "30 minutes",
+    "synonyms": ["30 minutes", "half an hour", "half hour", "thirty minutes", "30 mins"]
+  },
+  {
+    "value": "1 hour",
+    "synonyms": ["1 hour", "one hour", "an hour", "60 minutes"]
+  },
+  {
+    "value": "2 hours",
+    "synonyms": ["2 hours", "two hours", "a couple hours", "couple of hours"]
+  },
+  {
+    "value": "15 minutes",
+    "synonyms": ["15 minutes", "fifteen minutes", "quarter hour", "a quarter of an hour", "15 mins"]
+  },
+  {
+    "value": "45 minutes",
+    "synonyms": ["45 minutes", "forty five minutes", "three quarters of an hour", "45 mins"]
+  },
+  {
+    "value": "5 minutes",
+    "synonyms": ["5 minutes", "five minutes", "5 mins"]
+  },
+  {
+    "value": "10 minutes",
+    "synonyms": ["10 minutes", "ten minutes", "10 mins"]
+  },
+  {
+    "value": "20 minutes",
+    "synonyms": ["20 minutes", "twenty minutes", "20 mins"]
+  },
+  {
+    "value": "1 day",
+    "synonyms": ["1 day", "one day", "a day", "24 hours"]
+  },
+  {
+    "value": "1 week",
+    "synonyms": ["1 week", "one week", "a week", "7 days"]
+  },
+  {
+    "value": "2 weeks",
+    "synonyms": ["2 weeks", "two weeks", "a fortnight", "14 days"]
+  },
+  {
+    "value": "1 month",
+    "synonyms": ["1 month", "one month", "a month", "30 days"]
+  },
+  {
+    "value": "3 hours",
+    "synonyms": ["3 hours", "three hours"]
+  },
+  {
+    "value": "4 hours",
+    "synonyms": ["4 hours", "four hours"]
+  },
+  {
+    "value": "90 minutes",
+    "synonyms": ["90 minutes", "ninety minutes", "an hour and a half", "1.5 hours"]
+  }
+]

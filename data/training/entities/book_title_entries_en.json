@@ -1,0 +1,42 @@
+[
+  {
+    "value": "1984",
+    "synonyms": ["1984", "nineteen eighty-four", "Orwell's 1984"]
+  },
+  {
+    "value": "Pride and Prejudice",
+    "synonyms": ["Pride and Prejudice", "pride and prejudice"]
+  },
+  {
+    "value": "To Kill a Mockingbird",
+    "synonyms": ["To Kill a Mockingbird", "mockingbird book"]
+  },
+  {
+    "value": "The Great Gatsby",
+    "synonyms": ["The Great Gatsby", "Great Gatsby", "Gatsby"]
+  },
+  {
+    "value": "Harry Potter",
+    "synonyms": ["Harry Potter", "Harry Potter series", "HP"]
+  },
+  {
+    "value": "Lord of the Rings",
+    "synonyms": ["Lord of the Rings", "LOTR", "the Lord of the Rings"]
+  },
+  {
+    "value": "The Hobbit",
+    "synonyms": ["The Hobbit", "Hobbit"]
+  },
+  {
+    "value": "Dune",
+    "synonyms": ["Dune", "the Dune book"]
+  },
+  {
+    "value": "The Catcher in the Rye",
+    "synonyms": ["The Catcher in the Rye", "Catcher in the Rye"]
+  },
+  {
+    "value": "Brave New World",
+    "synonyms": ["Brave New World", "brave new world"]
+  }
+]

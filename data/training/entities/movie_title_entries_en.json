@@ -1,0 +1,50 @@
+[
+  {
+    "value": "Inception",
+    "synonyms": ["Inception", "the movie Inception"]
+  },
+  {
+    "value": "The Matrix",
+    "synonyms": ["The Matrix", "Matrix", "the Matrix movie"]
+  },
+  {
+    "value": "Titanic",
+    "synonyms": ["Titanic", "the Titanic movie"]
+  },
+  {
+    "value": "Avatar",
+    "synonyms": ["Avatar", "Avatar movie", "James Cameron's Avatar"]
+  },
+  {
+    "value": "The Godfather",
+    "synonyms": ["The Godfather", "Godfather"]
+  },
+  {
+    "value": "Pulp Fiction",
+    "synonyms": ["Pulp Fiction", "pulp fiction movie"]
+  },
+  {
+    "value": "The Dark Knight",
+    "synonyms": ["The Dark Knight", "Dark Knight", "Batman Dark Knight"]
+  },
+  {
+    "value": "Forrest Gump",
+    "synonyms": ["Forrest Gump", "Forest Gump"]
+  },
+  {
+    "value": "Star Wars",
+    "synonyms": ["Star Wars", "star wars movie", "a new hope"]
+  },
+  {
+    "value": "Jurassic Park",
+    "synonyms": ["Jurassic Park", "jurassic park movie"]
+  },
+  {
+    "value": "The Shawshank Redemption",
+    "synonyms": ["The Shawshank Redemption", "Shawshank Redemption", "Shawshank"]
+  },
+  {
+    "value": "Interstellar",
+    "synonyms": ["Interstellar", "the movie Interstellar"]
+  }
+]

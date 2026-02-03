@@ -1,0 +1,50 @@
+[
+  {
+    "value": "Spanish",
+    "synonyms": ["Spanish", "Español", "español", "in Spanish"]
+  },
+  {
+    "value": "French",
+    "synonyms": ["French", "Français", "français", "in French"]
+  },
+  {
+    "value": "German",
+    "synonyms": ["German", "Deutsch", "deutsch", "in German"]
+  },
+  {
+    "value": "Japanese",
+    "synonyms": ["Japanese", "日本語", "in Japanese"]
+  },
+  {
+    "value": "Chinese",
+    "synonyms": ["Chinese", "Mandarin", "中文", "in Chinese"]
+  },
+  {
+    "value": "Italian",
+    "synonyms": ["Italian", "Italiano", "in Italian"]
+  },
+  {
+    "value": "Portuguese",
+    "synonyms": ["Portuguese", "Português", "in Portuguese"]
+  },
+  {
+    "value": "Russian",
+    "synonyms": ["Russian", "Русский", "in Russian"]
+  },
+  {
+    "value": "Korean",
+    "synonyms": ["Korean", "한국어", "in Korean"]
+  },
+  {
+    "value": "Arabic",
+    "synonyms": ["Arabic", "العربية", "in Arabic"]
+  },
+  {
+    "value": "Hindi",
+    "synonyms": ["Hindi", "हिन्दी", "in Hindi"]
+  },
+  {
+    "value": "Dutch",
+    "synonyms": ["Dutch", "Nederlands", "in Dutch"]
+  }
+]

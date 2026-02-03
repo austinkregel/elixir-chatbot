@@ -1,0 +1,360 @@
+[
+  {
+    "entities": [],
+    "id": "bd0cf4e0-9f7d-4dff-9f98-307cccf8d4f3",
+    "intent": "knowledge.synonym",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "synonym for {word}",
+    "tokens": [
+      "synonym",
+      "for",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e61db2d0-712a-4da6-bff5-49835b98fe7d",
+    "intent": "knowledge.synonym",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what's another word for {word}",
+    "tokens": [
+      "what's",
+      "another",
+      "word",
+      "for",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a43ac46d-301f-44a6-86e2-5f3085f81767",
+    "intent": "knowledge.synonym",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "synonyms of {word}",
+    "tokens": [
+      "synonyms",
+      "of",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6cb8d1d6-1301-4f7f-ab7c-d59001b74a99",
+    "intent": "knowledge.synonym",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "different word for {word}",
+    "tokens": [
+      "different",
+      "word",
+      "for",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "01ed0cee-1598-46a8-b3f7-33d2bdd98b49",
+    "intent": "knowledge.synonym",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "give me a synonym for {word}",
+    "tokens": [
+      "give",
+      "me",
+      "a",
+      "synonym",
+      "for",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f87cc72a-416a-4aa3-b3dc-673c88c61b2a",
+    "intent": "knowledge.synonym",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what can I say instead of {word}",
+    "tokens": [
+      "what",
+      "can",
+      "i",
+      "say",
+      "instead",
+      "of",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1e0f2793-ed18-48c1-999e-714e81f50bab",
+    "intent": "knowledge.synonym",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "alternative to {word}",
+    "tokens": [
+      "alternative",
+      "to",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5e596a6b-9a1f-4927-baff-bccba21e10b2",
+    "intent": "knowledge.synonym",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "similar word to {word}",
+    "tokens": [
+      "similar",
+      "word",
+      "to",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7ad4666e-722a-4fae-b249-565b1538418a",
+    "intent": "knowledge.synonym",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "words like {word}",
+    "tokens": [
+      "words",
+      "like",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "52d39562-6f9e-4bc9-a281-e359d6a11003",
+    "intent": "knowledge.synonym",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "another way to say {word}",
+    "tokens": [
+      "another",
+      "way",
+      "to",
+      "say",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c7230ff3-9bc8-4f8d-964b-ed36fe57bb99",
+    "intent": "knowledge.synonym",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what else means {word}",
+    "tokens": [
+      "what",
+      "else",
+      "means",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0c86de42-67aa-4658-b851-f315cb70db01",
+    "intent": "knowledge.synonym",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "synonym of {word}",
+    "tokens": [
+      "synonym",
+      "of",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c0f765d7-06ae-4884-a96f-1794be31120a",
+    "intent": "knowledge.synonym",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "related words to {word}",
+    "tokens": [
+      "related",
+      "words",
+      "to",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1f1849eb-1ede-4eed-90a9-c70643069bb4",
+    "intent": "knowledge.synonym",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "CONJ",
+      "NOUN"
+    ],
+    "text": "like {word} but different",
+    "tokens": [
+      "like",
+      "word",
+      "but",
+      "different"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b58add78-e09f-4aee-8ae1-00a79b50341f",
+    "intent": "knowledge.synonym",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "thesaurus {word}",
+    "tokens": [
+      "thesaurus",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1f089eed-c1f0-41ee-b9b2-af7c27bdc57e",
+    "intent": "knowledge.synonym",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "other words for {word}",
+    "tokens": [
+      "other",
+      "words",
+      "for",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b404209e-bf7a-4082-af73-8664beb69497",
+    "intent": "knowledge.synonym",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what's similar to {word}",
+    "tokens": [
+      "what's",
+      "similar",
+      "to",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f49158a9-c734-4d4f-9935-290da1407df9",
+    "intent": "knowledge.synonym",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "equivalent of {word}",
+    "tokens": [
+      "equivalent",
+      "of",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4ca6c112-594f-4723-a47d-b4ff2ae3ad28",
+    "intent": "knowledge.synonym",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "substitute for {word}",
+    "tokens": [
+      "substitute",
+      "for",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "eaa70985-c880-42c5-807e-8bd35424db2b",
+    "intent": "knowledge.synonym",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "synonyms for the word {word}",
+    "tokens": [
+      "synonyms",
+      "for",
+      "the",
+      "word",
+      "word"
+    ]
+  }
+]

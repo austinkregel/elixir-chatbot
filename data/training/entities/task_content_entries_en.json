@@ -1,0 +1,50 @@
+[
+  {
+    "value": "buy groceries",
+    "synonyms": ["buy groceries", "get groceries", "grocery shopping", "pick up groceries"]
+  },
+  {
+    "value": "call mom",
+    "synonyms": ["call mom", "phone mom", "call mother", "ring mom"]
+  },
+  {
+    "value": "send email",
+    "synonyms": ["send email", "write email", "email", "compose email"]
+  },
+  {
+    "value": "pay bills",
+    "synonyms": ["pay bills", "pay the bills", "settle bills", "handle bills"]
+  },
+  {
+    "value": "do laundry",
+    "synonyms": ["do laundry", "wash clothes", "laundry", "wash laundry"]
+  },
+  {
+    "value": "clean house",
+    "synonyms": ["clean house", "clean the house", "housework", "tidy up"]
+  },
+  {
+    "value": "walk dog",
+    "synonyms": ["walk dog", "walk the dog", "take dog out", "dog walk"]
+  },
+  {
+    "value": "pick up kids",
+    "synonyms": ["pick up kids", "get the kids", "collect kids", "pick up children"]
+  },
+  {
+    "value": "finish report",
+    "synonyms": ["finish report", "complete report", "write report", "finalize report"]
+  },
+  {
+    "value": "schedule appointment",
+    "synonyms": ["schedule appointment", "book appointment", "make appointment", "set up appointment"]
+  },
+  {
+    "value": "return package",
+    "synonyms": ["return package", "send back package", "return item", "ship return"]
+  },
+  {
+    "value": "renew subscription",
+    "synonyms": ["renew subscription", "renew membership", "extend subscription"]
+  }
+]

@@ -2128,5 +2128,55 @@
     ],
     "text": "Learned 2 entities, 0 relationships, 0 facts from: My name is John",
     "timestamp": 1770052298804
+  },
+  {
+    "id": "6c736077c27cab69",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: My name is John",
+    "timestamp": 1770092947558
+  },
+  {
+    "id": "5f8ce5865b2063cd",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: My name is John",
+    "timestamp": 1770092947626
+  },
+  {
+    "id": "d8deb55c58cc0c54",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I live in New York",
+    "timestamp": 1770092947680
+  },
+  {
+    "id": "1461daa7b3ea4d6a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 1 facts from: History test message 1",
+    "timestamp": 1770092948207
+  },
+  {
+    "id": "c59a977bdee493df",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 1 facts from: History test message 2",
+    "timestamp": 1770092948343
   }
 ]

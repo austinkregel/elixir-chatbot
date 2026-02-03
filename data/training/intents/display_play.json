@@ -1,0 +1,296 @@
+[
+  {
+    "entities": [],
+    "id": "c076619a-eeae-445e-9a97-c307b79a4f03",
+    "intent": "display.play",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "play the recording",
+    "tokens": [
+      "play",
+      "the",
+      "recording"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "477f3e36-8e22-40f5-912b-61a7de072b9e",
+    "intent": "display.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "start playback",
+    "tokens": [
+      "start",
+      "playback"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "86325711-54e6-4c16-8493-5d4de4321357",
+    "intent": "display.play",
+    "pos_tags": [
+      "NOUN"
+    ],
+    "text": "play",
+    "tokens": [
+      "play"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6d65264a-60f5-49d5-8514-ddf591bf6447",
+    "intent": "display.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "begin playback",
+    "tokens": [
+      "begin",
+      "playback"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d9df9e39-ddf4-414c-8cbc-11d88f1315f4",
+    "intent": "display.play",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "play the video",
+    "tokens": [
+      "play",
+      "the",
+      "video"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "78b87bdc-19a0-46e6-9914-1258eba06b4a",
+    "intent": "display.play",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "start the recording",
+    "tokens": [
+      "start",
+      "the",
+      "recording"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "69a943f1-79d9-4aaa-8c71-bac52db9e278",
+    "intent": "display.play",
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "text": "play it",
+    "tokens": [
+      "play",
+      "it"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "fe9f8b8b-159b-4151-a9e5-225b5f0582b0",
+    "intent": "display.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "begin playing",
+    "tokens": [
+      "begin",
+      "playing"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "898a9115-f395-493a-a616-48ef4805c151",
+    "intent": "display.play",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "run the recording",
+    "tokens": [
+      "run",
+      "the",
+      "recording"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "28041c7e-6f1f-4f44-ab36-10982017b240",
+    "intent": "display.play",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "play the footage",
+    "tokens": [
+      "play",
+      "the",
+      "footage"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b7b1ec62-18ce-47d3-8040-245fa32d82ec",
+    "intent": "display.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "start playing",
+    "tokens": [
+      "start",
+      "playing"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a18e54e2-c443-4987-897a-1e6671cbb43d",
+    "intent": "display.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "resume playback",
+    "tokens": [
+      "resume",
+      "playback"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9ee3abbf-1dc2-485f-931f-9f86e1a24bc0",
+    "intent": "display.play",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "play the file",
+    "tokens": [
+      "play",
+      "the",
+      "file"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "43519628-cbe8-49a1-9ad5-cab9a47a3fda",
+    "intent": "display.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "initiate playback",
+    "tokens": [
+      "initiate",
+      "playback"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0d80d3cf-e78d-4ee5-8706-c0b7bb21fd78",
+    "intent": "display.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "run video",
+    "tokens": [
+      "run",
+      "video"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "13898343-bf1b-4970-946f-5a613828b926",
+    "intent": "display.play",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "play from the beginning",
+    "tokens": [
+      "play",
+      "from",
+      "the",
+      "beginning"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5226f184-2c29-401d-b863-0e24ba87bd95",
+    "intent": "display.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "start video",
+    "tokens": [
+      "start",
+      "video"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2ca8a6eb-6b5c-4170-971d-8aa3e8280ccb",
+    "intent": "display.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "commence playback",
+    "tokens": [
+      "commence",
+      "playback"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "aaaff63f-aa8e-4f5d-9f86-0e093eb19c6e",
+    "intent": "display.play",
+    "pos_tags": [
+      "NOUN",
+      "DET"
+    ],
+    "text": "play this",
+    "tokens": [
+      "play",
+      "this"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a8022141-ad0d-4058-a76a-910b9ed32590",
+    "intent": "display.play",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "activate playback",
+    "tokens": [
+      "activate",
+      "playback"
+    ]
+  }
+]

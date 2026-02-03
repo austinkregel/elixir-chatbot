@@ -246,6 +246,24 @@ defmodule World.Manager do
     GenServer.call(__MODULE__, :reload_persisted_worlds, 60_000)
   end
 
+  @doc """
+  Cleans up orphaned world directories from disk.
+
+  An orphaned directory is one that exists on disk but:
+  - Is not currently loaded in memory (ETS)
+  - Has no valid config.json file
+
+  ## Options
+    - `:dry_run` - If true (default), only reports what would be deleted
+    - `:max_age_hours` - Only delete directories older than this (default: 24)
+    - `:exclude` - List of world IDs to never delete (default: ["default"])
+
+  Returns `{:ok, deleted_count}` or `{:ok, {would_delete, directories}}` for dry run.
+  """
+  def cleanup_orphaned_worlds(opts \\ []) do
+    GenServer.call(__MODULE__, {:cleanup_orphaned_worlds, opts}, 120_000)
+  end
+
   # ============================================================================
   # GenServer Callbacks
   # ============================================================================
@@ -310,6 +328,12 @@ defmodule World.Manager do
   end
 
   @impl true
+  def handle_call({:cleanup_orphaned_worlds, opts}, _from, state) do
+    result = do_cleanup_orphaned_worlds(opts)
+    {:reply, result, state}
+  end
+
+  @impl true
   def handle_call({:create_world, name, opts}, _from, state) do
     world = TrainingWorld.new(name, opts)
     metrics = WorldMetrics.new()
@@ -367,6 +391,20 @@ defmodule World.Manager do
 
         # Clean up gazetteer overlay
         Brain.ML.Gazetteer.destroy_world_overlay(world_id)
+
+        # Clean up persisted data from disk (for persistent worlds)
+        if world.mode == :persistent do
+          case WorldPersistence.delete(world_id) do
+            :ok ->
+              Logger.info("Deleted persisted world data from disk", %{id: world_id})
+
+            {:error, reason} ->
+              Logger.warning("Failed to delete persisted world data", %{
+                id: world_id,
+                reason: reason
+              })
+          end
+        end
 
         Logger.info("Destroyed training world", %{id: world_id, name: world.name})
         {:reply, :ok, state}
@@ -650,6 +688,99 @@ defmodule World.Manager do
 
       [] ->
         :ok
+    end
+  end
+
+  defp do_cleanup_orphaned_worlds(opts) do
+    dry_run = Keyword.get(opts, :dry_run, true)
+    max_age_hours = Keyword.get(opts, :max_age_hours, 24)
+    exclude = Keyword.get(opts, :exclude, ["default"])
+
+    base_path = WorldPersistence.base_path()
+
+    if File.exists?(base_path) do
+      case File.ls(base_path) do
+        {:ok, entries} ->
+          # Get all currently loaded world IDs
+          loaded_world_ids =
+            try do
+              :ets.tab2list(@ets_worlds)
+              |> Enum.filter(fn
+                {id, %TrainingWorld{}} when is_binary(id) -> true
+                _ -> false
+              end)
+              |> Enum.map(fn {id, _} -> id end)
+              |> MapSet.new()
+            rescue
+              ArgumentError -> MapSet.new()
+            end
+
+          # Calculate cutoff time
+          cutoff = DateTime.add(DateTime.utc_now(), -max_age_hours * 3600, :second)
+
+          # Find orphaned directories
+          orphaned =
+            entries
+            |> Enum.filter(&File.dir?(Path.join(base_path, &1)))
+            |> Enum.reject(&(&1 in exclude))
+            |> Enum.reject(&MapSet.member?(loaded_world_ids, &1))
+            |> Enum.filter(fn world_id ->
+              dir_path = Path.join(base_path, world_id)
+              config_path = Path.join(dir_path, "config.json")
+
+              # Check if it's a valid world (has config.json)
+              has_valid_config = File.exists?(config_path)
+
+              # Check directory age
+              case File.stat(dir_path) do
+                {:ok, %{mtime: mtime}} ->
+                  # Convert mtime (erlang datetime) to DateTime
+                  case NaiveDateTime.from_erl(mtime) do
+                    {:ok, naive} ->
+                      dir_time = DateTime.from_naive!(naive, "Etc/UTC")
+                      is_old = DateTime.compare(dir_time, cutoff) == :lt
+
+                      # Delete if: no valid config OR old enough
+                      not has_valid_config or is_old
+
+                    _ ->
+                      # Can't parse time, skip
+                      false
+                  end
+
+                _ ->
+                  false
+              end
+            end)
+
+          if dry_run do
+            {:ok, {:would_delete, orphaned}}
+          else
+            deleted =
+              Enum.reduce(orphaned, 0, fn world_id, count ->
+                case WorldPersistence.delete(world_id) do
+                  :ok ->
+                    Logger.info("Cleaned up orphaned world directory", %{world_id: world_id})
+                    count + 1
+
+                  {:error, reason} ->
+                    Logger.warning("Failed to cleanup orphaned world", %{
+                      world_id: world_id,
+                      reason: reason
+                    })
+
+                    count
+                end
+              end)
+
+            {:ok, deleted}
+          end
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    else
+      {:ok, 0}
     end
   end
 end

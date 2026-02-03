@@ -1,0 +1,312 @@
+[
+  {
+    "entities": [],
+    "id": "a31e87d7-9825-4b34-965b-aa46b425ee54",
+    "intent": "status.active_tasks",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show active tasks",
+    "tokens": [
+      "show",
+      "active",
+      "tasks"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "bb763880-2721-45ee-aca9-87d71ca523f9",
+    "intent": "status.active_tasks",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "active tasks",
+    "tokens": [
+      "active",
+      "tasks"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b20ff468-cf4f-4555-87f8-d531dae2c566",
+    "intent": "status.active_tasks",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "current tasks",
+    "tokens": [
+      "current",
+      "tasks"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "07617b17-2efd-4bbb-9e9f-c74c742b2eed",
+    "intent": "status.active_tasks",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "NOUN"
+    ],
+    "text": "what tasks are active",
+    "tokens": [
+      "what",
+      "tasks",
+      "are",
+      "active"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5ecc72ff-118e-45df-8df7-59bba0907944",
+    "intent": "status.active_tasks",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "list active tasks",
+    "tokens": [
+      "list",
+      "active",
+      "tasks"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7d0d6b66-46c1-49a6-8842-375e04f8c976",
+    "intent": "status.active_tasks",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "running tasks",
+    "tokens": [
+      "running",
+      "tasks"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7f77c85d-73e8-41f3-a599-611e6d6c8ee3",
+    "intent": "status.active_tasks",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "tasks in progress",
+    "tokens": [
+      "tasks",
+      "in",
+      "progress"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b873d6c5-93c6-478f-86dd-050bf8bfce66",
+    "intent": "status.active_tasks",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show current tasks",
+    "tokens": [
+      "show",
+      "current",
+      "tasks"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "cc4b1532-dbb3-4754-bf68-86547f76cdf8",
+    "intent": "status.active_tasks",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "active jobs",
+    "tokens": [
+      "active",
+      "jobs"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "231cd629-818d-4d03-b139-427cc48504af",
+    "intent": "status.active_tasks",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP"
+    ],
+    "text": "what's being worked on",
+    "tokens": [
+      "what's",
+      "being",
+      "worked",
+      "on"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "461c51d1-e810-4321-8204-9d9ed420e29d",
+    "intent": "status.active_tasks",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "tasks currently running",
+    "tokens": [
+      "tasks",
+      "currently",
+      "running"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6b31f414-e0b5-4775-8452-29ddfcc7b4d9",
+    "intent": "status.active_tasks",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "ongoing tasks",
+    "tokens": [
+      "ongoing",
+      "tasks"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "798a2283-96ae-4879-9ad0-781b45f47b7e",
+    "intent": "status.active_tasks",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show running tasks",
+    "tokens": [
+      "show",
+      "running",
+      "tasks"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6081c7e3-ba16-434e-b126-9a49efa3f59b",
+    "intent": "status.active_tasks",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "active operations",
+    "tokens": [
+      "active",
+      "operations"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0ed05117-ab9c-4a57-991a-f9c1c8ae7e25",
+    "intent": "status.active_tasks",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "current active tasks",
+    "tokens": [
+      "current",
+      "active",
+      "tasks"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9a304704-48f8-4475-9772-2f020538a803",
+    "intent": "status.active_tasks",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "list running jobs",
+    "tokens": [
+      "list",
+      "running",
+      "jobs"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9f1f4882-8116-47e2-8f17-e022a789250b",
+    "intent": "status.active_tasks",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "tasks in execution",
+    "tokens": [
+      "tasks",
+      "in",
+      "execution"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e58eb58d-eec9-4c95-a1c9-7f35ee49d3b0",
+    "intent": "status.active_tasks",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show ongoing work",
+    "tokens": [
+      "show",
+      "ongoing",
+      "work"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5458a36d-d1bc-4144-90ef-f8602f305c47",
+    "intent": "status.active_tasks",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "active task list",
+    "tokens": [
+      "active",
+      "task",
+      "list"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5fb6d8f4-1353-4d68-a050-9e8386849c5b",
+    "intent": "status.active_tasks",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "current operations",
+    "tokens": [
+      "current",
+      "operations"
+    ]
+  }
+]

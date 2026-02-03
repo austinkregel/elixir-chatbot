@@ -40,6 +40,10 @@ defmodule Brain.Application do
 
       # ML classifiers
       Brain.ML.IntentClassifierSimple,
+      Brain.ML.EntityExtractor,
+
+      # LSTM unified model (NER, intent, sentiment, speech act)
+      Brain.ML.LSTM.UnifiedModel,
       
       # Seq2Seq LSTM + Attention system
       Brain.ML.Seq2Seq.Vocabulary,
@@ -73,8 +77,12 @@ defmodule Brain.Application do
     # Attach telemetry handlers
     Brain.Telemetry.attach_handlers()
 
-    # Initialize ML pipeline if enabled
-    if Application.get_env(:brain, :ml, [])[:enabled] do
+    # Initialize ML pipeline if enabled AND not in training mode
+    # Training mode skips async init to avoid conflicts with training process
+    ml_config = Application.get_env(:brain, :ml, [])
+    skip_init = Application.get_env(:brain, :skip_ml_init, false)
+    
+    if ml_config[:enabled] and not skip_init do
       init_ml_pipeline()
     end
 
@@ -119,13 +127,13 @@ defmodule Brain.Application do
         end
       end
 
-      # Load entity maps as fallback
-      case Brain.ML.EntityExtractor.load_entity_maps() do
-        {:ok, maps} ->
-          Logger.info("Entity maps loaded", %{count: map_size(maps)})
-
-        {:error, reason} ->
-          Logger.warning("Entity maps loading failed: #{inspect(reason)}")
+      # EntityExtractor now loads maps automatically as a GenServer
+      # Just log the status
+      if Brain.ML.EntityExtractor.is_loaded?() do
+        status = Brain.ML.EntityExtractor.get_status()
+        Logger.info("Entity extractor ready", %{entities_count: status.entities_count})
+      else
+        Logger.debug("Entity extractor still loading...")
       end
 
       # Initialize world embedder

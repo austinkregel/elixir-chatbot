@@ -1,0 +1,38 @@
+[
+  {
+    "value": "yesterday",
+    "synonyms": ["yesterday", "the day before", "previous day"]
+  },
+  {
+    "value": "last week",
+    "synonyms": ["last week", "previous week", "a week ago"]
+  },
+  {
+    "value": "last month",
+    "synonyms": ["last month", "previous month", "a month ago"]
+  },
+  {
+    "value": "last year",
+    "synonyms": ["last year", "previous year", "a year ago"]
+  },
+  {
+    "value": "previous version",
+    "synonyms": ["previous version", "last version", "prior version"]
+  },
+  {
+    "value": "baseline",
+    "synonyms": ["baseline", "the baseline", "original baseline"]
+  },
+  {
+    "value": "industry average",
+    "synonyms": ["industry average", "benchmark", "industry benchmark"]
+  },
+  {
+    "value": "same period last year",
+    "synonyms": ["same period last year", "year over year", "YoY"]
+  },
+  {
+    "value": "target",
+    "synonyms": ["target", "the target", "goal", "expected"]
+  }
+]

@@ -517,13 +517,32 @@ defmodule World.ModelRegistry do
       try do
         data = File.read!(overlay_path) |> Jason.decode!(keys: :atoms)
 
+        # Handle both list format (new) and map format (legacy)
         overlay_list =
-          Enum.map(data, fn {key, value} ->
-            {to_string(key), value}
-          end)
+          case data do
+            list when is_list(list) ->
+              # New format: list of %{key: "term", info: %{...}} objects
+              # Filter out metadata entries like _meta
+              list
+              |> Enum.reject(fn entry -> entry[:key] == "_meta" end)
+              |> Enum.map(fn entry ->
+                {to_string(entry[:key]), entry[:info] || %{}}
+              end)
 
-        Gazetteer.restore_world_overlay(world_id, overlay_list)
-        Logger.debug("Preloaded gazetteer overlay for world: #{world_id}")
+            map when is_map(map) ->
+              # Legacy format: map of %{term => info}
+              Enum.map(map, fn {key, value} ->
+                {to_string(key), value}
+              end)
+
+            _ ->
+              []
+          end
+
+        if overlay_list != [] do
+          Gazetteer.restore_world_overlay(world_id, overlay_list)
+          Logger.debug("Preloaded gazetteer overlay for world: #{world_id}")
+        end
       rescue
         e ->
           Logger.warning("Failed to preload gazetteer overlay: #{inspect(e)}")

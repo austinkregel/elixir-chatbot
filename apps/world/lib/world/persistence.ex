@@ -28,8 +28,6 @@ defmodule World.Persistence do
   alias World.Events, as: WorldEvents
   alias Brain.Memory.Types.{Episode, SemanticFact}
 
-  @default_base_path "priv/training_worlds"
-
   # ============================================================================
   # Public API
   # ============================================================================
@@ -41,11 +39,12 @@ defmodule World.Persistence do
   to ensure test worlds are completely isolated from production worlds.
   """
   def base_path do
-    if Application.get_env(:chat_bot, :test_world_sandbox) do
+    if Application.get_env(:world, :test_world_sandbox) do
       # Test environment uses temp directory for complete isolation
       Path.join(System.tmp_dir!(), "chat_bot_test_worlds")
     else
-      Application.get_env(:chat_bot, :training_worlds_path, @default_base_path)
+      # Use configured path or default to World app's priv directory
+      Application.get_env(:world, :training_worlds_path) || World.priv_path("training_worlds")
     end
   end
 

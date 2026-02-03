@@ -1,0 +1,358 @@
+[
+  {
+    "entities": [],
+    "id": "8679abbd-e9b9-42c5-bdda-36607a210e09",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "pause the timer",
+    "tokens": [
+      "pause",
+      "the",
+      "timer"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "22ee36c8-4988-4119-baf1-c5698fd562be",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "pause timer",
+    "tokens": [
+      "pause",
+      "timer"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e5511847-b045-48a2-a274-34a5812cf3dc",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "hold the timer",
+    "tokens": [
+      "hold",
+      "the",
+      "timer"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "dce6e618-f4dc-4802-bdaf-62367917f1a3",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "pause my timer",
+    "tokens": [
+      "pause",
+      "my",
+      "timer"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b77c3b8c-8a5d-448a-b445-a52df9efdb31",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "stop the timer temporarily",
+    "tokens": [
+      "stop",
+      "the",
+      "timer",
+      "temporarily"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "288e60da-296e-4f15-8209-740b8582e481",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "freeze the timer",
+    "tokens": [
+      "freeze",
+      "the",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "conference call",
+        "type": "event_title"
+      },
+      {
+        "end": 2,
+        "start": 2,
+        "text": "conference",
+        "type": "event_title"
+      }
+    ],
+    "id": "c3800555-5ab2-4dfe-b006-cb2c3b856151",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "VERB",
+      "NOUN"
+    ],
+    "text": "pause the conference call timer",
+    "tokens": [
+      "pause",
+      "the",
+      "conference",
+      "call",
+      "timer"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "standup",
+        "type": "event_title"
+      }
+    ],
+    "id": "599f9c6e-6192-44ab-a676-1a9c5dbec48c",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "pause the standup timer",
+    "tokens": [
+      "pause",
+      "the",
+      "standup",
+      "timer"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d2fec4d2-63c0-4895-a8a8-0f173b5de701",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "hold timer",
+    "tokens": [
+      "hold",
+      "timer"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c0b64b8a-cacb-4719-8a3f-3b9bf8ae5b1e",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "put timer on hold",
+    "tokens": [
+      "put",
+      "timer",
+      "on",
+      "hold"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8df45f89-d4f7-4d95-b404-51d35c0e71e3",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "suspend the timer",
+    "tokens": [
+      "suspend",
+      "the",
+      "timer"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d919fa1f-d6b0-4c10-8a84-5d6f6a4a00b8",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "pause counting",
+    "tokens": [
+      "pause",
+      "counting"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "45be0621-0785-418a-bf59-ca7e6c425026",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "stop counting temporarily",
+    "tokens": [
+      "stop",
+      "counting",
+      "temporarily"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5e273580-6ce4-4cc6-a966-7c35953726ea",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "hold on the timer",
+    "tokens": [
+      "hold",
+      "on",
+      "the",
+      "timer"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "01342f91-211c-4efc-a935-837e5cd3bc31",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "freeze timer",
+    "tokens": [
+      "freeze",
+      "timer"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "380db614-81db-467f-a424-331b37113848",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "pause the countdown",
+    "tokens": [
+      "pause",
+      "the",
+      "countdown"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d5f6007b-8023-4e0f-9f7e-d6605fda790d",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "temporarily stop timer",
+    "tokens": [
+      "temporarily",
+      "stop",
+      "timer"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "55218533-cfc9-469d-8054-80169dfacbd5",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "halt the timer",
+    "tokens": [
+      "halt",
+      "the",
+      "timer"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2c79b67c-75ee-4b90-8763-5b99d60d4e0e",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "pause time",
+    "tokens": [
+      "pause",
+      "time"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "76085e90-f940-4f07-af2c-dd8c8df41841",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "stop the clock",
+    "tokens": [
+      "stop",
+      "the",
+      "clock"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "27e04779-25fe-42b1-b627-1d8c653714e1",
+    "intent": "timer.pause",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "timer pause",
+    "tokens": [
+      "timer",
+      "pause"
+    ]
+  }
+]

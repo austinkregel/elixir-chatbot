@@ -1,0 +1,1441 @@
+[
+  {
+    "entities": [
+      {
+        "end": 8,
+        "start": 6,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "6f044ec7-31ae-4434-932b-ec64932a928a",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "CONJ",
+      "PRON",
+      "VERB",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me when I get to the coffee shop to {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "when",
+      "i",
+      "get",
+      "to",
+      "the",
+      "coffee",
+      "shop",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "6b746f9f-3845-4f45-9cc2-055b979cc6d4",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "CONJ",
+      "PRON",
+      "VERB",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me when I get to Zoom to {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "when",
+      "i",
+      "get",
+      "to",
+      "zoom",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "780dcd4f-fe6f-439c-bb1e-fc40c3fde1ba",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me at Zoom to {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "at",
+      "zoom",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "3dba3f92-dbf6-4db4-b543-f6c08e4452a5",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me at the office to {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "at",
+      "the",
+      "office",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "107ed338-1e08-43a2-af78-d4d788286026",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "CONJ",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "when I arrive at the office remind me to {reminder_content}",
+    "tokens": [
+      "when",
+      "i",
+      "arrive",
+      "at",
+      "the",
+      "office",
+      "remind",
+      "me",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 4,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "91e14d75-c3af-4570-bd98-baeb873e20cb",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "CONJ",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET",
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "when I arrive at conference room A remind me to {reminder_content}",
+    "tokens": [
+      "when",
+      "i",
+      "arrive",
+      "at",
+      "conference",
+      "room",
+      "a",
+      "remind",
+      "me",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 4,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "87682ac6-d7a0-4f6d-9f0c-b9f22927bd31",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "CONJ",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "when I arrive at the coffee shop remind me to {reminder_content}",
+    "tokens": [
+      "when",
+      "i",
+      "arrive",
+      "at",
+      "the",
+      "coffee",
+      "shop",
+      "remind",
+      "me",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 9,
+        "start": 7,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "33c15fd4-8353-4846-bebd-0a94091d3f20",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "CONJ",
+      "PRON",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remind me to {reminder_content} when I reach the coffee shop",
+    "tokens": [
+      "remind",
+      "me",
+      "to",
+      "reminder_content",
+      "when",
+      "i",
+      "reach",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 7,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "0b6eda09-3d0f-45ca-bb5f-efddd3c6611e",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "CONJ",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remind me to {reminder_content} when I reach downtown",
+    "tokens": [
+      "remind",
+      "me",
+      "to",
+      "reminder_content",
+      "when",
+      "i",
+      "reach",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "de79738d-77c4-47b4-beb7-6151227935ea",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set a location reminder for downtown",
+    "tokens": [
+      "set",
+      "a",
+      "location",
+      "reminder",
+      "for",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "44133c4b-07ee-4738-882a-7687f56622cc",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set a location reminder for Zoom",
+    "tokens": [
+      "set",
+      "a",
+      "location",
+      "reminder",
+      "for",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "79db1ec1-3fc3-46f8-b991-2944060c64b4",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "set a location reminder for the office",
+    "tokens": [
+      "set",
+      "a",
+      "location",
+      "reminder",
+      "for",
+      "the",
+      "office"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "d4fe3f4c-3862-42a2-9d33-19d9645fb07f",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "CONJ",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remind me when I leave downtown",
+    "tokens": [
+      "remind",
+      "me",
+      "when",
+      "i",
+      "leave",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "cae40cd1-cc79-4aaa-b30c-550d16206589",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "CONJ",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remind me when I leave Zoom",
+    "tokens": [
+      "remind",
+      "me",
+      "when",
+      "i",
+      "leave",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "6d3befdc-3c94-4e93-8ac5-31a7f5fead8b",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "CONJ",
+      "PRON",
+      "VERB",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "when I get to the office tell me to {reminder_content}",
+    "tokens": [
+      "when",
+      "i",
+      "get",
+      "to",
+      "the",
+      "office",
+      "tell",
+      "me",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 4,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "28e25617-6a74-4588-b895-3caa85eebc71",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "CONJ",
+      "PRON",
+      "VERB",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "when I get to conference room A tell me to {reminder_content}",
+    "tokens": [
+      "when",
+      "i",
+      "get",
+      "to",
+      "conference",
+      "room",
+      "a",
+      "tell",
+      "me",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "6ee64d02-b5a2-4078-a69a-e9026895ddec",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "location based reminder for downtown",
+    "tokens": [
+      "location",
+      "based",
+      "reminder",
+      "for",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 4,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "b50d4665-d941-47ba-ad2c-b472907c109e",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "location based reminder for the coffee shop",
+    "tokens": [
+      "location",
+      "based",
+      "reminder",
+      "for",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "ede57e72-4b4d-4971-8dd7-60a43895b469",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "remind me at the office",
+    "tokens": [
+      "remind",
+      "me",
+      "at",
+      "the",
+      "office"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "593dc370-5d34-4b61-8c72-e99dcda13b5f",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me at downtown",
+    "tokens": [
+      "remind",
+      "me",
+      "at",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 3,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "6e0be547-152c-4c66-9835-3ee37a372fd8",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET"
+    ],
+    "text": "remind me at conference room A",
+    "tokens": [
+      "remind",
+      "me",
+      "at",
+      "conference",
+      "room",
+      "a"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "77cd1672-5b92-4dcc-976c-09f6f9ee1db0",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "CONJ",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "when I'm at the office remind me to {reminder_content}",
+    "tokens": [
+      "when",
+      "i'm",
+      "at",
+      "the",
+      "office",
+      "remind",
+      "me",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 3,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "624f9187-bc62-4adc-9455-37949672d931",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "CONJ",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET",
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "when I'm at conference room A remind me to {reminder_content}",
+    "tokens": [
+      "when",
+      "i'm",
+      "at",
+      "conference",
+      "room",
+      "a",
+      "remind",
+      "me",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 7,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "ef81cbae-2451-4853-b25d-cc4ea7a47caa",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "CONJ",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set reminder for when I arrive at downtown",
+    "tokens": [
+      "set",
+      "reminder",
+      "for",
+      "when",
+      "i",
+      "arrive",
+      "at",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 7,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "e7fe3697-86a7-434c-aeef-5a4193d9c26a",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "CONJ",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set reminder for when I arrive at Zoom",
+    "tokens": [
+      "set",
+      "reminder",
+      "for",
+      "when",
+      "i",
+      "arrive",
+      "at",
+      "zoom"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 7,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 9,
+        "start": 7,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "eea597d1-897b-4732-ae8c-97b6021375e2",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "CONJ",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET"
+    ],
+    "text": "set reminder for when I arrive at conference room A",
+    "tokens": [
+      "set",
+      "reminder",
+      "for",
+      "when",
+      "i",
+      "arrive",
+      "at",
+      "conference",
+      "room",
+      "a"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "downtown",
+        "type": "location"
+      }
+    ],
+    "id": "87dab3d2-c471-427b-a51f-a2ca73f1c974",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me to {reminder_content} at downtown",
+    "tokens": [
+      "remind",
+      "me",
+      "to",
+      "reminder_content",
+      "at",
+      "downtown"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 5,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "f531f28f-008b-47a1-bfa2-372878057f4c",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remind me to {reminder_content} at the coffee shop",
+    "tokens": [
+      "remind",
+      "me",
+      "to",
+      "reminder_content",
+      "at",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "3f769957-4f08-4e98-82cb-ee48de163ee6",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "remind me to {reminder_content} at the office",
+    "tokens": [
+      "remind",
+      "me",
+      "to",
+      "reminder_content",
+      "at",
+      "the",
+      "office"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8b150403-e469-496b-9839-ce04998fdb04",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "CONJ",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "when I get home remind me to {reminder_content}",
+    "tokens": [
+      "when",
+      "i",
+      "get",
+      "home",
+      "remind",
+      "me",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "21428f97-6951-49fc-9a51-e517f23b66a6",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "CONJ",
+      "PRON",
+      "VERB",
+      "ADP",
+      "NOUN",
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "when I get to work remind me to {reminder_content}",
+    "tokens": [
+      "when",
+      "i",
+      "get",
+      "to",
+      "work",
+      "remind",
+      "me",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "742894e7-6f4c-4aa3-9cfd-d6a54746274e",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "CONJ",
+      "PRON",
+      "VERB",
+      "NOUN"
+    ],
+    "text": "remind me to {reminder_content} when I get home",
+    "tokens": [
+      "remind",
+      "me",
+      "to",
+      "reminder_content",
+      "when",
+      "i",
+      "get",
+      "home"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "458c07b6-5cd9-4b90-8735-f80e65113b3b",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "ADP",
+      "NOUN",
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "at Zoom remind me to {reminder_content}",
+    "tokens": [
+      "at",
+      "zoom",
+      "remind",
+      "me",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 3,
+        "start": 1,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "fae7a72c-fbe7-4988-8e97-9923b9917bed",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET",
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "at conference room A remind me to {reminder_content}",
+    "tokens": [
+      "at",
+      "conference",
+      "room",
+      "a",
+      "remind",
+      "me",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 2,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "10b0827c-b146-472f-afaf-c84b422e8ba4",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "location reminder the coffee shop {reminder_content}",
+    "tokens": [
+      "location",
+      "reminder",
+      "the",
+      "coffee",
+      "shop",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "zoom",
+        "type": "location"
+      }
+    ],
+    "id": "66026c82-4a4c-4b01-88f1-9cd575977570",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "location reminder Zoom {reminder_content}",
+    "tokens": [
+      "location",
+      "reminder",
+      "zoom",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 4,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "e959bb37-7003-4bae-b908-ea3c5f8c2756",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "CONJ",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET"
+    ],
+    "text": "remind when arriving at conference room A",
+    "tokens": [
+      "remind",
+      "when",
+      "arriving",
+      "at",
+      "conference",
+      "room",
+      "a"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 4,
+        "text": "the coffee shop",
+        "type": "location"
+      }
+    ],
+    "id": "21d3b648-a4fd-455c-a702-54bd17534de4",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "CONJ",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remind when arriving at the coffee shop",
+    "tokens": [
+      "remind",
+      "when",
+      "arriving",
+      "at",
+      "the",
+      "coffee",
+      "shop"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "22784dde-4427-4c5a-babe-f2c5c9403b0b",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "set geofence reminder for the office",
+    "tokens": [
+      "set",
+      "geofence",
+      "reminder",
+      "for",
+      "the",
+      "office"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 4,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "bc8a0d39-fd3a-4a0c-889b-04f715591ada",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET"
+    ],
+    "text": "set geofence reminder for conference room A",
+    "tokens": [
+      "set",
+      "geofence",
+      "reminder",
+      "for",
+      "conference",
+      "room",
+      "a"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "the office",
+        "type": "location"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "office",
+        "type": "location"
+      }
+    ],
+    "id": "8f59651a-42df-4ec5-94d1-835e7d288a61",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "remind me upon arrival at the office",
+    "tokens": [
+      "remind",
+      "me",
+      "upon",
+      "arrival",
+      "at",
+      "the",
+      "office"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "conference",
+        "type": "event_title"
+      },
+      {
+        "end": 7,
+        "start": 5,
+        "text": "conference room a",
+        "type": "location"
+      }
+    ],
+    "id": "f1e1806b-f512-4fa7-8cff-cc2739c37ab1",
+    "intent": "reminder.set.location_based",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "DET"
+    ],
+    "text": "remind me upon arrival at conference room A",
+    "tokens": [
+      "remind",
+      "me",
+      "upon",
+      "arrival",
+      "at",
+      "conference",
+      "room",
+      "a"
+    ]
+  }
+]

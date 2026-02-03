@@ -1,0 +1,302 @@
+[
+  {
+    "entities": [],
+    "id": "a2f05467-1403-46aa-8960-a749c1a96e79",
+    "intent": "alarm.stop",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "stop the alarm",
+    "tokens": [
+      "stop",
+      "the",
+      "alarm"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4f82e047-6984-489f-a4d8-eac323dccdda",
+    "intent": "alarm.stop",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "turn off the alarm",
+    "tokens": [
+      "turn",
+      "off",
+      "the",
+      "alarm"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "26f9d810-dee9-48ba-a6f3-699b87eda1b8",
+    "intent": "alarm.stop",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "stop alarm",
+    "tokens": [
+      "stop",
+      "alarm"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "aeebef7c-e0b1-494e-a20e-e5634eac610d",
+    "intent": "alarm.stop",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "dismiss alarm",
+    "tokens": [
+      "dismiss",
+      "alarm"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d22a3420-daf9-4f26-a2c3-3735592f7f6d",
+    "intent": "alarm.stop",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "turn it off",
+    "tokens": [
+      "turn",
+      "it",
+      "off"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c0d7af5c-8abd-487d-8594-9465dbddeb3b",
+    "intent": "alarm.stop",
+    "pos_tags": [
+      "NOUN"
+    ],
+    "text": "stop",
+    "tokens": [
+      "stop"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4c6115c1-4440-4d92-904a-df33c972218e",
+    "intent": "alarm.stop",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "alarm off",
+    "tokens": [
+      "alarm",
+      "off"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "85b19afb-737f-4e83-a6a8-5501cf157c69",
+    "intent": "alarm.stop",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "shut off the alarm",
+    "tokens": [
+      "shut",
+      "off",
+      "the",
+      "alarm"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ccea6bbc-7964-413c-8d76-cf0b951ee089",
+    "intent": "alarm.stop",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "dismiss the alarm",
+    "tokens": [
+      "dismiss",
+      "the",
+      "alarm"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "45100a1f-6d95-4782-8ef7-24598dbb8175",
+    "intent": "alarm.stop",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "silence the alarm",
+    "tokens": [
+      "silence",
+      "the",
+      "alarm"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "becb9907-37e2-4620-8ba1-0796dc749c82",
+    "intent": "alarm.stop",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "quiet the alarm",
+    "tokens": [
+      "quiet",
+      "the",
+      "alarm"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2aa4f5b9-870a-48ec-822d-dcd4fffb10e6",
+    "intent": "alarm.stop",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "make it stop",
+    "tokens": [
+      "make",
+      "it",
+      "stop"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3c3b5c95-f16f-4dea-a874-8614fc1f9a8e",
+    "intent": "alarm.stop",
+    "pos_tags": [
+      "NOUN"
+    ],
+    "text": "enough",
+    "tokens": [
+      "enough"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "61b80c6a-77a6-498a-b5b6-e054a233115e",
+    "intent": "alarm.stop",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "okay I'm up",
+    "tokens": [
+      "okay",
+      "i'm",
+      "up"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6b78ca14-2cd9-4074-94ea-a0553e84dff4",
+    "intent": "alarm.stop",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "stop ringing",
+    "tokens": [
+      "stop",
+      "ringing"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6af7cda6-3faa-42ac-a8c9-f38f88f11644",
+    "intent": "alarm.stop",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "turn off",
+    "tokens": [
+      "turn",
+      "off"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3553fa54-62d9-472b-8099-53a6b64c57af",
+    "intent": "alarm.stop",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "kill the alarm",
+    "tokens": [
+      "kill",
+      "the",
+      "alarm"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b2de2c10-7121-4f44-b66c-ceea776cacb7",
+    "intent": "alarm.stop",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "end alarm",
+    "tokens": [
+      "end",
+      "alarm"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1a75633d-8ccc-4b3c-a4ac-f001834b9935",
+    "intent": "alarm.stop",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "disable alarm",
+    "tokens": [
+      "disable",
+      "alarm"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3d234289-cbf6-4e63-8e62-0f20b5106728",
+    "intent": "alarm.stop",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "shut up",
+    "tokens": [
+      "shut",
+      "up"
+    ]
+  }
+]

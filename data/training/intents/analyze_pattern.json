@@ -1,0 +1,316 @@
+[
+  {
+    "entities": [],
+    "id": "8071a78b-90bb-46f4-b2cd-f370c9f5d7b1",
+    "intent": "analyze.pattern",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "find patterns in the data",
+    "tokens": [
+      "find",
+      "patterns",
+      "in",
+      "the",
+      "data"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9eaf3f08-359e-4cdb-aa64-55b06d2d5f26",
+    "intent": "analyze.pattern",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "pattern analysis",
+    "tokens": [
+      "pattern",
+      "analysis"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a270cd95-7e22-4782-bbdc-87ea0714fd1a",
+    "intent": "analyze.pattern",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "detect patterns",
+    "tokens": [
+      "detect",
+      "patterns"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ff6f71af-8e94-40a5-9cf1-4775ae9cda2d",
+    "intent": "analyze.pattern",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "analyze for patterns",
+    "tokens": [
+      "analyze",
+      "for",
+      "patterns"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c0c5c41d-a35c-4159-9024-173dd6d3e8cf",
+    "intent": "analyze.pattern",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "identify patterns",
+    "tokens": [
+      "identify",
+      "patterns"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7b1a4c57-8d19-4b2c-8b38-00b11ec2f14b",
+    "intent": "analyze.pattern",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "look for patterns",
+    "tokens": [
+      "look",
+      "for",
+      "patterns"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f220e797-8901-433e-8c86-d8031c4e09bf",
+    "intent": "analyze.pattern",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "pattern recognition",
+    "tokens": [
+      "pattern",
+      "recognition"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5a848af1-ec77-4152-a5e4-51f4634c268b",
+    "intent": "analyze.pattern",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "find recurring patterns",
+    "tokens": [
+      "find",
+      "recurring",
+      "patterns"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "86bb1818-b2fb-4001-ba40-132988db82fd",
+    "intent": "analyze.pattern",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "analyze patterns in {data_source}",
+    "tokens": [
+      "analyze",
+      "patterns",
+      "in",
+      "data_source"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "19c9c658-00c4-4063-be24-f42757b920a2",
+    "intent": "analyze.pattern",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "pattern detection",
+    "tokens": [
+      "pattern",
+      "detection"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b1f36a3c-e9d1-4732-80df-7f2d1bc30745",
+    "intent": "analyze.pattern",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "search for patterns",
+    "tokens": [
+      "search",
+      "for",
+      "patterns"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c52277dc-ab41-4072-9dd9-b3904c61db7a",
+    "intent": "analyze.pattern",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what patterns exist",
+    "tokens": [
+      "what",
+      "patterns",
+      "exist"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "defca3bf-cad6-4c7f-ba0a-bbedaf6bb487",
+    "intent": "analyze.pattern",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "identify data patterns",
+    "tokens": [
+      "identify",
+      "data",
+      "patterns"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "eb0fd287-2d20-44b7-b0fb-de8281b59c29",
+    "intent": "analyze.pattern",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "find the pattern",
+    "tokens": [
+      "find",
+      "the",
+      "pattern"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a1eb4d92-e294-430d-acbc-b779585f6d1a",
+    "intent": "analyze.pattern",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "patterns in {query_term}",
+    "tokens": [
+      "patterns",
+      "in",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a13b539a-b5e4-4fb9-8db3-789af1838c35",
+    "intent": "analyze.pattern",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "analyze pattern trends",
+    "tokens": [
+      "analyze",
+      "pattern",
+      "trends"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b985b957-0939-49ec-8e51-e3aa31ad0eef",
+    "intent": "analyze.pattern",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "detect recurring patterns",
+    "tokens": [
+      "detect",
+      "recurring",
+      "patterns"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8e882680-8cbc-41b9-8d09-a702fb313945",
+    "intent": "analyze.pattern",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "spot patterns",
+    "tokens": [
+      "spot",
+      "patterns"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6830f503-34b3-4607-bfd7-4e107cde525f",
+    "intent": "analyze.pattern",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "pattern identification",
+    "tokens": [
+      "pattern",
+      "identification"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6545dbec-23e2-4a79-9e6a-89a629cdb874",
+    "intent": "analyze.pattern",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "analyze for pattern recognition",
+    "tokens": [
+      "analyze",
+      "for",
+      "pattern",
+      "recognition"
+    ]
+  }
+]

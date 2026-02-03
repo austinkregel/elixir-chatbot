@@ -1,0 +1,38 @@
+[
+  {
+    "value": "January to March",
+    "synonyms": ["January to March", "Jan to Mar", "Q1", "first quarter"]
+  },
+  {
+    "value": "April to June",
+    "synonyms": ["April to June", "Apr to Jun", "Q2", "second quarter"]
+  },
+  {
+    "value": "July to September",
+    "synonyms": ["July to September", "Jul to Sep", "Q3", "third quarter"]
+  },
+  {
+    "value": "October to December",
+    "synonyms": ["October to December", "Oct to Dec", "Q4", "fourth quarter"]
+  },
+  {
+    "value": "last week",
+    "synonyms": ["last week", "past week", "previous week"]
+  },
+  {
+    "value": "last month",
+    "synonyms": ["last month", "past month", "previous month"]
+  },
+  {
+    "value": "last year",
+    "synonyms": ["last year", "past year", "previous year"]
+  },
+  {
+    "value": "year to date",
+    "synonyms": ["year to date", "YTD", "this year so far"]
+  },
+  {
+    "value": "all time",
+    "synonyms": ["all time", "ever", "entire history"]
+  }
+]

@@ -1,0 +1,310 @@
+[
+  {
+    "entities": [],
+    "id": "b4d4bde0-bdd6-46dc-ae3e-5bafb05e69e7",
+    "intent": "compute.sum",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "sum these values",
+    "tokens": [
+      "sum",
+      "these",
+      "values"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9d864c91-6ccf-45f0-bf3d-1c11b61ef224",
+    "intent": "compute.sum",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "add up the total",
+    "tokens": [
+      "add",
+      "up",
+      "the",
+      "total"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8933f2c4-b6df-48a3-aefe-28d8164bbc56",
+    "intent": "compute.sum",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "total sum",
+    "tokens": [
+      "total",
+      "sum"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ca653cdd-5390-4dfa-ae40-933d502d863f",
+    "intent": "compute.sum",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "sum of {query_term}",
+    "tokens": [
+      "sum",
+      "of",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "50caee0c-64d0-43e1-84e1-20d4f4baa103",
+    "intent": "compute.sum",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "add these numbers",
+    "tokens": [
+      "add",
+      "these",
+      "numbers"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8bf42af0-d24a-4ae6-a7fe-687d0ffe5a16",
+    "intent": "compute.sum",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "calculate the sum",
+    "tokens": [
+      "calculate",
+      "the",
+      "sum"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "829b72e8-9874-44e3-a1da-c0df4ed16e99",
+    "intent": "compute.sum",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "total of all",
+    "tokens": [
+      "total",
+      "of",
+      "all"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "84701a28-fd60-4fd0-974f-cb0d0c0f4486",
+    "intent": "compute.sum",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "sum it up",
+    "tokens": [
+      "sum",
+      "it",
+      "up"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "17e99009-34c0-458d-975f-7527e71c8159",
+    "intent": "compute.sum",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "add up",
+    "tokens": [
+      "add",
+      "up"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "942ee8f4-853b-4309-9b77-e7cb945706df",
+    "intent": "compute.sum",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "get the total",
+    "tokens": [
+      "get",
+      "the",
+      "total"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a901a8ef-3d7f-4e3f-a1fb-6a9c6c388b23",
+    "intent": "compute.sum",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "sum all values",
+    "tokens": [
+      "sum",
+      "all",
+      "values"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4b489429-2100-450d-9ce1-a28a835e731d",
+    "intent": "compute.sum",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "total calculation",
+    "tokens": [
+      "total",
+      "calculation"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f7864240-db08-4f0e-9194-567407a080e0",
+    "intent": "compute.sum",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "sum the numbers",
+    "tokens": [
+      "sum",
+      "the",
+      "numbers"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "526aa730-f156-49ef-9700-fdca73534087",
+    "intent": "compute.sum",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "add together",
+    "tokens": [
+      "add",
+      "together"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8ea460f5-b59d-48ff-952c-eb130709f053",
+    "intent": "compute.sum",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "cumulative sum",
+    "tokens": [
+      "cumulative",
+      "sum"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "38e26928-9c29-4da3-9a3d-5a1dedcf0846",
+    "intent": "compute.sum",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "aggregate total",
+    "tokens": [
+      "aggregate",
+      "total"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4ee9ee2f-711e-41f9-afe3-01b6e488d2c1",
+    "intent": "compute.sum",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "sum of the data",
+    "tokens": [
+      "sum",
+      "of",
+      "the",
+      "data"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3325720b-c7c6-4791-b81b-eb737e686090",
+    "intent": "compute.sum",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "add all",
+    "tokens": [
+      "add",
+      "all"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "06641388-6719-4262-96f5-ae9fb72b221b",
+    "intent": "compute.sum",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "calculate total sum",
+    "tokens": [
+      "calculate",
+      "total",
+      "sum"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3868eac9-6d84-45bb-a8af-b918b9591948",
+    "intent": "compute.sum",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "running total",
+    "tokens": [
+      "running",
+      "total"
+    ]
+  }
+]

@@ -35,7 +35,7 @@ defmodule Brain.ML.IntentClassifier do
   Returns {:ok, models} or {:error, reason}.
   """
   def load_models do
-    models_path = Application.get_env(:brain, :ml)[:models_path]
+    models_path = Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")
 
     with {:ok, vectorizer} <- load_vectorizer(models_path),
          {:ok, svm_model} <- load_svm_model(models_path) do

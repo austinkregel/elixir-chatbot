@@ -53,6 +53,7 @@ defmodule Brain.SystemStatus do
     Brain.Memory.Embedder => :memory_embed,
     Brain.Memory.Store => :memory_query,
     Brain.ML.Gazetteer => :gazetteer_lookup,
+    Brain.ML.EntityExtractor => :entity_extract,
     Brain.Knowledge.LearningCenter => :knowledge_research,
     Brain.Knowledge.ReviewQueue => :knowledge_review,
     Brain.Epistemic.JTMS => :jtms_justify,
@@ -692,14 +693,80 @@ defmodule Brain.SystemStatus do
       Brain.priv_path("ml_models")
   end
 
+  # Check if the gazetteer.term file is loaded by the Gazetteer GenServer
+  defp get_model_file_status(models_path, "gazetteer.term" = filename) do
+    path = Path.join(models_path, filename)
+    
+    is_loaded = 
+      try do
+        Brain.ML.Gazetteer.loaded?()
+      catch
+        :exit, _ -> false
+      end
+
+    build_model_file_status(path, is_loaded)
+  end
+
+  # Check if the classifier.term file is loaded by the IntentClassifierSimple GenServer
+  defp get_model_file_status(models_path, "classifier.term" = filename) do
+    path = Path.join(models_path, filename)
+    
+    is_loaded = 
+      try do
+        Brain.ML.IntentClassifierSimple.is_loaded?()
+      catch
+        :exit, _ -> false
+      end
+
+    build_model_file_status(path, is_loaded)
+  end
+
+  # POS model - loaded on-demand, check if file is valid and loadable
+  defp get_model_file_status(models_path, "pos_model.term" = filename) do
+    path = Path.join(models_path, filename)
+    
+    is_loaded = 
+      try do
+        case Brain.ML.POSTagger.load_model(path) do
+          {:ok, _model} -> true
+          _ -> false
+        end
+      catch
+        :exit, _ -> false
+      end
+
+    build_model_file_status(path, is_loaded)
+  end
+
+  # Entity model - loaded on-demand, check if file is valid and loadable
+  defp get_model_file_status(models_path, "entity_model.term" = filename) do
+    path = Path.join(models_path, filename)
+    
+    is_loaded = 
+      try do
+        case Brain.ML.EntityTrainer.load_model() do
+          {:ok, _model} -> true
+          _ -> false
+        end
+      catch
+        :exit, _ -> false
+      end
+
+    build_model_file_status(path, is_loaded)
+  end
+
+  # Other model files - just check if file exists
   defp get_model_file_status(models_path, filename) do
     path = Path.join(models_path, filename)
+    build_model_file_status(path, false)
+  end
 
+  defp build_model_file_status(path, is_loaded) do
     case File.stat(path) do
       {:ok, stat} ->
         %{
           exists: true,
-          loaded: false,
+          loaded: is_loaded,
           size_bytes: stat.size,
           modified_at: stat.mtime |> NaiveDateTime.from_erl!() |> DateTime.from_naive!("Etc/UTC"),
           path: path
@@ -713,6 +780,37 @@ defmodule Brain.SystemStatus do
           modified_at: nil,
           path: path
         }
+    end
+  end
+
+  # Specialized status check for EntityExtractor (GenServer with is_loaded? API)
+  defp get_agent_status(Brain.ML.EntityExtractor = module) do
+    pid = Process.whereis(module)
+
+    if pid do
+      process_info = get_process_info(pid)
+      
+      # EntityExtractor has its own is_loaded? method that checks if maps are loaded
+      is_loaded = 
+        try do
+          Brain.ML.EntityExtractor.is_loaded?()
+        catch
+          :exit, _ -> false
+        end
+
+      %{
+        loaded: is_loaded,
+        pid: pid,
+        memory_bytes: process_info[:memory],
+        message_queue_len: process_info[:message_queue_len]
+      }
+    else
+      %{
+        loaded: false,
+        pid: nil,
+        memory_bytes: nil,
+        message_queue_len: nil
+      }
     end
   end
 

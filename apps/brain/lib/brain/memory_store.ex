@@ -175,7 +175,10 @@ defmodule Brain.MemoryStore do
   # Private Functions
 
   defp get_memory_dir do
-    Application.get_env(:brain, :memory_dir, Brain.priv_path("memory"))
+    case Application.get_env(:brain, :memory_dir) do
+      nil -> Brain.priv_path("memory")
+      dir -> dir
+    end
   end
 
   defp get_memory_file_path(persona_name) do

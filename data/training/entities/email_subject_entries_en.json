@@ -1,0 +1,34 @@
+[
+  {
+    "value": "meeting follow-up",
+    "synonyms": ["meeting follow-up", "meeting followup", "follow up on meeting", "re: meeting"]
+  },
+  {
+    "value": "project update",
+    "synonyms": ["project update", "status update", "progress report", "project status"]
+  },
+  {
+    "value": "quick question",
+    "synonyms": ["quick question", "question", "a quick question", "brief question"]
+  },
+  {
+    "value": "thank you",
+    "synonyms": ["thank you", "thanks", "appreciation", "grateful"]
+  },
+  {
+    "value": "introduction",
+    "synonyms": ["introduction", "intro", "nice to meet you", "introducing myself"]
+  },
+  {
+    "value": "request",
+    "synonyms": ["request", "asking for", "need", "seeking"]
+  },
+  {
+    "value": "reminder",
+    "synonyms": ["reminder", "friendly reminder", "gentle reminder", "just a reminder"]
+  },
+  {
+    "value": "urgent",
+    "synonyms": ["urgent", "urgent request", "time sensitive", "immediate attention"]
+  }
+]

@@ -1,0 +1,320 @@
+[
+  {
+    "entities": [],
+    "id": "29c6eca6-64d3-47bf-9c01-40d1336d60a2",
+    "intent": "random.choice",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "CONJ",
+      "NOUN"
+    ],
+    "text": "pick between {topic} and {topic}",
+    "tokens": [
+      "pick",
+      "between",
+      "topic",
+      "and",
+      "topic"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0e87a9fe-d841-43ce-a231-69287e27f98a",
+    "intent": "random.choice",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "CONJ",
+      "NOUN"
+    ],
+    "text": "choose between {topic} or {topic}",
+    "tokens": [
+      "choose",
+      "between",
+      "topic",
+      "or",
+      "topic"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c05f3e4a-8385-4f37-ba80-e56527798105",
+    "intent": "random.choice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "random choice",
+    "tokens": [
+      "random",
+      "choice"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0f3a2996-0018-4bed-8d70-130a8eaaa920",
+    "intent": "random.choice",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "help me decide",
+    "tokens": [
+      "help",
+      "me",
+      "decide"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e6346732-c00c-48d6-b7b9-ad778859410e",
+    "intent": "random.choice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "pick one",
+    "tokens": [
+      "pick",
+      "one"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5027153f-9e0b-448a-ae9e-64f176d525a4",
+    "intent": "random.choice",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "which should I choose",
+    "tokens": [
+      "which",
+      "should",
+      "i",
+      "choose"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1798e852-bde8-41c1-a1eb-84a8ab3b087b",
+    "intent": "random.choice",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "make a choice",
+    "tokens": [
+      "make",
+      "a",
+      "choice"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8b06c34f-ed62-46af-be92-f7281781a691",
+    "intent": "random.choice",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "text": "decide for me",
+    "tokens": [
+      "decide",
+      "for",
+      "me"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1e390f9e-c6c0-4b8b-94ca-4bf05e36b9bd",
+    "intent": "random.choice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "random pick",
+    "tokens": [
+      "random",
+      "pick"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "dca10628-9788-46c0-9a50-5c9b89a0f7ff",
+    "intent": "random.choice",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "text": "choose for me",
+    "tokens": [
+      "choose",
+      "for",
+      "me"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "03683eb4-2a1d-44a8-8e88-539e96306f00",
+    "intent": "random.choice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "pick something",
+    "tokens": [
+      "pick",
+      "something"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e65166af-24f3-41dc-a219-373c68a116db",
+    "intent": "random.choice",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "help me pick",
+    "tokens": [
+      "help",
+      "me",
+      "pick"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0907d29f-1fc6-4838-a614-1d2fcbf465bc",
+    "intent": "random.choice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "random selection",
+    "tokens": [
+      "random",
+      "selection"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "70e9d11d-409f-4429-818c-1412c2916d6b",
+    "intent": "random.choice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "which one",
+    "tokens": [
+      "which",
+      "one"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f7363f7c-8c68-4953-8b1c-d760abfd9780",
+    "intent": "random.choice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "CONJ",
+      "NOUN"
+    ],
+    "text": "either {topic} or {topic}",
+    "tokens": [
+      "either",
+      "topic",
+      "or",
+      "topic"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0d879839-527d-43b0-aa19-3cbbc04affc2",
+    "intent": "random.choice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "select one",
+    "tokens": [
+      "select",
+      "one"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2f842512-5d48-4359-b2bd-8cee0c9d42a7",
+    "intent": "random.choice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "text": "choose one for me",
+    "tokens": [
+      "choose",
+      "one",
+      "for",
+      "me"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "36cf7275-e30d-49c5-a998-82a6d570f148",
+    "intent": "random.choice",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "make the decision",
+    "tokens": [
+      "make",
+      "the",
+      "decision"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d953d51c-d196-4dd0-ae3f-0e9dac6cf7b6",
+    "intent": "random.choice",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "I can't decide",
+    "tokens": [
+      "i",
+      "can't",
+      "decide"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "85db0719-3c59-4a35-a237-3225504021ba",
+    "intent": "random.choice",
+    "pos_tags": [
+      "PRON",
+      "NOUN"
+    ],
+    "text": "you pick",
+    "tokens": [
+      "you",
+      "pick"
+    ]
+  }
+]

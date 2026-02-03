@@ -134,9 +134,11 @@ defmodule Brain.Epistemic.ContradictionHandler do
 
   @impl true
   def handle_info(:register_builtin_rules, state) do
-    # Register the knowledge expansion rule
+    # Register built-in contradiction resolution rules
     new_rules =
-      Map.put(state.rules, :knowledge_expansion, &handle_knowledge_expansion_conflict/2)
+      state.rules
+      |> Map.put(:knowledge_expansion, &handle_knowledge_expansion_conflict/2)
+      |> Map.put(:academic_papers, &handle_academic_paper_conflict/2)
 
     {:noreply, %{state | rules: new_rules}}
   end
@@ -304,6 +306,72 @@ defmodule Brain.Epistemic.ContradictionHandler do
 
       _ ->
         :not_knowledge_expansion
+    end
+  end
+
+  # Academic Papers rule: when papers from different sources conflict,
+  # use citation count to determine which claim to prefer.
+  # Papers with significantly more citations (2x+) are considered more reliable.
+  defp handle_academic_paper_conflict(_node_id, assumptions) do
+    # Get paper metadata for each assumption node
+    papers =
+      assumptions
+      |> Enum.map(fn id ->
+        case JTMS.get_node(id) do
+          {:ok, node} ->
+            metadata = node.metadata || %{}
+
+            if Map.get(metadata, :source) == :academic do
+              {id, metadata}
+            else
+              nil
+            end
+
+          _ ->
+            nil
+        end
+      end)
+      |> Enum.reject(&is_nil/1)
+
+    # Only apply this rule if we have multiple academic sources
+    if length(papers) >= 2 do
+      # Sort by citation count (descending)
+      sorted =
+        papers
+        |> Enum.sort_by(fn {_, meta} ->
+          Map.get(meta, :citation_count, 0)
+        end, :desc)
+
+      case sorted do
+        [{_winner_id, winner_meta}, {loser_id, loser_meta} | _] ->
+          winner_cites = Map.get(winner_meta, :citation_count, 0)
+          loser_cites = Map.get(loser_meta, :citation_count, 0)
+
+          # If winner has 2x+ citations, auto-resolve by retracting lower-cited claim
+          if winner_cites > 0 and winner_cites > loser_cites * 2 do
+            Logger.info("Resolving academic conflict by citation count",
+              winner_citations: winner_cites,
+              loser_citations: loser_cites,
+              retracted_id: loser_id
+            )
+
+            {:resolve, loser_id}
+          else
+            # Too close to call automatically - queue for human review
+            Logger.info("Academic conflict too close to auto-resolve",
+              winner_citations: winner_cites,
+              loser_citations: loser_cites
+            )
+
+            :no_match
+          end
+
+        _ ->
+          :no_match
+      end
+    else
+      # Not enough academic sources to apply this rule
+      :no_match
     end
   end
 

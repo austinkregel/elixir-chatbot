@@ -1,0 +1,62 @@
+[
+  {
+    "value": "meeting",
+    "synonyms": ["meeting", "team meeting", "staff meeting", "group meeting"]
+  },
+  {
+    "value": "dentist appointment",
+    "synonyms": ["dentist appointment", "dentist", "dental appointment", "dental checkup"]
+  },
+  {
+    "value": "doctor appointment",
+    "synonyms": ["doctor appointment", "doctor's appointment", "medical appointment", "checkup"]
+  },
+  {
+    "value": "lunch",
+    "synonyms": ["lunch", "lunch meeting", "lunch break", "midday meal"]
+  },
+  {
+    "value": "dinner",
+    "synonyms": ["dinner", "dinner date", "dinner party", "evening meal"]
+  },
+  {
+    "value": "conference call",
+    "synonyms": ["conference call", "conference", "call", "video call", "zoom call", "team call"]
+  },
+  {
+    "value": "interview",
+    "synonyms": ["interview", "job interview", "phone interview"]
+  },
+  {
+    "value": "birthday party",
+    "synonyms": ["birthday party", "birthday", "bday", "birthday celebration"]
+  },
+  {
+    "value": "workout",
+    "synonyms": ["workout", "gym", "exercise", "training", "fitness class"]
+  },
+  {
+    "value": "standup",
+    "synonyms": ["standup", "daily standup", "scrum", "daily scrum", "team standup"]
+  },
+  {
+    "value": "presentation",
+    "synonyms": ["presentation", "demo", "demonstration", "pitch"]
+  },
+  {
+    "value": "review",
+    "synonyms": ["review", "performance review", "code review", "quarterly review"]
+  },
+  {
+    "value": "training",
+    "synonyms": ["training", "training session", "workshop", "seminar"]
+  },
+  {
+    "value": "appointment",
+    "synonyms": ["appointment", "scheduled appointment"]
+  },
+  {
+    "value": "flight",
+    "synonyms": ["flight", "plane", "airplane", "departure"]
+  }
+]

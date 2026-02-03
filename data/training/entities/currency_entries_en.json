@@ -1,0 +1,50 @@
+[
+  {
+    "value": "USD",
+    "synonyms": ["USD", "US dollars", "dollars", "American dollars", "$"]
+  },
+  {
+    "value": "EUR",
+    "synonyms": ["EUR", "euros", "euro", "€"]
+  },
+  {
+    "value": "GBP",
+    "synonyms": ["GBP", "British pounds", "pounds", "pounds sterling", "£"]
+  },
+  {
+    "value": "JPY",
+    "synonyms": ["JPY", "Japanese yen", "yen", "¥"]
+  },
+  {
+    "value": "CAD",
+    "synonyms": ["CAD", "Canadian dollars", "Canadian"]
+  },
+  {
+    "value": "AUD",
+    "synonyms": ["AUD", "Australian dollars", "Australian"]
+  },
+  {
+    "value": "CHF",
+    "synonyms": ["CHF", "Swiss francs", "francs"]
+  },
+  {
+    "value": "CNY",
+    "synonyms": ["CNY", "Chinese yuan", "yuan", "renminbi", "RMB"]
+  },
+  {
+    "value": "INR",
+    "synonyms": ["INR", "Indian rupees", "rupees"]
+  },
+  {
+    "value": "MXN",
+    "synonyms": ["MXN", "Mexican pesos", "pesos"]
+  },
+  {
+    "value": "BTC",
+    "synonyms": ["BTC", "bitcoin", "bitcoins"]
+  },
+  {
+    "value": "ETH",
+    "synonyms": ["ETH", "ethereum", "ether"]
+  }
+]

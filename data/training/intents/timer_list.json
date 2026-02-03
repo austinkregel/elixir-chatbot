@@ -1,0 +1,310 @@
+[
+  {
+    "entities": [],
+    "id": "db8e010b-5c6b-4c5c-b62f-e73e309e3577",
+    "intent": "timer.list",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "show my timers",
+    "tokens": [
+      "show",
+      "my",
+      "timers"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "248a40ba-a824-483a-b107-b88611e530ca",
+    "intent": "timer.list",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "list timers",
+    "tokens": [
+      "list",
+      "timers"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1051c055-483d-4655-b26e-9a54a9e80d8f",
+    "intent": "timer.list",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "NOUN"
+    ],
+    "text": "what timers are running",
+    "tokens": [
+      "what",
+      "timers",
+      "are",
+      "running"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "50ab8808-50a4-41d2-b61b-13c5fd984dcd",
+    "intent": "timer.list",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show all timers",
+    "tokens": [
+      "show",
+      "all",
+      "timers"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d234370d-0680-4ca9-b9b3-15218b83a97d",
+    "intent": "timer.list",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "list my timers",
+    "tokens": [
+      "list",
+      "my",
+      "timers"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "cf388091-9175-4c21-8073-72fe2ac11ee4",
+    "intent": "timer.list",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "active timers",
+    "tokens": [
+      "active",
+      "timers"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4874247e-28c6-4ed9-8789-79bc3c0ccde6",
+    "intent": "timer.list",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "display timers",
+    "tokens": [
+      "display",
+      "timers"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "78a21556-bffd-4adf-98d9-5c55ed5006eb",
+    "intent": "timer.list",
+    "pos_tags": [
+      "PRON",
+      "NOUN"
+    ],
+    "text": "my timers",
+    "tokens": [
+      "my",
+      "timers"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "63104369-f945-4323-80f8-7f8fd508b62a",
+    "intent": "timer.list",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "running timers",
+    "tokens": [
+      "running",
+      "timers"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9d4b076f-a250-4ee9-bf0c-52ab18460622",
+    "intent": "timer.list",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "show timers",
+    "tokens": [
+      "show",
+      "timers"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1d8364a6-6935-4986-982f-bf1b0b4b2a22",
+    "intent": "timer.list",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "AUX"
+    ],
+    "text": "what timers do I have",
+    "tokens": [
+      "what",
+      "timers",
+      "do",
+      "i",
+      "have"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "87816993-f021-446e-aee2-e2f4948ba409",
+    "intent": "timer.list",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "all timers",
+    "tokens": [
+      "all",
+      "timers"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "64465800-d8b7-4e76-b7d2-da6db4cb4766",
+    "intent": "timer.list",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "view my timers",
+    "tokens": [
+      "view",
+      "my",
+      "timers"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "82454040-6a40-40fa-a18a-32707842fd60",
+    "intent": "timer.list",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "check all timers",
+    "tokens": [
+      "check",
+      "all",
+      "timers"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "fa243864-f5f4-46e9-906b-cd8282a24502",
+    "intent": "timer.list",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "list all timers",
+    "tokens": [
+      "list",
+      "all",
+      "timers"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5148c546-5e1e-4dd6-953d-f6d5168727f6",
+    "intent": "timer.list",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "see my timers",
+    "tokens": [
+      "see",
+      "my",
+      "timers"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "09a3fd62-3fb7-4a3b-9baa-4a25203cb0cb",
+    "intent": "timer.list",
+    "pos_tags": [
+      "NOUN",
+      "VERB"
+    ],
+    "text": "timer list",
+    "tokens": [
+      "timer",
+      "list"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "093cd134-2dae-45ca-913d-b46edeff0555",
+    "intent": "timer.list",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "current timers",
+    "tokens": [
+      "current",
+      "timers"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "fa797f62-d567-40ad-ad5d-1bb93b37ddab",
+    "intent": "timer.list",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "show running timers",
+    "tokens": [
+      "show",
+      "running",
+      "timers"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "09aef1ac-d363-4d3f-a7ca-5ccb83ddda9a",
+    "intent": "timer.list",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "display all timers",
+    "tokens": [
+      "display",
+      "all",
+      "timers"
+    ]
+  }
+]

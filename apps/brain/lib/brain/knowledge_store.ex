@@ -598,7 +598,10 @@ defmodule Brain.KnowledgeStore do
   # Private Functions
 
   defp get_knowledge_dir do
-    Application.get_env(:brain, :knowledge_dir, Brain.priv_path("knowledge"))
+    case Application.get_env(:brain, :knowledge_dir) do
+      nil -> Brain.priv_path("knowledge")
+      dir -> dir
+    end
   end
 
   defp get_knowledge_file_path(persona_name) do

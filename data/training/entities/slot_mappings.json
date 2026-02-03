@@ -119,6 +119,366 @@
         "entity_types": ["music-service"],
         "description": "Preferred music streaming service"
       }
+    },
+    {
+      "value": "duration",
+      "synonyms": ["time_duration", "time_period", "length"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["duration", "time_length"],
+        "entity_types": ["duration"],
+        "description": "Time duration for timers, meetings, etc."
+      }
+    },
+    {
+      "value": "priority",
+      "synonyms": ["importance", "urgency"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["priority", "task_priority"],
+        "entity_types": ["priority"],
+        "description": "Task priority level (high, medium, low)"
+      }
+    },
+    {
+      "value": "event_title",
+      "synonyms": ["event_name", "appointment_name", "meeting_name"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["event_title", "event_name"],
+        "entity_types": ["event_title"],
+        "description": "Calendar event or appointment name"
+      }
+    },
+    {
+      "value": "task_content",
+      "synonyms": ["task_name", "task_description", "todo_item"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["task_content", "task_name"],
+        "entity_types": ["task_content"],
+        "description": "Task or todo item content"
+      }
+    },
+    {
+      "value": "project",
+      "synonyms": ["list_name", "category", "folder"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["project", "list_name"],
+        "entity_types": ["project"],
+        "description": "Project or list for organizing tasks"
+      }
+    },
+    {
+      "value": "reminder_content",
+      "synonyms": ["reminder_text", "reminder_message"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["reminder_content", "reminder_text"],
+        "entity_types": ["reminder_content"],
+        "description": "Content of a reminder"
+      }
+    },
+    {
+      "value": "email_address",
+      "synonyms": ["email", "email_addr"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["email_address", "email"],
+        "entity_types": ["email_address"],
+        "description": "Email address"
+      }
+    },
+    {
+      "value": "email_subject",
+      "synonyms": ["subject", "subject_line"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["email_subject", "subject"],
+        "entity_types": ["email_subject"],
+        "description": "Email subject line"
+      }
+    },
+    {
+      "value": "phone_number",
+      "synonyms": ["phone", "number", "telephone"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["phone_number", "phone"],
+        "entity_types": ["phone_number"],
+        "description": "Phone number for calls"
+      }
+    },
+    {
+      "value": "movie_title",
+      "synonyms": ["movie", "film", "film_title"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["movie_title", "movie"],
+        "entity_types": ["movie_title"],
+        "description": "Movie or film title"
+      }
+    },
+    {
+      "value": "tv_show",
+      "synonyms": ["show", "series", "tv_series"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["tv_show", "show"],
+        "entity_types": ["tv_show"],
+        "description": "TV show or series name"
+      }
+    },
+    {
+      "value": "actor",
+      "synonyms": ["actress", "performer", "star"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["actor", "favorite_actor"],
+        "entity_types": ["actor"],
+        "description": "Actor or actress name"
+      }
+    },
+    {
+      "value": "director",
+      "synonyms": ["filmmaker"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["director", "favorite_director"],
+        "entity_types": ["director"],
+        "description": "Film director name"
+      }
+    },
+    {
+      "value": "sports_team",
+      "synonyms": ["team", "club"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["sports_team", "favorite_team"],
+        "entity_types": ["sports_team"],
+        "description": "Sports team name"
+      }
+    },
+    {
+      "value": "sports_league",
+      "synonyms": ["league", "conference"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["sports_league"],
+        "entity_types": ["sports_league"],
+        "description": "Sports league name"
+      }
+    },
+    {
+      "value": "language",
+      "synonyms": ["lang", "tongue"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["language", "target_language"],
+        "entity_types": ["language"],
+        "description": "Language for translation"
+      }
+    },
+    {
+      "value": "currency",
+      "synonyms": ["money", "currency_code"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["currency", "preferred_currency"],
+        "entity_types": ["currency"],
+        "description": "Currency type"
+      }
+    },
+    {
+      "value": "unit_from",
+      "synonyms": ["source_unit", "from_unit"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["unit_from", "source_unit"],
+        "entity_types": ["unit_from"],
+        "description": "Source unit for conversion"
+      }
+    },
+    {
+      "value": "unit_to",
+      "synonyms": ["target_unit", "to_unit"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["unit_to", "target_unit"],
+        "entity_types": ["unit_to"],
+        "description": "Target unit for conversion"
+      }
+    },
+    {
+      "value": "book_title",
+      "synonyms": ["book", "novel"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["book_title", "book"],
+        "entity_types": ["book_title"],
+        "description": "Book or novel title"
+      }
+    },
+    {
+      "value": "word",
+      "synonyms": ["term", "vocabulary"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["word", "term"],
+        "entity_types": ["word"],
+        "description": "Word for definition or translation"
+      }
+    },
+    {
+      "value": "math_expression",
+      "synonyms": ["equation", "formula", "calculation"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["math_expression", "expression"],
+        "entity_types": ["math_expression"],
+        "description": "Mathematical expression to calculate"
+      }
+    },
+    {
+      "value": "section_id",
+      "synonyms": ["section", "area", "region"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["section_id", "section"],
+        "entity_types": ["section_id"],
+        "description": "Display section or area identifier"
+      }
+    },
+    {
+      "value": "magnification_level",
+      "synonyms": ["zoom_level", "magnification"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["magnification_level", "zoom"],
+        "entity_types": ["magnification_level"],
+        "description": "Zoom or magnification level"
+      }
+    },
+    {
+      "value": "time_index",
+      "synonyms": ["timestamp", "time_marker"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["time_index", "timestamp"],
+        "entity_types": ["time_index"],
+        "description": "Time marker in recordings"
+      }
+    },
+    {
+      "value": "file_name",
+      "synonyms": ["filename", "document_name", "file"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["file_name", "filename"],
+        "entity_types": ["file_name"],
+        "description": "File or document name"
+      }
+    },
+    {
+      "value": "data_source",
+      "synonyms": ["database", "source", "data_store"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["data_source", "database"],
+        "entity_types": ["data_source"],
+        "description": "Data source or database name"
+      }
+    },
+    {
+      "value": "query_term",
+      "synonyms": ["search_term", "keyword", "query"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["query_term", "search_query"],
+        "entity_types": ["query_term"],
+        "description": "Search query or keyword"
+      }
+    },
+    {
+      "value": "search_scope",
+      "synonyms": ["scope", "search_range"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["search_scope", "scope"],
+        "entity_types": ["search_scope"],
+        "description": "Search scope or boundary"
+      }
+    },
+    {
+      "value": "date_range",
+      "synonyms": ["time_range", "period"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["date_range", "time_range"],
+        "entity_types": ["date_range"],
+        "description": "Date range for queries"
+      }
+    },
+    {
+      "value": "metric_name",
+      "synonyms": ["metric", "measurement", "kpi"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["metric_name", "metric"],
+        "entity_types": ["metric_name"],
+        "description": "Metric or measurement name"
+      }
+    },
+    {
+      "value": "comparison_target",
+      "synonyms": ["baseline", "benchmark"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["comparison_target", "baseline"],
+        "entity_types": ["comparison_target"],
+        "description": "Target for comparison"
+      }
+    },
+    {
+      "value": "analysis_type",
+      "synonyms": ["analysis_method", "analysis_kind"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["analysis_type"],
+        "entity_types": ["analysis_type"],
+        "description": "Type of analysis to perform"
+      }
+    },
+    {
+      "value": "system_name",
+      "synonyms": ["system", "service_name", "server"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["system_name", "system"],
+        "entity_types": ["system_name"],
+        "description": "System or service name"
+      }
+    },
+    {
+      "value": "process_name",
+      "synonyms": ["process", "job", "task"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["process_name", "process"],
+        "entity_types": ["process_name"],
+        "description": "Process or job name"
+      }
+    },
+    {
+      "value": "resource_type",
+      "synonyms": ["resource", "resource_kind"],
+      "entity_type": "slot_mapping",
+      "metadata": {
+        "user_model_keys": ["resource_type", "resource"],
+        "entity_types": ["resource_type"],
+        "description": "Type of system resource"
+      }
     }
   ]
 }

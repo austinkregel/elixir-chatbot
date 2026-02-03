@@ -1,0 +1,34 @@
+[
+  {
+    "value": "revenue",
+    "synonyms": ["revenue", "income", "sales revenue"]
+  },
+  {
+    "value": "error messages",
+    "synonyms": ["error messages", "errors", "error logs"]
+  },
+  {
+    "value": "customer complaints",
+    "synonyms": ["customer complaints", "complaints", "customer issues"]
+  },
+  {
+    "value": "login attempts",
+    "synonyms": ["login attempts", "logins", "authentication attempts"]
+  },
+  {
+    "value": "product sales",
+    "synonyms": ["product sales", "item sales", "sold items"]
+  },
+  {
+    "value": "user signups",
+    "synonyms": ["user signups", "new users", "registrations"]
+  },
+  {
+    "value": "performance metrics",
+    "synonyms": ["performance metrics", "performance data", "KPIs"]
+  },
+  {
+    "value": "refunds",
+    "synonyms": ["refunds", "returns", "refund requests"]
+  }
+]

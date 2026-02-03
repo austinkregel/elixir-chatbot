@@ -1,0 +1,360 @@
+[
+  {
+    "entities": [],
+    "id": "c7147809-2d04-461b-9398-d46b8fbcd90f",
+    "intent": "search.find_in_database",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "search the database for {query_term}",
+    "tokens": [
+      "search",
+      "the",
+      "database",
+      "for",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f51118da-3663-4798-8064-1b1347cc87ea",
+    "intent": "search.find_in_database",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "find {query_term} in the database",
+    "tokens": [
+      "find",
+      "query_term",
+      "in",
+      "the",
+      "database"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "418675d3-48eb-46e9-a30c-840248db2cf2",
+    "intent": "search.find_in_database",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "database search {query_term}",
+    "tokens": [
+      "database",
+      "search",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "17fa56c9-ed22-405d-9488-d3a75c2a2bf4",
+    "intent": "search.find_in_database",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "query database for {query_term}",
+    "tokens": [
+      "query",
+      "database",
+      "for",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "049292c6-8fad-4ec7-aedf-3c6513dbd25e",
+    "intent": "search.find_in_database",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "look up {query_term} in database",
+    "tokens": [
+      "look",
+      "up",
+      "query_term",
+      "in",
+      "database"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "70bded44-7992-4673-ae65-9ad56cf2bfca",
+    "intent": "search.find_in_database",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "search {data_source} for {query_term}",
+    "tokens": [
+      "search",
+      "data_source",
+      "for",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "cae9218f-235d-4b75-b208-f7dad90c21df",
+    "intent": "search.find_in_database",
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "find in database {query_term}",
+    "tokens": [
+      "find",
+      "in",
+      "database",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f2371a37-dc8a-4f69-bccf-dd5cebb75bba",
+    "intent": "search.find_in_database",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "database query {query_term}",
+    "tokens": [
+      "database",
+      "query",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4946cb51-9b8e-4b66-9c57-8394d9251722",
+    "intent": "search.find_in_database",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "search records for {query_term}",
+    "tokens": [
+      "search",
+      "records",
+      "for",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "fbf10d8d-7fd1-414b-952d-65ddefc1150a",
+    "intent": "search.find_in_database",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "find {query_term} in records",
+    "tokens": [
+      "find",
+      "query_term",
+      "in",
+      "records"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e33b77cb-6984-4f4d-a3e5-4ab298b2eda2",
+    "intent": "search.find_in_database",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "query {data_source} for {query_term}",
+    "tokens": [
+      "query",
+      "data_source",
+      "for",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ce60adc7-5917-46e2-9d5d-16bd4c26dfa6",
+    "intent": "search.find_in_database",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "search {data_source}",
+    "tokens": [
+      "search",
+      "data_source"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5328d7bf-c374-4598-8a63-f2a47bcd9d99",
+    "intent": "search.find_in_database",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "look in database for {query_term}",
+    "tokens": [
+      "look",
+      "in",
+      "database",
+      "for",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9f1e1ec6-ecd7-4f21-b716-a567b9694d8d",
+    "intent": "search.find_in_database",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "database lookup {query_term}",
+    "tokens": [
+      "database",
+      "lookup",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "32ad9e6b-b818-465a-b357-611830907eae",
+    "intent": "search.find_in_database",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "search for {query_term} in {data_source}",
+    "tokens": [
+      "search",
+      "for",
+      "query_term",
+      "in",
+      "data_source"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "758c03fb-6cd1-4049-bdf2-f703415ee5c0",
+    "intent": "search.find_in_database",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "pull records for {query_term}",
+    "tokens": [
+      "pull",
+      "records",
+      "for",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4d53d8d9-1227-45e7-97fd-d9aa6af64d9a",
+    "intent": "search.find_in_database",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "find data on {query_term}",
+    "tokens": [
+      "find",
+      "data",
+      "on",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "29f54af8-daf1-42e8-b197-54ef395f7a2e",
+    "intent": "search.find_in_database",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "search all records for {query_term}",
+    "tokens": [
+      "search",
+      "all",
+      "records",
+      "for",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a46359aa-688d-453f-8d1d-655ace073193",
+    "intent": "search.find_in_database",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "query for {query_term}",
+    "tokens": [
+      "query",
+      "for",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3b42f40d-21c1-49fe-b27e-94729012f183",
+    "intent": "search.find_in_database",
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NOUN"
+    ],
+    "text": "database find {query_term}",
+    "tokens": [
+      "database",
+      "find",
+      "query_term"
+    ]
+  }
+]

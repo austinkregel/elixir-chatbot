@@ -1,0 +1,350 @@
+[
+  {
+    "entities": [],
+    "id": "3f6a74e8-2824-4d9d-baca-8ab8596e1644",
+    "intent": "translate",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "translate {word}",
+    "tokens": [
+      "translate",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "87846200-b9ef-409f-a29c-a1324863a517",
+    "intent": "translate",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how do you say {word}",
+    "tokens": [
+      "how",
+      "do",
+      "you",
+      "say",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ff6e7600-5e76-4ad2-9d50-b95aa5a576f2",
+    "intent": "translate",
+    "pos_tags": [
+      "NOUN",
+      "DET"
+    ],
+    "text": "translate this",
+    "tokens": [
+      "translate",
+      "this"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9ca3a67a-4669-4c7b-85ed-525843665244",
+    "intent": "translate",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what is {word} in other languages",
+    "tokens": [
+      "what",
+      "is",
+      "word",
+      "in",
+      "other",
+      "languages"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f2e9f497-a745-4fa4-8335-85761827b31a",
+    "intent": "translate",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "translate {word} please",
+    "tokens": [
+      "translate",
+      "word",
+      "please"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "44e98b11-5733-410a-9467-b46d0006b461",
+    "intent": "translate",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "can you translate {word}",
+    "tokens": [
+      "can",
+      "you",
+      "translate",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "223fde79-3faf-4a66-b47c-1eb1b29aff96",
+    "intent": "translate",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "translation of {word}",
+    "tokens": [
+      "translation",
+      "of",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f1b50219-33e8-4d68-a156-be0912529035",
+    "intent": "translate",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "help me translate",
+    "tokens": [
+      "help",
+      "me",
+      "translate"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "239222ac-f9d8-45f5-9593-2753d93c50cc",
+    "intent": "translate",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "translate the word {word}",
+    "tokens": [
+      "translate",
+      "the",
+      "word",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "faca626e-ddf5-4066-8d07-778e8fc7bdc4",
+    "intent": "translate",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what does {word} mean in other languages",
+    "tokens": [
+      "what",
+      "does",
+      "word",
+      "mean",
+      "in",
+      "other",
+      "languages"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a0d97ab6-488d-48ec-92cf-7f4f47e081cf",
+    "intent": "translate",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "text": "translate for me",
+    "tokens": [
+      "translate",
+      "for",
+      "me"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d74c1673-c4c8-469a-a907-fb9c134122cc",
+    "intent": "translate",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how to say {word}",
+    "tokens": [
+      "how",
+      "to",
+      "say",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0ea1500c-4021-4d84-81cf-1daa4162d889",
+    "intent": "translate",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "give me translation",
+    "tokens": [
+      "give",
+      "me",
+      "translation"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8c0e923e-65f6-4999-872d-0243ac8c9a71",
+    "intent": "translate",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "text": "translate {word} for me",
+    "tokens": [
+      "translate",
+      "word",
+      "for",
+      "me"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "26249e87-b2ad-42e4-bdcc-28b8099d5061",
+    "intent": "translate",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "I need a translation",
+    "tokens": [
+      "i",
+      "need",
+      "a",
+      "translation"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "768b8e0e-6171-44ab-984a-55c372829b0e",
+    "intent": "translate",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "help with translation",
+    "tokens": [
+      "help",
+      "with",
+      "translation"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "82da8395-9b91-47c6-af1e-caa27d5cd022",
+    "intent": "translate",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "translation please",
+    "tokens": [
+      "translation",
+      "please"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5b434993-77df-4c52-8d62-61dc461e9725",
+    "intent": "translate",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what's the translation of {word}",
+    "tokens": [
+      "what's",
+      "the",
+      "translation",
+      "of",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "70cf1e81-1337-4209-9220-d27edd4504d7",
+    "intent": "translate",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "NOUN",
+      "DET"
+    ],
+    "text": "can you translate this",
+    "tokens": [
+      "can",
+      "you",
+      "translate",
+      "this"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1b48edde-d4cc-4a9a-85c7-1d718ed33185",
+    "intent": "translate",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "translate the phrase",
+    "tokens": [
+      "translate",
+      "the",
+      "phrase"
+    ]
+  }
+]

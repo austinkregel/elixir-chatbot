@@ -464,5 +464,83 @@
     "count": 0,
     "lang": "en",
     "updated": 0
+  },
+  {
+    "id": "a1b2c3d4-howdy-001",
+    "data": [
+      {
+        "text": "howdy there",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "a1b2c3d4-howdy-002",
+    "data": [
+      {
+        "text": "howdy partner",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "a1b2c3d4-howdy-003",
+    "data": [
+      {
+        "text": "howdy!",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "a1b2c3d4-howdy-004",
+    "data": [
+      {
+        "text": "howdy y'all",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "a1b2c3d4-hia-001",
+    "data": [
+      {
+        "text": "hia",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "id": "a1b2c3d4-hia-002",
+    "data": [
+      {
+        "text": "hia there",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "lang": "en",
+    "updated": 0
   }
 ]

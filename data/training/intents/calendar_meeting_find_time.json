@@ -1,0 +1,1337 @@
+[
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 6,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "901f846d-5f06-4a95-ab27-134da4213d35",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "find a time to meet with the team",
+    "tokens": [
+      "find",
+      "a",
+      "time",
+      "to",
+      "meet",
+      "with",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "214ed5da-9b7f-4e31-ab1a-6790916fd297",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "CONJ",
+      "AUX",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "when can I meet with the team",
+    "tokens": [
+      "when",
+      "can",
+      "i",
+      "meet",
+      "with",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "my manager",
+        "type": "person"
+      }
+    ],
+    "id": "e4043190-17bc-4d68-ab10-20b8ef0f031e",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "CONJ",
+      "AUX",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "when can I meet with my manager",
+    "tokens": [
+      "when",
+      "can",
+      "i",
+      "meet",
+      "with",
+      "my",
+      "manager"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "f1f4f8d3-3792-4701-aca5-91e5334c7979",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "CONJ",
+      "AUX",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "when can I meet with Sarah",
+    "tokens": [
+      "when",
+      "can",
+      "i",
+      "meet",
+      "with",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "e73aac43-f03e-4a29-98c0-673f5f7eef43",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "find availability with John",
+    "tokens": [
+      "find",
+      "availability",
+      "with",
+      "john"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "my manager",
+        "type": "person"
+      }
+    ],
+    "id": "b64b9b70-0777-4141-9d9d-2e54461eeeed",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "find availability with my manager",
+    "tokens": [
+      "find",
+      "availability",
+      "with",
+      "my",
+      "manager"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "lisa",
+        "type": "person"
+      }
+    ],
+    "id": "3595319f-154a-4e9f-846c-31c8e391d4d6",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "find availability with Lisa",
+    "tokens": [
+      "find",
+      "availability",
+      "with",
+      "lisa"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "my manager",
+        "type": "person"
+      }
+    ],
+    "id": "935be099-1a76-43ee-b4ae-42634623b9ba",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "CONJ",
+      "PRON",
+      "NOUN",
+      "AUX",
+      "NOUN"
+    ],
+    "text": "check when my manager is free",
+    "tokens": [
+      "check",
+      "when",
+      "my",
+      "manager",
+      "is",
+      "free"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "d7ee85eb-b2a9-4e93-ae57-c963c942c7a7",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "CONJ",
+      "DET",
+      "NOUN",
+      "AUX",
+      "NOUN"
+    ],
+    "text": "check when the team is free",
+    "tokens": [
+      "check",
+      "when",
+      "the",
+      "team",
+      "is",
+      "free"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "6e0cbdc0-dd73-4c74-a35e-15cb61e9d1f6",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "CONJ",
+      "NOUN",
+      "AUX",
+      "NOUN"
+    ],
+    "text": "check when Sarah is free",
+    "tokens": [
+      "check",
+      "when",
+      "sarah",
+      "is",
+      "free"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 6,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "9f561075-ba42-4791-b57b-c6e781487a7b",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "find a slot to meet with the team",
+    "tokens": [
+      "find",
+      "a",
+      "slot",
+      "to",
+      "meet",
+      "with",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "097a47e5-1562-468a-b4f4-5b5afa707371",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "find a slot to meet with John",
+    "tokens": [
+      "find",
+      "a",
+      "slot",
+      "to",
+      "meet",
+      "with",
+      "john"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "583996bd-4ce0-4858-852b-93970d0ca1fe",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "CONJ",
+      "AUX",
+      "DET",
+      "NOUN",
+      "CONJ",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "when are the team and I both free",
+    "tokens": [
+      "when",
+      "are",
+      "the",
+      "team",
+      "and",
+      "i",
+      "both",
+      "free"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "65431703-2eae-4429-a219-65e2bef72c59",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "CONJ",
+      "AUX",
+      "NOUN",
+      "CONJ",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "when are Mike and I both free",
+    "tokens": [
+      "when",
+      "are",
+      "mike",
+      "and",
+      "i",
+      "both",
+      "free"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "my manager",
+        "type": "person"
+      }
+    ],
+    "id": "6b7122cf-a5da-4789-85d4-47e6b571aa26",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "CONJ",
+      "AUX",
+      "PRON",
+      "NOUN",
+      "CONJ",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "when are my manager and I both free",
+    "tokens": [
+      "when",
+      "are",
+      "my",
+      "manager",
+      "and",
+      "i",
+      "both",
+      "free"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "lisa",
+        "type": "person"
+      }
+    ],
+    "id": "8c2895dd-e8e6-40e6-bb93-9079ff53c876",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "find mutual availability with Lisa",
+    "tokens": [
+      "find",
+      "mutual",
+      "availability",
+      "with",
+      "lisa"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "my manager",
+        "type": "person"
+      }
+    ],
+    "id": "e9e4a1e9-badd-4eac-bd89-7d0e99f18bf9",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "find mutual availability with my manager",
+    "tokens": [
+      "find",
+      "mutual",
+      "availability",
+      "with",
+      "my",
+      "manager"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "27131e0f-4453-4dcc-af6c-27c0788e7dbb",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "check Mike's availability",
+    "tokens": [
+      "check",
+      "mike's",
+      "availability"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a19c1a75-bb20-42a2-a38f-e92773515ce4",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "check John's availability",
+    "tokens": [
+      "check",
+      "john's",
+      "availability"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "lisa",
+        "type": "person"
+      }
+    ],
+    "id": "57b62992-25a8-4bfd-b417-0324f1925591",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "CONJ",
+      "PRON"
+    ],
+    "text": "find a time that works for Lisa and me",
+    "tokens": [
+      "find",
+      "a",
+      "time",
+      "that",
+      "works",
+      "for",
+      "lisa",
+      "and",
+      "me"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "e96ac149-dc26-4dd2-ab46-84982285526c",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "CONJ",
+      "PRON"
+    ],
+    "text": "find a time that works for John and me",
+    "tokens": [
+      "find",
+      "a",
+      "time",
+      "that",
+      "works",
+      "for",
+      "john",
+      "and",
+      "me"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 6,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "9c7b835c-fb2d-4b50-b1b6-ac8b31ab6c12",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "CONJ",
+      "PRON"
+    ],
+    "text": "find a time that works for the team and me",
+    "tokens": [
+      "find",
+      "a",
+      "time",
+      "that",
+      "works",
+      "for",
+      "the",
+      "team",
+      "and",
+      "me"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "1e73d4f6-9660-4309-8171-8917c1da4234",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "CONJ",
+      "AUX",
+      "DET",
+      "NOUN",
+      "CONJ",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "when can the team and I meet",
+    "tokens": [
+      "when",
+      "can",
+      "the",
+      "team",
+      "and",
+      "i",
+      "meet"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "my manager",
+        "type": "person"
+      }
+    ],
+    "id": "54dfb605-aaff-4020-9b81-1e730378eb58",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "CONJ",
+      "AUX",
+      "PRON",
+      "NOUN",
+      "CONJ",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "when can my manager and I meet",
+    "tokens": [
+      "when",
+      "can",
+      "my",
+      "manager",
+      "and",
+      "i",
+      "meet"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "783e523b-4265-477b-acfd-787732dfebb4",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "look for available time with Sarah",
+    "tokens": [
+      "look",
+      "for",
+      "available",
+      "time",
+      "with",
+      "sarah"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "my manager",
+        "type": "person"
+      }
+    ],
+    "id": "97b88e51-8d9a-4679-8256-7efce582696b",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "look for available time with my manager",
+    "tokens": [
+      "look",
+      "for",
+      "available",
+      "time",
+      "with",
+      "my",
+      "manager"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 5,
+        "text": "my manager",
+        "type": "person"
+      }
+    ],
+    "id": "014ee41c-19c1-40be-89be-41a4dc0a994e",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "find a meeting time with my manager",
+    "tokens": [
+      "find",
+      "a",
+      "meeting",
+      "time",
+      "with",
+      "my",
+      "manager"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 6,
+        "start": 5,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "49de5b9e-7bde-44f6-99eb-6737bcf2f5fd",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "find a meeting time with the team",
+    "tokens": [
+      "find",
+      "a",
+      "meeting",
+      "time",
+      "with",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "lisa",
+        "type": "person"
+      }
+    ],
+    "id": "1bc45bd8-6aa5-4061-b71a-08b52a6ddf5f",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "find a meeting time with Lisa",
+    "tokens": [
+      "find",
+      "a",
+      "meeting",
+      "time",
+      "with",
+      "lisa"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "lisa",
+        "type": "person"
+      }
+    ],
+    "id": "c74c999c-73e2-4939-a17f-71f6938f7c14",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "check for overlapping free time with Lisa",
+    "tokens": [
+      "check",
+      "for",
+      "overlapping",
+      "free",
+      "time",
+      "with",
+      "lisa"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 6,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "22a5c263-2c6e-4d02-a93c-02a0a568aba1",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "check for overlapping free time with the team",
+    "tokens": [
+      "check",
+      "for",
+      "overlapping",
+      "free",
+      "time",
+      "with",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "ff7b40da-1f72-4b77-94be-884fc42fc740",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "check for overlapping free time with Mike",
+    "tokens": [
+      "check",
+      "for",
+      "overlapping",
+      "free",
+      "time",
+      "with",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "my manager",
+        "type": "person"
+      }
+    ],
+    "id": "6b3646a8-2a38-47eb-baf6-1dfc81090d9c",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "CONJ",
+      "AUX",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "when is my manager available",
+    "tokens": [
+      "when",
+      "is",
+      "my",
+      "manager",
+      "available"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "13d4843b-32ca-498a-a9b3-26929b9d1818",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "CONJ",
+      "AUX",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "when is the team available",
+    "tokens": [
+      "when",
+      "is",
+      "the",
+      "team",
+      "available"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "sarah",
+        "type": "person"
+      }
+    ],
+    "id": "545fabca-c1bb-40b6-84c7-a2a6ec049de0",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "CONJ",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "when is Sarah available",
+    "tokens": [
+      "when",
+      "is",
+      "sarah",
+      "available"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "83254ecb-1bea-49c2-bac6-e1bcead8fbb2",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "find a common time with John",
+    "tokens": [
+      "find",
+      "a",
+      "common",
+      "time",
+      "with",
+      "john"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "my manager",
+        "type": "person"
+      }
+    ],
+    "id": "b777aaf0-2f70-4638-a45b-f73e8d4c27e7",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "find a common time with my manager",
+    "tokens": [
+      "find",
+      "a",
+      "common",
+      "time",
+      "with",
+      "my",
+      "manager"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "385e70b2-c69c-432f-a620-7b258c7c45c6",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "look up John's calendar",
+    "tokens": [
+      "look",
+      "up",
+      "john's",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "74756ecc-3b98-411c-ac47-f6bb5c31546e",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "look up Mike's calendar",
+    "tokens": [
+      "look",
+      "up",
+      "mike's",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "b584bf3f-4d96-4ee3-97da-bccd1410c801",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "check mutual availability with Mike",
+    "tokens": [
+      "check",
+      "mutual",
+      "availability",
+      "with",
+      "mike"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "lisa",
+        "type": "person"
+      }
+    ],
+    "id": "4f17b542-5ad8-4bc8-8fff-c0432b5854ef",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "check mutual availability with Lisa",
+    "tokens": [
+      "check",
+      "mutual",
+      "availability",
+      "with",
+      "lisa"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "the team",
+        "type": "person"
+      }
+    ],
+    "id": "c75c7e81-16d5-4040-bd46-44bde4a7da71",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "check mutual availability with the team",
+    "tokens": [
+      "check",
+      "mutual",
+      "availability",
+      "with",
+      "the",
+      "team"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "772981a5-15c3-4670-af68-98a52ff0f321",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "find open time with John",
+    "tokens": [
+      "find",
+      "open",
+      "time",
+      "with",
+      "john"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "mike",
+        "type": "person"
+      }
+    ],
+    "id": "e30d453f-2f2b-4904-8871-193e7b634f25",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "find open time with Mike",
+    "tokens": [
+      "find",
+      "open",
+      "time",
+      "with",
+      "mike"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b16e2cc6-5c46-447f-ada8-5e37a50dedea",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "CONJ",
+      "AUX",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "when can we both meet",
+    "tokens": [
+      "when",
+      "can",
+      "we",
+      "both",
+      "meet"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "meeting",
+        "type": "event_title"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "john",
+        "type": "person"
+      }
+    ],
+    "id": "c03d6c8d-5e38-498c-a446-0c563014529d",
+    "intent": "calendar.meeting.find_time",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "search for meeting time with John",
+    "tokens": [
+      "search",
+      "for",
+      "meeting",
+      "time",
+      "with",
+      "john"
+    ]
+  }
+]

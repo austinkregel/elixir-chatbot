@@ -1,0 +1,42 @@
+[
+  {
+    "value": "take medicine",
+    "synonyms": ["take medicine", "take medication", "take pills", "take my medicine", "take meds"]
+  },
+  {
+    "value": "pick up kids",
+    "synonyms": ["pick up kids", "get the kids", "collect children", "pick up children from school"]
+  },
+  {
+    "value": "call back",
+    "synonyms": ["call back", "return call", "phone back", "ring back"]
+  },
+  {
+    "value": "drink water",
+    "synonyms": ["drink water", "hydrate", "have water", "stay hydrated"]
+  },
+  {
+    "value": "check email",
+    "synonyms": ["check email", "look at email", "read emails", "check inbox"]
+  },
+  {
+    "value": "attend meeting",
+    "synonyms": ["attend meeting", "join meeting", "go to meeting", "be at meeting"]
+  },
+  {
+    "value": "take a break",
+    "synonyms": ["take a break", "rest", "have a break", "step away"]
+  },
+  {
+    "value": "buy milk",
+    "synonyms": ["buy milk", "get milk", "pick up milk"]
+  },
+  {
+    "value": "feed pet",
+    "synonyms": ["feed pet", "feed the dog", "feed the cat", "feed animals"]
+  },
+  {
+    "value": "submit assignment",
+    "synonyms": ["submit assignment", "turn in homework", "hand in assignment", "submit work"]
+  }
+]

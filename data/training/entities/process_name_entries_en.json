@@ -1,0 +1,38 @@
+[
+  {
+    "value": "backup job",
+    "synonyms": ["backup job", "backup process", "backup task"]
+  },
+  {
+    "value": "data sync",
+    "synonyms": ["data sync", "synchronization", "sync process"]
+  },
+  {
+    "value": "report generation",
+    "synonyms": ["report generation", "generating reports", "report job"]
+  },
+  {
+    "value": "data import",
+    "synonyms": ["data import", "import process", "importing data"]
+  },
+  {
+    "value": "data export",
+    "synonyms": ["data export", "export process", "exporting data"]
+  },
+  {
+    "value": "batch processing",
+    "synonyms": ["batch processing", "batch job", "batch process"]
+  },
+  {
+    "value": "cleanup task",
+    "synonyms": ["cleanup task", "cleanup job", "garbage collection"]
+  },
+  {
+    "value": "indexing",
+    "synonyms": ["indexing", "reindexing", "index rebuild"]
+  },
+  {
+    "value": "deployment",
+    "synonyms": ["deployment", "deploy process", "release"]
+  }
+]

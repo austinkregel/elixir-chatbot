@@ -1,0 +1,306 @@
+[
+  {
+    "entities": [],
+    "id": "93c4be52-d4a3-45d4-9157-b176edaa10b4",
+    "intent": "compute.calculate",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "calculate the result",
+    "tokens": [
+      "calculate",
+      "the",
+      "result"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ad9af97c-d45e-4498-b080-c6ba918819b2",
+    "intent": "compute.calculate",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "compute {math_expression}",
+    "tokens": [
+      "compute",
+      "math_expression"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "49402858-b7dd-45cd-ab6b-c9a920905b65",
+    "intent": "compute.calculate",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "run the calculation",
+    "tokens": [
+      "run",
+      "the",
+      "calculation"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1ea604b1-c5eb-44ef-90e4-e67af402e44f",
+    "intent": "compute.calculate",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "calculate {query_term}",
+    "tokens": [
+      "calculate",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "943d7cf6-70c9-4ae4-82e0-94f4f7fcbaba",
+    "intent": "compute.calculate",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "perform calculation",
+    "tokens": [
+      "perform",
+      "calculation"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "760362f6-3e48-4027-a016-4007eff88bfc",
+    "intent": "compute.calculate",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "compute the value",
+    "tokens": [
+      "compute",
+      "the",
+      "value"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2484e9af-dc2a-4785-84c9-fd729e887966",
+    "intent": "compute.calculate",
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "text": "calculate it",
+    "tokens": [
+      "calculate",
+      "it"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e853c265-d978-46ff-aa08-89d04169a972",
+    "intent": "compute.calculate",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "mathematical calculation",
+    "tokens": [
+      "mathematical",
+      "calculation"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0b817dbd-d0be-41c0-87c5-798f03d57329",
+    "intent": "compute.calculate",
+    "pos_tags": [
+      "NOUN",
+      "DET"
+    ],
+    "text": "compute this",
+    "tokens": [
+      "compute",
+      "this"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f34b96a0-652a-40d3-b18e-2e8a6ba254dd",
+    "intent": "compute.calculate",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "calculate the total",
+    "tokens": [
+      "calculate",
+      "the",
+      "total"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c02a8840-5089-4e5b-a791-f485a8ab24a7",
+    "intent": "compute.calculate",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "run computation",
+    "tokens": [
+      "run",
+      "computation"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "70c206c8-48c1-4c52-81f6-4d8c93c55fef",
+    "intent": "compute.calculate",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "figure this out",
+    "tokens": [
+      "figure",
+      "this",
+      "out"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "02be9738-4b52-4069-892e-8fbebb800904",
+    "intent": "compute.calculate",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "compute the result",
+    "tokens": [
+      "compute",
+      "the",
+      "result"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d45c6ded-795c-42e3-b683-0e78c38fd08d",
+    "intent": "compute.calculate",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "text": "calculate for me",
+    "tokens": [
+      "calculate",
+      "for",
+      "me"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e1d37d55-dc67-4cc5-ac1d-e34ca24de94c",
+    "intent": "compute.calculate",
+    "pos_tags": [
+      "AUX",
+      "DET",
+      "NOUN"
+    ],
+    "text": "do the calculation",
+    "tokens": [
+      "do",
+      "the",
+      "calculation"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a4ec541d-0906-4c81-b489-ed1339a09519",
+    "intent": "compute.calculate",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "compute {query_term}",
+    "tokens": [
+      "compute",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d9a6eb30-c8d4-4d11-8a87-3b526db37af3",
+    "intent": "compute.calculate",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "calculation needed",
+    "tokens": [
+      "calculation",
+      "needed"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6f29df03-71c2-49b5-9884-eb6e631042df",
+    "intent": "compute.calculate",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "work out the math",
+    "tokens": [
+      "work",
+      "out",
+      "the",
+      "math"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b8039967-6153-4160-8f21-93f5b19baf2d",
+    "intent": "compute.calculate",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "calculate these values",
+    "tokens": [
+      "calculate",
+      "these",
+      "values"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a5b00d3d-6834-45d7-8325-46ea8d5bdf84",
+    "intent": "compute.calculate",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "compute the figures",
+    "tokens": [
+      "compute",
+      "the",
+      "figures"
+    ]
+  }
+]

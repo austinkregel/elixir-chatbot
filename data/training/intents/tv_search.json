@@ -1,0 +1,340 @@
+[
+  {
+    "entities": [],
+    "id": "9859a9d8-6495-4f00-a7c5-dfa4fc507ca9",
+    "intent": "tv.search",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "find TV shows about {topic}",
+    "tokens": [
+      "find",
+      "tv",
+      "shows",
+      "about",
+      "topic"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9933b01c-0e74-492a-b7ca-19f8b854ea6b",
+    "intent": "tv.search",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "search for {tv_show}",
+    "tokens": [
+      "search",
+      "for",
+      "tv_show"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "99398f3c-7602-41cf-85e1-3ab81e70fe13",
+    "intent": "tv.search",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "TV shows with {actor}",
+    "tokens": [
+      "tv",
+      "shows",
+      "with",
+      "actor"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "57c125aa-39e2-4e4a-97b7-ec89a5987e95",
+    "intent": "tv.search",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "find comedy shows",
+    "tokens": [
+      "find",
+      "comedy",
+      "shows"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "295e51ca-8a31-4076-a44f-308f92f16520",
+    "intent": "tv.search",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "search for drama series",
+    "tokens": [
+      "search",
+      "for",
+      "drama",
+      "series"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "11c68020-3aa9-4d93-9346-e1d45ed15d22",
+    "intent": "tv.search",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "shows like {tv_show}",
+    "tokens": [
+      "shows",
+      "like",
+      "tv_show"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7dfe47ba-2a21-4fe9-9c0d-31f3739c3612",
+    "intent": "tv.search",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "find new TV shows",
+    "tokens": [
+      "find",
+      "new",
+      "tv",
+      "shows"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f71d8f5e-5d28-4c38-8153-87bf0c67fc85",
+    "intent": "tv.search",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "look for reality shows",
+    "tokens": [
+      "look",
+      "for",
+      "reality",
+      "shows"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d5b139aa-d626-4d90-8559-2f8fe21a0b87",
+    "intent": "tv.search",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "search sitcoms",
+    "tokens": [
+      "search",
+      "sitcoms"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "00f9e74e-7952-42ab-aed2-3451db4e4ba8",
+    "intent": "tv.search",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "find documentary series",
+    "tokens": [
+      "find",
+      "documentary",
+      "series"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0497b2ac-1f7a-4093-88cc-fdd9c0640462",
+    "intent": "tv.search",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NUM"
+    ],
+    "text": "TV shows from 2024",
+    "tokens": [
+      "tv",
+      "shows",
+      "from",
+      "2024"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "dd0ac3f9-ea61-4592-a2d3-fc238c2086c7",
+    "intent": "tv.search",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "look up {tv_show}",
+    "tokens": [
+      "look",
+      "up",
+      "tv_show"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "74480223-7c02-41e3-aec8-27b71f5137a0",
+    "intent": "tv.search",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "find shows starring {actor}",
+    "tokens": [
+      "find",
+      "shows",
+      "starring",
+      "actor"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "aea704f7-4f39-4e3d-af51-2f8c4b918977",
+    "intent": "tv.search",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "search TV series",
+    "tokens": [
+      "search",
+      "tv",
+      "series"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f34479a8-95d0-4e85-b5bc-547bc2cf1683",
+    "intent": "tv.search",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "find streaming shows",
+    "tokens": [
+      "find",
+      "streaming",
+      "shows"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0fee2efc-08bb-4541-b7df-33c7be6d79ce",
+    "intent": "tv.search",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "look for {genre} shows",
+    "tokens": [
+      "look",
+      "for",
+      "genre",
+      "shows"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7b26640d-9d78-4260-b300-cae2210cfb14",
+    "intent": "tv.search",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "find binge-worthy shows",
+    "tokens": [
+      "find",
+      "binge-worthy",
+      "shows"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8ca61ed7-d607-468e-9b03-80a1e05878f1",
+    "intent": "tv.search",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "search for miniseries",
+    "tokens": [
+      "search",
+      "for",
+      "miniseries"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d8952772-c0b3-4f2a-84ca-ed5de2fa3d18",
+    "intent": "tv.search",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "TV shows on Netflix",
+    "tokens": [
+      "tv",
+      "shows",
+      "on",
+      "netflix"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3022f6de-bbdb-4d16-8a59-bd3fd85eafe4",
+    "intent": "tv.search",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "find popular shows",
+    "tokens": [
+      "find",
+      "popular",
+      "shows"
+    ]
+  }
+]

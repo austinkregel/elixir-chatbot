@@ -1,0 +1,296 @@
+[
+  {
+    "entities": [],
+    "id": "54f0271b-4a80-4d41-b11e-3cc65b4461be",
+    "intent": "status.summary",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "text": "give me a summary",
+    "tokens": [
+      "give",
+      "me",
+      "a",
+      "summary"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "46b25cac-a9cb-4adb-8944-e990ac0b7023",
+    "intent": "status.summary",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "summary please",
+    "tokens": [
+      "summary",
+      "please"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6de2f000-9384-41c3-89f3-6f94e4201575",
+    "intent": "status.summary",
+    "pos_tags": [
+      "NOUN"
+    ],
+    "text": "summarize",
+    "tokens": [
+      "summarize"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e1474b38-f606-41c7-9bab-fb37677c20d0",
+    "intent": "status.summary",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "brief summary",
+    "tokens": [
+      "brief",
+      "summary"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "65fbf7d9-8a6c-4fed-ad95-5b40234da4b0",
+    "intent": "status.summary",
+    "pos_tags": [
+      "NOUN"
+    ],
+    "text": "overview",
+    "tokens": [
+      "overview"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3c0b53db-2cbd-4c9b-a54b-afb7f414b563",
+    "intent": "status.summary",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "quick summary",
+    "tokens": [
+      "quick",
+      "summary"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "568fbdde-2c9d-435a-8034-53a578041f36",
+    "intent": "status.summary",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "text": "summary of the situation",
+    "tokens": [
+      "summary",
+      "of",
+      "the",
+      "situation"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b6237c64-7b2b-43d5-869f-ae939dc7a357",
+    "intent": "status.summary",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "summarize the status",
+    "tokens": [
+      "summarize",
+      "the",
+      "status"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "89a462ae-fa1c-43d0-b5dd-60b7f3f48c90",
+    "intent": "status.summary",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "provide a summary",
+    "tokens": [
+      "provide",
+      "a",
+      "summary"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f870e963-2eb4-4e27-a690-1a429358ebb1",
+    "intent": "status.summary",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "high level summary",
+    "tokens": [
+      "high",
+      "level",
+      "summary"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d581dfca-9a9b-4ab7-a745-0c941497aa0d",
+    "intent": "status.summary",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "executive summary",
+    "tokens": [
+      "executive",
+      "summary"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4f0b53a4-007d-4f96-b21f-b019fbde1ce4",
+    "intent": "status.summary",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "status summary",
+    "tokens": [
+      "status",
+      "summary"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b4faf47c-cf0f-430f-b28d-5ec5df99f4cf",
+    "intent": "status.summary",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "sum it up",
+    "tokens": [
+      "sum",
+      "it",
+      "up"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "528eb324-de84-4563-a90e-00f8ab42c635",
+    "intent": "status.summary",
+    "pos_tags": [
+      "ADP",
+      "NOUN"
+    ],
+    "text": "in summary",
+    "tokens": [
+      "in",
+      "summary"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "bad874ed-4218-4e1b-9186-15d6e1ca8ede",
+    "intent": "status.summary",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "give overview",
+    "tokens": [
+      "give",
+      "overview"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "cc0b26d3-566f-4a9c-baf4-cb06fce2865f",
+    "intent": "status.summary",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "text": "summarize for me",
+    "tokens": [
+      "summarize",
+      "for",
+      "me"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b4f06efe-0d3a-4c5f-b0b4-b9a65ff363eb",
+    "intent": "status.summary",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "brief overview",
+    "tokens": [
+      "brief",
+      "overview"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "89751f91-d7ac-4133-9bd1-022fe4d4f886",
+    "intent": "status.summary",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "short summary",
+    "tokens": [
+      "short",
+      "summary"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e692a051-437b-4c9c-98a1-62c0c2c38f0e",
+    "intent": "status.summary",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "quick overview",
+    "tokens": [
+      "quick",
+      "overview"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "da1ebd5d-5043-416d-afa8-4af56fdc5829",
+    "intent": "status.summary",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "summary report",
+    "tokens": [
+      "summary",
+      "report"
+    ]
+  }
+]

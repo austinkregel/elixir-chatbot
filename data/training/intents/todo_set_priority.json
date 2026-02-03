@@ -1,0 +1,366 @@
+[
+  {
+    "entities": [],
+    "id": "7cc3f79c-0f3c-4563-8d12-912838ded5b7",
+    "intent": "todo.set_priority",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set {task_content} to {priority} priority",
+    "tokens": [
+      "set",
+      "task_content",
+      "to",
+      "priority",
+      "priority"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1192927d-a03a-41e6-b0ca-aaa01ebd0a73",
+    "intent": "todo.set_priority",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "make {task_content} {priority}",
+    "tokens": [
+      "make",
+      "task_content",
+      "priority"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1ef61334-e05b-409d-bccb-947b87d53d09",
+    "intent": "todo.set_priority",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "change {task_content} priority to {priority}",
+    "tokens": [
+      "change",
+      "task_content",
+      "priority",
+      "to",
+      "priority"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a4de335b-78bb-4095-9672-9c8f325fde39",
+    "intent": "todo.set_priority",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "mark {task_content} as {priority}",
+    "tokens": [
+      "mark",
+      "task_content",
+      "as",
+      "priority"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "50725b91-2224-490b-aba8-e37b93fdd297",
+    "intent": "todo.set_priority",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set priority of {task_content} to {priority}",
+    "tokens": [
+      "set",
+      "priority",
+      "of",
+      "task_content",
+      "to",
+      "priority"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c6015859-14fd-4288-a4d8-3b9bc97ee6b5",
+    "intent": "todo.set_priority",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "{task_content} is {priority} priority",
+    "tokens": [
+      "task_content",
+      "is",
+      "priority",
+      "priority"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ce668906-79f1-4eba-85bf-f0630cd77c0c",
+    "intent": "todo.set_priority",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "update {task_content} to {priority}",
+    "tokens": [
+      "update",
+      "task_content",
+      "to",
+      "priority"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a3567609-1ef2-451a-8879-5e57d8ee9d6c",
+    "intent": "todo.set_priority",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "prioritize {task_content} as {priority}",
+    "tokens": [
+      "prioritize",
+      "task_content",
+      "as",
+      "priority"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "576c6717-ff43-4d44-8d1d-f3b0d48cf93c",
+    "intent": "todo.set_priority",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "change priority of {task_content}",
+    "tokens": [
+      "change",
+      "priority",
+      "of",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1289ec90-e731-47d9-a15b-fff3f241aee3",
+    "intent": "todo.set_priority",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "make {task_content} {priority} priority",
+    "tokens": [
+      "make",
+      "task_content",
+      "priority",
+      "priority"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3bfadb0e-4da7-43d5-8880-a3a53b6f12cb",
+    "intent": "todo.set_priority",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set {task_content} as {priority}",
+    "tokens": [
+      "set",
+      "task_content",
+      "as",
+      "priority"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "95207aa0-1c76-4d65-810d-bde2b1bdd78c",
+    "intent": "todo.set_priority",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "{priority} priority for {task_content}",
+    "tokens": [
+      "priority",
+      "priority",
+      "for",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c88da36c-2ad1-4776-ab35-205e4b17df91",
+    "intent": "todo.set_priority",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "change {task_content} to {priority}",
+    "tokens": [
+      "change",
+      "task_content",
+      "to",
+      "priority"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "19ee7b19-e735-4a7a-8716-d60198a67a6a",
+    "intent": "todo.set_priority",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "update priority of {task_content}",
+    "tokens": [
+      "update",
+      "priority",
+      "of",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "70667216-67db-4b52-aa41-5d07eaba98c7",
+    "intent": "todo.set_priority",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "assign {priority} priority to {task_content}",
+    "tokens": [
+      "assign",
+      "priority",
+      "priority",
+      "to",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2a3c1a40-3432-4ae2-a6f0-623fe6034269",
+    "intent": "todo.set_priority",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "move {task_content} to {priority}",
+    "tokens": [
+      "move",
+      "task_content",
+      "to",
+      "priority"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1316ffd0-d0f9-4210-916d-21a0b25d3d00",
+    "intent": "todo.set_priority",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "flag {task_content} as {priority}",
+    "tokens": [
+      "flag",
+      "task_content",
+      "as",
+      "priority"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "87d521c1-7ecf-4462-90ec-e3080d91d4c4",
+    "intent": "todo.set_priority",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "{task_content} priority {priority}",
+    "tokens": [
+      "task_content",
+      "priority",
+      "priority"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6cd545f4-687f-4495-a491-ad3ed9bb929b",
+    "intent": "todo.set_priority",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "set {task_content} priority {priority}",
+    "tokens": [
+      "set",
+      "task_content",
+      "priority",
+      "priority"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9090824c-9966-4476-8eaf-6411f851c4f6",
+    "intent": "todo.set_priority",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "mark {task_content} {priority}",
+    "tokens": [
+      "mark",
+      "task_content",
+      "priority"
+    ]
+  }
+]

@@ -3,15 +3,27 @@ defmodule Brain.FeatureTest do
   Feature tests that verify end-to-end chatbot behavior.
 
   These tests check that user inputs produce sensible outputs.
+  They REQUIRE trained models - if models are not loaded, tests fail fast.
   """
   use ExUnit.Case, async: false
+  use Brain.Test.ModelAssertions
 
   alias Brain
   import Brain.TestHelpers
 
-  setup do
-    start_brain_services()
+  @moduletag :requires_models
 
+  setup_all do
+    # Start services
+    start_brain_services()
+    
+    # Ensure models are loaded - fail fast if not
+    require_models!([:tfidf, :gazetteer, :entities])
+    
+    :ok
+  end
+
+  setup do
     # Create a conversation for each test
     {:ok, conversation_id} = Brain.create_conversation()
 

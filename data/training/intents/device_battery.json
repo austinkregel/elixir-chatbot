@@ -1,0 +1,298 @@
+[
+  {
+    "entities": [],
+    "id": "2eb5b467-9d5d-41cd-a482-e6b0c4356ad1",
+    "intent": "device.battery",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's my battery level",
+    "tokens": [
+      "what's",
+      "my",
+      "battery",
+      "level"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5732a97a-e3db-4ab4-973b-e984d53bf5de",
+    "intent": "device.battery",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "battery status",
+    "tokens": [
+      "battery",
+      "status"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b76c05f9-d6e2-4eac-8eb3-966d7480e14b",
+    "intent": "device.battery",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how much battery",
+    "tokens": [
+      "how",
+      "much",
+      "battery"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ff061b5c-7ffb-4250-afe9-47e40d8fd77b",
+    "intent": "device.battery",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "check battery",
+    "tokens": [
+      "check",
+      "battery"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "55acb883-ebe3-4c8d-affb-f3994be1a093",
+    "intent": "device.battery",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "battery percentage",
+    "tokens": [
+      "battery",
+      "percentage"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a1d55a4d-9dd3-43e0-a3d8-abd28d2b2cd0",
+    "intent": "device.battery",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "battery level",
+    "tokens": [
+      "battery",
+      "level"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2971fe9c-89d5-4e33-a7e2-48ae1632752e",
+    "intent": "device.battery",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "how's my battery",
+    "tokens": [
+      "how's",
+      "my",
+      "battery"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "23561ce1-c938-4d63-837d-0bc68c095498",
+    "intent": "device.battery",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "show battery",
+    "tokens": [
+      "show",
+      "battery"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "edac15ab-dc3a-484b-aa32-2af708b4021a",
+    "intent": "device.battery",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "battery remaining",
+    "tokens": [
+      "battery",
+      "remaining"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f8cd7195-d3fd-4c50-b0b0-1e82c59c6d2a",
+    "intent": "device.battery",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "current battery",
+    "tokens": [
+      "current",
+      "battery"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "fb9b99a4-c7fd-46af-8080-998e8c7b0baf",
+    "intent": "device.battery",
+    "pos_tags": [
+      "NOUN",
+      "VERB"
+    ],
+    "text": "battery check",
+    "tokens": [
+      "battery",
+      "check"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7b148ae9-be18-4e88-bb32-f853247c4635",
+    "intent": "device.battery",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "power level",
+    "tokens": [
+      "power",
+      "level"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "71dd4f92-d73f-4dab-8c92-6d1bfdd7679a",
+    "intent": "device.battery",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "how much charge left",
+    "tokens": [
+      "how",
+      "much",
+      "charge",
+      "left"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0f953aff-30bf-4c6a-877a-18815bc6ebc4",
+    "intent": "device.battery",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "battery life",
+    "tokens": [
+      "battery",
+      "life"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "66268e23-2c39-4793-a7be-18ba7776f23b",
+    "intent": "device.battery",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "percentage of battery",
+    "tokens": [
+      "percentage",
+      "of",
+      "battery"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "77b03893-f5c4-44c3-9244-ca36d8f04d4a",
+    "intent": "device.battery",
+    "pos_tags": [
+      "PRON",
+      "NOUN"
+    ],
+    "text": "my battery",
+    "tokens": [
+      "my",
+      "battery"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ddedd433-30c3-42c0-999b-f825e6107c67",
+    "intent": "device.battery",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "device battery",
+    "tokens": [
+      "device",
+      "battery"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f39acb9c-14fa-4c45-a0c6-62aed76ee181",
+    "intent": "device.battery",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "battery info",
+    "tokens": [
+      "battery",
+      "info"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e8545dde-fd89-4442-8378-b3b0b6b90878",
+    "intent": "device.battery",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "check power level",
+    "tokens": [
+      "check",
+      "power",
+      "level"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3cd8b998-d046-417a-b3af-8dc4672c11aa",
+    "intent": "device.battery",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remaining battery",
+    "tokens": [
+      "remaining",
+      "battery"
+    ]
+  }
+]

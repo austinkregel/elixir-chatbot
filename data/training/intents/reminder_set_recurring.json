@@ -1,0 +1,620 @@
+[
+  {
+    "entities": [],
+    "id": "e03a6224-659f-49ad-9427-5429762d3199",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me every weekly to {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "every",
+      "weekly",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "cc5067bb-5787-46c7-a6ce-cc0826230c54",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me every daily to {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "every",
+      "daily",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "2c414aae-4369-48cc-877d-c0087a5ccd96",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me every every Monday to {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "every",
+      "every",
+      "monday",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3b9e8adf-05db-4e63-aa20-379a97855488",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set a recurring reminder to {reminder_content}",
+    "tokens": [
+      "set",
+      "a",
+      "recurring",
+      "reminder",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7a0b8f16-9c64-4f5a-b40e-a1a23d879b78",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me weekly to {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "weekly",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "c1a69f63-d783-48fe-a211-00930541b5f3",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me every Monday to {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "every",
+      "monday",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "91cd34e1-4f65-4782-8efc-ae05d7b0e9b3",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "create a every Monday reminder for {reminder_content}",
+    "tokens": [
+      "create",
+      "a",
+      "every",
+      "monday",
+      "reminder",
+      "for",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d63b27ab-55b8-426a-a8f8-93d81a30fcf8",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "create a daily reminder for {reminder_content}",
+    "tokens": [
+      "create",
+      "a",
+      "daily",
+      "reminder",
+      "for",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6870df92-712c-401e-bbe5-367757a6e086",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remind me to {reminder_content} every day",
+    "tokens": [
+      "remind",
+      "me",
+      "to",
+      "reminder_content",
+      "every",
+      "day"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1274c9ab-8477-4b7f-a5a8-0f48138cb3de",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remind me to {reminder_content} every week",
+    "tokens": [
+      "remind",
+      "me",
+      "to",
+      "reminder_content",
+      "every",
+      "week"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "61d32de4-de66-4301-8d57-2a29771a1460",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set a daily reminder to {reminder_content}",
+    "tokens": [
+      "set",
+      "a",
+      "daily",
+      "reminder",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e6cb87c0-6bc3-4463-bb1f-d6f7c2ff0114",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set a weekly reminder for {reminder_content}",
+    "tokens": [
+      "set",
+      "a",
+      "weekly",
+      "reminder",
+      "for",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3e53e77b-e884-4e3a-84f6-df67b051289e",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me every morning to {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "every",
+      "morning",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5de52aa1-d0a6-422a-bed9-81ec02a34329",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me every night to {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "every",
+      "night",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "966bdfd7-9fac-443b-b04e-5fb046e60499",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "recurring reminder for {reminder_content}",
+    "tokens": [
+      "recurring",
+      "reminder",
+      "for",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "66abb3e9-1c63-46d6-9bdc-ee08c21d9be4",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me every weekday about {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "every",
+      "weekday",
+      "about",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5655cd3b-a460-42f0-98bd-4fbab90fc331",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me daily about {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "daily",
+      "about",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0950bdbb-a2b2-4798-b19b-0c0c001c94e5",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me weekly about {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "weekly",
+      "about",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4b662a06-005f-442e-ba62-dc39fe40c0fc",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set repeating reminder to {reminder_content}",
+    "tokens": [
+      "set",
+      "repeating",
+      "reminder",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e1e5feb2-0fe5-4f85-970c-c79cbf74b36d",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "remind me regularly to {reminder_content}",
+    "tokens": [
+      "remind",
+      "me",
+      "regularly",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8d1e6bf8-5554-46d1-828e-d1c00b652f66",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "schedule recurring reminder {reminder_content}",
+    "tokens": [
+      "schedule",
+      "recurring",
+      "reminder",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b6c35532-68b4-4dd3-a34c-497a6d9f7c8b",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "I need a weekly reminder to {reminder_content}",
+    "tokens": [
+      "i",
+      "need",
+      "a",
+      "weekly",
+      "reminder",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e4cbb1e6-4c92-4799-a3fd-e5d7089e2662",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remind me every monthly",
+    "tokens": [
+      "remind",
+      "me",
+      "every",
+      "monthly"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "abc475cf-8593-4e4c-94e8-ce369311eb6d",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remind me every every Monday",
+    "tokens": [
+      "remind",
+      "me",
+      "every",
+      "every",
+      "monday"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "138857cc-60ae-4548-ac5a-2434f1dd7a28",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "remind me every every weekday",
+    "tokens": [
+      "remind",
+      "me",
+      "every",
+      "every",
+      "weekday"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9a09847d-e6a2-43c0-9ded-cc2c2822f500",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set up a repeating reminder for {reminder_content}",
+    "tokens": [
+      "set",
+      "up",
+      "a",
+      "repeating",
+      "reminder",
+      "for",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "87cc6833-3ac0-453a-95f9-999755c2d9a7",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "daily reminder to {reminder_content}",
+    "tokens": [
+      "daily",
+      "reminder",
+      "to",
+      "reminder_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "aaa95763-a810-4ed6-82ec-de64679547e9",
+    "intent": "reminder.set.recurring",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "weekly reminder to {reminder_content}",
+    "tokens": [
+      "weekly",
+      "reminder",
+      "to",
+      "reminder_content"
+    ]
+  }
+]

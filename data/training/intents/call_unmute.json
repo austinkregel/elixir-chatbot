@@ -1,0 +1,312 @@
+[
+  {
+    "entities": [],
+    "id": "d4b57d90-7254-424d-921c-0c271dbb9917",
+    "intent": "call.unmute",
+    "pos_tags": [
+      "NOUN"
+    ],
+    "text": "unmute",
+    "tokens": [
+      "unmute"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "add405b7-8d27-468c-8f40-91b25ea52c99",
+    "intent": "call.unmute",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "unmute myself",
+    "tokens": [
+      "unmute",
+      "myself"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "579938bf-e37d-4253-8883-df158b5472ee",
+    "intent": "call.unmute",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "turn on my mic",
+    "tokens": [
+      "turn",
+      "on",
+      "my",
+      "mic"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "62b7437f-6cc5-4e4a-be9a-da8af3e46bcf",
+    "intent": "call.unmute",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "unmute my microphone",
+    "tokens": [
+      "unmute",
+      "my",
+      "microphone"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7beeb408-437a-47ac-92e5-911a4328664e",
+    "intent": "call.unmute",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "take off mute",
+    "tokens": [
+      "take",
+      "off",
+      "mute"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2fcf9452-9aaf-4336-bfe5-fc90c310f6d4",
+    "intent": "call.unmute",
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "text": "unmute me",
+    "tokens": [
+      "unmute",
+      "me"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d3080330-c1de-4468-a2a6-8d21a168d459",
+    "intent": "call.unmute",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP"
+    ],
+    "text": "turn mic on",
+    "tokens": [
+      "turn",
+      "mic",
+      "on"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "41c75032-18ae-4e26-8d32-bb25bafb59c1",
+    "intent": "call.unmute",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "unmute audio",
+    "tokens": [
+      "unmute",
+      "audio"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5caf118b-074d-479b-808f-86b78f9ccc9f",
+    "intent": "call.unmute",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "enable my microphone",
+    "tokens": [
+      "enable",
+      "my",
+      "microphone"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a7ec0837-37c3-47b1-a37a-f0d4b19c9cd2",
+    "intent": "call.unmute",
+    "pos_tags": [
+      "NOUN",
+      "ADP"
+    ],
+    "text": "mic on",
+    "tokens": [
+      "mic",
+      "on"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c21b324c-a665-44da-a1fa-58c6fd78a8a3",
+    "intent": "call.unmute",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "turn on microphone",
+    "tokens": [
+      "turn",
+      "on",
+      "microphone"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "948a5765-8fa3-414c-8fe2-cde4dd17f6c9",
+    "intent": "call.unmute",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "get off mute",
+    "tokens": [
+      "get",
+      "off",
+      "mute"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "eae40c6f-d19b-4a6a-b0ff-4eecd4f47580",
+    "intent": "call.unmute",
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "I want to unmute",
+    "tokens": [
+      "i",
+      "want",
+      "to",
+      "unmute"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "11c2b6b4-716c-4873-b8eb-5cd381736778",
+    "intent": "call.unmute",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "unmute please",
+    "tokens": [
+      "unmute",
+      "please"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "82c204b2-4a98-4b7f-a79b-e6d91cb1332f",
+    "intent": "call.unmute",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "NOUN",
+      "PRON"
+    ],
+    "text": "can you unmute me",
+    "tokens": [
+      "can",
+      "you",
+      "unmute",
+      "me"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ea98874d-d47f-4984-bfea-0c6bf597acb2",
+    "intent": "call.unmute",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "switch off mute",
+    "tokens": [
+      "switch",
+      "off",
+      "mute"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a9a53c90-7cf7-4058-93c9-bce23ec5d61c",
+    "intent": "call.unmute",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "activate mic",
+    "tokens": [
+      "activate",
+      "mic"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8422a642-301f-4ca0-b35b-6f6932d12d88",
+    "intent": "call.unmute",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP"
+    ],
+    "text": "turn the mic back on",
+    "tokens": [
+      "turn",
+      "the",
+      "mic",
+      "back",
+      "on"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "96dd71d4-1967-4f2d-ad1f-5c7903dc820e",
+    "intent": "call.unmute",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "remove mute",
+    "tokens": [
+      "remove",
+      "mute"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e755125a-3f8b-4bae-9183-8a4021c8db5c",
+    "intent": "call.unmute",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "unmute now",
+    "tokens": [
+      "unmute",
+      "now"
+    ]
+  }
+]

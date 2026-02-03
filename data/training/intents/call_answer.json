@@ -1,0 +1,306 @@
+[
+  {
+    "entities": [],
+    "id": "3ec8786b-8922-4f67-94a2-72aa7cb730cf",
+    "intent": "call.answer",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "VERB"
+    ],
+    "text": "answer the call",
+    "tokens": [
+      "answer",
+      "the",
+      "call"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8f86e9ac-56ea-477b-8aef-7d494058d115",
+    "intent": "call.answer",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "pick up",
+    "tokens": [
+      "pick",
+      "up"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a8b89432-e5e2-4d17-8029-fb911920eada",
+    "intent": "call.answer",
+    "pos_tags": [
+      "NOUN"
+    ],
+    "text": "answer",
+    "tokens": [
+      "answer"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "65c1a3b5-5ce9-433e-870f-a2ccf4a94bc5",
+    "intent": "call.answer",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "VERB"
+    ],
+    "text": "accept the call",
+    "tokens": [
+      "accept",
+      "the",
+      "call"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5a299df5-77e6-4558-a3a4-040d1da31ceb",
+    "intent": "call.answer",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "pick up the phone",
+    "tokens": [
+      "pick",
+      "up",
+      "the",
+      "phone"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e025b00d-f223-4f2e-bb38-59edf715cc75",
+    "intent": "call.answer",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "VERB"
+    ],
+    "text": "take the call",
+    "tokens": [
+      "take",
+      "the",
+      "call"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ef40e6dc-7195-448f-bcd3-3d9e18f63ad5",
+    "intent": "call.answer",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "answer the phone",
+    "tokens": [
+      "answer",
+      "the",
+      "phone"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8d149c31-77ad-4083-995c-450827e94f6e",
+    "intent": "call.answer",
+    "pos_tags": [
+      "NOUN",
+      "VERB"
+    ],
+    "text": "accept call",
+    "tokens": [
+      "accept",
+      "call"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6060c70c-3fc5-4b9a-852d-2a31f51e57f4",
+    "intent": "call.answer",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "VERB"
+    ],
+    "text": "get the call",
+    "tokens": [
+      "get",
+      "the",
+      "call"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3b39698f-b7cc-46ca-8377-2073ed6254c6",
+    "intent": "call.answer",
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "text": "answer it",
+    "tokens": [
+      "answer",
+      "it"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "375f66c9-16d7-4887-aefa-3fd03712d689",
+    "intent": "call.answer",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "pick it up",
+    "tokens": [
+      "pick",
+      "it",
+      "up"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a289815c-ccff-4c29-8abf-9bd7610c27ab",
+    "intent": "call.answer",
+    "pos_tags": [
+      "VERB",
+      "PRON"
+    ],
+    "text": "take it",
+    "tokens": [
+      "take",
+      "it"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "308822e2-7dbe-4f73-9c5f-049739692f01",
+    "intent": "call.answer",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "accept incoming call",
+    "tokens": [
+      "accept",
+      "incoming",
+      "call"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "60600010-1f02-4ea9-82ea-92f0f820c662",
+    "intent": "call.answer",
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PRON"
+    ],
+    "text": "I'll take it",
+    "tokens": [
+      "i'll",
+      "take",
+      "it"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "14ad7003-ff29-4854-917a-ab0e8814e9f6",
+    "intent": "call.answer",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP"
+    ],
+    "text": "put them through",
+    "tokens": [
+      "put",
+      "them",
+      "through"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "987f471a-a512-478d-9c09-e2c17eceef4b",
+    "intent": "call.answer",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "VERB"
+    ],
+    "text": "connect the call",
+    "tokens": [
+      "connect",
+      "the",
+      "call"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "97114b43-2977-4b65-bd5b-00d0e2dcde89",
+    "intent": "call.answer",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "answer incoming",
+    "tokens": [
+      "answer",
+      "incoming"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a0739b80-b13b-48cb-baa6-997dc6dc3a5e",
+    "intent": "call.answer",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "get the phone",
+    "tokens": [
+      "get",
+      "the",
+      "phone"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4ff98e14-15b5-435c-94fa-af2879a9a62d",
+    "intent": "call.answer",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "VERB"
+    ],
+    "text": "receive the call",
+    "tokens": [
+      "receive",
+      "the",
+      "call"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "eed1b33d-23b1-4719-bd8c-61d57092689a",
+    "intent": "call.answer",
+    "pos_tags": [
+      "NOUN"
+    ],
+    "text": "accept",
+    "tokens": [
+      "accept"
+    ]
+  }
+]

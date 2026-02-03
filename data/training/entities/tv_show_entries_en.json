@@ -1,0 +1,42 @@
+[
+  {
+    "value": "Breaking Bad",
+    "synonyms": ["Breaking Bad", "breaking bad show"]
+  },
+  {
+    "value": "The Office",
+    "synonyms": ["The Office", "Office", "the office show"]
+  },
+  {
+    "value": "Game of Thrones",
+    "synonyms": ["Game of Thrones", "GOT", "game of thrones show"]
+  },
+  {
+    "value": "Friends",
+    "synonyms": ["Friends", "friends show", "friends tv show"]
+  },
+  {
+    "value": "Stranger Things",
+    "synonyms": ["Stranger Things", "stranger things show"]
+  },
+  {
+    "value": "The Crown",
+    "synonyms": ["The Crown", "crown show", "the crown netflix"]
+  },
+  {
+    "value": "The Mandalorian",
+    "synonyms": ["The Mandalorian", "Mandalorian", "mando"]
+  },
+  {
+    "value": "Ted Lasso",
+    "synonyms": ["Ted Lasso", "ted lasso show"]
+  },
+  {
+    "value": "Seinfeld",
+    "synonyms": ["Seinfeld", "seinfeld show"]
+  },
+  {
+    "value": "The Simpsons",
+    "synonyms": ["The Simpsons", "Simpsons", "simpsons show"]
+  }
+]

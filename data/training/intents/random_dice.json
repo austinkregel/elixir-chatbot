@@ -1,0 +1,304 @@
+[
+  {
+    "entities": [],
+    "id": "cfcf5247-b3bb-4eb2-b12a-d308ae72f4f7",
+    "intent": "random.dice",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "roll a dice",
+    "tokens": [
+      "roll",
+      "a",
+      "dice"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b43a6af9-1f53-4bd5-91f4-5ff34a548667",
+    "intent": "random.dice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "roll dice",
+    "tokens": [
+      "roll",
+      "dice"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "cef8e2b8-889b-4a68-9417-04a8ccccb7c2",
+    "intent": "random.dice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "throw dice",
+    "tokens": [
+      "throw",
+      "dice"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "009966d5-e431-40d6-be41-fcf6f89181af",
+    "intent": "random.dice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "dice roll",
+    "tokens": [
+      "dice",
+      "roll"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7e510069-b6e4-4631-b763-7dcc2119c88f",
+    "intent": "random.dice",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "roll the dice",
+    "tokens": [
+      "roll",
+      "the",
+      "dice"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "3e8a9729-d00e-47a3-af88-f5a8f29afc5c",
+    "intent": "random.dice",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "roll a die",
+    "tokens": [
+      "roll",
+      "a",
+      "die"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9172120b-c677-42be-9f32-34aed506a815",
+    "intent": "random.dice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "toss dice",
+    "tokens": [
+      "toss",
+      "dice"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "490f0797-7f01-46de-a2d3-6f4a1b8010d4",
+    "intent": "random.dice",
+    "pos_tags": [
+      "NOUN"
+    ],
+    "text": "roll",
+    "tokens": [
+      "roll"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "93852e13-54d1-46d9-ac2f-94c889eca479",
+    "intent": "random.dice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "dice throw",
+    "tokens": [
+      "dice",
+      "throw"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2610e799-17c4-47fa-9222-9ae73a8b6156",
+    "intent": "random.dice",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "give me a dice roll",
+    "tokens": [
+      "give",
+      "me",
+      "a",
+      "dice",
+      "roll"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ae2ece3b-2462-4fab-ac92-8c97734eb288",
+    "intent": "random.dice",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "text": "roll for me",
+    "tokens": [
+      "roll",
+      "for",
+      "me"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b41811eb-8df9-47d8-aaa8-f5fd22416366",
+    "intent": "random.dice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "random dice",
+    "tokens": [
+      "random",
+      "dice"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "dd18d38f-541e-4943-a6b6-f4b5ba89fe3a",
+    "intent": "random.dice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "dice please",
+    "tokens": [
+      "dice",
+      "please"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b1cf1e1e-25ce-401a-897c-33f9f03e29f7",
+    "intent": "random.dice",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "throw the dice",
+    "tokens": [
+      "throw",
+      "the",
+      "dice"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d9fdac8c-da2c-4353-870e-bfd9ae2af510",
+    "intent": "random.dice",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "roll a d6",
+    "tokens": [
+      "roll",
+      "a",
+      "d6"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e9eba353-dc22-480d-9b69-464a8ecd1b9f",
+    "intent": "random.dice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "roll two dice",
+    "tokens": [
+      "roll",
+      "two",
+      "dice"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "963a2cdb-7e82-4b0e-8d52-06ab132bfc3a",
+    "intent": "random.dice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "dice game",
+    "tokens": [
+      "dice",
+      "game"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "561fef00-bb15-4718-ab10-2e08e6561187",
+    "intent": "random.dice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "text": "roll dice for me",
+    "tokens": [
+      "roll",
+      "dice",
+      "for",
+      "me"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8c74dfb3-d909-4d1e-9ae1-4d8028223bb9",
+    "intent": "random.dice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "cast dice",
+    "tokens": [
+      "cast",
+      "dice"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1c7b94e7-e7d4-4b81-acd3-b727b9b75620",
+    "intent": "random.dice",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "dice toss",
+    "tokens": [
+      "dice",
+      "toss"
+    ]
+  }
+]

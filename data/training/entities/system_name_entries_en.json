@@ -1,0 +1,38 @@
+[
+  {
+    "value": "database server",
+    "synonyms": ["database server", "DB server", "database"]
+  },
+  {
+    "value": "API gateway",
+    "synonyms": ["API gateway", "gateway", "API server"]
+  },
+  {
+    "value": "web server",
+    "synonyms": ["web server", "web application", "frontend server"]
+  },
+  {
+    "value": "authentication service",
+    "synonyms": ["authentication service", "auth service", "login service"]
+  },
+  {
+    "value": "email server",
+    "synonyms": ["email server", "mail server", "SMTP server"]
+  },
+  {
+    "value": "backup system",
+    "synonyms": ["backup system", "backup server", "backup service"]
+  },
+  {
+    "value": "cache server",
+    "synonyms": ["cache server", "Redis", "caching service"]
+  },
+  {
+    "value": "load balancer",
+    "synonyms": ["load balancer", "LB", "traffic manager"]
+  },
+  {
+    "value": "monitoring system",
+    "synonyms": ["monitoring system", "monitoring service", "alerting system"]
+  }
+]

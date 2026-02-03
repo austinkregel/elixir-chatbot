@@ -1,0 +1,360 @@
+[
+  {
+    "entities": [],
+    "id": "55be9956-daca-4378-9634-6b955affaa27",
+    "intent": "knowledge.define",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "define {word}",
+    "tokens": [
+      "define",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "53db10dd-8153-4f67-bc4a-05ee457851f6",
+    "intent": "knowledge.define",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what does {word} mean",
+    "tokens": [
+      "what",
+      "does",
+      "word",
+      "mean"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e13c2f76-7403-4305-8fe5-06a7524ddeb5",
+    "intent": "knowledge.define",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "definition of {word}",
+    "tokens": [
+      "definition",
+      "of",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "71320739-bd8f-48d0-aa83-b6f2b96d6bfa",
+    "intent": "knowledge.define",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what is the definition of {word}",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "definition",
+      "of",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ee8603e0-73b2-4dee-b333-dbe799dbdee1",
+    "intent": "knowledge.define",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "meaning of {word}",
+    "tokens": [
+      "meaning",
+      "of",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c6fd5b3f-bed9-4742-af0f-c6d3c368d08f",
+    "intent": "knowledge.define",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's {word} mean",
+    "tokens": [
+      "what's",
+      "word",
+      "mean"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "0d822fa8-c701-402d-a556-d52ef43b88a0",
+    "intent": "knowledge.define",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "define the word {word}",
+    "tokens": [
+      "define",
+      "the",
+      "word",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e394ca12-208e-4977-b6a5-6bf339414b3a",
+    "intent": "knowledge.define",
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "tell me what {word} means",
+    "tokens": [
+      "tell",
+      "me",
+      "what",
+      "word",
+      "means"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "57681390-6600-4eab-8032-8db26670dc0a",
+    "intent": "knowledge.define",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "{word} definition",
+    "tokens": [
+      "word",
+      "definition"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d275b07a-2f6d-4d36-b54a-1e2fe15519db",
+    "intent": "knowledge.define",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN"
+    ],
+    "text": "what is {word}",
+    "tokens": [
+      "what",
+      "is",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "fc4647c1-c4f7-43af-9e6a-0fc4e93beb4c",
+    "intent": "knowledge.define",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "explain {word}",
+    "tokens": [
+      "explain",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "99cf3619-884d-4464-abe8-da0945b4e974",
+    "intent": "knowledge.define",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what's the meaning of {word}",
+    "tokens": [
+      "what's",
+      "the",
+      "meaning",
+      "of",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1f3dc5c9-1e26-423d-8776-9afd005256de",
+    "intent": "knowledge.define",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "dictionary {word}",
+    "tokens": [
+      "dictionary",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6a10331e-e771-4d3b-95e4-176fc70b493f",
+    "intent": "knowledge.define",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "look up {word}",
+    "tokens": [
+      "look",
+      "up",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "287d4b70-dbb7-4aff-9466-861425084177",
+    "intent": "knowledge.define",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what does the word {word} mean",
+    "tokens": [
+      "what",
+      "does",
+      "the",
+      "word",
+      "word",
+      "mean"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "133afd21-7044-4ea9-ae77-cab5e9da7745",
+    "intent": "knowledge.define",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON"
+    ],
+    "text": "define {word} for me",
+    "tokens": [
+      "define",
+      "word",
+      "for",
+      "me"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c61226c8-1594-4bf7-942e-921714697d16",
+    "intent": "knowledge.define",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "meaning of the word {word}",
+    "tokens": [
+      "meaning",
+      "of",
+      "the",
+      "word",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "88c1cd8a-7646-4e23-b97a-79ec1e0b2e54",
+    "intent": "knowledge.define",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what is meant by {word}",
+    "tokens": [
+      "what",
+      "is",
+      "meant",
+      "by",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "829eded3-e8b6-4251-96a3-d06c2d648a94",
+    "intent": "knowledge.define",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what do you mean by {word}",
+    "tokens": [
+      "what",
+      "do",
+      "you",
+      "mean",
+      "by",
+      "word"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e5058319-6f43-4934-987e-bf890d5f5c39",
+    "intent": "knowledge.define",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "give me the definition of {word}",
+    "tokens": [
+      "give",
+      "me",
+      "the",
+      "definition",
+      "of",
+      "word"
+    ]
+  }
+]

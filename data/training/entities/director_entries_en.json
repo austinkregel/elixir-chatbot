@@ -1,0 +1,42 @@
+[
+  {
+    "value": "Christopher Nolan",
+    "synonyms": ["Christopher Nolan", "Chris Nolan", "Nolan"]
+  },
+  {
+    "value": "Steven Spielberg",
+    "synonyms": ["Steven Spielberg", "Spielberg"]
+  },
+  {
+    "value": "Martin Scorsese",
+    "synonyms": ["Martin Scorsese", "Scorsese"]
+  },
+  {
+    "value": "Quentin Tarantino",
+    "synonyms": ["Quentin Tarantino", "Tarantino"]
+  },
+  {
+    "value": "James Cameron",
+    "synonyms": ["James Cameron", "Cameron"]
+  },
+  {
+    "value": "Ridley Scott",
+    "synonyms": ["Ridley Scott", "Scott"]
+  },
+  {
+    "value": "Denis Villeneuve",
+    "synonyms": ["Denis Villeneuve", "Villeneuve"]
+  },
+  {
+    "value": "Greta Gerwig",
+    "synonyms": ["Greta Gerwig", "Gerwig"]
+  },
+  {
+    "value": "Jordan Peele",
+    "synonyms": ["Jordan Peele", "Peele"]
+  },
+  {
+    "value": "Wes Anderson",
+    "synonyms": ["Wes Anderson", "Anderson"]
+  }
+]

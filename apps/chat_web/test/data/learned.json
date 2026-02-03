@@ -8,6 +8,56 @@
       "entity": "Test",
       "entity_type": "location",
       "fact": "Test claim",
+      "id": "learned_aad35ac0d37e93d0",
+      "learned_at": 1770092949,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Entity3",
+      "entity_type": "location",
+      "fact": "Claim 3",
+      "id": "learned_29fd3d1789a1c1cd",
+      "learned_at": 1770092949,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Entity2",
+      "entity_type": "location",
+      "fact": "Claim 2",
+      "id": "learned_09e0a281fec32926",
+      "learned_at": 1770092949,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Entity1",
+      "entity_type": "location",
+      "fact": "Claim 1",
+      "id": "learned_d212df74b8fd4edd",
+      "learned_at": 1770092949,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Test",
+      "entity_type": "location",
+      "fact": "Test claim",
+      "id": "learned_7cbcc203cee88615",
+      "learned_at": 1770092948,
+      "verification_source": "https://test-source.com/article"
+    },
+    {
+      "category": "learned",
+      "confidence": 0.7,
+      "entity": "Test",
+      "entity_type": "location",
+      "fact": "Test claim",
       "id": "learned_9e1bd80cbd050605",
       "learned_at": 1770052298,
       "verification_source": "https://test-source.com/article"

@@ -350,7 +350,8 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
 
     if existing_node_id do
       # Register mutual contradiction in JTMS
-      metadata = %{
+      # Note: metadata could be used for enhanced conflict resolution in future
+      _metadata = %{
         source: :knowledge_expansion,
         new_fact: %{
           claim: new_paper.title,

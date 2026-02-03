@@ -1,0 +1,290 @@
+[
+  {
+    "entities": [],
+    "id": "c6d63d62-849c-41d0-9c51-bd43ec970c1d",
+    "intent": "status.version",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what version",
+    "tokens": [
+      "what",
+      "version"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f0a1b5a2-1461-4990-9225-b3df5359cf70",
+    "intent": "status.version",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "version number",
+    "tokens": [
+      "version",
+      "number"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7e54d786-7632-4f50-bfda-afa93ee5356f",
+    "intent": "status.version",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "current version",
+    "tokens": [
+      "current",
+      "version"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "244d092a-ebc5-4149-a525-c598a5abcf43",
+    "intent": "status.version",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "which version",
+    "tokens": [
+      "which",
+      "version"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b548fb5f-cd2e-4463-baee-26e601e44c00",
+    "intent": "status.version",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "version info",
+    "tokens": [
+      "version",
+      "info"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4110648b-7810-418c-875c-219e3f9918d5",
+    "intent": "status.version",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "DET"
+    ],
+    "text": "what version is this",
+    "tokens": [
+      "what",
+      "version",
+      "is",
+      "this"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9271077e-066c-4ef4-a32c-424d131a1f52",
+    "intent": "status.version",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "software version",
+    "tokens": [
+      "software",
+      "version"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5f257ada-2c4b-414d-9039-a4cf5c3f65e2",
+    "intent": "status.version",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "system version",
+    "tokens": [
+      "system",
+      "version"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d4df0cf7-5963-414c-93b3-cbb7d539c93f",
+    "intent": "status.version",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "check version",
+    "tokens": [
+      "check",
+      "version"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4ed40713-da7c-4015-9565-f6d9187f2c70",
+    "intent": "status.version",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "version status",
+    "tokens": [
+      "version",
+      "status"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "85727114-1f86-4098-88fc-d86d989faa35",
+    "intent": "status.version",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "show version",
+    "tokens": [
+      "show",
+      "version"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "c41013ee-1c80-4acb-ab7a-7fd1486bded1",
+    "intent": "status.version",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what release",
+    "tokens": [
+      "what",
+      "release"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "a5a5b622-4f80-4f6e-8dc6-ddd84f0afdc5",
+    "intent": "status.version",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "version information",
+    "tokens": [
+      "version",
+      "information"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "906245fe-688c-4e9c-9e9b-7f4c6f0d71ca",
+    "intent": "status.version",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "running version",
+    "tokens": [
+      "running",
+      "version"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ae2b0e80-8800-4888-87f7-d35c1ff97ff6",
+    "intent": "status.version",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON"
+    ],
+    "text": "what version are you",
+    "tokens": [
+      "what",
+      "version",
+      "are",
+      "you"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2255f954-e4ca-43fd-9ba5-6ac40d44c318",
+    "intent": "status.version",
+    "pos_tags": [
+      "NOUN",
+      "VERB"
+    ],
+    "text": "version check",
+    "tokens": [
+      "version",
+      "check"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2bcaadaa-8d24-4410-9f79-94ea7b1ad2ef",
+    "intent": "status.version",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "app version",
+    "tokens": [
+      "app",
+      "version"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d038ada2-4be8-4e77-b85b-ebcf094d52f4",
+    "intent": "status.version",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "display version",
+    "tokens": [
+      "display",
+      "version"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e6b54472-a101-4e4f-9df2-946ab65aaf77",
+    "intent": "status.version",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "get version",
+    "tokens": [
+      "get",
+      "version"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "20a54c9b-655d-4766-86bc-de796c78bffa",
+    "intent": "status.version",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "version details",
+    "tokens": [
+      "version",
+      "details"
+    ]
+  }
+]

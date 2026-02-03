@@ -1,0 +1,38 @@
+[
+  {
+    "value": "sales database",
+    "synonyms": ["sales database", "sales DB", "the sales database"]
+  },
+  {
+    "value": "user logs",
+    "synonyms": ["user logs", "user activity logs", "user data"]
+  },
+  {
+    "value": "customer records",
+    "synonyms": ["customer records", "customer database", "CRM"]
+  },
+  {
+    "value": "analytics",
+    "synonyms": ["analytics", "analytics data", "website analytics"]
+  },
+  {
+    "value": "inventory",
+    "synonyms": ["inventory", "inventory system", "stock database"]
+  },
+  {
+    "value": "financial records",
+    "synonyms": ["financial records", "financial data", "accounting database"]
+  },
+  {
+    "value": "server logs",
+    "synonyms": ["server logs", "application logs", "system logs"]
+  },
+  {
+    "value": "email archive",
+    "synonyms": ["email archive", "archived emails", "email history"]
+  },
+  {
+    "value": "sensor data",
+    "synonyms": ["sensor data", "IoT data", "device data"]
+  }
+]

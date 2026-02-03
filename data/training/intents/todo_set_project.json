@@ -1,0 +1,376 @@
+[
+  {
+    "entities": [],
+    "id": "1f0578c9-15ec-449b-977b-e6258ed3d868",
+    "intent": "todo.set_project",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "move {task_content} to {project}",
+    "tokens": [
+      "move",
+      "task_content",
+      "to",
+      "project"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "4b2b274f-6d7d-43b7-bc65-d50a3ef30153",
+    "intent": "todo.set_project",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "put {task_content} in {project}",
+    "tokens": [
+      "put",
+      "task_content",
+      "in",
+      "project"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "eddf62e1-e70c-40da-8cc3-01779bfd58ac",
+    "intent": "todo.set_project",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "add {task_content} to {project} project",
+    "tokens": [
+      "add",
+      "task_content",
+      "to",
+      "project",
+      "project"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "29a725bf-0ef9-473d-94f4-197a420f5b1b",
+    "intent": "todo.set_project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "assign {task_content} to {project}",
+    "tokens": [
+      "assign",
+      "task_content",
+      "to",
+      "project"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1902d61c-fde3-431b-974a-c617d0c6e8b0",
+    "intent": "todo.set_project",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set {task_content} project to {project}",
+    "tokens": [
+      "set",
+      "task_content",
+      "project",
+      "to",
+      "project"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "edbc397d-1875-4dc6-8b23-c5f3c0f7bd2a",
+    "intent": "todo.set_project",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "change {task_content} project to {project}",
+    "tokens": [
+      "change",
+      "task_content",
+      "project",
+      "to",
+      "project"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "2063ff48-b99c-4ee5-b51b-e2aaca7f326c",
+    "intent": "todo.set_project",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "VERB"
+    ],
+    "text": "move {task_content} to {project} list",
+    "tokens": [
+      "move",
+      "task_content",
+      "to",
+      "project",
+      "list"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "6f0b43cf-14dc-4d19-8152-6a8db10b7b77",
+    "intent": "todo.set_project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "categorize {task_content} under {project}",
+    "tokens": [
+      "categorize",
+      "task_content",
+      "under",
+      "project"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "66074ddb-3a6d-465d-83cd-90d8bb79da7f",
+    "intent": "todo.set_project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "file {task_content} under {project}",
+    "tokens": [
+      "file",
+      "task_content",
+      "under",
+      "project"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f7c55158-c4fe-43cb-bd79-6b5f8b989671",
+    "intent": "todo.set_project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "{task_content} belongs to {project}",
+    "tokens": [
+      "task_content",
+      "belongs",
+      "to",
+      "project"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "dfc8a688-9ff6-47fb-adcc-d3983cc61a34",
+    "intent": "todo.set_project",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "put {task_content} under {project}",
+    "tokens": [
+      "put",
+      "task_content",
+      "under",
+      "project"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "5adc337e-cf0d-4941-b345-9bd998fa3cc9",
+    "intent": "todo.set_project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "organize {task_content} in {project}",
+    "tokens": [
+      "organize",
+      "task_content",
+      "in",
+      "project"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "83913a82-2061-435e-bb78-0ce80a6d9852",
+    "intent": "todo.set_project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "place {task_content} in {project}",
+    "tokens": [
+      "place",
+      "task_content",
+      "in",
+      "project"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e0c5ebdc-a589-470c-b840-e93974a06698",
+    "intent": "todo.set_project",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "set project for {task_content} to {project}",
+    "tokens": [
+      "set",
+      "project",
+      "for",
+      "task_content",
+      "to",
+      "project"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7e0646e9-1334-42fa-85d6-0ca632b71794",
+    "intent": "todo.set_project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "assign {project} project to {task_content}",
+    "tokens": [
+      "assign",
+      "project",
+      "project",
+      "to",
+      "task_content"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "658dd8d9-7669-47c4-b305-77fd374dab6c",
+    "intent": "todo.set_project",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "move task {task_content} to {project}",
+    "tokens": [
+      "move",
+      "task",
+      "task_content",
+      "to",
+      "project"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9393f91b-42cd-4f90-954e-00005a2ec4c6",
+    "intent": "todo.set_project",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "{task_content} to {project}",
+    "tokens": [
+      "task_content",
+      "to",
+      "project"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "587c9ce6-d62b-45a7-8f9d-159287e4feef",
+    "intent": "todo.set_project",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "change {task_content} to {project}",
+    "tokens": [
+      "change",
+      "task_content",
+      "to",
+      "project"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "adc7c4bb-109a-4d9f-9b2e-8d721b8b0b02",
+    "intent": "todo.set_project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "tag {task_content} with {project}",
+    "tokens": [
+      "tag",
+      "task_content",
+      "with",
+      "project"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d01e50c6-74fa-41e8-9859-17887f4c2f00",
+    "intent": "todo.set_project",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "link {task_content} to {project}",
+    "tokens": [
+      "link",
+      "task_content",
+      "to",
+      "project"
+    ]
+  }
+]

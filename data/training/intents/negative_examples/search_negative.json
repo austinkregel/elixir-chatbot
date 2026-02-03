@@ -1,0 +1,42 @@
+[
+  {
+    "text": "show me the image",
+    "correct_intent": "display.show_image"
+  },
+  {
+    "text": "analyze the data",
+    "correct_intent": "analyze.data"
+  },
+  {
+    "text": "what time is it",
+    "correct_intent": "time.current"
+  },
+  {
+    "text": "calculate something",
+    "correct_intent": "math.calculate"
+  },
+  {
+    "text": "status report",
+    "correct_intent": "status.report"
+  },
+  {
+    "text": "zoom in on that",
+    "correct_intent": "display.zoom_in"
+  },
+  {
+    "text": "compare the charts",
+    "correct_intent": "analyze.compare"
+  },
+  {
+    "text": "estimate the time",
+    "correct_intent": "compute.estimate"
+  },
+  {
+    "text": "check system status",
+    "correct_intent": "status.check_system"
+  },
+  {
+    "text": "show the chart",
+    "correct_intent": "display.show_chart"
+  }
+]

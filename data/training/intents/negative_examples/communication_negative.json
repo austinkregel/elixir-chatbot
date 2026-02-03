@@ -1,0 +1,42 @@
+[
+  {
+    "text": "remind me to call mom",
+    "correct_intent": "reminder.set"
+  },
+  {
+    "text": "schedule a meeting",
+    "correct_intent": "calendar.meeting.schedule"
+  },
+  {
+    "text": "add milk to my list",
+    "correct_intent": "shopping.add"
+  },
+  {
+    "text": "what's the weather",
+    "correct_intent": "weather"
+  },
+  {
+    "text": "play some music",
+    "correct_intent": "music.play"
+  },
+  {
+    "text": "turn on the lights",
+    "correct_intent": "smarthome.lights.on"
+  },
+  {
+    "text": "set an alarm",
+    "correct_intent": "alarm.set"
+  },
+  {
+    "text": "what's on my calendar",
+    "correct_intent": "calendar.query.today"
+  },
+  {
+    "text": "add task buy groceries",
+    "correct_intent": "todo.add"
+  },
+  {
+    "text": "set a timer",
+    "correct_intent": "timer.set"
+  }
+]

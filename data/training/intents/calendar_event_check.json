@@ -1,0 +1,1916 @@
+[
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 6,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 7,
+        "start": 7,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "f8a39e41-60f0-4956-b1ec-d256e279eb99",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "VERB",
+      "CONJ",
+      "PRON",
+      "AUX",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "check if I have anything on next Monday",
+    "tokens": [
+      "check",
+      "if",
+      "i",
+      "have",
+      "anything",
+      "on",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 8,
+        "start": 6,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "1528c942-9c0e-4d4c-bb61-d31564d5fe79",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "VERB",
+      "CONJ",
+      "PRON",
+      "AUX",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "check if I have anything on tomorrow at 2pm",
+    "tokens": [
+      "check",
+      "if",
+      "i",
+      "have",
+      "anything",
+      "on",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "tomorrow",
+        "type": "date_time"
+      }
+    ],
+    "id": "03f2323c-20a5-4e6f-934d-e091964b6a4e",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "do I have any events on tomorrow",
+    "tokens": [
+      "do",
+      "i",
+      "have",
+      "any",
+      "events",
+      "on",
+      "tomorrow"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 8,
+        "start": 6,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "e7f57a37-5a66-46c4-b25d-d222f0fd72e4",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "do I have any events on tomorrow at 2pm",
+    "tokens": [
+      "do",
+      "i",
+      "have",
+      "any",
+      "events",
+      "on",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "next week",
+        "type": "date_time"
+      }
+    ],
+    "id": "f3670e86-8172-4b91-88f9-37809dcb961e",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's scheduled for next week",
+    "tokens": [
+      "what's",
+      "scheduled",
+      "for",
+      "next",
+      "week"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 3,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "a400e5a3-47a0-4893-a12e-51a0ff653309",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "what's scheduled for in 2 hours",
+    "tokens": [
+      "what's",
+      "scheduled",
+      "for",
+      "in",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 3,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "878737ea-d149-4e6f-bd2f-8af2daf91248",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what's scheduled for tomorrow at 2pm",
+    "tokens": [
+      "what's",
+      "scheduled",
+      "for",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 9,
+        "start": 7,
+        "text": "friday at 3pm",
+        "type": "date_time"
+      },
+      {
+        "end": 7,
+        "start": 7,
+        "text": "friday",
+        "type": "date_time"
+      }
+    ],
+    "id": "86ab365c-bf18-4919-8994-a55b56f87074",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "AUX",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "is there anything on my calendar for Friday at 3pm",
+    "tokens": [
+      "is",
+      "there",
+      "anything",
+      "on",
+      "my",
+      "calendar",
+      "for",
+      "friday",
+      "at",
+      "3pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 7,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 9,
+        "start": 7,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "e716c003-8f85-472a-bfcd-3ec83f6cac82",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "AUX",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "is there anything on my calendar for tomorrow at 2pm",
+    "tokens": [
+      "is",
+      "there",
+      "anything",
+      "on",
+      "my",
+      "calendar",
+      "for",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 8,
+        "start": 7,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 8,
+        "start": 8,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "26f3cdb2-e243-493a-bf10-8678d172aca7",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "AUX",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "is there anything on my calendar for next Monday",
+    "tokens": [
+      "is",
+      "there",
+      "anything",
+      "on",
+      "my",
+      "calendar",
+      "for",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "tomorrow",
+        "type": "date_time"
+      }
+    ],
+    "id": "1abac07f-f310-4b46-be94-dbe9187181ee",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "check my calendar for tomorrow",
+    "tokens": [
+      "check",
+      "my",
+      "calendar",
+      "for",
+      "tomorrow"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "a75bdef4-2e3a-42c2-8785-74689ea4cab7",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "check my calendar for next Monday",
+    "tokens": [
+      "check",
+      "my",
+      "calendar",
+      "for",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 4,
+        "text": "friday at 3pm",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "friday",
+        "type": "date_time"
+      }
+    ],
+    "id": "c970fb4b-2fc9-4688-a13c-a6d4130efff9",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "am I free on Friday at 3pm",
+    "tokens": [
+      "am",
+      "i",
+      "free",
+      "on",
+      "friday",
+      "at",
+      "3pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 4,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "ffc6c95c-8b07-42fc-9632-5e2726cb42d8",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "am I free on next Monday",
+    "tokens": [
+      "am",
+      "i",
+      "free",
+      "on",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 4,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "a8ae3860-dee5-4c23-b738-ed3aff72d614",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "am I free on tomorrow at 2pm",
+    "tokens": [
+      "am",
+      "i",
+      "free",
+      "on",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "tomorrow",
+        "type": "date_time"
+      }
+    ],
+    "id": "2384d384-8baf-472d-95a5-ee96296e4778",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "do I have plans on tomorrow",
+    "tokens": [
+      "do",
+      "i",
+      "have",
+      "plans",
+      "on",
+      "tomorrow"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 5,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 7,
+        "start": 6,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "80d7007c-b150-4180-9625-2779552d90dc",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "do I have plans on in 2 hours",
+    "tokens": [
+      "do",
+      "i",
+      "have",
+      "plans",
+      "on",
+      "in",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 7,
+        "start": 5,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "e06e9d83-2c4c-4b29-a4da-711b3294282f",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "do I have plans on tomorrow at 2pm",
+    "tokens": [
+      "do",
+      "i",
+      "have",
+      "plans",
+      "on",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 5,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "41b32c4f-a30f-4a97-844a-f16c77405c1d",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "AUX",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what do I have on next Monday",
+    "tokens": [
+      "what",
+      "do",
+      "i",
+      "have",
+      "on",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 5,
+        "text": "friday at 3pm",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 5,
+        "text": "friday",
+        "type": "date_time"
+      }
+    ],
+    "id": "2fa48e5b-f48d-4b2d-9964-82341e9c7e99",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "AUX",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what do I have on Friday at 3pm",
+    "tokens": [
+      "what",
+      "do",
+      "i",
+      "have",
+      "on",
+      "friday",
+      "at",
+      "3pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 5,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 7,
+        "start": 5,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "0ea47be1-33f8-4335-a10d-3738182f3fb8",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "PRON",
+      "AUX",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what do I have on tomorrow at 2pm",
+    "tokens": [
+      "what",
+      "do",
+      "i",
+      "have",
+      "on",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 3,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "6f4c5f9e-e7fc-4f7e-8521-9b492803beb5",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "anything scheduled for tomorrow at 2pm",
+    "tokens": [
+      "anything",
+      "scheduled",
+      "for",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "tomorrow",
+        "type": "date_time"
+      }
+    ],
+    "id": "b6060672-5764-4bdd-80b5-f8341e1fc1c4",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "anything scheduled for tomorrow",
+    "tokens": [
+      "anything",
+      "scheduled",
+      "for",
+      "tomorrow"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "0c6146b6-92b3-43b3-8fa4-d2e40feb7a70",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "anything scheduled for next Monday",
+    "tokens": [
+      "anything",
+      "scheduled",
+      "for",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 1,
+        "text": "next week",
+        "type": "date_time"
+      }
+    ],
+    "id": "8cf3e8ba-8bf2-4bd1-9666-7bcdeeae6e57",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "check next week on my calendar",
+    "tokens": [
+      "check",
+      "next",
+      "week",
+      "on",
+      "my",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 1,
+        "text": "friday at 3pm",
+        "type": "date_time"
+      },
+      {
+        "end": 1,
+        "start": 1,
+        "text": "friday",
+        "type": "date_time"
+      }
+    ],
+    "id": "8e37c73b-03a0-49df-9095-d822830c07fe",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "check Friday at 3pm on my calendar",
+    "tokens": [
+      "check",
+      "friday",
+      "at",
+      "3pm",
+      "on",
+      "my",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 1,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 2,
+        "start": 2,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "d831493d-3d02-4be7-8232-91751aeec9ac",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "check next Monday on my calendar",
+    "tokens": [
+      "check",
+      "next",
+      "monday",
+      "on",
+      "my",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "tomorrow",
+        "type": "date_time"
+      }
+    ],
+    "id": "806359a1-9525-4502-a50f-13ab7c44e2bd",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "AUX",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "is tomorrow free",
+    "tokens": [
+      "is",
+      "tomorrow",
+      "free"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 1,
+        "start": 1,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 3,
+        "start": 1,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "17ab1f5d-e6c4-4fb2-be99-974be09deeaa",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "AUX",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "is tomorrow at 2pm free",
+    "tokens": [
+      "is",
+      "tomorrow",
+      "at",
+      "2pm",
+      "free"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 1,
+        "text": "friday at 3pm",
+        "type": "date_time"
+      },
+      {
+        "end": 1,
+        "start": 1,
+        "text": "friday",
+        "type": "date_time"
+      }
+    ],
+    "id": "73c5a845-445f-4f2a-90b7-b35753457e41",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "AUX",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "is Friday at 3pm free",
+    "tokens": [
+      "is",
+      "friday",
+      "at",
+      "3pm",
+      "free"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 3,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "c5fca8e5-3355-4b0b-81ac-77cc4a55e239",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "what's happening on in 2 hours",
+    "tokens": [
+      "what's",
+      "happening",
+      "on",
+      "in",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "cc6e1204-eee2-4a11-a19d-53c7d3e2a6f0",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's happening on next Monday",
+    "tokens": [
+      "what's",
+      "happening",
+      "on",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "next week",
+        "type": "date_time"
+      }
+    ],
+    "id": "b0124c5b-a3de-4963-a455-540d87fd9786",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's happening on next week",
+    "tokens": [
+      "what's",
+      "happening",
+      "on",
+      "next",
+      "week"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 6,
+        "text": "next week",
+        "type": "date_time"
+      }
+    ],
+    "id": "5d224aba-3d44-42e0-91c9-39a338eefa77",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "do I have anything planned for next week",
+    "tokens": [
+      "do",
+      "i",
+      "have",
+      "anything",
+      "planned",
+      "for",
+      "next",
+      "week"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 8,
+        "start": 6,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 8,
+        "start": 7,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "bd46c209-f8d6-4d63-9905-9c3e5b288aeb",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "do I have anything planned for in 2 hours",
+    "tokens": [
+      "do",
+      "i",
+      "have",
+      "anything",
+      "planned",
+      "for",
+      "in",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 8,
+        "start": 6,
+        "text": "friday at 3pm",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 6,
+        "text": "friday",
+        "type": "date_time"
+      }
+    ],
+    "id": "dee86d7e-da6a-466d-9de5-b6267d83adaa",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "AUX",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "do I have anything planned for Friday at 3pm",
+    "tokens": [
+      "do",
+      "i",
+      "have",
+      "anything",
+      "planned",
+      "for",
+      "friday",
+      "at",
+      "3pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "tomorrow",
+        "type": "date_time"
+      }
+    ],
+    "id": "55ac1b8e-3420-4c0e-ba88-d1615ad5cfd8",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "look up tomorrow on my calendar",
+    "tokens": [
+      "look",
+      "up",
+      "tomorrow",
+      "on",
+      "my",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 2,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "eab0740d-eb91-4a39-9780-2dd0df6aa074",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "look up tomorrow at 2pm on my calendar",
+    "tokens": [
+      "look",
+      "up",
+      "tomorrow",
+      "at",
+      "2pm",
+      "on",
+      "my",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 3,
+        "text": "next week",
+        "type": "date_time"
+      }
+    ],
+    "id": "3d86c6fa-41a1-4995-8c29-e2fba818535a",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "any events on next week",
+    "tokens": [
+      "any",
+      "events",
+      "on",
+      "next",
+      "week"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 5,
+        "start": 3,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 4,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "6065ff0f-1417-41b6-af69-8e324e757122",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "any events on in 2 hours",
+    "tokens": [
+      "any",
+      "events",
+      "on",
+      "in",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 3,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 5,
+        "start": 3,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "c6bedab5-5722-4ba8-8f9d-9ae5e6a52f58",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "any events on tomorrow at 2pm",
+    "tokens": [
+      "any",
+      "events",
+      "on",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "next week",
+        "type": "date_time"
+      }
+    ],
+    "id": "b7e3840d-9ba6-4ee4-95d7-2b038c09b28f",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what's on next week",
+    "tokens": [
+      "what's",
+      "on",
+      "next",
+      "week"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "tomorrow",
+        "type": "date_time"
+      }
+    ],
+    "id": "0fa2303e-e114-41b7-93e7-8187f876b453",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what's on tomorrow",
+    "tokens": [
+      "what's",
+      "on",
+      "tomorrow"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 2,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "a622fef2-9d92-4641-9854-90c974dc421b",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what's on tomorrow at 2pm",
+    "tokens": [
+      "what's",
+      "on",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 4,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 5,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "ae787323-cad4-46da-aa22-eeba91f6e99a",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "check for events on in 2 hours",
+    "tokens": [
+      "check",
+      "for",
+      "events",
+      "on",
+      "in",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 4,
+        "text": "tomorrow",
+        "type": "date_time"
+      },
+      {
+        "end": 6,
+        "start": 4,
+        "text": "tomorrow at 2pm",
+        "type": "date_time"
+      }
+    ],
+    "id": "35863940-44f0-4d1b-ae20-b524cf6fce71",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "check for events on tomorrow at 2pm",
+    "tokens": [
+      "check",
+      "for",
+      "events",
+      "on",
+      "tomorrow",
+      "at",
+      "2pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 4,
+        "text": "friday at 3pm",
+        "type": "date_time"
+      },
+      {
+        "end": 4,
+        "start": 4,
+        "text": "friday",
+        "type": "date_time"
+      }
+    ],
+    "id": "02dade67-5473-4e1a-97fc-e2cc8e3cebd5",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "check for events on Friday at 3pm",
+    "tokens": [
+      "check",
+      "for",
+      "events",
+      "on",
+      "friday",
+      "at",
+      "3pm"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 4,
+        "start": 2,
+        "text": "friday at 3pm",
+        "type": "date_time"
+      },
+      {
+        "end": 2,
+        "start": 2,
+        "text": "friday",
+        "type": "date_time"
+      }
+    ],
+    "id": "3d57cdf3-ed36-4529-8017-0d02ae54e0db",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "is my Friday at 3pm busy",
+    "tokens": [
+      "is",
+      "my",
+      "friday",
+      "at",
+      "3pm",
+      "busy"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "next week",
+        "type": "date_time"
+      }
+    ],
+    "id": "2d57846c-c4ca-4e27-9581-b5b8da71f58a",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "is my next week busy",
+    "tokens": [
+      "is",
+      "my",
+      "next",
+      "week",
+      "busy"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "tomorrow",
+        "type": "date_time"
+      }
+    ],
+    "id": "838e4ce4-ccc7-41ee-82ec-7227b37f72b4",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "is my tomorrow busy",
+    "tokens": [
+      "is",
+      "my",
+      "tomorrow",
+      "busy"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 7,
+        "start": 6,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 7,
+        "start": 7,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "44028ed4-a5da-4084-838a-b618b598ef4d",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "AUX",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "what events do I have on next Monday",
+    "tokens": [
+      "what",
+      "events",
+      "do",
+      "i",
+      "have",
+      "on",
+      "next",
+      "monday"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 8,
+        "start": 6,
+        "text": "in 2 hours",
+        "type": "date_time"
+      },
+      {
+        "end": 8,
+        "start": 7,
+        "text": "2 hours",
+        "type": "duration"
+      }
+    ],
+    "id": "7b98032e-b2a3-4734-8c84-9737b4c751ec",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "AUX",
+      "ADP",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "text": "what events do I have on in 2 hours",
+    "tokens": [
+      "what",
+      "events",
+      "do",
+      "i",
+      "have",
+      "on",
+      "in",
+      "2",
+      "hours"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 6,
+        "start": 6,
+        "text": "tomorrow",
+        "type": "date_time"
+      }
+    ],
+    "id": "e03f5a21-ed97-4550-adde-58ecad08c26e",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "PRON",
+      "AUX",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "what events do I have on tomorrow",
+    "tokens": [
+      "what",
+      "events",
+      "do",
+      "i",
+      "have",
+      "on",
+      "tomorrow"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "next week",
+        "type": "date_time"
+      }
+    ],
+    "id": "96d48d14-d93c-4d7e-ba08-c977fad2e9d6",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "show me next week on my calendar",
+    "tokens": [
+      "show",
+      "me",
+      "next",
+      "week",
+      "on",
+      "my",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 2,
+        "start": 2,
+        "text": "tomorrow",
+        "type": "date_time"
+      }
+    ],
+    "id": "24bce0a9-4ac8-42c2-8e5b-b8ad649dbbec",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "show me tomorrow on my calendar",
+    "tokens": [
+      "show",
+      "me",
+      "tomorrow",
+      "on",
+      "my",
+      "calendar"
+    ]
+  },
+  {
+    "entities": [
+      {
+        "end": 3,
+        "start": 2,
+        "text": "next monday",
+        "type": "date_time"
+      },
+      {
+        "end": 3,
+        "start": 3,
+        "text": "monday",
+        "type": "date_time"
+      }
+    ],
+    "id": "55c66073-607a-4646-b919-f82d54649387",
+    "intent": "calendar.event.check",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "text": "show me next Monday on my calendar",
+    "tokens": [
+      "show",
+      "me",
+      "next",
+      "monday",
+      "on",
+      "my",
+      "calendar"
+    ]
+  }
+]

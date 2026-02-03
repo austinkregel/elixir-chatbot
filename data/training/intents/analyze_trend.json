@@ -1,0 +1,316 @@
+[
+  {
+    "entities": [],
+    "id": "e11bd056-6db1-4a61-a56f-0467dc5c9f27",
+    "intent": "analyze.trend",
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "text": "show me the trend",
+    "tokens": [
+      "show",
+      "me",
+      "the",
+      "trend"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1fec5a5a-0b81-45d1-977e-6f01abe486fa",
+    "intent": "analyze.trend",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "analyze trends",
+    "tokens": [
+      "analyze",
+      "trends"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1bba6af0-8e90-4327-b741-f101bb5a3c1d",
+    "intent": "analyze.trend",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "trend analysis",
+    "tokens": [
+      "trend",
+      "analysis"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "b25f5321-7b55-4fc4-80c2-7da38bbecd8c",
+    "intent": "analyze.trend",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "what's the trend",
+    "tokens": [
+      "what's",
+      "the",
+      "trend"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "e9e22c17-0155-4da1-8c2f-f3745443379a",
+    "intent": "analyze.trend",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "identify trends",
+    "tokens": [
+      "identify",
+      "trends"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7265341d-e9aa-404e-a29f-6db32aeb65b8",
+    "intent": "analyze.trend",
+    "pos_tags": [
+      "VERB",
+      "NOUN"
+    ],
+    "text": "find trends",
+    "tokens": [
+      "find",
+      "trends"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "d001c67a-f8b5-4145-9981-d4cd4f8e1605",
+    "intent": "analyze.trend",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "trending analysis",
+    "tokens": [
+      "trending",
+      "analysis"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "bfdc38da-454e-4c3d-bf3f-212f2d1515e8",
+    "intent": "analyze.trend",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "analyze {query_term} trends",
+    "tokens": [
+      "analyze",
+      "query_term",
+      "trends"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "adbee1fa-965b-4ac4-b055-7f671e2332ea",
+    "intent": "analyze.trend",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "show trend for {query_term}",
+    "tokens": [
+      "show",
+      "trend",
+      "for",
+      "query_term"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "f807c387-92ee-4394-97ce-4a8daa099462",
+    "intent": "analyze.trend",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "trend detection",
+    "tokens": [
+      "trend",
+      "detection"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9c3a0ee3-af12-4e59-897a-3f32e4525000",
+    "intent": "analyze.trend",
+    "pos_tags": [
+      "NOUN",
+      "AUX",
+      "DET",
+      "NOUN"
+    ],
+    "text": "what are the trends",
+    "tokens": [
+      "what",
+      "are",
+      "the",
+      "trends"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "265c4878-cf26-426d-bf30-c7530d3cafe0",
+    "intent": "analyze.trend",
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "text": "analyze the trend",
+    "tokens": [
+      "analyze",
+      "the",
+      "trend"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "1d844439-6e2b-4c3a-86e4-f22690c55581",
+    "intent": "analyze.trend",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "trend over time",
+    "tokens": [
+      "trend",
+      "over",
+      "time"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "ba12e8d0-ea33-47bb-83b2-6f18b72b6208",
+    "intent": "analyze.trend",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "historical trend",
+    "tokens": [
+      "historical",
+      "trend"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "da1490bf-d591-4a30-8a06-d5e2805f9a13",
+    "intent": "analyze.trend",
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "show trends in {data_source}",
+    "tokens": [
+      "show",
+      "trends",
+      "in",
+      "data_source"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "7ac5bb57-6d4f-4dae-bc18-3aa6b98d8554",
+    "intent": "analyze.trend",
+    "pos_tags": [
+      "NOUN",
+      "CONJ",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "upward or downward trend",
+    "tokens": [
+      "upward",
+      "or",
+      "downward",
+      "trend"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "54c85445-4493-4c5b-bbb8-abda3aee3cfb",
+    "intent": "analyze.trend",
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "analyze trend data",
+    "tokens": [
+      "analyze",
+      "trend",
+      "data"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "11b0c377-18e5-4ac8-896c-e9f111a2b7fc",
+    "intent": "analyze.trend",
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "text": "find the trend",
+    "tokens": [
+      "find",
+      "the",
+      "trend"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "9cedd38a-0da4-404c-93ae-abd5f0e5e2f3",
+    "intent": "analyze.trend",
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "text": "trend identification",
+    "tokens": [
+      "trend",
+      "identification"
+    ]
+  },
+  {
+    "entities": [],
+    "id": "8b0c6d7c-6364-4604-acaa-6d418b5eb585",
+    "intent": "analyze.trend",
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "text": "analyze for trends",
+    "tokens": [
+      "analyze",
+      "for",
+      "trends"
+    ]
+  }
+]
