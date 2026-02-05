@@ -1,0 +1,28 @@
+{
+  "description": "Linguistic data for NLP processing - negation, sentiment, and common patterns",
+  "negation_words": [
+    "not", "no", "never", "none", "cannot", "can't", "won't", "don't", 
+    "doesn't", "didn't", "isn't", "aren't", "wasn't", "weren't", 
+    "neither", "nor", "nobody", "nothing", "nowhere"
+  ],
+  "sentiment": {
+    "positive": [
+      "good", "great", "love", "happy", "thanks", "awesome", "nice", 
+      "excellent", "wonderful", "fantastic", "amazing", "perfect",
+      "helpful", "appreciate", "glad", "pleased"
+    ],
+    "negative": [
+      "bad", "hate", "terrible", "awful", "annoying", "frustrating", 
+      "worst", "horrible", "disappointing", "poor", "useless",
+      "angry", "upset", "confused", "wrong"
+    ]
+  },
+  "intensifiers": [
+    "very", "really", "extremely", "quite", "absolutely", "totally",
+    "completely", "highly", "incredibly", "especially"
+  ],
+  "hedges": [
+    "maybe", "perhaps", "possibly", "probably", "might", "could",
+    "somewhat", "kind of", "sort of", "a bit"
+  ]
+}

@@ -1,7 +1,21 @@
 {
+  "facts": [
+    {
+      "confidence": 0.7110000000000001,
+      "entity": "Austin",
+      "fact": "Hello, I'm Austin.",
+      "timestamp": 1770327314528
+    },
+    {
+      "confidence": 0.7110000000000001,
+      "entity": "Austin",
+      "fact": "Hello, I'm Austin. Can you tell me about the weather in Owosso?",
+      "timestamp": 1770158558605
+    }
+  ],
   "people": {
     "Austin": {
-      "confidence": 0.73,
+      "confidence": 0.79,
       "name": "Austin",
       "type": "person"
     }

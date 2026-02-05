@@ -33,7 +33,7 @@ defmodule Brain.Analysis.EntityDisambiguator do
 
   require Logger
 
-  alias Brain.Analysis.IntentRegistry
+  alias Brain.Analysis.{IntentRegistry, EntityTypes}
   alias World.TypeInferrer
 
   # Entity type preferences for different contexts
@@ -245,7 +245,7 @@ defmodule Brain.Analysis.EntityDisambiguator do
     # ambiguous_* types always need inference
     String.starts_with?(entity_type, "ambiguous_") or
       # person/location are contextually ambiguous - "Austin" could be either
-      entity_type in ["person", "location"]
+      EntityTypes.is_person_type?(entity_type) or entity_type == "location"
   end
 
   def requires_inference?(_), do: false
@@ -663,23 +663,23 @@ defmodule Brain.Analysis.EntityDisambiguator do
   defp calculate_feature_boost(entity_type, features) do
     cond do
       # Strong introduction signal + person type
-      features.pron_verb_adjacent and features.self_referential and entity_type == "person" ->
+      features.pron_verb_adjacent and features.self_referential and EntityTypes.is_person_type?(entity_type) ->
         0.5
 
       # Device intent + device/lights type
-      features.device_intent and entity_type in ["device", "lights", "heating", "room"] ->
+      features.device_intent and EntityTypes.is_device_type?(entity_type) ->
         0.4
 
       # Weather intent + location type
-      features.weather_intent and entity_type in ["location", "city"] ->
+      features.weather_intent and EntityTypes.is_location_type?(entity_type) ->
         0.4
 
       # Music intent + artist type
-      features.music_intent and entity_type == "music-artist" ->
+      features.music_intent and EntityTypes.is_music_type?(entity_type) ->
         0.4
 
       # Greeting context + person type
-      features.greeting_context and entity_type == "person" ->
+      features.greeting_context and EntityTypes.is_person_type?(entity_type) ->
         0.3
 
       true ->

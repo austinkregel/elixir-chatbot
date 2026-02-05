@@ -665,7 +665,7 @@ Brain coordinates but subprocesses operate independently.
 
 ```elixir
 # Emit telemetry span
-Nerve.Telemetry.span(:my_subsystem_operation, %{input: input}, fn ->
+Brain.Telemetry.span(:my_subsystem_operation, %{input: input}, fn ->
   # Your operation here
   result
 end)
@@ -890,6 +890,11 @@ The system emits these telemetry spans:
 - `:brain_evaluate`
 - `:belief_operation`
 - `:jtms_justify`
+- `:code_pipeline` (code analysis)
+- `:code_parse` (code parsing)
+- `:code_extract` (symbol extraction)
+- `:code_gazetteer_lookup` (code symbol lookups)
+- `:code_gazetteer_add` (code symbol additions)
 
 ### Dashboard Visibility
 
@@ -942,7 +947,7 @@ When adding new subsystems:
 ```elixir
 defmodule MySubsystem do
   def process(input) do
-    Nerve.Telemetry.span(:my_subsystem, %{input_length: String.length(input)}, fn ->
+    Brain.Telemetry.span(:my_subsystem, %{input_length: String.length(input)}, fn ->
       # Your processing here
       result
     end)

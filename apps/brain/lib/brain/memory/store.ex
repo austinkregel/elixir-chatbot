@@ -92,6 +92,138 @@ defmodule Brain.Memory.Store do
     GenServer.call(__MODULE__, {:query_by_tags, tags, limit, world_id})
   end
 
+  # ============================================================================
+  # Event-Aware Episode Functions
+  # ============================================================================
+
+  @doc """
+  Add an episode based on an extracted event.
+
+  Creates an episode with structured state from the event, action from the verb lemma,
+  and appropriate tags for event-based querying.
+
+  ## Parameters
+    - event: An Event struct from EventExtractor
+    - context: Map with :response (bot's response) and optional :user_input
+    - opts: Keyword list with :world_id, :tags
+
+  ## Examples
+
+      event = %Event{action: %{lemma: "play", ...}, object: %{text: "jazz"}}
+      context = %{response: "Playing jazz music", user_input: "Play some jazz"}
+      add_event_episode(event, context, world_id: "training")
+  """
+  def add_event_episode(event, context, opts \\ []) do
+    world_id = Keyword.get(opts, :world_id, @default_world_id)
+    extra_tags = Keyword.get(opts, :tags, [])
+
+    # Build state description from event
+    state = format_event_state(event, context)
+
+    # Action is the verb lemma
+    action = get_event_action(event)
+
+    # Outcome is the bot's response
+    outcome = Map.get(context, :response, "")
+
+    # Build event-specific tags
+    event_tags = build_event_tags(event)
+    all_tags = extra_tags ++ event_tags
+
+    add_episode(state, action, outcome, all_tags, world_id: world_id)
+  end
+
+  @doc """
+  Query for episodes by action/verb type.
+
+  Returns episodes that were created from events with the specified action lemma.
+
+  ## Examples
+
+      # Find all episodes where user asked to "play" something
+      query_events_by_action("play", 5, world_id: "default")
+  """
+  def query_events_by_action(action_lemma, k \\ 5, opts \\ []) do
+    query_by_tags(["event:#{action_lemma}"], k, opts)
+  end
+
+  @doc """
+  Query for episodes involving a specific object.
+
+  ## Examples
+
+      # Find all episodes about "music"
+      query_events_by_object("music", 5)
+  """
+  def query_events_by_object(object_text, k \\ 5, opts \\ []) do
+    query_by_tags(["object:#{String.downcase(object_text)}"], k, opts)
+  end
+
+  @doc """
+  Query for episodes involving a specific actor.
+
+  ## Examples
+
+      # Find all episodes where user was the actor
+      query_events_by_actor("user", 5)
+  """
+  def query_events_by_actor(actor_text, k \\ 5, opts \\ []) do
+    query_by_tags(["actor:#{String.downcase(actor_text)}"], k, opts)
+  end
+
+  # Format event state as a readable description
+  defp format_event_state(event, context) do
+    actor_text = get_participant_text(event, :actor)
+    object_text = get_participant_text(event, :object)
+    action_lemma = get_event_action(event)
+
+    user_input = Map.get(context, :user_input, "")
+
+    if user_input != "" do
+      "User said: #{user_input}"
+    else
+      actor = if actor_text, do: actor_text, else: "Someone"
+      object = if object_text, do: " #{object_text}", else: ""
+      "#{actor} #{action_lemma}#{object}"
+    end
+  end
+
+  defp get_event_action(event) do
+    case event do
+      %{action: %{lemma: lemma}} when is_binary(lemma) -> lemma
+      %{action: %{verb: verb}} when is_binary(verb) -> String.downcase(verb)
+      _ -> "unknown"
+    end
+  end
+
+  defp get_participant_text(event, role) do
+    case Map.get(event, role) do
+      %{text: text} when is_binary(text) -> text
+      _ -> nil
+    end
+  end
+
+  defp build_event_tags(event) do
+    action_lemma = get_event_action(event)
+    actor_text = get_participant_text(event, :actor)
+    object_text = get_participant_text(event, :object)
+
+    tags = ["event", "event:#{action_lemma}"]
+
+    tags =
+      if actor_text do
+        tags ++ ["actor:#{String.downcase(actor_text)}"]
+      else
+        tags
+      end
+
+    if object_text do
+      tags ++ ["object:#{String.downcase(object_text)}"]
+    else
+      tags
+    end
+  end
+
   @doc """
   Get a specific episode by ID.
 

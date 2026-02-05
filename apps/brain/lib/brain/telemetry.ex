@@ -44,6 +44,7 @@ defmodule Brain.Telemetry do
 
   - `[:chat_bot, :analysis, :racing, :start | :stop | :exception]` - Racing analyzer parallel processing
   - `[:chat_bot, :analysis, :racing, :early_exit]` - Racing analyzer early exit (fast path)
+  - `[:chat_bot, :analysis, :event_extraction]` - Event extraction with GPU/tensor verification
 
   ## Code Analysis Events
 
@@ -93,6 +94,7 @@ defmodule Brain.Telemetry do
   # Analysis Events
   @racing_analysis [:chat_bot, :analysis, :racing]
   @racing_early_exit [:chat_bot, :analysis, :racing, :early_exit]
+  @event_extraction [:chat_bot, :analysis, :event_extraction]
 
   # Code Analysis Events
   @code_parse [:chat_bot, :code, :parse]
@@ -448,6 +450,38 @@ defmodule Brain.Telemetry do
       @racing_early_exit,
       %{confidence: confidence, duration_ms: duration_ms},
       %{analyzer: analyzer, timestamp: System.monotonic_time(:millisecond)}
+    )
+  end
+
+  @doc """
+  Emits an event extraction telemetry event.
+
+  Used to verify tensor operations and GPU backend usage.
+
+  ## Measurements
+  - `:duration` - Extraction duration in native time units
+  - `:event_count` - Number of events extracted
+  - `:token_count` - Number of tokens processed
+
+  ## Metadata
+  - `:backend` - Nx backend in use (e.g., "EXLA.Backend")
+  - `:tensor_ops` - Whether tensor operations were used
+  - `:string_ops` - Whether string operations were used (should be false)
+  """
+  def emit_event_extraction(measurements) when is_map(measurements) do
+    :telemetry.execute(
+      @event_extraction,
+      %{
+        duration: Map.get(measurements, :duration, 0),
+        event_count: Map.get(measurements, :event_count, 0),
+        token_count: Map.get(measurements, :token_count, 0)
+      },
+      %{
+        backend: Map.get(measurements, :backend, "unknown"),
+        tensor_ops: Map.get(measurements, :tensor_ops, false),
+        string_ops: Map.get(measurements, :string_ops, false),
+        timestamp: System.monotonic_time(:millisecond)
+      }
     )
   end
 

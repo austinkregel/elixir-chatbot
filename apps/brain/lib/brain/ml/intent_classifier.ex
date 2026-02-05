@@ -1,9 +1,14 @@
 defmodule Brain.ML.IntentClassifier do
   @moduledoc """
-  Intent classifier using pre-trained SVM model with TF-IDF features.
+  **DEPRECATED** - This module is unused dead code. Use `Brain.ML.IntentClassifierSimple` instead.
 
-  This module loads serialized models and provides intent classification
-  functionality for user input text.
+  This was an early intent classifier that was described as "SVM with TF-IDF features"
+  but actually implements TF-IDF vectorization with nearest-neighbor cosine similarity
+  (not a true SVM). It is not referenced anywhere in the codebase and is not started
+  in any supervision tree.
+
+  `Brain.ML.IntentClassifierSimple` is the active intent classifier used throughout
+  the application.
   """
 
   require Logger

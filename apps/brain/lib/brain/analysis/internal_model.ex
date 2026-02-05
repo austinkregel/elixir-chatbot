@@ -165,6 +165,7 @@ defmodule Brain.Analysis.ChunkAnalysis do
   """
 
   alias Brain.Analysis.{DiscourseResult, SpeechActResult, SlotResult, SlotDetector}
+  alias Brain.Analysis.Types.Event
   alias Brain.Analysis.InternalModel
 
   @type t :: %__MODULE__{
@@ -178,7 +179,8 @@ defmodule Brain.Analysis.ChunkAnalysis do
           missing_context: list(atom()),
           response_strategy: InternalModel.response_strategy(),
           clarification_prompts: list(String.t()),
-          confidence: float()
+          confidence: float(),
+          events: list(Event.t())
         }
 
   defstruct [
@@ -192,7 +194,8 @@ defmodule Brain.Analysis.ChunkAnalysis do
     missing_context: [],
     response_strategy: :can_respond,
     clarification_prompts: [],
-    confidence: 0.0
+    confidence: 0.0,
+    events: []
   ]
 
   @doc """
@@ -204,6 +207,33 @@ defmodule Brain.Analysis.ChunkAnalysis do
       text: text
     }
   end
+
+  @doc """
+  Adds extracted events to the chunk analysis.
+
+  ## Examples
+
+      analysis = ChunkAnalysis.new(0, "I want coffee")
+      events = [%Event{action: %{verb: "want", ...}, ...}]
+      analysis = ChunkAnalysis.with_events(analysis, events)
+  """
+  def with_events(%__MODULE__{} = analysis, events) when is_list(events) do
+    %{analysis | events: events}
+  end
+
+  @doc """
+  Returns the primary event from the analysis (highest confidence).
+  """
+  def primary_event(%__MODULE__{events: []}), do: nil
+
+  def primary_event(%__MODULE__{events: events}) do
+    Enum.max_by(events, & &1.confidence, fn -> nil end)
+  end
+
+  @doc """
+  Checks if the chunk has any extracted events.
+  """
+  def has_events?(%__MODULE__{events: events}), do: length(events) > 0
 
   @doc """
   Determines response strategy based on analysis results.

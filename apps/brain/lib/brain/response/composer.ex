@@ -217,18 +217,36 @@ defmodule Brain.Response.Composer do
     end
   end
 
+  # Load primitives for fallback hedges
+  @primitives_path "priv/knowledge/domains/primitives.json"
+  @external_resource @primitives_path
+
+  @primitives_data (case File.read(@primitives_path) do
+                      {:ok, content} ->
+                        case Jason.decode(content) do
+                          {:ok, data} -> data
+                          {:error, _} -> %{}
+                        end
+
+                      {:error, _} ->
+                        %{}
+                    end)
+
   defp default_connectors do
+    hedges = Map.get(@primitives_data, "hedges", %{})
+    transitions = Map.get(@primitives_data, "transition_phrases", %{})
+
     %{
       "connectors" => %{
-        "default" => [" ", "Also, ", ""]
+        "default" => Map.get(transitions, "additional_info", [" ", "Also, ", ""])
       },
       "response_starters" => %{
-        "high_confidence" => [""],
-        "medium_confidence" => ["I think "],
-        "low_confidence" => ["I'm not sure, but "]
+        "high_confidence" => Map.get(hedges, "high_confidence", [""]),
+        "medium_confidence" => Map.get(hedges, "medium_confidence", ["I think "]),
+        "low_confidence" => Map.get(hedges, "low_confidence", ["I'm not sure, but "])
       },
       "clarification_prefixes" => ["To help you better, "],
-      "partial_response_connectors" => ["However, "]
+      "partial_response_connectors" => Map.get(transitions, "contrast", ["However, "])
     }
   end
 end

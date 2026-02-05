@@ -15,8 +15,8 @@ User Input
         ▼
     ┌───────────┐
     │ Fast Path │ ─── Check: is_followup?, is_self_knowledge?, heuristics, memory
-    └─────┬─────┘
-          │ (if no fast path hit)
+    └─────┬─────┘     (fast path ONLY for smalltalk intents - greetings, thanks, etc.)
+          │ (if no fast path hit, or intent is not smalltalk)
           ▼
 ┌─────────────────────┐
 │ Pipeline.process    │ ─── Main NLP analysis pipeline
@@ -137,11 +137,17 @@ Brain.evaluate(conversation_id, input, opts)
   │     └─→ If YES: handle_meta_cognitive_query() → skip pipeline
   │
   ├─→ Check: RacingAnalyzer.check_fast_path(input, world_id, user_id, cohort_id)
-  │     ├─→ HeuristicStore.match_best() → if confidence >= 0.85 → fast path
-  │     └─→ MemoryStore.query_similar() → if similarity >= 0.85 → fast path
-  │     NOTE: check_fast_path/3 (without world_id) is deprecated
+  │     ├─→ HeuristicStore.match_best() → if confidence >= 0.85 → candidate
+  │     └─→ MemoryStore.query_similar() → if similarity >= 0.85 → candidate
   │
-  └─→ If no fast path: process_standard_message()
+  ├─→ If fast path candidate found:
+  │     ├─→ Check: IntentRegistry.domain(intent) == :smalltalk
+  │     │     └─→ If NOT smalltalk → process_standard_message()
+  │     │         (weather, music, device, etc. need entity extraction)
+  │     └─→ If smalltalk → handle_fast_path_response()
+  │         (greetings, thanks, farewells don't need entities)
+  │
+  └─→ If no fast path: process_standard_message() → runs full pipeline
 ```
 
 ### Stage 1: Semantic Chunking

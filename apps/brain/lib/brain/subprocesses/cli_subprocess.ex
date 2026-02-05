@@ -194,7 +194,8 @@ defmodule Brain.Subprocesses.CliSubprocess do
         - status: Show subprocess status  
         - conversations: List conversations
         - create <name>: Create conversation
-        - send <id> <message>: Send message
+        - send <id> <message>: Send message to conversation via Brain
+        - chat <message>: Send message using default conversation
         - end <id>: End conversation
         - interrupt: Send interrupt
         - quit: Exit CLI
@@ -207,19 +208,60 @@ defmodule Brain.Subprocesses.CliSubprocess do
         - Commands executed: #{length(state.cli_memory)}
         - Uptime: #{System.system_time(:millisecond) - state.start_time}ms
         - Interrupted: #{state.is_interrupted}
+        - Conversation ID: #{state[:conversation_id] || "none"}
         """
 
       ["conversations"] ->
         "Conversations: (This would list active conversations)"
 
       ["create", name] ->
-        "Created conversation '#{name}' with ID: #{generate_conversation_id()}"
+        case Brain.create_conversation() do
+          {:ok, id} ->
+            "Created conversation '#{name}' with Brain ID: #{id}"
 
-      ["send", conversation_id, message] ->
-        "Sent to conversation #{conversation_id}: #{message}"
+          {:error, reason} ->
+            "Failed to create conversation '#{name}': #{inspect(reason)}"
+        end
+
+      ["send", rest] ->
+        case String.split(rest, " ", parts: 2) do
+          [conversation_id, message] ->
+            # Route through Brain.evaluate for full NLP processing
+            case Brain.evaluate(conversation_id, message) do
+              {:ok, response} when is_binary(response) ->
+                response
+
+              {:ok, nil} ->
+                "(no response - deferred)"
+
+              {:error, reason} ->
+                "Error: #{inspect(reason)}"
+            end
+
+          _ ->
+            "Usage: send <conversation_id> <message>"
+        end
+
+      ["chat", message] ->
+        # Use or create a default conversation for this CLI subprocess
+        conv_id = ensure_conversation_id(state)
+
+        case Brain.evaluate(conv_id, message) do
+          {:ok, response} when is_binary(response) ->
+            response
+
+          {:ok, nil} ->
+            "(no response - deferred)"
+
+          {:error, reason} ->
+            "Error: #{inspect(reason)}"
+        end
 
       ["end", conversation_id] ->
-        "Ended conversation #{conversation_id}"
+        case Brain.end_conversation(conversation_id) do
+          :ok -> "Ended conversation #{conversation_id}"
+          {:error, reason} -> "Failed to end conversation: #{inspect(reason)}"
+        end
 
       ["interrupt"] ->
         "Sent urgent interrupt signal"
@@ -238,6 +280,19 @@ defmodule Brain.Subprocesses.CliSubprocess do
 
       _ ->
         "Unknown command: #{command}. Type 'help' for available commands."
+    end
+  end
+
+  defp ensure_conversation_id(state) do
+    case state[:conversation_id] do
+      nil ->
+        case Brain.create_conversation() do
+          {:ok, id} -> id
+          _ -> generate_conversation_id()
+        end
+
+      id ->
+        id
     end
   end
 

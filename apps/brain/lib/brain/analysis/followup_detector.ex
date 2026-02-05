@@ -10,6 +10,7 @@ defmodule Brain.Analysis.FollowupDetector do
   """
 
   alias Brain.ML.POSTagger
+  alias Brain.Analysis.EntityTypes
 
   # Configuration constants
   @max_followup_words 5
@@ -191,14 +192,8 @@ defmodule Brain.Analysis.FollowupDetector do
   end
 
   defp fill_slots_from_entities(missing_slots, entities, existing_slots) do
-    # Entity type to slot name mappings
-    slot_mappings = %{
-      "location" => ["location", "room", "city", "place-name", "geo-location"],
-      "date" => ["date", "relative_date", "sys-date"],
-      "time" => ["time", "sys-time"],
-      "device" => ["device", "lights", "heating"],
-      "number" => ["number", "value", "temperature"]
-    }
+    # Entity type to slot name mappings - loaded from EntityTypes
+    slot_mappings = EntityTypes.type_synonyms()
 
     Enum.reduce(missing_slots, {existing_slots, []}, fn slot_name, {filled, still_missing} ->
       # Find entity types that can fill this slot

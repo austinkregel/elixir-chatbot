@@ -542,5 +542,56 @@
       "room": ["room", "location"]
     },
     "clarification_templates": {}
+  },
+  "code.explain": {
+    "description": "Request explanation of code",
+    "domain": "code",
+    "category": "directive",
+    "speech_act": "request_information",
+    "required": [],
+    "optional": ["symbol", "file", "language"],
+    "defaults": {},
+    "entity_mappings": {
+      "symbol": ["symbol", "function", "class", "method"],
+      "file": ["file", "filepath"],
+      "language": ["language", "programming_language"]
+    },
+    "clarification_templates": {
+      "symbol": "What code would you like me to explain?"
+    }
+  },
+  "code.signature": {
+    "description": "Request function/method signature",
+    "domain": "code",
+    "category": "directive",
+    "speech_act": "request_information",
+    "required": ["symbol"],
+    "optional": ["file", "language"],
+    "defaults": {},
+    "entity_mappings": {
+      "symbol": ["symbol", "function", "class", "method"],
+      "file": ["file", "filepath"],
+      "language": ["language", "programming_language"]
+    },
+    "clarification_templates": {
+      "symbol": "What function or method signature would you like to see?"
+    }
+  },
+  "code.find_usage": {
+    "description": "Find usages of a symbol in code",
+    "domain": "code",
+    "category": "directive",
+    "speech_act": "request_information",
+    "required": ["symbol"],
+    "optional": ["file", "language"],
+    "defaults": {},
+    "entity_mappings": {
+      "symbol": ["symbol", "function", "class", "method", "variable"],
+      "file": ["file", "filepath"],
+      "language": ["language", "programming_language"]
+    },
+    "clarification_templates": {
+      "symbol": "What symbol would you like to find usages for?"
+    }
   }
 }

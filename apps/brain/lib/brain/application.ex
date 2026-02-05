@@ -49,11 +49,17 @@ defmodule Brain.Application do
       # LSTM unified model (NER, intent, sentiment, speech act)
       Brain.ML.LSTM.UnifiedModel,
 
+      # LSTM multi-task model (intent, NER, POS via shared encoder)
+      Brain.ML.LSTM.MultiTaskModel,
+
       # Response system
       Brain.Response.TemplateStore,
       Brain.Response.ChunkCompatibility,
       Brain.Response.TemplateBlender,
       Brain.Response.SemanticFactRetriever,
+
+      # LSTM response scorer and refinement
+      Brain.Response.LSTMResponse,
 
       # Subprocess supervisor
       Brain.Subprocesses.Supervisor,
@@ -107,24 +113,20 @@ defmodule Brain.Application do
           Logger.warning("Gazetteer loading failed: #{inspect(reason)}")
       end
 
-      # Load default world models via WorldModelRegistry
-      if Code.ensure_loaded?(World.ModelRegistry) do
+      # Load default world models via WorldModelRegistry (if available)
+      if Code.ensure_loaded?(World.ModelRegistry) and Process.whereis(World.ModelRegistry) do
         case World.ModelRegistry.activate_world("default") do
           {:ok, status} ->
             Logger.info("Default world models activated", status)
 
           {:error, reason} ->
             Logger.warning("Default world model activation failed: #{inspect(reason)}")
-
-            # Fall back to loading classifier directly
-            case Brain.ML.IntentClassifierSimple.load_models() do
-              {:ok, _models} ->
-                Logger.info("Intent classifier loaded via fallback")
-
-              {:error, _} ->
-                :ok
-            end
+            load_classifier_fallback()
         end
+      else
+        # World.ModelRegistry not running, use fallback
+        Logger.debug("World.ModelRegistry not available, using fallback classifier loading")
+        load_classifier_fallback()
       end
 
       # EntityExtractor now loads maps automatically as a GenServer
@@ -144,5 +146,15 @@ defmodule Brain.Application do
 
       Logger.info("NLP pipeline initialization complete")
     end)
+  end
+
+  defp load_classifier_fallback do
+    case Brain.ML.IntentClassifierSimple.load_models() do
+      {:ok, _models} ->
+        Logger.info("Intent classifier loaded via fallback")
+
+      {:error, _} ->
+        :ok
+    end
   end
 end

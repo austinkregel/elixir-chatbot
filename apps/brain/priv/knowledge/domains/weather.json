@@ -1,0 +1,34 @@
+{
+  "domain": "weather",
+  "description": "Weather information queries and responses",
+  "response_frames": {
+    "has_location": [
+      "Let me check the weather for $location.",
+      "Looking up weather conditions in $location.",
+      "Here's what I found for $location weather."
+    ],
+    "missing_location": [
+      "What location would you like the weather for?",
+      "Which city or area should I check the weather for?",
+      "Where would you like me to check the weather?"
+    ],
+    "with_date": [
+      "Checking the weather for $location on $date.",
+      "Looking up the forecast for $location on $date."
+    ]
+  },
+  "entity_verbalizations": {
+    "location": ["in $value", "for $value", "around $value"],
+    "date": ["on $value", "for $value"],
+    "time": ["at $value", "around $value"]
+  },
+  "acknowledgment_prefixes": [
+    "Sure,",
+    "Of course,",
+    "Absolutely,"
+  ],
+  "slot_requirements": {
+    "required": ["location"],
+    "optional": ["date", "time"]
+  }
+}

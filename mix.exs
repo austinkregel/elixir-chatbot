@@ -64,7 +64,6 @@ defmodule ChatBot.Umbrella.MixProject do
       # Individual model training
       "train.unified": ["do --app brain train_unified"],
       "train.response": ["do --app brain train_response"],
-      "train.seq2seq": ["do --app brain train_seq2seq"],
       "train.lstm": ["do --app brain train_lstm"]
     ]
   end

@@ -39,10 +39,21 @@ defmodule Brain.Subprocesses.ConversationSubprocess do
 
   @impl true
   def init({subprocess_id, conversation_id, memory_snapshot}) do
+    # Ensure a Brain-level conversation exists so evaluate/3 works
+    resolved_conversation_id =
+      if conversation_id do
+        conversation_id
+      else
+        case Brain.create_conversation() do
+          {:ok, id} -> id
+          _ -> generate_id()
+        end
+      end
+
     # Initialize state
     state = %{
       subprocess_id: subprocess_id,
-      conversation_id: conversation_id,
+      conversation_id: resolved_conversation_id,
       memory_snapshot: memory_snapshot,
       conversation_memory: [],
       learning_data: %{
@@ -57,7 +68,7 @@ defmodule Brain.Subprocesses.ConversationSubprocess do
 
     Logger.info("Conversation subprocess started", %{
       subprocess_id: subprocess_id,
-      conversation_id: conversation_id,
+      conversation_id: resolved_conversation_id,
       memory_size: map_size(memory_snapshot)
     })
 
@@ -191,15 +202,25 @@ defmodule Brain.Subprocesses.ConversationSubprocess do
   end
 
   defp process_conversation_input(input, state) do
-    # Simple response generation - in a real implementation, this would call the Brain
-    # and use the conversation memory for context
-    context =
-      if length(state.conversation_memory) > 0 do
-        " (with #{length(state.conversation_memory)} previous messages)"
-      else
-        " (new conversation)"
-      end
+    # Route through the main Brain.evaluate pipeline for full NLP processing
+    conv_id = state.conversation_id
 
-    "Conversation subprocess received: #{input}#{context}. This is a simplified response."
+    case Brain.evaluate(conv_id, input) do
+      {:ok, response} when is_binary(response) ->
+        response
+
+      {:ok, nil} ->
+        # ResponseGate deferred - no response needed
+        ""
+
+      {:error, reason} ->
+        Logger.warning("Brain.evaluate failed in conversation subprocess",
+          reason: inspect(reason),
+          conversation_id: conv_id,
+          input: input
+        )
+
+        "I'm sorry, I wasn't able to process that right now."
+    end
   end
 end

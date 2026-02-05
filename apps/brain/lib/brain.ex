@@ -1180,10 +1180,12 @@ defmodule Brain do
   defp slots_to_entities(_), do: []
 
   defp generate_followup_clarification(context) do
+    alias Brain.Response.Synthesizer
+
     # Use centralized clarification prompts from IntentRegistry via SlotDetector
     case context.missing_slots do
       [] ->
-        "I need a bit more information. Could you elaborate?"
+        Synthesizer.get_generic_clarification()
 
       [slot | _] ->
         SlotDetector.get_clarification_prompt(slot, context.intent)
@@ -1494,9 +1496,11 @@ defmodule Brain do
   end
 
   defp build_clarification_response(prompts, _persona) do
+    alias Brain.Response.Synthesizer
+
     case prompts do
       [] ->
-        "I'm not sure I understand. Could you please provide more details?"
+        Synthesizer.get_generic_clarification()
 
       [single_prompt] ->
         single_prompt
@@ -1511,21 +1515,26 @@ defmodule Brain do
   end
 
   defp build_clarification_addendum(prompts) do
+    alias Brain.Response.Synthesizer
+
     # Build a follow-up question to append to a partial response
     case prompts do
       [] ->
         ""
 
       [single_prompt] ->
-        "By the way, #{String.downcase(String.first(single_prompt))}#{String.slice(single_prompt, 1..-1//1)}"
+        transition = Synthesizer.get_transition_phrase(:additional_info)
+        "#{transition} #{String.downcase(String.first(single_prompt))}#{String.slice(single_prompt, 1..-1//1)}"
 
       [first | _rest] ->
-        "Also, #{String.downcase(String.first(first))}#{String.slice(first, 1..-1//1)}"
+        transition = Synthesizer.get_transition_phrase(:additional_info)
+        "#{transition} #{String.downcase(String.first(first))}#{String.slice(first, 1..-1//1)}"
     end
   end
 
   defp simple_acknowledgment(_persona) do
-    "I noticed you said something, but I'm not sure if you were talking to me. Let me know if you need anything!"
+    # Load from data file via Synthesizer
+    Brain.Response.Synthesizer.get_defer_response()
   end
 
   # Generate response and return type for progress reporting
@@ -1540,14 +1549,9 @@ defmodule Brain do
     Generator.generate_from_analysis(analysis_model, intent, entities, query_text)
   end
 
-  defp simple_fallback_response(persona, input) do
-    case persona.traits do
-      ["cheerful"] ->
-        "Hello! I'm #{persona.name}, and I'm happy to help! You said: #{input}"
-
-      _ ->
-        "I'm #{persona.name}. You said: #{input}"
-    end
+  defp simple_fallback_response(_persona, _input) do
+    # Load from data file via Synthesizer
+    Brain.Response.Synthesizer.get_cannot_respond_response()
   end
 
   # Builds a detailed response path for inspector display
@@ -1601,40 +1605,73 @@ defmodule Brain do
 
     # Step 5: Response generation path
     {gen_steps, gen_status} = case response_type do
+      :synthesized ->
+        {[
+          %{handler: :synthesizer, tried: true, selected: true, reason: "Synthesized from domain knowledge (priv/knowledge/domains/)"},
+          %{handler: :memory_augmented, tried: false, selected: false, reason: "Skipped (synthesized)"},
+          %{handler: :template, tried: false, selected: false, reason: "Skipped (synthesized)"}
+        ], "Generative synthesis from domain knowledge"}
+
+      :memory_adapted ->
+        {[
+          %{handler: :synthesizer, tried: true, selected: false, reason: "No domain knowledge match"},
+          %{handler: :memory_augmented, tried: true, selected: true, reason: "Adapted from similar past episodes"},
+          %{handler: :template, tried: false, selected: false, reason: "Skipped (memory adapted)"}
+        ], "Memory-adapted response from past episodes"}
+
+      :special_handler ->
+        {[
+          %{handler: :synthesizer, tried: true, selected: false, reason: "No domain knowledge match"},
+          %{handler: :memory_augmented, tried: true, selected: false, reason: "No similar episodes"},
+          %{handler: :special_handler, tried: true, selected: true, reason: "Special handler (code/factual) matched"}
+        ], "Special handler response (code/factual)"}
+
+      :lstm_selected ->
+        {[
+          %{handler: :lstm_scorer, tried: true, selected: true, reason: "LSTM model selected best response"},
+          %{handler: :refinement, tried: true, selected: true, reason: "Response refined by neural scoring"}
+        ], "LSTM-scored best response"}
+
+      :quality_improved ->
+        {[
+          %{handler: :quality_check, tried: true, selected: true, reason: "Response quality improved"},
+          %{handler: :refinement, tried: true, selected: true, reason: "Poor quality detected, response enhanced"}
+        ], "Quality-improved response"}
+
       :domain ->
         {[
           %{handler: :domain, tried: true, selected: true, reason: "Domain handler matched intent"},
           %{handler: :memory_augmented, tried: false, selected: false, reason: "Skipped (domain handled)"},
           %{handler: :template, tried: false, selected: false, reason: "Skipped (domain handled)"}
         ], "Domain-specific handler"}
-      
+
       :memory_augmented ->
         {[
           %{handler: :domain, tried: true, selected: false, reason: "No domain handler for intent"},
           %{handler: :memory_augmented, tried: true, selected: true, reason: "Similar episodes found in Memory.Store"},
           %{handler: :template, tried: false, selected: false, reason: "Skipped (memory handled)"}
         ], "Memory-augmented response"}
-      
+
       :template ->
         {[
-          %{handler: :domain, tried: true, selected: false, reason: "No domain handler for intent"},
+          %{handler: :synthesizer, tried: true, selected: false, reason: "No domain knowledge match"},
           %{handler: :memory_augmented, tried: true, selected: false, reason: "No similar episodes found"},
           %{handler: :template, tried: true, selected: true, reason: "Template found in TemplateStore"}
         ], "Template-based response"}
-      
+
       :conditional_template ->
         {[
-          %{handler: :domain, tried: true, selected: false, reason: "No domain handler for intent"},
+          %{handler: :synthesizer, tried: true, selected: false, reason: "No domain knowledge match"},
           %{handler: :conditional_template, tried: true, selected: true, reason: "Condition matched, semantic ranking applied"}
         ], "Conditional template with semantic ranking"}
 
       :blended ->
         {[
-          %{handler: :domain, tried: true, selected: false, reason: "No domain handler for intent"},
+          %{handler: :synthesizer, tried: true, selected: false, reason: "No domain knowledge match"},
           %{handler: :conditional_template, tried: true, selected: false, reason: "No matching conditions"},
           %{handler: :template_blender, tried: true, selected: true, reason: "Blended chunks from multiple templates"}
         ], "Template blending"}
-      
+
       :smalltalk ->
         {[
           %{handler: :expressive, tried: true, selected: true, reason: "Expressive speech act (greeting/farewell/etc)"}
@@ -1644,17 +1681,17 @@ defmodule Brain do
         {[
           %{handler: :expressive, tried: true, selected: true, reason: "Expressive speech act"}
         ], "Expressive response"}
-      
+
       :fallback ->
         {[
-          %{handler: :domain, tried: true, selected: false, reason: "No domain handler for intent"},
+          %{handler: :synthesizer, tried: true, selected: false, reason: "No domain knowledge match"},
           %{handler: :memory_augmented, tried: true, selected: false, reason: "No similar episodes found"},
           %{handler: :template, tried: true, selected: false, reason: "No template for intent"},
           %{handler: :fallback, tried: true, selected: true, reason: "All handlers exhausted"}
         ], "Fallback response"}
-      
-      _ ->
-        {[%{handler: :unknown, tried: true, selected: true, reason: "Unknown response type"}], "Unknown"}
+
+      other ->
+        {[%{handler: :unknown, tried: true, selected: true, reason: "Untracked response type: #{inspect(other)}"}], "Unknown (#{inspect(other)})"}
     end
 
     steps = steps ++ [%{

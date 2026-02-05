@@ -105,6 +105,27 @@ jobs:
 
       - name: Check for unused dependencies
         run: mix deps.unlock --check-unused
+  # Verify ML-based approach (no string matching in event code)
+  verify-ml:
+    name: Verify ML Approach
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify no string matching in event extraction
+        run: ./scripts/verify_no_string_matching.sh
+  # Verify no string matching in event extraction code
+  verify-tensor-ops:
+    name: Verify Tensor Operations
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify no string matching in event code
+        run: ./scripts/verify_no_string_matching.sh
+
 
   # Run all tests with coverage
   test:

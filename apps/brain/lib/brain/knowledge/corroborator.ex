@@ -600,7 +600,7 @@ defmodule Brain.Knowledge.Corroborator do
   defp contradicts?(_, _), do: false
 
   defp has_negation_difference?(c1, c2) do
-    negation_words = ["not", "no", "never", "none", "neither", "nor", "cannot", "can't", "won't", "don't", "doesn't", "didn't", "isn't", "aren't", "wasn't", "weren't"]
+    negation_words = Brain.LinguisticData.negation_words()
 
     c1_has_negation = Enum.any?(negation_words, &String.contains?(c1, &1))
     c2_has_negation = Enum.any?(negation_words, &String.contains?(c2, &1))

@@ -10,7 +10,7 @@ defmodule Brain.Analysis.SlotDetector do
   - Provides clarification prompts for missing slots
   """
 
-  alias Brain.Analysis.{SlotResult, IntentRegistry}
+  alias Brain.Analysis.{SlotResult, IntentRegistry, EntityTypes}
 
   require Logger
 
@@ -139,13 +139,9 @@ defmodule Brain.Analysis.SlotDetector do
   # Calculate domain priority based on entity types present
   # Higher priority = more likely to be the intended domain
   defp domain_priority_for_entities(domain, entity_types) do
-    has_location =
-      Enum.any?(entity_types, &(&1 in ["location", "city", "room", "ambiguous_name_location"]))
-
-    has_device = Enum.any?(entity_types, &(&1 in ["device", "lights", "heating"]))
-
-    has_music =
-      Enum.any?(entity_types, &(&1 in ["song", "music-artist", "music-album", "playlist"]))
+    has_location = EntityTypes.has_location_type?(entity_types)
+    has_device = EntityTypes.has_device_type?(entity_types)
+    has_music = EntityTypes.has_music_type?(entity_types)
 
     cond do
       # Weather queries with location are common - prioritize weather for location entities

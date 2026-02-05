@@ -13,6 +13,20 @@ defmodule Brain.Code.LanguageGrammar do
   Each language has a corresponding tree-sitter grammar that must
   be compiled as a shared library (.so/.dylib).
 
+  ## Current Status: Degraded Mode (Fallback Parser)
+
+  The `TreeSitter` dependency is **not currently installed** in `mix.exs`.
+  As a result, this module always operates in **fallback mode**, which
+  provides basic line-based parsing and tokenization instead of real AST
+  construction. This means the entire Code Analysis system (Parser,
+  SymbolExtractor, RelationMapper, Summarizer, etc.) works on shallow
+  heuristics rather than true abstract syntax trees.
+
+  To enable full tree-sitter support:
+  1. Add `{:tree_sitter, "~> x.x"}` to `apps/brain/mix.exs`
+  2. Compile tree-sitter grammars as shared libraries
+  3. Place them in `priv/code/grammars/`
+
   ## Grammar Sources
 
   Tree-sitter grammars are available from:

@@ -1,0 +1,22 @@
+{
+  "description": "Entity type groupings and synonyms for disambiguation and slot detection",
+  "type_groups": {
+    "location_types": ["location", "city", "room", "ambiguous_name_location", "place-name", "geo-location"],
+    "device_types": ["device", "lights", "heating", "locks-status"],
+    "music_types": ["song", "music-artist", "music-album", "playlist"],
+    "person_types": ["person", "name"],
+    "date_types": ["date", "relative_date", "sys-date", "day_name"],
+    "time_types": ["time", "sys-time"]
+  },
+  "type_synonyms": {
+    "location": ["location", "room", "city", "place-name", "geo-location"],
+    "device": ["device", "lights", "heating"],
+    "number": ["number", "value", "temperature"]
+  },
+  "disambiguation_groups": {
+    "person_vs_location": ["person", "location"],
+    "device_control": ["device", "lights", "heating", "room"],
+    "weather_entities": ["location", "city"],
+    "music_entities": ["music-artist", "song", "album"]
+  }
+}

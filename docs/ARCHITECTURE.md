@@ -1857,6 +1857,11 @@ To verify the actual execution order at runtime, you can:
    - `:knowledge_research`
    - `:belief_operation`
    - `:jtms_justify`
+   - `:code_pipeline` (code analysis)
+   - `:code_parse` (code parsing)
+   - `:code_extract` (symbol extraction)
+   - `:code_gazetteer_lookup` (code symbol lookups)
+   - `:code_gazetteer_add` (code symbol additions)
 
 3. **Review the code execution**:
    - `Pipeline.process/2` → `do_process/2` runs stages sequentially

@@ -34,55 +34,49 @@ defmodule Brain.Response.ChunkSegmenter do
     defstruct [:text, :type, :embedding, :source_intent]
   end
 
-  # Seed examples for each chunk type (used to build centroids)
-  @chunk_type_seeds %{
-    greeting: [
-      "Hello!",
-      "Hi there!",
-      "Hey!",
-      "Good morning!",
-      "Nice to meet you!",
-      "Welcome!",
-      "Greetings!"
-    ],
-    acknowledgment: [
-      "I understand.",
-      "Got it.",
-      "Okay.",
-      "I see.",
-      "Understood.",
-      "Right.",
-      "Sure thing."
-    ],
-    body: [
-      "The weather is sunny.",
-      "Playing your music now.",
-      "Here's what I found.",
-      "The temperature is 72 degrees.",
-      "I'll set that reminder for you."
-    ],
-    offer: [
-      "What can I help you with?",
-      "Anything else?",
-      "How can I assist you?",
-      "What would you like to do?",
-      "Is there something else you need?"
-    ],
-    clarification: [
-      "Which location did you mean?",
-      "What time would you like?",
-      "I need to know the date.",
-      "Could you specify?",
-      "Which one?"
-    ],
-    closing: [
-      "Have a great day!",
-      "Goodbye!",
-      "Talk to you later!",
-      "Take care!",
-      "See you soon!"
-    ]
-  }
+  # Load chunk type seeds from smalltalk.json at compile time
+  @smalltalk_path "priv/knowledge/domains/smalltalk.json"
+  @external_resource @smalltalk_path
+
+  @chunk_type_seeds (case File.read(@smalltalk_path) do
+                       {:ok, content} ->
+                         case Jason.decode(content) do
+                           {:ok, data} ->
+                             seeds = Map.get(data, "chunk_type_seeds", %{})
+
+                             # Convert string keys to atoms
+                             %{
+                               greeting: Map.get(seeds, "greeting", ["Hello!"]),
+                               acknowledgment: Map.get(seeds, "acknowledgment", ["Got it."]),
+                               body: Map.get(seeds, "body", ["Here's what I found."]),
+                               offer: Map.get(seeds, "offer", ["What can I help you with?"]),
+                               clarification: Map.get(seeds, "clarification", ["Could you specify?"]),
+                               closing: Map.get(seeds, "closing", ["Goodbye!"])
+                             }
+
+                           {:error, _} ->
+                             # Fallback defaults
+                             %{
+                               greeting: ["Hello!"],
+                               acknowledgment: ["Got it."],
+                               body: ["Here's what I found."],
+                               offer: ["What can I help you with?"],
+                               clarification: ["Could you specify?"],
+                               closing: ["Goodbye!"]
+                             }
+                         end
+
+                       {:error, _} ->
+                         # Fallback defaults
+                         %{
+                           greeting: ["Hello!"],
+                           acknowledgment: ["Got it."],
+                           body: ["Here's what I found."],
+                           offer: ["What can I help you with?"],
+                           clarification: ["Could you specify?"],
+                           closing: ["Goodbye!"]
+                         }
+                     end)
 
   # Cached centroids (built lazily)
   @centroid_key :chunk_type_centroids

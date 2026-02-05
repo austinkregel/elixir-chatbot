@@ -700,7 +700,7 @@ defmodule Brain.Knowledge.Types do
       c1 = String.downcase(claim)
       c2 = String.downcase(finding_claim)
 
-      negation_words = ["not", "no", "never", "none", "cannot", "isn't", "aren't", "wasn't", "weren't"]
+      negation_words = Brain.LinguisticData.negation_words()
 
       c1_negated = Enum.any?(negation_words, &String.contains?(c1, &1))
       c2_negated = Enum.any?(negation_words, &String.contains?(c2, &1))

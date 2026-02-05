@@ -26,11 +26,13 @@ defmodule Brain.Analysis.Pipeline do
     Progress,
     IntentRegistry,
     NoveltyDetector,
-    IntentReviewQueue
+    IntentReviewQueue,
+    EventExtractor
   }
   alias Brain.Analysis.Types.IntentReviewCandidate
 
   alias Brain.ML.EntityExtractor
+  alias Brain.ML.LSTM.MultiTaskModel
 
   require Logger
 
@@ -264,6 +266,15 @@ defmodule Brain.Analysis.Pipeline do
       entities: entities |> Enum.take(25) |> Enum.map(&entity_to_dev_map/1)
     })
 
+    # Stage 3a.5: Event extraction (extract actor-verb-object structures)
+    events = extract_events(resolved_text, entities, opts)
+
+    Progress.report(opts, :events_extracted, %{
+      chunk_index: chunk.index,
+      event_count: length(events),
+      events: events |> Enum.take(5) |> Enum.map(&event_to_dev_map/1)
+    })
+
     # Stage 3b: Intent determination
     {intent, intent_method, intent_confidence, intent_details} =
       determine_intent(speech_act_result, entities, chunk.text)
@@ -333,6 +344,7 @@ defmodule Brain.Analysis.Pipeline do
       |> Map.put(:entities, relevant_entities)
       |> Map.put(:slots, resolved_slots)
       |> Map.put(:missing_context, resolved_slots.missing_required)
+      |> ChunkAnalysis.with_events(events)
       |> calculate_confidence()
       |> ChunkAnalysis.determine_response_strategy()
 
@@ -383,6 +395,68 @@ defmodule Brain.Analysis.Pipeline do
   end
 
   defp entity_to_dev_map(other), do: %{value: inspect(other)}
+
+  # Extract events from text using LSTM POS tags and entities
+  defp extract_events(text, entities, opts) do
+    if Keyword.get(opts, :skip_event_extraction, false) do
+      []
+    else
+      # Get POS tags from MultiTaskModel if available
+      case get_pos_tags(text) do
+        {:ok, pos_tags, tokens} ->
+          analysis_input = %{
+            pos_tags: pos_tags,
+            entities: entities,
+            tokens: tokens
+          }
+
+          case EventExtractor.extract(analysis_input, opts) do
+            {:ok, events} -> events
+            {:error, _reason} -> []
+          end
+
+        {:error, _reason} ->
+          []
+      end
+    end
+  end
+
+  defp get_pos_tags(text) do
+    if MultiTaskModel.ready?() do
+      case MultiTaskModel.analyze(text) do
+        {:ok, %{pos_tags: pos_tags, tokens: tokens}} ->
+          {:ok, pos_tags, tokens}
+
+        {:ok, result} when is_map(result) ->
+          # Handle different response formats
+          pos_tags = Map.get(result, :pos_tags, [])
+          tokens = Map.get(result, :tokens, [])
+          {:ok, pos_tags, tokens}
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    else
+      {:error, :model_not_ready}
+    end
+  end
+
+  defp event_to_dev_map(%{action: action, actor: actor, object: object, confidence: confidence}) do
+    %{
+      action: Map.get(action, :lemma, Map.get(action, :verb)),
+      actor: if(actor, do: Map.get(actor, :text)),
+      object: if(object, do: Map.get(object, :text)),
+      confidence: confidence
+    }
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Map.new()
+  end
+
+  defp event_to_dev_map(event) when is_struct(event) do
+    event_to_dev_map(Map.from_struct(event))
+  end
+
+  defp event_to_dev_map(other), do: %{value: inspect(other)}
 
   defp determine_intent(speech_act, _entities, text) do
     # Trust the trained intent classifier - it was trained on actual user intents

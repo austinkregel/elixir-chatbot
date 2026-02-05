@@ -15,8 +15,23 @@ defmodule Brain.Analysis.DiscourseAnalyzer do
 
   require Logger
 
-  # Bot name patterns - can be extended via learning store
-  @default_bot_names ["companion", "bot", "assistant", "ai", "echo"]
+  # Load discourse configuration from JSON at compile time
+  @discourse_config_path "priv/analysis/discourse_config.json"
+  @external_resource @discourse_config_path
+
+  @discourse_config (case File.read(@discourse_config_path) do
+                       {:ok, content} ->
+                         case Jason.decode(content) do
+                           {:ok, data} -> data
+                           {:error, _} -> %{}
+                         end
+
+                       {:error, _} ->
+                         %{}
+                     end)
+
+  # Bot name patterns - loaded from discourse_config.json
+  @default_bot_names Map.get(@discourse_config, "bot_names", ["companion", "bot", "assistant", "ai", "echo"])
 
   # Second person pronouns indicating addressing someone
   @second_person_pronouns ~w(you your yours yourself)
@@ -27,8 +42,8 @@ defmodule Brain.Analysis.DiscourseAnalyzer do
   # Third person pronouns (talking about someone else)
   @third_person_pronouns ~w(he she it they him her them his hers its their theirs)
 
-  # Direct address indicators
-  @address_prefixes ["hey", "hi", "hello", "ok", "okay", "yo"]
+  # Direct address indicators - loaded from discourse_config.json
+  @address_prefixes Map.get(@discourse_config, "address_prefixes", ["hey", "hi", "hello", "ok", "okay", "yo"])
 
   @doc """
   Analyzes discourse structure to determine the addressee.

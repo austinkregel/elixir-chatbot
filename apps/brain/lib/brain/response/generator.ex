@@ -1,15 +1,19 @@
 defmodule Brain.Response.Generator do
   @moduledoc """
-  Unified response generation entry point.
+  Generative response synthesis entry point.
 
-  This module orchestrates response generation by:
-  - Delegating to TemplateStore for template-based responses
-  - Delegating to FactRetriever for factual queries
-  - Delegating to MemoryAugmented for learning-based responses
-  - Handling domain-specific response generation
-  - Handling expressive speech act responses (greetings, farewells, etc.)
-  - Using LSTM response scoring to select the best response (when available)
-  - Quality checking to catch and improve poor responses
+  This module orchestrates response generation using a generative pipeline:
+
+  1. **Retrieve Context** - Query memory for similar episodes, get semantic facts
+  2. **Synthesize** - Compose response from primitives and domain knowledge
+  3. **Compose** - Weave parts together using speech act analysis
+  4. **Refine** - Score/improve using LSTM if available
+
+  The system generates novel responses by combining:
+  - Domain knowledge (from priv/knowledge/domains/*.json)
+  - Similar past episodes (memory-augmented)
+  - Response primitives (hedges, acknowledgments, connectors)
+  - Entity slot filling
 
   Brain should use this module instead of implementing response logic directly.
   """
@@ -17,8 +21,9 @@ defmodule Brain.Response.Generator do
   require Logger
 
   alias Brain.Response.{TemplateStore, MemoryAugmented, FactRetriever, Composer, TemplateBlender}
-  alias Brain.Response.{LSTMResponse, ResponseQuality}
+  alias Brain.Response.{LSTMResponse, ResponseQuality, Synthesizer}
   alias Brain.Analysis.IntentRegistry
+  alias Brain.Memory.{Store, Think}
   alias Brain.Code.QueryHandler
 
   # ============================================================================
@@ -28,80 +33,361 @@ defmodule Brain.Response.Generator do
   @doc """
   Generate a response for the given intent and entities.
 
+  Uses a generative pipeline:
+  1. Retrieve similar episodes from memory
+  2. Synthesize response from domain knowledge and primitives
+  3. Fall back to templates if synthesis doesn't produce a result
+  4. Apply LSTM scoring if available
+
   Returns:
-  - {:ok, response, :domain} for domain-specific responses
-  - {:ok, response, :memory_augmented} for memory-based responses
+  - {:ok, response, :synthesized} for generated responses
+  - {:ok, response, :memory_adapted} for memory-adapted responses
   - {:ok, response, :template} for template-based responses
   - {:ok, response, :lstm_selected} for LSTM-scored best response
   - {:ok, response, :fallback} for fallback responses
   """
   def generate(intent, entities, query_text \\ nil) do
-    # Try LSTM-enhanced generation first if available and we have query text
-    if query_text && LSTMResponse.ready?() do
-      case LSTMResponse.generate(query_text, intent, entities) do
-        {:ok, response, score} when score > 0.6 ->
-          {:ok, response, :lstm_selected}
-        _ ->
-          generate_standard(intent, entities, query_text)
-      end
-    else
-      generate_standard(intent, entities, query_text)
+    generate_with_events(intent, entities, query_text, [])
+  end
+
+  @doc """
+  Generate a response with event context for better slot filling.
+
+  When events are provided, they are used to:
+  - Provide action/actor/object slots for template filling
+  - Enhance context retrieval from memory
+  - Improve response relevance based on user intent structure
+
+  ## Examples
+
+      events = [%Event{action: %{lemma: "play"}, object: %{text: "jazz"}}]
+      generate_with_events("music.play", entities, "Play some jazz", events)
+  """
+  def generate_with_events(intent, entities, query_text, events) when is_list(events) do
+    # Build context for generation, including event-based context
+    context = build_generation_context_with_events(intent, entities, query_text, events)
+
+    # Try generative pipeline first
+    result = run_generative_pipeline(intent, entities, query_text, context)
+
+    # Try LSTM refinement if available
+    result = maybe_refine_with_lstm(result, query_text, intent, entities)
+
+    # Quality check
+    maybe_improve_response(result, query_text, intent, entities)
+  end
+
+  # ============================================================================
+  # Context Building
+  # ============================================================================
+
+  defp build_generation_context(intent, entities, query_text) do
+    build_generation_context_with_events(intent, entities, query_text, [])
+  end
+
+  defp build_generation_context_with_events(intent, entities, query_text, events) do
+    # Retrieve similar episodes from memory
+    similar_episodes = retrieve_similar_episodes(intent, entities, query_text)
+
+    # Retrieve event-related episodes if events present
+    event_episodes = retrieve_event_episodes(events)
+
+    # Build event-based slots for template filling
+    event_slots = build_context_from_events(events, entities)
+
+    # Get confidence from classification (default to medium)
+    confidence = 0.7
+
+    %{
+      similar_episodes: similar_episodes ++ event_episodes,
+      confidence: confidence,
+      intent: intent,
+      entities: entities,
+      query_text: query_text,
+      events: events,
+      event_slots: event_slots
+    }
+  end
+
+  defp retrieve_event_episodes(events) when is_list(events) and length(events) > 0 do
+    # Query memory for episodes related to the primary event action
+    case get_primary_action(events) do
+      nil ->
+        []
+
+      action_lemma ->
+        if Process.whereis(Store) do
+          case Store.query_events_by_action(action_lemma, 3) do
+            {:ok, episodes} -> episodes
+            _ -> []
+          end
+        else
+          []
+        end
     end
   end
-  
-  # Standard generation pipeline
-  defp generate_standard(intent, entities, query_text) do
-    # Try domain-specific first, then memory, then template, then fallback
-    result = case generate_domain_response(intent, entities, query_text) do
-      {:ok, response} ->
-        {:ok, response, :domain}
 
-      :not_handled ->
+  defp retrieve_event_episodes(_), do: []
+
+  @doc """
+  Build template context slots from extracted events.
+
+  This provides action/actor/object slots for more relevant response generation.
+
+  ## Examples
+
+      events = [%Event{action: %{lemma: "play"}, object: %{text: "jazz"}}]
+      build_context_from_events(events, entities)
+      # => %{action: "play", object: "jazz", location: "London", ...}
+  """
+  def build_context_from_events(events, entities) when is_list(events) do
+    # Start with entity-based slots
+    base_slots = build_entity_slots(entities)
+
+    # Add event-based slots (override entity slots if more specific)
+    event_slots = extract_event_slots(events)
+
+    Map.merge(base_slots, event_slots)
+  end
+
+  defp build_entity_slots(entities) when is_list(entities) do
+    # Extract slots from entities by type
+    Enum.reduce(entities, %{}, fn entity, acc ->
+      type = Map.get(entity, :entity_type) || Map.get(entity, "entity_type") || Map.get(entity, :type)
+      value = Map.get(entity, :value) || Map.get(entity, "value") || Map.get(entity, :text)
+
+      case type do
+        t when t in ["location", "city", "place"] -> Map.put(acc, :location, value)
+        t when t in ["person", "name"] -> Map.put(acc, :person, value)
+        t when t in ["song", "music-artist", "artist"] -> Map.put(acc, :music, value)
+        t when t in ["device", "lights", "heating"] -> Map.put(acc, :device, value)
+        t when t in ["date", "time"] -> Map.put(acc, :when, value)
+        _ -> acc
+      end
+    end)
+  end
+
+  defp build_entity_slots(_), do: %{}
+
+  defp extract_event_slots(events) when is_list(events) and length(events) > 0 do
+    # Get slots from the primary (highest confidence) event
+    primary = get_primary_event(events)
+
+    if primary do
+      slots = %{}
+
+      # Add action
+      slots =
+        case primary do
+          %{action: %{lemma: lemma}} when is_binary(lemma) ->
+            Map.put(slots, :action, lemma)
+
+          %{action: %{verb: verb}} when is_binary(verb) ->
+            Map.put(slots, :action, String.downcase(verb))
+
+          _ ->
+            slots
+        end
+
+      # Add actor
+      slots =
+        case primary do
+          %{actor: %{text: text}} when is_binary(text) ->
+            Map.put(slots, :actor, text)
+
+          _ ->
+            slots
+        end
+
+      # Add object
+      slots =
+        case primary do
+          %{object: %{text: text}} when is_binary(text) ->
+            Map.put(slots, :object, text)
+
+          _ ->
+            slots
+        end
+
+      slots
+    else
+      %{}
+    end
+  end
+
+  defp extract_event_slots(_), do: %{}
+
+  defp get_primary_event(events) when is_list(events) and length(events) > 0 do
+    Enum.max_by(events, fn e -> Map.get(e, :confidence, 0.0) end, fn -> nil end)
+  end
+
+  defp get_primary_event(_), do: nil
+
+  defp get_primary_action(events) do
+    case get_primary_event(events) do
+      %{action: %{lemma: lemma}} when is_binary(lemma) -> lemma
+      %{action: %{verb: verb}} when is_binary(verb) -> String.downcase(verb)
+      _ -> nil
+    end
+  end
+
+  defp retrieve_similar_episodes(intent, entities, query_text) do
+    # Build query from intent + entities + query text
+    query =
+      [
+        intent || "",
+        query_text || "",
+        entities |> Enum.map(fn e -> e[:value] || e["value"] || "" end) |> Enum.join(" ")
+      ]
+      |> Enum.filter(&(&1 != ""))
+      |> Enum.join(" ")
+
+    if query != "" and Process.whereis(Store) do
+      case Store.query_similar(query, 5) do
+        {:ok, episodes} -> episodes
+        _ -> []
+      end
+    else
+      []
+    end
+  rescue
+    _ -> []
+  end
+
+  # ============================================================================
+  # Generative Pipeline
+  # ============================================================================
+
+  defp run_generative_pipeline(intent, entities, query_text, context) do
+    # Step 1: Try to synthesize from domain knowledge + memory
+    case Synthesizer.synthesize(intent, entities,
+           confidence: context.confidence,
+           similar_episodes: context.similar_episodes
+         ) do
+      {:ok, response} ->
+        {:ok, response, :synthesized}
+
+      :not_synthesized ->
+        # Step 2: Try memory-augmented generation
         case try_memory_augmented(intent, entities) do
           {:ok, response} ->
-            {:ok, response, :memory_augmented}
+            {:ok, response, :memory_adapted}
 
           :not_handled ->
+            # Step 3: Try template-based response
             case try_template_response(intent, entities) do
               {:ok, response} ->
                 {:ok, response, :template}
 
               :not_handled ->
-                response = generate_fallback(intent, entities)
-                {:ok, response, :fallback}
+                # Step 4: Handle special cases (code, factual)
+                case try_special_handlers(intent, entities, query_text) do
+                  {:ok, response} ->
+                    {:ok, response, :special_handler}
+
+                  :not_handled ->
+                    # Step 5: Fallback
+                    response = Synthesizer.get_fallback_response()
+                    {:ok, response, :fallback}
+                end
             end
         end
     end
-    
-    # Quality check and potentially improve the response
-    maybe_improve_response(result, query_text, intent, entities)
   end
-  
+
+  defp maybe_refine_with_lstm({:ok, response, type}, query_text, intent, entities) do
+    if query_text && LSTMResponse.ready?() && type not in [:lstm_selected, :special_handler] do
+      case LSTMResponse.generate(query_text, intent, entities) do
+        {:ok, lstm_response, score} when score > 0.7 ->
+          # Only use LSTM response if significantly better
+          {:ok, lstm_response, :lstm_selected}
+
+        _ ->
+          {:ok, response, type}
+      end
+    else
+      {:ok, response, type}
+    end
+  end
+
   # Check response quality and try to improve if needed
   defp maybe_improve_response({:ok, response, type}, query_text, intent, entities) do
-    # Skip quality check for domain responses (assumed high quality)
-    if type == :domain or is_nil(query_text) do
+    # Skip quality check for synthesized/special responses
+    if type in [:synthesized, :special_handler, :lstm_selected] or is_nil(query_text) do
       {:ok, response, type}
     else
       case ResponseQuality.quick_check(query_text, response) do
         :ok ->
           {:ok, response, type}
-          
+
         :warning ->
-          # Log but keep the response
           Logger.debug("Response quality warning for intent #{intent}")
           {:ok, response, type}
-          
+
         :poor ->
-          # Try to get a better response
           Logger.debug("Poor response quality detected, attempting improvement")
+
           case ResponseQuality.improve(query_text, response, intent: intent, entities: entities) do
             {:improved, better_response, _analysis} ->
               {:ok, better_response, :quality_improved}
+
             _ ->
               {:ok, response, type}
           end
       end
+    end
+  end
+
+  # ============================================================================
+  # Special Handlers (Code, Factual queries)
+  # ============================================================================
+
+  defp try_special_handlers(intent, entities, query_text) do
+    # Use IntentRegistry to determine domain instead of string matching
+    domain = IntentRegistry.domain(intent)
+
+    cond do
+      # Code-related intents
+      domain == :code ->
+        handle_code_intent(intent, entities, query_text)
+
+      # Factual questions (domain is :question in intent_registry.json)
+      domain == :question or intent == "knowledge.query" ->
+        handle_factual_query(entities, query_text)
+
+      true ->
+        :not_handled
+    end
+  end
+
+  defp handle_code_intent(intent, entities, query_text) do
+    world_id = get_code_world_id()
+
+    case QueryHandler.handle(intent, entities, world_id: world_id, query_text: query_text) do
+      {:ok, response} -> {:ok, response}
+      :not_handled -> :not_handled
+    end
+  end
+
+  defp handle_factual_query(entities, query_text) do
+    if FactRetriever.ready?() do
+      case FactRetriever.retrieve(query_text, entities) do
+        {:ok, facts} when is_list(facts) and length(facts) > 0 ->
+          response = format_factual_response(query_text, facts)
+          {:ok, response}
+
+        _ ->
+          :not_handled
+      end
+    else
+      :not_handled
+    end
+  end
+
+  defp get_code_world_id do
+    case Process.get(:current_world_id) do
+      nil -> "default"
+      world_id -> world_id
     end
   end
   
@@ -120,23 +406,29 @@ defmodule Brain.Response.Generator do
   """
   def generate_with_path(intent, entities, query_text \\ nil) do
     path = []
+    context = build_generation_context(intent, entities, query_text)
 
-    # Step 1: Try domain-specific handlers
-    {path, domain_result} = try_domain_with_path(intent, entities, query_text, path)
+    # Step 1: Try synthesis from domain knowledge
+    path = path ++ [%{step: :try, handler: :synthesizer, intent: intent}]
 
-    case domain_result do
-      {:ok, response, handler} ->
-        path = path ++ [%{step: :selected, handler: handler, reason: "domain handler matched"}]
-        {:ok, response, :domain, path}
+    case Synthesizer.synthesize(intent, entities,
+           confidence: context.confidence,
+           similar_episodes: context.similar_episodes
+         ) do
+      {:ok, response} ->
+        path = path ++ [%{step: :selected, handler: :synthesizer, reason: "synthesized from domain knowledge"}]
+        {:ok, response, :synthesized, path}
 
-      :not_handled ->
+      :not_synthesized ->
+        path = path ++ [%{step: :skip, handler: :synthesizer, reason: "no domain knowledge for intent"}]
+
         # Step 2: Try memory-augmented
         {path, memory_result} = try_memory_with_path(intent, entities, path)
 
         case memory_result do
           {:ok, response} ->
             path = path ++ [%{step: :selected, handler: :memory_augmented, reason: "similar episodes found"}]
-            {:ok, response, :memory_augmented, path}
+            {:ok, response, :memory_adapted, path}
 
           :not_handled ->
             # Step 3: Try template-based
@@ -148,26 +440,22 @@ defmodule Brain.Response.Generator do
                 {:ok, response, :template, path}
 
               :not_handled ->
-                # Step 4: Fallback
-                response = generate_fallback(intent, entities)
-                path = path ++ [%{step: :selected, handler: :fallback, reason: "no handlers matched"}]
-                {:ok, response, :fallback, path}
+                # Step 4: Try special handlers
+                path = path ++ [%{step: :try, handler: :special, intent: intent}]
+
+                case try_special_handlers(intent, entities, query_text) do
+                  {:ok, response} ->
+                    path = path ++ [%{step: :selected, handler: :special, reason: "special handler matched"}]
+                    {:ok, response, :special_handler, path}
+
+                  :not_handled ->
+                    # Step 5: Fallback
+                    response = Synthesizer.get_fallback_response()
+                    path = path ++ [%{step: :selected, handler: :fallback, reason: "no handlers matched"}]
+                    {:ok, response, :fallback, path}
+                end
             end
         end
-    end
-  end
-
-  defp try_domain_with_path(intent, entities, query_text, path) do
-    path = path ++ [%{step: :try, handler: :domain, intent: intent}]
-
-    case generate_domain_response(intent, entities, query_text) do
-      {:ok, response} ->
-        handler = determine_domain_handler(intent)
-        {path, {:ok, response, handler}}
-
-      :not_handled ->
-        path = path ++ [%{step: :skip, handler: :domain, reason: "no domain handler for intent"}]
-        {path, :not_handled}
     end
   end
 
@@ -197,21 +485,6 @@ defmodule Brain.Response.Generator do
     end
   end
 
-  defp determine_domain_handler(intent) when is_binary(intent) do
-    cond do
-      String.starts_with?(intent, "weather") -> :weather_handler
-      String.starts_with?(intent, "music") -> :music_handler
-      String.starts_with?(intent, "smarthome") -> :device_handler
-      String.starts_with?(intent, "news") -> :news_handler
-      String.starts_with?(intent, "reminder") -> :reminder_handler
-      String.starts_with?(intent, "question.factual") -> :fact_retriever
-      String.starts_with?(intent, "code.") -> :code_handler
-      true -> :domain_generic
-    end
-  end
-
-  defp determine_domain_handler(_), do: :domain_generic
-
   @doc """
   Generate a response using context-aware template selection.
 
@@ -234,13 +507,14 @@ defmodule Brain.Response.Generator do
   def generate_with_context(intent, entities, query_text, context \\ %{}) do
     # Build full context with entities
     full_context = build_template_context(entities, context)
+    confidence = Map.get(context, :confidence, 0.7)
 
-    # Try domain-specific first
-    case generate_domain_response(intent, entities, query_text) do
+    # Try synthesis from domain knowledge first
+    case Synthesizer.synthesize(intent, entities, confidence: confidence) do
       {:ok, response} ->
-        {:ok, response, :domain}
+        {:ok, response, :synthesized}
 
-      :not_handled ->
+      :not_synthesized ->
         # Try context-aware template selection
         case try_conditional_template(intent, query_text, entities, full_context) do
           {:ok, response, type} ->
@@ -265,7 +539,7 @@ defmodule Brain.Response.Generator do
                         {:ok, response, :template}
 
                       :not_handled ->
-                        response = generate_fallback(intent, entities)
+                        response = Synthesizer.get_fallback_response()
                         {:ok, response, :fallback}
                     end
                 end
@@ -356,15 +630,12 @@ defmodule Brain.Response.Generator do
       |> Enum.reverse()
       |> Enum.filter(&(&1 != nil and &1 != ""))
 
-    # Determine primary response type
-    primary_type =
-      cond do
-        :memory_augmented in response_types -> :memory_augmented
-        :domain in response_types -> :domain
-        :template in response_types -> :template
-        :expressive in response_types -> :expressive
-        true -> :fallback
-      end
+    # Primary type is the last substantive response type (the main content handler)
+    # Expressive responses (greetings, etc.) are secondary to substantive content
+    primary_type = 
+      response_types
+      |> Enum.reject(&(&1 == :expressive))
+      |> List.first(:fallback)
 
     response =
       case valid_parts do
@@ -383,144 +654,9 @@ defmodule Brain.Response.Generator do
     {response, primary_type}
   end
 
-  # ============================================================================
-  # Domain-Specific Response Handlers
-  # ============================================================================
-
-  defp generate_domain_response(intent, entities, query_text)
-
-  defp generate_domain_response("weather.query", entities, _query_text) do
-    location = find_entity_value(entities, "location")
-
-    response =
-      if location do
-        # Try template first
-        case try_template_with_slots("weather.query", entities) do
-          {:ok, resp} ->
-            resp
-
-          :not_handled ->
-            "Let me check the weather for #{location}. The current conditions are partly cloudy with a temperature around 72°F."
-        end
-      else
-        "What location would you like the weather for?"
-      end
-
-    {:ok, response}
-  end
-
-  defp generate_domain_response("weather" <> _, entities, query_text) do
-    generate_domain_response("weather.query", entities, query_text)
-  end
-
-  defp generate_domain_response("music.play", entities, _query_text) do
-    artist = find_entity_value(entities, "music-artist")
-    song = find_entity_value(entities, "song")
-
-    response =
-      cond do
-        artist ->
-          case try_template_with_slots("music.play", entities) do
-            {:ok, resp} -> resp
-            :not_handled -> "Playing music by #{artist} for you now."
-          end
-
-        song ->
-          "Playing #{song} for you now."
-
-        true ->
-          "What would you like me to play?"
-      end
-
-    {:ok, response}
-  end
-
-  defp generate_domain_response("device.control", entities, _query_text) do
-    device = find_entity_value(entities, "device")
-    action = find_entity_value(entities, "action") || find_entity_value(entities, "locks-status")
-
-    response =
-      cond do
-        device && action -> "I'll #{action} the #{device} for you."
-        device -> "What would you like me to do with the #{device}?"
-        true -> "Which device would you like me to control?"
-      end
-
-    {:ok, response}
-  end
-
-  defp generate_domain_response("news.query", entities, _query_text) do
-    topic = find_entity_value(entities, "topic")
-
-    response =
-      if topic do
-        "Here are the latest headlines about #{topic}."
-      else
-        "Here are today's top headlines."
-      end
-
-    {:ok, response}
-  end
-
-  defp generate_domain_response("reminder.create", entities, _query_text) do
-    content = find_entity_value(entities, "content")
-    date = find_entity_value(entities, "date")
-
-    response =
-      cond do
-        content && date -> "I'll remind you about #{content} on #{date}."
-        content -> "When would you like to be reminded about #{content}?"
-        true -> "What would you like me to remind you about?"
-      end
-
-    {:ok, response}
-  end
-
-  defp generate_domain_response("question.factual", entities, query_text) do
-    generate_factual_with_semantic_search(entities, query_text)
-  end
-
-  # Also handle general questions with semantic search
-  defp generate_domain_response("question" <> _, entities, query_text) do
-    generate_factual_with_semantic_search(entities, query_text)
-  end
-
-  # Handle "what is X" type questions
-  defp generate_domain_response("knowledge.query", entities, query_text) do
-    generate_factual_with_semantic_search(entities, query_text)
-  end
-
-  # ============================================================================
-  # Code-Related Intent Handlers
-  # ============================================================================
-
-  # Delegate all code.* intents to the QueryHandler
-  defp generate_domain_response("code." <> _ = intent, entities, query_text) do
-    world_id = get_code_world_id()
-    
-    case QueryHandler.handle(intent, entities, world_id: world_id, query_text: query_text) do
-      {:ok, response} -> {:ok, response}
-      :not_handled -> :not_handled
-    end
-  end
-
-  # Catch-all for unhandled intents - must be last generate_domain_response clause
-  defp generate_domain_response(_intent, _entities, _query_text) do
-    :not_handled
-  end
-
-  # ============================================================================
-  # Code Response Helpers
-  # ============================================================================
-
-  defp get_code_world_id do
-    # Try to get the current world from the conversation context
-    # Fall back to default if not available
-    case Process.get(:current_world_id) do
-      nil -> "default"
-      world_id -> world_id
-    end
-  end
+  # NOTE: Domain-specific handlers have been replaced by the Synthesizer module
+  # which loads response frames from priv/knowledge/domains/*.json files.
+  # This enables generative responses without hardcoded strings.
 
   @doc """
   Formats a code snippet for display in a response.
@@ -684,14 +820,6 @@ defmodule Brain.Response.Generator do
     end
   end
 
-  defp generate_fallback(intent, entities) do
-    if intent && intent != "" do
-      "I understood that you're asking about #{IntentRegistry.humanize(intent)}#{format_entities(entities)}."
-    else
-      "I'm not sure I understand. Could you rephrase that?"
-    end
-  end
-
   # ============================================================================
   # Factual Response Formatting
   # ============================================================================
@@ -849,21 +977,6 @@ defmodule Brain.Response.Generator do
   end
 
   defp extract_entity_names_for_facts(_), do: []
-
-  defp format_entities([]), do: ""
-
-  defp format_entities(entities) do
-    entity_str =
-      entities
-      |> Enum.map(fn e ->
-        entity_type = e[:entity_type] || "unknown"
-        entity_value = e[:value] || ""
-        "#{entity_type}: #{entity_value}"
-      end)
-      |> Enum.join(", ")
-
-    " (with #{entity_str})"
-  end
 
   defp weave_response_parts(parts, types) do
     # Use Composer for sophisticated multi-part response weaving

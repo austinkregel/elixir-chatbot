@@ -1,0 +1,106 @@
+{
+  "description": "Shared response composition primitives",
+  "hedges": {
+    "high_confidence": [
+      "",
+      "Definitely,",
+      "Certainly,",
+      "Absolutely,"
+    ],
+    "medium_confidence": [
+      "I believe",
+      "I think",
+      "From what I understand,",
+      "It seems like"
+    ],
+    "low_confidence": [
+      "I'm not sure, but",
+      "Possibly,",
+      "I think, though I'm uncertain,",
+      "If I recall correctly,"
+    ]
+  },
+  "acknowledgments": {
+    "affirmative": [
+      "Sure,",
+      "Of course,",
+      "Absolutely,",
+      "You got it,"
+    ],
+    "neutral": [
+      "Okay,",
+      "Alright,",
+      "Got it,"
+    ]
+  },
+  "clarification_requests": {
+    "missing_required": [
+      "I need a bit more information.",
+      "Could you provide more details?",
+      "I'd like to help, but I need to know:"
+    ],
+    "ambiguous": [
+      "Just to clarify,",
+      "Did you mean",
+      "I want to make sure I understand:"
+    ],
+    "generic": [
+      "I'm not sure I understand. Could you provide more details?",
+      "Could you tell me more about what you need?",
+      "I'd like to help - what specifically are you looking for?"
+    ]
+  },
+  "transition_phrases": {
+    "additional_info": [
+      "Also,",
+      "Additionally,",
+      "By the way,"
+    ],
+    "contrast": [
+      "However,",
+      "On the other hand,",
+      "That said,"
+    ],
+    "conclusion": [
+      "So,",
+      "In summary,",
+      "To wrap up,"
+    ]
+  },
+  "uncertainty_markers": [
+    "but I could be wrong",
+    "though I'm not entirely sure",
+    "but that's just my understanding"
+  ],
+  "correction_invites": [
+    "Feel free to correct me if I'm wrong.",
+    "Let me know if that's not quite right.",
+    "Please tell me if I misunderstood."
+  ],
+  "fallback_responses": [
+    "I'm not sure how to help with that. Could you rephrase?",
+    "I don't quite understand. Could you try saying that differently?",
+    "I'm having trouble understanding. What would you like me to do?"
+  ],
+  "defer_responses": [
+    "I'm here if you need me!",
+    "Just let me know if you need anything.",
+    "Feel free to ask if you have a question!"
+  ],
+  "cannot_respond": [
+    "I'm not sure what to make of that. Could you try rephrasing?",
+    "I didn't quite catch that. Can you say it another way?",
+    "I'm having trouble understanding. What would you like help with?"
+  ],
+  "empty_knowledge": [
+    "I don't have much information about you yet. We're just getting to know each other.",
+    "I haven't learned much about you so far. Is there anything you'd like to share?",
+    "We haven't really talked much yet, so I don't have much to go on.",
+    "I'm still getting to know you. We haven't shared much yet."
+  ],
+  "quality_fallback": [
+    "I'm here to help. Could you tell me more about what you're looking for?",
+    "What would you like me to help you with?",
+    "How can I assist you today?"
+  ]
+}

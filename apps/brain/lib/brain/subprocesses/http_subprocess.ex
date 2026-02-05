@@ -118,7 +118,12 @@ defmodule Brain.Subprocesses.HttpSubprocess do
 
   @impl true
   def handle_call(:create_conversation, _from, state) do
-    conversation_id = generate_conversation_id()
+    # Create a Brain-level conversation so evaluate/3 works
+    conversation_id =
+      case Brain.create_conversation() do
+        {:ok, id} -> id
+        _ -> generate_conversation_id()
+      end
 
     conversation = %{
       id: conversation_id,
@@ -348,8 +353,23 @@ defmodule Brain.Subprocesses.HttpSubprocess do
     )
   end
 
-  defp process_http_input(input, _conversation) do
-    # Simple response generation - in a real implementation, this would call the Brain
-    "HTTP Subprocess received: #{input}. This is a simplified response."
+  defp process_http_input(input, conversation) do
+    # Route through the main Brain.evaluate pipeline for full NLP processing
+    case Brain.evaluate(conversation.id, input) do
+      {:ok, response} when is_binary(response) ->
+        response
+
+      {:ok, nil} ->
+        # ResponseGate deferred - no response needed
+        ""
+
+      {:error, reason} ->
+        Logger.warning("Brain.evaluate failed in HTTP subprocess",
+          reason: inspect(reason),
+          input: input
+        )
+
+        "I'm sorry, I wasn't able to process that right now."
+    end
   end
 end

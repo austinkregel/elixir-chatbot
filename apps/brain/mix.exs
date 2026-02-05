@@ -35,13 +35,18 @@ defmodule Brain.MixProject do
       {:nx, "~> 0.7"},
       {:axon, "~> 0.6"},
       {:exla, "~> 0.7"},
+      # NOTE: scholar is available for statistical/ML functions but not currently
+      # called directly. Do not confuse with Brain.Knowledge.Academic.SemanticScholar
+      # which is an API client for the Semantic Scholar academic search service.
       {:scholar, "~> 0.3"},
       {:tokenizers, "~> 0.4"},
       {:jason, "~> 1.2"},
       {:req, "~> 0.5"},
       {:floki, "~> 0.36"},
       {:bandit, "~> 1.0"}
-      # Tree-sitter for code parsing - requires tree-sitter C library to be installed
+      # Tree-sitter for code parsing - required for full AST-based code analysis.
+      # Without this, Brain.Code.LanguageGrammar operates in fallback mode with
+      # basic line-based parsing instead of real ASTs. See LanguageGrammar @moduledoc.
       # Uncomment if you have tree-sitter installed:
       # {:treesitter_elixir, "~> 0.1", optional: true}
     ]

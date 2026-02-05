@@ -1,8 +1,18 @@
 defmodule Brain.ML.LSTM.Integration do
   @moduledoc """
   Integration layer for using LSTM models alongside existing TF-IDF classifiers.
+
+  **NOTE**: This module is currently a standalone utility that is **not called**
+  from the main analysis pipeline (`Brain.Analysis.Pipeline`). The pipeline
+  invokes LSTM models directly via `Brain.ML.LSTM.MultiTaskModel` and
+  `Brain.ML.LSTM.UnifiedModel` instead of going through this integration layer.
+
+  This module is available for direct use but is not part of the standard
+  message processing flow. It could be integrated into the pipeline in the
+  future to provide ensemble voting between TF-IDF and LSTM classifiers.
   
-  This module provides functions to:
+  ## Provides
+  
   1. Get hybrid predictions combining TF-IDF and LSTM
   2. Fallback gracefully when LSTM is not available
   3. Ensemble voting for improved accuracy
@@ -261,13 +271,13 @@ defmodule Brain.ML.LSTM.Integration do
   
   defp keyword_sentiment(text) do
     lower = String.downcase(text)
-    
-    positive_words = ["good", "great", "love", "happy", "thanks", "awesome", "nice", "excellent"]
-    negative_words = ["bad", "hate", "terrible", "awful", "annoying", "frustrating", "worst"]
-    
+
+    positive_words = Brain.LinguisticData.positive_words()
+    negative_words = Brain.LinguisticData.negative_words()
+
     pos_count = Enum.count(positive_words, &String.contains?(lower, &1))
     neg_count = Enum.count(negative_words, &String.contains?(lower, &1))
-    
+
     cond do
       pos_count > neg_count -> {:positive, 0.6 + 0.1 * pos_count}
       neg_count > pos_count -> {:negative, 0.6 + 0.1 * neg_count}

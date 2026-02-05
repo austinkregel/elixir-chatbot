@@ -7,12 +7,11 @@ The system uses TF-IDF vectorization, intent classification, entity extraction, 
 
 ### Umbrella Structure
 
-This project uses an Elixir umbrella with five apps:
+This project uses an Elixir umbrella with four apps:
 
 | App | Purpose |
 |-----|---------|
-| `nerve` | Telemetry, metrics, system status |
-| `brain` | Core NLP, ML, Memory, Epistemic, Response |
+| `brain` | Core NLP, ML, Memory, Epistemic, Response, Telemetry, Metrics |
 | `world` | Training worlds, entity discovery |
 | `tasks` | Task data curation system |
 | `chat_web` | Phoenix web layer |
@@ -21,12 +20,11 @@ This project uses an Elixir umbrella with five apps:
 
 ```
 apps/
-├── nerve/lib/nerve/           # Telemetry & Monitoring
-│   ├── telemetry.ex           # Telemetry event definitions
-│   ├── metrics/aggregator.ex  # Non-blocking metrics collection
-│   └── system_status.ex       # GenServer health monitoring
 ├── brain/lib/brain/           # Core NLP & Brain
 │   ├── brain.ex               # Main orchestrator (GenServer)
+│   ├── telemetry.ex           # Telemetry event definitions
+│   ├── metrics/aggregator.ex  # Non-blocking metrics collection
+│   ├── system_status.ex       # System health monitoring
 │   ├── analysis/              # NLP analysis pipeline
 │   │   ├── pipeline.ex        # Orchestrates multi-stage analysis
 │   │   ├── semantic_chunker.ex
@@ -248,8 +246,8 @@ end
 ## UI Status Display
 
 The LiveView shows system status with:
-- `Nerve.SystemStatus.get_all/0` - All component statuses
-- `Nerve.SystemStatus.all_ready?/0` - Quick check if everything is ready
+- `Brain.SystemStatus.get_all/0` - All component statuses
+- `Brain.SystemStatus.all_ready?/0` - Quick check if everything is ready
 - Periodic polling (2 seconds) refreshes status display
 
 Components tracked:
@@ -333,7 +331,7 @@ mix train_models
 
 ### Check System Status
 ```elixir
-Nerve.SystemStatus.get_all()
+Brain.SystemStatus.get_all()
 Brain.Memory.Embedder.ready?()
 Brain.Memory.Store.stats()
 ```

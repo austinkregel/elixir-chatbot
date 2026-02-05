@@ -95,6 +95,149 @@ defmodule Brain.Epistemic.BeliefStore do
     query_beliefs(user_id: user_id)
   end
 
+  # ============================================================================
+  # Event-Based Belief Extraction
+  # ============================================================================
+
+  @doc """
+  Extract beliefs from an extracted event.
+
+  Creates beliefs based on the event structure:
+  - Actor performing an action suggests the actor wants/needs/likes the object
+  - Imperative actions suggest user desires
+
+  ## Parameters
+    - event: An Event struct from EventExtractor
+    - user_id: The user ID to associate beliefs with (optional)
+
+  ## Examples
+
+      event = %Event{
+        action: %{lemma: "want", tense: :present},
+        actor: %{text: "I", type: "pronoun"},
+        object: %{text: "coffee", type: "noun"},
+        confidence: 0.85
+      }
+
+      extract_beliefs_from_event(event, "user_123")
+      # Creates belief: User wants coffee (confidence: 0.85)
+  """
+  def extract_beliefs_from_event(event, user_id \\ nil) do
+    # Only extract beliefs from high-confidence events
+    confidence = Map.get(event, :confidence, 0.0)
+
+    if confidence >= 0.6 do
+      do_extract_beliefs_from_event(event, user_id)
+    else
+      {:ok, []}
+    end
+  end
+
+  defp do_extract_beliefs_from_event(event, user_id) do
+    beliefs_created = []
+    action = Map.get(event, :action, %{})
+    actor = Map.get(event, :actor)
+    object = Map.get(event, :object)
+    confidence = Map.get(event, :confidence, 0.5)
+
+    action_lemma = Map.get(action, :lemma, Map.get(action, :verb))
+    tense = Map.get(action, :tense, :present)
+
+    # Extract belief based on action type
+    beliefs_created =
+      cond do
+        # User wants/needs/desires something
+        action_lemma in ["want", "need", "desire", "wish", "like", "love", "prefer"] and object != nil ->
+          object_text = Map.get(object, :text, "something")
+
+          predicate =
+            case action_lemma do
+              "want" -> :wants
+              "need" -> :needs
+              "desire" -> :desires
+              "wish" -> :wishes_for
+              "like" -> :likes
+              "love" -> :loves
+              "prefer" -> :prefers
+              _ -> :wants
+            end
+
+          case add_belief(:user, predicate, object_text,
+                 source: :inferred,
+                 confidence: confidence * 0.9,
+                 user_id: user_id
+               ) do
+            {:ok, belief_id} -> [belief_id | beliefs_created]
+            _ -> beliefs_created
+          end
+
+        # User asks about something (implies interest)
+        action_lemma in ["ask", "wonder", "question", "inquire"] and object != nil ->
+          object_text = Map.get(object, :text, "something")
+
+          case add_belief(:user, :interested_in, object_text,
+                 source: :inferred,
+                 confidence: confidence * 0.7,
+                 user_id: user_id
+               ) do
+            {:ok, belief_id} -> [belief_id | beliefs_created]
+            _ -> beliefs_created
+          end
+
+        # Imperative commands suggest user wants bot to do something
+        tense == :imperative and object != nil ->
+          object_text = Map.get(object, :text, "something")
+
+          case add_belief(:user, :requests, "#{action_lemma} #{object_text}",
+                 source: :inferred,
+                 confidence: confidence * 0.8,
+                 user_id: user_id
+               ) do
+            {:ok, belief_id} -> [belief_id | beliefs_created]
+            _ -> beliefs_created
+          end
+
+        # User knows/believes something
+        action_lemma in ["know", "believe", "think", "understand"] and object != nil ->
+          object_text = Map.get(object, :text, "something")
+
+          case add_belief(:user, :believes, object_text,
+                 source: :inferred,
+                 confidence: confidence * 0.8,
+                 user_id: user_id
+               ) do
+            {:ok, belief_id} -> [belief_id | beliefs_created]
+            _ -> beliefs_created
+          end
+
+        true ->
+          beliefs_created
+      end
+
+    {:ok, beliefs_created}
+  end
+
+  @doc """
+  Extract beliefs from multiple events.
+
+  Processes a list of events and extracts beliefs from each.
+  """
+  def extract_beliefs_from_events(events, user_id \\ nil) when is_list(events) do
+    results =
+      Enum.map(events, fn event ->
+        extract_beliefs_from_event(event, user_id)
+      end)
+
+    belief_ids =
+      results
+      |> Enum.flat_map(fn
+        {:ok, ids} -> ids
+        _ -> []
+      end)
+
+    {:ok, belief_ids}
+  end
+
   @doc """
   Updates the confidence of a belief.
 

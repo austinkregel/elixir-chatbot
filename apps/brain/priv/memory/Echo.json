@@ -58,5 +58,75 @@
     ],
     "text": "Learned 2 entities, 0 relationships, 1 facts from: Hello I'm Austin",
     "timestamp": 1770152936684
+  },
+  {
+    "id": "96aac7f14c721a05",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello",
+    "timestamp": 1770156644260
+  },
+  {
+    "id": "927595c9f40f76bc",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 1 facts from: Hello, I'm Austin.",
+    "timestamp": 1770158296248
+  },
+  {
+    "id": "21294a437d45657c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Can you tell me the weather in Owosso?",
+    "timestamp": 1770158339271
+  },
+  {
+    "id": "d4d9248209cc425b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 1 facts from: Hello, I'm Austin. Can you tell me about the weather in Owosso?",
+    "timestamp": 1770158558606
+  },
+  {
+    "id": "6252ebf6e1e4acfd",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Can you tell me the weather in Owosso?",
+    "timestamp": 1770158575285
+  },
+  {
+    "id": "31c508d91e6af7f8",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 1 facts from: Hello, I'm Austin.",
+    "timestamp": 1770327314531
+  },
+  {
+    "id": "1c2f8455d3533acc",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Can I buy you with gifts?",
+    "timestamp": 1770327323318
   }
 ]

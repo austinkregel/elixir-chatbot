@@ -1,0 +1,39 @@
+{
+  "domain": "device",
+  "description": "Smart device control",
+  "response_frames": {
+    "control_device": [
+      "I'll $action the $device for you.",
+      "Setting the $device to $action.",
+      "Done - the $device is now $action."
+    ],
+    "missing_device": [
+      "Which device would you like me to control?",
+      "What device should I adjust?",
+      "Which device are you referring to?"
+    ],
+    "missing_action": [
+      "What would you like me to do with the $device?",
+      "How should I adjust the $device?",
+      "What action should I take on the $device?"
+    ],
+    "missing_both": [
+      "What device would you like me to control, and what should I do with it?",
+      "Which device and what action?"
+    ]
+  },
+  "entity_verbalizations": {
+    "device": ["the $value", "$value"],
+    "action": ["$value", "set to $value"],
+    "room": ["in the $value", "in $value"]
+  },
+  "acknowledgment_prefixes": [
+    "Sure,",
+    "On it,",
+    "Right away,"
+  ],
+  "slot_requirements": {
+    "required": ["device", "action"],
+    "optional": ["room"]
+  }
+}

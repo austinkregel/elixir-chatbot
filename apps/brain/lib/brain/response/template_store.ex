@@ -33,6 +33,7 @@ defmodule Brain.Response.TemplateStore do
 
   @intents_path "data/intents"
   @custom_smalltalk_path "data/customSmalltalkResponses_en.json"
+  @smalltalk_domain_path "priv/knowledge/domains/smalltalk.json"
 
   # Template struct with text, condition, and embedding
   defmodule Template do
@@ -40,14 +41,42 @@ defmodule Brain.Response.TemplateStore do
     defstruct [:text, :condition, :embedding, :intent]
   end
 
-  # Fallback responses for expressive speech acts when templates aren't available
-  @expressive_fallbacks %{
-    greeting: ["Hello!", "Hi there!", "Hey!"],
-    farewell: ["Goodbye!", "See you!", "Take care!"],
-    thanks: ["You're welcome!", "Happy to help!", "No problem!"],
-    apology: ["No worries!", "That's fine.", "Don't worry about it!"],
-    how_are_you: ["I'm doing well, thank you!", "Great, thanks for asking!", "All good here!"]
-  }
+  # Load expressive fallbacks from smalltalk.json at compile time
+  @external_resource @smalltalk_domain_path
+
+  @expressive_fallbacks (case File.read(@smalltalk_domain_path) do
+                           {:ok, content} ->
+                             case Jason.decode(content) do
+                               {:ok, data} ->
+                                 frames = Map.get(data, "response_frames", %{})
+
+                                 %{
+                                   greeting: Map.get(frames, "greeting", ["Hello!"]),
+                                   farewell: Map.get(frames, "farewell", ["Goodbye!"]),
+                                   thanks: Map.get(frames, "thanks", ["You're welcome!"]),
+                                   apology: Map.get(frames, "apology", ["No worries!"]),
+                                   how_are_you: Map.get(frames, "how_are_you", ["I'm doing well!"])
+                                 }
+
+                               {:error, _} ->
+                                 %{
+                                   greeting: ["Hello!"],
+                                   farewell: ["Goodbye!"],
+                                   thanks: ["You're welcome!"],
+                                   apology: ["No worries!"],
+                                   how_are_you: ["I'm doing well!"]
+                                 }
+                             end
+
+                           {:error, _} ->
+                             %{
+                               greeting: ["Hello!"],
+                               farewell: ["Goodbye!"],
+                               thanks: ["You're welcome!"],
+                               apology: ["No worries!"],
+                               how_are_you: ["I'm doing well!"]
+                             }
+                         end)
 
   # Client API
 

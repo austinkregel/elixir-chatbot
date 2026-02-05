@@ -32,19 +32,7 @@ config :brain,
   ],
 
   # Intent promotion (novel intent discovery)
-  intent_promotion_enabled: System.get_env("INTENT_PROMOTION_ENABLED", "false") == "true",
-
-  # Seq2Seq LSTM + Attention configuration
-  seq2seq: [
-    hidden_size: 256,
-    embedding_size: 128,
-    vocab_size: 10_000,
-    max_sequence_length: 100,
-    dropout: 0.1
-  ],
-
-  # Abstractive summarization toggle
-  use_abstractive_summarization: System.get_env("USE_ABSTRACTIVE_SUMMARIZATION", "false") == "true"
+  intent_promotion_enabled: System.get_env("INTENT_PROMOTION_ENABLED", "false") == "true"
 
 # ============================================================================
 # World App Configuration
@@ -128,9 +116,22 @@ config :exla,
   # Default client - determined at runtime based on available hardware
   # Set via XLA_TARGET=cuda for GPU acceleration
   default_client: (if System.get_env("XLA_TARGET") == "cuda", do: :cuda, else: :host),
-  # Memory fraction to use on GPU (0.0-1.0)
-  memory_fraction: 0.8,
-  # Pre-allocate GPU memory (faster but uses more memory upfront)
+  # Client-specific configuration for memory management
+  # Constraints: 6GB VRAM max, 32GB RAM max
+  clients: [
+    # CUDA client (NVIDIA GPU) - 75% of 6GB = ~4.5GB usable
+    cuda: [
+      memory_fraction: 0.75,
+      preallocate: true
+    ],
+    # Host client (CPU) - 50% of 32GB = ~16GB usable
+    host: [
+      memory_fraction: 0.5,
+      preallocate: false
+    ]
+  ],
+  # Legacy fallback settings (used if client not specified)
+  memory_fraction: 0.75,
   preallocate: true
 
 # Import environment specific config. This must remain at the bottom

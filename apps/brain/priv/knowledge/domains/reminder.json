@@ -1,0 +1,34 @@
+{
+  "domain": "reminder",
+  "description": "Reminder creation and management",
+  "response_frames": {
+    "create_with_date": [
+      "I'll remind you about $content on $date.",
+      "Reminder set for $date: $content.",
+      "Got it - I'll remind you about $content on $date."
+    ],
+    "create_content_only": [
+      "When would you like to be reminded about $content?",
+      "What date or time should I set the reminder for $content?"
+    ],
+    "missing_content": [
+      "What would you like me to remind you about?",
+      "What should the reminder say?",
+      "What do you want to be reminded of?"
+    ]
+  },
+  "entity_verbalizations": {
+    "content": ["about $value", "$value"],
+    "date": ["on $value", "at $value", "for $value"],
+    "time": ["at $value"]
+  },
+  "acknowledgment_prefixes": [
+    "Sure,",
+    "Got it,",
+    "No problem,"
+  ],
+  "slot_requirements": {
+    "required": ["content"],
+    "optional": ["date", "time"]
+  }
+}

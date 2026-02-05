@@ -425,10 +425,12 @@ defmodule Brain.Response.ResponseQuality do
   end
   
   defp get_template_response(intent, _entities) do
+    alias Brain.Response.Synthesizer
+
     case TemplateStore.get_random_template(intent) do
       {:ok, response} when is_binary(response) -> response
       {:ok, %{text: text}} -> text
-      _ -> "I'm here to help. Could you tell me more about what you're looking for?"
+      _ -> Synthesizer.get_quality_fallback()
     end
   end
   

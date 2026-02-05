@@ -252,7 +252,7 @@ defmodule Brain.Knowledge.AcademicValidator do
     c1 = String.downcase(claim)
     c2 = String.downcase(belief.object)
 
-    negation_words = ["not", "no", "never", "cannot", "doesn't", "don't", "isn't"]
+    negation_words = Brain.LinguisticData.negation_words()
 
     c1_has_negation = Enum.any?(negation_words, &String.contains?(c1, &1))
     c2_has_negation = Enum.any?(negation_words, &String.contains?(c2, &1))

@@ -733,7 +733,7 @@ defmodule Brain.Knowledge.LearningCenter do
   end
 
   defp has_negation_difference?(c1, c2) do
-    negation_words = ["not", "no", "never", "none"]
+    negation_words = Brain.LinguisticData.negation_words()
     c1_has_negation = Enum.any?(negation_words, &String.contains?(c1, &1))
     c2_has_negation = Enum.any?(negation_words, &String.contains?(c2, &1))
     c1_has_negation != c2_has_negation

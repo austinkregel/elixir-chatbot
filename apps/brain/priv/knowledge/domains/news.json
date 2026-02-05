@@ -1,0 +1,28 @@
+{
+  "domain": "news",
+  "description": "News and headlines queries",
+  "response_frames": {
+    "with_topic": [
+      "Here are the latest headlines about $topic.",
+      "Here's what's happening with $topic.",
+      "The latest news on $topic."
+    ],
+    "general": [
+      "Here are today's top headlines.",
+      "Here's what's in the news today.",
+      "These are the latest headlines."
+    ]
+  },
+  "entity_verbalizations": {
+    "topic": ["about $value", "on $value", "regarding $value"],
+    "news-source": ["from $value", "via $value"]
+  },
+  "acknowledgment_prefixes": [
+    "Sure,",
+    "Let me check,"
+  ],
+  "slot_requirements": {
+    "required": [],
+    "optional": ["topic", "news-source", "date"]
+  }
+}

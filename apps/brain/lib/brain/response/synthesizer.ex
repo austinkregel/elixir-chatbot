@@ -1,36 +1,88 @@
 defmodule Brain.Response.Synthesizer do
   @moduledoc """
-  Principle-driven response composition for epistemic queries.
+  Generative response composition from primitives and domain knowledge.
 
   Instead of template-based responses, this module composes responses
   from primitives based on:
+  - Domain knowledge (loaded from priv/knowledge/domains/*.json)
   - Confidence levels of the knowledge being shared
+  - Speech act analysis
+  - Entity slot filling
   - Disclosure policy decisions
-  - User's interaction style
-  - Social appropriateness
 
   Response primitives:
-  - :soft_preface - "From what I remember..."
-  - :confidence_bounded - Adjust language to confidence level
-  - :evidence_clause - "...based on what you've shared..."
-  - :uncertainty_marker - "...but that's just my understanding"
-  - :invite_correction - "Feel free to correct me if I'm wrong"
+  - Acknowledgments - "Sure,", "Of course,"
+  - Hedges - confidence-based language adjustments
+  - Entity verbalizations - "in $location", "by $artist"
+  - Response frames - domain-specific sentence structures
+  - Uncertainty markers - "but that's just my understanding"
 
   This enables novel, appropriate responses without massive training data.
   """
 
   alias Brain.Epistemic.Types.SelfKnowledgeAssessment
   alias Brain.Epistemic.DisclosurePolicy
+  alias Brain.Analysis.IntentRegistry
 
   require Logger
 
-  # Response primitives
-  @soft_prefaces [
-    "From what I remember",
-    "Based on our conversations",
-    "If I recall correctly",
-    "From what you've shared"
-  ]
+  # ============================================================================
+  # Domain Knowledge Loading
+  # ============================================================================
+
+  @domains_path "priv/knowledge/domains"
+  @primitives_path "priv/knowledge/domains/primitives.json"
+
+  # Load primitives at compile time
+  @external_resource @primitives_path
+
+  @primitives (case File.read(@primitives_path) do
+                 {:ok, content} ->
+                   case Jason.decode(content) do
+                     {:ok, data} -> data
+                     {:error, _} -> %{}
+                   end
+
+                 {:error, _} ->
+                   %{}
+               end)
+
+  # Load all domain knowledge at compile time
+  @domain_files Path.wildcard(Path.join(@domains_path, "*.json"))
+  @external_resource @domains_path
+
+  for file <- @domain_files do
+    @external_resource file
+  end
+
+  @domain_knowledge (
+                      @domain_files
+                      |> Enum.reject(&String.ends_with?(&1, "primitives.json"))
+                      |> Enum.reduce(%{}, fn file, acc ->
+                        case File.read(file) do
+                          {:ok, content} ->
+                            case Jason.decode(content) do
+                              {:ok, data} ->
+                                domain = Map.get(data, "domain", Path.basename(file, ".json"))
+                                Map.put(acc, domain, data)
+
+                              {:error, _} ->
+                                acc
+                            end
+
+                          {:error, _} ->
+                            acc
+                        end
+                      end)
+                    )
+
+  # Legacy primitives for epistemic responses (kept for backward compatibility)
+  @soft_prefaces Map.get(@primitives, "hedges", %{}) |> Map.get("low_confidence", [
+                   "From what I remember",
+                   "Based on our conversations",
+                   "If I recall correctly",
+                   "From what you've shared"
+                 ])
 
   @evidence_clauses [
     "based on what you've mentioned",
@@ -38,26 +90,412 @@ defmodule Brain.Response.Synthesizer do
     "according to what you've told me"
   ]
 
-  @uncertainty_markers [
-    "but I could be off",
-    "though I might be misremembering",
-    "but that's just my impression",
-    "though I'm not entirely certain"
-  ]
+  @uncertainty_markers Map.get(@primitives, "uncertainty_markers", [
+                         "but I could be off",
+                         "though I might be misremembering",
+                         "but that's just my impression",
+                         "though I'm not entirely certain"
+                       ])
 
-  @correction_invites [
-    "Feel free to correct me if I'm wrong.",
-    "Let me know if I've got anything mixed up.",
-    "Please tell me if that's not quite right.",
-    "I'm happy to be corrected on any of this."
-  ]
+  @correction_invites Map.get(@primitives, "correction_invites", [
+                        "Feel free to correct me if I'm wrong.",
+                        "Let me know if I've got anything mixed up.",
+                        "Please tell me if that's not quite right.",
+                        "I'm happy to be corrected on any of this."
+                      ])
 
-  @empty_knowledge_responses [
-    "I don't think I have much information about you yet. We're just getting to know each other.",
-    "I haven't learned much about you so far. Is there anything you'd like to share?",
-    "We haven't really talked much yet, so I don't have much to go on.",
-    "I'm still getting to know you. We haven't shared much yet."
-  ]
+  # Load empty knowledge responses from primitives.json
+  @empty_knowledge_responses Map.get(@primitives, "empty_knowledge", [
+                               "I don't have much information about you yet. We're just getting to know each other.",
+                               "I haven't learned much about you so far. Is there anything you'd like to share?",
+                               "We haven't really talked much yet, so I don't have much to go on.",
+                               "I'm still getting to know you. We haven't shared much yet."
+                             ])
+
+  # ============================================================================
+  # General Response Synthesis (NEW)
+  # ============================================================================
+
+  @doc """
+  Synthesizes a response for any intent using domain knowledge and primitives.
+
+  This is the primary entry point for generative response creation.
+
+  ## Parameters
+  - `intent` - The classified intent (e.g., "weather.query")
+  - `entities` - List of extracted entities
+  - `opts` - Options including:
+    - `:confidence` - Classification confidence (0.0-1.0)
+    - `:speech_act` - Speech act analysis result
+    - `:similar_episodes` - Similar past interactions from memory
+    - `:semantic_facts` - Retrieved semantic facts
+
+  ## Returns
+  `{:ok, response}` or `:not_synthesized`
+  """
+  def synthesize(intent, entities, opts \\ []) do
+    domain = IntentRegistry.domain(intent) || infer_domain(intent)
+    confidence = Keyword.get(opts, :confidence, 0.7)
+    similar_episodes = Keyword.get(opts, :similar_episodes, [])
+
+    # Try to adapt from similar episodes first
+    case adapt_from_episodes(similar_episodes, entities) do
+      {:ok, response} ->
+        {:ok, response}
+
+      :no_adaptation ->
+        # Fall back to domain-based synthesis
+        synthesize_from_domain(domain, intent, entities, confidence, opts)
+    end
+  end
+
+  @doc """
+  Synthesizes a response using domain knowledge and entity slots.
+  """
+  def synthesize_from_domain(domain, intent, entities, confidence, opts \\ [])
+
+  def synthesize_from_domain(nil, _intent, _entities, _confidence, _opts) do
+    :not_synthesized
+  end
+
+  def synthesize_from_domain(domain, _intent, entities, confidence, _opts) do
+    domain_str = to_string(domain)
+    domain_config = Map.get(@domain_knowledge, domain_str, %{})
+
+    if map_size(domain_config) == 0 do
+      :not_synthesized
+    else
+      # Determine which response frame to use based on filled slots
+      frame_key = determine_frame_key(domain_config, entities)
+      frames = get_in(domain_config, ["response_frames", frame_key]) || []
+
+      if length(frames) == 0 do
+        :not_synthesized
+      else
+        # Select and fill a frame
+        frame = Enum.random(frames)
+        filled_response = fill_entity_slots(frame, entities)
+
+        # Add acknowledgment prefix based on confidence
+        final_response = maybe_add_acknowledgment(filled_response, confidence, domain_config)
+
+        {:ok, final_response}
+      end
+    end
+  end
+
+  @doc """
+  Synthesizes a clarification request when required slots are missing.
+  """
+  def synthesize_clarification(intent, entities, missing_slots, opts \\ []) do
+    domain = IntentRegistry.domain(intent) || infer_domain(intent)
+    domain_str = to_string(domain)
+    domain_config = Map.get(@domain_knowledge, domain_str, %{})
+
+    # Get clarification prefix
+    clarification_prefix =
+      @primitives
+      |> Map.get("clarification_requests", %{})
+      |> Map.get("missing_required", ["I need a bit more information."])
+      |> Enum.random()
+
+    # Get slot-specific clarification from intent registry or domain config
+    slot_clarification = get_slot_clarification(intent, missing_slots, domain_config)
+
+    # Build the response with any partial information we have
+    partial_ack = build_partial_acknowledgment(entities, domain_config, opts)
+
+    response =
+      [partial_ack, clarification_prefix, slot_clarification]
+      |> Enum.filter(&(&1 != nil and &1 != ""))
+      |> Enum.join(" ")
+
+    {:ok, response}
+  end
+
+  @doc """
+  Synthesizes an expressive response (greeting, farewell, thanks, etc.).
+  """
+  def synthesize_expressive(sub_type, _opts \\ []) do
+    smalltalk_config = Map.get(@domain_knowledge, "smalltalk", %{})
+    frames = get_in(smalltalk_config, ["response_frames", to_string(sub_type)]) || []
+
+    if length(frames) > 0 do
+      {:ok, Enum.random(frames)}
+    else
+      :not_synthesized
+    end
+  end
+
+  @doc """
+  Gets a fallback response when nothing else works.
+  """
+  def get_fallback_response do
+    fallbacks =
+      Map.get(@primitives, "fallback_responses", [
+        "I'm not sure how to respond to that. Could you try rephrasing?"
+      ])
+
+    Enum.random(fallbacks)
+  end
+
+  @doc """
+  Gets a defer response when the bot wasn't directly addressed.
+  """
+  def get_defer_response do
+    responses =
+      Map.get(@primitives, "defer_responses", [
+        "I'm here if you need me!"
+      ])
+
+    Enum.random(responses)
+  end
+
+  @doc """
+  Gets a response when the NLP system cannot understand the input.
+  """
+  def get_cannot_respond_response do
+    responses =
+      Map.get(@primitives, "cannot_respond", [
+        "I'm not sure what to make of that. Could you try rephrasing?"
+      ])
+
+    Enum.random(responses)
+  end
+
+  @doc """
+  Gets a generic clarification request when no specific prompts are available.
+  """
+  def get_generic_clarification do
+    clarifications =
+      @primitives
+      |> Map.get("clarification_requests", %{})
+      |> Map.get("generic", ["Could you tell me more?"])
+
+    Enum.random(clarifications)
+  end
+
+  @doc """
+  Gets a transition phrase for adding additional information.
+  """
+  def get_transition_phrase(type \\ :additional_info) do
+    type_str = to_string(type)
+
+    phrases =
+      @primitives
+      |> Map.get("transition_phrases", %{})
+      |> Map.get(type_str, ["Also,"])
+
+    Enum.random(phrases)
+  end
+
+  @doc """
+  Gets a response when knowledge about the user is empty/minimal.
+  """
+  def get_empty_knowledge_response do
+    Enum.random(@empty_knowledge_responses)
+  end
+
+  @doc """
+  Gets a quality fallback response for response improvement.
+  """
+  def get_quality_fallback do
+    fallbacks =
+      Map.get(@primitives, "quality_fallback", [
+        "I'm here to help. Could you tell me more about what you're looking for?"
+      ])
+
+    Enum.random(fallbacks)
+  end
+
+  # ============================================================================
+  # Episode Adaptation
+  # ============================================================================
+
+  defp adapt_from_episodes([], _entities), do: :no_adaptation
+
+  defp adapt_from_episodes(episodes, entities) do
+    # Find the best episode to adapt
+    best_episode =
+      episodes
+      |> Enum.filter(fn {episode, similarity} ->
+        similarity >= 0.7 and episode.outcome != nil and episode.outcome != ""
+      end)
+      |> Enum.max_by(fn {_ep, sim} -> sim end, fn -> nil end)
+
+    case best_episode do
+      nil ->
+        :no_adaptation
+
+      {episode, _similarity} ->
+        # Try to adapt the outcome as a response pattern
+        adapted = adapt_response_pattern(episode.outcome, entities)
+        {:ok, adapted}
+    end
+  rescue
+    _ -> :no_adaptation
+  end
+
+  defp adapt_response_pattern(outcome, entities) when is_binary(outcome) do
+    # Replace entity placeholders in the outcome with current entities
+    Enum.reduce(entities, outcome, fn entity, acc ->
+      entity_type = entity[:entity_type] || entity["entity_type"] || ""
+      entity_value = entity[:value] || entity["value"] || ""
+
+      if entity_type != "" and entity_value != "" do
+        # Replace common placeholder patterns
+        acc
+        |> String.replace("$#{entity_type}", entity_value)
+        |> String.replace("#{entity_type}", entity_value)
+      else
+        acc
+      end
+    end)
+  end
+
+  defp adapt_response_pattern(_, _entities), do: ""
+
+  # ============================================================================
+  # Frame Selection and Slot Filling
+  # ============================================================================
+
+  defp determine_frame_key(domain_config, entities) do
+    slot_requirements = Map.get(domain_config, "slot_requirements", %{})
+    required_slots = Map.get(slot_requirements, "required", [])
+
+    # Check which required slots are filled
+    filled_required =
+      Enum.filter(required_slots, fn slot ->
+        find_entity_value(entities, slot) != nil
+      end)
+
+    missing_required = required_slots -- filled_required
+
+    # Determine frame key based on what's filled
+    cond do
+      length(missing_required) > 0 ->
+        # Missing required slot - use clarification frame
+        case missing_required do
+          [single] -> "missing_#{single}"
+          _ -> "missing_both"
+        end
+
+      length(filled_required) == 0 ->
+        # No required slots defined or none filled
+        "general"
+
+      true ->
+        # All required slots filled - use specific frame
+        case Enum.sort(filled_required) do
+          ["location"] -> "has_location"
+          ["content", "date"] -> "create_with_date"
+          ["content"] -> "create_content_only"
+          ["device", "action"] -> "control_device"
+          ["music-artist"] -> "play_artist"
+          ["song"] -> "play_song"
+          ["music-artist", "song"] -> "play_artist_song"
+          ["topic"] -> "with_topic"
+          ["symbol"] -> "explain_symbol"
+          _ -> "general"
+        end
+    end
+  end
+
+  defp fill_entity_slots(frame, entities) do
+    Enum.reduce(entities, frame, fn entity, acc ->
+      entity_type = entity[:entity_type] || entity["entity_type"] || ""
+      entity_value = entity[:value] || entity["value"] || ""
+
+      if entity_type != "" and entity_value != "" do
+        String.replace(acc, "$#{entity_type}", entity_value)
+      else
+        acc
+      end
+    end)
+  end
+
+  defp maybe_add_acknowledgment(response, confidence, domain_config) do
+    # Only add acknowledgment for high-confidence, actionable responses
+    if confidence >= 0.7 do
+      ack_prefixes = Map.get(domain_config, "acknowledgment_prefixes", [])
+
+      if length(ack_prefixes) > 0 and :rand.uniform() > 0.5 do
+        "#{Enum.random(ack_prefixes)} #{String.downcase(String.first(response))}#{String.slice(response, 1..-1//1)}"
+      else
+        response
+      end
+    else
+      response
+    end
+  end
+
+  defp get_slot_clarification(intent, missing_slots, _domain_config) do
+    # Try to get from intent registry first
+    case IntentRegistry.get(intent) do
+      nil ->
+        # Generic clarification
+        case missing_slots do
+          [slot] -> "What #{humanize_key(slot)} would you like?"
+          _ -> "Could you provide more details?"
+        end
+
+      meta ->
+        templates = Map.get(meta, "clarification_templates", %{})
+
+        case missing_slots do
+          [slot] ->
+            Map.get(templates, slot, "What #{humanize_key(slot)} would you like?")
+
+          _ ->
+            "Could you provide more details?"
+        end
+    end
+  end
+
+  defp build_partial_acknowledgment(entities, _domain_config, _opts) do
+    # Acknowledge what we did understand
+    filled_values =
+      entities
+      |> Enum.map(fn e -> e[:value] || e["value"] end)
+      |> Enum.filter(&(&1 != nil and &1 != ""))
+
+    if length(filled_values) > 0 do
+      "I understand you're interested in #{Enum.join(filled_values, " and ")}."
+    else
+      nil
+    end
+  end
+
+  defp find_entity_value(entities, entity_type) do
+    Enum.find_value(entities, fn entity ->
+      type = entity[:entity_type] || entity["entity_type"]
+
+      if type == entity_type do
+        entity[:value] || entity["value"]
+      else
+        nil
+      end
+    end)
+  end
+
+  # Fallback domain inference when intent is not in IntentRegistry.
+  # This uses simple prefix matching as a last resort. The primary domain
+  # lookup through IntentRegistry.domain/1 is data-driven.
+  # TODO: Consider loading prefix mappings from a config file if this grows.
+  defp infer_domain(intent) when is_binary(intent) do
+    cond do
+      String.starts_with?(intent, "weather") -> :weather
+      String.starts_with?(intent, "music") -> :music
+      String.starts_with?(intent, "device") or String.starts_with?(intent, "smarthome") -> :device
+      String.starts_with?(intent, "news") -> :news
+      String.starts_with?(intent, "reminder") -> :reminder
+      String.starts_with?(intent, "code") -> :code
+      String.starts_with?(intent, "question") -> :question
+      true -> nil
+    end
+  end
+
+  defp infer_domain(_), do: nil
 
   @doc """
   Synthesizes a response for a meta-cognitive query.
