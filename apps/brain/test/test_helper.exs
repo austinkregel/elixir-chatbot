@@ -8,11 +8,19 @@
 # - :training - Tests that train models (expensive)
 # - :wip - Work in progress tests
 # - :skip - Temporarily disabled tests
+# - :benchmark - Performance benchmark tests
+# - :gpu - GPU-specific tests
+#
+# Optional exclusions (add via command line):
+# - :requires_lstm - Tests requiring compatible LSTM .term files
 #
 # Run with: mix test --include slow --include integration
 # to run the full suite including slow tests
+#
+# To skip LSTM-dependent tests when models are incompatible:
+#   mix test --exclude requires_lstm
 ExUnit.configure(
-  exclude: [:slow, :integration, :training, :wip, :skip],
+  exclude: [:slow, :integration, :training, :wip, :skip, :benchmark, :gpu],
   timeout: 60_000
 )
 

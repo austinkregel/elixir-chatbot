@@ -166,26 +166,50 @@ defmodule Brain.ML.LSTM.MultiTaskModel do
   
   @impl true
   def handle_call({:analyze, text, opts}, _from, state) do
-    result = perform_analysis(text, state, opts)
-    {:reply, result, state}
+    try do
+      result = perform_analysis(text, state, opts)
+      {:reply, result, state}
+    rescue
+      e in ArgumentError ->
+        Logger.warning("MultiTaskModel: EXLA decode failed, disabling model")
+        {:reply, {:error, :model_incompatible}, %{state | status: :degraded}}
+    end
   end
-  
+
   @impl true
   def handle_call({:classify_intent, text}, _from, state) do
-    result = perform_intent_classification(text, state)
-    {:reply, result, state}
+    try do
+      result = perform_intent_classification(text, state)
+      {:reply, result, state}
+    rescue
+      e in ArgumentError ->
+        Logger.warning("MultiTaskModel: EXLA decode failed, disabling model")
+        {:reply, {:error, :model_incompatible}, %{state | status: :degraded}}
+    end
   end
-  
+
   @impl true
   def handle_call({:extract_entities, text}, _from, state) do
-    result = perform_entity_extraction(text, state)
-    {:reply, result, state}
+    try do
+      result = perform_entity_extraction(text, state)
+      {:reply, result, state}
+    rescue
+      e in ArgumentError ->
+        Logger.warning("MultiTaskModel: EXLA decode failed, disabling model")
+        {:reply, {:error, :model_incompatible}, %{state | status: :degraded}}
+    end
   end
-  
+
   @impl true
   def handle_call({:get_pos_tags, text}, _from, state) do
-    result = perform_pos_tagging(text, state)
-    {:reply, result, state}
+    try do
+      result = perform_pos_tagging(text, state)
+      {:reply, result, state}
+    rescue
+      e in ArgumentError ->
+        Logger.warning("MultiTaskModel: EXLA decode failed, disabling model")
+        {:reply, {:error, :model_incompatible}, %{state | status: :degraded}}
+    end
   end
   
   @impl true

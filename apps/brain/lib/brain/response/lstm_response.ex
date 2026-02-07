@@ -151,20 +151,26 @@ defmodule Brain.Response.LSTMResponse do
   @impl true
   def handle_call({:generate, query, intent, entities, opts}, _from, state) do
     num_candidates = Keyword.get(opts, :num_candidates, state.config.num_candidates)
-    
-    # Generate candidates
-    candidates = generate_candidates(query, intent, entities, num_candidates)
-    
-    # Score and rank
-    scored = score_candidates(query, candidates, state)
-    
-    # Return best
-    case scored do
-      [{best, score} | _] ->
-        Logger.debug("LSTM selected response with score #{Float.round(score, 3)}")
-        {:reply, {:ok, best, score}, state}
-      [] ->
-        {:reply, fallback_generate(query, intent, entities), state}
+
+    try do
+      # Generate candidates
+      candidates = generate_candidates(query, intent, entities, num_candidates)
+
+      # Score and rank
+      scored = score_candidates(query, candidates, state)
+
+      # Return best
+      case scored do
+        [{best, score} | _] ->
+          Logger.debug("LSTM selected response with score #{Float.round(score, 3)}")
+          {:reply, {:ok, best, score}, state}
+        [] ->
+          {:reply, fallback_generate(query, intent, entities), state}
+      end
+    rescue
+      e in ArgumentError ->
+        Logger.warning("LSTMResponse model inference failed (generate), disabling: #{Exception.message(e)}")
+        {:reply, fallback_generate(query, intent, entities), %{state | ready: false}}
     end
   end
   
@@ -175,8 +181,14 @@ defmodule Brain.Response.LSTMResponse do
   
   @impl true
   def handle_call({:score, query, response}, _from, state) do
-    score = compute_response_score(query, response, state)
-    {:reply, {:ok, score}, state}
+    try do
+      score = compute_response_score(query, response, state)
+      {:reply, {:ok, score}, state}
+    rescue
+      e in ArgumentError ->
+        Logger.warning("LSTMResponse model inference failed (score), disabling: #{Exception.message(e)}")
+        {:reply, {:ok, 0.5}, %{state | ready: false}}
+    end
   end
   
   @impl true
@@ -188,14 +200,21 @@ defmodule Brain.Response.LSTMResponse do
   
   @impl true
   def handle_call({:rank, query, responses}, _from, state) do
-    scored = responses
-      |> Enum.map(fn response ->
-        score = compute_response_score(query, response, state)
-        {response, score}
-      end)
-      |> Enum.sort_by(fn {_, score} -> score end, :desc)
-    
-    {:reply, {:ok, scored}, state}
+    try do
+      scored = responses
+        |> Enum.map(fn response ->
+          score = compute_response_score(query, response, state)
+          {response, score}
+        end)
+        |> Enum.sort_by(fn {_, score} -> score end, :desc)
+
+      {:reply, {:ok, scored}, state}
+    rescue
+      e in ArgumentError ->
+        Logger.warning("LSTMResponse model inference failed (rank), disabling: #{Exception.message(e)}")
+        ranked = Enum.map(responses, &{&1, 0.5})
+        {:reply, {:ok, ranked}, %{state | ready: false}}
+    end
   end
   
   @impl true

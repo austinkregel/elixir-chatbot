@@ -131,7 +131,7 @@ defmodule Brain.Analysis.EventExtractorGPUTest do
         %{
           pos_tags: generate_random_pos_tags(50),
           entities: [],
-          tokens: for j <- 1..50, do: "token_#{i}_#{j}"
+          tokens: (for j <- 1..50, do: "token_#{i}_#{j}")
         }
       end
 

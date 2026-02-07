@@ -164,8 +164,14 @@ defmodule Brain.ML.LSTM.UnifiedModel do
   
   @impl true
   def handle_call({:analyze, text}, _from, state) do
-    result = do_analyze(text, state)
-    {:reply, {:ok, result}, state}
+    try do
+      result = do_analyze(text, state)
+      {:reply, {:ok, result}, state}
+    rescue
+      e in ArgumentError ->
+        Logger.warning("UnifiedModel: EXLA decode failed, disabling model")
+        {:reply, {:error, :model_incompatible}, %{state | ready: false}}
+    end
   end
   
   @impl true
@@ -175,8 +181,14 @@ defmodule Brain.ML.LSTM.UnifiedModel do
   
   @impl true
   def handle_call({:classify_intent, text}, _from, state) do
-    result = do_classify_intent(text, state)
-    {:reply, {:ok, result}, state}
+    try do
+      result = do_classify_intent(text, state)
+      {:reply, {:ok, result}, state}
+    rescue
+      e in ArgumentError ->
+        Logger.warning("UnifiedModel: EXLA decode failed, disabling model")
+        {:reply, {:error, :model_incompatible}, %{state | ready: false}}
+    end
   end
   
   @impl true
@@ -186,8 +198,14 @@ defmodule Brain.ML.LSTM.UnifiedModel do
   
   @impl true
   def handle_call({:classify_sentiment, text}, _from, state) do
-    result = do_classify_sentiment(text, state)
-    {:reply, {:ok, result}, state}
+    try do
+      result = do_classify_sentiment(text, state)
+      {:reply, {:ok, result}, state}
+    rescue
+      e in ArgumentError ->
+        Logger.warning("UnifiedModel: EXLA decode failed, disabling model")
+        {:reply, {:error, :model_incompatible}, %{state | ready: false}}
+    end
   end
   
   @impl true
@@ -197,8 +215,14 @@ defmodule Brain.ML.LSTM.UnifiedModel do
   
   @impl true
   def handle_call({:classify_speech_act, text}, _from, state) do
-    result = do_classify_speech_act(text, state)
-    {:reply, {:ok, result}, state}
+    try do
+      result = do_classify_speech_act(text, state)
+      {:reply, {:ok, result}, state}
+    rescue
+      e in ArgumentError ->
+        Logger.warning("UnifiedModel: EXLA decode failed, disabling model")
+        {:reply, {:error, :model_incompatible}, %{state | ready: false}}
+    end
   end
   
   @impl true
@@ -208,8 +232,14 @@ defmodule Brain.ML.LSTM.UnifiedModel do
   
   @impl true
   def handle_call({:extract_entities, text}, _from, state) do
-    result = do_extract_entities(text, state)
-    {:reply, {:ok, result}, state}
+    try do
+      result = do_extract_entities(text, state)
+      {:reply, {:ok, result}, state}
+    rescue
+      e in ArgumentError ->
+        Logger.warning("UnifiedModel: EXLA decode failed, disabling model")
+        {:reply, {:error, :model_incompatible}, %{state | ready: false}}
+    end
   end
   
   @impl true
@@ -351,63 +381,38 @@ defmodule Brain.ML.LSTM.UnifiedModel do
     }
   end
   
+  # Note: These functions intentionally do NOT have try/rescue.
+  # Errors propagate to handle_call where the model is disabled on failure.
+  
   defp do_classify_intent(text, state) do
     tokens = Tokenizer.tokenize(text)
     input = prepare_input(tokens, state.vocabularies.token_vocab, state.config)
-    
-    try do
-      encoder_output = Axon.predict(state.encoder, state.params.encoder, %{"input" => input})
-      pooled = Nx.mean(encoder_output, axes: [1])
-      run_intent_head(pooled, state)
-    rescue
-      e ->
-        Logger.warning("LSTM intent classification failed: #{inspect(e)}")
-        {"unknown", 0.0}
-    end
+    encoder_output = Axon.predict(state.encoder, state.params.encoder, %{"input" => input})
+    pooled = Nx.mean(encoder_output, axes: [1])
+    run_intent_head(pooled, state)
   end
   
   defp do_classify_sentiment(text, state) do
     tokens = Tokenizer.tokenize(text)
     input = prepare_input(tokens, state.vocabularies.token_vocab, state.config)
-    
-    try do
-      encoder_output = Axon.predict(state.encoder, state.params.encoder, %{"input" => input})
-      pooled = Nx.mean(encoder_output, axes: [1])
-      run_sentiment_head(pooled, state)
-    rescue
-      e ->
-        Logger.warning("LSTM sentiment classification failed: #{inspect(e)}")
-        {:neutral, 0.5}
-    end
+    encoder_output = Axon.predict(state.encoder, state.params.encoder, %{"input" => input})
+    pooled = Nx.mean(encoder_output, axes: [1])
+    run_sentiment_head(pooled, state)
   end
   
   defp do_classify_speech_act(text, state) do
     tokens = Tokenizer.tokenize(text)
     input = prepare_input(tokens, state.vocabularies.token_vocab, state.config)
-    
-    try do
-      encoder_output = Axon.predict(state.encoder, state.params.encoder, %{"input" => input})
-      pooled = Nx.mean(encoder_output, axes: [1])
-      run_speech_act_head(pooled, state)
-    rescue
-      e ->
-        Logger.warning("LSTM speech act classification failed: #{inspect(e)}")
-        {:assertive, 0.5}
-    end
+    encoder_output = Axon.predict(state.encoder, state.params.encoder, %{"input" => input})
+    pooled = Nx.mean(encoder_output, axes: [1])
+    run_speech_act_head(pooled, state)
   end
   
   defp do_extract_entities(text, state) do
     tokens = Tokenizer.tokenize(text)
     input = prepare_input(tokens, state.vocabularies.token_vocab, state.config)
-    
-    try do
-      encoder_output = Axon.predict(state.encoder, state.params.encoder, %{"input" => input})
-      run_ner_head(encoder_output, tokens, state)
-    rescue
-      e ->
-        Logger.warning("Entity extraction failed: #{inspect(e)}")
-        []
-    end
+    encoder_output = Axon.predict(state.encoder, state.params.encoder, %{"input" => input})
+    run_ner_head(encoder_output, tokens, state)
   end
   
   defp run_intent_head(pooled, state) do
