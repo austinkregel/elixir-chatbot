@@ -333,8 +333,46 @@ defmodule Brain.ML.Trainer do
 
   @doc """
   Legacy training data loading (fallback).
+  Now loads from gold standard first, falls back to legacy directory.
   """
   def load_training_data_legacy do
+    # Try gold standard first
+    gold_standard_path =
+      Application.app_dir(:brain)
+      |> Path.join("priv/evaluation/intent/gold_standard.json")
+
+    case load_from_gold_standard(gold_standard_path) do
+      {:ok, samples} when samples != [] ->
+        Logger.info("Loaded training data from gold standard", %{examples: length(samples)})
+        samples
+
+      _ ->
+        load_training_data_from_directory()
+    end
+  end
+
+  defp load_from_gold_standard(path) do
+    case File.read(path) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, data} when is_list(data) ->
+            samples =
+              data
+              |> Enum.filter(fn item -> item["text"] && item["intent"] end)
+              |> Enum.map(fn item -> {item["text"], item["intent"]} end)
+
+            {:ok, samples}
+
+          _ ->
+            {:error, :invalid_json}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp load_training_data_from_directory do
     intents_path = Path.join(Application.get_env(:brain, :ml)[:training_data_path], "intents")
 
     case File.ls(intents_path) do
@@ -381,8 +419,9 @@ defmodule Brain.ML.Trainer do
 
         usersays_samples ++ other_samples
 
-      {:error, reason} ->
-        Logger.error("Failed to list intents directory", %{path: intents_path, reason: reason})
+      {:error, _reason} ->
+        # No legacy directory - return empty (not an error since gold standard is preferred)
+        Logger.debug("No legacy intents directory found")
         []
     end
   end

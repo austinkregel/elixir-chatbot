@@ -1,0 +1,38 @@
+[
+  {
+    "best_val_accuracy": null,
+    "best_val_loss": null,
+    "config": {
+      "batch_size": 32,
+      "epochs": 50,
+      "hidden_size": 128
+    },
+    "epochs_completed": 50,
+    "final_train_accuracy": null,
+    "final_train_loss": null,
+    "final_val_accuracy": null,
+    "final_val_loss": null,
+    "name": "train_20260208_151105",
+    "notes": "Master pipeline. Tasks: tfidf:ok, pos:ok, unified:ok, response:ok",
+    "timestamp": "2026-02-08T15:11:05.535549Z",
+    "training_time_seconds": 903
+  },
+  {
+    "best_val_accuracy": null,
+    "best_val_loss": null,
+    "config": {
+      "batch_size": 32,
+      "epochs": 50,
+      "hidden_size": 128
+    },
+    "epochs_completed": 50,
+    "final_train_accuracy": null,
+    "final_train_loss": null,
+    "final_val_accuracy": null,
+    "final_val_loss": null,
+    "name": "train_20260208_045332",
+    "notes": "Master pipeline. Tasks: tfidf:ok, pos:ok, unified:ok, response:ok",
+    "timestamp": "2026-02-08T04:53:32.574946Z",
+    "training_time_seconds": 908
+  }
+]

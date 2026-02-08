@@ -26,6 +26,8 @@ defmodule ChatBot.Umbrella.MixProject do
   # Run "mix help deps" for examples and options.
   defp deps do
     [
+      # Code quality
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       # Shared test dependencies
       {:excoveralls, "~> 0.18", only: :test}
     ]
@@ -37,8 +39,8 @@ defmodule ChatBot.Umbrella.MixProject do
       # Run setup in all child apps
       setup: ["cmd mix setup"],
 
-      # Precommit runs format check and tests
-      precommit: ["format --check-formatted", "test"],
+      # Precommit runs format check, Credo, and tests
+      precommit: ["format --check-formatted", "credo --strict", "test"],
 
       # Test coverage
       "test.coverage": ["coveralls.html"],

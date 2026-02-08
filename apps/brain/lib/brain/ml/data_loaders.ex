@@ -196,10 +196,56 @@ defmodule Brain.ML.DataLoaders do
   # ============================================================================
 
   @doc """
-  Load all intent training data from the intents directory.
-  Returns a list of intent examples with text, intent label, and entity annotations.
+  Load all intent training data.
+
+  First tries the consolidated gold standard (preferred), then falls back to
+  legacy data/intents directory if gold standard is empty.
   """
   def load_all_intents(path \\ nil) do
+    # Try gold standard first (consolidated data)
+    gold_standard_path =
+      Application.app_dir(:brain)
+      |> Path.join("priv/evaluation/intent/gold_standard.json")
+
+    case load_from_gold_standard(gold_standard_path) do
+      {:ok, examples} when examples != [] ->
+        Logger.info("Loaded intent examples from gold standard", %{examples: length(examples)})
+        {:ok, examples}
+
+      _ ->
+        # Fall back to legacy directory
+        load_all_intents_legacy(path)
+    end
+  end
+
+  defp load_from_gold_standard(path) do
+    case File.read(path) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, data} when is_list(data) ->
+            examples =
+              Enum.map(data, fn item ->
+                %{
+                  text: item["text"],
+                  intent: item["intent"],
+                  tokens: item["tokens"] || [],
+                  pos_tags: item["pos_tags"] || [],
+                  entities: item["entities"] || []
+                }
+              end)
+
+            {:ok, examples}
+
+          _ ->
+            {:error, :invalid_json}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp load_all_intents_legacy(path) do
     intents_dir = path || get_data_path("intents")
 
     case File.ls(intents_dir) do
@@ -217,16 +263,17 @@ defmodule Brain.ML.DataLoaders do
             end
           end)
 
-        Logger.info("Loaded intent examples", %{
+        Logger.info("Loaded intent examples from legacy directory", %{
           files: length(json_files),
           examples: length(examples)
         })
 
         {:ok, examples}
 
-      {:error, reason} ->
-        Logger.warning("Failed to list intents directory", %{path: intents_dir, reason: reason})
-        {:error, reason}
+      {:error, _reason} ->
+        # No legacy directory either - return empty
+        Logger.debug("No legacy intents directory found")
+        {:ok, []}
     end
   end
 

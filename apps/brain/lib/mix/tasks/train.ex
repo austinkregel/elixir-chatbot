@@ -257,9 +257,9 @@ defmodule Mix.Tasks.Train do
     for task <- @training_tasks do
       status = if task.task in skip_list, do: "[SKIP]", else: "[TRAIN]"
       color = if task.task in skip_list, do: :yellow, else: :green
-      
+
       message = "  #{status} #{task.name} (#{task.duration})"
-      
+
       if color == :green do
         Mix.shell().info(IO.ANSI.green() <> message <> IO.ANSI.reset())
       else

@@ -266,12 +266,81 @@ defmodule Brain.Response.TemplateStore do
 
   def get_expressive_fallback(_), do: nil
 
+  # ============================================================================
+  # Runtime CRUD API (for UI management)
+  # ============================================================================
+
+  @doc """
+  Add a new template for an intent.
+
+  Options:
+  - `:condition` - Optional condition for when to use this template
+  - `:source` - Source tag (default: :admin)
+
+  Returns `{:ok, template}` or `{:error, reason}`.
+  """
+  def add_template(intent, text, opts \\ []) when is_binary(intent) and is_binary(text) do
+    GenServer.call(__MODULE__, {:add_template, intent, text, opts})
+  end
+
+  @doc """
+  Update an existing template text.
+
+  Returns `{:ok, updated_template}` or `{:error, :not_found}`.
+  """
+  def update_template(intent, old_text, new_text) do
+    GenServer.call(__MODULE__, {:update_template, intent, old_text, new_text})
+  end
+
+  @doc """
+  Remove a template from an intent.
+
+  Returns `:ok` or `{:error, :not_found}`.
+  """
+  def remove_template(intent, text) do
+    GenServer.call(__MODULE__, {:remove_template, intent, text})
+  end
+
+  @doc """
+  List all templates for an intent with their metadata.
+
+  Returns a list of maps with :text, :condition, :source fields.
+  """
+  def list_templates_with_metadata(intent) do
+    GenServer.call(__MODULE__, {:list_templates_with_metadata, intent})
+  end
+
+  @doc """
+  Check if there are unsaved admin changes.
+  """
+  def has_unsaved_changes? do
+    GenServer.call(__MODULE__, :has_unsaved_changes?)
+  end
+
+  @doc """
+  Sync admin-added templates to the templates.json file.
+  """
+  def sync_to_file do
+    GenServer.call(__MODULE__, :sync_to_file, 30_000)
+  end
+
+  @doc """
+  Get the path to the templates JSON file.
+  """
+  def templates_file_path do
+    Application.app_dir(:brain)
+    |> Path.join("priv/response/templates.json")
+  end
+
   # Server Callbacks
 
   @impl true
   def init(_opts) do
     # Load templates asynchronously
     send(self(), :load_templates)
+
+    # Schedule periodic sync (every 5 minutes)
+    :timer.send_interval(5 * 60 * 1000, :periodic_sync)
 
     {:ok,
      %{
@@ -281,7 +350,9 @@ defmodule Brain.Response.TemplateStore do
        parameters: %{},
        embeddings: %{},
        all_template_structs: [],
-       loading: true
+       loading: true,
+       dirty: false,
+       admin_templates: %{}
      }}
   end
 
@@ -340,15 +411,170 @@ defmodule Brain.Response.TemplateStore do
   end
 
   def handle_call(:stats, _from, state) do
+    admin_count =
+      state.admin_templates
+      |> Map.values()
+      |> List.flatten()
+      |> length()
+
     stats = %{
       intent_count: map_size(state.templates),
       template_count: state.templates |> Map.values() |> List.flatten() |> length(),
       structured_template_count: length(state.all_template_structs),
       with_embeddings: map_size(state.embeddings),
+      admin_template_count: admin_count,
+      has_unsaved_changes: state.dirty,
       ready: state.ready
     }
 
     {:reply, stats, state}
+  end
+
+  # ============================================================================
+  # CRUD Handler Implementations
+  # ============================================================================
+
+  def handle_call({:add_template, intent, text, opts}, _from, state) do
+    condition = Keyword.get(opts, :condition)
+    source = Keyword.get(opts, :source, :admin)
+
+    new_template = %Template{
+      text: text,
+      condition: condition,
+      embedding: nil,
+      intent: intent
+    }
+
+    # Add to admin_templates tracking
+    admin_for_intent = Map.get(state.admin_templates, intent, [])
+    updated_admin = Map.put(state.admin_templates, intent, [new_template | admin_for_intent])
+
+    # Also add to the main templates for immediate use
+    existing_texts = Map.get(state.templates, intent, [])
+    updated_texts = [text | existing_texts]
+
+    existing_structured = Map.get(state.structured_templates, intent, [])
+    updated_structured = [new_template | existing_structured]
+
+    new_state = %{
+      state
+      | admin_templates: updated_admin,
+        templates: Map.put(state.templates, intent, updated_texts),
+        structured_templates: Map.put(state.structured_templates, intent, updated_structured),
+        all_template_structs: [new_template | state.all_template_structs],
+        dirty: true
+    }
+
+    Logger.info("Added template for #{intent}: #{String.slice(text, 0, 50)}...")
+
+    {:reply, {:ok, %{text: text, condition: condition, source: source}}, new_state}
+  end
+
+  def handle_call({:update_template, intent, old_text, new_text}, _from, state) do
+    existing_texts = Map.get(state.templates, intent, [])
+
+    if old_text in existing_texts do
+      # Update in templates
+      updated_texts = Enum.map(existing_texts, fn t -> if t == old_text, do: new_text, else: t end)
+
+      # Update in structured_templates
+      existing_structured = Map.get(state.structured_templates, intent, [])
+
+      updated_structured =
+        Enum.map(existing_structured, fn t ->
+          if t.text == old_text, do: %{t | text: new_text}, else: t
+        end)
+
+      # Update in all_template_structs
+      updated_all =
+        Enum.map(state.all_template_structs, fn t ->
+          if t.intent == intent and t.text == old_text, do: %{t | text: new_text}, else: t
+        end)
+
+      # Update in admin_templates if it was an admin template
+      updated_admin =
+        Map.update(state.admin_templates, intent, [], fn templates ->
+          Enum.map(templates, fn t ->
+            if t.text == old_text, do: %{t | text: new_text}, else: t
+          end)
+        end)
+
+      new_state = %{
+        state
+        | templates: Map.put(state.templates, intent, updated_texts),
+          structured_templates: Map.put(state.structured_templates, intent, updated_structured),
+          all_template_structs: updated_all,
+          admin_templates: updated_admin,
+          dirty: true
+      }
+
+      Logger.info("Updated template for #{intent}")
+      {:reply, {:ok, %{text: new_text}}, new_state}
+    else
+      {:reply, {:error, :not_found}, state}
+    end
+  end
+
+  def handle_call({:remove_template, intent, text}, _from, state) do
+    existing_texts = Map.get(state.templates, intent, [])
+
+    if text in existing_texts do
+      updated_texts = Enum.reject(existing_texts, &(&1 == text))
+
+      existing_structured = Map.get(state.structured_templates, intent, [])
+      updated_structured = Enum.reject(existing_structured, &(&1.text == text))
+
+      updated_all = Enum.reject(state.all_template_structs, &(&1.intent == intent and &1.text == text))
+
+      updated_admin =
+        Map.update(state.admin_templates, intent, [], fn templates ->
+          Enum.reject(templates, &(&1.text == text))
+        end)
+
+      new_state = %{
+        state
+        | templates: Map.put(state.templates, intent, updated_texts),
+          structured_templates: Map.put(state.structured_templates, intent, updated_structured),
+          all_template_structs: updated_all,
+          admin_templates: updated_admin,
+          dirty: true
+      }
+
+      Logger.info("Removed template from #{intent}")
+      {:reply, :ok, new_state}
+    else
+      {:reply, {:error, :not_found}, state}
+    end
+  end
+
+  def handle_call({:list_templates_with_metadata, intent}, _from, state) do
+    structured = Map.get(state.structured_templates, intent, [])
+
+    templates_with_meta =
+      Enum.map(structured, fn t ->
+        # Check if it's an admin template
+        admin_for_intent = Map.get(state.admin_templates, intent, [])
+        is_admin = Enum.any?(admin_for_intent, &(&1.text == t.text))
+
+        %{
+          text: t.text,
+          condition: t.condition,
+          source: if(is_admin, do: :admin, else: :file),
+          has_embedding: t.embedding != nil
+        }
+      end)
+
+    {:reply, templates_with_meta, state}
+  end
+
+  def handle_call(:has_unsaved_changes?, _from, state) do
+    {:reply, state.dirty, state}
+  end
+
+  def handle_call(:sync_to_file, _from, state) do
+    result = do_sync_to_file(state)
+    new_state = %{state | dirty: false}
+    {:reply, result, new_state}
   end
 
   # ============================================================================
@@ -423,10 +649,31 @@ defmodule Brain.Response.TemplateStore do
   end
 
   @impl true
+  def handle_info(:periodic_sync, state) do
+    if state.dirty do
+      Logger.debug("Periodic sync: saving admin template changes...")
+      do_sync_to_file(state)
+      {:noreply, %{state | dirty: false}}
+    else
+      {:noreply, state}
+    end
+  end
+
+  @impl true
   def handle_info(:load_templates, state) do
     Logger.info("Loading response templates from intent files...")
 
-    {templates, parameters, structured_templates} = load_all_intent_files_with_conditions()
+    # First try to load from consolidated templates.json
+    {templates, structured_templates} = load_consolidated_templates()
+
+    # Fall back to legacy loading if templates.json doesn't exist
+    {templates, parameters, structured_templates} =
+      if map_size(templates) == 0 do
+        load_all_intent_files_with_conditions()
+      else
+        # No parameters from consolidated file, use empty
+        {templates, %{}, structured_templates}
+      end
 
     Logger.info("Loaded templates for #{map_size(templates)} intents")
 
@@ -465,24 +712,127 @@ defmodule Brain.Response.TemplateStore do
 
   # Private Functions
 
-  defp load_all_intent_files_with_conditions do
-    intent_files =
-      Path.join(@intents_path, "*.json")
-      |> Path.wildcard()
-      |> Enum.reject(&String.contains?(&1, "usersays"))
+  # Load from consolidated templates.json (new format)
+  defp load_consolidated_templates do
+    path = templates_file_path()
 
-    Enum.reduce(intent_files, {%{}, %{}, %{}}, fn file_path, {templates_acc, params_acc, structured_acc} ->
-      case load_intent_file_with_conditions(file_path) do
-        {:ok, intent_name, speech_templates, parameters, structured_templates} ->
-          templates_acc = Map.put(templates_acc, intent_name, speech_templates)
-          params_acc = Map.put(params_acc, intent_name, parameters)
-          structured_acc = Map.put(structured_acc, intent_name, structured_templates)
-          {templates_acc, params_acc, structured_acc}
+    if File.exists?(path) do
+      case File.read(path) do
+        {:ok, content} ->
+          case Jason.decode(content) do
+            {:ok, data} when is_map(data) ->
+              {templates, structured} =
+                Enum.reduce(data, {%{}, %{}}, fn {intent, entry}, {t_acc, s_acc} ->
+                  tpl_list = Map.get(entry, "templates", [])
 
-        {:error, _reason} ->
-          {templates_acc, params_acc, structured_acc}
+                  texts = Enum.map(tpl_list, fn t -> t["text"] end)
+
+                  structs =
+                    Enum.map(tpl_list, fn t ->
+                      %Template{
+                        text: t["text"],
+                        condition: t["condition"],
+                        embedding: nil,
+                        intent: intent
+                      }
+                    end)
+
+                  {Map.put(t_acc, intent, texts), Map.put(s_acc, intent, structs)}
+                end)
+
+              Logger.info("Loaded #{map_size(templates)} intents from templates.json")
+              {templates, structured}
+
+            _ ->
+              {%{}, %{}}
+          end
+
+        {:error, _} ->
+          {%{}, %{}}
       end
-    end)
+    else
+      {%{}, %{}}
+    end
+  end
+
+  # Sync admin templates to file
+  defp do_sync_to_file(state) do
+    path = templates_file_path()
+
+    # Load existing file
+    existing =
+      if File.exists?(path) do
+        case File.read(path) do
+          {:ok, content} ->
+            case Jason.decode(content) do
+              {:ok, data} -> data
+              _ -> %{}
+            end
+
+          _ ->
+            %{}
+        end
+      else
+        %{}
+      end
+
+    # Build updated data from structured_templates
+    updated =
+      Enum.reduce(state.structured_templates, existing, fn {intent, templates}, acc ->
+        tpl_list =
+          Enum.map(templates, fn t ->
+            # Determine source
+            admin_for_intent = Map.get(state.admin_templates, intent, [])
+            is_admin = Enum.any?(admin_for_intent, &(&1.text == t.text))
+
+            %{
+              "text" => t.text,
+              "condition" => t.condition,
+              "source" => if(is_admin, do: "admin", else: "dialogflow")
+            }
+          end)
+
+        Map.put(acc, intent, %{"templates" => tpl_list})
+      end)
+
+    # Write to file
+    File.mkdir_p!(Path.dirname(path))
+
+    case File.write(path, Jason.encode!(updated, pretty: true)) do
+      :ok ->
+        Logger.info("Synced templates to #{path}")
+        {:ok, path}
+
+      {:error, reason} ->
+        Logger.warning("Failed to sync templates: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
+  defp load_all_intent_files_with_conditions do
+    # Check if legacy intents directory exists
+    if File.dir?(@intents_path) do
+      intent_files =
+        Path.join(@intents_path, "*.json")
+        |> Path.wildcard()
+        |> Enum.reject(&String.contains?(&1, "usersays"))
+
+      Enum.reduce(intent_files, {%{}, %{}, %{}}, fn file_path, {templates_acc, params_acc, structured_acc} ->
+        case load_intent_file_with_conditions(file_path) do
+          {:ok, intent_name, speech_templates, parameters, structured_templates} ->
+            templates_acc = Map.put(templates_acc, intent_name, speech_templates)
+            params_acc = Map.put(params_acc, intent_name, parameters)
+            structured_acc = Map.put(structured_acc, intent_name, structured_templates)
+            {templates_acc, params_acc, structured_acc}
+
+          {:error, _reason} ->
+            {templates_acc, params_acc, structured_acc}
+        end
+      end)
+    else
+      # Legacy directory doesn't exist - return empty (templates.json should be used)
+      {%{}, %{}, %{}}
+    end
   end
 
   defp load_intent_file_with_conditions(file_path) do

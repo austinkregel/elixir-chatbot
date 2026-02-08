@@ -362,7 +362,7 @@ The response system assembles context-aware responses from all subsystems.
 
 | Module | Purpose |
 |--------|---------|
-| `TemplateStore` | Template management, slot substitution |
+| `TemplateStore` | Template management, slot substitution, runtime CRUD via UI |
 | `MemoryAugmented` | Memory-based responses using Memory.Store |
 | `FactRetriever` | Factual query handling |
 | `SemanticFactRetriever` | TF-IDF fact search (wraps FactDatabase) |
@@ -736,6 +736,60 @@ The system automatically chooses:
 ```bash
 mix train_models
 ```
+
+### Data Migration & Template Management
+
+The project includes tools for migrating training data and managing response templates.
+
+#### Intent Data Migration
+
+```bash
+# List available intents and their sources
+mix migrate_gold_standard --list
+
+# Preview what would be migrated
+mix migrate_gold_standard --preview
+
+# Run migration (migrate training data to gold_standard.json)
+mix migrate_gold_standard
+
+# Destructive migration (also deletes source files after migrating)
+mix migrate_gold_standard --destructive
+
+# Extract intent metadata to intent_registry.json
+mix migrate_gold_standard --extract-metadata
+
+# Extract response templates to templates.json
+mix migrate_gold_standard --extract-templates
+
+# Clean up source directories (after migration is complete)
+mix migrate_gold_standard --cleanup-sources
+```
+
+#### Response Templates (Runtime CRUD)
+
+Response templates can be managed at runtime via the Settings UI or programmatically:
+
+```elixir
+alias Brain.Response.TemplateStore
+
+# Add a new template for an intent
+TemplateStore.add_template("smalltalk.greeting", "Hello there!")
+
+# List templates with metadata
+TemplateStore.list_templates_with_metadata("smalltalk.greeting")
+
+# Remove a template
+TemplateStore.remove_template("smalltalk.greeting", "Hello there!")
+
+# Save changes to file
+TemplateStore.sync_to_file()
+
+# Check for unsaved changes
+TemplateStore.has_unsaved_changes?()
+```
+
+Templates are stored in memory (ETS) for fast access, with periodic syncing to `priv/response/templates.json`.
 
 ### Memory Operations
 

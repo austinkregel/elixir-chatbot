@@ -128,5 +128,15 @@
     ],
     "text": "Learned 0 entities, 0 relationships, 0 facts from: Can I buy you with gifts?",
     "timestamp": 1770327323318
+  },
+  {
+    "id": "5bc47ab418999c71",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 1 facts from: Hello, I'm Austin",
+    "timestamp": 1770562643920
   }
 ]

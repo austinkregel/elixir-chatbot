@@ -8,7 +8,8 @@ This is a Phoenix LiveView chatbot application built around **classical NLP tech
 - **Classical NLP pipeline**: chunking → discourse analysis → speech act classification → entity extraction → intent determination → slot detection → context resolution.
 - **Cognitive memory**: TF‑IDF embeddings and similarity search used to augment reasoning/classification.
 - **Epistemic user model**: stores user “facts” (beliefs) extracted from conversation when enabled.
-- **Training & data tooling**: project-specific `mix` tasks to generate entity datasets and to train/load models.
+- **Training & data tooling**: project-specific `mix` tasks to generate entity datasets, migrate training data, and train/load models.
+- **Response Templates**: Runtime-manageable response templates via Settings UI (`/settings?section=templates`) with ETS caching and file persistence.
 - **Self-learning training worlds**: isolated learning environments for entity discovery from large corpora (e.g., scripts, documents) with A/B testing, metrics comparison, and human review workflows.
 
 ---

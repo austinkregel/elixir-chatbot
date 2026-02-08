@@ -19,6 +19,7 @@ defmodule ChatWeb.SettingsLive do
   alias Tasks.Source, as: TaskSource
   alias Brain.ML.Gazetteer
   alias Brain.ML.TrainingServer
+  alias Brain.Response.TemplateStore
 
   @impl true
   def mount(_params, _session, socket) do
@@ -38,6 +39,7 @@ defmodule ChatWeb.SettingsLive do
         "worlds" -> :worlds
         "training" -> :training
         "ml_training" -> :ml_training
+        "templates" -> :templates
         _ -> :worlds
       end
 
@@ -70,6 +72,14 @@ defmodule ChatWeb.SettingsLive do
       |> assign(:ml_schedules, [])
       |> assign(:ml_schedule_interval, "24")
       |> assign(:ml_reloading, false)
+      # Templates section assigns
+      |> assign(:template_intents, [])
+      |> assign(:selected_template_intent, nil)
+      |> assign(:intent_templates, [])
+      |> assign(:template_search, "")
+      |> assign(:new_template_text, "")
+      |> assign(:template_stats, %{})
+      |> assign(:template_has_unsaved, false)
       |> load_section_data()
 
     {:noreply, socket}
@@ -81,6 +91,7 @@ defmodule ChatWeb.SettingsLive do
       :entities -> load_entities_data(socket)
       :training -> load_training_data(socket)
       :ml_training -> load_ml_training_data(socket)
+      :templates -> load_templates_data(socket)
       _ -> socket
     end
   end
@@ -242,6 +253,64 @@ defmodule ChatWeb.SettingsLive do
     |> assign(:ml_model_statuses, model_statuses)
     |> assign(:ml_training_status, training_status)
     |> assign(:ml_schedules, schedules)
+  end
+
+  defp load_templates_data(socket) do
+    # Get template statistics
+    stats =
+      try do
+        TemplateStore.stats()
+      rescue
+        _ -> %{intent_count: 0, template_count: 0}
+      catch
+        :exit, _ -> %{intent_count: 0, template_count: 0}
+      end
+
+    # Get list of intents with templates
+    intents =
+      try do
+        TemplateStore.list_intents() |> Enum.sort()
+      rescue
+        _ -> []
+      catch
+        :exit, _ -> []
+      end
+
+    # Check for unsaved changes
+    has_unsaved =
+      try do
+        TemplateStore.has_unsaved_changes?()
+      rescue
+        _ -> false
+      catch
+        :exit, _ -> false
+      end
+
+    socket
+    |> assign(:template_stats, stats)
+    |> assign(:template_intents, intents)
+    |> assign(:template_has_unsaved, has_unsaved)
+    |> assign(:selected_template_intent, socket.assigns[:selected_template_intent] || List.first(intents))
+    |> load_intent_templates()
+  end
+
+  defp load_intent_templates(socket) do
+    intent = socket.assigns[:selected_template_intent]
+
+    templates =
+      if intent do
+        try do
+          TemplateStore.list_templates_with_metadata(intent)
+        rescue
+          _ -> []
+        catch
+          :exit, _ -> []
+        end
+      else
+        []
+      end
+
+    assign(socket, :intent_templates, templates)
   end
 
   # ============================================================================
@@ -606,6 +675,80 @@ defmodule ChatWeb.SettingsLive do
     end
   end
 
+  # ============================================================================
+  # Event Handlers - Templates
+  # ============================================================================
+
+  def handle_event("select_template_intent", %{"intent" => intent}, socket) do
+    {:noreply,
+     socket
+     |> assign(:selected_template_intent, intent)
+     |> load_intent_templates()}
+  end
+
+  def handle_event("search_templates", %{"query" => query}, socket) do
+    {:noreply, assign(socket, :template_search, query)}
+  end
+
+  def handle_event("update_new_template", %{"text" => text}, socket) do
+    {:noreply, assign(socket, :new_template_text, text)}
+  end
+
+  def handle_event("add_template", _params, socket) do
+    intent = socket.assigns.selected_template_intent
+    text = String.trim(socket.assigns.new_template_text)
+
+    if intent && text != "" do
+      case TemplateStore.add_template(intent, text) do
+        {:ok, _template} ->
+          {:noreply,
+           socket
+           |> assign(:new_template_text, "")
+           |> load_intent_templates()
+           |> assign(:template_has_unsaved, true)
+           |> put_flash(:info, "Added template")}
+
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, "Failed to add template: #{inspect(reason)}")}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Template text is required")}
+    end
+  end
+
+  def handle_event("remove_template", %{"text" => text}, socket) do
+    intent = socket.assigns.selected_template_intent
+
+    if intent do
+      case TemplateStore.remove_template(intent, text) do
+        :ok ->
+          {:noreply,
+           socket
+           |> load_intent_templates()
+           |> assign(:template_has_unsaved, true)
+           |> put_flash(:info, "Removed template")}
+
+        {:error, :not_found} ->
+          {:noreply, put_flash(socket, :error, "Template not found")}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("sync_templates", _params, socket) do
+    case TemplateStore.sync_to_file() do
+      {:ok, _path} ->
+        {:noreply,
+         socket
+         |> assign(:template_has_unsaved, false)
+         |> put_flash(:info, "Templates saved to file")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to save: #{inspect(reason)}")}
+    end
+  end
+
   @impl true
   def handle_info({:world_context_changed, _world_id}, socket) do
     # World was changed from another LiveView or tab
@@ -725,6 +868,13 @@ defmodule ChatWeb.SettingsLive do
           >
             <.icon name="hero-cpu-chip" class="size-4" /> ML Models
           </button>
+          <button
+            phx-click="switch_section"
+            phx-value-section="templates"
+            class={["tab gap-1", if(@section == :templates, do: "tab-active", else: "")]}
+          >
+            <.icon name="hero-chat-bubble-bottom-center-text" class="size-4" /> Templates
+          </button>
         </div>
         
     <!-- Content -->
@@ -770,6 +920,16 @@ defmodule ChatWeb.SettingsLive do
               schedules={@ml_schedules}
               schedule_interval={@ml_schedule_interval}
               reloading={@ml_reloading}
+            />
+          <% :templates -> %>
+            <.templates_section
+              intents={@template_intents}
+              selected_intent={@selected_template_intent}
+              templates={@intent_templates}
+              search={@template_search}
+              new_template_text={@new_template_text}
+              stats={@template_stats}
+              has_unsaved={@template_has_unsaved}
             />
         <% end %>
       </div>
@@ -1459,6 +1619,145 @@ defmodule ChatWeb.SettingsLive do
   defp session_status_badge(:cancelled), do: "badge-error"
   defp session_status_badge(_), do: "badge-ghost"
 
+  defp templates_section(assigns) do
+    ~H"""
+    <div class="space-y-6">
+      <!-- Stats & Actions Bar -->
+      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex flex-wrap gap-4">
+            <div class="stat p-0">
+              <div class="stat-title text-xs">Intents</div>
+              <div class="stat-value text-lg">{Map.get(@stats, :intent_count, 0)}</div>
+            </div>
+            <div class="stat p-0">
+              <div class="stat-title text-xs">Templates</div>
+              <div class="stat-value text-lg">{Map.get(@stats, :template_count, 0)}</div>
+            </div>
+            <div class="stat p-0">
+              <div class="stat-title text-xs">Admin Added</div>
+              <div class="stat-value text-lg">{Map.get(@stats, :admin_template_count, 0)}</div>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <%= if @has_unsaved do %>
+              <button phx-click="sync_templates" class="btn btn-primary btn-sm gap-1">
+                <.icon name="hero-arrow-down-tray" class="size-4" />
+                Save Changes
+              </button>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Intent List -->
+        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
+          <h3 class="font-semibold mb-4">Intents</h3>
+          <div class="mb-3">
+            <input
+              type="text"
+              name="query"
+              value={@search}
+              placeholder="Search intents..."
+              phx-debounce="300"
+              phx-change="search_templates"
+              class="input input-sm input-bordered w-full"
+            />
+          </div>
+          <div class="overflow-y-auto max-h-[400px] space-y-1">
+            <%= for intent <- filter_intents(@intents, @search) do %>
+              <button
+                phx-click="select_template_intent"
+                phx-value-intent={intent}
+                class={[
+                  "w-full text-left px-3 py-2 rounded-lg text-sm truncate transition-colors",
+                  if(intent == @selected_intent,
+                    do: "bg-primary text-primary-content",
+                    else: "hover:bg-base-200")
+                ]}
+                title={intent}
+              >
+                {intent}
+              </button>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Templates for Selected Intent -->
+        <div class="lg:col-span-2 bg-base-100 rounded-xl border border-base-300/50 p-4">
+          <h3 class="font-semibold mb-4">
+            Templates
+            <%= if @selected_intent do %>
+              <span class="text-sm font-normal text-base-content/60">for {@selected_intent}</span>
+            <% end %>
+          </h3>
+
+          <%= if @selected_intent do %>
+            <!-- Add Template Form -->
+            <form phx-submit="add_template" class="mb-4 flex gap-2">
+              <input type="hidden" name="intent" value={@selected_intent} />
+              <input
+                type="text"
+                name="text"
+                value={@new_template_text}
+                placeholder="Enter new template text..."
+                phx-change="update_new_template"
+                class="input input-bordered flex-1"
+              />
+              <button type="submit" class="btn btn-primary">
+                <.icon name="hero-plus" class="size-4" /> Add
+              </button>
+            </form>
+
+            <!-- Template List -->
+            <div class="space-y-2 max-h-[400px] overflow-y-auto">
+              <%= if length(@templates) == 0 do %>
+                <div class="text-sm text-base-content/50 p-4 text-center">
+                  No templates for this intent
+                </div>
+              <% else %>
+                <%= for template <- @templates do %>
+                  <div class="flex items-start gap-3 p-3 bg-base-200/50 rounded-lg group">
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm">{template.text}</p>
+                      <div class="flex gap-2 mt-1">
+                        <span class={[
+                          "badge badge-xs",
+                          if(template.source == :admin, do: "badge-primary", else: "badge-ghost")
+                        ]}>
+                          {template.source}
+                        </span>
+                        <%= if template.condition do %>
+                          <span class="badge badge-xs badge-info" title={template.condition}>
+                            conditional
+                          </span>
+                        <% end %>
+                      </div>
+                    </div>
+                    <button
+                      phx-click="remove_template"
+                      phx-value-text={template.text}
+                      class="btn btn-ghost btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Remove template"
+                    >
+                      <.icon name="hero-trash" class="size-4" />
+                    </button>
+                  </div>
+                <% end %>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="text-sm text-base-content/50 p-8 text-center">
+              Select an intent to view its templates
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
   # ============================================================================
   # Helpers
   # ============================================================================
@@ -1472,6 +1771,13 @@ defmodule ChatWeb.SettingsLive do
       String.contains?(String.downcase(entity.key || ""), search) ||
         String.contains?(String.downcase(entity.value || ""), search)
     end)
+  end
+
+  defp filter_intents(intents, ""), do: intents
+
+  defp filter_intents(intents, search) do
+    search = String.downcase(search)
+    Enum.filter(intents, &String.contains?(String.downcase(&1), search))
   end
 
   defp is_overlay_entity(entity, overlay) do

@@ -1598,7 +1598,7 @@ defmodule Brain do
       name: "Entity Extraction",
       status: if(entity_count > 0, do: :completed, else: :skipped),
       detail: "Extracted #{entity_count} entities",
-      entities: Enum.map(entities, fn e -> 
+      entities: Enum.map(entities, fn e ->
         %{type: e[:entity_type], value: e[:value]}
       end)
     }]
