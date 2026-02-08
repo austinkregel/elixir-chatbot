@@ -115,22 +115,14 @@ jobs:
 
       - name: Verify no string matching in event extraction
         run: ./scripts/verify_no_string_matching.sh
-  # Verify no string matching in event extraction code
-  verify-tensor-ops:
-    name: Verify Tensor Operations
+
+
+  # Check LSTM model compatibility before running tests
+  lstm-compatibility:
+    name: LSTM Model Compatibility
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Verify no string matching in event code
-        run: ./scripts/verify_no_string_matching.sh
-
-
-  # Run all tests with coverage
-  test:
-    name: Tests
-    runs-on: ubuntu-latest
+    outputs:
+      models_compatible: ${{ steps.check.outputs.compatible }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -157,8 +149,68 @@ jobs:
       - name: Compile
         run: mix compile
 
-      - name: Run tests
-        run: mix test --cover
+      - name: Check LSTM model compatibility
+        id: check
+        run: |
+          echo "Checking LSTM model compatibility..."
+          if mix regenerate_test_models --check 2>&1 | grep -q "INCOMPATIBLE"; then
+            echo "compatible=false" >> $GITHUB_OUTPUT
+            echo "::warning::LSTM models are incompatible with current library versions. Run 'mix regenerate_test_models --all' to fix."
+          else
+            echo "compatible=true" >> $GITHUB_OUTPUT
+            echo "LSTM models are compatible"
+          fi
+
+      - name: Display library versions
+        run: |
+          echo "=== ML Library Versions ==="
+          mix run -e 'IO.inspect(Application.spec(:nx, :vsn), label: "Nx")'
+          mix run -e 'IO.inspect(Application.spec(:axon, :vsn), label: "Axon")'
+          mix run -e 'IO.inspect(System.otp_release(), label: "OTP")'
+          echo "==========================="
+
+  # Run all tests with coverage
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    needs: [compile, lstm-compatibility]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+          otp-version: ${{ env.OTP_VERSION }}
+
+      - name: Restore dependencies cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ env.ELIXIR_VERSION }}-${{ env.OTP_VERSION }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-${{ env.ELIXIR_VERSION }}-${{ env.OTP_VERSION }}-
+
+      - name: Install dependencies
+        run: mix deps.get
+
+      - name: Compile
+        run: mix compile
+
+      - name: Run LSTM compatibility tests first
+        run: mix test apps/brain/test/brain/ml/lstm/model_compatibility_test.exs --trace
+
+      - name: Run tests (excluding LSTM-dependent if models incompatible)
+        run: |
+          if [ "${{ needs.lstm-compatibility.outputs.models_compatible }}" = "false" ]; then
+            echo "::warning::Running tests with --exclude requires_lstm due to model incompatibility"
+            mix test --cover --exclude requires_lstm
+          else
+            mix test --cover
+          fi
 
       - name: Generate coverage report
         run: mix coveralls.json

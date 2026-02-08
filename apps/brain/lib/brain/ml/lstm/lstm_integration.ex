@@ -2,14 +2,16 @@ defmodule Brain.ML.LSTM.Integration do
   @moduledoc """
   Integration layer for using LSTM models alongside existing TF-IDF classifiers.
 
-  **NOTE**: This module is currently a standalone utility that is **not called**
-  from the main analysis pipeline (`Brain.Analysis.Pipeline`). The pipeline
-  invokes LSTM models directly via `Brain.ML.LSTM.MultiTaskModel` and
-  `Brain.ML.LSTM.UnifiedModel` instead of going through this integration layer.
+  This module is called from the main analysis pipeline as an **ensemble
+  fallback**.  When `Brain.Analysis.SpeechActClassifier` obtains a low-confidence
+  result from the LSTM `MultiTaskModel` (below the ensemble threshold), it
+  delegates to `Integration.classify_intent/1` which combines TF-IDF and LSTM
+  predictions via ensemble voting to produce a more robust classification.
 
-  This module is available for direct use but is not part of the standard
-  message processing flow. It could be integrated into the pipeline in the
-  future to provide ensemble voting between TF-IDF and LSTM classifiers.
+  The pipeline still invokes LSTM models directly via
+  `Brain.ML.LSTM.MultiTaskModel` and `Brain.ML.LSTM.UnifiedModel` for
+  high-confidence predictions; this module is only consulted when the primary
+  LSTM confidence is insufficient.
   
   ## Provides
   

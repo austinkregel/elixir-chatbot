@@ -586,6 +586,9 @@ defmodule Brain.Response.Generator do
       analysis_model.analyses
       |> Enum.map(& &1.speech_act)
 
+    # Aggregate sentiment across chunks (use strongest non-neutral signal)
+    overall_sentiment = aggregate_sentiment(analysis_model.analyses)
+
     expressives =
       speech_acts
       |> Enum.filter(&(&1.category == :expressive))
@@ -650,6 +653,9 @@ defmodule Brain.Response.Generator do
           # Combine parts intelligently
           weave_response_parts(parts, Enum.reverse(response_types))
       end
+
+    # Prepend empathetic acknowledgment for negative sentiment
+    response = maybe_add_sentiment_prefix(response, overall_sentiment)
 
     {response, primary_type}
   end
@@ -1018,4 +1024,46 @@ defmodule Brain.Response.Generator do
   defp type_to_category(:template), do: :assertive
   defp type_to_category(:memory_augmented), do: :assertive
   defp type_to_category(_), do: :assertive
+
+  # Aggregate sentiment across multiple chunk analyses.
+  # Returns the strongest non-neutral sentiment, or :neutral.
+  defp aggregate_sentiment(analyses) do
+    sentiments =
+      analyses
+      |> Enum.map(&Map.get(&1, :sentiment))
+      |> Enum.reject(&is_nil/1)
+
+    case sentiments do
+      [] ->
+        %{label: :neutral, confidence: 0.5}
+
+      sentiments ->
+        # Pick the sentiment with highest confidence that isn't neutral
+        non_neutral =
+          Enum.filter(sentiments, fn s ->
+            label = Map.get(s, :label, :neutral)
+            label != :neutral and label != "neutral"
+          end)
+
+        case non_neutral do
+          [] -> List.first(sentiments)
+          found -> Enum.max_by(found, &Map.get(&1, :confidence, 0.0))
+        end
+    end
+  end
+
+  # Add empathetic prefix for negative sentiment with high confidence
+  defp maybe_add_sentiment_prefix(response, %{label: label, confidence: confidence})
+       when label in [:negative, "negative"] and confidence >= 0.7 do
+    prefix =
+      Enum.random([
+        "I understand.",
+        "I hear you.",
+        "I can see that's frustrating."
+      ])
+
+    "#{prefix} #{response}"
+  end
+
+  defp maybe_add_sentiment_prefix(response, _sentiment), do: response
 end

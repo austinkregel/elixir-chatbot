@@ -18,6 +18,8 @@ defmodule Mix.Tasks.Train do
     --epochs N       Default epochs for LSTM training (default: 20)
     --batch-size N   Default batch size (default: 32)
     --world ID       Train world-specific models
+    --name NAME      Experiment name for tracking (default: train_YYYYMMDD_HHMMSS)
+    --compare        Print experiment comparison table after training
     --list           List all available training tasks
 
   ## Training Order
@@ -63,6 +65,8 @@ defmodule Mix.Tasks.Train do
 
   use Mix.Task
   require Logger
+
+  alias Brain.ML.LSTM.ExperimentTracker
 
   @shortdoc "Train ALL ML models (master training pipeline)"
 
@@ -112,7 +116,9 @@ defmodule Mix.Tasks.Train do
           batch_size: :integer,
           hidden_size: :integer,
           world: :string,
-          list: :boolean
+          list: :boolean,
+          name: :string,
+          compare: :boolean
         ]
       )
 
@@ -164,6 +170,28 @@ defmodule Mix.Tasks.Train do
 
     # Display summary
     display_summary(results, total_duration)
+
+    # Record experiment
+    experiment_name = opts[:name] || generate_experiment_name("train")
+
+    ExperimentTracker.record(%{
+      name: experiment_name,
+      config: %{
+        epochs: opts[:epochs] || 20,
+        batch_size: opts[:batch_size] || 32,
+        hidden_size: opts[:hidden_size] || 128
+      },
+      epochs_completed: opts[:epochs] || 20,
+      training_time_seconds: total_duration,
+      notes: "Master pipeline. Tasks: #{summarize_results(results)}"
+    })
+
+    Mix.shell().info("  Experiment recorded: #{experiment_name}")
+
+    if opts[:compare] do
+      Mix.shell().info("")
+      ExperimentTracker.print_comparison()
+    end
   end
 
   defp build_skip_list(opts) do
@@ -503,6 +531,30 @@ defmodule Mix.Tasks.Train do
           []
       end
     end)
+  end
+
+  defp generate_experiment_name(prefix) do
+    now = NaiveDateTime.utc_now()
+
+    ts =
+      now
+      |> NaiveDateTime.to_iso8601()
+      |> String.slice(0, 19)
+      |> String.replace("-", "")
+      |> String.replace("T", "_")
+      |> String.replace(":", "")
+
+    "#{prefix}_#{ts}"
+  end
+
+  defp summarize_results(results) do
+    results
+    |> Enum.map(fn
+      {task, :skipped, _} -> "#{task}:skipped"
+      {task, {:ok, _}, _} -> "#{task}:ok"
+      {task, {:error, _}, _} -> "#{task}:failed"
+    end)
+    |> Enum.join(", ")
   end
 
   defp format_duration(seconds) when seconds < 60, do: "#{seconds} seconds"

@@ -12,7 +12,9 @@ defmodule Mix.Tasks.TrainResponse do
     --batch-size N   Batch size (default: 32)
     --hidden-size N  LSTM hidden dimension (default: 128)
     --lr FLOAT       Learning rate (default: 0.001)
-  
+    --name NAME      Experiment name for tracking (default: response_YYYYMMDD_HHMMSS)
+    --compare        Print experiment comparison table after training
+
   ## What This Trains
   
   The response scorer learns to evaluate query-response pairs:
@@ -35,6 +37,8 @@ defmodule Mix.Tasks.TrainResponse do
   
   use Mix.Task
   require Logger
+
+  alias Brain.ML.LSTM.ExperimentTracker
   
   @shortdoc "Train LSTM response quality scorer"
   
@@ -44,7 +48,9 @@ defmodule Mix.Tasks.TrainResponse do
         epochs: :integer,
         batch_size: :integer,
         hidden_size: :integer,
-        lr: :float
+        lr: :float,
+        name: :string,
+        compare: :boolean
       ]
     )
     
@@ -99,10 +105,42 @@ defmodule Mix.Tasks.TrainResponse do
         Mix.shell().info("  # Generate best response")
         Mix.shell().info("  LSTMResponse.generate(query, intent, entities)")
         Mix.shell().info("")
-        
+
+        # Record experiment
+        experiment_name = opts[:name] || generate_experiment_name("response")
+
+        ExperimentTracker.record(%{
+          name: experiment_name,
+          config: Enum.into(config, %{}),
+          epochs_completed: Keyword.get(config, :epochs),
+          training_time_seconds: duration,
+          notes: "Response scorer LSTM"
+        })
+
+        Mix.shell().info("  Experiment recorded: #{experiment_name}")
+
+        if opts[:compare] do
+          Mix.shell().info("")
+          ExperimentTracker.print_comparison()
+        end
+
       {:error, reason} ->
         Mix.shell().error("Training failed: #{inspect(reason)}")
         System.halt(1)
     end
+  end
+
+  defp generate_experiment_name(prefix) do
+    now = NaiveDateTime.utc_now()
+
+    ts =
+      now
+      |> NaiveDateTime.to_iso8601()
+      |> String.slice(0, 19)
+      |> String.replace("-", "")
+      |> String.replace("T", "_")
+      |> String.replace(":", "")
+
+    "#{prefix}_#{ts}"
   end
 end

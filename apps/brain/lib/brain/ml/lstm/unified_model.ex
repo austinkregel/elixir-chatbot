@@ -137,6 +137,13 @@ defmodule Brain.ML.LSTM.UnifiedModel do
   def classify_speech_act(text, name \\ __MODULE__) do
     GenServer.call(name, {:classify_speech_act, text}, 5_000)
   end
+
+  @doc """
+  Reload the model from disk without restarting the GenServer.
+  """
+  def reload(name \\ __MODULE__) do
+    GenServer.call(name, :reload, 30_000)
+  end
   
   # ============================================================================
   # Server Callbacks
@@ -242,6 +249,30 @@ defmodule Brain.ML.LSTM.UnifiedModel do
     end
   end
   
+  @impl true
+  def handle_call(:reload, _from, state) do
+    case load_saved_model() do
+      {:ok, model_data} ->
+        Logger.info("UnifiedModel: Reloaded model from disk")
+        new_state = %{state |
+          encoder: model_data.encoder,
+          intent_head: model_data.intent_head,
+          ner_head: model_data.ner_head,
+          sentiment_head: model_data.sentiment_head,
+          speech_act_head: model_data.speech_act_head,
+          params: model_data.params,
+          vocabularies: model_data.vocabularies,
+          config: model_data.config,
+          ready: true
+        }
+        {:reply, :ok, new_state}
+
+      {:error, reason} ->
+        Logger.warning("UnifiedModel: Reload failed (#{inspect(reason)})")
+        {:reply, {:error, reason}, state}
+    end
+  end
+
   @impl true
   def handle_info(:load_model, state) do
     case load_saved_model() do

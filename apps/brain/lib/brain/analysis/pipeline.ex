@@ -33,6 +33,7 @@ defmodule Brain.Analysis.Pipeline do
 
   alias Brain.ML.EntityExtractor
   alias Brain.ML.LSTM.MultiTaskModel
+  alias Brain.ML.LSTM.UnifiedModel
 
   require Logger
 
@@ -209,6 +210,19 @@ defmodule Brain.Analysis.Pipeline do
         SpeechActClassifier.classify(chunk.text)
       end)
 
+    # Stage 2b.5: Sentiment analysis (parallel, via UnifiedModel)
+    sentiment_task =
+      Task.async(fn ->
+        if UnifiedModel.ready?() do
+          case UnifiedModel.classify_sentiment(chunk.text) do
+            {:ok, result} -> result
+            _ -> %{label: :neutral, confidence: 0.5}
+          end
+        else
+          %{label: :neutral, confidence: 0.5}
+        end
+      end)
+
     # Wait for parallel tasks with timeout
     discourse_result =
       try do
@@ -228,6 +242,15 @@ defmodule Brain.Analysis.Pipeline do
           SpeechActClassifier.classify("")
       end
 
+    sentiment_result =
+      try do
+        Task.await(sentiment_task, 3000)
+      catch
+        :exit, {:timeout, _} ->
+          Task.shutdown(sentiment_task, :brutal_kill)
+          %{label: :neutral, confidence: 0.5}
+      end
+
     Progress.report(opts, :discourse_complete, %{
       chunk_index: chunk.index,
       addressee: Map.get(discourse_result, :addressee),
@@ -240,6 +263,12 @@ defmodule Brain.Analysis.Pipeline do
       sub_type: Map.get(speech_act_result, :sub_type),
       confidence: Map.get(speech_act_result, :confidence),
       is_question: Map.get(speech_act_result, :is_question)
+    })
+
+    Progress.report(opts, :sentiment_complete, %{
+      chunk_index: chunk.index,
+      label: Map.get(sentiment_result, :label),
+      confidence: Map.get(sentiment_result, :confidence)
     })
 
     # Stage 2c: Anaphora resolution (resolve pronouns/references from history)
@@ -340,6 +369,7 @@ defmodule Brain.Analysis.Pipeline do
       ChunkAnalysis.new(chunk.index, chunk.text)
       |> Map.put(:discourse, discourse_result)
       |> Map.put(:speech_act, speech_act_result)
+      |> Map.put(:sentiment, sentiment_result)
       |> Map.put(:intent, intent)
       |> Map.put(:entities, relevant_entities)
       |> Map.put(:slots, resolved_slots)

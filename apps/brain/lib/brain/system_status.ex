@@ -379,8 +379,34 @@ defmodule Brain.SystemStatus do
       gazetteer: get_model_file_status(models_path, "gazetteer.term"),
       intent_classifier: get_agent_status(Brain.ML.IntentClassifierSimple),
       entity_extractor: get_agent_status(Brain.ML.EntityExtractor),
+      # LSTM models
+      unified_model: get_lstm_status(Brain.ML.LSTM.UnifiedModel, models_path, "lstm/unified_model.term"),
+      multi_task_model: get_lstm_status(Brain.ML.LSTM.MultiTaskModel, models_path, "lstm/lstm_multitask.term"),
+      response_scorer: get_lstm_status(Brain.Response.LSTMResponse, models_path, "lstm/response_scorer.term"),
+      # Latest evaluation
+      last_evaluation: get_last_evaluation(),
       checked_at: DateTime.utc_now()
     }
+  end
+
+  defp get_lstm_status(module, models_path, file) do
+    ready =
+      try do
+        module.ready?()
+      catch
+        :exit, _ -> false
+      end
+
+    file_status = get_model_file_status(models_path, file)
+    Map.merge(file_status, %{ready: ready})
+  end
+
+  defp get_last_evaluation do
+    try do
+      Brain.ML.EvaluationStore.latest("intent")
+    rescue
+      _ -> nil
+    end
   end
 
   @doc """

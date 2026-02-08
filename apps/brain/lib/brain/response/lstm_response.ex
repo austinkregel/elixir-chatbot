@@ -115,6 +115,16 @@ defmodule Brain.Response.LSTMResponse do
   @doc """
   Select the best response from candidates using LSTM scoring.
   """
+  @doc """
+  Reload the model from disk without restarting the GenServer.
+  """
+  def reload(name \\ __MODULE__) do
+    GenServer.call(name, :reload, 30_000)
+  end
+
+  @doc """
+  Select the best response from candidates using LSTM scoring.
+  """
   def select_best(query, candidates, name \\ __MODULE__) when is_list(candidates) do
     case rank_responses(query, candidates, name) do
       {:ok, ranked} ->
@@ -218,6 +228,26 @@ defmodule Brain.Response.LSTMResponse do
   end
   
   @impl true
+  def handle_call(:reload, _from, state) do
+    case load_saved_model() do
+      {:ok, model_data} ->
+        Logger.info("LSTMResponse: Reloaded model from disk")
+        new_state = %{state |
+          scorer_model: model_data.scorer_model,
+          scorer_params: model_data.scorer_params,
+          vocabularies: model_data.vocabularies,
+          config: model_data.config,
+          ready: true
+        }
+        {:reply, :ok, new_state}
+
+      {:error, reason} ->
+        Logger.warning("LSTMResponse: Reload failed (#{inspect(reason)})")
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl true
   def handle_info(:load_model, state) do
     case load_saved_model() do
       {:ok, model_data} ->
@@ -230,7 +260,7 @@ defmodule Brain.Response.LSTMResponse do
           ready: true
         }
         {:noreply, new_state}
-        
+
       {:error, reason} ->
         Logger.debug("LSTMResponse: No saved model (#{inspect(reason)})")
         {:noreply, state}

@@ -434,6 +434,9 @@ defmodule ChatWeb.DashboardLive do
   def model_name(:entity_extractor), do: "Entity Extractor (Agent)"
   def model_name(:pos_tagger), do: "POS Tagger"
   def model_name(:entity_trainer), do: "Entity Trainer"
+  def model_name(:unified_model), do: "Unified LSTM"
+  def model_name(:multi_task_model), do: "Multi-Task LSTM"
+  def model_name(:response_scorer), do: "Response Scorer"
 
   def model_name(other),
     do: other |> to_string() |> String.replace("_", " ") |> String.capitalize()
@@ -450,6 +453,34 @@ defmodule ChatWeb.DashboardLive do
     [:intent_classifier, :entity_extractor]
     |> Enum.map(fn key -> {key, Map.get(ml_models_status, key)} end)
     |> Enum.filter(fn {_k, v} -> v != nil end)
+  end
+
+  # Get list of LSTM models for display
+  def lstm_models(ml_models_status) do
+    [:unified_model, :multi_task_model, :response_scorer]
+    |> Enum.map(fn key -> {key, Map.get(ml_models_status, key)} end)
+    |> Enum.filter(fn {_k, v} -> v != nil end)
+  end
+
+  # Get corpus size info
+  def corpus_info do
+    try do
+      size_info = Brain.ML.CorpusManager.size_by_category()
+
+      %{
+        total: Brain.ML.CorpusManager.format_bytes(size_info.total),
+        utilization: Brain.ML.CorpusManager.utilization_percent(),
+        categories: %{
+          training: Brain.ML.CorpusManager.format_bytes(size_info.training_data),
+          models: Brain.ML.CorpusManager.format_bytes(size_info.ml_models),
+          evaluation: Brain.ML.CorpusManager.format_bytes(size_info.evaluation),
+          worlds: Brain.ML.CorpusManager.format_bytes(size_info.training_worlds),
+          knowledge: Brain.ML.CorpusManager.format_bytes(size_info.knowledge)
+        }
+      }
+    rescue
+      _ -> %{total: "N/A", utilization: 0.0, categories: %{}}
+    end
   end
 
   # Get training stats from performance metrics

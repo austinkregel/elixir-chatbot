@@ -61,6 +61,9 @@ defmodule Brain.Application do
       # LSTM response scorer and refinement
       Brain.Response.LSTMResponse,
 
+      # ML training job server
+      Brain.ML.TrainingServer,
+
       # Subprocess supervisor
       Brain.Subprocesses.Supervisor,
 

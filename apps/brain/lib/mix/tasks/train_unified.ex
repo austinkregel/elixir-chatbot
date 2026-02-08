@@ -12,7 +12,8 @@ defmodule Mix.Tasks.TrainUnified do
     --batch-size N   Batch size (default: 32)
     --hidden-size N  LSTM hidden dimension (default: 128)
     --lr FLOAT       Learning rate (default: 0.001)
-    --name NAME      Experiment name for A/B testing
+    --name NAME      Experiment name for tracking (default: unified_YYYYMMDD_HHMMSS)
+    --compare        Print experiment comparison table after training
   
   ## Examples
   
@@ -31,6 +32,8 @@ defmodule Mix.Tasks.TrainUnified do
   
   use Mix.Task
   require Logger
+
+  alias Brain.ML.LSTM.ExperimentTracker
   
   @shortdoc "Train unified multi-task LSTM model"
   
@@ -42,7 +45,8 @@ defmodule Mix.Tasks.TrainUnified do
         hidden_size: :integer,
         embedding_size: :integer,
         lr: :float,
-        name: :string
+        name: :string,
+        compare: :boolean
       ]
     )
     
@@ -102,10 +106,42 @@ defmodule Mix.Tasks.TrainUnified do
         Mix.shell().info("Usage:")
         Mix.shell().info("  Brain.ML.LSTM.UnifiedModel.analyze(\"What's the weather?\")")
         Mix.shell().info("")
-        
+
+        # Record experiment
+        experiment_name = opts[:name] || generate_experiment_name("unified")
+
+        ExperimentTracker.record(%{
+          name: experiment_name,
+          config: Enum.into(config, %{}),
+          epochs_completed: Keyword.get(config, :epochs),
+          training_time_seconds: duration,
+          notes: "Unified multi-task LSTM. Vocab: #{map_size(result.vocabularies.token_vocab)}, Intents: #{map_size(result.vocabularies.intent_to_idx)}"
+        })
+
+        Mix.shell().info("  Experiment recorded: #{experiment_name}")
+
+        if opts[:compare] do
+          Mix.shell().info("")
+          ExperimentTracker.print_comparison()
+        end
+
       {:error, reason} ->
         Mix.shell().error("Training failed: #{inspect(reason)}")
         System.halt(1)
     end
+  end
+
+  defp generate_experiment_name(prefix) do
+    now = NaiveDateTime.utc_now()
+
+    ts =
+      now
+      |> NaiveDateTime.to_iso8601()
+      |> String.slice(0, 19)
+      |> String.replace("-", "")
+      |> String.replace("T", "_")
+      |> String.replace(":", "")
+
+    "#{prefix}_#{ts}"
   end
 end

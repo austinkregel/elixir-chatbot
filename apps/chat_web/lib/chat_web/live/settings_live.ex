@@ -18,9 +18,14 @@ defmodule ChatWeb.SettingsLive do
   alias Brain.Knowledge.LearningCenter
   alias Tasks.Source, as: TaskSource
   alias Brain.ML.Gazetteer
+  alias Brain.ML.TrainingServer
 
   @impl true
   def mount(_params, _session, socket) do
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Brain.PubSub, "training:progress")
+    end
+
     {:ok, socket}
   end
 
@@ -32,6 +37,7 @@ defmodule ChatWeb.SettingsLive do
         "entities" -> :entities
         "worlds" -> :worlds
         "training" -> :training
+        "ml_training" -> :ml_training
         _ -> :worlds
       end
 
@@ -53,6 +59,17 @@ defmodule ChatWeb.SettingsLive do
       |> assign(:starting_training, false)
       |> assign(:tasks_loading, false)
       |> assign(:lc_stats, %{total_sessions: 0, active_agents: 0})
+      # ML Training section assigns
+      |> assign(:ml_model_statuses, %{})
+      |> assign(:ml_training_status, :idle)
+      |> assign(:ml_selected_model, "unified")
+      |> assign(:ml_epochs, "20")
+      |> assign(:ml_batch_size, "32")
+      |> assign(:ml_experiment_name, "")
+      |> assign(:ml_training_log, [])
+      |> assign(:ml_schedules, [])
+      |> assign(:ml_schedule_interval, "24")
+      |> assign(:ml_reloading, false)
       |> load_section_data()
 
     {:noreply, socket}
@@ -63,6 +80,7 @@ defmodule ChatWeb.SettingsLive do
       :worlds -> load_worlds_data(socket)
       :entities -> load_entities_data(socket)
       :training -> load_training_data(socket)
+      :ml_training -> load_ml_training_data(socket)
       _ -> socket
     end
   end
@@ -177,6 +195,53 @@ defmodule ChatWeb.SettingsLive do
     end
 
     socket
+  end
+
+  defp load_ml_training_data(socket) do
+    # Check model readiness with short timeouts
+    unified_ready =
+      try do
+        Brain.ML.LSTM.UnifiedModel.ready?()
+      rescue
+        _ -> false
+      catch
+        :exit, _ -> false
+      end
+
+    multi_task_ready =
+      try do
+        Brain.ML.LSTM.MultiTaskModel.ready?()
+      rescue
+        _ -> false
+      catch
+        :exit, _ -> false
+      end
+
+    response_ready =
+      try do
+        Brain.Response.LSTMResponse.ready?()
+      rescue
+        _ -> false
+      catch
+        :exit, _ -> false
+      end
+
+    model_statuses = %{
+      unified_model: unified_ready,
+      multi_task_model: multi_task_ready,
+      response_scorer: response_ready
+    }
+
+    # Get training server status
+    training_status = TrainingServer.get_status()
+
+    # Get active schedules
+    schedules = TrainingServer.list_schedules()
+
+    socket
+    |> assign(:ml_model_statuses, model_statuses)
+    |> assign(:ml_training_status, training_status)
+    |> assign(:ml_schedules, schedules)
   end
 
   # ============================================================================
@@ -383,6 +448,164 @@ defmodule ChatWeb.SettingsLive do
     end
   end
 
+  # ============================================================================
+  # Event Handlers - ML Training
+  # ============================================================================
+
+  def handle_event("update_ml_training_form", params, socket) do
+    socket =
+      socket
+      |> assign(:ml_selected_model, params["model_type"] || socket.assigns.ml_selected_model)
+      |> assign(:ml_epochs, params["epochs"] || socket.assigns.ml_epochs)
+      |> assign(:ml_batch_size, params["batch_size"] || socket.assigns.ml_batch_size)
+      |> assign(:ml_experiment_name, params["experiment_name"] || socket.assigns.ml_experiment_name)
+
+    {:noreply, socket}
+  end
+
+  def handle_event("start_ml_training", _params, socket) do
+    model_type =
+      case socket.assigns.ml_selected_model do
+        "tfidf" -> :tfidf
+        "unified" -> :unified
+        "response" -> :response
+        _ -> :unified
+      end
+
+    epochs = parse_integer(socket.assigns.ml_epochs, 20)
+    batch_size = parse_integer(socket.assigns.ml_batch_size, 32)
+    experiment_name = socket.assigns.ml_experiment_name
+
+    config =
+      [epochs: epochs, batch_size: batch_size]
+      |> then(fn cfg ->
+        if experiment_name != "" do
+          Keyword.put(cfg, :name, experiment_name)
+        else
+          cfg
+        end
+      end)
+
+    case TrainingServer.start_training(model_type, config) do
+      {:ok, _model_type} ->
+        socket =
+          socket
+          |> load_ml_training_data()
+          |> append_training_log("Started training #{model_type}")
+          |> put_flash(:info, "Started #{model_type} training")
+
+        {:noreply, socket}
+
+      {:error, {:already_training, current}} ->
+        {:noreply,
+         put_flash(socket, :error, "Already training #{current}. Cancel it first.")}
+
+      {:error, reason} ->
+        {:noreply,
+         put_flash(socket, :error, "Failed to start training: #{inspect(reason)}")}
+    end
+  end
+
+  def handle_event("cancel_ml_training", _params, socket) do
+    case TrainingServer.cancel() do
+      :ok ->
+        socket =
+          socket
+          |> load_ml_training_data()
+          |> append_training_log("Training cancelled")
+          |> put_flash(:info, "Training cancelled")
+
+        {:noreply, socket}
+
+      {:error, :not_training} ->
+        {:noreply, put_flash(socket, :error, "No training in progress")}
+    end
+  end
+
+  def handle_event("reload_ml_models", _params, socket) do
+    socket = assign(socket, :ml_reloading, true)
+
+    results =
+      [:unified, :multi_task, :response]
+      |> Enum.map(fn model ->
+        try do
+          case model do
+            :unified -> {model, Brain.ML.LSTM.UnifiedModel.reload()}
+            :multi_task -> {model, Brain.ML.LSTM.MultiTaskModel.reload()}
+            :response -> {model, Brain.Response.LSTMResponse.reload()}
+          end
+        rescue
+          e -> {model, {:error, Exception.message(e)}}
+        catch
+          :exit, reason -> {model, {:error, reason}}
+        end
+      end)
+
+    successes = Enum.count(results, fn {_, res} -> res == :ok end)
+
+    socket =
+      socket
+      |> assign(:ml_reloading, false)
+      |> load_ml_training_data()
+      |> append_training_log("Reloaded models (#{successes}/3 succeeded)")
+      |> put_flash(:info, "Reloaded #{successes}/3 models")
+
+    {:noreply, socket}
+  end
+
+  def handle_event("update_ml_schedule_interval", %{"interval" => interval}, socket) do
+    {:noreply, assign(socket, :ml_schedule_interval, interval)}
+  end
+
+  def handle_event("add_ml_schedule", _params, socket) do
+    model_type =
+      case socket.assigns.ml_selected_model do
+        "tfidf" -> :tfidf
+        "unified" -> :unified
+        "response" -> :response
+        _ -> :unified
+      end
+
+    interval_hours = parse_integer(socket.assigns.ml_schedule_interval, 24)
+    epochs = parse_integer(socket.assigns.ml_epochs, 20)
+    batch_size = parse_integer(socket.assigns.ml_batch_size, 32)
+
+    config = [epochs: epochs, batch_size: batch_size]
+
+    case TrainingServer.schedule(model_type, config, interval_hours) do
+      {:ok, schedule_id} ->
+        socket =
+          socket
+          |> load_ml_training_data()
+          |> append_training_log(
+            "Scheduled #{model_type} every #{interval_hours}h (#{schedule_id})"
+          )
+          |> put_flash(:info, "Scheduled #{model_type} training every #{interval_hours} hours")
+
+        {:noreply, socket}
+
+      {:error, reason} ->
+        {:noreply,
+         put_flash(socket, :error, "Failed to schedule: #{inspect(reason)}")}
+    end
+  end
+
+  def handle_event("cancel_ml_schedule", %{"id" => schedule_id}, socket) do
+    case TrainingServer.cancel_schedule(schedule_id) do
+      :ok ->
+        socket =
+          socket
+          |> load_ml_training_data()
+          |> append_training_log("Cancelled schedule #{schedule_id}")
+          |> put_flash(:info, "Cancelled schedule")
+
+        {:noreply, socket}
+
+      {:error, :not_found} ->
+        {:noreply, put_flash(socket, :error, "Schedule not found")}
+    end
+  end
+
   @impl true
   def handle_info({:world_context_changed, _world_id}, socket) do
     # World was changed from another LiveView or tab
@@ -394,6 +617,55 @@ defmodule ChatWeb.SettingsLive do
      socket
      |> assign(:available_tasks, available)
      |> assign(:tasks_loading, false)}
+  end
+
+  # ML Training PubSub messages
+  def handle_info({:training_started, model_type, _started_at}, socket) do
+    socket =
+      socket
+      |> assign(:ml_training_status, {:training, model_type, DateTime.utc_now()})
+      |> append_training_log("Training #{model_type} started")
+
+    {:noreply, socket}
+  end
+
+  def handle_info({:training_complete, model_type, result}, socket) do
+    message =
+      case result do
+        {:ok, _} -> "Training #{model_type} completed successfully"
+        {:error, reason} -> "Training #{model_type} failed: #{inspect(reason)}"
+      end
+
+    socket =
+      socket
+      |> assign(:ml_training_status, :idle)
+      |> load_ml_training_data()
+      |> append_training_log(message)
+      |> put_flash(:info, message)
+
+    {:noreply, socket}
+  end
+
+  def handle_info({:training_cancelled, model_type}, socket) do
+    socket =
+      socket
+      |> assign(:ml_training_status, :idle)
+      |> append_training_log("Training #{model_type} cancelled")
+
+    {:noreply, socket}
+  end
+
+  def handle_info({:schedule_added, _id, model_type, interval}, socket) do
+    socket =
+      socket
+      |> load_ml_training_data()
+      |> append_training_log("Schedule added: #{model_type} every #{interval}h")
+
+    {:noreply, socket}
+  end
+
+  def handle_info({:schedule_cancelled, _id}, socket) do
+    {:noreply, load_ml_training_data(socket)}
   end
 
   # ============================================================================
@@ -446,6 +718,13 @@ defmodule ChatWeb.SettingsLive do
           >
             <.icon name="hero-academic-cap" class="size-4" /> Training
           </button>
+          <button
+            phx-click="switch_section"
+            phx-value-section="ml_training"
+            class={["tab gap-1", if(@section == :ml_training, do: "tab-active", else: "")]}
+          >
+            <.icon name="hero-cpu-chip" class="size-4" /> ML Models
+          </button>
         </div>
         
     <!-- Content -->
@@ -478,6 +757,19 @@ defmodule ChatWeb.SettingsLive do
               starting_training={@starting_training}
               tasks_loading={@tasks_loading}
               lc_stats={@lc_stats}
+            />
+          <% :ml_training -> %>
+            <.ml_training_section
+              model_statuses={@ml_model_statuses}
+              training_status={@ml_training_status}
+              selected_model={@ml_selected_model}
+              epochs={@ml_epochs}
+              batch_size={@ml_batch_size}
+              experiment_name={@ml_experiment_name}
+              training_log={@ml_training_log}
+              schedules={@ml_schedules}
+              schedule_interval={@ml_schedule_interval}
+              reloading={@ml_reloading}
             />
         <% end %>
       </div>
@@ -929,6 +1221,239 @@ defmodule ChatWeb.SettingsLive do
     """
   end
 
+  defp ml_training_section(assigns) do
+    ~H"""
+    <div class="space-y-6">
+      <!-- Model Status Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium">Unified Model</div>
+              <div class="text-sm text-base-content/60">Intent, NER, Sentiment, Speech Act</div>
+            </div>
+            <span class={[
+              "badge",
+              if(@model_statuses[:unified_model], do: "badge-success", else: "badge-ghost")
+            ]}>
+              {if @model_statuses[:unified_model], do: "Ready", else: "Not Ready"}
+            </span>
+          </div>
+        </div>
+        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium">Multi-Task Model</div>
+              <div class="text-sm text-base-content/60">Intent, NER, POS Tagging</div>
+            </div>
+            <span class={[
+              "badge",
+              if(@model_statuses[:multi_task_model], do: "badge-success", else: "badge-ghost")
+            ]}>
+              {if @model_statuses[:multi_task_model], do: "Ready", else: "Not Ready"}
+            </span>
+          </div>
+        </div>
+        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium">Response Scorer</div>
+              <div class="text-sm text-base-content/60">Query-response quality scoring</div>
+            </div>
+            <span class={[
+              "badge",
+              if(@model_statuses[:response_scorer], do: "badge-success", else: "badge-ghost")
+            ]}>
+              {if @model_statuses[:response_scorer], do: "Ready", else: "Not Ready"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reload Models -->
+      <div class="flex justify-end">
+        <button
+          phx-click="reload_ml_models"
+          class="btn btn-outline btn-sm"
+          disabled={@reloading}
+        >
+          <%= if @reloading do %>
+            <span class="loading loading-spinner loading-sm"></span>
+          <% else %>
+            <.icon name="hero-arrow-path" class="size-4" />
+          <% end %>
+          Reload All Models
+        </button>
+      </div>
+
+      <!-- Training Form -->
+      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
+        <h3 class="font-semibold mb-4">Train ML Model</h3>
+        <p class="text-sm text-base-content/60 mb-4">
+          Start an async training job for a specific model. Training runs in the background.
+        </p>
+        <form phx-change="update_ml_training_form" phx-submit="start_ml_training">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Model Type</span>
+              </label>
+              <select name="model_type" class="select select-bordered">
+                <option value="unified" selected={@selected_model == "unified"}>
+                  Unified LSTM
+                </option>
+                <option value="response" selected={@selected_model == "response"}>
+                  Response Scorer
+                </option>
+                <option value="tfidf" selected={@selected_model == "tfidf"}>
+                  TF-IDF Classifier
+                </option>
+              </select>
+            </div>
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Epochs</span>
+              </label>
+              <input
+                type="number"
+                name="epochs"
+                value={@epochs}
+                min="1"
+                max="200"
+                class="input input-bordered"
+              />
+            </div>
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Batch Size</span>
+              </label>
+              <input
+                type="number"
+                name="batch_size"
+                value={@batch_size}
+                min="1"
+                max="256"
+                class="input input-bordered"
+              />
+            </div>
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Experiment Name</span>
+              </label>
+              <input
+                type="text"
+                name="experiment_name"
+                value={@experiment_name}
+                placeholder="Optional"
+                class="input input-bordered"
+              />
+            </div>
+          </div>
+          <div class="flex items-center gap-4">
+            <%= case @training_status do %>
+              <% :idle -> %>
+                <button type="submit" class="btn btn-primary">
+                  <.icon name="hero-play" class="size-4" /> Train
+                </button>
+              <% {:training, model_type, started_at} -> %>
+                <div class="flex items-center gap-3">
+                  <span class="loading loading-spinner loading-md text-warning"></span>
+                  <div>
+                    <div class="font-medium">Training {model_type}...</div>
+                    <div class="text-xs text-base-content/60">
+                      Started {Calendar.strftime(started_at, "%H:%M:%S")}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    phx-click="cancel_ml_training"
+                    class="btn btn-error btn-sm"
+                  >
+                    <.icon name="hero-stop" class="size-4" /> Cancel
+                  </button>
+                </div>
+            <% end %>
+          </div>
+        </form>
+      </div>
+
+      <!-- Training Progress Log -->
+      <%= if length(@training_log) > 0 do %>
+        <div class="bg-base-100 rounded-xl border border-base-300/50">
+          <div class="p-4 border-b border-base-300">
+            <h3 class="font-semibold">Training Log</h3>
+          </div>
+          <div class="max-h-48 overflow-y-auto p-4 font-mono text-sm space-y-1">
+            <%= for {message, timestamp} <- Enum.reverse(@training_log) do %>
+              <div class="text-base-content/80">
+                <span class="text-base-content/40">[{Calendar.strftime(timestamp, "%H:%M:%S")}]</span>
+                {message}
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Scheduling -->
+      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
+        <h3 class="font-semibold mb-4">Training Schedules</h3>
+        <p class="text-sm text-base-content/60 mb-4">
+          Schedule recurring training runs. Uses the model type and parameters from the form above.
+        </p>
+        <div class="flex flex-wrap gap-4 items-end mb-4">
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Interval (hours)</span>
+            </label>
+            <select
+              name="interval"
+              phx-change="update_ml_schedule_interval"
+              class="select select-bordered"
+            >
+              <option value="1" selected={@schedule_interval == "1"}>Every 1 hour</option>
+              <option value="6" selected={@schedule_interval == "6"}>Every 6 hours</option>
+              <option value="12" selected={@schedule_interval == "12"}>Every 12 hours</option>
+              <option value="24" selected={@schedule_interval == "24"}>Every 24 hours</option>
+              <option value="48" selected={@schedule_interval == "48"}>Every 48 hours</option>
+              <option value="168" selected={@schedule_interval == "168"}>Every 7 days</option>
+            </select>
+          </div>
+          <button phx-click="add_ml_schedule" class="btn btn-outline btn-primary">
+            <.icon name="hero-clock" class="size-4" /> Schedule
+          </button>
+        </div>
+
+        <!-- Active Schedules -->
+        <%= if length(@schedules) == 0 do %>
+          <div class="text-sm text-base-content/50 p-4 text-center">
+            No active schedules
+          </div>
+        <% else %>
+          <div class="divide-y divide-base-300/50 border border-base-300/50 rounded-lg">
+            <%= for schedule <- @schedules do %>
+              <div class="p-3 flex items-center justify-between hover:bg-base-200/50">
+                <div>
+                  <span class="badge badge-sm badge-primary mr-2">{schedule.model_type}</span>
+                  <span class="text-sm">Every {schedule.interval_hours} hour(s)</span>
+                  <span class="text-xs text-base-content/50 ml-2 font-mono">{schedule.id}</span>
+                </div>
+                <button
+                  phx-click="cancel_ml_schedule"
+                  phx-value-id={schedule.id}
+                  class="btn btn-ghost btn-xs text-error"
+                  title="Cancel schedule"
+                >
+                  <.icon name="hero-x-mark" class="size-4" />
+                </button>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+    """
+  end
+
   defp session_status_badge(:active), do: "badge-warning"
   defp session_status_badge(:completed), do: "badge-success"
   defp session_status_badge(:cancelled), do: "badge-error"
@@ -954,4 +1479,19 @@ defmodule ChatWeb.SettingsLive do
       String.downcase(key) == String.downcase(entity.key || "")
     end)
   end
+
+  defp append_training_log(socket, message) do
+    entry = {message, DateTime.utc_now()}
+    log = Enum.take([entry | socket.assigns.ml_training_log], 50)
+    assign(socket, :ml_training_log, log)
+  end
+
+  defp parse_integer(value, default) when is_binary(value) do
+    case Integer.parse(value) do
+      {n, _} when n > 0 -> n
+      _ -> default
+    end
+  end
+
+  defp parse_integer(_, default), do: default
 end

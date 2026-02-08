@@ -168,6 +168,8 @@ defmodule Brain.Analysis.ChunkAnalysis do
   alias Brain.Analysis.Types.Event
   alias Brain.Analysis.InternalModel
 
+  @type sentiment :: %{label: atom(), confidence: float()} | nil
+
   @type t :: %__MODULE__{
           chunk_index: non_neg_integer(),
           text: String.t(),
@@ -180,7 +182,8 @@ defmodule Brain.Analysis.ChunkAnalysis do
           response_strategy: InternalModel.response_strategy(),
           clarification_prompts: list(String.t()),
           confidence: float(),
-          events: list(Event.t())
+          events: list(Event.t()),
+          sentiment: sentiment()
         }
 
   defstruct [
@@ -195,7 +198,8 @@ defmodule Brain.Analysis.ChunkAnalysis do
     response_strategy: :can_respond,
     clarification_prompts: [],
     confidence: 0.0,
-    events: []
+    events: [],
+    sentiment: nil
   ]
 
   @doc """

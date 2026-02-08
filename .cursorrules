@@ -1,97 +1,171 @@
 # ChatBot Project Rules
 
 This is an Elixir/Phoenix umbrella application using classical NLP techniques (no LLMs).
-The system uses TF-IDF vectorization, intent classification, entity extraction, and a cognitive memory system.
+The system uses TF-IDF vectorization, LSTM multi-task models (Axon/Nx), intent classification,
+entity extraction, sentiment analysis, and a cognitive memory system.
+
+## Strict Rules
+
+These rules MUST be followed in all code contributions:
+
+1. **No Regex in NLP**: Never use `~r/`, `Regex.`, or `String.contains?` for NLP text processing in the `apps/` folder. Use `Brain.ML.Tokenizer` functions instead. Regex is acceptable only in Mix tasks for CLI argument parsing.
+2. **No String Matching for Classification**: Intent classification, entity extraction, speech act classification, and sentiment analysis must be data-driven (TF-IDF, LSTM, trained models). Never hardcode string-matching rules for NLP decisions.
+3. **Non-blocking Operations**: Always check `ready?()` before calling GenServers that may be initializing. Use short timeouts (100ms) with graceful fallbacks.
+4. **Graceful Degradation**: The system must work even when LSTM models are unavailable. All LSTM-powered features fall back to classical ML (TF-IDF) or neutral defaults.
+5. **World-Scoping**: Use `World.Context` for isolated training environments. Models and data are scoped per-world.
 
 ## Project Overview
 
 ### Umbrella Structure
 
-This project uses an Elixir umbrella with four apps:
-
 | App | Purpose |
 |-----|---------|
-| `brain` | Core NLP, ML, Memory, Epistemic, Response, Telemetry, Metrics |
-| `world` | Training worlds, entity discovery |
-| `tasks` | Task data curation system |
-| `chat_web` | Phoenix web layer |
+| `brain` | Core NLP, ML (classical + LSTM), Memory, Epistemic, Response, Code Analysis, Telemetry |
+| `world` | Training worlds, entity discovery, type inference |
+| `tasks` | NLP benchmark task data curation |
+| `chat_web` | Phoenix 1.8 web layer with LiveView |
 
 ### Core Architecture
 
 ```
 apps/
-├── brain/lib/brain/           # Core NLP & Brain
+├── brain/lib/brain/
 │   ├── brain.ex               # Main orchestrator (GenServer)
-│   ├── telemetry.ex           # Telemetry event definitions
-│   ├── metrics/aggregator.ex  # Non-blocking metrics collection
 │   ├── system_status.ex       # System health monitoring
 │   ├── analysis/              # NLP analysis pipeline
-│   │   ├── pipeline.ex        # Orchestrates multi-stage analysis
+│   │   ├── pipeline.ex        # Multi-stage analysis orchestrator
 │   │   ├── semantic_chunker.ex
 │   │   ├── discourse_analyzer.ex
-│   │   ├── speech_act_classifier.ex
-│   │   └── slot_detector.ex
+│   │   ├── speech_act_classifier.ex  # Multi-pass voting + LSTM ensemble
+│   │   ├── slot_detector.ex
+│   │   ├── event_extractor.ex
+│   │   ├── racing_analyzer.ex       # Fast-path heuristic matching
+│   │   ├── response_gate.ex         # Response optionality
+│   │   └── outcome_learner.ex
 │   ├── memory/                # Cognitive memory system
 │   │   ├── embedder.ex        # TF-IDF vectorization
 │   │   ├── store.ex           # Episode/semantic memory
 │   │   └── think.ex           # High-level memory API
 │   ├── ml/                    # Machine learning
-│   │   ├── intent_classifier_simple.ex
-│   │   ├── gazetteer.ex
-│   │   └── tokenizer.ex
-│   └── epistemic/             # Belief/knowledge system
-├── world/lib/world/           # Training Worlds
-│   ├── manager.ex             # World lifecycle management
-│   ├── context.ex             # World-scoped API
-│   ├── entity_discoverer.ex   # Proper noun discovery
-│   └── type_inferrer.ex       # Entity type inference
-├── tasks/lib/tasks/           # Task Data Curation
-│   ├── analyzer.ex            # Task file analysis
-│   ├── transformer.ex         # Task data transformation
-│   └── source.ex              # Task source management
-└── chat_web/lib/chat_web/     # Phoenix Web Layer
-    ├── endpoint.ex
+│   │   ├── tokenizer.ex       # Text tokenization (use this, not regex)
+│   │   ├── intent_classifier_simple.ex  # TF-IDF + cosine similarity
+│   │   ├── entity_extractor.ex
+│   │   ├── gazetteer.ex       # ETS-backed entity lookup
+│   │   ├── pos_tagger.ex
+│   │   ├── data_loaders.ex    # Training data loading
+│   │   ├── trainer.ex         # Classical model training
+│   │   ├── evaluation.ex      # Precision/recall/F1/confusion matrix
+│   │   ├── evaluation_store.ex # Historical evaluation results
+│   │   ├── corpus_manager.ex  # Corpus size monitoring (<50 GB)
+│   │   ├── training_server.ex # Async training jobs + scheduling
+│   │   └── lstm/              # Deep learning models (Axon/Nx)
+│   │       ├── unified_model.ex       # Multi-task: intent + NER + sentiment + speech act
+│   │       ├── multi_task_model.ex    # Multi-task: intent + NER + POS
+│   │       ├── shared_encoder.ex      # Bidirectional LSTM encoder
+│   │       ├── intent_head.ex, ner_head.ex, pos_head.ex
+│   │       ├── trainer.ex, axon_trainer.ex
+│   │       ├── lstm_integration.ex    # Ensemble voting (TF-IDF + LSTM)
+│   │       └── experiment_tracker.ex  # A/B testing experiments
+│   ├── response/              # Response generation
+│   │   ├── generator.ex       # Orchestrator (synthesizer → memory → template → fallback)
+│   │   ├── synthesizer.ex     # Domain knowledge response frames
+│   │   ├── composer.ex        # Multi-part response weaving
+│   │   ├── lstm_response.ex   # LSTM response scoring/ranking
+│   │   ├── template_store.ex, template_blender.ex
+│   │   └── response_quality.ex
+│   ├── knowledge/             # Knowledge expansion
+│   │   ├── learning_center.ex, review_queue.ex
+│   │   ├── source_reliability.ex, corroborator.ex
+│   │   └── research_agent.ex
+│   ├── epistemic/             # Belief/knowledge system (JTMS)
+│   └── code/                  # Code analysis pipeline
+│       ├── pipeline.ex, parser.ex, symbol_extractor.ex
+│       └── code_gazetteer.ex
+├── world/lib/world/
+│   ├── manager.ex, training_world.ex, context.ex
+│   ├── entity_discoverer.ex, type_inferrer.ex
+│   └── model_registry.ex
+├── tasks/lib/tasks/
+│   ├── analyzer.ex, transformer.ex, source.ex
+└── chat_web/lib/chat_web/
     ├── router.ex
-    └── live/                  # LiveView modules
+    ├── channels/brain_channel.ex    # WebSocket communication
+    └── live/
+        ├── chat_live.ex             # Main chat + processing inspector
+        ├── dashboard_live.ex        # System monitoring + LSTM status
+        ├── accuracy_live.ex         # Model accuracy metrics + trends
+        ├── explorer_live.ex         # Training world data browser
+        ├── settings_live.ex         # World/entity/training management
+        ├── code_analysis_live.ex    # Code symbol browser
+        └── admin/
+            ├── intent_review_live.ex     # Novel intent review
+            └── knowledge_review_live.ex  # Knowledge expansion review
 ```
 
-### Key Design Principles
+### ML Model Stack
 
-1. **No Regex in NLP**: Use `Brain.ML.Tokenizer` functions instead of regex for text processing
-2. **Non-blocking Operations**: Always check `ready?()` before calling GenServers that may be initializing
-3. **Multi-sentence Handling**: Split input into chunks, analyze each, combine responses
-4. **Slot Detection**: Intents define required slots; missing slots trigger clarification questions
-5. **Graceful Degradation**: System should work even when some components are still loading
-6. **World-Scoping**: Use `World.Context` for isolated training environments
+```
+Input Text
+    ↓
+Tokenizer → Token Sequence
+    ↓
+┌──────────────────────────────────┐
+│ Classical ML (TF-IDF)            │
+│ • IntentClassifierSimple         │
+│ • EntityExtractor (BIO tagging)  │
+│ • POSTagger (HMM-based)          │
+│ • Gazetteer (ETS lookup)         │
+└──────────────────────────────────┘
+    ↓
+┌──────────────────────────────────┐
+│ LSTM Models (Axon/Nx/EXLA)       │
+│ Shared BiLSTM Encoder            │
+│ ├── Intent Head (UnifiedModel)   │
+│ ├── NER Head (UnifiedModel)      │
+│ ├── Sentiment Head (UnifiedModel)│
+│ ├── Speech Act Head (Unified)    │
+│ └── POS Head (MultiTaskModel)    │
+└──────────────────────────────────┘
+    ↓
+LSTMIntegration (Ensemble: TF-IDF + LSTM when confidence < 0.6)
+    ↓
+Response Generation → LSTMResponse (response scoring)
+    ↓
+Best Response Selected
+```
 
 ## Common Patterns
 
 ### GenServer Ready Check Pattern
 
-When a GenServer might be busy (e.g., building vocabulary), always check before calling:
-
 ```elixir
-# In the GenServer module
-def ready? do
+def ready?(name \\ __MODULE__) do
   try do
-    GenServer.call(__MODULE__, :ready?, 100)  # Short timeout
+    GenServer.call(name, :ready?, 100)
   catch
-    :exit, {:timeout, _} -> false
-    :exit, {:noproc, _} -> false
+    :exit, _ -> false
   end
 end
 
 # Before using the GenServer
-if Embedder.ready?() do
-  Embedder.embed(text)
+if UnifiedModel.ready?() do
+  UnifiedModel.classify_sentiment(text)
 else
-  {:error, :embedder_not_ready}
+  %{label: :neutral, confidence: 0.5}
 end
 ```
 
-### Slot Detection for Missing Context
+### Model Reload Pattern
 
-When an intent requires parameters that aren't provided, ask for clarification:
+LSTM GenServers support hot-reloading after retraining:
+
+```elixir
+Brain.ML.LSTM.UnifiedModel.reload()
+Brain.ML.LSTM.MultiTaskModel.reload()
+Brain.Response.LSTMResponse.reload()
+```
+
+### Slot Detection for Missing Context
 
 ```elixir
 # In slot_schemas.json
@@ -103,251 +177,145 @@ When an intent requires parameters that aren't provided, ask for clarification:
 }
 ```
 
-The pipeline returns `:needs_clarification` strategy with prompts when slots are missing.
-
-### Keyword-Based Intent Fallback
-
-When ML classifier has low confidence, use keyword heuristics:
-
-```elixir
-def suggest_intent_from_keywords(text) do
-  # Check for domain-specific keywords
-  if String.contains?(lower_text, "weather"), do: {:ok, "weather.query", 0.8}
-end
-```
-
 ### Multi-Sentence Response Combination
-
-For inputs with multiple utterances:
 
 ```elixir
 # 1. Semantic chunker splits into sentences
-# 2. Each chunk is analyzed independently  
-# 3. Response strategies are combined:
+# 2. Each chunk analyzed in parallel (discourse + speech act + sentiment)
+# 3. Response strategies combined:
 #    - :can_respond + :needs_clarification = :partial_response_with_clarification
-# 4. Brain combines greeting response + clarification question
+# 4. Brain combines greeting response + substantive response
 ```
 
 ## Important Files
 
 ### Configuration
 
-- `priv/analysis/slot_schemas.json` - Defines required/optional slots per intent
+- `priv/analysis/slot_schemas.json` - Required/optional slots per intent
 - `data/intents/*.json` - Training data for intent classification
 - `data/entities/*.json` - Entity definitions for gazetteer
-- `priv/ml_models/` - Trained model files
+- `priv/ml_models/` - Trained classical model files (`.term`)
+- `priv/ml_models/lstm/` - LSTM model files + `experiments.json`
+- `priv/evaluation/` - Gold standard data + evaluation results
 
 ### Training
 
-Run `mix train_models` to retrain all ML models from data files.
+```bash
+mix train                          # Master pipeline (all models)
+mix train --quick                  # Skip slow models
+mix train --name "experiment_v1"   # Track experiment
+mix train --compare                # Show experiment comparison
 
-## Common Issues & Solutions
+mix train_unified                  # Unified LSTM (intent + NER + sentiment + speech act)
+mix train_response                 # Response scorer LSTM
+mix train_lstm                     # Standalone LSTM intent classifier
+mix train_models                   # TF-IDF + optional LSTM
+```
 
-### 1. GenServer Timeout During Initialization
+### Evaluation
 
-**Problem**: Embedder is building vocabulary (4755+ texts), blocking other calls.
+```bash
+mix evaluate                       # Evaluate all tasks
+mix evaluate.intent --save         # Intent classification with save
+mix evaluate.sentiment --verbose   # Sentiment with per-class details
+mix evaluate.speech_act            # Speech act classification
+mix evaluate.ner                   # Named entity recognition
 
-**Solution**: 
-- Check `Embedder.ready?()` before calling `Embedder.embed/1`
-- Store episodes without embeddings if embedder not ready
-- Use short timeouts with graceful fallbacks
+mix test --only benchmark          # Run accuracy threshold tests
+```
 
-### 2. Intent Not Recognized
+### Model Regeneration
 
-**Problem**: Classifier returns wrong intent with low confidence.
+```bash
+mix regenerate_test_models --check    # Check Nx/Axon compatibility
+mix regenerate_test_models --all      # Regenerate all test models
+```
 
-**Solution**:
-- Add keyword-based fallback in `SlotDetector.suggest_intent_from_keywords/1`
-- Add more training examples to `data/intents/` for that intent
-- Check that training data covers variations (with/without location, etc.)
+## Routes
 
-### 3. Multi-Sentence Input Only Responds to First Part
-
-**Problem**: "Hello! What's the weather?" only gets greeting response.
-
-**Solution**:
-- Brain's `generate_analysis_response/4` must collect ALL speech acts
-- Prioritize substantive intents (questions/commands) over expressives (greetings)
-- Handle `:partial_response_with_clarification` strategy to combine responses
-
-### 4. Missing Location/Context Not Detected
-
-**Problem**: Weather query without location doesn't ask for clarification.
-
-**Solution**:
-- Ensure intent is correctly classified (may need keyword heuristic)
-- Slot schema must have `"required": ["location"]`
-- Pipeline returns `:needs_clarification` when slots are missing
-- Brain must handle this strategy and build clarification response
+| Route | LiveView | Purpose |
+|-------|----------|---------|
+| `/chat` | ChatLive | Main chat + processing inspector |
+| `/dashboard` | DashboardLive | System monitoring, GenServers, metrics |
+| `/accuracy` | AccuracyLive | Model accuracy, confusion matrices, trends |
+| `/explorer` | ExplorerLive | Training world data (entities, episodes, knowledge) |
+| `/settings` | SettingsLive | World/entity management, ML training controls |
+| `/code` | CodeAnalysisLive | Code symbol browser |
+| `/intent-review` | IntentReviewLive | Novel intent candidate review |
+| `/knowledge-review` | KnowledgeReviewLive | Knowledge expansion review |
 
 ## Testing
-
-### Feature Tests
-
-Test end-to-end behavior in `test/chat_bot/feature_test.exs`:
-
-```elixir
-test "handles greeting with weather question" do
-  {:ok, response} = Brain.evaluate(conv_id, "Hello! What's the weather in NYC?")
-  assert response =~ ~r/hello|hi/i
-  assert response =~ ~r/weather|location/i
-end
-```
 
 ### Running Tests
 
 ```bash
-mix test                           # Run all tests
-mix test test/chat_bot/feature_test.exs  # Run specific file
-mix test --failed                  # Rerun failed tests
-mix precommit                      # Full validation (format, credo, tests)
+mix test                           # All tests (excludes slow, benchmark, gpu)
+mix test --only benchmark          # Accuracy threshold tests
+mix test --only integration        # Integration tests
+mix test --exclude requires_lstm   # Skip LSTM-dependent tests
 ```
 
-## Memory System
+### Test Helpers
 
-### Episode Memory
-
-Stores individual experiences:
-```elixir
-%Episode{
-  id: "abc123",
-  state: "user said hello",
-  action: "conversation", 
-  outcome: "responded with greeting",
-  tags: ["greeting", "conv_id"],
-  embedding: [0.1, 0.2, ...]  # TF-IDF vector
-}
-```
-
-### Semantic Memory
-
-Aggregated knowledge from clustered episodes:
-```elixir
-%SemanticFact{
-  representation: "Users often greet before asking questions",
-  embedding: [...],
-  evidence_ids: ["ep1", "ep2", "ep3"]
-}
-```
-
-### Memory Integration
-
-Memory is used in speech act classification as an additional analysis pass:
-```elixir
-# In SpeechActClassifier
-defp analyze_with_memory(text) do
-  case Memory.Store.query_similar(text, 5) do
-    {:ok, similar_episodes} -> extract_classification_from_episodes(similar_episodes)
-    _ -> %{category: nil, confidence: 0}
-  end
-end
-```
-
-## UI Status Display
-
-The LiveView shows system status with:
-- `Brain.SystemStatus.get_all/0` - All component statuses
-- `Brain.SystemStatus.all_ready?/0` - Quick check if everything is ready
-- Periodic polling (2 seconds) refreshes status display
-
-Components tracked:
-- Embedder (building vocabulary / ready)
-- NLP Pipeline (loading models / ready)
-- Brain (ready / not started)
-- Memory Store (episode/semantic counts)
+- `test/support/lstm_test_helpers.ex` - Model compatibility checking, test model generation
+- Tests use real models with graceful degradation when models are incompatible
+- `@moduletag :benchmark` for accuracy threshold tests (excluded by default)
 
 ## Code Style
 
 ### Elixir Conventions
 
-- No regex for text processing - use `Tokenizer` functions
+- **No regex for text processing** - use `Tokenizer` functions
+- **No `String.contains?` for NLP** - use trained classifiers
 - GenServers for stateful processes
-- Agents for simple state (like loaded models)
-- ETS for fast concurrent lookups
+- ETS for fast concurrent lookups (Gazetteer, world context cache)
 - Pattern matching over conditionals when possible
+- `Task.async` for parallel work in the pipeline
 
 ### Phoenix/LiveView
 
 - Use `<Layouts.app>` wrapper in templates
 - Use `<.input>` and `<.form>` components
-- Assign forms with `to_form/2`
+- WorldContext on_mount hook for persistent world selection
+- PubSub topics: `brain:status`, `brain:learning`, `brain:conversations`, `training:progress`
 - No inline `<script>` tags - use app.js hooks
+- Tailwind CSS + daisyUI for styling
 
-### Testing
+### ML Framework Stack
 
-- Feature tests for end-to-end behavior
-- Unit tests for individual modules
-- Use `assert` with pattern matching
-- Test IDs on key DOM elements
-
-## Admin Interface
-
-### Entity Management (`/admin`)
-
-The admin interface allows managing gazetteer entries (locations, devices, etc.):
-
-- **View entities** by type (location, city, device, room, etc.)
-- **Search** across all entity types
-- **Add new entries** dynamically (stored in memory, tagged with `:admin` source)
-- **Remove admin-added entries** (data-sourced entries cannot be removed)
-
-### Gazetteer API for Dynamic Entries
-
-```elixir
-# Add a new location
-Gazetteer.add_entry("San Francisco", "city", %{country: "USA"})
-
-# Remove an entry
-Gazetteer.remove_entry("san francisco")
-
-# List entries by type
-Gazetteer.list_by_type("location")
-
-# Search across all types
-Gazetteer.search("new york")
-
-# List all entity types
-Gazetteer.list_types()
-```
-
-### Routes
-
-- `/chat` - Main chat interface
-- `/admin` - Entity management admin panel
-- `/dev/dashboard` - Phoenix LiveDashboard (dev only)
+- `Nx` ~0.7 - Numerical computing
+- `Axon` ~0.6 - Neural network framework
+- `EXLA` ~0.7 - XLA compiler backend (GPU acceleration)
+- `Scholar` ~0.3 - Statistical/ML functions
+- Erlang `:erlang.binary_to_term` / `term_to_binary` for model serialization
 
 ## Quick Reference
-### Start Development Server
+
 ```bash
-mix phx.server
-# or
-iex -S mix phx.server
+mix phx.server                     # Start dev server
+iex -S mix phx.server              # Start with IEx
+
+mix train --name "v1" --compare    # Train + track experiment
+mix evaluate --save --compare      # Evaluate + save + compare
+
+Brain.SystemStatus.get_all()       # Check all statuses
+Brain.ML.LSTM.UnifiedModel.ready?()
+Brain.ML.CorpusManager.corpus_size()
 ```
 
-### Train Models
-```bash
-mix train_models
-```
-
-### Check System Status
 ```elixir
-Brain.SystemStatus.get_all()
-Brain.Memory.Embedder.ready?()
-Brain.Memory.Store.stats()
-```
-
-### Test Intent Classification
-```elixir
-Brain.ML.IntentClassifierSimple.classify("What's the weather?")
-```
-
-### Test Analysis Pipeline
-```elixir
+# Test analysis pipeline
 Brain.Analysis.Pipeline.process("Hello! What's the weather in NYC?")
-```
 
-### Test Slot Detection
-```elixir
+# Test intent classification
+Brain.ML.IntentClassifierSimple.classify("What's the weather?")
+
+# Test LSTM sentiment
+Brain.ML.LSTM.UnifiedModel.classify_sentiment("I love this!")
+
+# Test slot detection
 Brain.Analysis.SlotDetector.detect("weather.query", [])
-# => %SlotResult{missing_required: ["location"], ...}
+
+# Test evaluation
+Brain.ML.Evaluation.accuracy(predictions, actuals)
 ```

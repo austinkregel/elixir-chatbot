@@ -21,7 +21,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
 
   alias Brain.Analysis.{SpeechActResult, IntentRegistry}
   alias Brain.ML.{IntentClassifierSimple, POSTagger, Tokenizer}
-  alias Brain.ML.LSTM.MultiTaskModel
+  alias Brain.ML.LSTM.{MultiTaskModel, Integration}
 
   require Logger
 
@@ -161,45 +161,94 @@ defmodule Brain.Analysis.SpeechActClassifier do
     end
   end
   
-  # Try LSTM multi-task model first (better accuracy on confusable cases)
+  # Try LSTM multi-task model first (better accuracy on confusable cases).
+  # When LSTM confidence is below @ensemble_threshold, use Integration's
+  # ensemble voting (TF-IDF + LSTM combined) as a conservative fallback.
+  @ensemble_threshold 0.6
+
   defp classify_with_lstm(text) do
     if lstm_available?() do
       case MultiTaskModel.classify_intent(text) do
         {:ok, %{label: intent, confidence: confidence, scores: scores}} ->
-          {category, sub_type} = intent_to_speech_act(intent)
-          
-          # Convert scores to top_k format
-          top_k = 
-            scores
-            |> Enum.sort_by(fn {_label, score} -> -score end)
-            |> Enum.take(5)
-            |> Enum.map(fn {label, score} -> %{intent: label, score: score} end)
-          
-          second_score = 
-            case top_k do
-              [_, %{score: s} | _] -> s
-              _ -> 0.0
-            end
-          
-          result = %{
-            intent: intent,
-            category: category,
-            sub_type: sub_type,
-            confidence: confidence,
-            second_score: second_score,
-            margin: confidence - second_score,
-            top_k: top_k,
-            source: :lstm
-          }
-          
-          {:ok, result}
-        
+          if confidence < @ensemble_threshold do
+            # Low confidence -- try ensemble fallback for a better signal
+            ensemble_fallback(text, intent, confidence, scores)
+          else
+            {:ok, build_lstm_result(intent, confidence, scores)}
+          end
+
         {:error, _} = error ->
           error
       end
     else
       {:error, :lstm_not_available}
     end
+  end
+
+  # Attempt Integration ensemble; on any failure, fall through to the
+  # original LSTM result so behaviour never degrades.
+  defp ensemble_fallback(text, lstm_intent, lstm_confidence, lstm_scores) do
+    try do
+      case Integration.classify_intent(text) do
+        {:ok, {ensemble_intent, ensemble_conf, source}} when source in [:ensemble, :lstm, :tfidf] ->
+          # Only accept the ensemble result when it is meaningfully more
+          # confident than the raw LSTM output.  Otherwise keep the LSTM
+          # prediction to stay conservative.
+          if ensemble_conf > lstm_confidence do
+            {category, sub_type} = intent_to_speech_act(ensemble_intent)
+
+            result = %{
+              intent: ensemble_intent,
+              category: category,
+              sub_type: sub_type,
+              confidence: ensemble_conf,
+              second_score: 0.0,
+              margin: 0.0,
+              top_k: [],
+              source: :ensemble
+            }
+
+            {:ok, result}
+          else
+            {:ok, build_lstm_result(lstm_intent, lstm_confidence, lstm_scores)}
+          end
+
+        _ ->
+          # Integration returned an unexpected shape -- keep original
+          {:ok, build_lstm_result(lstm_intent, lstm_confidence, lstm_scores)}
+      end
+    rescue
+      _ -> {:ok, build_lstm_result(lstm_intent, lstm_confidence, lstm_scores)}
+    catch
+      _, _ -> {:ok, build_lstm_result(lstm_intent, lstm_confidence, lstm_scores)}
+    end
+  end
+
+  defp build_lstm_result(intent, confidence, scores) do
+    {category, sub_type} = intent_to_speech_act(intent)
+
+    top_k =
+      scores
+      |> Enum.sort_by(fn {_label, score} -> -score end)
+      |> Enum.take(5)
+      |> Enum.map(fn {label, score} -> %{intent: label, score: score} end)
+
+    second_score =
+      case top_k do
+        [_, %{score: s} | _] -> s
+        _ -> 0.0
+      end
+
+    %{
+      intent: intent,
+      category: category,
+      sub_type: sub_type,
+      confidence: confidence,
+      second_score: second_score,
+      margin: confidence - second_score,
+      top_k: top_k,
+      source: :lstm
+    }
   end
   
   # Fall back to TF-IDF centroid classifier
