@@ -1,34 +1,10 @@
 defmodule Brain.ML.TrainingServer do
-  @moduledoc """
-  GenServer for managing async ML training jobs with scheduling.
+  @moduledoc "GenServer for managing async ML training jobs with scheduling.\n\nProvides a centralized interface for starting, monitoring, and scheduling\ntraining runs for the various ML models (TF-IDF classifier, unified LSTM,\nresponse scorer).\n\n## Model Types\n\n- `:tfidf` - Classical TF-IDF + centroid intent classifier\n- `:unified` - Unified LSTM model (intent, NER, sentiment, speech act)\n- `:response` - LSTM response scorer\n\n## Usage\n\n    # Start training\n    TrainingServer.start_training(:unified, epochs: 20, name: \"experiment_1\")\n\n    # Check status\n    TrainingServer.get_status()\n    # => :idle | {:training, :unified, ~U[2024-01-15 12:00:00Z]}\n\n    # Schedule recurring training\n    TrainingServer.schedule(:tfidf, [], 24)  # every 24 hours\n\n    # List and cancel schedules\n    TrainingServer.list_schedules()\n    TrainingServer.cancel_schedule(\"schedule_abc123\")\n"
 
-  Provides a centralized interface for starting, monitoring, and scheduling
-  training runs for the various ML models (TF-IDF classifier, unified LSTM,
-  response scorer).
-
-  ## Model Types
-
-  - `:tfidf` - Classical TF-IDF + centroid intent classifier
-  - `:unified` - Unified LSTM model (intent, NER, sentiment, speech act)
-  - `:response` - LSTM response scorer
-
-  ## Usage
-
-      # Start training
-      TrainingServer.start_training(:unified, epochs: 20, name: "experiment_1")
-
-      # Check status
-      TrainingServer.get_status()
-      # => :idle | {:training, :unified, ~U[2024-01-15 12:00:00Z]}
-
-      # Schedule recurring training
-      TrainingServer.schedule(:tfidf, [], 24)  # every 24 hours
-
-      # List and cancel schedules
-      TrainingServer.list_schedules()
-      TrainingServer.cancel_schedule("schedule_abc123")
-  """
-
+  alias Phoenix.PubSub
+  alias Brain.Response.LSTMResponse
+  alias Brain.ML.LSTM.UnifiedModel
+  alias Brain.ML.Trainer
   use GenServer
   require Logger
 
@@ -44,100 +20,57 @@ defmodule Brain.ML.TrainingServer do
           timer_ref: reference()
         }
 
-  defstruct status: :idle,
-            task_ref: nil,
-            schedules: []
-
-  # ============================================================================
-  # Client API
-  # ============================================================================
+  defstruct status: :idle, task_ref: nil, schedules: []
 
   def start_link(opts \\ []) do
     name = Keyword.get(opts, :name, __MODULE__)
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 
-  @doc """
-  Start an async training job for the given model type.
-
-  ## Options
-  - `:epochs` - Number of training epochs (default varies by model)
-  - `:batch_size` - Training batch size (default varies by model)
-  - `:name` - Experiment name for tracking
-  - `:learning_rate` - Learning rate override
-
-  Returns `{:ok, model_type}` or `{:error, reason}`.
-  """
+  @doc "Start an async training job for the given model type.\n\n## Options\n- `:epochs` - Number of training epochs (default varies by model)\n- `:batch_size` - Training batch size (default varies by model)\n- `:name` - Experiment name for tracking\n- `:learning_rate` - Learning rate override\n\nReturns `{:ok, model_type}` or `{:error, reason}`.\n"
   @spec start_training(model_type(), keyword()) :: {:ok, model_type()} | {:error, term()}
   def start_training(model_type, config \\ [], name \\ __MODULE__) do
-    GenServer.call(name, {:start_training, model_type, config}, 5_000)
+    GenServer.call(name, {:start_training, model_type, config}, 5000)
   end
 
-  @doc """
-  Get the current training status.
-
-  Returns `:idle` or `{:training, model_type, started_at}`.
-  """
+  @doc "Get the current training status.\n\nReturns `:idle` or `{:training, model_type, started_at}`.\n"
   @spec get_status(GenServer.name()) :: status()
   def get_status(name \\ __MODULE__) do
     try do
-      GenServer.call(name, :get_status, 2_000)
+      GenServer.call(name, :get_status, 2000)
     catch
       :exit, _ -> :idle
     end
   end
 
-  @doc """
-  Cancel an in-progress training job.
-
-  Returns `:ok` or `{:error, :not_training}`.
-  """
+  @doc "Cancel an in-progress training job.\n\nReturns `:ok` or `{:error, :not_training}`.\n"
   @spec cancel(GenServer.name()) :: :ok | {:error, :not_training}
   def cancel(name \\ __MODULE__) do
-    GenServer.call(name, :cancel, 5_000)
+    GenServer.call(name, :cancel, 5000)
   end
 
-  @doc """
-  Schedule recurring training for a model.
-
-  ## Parameters
-  - `model_type` - The model to train
-  - `config` - Training configuration (keyword list)
-  - `interval_hours` - Hours between training runs
-
-  Returns `{:ok, schedule_id}`.
-  """
+  @doc "Schedule recurring training for a model.\n\n## Parameters\n- `model_type` - The model to train\n- `config` - Training configuration (keyword list)\n- `interval_hours` - Hours between training runs\n\nReturns `{:ok, schedule_id}`.\n"
   @spec schedule(model_type(), keyword(), pos_integer(), GenServer.name()) ::
           {:ok, String.t()}
   def schedule(model_type, config \\ [], interval_hours, name \\ __MODULE__) do
-    GenServer.call(name, {:schedule, model_type, config, interval_hours}, 5_000)
+    GenServer.call(name, {:schedule, model_type, config, interval_hours}, 5000)
   end
 
-  @doc """
-  List all active schedules.
-  """
+  @doc "List all active schedules.\n"
   @spec list_schedules(GenServer.name()) :: [schedule()]
   def list_schedules(name \\ __MODULE__) do
     try do
-      GenServer.call(name, :list_schedules, 2_000)
+      GenServer.call(name, :list_schedules, 2000)
     catch
       :exit, _ -> []
     end
   end
 
-  @doc """
-  Cancel an active schedule by ID.
-
-  Returns `:ok` or `{:error, :not_found}`.
-  """
+  @doc "Cancel an active schedule by ID.\n\nReturns `:ok` or `{:error, :not_found}`.\n"
   @spec cancel_schedule(String.t(), GenServer.name()) :: :ok | {:error, :not_found}
   def cancel_schedule(schedule_id, name \\ __MODULE__) do
-    GenServer.call(name, {:cancel_schedule, schedule_id}, 5_000)
+    GenServer.call(name, {:cancel_schedule, schedule_id}, 5000)
   end
-
-  # ============================================================================
-  # Server Callbacks
-  # ============================================================================
 
   @impl true
   def init(_opts) do
@@ -204,7 +137,7 @@ defmodule Brain.ML.TrainingServer do
   @impl true
   def handle_call({:schedule, model_type, config, interval_hours}, _from, state) do
     schedule_id = generate_schedule_id()
-    interval_ms = interval_hours * 60 * 60 * 1_000
+    interval_ms = interval_hours * 60 * 60 * 1000
     timer_ref = Process.send_after(self(), {:scheduled_training, schedule_id}, interval_ms)
 
     schedule = %{
@@ -260,13 +193,8 @@ defmodule Brain.ML.TrainingServer do
     end
   end
 
-  # ============================================================================
-  # Info Handlers
-  # ============================================================================
-
   @impl true
   def handle_info({ref, result}, %{task_ref: ref} = state) when is_reference(ref) do
-    # Task completed - flush the DOWN message
     Process.demonitor(ref, [:flush])
 
     {:training, model_type, started_at} = state.status
@@ -274,9 +202,7 @@ defmodule Brain.ML.TrainingServer do
 
     case result do
       {:ok, training_result} ->
-        Logger.info(
-          "TrainingServer: Training #{model_type} completed in #{elapsed}s"
-        )
+        Logger.info("TrainingServer: Training #{model_type} completed in #{elapsed}s")
 
         record_experiment(model_type, training_result, elapsed)
         broadcast_progress({:training_complete, model_type, {:ok, training_result}})
@@ -308,20 +234,24 @@ defmodule Brain.ML.TrainingServer do
         {:noreply, state}
 
       schedule ->
-        # Re-schedule the next run
-        interval_ms = schedule.interval_hours * 60 * 60 * 1_000
-        new_timer_ref = Process.send_after(self(), {:scheduled_training, schedule_id}, interval_ms)
+        interval_ms = schedule.interval_hours * 60 * 60 * 1000
+
+        new_timer_ref =
+          Process.send_after(self(), {:scheduled_training, schedule_id}, interval_ms)
 
         updated_schedule = %{schedule | timer_ref: new_timer_ref}
 
         new_schedules =
           Enum.map(state.schedules, fn s ->
-            if s.id == schedule_id, do: updated_schedule, else: s
+            if s.id == schedule_id do
+              updated_schedule
+            else
+              s
+            end
           end)
 
         new_state = %{state | schedules: new_schedules}
 
-        # Start training if idle
         case state.status do
           :idle ->
             Logger.info(
@@ -357,25 +287,17 @@ defmodule Brain.ML.TrainingServer do
     {:noreply, state}
   end
 
-  # ============================================================================
-  # Private: Training Dispatch
-  # ============================================================================
-
   defp run_training(:tfidf, _config) do
-    Brain.ML.Trainer.train_and_save()
+    Trainer.train_and_save()
   end
 
   defp run_training(:unified, config) do
-    Brain.ML.LSTM.UnifiedModel.train(config)
+    UnifiedModel.train(config)
   end
 
   defp run_training(:response, config) do
-    Brain.Response.LSTMResponse.train(config)
+    LSTMResponse.train(config)
   end
-
-  # ============================================================================
-  # Private: Post-Training Actions
-  # ============================================================================
 
   defp record_experiment(model_type, training_result, elapsed_seconds) do
     try do
@@ -387,9 +309,7 @@ defmodule Brain.ML.TrainingServer do
       })
     rescue
       e ->
-        Logger.warning(
-          "TrainingServer: Failed to record experiment: #{Exception.message(e)}"
-        )
+        Logger.warning("TrainingServer: Failed to record experiment: #{Exception.message(e)}")
     end
   end
 
@@ -397,12 +317,14 @@ defmodule Brain.ML.TrainingServer do
     Map.get(training_result, :config) || Map.get(training_result, :vocabularies, %{})
   end
 
-  defp extract_config(_), do: %{}
+  defp extract_config(_) do
+    %{}
+  end
 
   defp maybe_reload_model(:unified) do
     if model_ready?(Brain.ML.LSTM.UnifiedModel) do
       try do
-        Brain.ML.LSTM.UnifiedModel.reload()
+        UnifiedModel.reload()
       rescue
         _ -> :ok
       catch
@@ -414,7 +336,7 @@ defmodule Brain.ML.TrainingServer do
   defp maybe_reload_model(:response) do
     if model_ready?(Brain.Response.LSTMResponse) do
       try do
-        Brain.Response.LSTMResponse.reload()
+        LSTMResponse.reload()
       rescue
         _ -> :ok
       catch
@@ -423,7 +345,9 @@ defmodule Brain.ML.TrainingServer do
     end
   end
 
-  defp maybe_reload_model(_), do: :ok
+  defp maybe_reload_model(_) do
+    :ok
+  end
 
   defp model_ready?(module) do
     try do
@@ -436,17 +360,9 @@ defmodule Brain.ML.TrainingServer do
     end
   end
 
-  # ============================================================================
-  # Private: Broadcasting
-  # ============================================================================
-
   defp broadcast_progress(message) do
-    Phoenix.PubSub.broadcast(Brain.PubSub, "training:progress", message)
+    PubSub.broadcast(Brain.PubSub, "training:progress", message)
   end
-
-  # ============================================================================
-  # Private: Utilities
-  # ============================================================================
 
   defp generate_schedule_id do
     :crypto.strong_rand_bytes(8) |> Base.url_encode64(padding: false)

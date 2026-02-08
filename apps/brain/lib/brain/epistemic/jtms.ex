@@ -1,53 +1,19 @@
 defmodule Brain.Epistemic.JTMS do
-  @moduledoc """
-  Justification-Based Truth Maintenance System (JTMS).
+  @moduledoc "Justification-Based Truth Maintenance System (JTMS).\n\nA JTMS maintains a dependency network where:\n- Nodes represent beliefs/sentences\n- Justifications link premise nodes to conclusion nodes\n- Labels (IN/OUT) propagate based on justification validity\n\nThis implementation follows the classic JTMS design from Forbus & de Kleer,\nadapted for Elixir with GenServer-based state management.\n\nKey operations:\n- create_node: Add a belief node to the network\n- justify_node: Add a justification linking premises to conclusion\n- enable_assumption/retract_assumption: Toggle assumption nodes\n- Label propagation: Automatic when justifications change\n\nThe system supports:\n- Premise nodes (always IN)\n- Assumption nodes (can be enabled/retracted)\n- Derived nodes (IN if any valid justification)\n- Contradiction nodes (trigger handler when IN)\n"
 
-  A JTMS maintains a dependency network where:
-  - Nodes represent beliefs/sentences
-  - Justifications link premise nodes to conclusion nodes
-  - Labels (IN/OUT) propagate based on justification validity
-
-  This implementation follows the classic JTMS design from Forbus & de Kleer,
-  adapted for Elixir with GenServer-based state management.
-
-  Key operations:
-  - create_node: Add a belief node to the network
-  - justify_node: Add a justification linking premises to conclusion
-  - enable_assumption/retract_assumption: Toggle assumption nodes
-  - Label propagation: Automatic when justifications change
-
-  The system supports:
-  - Premise nodes (always IN)
-  - Assumption nodes (can be enabled/retracted)
-  - Derived nodes (IN if any valid justification)
-  - Contradiction nodes (trigger handler when IN)
-  """
-
+  alias Brain.Epistemic.Types
   use GenServer
 
-  alias Brain.Epistemic.Types.{Node, Justification, Config}
+  alias Types.{Node, Justification, Config}
   alias Brain.Telemetry
 
   require Logger
-
-  # ============================================================================
-  # Client API
-  # ============================================================================
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc """
-  Creates a new node in the dependency network.
-
-  Options:
-  - :node_type - :premise | :assumption | :derived | :contradiction
-  - :assumption_enabled - For assumptions, whether initially enabled
-  - :metadata - Additional metadata
-
-  Returns {:ok, node_id}
-  """
+  @doc "Creates a new node in the dependency network.\n\nOptions:\n- :node_type - :premise | :assumption | :derived | :contradiction\n- :assumption_enabled - For assumptions, whether initially enabled\n- :metadata - Additional metadata\n\nReturns {:ok, node_id}\n"
   def create_node(datum, opts \\ []) do
     if Config.enabled?() do
       GenServer.call(__MODULE__, {:create_node, datum, opts})
@@ -56,16 +22,12 @@ defmodule Brain.Epistemic.JTMS do
     end
   end
 
-  @doc """
-  Creates a premise node (always IN).
-  """
+  @doc "Creates a premise node (always IN).\n"
   def create_premise(datum, opts \\ []) do
     create_node(datum, Keyword.put(opts, :node_type, :premise))
   end
 
-  @doc """
-  Creates an assumption node.
-  """
+  @doc "Creates an assumption node.\n"
   def create_assumption(datum, enabled? \\ false, opts \\ []) do
     opts =
       opts |> Keyword.put(:node_type, :assumption) |> Keyword.put(:assumption_enabled, enabled?)
@@ -73,24 +35,12 @@ defmodule Brain.Epistemic.JTMS do
     create_node(datum, opts)
   end
 
-  @doc """
-  Creates a contradiction node.
-  When this node becomes IN, the contradiction handler is triggered.
-  """
+  @doc "Creates a contradiction node.\nWhen this node becomes IN, the contradiction handler is triggered.\n"
   def create_contradiction(datum, opts \\ []) do
     create_node(datum, Keyword.put(opts, :node_type, :contradiction))
   end
 
-  @doc """
-  Adds a justification linking premises to a conclusion.
-
-  - in_list: Node IDs that must be IN
-  - out_list: Node IDs that must be OUT
-  - conclusion_id: The node this supports
-  - informant: What created this justification
-
-  Returns {:ok, justification_id}
-  """
+  @doc "Adds a justification linking premises to a conclusion.\n\n- in_list: Node IDs that must be IN\n- out_list: Node IDs that must be OUT\n- conclusion_id: The node this supports\n- informant: What created this justification\n\nReturns {:ok, justification_id}\n"
   def justify_node(in_list, out_list, conclusion_id, informant) do
     Telemetry.span(:jtms_justify, %{conclusion_id: conclusion_id, informant: informant}, fn ->
       if Config.enabled?() do
@@ -101,120 +51,82 @@ defmodule Brain.Epistemic.JTMS do
     end)
   end
 
-  @doc """
-  Adds a simple justification (no out_list).
-  """
+  @doc "Adds a simple justification (no out_list).\n"
   def justify_node(premise_ids, conclusion_id, informant) when is_list(premise_ids) do
     justify_node(premise_ids, [], conclusion_id, informant)
   end
 
-  @doc """
-  Enables an assumption node, making it IN.
-  Triggers label propagation.
-  """
+  @doc "Enables an assumption node, making it IN.\nTriggers label propagation.\n"
   def enable_assumption(node_id) do
     GenServer.call(__MODULE__, {:enable_assumption, node_id})
   end
 
-  @doc """
-  Retracts an assumption node, making it OUT.
-  Triggers label propagation.
-  """
+  @doc "Retracts an assumption node, making it OUT.\nTriggers label propagation.\n"
   def retract_assumption(node_id) do
     GenServer.call(__MODULE__, {:retract_assumption, node_id})
   end
 
-  @doc """
-  Checks if a node is currently IN.
-  """
+  @doc "Checks if a node is currently IN.\n"
   def is_in?(node_id) do
     GenServer.call(__MODULE__, {:is_in?, node_id})
   end
 
-  @doc """
-  Gets the current label of a node.
-  """
+  @doc "Gets the current label of a node.\n"
   def get_label(node_id) do
     GenServer.call(__MODULE__, {:get_label, node_id})
   end
 
-  @doc """
-  Gets a node by ID.
-  """
+  @doc "Gets a node by ID.\n"
   def get_node(node_id) do
     GenServer.call(__MODULE__, {:get_node, node_id})
   end
 
-  @doc """
-  Gets the justification chain explaining why a node is IN.
-  Returns the list of justifications supporting the node.
-  """
+  @doc "Gets the justification chain explaining why a node is IN.\nReturns the list of justifications supporting the node.\n"
   def why_node(node_id) do
     GenServer.call(__MODULE__, {:why_node, node_id})
   end
 
-  @doc """
-  Gets all nodes that depend on the given node (forward chaining).
-  """
+  @doc "Gets all nodes that depend on the given node (forward chaining).\n"
   def consequences_of(node_id) do
     GenServer.call(__MODULE__, {:consequences_of, node_id})
   end
 
-  @doc """
-  Gets all nodes that the given node depends on (backward chaining).
-  """
+  @doc "Gets all nodes that the given node depends on (backward chaining).\n"
   def antecedents_of(node_id) do
     GenServer.call(__MODULE__, {:antecedents_of, node_id})
   end
 
-  @doc """
-  Registers a set of node IDs as mutually contradictory.
-  When all are IN, triggers contradiction handling.
-  """
+  @doc "Registers a set of node IDs as mutually contradictory.\nWhen all are IN, triggers contradiction handling.\n"
   def register_contradiction(node_ids, informant \\ "contradiction_rule") do
     GenServer.call(__MODULE__, {:register_contradiction, node_ids, informant})
   end
 
-  @doc """
-  Checks consistency of the network.
-  Returns {:ok, :consistent} or {:error, {:contradiction, node_id}}.
-  """
+  @doc "Checks consistency of the network.\nReturns {:ok, :consistent} or {:error, {:contradiction, node_id}}.\n"
   def check_consistency do
     GenServer.call(__MODULE__, :check_consistency)
   end
 
-  @doc """
-  Gets all current contradictions (contradiction nodes that are IN).
-  """
+  @doc "Gets all current contradictions (contradiction nodes that are IN).\n"
   def get_contradictions do
     GenServer.call(__MODULE__, :get_contradictions)
   end
 
-  @doc """
-  Sets the contradiction handler callback.
-  The callback receives {:contradiction, node_id, supporting_assumptions}.
-  """
+  @doc "Sets the contradiction handler callback.\nThe callback receives {:contradiction, node_id, supporting_assumptions}.\n"
   def set_contradiction_handler(handler_fn) when is_function(handler_fn, 1) do
     GenServer.call(__MODULE__, {:set_handler, handler_fn})
   end
 
-  @doc """
-  Gets network statistics.
-  """
+  @doc "Gets network statistics.\n"
   def stats do
     GenServer.call(__MODULE__, :stats)
   end
 
-  @doc """
-  Clears the entire network (for testing).
-  """
+  @doc "Clears the entire network (for testing).\n"
   def clear do
     GenServer.call(__MODULE__, :clear)
   end
 
-  @doc """
-  Checks if JTMS is ready.
-  """
+  @doc "Checks if JTMS is ready.\n"
   def ready? do
     try do
       GenServer.call(__MODULE__, :ready?, 100)
@@ -223,10 +135,6 @@ defmodule Brain.Epistemic.JTMS do
       :exit, {:noproc, _} -> false
     end
   end
-
-  # ============================================================================
-  # Server Callbacks
-  # ============================================================================
 
   @impl true
   def init(_opts) do
@@ -251,7 +159,6 @@ defmodule Brain.Epistemic.JTMS do
     new_nodes = Map.put(state.nodes, node.id, node)
     new_state = %{state | nodes: new_nodes}
 
-    # Track contradiction nodes
     new_state =
       if node.node_type == :contradiction do
         %{new_state | contradiction_nodes: MapSet.put(state.contradiction_nodes, node.id)}
@@ -266,20 +173,16 @@ defmodule Brain.Epistemic.JTMS do
 
   @impl true
   def handle_call({:justify_node, in_list, out_list, conclusion_id, informant}, _from, state) do
-    # Verify all referenced nodes exist
     all_node_ids = [conclusion_id | in_list ++ out_list]
 
     missing = Enum.filter(all_node_ids, fn id -> not Map.has_key?(state.nodes, id) end)
 
-    if length(missing) > 0 do
+    if missing != [] do
       {:reply, {:error, {:nodes_not_found, missing}}, state}
     else
       justification = Justification.new(in_list, out_list, conclusion_id, informant)
-
-      # Store justification
       new_justifications = Map.put(state.justifications, justification.id, justification)
 
-      # Update node-to-justifications mapping
       new_node_to_justs =
         Enum.reduce(
           [conclusion_id | in_list ++ out_list],
@@ -290,7 +193,6 @@ defmodule Brain.Epistemic.JTMS do
           end
         )
 
-      # Update justification-to-conclusion mapping
       new_just_to_conc =
         Map.put(state.justification_to_conclusion, justification.id, conclusion_id)
 
@@ -301,7 +203,6 @@ defmodule Brain.Epistemic.JTMS do
           justification_to_conclusion: new_just_to_conc
       }
 
-      # Propagate labels
       new_state = propagate_from_justification(new_state, justification)
 
       Logger.debug("Justification added",
@@ -325,8 +226,6 @@ defmodule Brain.Epistemic.JTMS do
         updated = %{node | assumption_enabled: true, label: :in}
         new_nodes = Map.put(state.nodes, node_id, updated)
         new_state = %{state | nodes: new_nodes}
-
-        # Propagate label changes
         new_state = propagate_from_node(new_state, node_id)
 
         {:reply, :ok, new_state}
@@ -346,8 +245,6 @@ defmodule Brain.Epistemic.JTMS do
         updated = %{node | assumption_enabled: false, label: :out}
         new_nodes = Map.put(state.nodes, node_id, updated)
         new_state = %{state | nodes: new_nodes}
-
-        # Propagate label changes
         new_state = propagate_from_node(new_state, node_id)
 
         {:reply, :ok, new_state}
@@ -388,7 +285,6 @@ defmodule Brain.Epistemic.JTMS do
         {:reply, {:error, :not_found}, state}
 
       node ->
-        # Get all justifications that support this node
         just_ids = Map.get(state.node_to_justifications, node_id, [])
 
         supporting =
@@ -408,8 +304,6 @@ defmodule Brain.Epistemic.JTMS do
 
   @impl true
   def handle_call({:consequences_of, node_id}, _from, state) do
-    # Find all justifications where this node is in in_list or out_list
-    # Then find their conclusions
     consequences =
       state.justifications
       |> Map.values()
@@ -424,7 +318,6 @@ defmodule Brain.Epistemic.JTMS do
 
   @impl true
   def handle_call({:antecedents_of, node_id}, _from, state) do
-    # Find justifications for this node, then their premises
     just_ids = Map.get(state.node_to_justifications, node_id, [])
 
     antecedents =
@@ -441,7 +334,6 @@ defmodule Brain.Epistemic.JTMS do
 
   @impl true
   def handle_call({:register_contradiction, node_ids, informant}, _from, state) do
-    # Create a contradiction node
     contra_node = Node.contradiction("contradiction_of_#{Enum.join(node_ids, "_")}")
     new_nodes = Map.put(state.nodes, contra_node.id, contra_node)
 
@@ -451,11 +343,9 @@ defmodule Brain.Epistemic.JTMS do
         contradiction_nodes: MapSet.put(state.contradiction_nodes, contra_node.id)
     }
 
-    # Create justification: if all node_ids are IN, contradiction is IN
     justification = Justification.new(node_ids, [], contra_node.id, informant)
     new_justifications = Map.put(new_state.justifications, justification.id, justification)
 
-    # Update mappings
     new_node_to_justs =
       Enum.reduce([contra_node.id | node_ids], new_state.node_to_justifications, fn nid, acc ->
         current = Map.get(acc, nid, [])
@@ -472,7 +362,6 @@ defmodule Brain.Epistemic.JTMS do
         justification_to_conclusion: new_just_to_conc
     }
 
-    # Propagate to check if contradiction is already triggered
     new_state = propagate_from_justification(new_state, justification)
 
     {:reply, {:ok, contra_node.id}, new_state}
@@ -480,7 +369,6 @@ defmodule Brain.Epistemic.JTMS do
 
   @impl true
   def handle_call(:check_consistency, _from, state) do
-    # Find any contradiction nodes that are IN
     active_contradictions =
       state.contradiction_nodes
       |> Enum.map(&Map.get(state.nodes, &1))
@@ -544,36 +432,23 @@ defmodule Brain.Epistemic.JTMS do
     {:reply, true, state}
   end
 
-  # ============================================================================
-  # Label Propagation
-  # ============================================================================
-
   defp propagate_from_justification(state, justification) do
-    # Check if justification is now valid
     if justification_valid?(justification, state) do
-      # Update justification label
       updated_just = %{justification | label: :in}
       new_justifications = Map.put(state.justifications, justification.id, updated_just)
       state = %{state | justifications: new_justifications}
-
-      # Update conclusion node to IN if it isn't already
       conclusion = Map.get(state.nodes, justification.conclusion_id)
 
       if conclusion && conclusion.label == :out do
         updated_node = %{conclusion | label: :in}
         new_nodes = Map.put(state.nodes, conclusion.id, updated_node)
         state = %{state | nodes: new_nodes}
-
-        # Check for contradiction
         state = check_contradiction_triggered(state, conclusion.id)
-
-        # Continue propagation
         propagate_from_node(state, conclusion.id)
       else
         state
       end
     else
-      # Justification not valid, ensure its label is OUT
       updated_just = %{justification | label: :out}
       new_justifications = Map.put(state.justifications, justification.id, updated_just)
       %{state | justifications: new_justifications}
@@ -581,7 +456,6 @@ defmodule Brain.Epistemic.JTMS do
   end
 
   defp propagate_from_node(state, node_id) do
-    # Find all justifications that reference this node
     just_ids = Map.get(state.node_to_justifications, node_id, [])
 
     Enum.reduce(just_ids, state, fn just_id, acc_state ->
@@ -590,17 +464,14 @@ defmodule Brain.Epistemic.JTMS do
           acc_state
 
         justification ->
-          # Recompute validity
           was_valid = justification.label == :in
           now_valid = justification_valid?(justification, acc_state)
 
           cond do
             was_valid and not now_valid ->
-              # Justification became invalid, may need to update conclusion to OUT
               handle_justification_invalidated(acc_state, justification)
 
             not was_valid and now_valid ->
-              # Justification became valid
               propagate_from_justification(acc_state, justification)
 
             true ->
@@ -611,12 +482,9 @@ defmodule Brain.Epistemic.JTMS do
   end
 
   defp handle_justification_invalidated(state, justification) do
-    # Update justification label to OUT
     updated_just = %{justification | label: :out}
     new_justifications = Map.put(state.justifications, justification.id, updated_just)
     state = %{state | justifications: new_justifications}
-
-    # Check if conclusion has any other valid justifications
     conclusion_id = justification.conclusion_id
     conclusion = Map.get(state.nodes, conclusion_id)
 
@@ -624,12 +492,9 @@ defmodule Brain.Epistemic.JTMS do
       has_valid = has_valid_justification?(state, conclusion_id)
 
       if not has_valid and conclusion.label == :in do
-        # No valid justifications, set to OUT
         updated_node = %{conclusion | label: :out}
         new_nodes = Map.put(state.nodes, conclusion_id, updated_node)
         state = %{state | nodes: new_nodes}
-
-        # Continue propagation
         propagate_from_node(state, conclusion_id)
       else
         state
@@ -664,10 +529,7 @@ defmodule Brain.Epistemic.JTMS do
       node = Map.get(state.nodes, node_id)
 
       if node && node.label == :in do
-        # Find supporting assumptions
         assumptions = find_supporting_assumptions(state, node_id)
-
-        # Call contradiction handler
         state.contradiction_handler.({:contradiction, node_id, assumptions})
       end
     end
@@ -676,11 +538,12 @@ defmodule Brain.Epistemic.JTMS do
   end
 
   defp find_supporting_assumptions(state, node_id) do
-    # BFS to find all assumptions that support this node
     find_assumptions_recursive(state, [node_id], MapSet.new(), [])
   end
 
-  defp find_assumptions_recursive(_state, [], _visited, assumptions), do: assumptions
+  defp find_assumptions_recursive(_state, [], _visited, assumptions) do
+    assumptions
+  end
 
   defp find_assumptions_recursive(state, [node_id | rest], visited, assumptions) do
     if MapSet.member?(visited, node_id) do
@@ -700,7 +563,6 @@ defmodule Brain.Epistemic.JTMS do
           find_assumptions_recursive(state, rest, visited, assumptions)
 
         true ->
-          # Find justifications that support this node
           case handle_call({:why_node, node_id}, nil, state) do
             {:reply, {:ok, result}, _} ->
               antecedent_ids =
@@ -710,7 +572,6 @@ defmodule Brain.Epistemic.JTMS do
               find_assumptions_recursive(state, antecedent_ids ++ rest, visited, assumptions)
 
             _ ->
-              # Node not found or error, skip it
               find_assumptions_recursive(state, rest, visited, assumptions)
           end
       end

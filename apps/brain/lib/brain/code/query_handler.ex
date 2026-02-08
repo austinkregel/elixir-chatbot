@@ -1,50 +1,12 @@
 defmodule Brain.Code.QueryHandler do
-  @moduledoc """
-  Handles natural language queries about code in the codebase.
-
-  This module provides the bridge between user questions and the CodeGazetteer,
-  allowing users to ask questions like:
-  - "What does the process function do?"
-  - "Who calls Brain.evaluate?"
-  - "Show me the functions in the Parser module"
-
-  ## Usage
-
-      # Explain a symbol
-      {:ok, response} = QueryHandler.explain("process", world_id: "my_world")
-
-      # Find usages
-      {:ok, response} = QueryHandler.find_usages("evaluate", world_id: "my_world")
-
-      # List symbols
-      {:ok, response} = QueryHandler.list_symbols("Brain.Code", world_id: "my_world")
-
-      # Handle any code query based on intent
-      {:ok, response} = QueryHandler.handle("code.explain", entities, world_id: "my_world")
-  """
+  @moduledoc "Handles natural language queries about code in the codebase.\n\nThis module provides the bridge between user questions and the CodeGazetteer,\nallowing users to ask questions like:\n- \"What does the process function do?\"\n- \"Who calls Brain.evaluate?\"\n- \"Show me the functions in the Parser module\"\n\n## Usage\n\n    # Explain a symbol\n    {:ok, response} = QueryHandler.explain(\"process\", world_id: \"my_world\")\n\n    # Find usages\n    {:ok, response} = QueryHandler.find_usages(\"evaluate\", world_id: \"my_world\")\n\n    # List symbols\n    {:ok, response} = QueryHandler.list_symbols(\"Brain.Code\", world_id: \"my_world\")\n\n    # Handle any code query based on intent\n    {:ok, response} = QueryHandler.handle(\"code.explain\", entities, world_id: \"my_world\")\n"
 
   require Logger
 
   alias Brain.Code.CodeGazetteer
-
-  # Default world for code queries when none specified
   @default_world_id "default"
 
-  # ============================================================================
-  # Public API
-  # ============================================================================
-
-  @doc """
-  Handles a code query based on intent and entities.
-
-  ## Parameters
-    - `intent` - The classified intent (e.g., "code.explain", "code.find_usage")
-    - `entities` - Extracted entities from the query
-    - `opts` - Options including `:world_id` and `:query_text`
-
-  ## Returns
-    `{:ok, response}` or `:not_handled`
-  """
+  @doc "Handles a code query based on intent and entities.\n\n## Parameters\n  - `intent` - The classified intent (e.g., \"code.explain\", \"code.find_usage\")\n  - `entities` - Extracted entities from the query\n  - `opts` - Options including `:world_id` and `:query_text`\n\n## Returns\n  `{:ok, response}` or `:not_handled`\n"
   @spec handle(String.t(), list(), keyword()) :: {:ok, String.t()} | :not_handled
   def handle(intent, entities, opts \\ []) do
     world_id = Keyword.get(opts, :world_id, @default_world_id)
@@ -67,7 +29,6 @@ defmodule Brain.Code.QueryHandler do
         handle_search(entities, world_id, query_text)
 
       "code" <> _ ->
-        # Generic code intent - try to understand from context
         handle_generic_code_query(entities, world_id, query_text)
 
       _ ->
@@ -75,9 +36,7 @@ defmodule Brain.Code.QueryHandler do
     end
   end
 
-  @doc """
-  Explains a code symbol (function, class, module, etc.).
-  """
+  @doc "Explains a code symbol (function, class, module, etc.).\n"
   @spec explain(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
   def explain(symbol_name, opts \\ []) do
     world_id = Keyword.get(opts, :world_id, @default_world_id)
@@ -87,14 +46,13 @@ defmodule Brain.Code.QueryHandler do
         {:ok, generate_explanation(symbol, world_id)}
 
       :not_found ->
-        {:ok, "I couldn't find `#{symbol_name}` in the analyzed code. " <>
-              "Make sure the codebase has been analyzed with `World.DocumentIngestor.ingest_codebase/2`."}
+        {:ok,
+         "I couldn't find `#{symbol_name}` in the analyzed code. " <>
+           "Make sure the codebase has been analyzed with `World.DocumentIngestor.ingest_codebase/2`."}
     end
   end
 
-  @doc """
-  Finds all usages/callers of a symbol.
-  """
+  @doc "Finds all usages/callers of a symbol.\n"
   @spec find_usages(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
   def find_usages(symbol_name, opts \\ []) do
     world_id = Keyword.get(opts, :world_id, @default_world_id)
@@ -105,8 +63,8 @@ defmodule Brain.Code.QueryHandler do
         {:ok, format_usages(symbol.qualified_name, callers)}
 
       :not_found ->
-        # Try direct relation lookup anyway
         callers = CodeGazetteer.get_relations(world_id, symbol_name, :called_by)
+
         if callers != [] do
           {:ok, format_usages(symbol_name, callers)}
         else
@@ -115,9 +73,7 @@ defmodule Brain.Code.QueryHandler do
     end
   end
 
-  @doc """
-  Gets the signature/definition of a symbol.
-  """
+  @doc "Gets the signature/definition of a symbol.\n"
   @spec signature(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
   def signature(symbol_name, opts \\ []) do
     world_id = Keyword.get(opts, :world_id, @default_world_id)
@@ -131,9 +87,7 @@ defmodule Brain.Code.QueryHandler do
     end
   end
 
-  @doc """
-  Lists symbols matching a pattern or in a module/namespace.
-  """
+  @doc "Lists symbols matching a pattern or in a module/namespace.\n"
   @spec list_symbols(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
   def list_symbols(pattern, opts \\ []) do
     world_id = Keyword.get(opts, :world_id, @default_world_id)
@@ -148,9 +102,7 @@ defmodule Brain.Code.QueryHandler do
     end
   end
 
-  @doc """
-  Searches for symbols by name or description.
-  """
+  @doc "Searches for symbols by name or description.\n"
   @spec search(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
   def search(query, opts \\ []) do
     world_id = Keyword.get(opts, :world_id, @default_world_id)
@@ -165,9 +117,7 @@ defmodule Brain.Code.QueryHandler do
     end
   end
 
-  @doc """
-  Gets statistics about the analyzed codebase.
-  """
+  @doc "Gets statistics about the analyzed codebase.\n"
   @spec stats(keyword()) :: {:ok, String.t()} | {:error, term()}
   def stats(opts \\ []) do
     world_id = Keyword.get(opts, :world_id, @default_world_id)
@@ -184,14 +134,11 @@ defmodule Brain.Code.QueryHandler do
     {:ok, String.trim(response)}
   end
 
-  # ============================================================================
-  # Intent Handlers
-  # ============================================================================
-
   defp handle_explain(entities, world_id, query_text) do
     case extract_symbol_name(entities, query_text) do
       nil ->
-        {:ok, "What code would you like me to explain? Please specify a function, class, or module name."}
+        {:ok,
+         "What code would you like me to explain? Please specify a function, class, or module name."}
 
       symbol_name ->
         explain(symbol_name, world_id: world_id)
@@ -221,7 +168,6 @@ defmodule Brain.Code.QueryHandler do
   defp handle_list(entities, world_id) do
     case extract_symbol_name(entities, nil) do
       nil ->
-        # Return general stats
         stats(world_id: world_id)
 
       pattern ->
@@ -238,11 +184,9 @@ defmodule Brain.Code.QueryHandler do
     symbol_name = extract_symbol_name(entities, query_text)
 
     cond do
-      # If we have a symbol, try to explain it
       symbol_name ->
         explain(symbol_name, world_id: world_id)
 
-      # If we have query text, try to search
       query_text && String.length(query_text) > 3 ->
         search(query_text, world_id: world_id)
 
@@ -251,24 +195,17 @@ defmodule Brain.Code.QueryHandler do
     end
   end
 
-  # ============================================================================
-  # Symbol Finding
-  # ============================================================================
-
   defp find_symbol(world_id, name) do
-    # Try exact qualified name match first
     case CodeGazetteer.lookup_qualified(world_id, name) do
       {:ok, symbol} ->
         {:ok, symbol}
 
       :not_found ->
-        # Try simple name lookup
         case CodeGazetteer.lookup(world_id, name) do
           {:ok, [symbol | _]} ->
             {:ok, symbol}
 
           {:ok, []} ->
-            # Try search as fallback
             case CodeGazetteer.search(world_id, name, limit: 1) do
               [symbol | _] -> {:ok, symbol}
               [] -> :not_found
@@ -280,27 +217,21 @@ defmodule Brain.Code.QueryHandler do
     end
   end
 
-  # ============================================================================
-  # Entity Extraction
-  # ============================================================================
-
   defp extract_symbol_name(entities, query_text) do
-    # Look for explicit code.symbol entity
-    symbol = Enum.find(entities, fn e ->
-      entity_type = e[:entity_type] || e["entity_type"]
-      entity_type in ["code.symbol", "symbol", "code.file"]
-    end)
+    symbol =
+      Enum.find(entities, fn e ->
+        entity_type = e[:entity_type] || e["entity_type"]
+        entity_type in ["code.symbol", "symbol", "code.file"]
+      end)
 
     cond do
       symbol ->
         symbol[:value] || symbol["value"]
 
-      # Try to extract from any entity
       entities != [] ->
         entity = List.first(entities)
         entity[:value] || entity["value"]
 
-      # Try to extract code-like patterns from query
       query_text ->
         extract_code_pattern(query_text)
 
@@ -310,13 +241,9 @@ defmodule Brain.Code.QueryHandler do
   end
 
   defp extract_code_pattern(text) do
-    # Look for patterns that look like code symbols
     patterns = [
-      # Module.function pattern (e.g., Brain.evaluate)
       ~r/\b([A-Z][a-zA-Z0-9]*(?:\.[A-Z][a-zA-Z0-9]*)*(?:\.[a-z_][a-z0-9_]*)?)\b/,
-      # snake_case function names
       ~r/\b([a-z_][a-z0-9_]+)\b(?:\s+function|\s+method)?/,
-      # CamelCase class names
       ~r/\b([A-Z][a-zA-Z0-9]+)\b(?:\s+class|\s+module)?/
     ]
 
@@ -328,10 +255,6 @@ defmodule Brain.Code.QueryHandler do
     end)
   end
 
-  # ============================================================================
-  # Response Formatting
-  # ============================================================================
-
   defp generate_explanation(symbol, world_id) do
     entity_type = symbol.entity_type
     qualified = symbol.qualified_name
@@ -342,17 +265,14 @@ defmodule Brain.Code.QueryHandler do
 
     parts = ["**#{qualified}** is a #{language} #{type_label}"]
 
-    # Add location
-    parts = if symbol.file_path && symbol.line do
-      parts ++ ["Defined in `#{Path.basename(symbol.file_path)}` at line #{symbol.line}"]
-    else
-      parts
-    end
+    parts =
+      if symbol.file_path && symbol.line do
+        parts ++ ["Defined in `#{Path.basename(symbol.file_path)}` at line #{symbol.line}"]
+      else
+        parts
+      end
 
-    # Add metadata details
     parts = add_metadata_details(parts, entity_type, metadata)
-
-    # Add relationship info
     parts = add_relationship_info(parts, world_id, symbol.qualified_name, entity_type)
 
     Enum.join(parts, ". ") <> "."
@@ -372,12 +292,14 @@ defmodule Brain.Code.QueryHandler do
     end
   end
 
-  defp add_metadata_details(parts, _type, _metadata), do: parts
+  defp add_metadata_details(parts, _type, _metadata) do
+    parts
+  end
 
   defp add_relationship_info(parts, world_id, qualified_name, entity_type) do
-    # Get callers for functions
     if entity_type in ["code.function", "code.method"] do
       callers = CodeGazetteer.get_relations(world_id, qualified_name, :called_by)
+
       if callers != [] do
         count = length(callers)
         parts ++ ["It is called by #{count} other function(s)"]
@@ -385,8 +307,8 @@ defmodule Brain.Code.QueryHandler do
         parts
       end
     else
-      # Get what the symbol calls
       calls = CodeGazetteer.get_relations(world_id, qualified_name, :calls)
+
       if calls != [] do
         count = length(calls)
         parts ++ ["It calls #{count} other function(s)"]
@@ -404,10 +326,10 @@ defmodule Brain.Code.QueryHandler do
     count = length(callers)
 
     if count <= 5 do
-      caller_list = callers |> Enum.map(&"`#{&1}`") |> Enum.join(", ")
+      caller_list = callers |> Enum.map_join(", ", &"`#{&1}`")
       "`#{symbol_name}` is called by: #{caller_list}."
     else
-      shown = callers |> Enum.take(5) |> Enum.map(&"`#{&1}`") |> Enum.join(", ")
+      shown = callers |> Enum.take(5) |> Enum.map_join(", ", &"`#{&1}`")
       "`#{symbol_name}` is called #{count} times, including: #{shown}, and #{count - 5} more."
     end
   end
@@ -422,17 +344,32 @@ defmodule Brain.Code.QueryHandler do
       "code.function" ->
         arity = Map.get(metadata, :arity, 0)
         visibility = Map.get(metadata, :visibility, :public)
-        params = if arity > 0, do: " (#{arity} parameters)", else: ""
+
+        params =
+          if arity > 0 do
+            " (#{arity} parameters)"
+          else
+            ""
+          end
+
         "**#{name}**#{params} - #{visibility} #{language} function"
 
       "code.method" ->
         arity = Map.get(metadata, :arity, 0)
         visibility = Map.get(metadata, :visibility, :public)
-        params = if arity > 0, do: " (#{arity} parameters)", else: ""
+
+        params =
+          if arity > 0 do
+            " (#{arity} parameters)"
+          else
+            ""
+          end
+
         "**#{name}**#{params} - #{visibility} method"
 
       "code.class" ->
         superclass = Map.get(metadata, :superclass)
+
         if superclass do
           "**#{name}** - #{language} class extending `#{superclass}`"
         else
@@ -449,21 +386,33 @@ defmodule Brain.Code.QueryHandler do
 
   defp format_symbol_list(pattern, symbols) do
     count = length(symbols)
-    header = if count == 1 do
-      "Found 1 symbol matching `#{pattern}`:"
-    else
-      "Found #{count} symbols matching `#{pattern}`:"
-    end
 
-    items = symbols
-    |> Enum.take(15)
-    |> Enum.map(fn s ->
-      type_icon = type_to_icon(s.entity_type)
-      "- #{type_icon} **#{s.qualified_name}** (#{s.language} #{type_to_label(s.entity_type)})"
-    end)
-    |> Enum.join("\n")
+    header =
+      if count == 1 do
+        "Found 1 symbol matching `#{pattern}`:"
+      else
+        "Found #{count} symbols matching `#{pattern}`:"
+      end
 
-    more = if count > 15, do: "\n\n_...and #{count - 15} more._", else: ""
+    items =
+      symbols
+      |> Enum.take(15)
+      |> Enum.map_join(
+        "\n",
+        fn s ->
+          type_icon = type_to_icon(s.entity_type)
+          "- #{type_icon} **#{s.qualified_name}** (#{s.language} #{type_to_label(s.entity_type)})"
+        end
+      )
+
+    more =
+      if count > 15 do
+        "
+
+_...and #{count - 15} more._"
+      else
+        ""
+      end
 
     header <> "\n\n" <> items <> more
   end
@@ -472,39 +421,99 @@ defmodule Brain.Code.QueryHandler do
     count = length(symbols)
     header = "Found #{count} result(s) for \"#{query}\":"
 
-    items = symbols
-    |> Enum.take(10)
-    |> Enum.map(fn s ->
-      location = if s.file_path do
-        " - `#{Path.basename(s.file_path)}`"
-      else
-        ""
-      end
-      "- **#{s.qualified_name}** (#{type_to_label(s.entity_type)})#{location}"
-    end)
-    |> Enum.join("\n")
+    items =
+      symbols
+      |> Enum.take(10)
+      |> Enum.map_join(
+        "\n",
+        fn s ->
+          location =
+            if s.file_path do
+              " - `#{Path.basename(s.file_path)}`"
+            else
+              ""
+            end
+
+          "- **#{s.qualified_name}** (#{type_to_label(s.entity_type)})#{location}"
+        end
+      )
 
     header <> "\n\n" <> items
   end
 
-  defp type_to_label("code.function"), do: "function"
-  defp type_to_label("code.class"), do: "class"
-  defp type_to_label("code.method"), do: "method"
-  defp type_to_label("code.variable"), do: "variable"
-  defp type_to_label("code.constant"), do: "constant"
-  defp type_to_label("code.type"), do: "type"
-  defp type_to_label("code.namespace"), do: "module"
-  defp type_to_label("code.interface"), do: "interface"
-  defp type_to_label("code.enum"), do: "enum"
-  defp type_to_label("code.import"), do: "import"
-  defp type_to_label("code.macro"), do: "macro"
-  defp type_to_label(type), do: type |> String.replace("code.", "")
+  defp type_to_label("code.function") do
+    "function"
+  end
 
-  defp type_to_icon("code.function"), do: "fn"
-  defp type_to_icon("code.class"), do: "C"
-  defp type_to_icon("code.method"), do: "M"
-  defp type_to_icon("code.variable"), do: "v"
-  defp type_to_icon("code.constant"), do: "#"
-  defp type_to_icon("code.namespace"), do: "N"
-  defp type_to_icon(_), do: "*"
+  defp type_to_label("code.class") do
+    "class"
+  end
+
+  defp type_to_label("code.method") do
+    "method"
+  end
+
+  defp type_to_label("code.variable") do
+    "variable"
+  end
+
+  defp type_to_label("code.constant") do
+    "constant"
+  end
+
+  defp type_to_label("code.type") do
+    "type"
+  end
+
+  defp type_to_label("code.namespace") do
+    "module"
+  end
+
+  defp type_to_label("code.interface") do
+    "interface"
+  end
+
+  defp type_to_label("code.enum") do
+    "enum"
+  end
+
+  defp type_to_label("code.import") do
+    "import"
+  end
+
+  defp type_to_label("code.macro") do
+    "macro"
+  end
+
+  defp type_to_label(type) do
+    type |> String.replace("code.", "")
+  end
+
+  defp type_to_icon("code.function") do
+    "fn"
+  end
+
+  defp type_to_icon("code.class") do
+    "C"
+  end
+
+  defp type_to_icon("code.method") do
+    "M"
+  end
+
+  defp type_to_icon("code.variable") do
+    "v"
+  end
+
+  defp type_to_icon("code.constant") do
+    "#"
+  end
+
+  defp type_to_icon("code.namespace") do
+    "N"
+  end
+
+  defp type_to_icon(_) do
+    "*"
+  end
 end

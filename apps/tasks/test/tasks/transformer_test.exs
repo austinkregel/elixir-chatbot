@@ -6,10 +6,8 @@ defmodule Tasks.TransformerTest do
   @test_tasks_path "test/fixtures/domain_tasks_transformer"
 
   setup_all do
-    # Create test fixtures directory and sample task files
     File.mkdir_p!(@test_tasks_path)
 
-    # Create a sample QA task file
     qa_task = %{
       "Contributors" => ["Test"],
       "Source" => ["test"],
@@ -44,7 +42,6 @@ defmodule Tasks.TransformerTest do
     qa_file = Path.join(@test_tasks_path, "task_test_qa.json")
     File.write!(qa_file, Jason.encode!(qa_task))
 
-    # Create a sample sentiment task file
     sentiment_task = %{
       "Contributors" => ["Test"],
       "Source" => ["test"],
@@ -72,7 +69,6 @@ defmodule Tasks.TransformerTest do
     sentiment_file = Path.join(@test_tasks_path, "task_test_sentiment.json")
     File.write!(sentiment_file, Jason.encode!(sentiment_task))
 
-    # Create a sample paraphrasing task file
     paraphrase_task = %{
       "Contributors" => ["Test"],
       "Source" => ["test"],
@@ -95,7 +91,6 @@ defmodule Tasks.TransformerTest do
     paraphrase_file = Path.join(@test_tasks_path, "task_test_paraphrase.json")
     File.write!(paraphrase_file, Jason.encode!(paraphrase_task))
 
-    # Create a sample commonsense task file
     commonsense_task = %{
       "Contributors" => ["Test"],
       "Source" => ["test"],
@@ -136,18 +131,12 @@ defmodule Tasks.TransformerTest do
       file_path = Path.join(@test_tasks_path, "task_test_qa.json")
 
       {:ok, result} = Tasks.Transformer.transform_task(file_path, extract_entities: false)
-
-      # Should have training samples (examples + instances)
       assert length(result.training_samples) == 3
-
-      # Check sample structure
       sample = Enum.find(result.training_samples, &(&1.id == "test-qa-1"))
       assert sample.text == "Who wrote Romeo and Juliet?"
       assert sample.intent == "factual_question"
       assert is_list(sample.tokens)
       assert is_list(sample.pos_tags)
-
-      # Should have knowledge facts
       assert length(result.knowledge_facts) >= 2
 
       fact = Enum.find(result.knowledge_facts, &(&1.subject =~ "Romeo"))
@@ -161,15 +150,11 @@ defmodule Tasks.TransformerTest do
       {:ok, result} = Tasks.Transformer.transform_task(file_path, extract_entities: false)
 
       assert length(result.training_samples) == 2
-
-      # Check intent naming
       positive_sample = Enum.find(result.training_samples, &(&1.text =~ "fantastic"))
       assert positive_sample.intent == "sentiment.positive"
 
       negative_sample = Enum.find(result.training_samples, &(&1.text =~ "Terrible"))
       assert negative_sample.intent == "sentiment.negative"
-
-      # Sentiment tasks don't generate knowledge facts
       assert result.knowledge_facts == []
     end
 
@@ -177,11 +162,7 @@ defmodule Tasks.TransformerTest do
       file_path = Path.join(@test_tasks_path, "task_test_paraphrase.json")
 
       {:ok, result} = Tasks.Transformer.transform_task(file_path, extract_entities: false)
-
-      # Should have original + paraphrase(s)
       assert length(result.training_samples) >= 2
-
-      # Check we have both original and variant
       intents = Enum.map(result.training_samples, & &1.intent)
       assert "paraphrase.original" in intents
       assert "paraphrase.variant" in intents
@@ -193,24 +174,17 @@ defmodule Tasks.TransformerTest do
       {:ok, result} = Tasks.Transformer.transform_task(file_path, extract_entities: false)
 
       assert length(result.training_samples) == 2
-
-      # Check sample intent
       sample = List.first(result.training_samples)
       assert sample.intent == "commonsense_query"
-
-      # Should have knowledge facts from examples with explanations
-      assert length(result.knowledge_facts) >= 1
+      assert result.knowledge_facts != []
     end
 
     test "respects max_instances option" do
       file_path = Path.join(@test_tasks_path, "task_test_qa.json")
 
-      {:ok, result} = Tasks.Transformer.transform_task(file_path,
-        max_instances: 1,
-        extract_entities: false
-      )
+      {:ok, result} =
+        Tasks.Transformer.transform_task(file_path, max_instances: 1, extract_entities: false)
 
-      # Should only have 1 sample
       assert length(result.training_samples) == 1
     end
 
@@ -222,29 +196,31 @@ defmodule Tasks.TransformerTest do
 
   describe "text_to_training_sample/4" do
     test "creates training sample with tokenization and POS tagging" do
-      sample = Tasks.Transformer.text_to_training_sample(
-        "What is the weather today?",
-        "weather.query",
-        "test-id-1",
-        extract_entities: false
-      )
+      sample =
+        Tasks.Transformer.text_to_training_sample(
+          "What is the weather today?",
+          "weather.query",
+          "test-id-1",
+          extract_entities: false
+        )
 
       assert sample.text == "What is the weather today?"
       assert sample.intent == "weather.query"
       assert sample.id == "test-id-1"
       assert is_list(sample.tokens)
-      assert length(sample.tokens) > 0
+      assert sample.tokens != []
       assert is_list(sample.pos_tags)
       assert length(sample.pos_tags) == length(sample.tokens)
     end
 
     test "includes metadata when provided" do
-      sample = Tasks.Transformer.text_to_training_sample(
-        "Hello world",
-        "greeting",
-        "test-id-2",
-        metadata: %{source: "test"}
-      )
+      sample =
+        Tasks.Transformer.text_to_training_sample(
+          "Hello world",
+          "greeting",
+          "test-id-2",
+          metadata: %{source: "test"}
+        )
 
       assert sample.metadata == %{source: "test"}
     end
@@ -258,8 +234,6 @@ defmodule Tasks.TransformerTest do
       ]
 
       {:ok, result} = Tasks.Transformer.transform_tasks(files, extract_entities: false)
-
-      # Should combine samples from both files
       assert length(result.training_samples) >= 5
     end
 
@@ -271,14 +245,14 @@ defmodule Tasks.TransformerTest do
 
       progress_reports = :ets.new(:progress, [:set, :public])
 
-      {:ok, _result} = Tasks.Transformer.transform_tasks(files,
-        extract_entities: false,
-        progress_callback: fn progress ->
-          :ets.insert(progress_reports, {progress.current, progress})
-        end
-      )
+      {:ok, _result} =
+        Tasks.Transformer.transform_tasks(files,
+          extract_entities: false,
+          progress_callback: fn progress ->
+            :ets.insert(progress_reports, {progress.current, progress})
+          end
+        )
 
-      # Should have received progress updates
       assert :ets.info(progress_reports, :size) == 2
 
       :ets.delete(progress_reports)
@@ -319,7 +293,8 @@ defmodule Tasks.TransformerTest do
 
       metadata = %{task_id: "test_sent", categories: ["Sentiment Analysis"]}
 
-      result = Tasks.Transformer.convert_sentiment(instances, metadata, "", extract_entities: false)
+      result =
+        Tasks.Transformer.convert_sentiment(instances, metadata, "", extract_entities: false)
 
       assert length(result.training_samples) == 3
 
@@ -341,7 +316,8 @@ defmodule Tasks.TransformerTest do
 
       metadata = %{task_id: "test_cs", categories: ["Commonsense Classification"]}
 
-      result = Tasks.Transformer.convert_commonsense(instances, metadata, "", extract_entities: false)
+      result =
+        Tasks.Transformer.convert_commonsense(instances, metadata, "", extract_entities: false)
 
       assert length(result.training_samples) == 1
       assert length(result.knowledge_facts) == 1

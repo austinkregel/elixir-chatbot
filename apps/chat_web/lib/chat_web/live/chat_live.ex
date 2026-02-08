@@ -1,45 +1,32 @@
 defmodule ChatWeb.ChatLive do
-  @moduledoc """
-  LiveView for the chat interface.
-  Provides real-time chat functionality with the AI brain.
-  Uses global world context from WorldContext hook.
-  """
+  @moduledoc "LiveView for the chat interface.\nProvides real-time chat functionality with the AI brain.\nUses global world context from WorldContext hook.\n"
 
+  alias Brain.Epistemic.UserModelStore
+  alias Brain.KnowledgeStore
+  alias Brain.Memory.Store
+  alias Brain.SystemStatus
+  alias Phoenix.PubSub
   use ChatWeb, :live_view
   require Logger
 
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
-      # Subscribe to brain channels for real-time updates
-      Phoenix.PubSub.subscribe(Brain.PubSub, "brain:status")
-      Phoenix.PubSub.subscribe(Brain.PubSub, "brain:learning")
-      Phoenix.PubSub.subscribe(Brain.PubSub, "brain:conversations")
-      Phoenix.PubSub.subscribe(Brain.PubSub, "brain:analysis")
-
-      # Subscribe to world model status changes
-      Phoenix.PubSub.subscribe(Brain.PubSub, "world_models:status")
-
-      # Start periodic system status polling (every 2 seconds)
-      :timer.send_interval(2_000, self(), :refresh_system_status)
+      PubSub.subscribe(Brain.PubSub, "brain:status")
+      PubSub.subscribe(Brain.PubSub, "brain:learning")
+      PubSub.subscribe(Brain.PubSub, "brain:conversations")
+      PubSub.subscribe(Brain.PubSub, "brain:analysis")
+      PubSub.subscribe(Brain.PubSub, "world_models:status")
+      :timer.send_interval(2000, self(), :refresh_system_status)
     end
 
-    # Get initial status with longer timeout
     status = GenServer.call(Brain, :get_status, 60_000)
     conversations = GenServer.call(Brain, :get_conversations, 60_000)
     knowledge = get_combined_knowledge(status.name)
-
-    # Get cognitive memory stats (uses world context from on_mount)
     memory_stats = get_cognitive_memory_stats()
-
-    # Get system status
-    system_status = Brain.SystemStatus.get_all()
-
-    # Generate a session user_id for epistemic tracking
+    system_status = SystemStatus.get_all()
     user_id = "web_user_" <> (:crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower))
 
-    # Note: current_world_id and available_worlds are set by WorldContext on_mount hook
-    # Note: conversation loading is handled by handle_params which is called after mount
     socket =
       socket
       |> assign(:status, status)
@@ -68,7 +55,7 @@ defmodule ChatWeb.ChatLive do
 
   defp get_world_models_status(socket) do
     world_id = Map.get(socket.assigns, :current_world_id, "default")
-    Brain.SystemStatus.get_world_models_status(world_id)
+    SystemStatus.get_world_models_status(world_id)
   end
 
   @impl true
@@ -77,15 +64,12 @@ defmodule ChatWeb.ChatLive do
 
     socket =
       cond do
-        # No conversation requested and none loaded - do nothing
         is_nil(conversation_id) and is_nil(socket.assigns.current_conversation_id) ->
           socket
 
-        # Same conversation already loaded - do nothing
         conversation_id == socket.assigns.current_conversation_id ->
           socket
 
-        # Load new conversation from URL
         conversation_id ->
           case Brain.get_conversation(conversation_id) do
             {:ok, conversation} ->
@@ -107,7 +91,6 @@ defmodule ChatWeb.ChatLive do
               |> push_navigate(to: ~p"/chat")
           end
 
-        # Clear conversation (navigated to /chat from /chat/:id)
         true ->
           socket
           |> assign(:current_conversation_id, nil)
@@ -126,10 +109,8 @@ defmodule ChatWeb.ChatLive do
   @impl true
   def handle_event("send_message", %{"input" => input}, socket) do
     if socket.assigns.current_conversation_id do
-      # Send message to existing conversation
       send_message(socket.assigns.current_conversation_id, input, socket)
     else
-      # Create new conversation first with the selected world
       world_id = socket.assigns.current_world_id
 
       case Brain.create_conversation(world_id: world_id) do
@@ -147,7 +128,6 @@ defmodule ChatWeb.ChatLive do
               }
               | socket.assigns.conversations
             ])
-            # Update URL to include conversation ID (replace to avoid history spam)
             |> push_patch(to: ~p"/chat/#{conversation_id}", replace: true)
 
           send_message(conversation_id, input, socket)
@@ -190,7 +170,6 @@ defmodule ChatWeb.ChatLive do
   end
 
   def handle_event("select_message", %{"message_id" => message_id}, socket) do
-    # Toggle selection: if already selected, deselect; otherwise select
     new_selected =
       if socket.assigns.selected_message_id == message_id do
         nil
@@ -202,12 +181,10 @@ defmodule ChatWeb.ChatLive do
   end
 
   def handle_event("select_conversation", %{"conversation_id" => conversation_id}, socket) do
-    # Navigate to the conversation URL - handle_params will load the messages
     {:noreply, push_patch(socket, to: ~p"/chat/#{conversation_id}")}
   end
 
   def handle_event("new_conversation", _params, socket) do
-    # Navigate to base chat URL - handle_params will clear the conversation
     socket =
       socket
       |> assign(:selected_message_id, nil)
@@ -217,13 +194,10 @@ defmodule ChatWeb.ChatLive do
   end
 
   def handle_event("switch_world", %{"world_id" => _world_id}, socket) do
-    # World context hook already updated current_world_id
-    # Reset conversation state when world changes
     {:noreply, reset_for_world_change(socket)}
   end
 
   def handle_event("refresh_worlds", _params, socket) do
-    # World context hook already refreshed available_worlds
     {:noreply, socket}
   end
 
@@ -295,8 +269,7 @@ defmodule ChatWeb.ChatLive do
   end
 
   def handle_info({:world_context_changed, world_id}, socket) do
-    # World was changed from another LiveView or tab - reset conversation and update models
-    world_models_status = Brain.SystemStatus.get_world_models_status(world_id)
+    world_models_status = SystemStatus.get_world_models_status(world_id)
 
     socket =
       socket
@@ -307,7 +280,6 @@ defmodule ChatWeb.ChatLive do
     {:noreply, socket}
   end
 
-  # Handle analysis progress from plain PubSub broadcast
   def handle_info({:analysis_progress, payload}, socket) do
     message_id = Map.get(payload, :message_id) || Map.get(payload, "message_id")
     logs = socket.assigns.analysis_logs || %{}
@@ -335,7 +307,6 @@ defmodule ChatWeb.ChatLive do
     {:noreply, socket}
   end
 
-  # Also handle Phoenix.Socket.Broadcast format for backward compatibility
   def handle_info(
         %Phoenix.Socket.Broadcast{
           topic: "brain:analysis",
@@ -354,8 +325,6 @@ defmodule ChatWeb.ChatLive do
       ) do
     case result do
       {:ok, nil} ->
-        # Response was deferred (e.g., backchannel, gratitude loop, continuation)
-        # No assistant message to display - just clear input
         socket =
           if socket.assigns.current_conversation_id == conversation_id do
             socket
@@ -389,7 +358,6 @@ defmodule ChatWeb.ChatLive do
         {:noreply, socket}
 
       {:ok, ""} ->
-        # Empty response - treat same as nil (deferred)
         socket =
           if socket.assigns.current_conversation_id == conversation_id do
             socket
@@ -421,9 +389,7 @@ defmodule ChatWeb.ChatLive do
     end
   end
 
-  # Handle learning_processed from PubSub
   def handle_info({:learning_processed, _data}, socket) do
-    # Update status, knowledge, and memory stats when learning is processed
     status = Brain.get_status()
     knowledge = get_combined_knowledge(status.name)
     memory_stats = get_cognitive_memory_stats()
@@ -435,29 +401,23 @@ defmodule ChatWeb.ChatLive do
      |> assign(:memory_stats, memory_stats)}
   end
 
-  # Handle interrupt_acknowledged from PubSub
   def handle_info({:interrupt_acknowledged, data}, socket) do
-    # Handle interrupt acknowledgment
     socket = assign(socket, :error_message, "System interrupted: #{data.reason}")
     {:noreply, socket}
   end
 
-  # Handle emergency_acknowledged from PubSub
   def handle_info({:emergency_acknowledged, data}, socket) do
-    # Handle emergency acknowledgment
     socket = assign(socket, :error_message, "Emergency: #{data.reason}")
     {:noreply, socket}
   end
 
-  # Backward compatibility for Phoenix.Socket.Broadcast format
   def handle_info(%Phoenix.Socket.Broadcast{event: event, payload: payload}, socket)
       when event in ["learning_processed", "interrupt_acknowledged", "emergency_acknowledged"] do
     handle_info({String.to_atom(event), payload}, socket)
   end
 
   def handle_info(:refresh_system_status, socket) do
-    # Refresh system status for background processes
-    system_status = Brain.SystemStatus.get_all()
+    system_status = SystemStatus.get_all()
     memory_stats = get_cognitive_memory_stats()
 
     {:noreply,
@@ -466,7 +426,6 @@ defmodule ChatWeb.ChatLive do
      |> assign(:memory_stats, memory_stats)}
   end
 
-  # World model status events
   def handle_info({:world_models_loading, world_id}, socket) do
     if world_id == socket.assigns.current_world_id do
       {:noreply, assign(socket, :world_models_loading, true)}
@@ -501,12 +460,9 @@ defmodule ChatWeb.ChatLive do
     end
   end
 
-  # Private Functions
-
   defp send_message(conversation_id, input, socket) do
     message_id = generate_message_id()
 
-    # Add user message to the display immediately (analysis streams in via PubSub)
     user_message = %{
       id: message_id,
       role: "user",
@@ -550,14 +506,33 @@ defmodule ChatWeb.ChatLive do
     step |> Atom.to_string() |> String.replace("_", " ")
   end
 
-  def step_label(step) when is_binary(step), do: String.replace(step, "_", " ")
-  def step_label(_), do: "progress"
+  def step_label(step) when is_binary(step) do
+    String.replace(step, "_", " ")
+  end
 
-  def strategy_badge_variant(:can_respond), do: :success
-  def strategy_badge_variant(:needs_clarification), do: :warning
-  def strategy_badge_variant(:partial_response_with_clarification), do: :info
-  def strategy_badge_variant(:cannot_respond), do: :error
-  def strategy_badge_variant(_), do: :default
+  def step_label(_) do
+    "progress"
+  end
+
+  def strategy_badge_variant(:can_respond) do
+    :success
+  end
+
+  def strategy_badge_variant(:needs_clarification) do
+    :warning
+  end
+
+  def strategy_badge_variant(:partial_response_with_clarification) do
+    :info
+  end
+
+  def strategy_badge_variant(:cannot_respond) do
+    :error
+  end
+
+  def strategy_badge_variant(_) do
+    :default
+  end
 
   defp update_analysis_details(details, payload) when is_map(details) and is_map(payload) do
     step = Map.get(payload, :step) || Map.get(payload, "step")
@@ -652,8 +627,7 @@ defmodule ChatWeb.ChatLive do
             base_method: Map.get(payload, :base_method) || Map.get(payload, "base_method"),
             prompts_count:
               Map.get(payload, :prompts_count) || Map.get(payload, "prompts_count") || 0,
-            response_path:
-              Map.get(payload, :response_path) || Map.get(payload, "response_path"),
+            response_path: Map.get(payload, :response_path) || Map.get(payload, "response_path"),
             reason: Map.get(payload, :reason) || Map.get(payload, "reason"),
             source: Map.get(payload, :source) || Map.get(payload, "source")
           })
@@ -775,7 +749,7 @@ defmodule ChatWeb.ChatLive do
 
   defp to_display_messages(conversation_id, memory) when is_list(memory) do
     now = System.system_time(:millisecond)
-    base = now - max(length(memory) - 1, 0) * 1_000
+    base = now - max(length(memory) - 1, 0) * 1000
 
     memory
     |> Enum.with_index()
@@ -790,7 +764,7 @@ defmodule ChatWeb.ChatLive do
           Map.get(entry, "timestamp") ||
           get_in(entry, [:context, :timestamp]) ||
           get_in(entry, ["context", "timestamp"]) ||
-          base + idx * 1_000
+          base + idx * 1000
 
       id =
         Map.get(entry, :id) ||
@@ -805,14 +779,12 @@ defmodule ChatWeb.ChatLive do
         trace: nil
       }
     end)
-    # Filter out messages with nil or empty content (deferred responses)
     |> Enum.filter(fn msg ->
       msg.content != nil and msg.content != ""
     end)
   end
 
-  # Component for rendering processing trace
-  attr :trace, :map, required: true
+  attr(:trace, :map, required: true)
 
   def processing_trace(assigns) do
     ~H"""
@@ -836,7 +808,7 @@ defmodule ChatWeb.ChatLive do
             </span>
           </div>
         </div>
-        
+
     <!-- Each chunk -->
         <div class="space-y-3">
           <%= for chunk <- @trace.chunks || [] do %>
@@ -851,8 +823,7 @@ defmodule ChatWeb.ChatLive do
     """
   end
 
-  # Component for a single chunk in multi-chunk view
-  attr :chunk, :map, required: true
+  attr(:chunk, :map, required: true)
 
   defp chunk_trace(assigns) do
     ~H"""
@@ -877,7 +848,7 @@ defmodule ChatWeb.ChatLive do
           <% end %>
         </div>
       </div>
-      
+
     <!-- Compact details row -->
       <div class="flex flex-wrap items-center gap-2 text-base-content/60">
         <!-- Entities -->
@@ -892,7 +863,7 @@ defmodule ChatWeb.ChatLive do
             <% end %>
           </div>
         <% end %>
-        
+
     <!-- Missing slots -->
         <%= if length(@chunk.slots_missing || []) > 0 do %>
           <div class="flex items-center gap-1 text-warning">
@@ -900,7 +871,7 @@ defmodule ChatWeb.ChatLive do
             <span>Missing: {Enum.join(@chunk.slots_missing, ", ")}</span>
           </div>
         <% end %>
-        
+
     <!-- Alternatives (collapsed) -->
         <%= if length(@chunk.alternatives || []) > 0 do %>
           <div class="flex items-center gap-1">
@@ -910,12 +881,12 @@ defmodule ChatWeb.ChatLive do
             <% end %>
           </div>
         <% end %>
-        
+
     <!-- Backtrack indicator -->
         <%= if @chunk.backtrack_count > 0 do %>
           <span class="badge badge-warning badge-xs">↩{@chunk.backtrack_count}</span>
         <% end %>
-        
+
     <!-- Time -->
         <span class="ml-auto">{@chunk.racing_ms}ms</span>
       </div>
@@ -923,8 +894,7 @@ defmodule ChatWeb.ChatLive do
     """
   end
 
-  # Component for single chunk (full detail view)
-  attr :trace, :map, required: true
+  attr(:trace, :map, required: true)
 
   defp single_chunk_trace(assigns) do
     ~H"""
@@ -946,7 +916,7 @@ defmodule ChatWeb.ChatLive do
           <% end %>
         </div>
       </div>
-      
+
     <!-- Racing Analyzers -->
       <%= if length(@trace.analyzers || []) > 0 do %>
         <div class="mb-3">
@@ -977,7 +947,7 @@ defmodule ChatWeb.ChatLive do
           </div>
         </div>
       <% end %>
-      
+
     <!-- Alternatives -->
       <%= if length(@trace.alternatives || []) > 0 do %>
         <div class="mb-3">
@@ -994,7 +964,7 @@ defmodule ChatWeb.ChatLive do
           </div>
         </div>
       <% end %>
-      
+
     <!-- Entities & Slots -->
       <div class="grid grid-cols-2 gap-3 mb-3">
         <!-- Entities Found -->
@@ -1030,7 +1000,7 @@ defmodule ChatWeb.ChatLive do
             <span class="text-base-content/40 italic">None detected</span>
           <% end %>
         </div>
-        
+
     <!-- Slots -->
         <div>
           <div class="font-semibold text-base-content/70 mb-1 flex items-center gap-1">
@@ -1058,7 +1028,7 @@ defmodule ChatWeb.ChatLive do
           <% end %>
         </div>
       </div>
-      
+
     <!-- Backtracking -->
       <%= if @trace.backtrack_count > 0 do %>
         <div class="mb-2 p-2 bg-warning/10 rounded border border-warning/30">
@@ -1073,7 +1043,7 @@ defmodule ChatWeb.ChatLive do
           </div>
         </div>
       <% end %>
-      
+
     <!-- Clarification Needed -->
       <%= if @trace.needs_clarification && @trace.clarification do %>
         <div class="p-2 bg-info/10 rounded border border-info/30">
@@ -1083,7 +1053,7 @@ defmodule ChatWeb.ChatLive do
           </div>
         </div>
       <% end %>
-      
+
     <!-- Stability Footer -->
       <div class="mt-2 pt-2 border-t border-base-300 flex items-center justify-between text-base-content/50">
         <div class="flex items-center gap-2">
@@ -1098,8 +1068,8 @@ defmodule ChatWeb.ChatLive do
     """
   end
 
-  attr :level, :atom, required: true
-  attr :confidence, :string, required: true
+  attr(:level, :atom, required: true)
+  attr(:confidence, :string, required: true)
 
   defp confidence_badge(assigns) do
     badge_class =
@@ -1119,40 +1089,105 @@ defmodule ChatWeb.ChatLive do
     """
   end
 
-  defp activation_color(value) when value >= 0.7, do: "bg-success"
-  defp activation_color(value) when value >= 0.4, do: "bg-info"
-  defp activation_color(value) when value >= 0.2, do: "bg-warning"
-  defp activation_color(_), do: "bg-error"
+  defp activation_color(value) when value >= 0.7 do
+    "bg-success"
+  end
 
-  defp format_percent(nil), do: "0%"
-  defp format_percent(value) when is_float(value), do: "#{round(value * 100)}%"
-  defp format_percent(value) when is_integer(value), do: "#{value}%"
-  defp format_percent(_), do: "0%"
+  defp activation_color(value) when value >= 0.4 do
+    "bg-info"
+  end
 
-  # Helper for compact badge display
-  def confidence_badge_class(:high), do: "badge-success"
-  def confidence_badge_class(:medium), do: "badge-info"
-  def confidence_badge_class(:low), do: "badge-warning"
-  def confidence_badge_class(_), do: "badge-error"
+  defp activation_color(value) when value >= 0.2 do
+    "bg-warning"
+  end
 
-  # Make these public so they can be used in the template
-  def strategy_badge_class(:can_respond), do: "badge-success"
-  def strategy_badge_class(:partial_response_with_clarification), do: "badge-info"
-  def strategy_badge_class(:needs_clarification), do: "badge-warning"
-  def strategy_badge_class(_), do: "badge-error"
+  defp activation_color(_) do
+    "bg-error"
+  end
 
-  def format_strategy(:can_respond), do: "Ready"
-  def format_strategy(:partial_response_with_clarification), do: "Partial"
-  def format_strategy(:needs_clarification), do: "Need Info"
-  def format_strategy(:low_confidence), do: "Low Conf"
-  def format_strategy(:response_optional), do: "Optional"
-  def format_strategy(:response_deferred), do: "Deferred"
-  def format_strategy(nil), do: "Unknown"
-  def format_strategy(other), do: to_string(other)
+  defp format_percent(nil) do
+    "0%"
+  end
+
+  defp format_percent(value) when is_float(value) do
+    "#{round(value * 100)}%"
+  end
+
+  defp format_percent(value) when is_integer(value) do
+    "#{value}%"
+  end
+
+  defp format_percent(_) do
+    "0%"
+  end
+
+  def confidence_badge_class(:high) do
+    "badge-success"
+  end
+
+  def confidence_badge_class(:medium) do
+    "badge-info"
+  end
+
+  def confidence_badge_class(:low) do
+    "badge-warning"
+  end
+
+  def confidence_badge_class(_) do
+    "badge-error"
+  end
+
+  def strategy_badge_class(:can_respond) do
+    "badge-success"
+  end
+
+  def strategy_badge_class(:partial_response_with_clarification) do
+    "badge-info"
+  end
+
+  def strategy_badge_class(:needs_clarification) do
+    "badge-warning"
+  end
+
+  def strategy_badge_class(_) do
+    "badge-error"
+  end
+
+  def format_strategy(:can_respond) do
+    "Ready"
+  end
+
+  def format_strategy(:partial_response_with_clarification) do
+    "Partial"
+  end
+
+  def format_strategy(:needs_clarification) do
+    "Need Info"
+  end
+
+  def format_strategy(:low_confidence) do
+    "Low Conf"
+  end
+
+  def format_strategy(:response_optional) do
+    "Optional"
+  end
+
+  def format_strategy(:response_deferred) do
+    "Deferred"
+  end
+
+  def format_strategy(nil) do
+    "Unknown"
+  end
+
+  def format_strategy(other) do
+    to_string(other)
+  end
 
   defp get_cognitive_memory_stats do
     if Process.whereis(Brain.Memory.Store) != nil do
-      Brain.Memory.Store.stats()
+      Store.stats()
     else
       %{episode_count: 0, semantic_count: 0, episode_index_size: 0, semantic_index_size: 0}
     end
@@ -1160,26 +1195,19 @@ defmodule ChatWeb.ChatLive do
     _ -> %{episode_count: 0, semantic_count: 0, episode_index_size: 0, semantic_index_size: 0}
   end
 
-  # Combines knowledge from KnowledgeStore and UserModelStore
   defp get_combined_knowledge(persona_name) do
-    # Get structured knowledge from KnowledgeStore
-    base_knowledge = Brain.KnowledgeStore.get_knowledge(persona_name)
-
-    # Get user facts from UserModelStore
+    base_knowledge = KnowledgeStore.get_knowledge(persona_name)
     user_facts = get_all_user_facts()
-
-    # Merge user facts into the knowledge structure
     Map.put(base_knowledge, "user_facts", user_facts)
   end
 
-  # Gets all user facts from UserModelStore for display
   defp get_all_user_facts do
     if Process.whereis(Brain.Epistemic.UserModelStore) do
-      case Brain.Epistemic.UserModelStore.list_all_users() do
+      case UserModelStore.list_all_users() do
         {:ok, user_ids} ->
           user_ids
           |> Enum.map(fn user_id ->
-            case Brain.Epistemic.UserModelStore.get(user_id) do
+            case UserModelStore.get(user_id) do
               nil ->
                 nil
 
@@ -1210,18 +1238,20 @@ defmodule ChatWeb.ChatLive do
     |> Enum.map(fn {k, v} -> %{"key" => to_string(k), "value" => to_string(v)} end)
   end
 
-  defp format_user_facts(_), do: []
+  defp format_user_facts(_) do
+    []
+  end
 
   defp format_epistemic_bounds(bounds) when is_map(bounds) do
     bounds
     |> Enum.map(fn {k, v} -> %{"key" => to_string(k), "confidence" => v} end)
   end
 
-  defp format_epistemic_bounds(_), do: []
+  defp format_epistemic_bounds(_) do
+    []
+  end
 
-  @doc """
-  Returns a list of data stores that were accessed for a given response type.
-  """
+  @doc "Returns a list of data stores that were accessed for a given response type.\n"
   def get_stores_accessed(response_type) do
     case response_type do
       :domain ->
@@ -1237,9 +1267,7 @@ defmodule ChatWeb.ChatLive do
         ]
 
       :template ->
-        [
-          %{name: "TemplateStore", purpose: "Load response templates"}
-        ]
+        [%{name: "TemplateStore", purpose: "Load response templates"}]
 
       :conditional_template ->
         [
@@ -1255,14 +1283,10 @@ defmodule ChatWeb.ChatLive do
         ]
 
       :smalltalk ->
-        [
-          %{name: "TemplateStore", purpose: "Load smalltalk templates"}
-        ]
+        [%{name: "TemplateStore", purpose: "Load smalltalk templates"}]
 
       :expressive ->
-        [
-          %{name: "TemplateStore", purpose: "Load expressive templates"}
-        ]
+        [%{name: "TemplateStore", purpose: "Load expressive templates"}]
 
       :fast_path ->
         [

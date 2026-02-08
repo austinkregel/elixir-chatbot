@@ -1,63 +1,22 @@
 defmodule Brain.Knowledge.AcademicValidator do
-  @moduledoc """
-  Validates findings against peer-reviewed academic literature.
+  @moduledoc "Validates findings against peer-reviewed academic literature.\n\nUses the epistemic layer (BeliefStore, FactDatabase) to cross-reference\nclaims and provide confidence boosts when corroborated by academic sources.\n\n## Validation Outcomes\n\n- `:corroborated` - Finding matches academic literature (confidence boost)\n- `:contradicted` - Finding conflicts with academic sources (triggers review)\n- `:insufficient_evidence` - Not enough academic data to validate\n\n## Example\n\n    {:ok, result} = AcademicValidator.validate(finding)\n    # => {:corroborated, %{boost: 0.15, sources: [...]}}\n\n    {:ok, results} = AcademicValidator.bulk_validate(findings)\n"
 
-  Uses the epistemic layer (BeliefStore, FactDatabase) to cross-reference
-  claims and provide confidence boosts when corroborated by academic sources.
-
-  ## Validation Outcomes
-
-  - `:corroborated` - Finding matches academic literature (confidence boost)
-  - `:contradicted` - Finding conflicts with academic sources (triggers review)
-  - `:insufficient_evidence` - Not enough academic data to validate
-
-  ## Example
-
-      {:ok, result} = AcademicValidator.validate(finding)
-      # => {:corroborated, %{boost: 0.15, sources: [...]}}
-
-      {:ok, results} = AcademicValidator.bulk_validate(findings)
-  """
-
+  alias Brain.LinguisticData
+  alias Brain.Knowledge.Academic
+  alias Brain.Knowledge.Types
   require Logger
 
   alias Brain.Epistemic.BeliefStore
-  alias Brain.FactDatabase
   alias Brain.Knowledge.Corroborator
-  alias Brain.Knowledge.Types.{Finding, ReviewCandidate}
-  alias Brain.Knowledge.Academic.{SemanticScholar, OpenAlex, PaperModelBuilder}
-
-  # Similarity threshold for considering claims as matching
+  alias Types.{Finding, ReviewCandidate}
+  alias Academic.{SemanticScholar, OpenAlex, PaperModelBuilder}
   @similarity_threshold 0.7
-
-  # High confidence threshold for strong corroboration
   @high_confidence_threshold 0.8
-
-  # Confidence boost amounts
   @high_confidence_boost 0.15
-  @moderate_confidence_boost 0.10
+  @moderate_confidence_boost 0.1
   @low_confidence_boost 0.05
 
-  # ============================================================================
-  # Public API
-  # ============================================================================
-
-  @doc """
-  Validates a finding against peer-reviewed academic literature.
-
-  Checks both the BeliefStore (for previously ingested papers) and
-  optionally searches live academic APIs.
-
-  ## Options
-    - :live_search - Search live APIs if no match in BeliefStore (default: false)
-    - :min_confidence - Minimum confidence for matches (default: 0.6)
-
-  ## Returns
-    - {:ok, {:corroborated, details}} - Finding matches academic literature
-    - {:ok, {:contradicted, details}} - Finding conflicts with academic sources
-    - {:ok, :insufficient_evidence} - Not enough academic data
-    - {:error, reason} - Validation failed
-  """
+  @doc "Validates a finding against peer-reviewed academic literature.\n\nChecks both the BeliefStore (for previously ingested papers) and\noptionally searches live academic APIs.\n\n## Options\n  - :live_search - Search live APIs if no match in BeliefStore (default: false)\n  - :min_confidence - Minimum confidence for matches (default: 0.6)\n\n## Returns\n  - {:ok, {:corroborated, details}} - Finding matches academic literature\n  - {:ok, {:contradicted, details}} - Finding conflicts with academic sources\n  - {:ok, :insufficient_evidence} - Not enough academic data\n  - {:error, reason} - Validation failed\n"
   @spec validate(Finding.t(), keyword()) ::
           {:ok, {:corroborated, map()} | {:contradicted, map()} | :insufficient_evidence}
           | {:error, term()}
@@ -70,7 +29,6 @@ defmodule Brain.Knowledge.AcademicValidator do
       entity: finding.entity
     )
 
-    # First check BeliefStore for matching academic beliefs
     case check_belief_store(finding.claim, min_confidence) do
       {:ok, {:corroborated, _} = result} ->
         {:ok, result}
@@ -80,7 +38,6 @@ defmodule Brain.Knowledge.AcademicValidator do
 
       {:ok, :no_match} ->
         if live_search do
-          # Search live APIs for validation
           search_live_sources(finding, opts)
         else
           {:ok, :insufficient_evidence}
@@ -91,14 +48,7 @@ defmodule Brain.Knowledge.AcademicValidator do
     end
   end
 
-  @doc """
-  Validates multiple findings efficiently.
-
-  Groups similar findings and batches API requests where possible.
-
-  ## Returns
-    - {:ok, [validation_result]} - List of results in same order as input
-  """
+  @doc "Validates multiple findings efficiently.\n\nGroups similar findings and batches API requests where possible.\n\n## Returns\n  - {:ok, [validation_result]} - List of results in same order as input\n"
   @spec bulk_validate([Finding.t()], keyword()) :: {:ok, [term()]}
   def bulk_validate(findings, opts \\ []) when is_list(findings) do
     results =
@@ -113,11 +63,7 @@ defmodule Brain.Knowledge.AcademicValidator do
     {:ok, results}
   end
 
-  @doc """
-  Applies validation results to enhance a ReviewCandidate.
-
-  Boosts confidence and adds academic corroborating sources.
-  """
+  @doc "Applies validation results to enhance a ReviewCandidate.\n\nBoosts confidence and adds academic corroborating sources.\n"
   @spec apply_validation(ReviewCandidate.t(), term()) :: ReviewCandidate.t()
   def apply_validation(%ReviewCandidate{} = candidate, {:corroborated, details}) do
     boost = Map.get(details, :boost, @low_confidence_boost)
@@ -127,7 +73,6 @@ defmodule Brain.Knowledge.AcademicValidator do
       (candidate.aggregate_confidence + boost)
       |> min(1.0)
 
-    # Add academic sources to corroborating sources
     updated_sources = candidate.corroborating_sources ++ sources
 
     %{candidate | aggregate_confidence: new_confidence, corroborating_sources: updated_sources}
@@ -135,41 +80,29 @@ defmodule Brain.Knowledge.AcademicValidator do
 
   def apply_validation(%ReviewCandidate{} = candidate, {:contradicted, details}) do
     academic_contradictions = Map.get(details, :conflicting_papers, [])
-
-    # Convert papers to findings for the existing_contradictions field
     existing = candidate.existing_contradictions ++ academic_contradictions
 
     %{candidate | existing_contradictions: existing}
   end
 
-  def apply_validation(candidate, _), do: candidate
+  def apply_validation(candidate, _) do
+    candidate
+  end
 
-  @doc """
-  Searches academic sources for papers related to a topic.
-
-  Used for exploratory validation where we want to understand
-  what the academic consensus is on a topic.
-  """
+  @doc "Searches academic sources for papers related to a topic.\n\nUsed for exploratory validation where we want to understand\nwhat the academic consensus is on a topic.\n"
   @spec search_academic_consensus(String.t(), keyword()) ::
           {:ok, %{papers: [map()], consensus: atom()}}
   def search_academic_consensus(topic, opts \\ []) do
     limit = Keyword.get(opts, :limit, 20)
-
-    # Search multiple sources
     papers = search_all_sources(topic, limit: limit)
 
     if papers == [] do
       {:ok, %{papers: [], consensus: :no_data}}
     else
-      # Analyze papers for consensus
       consensus = analyze_consensus(papers)
       {:ok, %{papers: papers, consensus: consensus}}
     end
   end
-
-  # ============================================================================
-  # Private Functions - BeliefStore Validation
-  # ============================================================================
 
   defp check_belief_store(claim, min_confidence) do
     case BeliefStore.query_beliefs(predicate: :paper_claim, min_confidence: min_confidence) do
@@ -187,12 +120,10 @@ defmodule Brain.Knowledge.AcademicValidator do
         {:ok, :no_match}
     end
   rescue
-    # BeliefStore might not be running
     _ -> {:ok, :no_match}
   end
 
   defp find_matching_beliefs(claim, beliefs) do
-    # Compare claim against each belief
     matches =
       beliefs
       |> Enum.map(fn belief ->
@@ -209,7 +140,6 @@ defmodule Brain.Knowledge.AcademicValidator do
         {:ok, :no_match}
 
       [{best_match, similarity} | rest] ->
-        # Check for contradictions in the matches
         if has_contradiction?(claim, best_match) do
           {:ok,
            {:contradicted,
@@ -221,7 +151,6 @@ defmodule Brain.Knowledge.AcademicValidator do
               similarity: similarity
             }}}
         else
-          # Calculate boost based on confidence of matching beliefs
           boost = calculate_boost(best_match, length(rest) + 1)
 
           sources =
@@ -243,21 +172,17 @@ defmodule Brain.Knowledge.AcademicValidator do
         :no_match
     end
   rescue
-    # Corroborator might not be available
     _ -> :no_match
   end
 
   defp has_contradiction?(claim, belief) do
-    # Simple heuristic for contradiction detection
     c1 = String.downcase(claim)
     c2 = String.downcase(belief.object)
 
-    negation_words = Brain.LinguisticData.negation_words()
+    negation_words = LinguisticData.negation_words()
 
     c1_has_negation = Enum.any?(negation_words, &String.contains?(c1, &1))
     c2_has_negation = Enum.any?(negation_words, &String.contains?(c2, &1))
-
-    # XOR: one has negation, other doesn't
     c1_has_negation != c2_has_negation
   end
 
@@ -269,7 +194,6 @@ defmodule Brain.Knowledge.AcademicValidator do
         true -> @low_confidence_boost
       end
 
-    # Small bonus for multiple corroborating sources
     multi_source_bonus = min((total_matches - 1) * 0.02, 0.05)
 
     base_boost + multi_source_bonus
@@ -296,23 +220,16 @@ defmodule Brain.Knowledge.AcademicValidator do
     }
   end
 
-  # ============================================================================
-  # Private Functions - Live API Search
-  # ============================================================================
-
   defp search_live_sources(finding, opts) do
-    # Build search query from finding
     query = build_search_query(finding)
     limit = Keyword.get(opts, :limit, 5)
 
-    # Search Semantic Scholar (primary source)
     papers =
       case SemanticScholar.search(query, limit: limit) do
         {:ok, papers} -> papers
         {:error, _} -> []
       end
 
-    # Supplement with OpenAlex if needed
     papers =
       if length(papers) < 3 do
         case OpenAlex.search_cs(query, limit: limit) do
@@ -326,19 +243,14 @@ defmodule Brain.Knowledge.AcademicValidator do
     if papers == [] do
       {:ok, :insufficient_evidence}
     else
-      # Ingest papers into epistemic model
       PaperModelBuilder.ingest_papers(papers)
-
-      # Analyze results
       analyze_paper_results(finding.claim, papers)
     end
   end
 
   defp build_search_query(finding) do
-    # Use entity and key terms from claim
     terms = [finding.entity]
 
-    # Extract key nouns from claim
     words =
       finding.claim
       |> String.split()
@@ -351,7 +263,6 @@ defmodule Brain.Knowledge.AcademicValidator do
   end
 
   defp analyze_paper_results(claim, papers) do
-    # Check if any papers support or contradict the claim
     supporting =
       Enum.filter(papers, fn paper ->
         case paper.abstract do
@@ -361,7 +272,6 @@ defmodule Brain.Knowledge.AcademicValidator do
       end)
 
     if supporting != [] do
-      # Calculate boost based on citation counts
       avg_citations =
         supporting
         |> Enum.map(& &1.citation_count)
@@ -395,7 +305,6 @@ defmodule Brain.Knowledge.AcademicValidator do
   end
 
   defp claim_supported?(claim, abstract) do
-    # Simple keyword overlap check
     claim_words =
       claim
       |> String.downcase()
@@ -416,21 +325,16 @@ defmodule Brain.Knowledge.AcademicValidator do
     total > 0 and overlap / total >= 0.3
   end
 
-  # ============================================================================
-  # Private Functions - Consensus Analysis
-  # ============================================================================
-
   defp search_all_sources(topic, opts) do
     limit = Keyword.get(opts, :limit, 10)
 
-    # Search multiple sources in parallel
     tasks = [
       Task.async(fn -> SemanticScholar.search(topic, limit: div(limit, 2)) end),
       Task.async(fn -> OpenAlex.search_cs(topic, limit: div(limit, 2)) end)
     ]
 
     tasks
-    |> Task.await_many(20_000)
+    |> Task.await_many(20000)
     |> Enum.flat_map(fn
       {:ok, papers} -> papers
       _ -> []
@@ -440,7 +344,6 @@ defmodule Brain.Knowledge.AcademicValidator do
   end
 
   defp analyze_consensus(papers) do
-    # Simple consensus analysis based on citation counts
     total_citations = papers |> Enum.map(& &1.citation_count) |> Enum.sum()
     paper_count = length(papers)
 

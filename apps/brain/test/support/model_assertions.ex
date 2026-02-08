@@ -1,35 +1,12 @@
 defmodule Brain.Test.ModelAssertions do
-  @moduledoc """
-  Assertions and helpers for testing against trained ML models.
+  @moduledoc "Assertions and helpers for testing against trained ML models.\n\nThis module provides utilities to ensure tests are actually hitting\nthe production models and not silently passing with fallback behavior.\n\n## Usage in Tests\n\n    use Brain.Test.ModelAssertions\n\n    setup do\n      # Ensure models are loaded and fail fast if not\n      require_models!([:tfidf, :gazetteer])\n      :ok\n    end\n\n## Model Types\n\n- `:tfidf` - TF-IDF intent classifier (IntentClassifierSimple)\n- `:gazetteer` - Entity lookup tables\n- `:entities` - Entity extractor maps\n- `:unified_lstm` - Unified LSTM multi-task model\n- `:response_scorer` - LSTM response quality scorer\n- `:pos` - Part-of-speech tagger\n\n## Philosophy\n\nTests should fail loudly if expected models are not loaded, rather than\nsilently skipping or passing with degraded behavior. This ensures CI\ncatches missing or broken models.\n"
 
-  This module provides utilities to ensure tests are actually hitting
-  the production models and not silently passing with fallback behavior.
-
-  ## Usage in Tests
-
-      use Brain.Test.ModelAssertions
-
-      setup do
-        # Ensure models are loaded and fail fast if not
-        require_models!([:tfidf, :gazetteer])
-        :ok
-      end
-
-  ## Model Types
-
-  - `:tfidf` - TF-IDF intent classifier (IntentClassifierSimple)
-  - `:gazetteer` - Entity lookup tables
-  - `:entities` - Entity extractor maps
-  - `:unified_lstm` - Unified LSTM multi-task model
-  - `:response_scorer` - LSTM response quality scorer
-  - `:pos` - Part-of-speech tagger
-
-  ## Philosophy
-
-  Tests should fail loudly if expected models are not loaded, rather than
-  silently skipping or passing with degraded behavior. This ensures CI
-  catches missing or broken models.
-  """
+  alias Brain.ML.POSTagger
+  alias Brain.Response.LSTMResponse
+  alias Brain.ML.LSTM.UnifiedModel
+  alias Brain.ML.EntityExtractor
+  alias Brain.ML.Gazetteer
+  alias Brain.ML.IntentClassifierSimple
 
   defmacro __using__(_opts) do
     quote do
@@ -37,20 +14,7 @@ defmodule Brain.Test.ModelAssertions do
     end
   end
 
-  @doc """
-  Checks which models are currently loaded and returns a status map.
-
-  ## Returns
-
-      %{
-        tfidf: true,
-        gazetteer: true,
-        entities: true,
-        unified_lstm: false,
-        response_scorer: false,
-        pos: false
-      }
-  """
+  @doc "Checks which models are currently loaded and returns a status map.\n\n## Returns\n\n    %{\n      tfidf: true,\n      gazetteer: true,\n      entities: true,\n      unified_lstm: false,\n      response_scorer: false,\n      pos: false\n    }\n"
   def model_status do
     %{
       tfidf: check_tfidf_loaded(),
@@ -62,21 +26,7 @@ defmodule Brain.Test.ModelAssertions do
     }
   end
 
-  @doc """
-  Requires specific models to be loaded. Raises with a clear error if any are missing.
-
-  ## Examples
-
-      # Require TF-IDF classifier for basic intent tests
-      require_models!([:tfidf])
-
-      # Require full stack for integration tests
-      require_models!([:tfidf, :gazetteer, :unified_lstm])
-
-  ## Options
-
-    - `:allow_fallback` - If true, log a warning instead of raising (default: false)
-  """
+  @doc "Requires specific models to be loaded. Raises with a clear error if any are missing.\n\n## Examples\n\n    # Require TF-IDF classifier for basic intent tests\n    require_models!([:tfidf])\n\n    # Require full stack for integration tests\n    require_models!([:tfidf, :gazetteer, :unified_lstm])\n\n## Options\n\n  - `:allow_fallback` - If true, log a warning instead of raising (default: false)\n"
   def require_models!(model_types, opts \\ []) when is_list(model_types) do
     allow_fallback = Keyword.get(opts, :allow_fallback, false)
     status = model_status()
@@ -85,15 +35,15 @@ defmodule Brain.Test.ModelAssertions do
       model_types
       |> Enum.filter(fn type -> Map.get(status, type) != true end)
 
-    if length(missing) > 0 do
+    if missing != [] do
       message = """
-      
+
       ============================================================
       REQUIRED MODELS NOT LOADED
       ============================================================
 
       The following models are required for this test but are not loaded:
-        #{Enum.map(missing, &"  - #{&1}") |> Enum.join("\n")}
+        #{Enum.map_join(missing, "\n", &"  - #{&1}")}
 
       Current model status:
         #{format_status(status)}
@@ -122,27 +72,15 @@ defmodule Brain.Test.ModelAssertions do
     end
   end
 
-  @doc """
-  Asserts that a model classification actually used the expected model type.
-
-  This prevents tests from passing when fallback behavior kicks in.
-
-  ## Example
-
-      result = IntentClassifierSimple.classify("Hello")
-      assert_used_model(result, :tfidf)
-  """
+  @doc "Asserts that a model classification actually used the expected model type.\n\nThis prevents tests from passing when fallback behavior kicks in.\n\n## Example\n\n    result = IntentClassifierSimple.classify(\"Hello\")\n    assert_used_model(result, :tfidf)\n"
   def assert_used_model({:ok, result}, expected_model) do
     import ExUnit.Assertions
-    
-    # Check if result came from the expected model
     model_source = Map.get(result, :model_source) || Map.get(result, :source)
 
     if model_source do
       assert model_source == expected_model,
              "Expected result from #{expected_model}, got #{model_source}"
     else
-      # If no model source is tracked, at least verify confidence is reasonable
       confidence = Map.get(result, :confidence, 0)
 
       assert confidence > 0.01,
@@ -157,12 +95,10 @@ defmodule Brain.Test.ModelAssertions do
     flunk("Model call failed: #{inspect(error)}")
   end
 
-  @doc """
-  Asserts that entity extraction returned real entities, not empty fallback.
-  """
+  @doc "Asserts that entity extraction returned real entities, not empty fallback.\n"
   def assert_entities_extracted(entities, min_count \\ 1) when is_list(entities) do
     import ExUnit.Assertions
-    
+
     assert length(entities) >= min_count,
            """
            Expected at least #{min_count} entities, got #{length(entities)}.
@@ -171,25 +107,31 @@ defmodule Brain.Test.ModelAssertions do
            """
   end
 
-  @doc """
-  Returns a formatted summary of model status for logging/debugging.
-  """
+  @doc "Returns a formatted summary of model status for logging/debugging.\n"
   def format_status(status) when is_map(status) do
     status
-    |> Enum.map(fn {model, loaded} ->
-      marker = if loaded, do: "✓", else: "✗"
-      "#{marker} #{model}: #{if loaded, do: "loaded", else: "NOT LOADED"}"
-    end)
-    |> Enum.join("\n        ")
-  end
+    |> Enum.map_join(
+      "\n        ",
+      fn {model, loaded} ->
+        marker =
+          if loaded do
+            "✓"
+          else
+            "✗"
+          end
 
-  # ============================================================================
-  # Private Model Checks
-  # ============================================================================
+        "#{marker} #{model}: #{if loaded do
+          "loaded"
+        else
+          "NOT LOADED"
+        end}"
+      end
+    )
+  end
 
   defp check_tfidf_loaded do
     try do
-      Brain.ML.IntentClassifierSimple.is_loaded?()
+      IntentClassifierSimple.is_loaded?()
     rescue
       _ -> false
     catch
@@ -199,7 +141,7 @@ defmodule Brain.Test.ModelAssertions do
 
   defp check_gazetteer_loaded do
     try do
-      Brain.ML.Gazetteer.is_loaded?()
+      Gazetteer.is_loaded?()
     rescue
       _ -> false
     catch
@@ -209,7 +151,7 @@ defmodule Brain.Test.ModelAssertions do
 
   defp check_entities_loaded do
     try do
-      Brain.ML.EntityExtractor.is_loaded?()
+      EntityExtractor.is_loaded?()
     rescue
       _ -> false
     catch
@@ -219,7 +161,7 @@ defmodule Brain.Test.ModelAssertions do
 
   defp check_unified_lstm_loaded do
     try do
-      Brain.ML.LSTM.UnifiedModel.ready?()
+      UnifiedModel.ready?()
     rescue
       _ -> false
     catch
@@ -229,7 +171,7 @@ defmodule Brain.Test.ModelAssertions do
 
   defp check_response_scorer_loaded do
     try do
-      Brain.Response.LSTMResponse.ready?()
+      LSTMResponse.ready?()
     rescue
       _ -> false
     catch
@@ -239,7 +181,7 @@ defmodule Brain.Test.ModelAssertions do
 
   defp check_pos_loaded do
     try do
-      Brain.ML.POSTagger.model_exists?()
+      POSTagger.model_exists?()
     rescue
       _ -> false
     catch

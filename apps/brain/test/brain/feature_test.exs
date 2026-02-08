@@ -16,10 +16,10 @@ defmodule Brain.FeatureTest do
   setup_all do
     # Start services
     start_brain_services()
-    
+
     # Ensure models are loaded - fail fast if not
     require_models!([:tfidf, :gazetteer, :entities])
-    
+
     :ok
   end
 

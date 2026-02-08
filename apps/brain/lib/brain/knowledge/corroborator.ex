@@ -1,72 +1,18 @@
 defmodule Brain.Knowledge.Corroborator do
-  @moduledoc """
-  Analyzes findings for cross-source agreement and conflict detection.
+  @moduledoc "Analyzes findings for cross-source agreement and conflict detection.\n\nThe Corroborator implements the **evidence evaluation** phase of the\nscientific method:\n\n## Scientific Method Integration\n\n1. **Hypothesis Testing**: Evaluates hypotheses against gathered evidence\n2. **Falsifiability**: Contradicting evidence can falsify hypotheses\n3. **Support**: Agreeing evidence supports (but doesn't prove) hypotheses\n4. **Independent Verification**: Requires 2+ independent sources\n\nKey principle: \"We cannot prove a hypothesis true, only support it with\nevidence or falsify it with contradicting evidence.\"\n\n## Features\n\n- Groups findings by semantic similarity using TF-IDF embeddings\n- Requires 2+ independent sources for high-confidence facts\n- Detects conflicting claims between sources\n- Computes aggregate confidence scores based on corroboration\n- Evaluates hypotheses and determines if they are supported/falsified\n\n## Example\n\n    findings = [\n      %Finding{claim: \"Paris is the capital of France\", source: %{domain: \"source1.com\"}},\n      %Finding{claim: \"France's capital is Paris\", source: %{domain: \"source2.com\"}}\n    ]\n\n    {:ok, candidates} = Corroborator.corroborate(findings)\n    # => Single ReviewCandidate with 2 corroborating sources\n\n    # Or with hypothesis testing:\n    {:ok, investigation} = Corroborator.test_hypotheses(investigation, findings)\n"
 
-  The Corroborator implements the **evidence evaluation** phase of the
-  scientific method:
-
-  ## Scientific Method Integration
-
-  1. **Hypothesis Testing**: Evaluates hypotheses against gathered evidence
-  2. **Falsifiability**: Contradicting evidence can falsify hypotheses
-  3. **Support**: Agreeing evidence supports (but doesn't prove) hypotheses
-  4. **Independent Verification**: Requires 2+ independent sources
-
-  Key principle: "We cannot prove a hypothesis true, only support it with
-  evidence or falsify it with contradicting evidence."
-
-  ## Features
-
-  - Groups findings by semantic similarity using TF-IDF embeddings
-  - Requires 2+ independent sources for high-confidence facts
-  - Detects conflicting claims between sources
-  - Computes aggregate confidence scores based on corroboration
-  - Evaluates hypotheses and determines if they are supported/falsified
-
-  ## Example
-
-      findings = [
-        %Finding{claim: "Paris is the capital of France", source: %{domain: "source1.com"}},
-        %Finding{claim: "France's capital is Paris", source: %{domain: "source2.com"}}
-      ]
-
-      {:ok, candidates} = Corroborator.corroborate(findings)
-      # => Single ReviewCandidate with 2 corroborating sources
-
-      # Or with hypothesis testing:
-      {:ok, investigation} = Corroborator.test_hypotheses(investigation, findings)
-  """
-
+  alias Brain.LinguisticData
+  alias Brain.Knowledge.Types
   require Logger
 
   alias Brain.Memory.Embedder
-  alias Brain.Knowledge.Types.{Finding, ReviewCandidate, Hypothesis, Investigation}
+  alias Types.{Finding, ReviewCandidate, Hypothesis, Investigation}
   alias Brain.Telemetry
-
-  # Cosine similarity threshold for considering claims as "the same"
-  @similarity_threshold 0.70
-
-  # Minimum number of sources required for a finding to be considered corroborated
+  @similarity_threshold 0.7
   @min_sources 2
-
-  # Maximum cluster size to prevent runaway clustering
   @max_cluster_size 20
 
-  # ============================================================================
-  # Public API
-  # ============================================================================
-
-  @doc """
-  Groups findings by semantic similarity and calculates corroboration.
-
-  Returns ReviewCandidates with corroboration metadata. Only findings
-  that meet the minimum source threshold are returned.
-
-  ## Options
-    - :similarity_threshold - Override default similarity threshold
-    - :min_sources - Override minimum source requirement
-    - :include_uncorroborated - If true, include findings below threshold
-  """
+  @doc "Groups findings by semantic similarity and calculates corroboration.\n\nReturns ReviewCandidates with corroboration metadata. Only findings\nthat meet the minimum source threshold are returned.\n\n## Options\n  - :similarity_threshold - Override default similarity threshold\n  - :min_sources - Override minimum source requirement\n  - :include_uncorroborated - If true, include findings below threshold\n"
   @spec corroborate([Finding.t()], keyword()) :: {:ok, [ReviewCandidate.t()]}
   def corroborate(findings, opts \\ []) when is_list(findings) do
     Telemetry.span(:knowledge_corroborate, %{findings_count: length(findings)}, fn ->
@@ -81,16 +27,12 @@ defmodule Brain.Knowledge.Corroborator do
 
     Logger.debug("Starting corroboration", findings_count: length(findings))
 
-    if length(findings) == 0 do
+    if findings == [] do
       {:ok, []}
     else
-      # 1. Embed all claims
       embedded = embed_findings(findings)
-
-      # 2. Cluster by similarity
       clusters = cluster_by_similarity(embedded, similarity_threshold)
 
-      # 3. Build ReviewCandidates with corroboration info
       candidates =
         clusters
         |> Enum.map(&build_candidate_from_cluster/1)
@@ -106,11 +48,7 @@ defmodule Brain.Knowledge.Corroborator do
     end
   end
 
-  @doc """
-  Checks if two claims are semantically similar.
-
-  Returns {:ok, similarity_score} where score is 0.0-1.0.
-  """
+  @doc "Checks if two claims are semantically similar.\n\nReturns {:ok, similarity_score} where score is 0.0-1.0.\n"
   @spec compare_claims(String.t(), String.t()) :: {:ok, float()} | {:error, term()}
   def compare_claims(claim1, claim2) when is_binary(claim1) and is_binary(claim2) do
     if Embedder.ready?() do
@@ -120,16 +58,11 @@ defmodule Brain.Knowledge.Corroborator do
         {:ok, similarity}
       end
     else
-      # Fall back to simple token overlap
       {:ok, token_overlap_similarity(claim1, claim2)}
     end
   end
 
-  @doc """
-  Detects conflicts between a new claim and existing claims.
-
-  Returns a list of claims that conflict with the given claim.
-  """
+  @doc "Detects conflicts between a new claim and existing claims.\n\nReturns a list of claims that conflict with the given claim.\n"
   @spec find_conflicts(Finding.t(), [Finding.t()]) :: [Finding.t()]
   def find_conflicts(%Finding{} = finding, existing_findings) do
     existing_findings
@@ -138,42 +71,19 @@ defmodule Brain.Knowledge.Corroborator do
     end)
   end
 
-  # ============================================================================
-  # Hypothesis Testing API (Scientific Method)
-  # ============================================================================
-
-  @doc """
-  Tests hypotheses in an investigation against gathered evidence.
-
-  This is the core of the scientific method implementation:
-  1. For each hypothesis, find relevant evidence
-  2. Classify evidence as supporting or contradicting
-  3. Apply falsifiability rules
-  4. Update hypothesis status
-
-  ## Falsifiability Rules
-
-  A hypothesis is **falsified** if:
-  - Reliable contradicting evidence exists (reliability >= 0.6)
-  - The contradicting source is independent
-
-  A hypothesis is **supported** if:
-  - 2+ independent sources provide agreeing evidence
-  - No reliable contradicting evidence exists
-
-  ## Returns
-
-  Updated investigation with evaluated hypotheses.
-  """
+  @doc "Tests hypotheses in an investigation against gathered evidence.\n\nThis is the core of the scientific method implementation:\n1. For each hypothesis, find relevant evidence\n2. Classify evidence as supporting or contradicting\n3. Apply falsifiability rules\n4. Update hypothesis status\n\n## Falsifiability Rules\n\nA hypothesis is **falsified** if:\n- Reliable contradicting evidence exists (reliability >= 0.6)\n- The contradicting source is independent\n\nA hypothesis is **supported** if:\n- 2+ independent sources provide agreeing evidence\n- No reliable contradicting evidence exists\n\n## Returns\n\nUpdated investigation with evaluated hypotheses.\n"
   @spec test_hypotheses(Investigation.t(), [Finding.t()]) :: {:ok, Investigation.t()}
   def test_hypotheses(%Investigation{} = investigation, findings) when is_list(findings) do
-    # Using :knowledge_corroborate span since hypothesis testing is part of corroboration
-    Telemetry.span(:knowledge_corroborate, %{
-      hypothesis_count: length(investigation.hypotheses),
-      evidence_count: length(findings)
-    }, fn ->
-      do_test_hypotheses(investigation, findings)
-    end)
+    Telemetry.span(
+      :knowledge_corroborate,
+      %{
+        hypothesis_count: length(investigation.hypotheses),
+        evidence_count: length(findings)
+      },
+      fn ->
+        do_test_hypotheses(investigation, findings)
+      end
+    )
   end
 
   defp do_test_hypotheses(%Investigation{} = investigation, findings) do
@@ -182,10 +92,7 @@ defmodule Brain.Knowledge.Corroborator do
       findings: length(findings)
     )
 
-    # Record evidence in the investigation
     investigation = Investigation.record_evidence(investigation, findings)
-
-    # Conclude the investigation (evaluates all hypotheses)
     concluded = Investigation.conclude(investigation)
 
     Logger.info("Hypothesis testing completed",
@@ -197,17 +104,11 @@ defmodule Brain.Knowledge.Corroborator do
     {:ok, concluded}
   end
 
-  @doc """
-  Evaluates a single hypothesis against a set of findings.
-
-  Returns the hypothesis with updated status and evidence.
-  """
+  @doc "Evaluates a single hypothesis against a set of findings.\n\nReturns the hypothesis with updated status and evidence.\n"
   @spec evaluate_hypothesis(Hypothesis.t(), [Finding.t()]) :: Hypothesis.t()
   def evaluate_hypothesis(%Hypothesis{} = hypothesis, findings) when is_list(findings) do
-    # Find relevant evidence for this hypothesis
     {supporting, contradicting} = partition_evidence(hypothesis, findings)
 
-    # Add evidence to hypothesis
     hypothesis =
       supporting
       |> Enum.reduce(hypothesis, fn finding, hyp ->
@@ -220,21 +121,15 @@ defmodule Brain.Knowledge.Corroborator do
         Hypothesis.add_contradicting_evidence(hyp, finding)
       end)
 
-    # Evaluate and return
     Hypothesis.evaluate(hypothesis)
   end
 
-  @doc """
-  Determines if evidence supports or contradicts a hypothesis.
-
-  Uses semantic similarity and negation detection.
-  """
-  @spec classify_evidence(Hypothesis.t(), Finding.t()) :: :supporting | :contradicting | :irrelevant
+  @doc "Determines if evidence supports or contradicts a hypothesis.\n\nUses semantic similarity and negation detection.\n"
+  @spec classify_evidence(Hypothesis.t(), Finding.t()) ::
+          :supporting | :contradicting | :irrelevant
   def classify_evidence(%Hypothesis{} = hypothesis, %Finding{} = finding) do
-    # Check semantic similarity
     case compare_claims(hypothesis.claim, finding.claim) do
       {:ok, similarity} when similarity >= @similarity_threshold ->
-        # High similarity - check for contradiction
         if contradicts?(hypothesis.claim, finding.claim) do
           :contradicting
         else
@@ -249,16 +144,7 @@ defmodule Brain.Knowledge.Corroborator do
     end
   end
 
-  @doc """
-  Converts supported hypotheses from an investigation into ReviewCandidates.
-
-  Only hypotheses that are:
-  1. Supported (not falsified)
-  2. High confidence (>= 0.7)
-  3. Have 2+ independent sources
-
-  are converted to candidates for admin review.
-  """
+  @doc "Converts supported hypotheses from an investigation into ReviewCandidates.\n\nOnly hypotheses that are:\n1. Supported (not falsified)\n2. High confidence (>= 0.7)\n3. Have 2+ independent sources\n\nare converted to candidates for admin review.\n"
   @spec hypotheses_to_candidates(Investigation.t(), keyword()) :: [ReviewCandidate.t()]
   def hypotheses_to_candidates(%Investigation{} = investigation, opts \\ []) do
     session_id = Keyword.get(opts, :session_id)
@@ -266,10 +152,8 @@ defmodule Brain.Knowledge.Corroborator do
     investigation
     |> Investigation.promotable_hypotheses()
     |> Enum.map(fn hypothesis ->
-      # Use the first supporting evidence as the primary finding
       primary_finding = build_finding_from_hypothesis(hypothesis)
 
-      # Gather corroborating sources
       corroborating_sources =
         hypothesis.supporting_evidence
         |> Enum.map(& &1.source)
@@ -284,10 +168,6 @@ defmodule Brain.Knowledge.Corroborator do
     end)
   end
 
-  # ============================================================================
-  # Private Functions - Hypothesis Testing
-  # ============================================================================
-
   defp partition_evidence(%Hypothesis{} = hypothesis, findings) do
     findings
     |> Enum.reduce({[], []}, fn finding, {supporting, contradicting} ->
@@ -300,13 +180,16 @@ defmodule Brain.Knowledge.Corroborator do
   end
 
   defp build_finding_from_hypothesis(%Hypothesis{} = hypothesis) do
-    # Create a Finding from the hypothesis for the review queue
-    # Use the best supporting evidence as the source
     best_source =
       hypothesis.supporting_evidence
       |> Enum.max_by(fn f -> f.source.reliability_score end, fn -> nil end)
 
-    source = if best_source, do: best_source.source, else: default_source()
+    source =
+      if best_source do
+        best_source.source
+      else
+        default_source()
+      end
 
     Finding.new(
       hypothesis.claim,
@@ -321,10 +204,6 @@ defmodule Brain.Knowledge.Corroborator do
     alias Brain.Knowledge.Types.SourceInfo
     SourceInfo.new("internal://hypothesis", title: "Hypothesis-derived")
   end
-
-  # ============================================================================
-  # Private Functions - Embedding
-  # ============================================================================
 
   defp embed_findings(findings) do
     findings
@@ -346,7 +225,6 @@ defmodule Brain.Knowledge.Corroborator do
   end
 
   defp compute_simple_embedding(text) do
-    # Simple fallback: normalized word frequency vector
     words = tokenize(text)
     word_counts = Enum.frequencies(words)
     total = Enum.sum(Map.values(word_counts))
@@ -360,14 +238,7 @@ defmodule Brain.Knowledge.Corroborator do
     end
   end
 
-  # ============================================================================
-  # Private Functions - Clustering
-  # ============================================================================
-
   defp cluster_by_similarity(embedded_findings, threshold) do
-    # Greedy clustering: assign each finding to the first cluster it matches
-    # or create a new cluster
-
     embedded_findings
     |> Enum.reduce([], fn {finding, embedding}, clusters ->
       case find_matching_cluster(clusters, embedding, threshold) do
@@ -375,7 +246,6 @@ defmodule Brain.Knowledge.Corroborator do
           update_cluster(clusters, cluster_idx, {finding, embedding})
 
         :not_found ->
-          # Create new cluster with this finding as the primary
           new_cluster = %{
             primary: {finding, embedding},
             supporting: []
@@ -423,14 +293,15 @@ defmodule Brain.Knowledge.Corroborator do
   end
 
   defp compute_similarity(emb1, emb2) when is_map(emb1) and is_map(emb2) do
-    # Map-based embeddings (fallback mode)
     map_similarity(emb1, emb2)
   end
 
-  defp compute_similarity(_, _), do: 0.0
+  defp compute_similarity(_, _) do
+    0.0
+  end
 
   defp cosine_similarity(v1, v2) when is_list(v1) and is_list(v2) do
-    if length(v1) == length(v2) and length(v1) > 0 do
+    if length(v1) == length(v2) and v1 != [] do
       dot = Enum.zip(v1, v2) |> Enum.map(fn {a, b} -> a * b end) |> Enum.sum()
       norm1 = :math.sqrt(Enum.map(v1, &(&1 * &1)) |> Enum.sum())
       norm2 = :math.sqrt(Enum.map(v2, &(&1 * &1)) |> Enum.sum())
@@ -446,14 +317,17 @@ defmodule Brain.Knowledge.Corroborator do
   end
 
   defp map_similarity(map1, map2) do
-    # Jaccard-like similarity for word frequency maps
     keys1 = MapSet.new(Map.keys(map1))
     keys2 = MapSet.new(Map.keys(map2))
 
     intersection = MapSet.intersection(keys1, keys2) |> MapSet.size()
     union = MapSet.union(keys1, keys2) |> MapSet.size()
 
-    if union > 0, do: intersection / union, else: 0.0
+    if union > 0 do
+      intersection / union
+    else
+      0.0
+    end
   end
 
   defp token_overlap_similarity(text1, text2) do
@@ -463,7 +337,11 @@ defmodule Brain.Knowledge.Corroborator do
     intersection = MapSet.intersection(words1, words2) |> MapSet.size()
     union = MapSet.union(words1, words2) |> MapSet.size()
 
-    if union > 0, do: intersection / union, else: 0.0
+    if union > 0 do
+      intersection / union
+    else
+      0.0
+    end
   end
 
   defp tokenize(text) do
@@ -473,26 +351,14 @@ defmodule Brain.Knowledge.Corroborator do
     |> Enum.filter(&(String.length(&1) > 2))
   end
 
-  # ============================================================================
-  # Private Functions - Candidate Building
-  # ============================================================================
-
   defp build_candidate_from_cluster({primary, supporting}) do
-    # Calculate aggregate confidence based on:
-    # - Number of independent sources
-    # - Source reliability scores
-    # - Claim consistency
-
     all_findings = [primary | supporting]
     source_count = count_unique_domains(all_findings)
     avg_reliability = average_source_reliability(all_findings)
-
-    # Detect conflicts within the cluster
     {corroborating, conflicting} = partition_by_conflict(primary, supporting)
 
     aggregate = calculate_aggregate_confidence(source_count, avg_reliability, length(conflicting))
 
-    # Extract corroborating source info
     corroborating_sources =
       corroborating
       |> Enum.map(& &1.source)
@@ -515,7 +381,7 @@ defmodule Brain.Knowledge.Corroborator do
   defp average_source_reliability(findings) do
     scores = Enum.map(findings, fn f -> f.source.reliability_score end)
 
-    if length(scores) > 0 do
+    if scores != [] do
       Enum.sum(scores) / length(scores)
     else
       0.5
@@ -529,13 +395,8 @@ defmodule Brain.Knowledge.Corroborator do
   end
 
   defp calculate_aggregate_confidence(source_count, avg_reliability, conflict_count) do
-    # Base confidence from reliability
     base = avg_reliability
-
-    # Bonus for multiple sources (diminishing returns)
     source_bonus = :math.log(source_count + 1) / :math.log(5) * 0.2
-
-    # Penalty for conflicts
     conflict_penalty = conflict_count * 0.1
 
     (base + source_bonus - conflict_penalty)
@@ -548,16 +409,11 @@ defmodule Brain.Knowledge.Corroborator do
       candidates
     else
       Enum.filter(candidates, fn candidate ->
-        # Primary + corroborating sources
         total_sources = length(candidate.corroborating_sources) + 1
         total_sources >= min_sources
       end)
     end
   end
-
-  # ============================================================================
-  # Private Functions - Conflict Detection
-  # ============================================================================
 
   defp same_entity?(%Finding{entity: e1}, %Finding{entity: e2}) do
     normalize_entity(e1) == normalize_entity(e2)
@@ -569,54 +425,46 @@ defmodule Brain.Knowledge.Corroborator do
     |> String.trim()
   end
 
-  defp normalize_entity(_), do: ""
+  defp normalize_entity(_) do
+    ""
+  end
 
   defp contradicts?(claim1, claim2) when is_binary(claim1) and is_binary(claim2) do
-    # Check for explicit contradictions
-    # This is a simplified heuristic - could be enhanced with NLI models
-
     c1 = String.downcase(claim1)
     c2 = String.downcase(claim2)
 
     cond do
-      # Same claim (not a contradiction)
       c1 == c2 ->
         false
 
-      # Negation patterns
       has_negation_difference?(c1, c2) ->
         true
 
-      # Number disagreement (e.g., "14 million" vs "37 million")
       has_number_disagreement?(c1, c2) ->
         true
 
-      # Default: not a contradiction
       true ->
         false
     end
   end
 
-  defp contradicts?(_, _), do: false
+  defp contradicts?(_, _) do
+    false
+  end
 
   defp has_negation_difference?(c1, c2) do
-    negation_words = Brain.LinguisticData.negation_words()
+    negation_words = LinguisticData.negation_words()
 
     c1_has_negation = Enum.any?(negation_words, &String.contains?(c1, &1))
     c2_has_negation = Enum.any?(negation_words, &String.contains?(c2, &1))
-
-    # XOR: one has negation, other doesn't
     c1_has_negation != c2_has_negation
   end
 
   defp has_number_disagreement?(c1, c2) do
-    # Extract numbers from both claims
     numbers1 = extract_numbers(c1)
     numbers2 = extract_numbers(c2)
 
-    # If both have numbers and they're significantly different
-    if length(numbers1) > 0 and length(numbers2) > 0 do
-      # Check if any corresponding numbers differ by more than 20%
+    if numbers1 != [] and numbers2 != [] do
       Enum.any?(Enum.zip(numbers1, numbers2), fn {n1, n2} ->
         min_val = min(n1, n2)
         max_val = max(n1, n2)

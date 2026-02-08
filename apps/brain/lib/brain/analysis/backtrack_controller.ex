@@ -1,18 +1,7 @@
 defmodule Brain.Analysis.BacktrackController do
-  @moduledoc """
-  Controls backtracking with depth limits and thrash protection.
-
-  Prevents oscillation between interpretations by:
-  - Limiting maximum backtracks per input (budget)
-  - Applying activation cost per backtrack
-  - Detecting oscillation patterns
-  - Forcing clarification when budget exhausted
-
-  This addresses the "backtracking loops (thrash risk)" problem.
-  """
+  @moduledoc "Controls backtracking with depth limits and thrash protection.\n\nPrevents oscillation between interpretations by:\n- Limiting maximum backtracks per input (budget)\n- Applying activation cost per backtrack\n- Detecting oscillation patterns\n- Forcing clarification when budget exhausted\n\nThis addresses the \"backtracking loops (thrash risk)\" problem.\n"
 
   alias Brain.Analysis.{Interpretation, IntentRegistry, SlotDetector}
-
   require Logger
 
   @max_backtracks 2
@@ -36,24 +25,14 @@ defmodule Brain.Analysis.BacktrackController do
           interpretation_history: list(String.t())
         }
 
-  @doc """
-  Creates a new backtrack controller for an input.
-  """
+  @doc "Creates a new backtrack controller for an input.\n"
   def new(input_text) do
     %__MODULE__{input_text: input_text}
   end
 
-  @doc """
-  Checks if an interpretation has contradictions that warrant backtracking.
-
-  Returns {:needs_backtrack, reason} or :ok
-  """
+  @doc "Checks if an interpretation has contradictions that warrant backtracking.\n\nReturns {:needs_backtrack, reason} or :ok\n"
   def check_for_contradictions(%Interpretation{} = interp) do
-    checks = [
-      &check_missing_required_slots/1,
-      &check_entity_mismatch/1,
-      &check_confidence_drop/1
-    ]
+    checks = [&check_missing_required_slots/1, &check_entity_mismatch/1, &check_confidence_drop/1]
 
     Enum.find_value(checks, :ok, fn check ->
       case check.(interp) do
@@ -63,17 +42,9 @@ defmodule Brain.Analysis.BacktrackController do
     end)
   end
 
-  @doc """
-  Attempts to backtrack, promoting a secondary interpretation.
-
-  Returns:
-  - {:ok, new_state, new_interpretation, cost} on success
-  - {:force_clarification, clarification_prompt} if budget exhausted
-  - {:error, :no_alternatives} if no alternatives available
-  """
+  @doc "Attempts to backtrack, promoting a secondary interpretation.\n\nReturns:\n- {:ok, new_state, new_interpretation, cost} on success\n- {:force_clarification, clarification_prompt} if budget exhausted\n- {:error, :no_alternatives} if no alternatives available\n"
   def attempt_backtrack(%__MODULE__{} = state, %Interpretation{} = interp, reason) do
     cond do
-      # Budget exhausted
       state.backtrack_count >= @max_backtracks ->
         clarification = build_clarification_from_ambiguity(state, interp)
 
@@ -84,7 +55,6 @@ defmodule Brain.Analysis.BacktrackController do
 
         {:force_clarification, clarification}
 
-      # Oscillation detected
       detect_oscillation?(state, interp) ->
         Logger.warning("Oscillation detected, forcing clarification", %{
           history: state.interpretation_history
@@ -93,19 +63,15 @@ defmodule Brain.Analysis.BacktrackController do
         clarification = build_oscillation_clarification(state, interp)
         {:force_clarification, clarification}
 
-      # No alternatives to promote
       interp.alternatives == [] ->
         {:error, :no_alternatives}
 
-      # Proceed with backtrack
       true ->
         perform_backtrack(state, interp, reason)
     end
   end
 
-  @doc """
-  Returns backtracking statistics for self-reflection.
-  """
+  @doc "Returns backtracking statistics for self-reflection.\n"
   def stats(%__MODULE__{} = state) do
     %{
       backtrack_count: state.backtrack_count,
@@ -116,28 +82,24 @@ defmodule Brain.Analysis.BacktrackController do
     }
   end
 
-  @doc """
-  Checks if we should ask for clarification instead of backtracking again.
-
-  Useful for stability self-reflection (ST6, B8).
-  """
+  @doc "Checks if we should ask for clarification instead of backtracking again.\n\nUseful for stability self-reflection (ST6, B8).\n"
   def should_clarify?(%__MODULE__{} = state) do
     state.backtrack_count >= @max_backtracks - 1 or state.oscillation_detected
   end
 
-  @doc """
-  Returns the maximum allowed backtracks.
-  """
-  def max_backtracks, do: @max_backtracks
+  @doc "Returns the maximum allowed backtracks.\n"
+  def max_backtracks do
+    @max_backtracks
+  end
 
-  @doc """
-  Returns the cost per backtrack.
-  """
-  def backtrack_cost, do: @backtrack_cost
+  @doc "Returns the cost per backtrack.\n"
+  def backtrack_cost do
+    @backtrack_cost
+  end
 
-  # Private functions - Contradiction checks
-
-  defp check_missing_required_slots(%Interpretation{slots: nil}), do: :ok
+  defp check_missing_required_slots(%Interpretation{slots: nil}) do
+    :ok
+  end
 
   defp check_missing_required_slots(%Interpretation{slots: slots, intent: intent}) do
     if slots.all_required_filled do
@@ -155,21 +117,10 @@ defmodule Brain.Analysis.BacktrackController do
   end
 
   defp check_entity_mismatch(%Interpretation{} = _interp) do
-    # Entity-based contradiction checking has been disabled.
-    #
-    # The trained intent classifier is the source of truth for intent detection.
-    # Entity mismatch checks were causing incorrect backtracking:
-    # - "Turn on the lights" was rejected because "lights" wasn't in Gazetteer as a device
-    # - "Play some music" was rejected and overridden with news.query
-    #
-    # The classifier is trained on actual user patterns and should be trusted.
-    # If entity detection needs improvement, fix the training data/Gazetteer,
-    # don't override the classifier.
     :ok
   end
 
   defp check_confidence_drop(%Interpretation{activation: activation}) do
-    # Very low activation suggests something is wrong
     if activation < 0.2 do
       {:contradiction, {:low_confidence, activation}}
     else
@@ -177,25 +128,19 @@ defmodule Brain.Analysis.BacktrackController do
     end
   end
 
-  # Private functions - Backtracking
-
   defp perform_backtrack(state, interp, reason) do
-    # Promote the alternative
     case Interpretation.promote_alternative(interp) do
       {:ok, promoted} ->
-        # Record the demotion
         demoted = %{
           intent: interp.intent,
           activation: interp.activation,
           reason: reason
         }
 
-        # Apply cost to promoted interpretation
         penalized_activation = max(0.1, promoted.activation - @backtrack_cost)
 
         promoted_with_cost = %{promoted | activation: penalized_activation}
 
-        # Update state
         new_state = %{
           state
           | backtrack_count: state.backtrack_count + 1,
@@ -219,19 +164,13 @@ defmodule Brain.Analysis.BacktrackController do
   end
 
   defp detect_oscillation?(state, interp) do
-    # Check if we're bouncing between the same interpretations
-    # We need to check if the alternative we're about to promote
-    # was already visited in the history
-
     next_intent =
       case interp.alternatives do
         [%{intent: intent} | _] -> intent
         _ -> nil
       end
 
-    if next_intent && length(state.interpretation_history) >= 1 do
-      # Check if we're about to promote to something we already tried
-      # Also include current intent in check (A -> B -> A pattern)
+    if next_intent && state.interpretation_history != [] do
       full_history = [interp.intent | state.interpretation_history]
       next_intent in full_history
     else
@@ -239,10 +178,7 @@ defmodule Brain.Analysis.BacktrackController do
     end
   end
 
-  # Private functions - Clarification building
-
   defp build_clarification_from_ambiguity(state, interp) do
-    # Get the competing interpretations
     candidates =
       [interp.intent | Enum.map(state.demoted_interpretations, & &1.intent)]
       |> Enum.uniq()
@@ -266,7 +202,6 @@ defmodule Brain.Analysis.BacktrackController do
         }
 
       [_single] ->
-        # Only one candidate - ask about missing info
         build_missing_info_clarification(interp)
 
       [] ->
@@ -323,7 +258,6 @@ defmodule Brain.Analysis.BacktrackController do
   end
 
   defp generate_slot_prompt(slot, intent) do
-    # Use centralized clarification prompts from IntentRegistry via SlotDetector
     SlotDetector.get_clarification_prompt(slot, intent)
   end
 end

@@ -63,14 +63,14 @@ defmodule Brain.KnowledgeStoreDataTest do
     test "returns all categories when no filter" do
       # Add some data first
       KnowledgeStore.add_to_world(@test_world_id, "test_cat", "test_key", %{data: "value"})
-      
+
       result = KnowledgeStore.get_world_knowledge(@test_world_id)
       assert is_map(result)
     end
 
     test "filters by category when specified" do
       KnowledgeStore.add_to_world(@test_world_id, "specific", "item", %{value: 1})
-      
+
       result = KnowledgeStore.get_world_knowledge(@test_world_id, "specific")
       assert is_map(result)
     end
@@ -79,7 +79,7 @@ defmodule Brain.KnowledgeStoreDataTest do
   describe "remove_from_world/3 - data driven" do
     test "removes existing entry" do
       KnowledgeStore.add_to_world(@test_world_id, "removable", "item", %{temp: true})
-      
+
       result = KnowledgeStore.remove_from_world(@test_world_id, "removable", "item")
       assert result == :ok
     end
@@ -95,7 +95,7 @@ defmodule Brain.KnowledgeStoreDataTest do
     test "clears all knowledge for a world" do
       # Add data
       KnowledgeStore.add_to_world(@test_world_id, "clear_test", "item", %{data: true})
-      
+
       # Clear
       result = KnowledgeStore.clear_world(@test_world_id)
       assert result == :ok

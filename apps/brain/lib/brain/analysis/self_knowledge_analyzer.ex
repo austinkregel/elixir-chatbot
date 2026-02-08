@@ -1,40 +1,16 @@
 defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
-  @moduledoc """
-  Analyzes meta-cognitive queries about what the system knows.
-
-  This analyzer uses the trained intent classifier to detect queries like:
-  - "What do you know about me?" (meta.self_knowledge)
-  - "Do you remember me?" (meta.memory_check)
-  - "Are you tracking me?" (meta.privacy_probe)
-
-  Training data for these intents lives in:
-  - data/intents/meta.self_knowledge_usersays_en.json
-  - data/intents/meta.memory_check_usersays_en.json
-  - data/intents/meta.privacy_probe_usersays_en.json
-
-  For such queries, it builds a SelfKnowledgeAssessment that categorizes
-  the system's knowledge into:
-  - Discloseable (safe to share confidently)
-  - Inferred but uncertain (share with hedging)
-  - Should avoid (too personal, uncertain, or inappropriate)
-  """
+  @moduledoc "Analyzes meta-cognitive queries about what the system knows.\n\nThis analyzer uses the trained intent classifier to detect queries like:\n- \"What do you know about me?\" (meta.self_knowledge)\n- \"Do you remember me?\" (meta.memory_check)\n- \"Are you tracking me?\" (meta.privacy_probe)\n\nTraining data for these intents lives in:\n- data/intents/meta.self_knowledge_usersays_en.json\n- data/intents/meta.memory_check_usersays_en.json\n- data/intents/meta.privacy_probe_usersays_en.json\n\nFor such queries, it builds a SelfKnowledgeAssessment that categorizes\nthe system's knowledge into:\n- Discloseable (safe to share confidently)\n- Inferred but uncertain (share with hedging)\n- Should avoid (too personal, uncertain, or inappropriate)\n"
 
   alias Brain.Analysis.{AnalyzerResult, IntentRegistry}
   alias Brain.Epistemic.Types.{SelfKnowledgeAssessment, Config}
   alias Brain.Epistemic.UserModelStore
   alias Brain.ML.IntentClassifierSimple
 
+  alias Brain.ML.Tokenizer
   require Logger
-
-  # Minimum confidence to consider a meta-cognitive intent
   @min_confidence 0.5
 
-  @doc """
-  Analyzes text to detect meta-cognitive queries.
-
-  Returns an AnalyzerResult if a meta-cognitive query is detected,
-  otherwise returns a low-confidence result.
-  """
+  @doc "Analyzes text to detect meta-cognitive queries.\n\nReturns an AnalyzerResult if a meta-cognitive query is detected,\notherwise returns a low-confidence result.\n"
   def analyze(text, opts \\ []) do
     user_id = Keyword.get(opts, :user_id)
 
@@ -42,7 +18,6 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
       {:ok, intent, confidence} when confidence >= @min_confidence ->
         query_type = intent_to_query_type(intent)
 
-        # Build assessment if we have a user_id
         assessment =
           if user_id && Config.enabled?() do
             build_self_knowledge_assessment(user_id)
@@ -65,10 +40,7 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
     end
   end
 
-  @doc """
-  Checks if the text contains a meta-cognitive query.
-  Uses the intent classifier trained on meta.* intents.
-  """
+  @doc "Checks if the text contains a meta-cognitive query.\nUses the intent classifier trained on meta.* intents.\n"
   def is_self_knowledge_query?(text) do
     case detect_meta_intent(text) do
       {:ok, _intent, confidence} when confidence >= @min_confidence -> true
@@ -76,16 +48,12 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
     end
   end
 
-  @doc """
-  Builds a SelfKnowledgeAssessment for the given user.
-  """
+  @doc "Builds a SelfKnowledgeAssessment for the given user.\n"
   def build_self_knowledge_assessment(nil) do
-    # No user_id - return empty assessment
     SelfKnowledgeAssessment.new("unknown")
   end
 
   def build_self_knowledge_assessment(user_id) do
-    # Check if UserModelStore is available
     if Process.whereis(UserModelStore) == nil do
       SelfKnowledgeAssessment.new(user_id || "unknown")
     else
@@ -93,7 +61,6 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
 
       case UserModelStore.get(user_id) do
         nil ->
-          # No user model - return empty assessment
           SelfKnowledgeAssessment.new(user_id)
 
         model ->
@@ -106,50 +73,35 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
     end
   end
 
-  @doc """
-  Detects if the text matches a meta-cognitive intent.
-
-  Uses the intent classifier and filters for meta.* intents.
-  Falls back to keyword-based detection when classifier is unavailable.
-  Returns {:ok, intent, confidence} or :no_match
-  """
+  @doc "Detects if the text matches a meta-cognitive intent.\n\nUses the intent classifier and filters for meta.* intents.\nFalls back to keyword-based detection when classifier is unavailable.\nReturns {:ok, intent, confidence} or :no_match\n"
   def detect_meta_intent(text) do
-    # Try the classifier first
     case IntentClassifierSimple.classify(text) do
       {:ok, %{intent: intent, confidence: confidence}} when is_binary(intent) ->
         if is_meta_intent?(intent) do
           {:ok, intent, confidence}
         else
-          # Classifier returned non-meta intent, try keyword fallback
           keyword_fallback_detection(text)
         end
 
       _ ->
-        # Classifier unavailable, use keyword fallback
         keyword_fallback_detection(text)
     end
   rescue
     _ ->
-      # Error in classifier, use keyword fallback
       keyword_fallback_detection(text)
   end
 
-  # Keyword-based fallback detection using tokenizer (no regex)
-  # Used when the classifier isn't trained or available
   defp keyword_fallback_detection(text) do
-    tokens = Brain.ML.Tokenizer.tokenize_normalized(text)
+    tokens = Tokenizer.tokenize_normalized(text)
     token_set = MapSet.new(tokens)
 
     cond do
-      # Self-knowledge patterns
       is_self_knowledge_pattern?(tokens, token_set) ->
         {:ok, "meta.self_knowledge", 0.75}
 
-      # Memory check patterns
       is_memory_check_pattern?(tokens, token_set) ->
         {:ok, "meta.memory_check", 0.75}
 
-      # Privacy probe patterns
       is_privacy_probe_pattern?(tokens, token_set) ->
         {:ok, "meta.privacy_probe", 0.75}
 
@@ -159,7 +111,6 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
   end
 
   defp is_self_knowledge_pattern?(_tokens, token_set) do
-    # "what do you know about me"
     has_know = MapSet.member?(token_set, "know") or MapSet.member?(token_set, "learned")
     has_about_me = MapSet.member?(token_set, "about") and MapSet.member?(token_set, "me")
     has_you = MapSet.member?(token_set, "you")
@@ -170,7 +121,6 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
   end
 
   defp is_memory_check_pattern?(_tokens, token_set) do
-    # "do you remember me"
     has_remember = MapSet.member?(token_set, "remember") or MapSet.member?(token_set, "recall")
     has_you = MapSet.member?(token_set, "you")
     has_me = MapSet.member?(token_set, "me") or MapSet.member?(token_set, "anything")
@@ -179,7 +129,6 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
   end
 
   defp is_privacy_probe_pattern?(_tokens, token_set) do
-    # "are you tracking me"
     tracking_words = ~w(tracking watching monitoring spying collecting)
     has_tracking = Enum.any?(tracking_words, &MapSet.member?(token_set, &1))
     has_you = MapSet.member?(token_set, "you")
@@ -188,9 +137,7 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
     has_tracking and has_you and has_me
   end
 
-  @doc """
-  Determines the type of meta-cognitive query from the intent.
-  """
+  @doc "Determines the type of meta-cognitive query from the intent.\n"
   def detect_query_type(text) do
     case detect_meta_intent(text) do
       {:ok, intent, confidence} ->
@@ -201,16 +148,10 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
     end
   end
 
-  @doc """
-  Returns the list of meta-cognitive intents from IntentRegistry.
-  """
+  @doc "Returns the list of meta-cognitive intents from IntentRegistry.\n"
   def meta_intents do
     IntentRegistry.list_by_domain(:meta)
   end
-
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
 
   defp is_meta_intent?(intent) do
     IntentRegistry.meta_intent?(intent)

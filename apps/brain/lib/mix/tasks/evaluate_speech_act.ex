@@ -1,22 +1,12 @@
 defmodule Mix.Tasks.Evaluate.SpeechAct do
+  alias Brain.Analysis.SpeechActClassifier
+  alias Brain.ML
   @shortdoc "Evaluate speech act classification accuracy"
-  @moduledoc """
-  Evaluate speech act classification against gold standard data.
-
-  ## Usage
-
-      mix evaluate.speech_act              # Run evaluation
-      mix evaluate.speech_act --save       # Save results
-      mix evaluate.speech_act --verbose    # Show per-class details
-
-  ## Gold Standard Format
-
-      [{"text": "What time is it?", "speech_act": "directive"}, ...]
-  """
+  @moduledoc "Evaluate speech act classification against gold standard data.\n\n## Usage\n\n    mix evaluate.speech_act              # Run evaluation\n    mix evaluate.speech_act --save       # Save results\n    mix evaluate.speech_act --verbose    # Show per-class details\n\n## Gold Standard Format\n\n    [{\"text\": \"What time is it?\", \"speech_act\": \"directive\"}, ...]\n"
 
   use Mix.Task
 
-  alias Brain.ML.{Evaluation, EvaluationStore}
+  alias ML.{Evaluation, EvaluationStore}
 
   @impl Mix.Task
   def run(args) do
@@ -66,7 +56,7 @@ defmodule Mix.Tasks.Evaluate.SpeechAct do
       expected = example["speech_act"]
 
       predicted =
-        case Brain.Analysis.SpeechActClassifier.classify(text) do
+        case SpeechActClassifier.classify(text) do
           %{category: category} -> to_string(category)
           _ -> "unknown"
         end

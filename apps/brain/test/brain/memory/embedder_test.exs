@@ -5,10 +5,7 @@ defmodule Brain.Memory.EmbedderTest do
   alias Brain.Memory.Embedder
 
   setup do
-    # Ensure PubSub is started (required by Embedder for world model subscriptions)
     ensure_pubsub_started()
-
-    # Use ExUnit's supervised process management for consistent lifecycle
     ensure_started(Embedder)
 
     :ok
@@ -16,9 +13,6 @@ defmodule Brain.Memory.EmbedderTest do
 
   describe "initialization" do
     test "embedder has ready?/0 status function" do
-      # Test that the ready?() function works
-      # Note: A fresh embedder should not be ready, but in a test suite context
-      # it might already have vocabulary from previous tests
       ready = Embedder.ready?()
       assert is_boolean(ready)
     end
@@ -26,11 +20,7 @@ defmodule Brain.Memory.EmbedderTest do
 
   describe "build_vocabulary" do
     test "builds vocabulary from texts" do
-      texts = [
-        "hello world",
-        "hello there",
-        "goodbye world"
-      ]
+      texts = ["hello world", "hello there", "goodbye world"]
 
       {:ok, vocab_size} = Embedder.build_vocabulary(texts)
 
@@ -40,24 +30,15 @@ defmodule Brain.Memory.EmbedderTest do
     end
 
     test "filters out words with frequency < 2" do
-      texts = [
-        "hello hello hello",
-        "world world",
-        "unique"
-      ]
+      texts = ["hello hello hello", "world world", "unique"]
 
       {:ok, vocab_size} = Embedder.build_vocabulary(texts)
-
-      # "unique" appears only once, should be filtered out
-      # "hello" and "world" should remain
       assert vocab_size == 2
     end
   end
 
   describe "embed" do
     test "embed/1 returns error or embedding based on ready state" do
-      # If the embedder is not ready, it should return an error
-      # If it's already ready (vocabulary built), it should work
       result = Embedder.embed("hello")
 
       case Embedder.ready?() do
@@ -65,7 +46,6 @@ defmodule Brain.Memory.EmbedderTest do
           assert {:error, :not_ready} = result
 
         true ->
-          # Already has vocabulary, should return an embedding
           assert {:ok, embedding} = result
           assert is_list(embedding)
       end
@@ -78,17 +58,12 @@ defmodule Brain.Memory.EmbedderTest do
       {:ok, embedding} = Embedder.embed("hello world")
 
       assert is_list(embedding)
-      assert length(embedding) > 0
+      assert embedding != []
       assert Enum.all?(embedding, &is_float/1)
     end
 
     test "similar texts produce similar embeddings" do
-      texts = [
-        "hello world",
-        "hello there friend",
-        "goodbye world",
-        "good morning world"
-      ]
+      texts = ["hello world", "hello there friend", "goodbye world", "good morning world"]
 
       {:ok, _} = Embedder.build_vocabulary(texts)
 
@@ -98,8 +73,6 @@ defmodule Brain.Memory.EmbedderTest do
 
       sim_hello = Embedder.cosine_similarity(emb1, emb2)
       sim_different = Embedder.cosine_similarity(emb1, emb3)
-
-      # "hello world" should be more similar to "hello there" than to "goodbye cruel"
       assert sim_hello > sim_different
     end
   end
@@ -127,13 +100,8 @@ defmodule Brain.Memory.EmbedderTest do
       assert is_map(model)
       assert Map.has_key?(model, :vocabulary)
       assert Map.has_key?(model, :idf_weights)
-
-      # Test that loading a model works (even if already ready)
-      # The load_model should update the internal state
       :ok = Embedder.load_model(model)
       assert Embedder.ready?()
-
-      # Verify the vocabulary size matches what we exported
       vocab_size = Embedder.vocabulary_size()
       assert vocab_size == map_size(model.vocabulary)
     end

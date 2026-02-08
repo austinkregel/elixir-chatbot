@@ -1,34 +1,9 @@
 defmodule ChatWeb.WorldContext do
-  @moduledoc """
-  LiveView on_mount hook for world context persistence.
+  @moduledoc "LiveView on_mount hook for world context persistence.\n\nProvides a consistent world context across all LiveViews in a session.\nThe selected world persists across page navigations via PubSub broadcasts\nand session storage.\n\n## Usage\n\nIn the router:\n\n    live_session :world_context, on_mount: [{ChatWeb.WorldContext, :default}] do\n      live \"/chat\", ChatLive\n      live \"/explorer\", ExplorerLive\n      ...\n    end\n\nIn LiveViews, the following assigns are available:\n- `@current_world_id` - The currently selected world ID\n- `@available_worlds` - List of available worlds\n- `@system_ready` - Whether all systems are ready\n- `@current_path` - The current request path\n\n## World Change Notifications\n\nWhen a world is switched, a PubSub message is broadcast on the topic\n`world_context:<session_id>` with the payload `{:world_changed, world_id}`.\nSystems can subscribe to this to react to world changes.\n"
 
-  Provides a consistent world context across all LiveViews in a session.
-  The selected world persists across page navigations via PubSub broadcasts
-  and session storage.
-
-  ## Usage
-
-  In the router:
-
-      live_session :world_context, on_mount: [{ChatWeb.WorldContext, :default}] do
-        live "/chat", ChatLive
-        live "/explorer", ExplorerLive
-        ...
-      end
-
-  In LiveViews, the following assigns are available:
-  - `@current_world_id` - The currently selected world ID
-  - `@available_worlds` - List of available worlds
-  - `@system_ready` - Whether all systems are ready
-  - `@current_path` - The current request path
-
-  ## World Change Notifications
-
-  When a world is switched, a PubSub message is broadcast on the topic
-  `world_context:<session_id>` with the payload `{:world_changed, world_id}`.
-  Systems can subscribe to this to react to world changes.
-  """
-
+  alias Phoenix.PubSub
+  alias World.Manager
+  alias Brain.SystemStatus
   import Phoenix.LiveView
   import Phoenix.Component
 
@@ -37,38 +12,24 @@ defmodule ChatWeb.WorldContext do
   @default_world_id "default"
   @pubsub Brain.PubSub
 
-  @doc """
-  On mount hook that sets up world context.
-  """
+  @doc "On mount hook that sets up world context.\n"
   def on_mount(:default, params, session, socket) do
-    # Get session_id for PubSub topic
     session_id = get_session_id(session, socket)
 
-    # Get world_id from params, session, or ETS cache, or default
-    # We use ETS to persist across LiveView navigations since session isn't writable
     world_id =
       params["world_id"] ||
         get_cached_world_id(session_id) ||
         Map.get(session, "world_id") ||
         @default_world_id
 
-    # Cache the world_id for this session
     cache_world_id(session_id, world_id)
-
-    # Load available worlds
     available_worlds = get_available_worlds()
-
-    # Check system status
-    system_ready = Brain.SystemStatus.all_ready?()
-
-    # Get current path
+    system_ready = SystemStatus.all_ready?()
     current_path = get_current_path(socket)
 
-    # Subscribe to world context changes for this session AND globally
     if connected?(socket) do
-      Phoenix.PubSub.subscribe(@pubsub, world_topic(session_id))
-      # Also subscribe to global topic to catch cross-session broadcasts
-      Phoenix.PubSub.subscribe(@pubsub, "world_context:global")
+      PubSub.subscribe(@pubsub, world_topic(session_id))
+      PubSub.subscribe(@pubsub, "world_context:global")
     end
 
     socket =
@@ -85,15 +46,10 @@ defmodule ChatWeb.WorldContext do
     {:cont, socket}
   end
 
-  # ============================================================================
-  # Event Handlers
-  # ============================================================================
-
   defp handle_world_events("switch_world", %{"world_id" => world_id}, socket) do
     old_world_id = socket.assigns.current_world_id
     session_id = socket.assigns.world_session_id
 
-    # Only do something if world actually changed
     if world_id != old_world_id do
       Logger.info("Switching world context",
         from: old_world_id,
@@ -101,14 +57,10 @@ defmodule ChatWeb.WorldContext do
         session: String.slice(session_id, 0, 8)
       )
 
-      # Cache the new world_id for this session
       cache_world_id(session_id, world_id)
+      PubSub.broadcast(@pubsub, world_topic(session_id), {:world_changed, world_id})
 
-      # Broadcast world change to all LiveViews in this session
-      Phoenix.PubSub.broadcast(@pubsub, world_topic(session_id), {:world_changed, world_id})
-
-      # Also broadcast globally for backend systems (includes session_id for filtering)
-      Phoenix.PubSub.broadcast(
+      PubSub.broadcast(
         @pubsub,
         "world_context:global",
         {:world_changed, session_id, world_id}
@@ -134,36 +86,22 @@ defmodule ChatWeb.WorldContext do
     {:cont, socket}
   end
 
-  # ============================================================================
-  # Info Handlers (PubSub messages)
-  # ============================================================================
-
   defp handle_world_info({:world_changed, world_id}, socket) do
-    # Another LiveView in this session changed the world - sync up
     socket =
       if socket.assigns.current_world_id != world_id do
-        # Update cache for consistency
         cache_world_id(socket.assigns.world_session_id, world_id)
-
-        # Let the LiveView handle the world change for page-specific data reload
         send(self(), {:world_context_changed, world_id})
         assign(socket, :current_world_id, world_id)
       else
         socket
       end
 
-    # Halt to prevent the raw PubSub message from reaching the LiveView
-    # The LiveView will receive {:world_context_changed, world_id} instead
     {:halt, socket}
   end
 
   defp handle_world_info({:world_changed, _other_session_id, world_id}, socket) do
-    # Global broadcast from another session - check if same session
-    # We receive this because we subscribe to global, but we filter by our session
-    # For now, we also sync to this world if it changed (cross-tab sync)
     socket =
       if socket.assigns.current_world_id != world_id do
-        # Update cache
         cache_world_id(socket.assigns.world_session_id, world_id)
 
         send(self(), {:world_context_changed, world_id})
@@ -179,23 +117,14 @@ defmodule ChatWeb.WorldContext do
     {:cont, socket}
   end
 
-  # ============================================================================
-  # Params Handler
-  # ============================================================================
-
   defp handle_params(_params, uri, socket) do
-    # Update current path on navigation
     %URI{path: path} = URI.parse(uri)
     {:cont, assign(socket, :current_path, path || "/")}
   end
 
-  # ============================================================================
-  # Helpers
-  # ============================================================================
-
   defp get_available_worlds do
     try do
-      World.Manager.list_worlds()
+      Manager.list_worlds()
       |> Enum.map(fn world ->
         %{id: world.id, name: world.name}
       end)
@@ -222,27 +151,19 @@ defmodule ChatWeb.WorldContext do
   end
 
   defp get_session_id(session, socket) do
-    # Try to get a stable session identifier
-    # Priority: explicit session_id > CSRF token > socket private key > live_session name
     cond do
-      # Check explicit session_id in session
       session_id = Map.get(session, "session_id") ->
         session_id
 
-      # Check CSRF token (stable across live_session)
       csrf = Map.get(session, "_csrf_token") ->
         csrf
 
-      # Check socket's root_pid as a stable identifier for this browser tab
       socket.root_pid != nil ->
-        # Use the root LiveView's PID as identifier - stable within a browser tab
         :erlang.pid_to_list(socket.root_pid) |> to_string() |> Base.encode64(padding: false)
 
-      # Fallback to socket ID if available
       socket.id != nil ->
         socket.id
 
-      # Last resort - generate one (this means each LV would have different ID, but we log it)
       true ->
         id = :crypto.strong_rand_bytes(16) |> Base.url_encode64(padding: false)
 
@@ -254,39 +175,26 @@ defmodule ChatWeb.WorldContext do
     end
   end
 
-  defp world_topic(session_id), do: "world_context:#{session_id}"
+  defp world_topic(session_id) do
+    "world_context:#{session_id}"
+  end
 
-  # ============================================================================
-  # Public API for other modules
-  # ============================================================================
+  @doc "Returns the default world ID.\n"
+  def default_world_id do
+    @default_world_id
+  end
 
-  @doc """
-  Returns the default world ID.
-  """
-  def default_world_id, do: @default_world_id
-
-  @doc """
-  Subscribe to global world change events.
-  Receives `{:world_changed, session_id, world_id}` messages.
-  """
+  @doc "Subscribe to global world change events.\nReceives `{:world_changed, session_id, world_id}` messages.\n"
   def subscribe_global do
-    Phoenix.PubSub.subscribe(@pubsub, "world_context:global")
+    PubSub.subscribe(@pubsub, "world_context:global")
   end
 
-  @doc """
-  Broadcast a world change event for a session.
-  Used by backend systems that need to trigger a world switch.
-  """
+  @doc "Broadcast a world change event for a session.\nUsed by backend systems that need to trigger a world switch.\n"
   def broadcast_world_change(session_id, world_id) do
-    Phoenix.PubSub.broadcast(@pubsub, world_topic(session_id), {:world_changed, world_id})
+    PubSub.broadcast(@pubsub, world_topic(session_id), {:world_changed, world_id})
   end
-
-  # ============================================================================
-  # ETS Cache for World ID Persistence
-  # ============================================================================
 
   @ets_table :world_context_cache
-  # 1 hour
   @cache_ttl_ms 3_600_000
 
   defp ensure_ets_table do
@@ -295,7 +203,6 @@ defmodule ChatWeb.WorldContext do
     end
   rescue
     ArgumentError ->
-      # Table already exists in another process - that's fine
       :ok
   end
 
@@ -315,11 +222,9 @@ defmodule ChatWeb.WorldContext do
     try do
       case :ets.lookup(@ets_table, session_id) do
         [{^session_id, world_id, cached_at}] ->
-          # Check if cache is still valid
           if System.monotonic_time(:millisecond) - cached_at < @cache_ttl_ms do
             world_id
           else
-            # Expired - delete and return nil
             :ets.delete(@ets_table, session_id)
             nil
           end

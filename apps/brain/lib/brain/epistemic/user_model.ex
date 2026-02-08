@@ -1,62 +1,33 @@
 defmodule Brain.Epistemic.UserModelStore do
-  @moduledoc """
-  GenServer managing per-user knowledge models.
+  @moduledoc "GenServer managing per-user knowledge models.\n\nThe UserModelStore maintains explicit, inspectable models of what\nthe system knows about each user. This enables:\n\n- Self-referential responses (\"From what I remember, you...\")\n- Epistemic reasoning (knowing what we know vs. don't know)\n- Appropriate disclosure (sharing facts with proper hedging)\n\nEach UserModel tracks:\n- Facts with confidence and provenance\n- Interaction patterns\n- Disclosure history\n"
 
-  The UserModelStore maintains explicit, inspectable models of what
-  the system knows about each user. This enables:
-
-  - Self-referential responses ("From what I remember, you...")
-  - Epistemic reasoning (knowing what we know vs. don't know)
-  - Appropriate disclosure (sharing facts with proper hedging)
-
-  Each UserModel tracks:
-  - Facts with confidence and provenance
-  - Interaction patterns
-  - Disclosure history
-  """
-
+  alias Brain.Epistemic.Types
   use GenServer
 
-  alias Brain.Epistemic.Types.{UserModel, Belief, Config}
+  alias Types.{UserModel, Belief, Config}
   alias Brain.Epistemic.BeliefStore
 
   require Logger
 
-  # Default persistence path resolved at runtime
-  defp default_persistence_path, do: Brain.priv_path("data/user_models.term")
-
-  # ============================================================================
-  # Client API
-  # ============================================================================
+  defp default_persistence_path do
+    Brain.priv_path("data/user_models.term")
+  end
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc """
-  Gets or creates a UserModel for the given user ID.
-  """
+  @doc "Gets or creates a UserModel for the given user ID.\n"
   def get_or_create(user_id) do
     GenServer.call(__MODULE__, {:get_or_create, user_id})
   end
 
-  @doc """
-  Gets a UserModel by user ID, returns nil if not found.
-  """
+  @doc "Gets a UserModel by user ID, returns nil if not found.\n"
   def get(user_id) do
     GenServer.call(__MODULE__, {:get, user_id})
   end
 
-  @doc """
-  Updates a fact in the user's model.
-
-  Parameters:
-  - user_id: The user identifier
-  - key: Fact key (atom or string)
-  - value: The fact value
-  - source: How the fact was learned (:explicit | :inferred | :assumed | :learned)
-  - confidence: Confidence level (0.0 - 1.0)
-  """
+  @doc "Updates a fact in the user's model.\n\nParameters:\n- user_id: The user identifier\n- key: Fact key (atom or string)\n- value: The fact value\n- source: How the fact was learned (:explicit | :inferred | :assumed | :learned)\n- confidence: Confidence level (0.0 - 1.0)\n"
   def update_fact(user_id, key, value, source, confidence) do
     if Config.enabled?() do
       GenServer.call(__MODULE__, {:update_fact, user_id, key, value, source, confidence})
@@ -65,100 +36,72 @@ defmodule Brain.Epistemic.UserModelStore do
     end
   end
 
-  @doc """
-  Gets a specific fact with its confidence and provenance.
-  """
+  @doc "Gets a specific fact with its confidence and provenance.\n"
   def get_fact(user_id, key) do
     GenServer.call(__MODULE__, {:get_fact, user_id, key})
   end
 
-  @doc """
-  Gets all facts above a confidence threshold.
-  """
+  @doc "Gets all facts above a confidence threshold.\n"
   def get_facts_with_confidence(user_id, min_confidence \\ 0.0) do
     GenServer.call(__MODULE__, {:get_facts_with_confidence, user_id, min_confidence})
   end
 
-  @doc """
-  Gets the epistemic bounds (confidence levels) for all facts.
-  """
+  @doc "Gets the epistemic bounds (confidence levels) for all facts.\n"
   def get_epistemic_bounds(user_id) do
     GenServer.call(__MODULE__, {:get_epistemic_bounds, user_id})
   end
 
-  @doc """
-  Records an interaction pattern.
-  """
+  @doc "Records an interaction pattern.\n"
   def record_interaction_pattern(user_id, pattern_type, data) do
     GenServer.call(__MODULE__, {:record_pattern, user_id, pattern_type, data})
   end
 
-  @doc """
-  Records that facts were disclosed to the user.
-  """
+  @doc "Records that facts were disclosed to the user.\n"
   def record_disclosure(user_id, disclosed_keys, context) do
     GenServer.call(__MODULE__, {:record_disclosure, user_id, disclosed_keys, context})
   end
 
-  @doc """
-  Gets disclosure history for a user.
-  """
+  @doc "Gets disclosure history for a user.\n"
   def get_disclosure_history(user_id, limit \\ 20) do
     GenServer.call(__MODULE__, {:get_disclosure_history, user_id, limit})
   end
 
-  @doc """
-  Extracts beliefs from the user model and syncs to BeliefStore.
-  """
+  @doc "Extracts beliefs from the user model and syncs to BeliefStore.\n"
   def sync_to_beliefs(user_id) do
     GenServer.call(__MODULE__, {:sync_to_beliefs, user_id})
   end
 
-  @doc """
-  Updates the user model from beliefs in the BeliefStore.
-  """
+  @doc "Updates the user model from beliefs in the BeliefStore.\n"
   def sync_from_beliefs(user_id) do
     GenServer.call(__MODULE__, {:sync_from_beliefs, user_id})
   end
 
-  @doc """
-  Gets store statistics.
-  """
+  @doc "Gets store statistics.\n"
   def stats do
     GenServer.call(__MODULE__, :stats)
   end
 
-  @doc """
-  Lists all user IDs with stored models.
-  """
+  @doc "Lists all user IDs with stored models.\n"
   def list_all_users do
     GenServer.call(__MODULE__, :list_all_users)
   end
 
-  @doc """
-  Persists all user models to disk.
-  """
+  @doc "Persists all user models to disk.\n"
   def persist do
     GenServer.call(__MODULE__, :persist)
   end
 
-  @doc """
-  Clears a specific user's model.
-  """
+  @doc "Clears a specific user's model.\n"
   def clear_user(user_id) do
     GenServer.call(__MODULE__, {:clear_user, user_id})
   end
 
-  @doc """
-  Clears all user models (for testing).
-  """
+  @doc "Clears all user models (for testing).\n"
   def clear_all do
     GenServer.call(__MODULE__, :clear_all)
   end
 
-  @doc """
-  Checks if the store is ready.
-  """
+  @doc "Checks if the store is ready.\n"
   def ready? do
     try do
       GenServer.call(__MODULE__, :ready?, 100)
@@ -167,10 +110,6 @@ defmodule Brain.Epistemic.UserModelStore do
       :exit, {:noproc, _} -> false
     end
   end
-
-  # ============================================================================
-  # Server Callbacks
-  # ============================================================================
 
   @impl true
   def init(opts) do
@@ -181,7 +120,6 @@ defmodule Brain.Epistemic.UserModelStore do
       persistence_path: persistence_path
     }
 
-    # Try to load from disk
     state = maybe_load_from_disk(state)
 
     Logger.info("UserModelStore initialized", user_count: map_size(state.models))
@@ -292,7 +230,6 @@ defmodule Brain.Epistemic.UserModelStore do
         {:reply, {:ok, 0}, state}
 
       model ->
-        # Create beliefs from user model facts
         created =
           model.facts
           |> Enum.map(fn {key, value} ->
@@ -319,7 +256,6 @@ defmodule Brain.Epistemic.UserModelStore do
   def handle_call({:sync_from_beliefs, user_id}, _from, state) do
     model = Map.get(state.models, user_id) || UserModel.new(user_id)
 
-    # Get all beliefs about this user
     case BeliefStore.get_beliefs_for_user(user_id) do
       {:ok, beliefs} ->
         updated =
@@ -387,10 +323,6 @@ defmodule Brain.Epistemic.UserModelStore do
     {:reply, true, state}
   end
 
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
-
   defp maybe_load_from_disk(state) do
     path = state.persistence_path
 
@@ -420,8 +352,6 @@ defmodule Brain.Epistemic.UserModelStore do
 
   defp persist_to_disk(state) do
     path = state.persistence_path
-
-    # Ensure directory exists
     path |> Path.dirname() |> File.mkdir_p!()
 
     binary = :erlang.term_to_binary(state.models)

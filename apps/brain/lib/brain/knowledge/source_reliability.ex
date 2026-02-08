@@ -1,128 +1,78 @@
 defmodule Brain.Knowledge.SourceReliability do
-  @moduledoc """
-  GenServer managing source reputation and reliability scores.
+  @moduledoc "GenServer managing source reputation and reliability scores.\n\nTracks per-domain reliability scores, bias ratings, and trust tiers.\nBootstraps from MediaBiasFactCheck/AllSides data and learns from\nadmin feedback over time.\n\n## Features\n\n- Bootstrap from curated source reliability data\n- Per-domain reliability scoring (0.0-1.0)\n- Bias rating (left/center/right spectrum)\n- Trust tiers (verified, neutral, untrusted, blocked)\n- Admin feedback learning (approvals/rejections adjust scores)\n- Persistence of learned adjustments\n\n## Example\n\n    {:ok, profile} = SourceReliability.lookup(\"wikipedia.org\")\n    # => %SourceProfile{domain: \"wikipedia.org\", trust_tier: :verified, ...}\n\n    SourceReliability.record_feedback(\"sketchy-news.com\", :rejected)\n    # Lowers reliability score for that domain\n"
 
-  Tracks per-domain reliability scores, bias ratings, and trust tiers.
-  Bootstraps from MediaBiasFactCheck/AllSides data and learns from
-  admin feedback over time.
-
-  ## Features
-
-  - Bootstrap from curated source reliability data
-  - Per-domain reliability scoring (0.0-1.0)
-  - Bias rating (left/center/right spectrum)
-  - Trust tiers (verified, neutral, untrusted, blocked)
-  - Admin feedback learning (approvals/rejections adjust scores)
-  - Persistence of learned adjustments
-
-  ## Example
-
-      {:ok, profile} = SourceReliability.lookup("wikipedia.org")
-      # => %SourceProfile{domain: "wikipedia.org", trust_tier: :verified, ...}
-
-      SourceReliability.record_feedback("sketchy-news.com", :rejected)
-      # Lowers reliability score for that domain
-  """
-
+  alias Brain.Knowledge.Types
   use GenServer
   require Logger
 
-  alias Brain.Knowledge.Types.{SourceInfo, SourceProfile}
+  alias Types.{SourceInfo, SourceProfile}
 
-  # Paths resolved at runtime via Brain.priv_path/1
-  defp bootstrap_file, do: Brain.priv_path("knowledge/source_reliability.json")
-  defp default_persistence_file, do: Brain.priv_path("data/source_reliability_learned.term")
+  defp bootstrap_file do
+    Brain.priv_path("knowledge/source_reliability.json")
+  end
+
+  defp default_persistence_file do
+    Brain.priv_path("data/source_reliability_learned.term")
+  end
 
   defp persistence_file do
     Application.get_env(:brain, :source_reliability_path, default_persistence_file())
   end
 
-  # ============================================================================
-  # Client API
-  # ============================================================================
-
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc """
-  Looks up reliability information for a URL or domain.
-
-  Returns {:ok, SourceInfo} with reliability data, or a default profile
-  for unknown domains.
-  """
+  @doc "Looks up reliability information for a URL or domain.\n\nReturns {:ok, SourceInfo} with reliability data, or a default profile\nfor unknown domains.\n"
   @spec lookup(String.t()) :: {:ok, SourceInfo.t()}
   def lookup(url_or_domain) when is_binary(url_or_domain) do
     GenServer.call(__MODULE__, {:lookup, url_or_domain})
   end
 
-  @doc """
-  Gets the full profile for a domain including historical data.
-  """
+  @doc "Gets the full profile for a domain including historical data.\n"
   @spec get_profile(String.t()) :: {:ok, SourceProfile.t()} | {:error, :not_found}
   def get_profile(domain) when is_binary(domain) do
     GenServer.call(__MODULE__, {:get_profile, domain})
   end
 
-  @doc """
-  Records admin feedback (approval or rejection) for a domain.
-
-  This adjusts the domain's reliability score over time.
-
-  ## Options
-    - :candidate_id - ID of the candidate that was reviewed
-    - :notes - Optional notes from the reviewer
-  """
+  @doc "Records admin feedback (approval or rejection) for a domain.\n\nThis adjusts the domain's reliability score over time.\n\n## Options\n  - :candidate_id - ID of the candidate that was reviewed\n  - :notes - Optional notes from the reviewer\n"
   @spec record_feedback(String.t(), :approved | :rejected, keyword()) :: :ok
   def record_feedback(domain, decision, opts \\ [])
       when is_binary(domain) and decision in [:approved, :rejected] do
     GenServer.cast(__MODULE__, {:record_feedback, domain, decision, opts})
   end
 
-  @doc """
-  Gets statistics about the source reliability index.
-  """
+  @doc "Gets statistics about the source reliability index.\n"
   @spec stats() :: map()
   def stats do
     GenServer.call(__MODULE__, :stats)
   end
 
-  @doc """
-  Gets statistics about the source reliability index.
-  Deprecated: Use `stats/0` instead.
-  """
+  @doc "Gets statistics about the source reliability index.\nDeprecated: Use `stats/0` instead.\n"
   @spec get_stats() :: map()
   def get_stats do
     stats()
   end
 
-  @doc """
-  Reloads the bootstrap data from disk.
-  """
+  @doc "Reloads the bootstrap data from disk.\n"
   @spec reload_bootstrap() :: :ok
   def reload_bootstrap do
     GenServer.call(__MODULE__, :reload_bootstrap)
   end
 
-  @doc """
-  Persists learned adjustments to disk.
-  """
+  @doc "Persists learned adjustments to disk.\n"
   @spec persist() :: :ok | {:error, term()}
   def persist do
     GenServer.call(__MODULE__, :persist)
   end
 
-  @doc """
-  Checks if a domain is blocked.
-  """
+  @doc "Checks if a domain is blocked.\n"
   @spec blocked?(String.t()) :: boolean()
   def blocked?(domain) when is_binary(domain) do
     GenServer.call(__MODULE__, {:blocked?, domain})
   end
 
-  @doc """
-  Checks if the service is ready.
-  """
+  @doc "Checks if the service is ready.\n"
   @spec ready?() :: boolean()
   def ready? do
     try do
@@ -133,10 +83,6 @@ defmodule Brain.Knowledge.SourceReliability do
     end
   end
 
-  # ============================================================================
-  # Server Callbacks
-  # ============================================================================
-
   @impl true
   def init(_opts) do
     state = %{
@@ -145,10 +91,7 @@ defmodule Brain.Knowledge.SourceReliability do
       last_updated: nil
     }
 
-    # Load bootstrap data
     state = load_bootstrap_data(state)
-
-    # Load learned adjustments
     state = load_learned_data(state)
 
     Logger.info("SourceReliability initialized",
@@ -237,15 +180,10 @@ defmodule Brain.Knowledge.SourceReliability do
       new_reliability: SourceProfile.calculate_reliability(updated_profile)
     )
 
-    # Auto-persist after feedback
     persist_learned_data(new_state)
 
     {:noreply, new_state}
   end
-
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
 
   defp normalize_domain(url_or_domain) do
     SourceInfo.extract_domain(url_or_domain)
@@ -254,7 +192,6 @@ defmodule Brain.Knowledge.SourceReliability do
   defp get_or_create_profile(sources, domain) do
     case Map.get(sources, domain) do
       nil ->
-        # Unknown domain - return neutral profile
         SourceProfile.new(domain)
 
       profile ->
@@ -340,7 +277,9 @@ defmodule Brain.Knowledge.SourceReliability do
     end
   end
 
-  defp parse_bias_rating(_), do: :unknown
+  defp parse_bias_rating(_) do
+    :unknown
+  end
 
   defp parse_trust_tier(tier) when is_binary(tier) do
     case String.downcase(tier) do
@@ -352,7 +291,9 @@ defmodule Brain.Knowledge.SourceReliability do
     end
   end
 
-  defp parse_trust_tier(_), do: :neutral
+  defp parse_trust_tier(_) do
+    :neutral
+  end
 
   defp load_learned_data(state) do
     persistence_path = Path.join(File.cwd!(), persistence_file())
@@ -362,8 +303,6 @@ defmodule Brain.Knowledge.SourceReliability do
         {:ok, binary} ->
           try do
             data = :erlang.binary_to_term(binary)
-
-            # Merge learned data with bootstrap data
             learned_sources = Map.get(data, :sources, %{})
             merged_sources = Map.merge(state.sources, learned_sources)
 
@@ -388,11 +327,10 @@ defmodule Brain.Knowledge.SourceReliability do
   defp persist_learned_data(state) do
     persistence_path = Path.join(File.cwd!(), persistence_file())
 
-    # Only persist sources with admin decisions (learned adjustments)
     learned_sources =
       state.sources
       |> Enum.filter(fn {_domain, profile} ->
-        length(profile.admin_decisions) > 0
+        profile.admin_decisions != []
       end)
       |> Map.new()
 
@@ -402,7 +340,6 @@ defmodule Brain.Knowledge.SourceReliability do
       version: 1
     }
 
-    # Ensure directory exists
     persistence_path |> Path.dirname() |> File.mkdir_p!()
 
     case File.write(persistence_path, :erlang.term_to_binary(data)) do

@@ -87,3 +87,7 @@ erl_crash.dump
 apps/*/cover/
 
 apps/world/priv/training_worlds/*
+
+# Encrypted credentials (API keys, secrets)
+apps/brain/priv/secrets/
+!apps/brain/priv/secrets/.gitkeep

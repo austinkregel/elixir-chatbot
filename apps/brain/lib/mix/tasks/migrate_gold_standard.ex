@@ -1,63 +1,6 @@
 defmodule Mix.Tasks.MigrateGoldStandard do
   @shortdoc "Migrate intent data into gold standard evaluation files"
-  @moduledoc """
-  Migrates intent training data from multiple sources into the gold standard
-  evaluation files. Supports destructive mode to delete source files.
-
-  ## Data Sources
-
-  - `data/intents/*_usersays_en.json` - Dialogflow usersays files
-  - `data/training/intents/*.json` - Enriched training data
-
-  ## Context Variants
-
-  Context variants (e.g., `account.balance.check.context_.balance`) are follow-up
-  utterances that require prior conversational context. By default, they are kept
-  as separate intents because they have different semantic meanings:
-
-  - Base intent: "check my credit card balance" (self-contained)
-  - Context variant: "how much money" (requires prior context)
-
-  Use `--merge-contexts` only if you want to flatten them into base intents.
-
-  ## Usage
-
-      mix migrate_gold_standard                    # Migrate all intents
-      mix migrate_gold_standard --preview          # Preview without writing
-      mix migrate_gold_standard --destructive      # Migrate and delete source files
-      mix migrate_gold_standard --merge-contexts   # Merge context variants into base intents
-      mix migrate_gold_standard --limit 5          # Max 5 examples per intent
-      mix migrate_gold_standard --select lights    # Only intents containing "lights"
-      mix migrate_gold_standard --no-ner           # Skip NER gold standard
-      mix migrate_gold_standard --append           # Append instead of replace
-      mix migrate_gold_standard --list             # List available intents
-
-  ## Examples
-
-      # See what's available
-      mix migrate_gold_standard --list
-
-      # Preview migration of lighting intents
-      mix migrate_gold_standard --select lights --preview
-
-      # Full destructive migration (migrate all, delete sources)
-      mix migrate_gold_standard --destructive
-
-      # Merge context variants into base intents
-      mix migrate_gold_standard --merge-contexts --preview
-
-      # Extract intent metadata to intent_registry.json
-      mix migrate_gold_standard --extract-metadata --preview
-      mix migrate_gold_standard --extract-metadata
-
-      # Extract response templates to templates.json
-      mix migrate_gold_standard --extract-templates --preview
-      mix migrate_gold_standard --extract-templates
-
-      # Delete source directories after migration is complete
-      mix migrate_gold_standard --cleanup-sources --preview
-      mix migrate_gold_standard --cleanup-sources
-  """
+  @moduledoc "Migrates intent training data from multiple sources into the gold standard\nevaluation files. Supports destructive mode to delete source files.\n\n## Data Sources\n\n- `data/intents/*_usersays_en.json` - Dialogflow usersays files\n- `data/training/intents/*.json` - Enriched training data\n\n## Context Variants\n\nContext variants (e.g., `account.balance.check.context_.balance`) are follow-up\nutterances that require prior conversational context. By default, they are kept\nas separate intents because they have different semantic meanings:\n\n- Base intent: \"check my credit card balance\" (self-contained)\n- Context variant: \"how much money\" (requires prior context)\n\nUse `--merge-contexts` only if you want to flatten them into base intents.\n\n## Usage\n\n    mix migrate_gold_standard                    # Migrate all intents\n    mix migrate_gold_standard --preview          # Preview without writing\n    mix migrate_gold_standard --destructive      # Migrate and delete source files\n    mix migrate_gold_standard --merge-contexts   # Merge context variants into base intents\n    mix migrate_gold_standard --limit 5          # Max 5 examples per intent\n    mix migrate_gold_standard --select lights    # Only intents containing \"lights\"\n    mix migrate_gold_standard --no-ner           # Skip NER gold standard\n    mix migrate_gold_standard --append           # Append instead of replace\n    mix migrate_gold_standard --list             # List available intents\n\n## Examples\n\n    # See what's available\n    mix migrate_gold_standard --list\n\n    # Preview migration of lighting intents\n    mix migrate_gold_standard --select lights --preview\n\n    # Full destructive migration (migrate all, delete sources)\n    mix migrate_gold_standard --destructive\n\n    # Merge context variants into base intents\n    mix migrate_gold_standard --merge-contexts --preview\n\n    # Extract intent metadata to intent_registry.json\n    mix migrate_gold_standard --extract-metadata --preview\n    mix migrate_gold_standard --extract-metadata\n\n    # Extract response templates to templates.json\n    mix migrate_gold_standard --extract-templates --preview\n    mix migrate_gold_standard --extract-templates\n\n    # Delete source directories after migration is complete\n    mix migrate_gold_standard --cleanup-sources --preview\n    mix migrate_gold_standard --cleanup-sources\n"
 
   use Mix.Task
 
@@ -115,10 +58,11 @@ defmodule Mix.Tasks.MigrateGoldStandard do
     {total_intents, total_examples} =
       Enum.reduce(grouped, {total_intents, total_examples}, fn {group, intents}, {ti, te} ->
         group_examples = Enum.sum(Enum.map(intents, & &1.example_count))
-        IO.puts("\n  #{group} (#{length(intents)} intents, #{group_examples} examples)")
+        IO.puts("
+  #{group} (#{length(intents)} intents, #{group_examples} examples)")
 
         Enum.each(intents, fn intent ->
-          sources = intent.sources |> Enum.map(&to_string/1) |> Enum.join(", ")
+          sources = intent.sources |> Enum.map_join(", ", &to_string/1)
           IO.puts("    #{intent.name} (#{intent.example_count} examples) [#{sources}]")
         end)
 
@@ -140,22 +84,28 @@ defmodule Mix.Tasks.MigrateGoldStandard do
   defp preview_migration(select_filter, limit, merge_contexts?) do
     intent_names = resolve_intent_names(select_filter)
 
-    IO.puts("\nPreviewing migration for #{length(intent_names)} intent(s)...")
+    IO.puts("
+Previewing migration for #{length(intent_names)} intent(s)...")
 
     if merge_contexts? do
       IO.puts("NOTE: Context variants will be merged into base intents")
     end
 
     opts = [merge_context_variants: merge_contexts?]
-    opts = if limit, do: Keyword.put(opts, :limit, limit), else: opts
 
-    {intent_examples, entity_examples, source_files} = GoldStandardMigrator.preview(intent_names, opts)
+    opts =
+      if limit do
+        Keyword.put(opts, :limit, limit)
+      else
+        opts
+      end
+
+    {intent_examples, entity_examples, source_files} =
+      GoldStandardMigrator.preview(intent_names, opts)
+
     non_empty_ner = Enum.count(entity_examples, fn e -> e["expected"] != [] end)
-
-    # Count unique intents
     unique_intents = intent_examples |> Enum.map(& &1["intent"]) |> Enum.uniq() |> length()
 
-    # Count context variants
     context_variant_count =
       intent_examples
       |> Enum.map(& &1["intent"])
@@ -165,19 +115,27 @@ defmodule Mix.Tasks.MigrateGoldStandard do
     IO.puts("  Intent examples: #{length(intent_examples)} (#{unique_intents} unique intents)")
 
     if context_variant_count > 0 and not merge_contexts? do
-      IO.puts("  Context variants: #{context_variant_count} examples (use --merge-contexts to merge)")
+      IO.puts(
+        "  Context variants: #{context_variant_count} examples (use --merge-contexts to merge)"
+      )
     end
 
     IO.puts("  NER examples:    #{non_empty_ner}")
     IO.puts("  Source files:    #{length(source_files)}")
 
-    if length(intent_examples) > 0 do
+    if intent_examples != [] do
       IO.puts("\nSample intent examples:")
 
       intent_examples
       |> Enum.take(10)
       |> Enum.each(fn ex ->
-        richness = if ex["tokens"], do: " [enriched]", else: ""
+        richness =
+          if ex["tokens"] do
+            " [enriched]"
+          else
+            ""
+          end
+
         IO.puts("  [#{ex["intent"]}] #{ex["text"]}#{richness}")
       end)
 
@@ -206,7 +164,8 @@ defmodule Mix.Tasks.MigrateGoldStandard do
         optional = Map.get(metadata, "optional", [])
         templates = Map.get(metadata, "clarification_templates", %{})
 
-        IO.puts("\n  #{intent_name}:")
+        IO.puts("
+  #{intent_name}:")
         IO.puts("    required: #{inspect(required)}")
         IO.puts("    optional: #{inspect(optional)}")
 
@@ -216,7 +175,8 @@ defmodule Mix.Tasks.MigrateGoldStandard do
       end)
 
       if map_size(extracted) > 5 do
-        IO.puts("\n  ... and #{map_size(extracted) - 5} more")
+        IO.puts("
+  ... and #{map_size(extracted) - 5} more")
       end
 
       IO.puts("\nRun without --preview to write to intent_registry.json")
@@ -254,13 +214,21 @@ defmodule Mix.Tasks.MigrateGoldStandard do
         tpls = Map.get(entry, "templates", [])
         sources = tpls |> Enum.map(& &1["source"]) |> Enum.uniq() |> Enum.join(", ")
 
-        IO.puts("\n  #{intent_name}: (#{length(tpls)} templates, sources: #{sources})")
+        IO.puts("
+  #{intent_name}: (#{length(tpls)} templates, sources: #{sources})")
 
         tpls
         |> Enum.take(2)
         |> Enum.each(fn t ->
           text = String.slice(t["text"], 0, 60)
-          text = if String.length(t["text"]) > 60, do: text <> "...", else: text
+
+          text =
+            if String.length(t["text"]) > 60 do
+              text <> "..."
+            else
+              text
+            end
+
           IO.puts("    - #{text}")
         end)
 
@@ -270,7 +238,8 @@ defmodule Mix.Tasks.MigrateGoldStandard do
       end)
 
       if map_size(templates) > 5 do
-        IO.puts("\n  ... and #{map_size(templates) - 5} more intents")
+        IO.puts("
+  ... and #{map_size(templates) - 5} more intents")
       end
 
       IO.puts("\nRun without --preview to write to priv/response/templates.json")
@@ -305,7 +274,7 @@ defmodule Mix.Tasks.MigrateGoldStandard do
     existing_dirs = Enum.filter(dirs, &File.dir?/1)
     custom_exists = File.exists?(custom_file)
 
-    if length(existing_dirs) == 0 and not custom_exists do
+    if existing_dirs == [] and not custom_exists do
       IO.puts("  No source directories found - already cleaned up?")
     else
       Enum.each(existing_dirs, fn dir ->
@@ -325,7 +294,8 @@ defmodule Mix.Tasks.MigrateGoldStandard do
 
         case GoldStandardMigrator.delete_source_directories() do
           {:ok, deleted} ->
-            IO.puts("\nDeleted #{length(deleted)} items:")
+            IO.puts("
+Deleted #{length(deleted)} items:")
 
             Enum.each(deleted, fn item ->
               IO.puts("  - #{item}")
@@ -351,8 +321,15 @@ defmodule Mix.Tasks.MigrateGoldStandard do
   defp run_migration(select_filter, limit, include_ner?, append?, destructive?, merge_contexts?) do
     intent_names = resolve_intent_names(select_filter)
 
-    mode = if destructive?, do: "DESTRUCTIVE", else: "non-destructive"
-    IO.puts("\nMigrating #{length(intent_names)} intent(s) [#{mode} mode]...")
+    mode =
+      if destructive? do
+        "DESTRUCTIVE"
+      else
+        "non-destructive"
+      end
+
+    IO.puts("
+Migrating #{length(intent_names)} intent(s) [#{mode} mode]...")
 
     if merge_contexts? do
       IO.puts("NOTE: Context variants will be merged into base intents")
@@ -370,7 +347,12 @@ defmodule Mix.Tasks.MigrateGoldStandard do
       merge_context_variants: merge_contexts?
     ]
 
-    opts = if limit, do: Keyword.put(opts, :limit, limit), else: opts
+    opts =
+      if limit do
+        Keyword.put(opts, :limit, limit)
+      else
+        opts
+      end
 
     case GoldStandardMigrator.migrate_intents(intent_names, opts) do
       {:ok, %{intent_count: ic, ner_count: nc, deleted_files: deleted}} ->
@@ -378,7 +360,7 @@ defmodule Mix.Tasks.MigrateGoldStandard do
         IO.puts("  Intent examples: #{ic}")
         IO.puts("  NER examples:    #{nc}")
 
-        if length(deleted) > 0 do
+        if deleted != [] do
           IO.puts("  Files deleted:   #{length(deleted)}")
         end
 
@@ -407,7 +389,9 @@ defmodule Mix.Tasks.MigrateGoldStandard do
     end
   end
 
-  defp resolve_intent_names(nil), do: :all
+  defp resolve_intent_names(nil) do
+    :all
+  end
 
   defp resolve_intent_names(filter) do
     filter_lower = String.downcase(filter)

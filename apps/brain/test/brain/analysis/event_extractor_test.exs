@@ -34,7 +34,7 @@ defmodule Brain.Analysis.EventExtractorTest do
 
       {:ok, events} = EventExtractor.extract(analysis)
 
-      assert length(events) >= 1
+      assert events != []
       [event | _] = events
 
       assert event.action.verb == "Play"
@@ -51,7 +51,7 @@ defmodule Brain.Analysis.EventExtractorTest do
 
       {:ok, events} = EventExtractor.extract(analysis)
 
-      assert length(events) >= 1
+      assert events != []
       [event | _] = events
 
       assert event.action.verb == "play"
@@ -73,9 +73,7 @@ defmodule Brain.Analysis.EventExtractorTest do
       }
 
       {:ok, events} = EventExtractor.extract(analysis, max_events: 5)
-
-      # Should extract events for both verbs
-      assert length(events) >= 1
+      assert events != []
     end
 
     test "returns empty list for no verbs" do
@@ -97,11 +95,8 @@ defmodule Brain.Analysis.EventExtractorTest do
         tokens: ["want"]
       }
 
-      # With high min_confidence, should filter out low-confidence events
       {:ok, events} = EventExtractor.extract(analysis, min_confidence: 0.9)
-
-      # Event without actor/object has low confidence
-      assert length(events) == 0
+      assert events == []
     end
 
     test "handles invalid input gracefully" do
@@ -113,8 +108,6 @@ defmodule Brain.Analysis.EventExtractorTest do
     test "pos_tags_to_tensor converts tags to indices" do
       pos_tags = [{"I", "PRON"}, {"want", "VERB"}, {"coffee", "NOUN"}]
       tensor = EventExtractor.pos_tags_to_tensor(pos_tags)
-
-      # PRON=1, VERB=2, NOUN=3 per event_patterns.json
       indices = Nx.to_flat_list(tensor)
       assert indices == [1, 2, 3]
     end
@@ -122,19 +115,15 @@ defmodule Brain.Analysis.EventExtractorTest do
     test "find_verb_positions finds VERB indices" do
       pos_tensor = Nx.tensor([1, 2, 3, 2, 3], type: :s32)
       verb_mask = EventExtractor.find_verb_positions(pos_tensor)
-
-      # VERB=2, so positions 1 and 3 should be 1
       mask_list = Nx.to_flat_list(verb_mask)
       assert mask_list == [0, 1, 0, 1, 0]
     end
 
     test "find_actor_positions finds PRON/NOUN/PROPN indices" do
-      # PRON=1, VERB=2, NOUN=3, PROPN=4
       pos_tensor = Nx.tensor([1, 2, 3, 4, 2], type: :s32)
       actor_mask = EventExtractor.find_actor_positions(pos_tensor)
 
       mask_list = Nx.to_flat_list(actor_mask)
-      # Positions 0 (PRON), 2 (NOUN), 3 (PROPN) should be 1
       assert mask_list == [1, 0, 1, 1, 0]
     end
 
@@ -168,10 +157,11 @@ defmodule Brain.Analysis.EventExtractorTest do
     test "complete?/1 checks for actor and object" do
       action = %{verb: "want", lemma: "want", tense: :present}
 
-      complete = Event.new(action,
-        actor: %{text: "I", type: "pronoun", token_index: 0},
-        object: %{text: "coffee", type: "noun", token_index: 2}
-      )
+      complete =
+        Event.new(action,
+          actor: %{text: "I", type: "pronoun", token_index: 0},
+          object: %{text: "coffee", type: "noun", token_index: 2}
+        )
 
       incomplete = Event.new(action, object: %{text: "coffee", type: "noun", token_index: 2})
 
@@ -190,10 +180,11 @@ defmodule Brain.Analysis.EventExtractorTest do
     test "to_description/1 formats event" do
       action = %{verb: "want", lemma: "want", tense: :present}
 
-      event = Event.new(action,
-        actor: %{text: "I", type: "pronoun", token_index: 0},
-        object: %{text: "coffee", type: "noun", token_index: 2}
-      )
+      event =
+        Event.new(action,
+          actor: %{text: "I", type: "pronoun", token_index: 0},
+          object: %{text: "coffee", type: "noun", token_index: 2}
+        )
 
       assert Event.to_description(event) == "I want coffee"
     end
@@ -203,7 +194,7 @@ defmodule Brain.Analysis.EventExtractorTest do
     test "loads patterns from JSON" do
       patterns = EventPatterns.patterns()
       assert is_list(patterns)
-      assert length(patterns) > 0
+      assert patterns != []
     end
 
     test "pos_to_index converts tags" do
@@ -214,21 +205,20 @@ defmodule Brain.Analysis.EventExtractorTest do
 
     test "pattern_indices returns index list" do
       indices = EventPatterns.pattern_indices("svo_basic")
-      # PRON=1, VERB=2, NOUN=3
       assert indices == [1, 2, 3]
     end
 
     test "is_action_index? identifies verb indices" do
-      assert EventPatterns.is_action_index?(2)  # VERB
-      refute EventPatterns.is_action_index?(1)  # PRON
-      refute EventPatterns.is_action_index?(3)  # NOUN
+      assert EventPatterns.is_action_index?(2)
+      refute EventPatterns.is_action_index?(1)
+      refute EventPatterns.is_action_index?(3)
     end
 
     test "is_actor_index? identifies actor indices" do
-      assert EventPatterns.is_actor_index?(1)   # PRON
-      assert EventPatterns.is_actor_index?(3)   # NOUN
-      assert EventPatterns.is_actor_index?(4)   # PROPN
-      refute EventPatterns.is_actor_index?(2)   # VERB
+      assert EventPatterns.is_actor_index?(1)
+      assert EventPatterns.is_actor_index?(3)
+      assert EventPatterns.is_actor_index?(4)
+      refute EventPatterns.is_actor_index?(2)
     end
   end
 
@@ -248,9 +238,7 @@ defmodule Brain.Analysis.EventExtractorTest do
       ]
 
       {:ok, events} = EventExtractor.extract_parallel(chunks)
-
-      # Each chunk should produce at least 1 event
-      assert length(events) >= 1
+      assert events != []
     end
 
     test "extract_parallel handles empty chunks" do
@@ -266,13 +254,11 @@ defmodule Brain.Analysis.EventExtractorTest do
           entities: [],
           tokens: ["I", "want", "coffee"]
         },
-        %{invalid: true}  # Invalid chunk
+        %{invalid: true}
       ]
 
       {:ok, events} = EventExtractor.extract_parallel(chunks)
-
-      # Should still get events from valid chunk
-      assert length(events) >= 1
+      assert events != []
     end
   end
 

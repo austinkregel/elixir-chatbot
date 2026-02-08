@@ -12,7 +12,7 @@ defmodule World do
   @doc """
   Returns the path to a file or directory within the World app's priv directory.
 
-  This uses `Application.app_dir/2` to get the correct path regardless of 
+  This uses `Application.app_dir/2` to get the correct path regardless of
   whether the app is running from source or as a release.
 
   ## Examples
@@ -25,7 +25,7 @@ defmodule World do
       {:error, _} ->
         # Fallback for when app isn't fully started
         Path.join(["apps", "world", "priv", path])
-      
+
       priv_dir ->
         Path.join(priv_dir, path)
     end

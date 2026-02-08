@@ -1,16 +1,5 @@
 defmodule Brain.Analysis.Pipeline do
-  @moduledoc """
-  Orchestrates the text analysis pipeline.
-
-  The pipeline processes user input through multiple stages:
-  1. Semantic chunking (break input into utterances)
-  2. Parallel analysis (discourse + speech act classification)
-  3. Sequential analysis (slot detection + context resolution)
-  4. Internal model building (combine all results)
-
-  Each stage builds on the previous, creating a comprehensive
-  understanding of the user's input.
-  """
+  @moduledoc "Orchestrates the text analysis pipeline.\n\nThe pipeline processes user input through multiple stages:\n1. Semantic chunking (break input into utterances)\n2. Parallel analysis (discourse + speech act classification)\n3. Sequential analysis (slot detection + context resolution)\n4. Internal model building (combine all results)\n\nEach stage builds on the previous, creating a comprehensive\nunderstanding of the user's input.\n"
 
   alias Brain.Analysis.{
     InternalModel,
@@ -29,30 +18,19 @@ defmodule Brain.Analysis.Pipeline do
     IntentReviewQueue,
     EventExtractor
   }
+
   alias Brain.Analysis.Types.IntentReviewCandidate
 
   alias Brain.ML.EntityExtractor
   alias Brain.ML.LSTM.MultiTaskModel
   alias Brain.ML.LSTM.UnifiedModel
 
+  alias Brain.Telemetry
   require Logger
 
-  @doc """
-  Processes user input through the complete analysis pipeline.
-
-  Options:
-  - :participants - conversation participants (default: [:user, :bot])
-  - :bot_names - additional names the bot responds to
-  - :conversation_history - list of previous context snapshots for slot resolution
-  - :user_profile - map of user preferences (location, timezone, etc.)
-  - :skip_entity_extraction - if true, skips entity extraction (for testing)
-  - :entities - pre-extracted entities to use instead of extracting
-
-  Returns an InternalModel struct with complete analysis.
-  """
+  @doc "Processes user input through the complete analysis pipeline.\n\nOptions:\n- :participants - conversation participants (default: [:user, :bot])\n- :bot_names - additional names the bot responds to\n- :conversation_history - list of previous context snapshots for slot resolution\n- :user_profile - map of user preferences (location, timezone, etc.)\n- :skip_entity_extraction - if true, skips entity extraction (for testing)\n- :entities - pre-extracted entities to use instead of extracting\n\nReturns an InternalModel struct with complete analysis.\n"
   def process(text, opts \\ []) when is_binary(text) do
-    # Wrap with telemetry span for async, non-blocking metrics
-    Brain.Telemetry.span(:pipeline_process, %{text_length: String.length(text)}, fn ->
+    Telemetry.span(:pipeline_process, %{text_length: String.length(text)}, fn ->
       do_process(text, opts)
     end)
   end
@@ -63,25 +41,15 @@ defmodule Brain.Analysis.Pipeline do
     start_time = System.monotonic_time(:millisecond)
 
     Progress.report(opts, :pipeline_start, %{text_length: String.length(text)})
-
-    # Create the initial model
     model = InternalModel.new(text)
-
-    # Stage 1: Chunk the input
     chunks = SemanticChunker.chunk(text)
     model = InternalModel.with_chunks(model, chunks)
 
     Logger.debug("Chunking complete", %{chunk_count: length(chunks)})
     Progress.report(opts, :chunking_complete, %{chunk_count: length(chunks)})
-
-    # Stage 2 & 3: Analyze each chunk
     analyses = analyze_chunks(chunks, opts)
     model = InternalModel.with_analyses(model, analyses)
-
-    # Stage 4: Determine overall strategy
     model = InternalModel.determine_strategy(model)
-
-    # Build strategy reasoning for debug inspector
     chunk_strategies = Enum.map(analyses, & &1.response_strategy)
     has_expressives = Enum.any?(analyses, &(&1.speech_act.category == :expressive))
 
@@ -103,10 +71,10 @@ defmodule Brain.Analysis.Pipeline do
         Enum.all?(chunk_strategies, &(&1 == :defer_to_user)) ->
           "Bot was not addressed in any chunk"
 
-        length(all_missing) > 0 and Enum.any?(chunk_strategies, &(&1 == :can_respond)) ->
+        all_missing != [] and Enum.any?(chunk_strategies, &(&1 == :can_respond)) ->
           "Partial: can respond to some, missing slots: #{Enum.join(all_missing, ", ")}"
 
-        length(all_missing) > 0 ->
+        all_missing != [] ->
           "Missing required slots: #{Enum.join(all_missing, ", ")}"
 
         true ->
@@ -124,7 +92,6 @@ defmodule Brain.Analysis.Pipeline do
       suggested_prompts: model.suggested_prompts
     })
 
-    # Record timing
     elapsed = System.monotonic_time(:millisecond) - start_time
 
     Logger.debug("Pipeline complete", %{
@@ -133,7 +100,6 @@ defmodule Brain.Analysis.Pipeline do
       elapsed_ms: elapsed
     })
 
-    # Record feedback for learning
     record_pipeline_result(model)
 
     Progress.report(opts, :pipeline_complete, %{elapsed_ms: elapsed})
@@ -141,19 +107,13 @@ defmodule Brain.Analysis.Pipeline do
     model
   end
 
-  @doc """
-  Processes a single chunk through the analysis pipeline.
-
-  Useful for testing or when you already have chunks.
-  """
+  @doc "Processes a single chunk through the analysis pipeline.\n\nUseful for testing or when you already have chunks.\n"
   def analyze_chunk(chunk_text, opts \\ []) when is_binary(chunk_text) do
     chunk = Chunk.new(chunk_text, 0, 0, String.length(chunk_text) - 1)
     analyze_single_chunk(chunk, opts)
   end
 
-  @doc """
-  Returns a summary of the analysis for debugging/logging.
-  """
+  @doc "Returns a summary of the analysis for debugging/logging.\n"
   def summarize(%InternalModel{} = model) do
     %{
       input: String.slice(model.raw_input, 0, 50) <> "...",
@@ -173,11 +133,7 @@ defmodule Brain.Analysis.Pipeline do
     }
   end
 
-  # Private functions
-
   defp analyze_chunks(chunks, opts) do
-    # Process chunks - could be parallelized with Task.async_stream
-    # but keeping simple for now
     Enum.map(chunks, fn chunk ->
       analyze_single_chunk(chunk, opts)
     end)
@@ -195,22 +151,16 @@ defmodule Brain.Analysis.Pipeline do
       chunk_length: String.length(chunk.text)
     })
 
-    # Stage 2a: Discourse analysis (who is being addressed)
     discourse_task =
       Task.async(fn ->
-        DiscourseAnalyzer.analyze(chunk.text,
-          participants: participants,
-          bot_names: bot_names
-        )
+        DiscourseAnalyzer.analyze(chunk.text, participants: participants, bot_names: bot_names)
       end)
 
-    # Stage 2b: Speech act classification (what type of utterance)
     speech_act_task =
       Task.async(fn ->
         SpeechActClassifier.classify(chunk.text)
       end)
 
-    # Stage 2b.5: Sentiment analysis (parallel, via UnifiedModel)
     sentiment_task =
       Task.async(fn ->
         if UnifiedModel.ready?() do
@@ -223,7 +173,6 @@ defmodule Brain.Analysis.Pipeline do
         end
       end)
 
-    # Wait for parallel tasks with timeout
     discourse_result =
       try do
         Task.await(discourse_task, 3000)
@@ -271,22 +220,14 @@ defmodule Brain.Analysis.Pipeline do
       confidence: Map.get(sentiment_result, :confidence)
     })
 
-    # Stage 2c: Anaphora resolution (resolve pronouns/references from history)
     {resolved_text, anaphora_entities} =
       resolve_anaphora(chunk.text, history, chunk.index, opts)
 
-    # Stage 3a: Entity extraction (use resolved text for better extraction)
-    # Pass discourse and speech_act context for disambiguation
     entity_opts =
       opts ++
-        [
-          discourse: discourse_result,
-          speech_act: speech_act_result
-        ]
+        [discourse: discourse_result, speech_act: speech_act_result]
 
     entities = extract_entities(resolved_text, entity_opts)
-
-    # Merge anaphora-resolved entities with extracted entities
     entities = merge_anaphora_entities(entities, anaphora_entities)
 
     Progress.report(opts, :entities_extracted, %{
@@ -295,7 +236,6 @@ defmodule Brain.Analysis.Pipeline do
       entities: entities |> Enum.take(25) |> Enum.map(&entity_to_dev_map/1)
     })
 
-    # Stage 3a.5: Event extraction (extract actor-verb-object structures)
     events = extract_events(resolved_text, entities, opts)
 
     Progress.report(opts, :events_extracted, %{
@@ -304,7 +244,6 @@ defmodule Brain.Analysis.Pipeline do
       events: events |> Enum.take(5) |> Enum.map(&event_to_dev_map/1)
     })
 
-    # Stage 3b: Intent determination
     {intent, intent_method, intent_confidence, intent_details} =
       determine_intent(speech_act_result, entities, chunk.text)
 
@@ -316,9 +255,6 @@ defmodule Brain.Analysis.Pipeline do
       margin: Map.get(intent_details, :margin, 0.0)
     })
 
-    # Stage 3b.5: Filter entities to only those relevant to the intent's slot schema
-    # This prevents entities from being used for the wrong intent
-    # (e.g., "Austin" as location when intent is smalltalk.greeting)
     relevant_entities = filter_entities_by_intent(entities, intent)
 
     Progress.report(opts, :entities_filtered, %{
@@ -330,7 +266,6 @@ defmodule Brain.Analysis.Pipeline do
         |> Enum.uniq()
     })
 
-    # Stage 3c: Slot detection (use only relevant entities)
     slot_result = SlotDetector.detect(intent, relevant_entities)
 
     Progress.report(opts, :slots_detected, %{
@@ -340,7 +275,6 @@ defmodule Brain.Analysis.Pipeline do
       filled_slots: Map.get(slot_result, :filled_slots, %{})
     })
 
-    # Stage 3d: Context resolution
     user_id = Keyword.get(opts, :user_id)
 
     resolved_slots =
@@ -357,14 +291,19 @@ defmodule Brain.Analysis.Pipeline do
       filled_slots: Map.get(resolved_slots, :filled_slots, %{})
     })
 
-    # Check for novel intent candidates (after slots are resolved)
-    # Only check if confidence is available (classifier-based)
     if intent_confidence != nil do
-      maybe_record_novel_candidate(chunk.text, intent, intent_confidence, intent_details, speech_act_result, entities, resolved_slots, opts)
+      maybe_record_novel_candidate(
+        chunk.text,
+        intent,
+        intent_confidence,
+        intent_details,
+        speech_act_result,
+        entities,
+        resolved_slots,
+        opts
+      )
     end
 
-    # Build the chunk analysis
-    # Store only slot-relevant entities to prevent cross-intent contamination
     analysis =
       ChunkAnalysis.new(chunk.index, chunk.text)
       |> Map.put(:discourse, discourse_result)
@@ -396,8 +335,6 @@ defmodule Brain.Analysis.Pipeline do
         Keyword.get(opts, :entities, [])
 
       true ->
-        # Use the existing entity extractor from ML module
-        # Pass opts to include discourse and speech_act context for disambiguation
         try do
           EntityExtractor.extract_entities(text, opts)
         rescue
@@ -424,14 +361,14 @@ defmodule Brain.Analysis.Pipeline do
     |> Map.new()
   end
 
-  defp entity_to_dev_map(other), do: %{value: inspect(other)}
+  defp entity_to_dev_map(other) do
+    %{value: inspect(other)}
+  end
 
-  # Extract events from text using LSTM POS tags and entities
   defp extract_events(text, entities, opts) do
     if Keyword.get(opts, :skip_event_extraction, false) do
       []
     else
-      # Get POS tags from MultiTaskModel if available
       case get_pos_tags(text) do
         {:ok, pos_tags, tokens} ->
           analysis_input = %{
@@ -458,7 +395,6 @@ defmodule Brain.Analysis.Pipeline do
           {:ok, pos_tags, tokens}
 
         {:ok, result} when is_map(result) ->
-          # Handle different response formats
           pos_tags = Map.get(result, :pos_tags, [])
           tokens = Map.get(result, :tokens, [])
           {:ok, pos_tags, tokens}
@@ -474,8 +410,14 @@ defmodule Brain.Analysis.Pipeline do
   defp event_to_dev_map(%{action: action, actor: actor, object: object, confidence: confidence}) do
     %{
       action: Map.get(action, :lemma, Map.get(action, :verb)),
-      actor: if(actor, do: Map.get(actor, :text)),
-      object: if(object, do: Map.get(object, :text)),
+      actor:
+        if(actor) do
+          Map.get(actor, :text)
+        end,
+      object:
+        if(object) do
+          Map.get(object, :text)
+        end,
       confidence: confidence
     }
     |> Enum.reject(fn {_k, v} -> is_nil(v) end)
@@ -486,17 +428,11 @@ defmodule Brain.Analysis.Pipeline do
     event_to_dev_map(Map.from_struct(event))
   end
 
-  defp event_to_dev_map(other), do: %{value: inspect(other)}
+  defp event_to_dev_map(other) do
+    %{value: inspect(other)}
+  end
 
   defp determine_intent(speech_act, _entities, text) do
-    # Trust the trained intent classifier - it was trained on actual user intents
-    # No entity-based overrides - these caused consistent misclassification:
-    # - "Play some music" misclassified as news.query
-    # - "Turn on lights" misclassified as weather.query
-    # - "Hello, I'm Austin" had Austin misclassified as location
-    #
-    # The classifier is the source of truth for intent detection.
-
     classifier_intent = extract_classifier_intent(speech_act)
     best_score = speech_act.confidence
     second_score = Map.get(speech_act, :second_score, 0.0)
@@ -504,24 +440,20 @@ defmodule Brain.Analysis.Pipeline do
     top_k = Map.get(speech_act, :top_k, [])
 
     cond do
-      # Use the trained classifier's intent if available
       classifier_intent != nil ->
-        {classifier_intent, :classifier, best_score, %{second_score: second_score, margin: margin, top_k: top_k}}
+        {classifier_intent, :classifier, best_score,
+         %{second_score: second_score, margin: margin, top_k: top_k}}
 
-      # For expressive speech acts without explicit classifier intent,
-      # infer from speech act category (greeting, farewell, thanks, etc.)
       speech_act.category == :expressive ->
         inferred = infer_intent_from_speech_act(speech_act, text)
         {inferred, :speech_act, nil, %{second_score: 0.0, margin: 0.0, top_k: []}}
 
-      # Default: use speech act inference
       true ->
         inferred = infer_intent_from_speech_act(speech_act, text)
         {inferred, :speech_act, nil, %{second_score: 0.0, margin: 0.0, top_k: []}}
     end
   end
 
-  # Extract the classifier's intent from speech act indicators
   defp extract_classifier_intent(speech_act) do
     speech_act.indicators
     |> Enum.find_value(fn indicator ->
@@ -533,41 +465,30 @@ defmodule Brain.Analysis.Pipeline do
   end
 
   defp infer_intent_from_speech_act(speech_act, _text) do
-    # Use IntentRegistry mapping for canonical intent names
-    # This ensures consistency with TemplateStore
     case IntentRegistry.intent_for_speech_act(speech_act.sub_type) do
       canonical_intent when is_binary(canonical_intent) ->
-        # Found a canonical intent in the registry
         canonical_intent
 
       nil ->
-        # Fallback for unmapped speech acts
         cond do
-          # Question
           speech_act.is_question ->
             "question.factual"
 
-          # Command/directive
           speech_act.sub_type == :command ->
             "action.request"
 
-          # Request for action
           speech_act.sub_type == :request_action ->
             "action.request"
 
-          # Request for information
           speech_act.sub_type == :request_information ->
             "information.request"
 
-          # General expressive
           speech_act.category == :expressive ->
             "smalltalk.general"
 
-          # Assertive statement
           speech_act.category == :assertive ->
             "unknown"
 
-          # Unknown
           true ->
             "unknown"
         end
@@ -575,8 +496,6 @@ defmodule Brain.Analysis.Pipeline do
   end
 
   defp calculate_confidence(analysis) do
-    # Calculate overall confidence as weighted average
-    # Safely extract confidence values with defaults
     discourse_conf =
       case analysis.discourse do
         %{confidence: c} when is_number(c) -> c
@@ -601,13 +520,17 @@ defmodule Brain.Analysis.Pipeline do
           filled_count = map_size(filled || %{})
           missing_count = length(missing || [])
           total = missing_count + filled_count
-          if total == 0, do: 1.0, else: filled_count / total
+
+          if total == 0 do
+            1.0
+          else
+            filled_count / total
+          end
 
         _ ->
           0.5
       end
 
-    # Weighted average - ensure all values are floats
     confidence =
       (discourse_conf * 0.3 + speech_act_conf * 0.4 + slot_conf * 0.3)
       |> Float.round(3)
@@ -632,12 +555,10 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
-  # Anaphora resolution helpers
-
   defp resolve_anaphora(text, history, chunk_index, opts) do
     case AnaphoraResolver.resolve_and_substitute(text, history) do
       {:ok, resolved_text, resolved_entities} ->
-        if length(resolved_entities) > 0 do
+        if resolved_entities != [] do
           Progress.report(opts, :anaphora_resolved, %{
             chunk_index: chunk_index,
             resolved_count: length(resolved_entities),
@@ -663,7 +584,6 @@ defmodule Brain.Analysis.Pipeline do
   end
 
   defp merge_anaphora_entities(entities, anaphora_entities) when is_list(anaphora_entities) do
-    # Convert anaphora entities to the expected format
     converted =
       Enum.map(anaphora_entities, fn e ->
         %{
@@ -674,7 +594,6 @@ defmodule Brain.Analysis.Pipeline do
         }
       end)
 
-    # Merge, avoiding duplicates (prefer extracted over resolved)
     extracted_types =
       entities
       |> Enum.map(& &1[:entity_type])
@@ -688,29 +607,19 @@ defmodule Brain.Analysis.Pipeline do
     entities ++ unique_anaphora
   end
 
-  defp merge_anaphora_entities(entities, _), do: entities
-
-  # ============================================================================
-  # Intent-Based Entity Filtering
-  # ============================================================================
+  defp merge_anaphora_entities(entities, _) do
+    entities
+  end
 
   @doc false
-  # Filter entities to only include those relevant to the intent's slot schema.
-  # This prevents entities from being used for the wrong intent.
-  # For example, if intent is "smalltalk.greeting" (no slots), all entities are filtered out.
-  # If intent is "weather.query", only location/date/time entities are kept.
   defp filter_entities_by_intent(entities, intent) when is_list(entities) do
-    # Get the slot schema for this intent
     schema = SlotDetector.get_schema(intent)
 
     if schema == nil do
-      # No schema - keep all entities (conservative fallback)
       entities
     else
-      # Get all entity types that can map to slots for this intent
       entity_mappings = Map.get(schema, "entity_mappings", %{})
 
-      # Build a set of all valid entity types for this intent
       valid_types =
         entity_mappings
         |> Map.values()
@@ -718,11 +627,8 @@ defmodule Brain.Analysis.Pipeline do
         |> MapSet.new()
 
       if MapSet.size(valid_types) == 0 do
-        # Intent has no slots (e.g., smalltalk.greeting) - filter out all entities
-        # This prevents entities like "Austin" in "I'm Austin" from leaking
         []
       else
-        # Keep only entities whose type matches a valid slot type
         Enum.filter(entities, fn entity ->
           entity_type = entity[:entity_type]
           MapSet.member?(valid_types, entity_type)
@@ -731,14 +637,20 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
-  defp filter_entities_by_intent(entities, _), do: entities
+  defp filter_entities_by_intent(entities, _) do
+    entities
+  end
 
-  # ============================================================================
-  # Novel Intent Detection
-  # ============================================================================
-
-  defp maybe_record_novel_candidate(text, intent, confidence, details, speech_act, entities, slot_result, opts) do
-    # Only check if enabled and queue is ready
+  defp maybe_record_novel_candidate(
+         text,
+         intent,
+         confidence,
+         details,
+         speech_act,
+         entities,
+         slot_result,
+         opts
+       ) do
     enabled = Application.get_env(:brain, :intent_promotion_enabled, false)
 
     if enabled and IntentReviewQueue.ready?() do
@@ -747,9 +659,18 @@ defmodule Brain.Analysis.Pipeline do
 
       case NoveltyDetector.is_novel?(best_score, margin) do
         {:novel, novelty_score} ->
-          # Only record if substantive
           if NoveltyDetector.is_substantive?(speech_act, intent) do
-            record_novel_candidate(text, intent, best_score, details, speech_act, entities, slot_result, novelty_score, opts)
+            record_novel_candidate(
+              text,
+              intent,
+              best_score,
+              details,
+              speech_act,
+              entities,
+              slot_result,
+              novelty_score,
+              opts
+            )
           end
 
         :not_novel ->
@@ -760,7 +681,17 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
-  defp record_novel_candidate(text, intent, best_score, details, _speech_act, entities, slot_result, novelty_score, opts) do
+  defp record_novel_candidate(
+         text,
+         intent,
+         best_score,
+         details,
+         _speech_act,
+         entities,
+         slot_result,
+         novelty_score,
+         opts
+       ) do
     conversation_id = Keyword.get(opts, :conversation_id)
     world_id = Keyword.get(opts, :world_id)
 

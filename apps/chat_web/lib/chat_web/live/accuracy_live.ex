@@ -1,13 +1,5 @@
 defmodule ChatWeb.AccuracyLive do
-  @moduledoc """
-  ML model accuracy dashboard for viewing evaluation results and experiment comparisons.
-
-  Provides visibility into:
-  - Per-task evaluation metrics (intent, NER, sentiment, speech act)
-  - Per-class precision, recall, F1, and support
-  - Accuracy trends over evaluation runs (inline SVG charts)
-  - Experiment comparisons from ExperimentTracker
-  """
+  @moduledoc "ML model accuracy dashboard for viewing evaluation results and experiment comparisons.\n\nProvides visibility into:\n- Per-task evaluation metrics (intent, NER, sentiment, speech act)\n- Per-class precision, recall, F1, and support\n- Accuracy trends over evaluation runs (inline SVG charts)\n- Experiment comparisons from ExperimentTracker\n"
 
   use ChatWeb, :live_view
   require Logger
@@ -50,10 +42,6 @@ defmodule ChatWeb.AccuracyLive do
     {:noreply, socket}
   end
 
-  # ============================================================================
-  # Event Handlers
-  # ============================================================================
-
   @impl true
   def handle_event("switch_tab", %{"tab" => tab}, socket) do
     socket = assign(socket, :active_tab, tab)
@@ -87,7 +75,13 @@ defmodule ChatWeb.AccuracyLive do
   end
 
   def handle_event("run_evaluation", _params, socket) do
-    socket = put_flash(socket, :info, "Evaluation triggered. Run `mix evaluate.intent --save` from the terminal for full results.")
+    socket =
+      put_flash(
+        socket,
+        :info,
+        "Evaluation triggered. Run `mix evaluate.intent --save` from the terminal for full results."
+      )
+
     {:noreply, socket}
   end
 
@@ -204,10 +198,6 @@ defmodule ChatWeb.AccuracyLive do
     {:noreply, socket}
   end
 
-  # ============================================================================
-  # Render
-  # ============================================================================
-
   @impl true
   def render(assigns) do
     ~H"""
@@ -288,13 +278,9 @@ defmodule ChatWeb.AccuracyLive do
     """
   end
 
-  # ============================================================================
-  # Function Components
-  # ============================================================================
-
-  attr :tab, :string, required: true
-  attr :label, :string, required: true
-  attr :active, :boolean, default: false
+  attr(:tab, :string, required: true)
+  attr(:label, :string, required: true)
+  attr(:active, :boolean, default: false)
 
   defp tab_button(assigns) do
     ~H"""
@@ -316,11 +302,11 @@ defmodule ChatWeb.AccuracyLive do
     """
   end
 
-  attr :task, :string, required: true
-  attr :evaluation, :map, default: nil
-  attr :trend, :list, default: []
-  attr :sort_field, :string, default: "label"
-  attr :sort_dir, :atom, default: :asc
+  attr(:task, :string, required: true)
+  attr(:evaluation, :map, default: nil)
+  attr(:trend, :list, default: [])
+  attr(:sort_field, :string, default: "label")
+  attr(:sort_dir, :atom, default: :asc)
 
   defp task_panel(assigns) do
     assigns = assign(assigns, :task_label, @task_labels[assigns.task] || assigns.task)
@@ -398,9 +384,9 @@ defmodule ChatWeb.AccuracyLive do
     """
   end
 
-  attr :label, :string, required: true
-  attr :value, :string, required: true
-  attr :icon, :string, required: true
+  attr(:label, :string, required: true)
+  attr(:value, :string, required: true)
+  attr(:icon, :string, required: true)
 
   defp metric_card(assigns) do
     ~H"""
@@ -414,10 +400,10 @@ defmodule ChatWeb.AccuracyLive do
     """
   end
 
-  attr :field, :string, required: true
-  attr :label, :string, required: true
-  attr :sort_field, :string, required: true
-  attr :sort_dir, :atom, required: true
+  attr(:field, :string, required: true)
+  attr(:label, :string, required: true)
+  attr(:sort_field, :string, required: true)
+  attr(:sort_dir, :atom, required: true)
 
   defp sortable_th(assigns) do
     ~H"""
@@ -442,8 +428,8 @@ defmodule ChatWeb.AccuracyLive do
     """
   end
 
-  attr :task, :string, required: true
-  attr :task_label, :string, required: true
+  attr(:task, :string, required: true)
+  attr(:task_label, :string, required: true)
 
   defp empty_state(assigns) do
     ~H"""
@@ -462,7 +448,7 @@ defmodule ChatWeb.AccuracyLive do
     """
   end
 
-  attr :experiments, :list, default: []
+  attr(:experiments, :list, default: [])
 
   defp experiments_panel(assigns) do
     ~H"""
@@ -533,17 +519,13 @@ defmodule ChatWeb.AccuracyLive do
     """
   end
 
-  # ============================================================================
-  # Import Panel
-  # ============================================================================
-
-  attr :intents, :list, default: []
-  attr :grouped, :map, default: %{}
-  attr :selected, :any, default: nil
-  attr :import_limit, :integer, default: nil
-  attr :import_loading, :boolean, default: false
-  attr :import_filter, :string, default: ""
-  attr :gold_stats, :map, default: %{}
+  attr(:intents, :list, default: [])
+  attr(:grouped, :map, default: %{})
+  attr(:selected, :any, default: nil)
+  attr(:import_limit, :integer, default: nil)
+  attr(:import_loading, :boolean, default: false)
+  attr(:import_filter, :string, default: "")
+  attr(:gold_stats, :map, default: %{})
 
   defp import_panel(assigns) do
     selected_count = MapSet.size(assigns.selected)
@@ -562,9 +544,11 @@ defmodule ChatWeb.AccuracyLive do
       else
         assigns.grouped
         |> Enum.map(fn {group, intents} ->
-          filtered = Enum.filter(intents, fn i ->
-            String.downcase(i.name) |> String.contains?(filter_lower)
-          end)
+          filtered =
+            Enum.filter(intents, fn i ->
+              String.downcase(i.name) |> String.contains?(filter_lower)
+            end)
+
           {group, filtered}
         end)
         |> Enum.reject(fn {_group, intents} -> intents == [] end)
@@ -717,11 +701,7 @@ defmodule ChatWeb.AccuracyLive do
     """
   end
 
-  # ============================================================================
-  # Inline SVG Trend Chart
-  # ============================================================================
-
-  attr :points, :list, required: true
+  attr(:points, :list, required: true)
 
   defp trend_chart(assigns) do
     points = assigns.points
@@ -734,7 +714,6 @@ defmodule ChatWeb.AccuracyLive do
       <div class="text-sm text-base-content/50 text-center py-4">{@message}</div>
       """
     else
-      # Chart dimensions
       width = 600
       height = 200
       padding_x = 50
@@ -747,18 +726,18 @@ defmodule ChatWeb.AccuracyLive do
       max_val = min(Enum.max(values) + 5, 100)
       val_range = max(max_val - min_val, 1)
 
-      # Build polyline points string
       polyline_points =
         values
         |> Enum.with_index()
-        |> Enum.map(fn {val, i} ->
-          x = padding_x + i / max(count - 1, 1) * chart_width
-          y = padding_y + (1 - (val - min_val) / val_range) * chart_height
-          "#{Float.round(x * 1.0, 1)},#{Float.round(y * 1.0, 1)}"
-        end)
-        |> Enum.join(" ")
+        |> Enum.map_join(
+          " ",
+          fn {val, i} ->
+            x = padding_x + i / max(count - 1, 1) * chart_width
+            y = padding_y + (1 - (val - min_val) / val_range) * chart_height
+            "#{Float.round(x * 1.0, 1)},#{Float.round(y * 1.0, 1)}"
+          end
+        )
 
-      # Build dot positions
       dots =
         values
         |> Enum.with_index()
@@ -768,7 +747,6 @@ defmodule ChatWeb.AccuracyLive do
           %{x: Float.round(x * 1.0, 1), y: Float.round(y * 1.0, 1), val: Float.round(val, 1)}
         end)
 
-      # Y-axis labels (5 ticks)
       y_ticks =
         for i <- 0..4 do
           val = min_val + i / 4 * val_range
@@ -847,10 +825,6 @@ defmodule ChatWeb.AccuracyLive do
     end
   end
 
-  # ============================================================================
-  # Data Loading
-  # ============================================================================
-
   defp load_all_data(socket) do
     evaluations = load_evaluations()
     trends = load_trends()
@@ -898,17 +872,29 @@ defmodule ChatWeb.AccuracyLive do
     end
   end
 
-  # ============================================================================
-  # Helpers
-  # ============================================================================
+  defp format_percent(nil) do
+    "-"
+  end
 
-  defp format_percent(nil), do: "-"
-  defp format_percent(val) when is_float(val) and val <= 1.0, do: "#{Float.round(val * 100, 1)}%"
-  defp format_percent(val) when is_float(val), do: "#{Float.round(val, 1)}%"
-  defp format_percent(val) when is_integer(val), do: "#{val}%"
-  defp format_percent(_), do: "-"
+  defp format_percent(val) when is_float(val) and val <= 1.0 do
+    "#{Float.round(val * 100, 1)}%"
+  end
 
-  defp metric_color_class(nil), do: "text-base-content/50"
+  defp format_percent(val) when is_float(val) do
+    "#{Float.round(val, 1)}%"
+  end
+
+  defp format_percent(val) when is_integer(val) do
+    "#{val}%"
+  end
+
+  defp format_percent(_) do
+    "-"
+  end
+
+  defp metric_color_class(nil) do
+    "text-base-content/50"
+  end
 
   defp metric_color_class(val) when is_number(val) do
     cond do
@@ -918,9 +904,13 @@ defmodule ChatWeb.AccuracyLive do
     end
   end
 
-  defp metric_color_class(_), do: "text-base-content/50"
+  defp metric_color_class(_) do
+    "text-base-content/50"
+  end
 
-  defp sorted_per_class(nil, _field, _dir), do: []
+  defp sorted_per_class(nil, _field, _dir) do
+    []
+  end
 
   defp sorted_per_class(per_class, sort_field, sort_dir) when is_map(per_class) do
     per_class
@@ -940,12 +930,13 @@ defmodule ChatWeb.AccuracyLive do
     )
   end
 
-  defp toggle_sort_dir(:asc), do: :desc
-  defp toggle_sort_dir(:desc), do: :asc
+  defp toggle_sort_dir(:asc) do
+    :desc
+  end
 
-  # ============================================================================
-  # Import Data Loading
-  # ============================================================================
+  defp toggle_sort_dir(:desc) do
+    :asc
+  end
 
   defp load_available_intents do
     try do

@@ -1,10 +1,5 @@
 defmodule Tasks.SourceTest do
-  @moduledoc """
-  Tests for Tasks.Source module.
-
-  These tests use the real shipped dataset in priv/domain_tasks/ to verify
-  the task source functionality works end-to-end with actual NLP benchmark data.
-  """
+  @moduledoc "Tests for Tasks.Source module.\n\nThese tests use the real shipped dataset in priv/domain_tasks/ to verify\nthe task source functionality works end-to-end with actual NLP benchmark data.\n"
   use ExUnit.Case, async: true
 
   alias Tasks.{Analyzer, Source}
@@ -15,8 +10,6 @@ defmodule Tasks.SourceTest do
       goal = ResearchGoal.new("France", questions: ["What is the capital?"])
 
       {:ok, findings} = Source.fetch_for_goal(goal, max_tasks: 2, max_instances: 5)
-
-      # Should return some findings from the shipped dataset
       assert is_list(findings)
     end
   end
@@ -26,7 +19,7 @@ defmodule Tasks.SourceTest do
       {:ok, sessions} = Source.create_training_sessions(:question_answering, max_tasks: 3)
 
       assert is_list(sessions)
-      assert length(sessions) > 0, "Expected to find QA tasks in shipped dataset"
+      assert sessions != [], "Expected to find QA tasks in shipped dataset"
 
       session = List.first(sessions)
       assert Map.has_key?(session, :task_id)
@@ -44,7 +37,7 @@ defmodule Tasks.SourceTest do
       {:ok, sessions} = Source.create_training_sessions(:all, max_tasks: 5)
 
       assert is_list(sessions)
-      assert length(sessions) > 0, "Expected to find useful tasks in shipped dataset"
+      assert sessions != [], "Expected to find useful tasks in shipped dataset"
     end
   end
 
@@ -53,7 +46,6 @@ defmodule Tasks.SourceTest do
       {:ok, grouped} = Source.available_tasks()
 
       assert is_map(grouped)
-      # Should have at least some categories from the shipped dataset
       assert map_size(grouped) > 0, "Expected to find task categories in shipped dataset"
     end
   end
@@ -79,7 +71,7 @@ defmodule Tasks.SourceTest do
       assert File.dir?(path), "Expected #{path} to be a directory"
 
       files = Path.wildcard(Path.join(path, "*.json"))
-      assert length(files) > 0, "Expected to find JSON files in #{path}"
+      assert files != [], "Expected to find JSON files in #{path}"
     end
   end
 end

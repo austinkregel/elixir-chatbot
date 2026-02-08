@@ -3,8 +3,6 @@ defmodule Brain.Response.TemplateStoreTest do
 
   alias Brain.Response.TemplateStore
 
-  # These tests verify the conditional template selection functionality
-
   describe "filter_by_conditions/2" do
     test "filters templates that match condition" do
       templates = [
@@ -51,8 +49,6 @@ defmodule Brain.Response.TemplateStoreTest do
       context = %{entities: []}
 
       result = TemplateStore.filter_by_conditions(templates, context)
-
-      # Only the nil-condition template should match
       assert length(result) == 1
       assert List.first(result).text == "Hello!"
     end
@@ -134,7 +130,6 @@ defmodule Brain.Response.TemplateStoreTest do
         }
       ]
 
-      # Both conditions true
       context_both = %{
         entities: [%{entity_type: "person", value: "Austin"}],
         confidence: 0.9
@@ -143,14 +138,13 @@ defmodule Brain.Response.TemplateStoreTest do
       result_both = TemplateStore.filter_by_conditions(templates, context_both)
       assert length(result_both) == 1
 
-      # One condition false
       context_one = %{
         entities: [],
         confidence: 0.9
       }
 
       result_one = TemplateStore.filter_by_conditions(templates, context_one)
-      assert length(result_one) == 0
+      assert result_one == []
     end
 
     test "filters by compound OR conditions" do
@@ -163,7 +157,6 @@ defmodule Brain.Response.TemplateStoreTest do
         }
       ]
 
-      # First condition true
       context_first = %{
         entities: [%{entity_type: "person", value: "Austin"}],
         confidence: 0.3
@@ -172,7 +165,6 @@ defmodule Brain.Response.TemplateStoreTest do
       result_first = TemplateStore.filter_by_conditions(templates, context_first)
       assert length(result_first) == 1
 
-      # Second condition true
       context_second = %{
         entities: [],
         confidence: 0.9
@@ -181,20 +173,18 @@ defmodule Brain.Response.TemplateStoreTest do
       result_second = TemplateStore.filter_by_conditions(templates, context_second)
       assert length(result_second) == 1
 
-      # Both conditions false
       context_neither = %{
         entities: [],
         confidence: 0.3
       }
 
       result_neither = TemplateStore.filter_by_conditions(templates, context_neither)
-      assert length(result_neither) == 0
+      assert result_neither == []
     end
   end
 
   describe "rank_by_similarity/2" do
     test "ranks templates by embedding similarity" do
-      # Create templates with mock embeddings
       templates = [
         %TemplateStore.Template{
           text: "Low similarity",
@@ -219,8 +209,6 @@ defmodule Brain.Response.TemplateStoreTest do
       query_embedding = [0.9, 0.8, 0.7]
 
       result = TemplateStore.rank_by_similarity(templates, query_embedding)
-
-      # Should be sorted by similarity (highest first)
       assert List.first(result).text == "High similarity"
       assert List.last(result).text == "Low similarity"
     end
@@ -244,8 +232,6 @@ defmodule Brain.Response.TemplateStoreTest do
       query_embedding = [0.9, 0.8, 0.7]
 
       result = TemplateStore.rank_by_similarity(templates, query_embedding)
-
-      # Template with embedding should be ranked higher
       assert List.first(result).text == "Has embedding"
     end
 
@@ -301,15 +287,11 @@ defmodule Brain.Response.TemplateStoreTest do
       ]
 
       result = TemplateStore.substitute_slots(template, entities)
-
-      # Should use one of the matching entities
       assert result == "Weather in Austin is sunny." or result == "Weather in Dallas is sunny."
     end
   end
 
   describe "integration with TemplateStore GenServer" do
-    # These tests require the GenServer to be running
-
     test "ready? returns boolean" do
       result = TemplateStore.ready?()
       assert is_boolean(result)

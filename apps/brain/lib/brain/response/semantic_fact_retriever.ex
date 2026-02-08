@@ -1,20 +1,7 @@
 defmodule Brain.Response.SemanticFactRetriever do
-  @moduledoc """
-  Semantic fact retrieval using TF-IDF embeddings.
+  @moduledoc "Semantic fact retrieval using TF-IDF embeddings.\n\nUnlike keyword matching, this module:\n- Embeds facts and queries using the same TF-IDF space\n- Uses cosine similarity to find semantically related facts\n- Handles synonyms and related concepts naturally\n- Works with learned facts that may have different phrasing\n\n## Example\n\n    # Query: \"What is an earthquake?\"\n    # Finds: \"earthquake causes: The shaking of the ground causes damage to buildings.\"\n    # Even though \"What is\" != \"causes\"\n"
 
-  Unlike keyword matching, this module:
-  - Embeds facts and queries using the same TF-IDF space
-  - Uses cosine similarity to find semantically related facts
-  - Handles synonyms and related concepts naturally
-  - Works with learned facts that may have different phrasing
-
-  ## Example
-
-      # Query: "What is an earthquake?"
-      # Finds: "earthquake causes: The shaking of the ground causes damage to buildings."
-      # Even though "What is" != "causes"
-  """
-
+  alias Brain.ML
   use GenServer
   require Logger
 
@@ -25,41 +12,23 @@ defmodule Brain.Response.SemanticFactRetriever do
   @similarity_threshold 0.3
   @max_results 5
 
-  # ============================================================================
-  # Client API
-  # ============================================================================
-
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc """
-  Searches for facts semantically similar to the query.
-
-  Returns facts ranked by cosine similarity to the query embedding.
-
-  ## Options
-    - `:threshold` - Minimum similarity score (default: 0.3)
-    - `:limit` - Maximum results (default: 5)
-    - `:category` - Filter by category before semantic search
-  """
+  @doc "Searches for facts semantically similar to the query.\n\nReturns facts ranked by cosine similarity to the query embedding.\n\n## Options\n  - `:threshold` - Minimum similarity score (default: 0.3)\n  - `:limit` - Maximum results (default: 5)\n  - `:category` - Filter by category before semantic search\n"
   @spec search(String.t(), keyword()) :: [map()]
   def search(query, opts \\ []) when is_binary(query) do
     GenServer.call(__MODULE__, {:search, query, opts}, 10_000)
   end
 
-  @doc """
-  Rebuilds the semantic index from current FactDatabase contents.
-  Call after adding new facts.
-  """
+  @doc "Rebuilds the semantic index from current FactDatabase contents.\nCall after adding new facts.\n"
   @spec rebuild_index() :: :ok
   def rebuild_index do
     GenServer.call(__MODULE__, :rebuild_index, 60_000)
   end
 
-  @doc """
-  Checks if the semantic index is ready.
-  """
+  @doc "Checks if the semantic index is ready.\n"
   @spec ready?() :: boolean()
   def ready? do
     try do
@@ -69,24 +38,15 @@ defmodule Brain.Response.SemanticFactRetriever do
     end
   end
 
-  @doc """
-  Gets stats about the semantic index.
-  """
+  @doc "Gets stats about the semantic index.\n"
   @spec stats() :: map()
   def stats do
     GenServer.call(__MODULE__, :stats)
   end
 
-  # ============================================================================
-  # Server Callbacks
-  # ============================================================================
-
   @impl true
   def init(_opts) do
-    # Create ETS table for fact embeddings
     :ets.new(@ets_table, [:named_table, :set, :public, read_concurrency: true])
-
-    # Schedule initial index build
     send(self(), :build_initial_index)
 
     {:ok, %{indexed_count: 0, last_indexed: nil, ready: false}}
@@ -94,13 +54,11 @@ defmodule Brain.Response.SemanticFactRetriever do
 
   @impl true
   def handle_info(:build_initial_index, state) do
-    # Wait for Embedder to be ready
     if Embedder.ready?() do
       new_state = do_rebuild_index(state)
       {:noreply, new_state}
     else
-      # Retry in 2 seconds
-      Process.send_after(self(), :build_initial_index, 2_000)
+      Process.send_after(self(), :build_initial_index, 2000)
       {:noreply, state}
     end
   end
@@ -137,24 +95,14 @@ defmodule Brain.Response.SemanticFactRetriever do
     {:reply, stats, state}
   end
 
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
-
   defp do_rebuild_index(state) do
     Logger.info("Building semantic fact index...")
-
-    # Clear existing index
     :ets.delete_all_objects(@ets_table)
-
-    # Get all facts
     facts = FactDatabase.query(limit: 10_000)
 
-    # Embed each fact
     indexed_count =
       facts
       |> Enum.reduce(0, fn fact, count ->
-        # Create searchable text from entity + fact
         search_text = build_search_text(fact)
 
         case Embedder.embed(search_text) do
@@ -177,10 +125,8 @@ defmodule Brain.Response.SemanticFactRetriever do
     limit = Keyword.get(opts, :limit, @max_results)
     category = Keyword.get(opts, :category)
 
-    # Embed the query
     case Embedder.embed(query) do
       {:ok, query_embedding} ->
-        # Scan all indexed facts and compute similarity
         :ets.tab2list(@ets_table)
         |> Enum.map(fn {_id, fact, fact_embedding} ->
           similarity = cosine_similarity(query_embedding, fact_embedding)
@@ -205,21 +151,13 @@ defmodule Brain.Response.SemanticFactRetriever do
   end
 
   defp build_search_text(fact) do
-    # Combine entity and fact text for richer embedding
-    # Use tokenizer to extract content words from entity
     entity_content = extract_content_words(fact.entity)
     fact_content = fact.fact
-
-    # Combine for embedding - the TF-IDF will naturally weight content words higher
     "#{entity_content} #{fact_content}"
   end
 
-  # Use Tokenizer and POS tagger to extract meaningful content words
-  # This follows the project rules of using NLP instead of pattern matching
   defp extract_content_words(text) when is_binary(text) do
-    alias Brain.ML.{Tokenizer, POSTagger}
-
-    # Content POS tags that indicate meaningful search terms
+    alias ML.{Tokenizer, POSTagger}
     content_tags = ~w(NOUN PROPN VERB ADJ ADV NUM)
 
     tokens = Tokenizer.tokenize_words(text)
@@ -228,19 +166,21 @@ defmodule Brain.Response.SemanticFactRetriever do
       {:ok, model} ->
         tags = POSTagger.predict_tags(tokens, model)
 
-        # Keep only content words
         Enum.zip(tokens, tags)
         |> Enum.filter(fn {_token, tag} -> tag in content_tags end)
-        |> Enum.map(fn {token, _tag} -> token end)
-        |> Enum.join(" ")
+        |> Enum.map_join(
+          " ",
+          fn {token, _tag} -> token end
+        )
 
       {:error, _} ->
-        # Fallback: just use the original text
         text
     end
   end
 
-  defp extract_content_words(text), do: to_string(text)
+  defp extract_content_words(text) do
+    to_string(text)
+  end
 
   defp cosine_similarity(vec1, vec2) when is_list(vec1) and is_list(vec2) do
     if length(vec1) != length(vec2) do
@@ -258,5 +198,7 @@ defmodule Brain.Response.SemanticFactRetriever do
     end
   end
 
-  defp cosine_similarity(_, _), do: 0.0
+  defp cosine_similarity(_, _) do
+    0.0
+  end
 end

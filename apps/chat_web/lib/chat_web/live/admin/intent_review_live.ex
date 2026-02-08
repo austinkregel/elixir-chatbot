@@ -1,27 +1,21 @@
 defmodule ChatWeb.Admin.IntentReviewLive do
-  @moduledoc """
-  LiveView for reviewing novel intent candidates.
+  @moduledoc "LiveView for reviewing novel intent candidates.\n\nProvides an admin interface for:\n- Viewing pending intent candidates\n- Rich annotation UI (tags, notes, span annotations)\n- Promoting candidates as variations or new intents\n- Filtering and searching candidates\n"
 
-  Provides an admin interface for:
-  - Viewing pending intent candidates
-  - Rich annotation UI (tags, notes, span annotations)
-  - Promoting candidates as variations or new intents
-  - Filtering and searching candidates
-  """
-
+  alias Phoenix.PubSub
+  alias Brain.Analysis
   use ChatWeb, :live_view
   require Logger
 
   import ChatWeb.AppShell
 
-  alias Brain.Analysis.{IntentReviewQueue, IntentRegistry, IntentPromoter}
+  alias Analysis.{IntentReviewQueue, IntentRegistry, IntentPromoter}
 
-  @refresh_interval_ms 5_000
+  @refresh_interval_ms 5000
 
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
-      Phoenix.PubSub.subscribe(Brain.PubSub, "intent:review")
+      PubSub.subscribe(Brain.PubSub, "intent:review")
       :timer.send_interval(@refresh_interval_ms, self(), :refresh)
     end
 
@@ -479,8 +473,6 @@ defmodule ChatWeb.Admin.IntentReviewLive do
     """
   end
 
-  # Event Handlers
-
   @impl true
   def handle_event("change_tab", %{"tab" => tab}, socket) do
     tab_atom = String.to_existing_atom(tab)
@@ -526,23 +518,34 @@ defmodule ChatWeb.Admin.IntentReviewLive do
     tags = Map.get(params, "tags", [])
     notes = Map.get(params, "notes", "")
     domain_guess = Map.get(params, "domain_guess", "")
-    
+
     tags_list =
       cond do
         is_list(tags) -> Enum.map(tags, &String.to_existing_atom/1)
         is_binary(tags) -> [String.to_existing_atom(tags)]
         true -> []
       end
-    
+
     annotation_updates = %{
       tags: tags_list,
-      notes: if(notes != "", do: notes, else: nil),
-      domain_guess: if(domain_guess != "", do: domain_guess, else: nil)
+      notes:
+        if(notes != "") do
+          notes
+        else
+          nil
+        end,
+      domain_guess:
+        if(domain_guess != "") do
+          domain_guess
+        else
+          nil
+        end
     }
 
     case IntentReviewQueue.update_annotation(id, annotation_updates) do
       {:ok, _} ->
-        {:noreply, assign(socket, show_annotation_modal: false, selected_candidate: nil) |> refresh_data()}
+        {:noreply,
+         assign(socket, show_annotation_modal: false, selected_candidate: nil) |> refresh_data()}
 
       {:error, _} ->
         {:noreply, socket}
@@ -600,16 +603,14 @@ defmodule ChatWeb.Admin.IntentReviewLive do
         {:noreply, put_flash(socket, :error, "Domain is required for new intents")}
 
       true ->
-        # This will trigger the promotion workflow
         case IntentReviewQueue.approve(id, "Promoted via admin UI", action_atom, intent_name) do
           {:ok, candidate} ->
-            # Trigger promotion workflow (write files, retrain, etc.)
             Task.start(fn ->
-              IntentPromoter.promote(candidate, [
+              IntentPromoter.promote(candidate,
                 domain: Map.get(params, "new_intent_domain", ""),
                 category: Map.get(params, "new_intent_category", ""),
                 speech_act: Map.get(params, "new_intent_speech_act", "")
-              ])
+              )
             end)
 
             {:noreply,
@@ -648,8 +649,6 @@ defmodule ChatWeb.Admin.IntentReviewLive do
     end
   end
 
-  # PubSub Handlers
-
   @impl true
   def handle_info({event, _data}, socket)
       when event in [
@@ -669,7 +668,6 @@ defmodule ChatWeb.Admin.IntentReviewLive do
 
   @impl true
   def handle_info({:world_context_changed, _world_id}, socket) do
-    # World was changed from another LiveView or tab - reload data
     {:noreply, refresh_data(socket)}
   end
 
@@ -678,21 +676,20 @@ defmodule ChatWeb.Admin.IntentReviewLive do
     {:noreply, socket}
   end
 
-  # Helpers
-
   defp refresh_data(socket) do
     current_tab = socket.assigns[:current_tab] || :pending
     search_query = socket.assigns[:search_query] || ""
 
     candidates = load_candidates(current_tab)
 
-    # Apply search filter
     filtered_candidates =
       if search_query != "" do
         query_lower = String.downcase(search_query)
+
         Enum.filter(candidates, fn c ->
           String.contains?(String.downcase(c.text), query_lower) or
-            (c.annotation[:notes] && String.contains?(String.downcase(c.annotation[:notes]), query_lower))
+            (c.annotation[:notes] &&
+               String.contains?(String.downcase(c.annotation[:notes]), query_lower))
         end)
       else
         candidates
@@ -707,5 +704,7 @@ defmodule ChatWeb.Admin.IntentReviewLive do
     Float.round(score, 3)
   end
 
-  defp format_score(_), do: "N/A"
+  defp format_score(_) do
+    "N/A"
+  end
 end

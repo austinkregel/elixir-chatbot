@@ -1,20 +1,5 @@
 defmodule Tasks.Analyzer do
-  @moduledoc """
-  Analyzes domain-specific task files from NLP benchmarks.
-
-  Parses task metadata, categorizes tasks by their NLP category and domain,
-  and filters tasks suitable for chatbot training.
-
-  ## Task File Format
-
-  Each task file contains:
-  - Contributors, Source, URL: Metadata
-  - Categories: NLP task category (e.g., "Question Answering")
-  - Domains: Subject domain (e.g., "Wikipedia", "Commonsense")
-  - Definition: Task instruction
-  - Positive/Negative Examples: Demonstrations
-  - Instances: Actual task instances with input/output pairs
-  """
+  @moduledoc "Analyzes domain-specific task files from NLP benchmarks.\n\nParses task metadata, categorizes tasks by their NLP category and domain,\nand filters tasks suitable for chatbot training.\n\n## Task File Format\n\nEach task file contains:\n- Contributors, Source, URL: Metadata\n- Categories: NLP task category (e.g., \"Question Answering\")\n- Domains: Subject domain (e.g., \"Wikipedia\", \"Commonsense\")\n- Definition: Task instruction\n- Positive/Negative Examples: Demonstrations\n- Instances: Actual task instances with input/output pairs\n"
 
   require Logger
 
@@ -38,8 +23,6 @@ defmodule Tasks.Analyzer do
           useful_tasks: [task_metadata()],
           skipped_tasks: [task_metadata()]
         }
-
-  # Categories that are useful for chatbot training
   @useful_categories [
     "Question Answering",
     "Commonsense Classification",
@@ -56,39 +39,16 @@ defmodule Tasks.Analyzer do
     "Story Composition",
     "Text Completion"
   ]
+  @skip_categories ["Translation", "Text to Code", "Code to Text", "Program Execution"]
 
-  # Categories to skip (translation, code generation, etc.)
-  @skip_categories [
-    "Translation",
-    "Text to Code",
-    "Code to Text",
-    "Program Execution"
-  ]
-
-  # ============================================================================
-  # Public API
-  # ============================================================================
-
-  @doc """
-  Returns the default path to the domain tasks directory.
-  Uses the priv directory of the tasks app.
-  """
+  @doc "Returns the default path to the domain tasks directory.\nUses the priv directory of the tasks app.\n"
   @spec default_tasks_path() :: String.t()
   def default_tasks_path do
     Application.get_env(:tasks, :tasks_path) ||
       Path.join(:code.priv_dir(:tasks) |> to_string(), "domain_tasks")
   end
 
-  @doc """
-  Analyzes all task files in the domain_specific_tasks directory.
-
-  ## Options
-    - `:tasks_path` - Path to the tasks directory (default: priv/domain_tasks)
-    - `:english_only` - Only include English tasks (default: true)
-    - `:categories` - List of categories to include (default: all useful categories)
-
-  Returns an analysis result with task counts, category breakdown, and filtered task list.
-  """
+  @doc "Analyzes all task files in the domain_specific_tasks directory.\n\n## Options\n  - `:tasks_path` - Path to the tasks directory (default: priv/domain_tasks)\n  - `:english_only` - Only include English tasks (default: true)\n  - `:categories` - List of categories to include (default: all useful categories)\n\nReturns an analysis result with task counts, category breakdown, and filtered task list.\n"
   @spec analyze_all(keyword()) :: {:ok, analysis_result()} | {:error, term()}
   def analyze_all(opts \\ []) do
     tasks_path = Keyword.get(opts, :tasks_path, default_tasks_path())
@@ -99,7 +59,6 @@ defmodule Tasks.Analyzer do
       {:ok, files} ->
         Logger.info("Analyzing domain tasks", %{file_count: length(files)})
 
-        # Parse all task files in parallel
         tasks =
           files
           |> Task.async_stream(&parse_task_file/1, max_concurrency: 10, timeout: 30_000)
@@ -109,7 +68,6 @@ defmodule Tasks.Analyzer do
           end)
           |> Enum.reject(&is_nil/1)
 
-        # Filter and categorize
         {useful, skipped} = filter_tasks(tasks, english_only, categories)
 
         result = %{
@@ -128,9 +86,7 @@ defmodule Tasks.Analyzer do
     end
   end
 
-  @doc """
-  Parses a single task file and extracts metadata.
-  """
+  @doc "Parses a single task file and extracts metadata.\n"
   @spec parse_task_file(String.t()) :: task_metadata() | nil
   def parse_task_file(file_path) do
     case File.read(file_path) do
@@ -140,7 +96,6 @@ defmodule Tasks.Analyzer do
             extract_metadata(file_path, data)
 
           {:error, reason} ->
-            # Only log at debug level to avoid flooding logs when scanning many files
             Logger.debug("Failed to parse JSON: #{Path.basename(file_path)} - #{inspect(reason)}")
             nil
         end
@@ -151,21 +106,19 @@ defmodule Tasks.Analyzer do
     end
   end
 
-  @doc """
-  Returns the list of useful categories for chatbot training.
-  """
+  @doc "Returns the list of useful categories for chatbot training.\n"
   @spec useful_categories() :: [String.t()]
-  def useful_categories, do: @useful_categories
+  def useful_categories do
+    @useful_categories
+  end
 
-  @doc """
-  Returns categories that should be skipped.
-  """
+  @doc "Returns categories that should be skipped.\n"
   @spec skip_categories() :: [String.t()]
-  def skip_categories, do: @skip_categories
+  def skip_categories do
+    @skip_categories
+  end
 
-  @doc """
-  Checks if a task is useful for chatbot training based on its categories.
-  """
+  @doc "Checks if a task is useful for chatbot training based on its categories.\n"
   @spec useful_task?(task_metadata()) :: boolean()
   def useful_task?(task) do
     task_categories = MapSet.new(task.categories)
@@ -178,17 +131,13 @@ defmodule Tasks.Analyzer do
     has_useful and not has_skip
   end
 
-  @doc """
-  Checks if a task is English-only.
-  """
+  @doc "Checks if a task is English-only.\n"
   @spec english_task?(task_metadata()) :: boolean()
   def english_task?(task) do
     task.input_language == "English" and task.output_language == "English"
   end
 
-  @doc """
-  Groups tasks by their primary category.
-  """
+  @doc "Groups tasks by their primary category.\n"
   @spec group_by_category([task_metadata()]) :: %{String.t() => [task_metadata()]}
   def group_by_category(tasks) do
     Enum.group_by(tasks, fn task ->
@@ -196,13 +145,10 @@ defmodule Tasks.Analyzer do
     end)
   end
 
-  @doc """
-  Groups tasks by their primary domain.
-  """
+  @doc "Groups tasks by their primary domain.\n"
   @spec group_by_domain([task_metadata()]) :: %{String.t() => [task_metadata()]}
   def group_by_domain(tasks) do
     Enum.group_by(tasks, fn task ->
-      # Extract top-level domain (before "->")
       task.domains
       |> List.first()
       |> case do
@@ -212,13 +158,7 @@ defmodule Tasks.Analyzer do
     end)
   end
 
-  @doc """
-  Loads instances from a task file.
-
-  ## Options
-    - `:max_instances` - Maximum instances to load (default: all)
-    - `:include_examples` - Include positive/negative examples (default: true)
-  """
+  @doc "Loads instances from a task file.\n\n## Options\n  - `:max_instances` - Maximum instances to load (default: all)\n  - `:include_examples` - Include positive/negative examples (default: true)\n"
   @spec load_instances(String.t(), keyword()) :: {:ok, [map()]} | {:error, term()}
   def load_instances(file_path, opts \\ []) do
     max_instances = Keyword.get(opts, :max_instances, :all)
@@ -230,7 +170,6 @@ defmodule Tasks.Analyzer do
           {:ok, data} ->
             instances = Map.get(data, "Instances", [])
 
-            # Optionally include examples
             examples =
               if include_examples do
                 positive = Map.get(data, "Positive Examples", [])
@@ -242,7 +181,6 @@ defmodule Tasks.Analyzer do
 
             all_instances = examples ++ instances
 
-            # Apply limit
             limited =
               case max_instances do
                 :all -> all_instances
@@ -260,9 +198,7 @@ defmodule Tasks.Analyzer do
     end
   end
 
-  @doc """
-  Gets the task definition/instruction from a task file.
-  """
+  @doc "Gets the task definition/instruction from a task file.\n"
   @spec get_definition(String.t()) :: {:ok, String.t()} | {:error, term()}
   def get_definition(file_path) do
     case File.read(file_path) do
@@ -286,21 +222,16 @@ defmodule Tasks.Analyzer do
     end
   end
 
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
-
   defp list_task_files(tasks_path) do
     pattern = Path.join(tasks_path, "*.json")
     files = Path.wildcard(pattern)
 
-    # Filter out README.md or other non-task files
     task_files =
       files
       |> Enum.filter(&String.ends_with?(&1, ".json"))
       |> Enum.reject(&String.contains?(&1, "README"))
 
-    if length(task_files) == 0 do
+    if task_files == [] do
       {:error, :no_task_files_found}
     else
       {:ok, task_files}
@@ -336,8 +267,6 @@ defmodule Tasks.Analyzer do
       lang_ok = not english_only or english_task?(task)
       task_categories = MapSet.new(task.categories)
       cat_ok = not MapSet.disjoint?(task_categories, category_set)
-
-      # Also check it's not in skip categories
       skip_set = MapSet.new(@skip_categories)
       not_skipped = MapSet.disjoint?(task_categories, skip_set)
 

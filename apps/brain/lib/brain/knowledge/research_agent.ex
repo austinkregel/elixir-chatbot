@@ -1,60 +1,31 @@
 defmodule Brain.Knowledge.ResearchAgent do
-  @moduledoc """
-  Stateless worker module for fetching and analyzing web content.
+  @moduledoc "Stateless worker module for fetching and analyzing web content.\n\nResearch agents:\n- Accept a research goal (topic/questions)\n- Fetch content from web sources\n- Extract factual claims using the Analysis Pipeline\n- Return structured findings with source metadata\n\nAgents are designed to be run as supervised Tasks through the\nLearning Center's AgentSupervisor.\n\n## Example\n\n    goal = ResearchGoal.new(\"France\", questions: [\"What is the capital?\"])\n    {:ok, findings} = ResearchAgent.research(goal)\n"
 
-  Research agents:
-  - Accept a research goal (topic/questions)
-  - Fetch content from web sources
-  - Extract factual claims using the Analysis Pipeline
-  - Return structured findings with source metadata
-
-  Agents are designed to be run as supervised Tasks through the
-  Learning Center's AgentSupervisor.
-
-  ## Example
-
-      goal = ResearchGoal.new("France", questions: ["What is the capital?"])
-      {:ok, findings} = ResearchAgent.research(goal)
-  """
-
+  alias Brain.Knowledge.Academic
+  alias Brain.Knowledge.Types
+  alias Brain.Knowledge
   require Logger
 
   alias Brain.Analysis.Pipeline
-  alias Brain.Knowledge.{HtmlProcessor, SourceReliability}
-  alias Brain.Knowledge.Types.{Finding, SourceInfo, ResearchGoal}
+  alias Knowledge.{HtmlProcessor, SourceReliability}
+  alias Types.{Finding, SourceInfo, ResearchGoal}
   alias Brain.Telemetry
-
-  # Configurable HTTP client (allows mocking in tests)
   @http_client Application.compile_env(:brain, :http_client, Req)
-
-  # Rate limiting: minimum delay between requests to same domain
   @rate_limit_ms 1000
-
-  # Agent for tracking per-domain request times
   @rate_limiter_agent Brain.Knowledge.RateLimiter
 
   @type fetch_result :: {:ok, [Finding.t()]} | {:error, term()}
 
-  # ============================================================================
-  # Public API
-  # ============================================================================
-
-  @doc """
-  Fetches and analyzes content for a research goal.
-
-  Returns extracted findings with source metadata.
-
-  ## Options
-    - :sources - List of source types to use (default: [:web])
-    - :max_pages - Maximum pages to fetch per source (default: 5)
-    - :timeout - Request timeout in ms (default: 10000)
-    - :mock - If true, uses mock data for testing
-  """
+  @doc "Fetches and analyzes content for a research goal.\n\nReturns extracted findings with source metadata.\n\n## Options\n  - :sources - List of source types to use (default: [:web])\n  - :max_pages - Maximum pages to fetch per source (default: 5)\n  - :timeout - Request timeout in ms (default: 10_000)\n  - :mock - If true, uses mock data for testing\n"
   @spec research(ResearchGoal.t(), keyword()) :: fetch_result()
   def research(%ResearchGoal{} = goal, opts \\ []) do
-    Telemetry.span(:knowledge_research, %{topic: goal.topic, questions: length(goal.questions)}, fn ->
-      do_research(goal, opts)
-    end)
+    Telemetry.span(
+      :knowledge_research,
+      %{topic: goal.topic, questions: length(goal.questions)},
+      fn ->
+        do_research(goal, opts)
+      end
+    )
   end
 
   defp do_research(%ResearchGoal{} = goal, opts) do
@@ -69,13 +40,9 @@ defmodule Brain.Knowledge.ResearchAgent do
     )
 
     try do
-      # Generate search queries from goal
       queries = expand_goal_to_queries(goal)
-
-      # Include goal in opts for task source
       opts_with_goal = Keyword.put(opts, :goal, goal)
 
-      # Fetch from each source type
       raw_results =
         if mock? do
           generate_mock_results(goal, max_pages)
@@ -84,48 +51,33 @@ defmodule Brain.Knowledge.ResearchAgent do
           |> Enum.flat_map(&fetch_from_source(&1, queries, max_pages, opts_with_goal))
         end
 
-      # Extract claims using Pipeline
       findings =
         raw_results
         |> Enum.flat_map(&extract_findings/1)
         |> Enum.map(&enrich_with_source_reliability/1)
 
-      Logger.info("Research completed",
-        topic: goal.topic,
-        findings: length(findings)
-      )
+      Logger.info("Research completed", topic: goal.topic, findings: length(findings))
 
       {:ok, findings}
     rescue
       e ->
-        Logger.error("Research failed",
-          topic: goal.topic,
-          error: Exception.message(e)
-        )
+        Logger.error("Research failed", topic: goal.topic, error: Exception.message(e))
 
         {:error, {:research_failed, Exception.message(e)}}
     end
   end
 
-  @doc """
-  Fetches content from a single URL.
-
-  Used for direct URL fetching when the URL is already known.
-  Respects rate limiting per domain.
-  """
+  @doc "Fetches content from a single URL.\n\nUsed for direct URL fetching when the URL is already known.\nRespects rate limiting per domain.\n"
   @spec fetch_url(String.t(), keyword()) :: {:ok, map()} | {:error, term()}
   def fetch_url(url, opts \\ []) when is_binary(url) do
     timeout = Keyword.get(opts, :timeout, 10_000)
     domain = SourceInfo.extract_domain(url)
 
-    # Check if domain is blocked
     if SourceReliability.ready?() and SourceReliability.blocked?(domain) do
       {:error, :blocked_domain}
     else
-      # Apply rate limiting
       wait_for_rate_limit(domain)
 
-      # Fetch content
       case do_fetch(url, timeout) do
         {:ok, %{status: status, body: body}} when status in 200..299 ->
           record_request(domain)
@@ -146,10 +98,6 @@ defmodule Brain.Knowledge.ResearchAgent do
     end
   end
 
-  # ============================================================================
-  # Private Functions - Query Expansion
-  # ============================================================================
-
   defp expand_goal_to_queries(%ResearchGoal{topic: topic, questions: questions}) do
     base_queries = [topic]
 
@@ -163,25 +111,16 @@ defmodule Brain.Knowledge.ResearchAgent do
   end
 
   defp question_to_query(question) when is_binary(question) do
-    # Convert question to search query by removing question words
     question
     |> String.replace(~r/^(what|where|when|who|how|why|is|are|was|were|does|do|did)\s+/i, "")
     |> String.replace("?", "")
     |> String.trim()
   end
 
-  # ============================================================================
-  # Private Functions - Fetching
-  # ============================================================================
-
   defp fetch_from_source(:web, queries, max_pages, opts) do
-    # For web sources, we construct search-like URLs or use known sources
-    # In a production system, this would integrate with a search API
-
     queries
     |> Enum.take(max_pages)
     |> Enum.flat_map(fn query ->
-      # Generate potential source URLs based on query
       urls = generate_source_urls(query)
 
       urls
@@ -197,7 +136,6 @@ defmodule Brain.Knowledge.ResearchAgent do
   end
 
   defp fetch_from_source(:mock, _queries, max_pages, _opts) do
-    # Generate mock results for testing
     1..max_pages
     |> Enum.map(fn i ->
       %{
@@ -209,8 +147,6 @@ defmodule Brain.Knowledge.ResearchAgent do
   end
 
   defp fetch_from_source(:task, _queries, max_pages, opts) do
-    # Fetch from domain-specific NLP tasks
-    # This provides high-quality, curated training data
     goal = Keyword.get(opts, :goal)
 
     if goal do
@@ -218,14 +154,14 @@ defmodule Brain.Knowledge.ResearchAgent do
 
       case TaskSource.fetch_for_goal(goal, max_tasks: max_pages, max_instances: 20) do
         {:ok, findings} ->
-          # Convert findings to the expected raw result format
-          # Note: Finding struct uses entity_type for task metadata, source.title for task_id
           Enum.map(findings, fn finding ->
             task_id = finding.source.title || "unknown"
 
             %{
               url: "task://#{task_id}",
-              content: "#{finding.raw_context}\n\nAnswer: #{finding.claim}",
+              content: "#{finding.raw_context}
+
+Answer: #{finding.claim}",
               source: finding.source,
               finding: finding
             }
@@ -240,14 +176,11 @@ defmodule Brain.Knowledge.ResearchAgent do
   end
 
   defp fetch_from_source(:academic, queries, max_pages, _opts) do
-    # Fetch from academic paper APIs (Semantic Scholar, arXiv, OpenAlex)
-    # This provides high-quality, peer-reviewed data for knowledge expansion
-    alias Brain.Knowledge.Academic.{SemanticScholar, Arxiv, OpenAlex, PaperModelBuilder}
+    alias Academic.{SemanticScholar, Arxiv, OpenAlex, PaperModelBuilder}
 
     queries
     |> Enum.take(max_pages)
     |> Enum.flat_map(fn query ->
-      # Fetch from all academic sources in parallel
       tasks = [
         Task.async(fn -> SemanticScholar.search(query, limit: 5) end),
         Task.async(fn -> OpenAlex.search_cs(query, limit: 5) end),
@@ -262,12 +195,8 @@ defmodule Brain.Knowledge.ResearchAgent do
           {:error, _} -> []
         end)
 
-      Logger.debug("Fetched academic papers",
-        query: query,
-        paper_count: length(papers)
-      )
+      Logger.debug("Fetched academic papers", query: query, paper_count: length(papers))
 
-      # Ingest papers into epistemic model (builds running model)
       case PaperModelBuilder.ingest_papers(papers) do
         {:ok, _node_ids} ->
           Logger.debug("Ingested papers into epistemic model", count: length(papers))
@@ -276,13 +205,11 @@ defmodule Brain.Knowledge.ResearchAgent do
           Logger.warning("Failed to ingest papers", error: inspect(reason))
       end
 
-      # Convert papers to raw result format expected by extract_findings
       Enum.map(papers, &paper_to_raw_result/1)
     end)
   end
 
   defp fetch_from_source(_source, _queries, _max_pages, _opts) do
-    # Unknown source type
     []
   end
 
@@ -294,11 +221,28 @@ defmodule Brain.Knowledge.ResearchAgent do
     content =
       [
         "Title: #{paper.title}",
-        if(paper.abstract, do: "\nAbstract: #{paper.abstract}", else: ""),
-        "\nAuthors: #{Paper.author_string(paper)}",
-        if(paper.venue, do: "\nVenue: #{paper.venue}", else: ""),
-        if(paper.year, do: "\nYear: #{paper.year}", else: ""),
-        "\nCitations: #{paper.citation_count}"
+        if(paper.abstract) do
+          "
+Abstract: #{paper.abstract}"
+        else
+          ""
+        end,
+        "
+Authors: #{Paper.author_string(paper)}",
+        if(paper.venue) do
+          "
+Venue: #{paper.venue}"
+        else
+          ""
+        end,
+        if(paper.year) do
+          "
+Year: #{paper.year}"
+        else
+          ""
+        end,
+        "
+Citations: #{paper.citation_count}"
       ]
       |> Enum.reject(&(&1 == ""))
       |> Enum.join("")
@@ -312,8 +256,6 @@ defmodule Brain.Knowledge.ResearchAgent do
   end
 
   defp generate_source_urls(query) do
-    # Generate URLs for known reliable sources
-    # In production, this would use a search API
     encoded_query = URI.encode(query)
 
     [
@@ -323,7 +265,6 @@ defmodule Brain.Knowledge.ResearchAgent do
   end
 
   defp generate_mock_results(%ResearchGoal{topic: topic}, max_pages) do
-    # Generate mock data for testing
     1..min(max_pages, 3)
     |> Enum.map(fn i ->
       %{
@@ -343,7 +284,6 @@ defmodule Brain.Knowledge.ResearchAgent do
   end
 
   defp do_fetch(url, timeout) do
-    # Use the configured HTTP client
     try do
       case @http_client.get(url, receive_timeout: timeout) do
         {:ok, response} -> {:ok, response}
@@ -354,12 +294,7 @@ defmodule Brain.Knowledge.ResearchAgent do
     end
   end
 
-  # ============================================================================
-  # Private Functions - Rate Limiting
-  # ============================================================================
-
   defp wait_for_rate_limit(domain) do
-    # Get or create rate limiter agent
     ensure_rate_limiter_started()
 
     case Agent.get(@rate_limiter_agent, &Map.get(&1, domain)) do
@@ -391,16 +326,10 @@ defmodule Brain.Knowledge.ResearchAgent do
     end
   end
 
-  # ============================================================================
-  # Private Functions - Extraction
-  # ============================================================================
-
-  # Handle pre-extracted findings from TaskSource
   defp extract_findings(%{finding: finding}) when is_map(finding) do
     [finding]
   end
 
-  # Handle academic papers - convert directly to Finding
   defp extract_findings(%{paper: paper, source: _source}) when is_struct(paper) do
     alias Brain.Knowledge.Academic.Paper
 
@@ -411,15 +340,12 @@ defmodule Brain.Knowledge.ResearchAgent do
   end
 
   defp extract_findings(%{content: content, source: source}) when is_binary(content) do
-    # Clean HTML content if present
     clean_content = clean_content(content)
 
-    # Skip if no meaningful content after cleaning
     if String.length(clean_content) < 50 do
       Logger.debug("Content too short after cleaning", url: source.url)
       []
     else
-      # Run through Pipeline for sentence segmentation and analysis
       case Pipeline.process(clean_content, skip_entity_extraction: false) do
         %{analyses: analyses} ->
           analyses
@@ -433,15 +359,14 @@ defmodule Brain.Knowledge.ResearchAgent do
     end
   rescue
     e ->
-      Logger.warning("Failed to extract findings",
-        error: Exception.message(e),
-        url: source.url
-      )
+      Logger.warning("Failed to extract findings", error: Exception.message(e), url: source.url)
 
       []
   end
 
-  defp extract_findings(_), do: []
+  defp extract_findings(_) do
+    []
+  end
 
   defp clean_content(content) when is_binary(content) do
     if HtmlProcessor.is_html?(content) do
@@ -455,23 +380,21 @@ defmodule Brain.Knowledge.ResearchAgent do
           text
 
         {:error, :no_content} ->
-          # Fallback to basic HTML-to-text
           case HtmlProcessor.html_to_text(content, min_length: 20) do
             {:ok, text} -> text
             {:error, _} -> content
           end
       end
     else
-      # Not HTML, return as-is
       content
     end
   end
 
-  defp clean_content(content), do: to_string(content)
+  defp clean_content(content) do
+    to_string(content)
+  end
 
   defp is_factual_claim?(analysis) do
-    # Consider assertive speech acts as potential factual claims
-    # Exclude questions, commands, and expressives
     case analysis do
       %{speech_act: %{category: :assertive}} -> true
       %{speech_act: %{category: :commissive}} -> false
@@ -482,23 +405,19 @@ defmodule Brain.Knowledge.ResearchAgent do
   end
 
   defp build_finding(analysis, source, raw_content) do
-    # Extract entities from the analysis
     entities = Map.get(analysis, :entities, [])
 
-    # Find the primary entity (first one with high confidence)
     primary_entity =
       entities
       |> Enum.max_by(fn e -> Map.get(e, :confidence, 0) end, fn -> nil end)
 
-    # Get the claim text
     claim = Map.get(analysis, :text, "")
 
     if primary_entity && String.length(claim) > 10 do
       entity_value = Map.get(primary_entity, :value) || Map.get(primary_entity, "value")
       entity_type = Map.get(primary_entity, :entity_type) || Map.get(primary_entity, "type")
 
-      Finding.new(claim, entity_value || "unknown",
-        source,
+      Finding.new(claim, entity_value || "unknown", source,
         entity_type: entity_type,
         raw_context: extract_context(raw_content, claim),
         confidence: Map.get(analysis, :confidence, 0.5)
@@ -509,7 +428,6 @@ defmodule Brain.Knowledge.ResearchAgent do
   end
 
   defp extract_context(content, claim) when is_binary(content) and is_binary(claim) do
-    # Extract surrounding context for the claim
     case :binary.match(content, claim) do
       {start, len} ->
         context_start = max(0, start - 100)
@@ -522,7 +440,9 @@ defmodule Brain.Knowledge.ResearchAgent do
     end
   end
 
-  defp extract_context(_, claim), do: claim
+  defp extract_context(_, claim) do
+    claim
+  end
 
   defp enrich_with_source_reliability(%Finding{} = finding) do
     if SourceReliability.ready?() do

@@ -1,32 +1,5 @@
 defmodule Mix.Tasks.CleanupWorlds do
-  @moduledoc """
-  Cleans up orphaned training world directories from disk.
-
-  An orphaned directory is one that:
-  - Has no valid config.json file, OR
-  - Is older than the specified age
-
-  ## Usage
-
-      # Dry run (default) - shows what would be deleted
-      mix cleanup_worlds
-
-      # Actually delete orphaned directories
-      mix cleanup_worlds --delete
-
-      # Delete directories older than 12 hours
-      mix cleanup_worlds --delete --max-age 12
-
-      # Exclude specific world IDs from cleanup
-      mix cleanup_worlds --delete --exclude my_world --exclude another_world
-
-  ## Options
-
-    * `--delete` - Actually delete the directories (default is dry run)
-    * `--max-age` - Maximum age in hours before a directory is considered orphaned (default: 24)
-    * `--exclude` - World IDs to exclude from cleanup (can be specified multiple times)
-
-  """
+  @moduledoc "Cleans up orphaned training world directories from disk.\n\nAn orphaned directory is one that:\n- Has no valid config.json file, OR\n- Is older than the specified age\n\n## Usage\n\n    # Dry run (default) - shows what would be deleted\n    mix cleanup_worlds\n\n    # Actually delete orphaned directories\n    mix cleanup_worlds --delete\n\n    # Delete directories older than 12 hours\n    mix cleanup_worlds --delete --max-age 12\n\n    # Exclude specific world IDs from cleanup\n    mix cleanup_worlds --delete --exclude my_world --exclude another_world\n\n## Options\n\n  * `--delete` - Actually delete the directories (default is dry run)\n  * `--max-age` - Maximum age in hours before a directory is considered orphaned (default: 24)\n  * `--exclude` - World IDs to exclude from cleanup (can be specified multiple times)\n\n"
   use Mix.Task
 
   require Logger
@@ -37,11 +10,7 @@ defmodule Mix.Tasks.CleanupWorlds do
   def run(args) do
     {opts, _, _} =
       OptionParser.parse(args,
-        strict: [
-          delete: :boolean,
-          max_age: :integer,
-          exclude: [:string, :keep]
-        ],
+        strict: [delete: :boolean, max_age: :integer, exclude: [:string, :keep]],
         aliases: [d: :delete, m: :max_age, e: :exclude]
       )
 
@@ -63,7 +32,6 @@ defmodule Mix.Tasks.CleanupWorlds do
     Mix.shell().info("Excluded: #{inspect(exclude)}")
     Mix.shell().info("")
 
-    # Get the base path
     base_path =
       Application.get_env(:world, :training_worlds_path, "apps/world/priv/training_worlds")
 
@@ -74,18 +42,14 @@ defmodule Mix.Tasks.CleanupWorlds do
 
     case File.ls(base_path) do
       {:ok, entries} ->
-        # Find all directories
         all_dirs =
           entries
           |> Enum.filter(&File.dir?(Path.join(base_path, &1)))
 
         Mix.shell().info("Found #{length(all_dirs)} world directories")
         Mix.shell().info("")
-
-        # Calculate cutoff time
         cutoff = DateTime.add(DateTime.utc_now(), -max_age_hours * 3600, :second)
 
-        # Analyze each directory
         {orphaned, valid} =
           Enum.reduce(all_dirs, {[], []}, fn world_id, {orphaned_acc, valid_acc} ->
             if world_id in exclude do
@@ -124,7 +88,6 @@ defmodule Mix.Tasks.CleanupWorlds do
             end
           end)
 
-        # Report valid worlds
         Mix.shell().info("Valid worlds (#{length(valid)}):")
 
         valid
@@ -153,8 +116,7 @@ defmodule Mix.Tasks.CleanupWorlds do
 
         Mix.shell().info("")
 
-        # Report and handle orphaned directories
-        if length(orphaned) == 0 do
+        if orphaned == [] do
           Mix.shell().info("No orphaned directories found.")
         else
           Mix.shell().info("Orphaned directories (#{length(orphaned)}):")
@@ -213,7 +175,7 @@ defmodule Mix.Tasks.CleanupWorlds do
     cond do
       diff_seconds < 60 -> "#{diff_seconds}s ago"
       diff_seconds < 3600 -> "#{div(diff_seconds, 60)}m ago"
-      diff_seconds < 86400 -> "#{div(diff_seconds, 3600)}h ago"
+      diff_seconds < 86_400 -> "#{div(diff_seconds, 3600)}h ago"
       true -> "#{div(diff_seconds, 86400)}d ago"
     end
   end

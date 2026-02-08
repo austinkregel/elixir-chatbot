@@ -1,14 +1,14 @@
 defmodule Brain.Knowledge.ResearchAgentTest do
+  alias Brain.Knowledge.Types
   use ExUnit.Case, async: false
   import Brain.TestHelpers
 
   alias Brain.Knowledge.ResearchAgent
-  alias Brain.Knowledge.Types.{ResearchGoal, Finding}
+  alias Types.{ResearchGoal, Finding}
 
   setup do
     ensure_pubsub_started()
 
-    # Ensure the rate limiter agent is available
     case Agent.start_link(fn -> %{} end, name: Brain.Knowledge.RateLimiter) do
       {:ok, _} -> :ok
       {:error, {:already_started, _}} -> :ok
@@ -24,7 +24,6 @@ defmodule Brain.Knowledge.ResearchAgentTest do
       {:ok, findings} = ResearchAgent.research(goal, mock: true)
 
       assert is_list(findings)
-      # Mock mode should return some findings
       assert length(findings) >= 0
     end
 
@@ -40,8 +39,6 @@ defmodule Brain.Knowledge.ResearchAgentTest do
       goal = ResearchGoal.new("Test topic")
 
       {:ok, findings} = ResearchAgent.research(goal, mock: true, max_pages: 1)
-
-      # With limited pages, should still return a result
       assert is_list(findings)
     end
 
@@ -61,7 +58,6 @@ defmodule Brain.Knowledge.ResearchAgentTest do
 
   describe "fetch_url/2" do
     test "returns error for blocked domain" do
-      # Start SourceReliability for blocking check
       ensure_started(Brain.Knowledge.SourceReliability)
 
       result = ResearchAgent.fetch_url("https://theonion.com/article")
@@ -71,31 +67,21 @@ defmodule Brain.Knowledge.ResearchAgentTest do
 
     test "handles invalid URLs gracefully" do
       result = ResearchAgent.fetch_url("not-a-valid-url")
-
-      # Should return an error, not crash
       assert {:error, _} = result
     end
 
     test "respects timeout option" do
-      # Use a URL that will timeout quickly
       result = ResearchAgent.fetch_url("https://httpstat.us/200?sleep=5000", timeout: 100)
-
-      # Should timeout or error
       assert {:error, _} = result
     end
   end
 
   describe "rate limiting" do
     test "rate limiter agent can be accessed" do
-      # Verify the rate limiter is working
       domain = "test-rate-limit.com"
-
-      # First request should be immediate
       start_time = System.monotonic_time(:millisecond)
       ResearchAgent.fetch_url("https://#{domain}/page1", timeout: 100)
       first_elapsed = System.monotonic_time(:millisecond) - start_time
-
-      # Should complete quickly (just timeout, not rate limited)
       assert first_elapsed < 500
     end
   end
@@ -103,25 +89,15 @@ defmodule Brain.Knowledge.ResearchAgentTest do
   describe "goal expansion" do
     test "research with questions generates queries" do
       goal =
-        ResearchGoal.new("Paris",
-          questions: [
-            "What is the population?",
-            "When was it founded?"
-          ]
-        )
+        ResearchGoal.new("Paris", questions: ["What is the population?", "When was it founded?"])
 
-      # Mock mode exercises the query expansion logic
       {:ok, _findings} = ResearchAgent.research(goal, mock: true)
-
-      # If we got here without error, query expansion worked
       assert true
     end
 
     test "research with constraints" do
       goal =
-        ResearchGoal.new("Test",
-          constraints: %{min_sources: 3, max_age_days: 7}
-        )
+        ResearchGoal.new("Test", constraints: %{min_sources: 3, max_age_days: 7})
 
       {:ok, findings} = ResearchAgent.research(goal, mock: true)
 
@@ -137,7 +113,6 @@ defmodule Brain.Knowledge.ResearchAgentTest do
       {:ok, findings} = ResearchAgent.research(goal, mock: true)
 
       for finding <- findings do
-        # Source should have reliability fields
         assert finding.source.reliability_score != nil
         assert finding.source.trust_tier != nil
       end

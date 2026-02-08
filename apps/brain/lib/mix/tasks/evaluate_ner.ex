@@ -1,27 +1,12 @@
 defmodule Mix.Tasks.Evaluate.Ner do
+  alias Brain.ML.EntityExtractor
+  alias Brain.ML
   @shortdoc "Evaluate named entity recognition accuracy"
-  @moduledoc """
-  Evaluate NER against gold standard data.
-
-  ## Usage
-
-      mix evaluate.ner              # Run evaluation
-      mix evaluate.ner --save       # Save results
-      mix evaluate.ner --verbose    # Show per-type details
-
-  ## Gold Standard Format
-
-      [
-        {
-          "text": "What's the weather in London?",
-          "entities": [{"value": "London", "type": "location"}]
-        }
-      ]
-  """
+  @moduledoc "Evaluate NER against gold standard data.\n\n## Usage\n\n    mix evaluate.ner              # Run evaluation\n    mix evaluate.ner --save       # Save results\n    mix evaluate.ner --verbose    # Show per-type details\n\n## Gold Standard Format\n\n    [\n      {\n        \"text\": \"What's the weather in London?\",\n        \"entities\": [{\"value\": \"London\", \"type\": \"location\"}]\n      }\n    ]\n"
 
   use Mix.Task
 
-  alias Brain.ML.{Evaluation, EvaluationStore}
+  alias ML.{Evaluation, EvaluationStore}
 
   @impl Mix.Task
   def run(args) do
@@ -66,23 +51,19 @@ defmodule Mix.Tasks.Evaluate.Ner do
   end
 
   defp evaluate_all(gold) do
-    # For NER, we evaluate at entity level:
-    # Each expected entity is either found (correct type) or missed
-    # Each extracted entity is either correct or a false positive
     Enum.reduce(gold, {[], []}, fn example, {preds, acts} ->
       text = example["text"]
       expected_entities = example["entities"] || []
 
       extracted =
         try do
-          Brain.ML.EntityExtractor.extract_entities(text)
+          EntityExtractor.extract_entities(text)
         rescue
           _ -> []
         catch
           :exit, _ -> []
         end
 
-      # Match extracted to expected by value
       {matched_preds, matched_acts} =
         Enum.reduce(expected_entities, {[], []}, fn expected, {p_acc, a_acc} ->
           expected_value = expected["value"]
@@ -109,7 +90,9 @@ defmodule Mix.Tasks.Evaluate.Ner do
     |> then(fn {p, a} -> {Enum.reverse(p), Enum.reverse(a)} end)
   end
 
-  defp normalize_entity_value(nil), do: ""
+  defp normalize_entity_value(nil) do
+    ""
+  end
 
   defp normalize_entity_value(value) when is_binary(value) do
     value
@@ -117,5 +100,7 @@ defmodule Mix.Tasks.Evaluate.Ner do
     |> String.trim()
   end
 
-  defp normalize_entity_value(value), do: to_string(value)
+  defp normalize_entity_value(value) do
+    to_string(value)
+  end
 end

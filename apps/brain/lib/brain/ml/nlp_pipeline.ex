@@ -1,23 +1,10 @@
 defmodule Brain.ML.NLPPipeline do
-  @moduledoc """
-  NLP Pipeline orchestrator that coordinates entity extraction and intent classification.
+  @moduledoc "NLP Pipeline orchestrator that coordinates entity extraction and intent classification.\n\nThis module provides the main entry point for classical NLP processing,\ncombining:\n- Gazetteer-based entity lookup for known entities\n- BIO-tagged entity recognition for unknown entities\n- TF-IDF based intent classification\n- Unicode-aware tokenization\n\nThe pipeline prioritizes speed and accuracy by using:\n1. Pre-built gazetteer lookups (O(1) average)\n2. Token-based pattern matching (no regex)\n3. Centroid-based intent classification\n"
 
-  This module provides the main entry point for classical NLP processing,
-  combining:
-  - Gazetteer-based entity lookup for known entities
-  - BIO-tagged entity recognition for unknown entities
-  - TF-IDF based intent classification
-  - Unicode-aware tokenization
-
-  The pipeline prioritizes speed and accuracy by using:
-  1. Pre-built gazetteer lookups (O(1) average)
-  2. Token-based pattern matching (no regex)
-  3. Centroid-based intent classification
-  """
-
+  alias Brain.ML
   require Logger
 
-  alias Brain.ML.{EntityExtractor, IntentClassifierSimple, Gazetteer, Tokenizer}
+  alias ML.{EntityExtractor, IntentClassifierSimple, Gazetteer, Tokenizer}
 
   @type pipeline_result :: %{
           intent: String.t(),
@@ -27,18 +14,10 @@ defmodule Brain.ML.NLPPipeline do
           processing_method: :classical
         }
 
-  # ============================================================================
-  # Initialization
-  # ============================================================================
-
-  @doc """
-  Initialize the NLP pipeline by loading all required models and data.
-  Should be called at application startup.
-  """
+  @doc "Initialize the NLP pipeline by loading all required models and data.\nShould be called at application startup.\n"
   def init do
     Logger.info("Initializing NLP pipeline...")
 
-    # Start the Gazetteer if not already running
     case Gazetteer.start_link() do
       {:ok, _pid} ->
         Logger.info("Gazetteer GenServer started")
@@ -50,7 +29,6 @@ defmodule Brain.ML.NLPPipeline do
         Logger.warning("Failed to start Gazetteer GenServer", %{reason: reason})
     end
 
-    # Load gazetteer data
     case Gazetteer.load_all() do
       {:ok, stats} ->
         Logger.info("Gazetteer loaded", stats)
@@ -59,7 +37,6 @@ defmodule Brain.ML.NLPPipeline do
         Logger.warning("Gazetteer loading failed, will use fallback", %{reason: reason})
     end
 
-    # Load entity maps as fallback
     case EntityExtractor.load_entity_maps() do
       {:ok, maps} ->
         Logger.info("Entity maps loaded", %{count: map_size(maps)})
@@ -68,7 +45,6 @@ defmodule Brain.ML.NLPPipeline do
         Logger.warning("Entity maps loading failed", %{reason: reason})
     end
 
-    # Load intent classifier
     case IntentClassifierSimple.load_models() do
       {:ok, _model} ->
         Logger.info("Intent classifier loaded")
@@ -81,38 +57,20 @@ defmodule Brain.ML.NLPPipeline do
     :ok
   end
 
-  # ============================================================================
-  # Client API
-  # ============================================================================
-
-  @doc """
-  Main entry point for text processing using classical NLP.
-  Returns {:ok, result} or {:error, reason}.
-
-  ## Options
-
-  - `:discourse` - Discourse analysis result for entity disambiguation
-  - `:speech_act` - Speech act classification for entity disambiguation
-  """
+  @doc "Main entry point for text processing using classical NLP.\nReturns {:ok, result} or {:error, reason}.\n\n## Options\n\n- `:discourse` - Discourse analysis result for entity disambiguation\n- `:speech_act` - Speech act classification for entity disambiguation\n"
   def process(text, opts \\ []) do
     Logger.debug("Processing text with classical NLP", %{text: text})
 
     try do
-      # Tokenize input for analysis
       tokens = Tokenizer.tokenize(text)
       Logger.debug("Tokenized input", %{token_count: length(tokens)})
-
-      # Extract entities using gazetteer and patterns
-      # Pass context for disambiguation if available
       entities = EntityExtractor.extract_entities(text, opts)
       Logger.debug("Extracted entities", %{count: length(entities)})
 
-      # Classify intent
       case IntentClassifierSimple.classify(text) do
         {:ok, %{intent: intent, confidence: confidence}} ->
           Logger.debug("Classified intent", %{intent: intent, confidence: confidence})
 
-          # Check if we should use this result
           if should_use_classical_result?(confidence) do
             result = build_result(text, intent, confidence, entities, tokens)
             {:ok, result}
@@ -134,7 +92,7 @@ defmodule Brain.ML.NLPPipeline do
 
         {:error, reason} ->
           Logger.warning("Intent classification failed", %{reason: reason})
-          # Return entities even if intent fails
+
           {:ok,
            %{
              confidence: 0.0,
@@ -153,17 +111,12 @@ defmodule Brain.ML.NLPPipeline do
     end
   end
 
-  @doc """
-  Process text with enhanced entity extraction using the BIO model.
-  Use this for more thorough entity detection at the cost of speed.
-  """
+  @doc "Process text with enhanced entity extraction using the BIO model.\nUse this for more thorough entity detection at the cost of speed.\n"
   def process_enhanced(text) do
     Logger.debug("Processing text with enhanced NLP", %{text: text})
 
     try do
       tokens = Tokenizer.tokenize(text)
-
-      # Use enhanced entity extraction with BIO model
       entities = EntityExtractor.extract_entities_with_model(text)
       Logger.debug("Enhanced entity extraction", %{count: length(entities)})
 
@@ -188,17 +141,9 @@ defmodule Brain.ML.NLPPipeline do
     end
   end
 
-  @doc """
-  Extract features from text (entities + intent) for learning.
-
-  Options:
-  - `:discourse` - Discourse analysis result for entity disambiguation
-  - `:speech_act` - Speech act classification result for entity disambiguation
-  """
+  @doc "Extract features from text (entities + intent) for learning.\n\nOptions:\n- `:discourse` - Discourse analysis result for entity disambiguation\n- `:speech_act` - Speech act classification result for entity disambiguation\n"
   def extract_features(text, opts \\ []) do
     tokens = Tokenizer.tokenize(text)
-
-    # Extract entities with disambiguation context if available
     entities = EntityExtractor.extract_entities(text, opts)
 
     case IntentClassifierSimple.classify(text) do
@@ -222,58 +167,37 @@ defmodule Brain.ML.NLPPipeline do
     end
   end
 
-  @doc """
-  Tokenize text using the pipeline's tokenizer.
-  Exposed for external use.
-  """
+  @doc "Tokenize text using the pipeline's tokenizer.\nExposed for external use.\n"
   def tokenize(text) do
     Tokenizer.tokenize(text)
   end
 
-  @doc """
-  Normalize text for comparison.
-  """
+  @doc "Normalize text for comparison.\n"
   def normalize(text) do
     Tokenizer.normalize(text)
   end
 
-  @doc """
-  Check if classical result should be used based on confidence threshold.
-  """
+  @doc "Check if classical result should be used based on confidence threshold.\n"
   def should_use_classical_result?(confidence) do
     threshold = get_confidence_threshold()
     confidence >= threshold
   end
 
-  @doc """
-  Check if the pipeline is ready (models loaded).
-  """
+  @doc "Check if the pipeline is ready (models loaded).\n"
   def ready? do
     Gazetteer.loaded?() or EntityExtractor.get_entity_maps() != %{}
   end
-
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
 
   defp get_confidence_threshold do
     Application.get_env(:brain, :ml)[:confidence_threshold] || 0.75
   end
 
   defp build_result(text, intent, confidence, entities, tokens) do
-    # Build context from entities and intent
     context = build_context(text, intent, entities)
-
-    # Format entities for compatibility with existing Learner module
     formatted_entities = format_entities_for_learner(entities)
-
-    # Build relationships from entities
     relationships = build_relationships(entities)
-
-    # Build facts from entities
     facts = build_facts(entities, intent)
 
-    # Build token info
     token_info = %{
       count: length(tokens),
       words: Enum.filter(tokens, &(&1.type == :word)) |> length(),
@@ -295,12 +219,13 @@ defmodule Brain.ML.NLPPipeline do
   defp build_context(_text, intent, entities) do
     entity_summary =
       entities
-      # Limit summary length
       |> Enum.take(5)
-      |> Enum.map(fn entity ->
-        "#{Map.get(entity, :entity_type, "unknown")}: #{Map.get(entity, :value, "")}"
-      end)
-      |> Enum.join(", ")
+      |> Enum.map_join(
+        ", ",
+        fn entity ->
+          "#{Map.get(entity, :entity_type, "unknown")}: #{Map.get(entity, :value, "")}"
+        end
+      )
 
     if String.length(entity_summary) > 0 do
       "#{intent} with #{entity_summary}"
@@ -310,7 +235,6 @@ defmodule Brain.ML.NLPPipeline do
   end
 
   defp format_entities_for_learner(entities) do
-    # Standardized format with :entity_type key
     Enum.map(entities, fn entity ->
       %{
         entity_type: Map.get(entity, :entity_type, "unknown"),
@@ -324,10 +248,7 @@ defmodule Brain.ML.NLPPipeline do
   end
 
   defp build_relationships(entities) do
-    # Build simple relationships between entities
     relationships = []
-
-    # Look for device-room relationships
     devices = Enum.filter(entities, fn e -> Map.get(e, :entity_type) == "device" end)
     rooms = Enum.filter(entities, fn e -> Map.get(e, :entity_type) == "room" end)
 
@@ -345,7 +266,6 @@ defmodule Brain.ML.NLPPipeline do
         }
       end
 
-    # Look for location-time relationships
     locations = Enum.filter(entities, fn e -> Map.get(e, :entity_type) == "location" end)
 
     times =
@@ -372,14 +292,12 @@ defmodule Brain.ML.NLPPipeline do
   end
 
   defp build_facts(entities, intent) do
-    # Add intent-based facts
     intent_fact = %{
       "type" => "intent",
       "value" => intent,
       "confidence" => 0.9
     }
 
-    # Add entity-based facts
     entity_facts =
       entities
       |> Enum.map(fn entity ->

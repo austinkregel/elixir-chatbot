@@ -1,10 +1,10 @@
 defmodule Brain.Analysis.IntentReviewQueueTest do
+  alias Brain.Analysis
   use ExUnit.Case, async: false
 
-  alias Brain.Analysis.{IntentReviewQueue, Types.IntentReviewCandidate}
+  alias Analysis.{IntentReviewQueue, Types.IntentReviewCandidate}
 
   setup do
-    # Clear queue before each test
     IntentReviewQueue.clear()
     :ok
   end
@@ -55,7 +55,9 @@ defmodule Brain.Analysis.IntentReviewQueueTest do
       candidate = IntentReviewCandidate.new("test", "weather.query", 0.5)
       IntentReviewQueue.add(candidate)
 
-      assert {:ok, approved} = IntentReviewQueue.approve(candidate.id, "test notes", :variation, "weather.query")
+      assert {:ok, approved} =
+               IntentReviewQueue.approve(candidate.id, "test notes", :variation, "weather.query")
+
       assert approved.status == :approved
       assert approved.reviewer_notes == "test notes"
       assert approved.promotion_action == :variation
@@ -96,12 +98,8 @@ defmodule Brain.Analysis.IntentReviewQueueTest do
       candidate = IntentReviewCandidate.new("test", "weather.query", 0.5)
       IntentReviewQueue.add(candidate)
       IntentReviewQueue.persist()
-
-      # Clear and reload
       IntentReviewQueue.clear()
-      # Queue should reload on next access
       stats = IntentReviewQueue.stats()
-      # Note: persistence is tested via file system, may need manual verification
       assert is_map(stats)
     end
   end

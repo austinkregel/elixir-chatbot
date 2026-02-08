@@ -1,40 +1,15 @@
 defmodule Brain.Response.ChunkSegmenter do
-  @moduledoc """
-  Segments response templates into typed chunks for template blending.
-
-  Uses sentence boundaries and embedding-based classification to identify
-  chunk types. Chunks can then be recombined to generate novel responses.
-
-  ## Chunk Types
-
-  - `:greeting` - Opening phrases ("Hello!", "Nice to meet you!")
-  - `:acknowledgment` - Confirmation phrases ("I understand.", "Got it.")
-  - `:body` - Substantive content ("The weather in $location is...")
-  - `:offer` - Invitations for next action ("What can I help with?")
-  - `:clarification` - Requests for missing info ("Which location?")
-  - `:closing` - Farewell phrases ("Have a great day!", "Goodbye!")
-
-  ## Usage
-
-      ChunkSegmenter.segment("Hello! The weather is sunny. Anything else?")
-      # => [
-      #   %Chunk{text: "Hello!", type: :greeting},
-      #   %Chunk{text: "The weather is sunny.", type: :body},
-      #   %Chunk{text: "Anything else?", type: :offer}
-      # ]
-  """
+  @moduledoc "Segments response templates into typed chunks for template blending.\n\nUses sentence boundaries and embedding-based classification to identify\nchunk types. Chunks can then be recombined to generate novel responses.\n\n## Chunk Types\n\n- `:greeting` - Opening phrases (\"Hello!\", \"Nice to meet you!\")\n- `:acknowledgment` - Confirmation phrases (\"I understand.\", \"Got it.\")\n- `:body` - Substantive content (\"The weather in $location is...\")\n- `:offer` - Invitations for next action (\"What can I help with?\")\n- `:clarification` - Requests for missing info (\"Which location?\")\n- `:closing` - Farewell phrases (\"Have a great day!\", \"Goodbye!\")\n\n## Usage\n\n    ChunkSegmenter.segment(\"Hello! The weather is sunny. Anything else?\")\n    # => [\n    #   %Chunk{text: \"Hello!\", type: :greeting},\n    #   %Chunk{text: \"The weather is sunny.\", type: :body},\n    #   %Chunk{text: \"Anything else?\", type: :offer}\n    # ]\n"
 
   alias Brain.Memory.Embedder
 
   require Logger
 
-  # Chunk struct
   defmodule Chunk do
     @moduledoc "A segmented piece of a response template"
     defstruct [:text, :type, :embedding, :source_intent]
   end
 
-  # Load chunk type seeds from smalltalk.json at compile time
   @smalltalk_path "priv/knowledge/domains/smalltalk.json"
   @external_resource @smalltalk_path
 
@@ -44,18 +19,17 @@ defmodule Brain.Response.ChunkSegmenter do
                            {:ok, data} ->
                              seeds = Map.get(data, "chunk_type_seeds", %{})
 
-                             # Convert string keys to atoms
                              %{
                                greeting: Map.get(seeds, "greeting", ["Hello!"]),
                                acknowledgment: Map.get(seeds, "acknowledgment", ["Got it."]),
                                body: Map.get(seeds, "body", ["Here's what I found."]),
                                offer: Map.get(seeds, "offer", ["What can I help you with?"]),
-                               clarification: Map.get(seeds, "clarification", ["Could you specify?"]),
+                               clarification:
+                                 Map.get(seeds, "clarification", ["Could you specify?"]),
                                closing: Map.get(seeds, "closing", ["Goodbye!"])
                              }
 
                            {:error, _} ->
-                             # Fallback defaults
                              %{
                                greeting: ["Hello!"],
                                acknowledgment: ["Got it."],
@@ -67,7 +41,6 @@ defmodule Brain.Response.ChunkSegmenter do
                          end
 
                        {:error, _} ->
-                         # Fallback defaults
                          %{
                            greeting: ["Hello!"],
                            acknowledgment: ["Got it."],
@@ -77,22 +50,9 @@ defmodule Brain.Response.ChunkSegmenter do
                            closing: ["Goodbye!"]
                          }
                      end)
-
-  # Cached centroids (built lazily)
   @centroid_key :chunk_type_centroids
 
-  # ============================================================================
-  # Public API
-  # ============================================================================
-
-  @doc """
-  Segments a template text into typed chunks.
-
-  Returns a list of %Chunk{} structs, each with:
-  - text: The chunk text
-  - type: The classified chunk type (:greeting, :body, etc.)
-  - embedding: TF-IDF embedding for the chunk
-  """
+  @doc "Segments a template text into typed chunks.\n\nReturns a list of %Chunk{} structs, each with:\n- text: The chunk text\n- type: The classified chunk type (:greeting, :body, etc.)\n- embedding: TF-IDF embedding for the chunk\n"
   def segment(template_text) when is_binary(template_text) do
     template_text
     |> split_into_sentences()
@@ -100,19 +60,14 @@ defmodule Brain.Response.ChunkSegmenter do
     |> Enum.filter(& &1)
   end
 
-  @doc """
-  Segments a template and associates it with an intent.
-  """
+  @doc "Segments a template and associates it with an intent.\n"
   def segment(template_text, source_intent) when is_binary(template_text) do
     template_text
     |> segment()
     |> Enum.map(fn chunk -> %{chunk | source_intent: source_intent} end)
   end
 
-  @doc """
-  Segments all templates from a map of {intent => [template_texts]}.
-  Returns a flat list of all chunks.
-  """
+  @doc "Segments all templates from a map of {intent => [template_texts]}.\nReturns a flat list of all chunks.\n"
   def segment_all(templates_by_intent) when is_map(templates_by_intent) do
     templates_by_intent
     |> Enum.flat_map(fn {intent, templates} ->
@@ -122,37 +77,24 @@ defmodule Brain.Response.ChunkSegmenter do
     end)
   end
 
-  @doc """
-  Returns the chunk type seeds used for classification.
-  """
-  def get_type_seeds, do: @chunk_type_seeds
+  @doc "Returns the chunk type seeds used for classification.\n"
+  def get_type_seeds do
+    @chunk_type_seeds
+  end
 
-  @doc """
-  Clears the cached centroids (useful for testing).
-  """
+  @doc "Clears the cached centroids (useful for testing).\n"
   def clear_centroids do
     Process.delete(@centroid_key)
     :ok
   end
 
-  # ============================================================================
-  # Sentence Splitting
-  # ============================================================================
-
-  @doc """
-  Splits text into sentences using punctuation boundaries.
-  """
+  @doc "Splits text into sentences using punctuation boundaries.\n"
   def split_into_sentences(text) when is_binary(text) do
-    # Use tokenizer if available, otherwise simple split
     text
     |> String.split(~r/(?<=[.!?])\s+/, trim: true)
     |> Enum.map(&String.trim/1)
     |> Enum.filter(&(String.length(&1) > 0))
   end
-
-  # ============================================================================
-  # Classification
-  # ============================================================================
 
   defp classify_and_embed(sentence) do
     case Embedder.embed(sentence) do
@@ -167,7 +109,6 @@ defmodule Brain.Response.ChunkSegmenter do
         }
 
       _ ->
-        # Fallback: use heuristic classification
         chunk_type = classify_by_heuristic(sentence)
 
         %Chunk{
@@ -182,7 +123,6 @@ defmodule Brain.Response.ChunkSegmenter do
   defp classify_chunk_type(embedding) do
     centroids = get_or_build_centroids()
 
-    # Find nearest centroid
     {best_type, _best_similarity} =
       centroids
       |> Enum.map(fn {type, centroid} ->
@@ -198,55 +138,45 @@ defmodule Brain.Response.ChunkSegmenter do
     lower = String.downcase(sentence)
 
     cond do
-      # Greeting patterns
       String.starts_with?(lower, "hello") or
-      String.starts_with?(lower, "hi") or
-      String.starts_with?(lower, "hey") or
-      String.starts_with?(lower, "good morning") or
-      String.starts_with?(lower, "good afternoon") or
-      String.starts_with?(lower, "nice to meet") or
-        String.starts_with?(lower, "welcome") ->
+        String.starts_with?(lower, "hi") or
+        String.starts_with?(lower, "hey") or
+        String.starts_with?(lower, "good morning") or
+        String.starts_with?(lower, "good afternoon") or
+        String.starts_with?(lower, "nice to meet") or
+          String.starts_with?(lower, "welcome") ->
         :greeting
 
-      # Closing patterns
       String.starts_with?(lower, "goodbye") or
-      String.starts_with?(lower, "bye") or
-      String.starts_with?(lower, "take care") or
-      String.starts_with?(lower, "see you") or
-        String.contains?(lower, "have a great day") ->
+        String.starts_with?(lower, "bye") or
+        String.starts_with?(lower, "take care") or
+        String.starts_with?(lower, "see you") or
+          String.contains?(lower, "have a great day") ->
         :closing
 
-      # Offer patterns (questions offering help)
       String.contains?(lower, "can i help") or
-      String.contains?(lower, "anything else") or
-      String.contains?(lower, "what would you like") or
-        String.ends_with?(lower, "?") and String.contains?(lower, "help") ->
+        String.contains?(lower, "anything else") or
+        String.contains?(lower, "what would you like") or
+          (String.ends_with?(lower, "?") and String.contains?(lower, "help")) ->
         :offer
 
-      # Clarification patterns (questions asking for info)
       String.starts_with?(lower, "which") or
-      String.starts_with?(lower, "what") or
-      String.contains?(lower, "need to know") or
-        (String.ends_with?(lower, "?") and String.length(sentence) < 30) ->
+        String.starts_with?(lower, "what") or
+        String.contains?(lower, "need to know") or
+          (String.ends_with?(lower, "?") and String.length(sentence) < 30) ->
         :clarification
 
-      # Acknowledgment patterns
       String.starts_with?(lower, "i understand") or
-      String.starts_with?(lower, "got it") or
-      String.starts_with?(lower, "okay") or
-      String.starts_with?(lower, "sure") or
-        lower == "right." ->
+        String.starts_with?(lower, "got it") or
+        String.starts_with?(lower, "okay") or
+        String.starts_with?(lower, "sure") or
+          lower == "right." ->
         :acknowledgment
 
-      # Default to body
       true ->
         :body
     end
   end
-
-  # ============================================================================
-  # Centroids
-  # ============================================================================
 
   defp get_or_build_centroids do
     case Process.get(@centroid_key) do
@@ -275,7 +205,7 @@ defmodule Brain.Response.ChunkSegmenter do
           |> Enum.filter(& &1)
 
         centroid =
-          if length(embeddings) > 0 do
+          if embeddings != [] do
             average_vectors(embeddings)
           else
             nil
@@ -290,26 +220,22 @@ defmodule Brain.Response.ChunkSegmenter do
     end
   end
 
-  defp average_vectors(vectors) when is_list(vectors) and length(vectors) > 0 do
+  defp average_vectors(vectors) when is_list(vectors) and vectors != [] do
     n = length(vectors)
     vec_length = length(List.first(vectors))
 
-    # Sum all vectors element-wise
     summed =
       Enum.reduce(vectors, List.duplicate(0.0, vec_length), fn vec, acc ->
         Enum.zip(vec, acc)
         |> Enum.map(fn {a, b} -> a + b end)
       end)
 
-    # Divide by count to get average
     Enum.map(summed, fn x -> x / n end)
   end
 
-  defp average_vectors(_), do: nil
-
-  # ============================================================================
-  # Similarity
-  # ============================================================================
+  defp average_vectors(_) do
+    nil
+  end
 
   defp cosine_similarity(vec1, vec2) when is_list(vec1) and is_list(vec2) do
     if length(vec1) != length(vec2) do
@@ -319,9 +245,15 @@ defmodule Brain.Response.ChunkSegmenter do
       mag1 = :math.sqrt(Enum.reduce(vec1, 0.0, fn x, sum -> sum + x * x end))
       mag2 = :math.sqrt(Enum.reduce(vec2, 0.0, fn x, sum -> sum + x * x end))
 
-      if mag1 == 0.0 or mag2 == 0.0, do: 0.0, else: dot / (mag1 * mag2)
+      if mag1 == 0.0 or mag2 == 0.0 do
+        0.0
+      else
+        dot / (mag1 * mag2)
+      end
     end
   end
 
-  defp cosine_similarity(_, _), do: 0.0
+  defp cosine_similarity(_, _) do
+    0.0
+  end
 end

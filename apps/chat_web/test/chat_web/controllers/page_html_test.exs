@@ -1,4 +1,5 @@
 defmodule ChatWeb.PageHTMLTest do
+  alias ChatWeb.PageHTML
   use ExUnit.Case, async: true
 
   describe "ChatWeb.PageHTML" do
@@ -7,18 +8,12 @@ defmodule ChatWeb.PageHTMLTest do
     end
 
     test "uses ChatWeb :html" do
-      # The module should have embedded templates
-      # Check that it has the expected function for home template
       assert function_exported?(ChatWeb.PageHTML, :home, 1)
     end
 
     test "home/1 renders template" do
       assigns = %{}
-
-      # Call the template function
-      result = ChatWeb.PageHTML.home(assigns)
-
-      # Result should be a rendered template (Phoenix.LiveView.Rendered struct)
+      result = PageHTML.home(assigns)
       assert is_struct(result) or is_binary(result) or is_list(result)
     end
   end

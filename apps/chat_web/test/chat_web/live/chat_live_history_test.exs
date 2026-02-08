@@ -1,4 +1,5 @@
 defmodule ChatWeb.ChatLiveHistoryTest do
+  alias Phoenix.HTML
   use ChatWeb.ConnCase, async: false
 
   import Phoenix.LiveViewTest
@@ -25,7 +26,7 @@ defmodule ChatWeb.ChatLiveHistoryTest do
     |> render_click()
 
     html = render(view)
-    escaped_r1 = Phoenix.HTML.html_escape(r1) |> Phoenix.HTML.safe_to_string()
+    escaped_r1 = HTML.html_escape(r1) |> HTML.safe_to_string()
     assert html =~ "History test message 1"
     assert html =~ escaped_r1
     refute html =~ "History test message 2"

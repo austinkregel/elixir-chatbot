@@ -1,61 +1,31 @@
 defmodule Mix.Tasks.TrainUnified do
-  @moduledoc """
-  Train the unified LSTM model for multi-task NLP.
-  
-  ## Usage
-  
-      mix train_unified [options]
-  
-  ## Options
-  
-    --epochs N       Number of training epochs (default: 20)
-    --batch-size N   Batch size (default: 32)
-    --hidden-size N  LSTM hidden dimension (default: 128)
-    --lr FLOAT       Learning rate (default: 0.001)
-    --name NAME      Experiment name for tracking (default: unified_YYYYMMDD_HHMMSS)
-    --compare        Print experiment comparison table after training
-  
-  ## Examples
-  
-      # Train with defaults
-      mix train_unified
-  
-      # Train with more epochs
-      mix train_unified --epochs 30 --name "unified_30ep"
-  
-  This trains a shared LSTM encoder that powers:
-  - Intent classification
-  - Named Entity Recognition (NER)  
-  - Sentiment analysis
-  - Speech act classification
-  """
-  
+  @moduledoc "Train the unified LSTM model for multi-task NLP.\n\n## Usage\n\n    mix train_unified [options]\n\n## Options\n\n  --epochs N       Number of training epochs (default: 20)\n  --batch-size N   Batch size (default: 32)\n  --hidden-size N  LSTM hidden dimension (default: 128)\n  --lr FLOAT       Learning rate (default: 0.001)\n  --name NAME      Experiment name for tracking (default: unified_YYYYMMDD_HHMMSS)\n  --compare        Print experiment comparison table after training\n\n## Examples\n\n    # Train with defaults\n    mix train_unified\n\n    # Train with more epochs\n    mix train_unified --epochs 30 --name \"unified_30ep\"\n\nThis trains a shared LSTM encoder that powers:\n- Intent classification\n- Named Entity Recognition (NER)\n- Sentiment analysis\n- Speech act classification\n"
+
+  alias Brain.ML.LSTM.UnifiedModel
   use Mix.Task
   require Logger
 
   alias Brain.ML.LSTM.ExperimentTracker
-  
+
   @shortdoc "Train unified multi-task LSTM model"
-  
+
   def run(args) do
-    {opts, _, _} = OptionParser.parse(args,
-      strict: [
-        epochs: :integer,
-        batch_size: :integer,
-        hidden_size: :integer,
-        embedding_size: :integer,
-        lr: :float,
-        name: :string,
-        compare: :boolean
-      ]
-    )
-    
-    # Skip async ML init during training to avoid conflicts
+    {opts, _, _} =
+      OptionParser.parse(args,
+        strict: [
+          epochs: :integer,
+          batch_size: :integer,
+          hidden_size: :integer,
+          embedding_size: :integer,
+          lr: :float,
+          name: :string,
+          compare: :boolean
+        ]
+      )
+
     Application.put_env(:brain, :skip_ml_init, true)
-    
-    # Start the application
     Mix.Task.run("app.start")
-    
+
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(60))
     Mix.shell().info("Unified Multi-Task LSTM Training (EXLA Accelerated)")
@@ -67,31 +37,69 @@ defmodule Mix.Tasks.TrainUnified do
     Mix.shell().info("  - Sentiment Analysis")
     Mix.shell().info("  - Speech Act Classification")
     Mix.shell().info("")
-    
-    # Build config from options
     config = []
-    config = if opts[:epochs], do: [{:epochs, opts[:epochs]} | config], else: [{:epochs, 20} | config]
-    config = if opts[:batch_size], do: [{:batch_size, opts[:batch_size]} | config], else: config
-    config = if opts[:hidden_size], do: [{:hidden_size, opts[:hidden_size]} | config], else: [{:hidden_size, 128} | config]
-    config = if opts[:embedding_size], do: [{:embedding_size, opts[:embedding_size]} | config], else: [{:embedding_size, 128} | config]
-    config = if opts[:lr], do: [{:learning_rate, opts[:lr]} | config], else: config
-    config = if opts[:name], do: [{:name, opts[:name]} | config], else: config
-    
+
+    config =
+      if opts[:epochs] do
+        [{:epochs, opts[:epochs]} | config]
+      else
+        [{:epochs, 20} | config]
+      end
+
+    config =
+      if opts[:batch_size] do
+        [{:batch_size, opts[:batch_size]} | config]
+      else
+        config
+      end
+
+    config =
+      if opts[:hidden_size] do
+        [{:hidden_size, opts[:hidden_size]} | config]
+      else
+        [{:hidden_size, 128} | config]
+      end
+
+    config =
+      if opts[:embedding_size] do
+        [{:embedding_size, opts[:embedding_size]} | config]
+      else
+        [{:embedding_size, 128} | config]
+      end
+
+    config =
+      if opts[:lr] do
+        [{:learning_rate, opts[:lr]} | config]
+      else
+        config
+      end
+
+    config =
+      if opts[:name] do
+        [{:name, opts[:name]} | config]
+      else
+        config
+      end
+
     Mix.shell().info("Configuration:")
     Mix.shell().info("  Epochs: #{Keyword.get(config, :epochs)}")
     Mix.shell().info("  Batch size: #{Keyword.get(config, :batch_size, 32)}")
     Mix.shell().info("  Hidden size: #{Keyword.get(config, :hidden_size)}")
     Mix.shell().info("  Embedding size: #{Keyword.get(config, :embedding_size)}")
     Mix.shell().info("  Learning rate: #{Keyword.get(config, :learning_rate, 0.001)}")
-    if opts[:name], do: Mix.shell().info("  Experiment: #{opts[:name]}")
+
+    if opts[:name] do
+      Mix.shell().info("  Experiment: #{opts[:name]}")
+    end
+
     Mix.shell().info("")
-    
+
     start_time = System.monotonic_time(:second)
-    
-    case Brain.ML.LSTM.UnifiedModel.train(config) do
+
+    case UnifiedModel.train(config) do
       {:ok, result} ->
         duration = System.monotonic_time(:second) - start_time
-        
+
         Mix.shell().info("")
         Mix.shell().info("=" |> String.duplicate(60))
         Mix.shell().info("Training Complete!")
@@ -106,8 +114,6 @@ defmodule Mix.Tasks.TrainUnified do
         Mix.shell().info("Usage:")
         Mix.shell().info("  Brain.ML.LSTM.UnifiedModel.analyze(\"What's the weather?\")")
         Mix.shell().info("")
-
-        # Record experiment
         experiment_name = opts[:name] || generate_experiment_name("unified")
 
         ExperimentTracker.record(%{
@@ -115,7 +121,8 @@ defmodule Mix.Tasks.TrainUnified do
           config: Enum.into(config, %{}),
           epochs_completed: Keyword.get(config, :epochs),
           training_time_seconds: duration,
-          notes: "Unified multi-task LSTM. Vocab: #{map_size(result.vocabularies.token_vocab)}, Intents: #{map_size(result.vocabularies.intent_to_idx)}"
+          notes:
+            "Unified multi-task LSTM. Vocab: #{map_size(result.vocabularies.token_vocab)}, Intents: #{map_size(result.vocabularies.intent_to_idx)}"
         })
 
         Mix.shell().info("  Experiment recorded: #{experiment_name}")

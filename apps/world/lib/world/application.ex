@@ -1,18 +1,14 @@
 defmodule World.Application do
   @moduledoc false
+  alias World.Manager
   use Application
 
   @impl true
   def start(_type, _args) do
-    children = [
-      World.Manager,
-      World.ModelRegistry
-    ]
+    children = [World.Manager, World.ModelRegistry]
 
     opts = [strategy: :one_for_one, name: World.Supervisor]
     result = Supervisor.start_link(children, opts)
-
-    # Initialize default world after startup
     init_default_world()
 
     result
@@ -22,7 +18,6 @@ defmodule World.Application do
     require Logger
 
     Task.start(fn ->
-      # Give GenServers time to start
       Process.sleep(100)
 
       unless Process.whereis(World.Manager) do
@@ -34,8 +29,7 @@ defmodule World.Application do
         Logger.warning("World.Manager not available, skipping default world init")
         :ok
       else
-        # Ensure default world exists
-        case World.Manager.get("default") do
+        case Manager.get("default") do
           {:ok, _world} ->
             Logger.debug("Default world already exists")
             :ok
@@ -43,7 +37,7 @@ defmodule World.Application do
           {:error, :not_found} ->
             Logger.info("Creating default training world...")
 
-            case World.Manager.create("default",
+            case Manager.create("default",
                    id: "default",
                    mode: :persistent,
                    base_world: nil,

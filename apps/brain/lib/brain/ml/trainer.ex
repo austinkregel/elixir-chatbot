@@ -1,30 +1,22 @@
 defmodule Brain.ML.Trainer do
-  @moduledoc """
-  Training pipeline for building classical NLP models from training data.
+  @moduledoc "Training pipeline for building classical NLP models from training data.\n\nThis module orchestrates the training process:\n- Loads intent and entity training data using DataLoaders\n- Builds gazetteers for fast entity lookup\n- Trains intent classifier using TF-IDF + centroid approach\n- Trains entity recognition model using BIO tagging\n- Serializes all models for production use\n"
 
-  This module orchestrates the training process:
-  - Loads intent and entity training data using DataLoaders
-  - Builds gazetteers for fast entity lookup
-  - Trains intent classifier using TF-IDF + centroid approach
-  - Trains entity recognition model using BIO tagging
-  - Serializes all models for production use
-  """
-
+  alias Brain.ML.SimpleClassifier
+  alias Nx.Tensor
+  alias Brain.ML
   require Logger
 
-  alias Brain.ML.{DataLoaders, Tokenizer, EntityTrainer}
+  alias ML.{DataLoaders, Tokenizer, EntityTrainer}
 
-  # Configure Nx backend for optimal performance
   defp configure_nx_backend do
     Nx.default_backend(Nx.BinaryBackend)
     Logger.info("Using optimized CPU backend for training")
   end
 
-  # {text, intent_label}
   @type training_sample :: {String.t(), String.t()}
   @type tfidf_vectorizer :: %{
           vocabulary: %{String.t() => integer()},
-          idf_weights: Nx.Tensor.t(),
+          idf_weights: Tensor.t(),
           max_features: integer()
         }
 
@@ -35,24 +27,14 @@ defmodule Brain.ML.Trainer do
           gazetteer_entries: integer()
         }
 
-  # Client API
-
-  @doc """
-  Main training function that loads data, trains all models, and saves them.
-  Returns {:ok, stats} or {:error, reason}.
-
-  ## Options
-    - models_path: Override the default models output path
-  """
+  @doc "Main training function that loads data, trains all models, and saves them.\nReturns {:ok, stats} or {:error, reason}.\n\n## Options\n  - models_path: Override the default models output path\n"
   def train_and_save(opts \\ []) do
     models_path =
-      Keyword.get(opts, :models_path) || 
-      Application.get_env(:brain, :ml)[:models_path] || 
-      Brain.priv_path("ml_models")
+      Keyword.get(opts, :models_path) ||
+        Application.get_env(:brain, :ml)[:models_path] ||
+        Brain.priv_path("ml_models")
 
     Logger.info("Starting ML model training pipeline", %{models_path: models_path})
-
-    # Configure Nx backend
     configure_nx_backend()
 
     stats = %{
@@ -63,15 +45,11 @@ defmodule Brain.ML.Trainer do
       entity_model_trained: false
     }
 
-    # Step 1: Load and train intent classifier
     {stats, result} = train_intent_classifier(stats, models_path: models_path)
 
     case result do
       :ok ->
-        # Step 2: Train entity recognition model
         stats = train_entity_model(stats, models_path: models_path)
-
-        # Step 3: Build and save gazetteer data
         stats = build_gazetteer_data(stats, models_path: models_path)
 
         Logger.info("Training pipeline completed", stats)
@@ -82,43 +60,33 @@ defmodule Brain.ML.Trainer do
     end
   end
 
-  @doc """
-  Train only the intent classifier.
-
-  ## Options
-    - models_path: Override the default models output path
-  """
+  @doc "Train only the intent classifier.\n\n## Options\n  - models_path: Override the default models output path\n"
   def train_intent_classifier(stats \\ %{}, opts \\ []) do
     models_path =
-      Keyword.get(opts, :models_path) || 
-      Application.get_env(:brain, :ml)[:models_path] || 
-      Brain.priv_path("ml_models")
+      Keyword.get(opts, :models_path) ||
+        Application.get_env(:brain, :ml)[:models_path] ||
+        Brain.priv_path("ml_models")
 
     Logger.info("Training intent classifier...")
-
-    # Load training data using new DataLoaders
     training_data = load_training_data()
     Logger.info("Loaded training data", %{samples: length(training_data)})
 
-    if length(training_data) == 0 do
+    if training_data == [] do
       Logger.error("No training data found")
       {stats, {:error, "No training data"}}
     else
-      # Train simple classifier
-      model = Brain.ML.SimpleClassifier.train(training_data)
+      model = SimpleClassifier.train(training_data)
 
       Logger.info("Trained classifier", %{
         vocab_size: map_size(model.vocabulary),
         num_labels: map_size(model.label_centroids)
       })
 
-      # Save model
       File.mkdir_p!(models_path)
       model_path = Path.join(models_path, "classifier.term")
       File.write!(model_path, :erlang.term_to_binary(model))
       Logger.info("Intent classifier saved", %{path: model_path})
 
-      # Also save embedder vocabulary for this world
       embedder_model = %{
         vocabulary: model.vocabulary,
         idf_weights: build_idf_weights_from_model(model)
@@ -138,26 +106,18 @@ defmodule Brain.ML.Trainer do
     end
   end
 
-  # Extract IDF weights from the classifier model's vocabulary
   defp build_idf_weights_from_model(model) do
-    # The classifier model has vocabulary and idf weights computed during training
-    # Return a simple map with uniform IDF for now (the actual IDF calculation is done during classification)
     model.vocabulary
     |> Enum.map(fn {word, _idx} -> {word, 1.0} end)
     |> Map.new()
   end
 
-  @doc """
-  Train the entity recognition model using BIO tagging.
-
-  ## Options
-    - models_path: Override the default models output path
-  """
+  @doc "Train the entity recognition model using BIO tagging.\n\n## Options\n  - models_path: Override the default models output path\n"
   def train_entity_model(stats \\ %{}, opts \\ []) do
     models_path =
-      Keyword.get(opts, :models_path) || 
-      Application.get_env(:brain, :ml)[:models_path] || 
-      Brain.priv_path("ml_models")
+      Keyword.get(opts, :models_path) ||
+        Application.get_env(:brain, :ml)[:models_path] ||
+        Brain.priv_path("ml_models")
 
     Logger.info("Training entity recognition model...")
 
@@ -175,19 +135,15 @@ defmodule Brain.ML.Trainer do
     end
   end
 
-  @doc """
-  Build gazetteer lookup data and save for fast runtime access.
-
-  ## Options
-    - models_path: Override the default models output path
-  """
+  @doc "Build gazetteer lookup data and save for fast runtime access.\n\n## Options\n  - models_path: Override the default models output path\n"
   def build_gazetteer_data(stats \\ %{}, opts \\ []) do
     Logger.info("Building gazetteer data...")
 
     models_path =
-      Keyword.get(opts, :models_path) || 
-      Application.get_env(:brain, :ml)[:models_path] || 
-      Brain.priv_path("ml_models")
+      Keyword.get(opts, :models_path) ||
+        Application.get_env(:brain, :ml)[:models_path] ||
+        Brain.priv_path("ml_models")
+
     File.mkdir_p!(models_path)
 
     gazetteer_data = %{
@@ -197,7 +153,6 @@ defmodule Brain.ML.Trainer do
       emojis: %{}
     }
 
-    # Load and process entity definitions
     gazetteer_data =
       case DataLoaders.load_all_entities() do
         {:ok, entities} ->
@@ -209,12 +164,16 @@ defmodule Brain.ML.Trainer do
           gazetteer_data
       end
 
-    # Load and process cities (sample for faster loading)
     gazetteer_data =
       case DataLoaders.load_cities() do
         {:ok, cities} ->
-          # Take top cities by population (assuming sorted) or all if small
-          sampled_cities = if length(cities) > 10000, do: Enum.take(cities, 10000), else: cities
+          sampled_cities =
+            if length(cities) > 10_000 do
+              Enum.take(cities, 10_000)
+            else
+              cities
+            end
+
           city_lookup = DataLoaders.build_city_lookup(sampled_cities)
           Logger.info("Built city lookup", %{entries: map_size(city_lookup)})
           %{gazetteer_data | cities: city_lookup}
@@ -223,13 +182,15 @@ defmodule Brain.ML.Trainer do
           gazetteer_data
       end
 
-    # Load and process artists (sample for faster loading)
     gazetteer_data =
       case DataLoaders.load_artists() do
         {:ok, artists} ->
-          # Take subset of artists
           sampled_artists =
-            if length(artists) > 10000, do: Enum.take(artists, 10000), else: artists
+            if length(artists) > 10_000 do
+              Enum.take(artists, 10_000)
+            else
+              artists
+            end
 
           artist_lookup = DataLoaders.build_artist_lookup(sampled_artists)
           Logger.info("Built artist lookup", %{entries: map_size(artist_lookup)})
@@ -239,7 +200,6 @@ defmodule Brain.ML.Trainer do
           gazetteer_data
       end
 
-    # Load and process emojis
     gazetteer_data =
       case DataLoaders.load_emojis() do
         {:ok, emojis} ->
@@ -251,14 +211,12 @@ defmodule Brain.ML.Trainer do
           gazetteer_data
       end
 
-    # Merge all lookups into a single combined gazetteer
     combined_lookup =
       gazetteer_data.entities
       |> Map.merge(gazetteer_data.cities)
       |> Map.merge(gazetteer_data.artists)
       |> Map.merge(gazetteer_data.emojis)
 
-    # Save combined gazetteer
     gazetteer_path = Path.join(models_path, "gazetteer.term")
     File.write!(gazetteer_path, :erlang.term_to_binary(combined_lookup))
 
@@ -267,7 +225,6 @@ defmodule Brain.ML.Trainer do
       total_entries: map_size(combined_lookup)
     })
 
-    # Update stats
     total_entries =
       map_size(gazetteer_data.entities) +
         map_size(gazetteer_data.cities) +
@@ -291,12 +248,13 @@ defmodule Brain.ML.Trainer do
     |> Enum.flat_map(fn lookup ->
       Map.values(lookup)
       |> Enum.flat_map(fn info ->
-        # Handle both single maps and lists of maps
         case info do
           entries when is_list(entries) ->
             Enum.map(entries, fn entry -> Map.get(entry, :entity_type) end)
+
           entry when is_map(entry) ->
             [Map.get(entry, :entity_type)]
+
           _ ->
             []
         end
@@ -307,15 +265,10 @@ defmodule Brain.ML.Trainer do
     |> length()
   end
 
-  @doc """
-  Load training data from intent files using DataLoaders.
-  Returns a list of {text, intent_label} tuples.
-  """
+  @doc "Load training data from intent files using DataLoaders.\nReturns a list of {text, intent_label} tuples.\n"
   def load_training_data do
-    # Use the new DataLoaders module for consistent loading
     case DataLoaders.load_all_intents() do
       {:ok, examples} ->
-        # Convert to {text, intent} tuple format
         examples
         |> Enum.map(fn example ->
           {example.text, example.intent}
@@ -326,17 +279,12 @@ defmodule Brain.ML.Trainer do
 
       {:error, reason} ->
         Logger.error("Failed to load training data", %{reason: reason})
-        # Fallback to legacy loading
         load_training_data_legacy()
     end
   end
 
-  @doc """
-  Legacy training data loading (fallback).
-  Now loads from gold standard first, falls back to legacy directory.
-  """
+  @doc "Legacy training data loading (fallback).\nNow loads from gold standard first, falls back to legacy directory.\n"
   def load_training_data_legacy do
-    # Try gold standard first
     gold_standard_path =
       Application.app_dir(:brain)
       |> Path.join("priv/evaluation/intent/gold_standard.json")
@@ -420,23 +368,15 @@ defmodule Brain.ML.Trainer do
         usersays_samples ++ other_samples
 
       {:error, _reason} ->
-        # No legacy directory - return empty (not an error since gold standard is preferred)
         Logger.debug("No legacy intents directory found")
         []
     end
   end
 
-  @doc """
-  Build TF-IDF vectorizer from training data.
-  """
+  @doc "Build TF-IDF vectorizer from training data.\n"
   def build_tfidf_vectorizer(training_data) do
-    # Extract all texts
     texts = Enum.map(training_data, fn {text, _label} -> text end)
-
-    # Build vocabulary
     vocabulary = build_vocabulary(texts)
-
-    # Calculate IDF weights
     idf_weights = calculate_idf_weights(texts, vocabulary)
 
     %{
@@ -446,15 +386,9 @@ defmodule Brain.ML.Trainer do
     }
   end
 
-  @doc """
-  Train simple classifier using TF-IDF features.
-  For now, we'll use a simple nearest neighbor approach.
-  """
+  @doc "Train simple classifier using TF-IDF features.\nFor now, we'll use a simple nearest neighbor approach.\n"
   def train_svm_classifier(training_data, vectorizer) do
-    # Prepare training data
     {texts, labels} = Enum.unzip(training_data)
-
-    # Vectorize texts
     Logger.debug("Starting vectorization", %{num_texts: length(texts)})
     Logger.debug("First few texts: #{inspect(Enum.take(texts, 3))}")
 
@@ -464,13 +398,9 @@ defmodule Brain.ML.Trainer do
 
     X = vectorize_texts(texts, vectorizer)
     Logger.debug("Vectorized texts", %{shape: Nx.shape(X), type: Nx.type(X)})
-
-    # Encode labels
     {y, label_encoder} = encode_labels(labels)
     Logger.debug("Encoded labels", %{shape: Nx.shape(y)})
 
-    # For now, store the training data for nearest neighbor classification
-    # In a real implementation, you'd train an actual SVM
     classifier = %{
       training_vectors: X,
       training_labels: y,
@@ -483,16 +413,10 @@ defmodule Brain.ML.Trainer do
     }
   end
 
-  @doc """
-  Save trained models to disk.
-  """
+  @doc "Save trained models to disk.\n"
   def save_models(vectorizer, svm_model) do
     models_path = Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")
-
-    # Ensure directory exists
     File.mkdir_p!(models_path)
-
-    # Save vectorizer
     vectorizer_path = Path.join(models_path, "vectorizer.term")
 
     vectorizer_data = %{
@@ -502,8 +426,6 @@ defmodule Brain.ML.Trainer do
     }
 
     File.write!(vectorizer_path, :erlang.term_to_binary(vectorizer_data))
-
-    # Save SVM model
     svm_path = Path.join(models_path, "svm_model.term")
 
     svm_data = %{
@@ -515,8 +437,6 @@ defmodule Brain.ML.Trainer do
 
     Logger.info("Models saved", %{vectorizer_path: vectorizer_path, svm_path: svm_path})
   end
-
-  # Private Functions
 
   defp extract_intent_name(filename) do
     filename
@@ -532,7 +452,6 @@ defmodule Brain.ML.Trainer do
     |> String.replace("_", ".")
   end
 
-  # Parse Dialogflow-like usersays entries
   defp parse_usersays_file(content, intent_name) do
     case Jason.decode(content) do
       {:ok, examples} when is_list(examples) ->
@@ -551,11 +470,9 @@ defmodule Brain.ML.Trainer do
     end
   end
 
-  # Parse general intent JSON that may contain "contexts", "responses", or plain structures
   defp parse_general_intent_file(content, intent_name) do
     case Jason.decode(content) do
       {:ok, %{"responses" => responses}} when is_list(responses) ->
-        # Some files include example "messages" or "speech"
         Enum.flat_map(responses, fn resp ->
           msgs = Map.get(resp, "messages", [])
 
@@ -574,11 +491,9 @@ defmodule Brain.ML.Trainer do
         end)
 
       {:ok, %{"userSays" => examples}} when is_list(examples) ->
-        # Alternate key casing
         Enum.map(examples, fn ex -> {extract_text_from_example(ex), intent_name} end)
 
       {:ok, list} when is_list(list) ->
-        # Some intents might be a list of simple strings
         Enum.flat_map(list, fn item ->
           cond do
             is_binary(item) ->
@@ -586,7 +501,12 @@ defmodule Brain.ML.Trainer do
 
             is_map(item) ->
               text = Map.get(item, "text") || Map.get(item, "phrase") || ""
-              if text == "", do: [], else: [{text, intent_name}]
+
+              if text == "" do
+                []
+              else
+                [{text, intent_name}]
+              end
 
             true ->
               []
@@ -601,22 +521,23 @@ defmodule Brain.ML.Trainer do
   defp extract_text_from_example(example) do
     case Map.get(example, "data") do
       nil ->
-        # Fallback: try to extract from other fields
         case Map.get(example, "text") do
           nil -> ""
           text -> text
         end
 
       data when is_list(data) ->
-        # Extract text from data array
-        Enum.map(data, fn item ->
-          case item do
-            %{"text" => text, "userDefined" => false} -> text
-            %{"text" => text, "userDefined" => true} -> text
-            _ -> ""
+        Enum.map_join(
+          data,
+          "",
+          fn item ->
+            case item do
+              %{"text" => text, "userDefined" => false} -> text
+              %{"text" => text, "userDefined" => true} -> text
+              _ -> ""
+            end
           end
-        end)
-        |> Enum.join("")
+        )
 
       _ ->
         ""
@@ -624,15 +545,12 @@ defmodule Brain.ML.Trainer do
   end
 
   defp build_vocabulary(texts) do
-    # Tokenize and count words
     word_counts =
       texts
       |> Enum.flat_map(&tokenize_text/1)
       |> Enum.frequencies()
 
-    # Filter by minimum frequency and take top N words
     min_freq = 2
-    # Default to 5000 features if not configured
     max_features = Application.get_env(:brain, :ml)[:max_features] || 5000
 
     word_counts
@@ -644,7 +562,6 @@ defmodule Brain.ML.Trainer do
   end
 
   defp tokenize_text(text) do
-    # Use the new Tokenizer module for unicode-aware tokenization
     Tokenizer.tokenize_normalized(text, min_length: 2)
   end
 
@@ -652,11 +569,9 @@ defmodule Brain.ML.Trainer do
     _vocab_size = map_size(vocabulary)
     num_docs = length(texts)
 
-    # Calculate IDF for each term
     idf_values =
       vocabulary
       |> Enum.map(fn {term, _index} ->
-        # Count documents containing this term
         doc_freq =
           texts
           |> Enum.count(fn text ->
@@ -664,13 +579,11 @@ defmodule Brain.ML.Trainer do
             term in tokens
           end)
 
-        # Calculate IDF
         idf = :math.log(num_docs / max(doc_freq, 1))
         {term, idf}
       end)
       |> Enum.into(%{})
 
-    # Convert to tensor
     idf_list =
       vocabulary
       |> Enum.map(fn {term, index} ->
@@ -683,12 +596,10 @@ defmodule Brain.ML.Trainer do
   end
 
   defp vectorize_texts(texts, vectorizer) do
-    # Convert texts to TF-IDF vectors
     vectors =
       texts
       |> Enum.map(&vectorize_single_text(&1, vectorizer))
 
-    # Stack vectors into a single tensor
     case vectors do
       [] ->
         Nx.broadcast(0.0, {0, vectorizer.max_features})
@@ -701,14 +612,10 @@ defmodule Brain.ML.Trainer do
   defp vectorize_single_text(text, vectorizer) do
     tokens = tokenize_text(text)
     vocab_size = vectorizer.max_features
-
-    # Calculate term frequencies
     tf_counts = Enum.frequencies(tokens)
 
-    # Build TF vector as a list first, then convert to tensor
     tf_list =
       for i <- 0..(vocab_size - 1) do
-        # Find the term for this index
         term = Enum.find(vectorizer.vocabulary, fn {_term, idx} -> idx == i end)
 
         case term do
@@ -717,13 +624,8 @@ defmodule Brain.ML.Trainer do
         end
       end
 
-    # Convert to tensor
     tf_vector = Nx.tensor(tf_list, type: :f32)
-
-    # Apply TF-IDF weighting
     tfidf_vector = Nx.multiply(tf_vector, vectorizer.idf_weights)
-
-    # Normalize
     norm = Nx.reduce_max(tfidf_vector)
 
     if Nx.to_number(norm) > 0 do
@@ -734,14 +636,12 @@ defmodule Brain.ML.Trainer do
   end
 
   defp encode_labels(labels) do
-    # Create label encoder
     unique_labels = labels |> Enum.uniq() |> Enum.sort()
     label_to_index = Enum.with_index(unique_labels) |> Enum.into(%{})
 
     index_to_label =
       Enum.with_index(unique_labels) |> Enum.into(%{}, fn {label, index} -> {index, label} end)
 
-    # Encode labels
     encoded_labels =
       labels
       |> Enum.map(&Map.get(label_to_index, &1))

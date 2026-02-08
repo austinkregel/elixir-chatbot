@@ -1,17 +1,5 @@
 defmodule Brain.Analysis.Interpretation do
-  @moduledoc """
-  Represents an interpretation of user input with activation levels.
-
-  Unlike binary classification results, interpretations carry:
-  - Activation levels (0.0-1.0) representing confidence
-  - Source tracking (which analyzer produced this)
-  - Calibrated scores based on historical accuracy
-  - Alternative interpretations that lost the race but stay "warm"
-
-  This enables competitive activation where multiple interpretations
-  race and the first to threshold wins, while runners-up remain
-  available for backtracking.
-  """
+  @moduledoc "Represents an interpretation of user input with activation levels.\n\nUnlike binary classification results, interpretations carry:\n- Activation levels (0.0-1.0) representing confidence\n- Source tracking (which analyzer produced this)\n- Calibrated scores based on historical accuracy\n- Alternative interpretations that lost the race but stay \"warm\"\n\nThis enables competitive activation where multiple interpretations\nrace and the first to threshold wins, while runners-up remain\navailable for backtracking.\n"
 
   alias Brain.Analysis.{AnalyzerResult, SlotResult}
 
@@ -27,31 +15,18 @@ defmodule Brain.Analysis.Interpretation do
         }
 
   @type t :: %__MODULE__{
-          # Core identification
           intent: String.t() | nil,
           text: String.t(),
-
-          # Activation levels
           raw_activation: float(),
           activation: float(),
           calibrated_activation: float(),
-
-          # Source tracking
           source: source(),
           triggering_heuristic_id: String.t() | nil,
           heuristic_scope: scope() | nil,
-
-          # Analyzer results that contributed
           analyzer_results: list(AnalyzerResult.t()),
-
-          # Slot information
           slots: SlotResult.t() | nil,
           entities: list(map()),
-
-          # Alternative interpretations (runners-up)
           alternatives: list(alternative()),
-
-          # Metadata
           created_at: integer(),
           backtrack_count: integer(),
           was_promoted: boolean(),
@@ -77,9 +52,7 @@ defmodule Brain.Analysis.Interpretation do
     metadata: %{}
   ]
 
-  @doc """
-  Creates a new interpretation with the given intent and activation.
-  """
+  @doc "Creates a new interpretation with the given intent and activation.\n"
   def new(intent, text, activation, source) do
     %__MODULE__{
       intent: intent,
@@ -92,20 +65,15 @@ defmodule Brain.Analysis.Interpretation do
     }
   end
 
-  @doc """
-  Creates an interpretation from analyzer results, picking the winner.
-  """
+  @doc "Creates an interpretation from analyzer results, picking the winner.\n"
   def from_analyzer_results(text, results) when is_list(results) do
-    # Sort by calibrated activation, highest first
     sorted = Enum.sort_by(results, & &1.calibrated_activation, :desc)
 
     case sorted do
       [] ->
-        # No results - return unknown interpretation
         new("unknown", text, 0.0, :structural)
 
       [winner | runners_up] ->
-        # Build alternatives from runners-up
         alternatives =
           runners_up
           |> Enum.take(5)
@@ -132,45 +100,32 @@ defmodule Brain.Analysis.Interpretation do
     end
   end
 
-  @doc """
-  Updates the interpretation with slot detection results.
-  """
+  @doc "Updates the interpretation with slot detection results.\n"
   def with_slots(%__MODULE__{} = interp, %SlotResult{} = slots) do
     %{interp | slots: slots}
   end
 
-  @doc """
-  Updates the interpretation with extracted entities.
-  """
+  @doc "Updates the interpretation with extracted entities.\n"
   def with_entities(%__MODULE__{} = interp, entities) when is_list(entities) do
     %{interp | entities: entities}
   end
 
-  @doc """
-  Sets the normalized activation after global inhibition.
-  """
+  @doc "Sets the normalized activation after global inhibition.\n"
   def with_normalized_activation(%__MODULE__{} = interp, normalized) do
     %{interp | activation: normalized}
   end
 
-  @doc """
-  Marks this interpretation as having come from a heuristic fast-path.
-  """
+  @doc "Marks this interpretation as having come from a heuristic fast-path.\n"
   def with_heuristic(%__MODULE__{} = interp, heuristic_id, scope) do
     %{interp | triggering_heuristic_id: heuristic_id, heuristic_scope: scope}
   end
 
-  @doc """
-  Promotes the highest-ranked alternative to primary, demoting current.
-
-  Returns {:ok, new_interpretation} or {:error, :no_alternatives}
-  """
+  @doc "Promotes the highest-ranked alternative to primary, demoting current.\n\nReturns {:ok, new_interpretation} or {:error, :no_alternatives}\n"
   def promote_alternative(%__MODULE__{alternatives: []} = _interp) do
     {:error, :no_alternatives}
   end
 
   def promote_alternative(%__MODULE__{alternatives: [next | rest]} = interp) do
-    # Current primary becomes an alternative
     demoted = %{
       intent: interp.intent,
       activation: interp.activation * 0.5,
@@ -193,50 +148,58 @@ defmodule Brain.Analysis.Interpretation do
     {:ok, promoted}
   end
 
-  @doc """
-  Checks if this interpretation has required slots missing.
-  """
-  def has_missing_required?(%__MODULE__{slots: nil}), do: false
+  @doc "Checks if this interpretation has required slots missing.\n"
+  def has_missing_required?(%__MODULE__{slots: nil}) do
+    false
+  end
 
   def has_missing_required?(%__MODULE__{slots: slots}) do
     not slots.all_required_filled
   end
 
-  @doc """
-  Returns the list of missing required slots.
-  """
-  def missing_required(%__MODULE__{slots: nil}), do: []
-  def missing_required(%__MODULE__{slots: slots}), do: slots.missing_required
+  @doc "Returns the list of missing required slots.\n"
+  def missing_required(%__MODULE__{slots: nil}) do
+    []
+  end
 
-  @doc """
-  Checks if this interpretation was triggered by a heuristic.
-  """
-  def from_heuristic?(%__MODULE__{triggering_heuristic_id: nil}), do: false
-  def from_heuristic?(%__MODULE__{}), do: true
+  def missing_required(%__MODULE__{slots: slots}) do
+    slots.missing_required
+  end
 
-  @doc """
-  Returns the confidence level as a category.
-  """
-  def confidence_level(%__MODULE__{activation: a}) when a >= 0.85, do: :high
-  def confidence_level(%__MODULE__{activation: a}) when a >= 0.6, do: :medium
-  def confidence_level(%__MODULE__{activation: a}) when a >= 0.3, do: :low
-  def confidence_level(%__MODULE__{}), do: :very_low
+  @doc "Checks if this interpretation was triggered by a heuristic.\n"
+  def from_heuristic?(%__MODULE__{triggering_heuristic_id: nil}) do
+    false
+  end
 
-  @doc """
-  Calculates how much "headroom" remains for activation boosts.
-  """
+  def from_heuristic?(%__MODULE__{}) do
+    true
+  end
+
+  @doc "Returns the confidence level as a category.\n"
+  def confidence_level(%__MODULE__{activation: a}) when a >= 0.85 do
+    :high
+  end
+
+  def confidence_level(%__MODULE__{activation: a}) when a >= 0.6 do
+    :medium
+  end
+
+  def confidence_level(%__MODULE__{activation: a}) when a >= 0.3 do
+    :low
+  end
+
+  def confidence_level(%__MODULE__{}) do
+    :very_low
+  end
+
+  @doc "Calculates how much \"headroom\" remains for activation boosts.\n"
   def activation_headroom(%__MODULE__{activation: a}) do
     max(0.0, 1.0 - a)
   end
 end
 
 defmodule Brain.Analysis.AnalyzerResult do
-  @moduledoc """
-  Result from a single analyzer in the racing system.
-
-  Each analyzer outputs a rich result with both raw and calibrated scores,
-  allowing the system to compare apples-to-apples across different analyzers.
-  """
+  @moduledoc "Result from a single analyzer in the racing system.\n\nEach analyzer outputs a rich result with both raw and calibrated scores,\nallowing the system to compare apples-to-apples across different analyzers.\n"
 
   @type analyzer_type ::
           :memory_similarity
@@ -268,9 +231,7 @@ defmodule Brain.Analysis.AnalyzerResult do
     metadata: %{}
   ]
 
-  @doc """
-  Creates a new analyzer result.
-  """
+  @doc "Creates a new analyzer result.\n"
   def new(analyzer, intent, raw_score, opts \\ []) do
     %__MODULE__{
       analyzer: analyzer,
@@ -284,9 +245,7 @@ defmodule Brain.Analysis.AnalyzerResult do
     }
   end
 
-  @doc """
-  Updates the result with calibrated activation.
-  """
+  @doc "Updates the result with calibrated activation.\n"
   def with_calibration(%__MODULE__{} = result, calibrated, error) do
     %{result | calibrated_activation: calibrated, historical_calibration_error: error}
   end

@@ -1,15 +1,13 @@
 defmodule Brain.Memory.StoreTest do
+  alias Brain.Memory
   use ExUnit.Case, async: false
   import Brain.TestHelpers
 
-  alias Brain.Memory.{Store, Embedder}
+  alias Memory.{Store, Embedder}
   alias Brain.Memory.Types.SemanticFact
 
   setup do
-    # PubSub is started globally in test_helper.exs
     ensure_pubsub_started()
-
-    # Start or reuse embedder using ExUnit's start_supervised
     ensure_started(Embedder)
 
     texts = [
@@ -22,12 +20,10 @@ defmodule Brain.Memory.StoreTest do
 
     Embedder.build_vocabulary(texts)
 
-    # Start or reuse store
     ensure_started(
       {Store, persistence_path: "/tmp/test_memory_store_#{:rand.uniform(100_000)}.term"}
     )
 
-    # Clear any existing data
     Store.clear()
 
     :ok
@@ -66,7 +62,6 @@ defmodule Brain.Memory.StoreTest do
       {:ok, results} = Store.query_similar("hello friend", 3)
 
       assert length(results) == 3
-      # Results should be tuples of {episode, similarity}
       [{ep1, sim1} | _] = results
       assert is_struct(ep1)
       assert is_float(sim1)
@@ -110,7 +105,6 @@ defmodule Brain.Memory.StoreTest do
     end
 
     test "queries semantic facts by similarity" do
-      # Need matching embedding size
       {:ok, embedding} = Embedder.embed("hello world")
 
       fact = SemanticFact.new("greeting pattern", embedding, ["ep1"], ["greeting"])

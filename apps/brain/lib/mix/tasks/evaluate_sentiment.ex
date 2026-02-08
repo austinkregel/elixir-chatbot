@@ -1,22 +1,12 @@
 defmodule Mix.Tasks.Evaluate.Sentiment do
+  alias Brain.ML.LSTM.UnifiedModel
+  alias Brain.ML
   @shortdoc "Evaluate sentiment analysis accuracy"
-  @moduledoc """
-  Evaluate sentiment classification against gold standard data.
-
-  ## Usage
-
-      mix evaluate.sentiment              # Run evaluation
-      mix evaluate.sentiment --save       # Save results
-      mix evaluate.sentiment --verbose    # Show per-class details
-
-  ## Gold Standard Format
-
-      [{"text": "I love this!", "sentiment": "positive"}, ...]
-  """
+  @moduledoc "Evaluate sentiment classification against gold standard data.\n\n## Usage\n\n    mix evaluate.sentiment              # Run evaluation\n    mix evaluate.sentiment --save       # Save results\n    mix evaluate.sentiment --verbose    # Show per-class details\n\n## Gold Standard Format\n\n    [{\"text\": \"I love this!\", \"sentiment\": \"positive\"}, ...]\n"
 
   use Mix.Task
 
-  alias Brain.ML.{Evaluation, EvaluationStore}
+  alias ML.{Evaluation, EvaluationStore}
 
   @impl Mix.Task
   def run(args) do
@@ -38,7 +28,7 @@ defmodule Mix.Tasks.Evaluate.Sentiment do
     IO.puts("SENTIMENT ANALYSIS EVALUATION (#{length(gold)} examples)")
     IO.puts(String.duplicate("=", 60) <> "\n")
 
-    unless Brain.ML.LSTM.UnifiedModel.ready?() do
+    unless UnifiedModel.ready?() do
       IO.puts("WARNING: UnifiedModel not ready. All predictions will be 'neutral'.\n")
     end
 
@@ -70,8 +60,8 @@ defmodule Mix.Tasks.Evaluate.Sentiment do
       expected = example["sentiment"]
 
       predicted =
-        if Brain.ML.LSTM.UnifiedModel.ready?() do
-          case Brain.ML.LSTM.UnifiedModel.classify_sentiment(text) do
+        if UnifiedModel.ready?() do
+          case UnifiedModel.classify_sentiment(text) do
             {:ok, %{label: label}} -> to_string(label)
             _ -> "neutral"
           end

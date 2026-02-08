@@ -1,22 +1,15 @@
 defmodule Brain.ML.BenchmarkTest do
-  @moduledoc """
-  Benchmark tests for ML model accuracy.
+  @moduledoc "Benchmark tests for ML model accuracy.\n\nThese tests verify that ML models meet minimum accuracy thresholds\non known inputs. They focus on positive assertions - testing what\nthe system SHOULD do correctly.\n\nRun with: mix test --only benchmark\n"
 
-  These tests verify that ML models meet minimum accuracy thresholds
-  on known inputs. They focus on positive assertions - testing what
-  the system SHOULD do correctly.
-
-  Run with: mix test --only benchmark
-  """
-
+  alias Brain.Analysis.SpeechActClassifier
+  alias Brain.ML.EntityExtractor
+  alias Brain.Analysis.Pipeline
+  alias Brain.ML.LSTM.UnifiedModel
+  alias Brain.ML
   use ExUnit.Case, async: false
   @moduletag :benchmark
 
-  alias Brain.ML.{Evaluation, EvaluationStore}
-
-  # ============================================================================
-  # Intent Classification Benchmarks
-  # ============================================================================
+  alias ML.{Evaluation, EvaluationStore}
 
   describe "intent classification" do
     @tag :benchmark
@@ -41,12 +34,7 @@ defmodule Brain.ML.BenchmarkTest do
 
     @tag :benchmark
     test "correctly classifies greeting intents" do
-      greeting_inputs = [
-        "Hello",
-        "Hi there",
-        "Hey",
-        "Good morning"
-      ]
+      greeting_inputs = ["Hello", "Hi there", "Hey", "Good morning"]
 
       results = classify_intents(greeting_inputs)
 
@@ -61,11 +49,7 @@ defmodule Brain.ML.BenchmarkTest do
 
     @tag :benchmark
     test "correctly classifies music play intents" do
-      music_inputs = [
-        "Play some jazz music",
-        "Can you play a song?",
-        "Put on some rock music"
-      ]
+      music_inputs = ["Play some jazz music", "Can you play a song?", "Put on some rock music"]
 
       results = classify_intents(music_inputs)
 
@@ -83,20 +67,18 @@ defmodule Brain.ML.BenchmarkTest do
       gold = EvaluationStore.load_gold_standard("intent")
 
       if gold == [] do
-        IO.puts("  [SKIP] No gold standard data for intent (add to priv/evaluation/intent/gold_standard.json)")
+        IO.puts(
+          "  [SKIP] No gold standard data for intent (add to priv/evaluation/intent/gold_standard.json)"
+        )
       else
         {predictions, actuals} = evaluate_intent_gold(gold)
         acc = Evaluation.accuracy(predictions, actuals)
 
-        assert acc >= 0.60,
+        assert acc >= 0.6,
                "Intent classification accuracy #{Float.round(acc * 100, 1)}% is below minimum threshold of 60%"
       end
     end
   end
-
-  # ============================================================================
-  # Entity Extraction Benchmarks
-  # ============================================================================
 
   describe "entity extraction" do
     @tag :benchmark
@@ -131,9 +113,7 @@ defmodule Brain.ML.BenchmarkTest do
 
     @tag :benchmark
     test "extracts person entities" do
-      inputs = [
-        {"Tell me about Albert Einstein", "Albert Einstein"}
-      ]
+      inputs = [{"Tell me about Albert Einstein", "Albert Einstein"}]
 
       results =
         Enum.map(inputs, fn {text, expected_name} ->
@@ -155,10 +135,6 @@ defmodule Brain.ML.BenchmarkTest do
     end
   end
 
-  # ============================================================================
-  # Speech Act Classification Benchmarks
-  # ============================================================================
-
   describe "speech act classification" do
     @tag :benchmark
     test "correctly classifies questions as directives" do
@@ -170,7 +146,7 @@ defmodule Brain.ML.BenchmarkTest do
 
       results =
         Enum.map(questions, fn text ->
-          result = Brain.Analysis.SpeechActClassifier.classify(text)
+          result = SpeechActClassifier.classify(text)
           {text, result.category, result.is_question}
         end)
 
@@ -182,15 +158,11 @@ defmodule Brain.ML.BenchmarkTest do
 
     @tag :benchmark
     test "correctly classifies commands as directives" do
-      commands = [
-        "Turn on the lights",
-        "Play some music",
-        "Set an alarm for 7am"
-      ]
+      commands = ["Turn on the lights", "Play some music", "Set an alarm for 7am"]
 
       results =
         Enum.map(commands, fn text ->
-          result = Brain.Analysis.SpeechActClassifier.classify(text)
+          result = SpeechActClassifier.classify(text)
           {text, result.category}
         end)
 
@@ -202,15 +174,11 @@ defmodule Brain.ML.BenchmarkTest do
 
     @tag :benchmark
     test "correctly classifies greetings as expressives" do
-      greetings = [
-        "Hello!",
-        "Good morning!",
-        "Thanks a lot!"
-      ]
+      greetings = ["Hello!", "Good morning!", "Thanks a lot!"]
 
       results =
         Enum.map(greetings, fn text ->
-          result = Brain.Analysis.SpeechActClassifier.classify(text)
+          result = SpeechActClassifier.classify(text)
           {text, result.category}
         end)
 
@@ -221,14 +189,10 @@ defmodule Brain.ML.BenchmarkTest do
     end
   end
 
-  # ============================================================================
-  # Sentiment Analysis Benchmarks
-  # ============================================================================
-
   describe "sentiment analysis" do
     @tag :benchmark
     test "UnifiedModel sentiment classification on clear examples" do
-      unless Brain.ML.LSTM.UnifiedModel.ready?() do
+      unless UnifiedModel.ready?() do
         IO.puts("  [SKIP] UnifiedModel not ready")
       else
         positive_texts = ["I love this!", "This is amazing!", "Great job!"]
@@ -236,7 +200,7 @@ defmodule Brain.ML.BenchmarkTest do
 
         positive_results =
           Enum.map(positive_texts, fn text ->
-            case Brain.ML.LSTM.UnifiedModel.classify_sentiment(text) do
+            case UnifiedModel.classify_sentiment(text) do
               {:ok, %{label: label}} -> {text, label}
               _ -> {text, :unknown}
             end
@@ -244,7 +208,7 @@ defmodule Brain.ML.BenchmarkTest do
 
         negative_results =
           Enum.map(negative_texts, fn text ->
-            case Brain.ML.LSTM.UnifiedModel.classify_sentiment(text) do
+            case UnifiedModel.classify_sentiment(text) do
               {:ok, %{label: label}} -> {text, label}
               _ -> {text, :unknown}
             end
@@ -269,25 +233,24 @@ defmodule Brain.ML.BenchmarkTest do
     end
   end
 
-  # ============================================================================
-  # Pipeline Integration Benchmarks
-  # ============================================================================
-
   describe "full pipeline" do
     @tag :benchmark
     test "pipeline processes multi-sentence input with correct strategy" do
-      result = Brain.Analysis.Pipeline.process("Hello! What's the weather?")
+      result = Pipeline.process("Hello! What's the weather?")
 
-      assert length(result.analyses) >= 1,
-             "Expected at least 1 analysis chunk"
+      assert result.analyses != [], "Expected at least 1 analysis chunk"
 
-      assert result.overall_strategy in [:can_respond, :needs_clarification, :partial_response_with_clarification],
+      assert result.overall_strategy in [
+               :can_respond,
+               :needs_clarification,
+               :partial_response_with_clarification
+             ],
              "Expected actionable strategy, got #{result.overall_strategy}"
     end
 
     @tag :benchmark
     test "pipeline includes sentiment in analysis" do
-      result = Brain.Analysis.Pipeline.process("I'm really frustrated with this.")
+      result = Pipeline.process("I'm really frustrated with this.")
 
       first_analysis = List.first(result.analyses)
 
@@ -295,8 +258,7 @@ defmodule Brain.ML.BenchmarkTest do
       assert Map.has_key?(first_analysis, :sentiment), "Expected sentiment field in analysis"
 
       if first_analysis.sentiment do
-        assert Map.has_key?(first_analysis.sentiment, :label),
-               "Expected sentiment to have :label"
+        assert Map.has_key?(first_analysis.sentiment, :label), "Expected sentiment to have :label"
 
         assert Map.has_key?(first_analysis.sentiment, :confidence),
                "Expected sentiment to have :confidence"
@@ -304,13 +266,9 @@ defmodule Brain.ML.BenchmarkTest do
     end
   end
 
-  # ============================================================================
-  # Helper Functions
-  # ============================================================================
-
   defp classify_intents(texts) do
     Enum.map(texts, fn text ->
-      result = Brain.Analysis.SpeechActClassifier.classify(text)
+      result = SpeechActClassifier.classify(text)
 
       intent =
         result.indicators
@@ -331,7 +289,7 @@ defmodule Brain.ML.BenchmarkTest do
 
   defp extract_entities(text) do
     try do
-      Brain.ML.EntityExtractor.extract_entities(text)
+      EntityExtractor.extract_entities(text)
     rescue
       _ -> []
     catch
@@ -344,7 +302,7 @@ defmodule Brain.ML.BenchmarkTest do
       text = example["text"]
       expected = example["intent"]
 
-      result = Brain.Analysis.SpeechActClassifier.classify(text)
+      result = SpeechActClassifier.classify(text)
 
       predicted =
         result.indicators

@@ -1,9 +1,9 @@
 defmodule Brain.Knowledge.Academic.PaperModelBuilderTest do
+  alias Brain.Knowledge.Academic
   use ExUnit.Case, async: false
 
-  alias Brain.Knowledge.Academic.{Paper, PaperModelBuilder}
+  alias Academic.{Paper, PaperModelBuilder}
 
-  # Sample paper for testing
   def sample_paper(opts \\ []) do
     Paper.new(
       id: Keyword.get(opts, :id, "test-paper-123"),
@@ -29,9 +29,8 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilderTest do
       claims = PaperModelBuilder.extract_claims(paper)
 
       assert is_list(claims)
-      assert length(claims) > 0
+      assert claims != []
 
-      # Claims should be non-empty strings
       Enum.each(claims, fn claim ->
         assert is_binary(claim)
         assert String.length(claim) > 0
@@ -65,13 +64,13 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilderTest do
     end
 
     test "returns lower confidence for less cited papers" do
-      assert PaperModelBuilder.citation_to_confidence(50) == 0.70
-      assert PaperModelBuilder.citation_to_confidence(11) == 0.70
+      assert PaperModelBuilder.citation_to_confidence(50) == 0.7
+      assert PaperModelBuilder.citation_to_confidence(11) == 0.7
     end
 
     test "returns base confidence for new papers" do
-      assert PaperModelBuilder.citation_to_confidence(5) == 0.50
-      assert PaperModelBuilder.citation_to_confidence(0) == 0.50
+      assert PaperModelBuilder.citation_to_confidence(5) == 0.5
+      assert PaperModelBuilder.citation_to_confidence(0) == 0.5
     end
   end
 
@@ -94,13 +93,8 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilderTest do
 
   describe "ingest_paper/1" do
     setup do
-      # These tests require JTMS and BeliefStore to be running
-      # In a real test environment, we'd mock these
-
-      # Try to start JTMS if not running
       case Process.whereis(Brain.Epistemic.JTMS) do
         nil ->
-          # JTMS not running, skip epistemic integration tests
           :skip
 
         _pid ->
@@ -117,7 +111,6 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilderTest do
           assert is_list(node_ids)
 
         {:error, _reason} ->
-          # Epistemic layer might not be fully initialized in test
           :ok
       end
     end
@@ -144,7 +137,6 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilderTest do
           assert is_list(node_ids)
 
         {:error, _reason} ->
-          # Epistemic layer might not be available
           :ok
       end
     end

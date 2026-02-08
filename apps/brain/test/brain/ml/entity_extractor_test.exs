@@ -4,7 +4,6 @@ defmodule Brain.ML.EntityExtractorTest do
   alias Brain.ML.EntityExtractor
 
   setup do
-    # Ensure entity maps are loaded
     EntityExtractor.load_entity_maps()
     :ok
   end
@@ -16,12 +15,10 @@ defmodule Brain.ML.EntityExtractorTest do
     end
 
     test "extracts known entity from entity maps" do
-      # This will depend on what's in the entity files
       entities = EntityExtractor.extract_entities("turn on the kitchen lights")
 
       assert is_list(entities)
 
-      # Look for kitchen if it's in the entity data
       kitchen =
         Enum.find(entities, fn e ->
           String.downcase(Map.get(e, :value, "")) == "kitchen"
@@ -50,18 +47,15 @@ defmodule Brain.ML.EntityExtractorTest do
     test "extracts relative dates" do
       entities = EntityExtractor.extract_entities("remind me tomorrow")
 
-      # Look for tomorrow as either relative_date or with value matching
       date_entity =
         Enum.find(entities, fn e ->
           Map.get(e, :entity_type) == "relative_date" or
             String.downcase(Map.get(e, :value, "")) == "tomorrow"
         end)
 
-      # This might not find if not in entity data - just check it doesn't crash
       if date_entity do
         assert String.downcase(date_entity.value) == "tomorrow"
       else
-        # Function should still return a list
         assert is_list(entities)
       end
     end
@@ -69,8 +63,6 @@ defmodule Brain.ML.EntityExtractorTest do
     test "extracts day names" do
       entities = EntityExtractor.extract_entities("schedule for Monday")
 
-      # Day names are loaded from sys-date entity file, so entity_type is "sys_date"
-      # or they may be tagged as "day_name", "weekday", or "date" depending on data source
       day_entity =
         Enum.find(entities, fn e ->
           entity_type = Map.get(e, :entity_type, "")
@@ -80,12 +72,9 @@ defmodule Brain.ML.EntityExtractorTest do
             entity_type in ["day_name", "sys_date", "weekday", "date", "relative_date"]
         end)
 
-      # Day may or may not be extracted depending on gazetteer training data
-      # If found, verify the value is correct
       if day_entity do
         assert String.downcase(day_entity.value) == "monday"
       else
-        # Function should still return a list
         assert is_list(entities)
       end
     end
@@ -93,7 +82,7 @@ defmodule Brain.ML.EntityExtractorTest do
     test "entity has required fields" do
       entities = EntityExtractor.extract_entities("set to 50 degrees today")
 
-      if length(entities) > 0 do
+      if entities != [] do
         entity = Enum.at(entities, 0)
         assert Map.has_key?(entity, :entity_type)
         assert Map.has_key?(entity, :value)
@@ -117,7 +106,6 @@ defmodule Brain.ML.EntityExtractorTest do
 
   describe "extract_entities with custom entity maps" do
     test "uses provided entity maps" do
-      # Entity maps use lowercase normalized keys
       custom_maps = %{
         "custom item" => %{entity_type: "custom", value: "Custom Item"}
       }
@@ -130,11 +118,9 @@ defmodule Brain.ML.EntityExtractorTest do
             String.downcase(Map.get(e, :value, "")) == "custom item"
         end)
 
-      # If found, validate the structure
       if custom do
         assert custom.value == "Custom Item" or custom.value == "custom item"
       else
-        # The gazetteer might be loaded and override, just verify function works
         assert is_list(entities)
       end
     end
@@ -149,7 +135,6 @@ defmodule Brain.ML.EntityExtractorTest do
           Map.get(e, :entity_type) == "location"
         end)
 
-      # Should find New York as location (either from gazetteer or context)
       if location do
         assert String.contains?(location.value, "New") or
                  String.contains?(location.value, "York")
@@ -159,8 +144,6 @@ defmodule Brain.ML.EntityExtractorTest do
 
   describe "conflict resolution" do
     test "resolves overlapping entities by keeping longest match" do
-      # If we have both "New" and "New York" as entities,
-      # "New York" should win
       custom_maps = %{
         "new" => %{entity_type: "word", value: "New"},
         "new york" => %{entity_type: "city", value: "New York"}
@@ -168,7 +151,6 @@ defmodule Brain.ML.EntityExtractorTest do
 
       entities = EntityExtractor.extract_entities("I'm in New York", custom_maps)
 
-      # Should prefer "New York" over "New"
       new_york =
         Enum.find(entities, fn e ->
           String.downcase(Map.get(e, :value, "")) == "new york"
@@ -179,7 +161,6 @@ defmodule Brain.ML.EntityExtractorTest do
           Map.get(e, :value) == "New" and Map.get(e, :entity_type) == "word"
         end)
 
-      # If we found "New York", we shouldn't also find just "New" at the same position
       if new_york do
         assert just_new == nil or just_new.start_pos != new_york.start_pos
       end
@@ -195,7 +176,6 @@ defmodule Brain.ML.EntityExtractorTest do
           assert is_map(maps)
 
         {:error, _} ->
-          # May fail if no entity files exist
           assert true
       end
     end
@@ -212,20 +192,16 @@ defmodule Brain.ML.EntityExtractorTest do
     alias Brain.ML.Gazetteer
 
     setup do
-      # Ensure Gazetteer is loaded first (this happens once for all tests)
       unless Gazetteer.loaded?() do
         Gazetteer.load_all()
       end
 
-      # Add test entities to the live Gazetteer
-      # EntityExtractor uses Gazetteer.lookup_spans which queries ETS directly
       Gazetteer.add_entry("Michael", "person", %{confidence: 0.9})
       Gazetteer.add_entry("Sarah", "person", %{confidence: 0.9})
       Gazetteer.add_entry("John", "person", %{confidence: 0.9})
       Gazetteer.add_entry("Emily", "person", %{confidence: 0.9})
 
       on_exit(fn ->
-        # Clean up test entries after each test
         Gazetteer.remove_entry("Michael")
         Gazetteer.remove_entry("Sarah")
         Gazetteer.remove_entry("John")
@@ -236,13 +212,11 @@ defmodule Brain.ML.EntityExtractorTest do
     end
 
     test "extracts common person names from gazetteer" do
-      # Verify Michael was added to the gazetteer in setup
       assert {:ok, _info} = Gazetteer.lookup("Michael"),
              "Michael should be in the gazetteer from setup"
 
       entities = EntityExtractor.extract_entities("My name is Michael")
 
-      # Find entity for Michael - might be primary type or in types list
       michael_entity =
         Enum.find(entities, fn e ->
           String.downcase(Map.get(e, :value, "")) == "michael"
@@ -251,7 +225,6 @@ defmodule Brain.ML.EntityExtractorTest do
       assert michael_entity != nil, "Should find 'Michael' as an entity"
       assert String.downcase(michael_entity.value) == "michael"
 
-      # Michael should be recognized as person (either primary type or in types)
       has_person_type =
         michael_entity.entity_type == "person" or
           (is_list(Map.get(michael_entity, :types)) and
@@ -264,14 +237,11 @@ defmodule Brain.ML.EntityExtractorTest do
     end
 
     test "extracts person name with high enough confidence for learning" do
-      # Verify Sarah was added to the gazetteer in setup
       assert {:ok, _info} = Gazetteer.lookup("Sarah"),
              "Sarah should be in the gazetteer from setup"
 
-      # Person names should have confidence >= 0.7 to be learned by Learner
       entities = EntityExtractor.extract_entities("Tell Sarah about the meeting")
 
-      # Find entity for Sarah - might be primary type or in types list
       sarah_entity =
         Enum.find(entities, fn e ->
           String.downcase(Map.get(e, :value, "")) == "sarah"
@@ -279,6 +249,7 @@ defmodule Brain.ML.EntityExtractorTest do
 
       assert sarah_entity != nil, "Should find 'Sarah' as an entity"
       assert String.downcase(sarah_entity.value) == "sarah"
+
       assert sarah_entity.confidence >= 0.7,
              "Entity confidence (#{sarah_entity.confidence}) should be >= 0.7 for learning"
     end
@@ -291,8 +262,6 @@ defmodule Brain.ML.EntityExtractorTest do
         |> Enum.filter(fn e -> Map.get(e, :entity_type) == "person" end)
         |> Enum.map(fn e -> String.downcase(e.value) end)
 
-      # Should find at least one of the names we added to the gazetteer
-      # Both should ideally be found, but gazetteer lookup may vary
       found_count = Enum.count(["john", "emily"], &(&1 in person_names))
 
       assert found_count >= 1,
@@ -300,11 +269,8 @@ defmodule Brain.ML.EntityExtractorTest do
     end
 
     test "does not extract stoplist words as person names" do
-      # These are common words that are also names but filtered out
-      # to prevent false positives
       entities = EntityExtractor.extract_entities("I will do it in May")
 
-      # "Will" and "May" are in the stoplist and should NOT be extracted as person
       person_entities =
         Enum.filter(entities, fn e ->
           Map.get(e, :entity_type) == "person" and
@@ -316,7 +282,6 @@ defmodule Brain.ML.EntityExtractorTest do
     end
 
     test "extracts person names case-insensitively" do
-      # Names should be matched regardless of case
       entities = EntityExtractor.extract_entities("DAVID said hello")
 
       person =
@@ -332,8 +297,6 @@ defmodule Brain.ML.EntityExtractorTest do
 
   describe "casing-based confidence adjustment" do
     test "reduces confidence when match casing doesn't match entity value" do
-      # "friend" (lowercase in text) should have lower confidence
-      # when matched against "Friend" (capitalized location)
       entities = EntityExtractor.extract_entities("hello friend")
 
       friend_entity =
@@ -342,7 +305,6 @@ defmodule Brain.ML.EntityExtractorTest do
         end)
 
       if friend_entity do
-        # If "friend" matched a location "Friend", confidence should be reduced
         entity_type = Map.get(friend_entity, :entity_type)
         confidence = Map.get(friend_entity, :confidence, 1.0)
         match_text = Map.get(friend_entity, :match, "")
@@ -350,7 +312,6 @@ defmodule Brain.ML.EntityExtractorTest do
 
         if entity_type == "location" && match_text != entity_value &&
              String.downcase(match_text) == String.downcase(entity_value) do
-          # Casing mismatch for location - confidence should be penalized
           assert confidence < 0.7,
                  "Expected lower confidence for casing mismatch, got: #{confidence} for match='#{match_text}' value='#{entity_value}'"
         end
@@ -358,7 +319,6 @@ defmodule Brain.ML.EntityExtractorTest do
     end
 
     test "maintains high confidence when casing matches" do
-      # "Friend" (capitalized) should have normal confidence when matched against "Friend" location
       entities = EntityExtractor.extract_entities("I'm from Friend")
 
       friend_entity =
@@ -372,7 +332,6 @@ defmodule Brain.ML.EntityExtractorTest do
         confidence = Map.get(friend_entity, :confidence, 0.0)
 
         if match_text == entity_value do
-          # Casing matches - should have normal confidence
           assert confidence >= 0.5,
                  "Expected normal confidence for matching casing, got: #{confidence}"
         end
@@ -382,7 +341,6 @@ defmodule Brain.ML.EntityExtractorTest do
 
   describe "confidence threshold filtering" do
     test "filters out entities below threshold" do
-      # Create test entities with different confidence levels
       high_conf_entity = %{
         entity_type: "location",
         value: "Austin",
@@ -398,10 +356,9 @@ defmodule Brain.ML.EntityExtractorTest do
       medium_conf_entity = %{
         entity_type: "person",
         value: "John",
-        confidence: 0.60
+        confidence: 0.6
       }
 
-      # Test filtering with 0.51 threshold
       entities = [high_conf_entity, low_conf_entity, medium_conf_entity]
 
       filtered =
@@ -410,7 +367,6 @@ defmodule Brain.ML.EntityExtractorTest do
           confidence >= 0.51
         end)
 
-      # Should only include high and medium confidence entities
       assert length(filtered) == 2
       assert Enum.any?(filtered, &(&1.value == "Austin"))
       assert Enum.any?(filtered, &(&1.value == "John"))
@@ -418,16 +374,9 @@ defmodule Brain.ML.EntityExtractorTest do
     end
 
     test "respects min_confidence option" do
-      # Test that we can override threshold via opts
       text = "hello friend"
-
-      # Extract with high threshold
       entities_high = EntityExtractor.extract_entities(text, min_confidence: 0.8)
-
-      # Extract with low threshold
       entities_low = EntityExtractor.extract_entities(text, min_confidence: 0.3)
-
-      # High threshold should filter more strictly
       assert length(entities_low) >= length(entities_high)
     end
   end

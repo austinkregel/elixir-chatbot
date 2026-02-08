@@ -1,28 +1,5 @@
 defmodule Brain.Response.TemplateStore do
-  @moduledoc """
-  Stores and retrieves response templates from intent definition files.
-
-  This module:
-  - Loads response templates from data/intents/*.json files at startup
-  - Loads custom smalltalk responses from data/customSmalltalkResponses_en.json
-  - Builds TF-IDF embeddings per-template for similarity-based selection
-  - Evaluates conditions for context-aware template selection
-  - Provides slot-aware template matching and substitution
-  - Supports enrichment hooks for real-time data integration
-
-  Templates are categorized by intent and can include slot placeholders
-  like $location, $artist, etc. that are substituted with entity values.
-
-  ## Conditional Template Selection
-
-  Templates can specify conditions that must match for selection:
-  - `has_entity:person` - Entity of type "person" is present
-  - `missing_entity:location` - No location entity
-  - `slot_filled:address` - Slot has a value
-  - `confidence:high` - Confidence >= 0.8
-
-  When multiple templates match, semantic similarity to the query is used for ranking.
-  """
+  @moduledoc "Stores and retrieves response templates from intent definition files.\n\nThis module:\n- Loads response templates from data/intents/*.json files at startup\n- Loads custom smalltalk responses from data/customSmalltalkResponses_en.json\n- Builds TF-IDF embeddings per-template for similarity-based selection\n- Evaluates conditions for context-aware template selection\n- Provides slot-aware template matching and substitution\n- Supports enrichment hooks for real-time data integration\n\nTemplates are categorized by intent and can include slot placeholders\nlike $location, $artist, etc. that are substituted with entity values.\n\n## Conditional Template Selection\n\nTemplates can specify conditions that must match for selection:\n- `has_entity:person` - Entity of type \"person\" is present\n- `missing_entity:location` - No location entity\n- `slot_filled:address` - Slot has a value\n- `confidence:high` - Confidence >= 0.8\n\nWhen multiple templates match, semantic similarity to the query is used for ranking.\n"
 
   use GenServer
   require Logger
@@ -34,14 +11,11 @@ defmodule Brain.Response.TemplateStore do
   @intents_path "data/intents"
   @custom_smalltalk_path "data/customSmalltalkResponses_en.json"
   @smalltalk_domain_path "priv/knowledge/domains/smalltalk.json"
-
-  # Template struct with text, condition, and embedding
   defmodule Template do
     @moduledoc false
     defstruct [:text, :condition, :embedding, :intent]
   end
 
-  # Load expressive fallbacks from smalltalk.json at compile time
   @external_resource @smalltalk_domain_path
 
   @expressive_fallbacks (case File.read(@smalltalk_domain_path) do
@@ -55,7 +29,8 @@ defmodule Brain.Response.TemplateStore do
                                    farewell: Map.get(frames, "farewell", ["Goodbye!"]),
                                    thanks: Map.get(frames, "thanks", ["You're welcome!"]),
                                    apology: Map.get(frames, "apology", ["No worries!"]),
-                                   how_are_you: Map.get(frames, "how_are_you", ["I'm doing well!"])
+                                   how_are_you:
+                                     Map.get(frames, "how_are_you", ["I'm doing well!"])
                                  }
 
                                {:error, _} ->
@@ -78,15 +53,11 @@ defmodule Brain.Response.TemplateStore do
                              }
                          end)
 
-  # Client API
-
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc """
-  Check if the store is loaded and ready.
-  """
+  @doc "Check if the store is loaded and ready.\n"
   def ready? do
     try do
       GenServer.call(__MODULE__, :ready?, 100)
@@ -95,17 +66,12 @@ defmodule Brain.Response.TemplateStore do
     end
   end
 
-  @doc """
-  Get response templates for a specific intent.
-  Returns a list of template strings.
-  """
+  @doc "Get response templates for a specific intent.\nReturns a list of template strings.\n"
   def get_templates(intent) do
     GenServer.call(__MODULE__, {:get_templates, intent})
   end
 
-  @doc """
-  Get a random response template for an intent.
-  """
+  @doc "Get a random response template for an intent.\n"
   def get_random_template(intent) do
     case get_templates(intent) do
       [] -> nil
@@ -113,49 +79,24 @@ defmodule Brain.Response.TemplateStore do
     end
   end
 
-  @doc """
-  Get the best template for an intent using conditions and semantic ranking.
-
-  This is the main entry point for context-aware template selection:
-  1. Filter templates by conditions that match the context
-  2. Rank matching templates by semantic similarity to the query
-  3. Fall back to cross-intent semantic search if no conditions match
-
-  ## Parameters
-  - `intent` - The classified intent name
-  - `query_text` - The original user query (for semantic ranking)
-  - `context` - Map with entities, filled_slots, missing_slots, confidence, speech_act
-
-  ## Returns
-  - `{:ok, template_text}` - Best matching template
-  - `{:ok, template_text, :fallback}` - Template found via cross-intent fallback
-  - `{:error, :no_template}` - No suitable template found
-  """
+  @doc "Get the best template for an intent using conditions and semantic ranking.\n\nThis is the main entry point for context-aware template selection:\n1. Filter templates by conditions that match the context\n2. Rank matching templates by semantic similarity to the query\n3. Fall back to cross-intent semantic search if no conditions match\n\n## Parameters\n- `intent` - The classified intent name\n- `query_text` - The original user query (for semantic ranking)\n- `context` - Map with entities, filled_slots, missing_slots, confidence, speech_act\n\n## Returns\n- `{:ok, template_text}` - Best matching template\n- `{:ok, template_text, :fallback}` - Template found via cross-intent fallback\n- `{:error, :no_template}` - No suitable template found\n"
   def get_best_template(intent, query_text, context) do
     GenServer.call(__MODULE__, {:get_best_template, intent, query_text, context}, 5000)
   end
 
-  @doc """
-  Get structured templates with conditions for an intent.
-  Returns a list of %Template{} structs.
-  """
+  @doc "Get structured templates with conditions for an intent.\nReturns a list of %Template{} structs.\n"
   def get_structured_templates(intent) do
     GenServer.call(__MODULE__, {:get_structured_templates, intent})
   end
 
-  @doc """
-  Filter templates by conditions that match the given context.
-  """
+  @doc "Filter templates by conditions that match the given context.\n"
   def filter_by_conditions(templates, context) when is_list(templates) do
     Enum.filter(templates, fn template ->
       ConditionEvaluator.evaluate(template.condition, context)
     end)
   end
 
-  @doc """
-  Rank templates by semantic similarity to the query.
-  Returns templates sorted by similarity (highest first).
-  """
+  @doc "Rank templates by semantic similarity to the query.\nReturns templates sorted by similarity (highest first).\n"
   def rank_by_similarity(templates, query_embedding) when is_list(templates) do
     templates
     |> Enum.map(fn template ->
@@ -172,73 +113,47 @@ defmodule Brain.Response.TemplateStore do
     |> Enum.map(fn {template, _} -> template end)
   end
 
-  @doc """
-  Find the best matching template for given context using TF-IDF similarity.
-
-  Options:
-  - :intent - filter to specific intent
-  - :filled_slots - list of slot names that have values
-  - :top_k - number of candidates to return (default: 3)
-  """
+  @doc "Find the best matching template for given context using TF-IDF similarity.\n\nOptions:\n- :intent - filter to specific intent\n- :filled_slots - list of slot names that have values\n- :top_k - number of candidates to return (default: 3)\n"
   def find_similar(query_text, opts \\ []) do
     GenServer.call(__MODULE__, {:find_similar, query_text, opts}, 5000)
   end
 
-  @doc """
-  Substitute slot placeholders in a template with entity values.
-
-  Placeholders are in the format $slot_name (e.g., $location, $artist).
-  """
+  @doc "Substitute slot placeholders in a template with entity values.\n\nPlaceholders are in the format $slot_name (e.g., $location, $artist).\n"
   def substitute_slots(template, entities) when is_binary(template) do
-    # Build a map of slot names to values
     slot_values = build_slot_value_map(entities)
 
-    # Replace each placeholder with its value
-    # Placeholders are $slot_name format
     Enum.reduce(slot_values, template, fn {slot_name, value}, acc ->
-      # Replace both $slot_name and @slot_name formats
       acc
       |> String.replace("$#{slot_name}", value)
       |> String.replace("@#{slot_name}", value)
     end)
   end
 
-  @doc """
-  Get slot parameter definitions for an intent.
-  Returns list of %{name, dataType, required, value} maps.
-  """
+  @doc "Get slot parameter definitions for an intent.\nReturns list of %{name, dataType, required, value} maps.\n"
   def get_parameters(intent) do
     GenServer.call(__MODULE__, {:get_parameters, intent})
   end
 
-  @doc """
-  List all loaded intents.
-  """
+  @doc "List all loaded intents.\n"
   def list_intents do
     GenServer.call(__MODULE__, :list_intents)
   end
 
-  @doc """
-  Get statistics about loaded templates.
-  """
+  @doc "Get statistics about loaded templates.\n"
   def stats do
     GenServer.call(__MODULE__, :stats)
   end
 
-  @doc """
-  Get the intent name for a speech act sub_type.
-  Delegates to IntentRegistry for the canonical mapping.
-  """
+  @doc "Get the intent name for a speech act sub_type.\nDelegates to IntentRegistry for the canonical mapping.\n"
   def intent_for_speech_act(sub_type) when is_atom(sub_type) do
     IntentRegistry.intent_for_speech_act(sub_type)
   end
 
-  def intent_for_speech_act(_), do: nil
+  def intent_for_speech_act(_) do
+    nil
+  end
 
-  @doc """
-  Get a response for an expressive speech act.
-  First tries to find a template, then falls back to built-in responses.
-  """
+  @doc "Get a response for an expressive speech act.\nFirst tries to find a template, then falls back to built-in responses.\n"
   def get_expressive_response(sub_type) when is_atom(sub_type) do
     intent_name = intent_for_speech_act(sub_type)
 
@@ -252,11 +167,11 @@ defmodule Brain.Response.TemplateStore do
     end
   end
 
-  def get_expressive_response(_), do: nil
+  def get_expressive_response(_) do
+    nil
+  end
 
-  @doc """
-  Get a fallback response for an expressive speech act.
-  """
+  @doc "Get a fallback response for an expressive speech act.\n"
   def get_expressive_fallback(sub_type) when is_atom(sub_type) do
     case Map.get(@expressive_fallbacks, sub_type) do
       nil -> nil
@@ -264,82 +179,49 @@ defmodule Brain.Response.TemplateStore do
     end
   end
 
-  def get_expressive_fallback(_), do: nil
+  def get_expressive_fallback(_) do
+    nil
+  end
 
-  # ============================================================================
-  # Runtime CRUD API (for UI management)
-  # ============================================================================
-
-  @doc """
-  Add a new template for an intent.
-
-  Options:
-  - `:condition` - Optional condition for when to use this template
-  - `:source` - Source tag (default: :admin)
-
-  Returns `{:ok, template}` or `{:error, reason}`.
-  """
+  @doc "Add a new template for an intent.\n\nOptions:\n- `:condition` - Optional condition for when to use this template\n- `:source` - Source tag (default: :admin)\n\nReturns `{:ok, template}` or `{:error, reason}`.\n"
   def add_template(intent, text, opts \\ []) when is_binary(intent) and is_binary(text) do
     GenServer.call(__MODULE__, {:add_template, intent, text, opts})
   end
 
-  @doc """
-  Update an existing template text.
-
-  Returns `{:ok, updated_template}` or `{:error, :not_found}`.
-  """
+  @doc "Update an existing template text.\n\nReturns `{:ok, updated_template}` or `{:error, :not_found}`.\n"
   def update_template(intent, old_text, new_text) do
     GenServer.call(__MODULE__, {:update_template, intent, old_text, new_text})
   end
 
-  @doc """
-  Remove a template from an intent.
-
-  Returns `:ok` or `{:error, :not_found}`.
-  """
+  @doc "Remove a template from an intent.\n\nReturns `:ok` or `{:error, :not_found}`.\n"
   def remove_template(intent, text) do
     GenServer.call(__MODULE__, {:remove_template, intent, text})
   end
 
-  @doc """
-  List all templates for an intent with their metadata.
-
-  Returns a list of maps with :text, :condition, :source fields.
-  """
+  @doc "List all templates for an intent with their metadata.\n\nReturns a list of maps with :text, :condition, :source fields.\n"
   def list_templates_with_metadata(intent) do
     GenServer.call(__MODULE__, {:list_templates_with_metadata, intent})
   end
 
-  @doc """
-  Check if there are unsaved admin changes.
-  """
+  @doc "Check if there are unsaved admin changes.\n"
   def has_unsaved_changes? do
     GenServer.call(__MODULE__, :has_unsaved_changes?)
   end
 
-  @doc """
-  Sync admin-added templates to the templates.json file.
-  """
+  @doc "Sync admin-added templates to the templates.json file.\n"
   def sync_to_file do
     GenServer.call(__MODULE__, :sync_to_file, 30_000)
   end
 
-  @doc """
-  Get the path to the templates JSON file.
-  """
+  @doc "Get the path to the templates JSON file.\n"
   def templates_file_path do
     Application.app_dir(:brain)
     |> Path.join("priv/response/templates.json")
   end
 
-  # Server Callbacks
-
   @impl true
   def init(_opts) do
-    # Load templates asynchronously
     send(self(), :load_templates)
-
-    # Schedule periodic sync (every 5 minutes)
     :timer.send_interval(5 * 60 * 1000, :periodic_sync)
 
     {:ok,
@@ -363,7 +245,7 @@ defmodule Brain.Response.TemplateStore do
 
   def handle_call({:get_templates, intent}, _from, state) do
     templates = Map.get(state.templates, intent, [])
-    # Also try parent intent
+
     templates =
       if templates == [] do
         parent = get_parent_intent(intent)
@@ -383,7 +265,6 @@ defmodule Brain.Response.TemplateStore do
   def handle_call({:get_structured_templates, intent}, _from, state) do
     templates = Map.get(state.structured_templates, intent, [])
 
-    # Also try parent intent if no templates found
     templates =
       if templates == [] do
         parent = get_parent_intent(intent)
@@ -430,10 +311,6 @@ defmodule Brain.Response.TemplateStore do
     {:reply, stats, state}
   end
 
-  # ============================================================================
-  # CRUD Handler Implementations
-  # ============================================================================
-
   def handle_call({:add_template, intent, text, opts}, _from, state) do
     condition = Keyword.get(opts, :condition)
     source = Keyword.get(opts, :source, :admin)
@@ -445,11 +322,8 @@ defmodule Brain.Response.TemplateStore do
       intent: intent
     }
 
-    # Add to admin_templates tracking
     admin_for_intent = Map.get(state.admin_templates, intent, [])
     updated_admin = Map.put(state.admin_templates, intent, [new_template | admin_for_intent])
-
-    # Also add to the main templates for immediate use
     existing_texts = Map.get(state.templates, intent, [])
     updated_texts = [text | existing_texts]
 
@@ -474,28 +348,43 @@ defmodule Brain.Response.TemplateStore do
     existing_texts = Map.get(state.templates, intent, [])
 
     if old_text in existing_texts do
-      # Update in templates
-      updated_texts = Enum.map(existing_texts, fn t -> if t == old_text, do: new_text, else: t end)
+      updated_texts =
+        Enum.map(existing_texts, fn t ->
+          if t == old_text do
+            new_text
+          else
+            t
+          end
+        end)
 
-      # Update in structured_templates
       existing_structured = Map.get(state.structured_templates, intent, [])
 
       updated_structured =
         Enum.map(existing_structured, fn t ->
-          if t.text == old_text, do: %{t | text: new_text}, else: t
+          if t.text == old_text do
+            %{t | text: new_text}
+          else
+            t
+          end
         end)
 
-      # Update in all_template_structs
       updated_all =
         Enum.map(state.all_template_structs, fn t ->
-          if t.intent == intent and t.text == old_text, do: %{t | text: new_text}, else: t
+          if t.intent == intent and t.text == old_text do
+            %{t | text: new_text}
+          else
+            t
+          end
         end)
 
-      # Update in admin_templates if it was an admin template
       updated_admin =
         Map.update(state.admin_templates, intent, [], fn templates ->
           Enum.map(templates, fn t ->
-            if t.text == old_text, do: %{t | text: new_text}, else: t
+            if t.text == old_text do
+              %{t | text: new_text}
+            else
+              t
+            end
           end)
         end)
 
@@ -524,7 +413,8 @@ defmodule Brain.Response.TemplateStore do
       existing_structured = Map.get(state.structured_templates, intent, [])
       updated_structured = Enum.reject(existing_structured, &(&1.text == text))
 
-      updated_all = Enum.reject(state.all_template_structs, &(&1.intent == intent and &1.text == text))
+      updated_all =
+        Enum.reject(state.all_template_structs, &(&1.intent == intent and &1.text == text))
 
       updated_admin =
         Map.update(state.admin_templates, intent, [], fn templates ->
@@ -552,14 +442,18 @@ defmodule Brain.Response.TemplateStore do
 
     templates_with_meta =
       Enum.map(structured, fn t ->
-        # Check if it's an admin template
         admin_for_intent = Map.get(state.admin_templates, intent, [])
         is_admin = Enum.any?(admin_for_intent, &(&1.text == t.text))
 
         %{
           text: t.text,
           condition: t.condition,
-          source: if(is_admin, do: :admin, else: :file),
+          source:
+            if(is_admin) do
+              :admin
+            else
+              :file
+            end,
           has_embedding: t.embedding != nil
         }
       end)
@@ -577,15 +471,9 @@ defmodule Brain.Response.TemplateStore do
     {:reply, result, new_state}
   end
 
-  # ============================================================================
-  # Best Template Selection Logic
-  # ============================================================================
-
   defp do_get_best_template(intent, query_text, context, state) do
-    # Get structured templates for this intent
     templates = Map.get(state.structured_templates, intent, [])
 
-    # Also try parent intent if no templates found
     templates =
       if templates == [] do
         parent = get_parent_intent(intent)
@@ -594,27 +482,22 @@ defmodule Brain.Response.TemplateStore do
         templates
       end
 
-    # Step 1: Filter by conditions
     matching = filter_by_conditions(templates, context)
 
     case matching do
       [] ->
-        # Fallback: semantic search across all intents
         fallback_semantic_search(query_text, state)
 
       [single] ->
-        # Only one match, use it
         {:ok, single.text}
 
       multiple ->
-        # Step 2: Rank by similarity to query
         case Embedder.embed(query_text) do
           {:ok, query_embedding} ->
             best = rank_by_similarity(multiple, query_embedding) |> List.first()
             {:ok, best.text}
 
           _ ->
-            # Embedder not ready, pick random
             {:ok, Enum.random(multiple).text}
         end
     end
@@ -623,7 +506,6 @@ defmodule Brain.Response.TemplateStore do
   defp fallback_semantic_search(query_text, state) do
     case Embedder.embed(query_text) do
       {:ok, query_embedding} ->
-        # Search across all templates
         best =
           state.all_template_structs
           |> Enum.filter(& &1.embedding)
@@ -662,37 +544,23 @@ defmodule Brain.Response.TemplateStore do
   @impl true
   def handle_info(:load_templates, state) do
     Logger.info("Loading response templates from intent files...")
-
-    # First try to load from consolidated templates.json
     {templates, structured_templates} = load_consolidated_templates()
 
-    # Fall back to legacy loading if templates.json doesn't exist
     {templates, parameters, structured_templates} =
       if map_size(templates) == 0 do
         load_all_intent_files_with_conditions()
       else
-        # No parameters from consolidated file, use empty
         {templates, %{}, structured_templates}
       end
 
     Logger.info("Loaded templates for #{map_size(templates)} intents")
-
-    # Load custom smalltalk responses and merge with templates
     custom_smalltalk = load_custom_smalltalk_responses()
     merged_templates = merge_custom_responses(templates, custom_smalltalk)
-
-    # Also merge into structured templates (custom templates have no conditions)
     merged_structured = merge_custom_structured_responses(structured_templates, custom_smalltalk)
 
     Logger.info("Merged #{map_size(custom_smalltalk)} custom smalltalk responses")
-
-    # Build embeddings for templates that have content (legacy)
     embeddings = build_template_embeddings(merged_templates)
-
-    # Build per-template embeddings for structured templates
     all_template_structs = build_per_template_embeddings(merged_structured)
-
-    # Update structured_templates with embedded versions
     structured_with_embeddings = group_templates_by_intent(all_template_structs)
 
     Logger.info("Built embeddings for #{length(all_template_structs)} individual templates")
@@ -710,9 +578,6 @@ defmodule Brain.Response.TemplateStore do
      }}
   end
 
-  # Private Functions
-
-  # Load from consolidated templates.json (new format)
   defp load_consolidated_templates do
     path = templates_file_path()
 
@@ -755,11 +620,9 @@ defmodule Brain.Response.TemplateStore do
     end
   end
 
-  # Sync admin templates to file
   defp do_sync_to_file(state) do
     path = templates_file_path()
 
-    # Load existing file
     existing =
       if File.exists?(path) do
         case File.read(path) do
@@ -776,26 +639,28 @@ defmodule Brain.Response.TemplateStore do
         %{}
       end
 
-    # Build updated data from structured_templates
     updated =
       Enum.reduce(state.structured_templates, existing, fn {intent, templates}, acc ->
         tpl_list =
           Enum.map(templates, fn t ->
-            # Determine source
             admin_for_intent = Map.get(state.admin_templates, intent, [])
             is_admin = Enum.any?(admin_for_intent, &(&1.text == t.text))
 
             %{
               "text" => t.text,
               "condition" => t.condition,
-              "source" => if(is_admin, do: "admin", else: "dialogflow")
+              "source" =>
+                if(is_admin) do
+                  "admin"
+                else
+                  "dialogflow"
+                end
             }
           end)
 
         Map.put(acc, intent, %{"templates" => tpl_list})
       end)
 
-    # Write to file
     File.mkdir_p!(Path.dirname(path))
 
     case File.write(path, Jason.encode!(updated, pretty: true)) do
@@ -810,14 +675,14 @@ defmodule Brain.Response.TemplateStore do
   end
 
   defp load_all_intent_files_with_conditions do
-    # Check if legacy intents directory exists
     if File.dir?(@intents_path) do
       intent_files =
         Path.join(@intents_path, "*.json")
         |> Path.wildcard()
         |> Enum.reject(&String.contains?(&1, "usersays"))
 
-      Enum.reduce(intent_files, {%{}, %{}, %{}}, fn file_path, {templates_acc, params_acc, structured_acc} ->
+      Enum.reduce(intent_files, {%{}, %{}, %{}}, fn file_path,
+                                                    {templates_acc, params_acc, structured_acc} ->
         case load_intent_file_with_conditions(file_path) do
           {:ok, intent_name, speech_templates, parameters, structured_templates} ->
             templates_acc = Map.put(templates_acc, intent_name, speech_templates)
@@ -830,7 +695,6 @@ defmodule Brain.Response.TemplateStore do
         end
       end)
     else
-      # Legacy directory doesn't exist - return empty (templates.json should be used)
       {%{}, %{}, %{}}
     end
   end
@@ -840,15 +704,13 @@ defmodule Brain.Response.TemplateStore do
          {:ok, data} <- Jason.decode(content) do
       intent_name = Map.get(data, "name", Path.basename(file_path, ".json"))
 
-      # Extract speech templates with conditions from responses
-      {speech_templates, structured_templates} = extract_templates_with_conditions(data, intent_name)
+      {speech_templates, structured_templates} =
+        extract_templates_with_conditions(data, intent_name)
 
-      # Also extract from conditionalResponses
       conditional_structured = extract_conditional_responses(data, intent_name)
 
       all_structured = structured_templates ++ conditional_structured
 
-      # Extract parameter definitions
       parameters =
         data
         |> Map.get("responses", [])
@@ -884,14 +746,18 @@ defmodule Brain.Response.TemplateStore do
           speech_list = Map.get(msg, "speech", [])
           condition = Map.get(msg, "condition", "")
 
-          # Create Template structs for each speech template
           new_structs =
             speech_list
             |> Enum.filter(&(is_binary(&1) and String.length(&1) > 0))
             |> Enum.map(fn text ->
               %Template{
                 text: text,
-                condition: if(condition == "", do: nil, else: condition),
+                condition:
+                  if(condition == "") do
+                    nil
+                  else
+                    condition
+                  end,
                 embedding: nil,
                 intent: intent_name
               }
@@ -921,7 +787,12 @@ defmodule Brain.Response.TemplateStore do
         |> Enum.map(fn text ->
           %Template{
             text: text,
-            condition: if(condition == "", do: nil, else: condition),
+            condition:
+              if(condition == "") do
+                nil
+              else
+                condition
+              end,
             embedding: nil,
             intent: intent_name
           }
@@ -944,7 +815,6 @@ defmodule Brain.Response.TemplateStore do
         end
       end)
     else
-      # Return templates without embeddings if embedder not ready
       Enum.flat_map(structured_templates, fn {_intent, templates} -> templates end)
     end
   end
@@ -970,14 +840,11 @@ defmodule Brain.Response.TemplateStore do
     end)
   end
 
-
   defp build_template_embeddings(templates) do
-    # Only build embeddings if Embedder is ready
     if Embedder.ready?() do
       templates
-      |> Enum.filter(fn {_intent, tpls} -> length(tpls) > 0 end)
+      |> Enum.filter(fn {_intent, tpls} -> tpls != [] end)
       |> Enum.reduce(%{}, fn {intent, tpls}, acc ->
-        # Combine all templates for this intent into one embedding
         combined_text = Enum.join(tpls, " ")
 
         case Embedder.embed(combined_text) do
@@ -997,10 +864,8 @@ defmodule Brain.Response.TemplateStore do
     intent_filter = Keyword.get(opts, :intent)
     top_k = Keyword.get(opts, :top_k, 3)
 
-    # Get query embedding
     case Embedder.embed(query_text) do
       {:ok, query_embedding} ->
-        # Filter and score templates
         candidates =
           state.embeddings
           |> Enum.filter(fn {intent, _} ->
@@ -1012,7 +877,7 @@ defmodule Brain.Response.TemplateStore do
             templates = Map.get(state.templates, intent, [])
             {intent, similarity, templates}
           end)
-          |> Enum.filter(fn {_, sim, tpls} -> sim > 0.1 and length(tpls) > 0 end)
+          |> Enum.filter(fn {_, sim, tpls} -> sim > 0.1 and tpls != [] end)
           |> Enum.sort_by(fn {_, sim, _} -> -sim end)
           |> Enum.take(top_k)
 
@@ -1031,7 +896,11 @@ defmodule Brain.Response.TemplateStore do
       mag1 = :math.sqrt(Enum.reduce(vec1, 0.0, fn x, sum -> sum + x * x end))
       mag2 = :math.sqrt(Enum.reduce(vec2, 0.0, fn x, sum -> sum + x * x end))
 
-      if mag1 == 0.0 or mag2 == 0.0, do: 0.0, else: dot / (mag1 * mag2)
+      if mag1 == 0.0 or mag2 == 0.0 do
+        0.0
+      else
+        dot / (mag1 * mag2)
+      end
     end
   end
 
@@ -1041,7 +910,6 @@ defmodule Brain.Response.TemplateStore do
       value = entity[:value]
 
       if entity_type && value do
-        # Map entity type to common slot names
         slot_names = entity_type_to_slot_names(entity_type)
 
         Enum.reduce(slot_names, acc, fn slot_name, inner_acc ->
@@ -1053,9 +921,10 @@ defmodule Brain.Response.TemplateStore do
     end)
   end
 
-  defp build_slot_value_map(_), do: %{}
+  defp build_slot_value_map(_) do
+    %{}
+  end
 
-  # Map entity types to their corresponding slot names
   defp entity_type_to_slot_names(entity_type) do
     mappings = %{
       "location" => ["location", "address", "place"],
@@ -1083,20 +952,20 @@ defmodule Brain.Response.TemplateStore do
     end
   end
 
-  defp get_parent_intent(_), do: nil
+  defp get_parent_intent(_) do
+    nil
+  end
 
-  # Load custom smalltalk responses from JSON file
   defp load_custom_smalltalk_responses do
     case File.read(@custom_smalltalk_path) do
       {:ok, content} ->
         case Jason.decode(content) do
           {:ok, data} when is_list(data) ->
-            # Convert array format to map: %{action => customAnswers}
             Enum.reduce(data, %{}, fn item, acc ->
               action = Map.get(item, "action")
               answers = Map.get(item, "customAnswers", [])
 
-              if is_binary(action) and is_list(answers) and length(answers) > 0 do
+              if is_binary(action) and is_list(answers) and answers != [] do
                 Map.put(acc, action, answers)
               else
                 acc
@@ -1104,7 +973,6 @@ defmodule Brain.Response.TemplateStore do
             end)
 
           {:ok, data} when is_map(data) ->
-            # Already in map format
             data
 
           {:error, reason} ->
@@ -1118,11 +986,8 @@ defmodule Brain.Response.TemplateStore do
     end
   end
 
-  # Merge custom responses with intent templates
-  # Custom responses take precedence when both exist
   defp merge_custom_responses(templates, custom) do
     Map.merge(templates, custom, fn _key, intent_tpls, custom_tpls ->
-      # Combine both, putting custom first (they'll be randomly selected anyway)
       custom_tpls ++ intent_tpls
     end)
   end

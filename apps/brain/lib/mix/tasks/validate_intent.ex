@@ -1,62 +1,5 @@
 defmodule Mix.Tasks.ValidateIntent do
-  @moduledoc """
-  Mix task to validate intent training data files.
-
-  ## Usage
-
-      mix validate_intent <path_to_intent_file.json> [options]
-
-  ## Options
-
-    --negative <path>    Path to the corresponding negative examples file
-    --fix                Attempt to auto-fix common issues
-    --verbose            Show detailed validation output
-    --strict             Fail on warnings (not just errors)
-
-  ## Validation Checks
-
-  This task validates:
-
-  ### Structural Validation
-  - JSON is valid and parseable
-  - Each example has required fields: text, tokens, pos_tags, entities, id, intent
-  - tokens and pos_tags arrays have matching lengths
-  - Entity spans (start/end) are valid indices into the tokens array
-
-  ### Content Validation  
-  - Minimum 20 training examples per intent
-  - Intent name is consistent across all examples
-  - No duplicate example texts
-  - Each example has a unique ID
-
-  ### Entity Span Validation
-  - Entity start <= end
-  - Entity indices are within tokens array bounds
-  - Entity text matches the joined tokens in the specified span
-
-  ### Phrasing Variety Validation
-  - Checks for diversity in sentence structure
-  - Warns on highly similar examples
-  - Ensures variety in vocabulary usage
-
-  ### Negative Examples Validation (if --negative provided)
-  - 5-10 negative examples per intent
-  - Each negative example has text and correct_intent fields
-  - Negative examples don't match the intent being validated
-
-  ## Examples
-
-      # Validate a single intent file
-      mix validate_intent data/training/intents/calendar.event.create.json
-
-      # Validate with corresponding negative examples
-      mix validate_intent data/training/intents/calendar.event.create.json \\
-        --negative data/training/intents/negative_examples/calendar.event.create_negative.json
-
-      # Verbose output with strict mode
-      mix validate_intent data/training/intents/weather.json --verbose --strict
-
-  """
+  @moduledoc "Mix task to validate intent training data files.\n\n## Usage\n\n    mix validate_intent <path_to_intent_file.json> [options]\n\n## Options\n\n  --negative <path>    Path to the corresponding negative examples file\n  --fix                Attempt to auto-fix common issues\n  --verbose            Show detailed validation output\n  --strict             Fail on warnings (not just errors)\n\n## Validation Checks\n\nThis task validates:\n\n### Structural Validation\n- JSON is valid and parseable\n- Each example has required fields: text, tokens, pos_tags, entities, id, intent\n- tokens and pos_tags arrays have matching lengths\n- Entity spans (start/end) are valid indices into the tokens array\n\n### Content Validation\n- Minimum 20 training examples per intent\n- Intent name is consistent across all examples\n- No duplicate example texts\n- Each example has a unique ID\n\n### Entity Span Validation\n- Entity start <= end\n- Entity indices are within tokens array bounds\n- Entity text matches the joined tokens in the specified span\n\n### Phrasing Variety Validation\n- Checks for diversity in sentence structure\n- Warns on highly similar examples\n- Ensures variety in vocabulary usage\n\n### Negative Examples Validation (if --negative provided)\n- 5-10 negative examples per intent\n- Each negative example has text and correct_intent fields\n- Negative examples don't match the intent being validated\n\n## Examples\n\n    # Validate a single intent file\n    mix validate_intent data/training/intents/calendar.event.create.json\n\n    # Validate with corresponding negative examples\n    mix validate_intent data/training/intents/calendar.event.create.json \\\n      --negative data/training/intents/negative_examples/calendar.event.create_negative.json\n\n    # Verbose output with strict mode\n    mix validate_intent data/training/intents/weather.json --verbose --strict\n\n"
 
   use Mix.Task
   require Logger
@@ -71,12 +14,7 @@ defmodule Mix.Tasks.ValidateIntent do
   def run(args) do
     {opts, positional, _} =
       OptionParser.parse(args,
-        strict: [
-          negative: :string,
-          fix: :boolean,
-          verbose: :boolean,
-          strict: :boolean
-        ]
+        strict: [negative: :string, fix: :boolean, verbose: :boolean, strict: :boolean]
       )
 
     case positional do
@@ -100,21 +38,17 @@ defmodule Mix.Tasks.ValidateIntent do
     Mix.shell().info("Validating: #{path}")
     Mix.shell().info("=" |> String.duplicate(60))
 
-    # Check file exists
     unless File.exists?(path) do
       Mix.shell().error("Error: File not found: #{path}")
       System.halt(1)
     end
 
-    # Parse JSON
     case File.read(path) do
       {:ok, content} ->
         case Jason.decode(content) do
           {:ok, examples} when is_list(examples) ->
-            # Run all validations
             results = run_validations(examples, path, opts)
 
-            # Validate negative examples if provided
             negative_results =
               if negative_path do
                 validate_negative_examples(negative_path, examples, opts)
@@ -122,16 +56,12 @@ defmodule Mix.Tasks.ValidateIntent do
                 %{errors: [], warnings: []}
               end
 
-            # Combine results
             all_errors = results.errors ++ negative_results.errors
             all_warnings = results.warnings ++ negative_results.warnings
-
-            # Display results
             display_results(all_errors, all_warnings, verbose)
 
-            # Determine exit code
             should_fail =
-              length(all_errors) > 0 or (strict and length(all_warnings) > 0)
+              all_errors != [] or (strict and all_warnings != [])
 
             if should_fail do
               Mix.shell().error("")
@@ -141,7 +71,7 @@ defmodule Mix.Tasks.ValidateIntent do
               Mix.shell().info("")
               Mix.shell().info("Validation PASSED")
 
-              if length(all_warnings) > 0 do
+              if all_warnings != [] do
                 Mix.shell().info("(#{length(all_warnings)} warnings)")
               end
             end
@@ -166,34 +96,16 @@ defmodule Mix.Tasks.ValidateIntent do
 
     errors = []
     warnings = []
-
-    # 1. Check minimum examples
     {errors, warnings} = validate_minimum_examples(examples, errors, warnings)
-
-    # 2. Validate each example structure
     {errors, warnings} = validate_example_structures(examples, errors, warnings, verbose)
-
-    # 3. Check for consistent intent
     {errors, warnings} = validate_consistent_intent(examples, path, errors, warnings)
-
-    # 4. Check for duplicate texts
     {errors, warnings} = validate_no_duplicates(examples, errors, warnings)
-
-    # 5. Check for unique IDs
     {errors, warnings} = validate_unique_ids(examples, errors, warnings)
-
-    # 6. Validate entity spans
     {errors, warnings} = validate_entity_spans(examples, errors, warnings, verbose)
-
-    # 7. Check phrasing variety
     {errors, warnings} = validate_phrasing_variety(examples, errors, warnings, verbose)
 
     %{errors: errors, warnings: warnings}
   end
-
-  # ============================================================================
-  # Validation Functions
-  # ============================================================================
 
   defp validate_minimum_examples(examples, errors, warnings) do
     count = length(examples)
@@ -211,21 +123,21 @@ defmodule Mix.Tasks.ValidateIntent do
 
     Enum.with_index(examples)
     |> Enum.reduce({errors, warnings}, fn {example, idx}, {errs, warns} ->
-      # Check required fields
       missing_fields =
         Enum.filter(required_fields, fn field ->
           not Map.has_key?(example, field)
         end)
 
       errs =
-        if length(missing_fields) > 0 do
-          error = "Example #{idx + 1}: Missing required fields: #{Enum.join(missing_fields, ", ")}"
+        if missing_fields != [] do
+          error =
+            "Example #{idx + 1}: Missing required fields: #{Enum.join(missing_fields, ", ")}"
+
           [error | errs]
         else
           errs
         end
 
-      # Check tokens/pos_tags length match
       tokens = Map.get(example, "tokens", [])
       pos_tags = Map.get(example, "pos_tags", [])
 
@@ -239,7 +151,6 @@ defmodule Mix.Tasks.ValidateIntent do
           errs
         end
 
-      # Check for empty text
       text = Map.get(example, "text", "")
 
       warns =
@@ -250,9 +161,8 @@ defmodule Mix.Tasks.ValidateIntent do
           warns
         end
 
-      # Check for empty tokens
       errs =
-        if length(tokens) == 0 and String.trim(text) != "" do
+        if tokens == [] and String.trim(text) != "" do
           error = "Example #{idx + 1}: Text present but tokens array is empty"
           [error | errs]
         else
@@ -298,14 +208,16 @@ defmodule Mix.Tasks.ValidateIntent do
       |> Enum.frequencies()
       |> Enum.filter(fn {_text, count} -> count > 1 end)
 
-    if length(duplicates) > 0 do
+    if duplicates != [] do
       dup_count = length(duplicates)
 
       dup_examples =
         duplicates
         |> Enum.take(3)
-        |> Enum.map(fn {text, count} -> "\"#{String.slice(text, 0, 40)}...\" (#{count}x)" end)
-        |> Enum.join(", ")
+        |> Enum.map_join(
+          ", ",
+          fn {text, count} -> "\"#{String.slice(text, 0, 40)}...\" (#{count}x)" end
+        )
 
       warning = "Found #{dup_count} duplicate text(s): #{dup_examples}"
       {errors, [warning | warnings]}
@@ -325,7 +237,7 @@ defmodule Mix.Tasks.ValidateIntent do
       |> Enum.frequencies()
       |> Enum.filter(fn {_id, count} -> count > 1 end)
 
-    if length(duplicate_ids) > 0 do
+    if duplicate_ids != [] do
       error = "Found #{length(duplicate_ids)} duplicate ID(s)"
       {[error | errors], warnings}
     else
@@ -347,25 +259,21 @@ defmodule Mix.Tasks.ValidateIntent do
         _entity_type = Map.get(entity, "type", "unknown")
 
         cond do
-          # Check start <= end
           start_idx > end_idx ->
             error =
               "Example #{idx + 1}: Entity '#{entity_text}' has start (#{start_idx}) > end (#{end_idx})"
 
             {[error | e], w}
 
-          # Check bounds
           start_idx < 0 or end_idx >= length(tokens) ->
             error =
               "Example #{idx + 1}: Entity '#{entity_text}' indices [#{start_idx}, #{end_idx}] out of bounds (tokens: 0-#{length(tokens) - 1})"
 
             {[error | e], w}
 
-          # Check entity text matches tokens
           true ->
             span_tokens = Enum.slice(tokens, start_idx..end_idx)
             reconstructed = Enum.join(span_tokens, " ")
-            # Normalize for comparison (handle punctuation spacing)
             normalized_entity = normalize_for_comparison(entity_text)
             normalized_reconstructed = normalize_for_comparison(reconstructed)
 
@@ -394,20 +302,16 @@ defmodule Mix.Tasks.ValidateIntent do
     if length(examples) < 5 do
       {errors, warnings}
     else
-      # Check for similarity in phrasing
       texts =
         examples
         |> Enum.map(&Map.get(&1, "text", ""))
         |> Enum.map(&String.downcase/1)
 
-      # Calculate word frequencies across all texts
-      # Calculate word frequencies for potential future use
       _all_words =
         texts
         |> Enum.flat_map(&String.split(&1, ~r/\s+/))
         |> Enum.frequencies()
 
-      # Check for high similarity pairs using simple jaccard similarity
       similar_pairs = find_similar_pairs(texts, @similarity_threshold)
 
       warnings =
@@ -422,7 +326,6 @@ defmodule Mix.Tasks.ValidateIntent do
           warnings
         end
 
-      # Check for variety in sentence starters
       starters =
         texts
         |> Enum.map(fn text ->
@@ -472,12 +375,12 @@ defmodule Mix.Tasks.ValidateIntent do
     intersection = MapSet.intersection(words1, words2) |> MapSet.size()
     union = MapSet.union(words1, words2) |> MapSet.size()
 
-    if union == 0, do: 0.0, else: intersection / union
+    if union == 0 do
+      0.0
+    else
+      intersection / union
+    end
   end
-
-  # ============================================================================
-  # Negative Examples Validation
-  # ============================================================================
 
   defp validate_negative_examples(path, training_examples, opts) do
     _verbose = Keyword.get(opts, :verbose, false)
@@ -508,18 +411,16 @@ defmodule Mix.Tasks.ValidateIntent do
     end
   end
 
-  defp validate_negative_list(negatives, training_examples, opts) do
+  defp validate_negative_list(negatives, training_examples, _opts) do
     errors = []
     warnings = []
 
-    # Get the intent from training examples
     training_intent =
       training_examples
       |> Enum.map(&Map.get(&1, "intent"))
       |> Enum.filter(&(&1 != nil))
       |> List.first()
 
-    # Check count
     count = length(negatives)
 
     warnings =
@@ -540,11 +441,9 @@ defmodule Mix.Tasks.ValidateIntent do
           warnings
       end
 
-    # Validate each negative example
     {errors, warnings} =
       Enum.with_index(negatives)
       |> Enum.reduce({errors, warnings}, fn {neg, idx}, {errs, warns} ->
-        # Check required fields
         text = Map.get(neg, "text")
         correct_intent = Map.get(neg, "correct_intent")
 
@@ -584,14 +483,10 @@ defmodule Mix.Tasks.ValidateIntent do
     %{errors: Enum.reverse(errors), warnings: Enum.reverse(warnings)}
   end
 
-  # ============================================================================
-  # Display Functions
-  # ============================================================================
-
   defp display_results(errors, warnings, _verbose) do
     Mix.shell().info("")
 
-    if length(errors) > 0 do
+    if errors != [] do
       Mix.shell().error("ERRORS (#{length(errors)}):")
 
       Enum.each(errors, fn error ->
@@ -599,7 +494,7 @@ defmodule Mix.Tasks.ValidateIntent do
       end)
     end
 
-    if length(warnings) > 0 do
+    if warnings != [] do
       Mix.shell().info("")
       Mix.shell().info("WARNINGS (#{length(warnings)}):")
 
@@ -608,7 +503,7 @@ defmodule Mix.Tasks.ValidateIntent do
       end)
     end
 
-    if length(errors) == 0 and length(warnings) == 0 do
+    if errors == [] and warnings == [] do
       Mix.shell().info("All checks passed!")
     end
   end

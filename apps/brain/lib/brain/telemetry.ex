@@ -54,6 +54,15 @@ defmodule Brain.Telemetry do
   - `[:chat_bot, :code, :gazetteer, :lookup, :stop]` - Code gazetteer lookups
   - `[:chat_bot, :code, :gazetteer, :add, :stop]` - Code gazetteer additions
   - `[:chat_bot, :code, :file_processed]` - Code file processed event
+
+  ## External Services Events
+
+  - `[:chat_bot, :services, :dispatch, :start | :stop | :exception]` - Service dispatch operations
+  - `[:chat_bot, :services, :enrichment, :start | :stop | :exception]` - Response enrichment
+  - `[:chat_bot, :services, :cache, :hit]` - Cache hit events
+  - `[:chat_bot, :services, :cache, :miss]` - Cache miss events
+  - `[:chat_bot, :services, :health_check, :stop]` - Service health check results
+  - `[:chat_bot, :services, :credential]` - Credential operations (store/delete)
   """
 
   require Logger
@@ -103,6 +112,14 @@ defmodule Brain.Telemetry do
   @code_gazetteer_lookup [:chat_bot, :code, :gazetteer, :lookup]
   @code_gazetteer_add [:chat_bot, :code, :gazetteer, :add]
   @code_file_processed [:chat_bot, :code, :file_processed]
+
+  # External Services Events
+  @service_dispatch [:chat_bot, :services, :dispatch]
+  @service_enrichment [:chat_bot, :services, :enrichment]
+  @service_cache_hit [:chat_bot, :services, :cache, :hit]
+  @service_cache_miss [:chat_bot, :services, :cache, :miss]
+  @service_health_check [:chat_bot, :services, :health_check]
+  @service_credential_operation [:chat_bot, :services, :credential]
 
   # ============================================================================
   # Public API - Attach Handlers
@@ -219,7 +236,25 @@ defmodule Brain.Telemetry do
       {"chatbot-code-gazetteer-add-stop", @code_gazetteer_add ++ [:stop],
        &__MODULE__.handle_span_stop/4, %{metric: :code_gazetteer_add}},
       {"chatbot-code-file-processed", @code_file_processed,
-       &__MODULE__.handle_code_file_processed/4, %{}}
+       &__MODULE__.handle_code_file_processed/4, %{}},
+
+      # External Services handlers
+      {"chatbot-service-dispatch-stop", @service_dispatch ++ [:stop],
+       &__MODULE__.handle_service_dispatch/4, %{}},
+      {"chatbot-service-dispatch-exception", @service_dispatch ++ [:exception],
+       &__MODULE__.handle_span_exception/4, %{metric: :service_dispatch}},
+      {"chatbot-service-enrichment-stop", @service_enrichment ++ [:stop],
+       &__MODULE__.handle_span_stop/4, %{metric: :service_enrichment}},
+      {"chatbot-service-enrichment-exception", @service_enrichment ++ [:exception],
+       &__MODULE__.handle_span_exception/4, %{metric: :service_enrichment}},
+      {"chatbot-service-cache-hit", @service_cache_hit,
+       &__MODULE__.handle_service_cache/4, %{type: :hit}},
+      {"chatbot-service-cache-miss", @service_cache_miss,
+       &__MODULE__.handle_service_cache/4, %{type: :miss}},
+      {"chatbot-service-health-check-stop", @service_health_check ++ [:stop],
+       &__MODULE__.handle_service_health_check/4, %{}},
+      {"chatbot-service-credential", @service_credential_operation,
+       &__MODULE__.handle_service_credential/4, %{}}
     ]
 
     Enum.each(handlers, fn {id, event, handler, config} ->
@@ -280,7 +315,16 @@ defmodule Brain.Telemetry do
       "chatbot-code-pipeline-exception",
       "chatbot-code-gazetteer-lookup-stop",
       "chatbot-code-gazetteer-add-stop",
-      "chatbot-code-file-processed"
+      "chatbot-code-file-processed",
+      # External services events
+      "chatbot-service-dispatch-stop",
+      "chatbot-service-dispatch-exception",
+      "chatbot-service-enrichment-stop",
+      "chatbot-service-enrichment-exception",
+      "chatbot-service-cache-hit",
+      "chatbot-service-cache-miss",
+      "chatbot-service-health-check-stop",
+      "chatbot-service-credential"
     ]
 
     Enum.each(handler_ids, fn id ->
@@ -429,6 +473,83 @@ defmodule Brain.Telemetry do
       result = fun.()
       {result, %{}}
     end)
+  end
+
+  # External Services spans
+
+  def span(:service_dispatch, metadata, fun) do
+    :telemetry.span(@service_dispatch, metadata, fn ->
+      result = fun.()
+      {result, %{}}
+    end)
+  end
+
+  def span(:service_enrichment, metadata, fun) do
+    :telemetry.span(@service_enrichment, metadata, fn ->
+      result = fun.()
+      {result, %{}}
+    end)
+  end
+
+  def span(:service_health_check, metadata, fun) do
+    :telemetry.span(@service_health_check, metadata, fn ->
+      result = fun.()
+      {result, %{}}
+    end)
+  end
+
+  @doc """
+  Emits a service cache hit event.
+  """
+  def emit_service_cache_hit(service, key) do
+    :telemetry.execute(
+      @service_cache_hit,
+      %{count: 1},
+      %{service: service, key: key, timestamp: System.monotonic_time(:millisecond)}
+    )
+  end
+
+  @doc """
+  Emits a service cache miss event.
+  """
+  def emit_service_cache_miss(service, key) do
+    :telemetry.execute(
+      @service_cache_miss,
+      %{count: 1},
+      %{service: service, key: key, timestamp: System.monotonic_time(:millisecond)}
+    )
+  end
+
+  @doc """
+  Emits a service dispatch event with detailed metrics.
+  """
+  def emit_service_dispatch(service, intent, status, duration_ms) do
+    :telemetry.execute(
+      @service_dispatch ++ [:stop],
+      %{duration: duration_ms},
+      %{
+        service: service,
+        intent: intent,
+        status: status,
+        timestamp: System.monotonic_time(:millisecond)
+      }
+    )
+  end
+
+  @doc """
+  Emits a credential operation event.
+  """
+  def emit_credential_operation(operation, service, world) do
+    :telemetry.execute(
+      @service_credential_operation,
+      %{count: 1},
+      %{
+        operation: operation,
+        service: service,
+        world: world,
+        timestamp: System.monotonic_time(:millisecond)
+      }
+    )
   end
 
   @doc """
@@ -628,6 +749,56 @@ defmodule Brain.Telemetry do
         Brain.Metrics.Aggregator,
         {:record_code_file_processed, metadata[:file_path], metadata[:language],
          measurements[:symbols_count], measurements[:relations_count], measurements[:duration_ms]}
+      )
+    end
+  end
+
+  # ============================================================================
+  # External Services Handlers
+  # ============================================================================
+
+  @doc false
+  def handle_service_dispatch(_event, measurements, metadata, _config) do
+    if Process.whereis(Brain.Metrics.Aggregator) do
+      duration_ms = native_to_ms(measurements[:duration])
+
+      GenServer.cast(
+        Brain.Metrics.Aggregator,
+        {:record_service_dispatch, metadata[:service], metadata[:intent], metadata[:status],
+         duration_ms}
+      )
+    end
+  end
+
+  @doc false
+  def handle_service_cache(_event, measurements, metadata, config) do
+    if Process.whereis(Brain.Metrics.Aggregator) do
+      GenServer.cast(
+        Brain.Metrics.Aggregator,
+        {:record_service_cache, config[:type], metadata[:service], measurements[:count]}
+      )
+    end
+  end
+
+  @doc false
+  def handle_service_health_check(_event, measurements, metadata, _config) do
+    if Process.whereis(Brain.Metrics.Aggregator) do
+      duration_ms = native_to_ms(measurements[:duration])
+
+      GenServer.cast(
+        Brain.Metrics.Aggregator,
+        {:record_service_health_check, metadata[:service], metadata[:status], duration_ms}
+      )
+    end
+  end
+
+  @doc false
+  def handle_service_credential(_event, measurements, metadata, _config) do
+    if Process.whereis(Brain.Metrics.Aggregator) do
+      GenServer.cast(
+        Brain.Metrics.Aggregator,
+        {:record_service_credential, metadata[:operation], metadata[:service],
+         measurements[:count]}
       )
     end
   end

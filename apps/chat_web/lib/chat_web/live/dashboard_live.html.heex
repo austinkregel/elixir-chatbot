@@ -1005,6 +1005,142 @@
       </div>
     </section>
     
+<!-- External Services Status -->
+    <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+      <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-xl bg-gradient-to-br from-sky-500/20 to-sky-500/5">
+              <.icon name="hero-cloud" class="size-5 text-sky-500" />
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-base-content">External Services</h2>
+              <p class="text-xs text-base-content/60">
+                API integrations for response enrichment
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <.link navigate={~p"/settings?section=services"} class="btn btn-xs btn-ghost">
+              <.icon name="hero-cog-6-tooth" class="size-3" /> Configure
+            </.link>
+            <.badge
+              variant={if @services_status.ready, do: :success, else: :warning}
+              size={:sm}
+            >
+              <%= if @services_status.ready do %>
+                <.icon name="hero-check-circle" class="size-3 mr-1" /> Ready
+              <% else %>
+                <.icon name="hero-clock" class="size-3 mr-1" /> Initializing
+              <% end %>
+            </.badge>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4">
+        <!-- Summary Stats -->
+        <div class="grid grid-cols-4 gap-4 mb-4">
+          <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 text-center">
+            <div class="text-2xl font-bold text-base-content">
+              {length(@services_status.services)}
+            </div>
+            <div class="text-xs text-base-content/60">Services</div>
+          </div>
+          <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 text-center">
+            <div class="text-2xl font-bold text-base-content">
+              {@services_status.dispatch_metrics.total_count}
+            </div>
+            <div class="text-xs text-base-content/60">Dispatches</div>
+          </div>
+          <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 text-center">
+            <div class="text-2xl font-bold text-base-content">
+              {format_ms(@services_status.dispatch_metrics.avg_ms)}
+            </div>
+            <div class="text-xs text-base-content/60">Avg Latency</div>
+          </div>
+          <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 text-center">
+            <div class="text-2xl font-bold text-success">
+              {@services_status.cache_metrics.hit_rate}%
+            </div>
+            <div class="text-xs text-base-content/60">Cache Hit Rate</div>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <!-- Credential Vault -->
+          <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-semibold text-xs text-base-content">Credential Vault</span>
+              <.status_dot status={
+                if @services_status.genservers.credential_vault.ready, do: :ready, else: :not_started
+              } />
+            </div>
+            <div class="text-[10px] text-base-content/60">
+              Encrypted API key storage
+            </div>
+          </div>
+          
+          <!-- Service Cache -->
+          <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-semibold text-xs text-base-content">Service Cache</span>
+              <.status_dot status={
+                if @services_status.genservers.cache.ready, do: :ready, else: :not_started
+              } />
+            </div>
+            <div class="text-[10px] text-base-content/60 space-y-1">
+              <div class="flex justify-between">
+                <span>Hits</span>
+                <span class="font-mono text-success">{@services_status.cache_metrics.hits}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Misses</span>
+                <span class="font-mono">{@services_status.cache_metrics.misses}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Registered Services -->
+          <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 col-span-2">
+            <div class="flex items-center gap-2 mb-2">
+              <.icon name="hero-globe-alt" class="size-4 text-sky-500" />
+              <span class="font-semibold text-xs text-base-content">Registered Services</span>
+            </div>
+            <%= if length(@services_status.services) > 0 do %>
+              <div class="flex flex-wrap gap-2">
+                <%= for service <- @services_status.services do %>
+                  <div class={[
+                    "inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium",
+                    if(service.configured, do: "bg-success/20 text-success", else: "bg-warning/20 text-warning")
+                  ]}>
+                    <%= if service.configured do %>
+                      <.icon name="hero-check-circle" class="size-3" />
+                    <% else %>
+                      <.icon name="hero-exclamation-triangle" class="size-3" />
+                    <% end %>
+                    {service.display_name}
+                    <%= if service.total_dispatches > 0 do %>
+                      <span class="text-base-content/50">({service.total_dispatches})</span>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% else %>
+              <span class="text-[10px] text-base-content/40 italic">No services registered</span>
+            <% end %>
+          </div>
+        </div>
+        
+        <div class="mt-3 text-[10px] text-base-content/50">
+          Configure API keys in the
+          <.link navigate={~p"/settings?section=services"} class="text-sky-500 hover:underline">
+            Services Settings
+          </.link>
+        </div>
+      </div>
+    </section>
+    
     <!-- Memory Explorer Quick Access -->
     <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
       <div class="p-4 bg-gradient-to-r from-base-100 to-base-200/30">
@@ -1041,7 +1177,7 @@
       
 <!-- Categories in a 6 column responsive grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
-        <%= for category <- all_categories() do %>
+        <%= for category <- available_categories(@genserver_status) do %>
           <div class="rounded-2xl bg-base-100 border border-base-300/50 shadow-lg shadow-base-300/10 overflow-hidden">
             <button
               type="button"

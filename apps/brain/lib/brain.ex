@@ -1,13 +1,25 @@
 defmodule Brain do
-  @moduledoc """
-  The Brain GenServer manages the AI personality, subprocesses, and global memory.
-  This is the core component that orchestrates all chat bot functionality.
-  """
+  @moduledoc "The Brain GenServer manages the AI personality, subprocesses, and global memory.\nThis is the core component that orchestrates all chat bot functionality.\n"
 
+  alias Brain.ML.Tokenizer
+  alias Brain.ML.IntentClassifierSimple
+  alias Brain.Learner
+  alias Brain.ML.NLPPipeline
+  alias Phoenix.PubSub
+  alias Brain.Analysis.Pipeline
+  alias Brain.Analysis.FollowupDetector
+  alias Brain.ML.EntityExtractor
+  alias Brain.MemoryStore
+  alias Brain.KnowledgeStore
+  alias Brain.Telemetry
+  alias Brain.Response
+  alias Brain.Epistemic.Types
+  alias Brain.Epistemic
+  alias Brain.Analysis
   use GenServer
   require Logger
 
-  alias Brain.Analysis.{
+  alias Analysis.{
     SelfKnowledgeAnalyzer,
     RacingAnalyzer,
     Interpretation,
@@ -19,40 +31,20 @@ defmodule Brain do
 
   alias Brain.Analysis.OutcomeLearner
 
-  alias Brain.Epistemic.{UserModelStore, BeliefStore}
-  alias Brain.Epistemic.Types.{Belief, Config}
-  alias Brain.Response.{Synthesizer, Generator}
+  alias Epistemic.{UserModelStore, BeliefStore}
+  alias Types.{Belief, Config}
+  alias Response.{Synthesizer, Generator}
   alias World.Context, as: WorldContext
 
-  # ============================================================================
-  # Path Helpers
-  # ============================================================================
-
-  @doc """
-  Returns the priv directory path for the brain app.
-
-  Uses `:code.priv_dir(:brain)` which correctly resolves the path
-  regardless of which directory the application is run from.
-  """
+  @doc "Returns the priv directory path for the brain app.\n\nUses `:code.priv_dir(:brain)` which correctly resolves the path\nregardless of which directory the application is run from.\n"
   def priv_dir do
     :code.priv_dir(:brain) |> to_string()
   end
 
-  @doc """
-  Returns a path within the brain priv directory.
-
-  ## Examples
-
-      Brain.priv_path("ml_models/classifier.term")
-      #=> "/path/to/apps/brain/priv/ml_models/classifier.term"
-  """
+  @doc "Returns a path within the brain priv directory.\n\n## Examples\n\n    Brain.priv_path(\"ml_models/classifier.term\")\n    #=> \"/path/to/apps/brain/priv/ml_models/classifier.term\"\n"
   def priv_path(subpath) when is_binary(subpath) do
     Path.join(priv_dir(), subpath)
   end
-
-  # ============================================================================
-  # Client API
-  # ============================================================================
 
   @doc """
   Starts the Brain GenServer.
@@ -79,8 +71,7 @@ defmodule Brain do
     timeout = Keyword.get(opts, :timeout, 90_000)
     opts = opts |> Keyword.delete(:server) |> Keyword.delete(:timeout)
 
-    # Wrap with telemetry span for async, non-blocking metrics
-    Brain.Telemetry.span(:brain_evaluate, %{conversation_id: conversation_id}, fn ->
+    Telemetry.span(:brain_evaluate, %{conversation_id: conversation_id}, fn ->
       GenServer.call(server, {:evaluate, conversation_id, input, opts}, timeout)
     end)
   end
@@ -229,22 +220,14 @@ defmodule Brain do
     GenServer.call(server, :reset_state)
   end
 
-  # Server Callbacks
-
   @impl true
   def init(artifact_path) do
-    # Load the personality artifact
     artifact = load_artifact(artifact_path)
     persona = create_personality(artifact)
-
-    # Load existing knowledge and memory
-    knowledge = Brain.KnowledgeStore.load_knowledge(persona.name)
-    memory = Brain.MemoryStore.load_all(persona.name)
-
-    # Update persona with loaded knowledge
+    knowledge = KnowledgeStore.load_knowledge(persona.name)
+    memory = MemoryStore.load_all(persona.name)
     updated_persona = Map.put(persona, :knowledge, knowledge)
 
-    # Initialize state
     state = %{
       artifact_path: artifact_path,
       artifact: artifact,
@@ -283,28 +266,19 @@ defmodule Brain do
 
       conversation ->
         now = System.system_time(:millisecond)
-
-        # Get world_id from conversation (default to "default")
         world_id = Map.get(conversation, :world_id, "default")
-
-        # Add world_id to options for downstream processing
         opts_with_world = Keyword.put(opts, :world_id, world_id)
-
-        # Process with classical NLP
-        # Check :brain config first, fall back to :chat_bot for legacy compatibility
         ml_config = Application.get_env(:brain, :ml) || Application.get_env(:chat_bot, :ml) || []
+
         {response, processing_method, context} =
           if ml_config[:enabled] do
             try_classical_nlp_first(state.persona, input, conversation.memory, opts_with_world)
           else
-            # ML disabled - use simple fallback
             {simple_fallback_response(state.persona, input), :simple, %{}}
           end
 
-        # Build context snapshot for conversation memory
         context_snapshot = build_context_snapshot(context)
 
-        # Update conversation memory with context
         user_message_id =
           get_in(opts, [:progress, :message_id]) ||
             get_in(opts, [:progress, "message_id"]) ||
@@ -318,14 +292,10 @@ defmodule Brain do
           context: context_snapshot
         }
 
-        # Handle nil responses (deferred by ResponseGate)
-        # Still store user message for speech act history, but no assistant message
         {new_messages, learning_response} =
           if response == nil do
-            # Response deferred - only add user message
             {[user_message], nil}
           else
-            # Normal response - add both messages
             assistant_message = %{
               id: generate_message_id(),
               role: "assistant",
@@ -340,11 +310,9 @@ defmodule Brain do
         updated_conversation =
           conversation
           |> Map.put(:memory, conversation.memory ++ new_messages)
-          # Track active context for follow-up detection (use Map.put since key may not exist)
           |> Map.put(:active_context, context_snapshot)
           |> Map.put(:last_activity, System.system_time(:millisecond))
 
-        # Add to learning queue only if we responded
         updated_learning_queue =
           if learning_response != nil do
             learning_entry = %{
@@ -360,13 +328,10 @@ defmodule Brain do
             state.learning_queue
           end
 
-        # Extract and store beliefs from entities (epistemic integration)
         user_id = Keyword.get(opts, :user_id)
         entities = Map.get(context, :entities, [])
         extract_and_store_beliefs(input, entities, user_id, conversation_id)
 
-        # Learn from this interaction for future fast-path (heuristic learning)
-        # Only learn when we actually responded (not deferred)
         if learning_response != nil and processing_method != :response_deferred do
           Task.start(fn ->
             interpretation = build_interpretation_from_context(input, context)
@@ -386,7 +351,6 @@ defmodule Brain do
             learning_queue: updated_learning_queue
         }
 
-        # Process learning queue asynchronously (only if there are entries)
         if length(updated_learning_queue) > length(state.learning_queue) do
           send(self(), :process_learning_queue)
         end
@@ -422,7 +386,6 @@ defmodule Brain do
     {:reply, {:ok, conversation_id}, updated_state}
   end
 
-  # Backward compatibility for old create_conversation calls
   @impl true
   def handle_call(:create_conversation, from, state) do
     handle_call({:create_conversation, []}, from, state)
@@ -584,7 +547,6 @@ defmodule Brain do
 
   @impl true
   def handle_call({:stop_subprocess, subprocess_id}, _from, state) do
-    # Find and stop the subprocess
     subprocess_info = find_subprocess_by_id(state.subprocesses, subprocess_id)
 
     case subprocess_info do
@@ -622,7 +584,6 @@ defmodule Brain do
 
   @impl true
   def handle_call(:reset_state, _from, state) do
-    # Reset the Brain to a clean state (useful for testing)
     reset_state = %{
       state
       | is_shutting_down: false,
@@ -638,7 +599,6 @@ defmodule Brain do
   def handle_cast({:urgent_interrupt, reason, data}, state) do
     Logger.warning("Handling urgent interrupt", %{reason: reason, data: data})
 
-    # Stop all active conversations
     updated_conversations =
       state.active_conversations
       |> Enum.map(fn {id, conversation} ->
@@ -655,7 +615,6 @@ defmodule Brain do
 
     updated_state = %{state | active_conversations: updated_conversations}
 
-    # Broadcast interrupt acknowledgment (if PubSub is running)
     safe_pubsub_broadcast("brain:status", "interrupt_acknowledged", %{
       reason: reason,
       timestamp: System.system_time(:millisecond)
@@ -667,11 +626,8 @@ defmodule Brain do
   @impl true
   def handle_cast({:urgent_emergency, reason, data}, state) do
     Logger.error("Handling urgent emergency", %{reason: reason, data: data})
-
-    # Emergency shutdown of all conversations
     updated_state = %{state | active_conversations: %{}, is_shutting_down: true}
 
-    # Broadcast emergency acknowledgment (if PubSub is running)
     safe_pubsub_broadcast("brain:status", "emergency_acknowledged", %{
       reason: reason,
       timestamp: System.system_time(:millisecond)
@@ -682,11 +638,9 @@ defmodule Brain do
 
   @impl true
   def handle_info(:process_learning_queue, state) do
-    if length(state.learning_queue) > 0 do
-      # Process learning entries
+    if state.learning_queue != [] do
       {processed_entries, remaining_queue} = Enum.split(state.learning_queue, 5)
 
-      # Add to global memory
       new_memory_entries =
         processed_entries
         |> Enum.map(fn entry ->
@@ -697,7 +651,6 @@ defmodule Brain do
           }
         end)
 
-      # Also store in cognitive memory system for embedding-based retrieval
       store_in_cognitive_memory(processed_entries)
 
       updated_state = %{
@@ -712,15 +665,13 @@ defmodule Brain do
         global_memory_size: length(updated_state.global_memory)
       })
 
-      # Broadcast learning update
       safe_pubsub_broadcast("brain:learning", "learning_processed", %{
         processed_count: length(processed_entries),
         global_memory_size: length(updated_state.global_memory),
         timestamp: System.system_time(:millisecond)
       })
 
-      # Schedule next processing if there are more entries
-      if length(remaining_queue) > 0 do
+      if remaining_queue != [] do
         Process.send_after(self(), :process_learning_queue, 1000)
       end
 
@@ -730,15 +681,12 @@ defmodule Brain do
     end
   end
 
-  # Private Functions
-
   defp build_context_snapshot(context) do
     %{
       intent: Map.get(context, :intent),
       entities: Map.get(context, :entities, []),
       slots: Map.get(context, :slots, %{}),
       missing_slots: Map.get(context, :missing_slots, []),
-      # Store speech act for response optionality history-based reasoning
       speech_act: Map.get(context, :speech_act),
       timestamp: System.system_time(:millisecond)
     }
@@ -779,7 +727,6 @@ defmodule Brain do
         Jason.decode!(content)
 
       {:error, _} ->
-        # Fallback to default artifact
         %{
           "name" => "Echo",
           "traits" => ["cheerful"],
@@ -797,11 +744,9 @@ defmodule Brain do
   end
 
   defp try_classical_nlp_first(persona, input, memory, opts) do
-    # First, check if this is a follow-up to a previous message
     previous_context = get_previous_context(memory)
 
-    if Brain.Analysis.FollowupDetector.is_followup?(input, previous_context) do
-      # This is providing context for the previous intent
+    if FollowupDetector.is_followup?(input, previous_context) do
       Logger.info("Detected follow-up message", %{
         input: input,
         previous_intent: previous_context[:intent]
@@ -809,7 +754,6 @@ defmodule Brain do
 
       handle_followup_message(persona, input, previous_context)
     else
-      # Normal processing - run the analysis pipeline
       process_new_message(persona, input, memory, opts)
     end
   end
@@ -817,29 +761,17 @@ defmodule Brain do
   defp process_new_message(persona, input, memory, opts) do
     user_id = Keyword.get(opts, :user_id)
     world_id = Keyword.get(opts, :world_id, "default")
-
-    # Store world_id in process dictionary for downstream components (e.g., code queries)
     Process.put(:current_world_id, world_id)
 
-    # First, check for meta-cognitive queries (epistemic self-knowledge)
     if Config.enabled?() and SelfKnowledgeAnalyzer.is_self_knowledge_query?(input) do
       handle_meta_cognitive_query(persona, input, user_id, opts)
     else
-      # Check for fast-path via RacingAnalyzer
-      # IMPORTANT: Fast path is ONLY for simple smalltalk intents that don't need
-      # entity extraction (greetings, thanks, farewells, etc.).
-      # All other intents (device.control, weather.query, music.play, etc.) MUST
-      # go through the full pipeline for entity extraction, slot detection, and
-      # proper response generation.
       case RacingAnalyzer.check_fast_path(input, world_id, user_id, nil) do
         {:fast_path, interpretation} ->
-          # Only use fast path for simple smalltalk intents
-          # These intents don't benefit from entity extraction
           intent_domain = IntentRegistry.domain(interpretation.intent)
           is_simple_smalltalk = intent_domain == :smalltalk
 
           if is_simple_smalltalk do
-            # Simple smalltalk (greetings, thanks, farewells) - safe to use fast path
             Logger.debug("Fast path hit (simple smalltalk)", %{
               intent: interpretation.intent,
               source: interpretation.source,
@@ -848,8 +780,6 @@ defmodule Brain do
 
             handle_fast_path_response(persona, interpretation, memory, opts)
           else
-            # Non-smalltalk intent - MUST run full pipeline
-            # This ensures entity extraction happens for weather, music, device, etc.
             Logger.debug("Fast path bypassed (needs entity extraction)", %{
               intent: interpretation.intent,
               domain: intent_domain
@@ -859,19 +789,13 @@ defmodule Brain do
           end
 
         :no_match ->
-          # No fast path match - run standard analysis pipeline
           process_standard_message(persona, input, memory, opts)
       end
     end
   end
 
-  # Handles responses when RacingAnalyzer finds a fast-path match for smalltalk intents
-  # (greetings, thanks, farewells, etc. - intents that don't need entity extraction)
   defp handle_fast_path_response(_persona, interpretation, _memory, opts) do
     intent = interpretation.intent
-
-    # Generate response using existing Generator
-    # No entities needed for intents without required slots
     {:ok, response, response_type} = Generator.generate(intent, [], nil)
 
     context = %{
@@ -898,7 +822,6 @@ defmodule Brain do
   end
 
   defp process_standard_message(persona, input, memory, opts) do
-    # Run the analysis pipeline to build an internal model
     analysis_model = run_analysis_pipeline(input, memory, opts)
 
     Logger.debug("Analysis pipeline complete", %{
@@ -907,11 +830,8 @@ defmodule Brain do
       prompts: analysis_model.suggested_prompts
     })
 
-    # NEW: Check if response is optional (after analysis, before response generation)
-    # This evaluates gratitude loops, backchannels, compliments, continuations, etc.
     case ResponseGate.evaluate(analysis_model, memory, opts) do
       {:defer, reason} ->
-        # Response not needed - return nil
         Logger.info("Response deferred by ResponseGate", reason)
 
         Progress.report(opts, :response_generated, %{
@@ -924,7 +844,6 @@ defmodule Brain do
         {nil, :response_deferred, Map.put(context, :defer_reason, reason)}
 
       {:optional, confidence, reason} ->
-        # Response is situational - Brain decides based on confidence threshold
         defer_threshold = get_defer_threshold(opts)
 
         if confidence >= defer_threshold do
@@ -944,7 +863,6 @@ defmodule Brain do
           context = extract_context_from_analysis(analysis_model)
           {nil, :response_optional, Map.put(context, :defer_reason, reason)}
         else
-          # Low confidence - still respond but record for learning
           Logger.debug("Response optional but proceeding", %{
             confidence: confidence,
             threshold: defer_threshold,
@@ -955,17 +873,13 @@ defmodule Brain do
         end
 
       {:respond, _reason} ->
-        # Normal flow - proceed with response generation
         proceed_with_standard_response(persona, input, memory, analysis_model, opts)
     end
   end
 
-  # Standard response generation after ResponseGate approves
   defp proceed_with_standard_response(persona, input, memory, analysis_model, opts) do
-    # Check if we need clarification before processing
     case analysis_model.overall_strategy do
       :needs_clarification ->
-        # Return a clarification request instead of trying to respond
         prompts = analysis_model.suggested_prompts
         response = build_clarification_response(prompts, persona)
         context = extract_context_from_analysis(analysis_model)
@@ -979,7 +893,6 @@ defmodule Brain do
         {response, :clarification_needed, context}
 
       :partial_response_with_clarification ->
-        # Respond to what we can, then ask for clarification on what's missing
         {base_response, response_method, context} =
           try_nlp_with_analysis(persona, input, memory, analysis_model, opts)
 
@@ -1003,7 +916,6 @@ defmodule Brain do
         {combined_response, :partial_with_clarification, context}
 
       :defer_to_user ->
-        # Bot wasn't addressed - acknowledge but don't try to respond substantively
         Progress.report(opts, :response_generated, %{
           response_type: :acknowledgment,
           strategy: :defer_to_user
@@ -1012,7 +924,6 @@ defmodule Brain do
         {simple_acknowledgment(persona), :not_addressed, %{}}
 
       :cannot_respond ->
-        # Cannot respond with classical NLP - use simple fallback
         Progress.report(opts, :response_generated, %{
           response_type: :fallback,
           strategy: :cannot_respond
@@ -1021,12 +932,10 @@ defmodule Brain do
         {simple_fallback_response(persona, input), :cannot_respond, %{}}
 
       _ ->
-        # Can respond (fully or partially) - proceed with NLP pipeline
         try_nlp_with_analysis(persona, input, memory, analysis_model, opts)
     end
   end
 
-  # Get the threshold for deferring optional responses
   defp get_defer_threshold(opts) do
     Keyword.get(opts, :defer_threshold, 0.7)
   end
@@ -1042,11 +951,8 @@ defmodule Brain do
   end
 
   defp handle_followup_message(persona, input, previous_context) do
-    # Run full analysis pipeline to get proper discourse/speech_act context for disambiguation
-    # This ensures entities are disambiguated correctly even in follow-up messages
     analysis_model = run_analysis_pipeline(input, [], [])
 
-    # Extract entities from the best analysis chunk with proper disambiguation context
     best_analysis =
       analysis_model.analyses
       |> Enum.max_by(& &1.confidence, fn -> nil end)
@@ -1062,8 +968,7 @@ defmodule Brain do
           }
         end)
       else
-        # Fallback: extract without context if analysis failed
-        Brain.ML.EntityExtractor.extract_entities(input)
+        EntityExtractor.extract_entities(input)
       end
 
     Logger.info("Extracted entities from follow-up", %{
@@ -1072,11 +977,8 @@ defmodule Brain do
       used_pipeline: best_analysis != nil
     })
 
-    # Get carried context with previous info
-    carried = Brain.Analysis.FollowupDetector.get_carried_context(input, previous_context)
-
-    # Merge with previous context
-    merged_context = Brain.Analysis.FollowupDetector.merge_with_previous(carried, entities)
+    carried = FollowupDetector.get_carried_context(input, previous_context)
+    merged_context = FollowupDetector.merge_with_previous(carried, entities)
 
     Logger.info("Merged context", %{
       intent: merged_context.intent,
@@ -1084,7 +986,6 @@ defmodule Brain do
       missing: merged_context.missing_slots
     })
 
-    # Generate response with complete context
     if merged_context.all_required_filled do
       response = generate_intent_response(merged_context, persona)
 
@@ -1093,13 +994,11 @@ defmodule Brain do
         entities: merged_context.entities,
         slots: merged_context.slots,
         missing_slots: [],
-        # Followup inherits speech_act from original context if available
         speech_act: Map.get(merged_context, :speech_act)
       }
 
       {response, :followup_completed, context}
     else
-      # Still missing slots - ask for clarification
       prompt = generate_followup_clarification(merged_context)
 
       context = %{
@@ -1107,7 +1006,6 @@ defmodule Brain do
         entities: merged_context.entities,
         slots: merged_context.slots,
         missing_slots: merged_context.missing_slots,
-        # Followup inherits speech_act from original context if available
         speech_act: Map.get(merged_context, :speech_act)
       }
 
@@ -1126,7 +1024,6 @@ defmodule Brain do
         entities: best_analysis.entities || [],
         slots: Map.get(best_analysis, :slots, %{}) |> extract_filled_slots(),
         missing_slots: Map.get(best_analysis, :missing_context, []),
-        # Include speech act for response optionality reasoning
         speech_act: extract_speech_act_info(best_analysis.speech_act)
       }
     else
@@ -1134,8 +1031,9 @@ defmodule Brain do
     end
   end
 
-  # Extract speech act info for storage in conversation memory
-  defp extract_speech_act_info(nil), do: nil
+  defp extract_speech_act_info(nil) do
+    nil
+  end
 
   defp extract_speech_act_info(speech_act) when is_map(speech_act) do
     %{
@@ -1146,7 +1044,9 @@ defmodule Brain do
     }
   end
 
-  defp extract_speech_act_info(_), do: nil
+  defp extract_speech_act_info(_) do
+    nil
+  end
 
   defp extract_filled_slots(slots) when is_map(slots) do
     case Map.get(slots, :filled_slots) do
@@ -1155,10 +1055,11 @@ defmodule Brain do
     end
   end
 
-  defp extract_filled_slots(_), do: %{}
+  defp extract_filled_slots(_) do
+    %{}
+  end
 
   defp generate_intent_response(context, _persona) do
-    # Delegate to Generator for unified response generation
     intent = context.intent
     entities = slots_to_entities(context.slots)
     {:ok, response, _type} = Generator.generate(intent, entities, nil)
@@ -1177,12 +1078,13 @@ defmodule Brain do
     end)
   end
 
-  defp slots_to_entities(_), do: []
+  defp slots_to_entities(_) do
+    []
+  end
 
   defp generate_followup_clarification(context) do
     alias Brain.Response.Synthesizer
 
-    # Use centralized clarification prompts from IntentRegistry via SlotDetector
     case context.missing_slots do
       [] ->
         Synthesizer.get_generic_clarification()
@@ -1193,8 +1095,6 @@ defmodule Brain do
   end
 
   defp run_analysis_pipeline(input, memory, opts) do
-    # Build conversation history from memory for context resolution
-    # Now supports both old format (with :entities) and new format (with :context)
     history =
       memory
       |> Enum.filter(fn m ->
@@ -1204,7 +1104,6 @@ defmodule Brain do
       |> Enum.map(fn m ->
         case Map.get(m, :context) do
           nil ->
-            # Old format
             %{
               entities: Map.get(m, :entities, %{}),
               intent: Map.get(m, :intent),
@@ -1212,7 +1111,6 @@ defmodule Brain do
             }
 
           context ->
-            # New format with context snapshot
             %{
               entities: build_entities_map(Map.get(context, :entities, [])),
               intent: Map.get(context, :intent),
@@ -1229,12 +1127,12 @@ defmodule Brain do
         user_profile: %{}
       )
 
-    Brain.Analysis.Pipeline.process(input, pipeline_opts)
+    Pipeline.process(input, pipeline_opts)
   end
 
   defp safe_pubsub_broadcast(topic, event, payload) when is_binary(topic) and is_binary(event) do
     if Process.whereis(ChatWeb.PubSub) != nil do
-      Phoenix.PubSub.broadcast(ChatWeb.PubSub, topic, {String.to_atom(event), payload})
+      PubSub.broadcast(ChatWeb.PubSub, topic, {String.to_atom(event), payload})
     end
 
     :ok
@@ -1243,19 +1141,27 @@ defmodule Brain do
   end
 
   defp build_entities_map(entities) when is_list(entities) do
-    # Convert list of entities to a map keyed by entity type
     Enum.reduce(entities, %{}, fn entity, acc ->
       entity_type = entity[:entity_type]
       entity_value = entity[:value]
-      if entity_type, do: Map.put(acc, entity_type, entity_value), else: acc
+
+      if entity_type do
+        Map.put(acc, entity_type, entity_value)
+      else
+        acc
+      end
     end)
   end
 
-  defp build_entities_map(entities) when is_map(entities), do: entities
-  defp build_entities_map(_), do: %{}
+  defp build_entities_map(entities) when is_map(entities) do
+    entities
+  end
+
+  defp build_entities_map(_) do
+    %{}
+  end
 
   defp try_nlp_with_analysis(persona, input, _memory, analysis_model, opts) do
-    # Collect ALL intents from all chunks with their analysis reference
     all_intents_with_analysis =
       analysis_model.analyses
       |> Enum.map(fn analysis ->
@@ -1263,38 +1169,29 @@ defmodule Brain do
       end)
       |> Enum.filter(fn {intent, _, _, _} -> intent != nil and intent != "" end)
 
-    # Prioritize substantive intents (questions, commands) over expressives (greetings)
     substantive_intents =
       all_intents_with_analysis
       |> Enum.filter(fn {intent, speech_act, _, _} ->
-        # Not a greeting/farewell/thanks - use registry for classification
         not IntentRegistry.greeting?(intent) and
           not IntentRegistry.farewell?(intent) and
           speech_act.category in [:directive, :assertive]
       end)
 
-    # Pick the best substantive intent, or fall back to any intent
-    # IMPORTANT: Use entities from the SAME chunk as the selected intent
     {analysis_intent, _, _, intent_analysis} =
       case substantive_intents do
         [first | _] -> first
         [] -> List.first(all_intents_with_analysis) || {nil, nil, 0, nil}
       end
 
-    # Use the intent's chunk for entities, NOT the highest confidence chunk
-    # This prevents entities from one chunk (e.g., "I'm Austin" greeting)
-    # from filling slots in another chunk (e.g., weather query)
     best_analysis =
       if intent_analysis do
         intent_analysis
       else
-        # Fallback to highest confidence if no intent match
         analysis_model.analyses
         |> Enum.filter(&(&1.response_strategy == :can_respond))
         |> Enum.max_by(& &1.confidence, fn -> List.first(analysis_model.analyses) end)
       end
 
-    # Extract entities from the chunk that contains the selected intent
     analysis_entities =
       if best_analysis do
         (best_analysis.entities || [])
@@ -1315,12 +1212,20 @@ defmodule Brain do
       chunk_index: best_analysis && best_analysis.index
     })
 
-    # Extract slot information for context
-    slots_info = if best_analysis, do: Map.get(best_analysis, :slots), else: nil
-    missing_slots = if best_analysis, do: Map.get(best_analysis, :missing_context, []), else: []
+    slots_info =
+      if best_analysis do
+        Map.get(best_analysis, :slots)
+      else
+        nil
+      end
 
-    # Extract discourse and speech_act context for disambiguation
-    # Include world_id for world-scoped type inference
+    missing_slots =
+      if best_analysis do
+        Map.get(best_analysis, :missing_context, [])
+      else
+        []
+      end
+
     world_id = Keyword.get(opts, :world_id, "default")
 
     disambiguation_opts =
@@ -1334,8 +1239,6 @@ defmodule Brain do
         [world_id: world_id]
       end
 
-    # Collect ALL entities from ALL chunks for conflict detection
-    # This prevents "Austin" being used as location when it was identified as person in another chunk
     all_analysis_entities =
       analysis_model.analyses
       |> Enum.flat_map(fn analysis ->
@@ -1349,16 +1252,10 @@ defmodule Brain do
         end)
       end)
 
-    # For multi-chunk inputs, skip NLPPipeline entirely.
-    # The per-chunk analysis is more accurate because each chunk gets proper context.
-    # NLPPipeline processes the whole text with only one chunk's context, which can cause
-    # cross-chunk entity bleeding (e.g., "Austin" as person in greeting being used as
-    # location for a weather query in the same message).
     num_chunks = length(analysis_model.analyses)
 
     {intent, entities, method} =
       if num_chunks > 1 do
-        # Multi-chunk: use only per-chunk analysis results
         Logger.debug("Multi-chunk input: skipping NLPPipeline, using only per-chunk analysis", %{
           num_chunks: num_chunks,
           analysis_entity_count: length(analysis_entities),
@@ -1367,17 +1264,15 @@ defmodule Brain do
 
         {analysis_intent, analysis_entities, :analysis_only}
       else
-        # Single chunk: safe to use NLPPipeline for additional processing
-        case Brain.ML.NLPPipeline.process(input, disambiguation_opts) do
+        case NLPPipeline.process(input, disambiguation_opts) do
           {:ok, %{confidence: conf, intent: nlp_intent, entities: nlp_entities}} ->
-            # Merge analysis intent with NLP intent (prefer analysis if both present)
             intent = analysis_intent || nlp_intent
 
             entities =
               merge_entities(analysis_entities, nlp_entities, all_analysis_entities, intent)
 
             method =
-              if Brain.ML.NLPPipeline.should_use_classical_result?(conf) or
+              if NLPPipeline.should_use_classical_result?(conf) or
                    analysis_intent != nil do
                 :analysis_enhanced
               else
@@ -1400,9 +1295,12 @@ defmodule Brain do
       num_chunks: num_chunks
     })
 
-    # Build context for storage (include speech_act for response optionality)
     speech_act_info =
-      if(best_analysis, do: extract_speech_act_info(best_analysis.speech_act), else: nil)
+      if(best_analysis) do
+        extract_speech_act_info(best_analysis.speech_act)
+      else
+        nil
+      end
 
     context = %{
       intent: intent,
@@ -1412,27 +1310,23 @@ defmodule Brain do
       speech_act: speech_act_info
     }
 
-    # Learn from conversation - extracts both entities AND facts from assertive statements
     analysis_for_learning = %{
       entities: entities,
       speech_act: speech_act_info,
       intent: intent
     }
 
-    Brain.Learner.learn_from_conversation(persona.name, input, analysis_for_learning)
+    Learner.learn_from_conversation(persona.name, input, analysis_for_learning)
 
-    # Determine response type (domain vs smalltalk)
     {response, response_type} =
       generate_analysis_response_with_type(intent, entities, analysis_model, persona, input)
 
-    # Report response generation details with full path
     Progress.report(opts, :response_generated, %{
       response_type: response_type,
       strategy: :can_respond,
       method: method,
       intent: intent,
       entities_count: length(entities),
-      # Response path shows decision flow
       response_path: build_response_path(method, response_type, intent, entities)
     })
 
@@ -1440,15 +1334,8 @@ defmodule Brain do
   end
 
   defp merge_entities(analysis_entities, nlp_entities, all_analysis_entities, intent) do
-    # Combine entities, preferring analysis entities for duplicates
-    # Analysis entities are extracted per-chunk with proper context disambiguation
-    # NLP entities are extracted globally and may have wrong context
-
-    # Get types from the selected chunk's entities
     analysis_types = Enum.map(analysis_entities, & &1.entity_type) |> MapSet.new()
 
-    # Get entity types allowed by the intent's slot schema
-    # This prevents entities extracted from other chunks from bleeding into the wrong intent
     allowed_types =
       if intent do
         SlotDetector.get_entity_types_for_intent(intent)
@@ -1456,11 +1343,12 @@ defmodule Brain do
         MapSet.new()
       end
 
-    # Get normalized values from ALL analysis chunks to detect cross-chunk conflicts
-    # e.g., if "Austin" was identified as "person" in chunk 1, don't add it as "location"
-    # for chunk 3's weather query
     all_entities_for_conflict_check =
-      if length(all_analysis_entities) > 0, do: all_analysis_entities, else: analysis_entities
+      if all_analysis_entities != [] do
+        all_analysis_entities
+      else
+        analysis_entities
+      end
 
     analysis_values =
       all_entities_for_conflict_check
@@ -1475,17 +1363,9 @@ defmodule Brain do
       |> Enum.reject(fn e ->
         e_type = e.entity_type
         e_value = String.downcase(to_string(e[:value] || e["value"] || ""))
-
-        # Reject if same type already exists in selected chunk
         same_type = MapSet.member?(analysis_types, e_type)
-
-        # Also reject if the same value was extracted by analysis in ANY chunk with a DIFFERENT type
-        # This prevents cross-chunk entity bleeding (e.g., "Austin" as person in greeting
-        # shouldn't become "Austin" as location for weather query)
         value_conflict = MapSet.member?(analysis_values, e_value) and not same_type
 
-        # Additionally, reject if the entity type is not allowed by the intent's slot schema
-        # This prevents "person" entities from filling "location" slots, etc.
         type_not_allowed =
           MapSet.size(allowed_types) > 0 and not MapSet.member?(allowed_types, e_type)
 
@@ -1506,24 +1386,27 @@ defmodule Brain do
         single_prompt
 
       multiple ->
-        # Combine multiple prompts
         first = List.first(multiple)
         rest_count = length(multiple) - 1
 
-        "#{first} (I also have #{rest_count} more question#{if rest_count > 1, do: "s", else: ""})"
+        "#{first} (I also have #{rest_count} more question#{if rest_count > 1 do
+          "s"
+        else
+          ""
+        end})"
     end
   end
 
   defp build_clarification_addendum(prompts) do
     alias Brain.Response.Synthesizer
 
-    # Build a follow-up question to append to a partial response
     case prompts do
       [] ->
         ""
 
       [single_prompt] ->
         transition = Synthesizer.get_transition_phrase(:additional_info)
+
         "#{transition} #{String.downcase(String.first(single_prompt))}#{String.slice(single_prompt, 1..-1//1)}"
 
       [first | _rest] ->
@@ -1533,11 +1416,9 @@ defmodule Brain do
   end
 
   defp simple_acknowledgment(_persona) do
-    # Load from data file via Synthesizer
     Brain.Response.Synthesizer.get_defer_response()
   end
 
-  # Generate response and return type for progress reporting
   defp generate_analysis_response_with_type(
          intent,
          entities,
@@ -1545,163 +1426,351 @@ defmodule Brain do
          _persona,
          query_text
        ) do
-    # Delegate to Generator for unified analysis response generation
     Generator.generate_from_analysis(analysis_model, intent, entities, query_text)
   end
 
   defp simple_fallback_response(_persona, _input) do
-    # Load from data file via Synthesizer
     Brain.Response.Synthesizer.get_cannot_respond_response()
   end
 
-  # Builds a detailed response path for inspector display
   defp build_response_path(method, response_type, intent, entities) do
     steps = []
 
-    # Step 1: Entry point
-    steps = steps ++ [%{
-      step: 1,
-      name: "Brain.evaluate",
-      status: :completed,
-      detail: "Received user input"
-    }]
+    steps =
+      steps ++
+        [
+          %{
+            step: 1,
+            name: "Brain.evaluate",
+            status: :completed,
+            detail: "Received user input"
+          }
+        ]
 
-    # Step 2: Analysis method
-    analysis_detail = case method do
-      :analysis_only -> "Multi-chunk: used per-chunk analysis only"
-      :analysis_enhanced -> "Single-chunk: NLPPipeline enhanced analysis"
-      :classical_low_confidence -> "NLP had low confidence, used analysis"
-      _ -> "Standard analysis pipeline"
-    end
+    analysis_detail =
+      case method do
+        :analysis_only -> "Multi-chunk: used per-chunk analysis only"
+        :analysis_enhanced -> "Single-chunk: NLPPipeline enhanced analysis"
+        :classical_low_confidence -> "NLP had low confidence, used analysis"
+        _ -> "Standard analysis pipeline"
+      end
 
-    steps = steps ++ [%{
-      step: 2,
-      name: "try_nlp_with_analysis",
-      status: :completed,
-      detail: analysis_detail,
-      method: method
-    }]
+    steps =
+      steps ++
+        [
+          %{
+            step: 2,
+            name: "try_nlp_with_analysis",
+            status: :completed,
+            detail: analysis_detail,
+            method: method
+          }
+        ]
 
-    # Step 3: Intent determination
-    steps = steps ++ [%{
-      step: 3,
-      name: "Intent Classification",
-      status: if(intent, do: :completed, else: :skipped),
-      detail: if(intent, do: "Classified as: #{intent}", else: "No intent detected"),
-      intent: intent
-    }]
+    steps =
+      steps ++
+        [
+          %{
+            step: 3,
+            name: "Intent Classification",
+            status:
+              if(intent) do
+                :completed
+              else
+                :skipped
+              end,
+            detail:
+              if(intent) do
+                "Classified as: #{intent}"
+              else
+                "No intent detected"
+              end,
+            intent: intent
+          }
+        ]
 
-    # Step 4: Entity extraction
     entity_count = length(entities)
-    steps = steps ++ [%{
-      step: 4,
-      name: "Entity Extraction",
-      status: if(entity_count > 0, do: :completed, else: :skipped),
-      detail: "Extracted #{entity_count} entities",
-      entities: Enum.map(entities, fn e ->
-        %{type: e[:entity_type], value: e[:value]}
-      end)
-    }]
 
-    # Step 5: Response generation path
-    {gen_steps, gen_status} = case response_type do
-      :synthesized ->
-        {[
-          %{handler: :synthesizer, tried: true, selected: true, reason: "Synthesized from domain knowledge (priv/knowledge/domains/)"},
-          %{handler: :memory_augmented, tried: false, selected: false, reason: "Skipped (synthesized)"},
-          %{handler: :template, tried: false, selected: false, reason: "Skipped (synthesized)"}
-        ], "Generative synthesis from domain knowledge"}
+    steps =
+      steps ++
+        [
+          %{
+            step: 4,
+            name: "Entity Extraction",
+            status:
+              if(entity_count > 0) do
+                :completed
+              else
+                :skipped
+              end,
+            detail: "Extracted #{entity_count} entities",
+            entities:
+              Enum.map(entities, fn e ->
+                %{type: e[:entity_type], value: e[:value]}
+              end)
+          }
+        ]
 
-      :memory_adapted ->
-        {[
-          %{handler: :synthesizer, tried: true, selected: false, reason: "No domain knowledge match"},
-          %{handler: :memory_augmented, tried: true, selected: true, reason: "Adapted from similar past episodes"},
-          %{handler: :template, tried: false, selected: false, reason: "Skipped (memory adapted)"}
-        ], "Memory-adapted response from past episodes"}
+    {gen_steps, gen_status} =
+      case response_type do
+        :synthesized ->
+          {[
+             %{
+               handler: :synthesizer,
+               tried: true,
+               selected: true,
+               reason: "Synthesized from domain knowledge (priv/knowledge/domains/)"
+             },
+             %{
+               handler: :memory_augmented,
+               tried: false,
+               selected: false,
+               reason: "Skipped (synthesized)"
+             },
+             %{handler: :template, tried: false, selected: false, reason: "Skipped (synthesized)"}
+           ], "Generative synthesis from domain knowledge"}
 
-      :special_handler ->
-        {[
-          %{handler: :synthesizer, tried: true, selected: false, reason: "No domain knowledge match"},
-          %{handler: :memory_augmented, tried: true, selected: false, reason: "No similar episodes"},
-          %{handler: :special_handler, tried: true, selected: true, reason: "Special handler (code/factual) matched"}
-        ], "Special handler response (code/factual)"}
+        :memory_adapted ->
+          {[
+             %{
+               handler: :synthesizer,
+               tried: true,
+               selected: false,
+               reason: "No domain knowledge match"
+             },
+             %{
+               handler: :memory_augmented,
+               tried: true,
+               selected: true,
+               reason: "Adapted from similar past episodes"
+             },
+             %{
+               handler: :template,
+               tried: false,
+               selected: false,
+               reason: "Skipped (memory adapted)"
+             }
+           ], "Memory-adapted response from past episodes"}
 
-      :lstm_selected ->
-        {[
-          %{handler: :lstm_scorer, tried: true, selected: true, reason: "LSTM model selected best response"},
-          %{handler: :refinement, tried: true, selected: true, reason: "Response refined by neural scoring"}
-        ], "LSTM-scored best response"}
+        :special_handler ->
+          {[
+             %{
+               handler: :synthesizer,
+               tried: true,
+               selected: false,
+               reason: "No domain knowledge match"
+             },
+             %{
+               handler: :memory_augmented,
+               tried: true,
+               selected: false,
+               reason: "No similar episodes"
+             },
+             %{
+               handler: :special_handler,
+               tried: true,
+               selected: true,
+               reason: "Special handler (code/factual) matched"
+             }
+           ], "Special handler response (code/factual)"}
 
-      :quality_improved ->
-        {[
-          %{handler: :quality_check, tried: true, selected: true, reason: "Response quality improved"},
-          %{handler: :refinement, tried: true, selected: true, reason: "Poor quality detected, response enhanced"}
-        ], "Quality-improved response"}
+        :lstm_selected ->
+          {[
+             %{
+               handler: :lstm_scorer,
+               tried: true,
+               selected: true,
+               reason: "LSTM model selected best response"
+             },
+             %{
+               handler: :refinement,
+               tried: true,
+               selected: true,
+               reason: "Response refined by neural scoring"
+             }
+           ], "LSTM-scored best response"}
 
-      :domain ->
-        {[
-          %{handler: :domain, tried: true, selected: true, reason: "Domain handler matched intent"},
-          %{handler: :memory_augmented, tried: false, selected: false, reason: "Skipped (domain handled)"},
-          %{handler: :template, tried: false, selected: false, reason: "Skipped (domain handled)"}
-        ], "Domain-specific handler"}
+        :quality_improved ->
+          {[
+             %{
+               handler: :quality_check,
+               tried: true,
+               selected: true,
+               reason: "Response quality improved"
+             },
+             %{
+               handler: :refinement,
+               tried: true,
+               selected: true,
+               reason: "Poor quality detected, response enhanced"
+             }
+           ], "Quality-improved response"}
 
-      :memory_augmented ->
-        {[
-          %{handler: :domain, tried: true, selected: false, reason: "No domain handler for intent"},
-          %{handler: :memory_augmented, tried: true, selected: true, reason: "Similar episodes found in Memory.Store"},
-          %{handler: :template, tried: false, selected: false, reason: "Skipped (memory handled)"}
-        ], "Memory-augmented response"}
+        :domain ->
+          {[
+             %{
+               handler: :domain,
+               tried: true,
+               selected: true,
+               reason: "Domain handler matched intent"
+             },
+             %{
+               handler: :memory_augmented,
+               tried: false,
+               selected: false,
+               reason: "Skipped (domain handled)"
+             },
+             %{
+               handler: :template,
+               tried: false,
+               selected: false,
+               reason: "Skipped (domain handled)"
+             }
+           ], "Domain-specific handler"}
 
-      :template ->
-        {[
-          %{handler: :synthesizer, tried: true, selected: false, reason: "No domain knowledge match"},
-          %{handler: :memory_augmented, tried: true, selected: false, reason: "No similar episodes found"},
-          %{handler: :template, tried: true, selected: true, reason: "Template found in TemplateStore"}
-        ], "Template-based response"}
+        :memory_augmented ->
+          {[
+             %{
+               handler: :domain,
+               tried: true,
+               selected: false,
+               reason: "No domain handler for intent"
+             },
+             %{
+               handler: :memory_augmented,
+               tried: true,
+               selected: true,
+               reason: "Similar episodes found in Memory.Store"
+             },
+             %{
+               handler: :template,
+               tried: false,
+               selected: false,
+               reason: "Skipped (memory handled)"
+             }
+           ], "Memory-augmented response"}
 
-      :conditional_template ->
-        {[
-          %{handler: :synthesizer, tried: true, selected: false, reason: "No domain knowledge match"},
-          %{handler: :conditional_template, tried: true, selected: true, reason: "Condition matched, semantic ranking applied"}
-        ], "Conditional template with semantic ranking"}
+        :template ->
+          {[
+             %{
+               handler: :synthesizer,
+               tried: true,
+               selected: false,
+               reason: "No domain knowledge match"
+             },
+             %{
+               handler: :memory_augmented,
+               tried: true,
+               selected: false,
+               reason: "No similar episodes found"
+             },
+             %{
+               handler: :template,
+               tried: true,
+               selected: true,
+               reason: "Template found in TemplateStore"
+             }
+           ], "Template-based response"}
 
-      :blended ->
-        {[
-          %{handler: :synthesizer, tried: true, selected: false, reason: "No domain knowledge match"},
-          %{handler: :conditional_template, tried: true, selected: false, reason: "No matching conditions"},
-          %{handler: :template_blender, tried: true, selected: true, reason: "Blended chunks from multiple templates"}
-        ], "Template blending"}
+        :conditional_template ->
+          {[
+             %{
+               handler: :synthesizer,
+               tried: true,
+               selected: false,
+               reason: "No domain knowledge match"
+             },
+             %{
+               handler: :conditional_template,
+               tried: true,
+               selected: true,
+               reason: "Condition matched, semantic ranking applied"
+             }
+           ], "Conditional template with semantic ranking"}
 
-      :smalltalk ->
-        {[
-          %{handler: :expressive, tried: true, selected: true, reason: "Expressive speech act (greeting/farewell/etc)"}
-        ], "Expressive/smalltalk response"}
+        :blended ->
+          {[
+             %{
+               handler: :synthesizer,
+               tried: true,
+               selected: false,
+               reason: "No domain knowledge match"
+             },
+             %{
+               handler: :conditional_template,
+               tried: true,
+               selected: false,
+               reason: "No matching conditions"
+             },
+             %{
+               handler: :template_blender,
+               tried: true,
+               selected: true,
+               reason: "Blended chunks from multiple templates"
+             }
+           ], "Template blending"}
 
-      :expressive ->
-        {[
-          %{handler: :expressive, tried: true, selected: true, reason: "Expressive speech act"}
-        ], "Expressive response"}
+        :smalltalk ->
+          {[
+             %{
+               handler: :expressive,
+               tried: true,
+               selected: true,
+               reason: "Expressive speech act (greeting/farewell/etc)"
+             }
+           ], "Expressive/smalltalk response"}
 
-      :fallback ->
-        {[
-          %{handler: :synthesizer, tried: true, selected: false, reason: "No domain knowledge match"},
-          %{handler: :memory_augmented, tried: true, selected: false, reason: "No similar episodes found"},
-          %{handler: :template, tried: true, selected: false, reason: "No template for intent"},
-          %{handler: :fallback, tried: true, selected: true, reason: "All handlers exhausted"}
-        ], "Fallback response"}
+        :expressive ->
+          {[
+             %{handler: :expressive, tried: true, selected: true, reason: "Expressive speech act"}
+           ], "Expressive response"}
 
-      other ->
-        {[%{handler: :unknown, tried: true, selected: true, reason: "Untracked response type: #{inspect(other)}"}], "Unknown (#{inspect(other)})"}
-    end
+        :fallback ->
+          {[
+             %{
+               handler: :synthesizer,
+               tried: true,
+               selected: false,
+               reason: "No domain knowledge match"
+             },
+             %{
+               handler: :memory_augmented,
+               tried: true,
+               selected: false,
+               reason: "No similar episodes found"
+             },
+             %{
+               handler: :template,
+               tried: true,
+               selected: false,
+               reason: "No template for intent"
+             },
+             %{handler: :fallback, tried: true, selected: true, reason: "All handlers exhausted"}
+           ], "Fallback response"}
 
-    steps = steps ++ [%{
-      step: 5,
-      name: "Response Generation",
-      status: :completed,
-      detail: gen_status,
-      response_type: response_type,
-      handlers_tried: gen_steps
-    }]
+        other ->
+          {[
+             %{
+               handler: :unknown,
+               tried: true,
+               selected: true,
+               reason: "Untracked response type: #{inspect(other)}"
+             }
+           ], "Unknown (#{inspect(other)})"}
+      end
+
+    steps =
+      steps ++
+        [
+          %{
+            step: 5,
+            name: "Response Generation",
+            status: :completed,
+            detail: gen_status,
+            response_type: response_type,
+            handlers_tried: gen_steps
+          }
+        ]
 
     %{
       steps: steps,
@@ -1721,20 +1790,15 @@ defmodule Brain do
   end
 
   defp create_learning_summary(input, response) do
-    # Simple learning summary for storing conversation context
     "User: #{String.slice(input, 0, 50)}... | Assistant: #{String.slice(response, 0, 50)}..."
   end
 
   defp store_in_cognitive_memory(entries) do
-    # Store conversation entries in the cognitive memory system
-    # Using WorldContext for inheritance-aware data access
     if Process.whereis(Brain.Memory.Store) != nil do
       Enum.each(entries, fn entry ->
-        # Determine tags from NLP analysis if possible
         tags = extract_tags_for_memory(entry.input)
         world_id = Map.get(entry, :world_id, "default")
 
-        # Use WorldContext.add_episode for world-scoped storage with inheritance
         WorldContext.add_episode(
           world_id,
           entry.input,
@@ -1750,8 +1814,7 @@ defmodule Brain do
   end
 
   defp extract_tags_for_memory(input) do
-    # Try to get intent classification for tagging
-    case Brain.ML.IntentClassifierSimple.classify(input) do
+    case IntentClassifierSimple.classify(input) do
       {:ok, %{intent: intent}} when is_binary(intent) ->
         [intent]
 
@@ -1762,17 +1825,10 @@ defmodule Brain do
     _ -> []
   end
 
-  # ============================================================================
-  # Epistemic System Integration
-  # ============================================================================
-
   defp handle_meta_cognitive_query(_persona, input, user_id, _opts) do
     Logger.info("Handling meta-cognitive query", %{input: input, user_id: user_id})
-
-    # Build self-knowledge assessment
     assessment = SelfKnowledgeAnalyzer.build_self_knowledge_assessment(user_id)
 
-    # Synthesize response using the epistemic response synthesizer
     response =
       Synthesizer.synthesize_self_knowledge_response(assessment,
         context: %{
@@ -1781,7 +1837,6 @@ defmodule Brain do
         }
       )
 
-    # Record this disclosure
     if user_id do
       disclosed_keys =
         (assessment.discloseable ++ assessment.inferred_uncertain)
@@ -1799,7 +1854,6 @@ defmodule Brain do
       slots: %{},
       missing_slots: [],
       epistemic_assessment: true,
-      # Meta queries are directives (questions) - always expect response
       speech_act: %{
         category: :directive,
         sub_type: :request_information,
@@ -1814,15 +1868,12 @@ defmodule Brain do
   @doc false
   def extract_and_store_beliefs(input, entities, user_id, conversation_id) do
     if Config.auto_extraction_enabled?() and user_id do
-      # Extract potential beliefs from entities
       Enum.each(entities, fn entity ->
         entity_type = entity[:entity_type]
         entity_value = entity[:value]
 
         if entity_type && entity_value do
-          # Determine if this is a user fact
           if is_user_fact?(entity_type) do
-            # Create and store belief
             belief =
               Belief.new(:user, normalize_predicate(entity_type), entity_value,
                 source: :explicit,
@@ -1836,7 +1887,6 @@ defmodule Brain do
 
             BeliefStore.add_belief(belief)
 
-            # Also update user model
             UserModelStore.update_fact(
               user_id,
               normalize_predicate(entity_type),
@@ -1854,7 +1904,6 @@ defmodule Brain do
         end
       end)
 
-      # Look for self-referential statements
       extract_self_referential_facts(input, user_id, conversation_id)
     end
   rescue
@@ -1881,7 +1930,9 @@ defmodule Brain do
     Enum.any?(user_fact_types, &String.contains?(entity_type_str, &1))
   end
 
-  defp normalize_predicate(predicate) when is_atom(predicate), do: predicate
+  defp normalize_predicate(predicate) when is_atom(predicate) do
+    predicate
+  end
 
   defp normalize_predicate(predicate) when is_binary(predicate) do
     predicate
@@ -1890,15 +1941,13 @@ defmodule Brain do
     |> String.to_atom()
   end
 
-  defp normalize_predicate(_), do: :unknown
+  defp normalize_predicate(_) do
+    :unknown
+  end
 
   defp extract_self_referential_facts(input, user_id, conversation_id) do
-    # Expand contractions first for simpler pattern matching
-    # "I'm" → "I am", "don't" → "do not", etc.
-    expanded = Brain.ML.Tokenizer.expand_contractions(input)
-    tokens = Brain.ML.Tokenizer.tokenize_normalized(expanded)
-
-    # Check for various self-referential patterns (all in canonical form now)
+    expanded = Tokenizer.expand_contractions(input)
+    tokens = Tokenizer.tokenize_normalized(expanded)
     extract_location_facts(tokens, expanded, user_id, conversation_id)
     extract_name_facts(tokens, expanded, user_id, conversation_id)
     extract_preference_facts(tokens, expanded, user_id, conversation_id)
@@ -1906,15 +1955,11 @@ defmodule Brain do
   end
 
   defp extract_location_facts(tokens, _input, user_id, conversation_id) do
-    # Pattern: "i am from X", "i live in X"
-    # Contractions are already expanded, so we only need canonical patterns
     cond do
-      # "i am from" (handles both "I'm from" and "I am from")
       has_sequence?(tokens, ["i", "am", "from"]) ->
         value = extract_after_sequence(tokens, ["from"])
         store_fact_if_valid(user_id, :location, value, conversation_id)
 
-      # "i live in"
       has_sequence?(tokens, ["i", "live", "in"]) ->
         value = extract_after_sequence(tokens, ["in"])
         store_fact_if_valid(user_id, :location, value, conversation_id)
@@ -1925,7 +1970,6 @@ defmodule Brain do
   end
 
   defp extract_name_facts(tokens, _input, user_id, conversation_id) do
-    # Pattern: "my name is X", "i'm X" (when short), "call me X"
     cond do
       has_sequence?(tokens, ["my", "name", "is"]) ->
         value = extract_after_sequence(tokens, ["is"])
@@ -1941,7 +1985,6 @@ defmodule Brain do
   end
 
   defp extract_preference_facts(tokens, _input, user_id, conversation_id) do
-    # Pattern: "i like X", "i prefer X", "i love X"
     cond do
       has_sequence?(tokens, ["i", "like"]) ->
         value = extract_after_sequence(tokens, ["like"])
@@ -1961,7 +2004,6 @@ defmodule Brain do
   end
 
   defp extract_work_facts(tokens, _input, user_id, conversation_id) do
-    # Pattern: "i work at X", "i work for X"
     cond do
       has_sequence?(tokens, ["i", "work", "at"]) ->
         value = extract_after_sequence(tokens, ["at"])
@@ -1977,7 +2019,6 @@ defmodule Brain do
   end
 
   defp has_sequence?(tokens, sequence) do
-    # Check if tokens contain the sequence in order
     sequence_len = length(sequence)
 
     tokens
@@ -1986,7 +2027,6 @@ defmodule Brain do
   end
 
   defp extract_after_sequence(tokens, marker_sequence) do
-    # Find the marker sequence and return tokens after it
     marker_len = length(marker_sequence)
 
     case find_sequence_index(tokens, marker_sequence) do
@@ -1996,7 +2036,6 @@ defmodule Brain do
       idx ->
         tokens
         |> Enum.drop(idx + marker_len)
-        # Take up to 5 tokens
         |> Enum.take(5)
         |> Enum.join(" ")
     end
@@ -2009,12 +2048,21 @@ defmodule Brain do
     |> Enum.chunk_every(sequence_len, 1, :discard)
     |> Enum.with_index()
     |> Enum.find_value(fn {chunk, idx} ->
-      if chunk == sequence, do: idx, else: nil
+      if chunk == sequence do
+        idx
+      else
+        nil
+      end
     end)
   end
 
   defp store_fact_if_valid(user_id, predicate, value, conversation_id) do
-    clean_value = if value, do: String.trim(value), else: ""
+    clean_value =
+      if value do
+        String.trim(value)
+      else
+        ""
+      end
 
     if String.length(clean_value) > 0 and String.length(clean_value) < 50 do
       belief =
@@ -2035,14 +2083,12 @@ defmodule Brain do
     end
   end
 
-  # Builds an Interpretation struct from the context for OutcomeLearner
   defp build_interpretation_from_context(input, context) do
     intent = Map.get(context, :intent)
     activation = Map.get(context, :activation, 0.7)
     source = Map.get(context, :source, :pipeline)
     entities = Map.get(context, :entities, [])
 
-    # Determine the source type for the Interpretation
     source_atom =
       case source do
         :fast_path -> :heuristic

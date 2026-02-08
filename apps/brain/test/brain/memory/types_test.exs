@@ -1,7 +1,8 @@
 defmodule Brain.Memory.TypesTest do
+  alias Brain.Memory.Types
   use ExUnit.Case, async: true
 
-  alias Brain.Memory.Types.{Episode, SemanticFact, Procedure}
+  alias Types.{Episode, SemanticFact, Procedure}
 
   describe "Episode" do
     test "new/5 creates an episode with auto-generated id and timestamp" do

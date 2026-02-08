@@ -1,25 +1,8 @@
 defmodule Brain.Memory.Embedder do
-  @moduledoc """
-  Embedding utilities for the cognitive memory system.
+  @moduledoc "Embedding utilities for the cognitive memory system.\n\nProduces TF-IDF based embeddings for text that can be used in\nsimilarity search. This replaces the byte frequency approach\nfrom the Rust implementation with a more semantically meaningful\nTF-IDF vectorization.\n\nThe embedder maintains a vocabulary and IDF weights that are\nbuilt from training data and used to consistently embed new text.\n\n## World Scoping\n\nThis module provides both global and world-scoped embedding:\n- `embed/1` - Uses the global/default vocabulary\n- `embed/2` - Uses world-specific vocabulary via WorldEmbedder\n\nWorld-specific embeddings are managed by `World.Embedder`\nand are built lazily from world-specific episodes.\n"
 
-  Produces TF-IDF based embeddings for text that can be used in
-  similarity search. This replaces the byte frequency approach
-  from the Rust implementation with a more semantically meaningful
-  TF-IDF vectorization.
-
-  The embedder maintains a vocabulary and IDF weights that are
-  built from training data and used to consistently embed new text.
-
-  ## World Scoping
-
-  This module provides both global and world-scoped embedding:
-  - `embed/1` - Uses the global/default vocabulary
-  - `embed/2` - Uses world-specific vocabulary via WorldEmbedder
-
-  World-specific embeddings are managed by `World.Embedder`
-  and are built lazily from world-specific episodes.
-  """
-
+  alias Phoenix.PubSub
+  alias Brain.Telemetry
   use GenServer
 
   alias Brain.ML.Tokenizer
@@ -32,10 +15,6 @@ defmodule Brain.Memory.Embedder do
   @default_world_id "default"
   @pubsub Brain.PubSub
 
-  # ============================================================================
-  # Client API
-  # ============================================================================
-
   @doc """
   Starts the Embedder GenServer.
 
@@ -47,43 +26,28 @@ defmodule Brain.Memory.Embedder do
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 
-  @doc """
-  Build vocabulary and IDF weights from a list of texts.
-  This should be called during training for the default/global vocabulary.
-  """
+  @doc "Build vocabulary and IDF weights from a list of texts.\nThis should be called during training for the default/global vocabulary.\n"
   def build_vocabulary(texts) when is_list(texts) do
     GenServer.call(__MODULE__, {:build_vocabulary, texts}, :infinity)
   end
 
-  @doc """
-  Build vocabulary for a specific world.
-  For non-default worlds, this triggers the WorldEmbedder to build from episodes.
-  For the default world, uses the provided texts directly.
-  """
+  @doc "Build vocabulary for a specific world.\nFor non-default worlds, this triggers the WorldEmbedder to build from episodes.\nFor the default world, uses the provided texts directly.\n"
   def build_vocabulary(texts, world_id) when is_list(texts) and is_binary(world_id) do
     if world_id == @default_world_id do
       build_vocabulary(texts)
     else
-      # WorldEmbedder builds from episodes, so just trigger a rebuild
       WorldEmbedder.build_vocabulary(world_id, force: true)
     end
   end
 
-  @doc """
-  Embed text into a TF-IDF vector using the global/default vocabulary.
-  Returns a list of floats representing the embedding.
-  """
+  @doc "Embed text into a TF-IDF vector using the global/default vocabulary.\nReturns a list of floats representing the embedding.\n"
   def embed(text) when is_binary(text) do
-    # Wrap with telemetry span for async, non-blocking metrics
-    Brain.Telemetry.span(:memory_embed, %{text_length: byte_size(text)}, fn ->
+    Telemetry.span(:memory_embed, %{text_length: byte_size(text)}, fn ->
       GenServer.call(__MODULE__, {:embed, text})
     end)
   end
 
-  @doc """
-  Embed text using a world-specific vocabulary.
-  Falls back to global vocabulary if world vocabulary is not available.
-  """
+  @doc "Embed text using a world-specific vocabulary.\nFalls back to global vocabulary if world vocabulary is not available.\n"
   def embed(text, world_id) when is_binary(text) and is_binary(world_id) do
     if world_id == @default_world_id do
       embed(text)
@@ -93,8 +57,12 @@ defmodule Brain.Memory.Embedder do
           {:ok, embedding}
 
         {:error, reason}
-        when reason in [:no_training_data, :vocabulary_building, :not_initialized, :table_not_ready] ->
-          # Fall back to global embedder for any "not ready" state
+        when reason in [
+               :no_training_data,
+               :vocabulary_building,
+               :not_initialized,
+               :table_not_ready
+             ] ->
           embed(text)
 
         error ->
@@ -103,18 +71,12 @@ defmodule Brain.Memory.Embedder do
     end
   end
 
-  @doc """
-  Compute cosine similarity between two embedding vectors.
-  Returns a float in [-1, 1].
-  """
+  @doc "Compute cosine similarity between two embedding vectors.\nReturns a float in [-1, 1].\n"
   def cosine_similarity(vec_a, vec_b) when is_list(vec_a) and is_list(vec_b) do
     compute_cosine_similarity(vec_a, vec_b)
   end
 
-  @doc """
-  Check if the embedder is initialized with vocabulary.
-  Uses a short timeout to avoid blocking if embedder is busy.
-  """
+  @doc "Check if the embedder is initialized with vocabulary.\nUses a short timeout to avoid blocking if embedder is busy.\n"
   def ready? do
     try do
       GenServer.call(__MODULE__, :ready?, 100)
@@ -124,9 +86,7 @@ defmodule Brain.Memory.Embedder do
     end
   end
 
-  @doc """
-  Check if a world-specific embedder is ready.
-  """
+  @doc "Check if a world-specific embedder is ready.\n"
   def ready?(world_id) when is_binary(world_id) do
     if world_id == @default_world_id do
       ready?()
@@ -135,16 +95,12 @@ defmodule Brain.Memory.Embedder do
     end
   end
 
-  @doc """
-  Get the current vocabulary size.
-  """
+  @doc "Get the current vocabulary size.\n"
   def vocabulary_size do
     GenServer.call(__MODULE__, :vocabulary_size)
   end
 
-  @doc """
-  Get vocabulary size for a specific world.
-  """
+  @doc "Get vocabulary size for a specific world.\n"
   def vocabulary_size(world_id) when is_binary(world_id) do
     if world_id == @default_world_id do
       vocabulary_size()
@@ -156,16 +112,12 @@ defmodule Brain.Memory.Embedder do
     end
   end
 
-  @doc """
-  Load a pre-built vocabulary and IDF weights.
-  """
+  @doc "Load a pre-built vocabulary and IDF weights.\n"
   def load_model(model) when is_map(model) do
     GenServer.call(__MODULE__, {:load_model, model})
   end
 
-  @doc """
-  Load a pre-built vocabulary for a specific world.
-  """
+  @doc "Load a pre-built vocabulary for a specific world.\n"
   def load_model(model, world_id) when is_map(model) and is_binary(world_id) do
     if world_id == @default_world_id do
       load_model(model)
@@ -174,16 +126,12 @@ defmodule Brain.Memory.Embedder do
     end
   end
 
-  @doc """
-  Export the current vocabulary and IDF weights for persistence.
-  """
+  @doc "Export the current vocabulary and IDF weights for persistence.\n"
   def export_model do
     GenServer.call(__MODULE__, :export_model)
   end
 
-  @doc """
-  Export vocabulary for a specific world.
-  """
+  @doc "Export vocabulary for a specific world.\n"
   def export_model(world_id) when is_binary(world_id) do
     if world_id == @default_world_id do
       export_model()
@@ -192,10 +140,7 @@ defmodule Brain.Memory.Embedder do
     end
   end
 
-  @doc """
-  Get detailed status of the embedder including initialization progress.
-  Uses a short timeout to avoid blocking.
-  """
+  @doc "Get detailed status of the embedder including initialization progress.\nUses a short timeout to avoid blocking.\n"
   def get_status do
     try do
       GenServer.call(__MODULE__, :get_status, 100)
@@ -222,9 +167,7 @@ defmodule Brain.Memory.Embedder do
     end
   end
 
-  @doc """
-  Get status for a specific world's embedder.
-  """
+  @doc "Get status for a specific world's embedder.\n"
   def get_status(world_id) when is_binary(world_id) do
     if world_id == @default_world_id do
       get_status()
@@ -233,21 +176,15 @@ defmodule Brain.Memory.Embedder do
     end
   end
 
-  # ============================================================================
-  # Server Callbacks
-  # ============================================================================
-
   @impl true
   def init(_opts) do
-    # Subscribe to world model events
-    Phoenix.PubSub.subscribe(@pubsub, "world_models:status")
+    PubSub.subscribe(@pubsub, "world_models:status")
 
     {:ok,
      %{
        vocabulary: %{},
        idf_weights: %{},
        ready: false,
-       # Initialization progress tracking
        phase: :idle,
        phase_label: "Idle",
        progress: nil,
@@ -257,10 +194,8 @@ defmodule Brain.Memory.Embedder do
      }}
   end
 
-  # Handle world model events - could trigger vocabulary reload
   @impl true
   def handle_info({:world_models_loaded, _world_id, _status}, state) do
-    # World models were loaded - WorldEmbedder handles its own state
     {:noreply, state}
   end
 
@@ -281,7 +216,6 @@ defmodule Brain.Memory.Embedder do
 
     Logger.info("Building embedder vocabulary from #{total_texts} texts")
 
-    # Phase 1: Tokenizing texts
     state = %{
       state
       | phase: :tokenizing,
@@ -291,10 +225,7 @@ defmodule Brain.Memory.Embedder do
         started_at: started_at
     }
 
-    # Tokenize all texts with progress tracking
     {all_tokens, tokenized_texts} = tokenize_with_progress(texts, state)
-
-    # Phase 2: Building frequency table
     state = %{state | phase: :building_frequencies, phase_label: "Building frequency table"}
 
     token_frequencies =
@@ -312,7 +243,6 @@ defmodule Brain.Memory.Embedder do
 
     vocab_size = map_size(vocabulary)
 
-    # Phase 3: Calculating IDF weights
     state = %{
       state
       | phase: :calculating_idf,
@@ -407,12 +337,7 @@ defmodule Brain.Memory.Embedder do
     {:reply, {:ok, model}, state}
   end
 
-  # ============================================================================
-  # Private Functions - Progress Tracking
-  # ============================================================================
-
   defp tokenize_with_progress(texts, _state) do
-    # Tokenize all texts and keep the tokenized versions for IDF calculation
     tokenized =
       texts
       |> Enum.map(&tokenize/1)
@@ -422,7 +347,6 @@ defmodule Brain.Memory.Embedder do
   end
 
   defp calculate_idf_weights(vocabulary, tokenized_texts, num_docs) do
-    # Convert tokenized texts to sets for faster membership testing
     text_sets = Enum.map(tokenized_texts, &MapSet.new/1)
 
     vocabulary
@@ -439,10 +363,11 @@ defmodule Brain.Memory.Embedder do
       current: state.processed_texts,
       total: state.total_texts,
       percent:
-        if(state.total_texts > 0,
-          do: round(state.processed_texts / state.total_texts * 100),
-          else: 0
-        ),
+        if(state.total_texts > 0) do
+          round(state.processed_texts / state.total_texts * 100)
+        else
+          0
+        end,
       detail: "Processing #{state.total_texts} documents"
     }
   end
@@ -462,16 +387,18 @@ defmodule Brain.Memory.Embedder do
       current: progress.current,
       total: progress.total,
       percent:
-        if(progress.total > 0, do: round(progress.current / progress.total * 100), else: 0),
+        if(progress.total > 0) do
+          round(progress.current / progress.total * 100)
+        else
+          0
+        end,
       detail: "Computing IDF for #{progress.total} vocabulary terms"
     }
   end
 
-  defp build_progress_info(_state), do: nil
-
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
+  defp build_progress_info(_state) do
+    nil
+  end
 
   defp tokenize(text) do
     Tokenizer.tokenize_normalized(text, min_length: 2)
@@ -481,7 +408,6 @@ defmodule Brain.Memory.Embedder do
     tokens = tokenize(text)
     token_freq = Enum.frequencies(tokens)
 
-    # Build TF-IDF vector
     vector =
       vocabulary
       |> Enum.sort_by(fn {_word, idx} -> idx end)
@@ -491,7 +417,6 @@ defmodule Brain.Memory.Embedder do
         tf * idf
       end)
 
-    # Normalize the vector
     normalize_vector(vector)
   end
 
@@ -506,7 +431,7 @@ defmodule Brain.Memory.Embedder do
   end
 
   defp compute_cosine_similarity(vec1, vec2) do
-    if length(vec1) != length(vec2) or length(vec1) == 0 do
+    if length(vec1) != length(vec2) or vec1 == [] do
       0.0
     else
       dot_product =

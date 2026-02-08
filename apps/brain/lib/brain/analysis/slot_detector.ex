@@ -1,14 +1,5 @@
 defmodule Brain.Analysis.SlotDetector do
-  @moduledoc """
-  Detects required and optional slots for a given intent and fills them from entities.
-
-  This module:
-  - Loads slot schemas from JSON configuration
-  - Maps extracted entities to slots
-  - Identifies missing required slots
-  - Applies default values where configured
-  - Provides clarification prompts for missing slots
-  """
+  @moduledoc "Detects required and optional slots for a given intent and fills them from entities.\n\nThis module:\n- Loads slot schemas from JSON configuration\n- Maps extracted entities to slots\n- Identifies missing required slots\n- Applies default values where configured\n- Provides clarification prompts for missing slots\n"
 
   alias Brain.Analysis.{SlotResult, IntentRegistry, EntityTypes}
 
@@ -16,17 +7,12 @@ defmodule Brain.Analysis.SlotDetector do
 
   @schemas_path "priv/analysis/intent_registry.json"
 
-  @doc """
-  Detects slots for the given intent and fills them from entities.
-
-  Returns a SlotResult struct indicating which slots are filled and which are missing.
-  """
+  @doc "Detects slots for the given intent and fills them from entities.\n\nReturns a SlotResult struct indicating which slots are filled and which are missing.\n"
   def detect(intent, entities) when is_binary(intent) and is_list(entities) do
     schemas = load_schemas()
 
     case Map.get(schemas, intent) do
       nil ->
-        # Try to match a parent intent (e.g., "weather" from "weather.query")
         parent_intent = get_parent_intent(intent)
 
         case Map.get(schemas, parent_intent) do
@@ -39,19 +25,13 @@ defmodule Brain.Analysis.SlotDetector do
     end
   end
 
-  @doc """
-  Returns the slot schema for a given intent.
-  """
+  @doc "Returns the slot schema for a given intent.\n"
   def get_schema(intent) do
     schemas = load_schemas()
     Map.get(schemas, intent) || Map.get(schemas, get_parent_intent(intent))
   end
 
-  @doc """
-  Returns the set of entity types that can fill slots for a given intent.
-
-  This is useful for filtering entities to only those relevant to the intent.
-  """
+  @doc "Returns the set of entity types that can fill slots for a given intent.\n\nThis is useful for filtering entities to only those relevant to the intent.\n"
   def get_entity_types_for_intent(intent) do
     case get_schema(intent) do
       nil ->
@@ -67,31 +47,16 @@ defmodule Brain.Analysis.SlotDetector do
     end
   end
 
-  @doc """
-  Lists all available slot schemas.
-  """
+  @doc "Lists all available slot schemas.\n"
   def list_schemas do
     load_schemas()
   end
 
-  @doc """
-  Suggests an intent based on entities present.
-
-  This can be used when intent classification has low confidence.
-
-  Scoring algorithm:
-  1. Primary: Count unique entity types that can fill ANY slot (not slots per type)
-  2. Tiebreaker: Ratio of required slots that can be filled
-
-  This prevents intents with multiple slots accepting the same type from
-  scoring higher (e.g., navigation.directions with destination+origin both
-  accepting location should not beat weather.query for a single location entity).
-  """
+  @doc "Suggests an intent based on entities present.\n\nThis can be used when intent classification has low confidence.\n\nScoring algorithm:\n1. Primary: Count unique entity types that can fill ANY slot (not slots per type)\n2. Tiebreaker: Ratio of required slots that can be filled\n\nThis prevents intents with multiple slots accepting the same type from\nscoring higher (e.g., navigation.directions with destination+origin both\naccepting location should not beat weather.query for a single location entity).\n"
   def suggest_intent_from_entities(entities) when is_list(entities) do
     schemas = load_schemas()
     entity_types = Enum.map(entities, fn e -> e[:entity_type] end) |> Enum.uniq()
 
-    # Score each schema by unique entity type matches, with tiebreakers
     scored_schemas =
       schemas
       |> Enum.map(fn {intent, schema} ->
@@ -99,15 +64,12 @@ defmodule Brain.Analysis.SlotDetector do
         required = Map.get(schema, "required", [])
         domain = Map.get(schema, "domain", "unknown")
 
-        # Count entity types that can fill ANY slot (not slots per type)
-        # This prevents double-counting when multiple slots accept the same type
         matched_types =
           entity_types
           |> Enum.count(fn etype ->
             Enum.any?(mappings, fn {_slot, mapped} -> etype in mapped end)
           end)
 
-        # Tiebreaker 1: ratio of required slots that can be filled
         filled_required =
           Enum.count(required, fn slot ->
             mapped = Map.get(mappings, slot, [])
@@ -115,17 +77,17 @@ defmodule Brain.Analysis.SlotDetector do
           end)
 
         fill_ratio =
-          if length(required) > 0, do: filled_required / length(required), else: 1.0
+          if required != [] do
+            filled_required / length(required)
+          else
+            1.0
+          end
 
-        # Tiebreaker 2: domain priority based on entity types present
-        # When location entities are present, prefer weather over navigation
-        # (navigation typically needs both origin AND destination to be useful)
         domain_priority = domain_priority_for_entities(domain, entity_types)
 
         {intent, matched_types, fill_ratio, domain_priority}
       end)
       |> Enum.filter(fn {_, score, _, _} -> score > 0 end)
-      # Sort by: most matches, highest fill ratio, highest domain priority, alphabetical
       |> Enum.sort_by(fn {intent, score, ratio, priority} ->
         {-score, -ratio, -priority, intent}
       end)
@@ -136,40 +98,21 @@ defmodule Brain.Analysis.SlotDetector do
     end
   end
 
-  # Calculate domain priority based on entity types present
-  # Higher priority = more likely to be the intended domain
   defp domain_priority_for_entities(domain, entity_types) do
     has_location = EntityTypes.has_location_type?(entity_types)
     has_device = EntityTypes.has_device_type?(entity_types)
     has_music = EntityTypes.has_music_type?(entity_types)
 
     cond do
-      # Weather queries with location are common - prioritize weather for location entities
       domain == "weather" and has_location -> 10
-      # Device control with device entities
       domain == "device" and has_device -> 10
-      # Music with music entities
       domain == "music" and has_music -> 10
-      # Navigation requires destination, but location alone is ambiguous
-      # (could be weather, could be navigation) - slightly lower priority
       domain == "navigation" and has_location -> 5
-      # Default priority
       true -> 0
     end
   end
 
-  @doc """
-  Gets clarification prompt for a missing slot from intent_registry.json.
-  Falls back to a generic prompt if not defined.
-
-  ## Examples
-
-      iex> SlotDetector.get_clarification_prompt("location", "weather.query")
-      "What location would you like the weather for?"
-
-      iex> SlotDetector.get_clarification_prompt("unknown_slot", "some.intent")
-      "Could you please specify the unknown slot?"
-  """
+  @doc "Gets clarification prompt for a missing slot from intent_registry.json.\nFalls back to a generic prompt if not defined.\n\n## Examples\n\n    iex> SlotDetector.get_clarification_prompt(\"location\", \"weather.query\")\n    \"What location would you like the weather for?\"\n\n    iex> SlotDetector.get_clarification_prompt(\"unknown_slot\", \"some.intent\")\n    \"Could you please specify the unknown slot?\"\n"
   def get_clarification_prompt(slot_name, intent) when is_binary(slot_name) do
     templates = IntentRegistry.clarification_templates(intent)
 
@@ -183,19 +126,23 @@ defmodule Brain.Analysis.SlotDetector do
     get_clarification_prompt(Atom.to_string(slot_name), intent)
   end
 
-  def get_clarification_prompt(_, _), do: "Could you please provide more information?"
+  def get_clarification_prompt(_, _) do
+    "Could you please provide more information?"
+  end
 
-  @doc """
-  Gets all clarification prompts for a list of missing slots.
-  """
+  @doc "Gets all clarification prompts for a list of missing slots.\n"
   def get_clarification_prompts(missing_slots, intent) when is_list(missing_slots) do
     Enum.map(missing_slots, fn slot ->
-      slot_name = if is_atom(slot), do: Atom.to_string(slot), else: slot
+      slot_name =
+        if is_atom(slot) do
+          Atom.to_string(slot)
+        else
+          slot
+        end
+
       get_clarification_prompt(slot_name, intent)
     end)
   end
-
-  # Private functions
 
   defp generate_generic_prompt(slot_name) do
     readable =
@@ -249,17 +196,9 @@ defmodule Brain.Analysis.SlotDetector do
     optional = Map.get(schema, "optional", [])
     defaults = Map.get(schema, "defaults", %{})
     mappings = Map.get(schema, "entity_mappings", %{})
-
-    # Initialize result
     result = SlotResult.new(intent)
-
-    # Fill slots from entities
     result = fill_slots_from_entities(result, required ++ optional, entities, mappings)
-
-    # Apply defaults for unfilled slots
     result = apply_defaults(result, defaults)
-
-    # Set missing required slots
     filled_slot_names = Map.keys(result.filled_slots)
     missing_required = Enum.reject(required, &(&1 in filled_slot_names))
     missing_optional = Enum.reject(optional, &(&1 in filled_slot_names))
@@ -276,7 +215,6 @@ defmodule Brain.Analysis.SlotDetector do
     Enum.reduce(slots, result, fn slot_name, acc ->
       mapped_entity_types = Map.get(mappings, slot_name, [slot_name])
 
-      # Find an entity that matches one of the mapped types
       matching_entity =
         Enum.find(entities, fn entity ->
           entity_type = entity[:entity_type]
@@ -308,7 +246,6 @@ defmodule Brain.Analysis.SlotDetector do
   defp build_unknown_result(entities) do
     result = SlotResult.new("unknown")
 
-    # Still fill any entities we have
     Enum.reduce(entities, result, fn entity, acc ->
       entity_type = entity[:entity_type]
       value = entity[:value]

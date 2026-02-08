@@ -1,10 +1,6 @@
 defmodule Brain.Knowledge.Academic.OpenAlexTest do
   use ExUnit.Case, async: true
 
-  # Tests that don't require API calls are in other test files
-  # OpenAlex tests focus on integration since the module primarily
-  # wraps API calls
-
   describe "search/2 (integration)" do
     @tag :integration
     @tag :external_api
@@ -15,7 +11,8 @@ defmodule Brain.Knowledge.Academic.OpenAlexTest do
       {:ok, papers} = OpenAlex.search("transformer attention", limit: 3)
 
       assert is_list(papers)
-      if length(papers) > 0 do
+
+      if papers != [] do
         [paper | _] = papers
         assert %Paper{} = paper
         assert paper.source == :openalex

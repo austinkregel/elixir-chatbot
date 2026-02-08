@@ -1,73 +1,39 @@
 defmodule Brain.KnowledgeStore do
-  @moduledoc """
-  Knowledge store for persistent storage of learned facts about users, pets, rooms, devices, etc.
-  Provides functions to store and retrieve structured knowledge.
+  @moduledoc "Knowledge store for persistent storage of learned facts about users, pets, rooms, devices, etc.\nProvides functions to store and retrieve structured knowledge.\n\n## World Scoping\n\nSupports both legacy persona-based storage and new world-scoped storage.\nWorld-scoped knowledge is stored in `priv/training_worlds/{world_id}/knowledge.json`.\nPersona-based knowledge remains in `priv/knowledge/{persona}.json`.\n"
 
-  ## World Scoping
-
-  Supports both legacy persona-based storage and new world-scoped storage.
-  World-scoped knowledge is stored in `priv/training_worlds/{world_id}/knowledge.json`.
-  Persona-based knowledge remains in `priv/knowledge/{persona}.json`.
-  """
-
+  alias World.Persistence
   use GenServer
   require Logger
 
-  # ============================================================================
-  # World-Scoped API (New)
-  # ============================================================================
-
-  @doc """
-  Gets knowledge for a specific world.
-
-  ## Parameters
-    - world_id: The world to get knowledge from
-    - category: Optional category filter (e.g., "people", "facts")
-  """
+  @doc "Gets knowledge for a specific world.\n\n## Parameters\n  - world_id: The world to get knowledge from\n  - category: Optional category filter (e.g., \"people\", \"facts\")\n"
   def get_world_knowledge(world_id, category \\ nil) do
     GenServer.call(__MODULE__, {:get_world_knowledge, world_id, category})
   end
 
-  @doc """
-  Saves knowledge to a specific world.
-  """
+  @doc "Saves knowledge to a specific world.\n"
   def save_world_knowledge(world_id, knowledge) do
     GenServer.call(__MODULE__, {:save_world_knowledge, world_id, knowledge})
   end
 
-  @doc """
-  Adds an entry to a world's knowledge in a specific category.
-  """
+  @doc "Adds an entry to a world's knowledge in a specific category.\n"
   def add_to_world(world_id, category, key, value) do
     GenServer.call(__MODULE__, {:add_to_world, world_id, category, key, value})
   end
 
-  @doc """
-  Removes an entry from a world's knowledge.
-  """
+  @doc "Removes an entry from a world's knowledge.\n"
   def remove_from_world(world_id, category, key) do
     GenServer.call(__MODULE__, {:remove_from_world, world_id, category, key})
   end
 
-  @doc """
-  Clears all knowledge for a world.
-  """
+  @doc "Clears all knowledge for a world.\n"
   def clear_world(world_id) do
     GenServer.call(__MODULE__, {:clear_world, world_id})
   end
 
-  @doc """
-  Lists all worlds that have knowledge stored.
-  """
+  @doc "Lists all worlds that have knowledge stored.\n"
   def list_knowledge_worlds do
     GenServer.call(__MODULE__, :list_knowledge_worlds)
   end
-
-  # ============================================================================
-  # Legacy Persona-Based API (Backward Compatible)
-  # ============================================================================
-
-  # Client API
 
   @doc """
   Starts the KnowledgeStore GenServer.
@@ -150,16 +116,12 @@ defmodule Brain.KnowledgeStore do
     GenServer.call(__MODULE__, {:get_knowledge, persona_name, category})
   end
 
-  @doc """
-  Clears all learned knowledge for a persona.
-  """
+  @doc "Clears all learned knowledge for a persona.\n"
   def clear(persona_name) do
     GenServer.call(__MODULE__, {:clear, persona_name})
   end
 
-  @doc """
-  Checks if the knowledge store is ready.
-  """
+  @doc "Checks if the knowledge store is ready.\n"
   def ready? do
     try do
       GenServer.call(__MODULE__, :ready?, 100)
@@ -169,11 +131,8 @@ defmodule Brain.KnowledgeStore do
     end
   end
 
-  # Server Callbacks
-
   @impl true
   def init(_opts) do
-    # Create knowledge directory if it doesn't exist
     knowledge_dir = get_knowledge_dir()
     File.mkdir_p!(knowledge_dir)
 
@@ -287,14 +246,12 @@ defmodule Brain.KnowledgeStore do
 
     case Map.get(people, person_name) do
       nil ->
-        # Create new person entry
         new_person = %{"type" => "person", "name" => person_name, "birthdate" => birthdate}
         updated_people = Map.put(people, person_name, new_person)
         updated_knowledge = Map.put(knowledge, "people", updated_people)
         save_knowledge_data(persona_name, updated_knowledge)
 
       existing_person ->
-        # Update existing person
         updated_person = Map.put(existing_person, "birthdate", birthdate)
         updated_people = Map.put(people, person_name, updated_person)
         updated_knowledge = Map.put(knowledge, "people", updated_people)
@@ -311,7 +268,6 @@ defmodule Brain.KnowledgeStore do
 
     case Map.get(people, person_name) do
       nil ->
-        # Create new person entry
         new_person = %{
           "type" => "person",
           "name" => person_name,
@@ -323,13 +279,14 @@ defmodule Brain.KnowledgeStore do
         save_knowledge_data(persona_name, updated_knowledge)
 
       existing_person ->
-        # Update existing person
         existing_holidays = Map.get(existing_person, "favorite_holidays", [])
 
         updated_holidays =
-          if holiday in existing_holidays,
-            do: existing_holidays,
-            else: existing_holidays ++ [holiday]
+          if holiday in existing_holidays do
+            existing_holidays
+          else
+            existing_holidays ++ [holiday]
+          end
 
         updated_person = Map.put(existing_person, "favorite_holidays", updated_holidays)
         updated_people = Map.put(people, person_name, updated_person)
@@ -466,7 +423,6 @@ defmodule Brain.KnowledgeStore do
 
   @impl true
   def handle_call({:clear, persona_name}, _from, state) do
-    # Clear knowledge by saving an empty structure
     empty_knowledge = %{
       "people" => %{},
       "pets" => %{},
@@ -489,10 +445,6 @@ defmodule Brain.KnowledgeStore do
   def handle_call(:ready?, _from, state) do
     {:reply, true, state}
   end
-
-  # ============================================================================
-  # World-Scoped Server Callbacks
-  # ============================================================================
 
   @impl true
   def handle_call({:get_world_knowledge, world_id, nil}, _from, state) do
@@ -517,12 +469,12 @@ defmodule Brain.KnowledgeStore do
   def handle_call({:add_to_world, world_id, category, key, value}, _from, state) do
     knowledge = load_world_knowledge_data(world_id)
 
-    # Ensure category_data is a map (handle legacy list format)
-    category_data = 
+    category_data =
       case Map.get(knowledge, category, %{}) do
         data when is_map(data) -> data
         _ -> %{}
       end
+
     updated_category = Map.put(category_data, key, value)
     updated_knowledge = Map.put(knowledge, category, updated_category)
 
@@ -577,8 +529,7 @@ defmodule Brain.KnowledgeStore do
 
   @impl true
   def handle_call(:list_knowledge_worlds, _from, state) do
-    # Use WorldPersistence.base_path() to respect test environment isolation
-    worlds_dir = World.Persistence.base_path()
+    worlds_dir = Persistence.base_path()
 
     worlds =
       if File.dir?(worlds_dir) do
@@ -594,8 +545,6 @@ defmodule Brain.KnowledgeStore do
 
     {:reply, {:ok, worlds}, state}
   end
-
-  # Private Functions
 
   defp get_knowledge_dir do
     case Application.get_env(:brain, :knowledge_dir) do
@@ -628,11 +577,8 @@ defmodule Brain.KnowledgeStore do
     File.write(file_path, Jason.encode!(knowledge, pretty: true))
   end
 
-  # World-scoped knowledge helpers
-
   defp get_world_knowledge_path(world_id) do
-    # Use WorldPersistence.world_path() to respect test environment isolation
-    Path.join(World.Persistence.world_path(world_id), "knowledge.json")
+    Path.join(Persistence.world_path(world_id), "knowledge.json")
   end
 
   defp load_world_knowledge_data(world_id) do
@@ -642,7 +588,6 @@ defmodule Brain.KnowledgeStore do
       {:ok, content} ->
         case Jason.decode(content) do
           {:ok, json} when is_map(json) -> json
-          # Handle corrupt or list data
           {:ok, _non_map} -> %{}
           {:error, _} -> %{}
         end
@@ -654,8 +599,6 @@ defmodule Brain.KnowledgeStore do
 
   defp save_world_knowledge_data(world_id, knowledge) do
     file_path = get_world_knowledge_path(world_id)
-
-    # Ensure directory exists
     file_path |> Path.dirname() |> File.mkdir_p!()
 
     case File.write(file_path, Jason.encode!(knowledge, pretty: true)) do
@@ -668,7 +611,6 @@ defmodule Brain.KnowledgeStore do
     end
   end
 
-  # Idempotent upserts to avoid duplicate knowledge entries
   defp upsert_relationship(existing, new_rel) do
     key = fn rel ->
       {
@@ -685,7 +627,6 @@ defmodule Brain.KnowledgeStore do
         existing ++ [new_rel]
 
       idx ->
-        # Merge by keeping the higher confidence and latest timestamp
         old = Enum.at(existing, idx)
 
         merged =
@@ -729,7 +670,15 @@ defmodule Brain.KnowledgeStore do
     end
   end
 
-  defp normalize(nil), do: ""
-  defp normalize(val) when is_binary(val), do: val |> String.downcase() |> String.trim()
-  defp normalize(val), do: to_string(val) |> String.downcase() |> String.trim()
+  defp normalize(nil) do
+    ""
+  end
+
+  defp normalize(val) when is_binary(val) do
+    val |> String.downcase() |> String.trim()
+  end
+
+  defp normalize(val) do
+    to_string(val) |> String.downcase() |> String.trim()
+  end
 end

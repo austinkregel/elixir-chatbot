@@ -1,13 +1,5 @@
 defmodule Brain.Analysis.SemanticChunker do
-  @moduledoc """
-  Breaks longer user inputs into manageable semantic chunks (utterances).
-
-  This module handles:
-  - Sentence boundary detection using punctuation patterns
-  - Discourse marker detection ("but", "however", "also", "and then")
-  - Quoted speech handling (keeps quoted content together)
-  - Learnable parameters for chunk size thresholds
-  """
+  @moduledoc "Breaks longer user inputs into manageable semantic chunks (utterances).\n\nThis module handles:\n- Sentence boundary detection using punctuation patterns\n- Discourse marker detection (\"but\", \"however\", \"also\", \"and then\")\n- Quoted speech handling (keeps quoted content together)\n- Learnable parameters for chunk size thresholds\n"
 
   alias Brain.Analysis.Chunk
   alias Brain.Analysis.LearningStore
@@ -15,9 +7,7 @@ defmodule Brain.Analysis.SemanticChunker do
 
   require Logger
 
-  # Default discourse markers that indicate chunk boundaries
   @default_discourse_markers [
-    # Additive
     "also",
     "and",
     "and also",
@@ -27,7 +17,6 @@ defmodule Brain.Analysis.SemanticChunker do
     "furthermore",
     "in addition",
     "additionally",
-    # Contrastive
     "but",
     "however",
     "although",
@@ -36,7 +25,6 @@ defmodule Brain.Analysis.SemanticChunker do
     "on the other hand",
     "nevertheless",
     "nonetheless",
-    # Causal
     "because",
     "since",
     "so",
@@ -44,7 +32,6 @@ defmodule Brain.Analysis.SemanticChunker do
     "thus",
     "consequently",
     "as a result",
-    # Temporal
     "then",
     "after that",
     "before that",
@@ -52,7 +39,6 @@ defmodule Brain.Analysis.SemanticChunker do
     "next",
     "finally",
     "meanwhile",
-    # Topic shift
     "anyway",
     "by the way",
     "speaking of",
@@ -60,14 +46,7 @@ defmodule Brain.Analysis.SemanticChunker do
     "well"
   ]
 
-  # Sentence-ending punctuation (used in split_into_sentences regex)
-  # @sentence_endings [".", "!", "?"]
-
-  @doc """
-  Chunks the input text into semantic units.
-
-  Returns a list of Chunk structs.
-  """
+  @doc "Chunks the input text into semantic units.\n\nReturns a list of Chunk structs.\n"
   def chunk(text) when is_binary(text) do
     params = get_chunking_params()
 
@@ -81,9 +60,7 @@ defmodule Brain.Analysis.SemanticChunker do
     |> build_chunks(text)
   end
 
-  @doc """
-  Returns chunking statistics for the given text.
-  """
+  @doc "Returns chunking statistics for the given text.\n"
   def analyze(text) when is_binary(text) do
     chunks = chunk(text)
 
@@ -95,8 +72,6 @@ defmodule Brain.Analysis.SemanticChunker do
       has_quoted: Enum.any?(chunks, & &1.is_quoted)
     }
   end
-
-  # Private functions
 
   defp get_chunking_params do
     case LearningStore.get_params("chunker") do
@@ -124,15 +99,12 @@ defmodule Brain.Analysis.SemanticChunker do
   end
 
   defp extract_quoted_sections(text) do
-    # Find all quoted sections and mark them using Tokenizer (no regex)
     quoted_sections = Tokenizer.extract_quoted_sections(text)
 
     {processed, quoted_map} =
       quoted_sections
       |> Enum.with_index()
       |> Enum.reduce({text, %{}}, fn {{quoted_text, _start, _end}, idx}, {acc_text, acc_map} ->
-        # Find the full quoted section including quotes
-        # Look for common quote patterns
         full_quoted = find_quoted_in_text(acc_text, quoted_text)
         marker = "<<QUOTED_#{idx}>>"
 
@@ -150,12 +122,11 @@ defmodule Brain.Analysis.SemanticChunker do
   end
 
   defp find_quoted_in_text(text, inner_text) do
-    # Try to find the quoted section with its surrounding quotes
     patterns = [
       "\"" <> inner_text <> "\"",
       "'" <> inner_text <> "'",
-      "\u201C" <> inner_text <> "\u201D",
-      "\u2018" <> inner_text <> "\u2019"
+      "“" <> inner_text <> "”",
+      "‘" <> inner_text <> "’"
     ]
 
     Enum.find(patterns, fn pattern ->
@@ -164,14 +135,12 @@ defmodule Brain.Analysis.SemanticChunker do
   end
 
   defp split_into_sentences({text, quoted_map}) do
-    # Split on sentence boundaries using Tokenizer (no regex)
     sentences =
       Tokenizer.split_sentences(text)
       |> Enum.map(fn sentence_map -> sentence_map.text end)
       |> Enum.map(&String.trim/1)
       |> Enum.reject(&(&1 == ""))
 
-    # Restore quoted sections
     restored =
       Enum.map(sentences, fn sentence ->
         Enum.reduce(quoted_map, sentence, fn {marker, quoted}, acc ->
@@ -183,7 +152,6 @@ defmodule Brain.Analysis.SemanticChunker do
   end
 
   defp merge_short_sentences({sentences, quoted_map}, min_words) do
-    # Merge very short sentences with the previous one
     merged =
       Enum.reduce(sentences, [], fn sentence, acc ->
         word_count = count_words(sentence)
@@ -193,7 +161,6 @@ defmodule Brain.Analysis.SemanticChunker do
             [sentence]
 
           [prev | rest] when word_count < min_words ->
-            # Merge with previous
             [prev <> " " <> sentence | rest]
 
           _ ->
@@ -206,7 +173,6 @@ defmodule Brain.Analysis.SemanticChunker do
   end
 
   defp detect_discourse_markers({sentences, quoted_map}) do
-    # Mark sentences that start with discourse markers
     marked =
       Enum.map(sentences, fn sentence ->
         lower = String.downcase(sentence)
@@ -218,7 +184,6 @@ defmodule Brain.Analysis.SemanticChunker do
   end
 
   defp find_leading_markers(text) do
-    # Check if text starts with any discourse marker (no regex)
     @default_discourse_markers
     |> Enum.filter(fn marker ->
       Tokenizer.starts_with_word?(text, marker)
@@ -226,17 +191,19 @@ defmodule Brain.Analysis.SemanticChunker do
   end
 
   defp apply_max_chunk_size({marked_sentences, quoted_map}, max_words) do
-    # Split sentences that exceed max word count
     split_sentences =
       Enum.flat_map(marked_sentences, fn {sentence, markers} ->
         word_count = count_words(sentence)
 
         if word_count > max_words do
-          # Split on clause boundaries (commas, semicolons) or at max_words
           split_long_sentence(sentence, max_words)
           |> Enum.with_index()
           |> Enum.map(fn {part, idx} ->
-            if idx == 0, do: {part, markers}, else: {part, []}
+            if idx == 0 do
+              {part, markers}
+            else
+              {part, []}
+            end
           end)
         else
           [{sentence, markers}]
@@ -247,14 +214,12 @@ defmodule Brain.Analysis.SemanticChunker do
   end
 
   defp split_long_sentence(sentence, max_words) do
-    # First try splitting on clause boundaries (no regex)
     parts =
       sentence
       |> split_on_clause_boundaries()
       |> Enum.map(&String.trim/1)
       |> Enum.reject(&(&1 == ""))
 
-    # If all parts are still too long, split by word count
     Enum.flat_map(parts, fn part ->
       if count_words(part) > max_words do
         split_by_word_count(part, max_words)
@@ -273,7 +238,6 @@ defmodule Brain.Analysis.SemanticChunker do
   end
 
   defp split_on_clause_boundaries(text) do
-    # Split on commas and semicolons without regex
     text
     |> String.graphemes()
     |> split_on_graphemes([",", ";"], [], "")
@@ -303,16 +267,12 @@ defmodule Brain.Analysis.SemanticChunker do
     marked_sentences
     |> Enum.with_index()
     |> Enum.map(fn {{sentence, markers}, index} ->
-      # Restore any quoted sections
       restored =
         Enum.reduce(quoted_map, sentence, fn {marker, quoted}, acc ->
           String.replace(acc, marker, quoted)
         end)
 
-      # Find position in original text
       {start_pos, end_pos} = find_position(original_text, restored, index)
-
-      # Check if this chunk contains quoted text (no regex)
       is_quoted = contains_quoted_text?(restored)
 
       Chunk.new(restored, index, start_pos, end_pos,
@@ -328,7 +288,6 @@ defmodule Brain.Analysis.SemanticChunker do
         {start, start + length - 1}
 
       :nomatch ->
-        # Fallback: approximate based on normalized matching
         normalized_chunk = normalize_whitespace(chunk_text)
 
         case :binary.match(normalize_whitespace(original), normalized_chunk) do
@@ -339,8 +298,6 @@ defmodule Brain.Analysis.SemanticChunker do
   end
 
   defp count_words(text) do
-    # Expand contractions before counting so "I'm" counts as 2 words ("I am")
-    # This ensures short sentences like "I'm Austin." (3 words) aren't merged
     text
     |> Tokenizer.expand_contractions()
     |> Tokenizer.split_words()
@@ -348,13 +305,12 @@ defmodule Brain.Analysis.SemanticChunker do
   end
 
   defp contains_quoted_text?(text) do
-    # Check for quoted text without regex
     quoted_sections = Tokenizer.extract_quoted_sections(text)
-    length(quoted_sections) > 0
+    quoted_sections != []
   end
 
   defp calculate_avg_length(chunks) do
-    if length(chunks) == 0 do
+    if chunks == [] do
       0
     else
       total = Enum.reduce(chunks, 0, fn chunk, acc -> acc + String.length(chunk.text) end)

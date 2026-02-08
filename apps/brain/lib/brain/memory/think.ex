@@ -1,17 +1,10 @@
 defmodule Brain.Memory.Think do
-  @moduledoc """
-  High-level API for the cognitive memory system.
-
-  Ported from the Rust cognitive_memory_system think module.
-
-  This module exposes a `think` function that orchestrates memory
-  insertion, retrieval, and consolidation. It wraps lower-level
-  components in a convenient interface.
-  """
+  @moduledoc "High-level API for the cognitive memory system.\n\nPorted from the Rust cognitive_memory_system think module.\n\nThis module exposes a `think` function that orchestrates memory\ninsertion, retrieval, and consolidation. It wraps lower-level\ncomponents in a convenient interface.\n"
 
   alias Brain.Memory.{Store, Embedder, Consolidation}
   alias Brain.Memory.Types.Episode
 
+  alias Brain.ML.DataLoaders
   require Logger
 
   @type think_input ::
@@ -26,37 +19,16 @@ defmodule Brain.Memory.Think do
           | {:semantic_results, [{SemanticFact.t(), float()}]}
           | {:consolidated, non_neg_integer()}
 
-  @doc """
-  High-level entry point for interacting with the memory system.
-
-  ## Examples
-
-      # Add a new episode
-      Think.think(:add_episode, %{
-        state: "Hello there!",
-        action: "greeting",
-        outcome: "responded with hello",
-        tags: ["greeting", "smalltalk"]
-      })
-
-      # Query for similar episodes
-      Think.think(:query_chat, %{input: "Hi!", k: 5})
-
-      # Consolidate similar episodes into semantic facts
-      Think.think(:consolidate, %{threshold: 0.8, min_size: 2})
-  """
+  @doc "High-level entry point for interacting with the memory system.\n\n## Examples\n\n    # Add a new episode\n    Think.think(:add_episode, %{\n      state: \"Hello there!\",\n      action: \"greeting\",\n      outcome: \"responded with hello\",\n      tags: [\"greeting\", \"smalltalk\"]\n    })\n\n    # Query for similar episodes\n    Think.think(:query_chat, %{input: \"Hi!\", k: 5})\n\n    # Consolidate similar episodes into semantic facts\n    Think.think(:consolidate, %{threshold: 0.8, min_size: 2})\n"
   def think(operation, params \\ %{})
 
   def think(:add_episode, params) do
-    # Check if Store is available before attempting to add
     if Process.whereis(Store) do
       state = Map.get(params, :state, "")
       action = Map.get(params, :action, "")
       outcome = Map.get(params, :outcome, "")
       tags = Map.get(params, :tags, [])
       world_id = Map.get(params, :world_id, "default")
-
-      # Pass world_id option to the store
       opts = [world_id: world_id]
 
       case Store.add_episode(state, action, outcome, tags, opts) do
@@ -146,14 +118,10 @@ defmodule Brain.Memory.Think do
     {:ok, :cleared}
   end
 
-  @doc """
-  Initialize the memory system by starting required processes.
-  Should be called at application startup.
-  """
+  @doc "Initialize the memory system by starting required processes.\nShould be called at application startup.\n"
   def init do
     Logger.info("Initializing cognitive memory system...")
 
-    # Ensure Embedder is started
     case Process.whereis(Embedder) do
       nil ->
         case Embedder.start_link() do
@@ -166,7 +134,6 @@ defmodule Brain.Memory.Think do
         :ok
     end
 
-    # Ensure Store is started
     case Process.whereis(Store) do
       nil ->
         case Store.start_link() do
@@ -183,20 +150,15 @@ defmodule Brain.Memory.Think do
     :ok
   end
 
-  @doc """
-  Load training data into the memory system as episodes.
-  This populates the episodic memory from intent training data.
-  """
+  @doc "Load training data into the memory system as episodes.\nThis populates the episodic memory from intent training data.\n"
   def load_training_data do
     Logger.info("Loading training data into memory system...")
 
-    case Brain.ML.DataLoaders.load_all_intents() do
+    case DataLoaders.load_all_intents() do
       {:ok, examples} ->
-        # First build vocabulary from all texts
         texts = Enum.map(examples, & &1.text)
         Embedder.build_vocabulary(texts)
 
-        # Then add each example as an episode
         count =
           Enum.reduce(examples, 0, fn example, acc ->
             case think(:add_episode, %{
@@ -225,5 +187,7 @@ defmodule Brain.Memory.Think do
     |> Enum.uniq()
   end
 
-  defp extract_entity_types(_), do: []
+  defp extract_entity_types(_) do
+    []
+  end
 end

@@ -31,38 +31,26 @@ defmodule Brain.Subprocesses.HttpSubprocessTest do
   end
 
   test "creates and manages conversations", %{subprocess_id: subprocess_id} do
-    # Create a conversation
     {:ok, conversation_id} = HttpSubprocess.create_conversation(subprocess_id)
     assert is_binary(conversation_id)
-
-    # Get conversations list
     conversations = HttpSubprocess.get_conversations(subprocess_id)
     assert length(conversations) == 1
     assert hd(conversations).id == conversation_id
 
-    # Route input to conversation
     {:ok, response} =
       HttpSubprocess.route_to_conversation(subprocess_id, conversation_id, "Hello")
 
     assert is_binary(response)
     assert String.contains?(response, "Hello")
-
-    # End conversation
     :ok = HttpSubprocess.end_conversation(subprocess_id, conversation_id)
-
-    # Verify conversation is gone
     conversations = HttpSubprocess.get_conversations(subprocess_id)
-    assert length(conversations) == 0
+    assert conversations == []
   end
 
   test "handles learning summaries", %{subprocess_id: subprocess_id} do
     conversation_id = "test_conv_123"
     summary = "User learned about Elixir programming"
-
-    # This should not crash
     HttpSubprocess.send_learning_summary(subprocess_id, conversation_id, summary)
-
-    # Verify subprocess is still running
     status = HttpSubprocess.get_status(subprocess_id)
     assert status.subprocess_id == subprocess_id
   end

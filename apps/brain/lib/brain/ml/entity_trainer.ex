@@ -1,25 +1,10 @@
 defmodule Brain.ML.EntityTrainer do
-  @moduledoc """
-  Entity recognition training using BIO tagging.
+  @moduledoc "Entity recognition training using BIO tagging.\n\nConverts Dialogflow-format annotated data to BIO (Begin-Inside-Outside) format\nand trains a sequence model for entity boundary detection.\n\nBIO Tagging:\n- B-{type}: Beginning of an entity\n- I-{type}: Inside (continuation) of an entity\n- O: Outside any entity\n\nExample:\n  \"weather in New York today\"\n  [\"O\", \"O\", \"B-location\", \"I-location\", \"B-date\"]\n"
 
-  Converts Dialogflow-format annotated data to BIO (Begin-Inside-Outside) format
-  and trains a sequence model for entity boundary detection.
-
-  BIO Tagging:
-  - B-{type}: Beginning of an entity
-  - I-{type}: Inside (continuation) of an entity
-  - O: Outside any entity
-
-  Example:
-    "weather in New York today"
-    ["O", "O", "B-location", "I-location", "B-date"]
-  """
-
+  alias Brain.ML
   require Logger
 
-  alias Brain.ML.{DataLoaders, Tokenizer}
-
-  # "O", "B-location", "I-location", etc.
+  alias ML.{DataLoaders, Tokenizer}
   @type bio_tag :: String.t()
 
   @type training_sequence :: %{
@@ -35,39 +20,26 @@ defmodule Brain.ML.EntityTrainer do
           tag_priors: %{bio_tag() => float()}
         }
 
-  # ============================================================================
-  # Public API
-  # ============================================================================
-
-  @doc """
-  Train entity recognition model from intent data.
-  Returns {:ok, model} or {:error, reason}.
-  Emits telemetry events for training metrics.
-  """
+  @doc "Train entity recognition model from intent data.\nReturns {:ok, model} or {:error, reason}.\nEmits telemetry events for training metrics.\n"
   def train do
     start_time = System.monotonic_time(:millisecond)
 
     Logger.info("Starting entity model training...")
 
-    # Emit training start event
     :telemetry.execute(
       [:chat_bot, :ml, :train, :start],
       %{sequence_count: 0},
       %{model: :entity_trainer, started_at: DateTime.utc_now()}
     )
 
-    # Load intent data with entity annotations
     result =
       case DataLoaders.load_all_intents() do
         {:ok, examples} ->
           Logger.info("Converting examples to BIO format", %{count: length(examples)})
-
-          # Convert to BIO-tagged sequences
           sequences = convert_to_bio_sequences(examples)
           Logger.info("Generated BIO sequences", %{count: length(sequences)})
 
-          if length(sequences) > 0 do
-            # Train the model
+          if sequences != [] do
             model = train_sequence_model(sequences)
 
             Logger.info("Entity model trained", %{
@@ -84,12 +56,10 @@ defmodule Brain.ML.EntityTrainer do
           {:error, reason}
       end
 
-    # Calculate training metrics
     duration_ms = System.monotonic_time(:millisecond) - start_time
 
     case result do
       {:ok, model, sequence_count} ->
-        # Emit training success event
         :telemetry.execute(
           [:chat_bot, :ml, :train, :stop],
           %{
@@ -104,7 +74,6 @@ defmodule Brain.ML.EntityTrainer do
         {:ok, model}
 
       {:error, reason} ->
-        # Emit training failure event
         :telemetry.execute(
           [:chat_bot, :ml, :train, :exception],
           %{duration_ms: duration_ms, sequence_count: 0},
@@ -115,17 +84,12 @@ defmodule Brain.ML.EntityTrainer do
     end
   end
 
-  @doc """
-  Train entity recognition model and save to disk.
-
-  ## Options
-    - models_path: Override the default models output path
-  """
+  @doc "Train entity recognition model and save to disk.\n\n## Options\n  - models_path: Override the default models output path\n"
   def train_and_save(opts \\ []) do
     models_path =
-      Keyword.get(opts, :models_path) || 
-      Application.get_env(:brain, :ml)[:models_path] || 
-      Brain.priv_path("ml_models")
+      Keyword.get(opts, :models_path) ||
+        Application.get_env(:brain, :ml)[:models_path] ||
+        Brain.priv_path("ml_models")
 
     case train() do
       {:ok, model} ->
@@ -136,9 +100,7 @@ defmodule Brain.ML.EntityTrainer do
     end
   end
 
-  @doc """
-  Load a trained entity model from disk.
-  """
+  @doc "Load a trained entity model from disk.\n"
   def load_model do
     models_path = Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")
     model_path = Path.join(models_path, "entity_model.term")
@@ -157,52 +119,36 @@ defmodule Brain.ML.EntityTrainer do
     end
   end
 
-  @doc """
-  Predict entity tags for a sequence of tokens.
-  Returns list of {token, predicted_tag} tuples.
-  """
+  @doc "Predict entity tags for a sequence of tokens.\nReturns list of {token, predicted_tag} tuples.\n"
   def predict(tokens, model) when is_list(tokens) do
-    # Use Viterbi-like decoding
     predictions = viterbi_decode(tokens, model)
     Enum.zip(tokens, predictions)
   end
 
-  @doc """
-  Extract entities from predicted BIO tags.
-  Returns list of entity maps.
-  """
+  @doc "Extract entities from predicted BIO tags.\nReturns list of entity maps.\n"
   def extract_entities_from_bio(token_tag_pairs) do
     extract_entities_from_bio_impl(token_tag_pairs, [], nil)
   end
 
-  @doc """
-  Convert Dialogflow-format examples to BIO-tagged sequences.
-  """
+  @doc "Convert Dialogflow-format examples to BIO-tagged sequences.\n"
   def convert_to_bio_sequences(examples) when is_list(examples) do
     examples
     |> Enum.map(&convert_example_to_bio/1)
-    |> Enum.filter(fn seq -> length(seq.tokens) > 0 end)
+    |> Enum.filter(fn seq -> seq.tokens != [] end)
   end
 
-  # ============================================================================
-  # Training Implementation
-  # ============================================================================
-
   defp train_sequence_model(sequences) do
-    # Collect all tags
     all_tags =
       sequences
       |> Enum.flat_map(& &1.tags)
       |> Enum.uniq()
       |> Enum.sort()
 
-    # Build tag vocabulary
     tag_vocabulary =
       all_tags
       |> Enum.with_index()
       |> Enum.into(%{})
 
-    # Calculate tag priors
     tag_counts =
       sequences
       |> Enum.flat_map(& &1.tags)
@@ -215,11 +161,8 @@ defmodule Brain.ML.EntityTrainer do
         {tag, count / total_tags}
       end)
 
-    # Calculate transition probabilities
     transition_counts = calculate_transition_counts(sequences)
     transition_weights = normalize_transition_counts(transition_counts, all_tags)
-
-    # Calculate feature weights (emission probabilities)
     feature_weights = calculate_feature_weights(sequences)
 
     %{
@@ -245,8 +188,6 @@ defmodule Brain.ML.EntityTrainer do
 
   defp normalize_transition_counts(counts, all_tags) do
     all_tags_with_markers = ["<START>" | all_tags] ++ ["<END>"]
-
-    # Group by previous tag
     grouped = Enum.group_by(counts, fn {{prev, _curr}, _count} -> prev end)
 
     Enum.reduce(all_tags_with_markers, %{}, fn prev_tag, acc ->
@@ -261,7 +202,6 @@ defmodule Brain.ML.EntityTrainer do
 
         Map.put(acc, prev_tag, probs)
       else
-        # Default uniform distribution
         uniform = 1.0 / length(all_tags_with_markers)
         probs = Enum.into(all_tags_with_markers, %{}, fn tag -> {tag, uniform} end)
         Map.put(acc, prev_tag, probs)
@@ -270,14 +210,12 @@ defmodule Brain.ML.EntityTrainer do
   end
 
   defp calculate_feature_weights(sequences) do
-    # Count (token_feature, tag) co-occurrences
     feature_tag_counts =
       Enum.reduce(sequences, %{}, fn seq, acc ->
         seq.tokens
         |> Enum.zip(seq.tags)
         |> Enum.with_index()
         |> Enum.reduce(acc, fn {{token, tag}, idx}, inner_acc ->
-          # Extract features for this token
           features = extract_token_features(token, seq.tokens, idx)
 
           Enum.reduce(features, inner_acc, fn feature, feat_acc ->
@@ -288,7 +226,6 @@ defmodule Brain.ML.EntityTrainer do
         end)
       end)
 
-    # Normalize to probabilities
     Enum.into(feature_tag_counts, %{}, fn {feature, tag_counts} ->
       total = Enum.sum(Map.values(tag_counts))
 
@@ -303,26 +240,43 @@ defmodule Brain.ML.EntityTrainer do
 
   defp extract_token_features(token, all_tokens, idx) do
     features = [
-      # Current token (lowercased)
       "token:#{String.downcase(token)}",
-      # Token prefix
       "prefix2:#{String.slice(String.downcase(token), 0, 2)}",
       "prefix3:#{String.slice(String.downcase(token), 0, 3)}",
-      # Token suffix
       "suffix2:#{String.slice(String.downcase(token), -2, 2)}",
       "suffix3:#{String.slice(String.downcase(token), -3, 3)}",
-      # Capitalization features
-      if(capitalized?(token), do: "is_capitalized", else: "not_capitalized"),
-      if(all_caps?(token), do: "is_all_caps", else: "not_all_caps"),
-      # Digit features
-      if(has_digit?(token), do: "has_digit", else: "no_digit"),
-      if(all_digits?(token), do: "is_number", else: "not_number"),
-      # Position features
-      if(idx == 0, do: "is_first", else: "not_first"),
-      if(idx == length(all_tokens) - 1, do: "is_last", else: "not_last")
+      if(capitalized?(token)) do
+        "is_capitalized"
+      else
+        "not_capitalized"
+      end,
+      if(all_caps?(token)) do
+        "is_all_caps"
+      else
+        "not_all_caps"
+      end,
+      if(has_digit?(token)) do
+        "has_digit"
+      else
+        "no_digit"
+      end,
+      if(all_digits?(token)) do
+        "is_number"
+      else
+        "not_number"
+      end,
+      if(idx == 0) do
+        "is_first"
+      else
+        "not_first"
+      end,
+      if(idx == length(all_tokens) - 1) do
+        "is_last"
+      else
+        "not_last"
+      end
     ]
 
-    # Previous token feature
     prev_features =
       if idx > 0 do
         prev_token = Enum.at(all_tokens, idx - 1)
@@ -331,7 +285,6 @@ defmodule Brain.ML.EntityTrainer do
         ["prev_token:<START>"]
       end
 
-    # Next token feature
     next_features =
       if idx < length(all_tokens) - 1 do
         next_token = Enum.at(all_tokens, idx + 1)
@@ -353,7 +306,6 @@ defmodule Brain.ML.EntityTrainer do
   end
 
   defp has_digit?(token) do
-    # Check if any character is a digit (without regex)
     Enum.any?(String.graphemes(token), fn g ->
       g >= "0" and g <= "9"
     end)
@@ -366,21 +318,15 @@ defmodule Brain.ML.EntityTrainer do
       end)
   end
 
-  # ============================================================================
-  # Prediction (Viterbi Decoding)
-  # ============================================================================
-
   defp viterbi_decode(tokens, model) do
-    if length(tokens) == 0 do
+    if tokens == [] do
       []
     else
       tags = Map.keys(model.tag_vocabulary) |> Enum.filter(&(&1 != "<START>" and &1 != "<END>"))
 
-      # Initialize with start probabilities
       {initial_viterbi, initial_backpointer} =
         initialize_viterbi(Enum.at(tokens, 0), tokens, 0, tags, model)
 
-      # Forward pass
       {final_viterbi, backpointers} =
         tokens
         |> Enum.with_index()
@@ -391,7 +337,6 @@ defmodule Brain.ML.EntityTrainer do
           {new_viterbi, [new_bp | bps]}
         end)
 
-      # Backtrack to find best path
       backtrack(final_viterbi, Enum.reverse(backpointers), tags)
     end
   end
@@ -407,7 +352,6 @@ defmodule Brain.ML.EntityTrainer do
         {tag, score}
       end)
 
-    # No backpointer for first position
     backpointer = Enum.into(tags, %{}, fn tag -> {tag, nil} end)
 
     {viterbi, backpointer}
@@ -420,7 +364,6 @@ defmodule Brain.ML.EntityTrainer do
       Enum.reduce(tags, {%{}, %{}}, fn curr_tag, {vit_acc, bp_acc} ->
         emission = calculate_emission_prob(features, curr_tag, model)
 
-        # Find best previous tag
         {best_score, best_prev_tag} =
           Enum.reduce(tags, {nil, nil}, fn prev_tag, {best, best_tag} ->
             prev_score = Map.get(prev_viterbi, prev_tag, -1000)
@@ -443,7 +386,6 @@ defmodule Brain.ML.EntityTrainer do
   end
 
   defp calculate_emission_prob(features, tag, model) do
-    # Average feature probabilities for this tag
     probs =
       Enum.map(features, fn feature ->
         case Map.get(model.feature_weights, feature) do
@@ -452,7 +394,7 @@ defmodule Brain.ML.EntityTrainer do
         end
       end)
 
-    if length(probs) > 0 do
+    if probs != [] do
       Enum.sum(probs) / length(probs)
     else
       Map.get(model.tag_priors, tag, 0.01)
@@ -467,7 +409,6 @@ defmodule Brain.ML.EntityTrainer do
   end
 
   defp backtrack(final_viterbi, backpointers, tags) do
-    # Find best final tag
     {_best_score, best_tag} =
       Enum.reduce(tags, {nil, nil}, fn tag, {best, best_tag} ->
         score = Map.get(final_viterbi, tag, -1000)
@@ -479,7 +420,6 @@ defmodule Brain.ML.EntityTrainer do
         end
       end)
 
-    # Backtrack through pointers
     backtrack_impl(backpointers, best_tag, [best_tag])
   end
 
@@ -497,19 +437,11 @@ defmodule Brain.ML.EntityTrainer do
     end
   end
 
-  # ============================================================================
-  # BIO Conversion
-  # ============================================================================
-
   defp convert_example_to_bio(example) do
     text = example.text
     entities = example.entities || []
     intent = example.intent
-
-    # Tokenize the text
     tokens = Tokenizer.tokenize(text)
-
-    # Assign BIO tags based on entity positions
     tags = assign_bio_tags(tokens, entities)
 
     %{
@@ -520,7 +452,6 @@ defmodule Brain.ML.EntityTrainer do
   end
 
   defp assign_bio_tags(tokens, entities) do
-    # Build position map for entities
     entity_positions = build_entity_position_map(entities)
 
     Enum.map(tokens, fn token ->
@@ -534,7 +465,6 @@ defmodule Brain.ML.EntityTrainer do
       end_pos = entity.end_pos || start_pos + String.length(entity.text) - 1
       entity_type = entity.type || entity.alias || "unknown"
 
-      # Mark each position with the entity info
       Enum.reduce(start_pos..end_pos, acc, fn pos, inner_acc ->
         is_start = pos == start_pos
         Map.put(inner_acc, pos, {entity_type, is_start})
@@ -543,11 +473,9 @@ defmodule Brain.ML.EntityTrainer do
   end
 
   defp find_bio_tag_for_token(token, entity_positions) do
-    # Check if any position of this token is in an entity
     token_start = token.start_pos
     _token_end = token.end_pos
 
-    # Check the start position first
     case Map.get(entity_positions, token_start) do
       nil ->
         "O"
@@ -560,12 +488,7 @@ defmodule Brain.ML.EntityTrainer do
     end
   end
 
-  # ============================================================================
-  # Entity Extraction from BIO
-  # ============================================================================
-
   defp extract_entities_from_bio_impl([], acc, current_entity) do
-    # Finish any pending entity
     case current_entity do
       nil -> Enum.reverse(acc)
       entity -> Enum.reverse([finalize_entity(entity) | acc])
@@ -575,7 +498,6 @@ defmodule Brain.ML.EntityTrainer do
   defp extract_entities_from_bio_impl([{token, tag} | rest], acc, current_entity) do
     cond do
       String.starts_with?(tag, "B-") ->
-        # Start of new entity
         entity_type = String.replace_prefix(tag, "B-", "")
 
         new_entity = %{
@@ -584,7 +506,6 @@ defmodule Brain.ML.EntityTrainer do
           text: token
         }
 
-        # Finish previous entity if any
         case current_entity do
           nil ->
             extract_entities_from_bio_impl(rest, acc, new_entity)
@@ -594,7 +515,6 @@ defmodule Brain.ML.EntityTrainer do
         end
 
       String.starts_with?(tag, "I-") and current_entity != nil ->
-        # Continue current entity
         entity_type = String.replace_prefix(tag, "I-", "")
 
         if entity_type == current_entity.type do
@@ -606,7 +526,6 @@ defmodule Brain.ML.EntityTrainer do
 
           extract_entities_from_bio_impl(rest, acc, updated)
         else
-          # Type mismatch - finish current and start new
           new_entity = %{type: entity_type, tokens: [token], text: token}
 
           extract_entities_from_bio_impl(
@@ -617,7 +536,6 @@ defmodule Brain.ML.EntityTrainer do
         end
 
       tag == "O" ->
-        # Outside any entity
         case current_entity do
           nil ->
             extract_entities_from_bio_impl(rest, acc, nil)
@@ -627,7 +545,6 @@ defmodule Brain.ML.EntityTrainer do
         end
 
       true ->
-        # Unknown tag - treat as O
         case current_entity do
           nil ->
             extract_entities_from_bio_impl(rest, acc, nil)
@@ -643,14 +560,9 @@ defmodule Brain.ML.EntityTrainer do
       entity_type: entity.type,
       value: entity.text,
       tokens: entity.tokens,
-      # Could be calculated based on model scores
       confidence: 0.8
     }
   end
-
-  # ============================================================================
-  # Model Persistence
-  # ============================================================================
 
   defp save_model(model, models_path) do
     File.mkdir_p!(models_path)

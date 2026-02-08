@@ -3,7 +3,6 @@ defmodule Brain.Knowledge.Academic.ArxivTest do
 
   alias Brain.Knowledge.Academic.Arxiv
 
-  # Tests that don't require API calls
   describe "get_pdf_url/1" do
     test "returns correct PDF URL for arXiv ID" do
       url = Arxiv.get_pdf_url("1706.03762")
@@ -38,7 +37,6 @@ defmodule Brain.Knowledge.Academic.ArxivTest do
     end
   end
 
-  # Integration tests that hit real APIs (tagged for optional running)
   describe "search/2 (integration)" do
     @tag :integration
     @tag :external_api
@@ -48,8 +46,8 @@ defmodule Brain.Knowledge.Academic.ArxivTest do
       {:ok, papers} = Arxiv.search("transformer attention", limit: 3)
 
       assert is_list(papers)
-      # arXiv might return results
-      if length(papers) > 0 do
+
+      if papers != [] do
         [paper | _] = papers
         assert %Paper{} = paper
         assert paper.source == :arxiv

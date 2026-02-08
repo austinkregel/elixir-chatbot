@@ -1,7 +1,8 @@
 defmodule Brain.Knowledge.TypesTest do
+  alias Brain.Knowledge.Types
   use ExUnit.Case, async: true
 
-  alias Brain.Knowledge.Types.{
+  alias Types.{
     SourceInfo,
     Finding,
     ResearchGoal,
@@ -23,7 +24,9 @@ defmodule Brain.Knowledge.TypesTest do
     test "extracts domain correctly from various URL formats" do
       assert SourceInfo.extract_domain("https://en.wikipedia.org/wiki/Page") == "en.wikipedia.org"
       assert SourceInfo.extract_domain("http://www.example.com/path") == "example.com"
-      assert SourceInfo.extract_domain("https://subdomain.site.co.uk/page") == "subdomain.site.co.uk"
+
+      assert SourceInfo.extract_domain("https://subdomain.site.co.uk/page") ==
+               "subdomain.site.co.uk"
     end
 
     test "accepts custom reliability options" do
@@ -181,28 +184,21 @@ defmodule Brain.Knowledge.TypesTest do
 
     test "records decisions and calculates reliability" do
       profile = SourceProfile.new("example.com", factual_accuracy: 0.7)
-
-      # Record several approvals
       profile = SourceProfile.record_decision(profile, :approved)
       profile = SourceProfile.record_decision(profile, :approved)
       profile = SourceProfile.record_decision(profile, :approved)
 
       reliability = SourceProfile.calculate_reliability(profile)
-      # Base 0.7 * 0.7 + feedback adjustment * 0.3
-      # With all approvals, feedback should be ~1.0
       assert reliability > 0.7
     end
 
     test "rejections lower reliability" do
       profile = SourceProfile.new("sketchy.com", factual_accuracy: 0.5)
-
-      # Record several rejections
       profile = SourceProfile.record_decision(profile, :rejected)
       profile = SourceProfile.record_decision(profile, :rejected)
       profile = SourceProfile.record_decision(profile, :rejected)
 
       reliability = SourceProfile.calculate_reliability(profile)
-      # With all rejections, feedback should be ~0.0
       assert reliability < 0.5
     end
   end

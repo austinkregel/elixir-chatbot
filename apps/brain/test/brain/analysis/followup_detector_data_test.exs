@@ -84,9 +84,9 @@ defmodule Brain.Analysis.FollowupDetectorDataTest do
   describe "get_carried_context/2" do
     test "returns context map with required fields" do
       context = recent_context(%{intent: "weather.query", missing_slots: ["location"]})
-      
+
       carried = FollowupDetector.get_carried_context("Seattle", context)
-      
+
       assert is_map(carried)
       assert Map.has_key?(carried, :intent)
       assert Map.has_key?(carried, :carry_forward)

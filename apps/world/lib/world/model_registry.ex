@@ -1,27 +1,8 @@
 defmodule World.ModelRegistry do
-  @moduledoc """
-  Central registry for per-world ML models.
+  @moduledoc "Central registry for per-world ML models.\n\nManages loading, caching, and switching of world-specific models:\n- Intent classifier\n- Embedder vocabulary/IDF weights\n- POS tagger\n- Entity model\n\nWhen a world is activated, all its models are loaded (or created from defaults).\nComponents can query this registry to get the active world's models.\n\n## PubSub Events\n\nSubscribes to:\n- `world_context:global` - `{:world_changed, session_id, world_id}` - Triggers model switch\n\nBroadcasts on `world_models:status`:\n- `{:world_models_loading, world_id}` - Models are being loaded\n- `{:world_models_loaded, world_id, status}` - Models finished loading\n- `{:world_models_error, world_id, reason}` - Loading failed\n"
 
-  Manages loading, caching, and switching of world-specific models:
-  - Intent classifier
-  - Embedder vocabulary/IDF weights
-  - POS tagger
-  - Entity model
-
-  When a world is activated, all its models are loaded (or created from defaults).
-  Components can query this registry to get the active world's models.
-
-  ## PubSub Events
-
-  Subscribes to:
-  - `world_context:global` - `{:world_changed, session_id, world_id}` - Triggers model switch
-
-  Broadcasts on `world_models:status`:
-  - `{:world_models_loading, world_id}` - Models are being loaded
-  - `{:world_models_loaded, world_id, status}` - Models finished loading
-  - `{:world_models_error, world_id, reason}` - Loading failed
-  """
-
+  alias Phoenix.PubSub
+  alias World.Persistence
   use GenServer
   require Logger
 
@@ -30,89 +11,58 @@ defmodule World.ModelRegistry do
 
   @pubsub Brain.PubSub
   @default_world_id "default"
-
-  # Model types managed by this registry
   @model_types [:classifier, :embedder, :pos_model, :entity_model]
-
-  # ============================================================================
-  # Client API
-  # ============================================================================
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc """
-  Activates a world's models, loading them if necessary.
-  This is the primary entry point for world switching.
-
-  Returns {:ok, status} or {:error, reason}
-  """
+  @doc "Activates a world's models, loading them if necessary.\nThis is the primary entry point for world switching.\n\nReturns {:ok, status} or {:error, reason}\n"
   def activate_world(world_id) when is_binary(world_id) do
     GenServer.call(__MODULE__, {:activate_world, world_id}, 60_000)
   end
 
-  @doc """
-  Returns the currently active world ID.
-  """
+  @doc "Returns the currently active world ID.\n"
   def get_active_world do
     GenServer.call(__MODULE__, :get_active_world)
   end
 
-  @doc """
-  Gets a specific model for a world.
-  Returns {:ok, model} or {:error, reason}
-  """
+  @doc "Gets a specific model for a world.\nReturns {:ok, model} or {:error, reason}\n"
   def get_model(world_id, model_type) when is_binary(world_id) and model_type in @model_types do
     GenServer.call(__MODULE__, {:get_model, world_id, model_type})
   end
 
-  @doc """
-  Gets all models for a world.
-  Returns {:ok, models_map} or {:error, reason}
-  """
+  @doc "Gets all models for a world.\nReturns {:ok, models_map} or {:error, reason}\n"
   def get_world_models(world_id) when is_binary(world_id) do
     GenServer.call(__MODULE__, {:get_world_models, world_id})
   end
 
-  @doc """
-  Gets the active world's models.
-  """
+  @doc "Gets the active world's models.\n"
   def get_active_models do
     GenServer.call(__MODULE__, :get_active_models)
   end
 
-  @doc """
-  Reloads models for a world from disk.
-  """
+  @doc "Reloads models for a world from disk.\n"
   def reload_world_models(world_id) when is_binary(world_id) do
     GenServer.call(__MODULE__, {:reload_world_models, world_id}, 60_000)
   end
 
-  @doc """
-  Unloads models for a world to free memory.
-  """
+  @doc "Unloads models for a world to free memory.\n"
   def unload_world(world_id) when is_binary(world_id) do
     GenServer.call(__MODULE__, {:unload_world, world_id})
   end
 
-  @doc """
-  Returns the status of models for a world.
-  """
+  @doc "Returns the status of models for a world.\n"
   def get_world_status(world_id) when is_binary(world_id) do
     GenServer.call(__MODULE__, {:get_world_status, world_id})
   end
 
-  @doc """
-  Returns the status of all loaded worlds.
-  """
+  @doc "Returns the status of all loaded worlds.\n"
   def get_all_status do
     GenServer.call(__MODULE__, :get_all_status)
   end
 
-  @doc """
-  Checks if the registry is ready (has loaded default world).
-  """
+  @doc "Checks if the registry is ready (has loaded default world).\n"
   def ready? do
     try do
       GenServer.call(__MODULE__, :ready?, 100)
@@ -122,18 +72,13 @@ defmodule World.ModelRegistry do
     end
   end
 
-  @doc """
-  Returns the path where a world's models are stored.
-  """
+  @doc "Returns the path where a world's models are stored.\n"
   def models_dir(world_id) do
-    # Use WorldPersistence.base_path() to respect test environment isolation
-    base = World.Persistence.base_path()
+    base = Persistence.base_path()
     Path.join([base, world_id, "models"])
   end
 
-  @doc """
-  Returns the path for a specific model file.
-  """
+  @doc "Returns the path for a specific model file.\n"
   def model_path(world_id, model_type) when model_type in @model_types do
     filename =
       case model_type do
@@ -146,9 +91,7 @@ defmodule World.ModelRegistry do
     Path.join(models_dir(world_id), filename)
   end
 
-  @doc """
-  Returns the path for the default (fallback) model.
-  """
+  @doc "Returns the path for the default (fallback) model.\n"
   def default_model_path(model_type) when model_type in @model_types do
     models_path = Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")
 
@@ -163,23 +106,15 @@ defmodule World.ModelRegistry do
     Path.join(models_path, filename)
   end
 
-  @doc """
-  Checks if a world has trained models.
-  """
+  @doc "Checks if a world has trained models.\n"
   def world_has_models?(world_id) do
-    # Check if at least the classifier exists (most essential model)
     File.exists?(model_path(world_id, :classifier)) or
       (world_id == @default_world_id and File.exists?(default_model_path(:classifier)))
   end
 
-  # ============================================================================
-  # Server Callbacks
-  # ============================================================================
-
   @impl true
   def init(_opts) do
-    # Subscribe to world change events
-    Phoenix.PubSub.subscribe(@pubsub, "world_context:global")
+    PubSub.subscribe(@pubsub, "world_context:global")
 
     state = %{
       active_world_id: @default_world_id,
@@ -188,7 +123,6 @@ defmodule World.ModelRegistry do
       ready: false
     }
 
-    # Load default world models asynchronously
     send(self(), :load_default_world)
 
     {:ok, state}
@@ -224,7 +158,6 @@ defmodule World.ModelRegistry do
 
   @impl true
   def handle_info({:world_changed, _session_id, world_id}, state) do
-    # World was changed from UI - activate that world's models
     Logger.info("WorldModelRegistry: World change detected", %{world_id: world_id})
 
     case do_activate_world(world_id, state) do
@@ -238,7 +171,6 @@ defmodule World.ModelRegistry do
 
   @impl true
   def handle_info({:world_changed, world_id}, state) do
-    # Handle simpler world_changed format
     Logger.info("WorldModelRegistry: World change detected (simple)", %{world_id: world_id})
 
     case do_activate_world(world_id, state) do
@@ -271,7 +203,6 @@ defmodule World.ModelRegistry do
     result =
       case Map.get(state.models, world_id) do
         nil ->
-          # Try to get from default if world not loaded
           case Map.get(state.models, @default_world_id) do
             nil -> {:error, :no_models_loaded}
             default_models -> {:ok, Map.get(default_models, model_type)}
@@ -280,7 +211,6 @@ defmodule World.ModelRegistry do
         world_models ->
           case Map.get(world_models, model_type) do
             nil ->
-              # Fall back to default
               default_models = Map.get(state.models, @default_world_id, %{})
               {:ok, Map.get(default_models, model_type)}
 
@@ -308,7 +238,6 @@ defmodule World.ModelRegistry do
     result =
       case Map.get(state.models, state.active_world_id) do
         nil ->
-          # Fall back to default
           case Map.get(state.models, @default_world_id) do
             nil -> {:error, :no_models_loaded}
             models -> {:ok, models}
@@ -375,21 +304,14 @@ defmodule World.ModelRegistry do
     {:reply, state.ready, state}
   end
 
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
-
   defp do_activate_world(world_id, state) do
     if MapSet.member?(state.loading, world_id) do
       {:error, :already_loading, state}
     else
-      # Mark as loading
       state = %{state | loading: MapSet.put(state.loading, world_id)}
       broadcast_models_loading(world_id)
 
-      # Check if already loaded
       if Map.has_key?(state.models, world_id) do
-        # Already loaded, just switch
         new_state = %{
           state
           | active_world_id: world_id,
@@ -399,7 +321,6 @@ defmodule World.ModelRegistry do
         broadcast_models_loaded(world_id, Map.get(state.models, world_id))
         {:ok, new_state}
       else
-        # Need to load
         case do_load_world_models(world_id) do
           {:ok, models} ->
             new_state = %{
@@ -415,7 +336,6 @@ defmodule World.ModelRegistry do
           {:error, reason} ->
             new_state = %{state | loading: MapSet.delete(state.loading, world_id)}
             broadcast_models_error(world_id, reason)
-            # Still switch, but with empty models (will fall back to default)
             new_state = %{new_state | active_world_id: world_id}
             {:error, reason, new_state}
         end
@@ -433,14 +353,10 @@ defmodule World.ModelRegistry do
       entity_model: load_model_file(world_id, :entity_model)
     }
 
-    # Check if we got any valid models
     if Enum.all?(Map.values(models), &is_nil/1) do
       {:error, :no_models_found}
     else
-      # Also preload gazetteer overlay
       preload_gazetteer_overlay(world_id)
-
-      # Also ensure world embedder is initialized
       ensure_world_embedder(world_id)
 
       {:ok, models}
@@ -448,7 +364,6 @@ defmodule World.ModelRegistry do
   end
 
   defp load_model_file(world_id, model_type) do
-    # Try world-specific path first
     world_path = model_path(world_id, model_type)
 
     cond do
@@ -456,7 +371,6 @@ defmodule World.ModelRegistry do
         load_term_file(world_path)
 
       world_id != @default_world_id ->
-        # Fall back to default
         default_path = default_model_path(model_type)
 
         if File.exists?(default_path) do
@@ -466,7 +380,6 @@ defmodule World.ModelRegistry do
         end
 
       true ->
-        # Default world, try default path
         default_path = default_model_path(model_type)
 
         if File.exists?(default_path) do
@@ -489,7 +402,6 @@ defmodule World.ModelRegistry do
   end
 
   defp load_embedder_model(world_id) do
-    # Try world-specific embedder
     world_path = model_path(world_id, :embedder)
 
     cond do
@@ -497,7 +409,6 @@ defmodule World.ModelRegistry do
         load_term_file(world_path)
 
       true ->
-        # Fall back to default embedder
         default_path = default_model_path(:embedder)
 
         if File.exists?(default_path) do
@@ -509,20 +420,15 @@ defmodule World.ModelRegistry do
   end
 
   defp preload_gazetteer_overlay(world_id) do
-    # Load the world's gazetteer overlay into ETS
-    # Use WorldPersistence.world_path() to respect test environment isolation
-    overlay_path = Path.join(World.Persistence.world_path(world_id), "gazetteer_overlay.json")
+    overlay_path = Path.join(Persistence.world_path(world_id), "gazetteer_overlay.json")
 
     if File.exists?(overlay_path) do
       try do
         data = File.read!(overlay_path) |> Jason.decode!(keys: :atoms)
 
-        # Handle both list format (new) and map format (legacy)
         overlay_list =
           case data do
             list when is_list(list) ->
-              # New format: list of %{key: "term", info: %{...}} objects
-              # Filter out metadata entries like _meta
               list
               |> Enum.reject(fn entry -> entry[:key] == "_meta" end)
               |> Enum.map(fn entry ->
@@ -530,7 +436,6 @@ defmodule World.ModelRegistry do
               end)
 
             map when is_map(map) ->
-              # Legacy format: map of %{term => info}
               Enum.map(map, fn {key, value} ->
                 {to_string(key), value}
               end)
@@ -551,13 +456,11 @@ defmodule World.ModelRegistry do
   end
 
   defp ensure_world_embedder(world_id) do
-    # Trigger world embedder initialization if needed
     case WorldEmbedder.get_status(world_id) do
       %{ready: true} ->
         :ok
 
       %{phase: :not_initialized} ->
-        # Will be built lazily when needed
         :ok
 
       _ ->
@@ -582,28 +485,32 @@ defmodule World.ModelRegistry do
     }
   end
 
-  defp get_vocab_size(nil), do: 0
+  defp get_vocab_size(nil) do
+    0
+  end
 
   defp get_vocab_size(model) when is_map(model) do
     Map.get(model, :vocabulary, %{}) |> map_size()
   end
 
-  defp get_vocab_size(_), do: 0
+  defp get_vocab_size(_) do
+    0
+  end
 
-  defp get_embedder_vocab_size(nil), do: 0
+  defp get_embedder_vocab_size(nil) do
+    0
+  end
 
   defp get_embedder_vocab_size(model) when is_map(model) do
     Map.get(model, :vocabulary, %{}) |> map_size()
   end
 
-  defp get_embedder_vocab_size(_), do: 0
-
-  # ============================================================================
-  # PubSub Broadcasting
-  # ============================================================================
+  defp get_embedder_vocab_size(_) do
+    0
+  end
 
   defp broadcast_models_loading(world_id) do
-    Phoenix.PubSub.broadcast(@pubsub, "world_models:status", {:world_models_loading, world_id})
+    PubSub.broadcast(@pubsub, "world_models:status", {:world_models_loading, world_id})
   end
 
   defp broadcast_models_loaded(world_id, models) do
@@ -614,7 +521,7 @@ defmodule World.ModelRegistry do
       entity_model: models[:entity_model] != nil
     }
 
-    Phoenix.PubSub.broadcast(
+    PubSub.broadcast(
       @pubsub,
       "world_models:status",
       {:world_models_loaded, world_id, status}
@@ -622,7 +529,7 @@ defmodule World.ModelRegistry do
   end
 
   defp broadcast_models_error(world_id, reason) do
-    Phoenix.PubSub.broadcast(
+    PubSub.broadcast(
       @pubsub,
       "world_models:status",
       {:world_models_error, world_id, reason}

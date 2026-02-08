@@ -62,7 +62,7 @@ defmodule Brain.Analysis.IntentRegistryDataTest do
 
       test "#{description}" do
         result = IntentRegistry.domain(@intent)
-        
+
         if @expected_domain do
           assert result == @expected_domain
         else
@@ -88,7 +88,7 @@ defmodule Brain.Analysis.IntentRegistryDataTest do
 
       test "#{description}" do
         result = IntentRegistry.category(@intent)
-        
+
         # Category should be an atom or nil
         assert is_atom(result) or result == nil
       end

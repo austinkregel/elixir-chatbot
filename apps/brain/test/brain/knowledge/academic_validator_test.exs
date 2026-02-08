@@ -1,10 +1,10 @@
 defmodule Brain.Knowledge.AcademicValidatorTest do
+  alias Brain.Knowledge.Types
   use ExUnit.Case, async: false
 
   alias Brain.Knowledge.AcademicValidator
-  alias Brain.Knowledge.Types.{Finding, SourceInfo, ReviewCandidate}
+  alias Types.{Finding, SourceInfo, ReviewCandidate}
 
-  # Sample finding for testing
   def sample_finding(opts \\ []) do
     source =
       SourceInfo.new(
@@ -36,15 +36,12 @@ defmodule Brain.Knowledge.AcademicValidatorTest do
           assert true
 
         {:error, _reason} ->
-          # BeliefStore might not be running
           assert true
       end
     end
 
     test "accepts live_search option" do
       finding = sample_finding()
-
-      # Should not error with the option
       result = AcademicValidator.validate(finding, live_search: false)
       assert match?({:ok, _}, result) or match?({:error, _}, result)
     end
@@ -71,7 +68,6 @@ defmodule Brain.Knowledge.AcademicValidatorTest do
           assert is_list(results)
 
         {:error, _reason} ->
-          # Expected if epistemic layer not running
           :ok
       end
     end
@@ -88,10 +84,7 @@ defmodule Brain.Knowledge.AcademicValidatorTest do
       source = SourceInfo.new("https://test.com", reliability_score: 0.7)
 
       candidate =
-        ReviewCandidate.new(finding,
-          aggregate_confidence: 0.6,
-          corroborating_sources: [source]
-        )
+        ReviewCandidate.new(finding, aggregate_confidence: 0.6, corroborating_sources: [source])
 
       validation_result =
         {:corroborated,
@@ -103,16 +96,14 @@ defmodule Brain.Knowledge.AcademicValidatorTest do
       updated = AcademicValidator.apply_validation(candidate, validation_result)
 
       assert updated.aggregate_confidence == 0.75
-      assert length(updated.corroborating_sources) >= 1
+      assert updated.corroborating_sources != []
     end
 
     test "caps confidence at 1.0" do
       finding = sample_finding()
 
       candidate =
-        ReviewCandidate.new(finding,
-          aggregate_confidence: 0.95
-        )
+        ReviewCandidate.new(finding, aggregate_confidence: 0.95)
 
       validation_result = {:corroborated, %{boost: 0.15, sources: []}}
 
@@ -125,10 +116,7 @@ defmodule Brain.Knowledge.AcademicValidatorTest do
       finding = sample_finding()
 
       candidate =
-        ReviewCandidate.new(finding,
-          aggregate_confidence: 0.6,
-          existing_contradictions: []
-        )
+        ReviewCandidate.new(finding, aggregate_confidence: 0.6, existing_contradictions: [])
 
       validation_result =
         {:contradicted,
@@ -147,9 +135,7 @@ defmodule Brain.Knowledge.AcademicValidatorTest do
       finding = sample_finding()
 
       candidate =
-        ReviewCandidate.new(finding,
-          aggregate_confidence: 0.6
-        )
+        ReviewCandidate.new(finding, aggregate_confidence: 0.6)
 
       updated = AcademicValidator.apply_validation(candidate, :insufficient_evidence)
 
@@ -160,7 +146,6 @@ defmodule Brain.Knowledge.AcademicValidatorTest do
   describe "search_academic_consensus/2" do
     @tag :integration
     test "returns consensus information for a topic" do
-      # This test would hit real APIs unless mocked
       case AcademicValidator.search_academic_consensus("machine learning", limit: 5) do
         {:ok, result} ->
           assert Map.has_key?(result, :papers)
@@ -168,7 +153,6 @@ defmodule Brain.Knowledge.AcademicValidatorTest do
           assert result.consensus in [:no_data, :emerging, :weak, :moderate, :strong]
 
         {:error, _reason} ->
-          # Expected if APIs are rate-limited or unavailable
           :ok
       end
     end

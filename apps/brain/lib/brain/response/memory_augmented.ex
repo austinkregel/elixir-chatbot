@@ -1,33 +1,14 @@
 defmodule Brain.Response.MemoryAugmented do
-  @moduledoc """
-  Generates contextually appropriate responses by:
-  1. Finding similar past interactions via TF-IDF similarity
-  2. Extracting successful response patterns from those interactions
-  3. Adapting patterns to current context using slot filling
-
-  This module provides an alternative to template-based responses
-  by leveraging episodic memory of past successful conversations.
-  """
+  @moduledoc "Generates contextually appropriate responses by:\n1. Finding similar past interactions via TF-IDF similarity\n2. Extracting successful response patterns from those interactions\n3. Adapting patterns to current context using slot filling\n\nThis module provides an alternative to template-based responses\nby leveraging episodic memory of past successful conversations.\n"
 
   alias Brain.Memory.{Store, Embedder}
   alias Brain.ML.Tokenizer
 
   require Logger
-
-  # Minimum similarity threshold for using a memory-based response
   @similarity_threshold 0.6
-
-  # Maximum number of episodes to consider
   @max_episodes 5
 
-  @doc """
-  Attempts to generate a response from similar past interactions.
-
-  Returns:
-  - {:ok, response, metadata} - Successfully generated response
-  - :no_memory_match - No suitable past interactions found
-  - :embedder_not_ready - Embedder not available
-  """
+  @doc "Attempts to generate a response from similar past interactions.\n\nReturns:\n- {:ok, response, metadata} - Successfully generated response\n- :no_memory_match - No suitable past interactions found\n- :embedder_not_ready - Embedder not available\n"
   def generate(intent, entities, context \\ %{}) do
     if Embedder.ready?() and Process.whereis(Store) do
       do_generate(intent, entities, context)
@@ -36,9 +17,7 @@ defmodule Brain.Response.MemoryAugmented do
     end
   end
 
-  @doc """
-  Finds similar past interactions for debugging/inspection.
-  """
+  @doc "Finds similar past interactions for debugging/inspection.\n"
   def find_similar_episodes(intent, entities, limit \\ @max_episodes) do
     query = build_semantic_query(intent, entities)
 
@@ -48,16 +27,11 @@ defmodule Brain.Response.MemoryAugmented do
     end
   end
 
-  # Private implementation
-
   defp do_generate(intent, entities, context) do
-    # Build query from current state
     query = build_semantic_query(intent, entities)
 
-    # Find similar successful past exchanges
     case Store.query_similar(query, @max_episodes) do
       {:ok, [_ | _] = episodes} ->
-        # Extract and adapt response pattern
         adapt_from_episodes(episodes, entities, context)
 
       _ ->
@@ -70,7 +44,6 @@ defmodule Brain.Response.MemoryAugmented do
   end
 
   defp build_semantic_query(intent, entities) do
-    # Combine intent with entity values for rich query
     entity_text =
       entities
       |> Enum.map(fn e -> e[:value] || e["value"] || "" end)
@@ -85,7 +58,6 @@ defmodule Brain.Response.MemoryAugmented do
   end
 
   defp adapt_from_episodes(episodes, current_entities, _context) do
-    # Filter for episodes with positive outcomes
     positive_episodes =
       episodes
       |> Enum.filter(fn {ep, sim} ->
@@ -97,11 +69,9 @@ defmodule Brain.Response.MemoryAugmented do
         :no_memory_match
 
       candidates ->
-        # Find best match
         {best_episode, similarity} =
           Enum.max_by(candidates, fn {_ep, sim} -> sim end)
 
-        # Extract response pattern and substitute current entities
         case extract_response_pattern(best_episode) do
           nil ->
             :no_memory_match
@@ -128,32 +98,25 @@ defmodule Brain.Response.MemoryAugmented do
   end
 
   defp positive_outcome?(episode) do
-    # Check episode tags or outcome for positive indicators
     tags = episode.tags || []
     outcome = episode.outcome || ""
 
     cond do
-      # Explicit positive tag
       "successful" in tags -> true
       "positive" in tags -> true
-      # Negative indicators
       "failed" in tags -> false
       "negative" in tags -> false
-      # Check outcome text
       String.contains?(outcome, "success") -> true
       String.contains?(outcome, "error") -> false
-      # Default to considering it positive
       true -> true
     end
   end
 
   defp extract_response_pattern(episode) do
-    # The outcome field typically contains the bot's response
     outcome = episode.outcome
 
     cond do
       is_binary(outcome) and String.length(outcome) > 0 ->
-        # Clean up the pattern for reuse
         clean_pattern(outcome)
 
       is_map(episode) and Map.has_key?(episode, :response) ->
@@ -170,19 +133,17 @@ defmodule Brain.Response.MemoryAugmented do
     |> Tokenizer.collapse_whitespace_public()
   end
 
-  defp clean_pattern(_), do: nil
+  defp clean_pattern(_) do
+    nil
+  end
 
   defp substitute_entities(pattern, entities) when is_list(entities) do
-    # Replace placeholder tokens with current entity values
-    # Placeholders are in format @entity_type
     Enum.reduce(entities, pattern, fn entity, acc ->
       entity_type = entity[:entity_type]
       value = entity[:value] || ""
 
       if entity_type && value != "" do
         placeholder = "@#{entity_type}"
-
-        # Use tokenizer to find and replace (not regex for the main logic)
         replace_placeholder_tokens(acc, placeholder, value)
       else
         acc
@@ -190,10 +151,11 @@ defmodule Brain.Response.MemoryAugmented do
     end)
   end
 
-  defp substitute_entities(pattern, _), do: pattern
+  defp substitute_entities(pattern, _) do
+    pattern
+  end
 
   defp replace_placeholder_tokens(text, placeholder, value) do
-    # Tokenize and replace matching tokens
     tokens = Tokenizer.tokenize_words(text)
     normalized_placeholder = Tokenizer.normalize(placeholder)
 

@@ -36,10 +36,10 @@ defmodule Brain.IntentEdgeCasesTest do
   setup_all do
     Application.ensure_all_started(:brain)
     :timer.sleep(500)
-    
+
     # Require TF-IDF and gazetteer models - fail fast if not loaded
     require_models!([:tfidf, :gazetteer, :entities])
-    
+
     # Capture status for debugging
     %{model_status: model_status()}
   end
@@ -159,11 +159,11 @@ defmodule Brain.IntentEdgeCasesTest do
     test "Hello alone is a greeting, not the song" do
       {:ok, result} = IntentClassifierSimple.classify("Hello")
       intent_lower = String.downcase(result.intent)
-      
+
       is_greeting = String.contains?(intent_lower, "greeting") or
                     String.contains?(intent_lower, "hello") or
                     String.contains?(intent_lower, "welcome")
-      
+
       assert is_greeting, "Expected greeting, got: #{result.intent}"
       refute String.contains?(intent_lower, "music.play"), "Should not be music.play"
     end
@@ -171,22 +171,22 @@ defmodule Brain.IntentEdgeCasesTest do
     test "Hello I'm Austin is a greeting introduction" do
       {:ok, result} = IntentClassifierSimple.classify("Hello, I'm Austin")
       intent_lower = String.downcase(result.intent)
-      
+
       is_greeting = String.contains?(intent_lower, "greeting") or
                     String.contains?(intent_lower, "hello") or
                     String.contains?(intent_lower, "welcome") or
                     String.contains?(intent_lower, "introduction")
-      
+
       assert is_greeting, "Expected greeting/introduction, got: #{result.intent}"
     end
 
     test "Play Hello by Adele is a music request" do
       {:ok, result} = IntentClassifierSimple.classify("Play Hello by Adele")
       intent_lower = String.downcase(result.intent)
-      
+
       is_music = String.contains?(intent_lower, "music") or
                  String.contains?(intent_lower, "play")
-      
+
       assert is_music, "Expected music/play, got: #{result.intent}"
     end
   end
@@ -220,7 +220,7 @@ defmodule Brain.IntentEdgeCasesTest do
     test "gibberish has lower confidence than real phrases" do
       {:ok, gibberish} = IntentClassifierSimple.classify("xyzabc qwerty asdfgh jklmnop")
       {:ok, real} = IntentClassifierSimple.classify("What's the weather today")
-      
+
       assert real.confidence > gibberish.confidence,
              "Real: #{real.confidence}, Gibberish: #{gibberish.confidence}"
     end
@@ -418,7 +418,7 @@ defmodule Brain.IntentEdgeCasesTest do
     case IntentClassifierSimple.classify(input) do
       {:ok, result} ->
         intent_lower = String.downcase(result.intent)
-        
+
         matches_pattern = Enum.any?(patterns, fn pattern ->
           String.contains?(intent_lower, String.downcase(pattern))
         end)

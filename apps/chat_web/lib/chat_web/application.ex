@@ -1,14 +1,13 @@
 defmodule ChatWeb.Application do
   @moduledoc false
+  alias ChatWeb.Endpoint
   use Application
 
   @impl true
   def start(_type, _args) do
     children = [
       ChatWeb.Telemetry,
-      {DNSCluster, query: Application.get_env(:chat_web, :dns_cluster_query) || :ignore},
-      # PubSub is started by Brain.Application as Brain.PubSub
-      # Start to serve requests, typically the last entry
+      {DNSCluster, [query: Application.get_env(:chat_web, :dns_cluster_query) || :ignore]},
       ChatWeb.Endpoint
     ]
 
@@ -18,7 +17,7 @@ defmodule ChatWeb.Application do
 
   @impl true
   def config_change(changed, _new, removed) do
-    ChatWeb.Endpoint.config_change(changed, removed)
+    Endpoint.config_change(changed, removed)
     :ok
   end
 end

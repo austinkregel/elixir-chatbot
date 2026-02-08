@@ -1,13 +1,10 @@
 defmodule ChatWeb.SettingsLive do
-  @moduledoc """
-  Settings page for world management and entity administration.
+  @moduledoc "Settings page for world management and entity administration.\n\nFeatures:\n- World management (create, delete, configure)\n- Gazetteer entity management\n- System configuration\n"
 
-  Features:
-  - World management (create, delete, configure)
-  - Gazetteer entity management
-  - System configuration
-  """
-
+  alias Brain.Response.LSTMResponse
+  alias Brain.ML.LSTM.MultiTaskModel
+  alias Brain.ML.LSTM.UnifiedModel
+  alias Phoenix.PubSub
   use ChatWeb, :live_view
   require Logger
 
@@ -20,11 +17,12 @@ defmodule ChatWeb.SettingsLive do
   alias Brain.ML.Gazetteer
   alias Brain.ML.TrainingServer
   alias Brain.Response.TemplateStore
+  alias Brain.Services.{Dispatcher, CredentialVault}
 
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
-      Phoenix.PubSub.subscribe(Brain.PubSub, "training:progress")
+      PubSub.subscribe(Brain.PubSub, "training:progress")
     end
 
     {:ok, socket}
@@ -32,7 +30,6 @@ defmodule ChatWeb.SettingsLive do
 
   @impl true
   def handle_params(params, _uri, socket) do
-    # Determine which section to show
     section =
       case params["section"] do
         "entities" -> :entities
@@ -40,6 +37,7 @@ defmodule ChatWeb.SettingsLive do
         "training" -> :training
         "ml_training" -> :ml_training
         "templates" -> :templates
+        "services" -> :services
         _ -> :worlds
       end
 
@@ -54,14 +52,12 @@ defmodule ChatWeb.SettingsLive do
       |> assign(:new_entity_key, "")
       |> assign(:new_entity_value, "")
       |> assign(:new_entity_type, "location")
-      # Training section assigns
       |> assign(:training_sessions, [])
       |> assign(:available_tasks, %{})
       |> assign(:selected_capability, :all)
       |> assign(:starting_training, false)
       |> assign(:tasks_loading, false)
       |> assign(:lc_stats, %{total_sessions: 0, active_agents: 0})
-      # ML Training section assigns
       |> assign(:ml_model_statuses, %{})
       |> assign(:ml_training_status, :idle)
       |> assign(:ml_selected_model, "unified")
@@ -72,7 +68,6 @@ defmodule ChatWeb.SettingsLive do
       |> assign(:ml_schedules, [])
       |> assign(:ml_schedule_interval, "24")
       |> assign(:ml_reloading, false)
-      # Templates section assigns
       |> assign(:template_intents, [])
       |> assign(:selected_template_intent, nil)
       |> assign(:intent_templates, [])
@@ -80,6 +75,10 @@ defmodule ChatWeb.SettingsLive do
       |> assign(:new_template_text, "")
       |> assign(:template_stats, %{})
       |> assign(:template_has_unsaved, false)
+      |> assign(:services, [])
+      |> assign(:service_credentials, %{})
+      |> assign(:service_health_status, %{})
+      |> assign(:service_checking, nil)
       |> load_section_data()
 
     {:noreply, socket}
@@ -92,6 +91,7 @@ defmodule ChatWeb.SettingsLive do
       :training -> load_training_data(socket)
       :ml_training -> load_ml_training_data(socket)
       :templates -> load_templates_data(socket)
+      :services -> load_services_data(socket)
       _ -> socket
     end
   end
@@ -118,11 +118,7 @@ defmodule ChatWeb.SettingsLive do
 
   defp load_entities_data(socket) do
     world_id = socket.assigns.current_world_id
-
-    # Get global entities grouped by type
     entity_types = Gazetteer.list_types()
-
-    # Get world overlay
     world_overlay = Gazetteer.get_world_overlay(world_id)
 
     socket
@@ -139,7 +135,6 @@ defmodule ChatWeb.SettingsLive do
       if type do
         Gazetteer.list_by_type(type)
         |> Enum.map(fn {key, info} ->
-          # Convert tuple to map for template compatibility
           %{
             key: key,
             value: Map.get(info, :value) || Map.get(info, :original) || key,
@@ -155,7 +150,6 @@ defmodule ChatWeb.SettingsLive do
   end
 
   defp load_training_data(socket) do
-    # Load active training sessions
     sessions =
       try do
         LearningCenter.list_sessions()
@@ -165,7 +159,6 @@ defmodule ChatWeb.SettingsLive do
         :exit, _ -> []
       end
 
-    # Get Learning Center stats
     lc_stats =
       try do
         LearningCenter.stats()
@@ -175,8 +168,6 @@ defmodule ChatWeb.SettingsLive do
         :exit, _ -> %{total_sessions: 0, active_agents: 0}
       end
 
-    # Load available task categories in background to not block UI
-    # Start with empty map, then load async
     socket =
       socket
       |> assign(:training_sessions, sessions)
@@ -184,7 +175,6 @@ defmodule ChatWeb.SettingsLive do
       |> assign(:available_tasks, socket.assigns[:available_tasks] || %{})
       |> assign(:tasks_loading, true)
 
-    # Spawn async task to load available tasks (heavy operation)
     if connected?(socket) do
       self_pid = self()
 
@@ -209,10 +199,9 @@ defmodule ChatWeb.SettingsLive do
   end
 
   defp load_ml_training_data(socket) do
-    # Check model readiness with short timeouts
     unified_ready =
       try do
-        Brain.ML.LSTM.UnifiedModel.ready?()
+        UnifiedModel.ready?()
       rescue
         _ -> false
       catch
@@ -221,7 +210,7 @@ defmodule ChatWeb.SettingsLive do
 
     multi_task_ready =
       try do
-        Brain.ML.LSTM.MultiTaskModel.ready?()
+        MultiTaskModel.ready?()
       rescue
         _ -> false
       catch
@@ -230,7 +219,7 @@ defmodule ChatWeb.SettingsLive do
 
     response_ready =
       try do
-        Brain.Response.LSTMResponse.ready?()
+        LSTMResponse.ready?()
       rescue
         _ -> false
       catch
@@ -243,10 +232,7 @@ defmodule ChatWeb.SettingsLive do
       response_scorer: response_ready
     }
 
-    # Get training server status
     training_status = TrainingServer.get_status()
-
-    # Get active schedules
     schedules = TrainingServer.list_schedules()
 
     socket
@@ -256,7 +242,6 @@ defmodule ChatWeb.SettingsLive do
   end
 
   defp load_templates_data(socket) do
-    # Get template statistics
     stats =
       try do
         TemplateStore.stats()
@@ -266,7 +251,6 @@ defmodule ChatWeb.SettingsLive do
         :exit, _ -> %{intent_count: 0, template_count: 0}
       end
 
-    # Get list of intents with templates
     intents =
       try do
         TemplateStore.list_intents() |> Enum.sort()
@@ -276,7 +260,6 @@ defmodule ChatWeb.SettingsLive do
         :exit, _ -> []
       end
 
-    # Check for unsaved changes
     has_unsaved =
       try do
         TemplateStore.has_unsaved_changes?()
@@ -290,7 +273,10 @@ defmodule ChatWeb.SettingsLive do
     |> assign(:template_stats, stats)
     |> assign(:template_intents, intents)
     |> assign(:template_has_unsaved, has_unsaved)
-    |> assign(:selected_template_intent, socket.assigns[:selected_template_intent] || List.first(intents))
+    |> assign(
+      :selected_template_intent,
+      socket.assigns[:selected_template_intent] || List.first(intents)
+    )
     |> load_intent_templates()
   end
 
@@ -313,18 +299,41 @@ defmodule ChatWeb.SettingsLive do
     assign(socket, :intent_templates, templates)
   end
 
-  # ============================================================================
-  # Event Handlers - World Context
-  # ============================================================================
+  defp load_services_data(socket) do
+    world = socket.assigns[:current_world_id] || "default"
+
+    services =
+      try do
+        Dispatcher.list_services(world: world)
+      rescue
+        _ -> []
+      catch
+        :exit, _ -> []
+      end
+
+    # Build credential status for each service
+    service_credentials =
+      Enum.reduce(services, %{}, fn service, acc ->
+        creds =
+          Enum.reduce(service.required_credentials, %{}, fn cred_key, inner_acc ->
+            has_cred = CredentialVault.has_credential?(service.name, cred_key, world: world)
+            Map.put(inner_acc, cred_key, has_cred)
+          end)
+
+        Map.put(acc, service.name, creds)
+      end)
+
+    socket
+    |> assign(:services, services)
+    |> assign(:service_credentials, service_credentials)
+  end
 
   @impl true
   def handle_event("switch_world", %{"world_id" => _world_id}, socket) do
-    # World context hook already updated current_world_id, reload section data
     {:noreply, load_section_data(socket)}
   end
 
   def handle_event("refresh_worlds", _params, socket) do
-    # World context hook already refreshed available_worlds
     {:noreply, socket}
   end
 
@@ -403,10 +412,6 @@ defmodule ChatWeb.SettingsLive do
     end
   end
 
-  # ============================================================================
-  # Event Handlers - Entities
-  # ============================================================================
-
   @impl true
   def handle_event("select_entity_type", %{"type" => type}, socket) do
     {:noreply, socket |> assign(:selected_entity_type, type) |> load_type_entities()}
@@ -437,7 +442,12 @@ defmodule ChatWeb.SettingsLive do
 
     if key != "" do
       case Gazetteer.add_to_world(world_id, key, type, %{
-             value: if(value == "", do: key, else: value),
+             value:
+               if(value == "") do
+                 key
+               else
+                 value
+               end,
              source: :admin,
              added_at: DateTime.utc_now()
            }) do
@@ -474,10 +484,6 @@ defmodule ChatWeb.SettingsLive do
   def handle_event("refresh", _params, socket) do
     {:noreply, load_section_data(socket)}
   end
-
-  # ============================================================================
-  # Event Handlers - Training
-  # ============================================================================
 
   def handle_event("select_capability", %{"capability" => capability}, socket) do
     capability = String.to_existing_atom(capability)
@@ -517,17 +523,16 @@ defmodule ChatWeb.SettingsLive do
     end
   end
 
-  # ============================================================================
-  # Event Handlers - ML Training
-  # ============================================================================
-
   def handle_event("update_ml_training_form", params, socket) do
     socket =
       socket
       |> assign(:ml_selected_model, params["model_type"] || socket.assigns.ml_selected_model)
       |> assign(:ml_epochs, params["epochs"] || socket.assigns.ml_epochs)
       |> assign(:ml_batch_size, params["batch_size"] || socket.assigns.ml_batch_size)
-      |> assign(:ml_experiment_name, params["experiment_name"] || socket.assigns.ml_experiment_name)
+      |> assign(
+        :ml_experiment_name,
+        params["experiment_name"] || socket.assigns.ml_experiment_name
+      )
 
     {:noreply, socket}
   end
@@ -566,12 +571,10 @@ defmodule ChatWeb.SettingsLive do
         {:noreply, socket}
 
       {:error, {:already_training, current}} ->
-        {:noreply,
-         put_flash(socket, :error, "Already training #{current}. Cancel it first.")}
+        {:noreply, put_flash(socket, :error, "Already training #{current}. Cancel it first.")}
 
       {:error, reason} ->
-        {:noreply,
-         put_flash(socket, :error, "Failed to start training: #{inspect(reason)}")}
+        {:noreply, put_flash(socket, :error, "Failed to start training: #{inspect(reason)}")}
     end
   end
 
@@ -599,9 +602,9 @@ defmodule ChatWeb.SettingsLive do
       |> Enum.map(fn model ->
         try do
           case model do
-            :unified -> {model, Brain.ML.LSTM.UnifiedModel.reload()}
-            :multi_task -> {model, Brain.ML.LSTM.MultiTaskModel.reload()}
-            :response -> {model, Brain.Response.LSTMResponse.reload()}
+            :unified -> {model, UnifiedModel.reload()}
+            :multi_task -> {model, MultiTaskModel.reload()}
+            :response -> {model, LSTMResponse.reload()}
           end
         rescue
           e -> {model, {:error, Exception.message(e)}}
@@ -654,8 +657,7 @@ defmodule ChatWeb.SettingsLive do
         {:noreply, socket}
 
       {:error, reason} ->
-        {:noreply,
-         put_flash(socket, :error, "Failed to schedule: #{inspect(reason)}")}
+        {:noreply, put_flash(socket, :error, "Failed to schedule: #{inspect(reason)}")}
     end
   end
 
@@ -674,10 +676,6 @@ defmodule ChatWeb.SettingsLive do
         {:noreply, put_flash(socket, :error, "Schedule not found")}
     end
   end
-
-  # ============================================================================
-  # Event Handlers - Templates
-  # ============================================================================
 
   def handle_event("select_template_intent", %{"intent" => intent}, socket) do
     {:noreply,
@@ -749,9 +747,91 @@ defmodule ChatWeb.SettingsLive do
     end
   end
 
+  # ============================================================================
+  # Services Section Event Handlers
+  # ============================================================================
+
+  def handle_event("save_credential", %{"service" => service_name, "key" => key, "value" => value}, socket) do
+    world = socket.assigns[:current_world_id] || "default"
+    service_atom = String.to_existing_atom(service_name)
+    key_atom = String.to_existing_atom(key)
+
+    case CredentialVault.store(service_atom, key_atom, value, world: world) do
+      :ok ->
+        {:noreply,
+         socket
+         |> load_services_data()
+         |> put_flash(:info, "Credential saved for #{service_name}")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to save credential: #{inspect(reason)}")}
+    end
+  rescue
+    ArgumentError ->
+      {:noreply, put_flash(socket, :error, "Invalid service or credential key")}
+  end
+
+  def handle_event("delete_credential", %{"service" => service_name, "key" => key}, socket) do
+    world = socket.assigns[:current_world_id] || "default"
+    service_atom = String.to_existing_atom(service_name)
+    key_atom = String.to_existing_atom(key)
+
+    CredentialVault.delete(service_atom, key_atom, world: world)
+
+    {:noreply,
+     socket
+     |> load_services_data()
+     |> put_flash(:info, "Credential removed")}
+  rescue
+    ArgumentError ->
+      {:noreply, put_flash(socket, :error, "Invalid service or credential key")}
+  end
+
+  def handle_event("check_service_health", %{"service" => service_name}, socket) do
+    world = socket.assigns[:current_world_id] || "default"
+    service_atom = String.to_existing_atom(service_name)
+
+    # Mark as checking
+    socket = assign(socket, :service_checking, service_atom)
+
+    # Run health check
+    result = Dispatcher.health_check(service_atom, world: world)
+
+    status =
+      case result do
+        :ok -> :healthy
+        {:error, :missing_credentials} -> :missing_credentials
+        {:error, :invalid_credentials} -> :invalid_credentials
+        {:error, reason} -> {:error, reason}
+      end
+
+    health_status = Map.put(socket.assigns.service_health_status, service_atom, status)
+
+    flash_msg =
+      case status do
+        :healthy -> "#{service_name} is working correctly"
+        :missing_credentials -> "Missing credentials for #{service_name}"
+        :invalid_credentials -> "Invalid credentials for #{service_name}"
+        {:error, reason} -> "#{service_name} error: #{inspect(reason)}"
+      end
+
+    flash_type = if status == :healthy, do: :info, else: :error
+
+    {:noreply,
+     socket
+     |> assign(:service_health_status, health_status)
+     |> assign(:service_checking, nil)
+     |> put_flash(flash_type, flash_msg)}
+  rescue
+    ArgumentError ->
+      {:noreply,
+       socket
+       |> assign(:service_checking, nil)
+       |> put_flash(:error, "Invalid service name")}
+  end
+
   @impl true
   def handle_info({:world_context_changed, _world_id}, socket) do
-    # World was changed from another LiveView or tab
     {:noreply, load_section_data(socket)}
   end
 
@@ -762,7 +842,6 @@ defmodule ChatWeb.SettingsLive do
      |> assign(:tasks_loading, false)}
   end
 
-  # ML Training PubSub messages
   def handle_info({:training_started, model_type, _started_at}, socket) do
     socket =
       socket
@@ -810,10 +889,6 @@ defmodule ChatWeb.SettingsLive do
   def handle_info({:schedule_cancelled, _id}, socket) do
     {:noreply, load_ml_training_data(socket)}
   end
-
-  # ============================================================================
-  # Render
-  # ============================================================================
 
   @impl true
   def render(assigns) do
@@ -875,8 +950,15 @@ defmodule ChatWeb.SettingsLive do
           >
             <.icon name="hero-chat-bubble-bottom-center-text" class="size-4" /> Templates
           </button>
+          <button
+            phx-click="switch_section"
+            phx-value-section="services"
+            class={["tab gap-1", if(@section == :services, do: "tab-active", else: "")]}
+          >
+            <.icon name="hero-cloud" class="size-4" /> Services
+          </button>
         </div>
-        
+
     <!-- Content -->
         <%= case @section do %>
           <% :worlds -> %>
@@ -931,15 +1013,18 @@ defmodule ChatWeb.SettingsLive do
               stats={@template_stats}
               has_unsaved={@template_has_unsaved}
             />
+          <% :services -> %>
+            <.services_section
+              services={@services}
+              credentials={@service_credentials}
+              health_status={@service_health_status}
+              checking={@service_checking}
+            />
         <% end %>
       </div>
     </.app_shell>
     """
   end
-
-  # ============================================================================
-  # Section Components
-  # ============================================================================
 
   defp worlds_section(assigns) do
     ~H"""
@@ -969,7 +1054,7 @@ defmodule ChatWeb.SettingsLive do
           </button>
         </form>
       </div>
-      
+
     <!-- Active Worlds -->
       <div class="bg-base-100 rounded-xl border border-base-300/50">
         <div class="p-4 border-b border-base-300">
@@ -1022,7 +1107,7 @@ defmodule ChatWeb.SettingsLive do
           </div>
         <% end %>
       </div>
-      
+
     <!-- Persisted Worlds (not loaded) -->
       <% not_loaded =
         Enum.filter(@persisted_worlds, fn pw -> not Enum.any?(@worlds, &(&1.id == pw.id)) end) %>
@@ -1112,7 +1197,7 @@ defmodule ChatWeb.SettingsLive do
             <% end %>
           </ul>
         </div>
-        
+
     <!-- Entities List -->
         <div class="lg:col-span-3 bg-base-100 rounded-xl border border-base-300/50">
           <div class="p-4 border-b border-base-300 flex items-center gap-4">
@@ -1226,7 +1311,7 @@ defmodule ChatWeb.SettingsLive do
           </div>
         </div>
       </div>
-      
+
       <!-- Start Training -->
       <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
         <h3 class="font-semibold mb-4">Start Task-Based Training</h3>
@@ -1272,7 +1357,7 @@ defmodule ChatWeb.SettingsLive do
           </button>
         </div>
       </div>
-      
+
       <!-- Active Sessions -->
       <div class="bg-base-100 rounded-xl border border-base-300/50">
         <div class="p-4 border-b border-base-300">
@@ -1335,7 +1420,7 @@ defmodule ChatWeb.SettingsLive do
           </div>
         <% end %>
       </div>
-      
+
       <!-- Available Task Categories -->
       <div class="bg-base-100 rounded-xl border border-base-300/50">
         <div class="p-4 border-b border-base-300">
@@ -1614,10 +1699,21 @@ defmodule ChatWeb.SettingsLive do
     """
   end
 
-  defp session_status_badge(:active), do: "badge-warning"
-  defp session_status_badge(:completed), do: "badge-success"
-  defp session_status_badge(:cancelled), do: "badge-error"
-  defp session_status_badge(_), do: "badge-ghost"
+  defp session_status_badge(:active) do
+    "badge-warning"
+  end
+
+  defp session_status_badge(:completed) do
+    "badge-success"
+  end
+
+  defp session_status_badge(:cancelled) do
+    "badge-error"
+  end
+
+  defp session_status_badge(_) do
+    "badge-ghost"
+  end
 
   defp templates_section(assigns) do
     ~H"""
@@ -1758,11 +1854,189 @@ defmodule ChatWeb.SettingsLive do
     """
   end
 
-  # ============================================================================
-  # Helpers
-  # ============================================================================
+  defp services_section(assigns) do
+    ~H"""
+    <div class="space-y-6">
+      <!-- Services Overview -->
+      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="font-semibold">External Services</h3>
+            <p class="text-sm text-base-content/60">
+              Configure API credentials for live data enrichment
+            </p>
+          </div>
+          <div class="badge badge-outline gap-1">
+            <.icon name="hero-shield-check" class="size-3" />
+            Credentials are encrypted
+          </div>
+        </div>
 
-  defp filter_entities(entities, ""), do: entities
+        <div class="alert alert-info mb-4">
+          <.icon name="hero-information-circle" class="size-5" />
+          <span>
+            API keys are stored encrypted and never exposed in responses or logs.
+            Each world can have its own service credentials.
+          </span>
+        </div>
+      </div>
+
+      <!-- Service Cards -->
+      <%= if length(@services) == 0 do %>
+        <div class="bg-base-100 rounded-xl border border-base-300/50 p-8 text-center">
+          <.icon name="hero-cloud" class="size-12 mx-auto text-base-content/30 mb-4" />
+          <h3 class="font-semibold mb-2">No Services Available</h3>
+          <p class="text-sm text-base-content/60">
+            No external services are configured in this installation.
+          </p>
+        </div>
+      <% else %>
+        <div class="grid gap-4 md:grid-cols-2">
+          <%= for service <- @services do %>
+            <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
+              <!-- Service Header -->
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <h4 class="font-semibold flex items-center gap-2">
+                    <.icon name={service_icon(service.name)} class="size-5" />
+                    {service.display_name}
+                  </h4>
+                  <p class="text-sm text-base-content/60 mt-1">{service.description}</p>
+                </div>
+                <.service_status_badge
+                  configured={service.configured}
+                  health={Map.get(@health_status, service.name)}
+                />
+              </div>
+
+              <!-- Supported Intents -->
+              <div class="mb-4">
+                <div class="text-xs text-base-content/60 mb-1">Supports:</div>
+                <div class="flex flex-wrap gap-1">
+                  <%= for intent <- service.supported_intents do %>
+                    <span class="badge badge-sm badge-ghost">{intent}</span>
+                  <% end %>
+                </div>
+              </div>
+
+              <!-- Credential Forms -->
+              <div class="space-y-3">
+                <%= for cred_key <- service.required_credentials do %>
+                  <% has_cred = get_in(@credentials, [service.name, cred_key]) %>
+                  <div class="form-control">
+                    <label class="label py-1">
+                      <span class="label-text text-sm">{humanize_credential(cred_key)}</span>
+                      <%= if has_cred do %>
+                        <span class="badge badge-success badge-xs gap-1">
+                          <.icon name="hero-check" class="size-3" /> Set
+                        </span>
+                      <% end %>
+                    </label>
+                    <div class="flex gap-2">
+                      <form
+                        phx-submit="save_credential"
+                        class="flex-1 flex gap-2"
+                      >
+                        <input type="hidden" name="service" value={service.name} />
+                        <input type="hidden" name="key" value={cred_key} />
+                        <input
+                          type="password"
+                          name="value"
+                          placeholder={if has_cred, do: "••••••••", else: "Enter #{humanize_credential(cred_key)}..."}
+                          class="input input-sm input-bordered flex-1"
+                          autocomplete="off"
+                        />
+                        <button type="submit" class="btn btn-sm btn-primary">
+                          <.icon name="hero-key" class="size-4" />
+                          Save
+                        </button>
+                      </form>
+                      <%= if has_cred do %>
+                        <button
+                          phx-click="delete_credential"
+                          phx-value-service={service.name}
+                          phx-value-key={cred_key}
+                          class="btn btn-sm btn-ghost text-error"
+                          title="Remove credential"
+                        >
+                          <.icon name="hero-trash" class="size-4" />
+                        </button>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+
+              <!-- Health Check -->
+              <%= if service.configured do %>
+                <div class="mt-4 pt-4 border-t border-base-300/50">
+                  <button
+                    phx-click="check_service_health"
+                    phx-value-service={service.name}
+                    class="btn btn-sm btn-outline w-full gap-1"
+                    disabled={@checking == service.name}
+                  >
+                    <%= if @checking == service.name do %>
+                      <span class="loading loading-spinner loading-xs"></span>
+                      Checking...
+                    <% else %>
+                      <.icon name="hero-signal" class="size-4" />
+                      Test Connection
+                    <% end %>
+                  </button>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+    """
+  end
+
+  defp service_status_badge(assigns) do
+    ~H"""
+    <div class={[
+      "badge gap-1",
+      cond do
+        @health == :healthy -> "badge-success"
+        @health in [:invalid_credentials, :missing_credentials] -> "badge-error"
+        @health != nil -> "badge-warning"
+        @configured -> "badge-info"
+        true -> "badge-ghost"
+      end
+    ]}>
+      <%= cond do %>
+        <% @health == :healthy -> %>
+          <.icon name="hero-check-circle" class="size-3" /> Healthy
+        <% @health == :invalid_credentials -> %>
+          <.icon name="hero-x-circle" class="size-3" /> Invalid Key
+        <% @health == :missing_credentials -> %>
+          <.icon name="hero-exclamation-circle" class="size-3" /> Missing
+        <% @health != nil -> %>
+          <.icon name="hero-exclamation-triangle" class="size-3" /> Error
+        <% @configured -> %>
+          <.icon name="hero-check" class="size-3" /> Configured
+        <% true -> %>
+          <.icon name="hero-minus-circle" class="size-3" /> Not Set
+      <% end %>
+    </div>
+    """
+  end
+
+  defp service_icon(:weather), do: "hero-sun"
+  defp service_icon(:news), do: "hero-newspaper"
+  defp service_icon(:geocoding), do: "hero-map-pin"
+  defp service_icon(_), do: "hero-cloud"
+
+  defp humanize_credential(:api_key), do: "API Key"
+  defp humanize_credential(:client_id), do: "Client ID"
+  defp humanize_credential(:client_secret), do: "Client Secret"
+  defp humanize_credential(key), do: key |> Atom.to_string() |> String.replace("_", " ") |> String.capitalize()
+
+  defp filter_entities(entities, "") do
+    entities
+  end
 
   defp filter_entities(entities, search) do
     search = String.downcase(search)
@@ -1773,7 +2047,9 @@ defmodule ChatWeb.SettingsLive do
     end)
   end
 
-  defp filter_intents(intents, ""), do: intents
+  defp filter_intents(intents, "") do
+    intents
+  end
 
   defp filter_intents(intents, search) do
     search = String.downcase(search)
@@ -1799,5 +2075,7 @@ defmodule ChatWeb.SettingsLive do
     end
   end
 
-  defp parse_integer(_, default), do: default
+  defp parse_integer(_, default) do
+    default
+  end
 end

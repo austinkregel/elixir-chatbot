@@ -1,19 +1,13 @@
 defmodule Mix.Tasks.Evaluate do
+  alias Brain.Analysis.SpeechActClassifier
+  alias Brain.ML.LSTM.UnifiedModel
+  alias Brain.ML
   @shortdoc "Run all ML model evaluations"
-  @moduledoc """
-  Run evaluation against gold standard data for all ML tasks.
-
-  ## Usage
-
-      mix evaluate              # Run all evaluations
-      mix evaluate --save       # Save results for historical tracking
-      mix evaluate --compare    # Compare with previous run
-      mix evaluate --verbose    # Show per-class details
-  """
+  @moduledoc "Run evaluation against gold standard data for all ML tasks.\n\n## Usage\n\n    mix evaluate              # Run all evaluations\n    mix evaluate --save       # Save results for historical tracking\n    mix evaluate --compare    # Compare with previous run\n    mix evaluate --verbose    # Show per-class details\n"
 
   use Mix.Task
 
-  alias Brain.ML.{Evaluation, EvaluationStore}
+  alias ML.{Evaluation, EvaluationStore}
 
   @tasks ["intent", "sentiment", "speech_act"]
 
@@ -34,7 +28,10 @@ defmodule Mix.Tasks.Evaluate do
         gold = EvaluationStore.load_gold_standard(task)
 
         if gold == [] do
-          IO.puts("  #{task}: No gold standard data (add examples to priv/evaluation/#{task}/gold_standard.json)")
+          IO.puts(
+            "  #{task}: No gold standard data (add examples to priv/evaluation/#{task}/gold_standard.json)"
+          )
+
           {task, nil}
         else
           IO.puts("  Evaluating #{task} (#{length(gold)} examples)...")
@@ -46,7 +43,9 @@ defmodule Mix.Tasks.Evaluate do
           IO.puts("    Accuracy: #{acc}%  Macro-F1: #{f1}%")
 
           if verbose? do
-            report = Evaluation.classification_report(Evaluation.confusion_matrix(predictions, actuals))
+            report =
+              Evaluation.classification_report(Evaluation.confusion_matrix(predictions, actuals))
+
             IO.puts("")
             IO.puts(Evaluation.format_report(report))
             IO.puts("")
@@ -71,8 +70,17 @@ defmodule Mix.Tasks.Evaluate do
           case EvaluationStore.list_runs(task) do
             [_current | [previous | _]] ->
               delta = EvaluationStore.compare(previous, current)
-              sign = if delta.accuracy_delta >= 0, do: "+", else: ""
-              IO.puts("  #{task}: #{sign}#{Float.round(delta.accuracy_delta * 100, 1)}% accuracy change")
+
+              sign =
+                if delta.accuracy_delta >= 0 do
+                  "+"
+                else
+                  ""
+                end
+
+              IO.puts(
+                "  #{task}: #{sign}#{Float.round(delta.accuracy_delta * 100, 1)}% accuracy change"
+              )
 
             _ ->
               IO.puts("  #{task}: no previous run to compare")
@@ -113,10 +121,12 @@ defmodule Mix.Tasks.Evaluate do
     |> then(fn {p, a} -> {Enum.reverse(p), Enum.reverse(a)} end)
   end
 
-  defp run_task_evaluation(_task, _gold), do: {[], []}
+  defp run_task_evaluation(_task, _gold) do
+    {[], []}
+  end
 
   defp classify_intent(text) do
-    case Brain.Analysis.SpeechActClassifier.classify(text) do
+    case SpeechActClassifier.classify(text) do
       %{indicators: indicators} ->
         indicators
         |> Enum.find_value("unknown", fn indicator ->
@@ -132,8 +142,8 @@ defmodule Mix.Tasks.Evaluate do
   end
 
   defp classify_sentiment(text) do
-    if Brain.ML.LSTM.UnifiedModel.ready?() do
-      case Brain.ML.LSTM.UnifiedModel.classify_sentiment(text) do
+    if UnifiedModel.ready?() do
+      case UnifiedModel.classify_sentiment(text) do
         {:ok, %{label: label}} -> to_string(label)
         _ -> "neutral"
       end
@@ -143,7 +153,7 @@ defmodule Mix.Tasks.Evaluate do
   end
 
   defp classify_speech_act(text) do
-    case Brain.Analysis.SpeechActClassifier.classify(text) do
+    case SpeechActClassifier.classify(text) do
       %{category: category} -> to_string(category)
       _ -> "unknown"
     end

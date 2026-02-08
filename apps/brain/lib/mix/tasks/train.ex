@@ -1,68 +1,11 @@
 defmodule Mix.Tasks.Train do
-  @moduledoc """
-  Master training task that trains ALL models in the correct order.
+  @moduledoc "Master training task that trains ALL models in the correct order.\n\n## Usage\n\n    mix train [options]\n\n## Options\n\n  --quick          Skip slow/optional models (seq2seq, response scorer)\n  --skip-tfidf     Skip TF-IDF models (intent classifier, entity model, gazetteer)\n  --skip-lstm      Skip all LSTM models\n  --skip-pos       Skip POS tagger training\n  --skip-unified   Skip unified multi-task LSTM model\n  --skip-response  Skip response scorer model\n  --skip-seq2seq   Skip seq2seq generation model\n  --epochs N       Default epochs for LSTM training (default: 20)\n  --batch-size N   Default batch size (default: 32)\n  --world ID       Train world-specific models\n  --name NAME      Experiment name for tracking (default: train_YYYYMMDD_HHMMSS)\n  --compare        Print experiment comparison table after training\n  --list           List all available training tasks\n\n## Training Order\n\nModels are trained in dependency order:\n\n1. **TF-IDF Models** (fast, ~30 seconds)\n   - Intent Classifier (classifier.term)\n   - Entity Recognition (entity_model.term)\n   - Gazetteer (gazetteer.term)\n   - TF-IDF Vectorizer (vectorizer.term)\n   - Embedder Vocabulary (embedder.term)\n\n2. **POS Tagger** (fast, ~10 seconds)\n   - Part-of-speech model (pos_model.term)\n\n3. **LSTM Unified Model** (GPU accelerated, ~2-5 minutes)\n   - Intent classification\n   - Named Entity Recognition\n   - Sentiment analysis\n   - Speech act classification\n\n4. **Response Scorer** (GPU accelerated, ~1-2 minutes)\n   - Query-response pair scoring\n\n## Examples\n\n    # Train everything\n    mix train\n\n    # Quick training (skip slow models)\n    mix train --quick\n\n    # Train only LSTM models with more epochs\n    mix train --skip-tfidf --epochs 30\n\n    # Train for a specific world\n    mix train --world star_trek\n\n    # List all training tasks\n    mix train --list\n"
 
-  ## Usage
-
-      mix train [options]
-
-  ## Options
-
-    --quick          Skip slow/optional models (seq2seq, response scorer)
-    --skip-tfidf     Skip TF-IDF models (intent classifier, entity model, gazetteer)
-    --skip-lstm      Skip all LSTM models
-    --skip-pos       Skip POS tagger training
-    --skip-unified   Skip unified multi-task LSTM model
-    --skip-response  Skip response scorer model
-    --skip-seq2seq   Skip seq2seq generation model
-    --epochs N       Default epochs for LSTM training (default: 20)
-    --batch-size N   Default batch size (default: 32)
-    --world ID       Train world-specific models
-    --name NAME      Experiment name for tracking (default: train_YYYYMMDD_HHMMSS)
-    --compare        Print experiment comparison table after training
-    --list           List all available training tasks
-
-  ## Training Order
-
-  Models are trained in dependency order:
-
-  1. **TF-IDF Models** (fast, ~30 seconds)
-     - Intent Classifier (classifier.term)
-     - Entity Recognition (entity_model.term)
-     - Gazetteer (gazetteer.term)
-     - TF-IDF Vectorizer (vectorizer.term)
-     - Embedder Vocabulary (embedder.term)
-
-  2. **POS Tagger** (fast, ~10 seconds)
-     - Part-of-speech model (pos_model.term)
-
-  3. **LSTM Unified Model** (GPU accelerated, ~2-5 minutes)
-     - Intent classification
-     - Named Entity Recognition
-     - Sentiment analysis
-     - Speech act classification
-
-  4. **Response Scorer** (GPU accelerated, ~1-2 minutes)
-     - Query-response pair scoring
-
-  ## Examples
-
-      # Train everything
-      mix train
-
-      # Quick training (skip slow models)
-      mix train --quick
-
-      # Train only LSTM models with more epochs
-      mix train --skip-tfidf --epochs 30
-
-      # Train for a specific world
-      mix train --world star_trek
-
-      # List all training tasks
-      mix train --list
-  """
-
+  alias World.Persistence
+  alias Brain.Response.LSTMResponse
+  alias Brain.ML.LSTM.UnifiedModel
+  alias Brain.ML.POSTagger
+  alias Brain.ML.Trainer
   use Mix.Task
   require Logger
 
@@ -76,7 +19,13 @@ defmodule Mix.Tasks.Train do
       description: "Intent classifier, entity recognition, gazetteer, embedder",
       task: :tfidf,
       duration: "~30 seconds",
-      outputs: ["classifier.term", "entity_model.term", "gazetteer.term", "vectorizer.term", "embedder.term"]
+      outputs: [
+        "classifier.term",
+        "entity_model.term",
+        "gazetteer.term",
+        "vectorizer.term",
+        "embedder.term"
+      ]
     },
     %{
       name: "POS Tagger",
@@ -122,7 +71,6 @@ defmodule Mix.Tasks.Train do
         ]
       )
 
-    # Handle --list early (no need to start app)
     if opts[:list] do
       display_training_tasks()
       return_ok()
@@ -131,13 +79,12 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  defp return_ok, do: :ok
+  defp return_ok do
+    :ok
+  end
 
   defp run_training(opts) do
-    # Skip async ML init during training to avoid conflicts
     Application.put_env(:brain, :skip_ml_init, true)
-
-    # Start the application
     Mix.Task.run("app.start")
 
     Mix.shell().info("")
@@ -145,14 +92,9 @@ defmodule Mix.Tasks.Train do
     Mix.shell().info("  MASTER TRAINING PIPELINE")
     Mix.shell().info("=" |> String.duplicate(70))
     Mix.shell().info("")
-
-    # Build skip list based on options
     skip_list = build_skip_list(opts)
-
-    # Display what will be trained
     display_training_plan(skip_list)
 
-    # Confirm before proceeding
     if length(skip_list) < length(@training_tasks) do
       Mix.shell().info("")
       Mix.shell().info("Starting training in 3 seconds... (Ctrl+C to cancel)")
@@ -163,15 +105,10 @@ defmodule Mix.Tasks.Train do
       System.halt(0)
     end
 
-    # Run training pipeline
     start_time = System.monotonic_time(:second)
     results = run_training_pipeline(opts, skip_list)
     total_duration = System.monotonic_time(:second) - start_time
-
-    # Display summary
     display_summary(results, total_duration)
-
-    # Record experiment
     experiment_name = opts[:name] || generate_experiment_name("train")
 
     ExperimentTracker.record(%{
@@ -197,13 +134,41 @@ defmodule Mix.Tasks.Train do
   defp build_skip_list(opts) do
     skip_list = []
 
-    skip_list = if opts[:skip_tfidf], do: [:tfidf | skip_list], else: skip_list
-    skip_list = if opts[:skip_pos], do: [:pos | skip_list], else: skip_list
-    skip_list = if opts[:skip_unified], do: [:unified | skip_list], else: skip_list
-    skip_list = if opts[:skip_response], do: [:response | skip_list], else: skip_list
-    skip_list = if opts[:skip_seq2seq], do: [:seq2seq | skip_list], else: skip_list
+    skip_list =
+      if opts[:skip_tfidf] do
+        [:tfidf | skip_list]
+      else
+        skip_list
+      end
 
-    # --quick skips slow optional models
+    skip_list =
+      if opts[:skip_pos] do
+        [:pos | skip_list]
+      else
+        skip_list
+      end
+
+    skip_list =
+      if opts[:skip_unified] do
+        [:unified | skip_list]
+      else
+        skip_list
+      end
+
+    skip_list =
+      if opts[:skip_response] do
+        [:response | skip_list]
+      else
+        skip_list
+      end
+
+    skip_list =
+      if opts[:skip_seq2seq] do
+        [:seq2seq | skip_list]
+      else
+        skip_list
+      end
+
     skip_list =
       if opts[:quick] do
         skip_list
@@ -213,7 +178,6 @@ defmodule Mix.Tasks.Train do
         skip_list
       end
 
-    # --skip-lstm skips all LSTM models
     skip_list =
       if opts[:skip_lstm] do
         skip_list
@@ -255,8 +219,19 @@ defmodule Mix.Tasks.Train do
     Mix.shell().info("-" |> String.duplicate(70))
 
     for task <- @training_tasks do
-      status = if task.task in skip_list, do: "[SKIP]", else: "[TRAIN]"
-      color = if task.task in skip_list, do: :yellow, else: :green
+      status =
+        if task.task in skip_list do
+          "[SKIP]"
+        else
+          "[TRAIN]"
+        end
+
+      color =
+        if task.task in skip_list do
+          :yellow
+        else
+          :green
+        end
 
       message = "  #{status} #{task.name} (#{task.duration})"
 
@@ -269,14 +244,14 @@ defmodule Mix.Tasks.Train do
   end
 
   defp run_training_pipeline(opts, skip_list) do
-    world_id = opts[:world] || "default"
+    world_id = opts[:world]
     epochs = opts[:epochs] || 20
     batch_size = opts[:batch_size] || 32
     hidden_size = opts[:hidden_size] || 128
+    models_path = get_models_path(world_id)
 
     results = []
 
-    # 1. TF-IDF Models
     results =
       if :tfidf in skip_list do
         [{:tfidf, :skipped, 0} | results]
@@ -285,7 +260,6 @@ defmodule Mix.Tasks.Train do
         [{:tfidf, result, 0} | results]
       end
 
-    # 2. POS Tagger
     results =
       if :pos in skip_list do
         [{:pos, :skipped, 0} | results]
@@ -294,24 +268,22 @@ defmodule Mix.Tasks.Train do
         [{:pos, result, 0} | results]
       end
 
-    # 3. Unified LSTM Model
     results =
       if :unified in skip_list do
         [{:unified, :skipped, 0} | results]
       else
         start = System.monotonic_time(:second)
-        result = train_unified_lstm(epochs, batch_size, hidden_size)
+        result = train_unified_lstm(epochs, batch_size, hidden_size, models_path)
         duration = System.monotonic_time(:second) - start
         [{:unified, result, duration} | results]
       end
 
-    # 4. Response Scorer
     results =
       if :response in skip_list do
         [{:response, :skipped, 0} | results]
       else
         start = System.monotonic_time(:second)
-        result = train_response_scorer(epochs, batch_size, hidden_size)
+        result = train_response_scorer(epochs, batch_size, hidden_size, models_path)
         duration = System.monotonic_time(:second) - start
         [{:response, result, duration} | results]
       end
@@ -327,7 +299,7 @@ defmodule Mix.Tasks.Train do
 
     models_path = get_models_path(opts[:world])
 
-    case Brain.ML.Trainer.train_and_save(models_path: models_path) do
+    case Trainer.train_and_save(models_path: models_path) do
       {:ok, stats} ->
         Mix.shell().info("  TF-IDF training complete!")
         Mix.shell().info("    Intent samples: #{stats.intent_samples}")
@@ -352,15 +324,15 @@ defmodule Mix.Tasks.Train do
     if File.exists?(training_dir) do
       sequences = load_pos_from_enriched_intents(training_dir)
 
-      if length(sequences) > 0 do
+      if sequences != [] do
         Mix.shell().info("  Found #{length(sequences)} POS-annotated sequences")
 
-        case Brain.ML.POSTagger.train(sequences) do
+        case POSTagger.train(sequences) do
           {:ok, model} ->
             save_path = Path.join(models_path, "pos_model.term")
             File.mkdir_p!(Path.dirname(save_path))
 
-            case Brain.ML.POSTagger.save_model(model, save_path) do
+            case POSTagger.save_model(model, save_path) do
               {:ok, path} ->
                 Mix.shell().info("  POS model saved to #{path}")
                 {:ok, %{pos_trained: true, tag_count: map_size(model.tag_vocabulary)}}
@@ -382,7 +354,7 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  defp train_unified_lstm(epochs, batch_size, hidden_size) do
+  defp train_unified_lstm(epochs, batch_size, hidden_size, models_path) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
     Mix.shell().info("  Stage 3/4: Unified LSTM Model (GPU Accelerated)")
@@ -400,10 +372,11 @@ defmodule Mix.Tasks.Train do
       batch_size: batch_size,
       hidden_size: hidden_size,
       embedding_size: hidden_size,
-      learning_rate: 0.001
+      learning_rate: 0.001,
+      models_path: models_path
     ]
 
-    case Brain.ML.LSTM.UnifiedModel.train(config) do
+    case UnifiedModel.train(config) do
       {:ok, result} ->
         Mix.shell().info("  Unified LSTM training complete!")
         Mix.shell().info("    Vocabulary size: #{map_size(result.vocabularies.token_vocab)}")
@@ -416,7 +389,7 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  defp train_response_scorer(epochs, batch_size, hidden_size) do
+  defp train_response_scorer(epochs, batch_size, hidden_size, models_path) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
     Mix.shell().info("  Stage 4/4: Response Scorer (GPU Accelerated)")
@@ -428,10 +401,11 @@ defmodule Mix.Tasks.Train do
     config = [
       epochs: min(epochs, 15),
       batch_size: batch_size,
-      hidden_size: hidden_size
+      hidden_size: hidden_size,
+      models_path: models_path
     ]
 
-    case Brain.Response.LSTMResponse.train(config) do
+    case LSTMResponse.train(config) do
       {:ok, result} ->
         Mix.shell().info("  Response scorer training complete!")
         {:ok, result}
@@ -464,11 +438,21 @@ defmodule Mix.Tasks.Train do
           Mix.shell().info("  #{name}: " <> IO.ANSI.yellow() <> "SKIPPED" <> IO.ANSI.reset())
 
         {:ok, _} ->
-          duration_str = if duration > 0, do: " (#{duration}s)", else: ""
-          Mix.shell().info("  #{name}: " <> IO.ANSI.green() <> "OK#{duration_str}" <> IO.ANSI.reset())
+          duration_str =
+            if duration > 0 do
+              " (#{duration}s)"
+            else
+              ""
+            end
+
+          Mix.shell().info(
+            "  #{name}: " <> IO.ANSI.green() <> "OK#{duration_str}" <> IO.ANSI.reset()
+          )
 
         {:error, reason} ->
-          Mix.shell().info("  #{name}: " <> IO.ANSI.red() <> "FAILED - #{inspect(reason)}" <> IO.ANSI.reset())
+          Mix.shell().info(
+            "  #{name}: " <> IO.ANSI.red() <> "FAILED - #{inspect(reason)}" <> IO.ANSI.reset()
+          )
       end
     end
 
@@ -478,10 +462,12 @@ defmodule Mix.Tasks.Train do
 
     Mix.shell().info("")
     Mix.shell().info("  Total time: #{format_duration(total_duration)}")
-    Mix.shell().info("  Results: #{success_count} succeeded, #{skip_count} skipped, #{fail_count} failed")
-    Mix.shell().info("")
 
-    # Show where models are saved
+    Mix.shell().info(
+      "  Results: #{success_count} succeeded, #{skip_count} skipped, #{fail_count} failed"
+    )
+
+    Mix.shell().info("")
     models_path = Brain.priv_path("ml_models")
     Mix.shell().info("  Models saved to: #{models_path}")
     Mix.shell().info("")
@@ -496,7 +482,7 @@ defmodule Mix.Tasks.Train do
   end
 
   defp get_models_path(world_id) do
-    world_path = World.Persistence.world_path(world_id)
+    world_path = Persistence.world_path(world_id)
     Path.join(world_path, "models")
   end
 
@@ -513,7 +499,7 @@ defmodule Mix.Tasks.Train do
               |> Enum.filter(fn ex ->
                 tokens = ex["tokens"] || []
                 tags = ex["pos_tags"] || []
-                length(tokens) > 0 and length(tokens) == length(tags)
+                tokens != [] and length(tokens) == length(tags)
               end)
               |> Enum.map(fn ex ->
                 %{
@@ -549,20 +535,26 @@ defmodule Mix.Tasks.Train do
 
   defp summarize_results(results) do
     results
-    |> Enum.map(fn
-      {task, :skipped, _} -> "#{task}:skipped"
-      {task, {:ok, _}, _} -> "#{task}:ok"
-      {task, {:error, _}, _} -> "#{task}:failed"
-    end)
-    |> Enum.join(", ")
+    |> Enum.map_join(
+      ", ",
+      fn
+        {task, :skipped, _} -> "#{task}:skipped"
+        {task, {:ok, _}, _} -> "#{task}:ok"
+        {task, {:error, _}, _} -> "#{task}:failed"
+      end
+    )
   end
 
-  defp format_duration(seconds) when seconds < 60, do: "#{seconds} seconds"
+  defp format_duration(seconds) when seconds < 60 do
+    "#{seconds} seconds"
+  end
+
   defp format_duration(seconds) when seconds < 3600 do
     minutes = div(seconds, 60)
     secs = rem(seconds, 60)
     "#{minutes}m #{secs}s"
   end
+
   defp format_duration(seconds) do
     hours = div(seconds, 3600)
     minutes = div(rem(seconds, 3600), 60)

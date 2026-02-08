@@ -1,11 +1,5 @@
 defmodule Brain.Analysis.InternalModel do
-  @moduledoc """
-  Core data structures for the text analysis pipeline.
-
-  The InternalModel represents the complete analysis of user input,
-  combining results from all analysis stages into a unified model
-  that downstream components can use to generate contextual responses.
-  """
+  @moduledoc "Core data structures for the text analysis pipeline.\n\nThe InternalModel represents the complete analysis of user input,\ncombining results from all analysis stages into a unified model\nthat downstream components can use to generate contextual responses.\n"
 
   alias Brain.Analysis.{Chunk, ChunkAnalysis, DiscourseResult, SpeechActResult, SlotResult}
 
@@ -36,9 +30,7 @@ defmodule Brain.Analysis.InternalModel do
     created_at: nil
   ]
 
-  @doc """
-  Creates a new InternalModel from raw input.
-  """
+  @doc "Creates a new InternalModel from raw input.\n"
   def new(raw_input) when is_binary(raw_input) do
     %__MODULE__{
       raw_input: raw_input,
@@ -46,23 +38,17 @@ defmodule Brain.Analysis.InternalModel do
     }
   end
 
-  @doc """
-  Adds chunks to the model.
-  """
+  @doc "Adds chunks to the model.\n"
   def with_chunks(%__MODULE__{} = model, chunks) when is_list(chunks) do
     %{model | chunks: chunks}
   end
 
-  @doc """
-  Adds chunk analyses to the model.
-  """
+  @doc "Adds chunk analyses to the model.\n"
   def with_analyses(%__MODULE__{} = model, analyses) when is_list(analyses) do
     %{model | analyses: analyses}
   end
 
-  @doc """
-  Determines the overall response strategy based on chunk analyses.
-  """
+  @doc "Determines the overall response strategy based on chunk analyses.\n"
   def determine_strategy(%__MODULE__{analyses: analyses} = model) do
     strategies = Enum.map(analyses, & &1.response_strategy)
 
@@ -97,23 +83,17 @@ defmodule Brain.Analysis.InternalModel do
     %{model | overall_strategy: overall, suggested_prompts: prompts}
   end
 
-  @doc """
-  Returns analyses that can be responded to.
-  """
+  @doc "Returns analyses that can be responded to.\n"
   def respondable_analyses(%__MODULE__{analyses: analyses}) do
     Enum.filter(analyses, &(&1.response_strategy == :can_respond))
   end
 
-  @doc """
-  Returns analyses that need clarification.
-  """
+  @doc "Returns analyses that need clarification.\n"
   def clarification_analyses(%__MODULE__{analyses: analyses}) do
     Enum.filter(analyses, &(&1.response_strategy == :needs_clarification))
   end
 
-  @doc """
-  Checks if the bot is being addressed in any chunk.
-  """
+  @doc "Checks if the bot is being addressed in any chunk.\n"
   def bot_addressed?(%__MODULE__{analyses: analyses}) do
     Enum.any?(analyses, fn analysis ->
       analysis.discourse.addressee == :bot
@@ -122,9 +102,7 @@ defmodule Brain.Analysis.InternalModel do
 end
 
 defmodule Brain.Analysis.Chunk do
-  @moduledoc """
-  Represents a single semantic chunk (utterance) extracted from user input.
-  """
+  @moduledoc "Represents a single semantic chunk (utterance) extracted from user input.\n"
 
   @type t :: %__MODULE__{
           text: String.t(),
@@ -135,18 +113,9 @@ defmodule Brain.Analysis.Chunk do
           discourse_markers: list(String.t())
         }
 
-  defstruct [
-    :text,
-    :index,
-    :start_pos,
-    :end_pos,
-    is_quoted: false,
-    discourse_markers: []
-  ]
+  defstruct [:text, :index, :start_pos, :end_pos, is_quoted: false, discourse_markers: []]
 
-  @doc """
-  Creates a new chunk.
-  """
+  @doc "Creates a new chunk.\n"
   def new(text, index, start_pos, end_pos, opts \\ []) do
     %__MODULE__{
       text: text,
@@ -160,11 +129,9 @@ defmodule Brain.Analysis.Chunk do
 end
 
 defmodule Brain.Analysis.ChunkAnalysis do
-  @moduledoc """
-  Complete analysis for a single chunk, combining results from all analyzers.
-  """
+  @moduledoc "Complete analysis for a single chunk, combining results from all analyzers.\n"
 
-  alias Brain.Analysis.{DiscourseResult, SpeechActResult, SlotResult, SlotDetector}
+  alias Analysis.{DiscourseResult, SpeechActResult, SlotResult, SlotDetector}
   alias Brain.Analysis.Types.Event
   alias Brain.Analysis.InternalModel
 
@@ -202,9 +169,7 @@ defmodule Brain.Analysis.ChunkAnalysis do
     sentiment: nil
   ]
 
-  @doc """
-  Creates a new chunk analysis.
-  """
+  @doc "Creates a new chunk analysis.\n"
   def new(chunk_index, text) do
     %__MODULE__{
       chunk_index: chunk_index,
@@ -212,44 +177,32 @@ defmodule Brain.Analysis.ChunkAnalysis do
     }
   end
 
-  @doc """
-  Adds extracted events to the chunk analysis.
-
-  ## Examples
-
-      analysis = ChunkAnalysis.new(0, "I want coffee")
-      events = [%Event{action: %{verb: "want", ...}, ...}]
-      analysis = ChunkAnalysis.with_events(analysis, events)
-  """
+  @doc "Adds extracted events to the chunk analysis.\n\n## Examples\n\n    analysis = ChunkAnalysis.new(0, \"I want coffee\")\n    events = [%Event{action: %{verb: \"want\", ...}, ...}]\n    analysis = ChunkAnalysis.with_events(analysis, events)\n"
   def with_events(%__MODULE__{} = analysis, events) when is_list(events) do
     %{analysis | events: events}
   end
 
-  @doc """
-  Returns the primary event from the analysis (highest confidence).
-  """
-  def primary_event(%__MODULE__{events: []}), do: nil
+  @doc "Returns the primary event from the analysis (highest confidence).\n"
+  def primary_event(%__MODULE__{events: []}) do
+    nil
+  end
 
   def primary_event(%__MODULE__{events: events}) do
     Enum.max_by(events, & &1.confidence, fn -> nil end)
   end
 
-  @doc """
-  Checks if the chunk has any extracted events.
-  """
-  def has_events?(%__MODULE__{events: events}), do: length(events) > 0
+  @doc "Checks if the chunk has any extracted events.\n"
+  def has_events?(%__MODULE__{events: events}) do
+    events != []
+  end
 
-  @doc """
-  Determines response strategy based on analysis results.
-  """
+  @doc "Determines response strategy based on analysis results.\n"
   def determine_response_strategy(%__MODULE__{} = analysis) do
     cond do
-      # Bot not addressed - defer to user
       analysis.discourse.addressee != :bot ->
         %{analysis | response_strategy: :defer_to_user}
 
-      # Missing required context - needs clarification
-      length(analysis.missing_context) > 0 ->
+      analysis.missing_context != [] ->
         prompts = generate_clarification_prompts(analysis.missing_context, analysis.intent)
 
         %{
@@ -258,11 +211,9 @@ defmodule Brain.Analysis.ChunkAnalysis do
             clarification_prompts: prompts
         }
 
-      # Speech act is not a directive - might just be a statement
       not is_directive?(analysis.speech_act) ->
         %{analysis | response_strategy: :can_respond}
 
-      # All good - can respond
       true ->
         %{analysis | response_strategy: :can_respond}
     end
@@ -272,18 +223,17 @@ defmodule Brain.Analysis.ChunkAnalysis do
     Map.get(speech_act, :category) == :directive
   end
 
-  defp is_directive?(_), do: false
+  defp is_directive?(_) do
+    false
+  end
 
   defp generate_clarification_prompts(missing_context, intent) do
-    # Use centralized clarification prompts from IntentRegistry via SlotDetector
     SlotDetector.get_clarification_prompts(missing_context, intent)
   end
 end
 
 defmodule Brain.Analysis.DiscourseResult do
-  @moduledoc """
-  Result of discourse analysis - who is being addressed.
-  """
+  @moduledoc "Result of discourse analysis - who is being addressed.\n"
 
   @type addressee :: :bot | :user | :third_party | :ambiguous | :unknown
 
@@ -301,9 +251,7 @@ defmodule Brain.Analysis.DiscourseResult do
             participants: [:user, :bot],
             direct_address_detected: false
 
-  @doc """
-  Creates a new discourse result.
-  """
+  @doc "Creates a new discourse result.\n"
   def new(addressee, confidence, indicators \\ []) do
     %__MODULE__{
       addressee: addressee,
@@ -315,16 +263,7 @@ defmodule Brain.Analysis.DiscourseResult do
 end
 
 defmodule Brain.Analysis.SpeechActResult do
-  @moduledoc """
-  Result of speech act classification.
-
-  Based on Searle's taxonomy:
-  - Assertives: statements, claims, reports
-  - Directives: requests, commands, questions
-  - Commissives: promises, offers
-  - Expressives: thanks, apologies, greetings
-  - Declaratives: performatives
-  """
+  @moduledoc "Result of speech act classification.\n\nBased on Searle's taxonomy:\n- Assertives: statements, claims, reports\n- Directives: requests, commands, questions\n- Commissives: promises, offers\n- Expressives: thanks, apologies, greetings\n- Declaratives: performatives\n"
 
   @type category :: :assertive | :directive | :commissive | :expressive | :declarative | :unknown
 
@@ -345,7 +284,6 @@ defmodule Brain.Analysis.SpeechActResult do
           | :greeting
           | :farewell
           | :performative
-          # Response optionality sub-types
           | :backchannel
           | :compliment
           | :acknowledgment
@@ -368,9 +306,7 @@ defmodule Brain.Analysis.SpeechActResult do
             is_question: false,
             is_imperative: false
 
-  @doc """
-  Creates a new speech act result.
-  """
+  @doc "Creates a new speech act result.\n"
   def new(category, sub_type, confidence, opts \\ []) do
     %__MODULE__{
       category: category,
@@ -382,31 +318,46 @@ defmodule Brain.Analysis.SpeechActResult do
     }
   end
 
-  @doc """
-  Checks if this speech act expects a response from the addressee.
+  @doc "Checks if this speech act expects a response from the addressee.\n\nReturns:\n- `true` for speech acts that clearly expect a response (directives, questions, greetings)\n- `false` for speech acts where silence is appropriate (backchannels, continuations)\n- `:optional` for speech acts where response is situational (compliments, acknowledgments)\n"
+  def expects_response?(%__MODULE__{category: :directive}) do
+    true
+  end
 
-  Returns:
-  - `true` for speech acts that clearly expect a response (directives, questions, greetings)
-  - `false` for speech acts where silence is appropriate (backchannels, continuations)
-  - `:optional` for speech acts where response is situational (compliments, acknowledgments)
-  """
-  def expects_response?(%__MODULE__{category: :directive}), do: true
-  def expects_response?(%__MODULE__{sub_type: :greeting}), do: true
-  def expects_response?(%__MODULE__{sub_type: :question_factual}), do: true
-  def expects_response?(%__MODULE__{sub_type: :question_opinion}), do: true
-  # Response optionality: these typically don't need responses
-  def expects_response?(%__MODULE__{sub_type: :backchannel}), do: false
-  def expects_response?(%__MODULE__{sub_type: :continuation}), do: false
-  # These are situational - let ResponseGate decide
-  def expects_response?(%__MODULE__{sub_type: :compliment}), do: :optional
-  def expects_response?(%__MODULE__{sub_type: :acknowledgment}), do: :optional
-  def expects_response?(_), do: :unknown
+  def expects_response?(%__MODULE__{sub_type: :greeting}) do
+    true
+  end
+
+  def expects_response?(%__MODULE__{sub_type: :question_factual}) do
+    true
+  end
+
+  def expects_response?(%__MODULE__{sub_type: :question_opinion}) do
+    true
+  end
+
+  def expects_response?(%__MODULE__{sub_type: :backchannel}) do
+    false
+  end
+
+  def expects_response?(%__MODULE__{sub_type: :continuation}) do
+    false
+  end
+
+  def expects_response?(%__MODULE__{sub_type: :compliment}) do
+    :optional
+  end
+
+  def expects_response?(%__MODULE__{sub_type: :acknowledgment}) do
+    :optional
+  end
+
+  def expects_response?(_) do
+    :unknown
+  end
 end
 
 defmodule Brain.Analysis.SlotResult do
-  @moduledoc """
-  Result of slot detection and context resolution.
-  """
+  @moduledoc "Result of slot detection and context resolution.\n"
 
   @type slot_value :: %{
           value: any(),
@@ -428,16 +379,12 @@ defmodule Brain.Analysis.SlotResult do
             missing_optional: [],
             all_required_filled: true
 
-  @doc """
-  Creates a new slot result.
-  """
+  @doc "Creates a new slot result.\n"
   def new(schema_name \\ nil) do
     %__MODULE__{schema_name: schema_name}
   end
 
-  @doc """
-  Adds a filled slot.
-  """
+  @doc "Adds a filled slot.\n"
   def fill_slot(%__MODULE__{} = result, slot_name, value, source, confidence \\ 1.0) do
     slot_value = %{value: value, source: source, confidence: confidence}
 
@@ -454,9 +401,7 @@ defmodule Brain.Analysis.SlotResult do
     }
   end
 
-  @doc """
-  Gets the value of a slot if filled.
-  """
+  @doc "Gets the value of a slot if filled.\n"
   def get_slot_value(%__MODULE__{filled_slots: slots}, slot_name) do
     case Map.get(slots, slot_name) do
       nil -> nil

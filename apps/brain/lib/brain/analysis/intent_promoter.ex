@@ -1,27 +1,13 @@
 defmodule Brain.Analysis.IntentPromoter do
-  @moduledoc """
-  Handles promotion of novel intent candidates to training data and intent registry.
+  @moduledoc "Handles promotion of novel intent candidates to training data and intent registry.\n\nWhen a candidate is approved:\n1. Writes training example to data/intents/*_usersays_en.json\n2. Updates apps/brain/priv/analysis/intent_registry.json (for new intents)\n3. Triggers model retraining\n4. Reloads the classifier model\n"
 
-  When a candidate is approved:
-  1. Writes training example to data/intents/*_usersays_en.json
-  2. Updates apps/brain/priv/analysis/intent_registry.json (for new intents)
-  3. Triggers model retraining
-  4. Reloads the classifier model
-  """
-
+  alias Brain.ML
   require Logger
 
   alias Brain.Analysis.Types.IntentReviewCandidate
-  alias Brain.ML.{Trainer, IntentClassifierSimple}
+  alias ML.{Trainer, IntentClassifierSimple}
 
-  @doc """
-  Promotes a candidate to training data and/or intent registry.
-
-  ## Options
-    - `:domain` - Domain for new intent (required if promotion_action is :new_intent)
-    - `:category` - Category for new intent (required if promotion_action is :new_intent)
-    - `:speech_act` - Speech act type for new intent (required if promotion_action is :new_intent)
-  """
+  @doc "Promotes a candidate to training data and/or intent registry.\n\n## Options\n  - `:domain` - Domain for new intent (required if promotion_action is :new_intent)\n  - `:category` - Category for new intent (required if promotion_action is :new_intent)\n  - `:speech_act` - Speech act type for new intent (required if promotion_action is :new_intent)\n"
   def promote(%IntentReviewCandidate{} = candidate, opts \\ []) do
     Logger.info("Promoting intent candidate",
       id: candidate.id,
@@ -44,7 +30,6 @@ defmodule Brain.Analysis.IntentPromoter do
 
   defp promote_as_variation(%IntentReviewCandidate{promoted_to_intent: intent_name, text: text})
        when is_binary(intent_name) and intent_name != "" do
-    # Write training example to existing intent file
     intent_file = get_intent_file_path(intent_name)
 
     case append_training_example(intent_file, text) do
@@ -54,14 +39,23 @@ defmodule Brain.Analysis.IntentPromoter do
         {:ok, :variation_added}
 
       {:error, reason} ->
-        Logger.error("Failed to add training example", intent: intent_name, reason: inspect(reason))
+        Logger.error("Failed to add training example",
+          intent: intent_name,
+          reason: inspect(reason)
+        )
+
         {:error, reason}
     end
   end
 
-  defp promote_as_variation(_), do: {:error, :invalid_intent_name}
+  defp promote_as_variation(_) do
+    {:error, :invalid_intent_name}
+  end
 
-  defp promote_as_new_intent(%IntentReviewCandidate{promoted_to_intent: intent_name, text: text}, opts)
+  defp promote_as_new_intent(
+         %IntentReviewCandidate{promoted_to_intent: intent_name, text: text},
+         opts
+       )
        when is_binary(intent_name) and intent_name != "" do
     domain = Keyword.get(opts, :domain) || ""
     category = Keyword.get(opts, :category) || "directive"
@@ -71,14 +65,15 @@ defmodule Brain.Analysis.IntentPromoter do
       Logger.warning("New intent promotion requires domain", intent: intent_name)
       {:error, :domain_required}
     else
-      # 1. Write training example
       intent_file = get_intent_file_path(intent_name)
 
       case append_training_example(intent_file, text) do
         :ok ->
-          Logger.info("Created training example for new intent", intent: intent_name, file: intent_file)
+          Logger.info("Created training example for new intent",
+            intent: intent_name,
+            file: intent_file
+          )
 
-          # 2. Update intent registry
           case update_intent_registry(intent_name, domain, category, speech_act) do
             :ok ->
               Logger.info("Updated intent registry", intent: intent_name)
@@ -86,24 +81,32 @@ defmodule Brain.Analysis.IntentPromoter do
               {:ok, :new_intent_created}
 
             {:error, reason} ->
-              Logger.error("Failed to update intent registry", intent: intent_name, reason: inspect(reason))
+              Logger.error("Failed to update intent registry",
+                intent: intent_name,
+                reason: inspect(reason)
+              )
+
               {:error, reason}
           end
 
         {:error, reason} ->
-          Logger.error("Failed to create training example", intent: intent_name, reason: inspect(reason))
+          Logger.error("Failed to create training example",
+            intent: intent_name,
+            reason: inspect(reason)
+          )
+
           {:error, reason}
       end
     end
   end
 
-  defp promote_as_new_intent(_, _), do: {:error, :invalid_intent_name}
+  defp promote_as_new_intent(_, _) do
+    {:error, :invalid_intent_name}
+  end
 
   defp append_training_example(file_path, text) do
-    # Ensure directory exists
     file_path |> Path.dirname() |> File.mkdir_p!()
 
-    # Read existing file or create new
     existing_data =
       if File.exists?(file_path) do
         case File.read(file_path) do
@@ -121,7 +124,6 @@ defmodule Brain.Analysis.IntentPromoter do
         []
       end
 
-    # Create new example in Dialogflow format
     new_example = %{
       "id" => generate_id(),
       "data" => [
@@ -136,12 +138,9 @@ defmodule Brain.Analysis.IntentPromoter do
       "updated" => 0
     }
 
-    # Append to existing data
     updated_data = existing_data ++ [new_example]
-
-    # Write back to file
     json_content = Jason.encode!(updated_data, pretty: true)
-    
+
     case File.write(file_path, json_content) do
       :ok -> :ok
       {:error, reason} -> {:error, reason}
@@ -150,11 +149,8 @@ defmodule Brain.Analysis.IntentPromoter do
 
   defp update_intent_registry(intent_name, domain, category, speech_act) do
     registry_path = Brain.priv_path("analysis/intent_registry.json")
-
-    # Ensure directory exists
     registry_path |> Path.dirname() |> File.mkdir_p!()
 
-    # Read existing registry or create new
     registry =
       case File.read(registry_path) do
         {:ok, content} ->
@@ -167,7 +163,6 @@ defmodule Brain.Analysis.IntentPromoter do
           %{}
       end
 
-    # Add new intent entry
     new_entry = %{
       "description" => "Intent created from novel candidate review",
       "domain" => domain,
@@ -181,14 +176,10 @@ defmodule Brain.Analysis.IntentPromoter do
     }
 
     updated_registry = Map.put(registry, intent_name, new_entry)
-
-    # Write back
     json_content = Jason.encode!(updated_registry, pretty: true)
 
     case File.write(registry_path, json_content) do
       :ok ->
-        # Reload IntentRegistry (it's compile-time, so we need to restart or use a runtime version)
-        # For now, just log - the registry will reload on next compile/restart
         Logger.info("Intent registry updated - restart required for IntentRegistry to reload")
         :ok
 
@@ -205,7 +196,6 @@ defmodule Brain.Analysis.IntentPromoter do
         {:ok, stats} ->
           Logger.info("Model retraining completed", stats)
 
-          # Reload the classifier
           case IntentClassifierSimple.load_models() do
             {:ok, _} ->
               Logger.info("Intent classifier reloaded after promotion")
@@ -221,11 +211,7 @@ defmodule Brain.Analysis.IntentPromoter do
   end
 
   defp get_intent_file_path(intent_name) do
-    # Convert intent name to filename format
-    # e.g., "weather.query" -> "weather.query_usersays_en.json"
     filename = "#{intent_name}_usersays_en.json"
-
-    # Get training data path (defaults to repo root "data")
     base_path = Application.get_env(:brain, :ml)[:training_data_path] || "data"
     Path.join([base_path, "intents", filename])
   end

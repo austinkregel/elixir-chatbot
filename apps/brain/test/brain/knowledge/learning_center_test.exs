@@ -1,14 +1,14 @@
 defmodule Brain.Knowledge.LearningCenterTest do
+  alias Brain.Knowledge
   use ExUnit.Case, async: false
   import Brain.TestHelpers
 
-  alias Brain.Knowledge.{LearningCenter, ReviewQueue, SourceReliability}
+  alias Knowledge.{LearningCenter, ReviewQueue, SourceReliability}
   alias Brain.Knowledge.Types.ResearchGoal
 
   setup do
     ensure_pubsub_started()
 
-    # Start the agent supervisor
     case Task.Supervisor.start_link(name: Brain.Knowledge.AgentSupervisor) do
       {:ok, _pid} -> :ok
       {:error, {:already_started, _pid}} -> :ok
@@ -17,8 +17,6 @@ defmodule Brain.Knowledge.LearningCenterTest do
     ensure_started(SourceReliability)
     ensure_started(ReviewQueue)
     ensure_started(LearningCenter)
-
-    # Clear queue before each test
     ReviewQueue.clear()
 
     :ok
@@ -31,7 +29,7 @@ defmodule Brain.Knowledge.LearningCenterTest do
       assert is_binary(session.id)
       assert session.status == :active
       assert session.topic == "European capitals"
-      assert length(session.goals) > 0
+      assert session.goals != []
     end
 
     test "generates goals from topic" do
@@ -146,13 +144,9 @@ defmodule Brain.Knowledge.LearningCenterTest do
   describe "session completion" do
     test "session completes when all agents finish" do
       {:ok, session} = LearningCenter.start_session("Quick topic", mock: true, max_goals: 1)
-
-      # Wait for agents to complete (mock mode is fast)
       Process.sleep(500)
 
       {:ok, completed} = LearningCenter.get_session(session.id)
-
-      # Session should either be completed or still processing
       assert completed.status in [:active, :completed]
     end
   end

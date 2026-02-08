@@ -1,26 +1,14 @@
 defmodule Mix.Tasks.FactDatabase do
-  @moduledoc """
-  Mix task for interacting with the fact database.
+  @moduledoc "Mix task for interacting with the fact database.\n\n## Usage\n\n    mix fact_database              # Show stats\n    mix fact_database stats        # Show detailed stats\n    mix fact_database list         # List all facts\n    mix fact_database categories   # List categories\n    mix fact_database search TERM  # Search facts\n    mix fact_database entity NAME  # Get facts about an entity\n    mix fact_database sync         # Sync facts to epistemic system\n    mix fact_database add ENTITY FACT  # Add a new fact\n"
 
-  ## Usage
-
-      mix fact_database              # Show stats
-      mix fact_database stats        # Show detailed stats
-      mix fact_database list         # List all facts
-      mix fact_database categories   # List categories
-      mix fact_database search TERM  # Search facts
-      mix fact_database entity NAME  # Get facts about an entity
-      mix fact_database sync         # Sync facts to epistemic system
-      mix fact_database add ENTITY FACT  # Add a new fact
-  """
-
+  alias Brain.FactDatabase.Integration
+  alias Brain.FactDatabase
   use Mix.Task
 
   @shortdoc "Interact with the fact database"
 
   @impl Mix.Task
   def run(args) do
-    # Start the application
     Mix.Task.run("app.start")
 
     case args do
@@ -37,22 +25,25 @@ defmodule Mix.Tasks.FactDatabase do
   end
 
   defp show_stats do
-    stats = Brain.FactDatabase.stats()
-    categories = Brain.FactDatabase.list_categories()
+    stats = FactDatabase.stats()
+    categories = FactDatabase.list_categories()
 
     IO.puts("\n=== Fact Database Stats ===\n")
     IO.puts("  Total facts:  #{stats.total_facts}")
     IO.puts("  Categories:   #{stats.categories}")
     IO.puts("  Entities:     #{stats.entities}")
     IO.puts("  Loaded at:    #{format_timestamp(stats.loaded_at)}")
-    IO.puts("\n  Categories: #{Enum.join(categories, ", ")}")
+    IO.puts("
+  Categories: #{Enum.join(categories, ", ")}")
     IO.puts("")
   end
 
   defp list_facts do
-    facts = Brain.FactDatabase.query(limit: 100)
+    facts = FactDatabase.query(limit: 100)
 
-    IO.puts("\n=== All Facts (#{length(facts)}) ===\n")
+    IO.puts("
+=== All Facts (#{length(facts)}) ===
+")
 
     facts
     |> Enum.group_by(& &1.category)
@@ -69,12 +60,12 @@ defmodule Mix.Tasks.FactDatabase do
   end
 
   defp list_categories do
-    categories = Brain.FactDatabase.list_categories()
+    categories = FactDatabase.list_categories()
 
     IO.puts("\n=== Categories ===\n")
 
     Enum.each(categories, fn cat ->
-      facts = Brain.FactDatabase.get_category_facts(cat)
+      facts = FactDatabase.get_category_facts(cat)
       IO.puts("  #{cat}: #{length(facts)} facts")
     end)
 
@@ -82,9 +73,11 @@ defmodule Mix.Tasks.FactDatabase do
   end
 
   defp search_facts(term) do
-    facts = Brain.FactDatabase.query(search: term, limit: 20)
+    facts = FactDatabase.query(search: term, limit: 20)
 
-    IO.puts("\n=== Search: \"#{term}\" (#{length(facts)} results) ===\n")
+    IO.puts("
+=== Search: \"#{term}\" (#{length(facts)} results) ===
+")
 
     if facts == [] do
       IO.puts("  No facts found matching \"#{term}\"")
@@ -98,9 +91,11 @@ defmodule Mix.Tasks.FactDatabase do
   end
 
   defp get_entity_facts(entity) do
-    facts = Brain.FactDatabase.get_entity_facts(entity)
+    facts = FactDatabase.get_entity_facts(entity)
 
-    IO.puts("\n=== Facts about \"#{entity}\" (#{length(facts)}) ===\n")
+    IO.puts("
+=== Facts about \"#{entity}\" (#{length(facts)}) ===
+")
 
     if facts == [] do
       IO.puts("  No facts found for entity \"#{entity}\"")
@@ -117,7 +112,7 @@ defmodule Mix.Tasks.FactDatabase do
   defp sync_to_beliefs do
     IO.puts("\n=== Syncing Facts to Epistemic System ===\n")
 
-    {:ok, count} = Brain.FactDatabase.Integration.sync_facts_to_beliefs()
+    {:ok, count} = Integration.sync_facts_to_beliefs()
     IO.puts("  Successfully synced #{count} facts to beliefs")
 
     IO.puts("")
@@ -129,13 +124,14 @@ defmodule Mix.Tasks.FactDatabase do
     IO.puts("  Fact: #{fact_text}")
 
     {:ok, fact_id, _fact} =
-      Brain.FactDatabase.Integration.add_fact(entity, fact_text,
+      Integration.add_fact(entity, fact_text,
         category: "learned",
         confidence: 0.8,
         verification_source: "manual_entry"
       )
 
-    IO.puts("\n  Success! Fact ID: #{fact_id}")
+    IO.puts("
+  Success! Fact ID: #{fact_id}")
     IO.puts("")
   end
 

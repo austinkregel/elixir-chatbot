@@ -1,71 +1,25 @@
 defmodule Mix.Tasks.RegenerateTestModels do
-  @moduledoc """
-  Regenerate LSTM model .term files for test compatibility.
+  @moduledoc "Regenerate LSTM model .term files for test compatibility.\n\nWhen LSTM model files become incompatible with current library versions\n(Nx, EXLA, Axon, OTP), this task regenerates them.\n\n## Usage\n\n    mix regenerate_test_models [options]\n\n## Options\n\n  --all            Regenerate all model types\n  --unified        Regenerate unified model\n  --multi-task     Regenerate multi-task model\n  --response       Regenerate response scorer model\n  --minimal        Generate minimal test models (fast, small vocab)\n  --check          Check compatibility without regenerating\n\n## Examples\n\n    # Check if models need regeneration\n    mix regenerate_test_models --check\n\n    # Regenerate all models\n    mix regenerate_test_models --all\n\n    # Generate minimal models for fast testing\n    mix regenerate_test_models --minimal\n\n## Version Compatibility\n\nModels are serialized using `:erlang.term_to_binary/1`. The internal format\nof Nx tensors depends on:\n\n- Nx version\n- EXLA version (for EXLA-backed tensors)\n- OTP version (for term_to_binary format)\n\nWhen you update these libraries, models need to be regenerated.\n\n## Workflow\n\n1. Run `mix regenerate_test_models --check` to see if models are incompatible\n2. Run `mix regenerate_test_models --all` to regenerate\n3. Run `mix test` to verify tests pass\n4. Commit the new .term files\n"
 
-  When LSTM model files become incompatible with current library versions
-  (Nx, EXLA, Axon, OTP), this task regenerates them.
-
-  ## Usage
-
-      mix regenerate_test_models [options]
-
-  ## Options
-
-    --all            Regenerate all model types
-    --unified        Regenerate unified model
-    --multi-task     Regenerate multi-task model
-    --response       Regenerate response scorer model
-    --minimal        Generate minimal test models (fast, small vocab)
-    --check          Check compatibility without regenerating
-
-  ## Examples
-
-      # Check if models need regeneration
-      mix regenerate_test_models --check
-
-      # Regenerate all models
-      mix regenerate_test_models --all
-
-      # Generate minimal models for fast testing
-      mix regenerate_test_models --minimal
-
-  ## Version Compatibility
-
-  Models are serialized using `:erlang.term_to_binary/1`. The internal format
-  of Nx tensors depends on:
-
-  - Nx version
-  - EXLA version (for EXLA-backed tensors)
-  - OTP version (for term_to_binary format)
-
-  When you update these libraries, models need to be regenerated.
-
-  ## Workflow
-
-  1. Run `mix regenerate_test_models --check` to see if models are incompatible
-  2. Run `mix regenerate_test_models --all` to regenerate
-  3. Run `mix test` to verify tests pass
-  4. Commit the new .term files
-  """
-
+  alias Brain.LSTMTestHelpers
   use Mix.Task
   require Logger
 
   @shortdoc "Regenerate LSTM model .term files for test compatibility"
 
   def run(args) do
-    {opts, _, _} = OptionParser.parse(args,
-      strict: [
-        all: :boolean,
-        unified: :boolean,
-        multi_task: :boolean,
-        response: :boolean,
-        minimal: :boolean,
-        check: :boolean
-      ]
-    )
+    {opts, _, _} =
+      OptionParser.parse(args,
+        strict: [
+          all: :boolean,
+          unified: :boolean,
+          multi_task: :boolean,
+          response: :boolean,
+          minimal: :boolean,
+          check: :boolean
+        ]
+      )
 
-    # Start the application
     Mix.Task.run("app.start")
 
     Mix.shell().info("")
@@ -73,8 +27,6 @@ defmodule Mix.Tasks.RegenerateTestModels do
     Mix.shell().info("LSTM Model Compatibility Tool")
     Mix.shell().info("=" |> String.duplicate(60))
     Mix.shell().info("")
-
-    # Show current versions
     show_versions()
 
     cond do
@@ -114,32 +66,33 @@ defmodule Mix.Tasks.RegenerateTestModels do
     Mix.shell().info("")
 
     models = [
-      {:unified, "Unified Model"},
-      {:multi_task, "Multi-Task Model"},
-      {:response_scorer, "Response Scorer"}
+      unified: "Unified Model",
+      multi_task: "Multi-Task Model",
+      response_scorer: "Response Scorer"
     ]
 
-    all_ok = Enum.reduce(models, true, fn {type, name}, acc ->
-      result = Brain.LSTMTestHelpers.check_model_compatibility(type)
+    all_ok =
+      Enum.reduce(models, true, fn {type, name}, acc ->
+        result = LSTMTestHelpers.check_model_compatibility(type)
 
-      case result do
-        :ok ->
-          Mix.shell().info("  ✓ #{name}: Compatible")
-          acc
+        case result do
+          :ok ->
+            Mix.shell().info("  ✓ #{name}: Compatible")
+            acc
 
-        {:error, :model_not_found, _} ->
-          Mix.shell().info("  - #{name}: Not found (optional)")
-          acc
+          {:error, :model_not_found, _} ->
+            Mix.shell().info("  - #{name}: Not found (optional)")
+            acc
 
-        {:error, :decode_failed, _} ->
-          Mix.shell().error("  ✗ #{name}: INCOMPATIBLE - regeneration needed")
-          false
+          {:error, :decode_failed, _} ->
+            Mix.shell().error("  ✗ #{name}: INCOMPATIBLE - regeneration needed")
+            false
 
-        {:error, reason, _} ->
-          Mix.shell().info("  ? #{name}: #{reason}")
-          acc
-      end
-    end)
+          {:error, reason, _} ->
+            Mix.shell().info("  ? #{name}: #{reason}")
+            acc
+        end
+      end)
 
     Mix.shell().info("")
 
@@ -164,15 +117,14 @@ defmodule Mix.Tasks.RegenerateTestModels do
     lstm_path = Path.join(models_path, "lstm")
     File.mkdir_p!(lstm_path)
 
-    # Generate minimal unified model
-    {:ok, path} = Brain.LSTMTestHelpers.generate_test_model(:unified,
-      vocab_size: 100,
-      embedding_size: 32,
-      hidden_size: 32,
-      output_dir: lstm_path
-    )
+    {:ok, path} =
+      LSTMTestHelpers.generate_test_model(:unified,
+        vocab_size: 100,
+        embedding_size: 32,
+        hidden_size: 32,
+        output_dir: lstm_path
+      )
 
-    # Rename to standard filename
     dest = Path.join(lstm_path, "unified_model.term")
     File.rename!(path, dest)
     Mix.shell().info("  ✓ Generated: #{dest}")
@@ -188,8 +140,6 @@ defmodule Mix.Tasks.RegenerateTestModels do
     Mix.shell().info("This will retrain all models from training data.")
     Mix.shell().info("This may take several minutes.")
     Mix.shell().info("")
-
-    # Delegate to the main training tasks
     Mix.shell().info("Running: mix train_unified")
     Mix.Task.run("train_unified", [])
 
@@ -211,7 +161,6 @@ defmodule Mix.Tasks.RegenerateTestModels do
 
     if Keyword.get(opts, :multi_task, false) do
       Mix.shell().info("Regenerating multi-task model...")
-      # Multi-task training would be handled by train_lstm
       Mix.Task.run("train_lstm", ["--type", "multitask"])
     end
 

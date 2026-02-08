@@ -1,43 +1,10 @@
 defmodule Brain.Epistemic.DisclosurePolicy do
-  @moduledoc """
-  Governs what information is appropriate to share with users.
-
-  Implements the validation questions from epistemic framing research:
-  - V6: Is this information socially appropriate to disclose right now?
-  - V7: Would this sound creepy if said confidently?
-  - V8: Should I hedge, ask permission, or generalize?
-
-  The policy evaluates each piece of knowledge and returns a
-  DisclosureDecision indicating:
-  - Whether to disclose at all
-  - What level of hedging is required
-  - Whether to generalize or be specific
-  - Whether to ask permission first
-  """
+  @moduledoc "Governs what information is appropriate to share with users.\n\nImplements the validation questions from epistemic framing research:\n- V6: Is this information socially appropriate to disclose right now?\n- V7: Would this sound creepy if said confidently?\n- V8: Should I hedge, ask permission, or generalize?\n\nThe policy evaluates each piece of knowledge and returns a\nDisclosureDecision indicating:\n- Whether to disclose at all\n- What level of hedging is required\n- Whether to generalize or be specific\n- Whether to ask permission first\n"
 
   alias Brain.Epistemic.Types.{Belief, DisclosureDecision, SelfKnowledgeAssessment}
-
   require Logger
-
-  # Predicates that are always safe to disclose
-  @always_safe_predicates [
-    :name,
-    :preferred_name,
-    :timezone,
-    :language,
-    :greeting_preference
-  ]
-
-  # Predicates that require high confidence to disclose
-  @require_high_confidence [
-    :occupation,
-    :workplace,
-    :relationship_status,
-    :age,
-    :location
-  ]
-
-  # Predicates that should never be disclosed (even if known)
+  @always_safe_predicates [:name, :preferred_name, :timezone, :language, :greeting_preference]
+  @require_high_confidence [:occupation, :workplace, :relationship_status, :age, :location]
   @never_disclose [
     :password,
     :ssn,
@@ -47,8 +14,6 @@ defmodule Brain.Epistemic.DisclosurePolicy do
     :health_condition,
     :medical_history
   ]
-
-  # Predicates that might sound creepy if stated too confidently
   @creepy_if_confident [
     :daily_routine,
     :sleep_schedule,
@@ -59,37 +24,23 @@ defmodule Brain.Epistemic.DisclosurePolicy do
     :relationships
   ]
 
-  @doc """
-  Evaluates whether a belief should be disclosed.
-
-  Context options:
-  - :relationship_duration - How long we've known the user (:new | :established | :long_term)
-  - :conversation_tone - Current tone (:formal | :casual | :technical)
-  - :user_initiated - Whether user asked about this specifically
-  - :previous_disclosures - What we've disclosed before
-  """
+  @doc "Evaluates whether a belief should be disclosed.\n\nContext options:\n- :relationship_duration - How long we've known the user (:new | :established | :long_term)\n- :conversation_tone - Current tone (:formal | :casual | :technical)\n- :user_initiated - Whether user asked about this specifically\n- :previous_disclosures - What we've disclosed before\n"
   def evaluate_disclosure(%Belief{} = belief, context \\ %{}) do
     predicate = normalize_predicate(belief.predicate)
 
-    # Run through validation checks
     cond do
-      # V1: Never disclose sensitive information
       predicate in @never_disclose ->
         DisclosureDecision.do_not_disclose("Sensitive information - never disclose")
 
-      # V2: Check if predicate is always safe
       predicate in @always_safe_predicates and belief.source == :explicit ->
         DisclosureDecision.disclose("Safe predicate with explicit source")
 
-      # V3: Low confidence requires strong hedging or no disclosure
       belief.confidence < 0.3 ->
         DisclosureDecision.do_not_disclose("Confidence too low (#{belief.confidence})")
 
-      # V4: Inferred knowledge about personal matters needs permission
       belief.source == :inferred and predicate in @require_high_confidence ->
         DisclosureDecision.ask_first("Inferred personal information - seek permission")
 
-      # V5: Check for creepiness
       would_be_creepy?(belief, context) ->
         if belief.confidence >= 0.7 do
           DisclosureDecision.disclose_with_hedging(:strong, "Could sound creepy if too confident")
@@ -97,32 +48,24 @@ defmodule Brain.Epistemic.DisclosurePolicy do
           DisclosureDecision.do_not_disclose("Too uncertain and potentially creepy")
         end
 
-      # V6: Moderate confidence needs hedging
       belief.confidence < 0.6 ->
         DisclosureDecision.disclose_with_hedging(:strong, "Moderate confidence")
 
       belief.confidence < 0.8 ->
         DisclosureDecision.disclose_with_hedging(:light, "Good confidence but not certain")
 
-      # V7: High confidence explicit can be stated directly
       belief.source == :explicit and belief.confidence >= 0.8 ->
         DisclosureDecision.disclose("High confidence explicit statement")
 
-      # V8: High confidence inferred still needs light hedging
       belief.source == :inferred and belief.confidence >= 0.8 ->
         DisclosureDecision.disclose_with_hedging(:light, "High confidence but inferred")
 
-      # Default: light hedging
       true ->
         DisclosureDecision.disclose_with_hedging(:light, "Default policy")
     end
   end
 
-  @doc """
-  Evaluates disclosure for an entire SelfKnowledgeAssessment.
-
-  Returns a map of fact_key => DisclosureDecision.
-  """
+  @doc "Evaluates disclosure for an entire SelfKnowledgeAssessment.\n\nReturns a map of fact_key => DisclosureDecision.\n"
   def evaluate_assessment(%SelfKnowledgeAssessment{} = assessment, context \\ %{}) do
     all_facts =
       assessment.discloseable ++
@@ -142,11 +85,7 @@ defmodule Brain.Epistemic.DisclosurePolicy do
     |> Map.new()
   end
 
-  @doc """
-  Filters an assessment to only include facts that should be disclosed.
-
-  Returns a new assessment with filtered facts.
-  """
+  @doc "Filters an assessment to only include facts that should be disclosed.\n\nReturns a new assessment with filtered facts.\n"
   def filter_discloseable(%SelfKnowledgeAssessment{} = assessment, context \\ %{}) do
     decisions = evaluate_assessment(assessment, context)
 
@@ -167,11 +106,7 @@ defmodule Brain.Epistemic.DisclosurePolicy do
     }
   end
 
-  @doc """
-  Gets the hedging level for a fact.
-
-  Returns :none | :light | :strong | :do_not_disclose
-  """
+  @doc "Gets the hedging level for a fact.\n\nReturns :none | :light | :strong | :do_not_disclose\n"
   def get_hedging_level(fact, context \\ %{}) do
     belief =
       Belief.new(:user, fact.key, fact.value,
@@ -188,24 +123,20 @@ defmodule Brain.Epistemic.DisclosurePolicy do
     end
   end
 
-  @doc """
-  Checks if disclosing this belief would violate any policy.
-  """
+  @doc "Checks if disclosing this belief would violate any policy.\n"
   def violates_policy?(%Belief{} = belief, context \\ %{}) do
     decision = evaluate_disclosure(belief, context)
     not decision.should_disclose
   end
 
-  @doc """
-  Gets all predicates that are safe to disclose without hedging.
-  """
-  def safe_predicates, do: @always_safe_predicates
+  @doc "Gets all predicates that are safe to disclose without hedging.\n"
+  def safe_predicates do
+    @always_safe_predicates
+  end
 
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
-
-  defp normalize_predicate(predicate) when is_atom(predicate), do: predicate
+  defp normalize_predicate(predicate) when is_atom(predicate) do
+    predicate
+  end
 
   defp normalize_predicate(predicate) when is_binary(predicate) do
     predicate
@@ -214,7 +145,9 @@ defmodule Brain.Epistemic.DisclosurePolicy do
     |> String.to_atom()
   end
 
-  defp normalize_predicate(_), do: :unknown
+  defp normalize_predicate(_) do
+    :unknown
+  end
 
   defp would_be_creepy?(%Belief{} = belief, context) do
     predicate = normalize_predicate(belief.predicate)
@@ -222,20 +155,16 @@ defmodule Brain.Epistemic.DisclosurePolicy do
     user_initiated = Map.get(context, :user_initiated, false)
 
     cond do
-      # User asked specifically - less creepy
       user_initiated ->
         false
 
-      # Creepy predicates with new relationship
       predicate in @creepy_if_confident and relationship == :new ->
         true
 
-      # Inferred personal details early in relationship
       belief.source == :inferred and relationship == :new and
           predicate in @require_high_confidence ->
         true
 
-      # Location tracking vibes
       predicate in [:location, :location_history, :daily_routine] and belief.source != :explicit ->
         true
 

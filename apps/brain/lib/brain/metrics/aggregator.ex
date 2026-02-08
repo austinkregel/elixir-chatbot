@@ -1,41 +1,14 @@
 defmodule Brain.Metrics.Aggregator do
-  @moduledoc """
-  Non-blocking metrics aggregator for telemetry events.
-
-  Design principles for zero latency impact:
-  1. All writes via `cast` - never blocks the caller
-  2. ETS for reads - dashboard reads directly from ETS, never calls GenServer
-  3. Atomic counters - uses `:ets.update_counter/3` for thread-safe increments
-  4. Periodic aggregation - heavy computation happens on a timer, not per-event
-  5. Bounded memory - sliding window with automatic expiration
-
-  ## Usage
-
-      # Recording metrics (fire-and-forget via telemetry handlers)
-      GenServer.cast(Aggregator, {:record_duration, :brain_evaluate, 150, %{}})
-
-      # Reading metrics (direct ETS read, non-blocking)
-      Brain.Metrics.Aggregator.get_metrics()
-  """
+  @moduledoc "Non-blocking metrics aggregator for telemetry events.\n\nDesign principles for zero latency impact:\n1. All writes via `cast` - never blocks the caller\n2. ETS for reads - dashboard reads directly from ETS, never calls GenServer\n3. Atomic counters - uses `:ets.update_counter/3` for thread-safe increments\n4. Periodic aggregation - heavy computation happens on a timer, not per-event\n5. Bounded memory - sliding window with automatic expiration\n\n## Usage\n\n    # Recording metrics (fire-and-forget via telemetry handlers)\n    GenServer.cast(Aggregator, {:record_duration, :brain_evaluate, 150, %{}})\n\n    # Reading metrics (direct ETS read, non-blocking)\n    Brain.Metrics.Aggregator.get_metrics()\n"
 
   use GenServer
   require Logger
 
   @metrics_table :chatbot_metrics
   @raw_data_table :chatbot_metrics_raw
-
-  # Sliding window duration in milliseconds (5 minutes)
   @window_duration_ms 5 * 60 * 1000
-
-  # Aggregation interval in milliseconds (10 seconds)
   @aggregation_interval_ms 10_000
-
-  # Maximum raw data points to keep per metric
   @max_raw_points 1000
-
-  # ============================================================================
-  # Client API
-  # ============================================================================
 
   @doc """
   Starts the Metrics.Aggregator GenServer.
@@ -48,9 +21,7 @@ defmodule Brain.Metrics.Aggregator do
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 
-  @doc """
-  Gets aggregated metrics. Reads directly from ETS - non-blocking.
-  """
+  @doc "Gets aggregated metrics. Reads directly from ETS - non-blocking.\n"
   def get_metrics do
     try do
       @metrics_table
@@ -83,9 +54,7 @@ defmodule Brain.Metrics.Aggregator do
     end
   end
 
-  @doc """
-  Gets a specific metric. Reads directly from ETS - non-blocking.
-  """
+  @doc "Gets a specific metric. Reads directly from ETS - non-blocking.\n"
   def get_metric(name) do
     try do
       case :ets.lookup(@metrics_table, {:metric, name}) do
@@ -97,9 +66,7 @@ defmodule Brain.Metrics.Aggregator do
     end
   end
 
-  @doc """
-  Gets error metrics. Reads directly from ETS - non-blocking.
-  """
+  @doc "Gets error metrics. Reads directly from ETS - non-blocking.\n"
   def get_errors do
     try do
       @metrics_table
@@ -111,9 +78,7 @@ defmodule Brain.Metrics.Aggregator do
     end
   end
 
-  @doc """
-  Gets queue size metrics. Reads directly from ETS - non-blocking.
-  """
+  @doc "Gets queue size metrics. Reads directly from ETS - non-blocking.\n"
   def get_queue_sizes do
     try do
       @metrics_table
@@ -126,37 +91,105 @@ defmodule Brain.Metrics.Aggregator do
   end
 
   @doc """
-  Records a duration metric. Use cast for non-blocking.
+  Gets external service metrics. Reads directly from ETS - non-blocking.
+
+  Returns a map with:
+  - `:dispatch` - Overall dispatch metrics (count, avg_ms, etc.)
+  - `:by_service` - Per-service breakdown
+  - `:cache` - Cache hit/miss ratios
+  - `:health` - Last health check status per service
   """
+  def get_service_metrics do
+    try do
+      dispatch_metrics = get_metric(:service_dispatch) || %{count: 0}
+      enrichment_metrics = get_metric(:service_enrichment) || %{count: 0}
+
+      # Get per-service metrics
+      by_service =
+        @metrics_table
+        |> :ets.match({{:service, :"$1"}, :"$2"})
+        |> Enum.map(fn [name, _] -> name end)
+        |> Enum.uniq()
+        |> Enum.map(fn service ->
+          count = get_counter_for_service({:service, service}, :count)
+          success = get_counter_for_service({:service, service}, :success_count)
+          errors = get_counter_for_service({:service, service}, :error_count)
+          last_dispatch = get_last_event({:service_dispatch_last, service})
+          health = get_last_event({:service_health, service})
+
+          {service,
+           %{
+             total_dispatches: count,
+             success_count: success,
+             error_count: errors,
+             success_rate: if(count > 0, do: Float.round(success / count * 100, 1), else: 0.0),
+             last_dispatch: last_dispatch,
+             health_status: health
+           }}
+        end)
+        |> Map.new()
+
+      # Get cache metrics
+      cache_hits = get_counter_for_service({:service_cache, :hit}, :count)
+      cache_misses = get_counter_for_service({:service_cache, :miss}, :count)
+      total_cache = cache_hits + cache_misses
+
+      cache_metrics = %{
+        hits: cache_hits,
+        misses: cache_misses,
+        hit_rate: if(total_cache > 0, do: Float.round(cache_hits / total_cache * 100, 1), else: 0.0)
+      }
+
+      %{
+        dispatch: dispatch_metrics,
+        enrichment: enrichment_metrics,
+        by_service: by_service,
+        cache: cache_metrics
+      }
+    catch
+      :error, :badarg -> %{dispatch: %{count: 0}, enrichment: %{count: 0}, by_service: %{}, cache: %{}}
+    end
+  end
+
+  defp get_counter_for_service(key, field) do
+    case :ets.lookup(@raw_data_table, {:counter, key, field}) do
+      [{{:counter, ^key, ^field}, count}] -> count
+      [] -> 0
+    end
+  rescue
+    _ -> 0
+  end
+
+  defp get_last_event(key) do
+    case :ets.lookup(@metrics_table, key) do
+      [{^key, data}] -> data
+      [] -> nil
+    end
+  rescue
+    _ -> nil
+  end
+
+  @doc "Records a duration metric. Use cast for non-blocking.\n"
   def record_duration(metric_name, duration_ms, metadata \\ %{}) do
     GenServer.cast(__MODULE__, {:record_duration, metric_name, duration_ms, metadata})
   end
 
-  @doc """
-  Records an error. Use cast for non-blocking.
-  """
+  @doc "Records an error. Use cast for non-blocking.\n"
   def record_error(metric_name, duration_ms, metadata \\ %{}) do
     GenServer.cast(__MODULE__, {:record_error, metric_name, duration_ms, metadata})
   end
 
-  @doc """
-  Records a queue size. Use cast for non-blocking.
-  """
+  @doc "Records a queue size. Use cast for non-blocking.\n"
   def record_queue_size(genserver_name, queue_length) do
     GenServer.cast(__MODULE__, {:record_queue_size, genserver_name, queue_length})
   end
 
-  @doc """
-  Resets all metrics. Useful for testing.
-  """
+  @doc "Resets all metrics. Useful for testing.\n"
   def reset do
     GenServer.call(__MODULE__, :reset)
   end
 
-  @doc """
-  Gets training metrics. Reads directly from ETS - non-blocking.
-  Returns a map of model name to training stats.
-  """
+  @doc "Gets training metrics. Reads directly from ETS - non-blocking.\nReturns a map of model name to training stats.\n"
   def get_training_stats do
     try do
       @metrics_table
@@ -168,9 +201,7 @@ defmodule Brain.Metrics.Aggregator do
     end
   end
 
-  @doc """
-  Gets model load metrics. Reads directly from ETS - non-blocking.
-  """
+  @doc "Gets model load metrics. Reads directly from ETS - non-blocking.\n"
   def get_model_load_stats do
     try do
       @metrics_table
@@ -182,31 +213,12 @@ defmodule Brain.Metrics.Aggregator do
     end
   end
 
-  # ============================================================================
-  # Server Callbacks
-  # ============================================================================
-
   @impl true
   def init(_opts) do
-    # Create ETS tables with concurrent read access
-    :ets.new(@metrics_table, [
-      :named_table,
-      :public,
-      :set,
-      read_concurrency: true
-    ])
+    :ets.new(@metrics_table, [:named_table, :public, :set, read_concurrency: true])
 
-    :ets.new(@raw_data_table, [
-      :named_table,
-      :public,
-      :set,
-      read_concurrency: true
-    ])
-
-    # Initialize default metrics
+    :ets.new(@raw_data_table, [:named_table, :public, :set, read_concurrency: true])
     initialize_metrics()
-
-    # Schedule periodic aggregation
     schedule_aggregation()
 
     Logger.info("Metrics.Aggregator started")
@@ -226,13 +238,9 @@ defmodule Brain.Metrics.Aggregator do
   def handle_cast({:record_error, metric_name, duration_ms, metadata}, state) do
     now = System.monotonic_time(:millisecond)
     error_type = Map.get(metadata, :kind, :unknown)
-
-    # Record the duration as well
     add_raw_data_point(metric_name, duration_ms, now)
     increment_counter(metric_name, :count)
     increment_counter(metric_name, :error_count)
-
-    # Track error by type
     increment_error_counter(error_type)
 
     {:noreply, state}
@@ -283,7 +291,6 @@ defmodule Brain.Metrics.Aggregator do
   def handle_cast({:record_training_stop, model, measurements, _metadata}, state) do
     now = System.monotonic_time(:millisecond)
 
-    # Get existing training record or create new one
     existing =
       case :ets.lookup(@metrics_table, {:training, model}) do
         [{{:training, ^model}, data}] -> data
@@ -303,8 +310,6 @@ defmodule Brain.Metrics.Aggregator do
     }
 
     :ets.insert(@metrics_table, {{:training, model}, updated})
-
-    # Also record as a duration metric for aggregation
     add_raw_data_point({:train, model}, measurements[:duration_ms] || 0, now)
     increment_counter({:train, model}, :count)
 
@@ -333,8 +338,6 @@ defmodule Brain.Metrics.Aggregator do
     }
 
     :ets.insert(@metrics_table, {{:training, model}, updated})
-
-    # Track error
     increment_error_counter({:training_failed, model})
 
     {:noreply, state}
@@ -362,16 +365,11 @@ defmodule Brain.Metrics.Aggregator do
   def handle_cast({:record_learning_event, event_type, _measurements, metadata}, state) do
     now = System.monotonic_time(:millisecond)
     world_id = Map.get(metadata, :world_id, "unknown")
-
-    # Increment counter for this event type
     metric_key = {:learning, event_type}
     increment_counter(metric_key, :count)
-
-    # Track per-world counts
     world_key = {:learning_world, world_id, event_type}
     increment_counter(world_key, :count)
 
-    # Record timestamp
     :ets.insert(
       @metrics_table,
       {{:learning_last, event_type},
@@ -387,12 +385,9 @@ defmodule Brain.Metrics.Aggregator do
   @impl true
   def handle_cast({:record_racing_early_exit, analyzer, confidence, duration_ms}, state) do
     now = System.monotonic_time(:millisecond)
-
-    # Track early exit counts by analyzer
     key = {:racing_early_exit, analyzer}
     increment_counter(key, :count)
 
-    # Update aggregate metrics
     :ets.insert(
       @metrics_table,
       {{:racing_early_exit_last, analyzer},
@@ -407,18 +402,17 @@ defmodule Brain.Metrics.Aggregator do
   end
 
   @impl true
-  def handle_cast({:record_code_file_processed, file_path, language, symbols_count, relations_count, duration_ms}, state) do
+  def handle_cast(
+        {:record_code_file_processed, file_path, language, symbols_count, relations_count,
+         duration_ms},
+        state
+      ) do
     now = System.monotonic_time(:millisecond)
-
-    # Track overall code analysis metrics
     add_raw_data_point(:code_pipeline, duration_ms, now)
     increment_counter(:code_pipeline, :count)
-
-    # Track per-language metrics
     lang_key = {:code_language, language}
     increment_counter(lang_key, :count)
 
-    # Update aggregate code analysis stats
     :ets.insert(
       @metrics_table,
       {{:code_file_last, language},
@@ -427,6 +421,93 @@ defmodule Brain.Metrics.Aggregator do
          symbols_count: symbols_count,
          relations_count: relations_count,
          duration_ms: duration_ms,
+         timestamp: now
+       }}
+    )
+
+    {:noreply, state}
+  end
+
+  # ============================================================================
+  # External Services Handlers
+  # ============================================================================
+
+  @impl true
+  def handle_cast({:record_service_dispatch, service, intent, status, duration_ms}, state) do
+    now = System.monotonic_time(:millisecond)
+    add_raw_data_point(:service_dispatch, duration_ms, now)
+    increment_counter(:service_dispatch, :count)
+
+    # Track per-service metrics
+    service_key = {:service, service}
+    increment_counter(service_key, :count)
+
+    # Track success/failure
+    case status do
+      :success ->
+        increment_counter(service_key, :success_count)
+
+      {:error, _} ->
+        increment_counter(service_key, :error_count)
+
+      _ ->
+        :ok
+    end
+
+    # Store last dispatch info
+    :ets.insert(
+      @metrics_table,
+      {{:service_dispatch_last, service},
+       %{
+         intent: intent,
+         status: status,
+         duration_ms: duration_ms,
+         timestamp: now
+       }}
+    )
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:record_service_cache, type, service, count}, state) do
+    cache_key = {:service_cache, type}
+    increment_counter(cache_key, :count, count || 1)
+
+    service_cache_key = {:service_cache, service, type}
+    increment_counter(service_cache_key, :count, count || 1)
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:record_service_health_check, service, status, duration_ms}, state) do
+    now = System.monotonic_time(:millisecond)
+
+    :ets.insert(
+      @metrics_table,
+      {{:service_health, service},
+       %{
+         status: status,
+         duration_ms: duration_ms,
+         timestamp: now
+       }}
+    )
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:record_service_credential, operation, service, _count}, state) do
+    now = System.monotonic_time(:millisecond)
+    cred_key = {:service_credential, operation}
+    increment_counter(cred_key, :count)
+
+    :ets.insert(
+      @metrics_table,
+      {{:service_credential_last, service},
+       %{
+         operation: operation,
          timestamp: now
        }}
     )
@@ -449,33 +530,26 @@ defmodule Brain.Metrics.Aggregator do
     {:noreply, state}
   end
 
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
-
   defp initialize_metrics do
-    # Initialize default metrics with zero values
     default_metrics = [
-      # Core operations
       :brain_evaluate,
       :pipeline_process,
       :memory_query,
       :memory_embed,
       :gazetteer_lookup,
-      # Knowledge Expansion operations
       :knowledge_research,
       :knowledge_corroborate,
       :knowledge_review,
-      # Epistemic System operations
       :jtms_justify,
       :belief_operation,
-      # Analysis operations
       :racing_analysis,
-      # Code analysis operations
       :code_pipeline,
       :code_parse,
       :code_extract,
-      :code_gazetteer_lookup
+      :code_gazetteer_lookup,
+      # External services
+      :service_dispatch,
+      :service_enrichment
     ]
 
     Enum.each(default_metrics, fn name ->
@@ -504,14 +578,12 @@ defmodule Brain.Metrics.Aggregator do
     key = {:raw, metric_name}
     cutoff = timestamp - @window_duration_ms
 
-    # Get existing data and add new point
     existing =
       case :ets.lookup(@raw_data_table, key) do
         [{^key, data}] -> data
         [] -> []
       end
 
-    # Add new point and trim old ones, keeping max points
     new_data =
       [{duration_ms, timestamp} | existing]
       |> Enum.filter(fn {_val, ts} -> ts > cutoff end)
@@ -520,15 +592,16 @@ defmodule Brain.Metrics.Aggregator do
     :ets.insert(@raw_data_table, {key, new_data})
   end
 
-  defp increment_counter(metric_name, counter_type) do
+  defp increment_counter(metric_name, counter_type, amount \\ 1)
+
+  defp increment_counter(metric_name, counter_type, amount) when is_integer(amount) do
     key = {:counter, metric_name, counter_type}
 
     try do
-      :ets.update_counter(@raw_data_table, key, {2, 1})
+      :ets.update_counter(@raw_data_table, key, {2, amount})
     catch
       :error, :badarg ->
-        # Counter doesn't exist, create it
-        :ets.insert(@raw_data_table, {key, 1})
+        :ets.insert(@raw_data_table, {key, amount})
     end
   end
 
@@ -573,7 +646,6 @@ defmodule Brain.Metrics.Aggregator do
       :memory_query,
       :memory_embed,
       :gazetteer_lookup,
-      # Code analysis
       :code_pipeline,
       :code_parse,
       :code_extract,
@@ -588,7 +660,6 @@ defmodule Brain.Metrics.Aggregator do
   defp aggregate_metric(metric_name, now, cutoff) do
     raw_key = {:raw, metric_name}
 
-    # Get raw data points within the window
     data_points =
       case :ets.lookup(@raw_data_table, raw_key) do
         [{^raw_key, points}] ->
@@ -599,15 +670,12 @@ defmodule Brain.Metrics.Aggregator do
           []
       end
 
-    # Get counters
     count = get_counter(metric_name, :count)
     error_count = get_counter(metric_name, :error_count)
-
-    # Calculate statistics
     values = Enum.map(data_points, fn {val, _ts} -> val end)
 
     stats =
-      if length(values) > 0 do
+      if values != [] do
         sorted = Enum.sort(values)
         sum = Enum.sum(values)
         len = length(values)
@@ -616,8 +684,6 @@ defmodule Brain.Metrics.Aggregator do
         max_val = List.last(sorted, 0)
         p95_idx = round(len * 0.95) - 1
         p95 = Enum.at(sorted, max(p95_idx, 0), 0)
-
-        # Calculate rate per minute
         window_seconds = @window_duration_ms / 1000
         rate = len / window_seconds * 60
 
@@ -646,7 +712,6 @@ defmodule Brain.Metrics.Aggregator do
         }
       end
 
-    # Update aggregated metrics
     :ets.insert(@metrics_table, {{:metric, metric_name}, stats})
   end
 

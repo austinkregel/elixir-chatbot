@@ -1,15 +1,7 @@
 defmodule World.Embedder do
-  @moduledoc """
-  Manages world-specific TF-IDF embeddings.
+  @moduledoc "Manages world-specific TF-IDF embeddings.\n\nEach training world can have its own vocabulary and IDF weights, built from\nthe episodes stored in that world. This provides domain-specific semantic\nsimilarity within each world's context.\n\nEmbeddings are built lazily on first use and stored in ETS for performance.\nVocabulary can be rebuilt when significant new data is added.\n"
 
-  Each training world can have its own vocabulary and IDF weights, built from
-  the episodes stored in that world. This provides domain-specific semantic
-  similarity within each world's context.
-
-  Embeddings are built lazily on first use and stored in ETS for performance.
-  Vocabulary can be rebuilt when significant new data is added.
-  """
-
+  alias Brain.Memory.Store
   require Logger
 
   alias Brain.ML.Tokenizer
@@ -18,13 +10,7 @@ defmodule World.Embedder do
   @default_vocab_size 2000
   @min_word_frequency 2
 
-  # ============================================================================
-  # Public API
-  # ============================================================================
-
-  @doc """
-  Ensures the ETS table exists. Called during application startup.
-  """
+  @doc "Ensures the ETS table exists. Called during application startup.\n"
   def init do
     if :ets.whereis(@ets_table) == :undefined do
       :ets.new(@ets_table, [:set, :public, :named_table, read_concurrency: true])
@@ -33,10 +19,7 @@ defmodule World.Embedder do
     :ok
   end
 
-  @doc """
-  Checks if embeddings are ready for a world.
-  Returns true if the world has a built vocabulary.
-  """
+  @doc "Checks if embeddings are ready for a world.\nReturns true if the world has a built vocabulary.\n"
   def ready?(world_id) do
     case get_state(world_id) do
       {:ok, state} -> state.ready
@@ -44,10 +27,7 @@ defmodule World.Embedder do
     end
   end
 
-  @doc """
-  Gets the current status of a world's embedder.
-  Returns detailed information for dashboard display.
-  """
+  @doc "Gets the current status of a world's embedder.\nReturns detailed information for dashboard display.\n"
   def get_status(world_id) do
     case get_state(world_id) do
       {:ok, state} ->
@@ -82,12 +62,7 @@ defmodule World.Embedder do
     end
   end
 
-  @doc """
-  Embeds text using the world's vocabulary.
-  Does NOT auto-build vocabulary to avoid deadlocks - call build_vocabulary first.
-
-  Returns {:ok, embedding} or {:error, reason}
-  """
+  @doc "Embeds text using the world's vocabulary.\nDoes NOT auto-build vocabulary to avoid deadlocks - call build_vocabulary first.\n\nReturns {:ok, embedding} or {:error, reason}\n"
   def embed(world_id, text) when is_binary(world_id) and is_binary(text) do
     case get_state(world_id) do
       {:ok, %{ready: true} = state} ->
@@ -98,15 +73,12 @@ defmodule World.Embedder do
         {:error, :no_training_data}
 
       {:ok, _state} ->
-        # Vocabulary exists but not ready (building in progress)
         {:error, :vocabulary_building}
 
       {:error, :not_found} ->
-        # Vocabulary not initialized yet
         {:error, :not_initialized}
 
       {:error, :table_not_ready} ->
-        # ETS table not created yet (e.g., in test environment)
         {:error, :table_not_ready}
 
       error ->
@@ -114,13 +86,10 @@ defmodule World.Embedder do
     end
   end
 
-  @doc """
-  Builds or rebuilds the vocabulary for a world from its episodes.
-  """
+  @doc "Builds or rebuilds the vocabulary for a world from its episodes.\n"
   def build_vocabulary(world_id, opts \\ []) do
     force = Keyword.get(opts, :force, false)
 
-    # Check if we need to rebuild
     case get_state(world_id) do
       {:ok, %{ready: true}} when not force ->
         {:ok, :already_built}
@@ -130,11 +99,9 @@ defmodule World.Embedder do
     end
   end
 
-  @doc """
-  Computes cosine similarity between two embeddings.
-  """
+  @doc "Computes cosine similarity between two embeddings.\n"
   def cosine_similarity(vec_a, vec_b) when is_list(vec_a) and is_list(vec_b) do
-    if length(vec_a) != length(vec_b) or length(vec_a) == 0 do
+    if length(vec_a) != length(vec_b) or vec_a == [] do
       0.0
     else
       dot_product =
@@ -152,9 +119,7 @@ defmodule World.Embedder do
     end
   end
 
-  @doc """
-  Clears the embedder state for a world (used when world is destroyed).
-  """
+  @doc "Clears the embedder state for a world (used when world is destroyed).\n"
   def clear(world_id) do
     :ets.delete(@ets_table, world_id)
     :ok
@@ -162,10 +127,7 @@ defmodule World.Embedder do
     ArgumentError -> :ok
   end
 
-  @doc """
-  Loads a pre-built vocabulary and IDF weights for a world.
-  Used when loading world models from disk.
-  """
+  @doc "Loads a pre-built vocabulary and IDF weights for a world.\nUsed when loading world models from disk.\n"
   def load_model(world_id, model) when is_binary(world_id) and is_map(model) do
     state = %{
       ready: true,
@@ -189,9 +151,7 @@ defmodule World.Embedder do
     end
   end
 
-  @doc """
-  Exports the vocabulary and IDF weights for a world for persistence.
-  """
+  @doc "Exports the vocabulary and IDF weights for a world for persistence.\n"
   def export_model(world_id) when is_binary(world_id) do
     case get_state(world_id) do
       {:ok, state} ->
@@ -208,24 +168,16 @@ defmodule World.Embedder do
     end
   end
 
-  @doc """
-  Preloads/builds vocabulary for a world if not already ready.
-  Called by WorldModelRegistry when activating a world.
-  """
+  @doc "Preloads/builds vocabulary for a world if not already ready.\nCalled by WorldModelRegistry when activating a world.\n"
   def preload(world_id) when is_binary(world_id) do
     case get_state(world_id) do
       {:ok, %{ready: true}} ->
         {:ok, :already_ready}
 
       _ ->
-        # Trigger vocabulary building
         build_vocabulary(world_id)
     end
   end
-
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
 
   defp get_state(world_id) do
     try do
@@ -250,7 +202,6 @@ defmodule World.Embedder do
   defp do_build_vocabulary(world_id) do
     Logger.info("Building embedder vocabulary for world: #{world_id}")
 
-    # Set initial state
     set_state(world_id, %{
       ready: false,
       phase: :loading_episodes,
@@ -260,7 +211,6 @@ defmodule World.Embedder do
       episode_count: 0
     })
 
-    # Get episodes for this world
     episodes = get_world_episodes(world_id)
 
     if Enum.empty?(episodes) do
@@ -277,7 +227,6 @@ defmodule World.Embedder do
 
       {:error, :no_data}
     else
-      # Extract text from episodes
       texts = Enum.map(episodes, & &1.state)
       episode_count = length(texts)
 
@@ -290,7 +239,6 @@ defmodule World.Embedder do
         episode_count: episode_count
       })
 
-      # Tokenize all texts
       tokenized = Enum.map(texts, &tokenize/1)
       all_tokens = List.flatten(tokenized)
 
@@ -303,7 +251,6 @@ defmodule World.Embedder do
         episode_count: episode_count
       })
 
-      # Build vocabulary from most frequent tokens
       token_frequencies =
         all_tokens
         |> Enum.frequencies()
@@ -326,7 +273,6 @@ defmodule World.Embedder do
         episode_count: episode_count
       })
 
-      # Calculate IDF weights
       text_sets = Enum.map(tokenized, &MapSet.new/1)
       num_docs = length(texts)
 
@@ -341,7 +287,6 @@ defmodule World.Embedder do
 
       vocab_size = map_size(vocabulary)
 
-      # Store final state
       set_state(world_id, %{
         ready: true,
         phase: :ready,
@@ -360,7 +305,7 @@ defmodule World.Embedder do
   end
 
   defp get_world_episodes(world_id) do
-    case Brain.Memory.Store.all_episodes(world_id: world_id) do
+    case Store.all_episodes(world_id: world_id) do
       {:ok, episodes} -> episodes
       _ -> []
     end
@@ -374,7 +319,6 @@ defmodule World.Embedder do
     tokens = tokenize(text)
     token_freq = Enum.frequencies(tokens)
 
-    # Build TF-IDF vector
     vector =
       vocabulary
       |> Enum.sort_by(fn {_word, idx} -> idx end)
@@ -397,12 +341,35 @@ defmodule World.Embedder do
     end
   end
 
-  defp phase_label(:loading_episodes), do: "Loading episodes"
-  defp phase_label(:tokenizing), do: "Tokenizing texts"
-  defp phase_label(:building_frequencies), do: "Building frequencies"
-  defp phase_label(:calculating_idf), do: "Calculating IDF weights"
-  defp phase_label(:ready), do: "Ready"
-  defp phase_label(:no_data), do: "No training data"
-  defp phase_label(:not_initialized), do: "Not initialized"
-  defp phase_label(_), do: "Unknown"
+  defp phase_label(:loading_episodes) do
+    "Loading episodes"
+  end
+
+  defp phase_label(:tokenizing) do
+    "Tokenizing texts"
+  end
+
+  defp phase_label(:building_frequencies) do
+    "Building frequencies"
+  end
+
+  defp phase_label(:calculating_idf) do
+    "Calculating IDF weights"
+  end
+
+  defp phase_label(:ready) do
+    "Ready"
+  end
+
+  defp phase_label(:no_data) do
+    "No training data"
+  end
+
+  defp phase_label(:not_initialized) do
+    "Not initialized"
+  end
+
+  defp phase_label(_) do
+    "Unknown"
+  end
 end

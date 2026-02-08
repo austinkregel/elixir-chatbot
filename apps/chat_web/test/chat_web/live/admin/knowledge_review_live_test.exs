@@ -1,15 +1,16 @@
 defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
+  alias Brain.Knowledge.Types
+  alias Brain.Knowledge
   use ChatWeb.ConnCase, async: false
   import Phoenix.LiveViewTest
   import Brain.TestHelpers
 
-  alias Brain.Knowledge.{ReviewQueue, SourceReliability, LearningCenter}
-  alias Brain.Knowledge.Types.{Finding, SourceInfo, ReviewCandidate}
+  alias Knowledge.{ReviewQueue, SourceReliability, LearningCenter}
+  alias Types.{Finding, SourceInfo, ReviewCandidate}
 
   setup do
     ensure_pubsub_started()
 
-    # Start required GenServers
     case Task.Supervisor.start_link(name: Brain.Knowledge.AgentSupervisor) do
       {:ok, _pid} -> :ok
       {:error, {:already_started, _pid}} -> :ok
@@ -18,8 +19,6 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
     ensure_started(SourceReliability)
     ensure_started(ReviewQueue)
     ensure_started(LearningCenter)
-
-    # Clear the queue before each test
     ReviewQueue.clear()
 
     :ok
@@ -34,7 +33,6 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
     end
 
     test "renders pending candidates", %{conn: conn} do
-      # Add a test candidate
       candidate = build_test_candidate("France", "Paris is the capital of France")
       ReviewQueue.add(candidate)
 
@@ -59,11 +57,7 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
       ReviewQueue.add(candidate)
 
       {:ok, view, _html} = live(conn, "/knowledge-review")
-
-      # Click approve - use specific phx-click selector
       view |> element("button[phx-click=approve]") |> render_click()
-
-      # Candidate should be removed
       html = render(view)
       refute html =~ "Test claim"
     end
@@ -75,8 +69,6 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
       {:ok, view, _html} = live(conn, "/knowledge-review")
 
       view |> element("button[phx-click=approve]") |> render_click()
-
-      # Stats should update
       stats = ReviewQueue.stats()
       assert stats.approved_today >= 1
     end
@@ -123,8 +115,6 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
       ReviewQueue.add(candidate)
 
       {:ok, view, _html} = live(conn, "/knowledge-review")
-
-      # Select the candidate using phx-click selector
       view |> element("input[phx-click=toggle_select]") |> render_click()
 
       html = render(view)
@@ -132,22 +122,19 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
     end
 
     test "bulk approve processes multiple candidates", %{conn: _conn} do
-      candidates = for i <- 1..3 do
-        c = build_test_candidate("Entity#{i}", "Claim #{i}")
-        ReviewQueue.add(c)
-        c
-      end
+      candidates =
+        for i <- 1..3 do
+          c = build_test_candidate("Entity#{i}", "Claim #{i}")
+          ReviewQueue.add(c)
+          c
+        end
 
-      # Use ReviewQueue's bulk_approve directly since DOM interaction 
-      # with multiple dynamic checkboxes is complex
       ids = Enum.map(candidates, & &1.id)
       {:ok, count} = ReviewQueue.bulk_approve(ids)
 
       assert count == 3
-
-      # All should be processed
       pending = ReviewQueue.get_pending()
-      assert length(pending) == 0
+      assert pending == []
     end
   end
 
@@ -163,16 +150,12 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
 
     test "starting session with topic creates session", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/knowledge-review")
-
-      # Open modal
       view |> element("button", "Start Learning Session") |> render_click()
 
-      # Fill in topic and submit
       view
       |> form("form", %{topic: "European capitals"})
       |> render_submit()
 
-      # Session should be created
       sessions = LearningCenter.list_sessions()
       assert Enum.any?(sessions, &(&1.topic == "European capitals"))
     end
@@ -180,11 +163,12 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
 
   describe "source display" do
     test "shows source reliability badge", %{conn: conn} do
-      source = SourceInfo.new("https://wikipedia.org/wiki/Test",
-        reliability_score: 0.85,
-        trust_tier: :verified,
-        bias_rating: :center
-      )
+      source =
+        SourceInfo.new("https://wikipedia.org/wiki/Test",
+          reliability_score: 0.85,
+          trust_tier: :verified,
+          bias_rating: :center
+        )
 
       finding = Finding.new("Test claim", "Test Entity", source)
       candidate = ReviewCandidate.new(finding, aggregate_confidence: 0.8)
@@ -193,7 +177,6 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
       {:ok, _view, html} = live(conn, "/knowledge-review")
 
       assert html =~ "wikipedia.org"
-      # Should show reliability as percentage
       assert html =~ "85"
     end
 
@@ -202,10 +185,10 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
       source2 = SourceInfo.new("https://source2.com/article")
 
       finding = Finding.new("Corroborated claim", "Entity", source1)
-      candidate = ReviewCandidate.new(finding,
-        corroborating_sources: [source2],
-        aggregate_confidence: 0.9
-      )
+
+      candidate =
+        ReviewCandidate.new(finding, corroborating_sources: [source2], aggregate_confidence: 0.9)
+
       ReviewQueue.add(candidate)
 
       {:ok, _view, html} = live(conn, "/knowledge-review")
@@ -217,10 +200,12 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
     test "shows contradiction warning", %{conn: conn} do
       source = SourceInfo.new("https://example.com/article")
       finding = Finding.new("Conflicting claim", "Entity", source)
-      
-      candidate = ReviewCandidate.new(finding,
-        existing_contradictions: [%{object: "Existing belief about Entity"}]
-      )
+
+      candidate =
+        ReviewCandidate.new(finding,
+          existing_contradictions: [%{object: "Existing belief about Entity"}]
+        )
+
       ReviewQueue.add(candidate)
 
       {:ok, _view, html} = live(conn, "/knowledge-review")
@@ -241,21 +226,14 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
     end
   end
 
-  # Helper functions
-
   defp build_test_candidate(entity, claim, opts \\ []) do
     confidence = Keyword.get(opts, :confidence, 0.7)
     domain = Keyword.get(opts, :domain, "test-source.com")
 
-    source = SourceInfo.new("https://#{domain}/article",
-      reliability_score: 0.8,
-      trust_tier: :verified
-    )
+    source =
+      SourceInfo.new("https://#{domain}/article", reliability_score: 0.8, trust_tier: :verified)
 
-    finding = Finding.new(claim, entity, source,
-      entity_type: "location",
-      confidence: confidence
-    )
+    finding = Finding.new(claim, entity, source, entity_type: "location", confidence: confidence)
 
     ReviewCandidate.new(finding, aggregate_confidence: confidence)
   end

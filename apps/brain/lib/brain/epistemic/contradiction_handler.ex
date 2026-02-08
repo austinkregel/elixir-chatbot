@@ -1,92 +1,48 @@
 defmodule Brain.Epistemic.ContradictionHandler do
-  @moduledoc """
-  Handles contradictions detected by the JTMS.
+  @moduledoc "Handles contradictions detected by the JTMS.\n\nWhen the JTMS detects that a contradiction node has become IN,\nthis module is responsible for:\n\n1. Identifying the minimal set of assumptions causing the contradiction\n2. Determining resolution strategies\n3. Presenting options or auto-resolving based on configuration\n4. Tracking resolution history for learning\n\nResolution strategies:\n- Retract the least confident assumption\n- Retract the most recent assumption\n- Present options to the user\n- Apply domain-specific rules\n"
 
-  When the JTMS detects that a contradiction node has become IN,
-  this module is responsible for:
-
-  1. Identifying the minimal set of assumptions causing the contradiction
-  2. Determining resolution strategies
-  3. Presenting options or auto-resolving based on configuration
-  4. Tracking resolution history for learning
-
-  Resolution strategies:
-  - Retract the least confident assumption
-  - Retract the most recent assumption
-  - Present options to the user
-  - Apply domain-specific rules
-  """
-
+  alias Brain.Knowledge.ReviewQueue
   use GenServer
 
   alias Brain.Epistemic.JTMS
 
   require Logger
 
-  # ============================================================================
-  # Client API
-  # ============================================================================
-
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc """
-  Handles a contradiction notification from the JTMS.
-
-  Returns a resolution decision or {:needs_user_input, options}.
-  """
+  @doc "Handles a contradiction notification from the JTMS.\n\nReturns a resolution decision or {:needs_user_input, options}.\n"
   def handle_contradiction(node_id, supporting_assumptions) do
     GenServer.call(__MODULE__, {:handle_contradiction, node_id, supporting_assumptions})
   end
 
-  @doc """
-  Resolves a contradiction by retracting the specified assumption.
-  """
+  @doc "Resolves a contradiction by retracting the specified assumption.\n"
   def resolve_by_retraction(assumption_id) do
     GenServer.call(__MODULE__, {:resolve_by_retraction, assumption_id})
   end
 
-  @doc """
-  Gets all pending contradictions awaiting user resolution.
-  """
+  @doc "Gets all pending contradictions awaiting user resolution.\n"
   def get_pending do
     GenServer.call(__MODULE__, :get_pending)
   end
 
-  @doc """
-  Gets resolution history.
-  """
+  @doc "Gets resolution history.\n"
   def get_history(opts \\ []) do
     GenServer.call(__MODULE__, {:get_history, opts})
   end
 
-  @doc """
-  Sets the resolution strategy.
-
-  Strategies:
-  - :auto_least_confident - Automatically retract least confident assumption
-  - :auto_most_recent - Automatically retract most recent assumption
-  - :manual - Always require user input
-  - :hybrid - Auto for low stakes, manual for high stakes
-  """
+  @doc "Sets the resolution strategy.\n\nStrategies:\n- :auto_least_confident - Automatically retract least confident assumption\n- :auto_most_recent - Automatically retract most recent assumption\n- :manual - Always require user input\n- :hybrid - Auto for low stakes, manual for high stakes\n"
   def set_strategy(strategy) do
     GenServer.call(__MODULE__, {:set_strategy, strategy})
   end
 
-  @doc """
-  Registers a domain-specific resolution rule.
-
-  Rules are functions that take (node_id, assumptions) and return
-  {:resolve, assumption_to_retract} or :no_match.
-  """
+  @doc "Registers a domain-specific resolution rule.\n\nRules are functions that take (node_id, assumptions) and return\n{:resolve, assumption_to_retract} or :no_match.\n"
   def register_rule(name, rule_fn) when is_function(rule_fn, 2) do
     GenServer.call(__MODULE__, {:register_rule, name, rule_fn})
   end
 
-  @doc """
-  Checks if the handler is ready.
-  """
+  @doc "Checks if the handler is ready.\n"
   def ready? do
     try do
       GenServer.call(__MODULE__, :ready?, 100)
@@ -96,21 +52,14 @@ defmodule Brain.Epistemic.ContradictionHandler do
     end
   end
 
-  @doc """
-  Gets statistics about the contradiction handler.
-  """
+  @doc "Gets statistics about the contradiction handler.\n"
   @spec stats() :: map()
   def stats do
     GenServer.call(__MODULE__, :stats)
   end
 
-  # ============================================================================
-  # Server Callbacks
-  # ============================================================================
-
   @impl true
   def init(_opts) do
-    # Register as JTMS contradiction handler
     if Process.whereis(JTMS) do
       JTMS.set_contradiction_handler(&handle_jtms_callback/1)
     end
@@ -123,8 +72,6 @@ defmodule Brain.Epistemic.ContradictionHandler do
       assumption_metadata: %{}
     }
 
-    # Register built-in rules after state is created
-    # We'll register the knowledge expansion rule via a message to self
     send(self(), :register_builtin_rules)
 
     Logger.info("ContradictionHandler initialized")
@@ -134,7 +81,6 @@ defmodule Brain.Epistemic.ContradictionHandler do
 
   @impl true
   def handle_info(:register_builtin_rules, state) do
-    # Register built-in contradiction resolution rules
     new_rules =
       state.rules
       |> Map.put(:knowledge_expansion, &handle_knowledge_expansion_conflict/2)
@@ -145,7 +91,6 @@ defmodule Brain.Epistemic.ContradictionHandler do
 
   @impl true
   def handle_info({:register_with_jtms}, state) do
-    # Delayed registration in case JTMS starts after us
     if Process.whereis(JTMS) do
       JTMS.set_contradiction_handler(&handle_jtms_callback/1)
     end
@@ -155,21 +100,15 @@ defmodule Brain.Epistemic.ContradictionHandler do
 
   @impl true
   def handle_call({:handle_contradiction, node_id, assumptions}, _from, state) do
-    Logger.info("Handling contradiction",
-      node_id: node_id,
-      assumptions: assumptions
-    )
+    Logger.info("Handling contradiction", node_id: node_id, assumptions: assumptions)
 
-    # Try domain-specific rules first
     case try_rules(state.rules, node_id, assumptions) do
       {:resolve, assumption_id} ->
-        # Auto-resolve using the rule
         result = do_resolution(assumption_id, node_id, :rule)
         new_state = record_resolution(state, node_id, assumption_id, :rule)
         {:reply, {:resolved, result}, new_state}
 
       :no_match ->
-        # Apply strategy
         case apply_strategy(state.strategy, assumptions, state.assumption_metadata) do
           {:auto_resolve, assumption_id, reason} ->
             result = do_resolution(assumption_id, node_id, reason)
@@ -177,7 +116,6 @@ defmodule Brain.Epistemic.ContradictionHandler do
             {:reply, {:resolved, result}, new_state}
 
           :needs_user_input ->
-            # Add to pending
             pending_entry = %{
               node_id: node_id,
               assumptions: assumptions,
@@ -195,7 +133,6 @@ defmodule Brain.Epistemic.ContradictionHandler do
 
   @impl true
   def handle_call({:resolve_by_retraction, assumption_id}, _from, state) do
-    # Find which pending contradiction this resolves
     {resolved_node, remaining} =
       Enum.split_with(state.pending, fn {_node_id, entry} ->
         assumption_id in entry.assumptions
@@ -254,35 +191,24 @@ defmodule Brain.Epistemic.ContradictionHandler do
     {:reply, stats, state}
   end
 
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
-
   defp handle_jtms_callback({:contradiction, node_id, assumptions}) do
-    # Called by JTMS when contradiction detected
-    # We need to handle this async to avoid deadlock
     spawn(fn ->
       handle_contradiction(node_id, assumptions)
     end)
   end
 
-  # Knowledge Expansion rule: when a new fact from knowledge expansion
-  # conflicts with an existing belief, queue it for admin review instead
-  # of auto-resolving.
   defp handle_knowledge_expansion_conflict(node_id, _assumptions) do
-    # Check if this is a knowledge expansion conflict
     case get_conflict_context(node_id) do
       {:knowledge_expansion, new_fact, existing_belief} ->
-        # Queue for admin review instead of auto-resolving
         if Process.whereis(Brain.Knowledge.ReviewQueue) do
-          Brain.Knowledge.ReviewQueue.add_contradiction(new_fact, existing_belief)
+          ReviewQueue.add_contradiction(new_fact, existing_belief)
+
           Logger.info("Knowledge expansion conflict queued for review",
             node_id: node_id,
             new_fact: inspect(new_fact)
           )
         end
 
-        # Return :no_match so it goes to :needs_user_input
         :no_match
 
       _ ->
@@ -290,7 +216,6 @@ defmodule Brain.Epistemic.ContradictionHandler do
     end
   end
 
-  # Check if a contradiction node is related to knowledge expansion
   defp get_conflict_context(node_id) do
     case JTMS.get_node(node_id) do
       {:ok, node} ->
@@ -309,11 +234,7 @@ defmodule Brain.Epistemic.ContradictionHandler do
     end
   end
 
-  # Academic Papers rule: when papers from different sources conflict,
-  # use citation count to determine which claim to prefer.
-  # Papers with significantly more citations (2x+) are considered more reliable.
   defp handle_academic_paper_conflict(_node_id, assumptions) do
-    # Get paper metadata for each assumption node
     papers =
       assumptions
       |> Enum.map(fn id ->
@@ -333,21 +254,21 @@ defmodule Brain.Epistemic.ContradictionHandler do
       end)
       |> Enum.reject(&is_nil/1)
 
-    # Only apply this rule if we have multiple academic sources
     if length(papers) >= 2 do
-      # Sort by citation count (descending)
       sorted =
         papers
-        |> Enum.sort_by(fn {_, meta} ->
-          Map.get(meta, :citation_count, 0)
-        end, :desc)
+        |> Enum.sort_by(
+          fn {_, meta} ->
+            Map.get(meta, :citation_count, 0)
+          end,
+          :desc
+        )
 
       case sorted do
         [{_winner_id, winner_meta}, {loser_id, loser_meta} | _] ->
           winner_cites = Map.get(winner_meta, :citation_count, 0)
           loser_cites = Map.get(loser_meta, :citation_count, 0)
 
-          # If winner has 2x+ citations, auto-resolve by retracting lower-cited claim
           if winner_cites > 0 and winner_cites > loser_cites * 2 do
             Logger.info("Resolving academic conflict by citation count",
               winner_citations: winner_cites,
@@ -357,7 +278,6 @@ defmodule Brain.Epistemic.ContradictionHandler do
 
             {:resolve, loser_id}
           else
-            # Too close to call automatically - queue for human review
             Logger.info("Academic conflict too close to auto-resolve",
               winner_citations: winner_cites,
               loser_citations: loser_cites
@@ -370,7 +290,6 @@ defmodule Brain.Epistemic.ContradictionHandler do
           :no_match
       end
     else
-      # Not enough academic sources to apply this rule
       :no_match
     end
   end
@@ -386,7 +305,6 @@ defmodule Brain.Epistemic.ContradictionHandler do
   end
 
   defp apply_strategy(:auto_least_confident, assumptions, metadata) do
-    # Find assumption with lowest confidence
     assumption_with_confidence =
       assumptions
       |> Enum.map(fn id ->
@@ -402,7 +320,6 @@ defmodule Brain.Epistemic.ContradictionHandler do
   end
 
   defp apply_strategy(:auto_most_recent, assumptions, metadata) do
-    # Find most recently added assumption
     assumption_with_time =
       assumptions
       |> Enum.map(fn id ->
@@ -422,11 +339,9 @@ defmodule Brain.Epistemic.ContradictionHandler do
   end
 
   defp apply_strategy(:hybrid, assumptions, metadata) do
-    # Auto for single assumption or clear confidence difference
     if length(assumptions) == 1 do
       {:auto_resolve, hd(assumptions), :only_option}
     else
-      # Check confidence spread
       confidences =
         Enum.map(assumptions, fn id ->
           get_in(metadata, [id, :confidence]) || 0.5
@@ -436,17 +351,14 @@ defmodule Brain.Epistemic.ContradictionHandler do
       max_conf = Enum.max(confidences)
 
       if max_conf - min_conf > 0.3 do
-        # Clear winner - retract least confident
         apply_strategy(:auto_least_confident, assumptions, metadata)
       else
-        # Too close to call automatically
         :needs_user_input
       end
     end
   end
 
   defp do_resolution(assumption_id, _node_id, _reason) do
-    # Retract the assumption in JTMS
     case JTMS.retract_assumption(assumption_id) do
       :ok ->
         Logger.info("Contradiction resolved by retracting assumption", id: assumption_id)
@@ -485,7 +397,6 @@ defmodule Brain.Epistemic.ContradictionHandler do
   end
 
   defp estimate_impact(assumption_id) do
-    # Estimate how many nodes would be affected by retracting this assumption
     case JTMS.consequences_of(assumption_id) do
       {:ok, consequences} -> length(consequences)
       _ -> 0

@@ -1,29 +1,21 @@
 defmodule ChatWeb.Admin.KnowledgeReviewLive do
-  @moduledoc """
-  LiveView for reviewing knowledge expansion candidates.
+  @moduledoc "LiveView for reviewing knowledge expansion candidates.\n\nProvides an admin interface for:\n- Viewing pending knowledge candidates\n- Source reliability badges and bias indicators\n- Corroboration evidence display\n- Contradiction highlighting with existing beliefs\n- Approve/Reject/Defer actions\n- Bulk review capabilities\n"
 
-  Provides an admin interface for:
-  - Viewing pending knowledge candidates
-  - Source reliability badges and bias indicators
-  - Corroboration evidence display
-  - Contradiction highlighting with existing beliefs
-  - Approve/Reject/Defer actions
-  - Bulk review capabilities
-  """
-
+  alias Phoenix.PubSub
+  alias Brain.Knowledge
   use ChatWeb, :live_view
   require Logger
 
   import ChatWeb.AppShell
 
-  alias Brain.Knowledge.{ReviewQueue, LearningCenter}
+  alias Knowledge.{ReviewQueue, LearningCenter}
 
-  @refresh_interval_ms 5_000
+  @refresh_interval_ms 5000
 
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
-      Phoenix.PubSub.subscribe(Brain.PubSub, "knowledge:review")
+      PubSub.subscribe(Brain.PubSub, "knowledge:review")
       :timer.send_interval(@refresh_interval_ms, self(), :refresh)
     end
 
@@ -389,18 +381,33 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
     """
   end
 
-  defp status_badge_class(:approved), do: "badge-success"
-  defp status_badge_class(:rejected), do: "badge-error"
-  defp status_badge_class(:deferred), do: "badge-warning"
-  defp status_badge_class(_), do: "badge-ghost"
+  defp status_badge_class(:approved) do
+    "badge-success"
+  end
 
-  defp format_datetime(nil), do: "N/A"
+  defp status_badge_class(:rejected) do
+    "badge-error"
+  end
+
+  defp status_badge_class(:deferred) do
+    "badge-warning"
+  end
+
+  defp status_badge_class(_) do
+    "badge-ghost"
+  end
+
+  defp format_datetime(nil) do
+    "N/A"
+  end
 
   defp format_datetime(%DateTime{} = dt) do
     Calendar.strftime(dt, "%Y-%m-%d %H:%M")
   end
 
-  defp format_datetime(_), do: "N/A"
+  defp format_datetime(_) do
+    "N/A"
+  end
 
   defp source_badge(assigns) do
     tier_class =
@@ -439,8 +446,6 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
     </div>
     """
   end
-
-  # Event Handlers
 
   @impl true
   def handle_event("toggle_select", %{"id" => id}, socket) do
@@ -599,8 +604,6 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
     end
   end
 
-  # PubSub Handlers
-
   @impl true
   def handle_info({event, _data}, socket)
       when event in [
@@ -621,7 +624,6 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
 
   @impl true
   def handle_info({:world_context_changed, _world_id}, socket) do
-    # World was changed from another LiveView or tab - reload data
     {:noreply, refresh_data(socket)}
   end
 
@@ -629,8 +631,6 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
   def handle_info(_msg, socket) do
     {:noreply, socket}
   end
-
-  # Helpers
 
   defp refresh_data(socket) do
     current_tab = socket.assigns[:current_tab] || :pending
@@ -645,7 +645,9 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
     Float.round(score * 100, 1)
   end
 
-  defp format_confidence(_), do: "N/A"
+  defp format_confidence(_) do
+    "N/A"
+  end
 
   defp format_domains(sources) do
     sources
@@ -663,10 +665,23 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
     end
   end
 
-  defp confidence_class(_), do: "progress-info"
+  defp confidence_class(_) do
+    "progress-info"
+  end
 
-  defp session_status_class(:active), do: "badge-primary"
-  defp session_status_class(:completed), do: "badge-success"
-  defp session_status_class(:cancelled), do: "badge-error"
-  defp session_status_class(_), do: "badge-ghost"
+  defp session_status_class(:active) do
+    "badge-primary"
+  end
+
+  defp session_status_class(:completed) do
+    "badge-success"
+  end
+
+  defp session_status_class(:cancelled) do
+    "badge-error"
+  end
+
+  defp session_status_class(_) do
+    "badge-ghost"
+  end
 end

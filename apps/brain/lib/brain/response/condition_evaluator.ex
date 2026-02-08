@@ -10,9 +10,19 @@ defmodule Brain.Response.ConditionEvaluator do
   - `confidence:high/medium/low` - Confidence threshold
   - `speech_act:sub_type` - Speech act matches
 
-  Compound expressions with AND / OR:
+  ## Enrichment Conditions
+
+  For templates that require live data from external services:
+  - `enriched:field` - Enrichment data contains the specified field
+  - `service_available:name` - Service is configured and healthy
+  - `enrichment_failed` - Enrichment was attempted but failed
+  - `enrichment_success` - Enrichment succeeded
+
+  Compound expressions with AND / OR / NOT:
   - `has_entity:person AND confidence:high`
   - `slot_missing:address OR slot_missing:date-time`
+  - `slot_filled:location AND enriched:temperature`
+  - `slot_filled:location AND NOT service_available:weather`
 
   ## Usage
 
@@ -28,6 +38,20 @@ defmodule Brain.Response.ConditionEvaluator do
       # => true
 
       ConditionEvaluator.evaluate("has_entity:person AND confidence:high", context)
+      # => true
+
+  ## Enrichment Example
+
+      context = %{
+        filled_slots: ["location"],
+        enriched_data: %{temperature: "72°F", conditions: "sunny"},
+        enrichment_status: :success
+      }
+
+      ConditionEvaluator.evaluate("enriched:temperature", context)
+      # => true
+
+      ConditionEvaluator.evaluate("slot_filled:location AND enriched:temperature", context)
       # => true
   """
 
@@ -69,6 +93,7 @@ defmodule Brain.Response.ConditionEvaluator do
   Returns a tuple representing the parsed condition:
   - `{:and, left, right}` - AND expression
   - `{:or, left, right}` - OR expression
+  - `{:not, inner}` - NOT expression
   - `{:condition, type, value}` - Simple condition
   """
   def parse(condition) when is_binary(condition) do
@@ -83,6 +108,9 @@ defmodule Brain.Response.ConditionEvaluator do
 
       String.contains?(condition, " AND ") ->
         parse_and(condition)
+
+      String.starts_with?(condition, "NOT ") ->
+        parse_not(condition)
 
       true ->
         parse_simple(condition)
@@ -115,6 +143,12 @@ defmodule Brain.Response.ConditionEvaluator do
     end
   end
 
+  defp parse_not(condition) do
+    # Remove "NOT " prefix and parse the rest
+    inner = String.replace_prefix(condition, "NOT ", "")
+    {:not, parse(String.trim(inner))}
+  end
+
   defp parse_simple(condition) do
     case String.split(condition, ":", parts: 2) do
       [type, value] ->
@@ -137,6 +171,10 @@ defmodule Brain.Response.ConditionEvaluator do
 
   defp eval_ast({:or, left, right}, context) do
     eval_ast(left, context) or eval_ast(right, context)
+  end
+
+  defp eval_ast({:not, inner}, context) do
+    not eval_ast(inner, context)
   end
 
   defp eval_ast({:condition, type, value}, context) do
@@ -195,6 +233,47 @@ defmodule Brain.Response.ConditionEvaluator do
       true ->
         false
     end
+  end
+
+  # ============================================================================
+  # Enrichment Conditions
+  # ============================================================================
+
+  defp eval_condition("enriched", field_name, context) do
+    # Check if enrichment data contains the specified field
+    enriched_data = Map.get(context, :enriched_data, %{})
+
+    # Support both atom and string keys
+    field_atom = String.to_atom(field_name)
+
+    Map.has_key?(enriched_data, field_atom) or Map.has_key?(enriched_data, field_name)
+  end
+
+  defp eval_condition("service_available", service_name, context) do
+    # Check if a service is configured and available
+    # First check context for cached availability
+    available_services = Map.get(context, :available_services, [])
+
+    if available_services != [] do
+      service_name in available_services or String.to_atom(service_name) in available_services
+    else
+      # Fall back to checking dispatcher
+      alias Brain.Services.Dispatcher
+      world = Map.get(context, :world_id) || Map.get(context, :world, "default")
+      Dispatcher.service_available?(String.to_atom(service_name), world: world)
+    end
+  end
+
+  defp eval_condition("enrichment_failed", _value, context) do
+    # Check if enrichment was attempted but failed
+    enrichment_status = Map.get(context, :enrichment_status)
+    enrichment_status == :failed
+  end
+
+  defp eval_condition("enrichment_success", _value, context) do
+    # Check if enrichment succeeded
+    enrichment_status = Map.get(context, :enrichment_status)
+    enrichment_status == :success
   end
 
   defp eval_condition(unknown_type, _value, _context) do

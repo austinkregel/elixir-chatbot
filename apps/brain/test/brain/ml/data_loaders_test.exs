@@ -10,11 +10,9 @@ defmodule Brain.ML.DataLoadersTest do
       case result do
         {:ok, entities} ->
           assert is_map(entities)
-          # Should have at least some entity types
           assert map_size(entities) >= 0
 
         {:error, _reason} ->
-          # Directory might not exist in test environment
           assert true
       end
     end
@@ -28,15 +26,13 @@ defmodule Brain.ML.DataLoadersTest do
         {:ok, examples} ->
           assert is_list(examples)
 
-          # Each example should have required fields
-          if length(examples) > 0 do
+          if examples != [] do
             example = Enum.at(examples, 0)
             assert Map.has_key?(example, :text)
             assert Map.has_key?(example, :intent)
           end
 
         {:error, _reason} ->
-          # Directory might not exist in test environment
           assert true
       end
     end
@@ -50,14 +46,13 @@ defmodule Brain.ML.DataLoadersTest do
         {:ok, cities} ->
           assert is_list(cities)
 
-          if length(cities) > 0 do
+          if cities != [] do
             city = Enum.at(cities, 0)
             assert Map.has_key?(city, :name)
             assert Map.has_key?(city, :country)
           end
 
         {:error, _reason} ->
-          # CSV might not exist in test environment
           assert true
       end
     end
@@ -71,13 +66,12 @@ defmodule Brain.ML.DataLoadersTest do
         {:ok, artists} ->
           assert is_list(artists)
 
-          if length(artists) > 0 do
+          if artists != [] do
             artist = Enum.at(artists, 0)
             assert Map.has_key?(artist, :artist_name)
           end
 
         {:error, _reason} ->
-          # CSV might not exist in test environment
           assert true
       end
     end
@@ -91,13 +85,12 @@ defmodule Brain.ML.DataLoadersTest do
         {:ok, emojis} ->
           assert is_list(emojis)
 
-          if length(emojis) > 0 do
+          if emojis != [] do
             emoji = Enum.at(emojis, 0)
             assert Map.has_key?(emoji, :name)
           end
 
         {:error, _reason} ->
-          # CSV might not exist in test environment
           assert true
       end
     end
@@ -114,22 +107,16 @@ defmodule Brain.ML.DataLoadersTest do
           },
           %{value: "light", synonyms: ["lamp", "bulb"], entity_type: "device"}
         ],
-        "room" => [
-          %{value: "kitchen", synonyms: ["cook room"], entity_type: "room"}
-        ]
+        "room" => [%{value: "kitchen", synonyms: ["cook room"], entity_type: "room"}]
       }
 
       lookup = DataLoaders.build_entity_lookup(entities)
 
       assert is_map(lookup)
-
-      # Check synonyms are indexed
       assert Map.has_key?(lookup, "thermostat")
       assert Map.has_key?(lookup, "thermo")
       assert Map.has_key?(lookup, "lamp")
       assert Map.has_key?(lookup, "kitchen")
-
-      # Check value structure
       thermo = Map.get(lookup, "thermostat")
       assert thermo.entity_type == "device"
       assert thermo.value == "thermostat"
@@ -158,12 +145,8 @@ defmodule Brain.ML.DataLoadersTest do
       }
 
       lookup = DataLoaders.build_entity_lookup(entities)
-
-      # Single character entries should be filtered
       refute Map.has_key?(lookup, "a")
       refute Map.has_key?(lookup, "b")
-
-      # 2+ character entries should be kept
       assert Map.has_key?(lookup, "valid")
       assert Map.has_key?(lookup, "ok")
     end

@@ -1,11 +1,7 @@
 defmodule World.Manager do
-  @moduledoc """
-  Manages training world lifecycle - creation, destruction, checkpointing.
+  @moduledoc "Manages training world lifecycle - creation, destruction, checkpointing.\n\nThis GenServer maintains the registry of active training worlds and\ncoordinates their data isolation while sharing computational processes.\n"
 
-  This GenServer maintains the registry of active training worlds and
-  coordinates their data isolation while sharing computational processes.
-  """
-
+  alias Brain.ML.Gazetteer
   use GenServer
   require Logger
 
@@ -18,37 +14,21 @@ defmodule World.Manager do
   @ets_candidates :learning_candidates
   @ets_events :learning_events
 
-  # ============================================================================
-  # Client API
-  # ============================================================================
-
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc """
-  Creates a new training world.
-
-  ## Options
-    - `:mode` - :ephemeral (default) or :persistent
-    - `:base` - ID of parent world to inherit from (nil = empty)
-    - `:config` - Custom configuration map
-    - `:metadata` - Additional metadata
-  """
+  @doc "Creates a new training world.\n\n## Options\n  - `:mode` - :ephemeral (default) or :persistent\n  - `:base` - ID of parent world to inherit from (nil = empty)\n  - `:config` - Custom configuration map\n  - `:metadata` - Additional metadata\n"
   def create(name, opts \\ []) when is_binary(name) do
     GenServer.call(__MODULE__, {:create_world, name, opts})
   end
 
-  @doc """
-  Destroys a training world and cleans up its data.
-  """
+  @doc "Destroys a training world and cleans up its data.\n"
   def destroy(world_id) when is_binary(world_id) do
     GenServer.call(__MODULE__, {:destroy_world, world_id})
   end
 
-  @doc """
-  Gets a training world by ID.
-  """
+  @doc "Gets a training world by ID.\n"
   def get(world_id) when is_binary(world_id) do
     case :ets.lookup(@ets_worlds, world_id) do
       [{^world_id, world}] -> {:ok, world}
@@ -58,13 +38,7 @@ defmodule World.Manager do
     ArgumentError -> {:error, :table_not_ready}
   end
 
-  @doc """
-  Lists all active training worlds.
-
-  ## Options
-    - `:include_test` - If false (default), excludes test worlds from the list.
-                        Test worlds are identified by having `test: true` in metadata.
-  """
+  @doc "Lists all active training worlds.\n\n## Options\n  - `:include_test` - If false (default), excludes test worlds from the list.\n                      Test worlds are identified by having `test: true` in metadata.\n"
   def list_worlds(opts \\ []) do
     include_test = Keyword.get(opts, :include_test, false)
 
@@ -72,7 +46,6 @@ defmodule World.Manager do
       :ets.tab2list(@ets_worlds)
       |> Enum.filter(fn
         {id, %TrainingWorld{} = world} when is_binary(id) ->
-          # Filter out test worlds unless explicitly requested
           if include_test do
             true
           else
@@ -92,11 +65,11 @@ defmodule World.Manager do
     Map.get(metadata, :test, false) == true
   end
 
-  defp is_test_world?(_), do: false
+  defp is_test_world?(_) do
+    false
+  end
 
-  @doc """
-  Gets the metrics for a training world.
-  """
+  @doc "Gets the metrics for a training world.\n"
   def get_metrics(world_id) when is_binary(world_id) do
     case :ets.lookup(@ets_worlds, {:metrics, world_id}) do
       [{{:metrics, ^world_id}, metrics}] -> {:ok, metrics}
@@ -106,14 +79,9 @@ defmodule World.Manager do
     ArgumentError -> {:error, :table_not_ready}
   end
 
-  @doc """
-  Updates the metrics for a training world.
-
-  This is a non-blocking operation that updates ETS directly for performance.
-  """
+  @doc "Updates the metrics for a training world.\n\nThis is a non-blocking operation that updates ETS directly for performance.\n"
   def update_metrics(world_id, update_fn)
       when is_binary(world_id) and is_function(update_fn, 1) do
-    # Direct ETS update for performance (table is public)
     try do
       case :ets.lookup(@ets_worlds, {:metrics, world_id}) do
         [{{:metrics, ^world_id}, metrics}] ->
@@ -129,16 +97,12 @@ defmodule World.Manager do
     end
   end
 
-  @doc """
-  Records an event in a training world's event log.
-  """
+  @doc "Records an event in a training world's event log.\n"
   def record_event(world_id, event_type, data \\ %{}, opts \\ []) do
     GenServer.cast(__MODULE__, {:record_event, world_id, event_type, data, opts})
   end
 
-  @doc """
-  Gets all events for a training world, optionally filtered by type.
-  """
+  @doc "Gets all events for a training world, optionally filtered by type.\n"
   def get_events(world_id, filters \\ []) do
     type_filter = Keyword.get(filters, :type)
     limit = Keyword.get(filters, :limit, 1000)
@@ -153,16 +117,12 @@ defmodule World.Manager do
     end
   end
 
-  @doc """
-  Adds an entity candidate to a world's candidate pool.
-  """
+  @doc "Adds an entity candidate to a world's candidate pool.\n"
   def add_candidate(world_id, candidate) when is_binary(world_id) and is_map(candidate) do
     GenServer.cast(__MODULE__, {:add_candidate, world_id, candidate})
   end
 
-  @doc """
-  Gets all entity candidates for a world.
-  """
+  @doc "Gets all entity candidates for a world.\n"
   def get_candidates(world_id, opts \\ []) do
     try do
       case :ets.lookup(@ets_candidates, world_id) do
@@ -179,37 +139,27 @@ defmodule World.Manager do
     end
   end
 
-  @doc """
-  Promotes a candidate to the world's gazetteer overlay.
-  """
+  @doc "Promotes a candidate to the world's gazetteer overlay.\n"
   def promote_candidate(world_id, candidate_value, entity_type) do
     GenServer.call(__MODULE__, {:promote_candidate, world_id, candidate_value, entity_type})
   end
 
-  @doc """
-  Creates a checkpoint for a persistent world.
-  """
+  @doc "Creates a checkpoint for a persistent world.\n"
   def checkpoint(world_id) when is_binary(world_id) do
     GenServer.call(__MODULE__, {:checkpoint, world_id}, 60_000)
   end
 
-  @doc """
-  Loads a persistent world from disk.
-  """
+  @doc "Loads a persistent world from disk.\n"
   def load_world(world_id) when is_binary(world_id) do
     GenServer.call(__MODULE__, {:load_world, world_id}, 60_000)
   end
 
-  @doc """
-  Exports a world's data for review.
-  """
+  @doc "Exports a world's data for review.\n"
   def export(world_id) when is_binary(world_id) do
     GenServer.call(__MODULE__, {:export, world_id})
   end
 
-  @doc """
-  Compares two worlds.
-  """
+  @doc "Compares two worlds.\n"
   def compare(world_id_1, world_id_2) do
     with {:ok, metrics1} <- get_metrics(world_id_1),
          {:ok, metrics2} <- get_metrics(world_id_2) do
@@ -217,16 +167,12 @@ defmodule World.Manager do
     end
   end
 
-  @doc """
-  Merges approved learnings from source world to target world.
-  """
+  @doc "Merges approved learnings from source world to target world.\n"
   def merge(source_world_id, target_world_id, opts \\ []) do
     GenServer.call(__MODULE__, {:merge, source_world_id, target_world_id, opts}, 60_000)
   end
 
-  @doc """
-  Checks if the world manager is ready.
-  """
+  @doc "Checks if the world manager is ready.\n"
   def ready? do
     try do
       GenServer.call(__MODULE__, :ready?, 100)
@@ -236,37 +182,15 @@ defmodule World.Manager do
     end
   end
 
-  @doc """
-  Reloads persisted worlds from disk.
-
-  Useful when worlds have been saved by another process (e.g., mix task)
-  and you want the running server to pick them up.
-  """
+  @doc "Reloads persisted worlds from disk.\n\nUseful when worlds have been saved by another process (e.g., mix task)\nand you want the running server to pick them up.\n"
   def reload_persisted_worlds do
     GenServer.call(__MODULE__, :reload_persisted_worlds, 60_000)
   end
 
-  @doc """
-  Cleans up orphaned world directories from disk.
-
-  An orphaned directory is one that exists on disk but:
-  - Is not currently loaded in memory (ETS)
-  - Has no valid config.json file
-
-  ## Options
-    - `:dry_run` - If true (default), only reports what would be deleted
-    - `:max_age_hours` - Only delete directories older than this (default: 24)
-    - `:exclude` - List of world IDs to never delete (default: ["default"])
-
-  Returns `{:ok, deleted_count}` or `{:ok, {would_delete, directories}}` for dry run.
-  """
+  @doc "Cleans up orphaned world directories from disk.\n\nAn orphaned directory is one that exists on disk but:\n- Is not currently loaded in memory (ETS)\n- Has no valid config.json file\n\n## Options\n  - `:dry_run` - If true (default), only reports what would be deleted\n  - `:max_age_hours` - Only delete directories older than this (default: 24)\n  - `:exclude` - List of world IDs to never delete (default: [\"default\"])\n\nReturns `{:ok, deleted_count}` or `{:ok, {would_delete, directories}}` for dry run.\n"
   def cleanup_orphaned_worlds(opts \\ []) do
     GenServer.call(__MODULE__, {:cleanup_orphaned_worlds, opts}, 120_000)
   end
-
-  # ============================================================================
-  # GenServer Callbacks
-  # ============================================================================
 
   @impl true
   def init(_opts) do
@@ -277,31 +201,24 @@ defmodule World.Manager do
   end
 
   defp do_load_persisted_worlds do
-    # Load all persisted worlds from disk
     persisted = WorldPersistence.list_persisted_worlds()
 
     loaded =
       Enum.reduce(persisted, 0, fn world, count ->
         world_id = world.id
 
-        # Check if already loaded
         case :ets.lookup(@ets_worlds, world_id) do
           [{^world_id, _}] ->
-            # Already loaded, skip
             count
 
           [] ->
-            # Not loaded, load from disk
             case WorldPersistence.load(world_id) do
               {:ok, data} ->
-                # Restore to ETS
                 :ets.insert(@ets_worlds, {world_id, data.world})
                 :ets.insert(@ets_worlds, {{:metrics, world_id}, data.metrics})
                 :ets.insert(@ets_candidates, {world_id, data.candidates})
                 :ets.insert(@ets_events, {world_id, data.events})
-
-                # Restore gazetteer overlay
-                Brain.ML.Gazetteer.restore_world_overlay(world_id, data.overlay)
+                Gazetteer.restore_world_overlay(world_id, data.overlay)
 
                 Logger.info("Loaded persisted world", %{id: world_id, name: world.name})
                 count + 1
@@ -337,17 +254,11 @@ defmodule World.Manager do
   def handle_call({:create_world, name, opts}, _from, state) do
     world = TrainingWorld.new(name, opts)
     metrics = WorldMetrics.new()
-
-    # Store world and metrics
     :ets.insert(@ets_worlds, {world.id, world})
     :ets.insert(@ets_worlds, {{:metrics, world.id}, metrics})
     :ets.insert(@ets_candidates, {world.id, []})
     :ets.insert(@ets_events, {world.id, []})
-
-    # Initialize gazetteer overlay for this world
-    Brain.ML.Gazetteer.create_world_overlay(world.id)
-
-    # Record creation event
+    Gazetteer.create_world_overlay(world.id)
     event = WorldEvents.new(world.id, :world_created, %{name: name, mode: world.mode})
     append_event(world.id, event)
 
@@ -355,10 +266,9 @@ defmodule World.Manager do
       WorldEvents.emit_telemetry(event)
     end
 
-    # Auto-save persistent worlds to disk immediately
     if world.mode == :persistent do
       events = [event]
-      overlay = Brain.ML.Gazetteer.get_world_overlay(world.id)
+      overlay = Gazetteer.get_world_overlay(world.id)
 
       case WorldPersistence.save(world.id, %{
              world: world,
@@ -383,16 +293,12 @@ defmodule World.Manager do
   def handle_call({:destroy_world, world_id}, _from, state) do
     case :ets.lookup(@ets_worlds, world_id) do
       [{^world_id, world}] ->
-        # Clean up ETS entries
         :ets.delete(@ets_worlds, world_id)
         :ets.delete(@ets_worlds, {:metrics, world_id})
         :ets.delete(@ets_candidates, world_id)
         :ets.delete(@ets_events, world_id)
+        Gazetteer.destroy_world_overlay(world_id)
 
-        # Clean up gazetteer overlay
-        Brain.ML.Gazetteer.destroy_world_overlay(world_id)
-
-        # Clean up persisted data from disk (for persistent worlds)
         if world.mode == :persistent do
           case WorldPersistence.delete(world_id) do
             :ok ->
@@ -416,15 +322,12 @@ defmodule World.Manager do
 
   @impl true
   def handle_call({:promote_candidate, world_id, candidate_value, entity_type}, _from, state) do
-    # Add to gazetteer overlay
-    result = Brain.ML.Gazetteer.add_to_world(world_id, candidate_value, entity_type)
+    result = Gazetteer.add_to_world(world_id, candidate_value, entity_type)
 
     case result do
       {:ok, _} ->
-        # Update metrics
         update_metrics_internal(world_id, &WorldMetrics.record_entity_promoted/1)
 
-        # Record event
         event =
           WorldEvents.new(world_id, :entity_promoted_to_gazetteer, %{
             value: candidate_value,
@@ -449,7 +352,7 @@ defmodule World.Manager do
           metrics = get_metrics_internal(world_id)
           candidates = get_candidates(world_id)
           events = get_events(world_id)
-          overlay = Brain.ML.Gazetteer.get_world_overlay(world_id)
+          overlay = Gazetteer.get_world_overlay(world_id)
 
           result =
             WorldPersistence.save(world_id, %{
@@ -482,14 +385,11 @@ defmodule World.Manager do
   def handle_call({:load_world, world_id}, _from, state) do
     case WorldPersistence.load(world_id) do
       {:ok, data} ->
-        # Restore to ETS
         :ets.insert(@ets_worlds, {world_id, data.world})
         :ets.insert(@ets_worlds, {{:metrics, world_id}, data.metrics})
         :ets.insert(@ets_candidates, {world_id, data.candidates})
         :ets.insert(@ets_events, {world_id, data.events})
-
-        # Restore gazetteer overlay
-        Brain.ML.Gazetteer.restore_world_overlay(world_id, data.overlay)
+        Gazetteer.restore_world_overlay(world_id, data.overlay)
 
         {:reply, {:ok, data.world}, state}
 
@@ -507,7 +407,7 @@ defmodule World.Manager do
           metrics: get_metrics_internal(world_id),
           candidates: get_candidates(world_id),
           events: get_events(world_id),
-          overlay: Brain.ML.Gazetteer.get_world_overlay(world_id)
+          overlay: Gazetteer.get_world_overlay(world_id)
         }
 
         {:reply, {:ok, export_data}, state}
@@ -524,10 +424,8 @@ defmodule World.Manager do
 
     with {:ok, _source} <- get(source_id),
          {:ok, _target} <- get(target_id) do
-      # Get promoted entities from source overlay
-      source_overlay = Brain.ML.Gazetteer.get_world_overlay(source_id)
+      source_overlay = Gazetteer.get_world_overlay(source_id)
 
-      # Filter by confidence if required
       entities_to_merge =
         source_overlay
         |> Enum.filter(fn {_key, info} ->
@@ -535,13 +433,11 @@ defmodule World.Manager do
           confidence >= min_confidence
         end)
 
-      if require_review and length(entities_to_merge) > 0 do
-        # Return entities for review instead of merging
+      if require_review and entities_to_merge != [] do
         {:reply, {:needs_review, entities_to_merge}, state}
       else
-        # Merge entities to target
         Enum.each(entities_to_merge, fn {_key, info} ->
-          Brain.ML.Gazetteer.add_to_world(
+          Gazetteer.add_to_world(
             target_id,
             info.value,
             info.entity_type,
@@ -566,27 +462,22 @@ defmodule World.Manager do
   def handle_cast({:add_candidate, world_id, candidate}, state) do
     case :ets.lookup(@ets_candidates, world_id) do
       [{^world_id, candidates}] ->
-        # Check if candidate already exists (by value)
         candidate_value = Map.get(candidate, :value)
 
         {updated_candidates, is_new} =
           case Enum.find_index(candidates, &(Map.get(&1, :value) == candidate_value)) do
             nil ->
-              # New candidate
               {[candidate | candidates], true}
 
             idx ->
-              # Existing candidate - update occurrence count
               existing = Enum.at(candidates, idx)
               updated = Map.update(existing, :occurrences, 1, &(&1 + 1))
               {List.replace_at(candidates, idx, updated), false}
           end
 
-        # Limit candidates to prevent unbounded growth
         limited = Enum.take(updated_candidates, 10_000)
         :ets.insert(@ets_candidates, {world_id, limited})
 
-        # Update metrics
         if is_new do
           entity_type = Map.get(candidate, :inferred_type, "unknown")
           confidence = Map.get(candidate, :confidence, 0.5)
@@ -604,26 +495,19 @@ defmodule World.Manager do
     {:noreply, state}
   end
 
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
-
   defp create_tables do
-    # Main worlds table
     if :ets.whereis(@ets_worlds) != :undefined do
       :ets.delete(@ets_worlds)
     end
 
     :ets.new(@ets_worlds, [:set, :public, :named_table, read_concurrency: true])
 
-    # Candidates table
     if :ets.whereis(@ets_candidates) != :undefined do
       :ets.delete(@ets_candidates)
     end
 
     :ets.new(@ets_candidates, [:set, :public, :named_table, read_concurrency: true])
 
-    # Events table
     if :ets.whereis(@ets_events) != :undefined do
       :ets.delete(@ets_events)
     end
@@ -634,7 +518,6 @@ defmodule World.Manager do
   defp append_event(world_id, event) do
     case :ets.lookup(@ets_events, world_id) do
       [{^world_id, events}] ->
-        # Prepend for efficiency, limit to prevent unbounded growth
         updated = [event | events] |> Enum.take(10_000)
         :ets.insert(@ets_events, {world_id, updated})
 
@@ -643,13 +526,17 @@ defmodule World.Manager do
     end
   end
 
-  defp maybe_filter_by_type(events, nil), do: events
+  defp maybe_filter_by_type(events, nil) do
+    events
+  end
 
   defp maybe_filter_by_type(events, type) do
     Enum.filter(events, &(&1.type == type))
   end
 
-  defp maybe_sort_candidates(candidates, nil), do: candidates
+  defp maybe_sort_candidates(candidates, nil) do
+    candidates
+  end
 
   defp maybe_sort_candidates(candidates, :confidence) do
     Enum.sort_by(candidates, &Map.get(&1, :confidence, 0), :desc)
@@ -659,7 +546,9 @@ defmodule World.Manager do
     Enum.sort_by(candidates, &Map.get(&1, :occurrences, 1), :desc)
   end
 
-  defp maybe_sort_candidates(candidates, _), do: candidates
+  defp maybe_sort_candidates(candidates, _) do
+    candidates
+  end
 
   defp get_metrics_internal(world_id) do
     case :ets.lookup(@ets_worlds, {:metrics, world_id}) do
@@ -701,7 +590,6 @@ defmodule World.Manager do
     if File.exists?(base_path) do
       case File.ls(base_path) do
         {:ok, entries} ->
-          # Get all currently loaded world IDs
           loaded_world_ids =
             try do
               :ets.tab2list(@ets_worlds)
@@ -715,10 +603,8 @@ defmodule World.Manager do
               ArgumentError -> MapSet.new()
             end
 
-          # Calculate cutoff time
           cutoff = DateTime.add(DateTime.utc_now(), -max_age_hours * 3600, :second)
 
-          # Find orphaned directories
           orphaned =
             entries
             |> Enum.filter(&File.dir?(Path.join(base_path, &1)))
@@ -727,24 +613,17 @@ defmodule World.Manager do
             |> Enum.filter(fn world_id ->
               dir_path = Path.join(base_path, world_id)
               config_path = Path.join(dir_path, "config.json")
-
-              # Check if it's a valid world (has config.json)
               has_valid_config = File.exists?(config_path)
 
-              # Check directory age
               case File.stat(dir_path) do
                 {:ok, %{mtime: mtime}} ->
-                  # Convert mtime (erlang datetime) to DateTime
                   case NaiveDateTime.from_erl(mtime) do
                     {:ok, naive} ->
                       dir_time = DateTime.from_naive!(naive, "Etc/UTC")
                       is_old = DateTime.compare(dir_time, cutoff) == :lt
-
-                      # Delete if: no valid config OR old enough
                       not has_valid_config or is_old
 
                     _ ->
-                      # Can't parse time, skip
                       false
                   end
 

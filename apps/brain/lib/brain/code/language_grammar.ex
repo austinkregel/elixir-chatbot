@@ -327,6 +327,7 @@ defmodule Brain.Code.LanguageGrammar do
 
         {:error, reason} ->
           # Try creating a fallback parser
+          Logger.warning("Failed to load grammar for #{language}: #{inspect(reason)}, using fallback")
           fallback = create_fallback_parser(language)
           cache_parser(language, fallback)
           {:ok, fallback}

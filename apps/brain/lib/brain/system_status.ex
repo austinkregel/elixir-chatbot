@@ -1,10 +1,21 @@
 defmodule Brain.SystemStatus do
-  @moduledoc """
-  Reports the status of various background systems for UI display.
-  Provides comprehensive monitoring of all GenServers in the application.
-  """
+  @moduledoc "Reports the status of various background systems for UI display.\nProvides comprehensive monitoring of all GenServers in the application.\n"
+  alias Brain.Metrics.Aggregator
+  alias Brain.ML.EntityExtractor
+  alias Brain.ML.EntityTrainer
+  alias Brain.ML.POSTagger
+  alias Brain.ML.IntentClassifierSimple
+  alias Brain.ML.Gazetteer
+  alias World.ModelRegistry
+  alias World.Embedder
+  alias World.Manager
+  alias World.Persistence
+  alias World.Metrics
+  alias Brain.Code.LanguageGrammar
+  alias Brain.Code.CodeGazetteer
+  alias Brain.ML.EvaluationStore
+  alias Brain.Memory.Store
 
-  # All GenServers organized by category
   @genserver_categories %{
     core: [
       {Brain, "Brain", :has_status},
@@ -40,17 +51,17 @@ defmodule Brain.SystemStatus do
       {Brain.Code.CodeGazetteer, "Code Gazetteer", :has_stats},
       {Brain.Code.LanguageGrammar, "Language Grammar", :has_ready}
     ],
+    services: [
+      {Brain.Services.CredentialVault, "Credential Vault", :has_ready},
+      {Brain.Services.Cache, "Service Cache", :has_ready}
+    ],
     storage: [
       {Brain.KnowledgeStore, "Knowledge Store", :has_ready},
       {Brain.MemoryStore, "Memory Store (Legacy)", :has_ready},
       {Brain.FactDatabase, "Fact Database", :has_ready_and_stats}
     ],
-    metrics: [
-      {Brain.Metrics.Aggregator, "Metrics Aggregator", :basic}
-    ]
+    metrics: [{Brain.Metrics.Aggregator, "Metrics Aggregator", :basic}]
   }
-
-  # Module to telemetry metric name mapping
   @module_metric_map %{
     Brain => :brain_evaluate,
     Brain.Analysis.Pipeline => :pipeline_process,
@@ -63,20 +74,14 @@ defmodule Brain.SystemStatus do
     Brain.Epistemic.JTMS => :jtms_justify,
     Brain.Epistemic.BeliefStore => :belief_operation,
     Brain.Analysis.RacingAnalyzer => :racing_analysis,
-    # Code analysis modules
     Brain.Code.CodeGazetteer => :code_gazetteer_lookup,
     Brain.Code.Pipeline => :code_pipeline,
     Brain.Code.Parser => :code_parse,
-    Brain.Code.SymbolExtractor => :code_extract
+    Brain.Code.SymbolExtractor => :code_extract,
+    Brain.Services.Dispatcher => :service_dispatch
   }
 
-  # ============================================================================
-  # Public API
-  # ============================================================================
-
-  @doc """
-  Returns a map of all system statuses (legacy format for compatibility).
-  """
+  @doc "Returns a map of all system statuses (legacy format for compatibility).\n"
   def get_all do
     %{
       embedder: get_embedder_status(),
@@ -86,9 +91,7 @@ defmodule Brain.SystemStatus do
     }
   end
 
-  @doc """
-  Returns comprehensive status of all GenServers organized by category.
-  """
+  @doc "Returns comprehensive status of all GenServers organized by category.\n"
   def get_all_genservers_status do
     started_at = System.monotonic_time(:millisecond)
 
@@ -106,7 +109,6 @@ defmodule Brain.SystemStatus do
       end)
       |> Map.new()
 
-    # Add subprocess supervisor status
     subprocess_status = get_subprocess_supervisor_status()
 
     elapsed = System.monotonic_time(:millisecond) - started_at
@@ -119,13 +121,11 @@ defmodule Brain.SystemStatus do
     }
   end
 
-  @doc """
-  Returns performance metrics from the Metrics Aggregator.
-  """
+  @doc "Returns performance metrics from the Metrics Aggregator.\n"
   def get_performance_metrics do
     if Code.ensure_loaded?(Brain.Metrics.Aggregator) do
       try do
-        Brain.Metrics.Aggregator.get_metrics()
+        Aggregator.get_metrics()
       catch
         :exit, _ -> default_metrics()
       end
@@ -134,18 +134,18 @@ defmodule Brain.SystemStatus do
     end
   end
 
-  @doc """
-  Returns health indicators for the system.
-  """
+  @doc "Returns health indicators for the system.\n"
   def get_health_indicators do
     genserver_status = get_all_genservers_status()
     supervisor_info = get_supervisor_info()
-
-    # Count running/total GenServers
     {running, total} = count_genserver_health(genserver_status.categories)
 
-    # Calculate health score (0-100)
-    health_score = if total > 0, do: round(running / total * 100), else: 0
+    health_score =
+      if total > 0 do
+        round(running / total * 100)
+      else
+        0
+      end
 
     %{
       genservers_running: running,
@@ -158,9 +158,7 @@ defmodule Brain.SystemStatus do
     }
   end
 
-  @doc """
-  Returns a utilization report identifying idle, low-usage, and high-cost systems.
-  """
+  @doc "Returns a utilization report identifying idle, low-usage, and high-cost systems.\n"
   def get_utilization_report do
     genserver_status = get_all_genservers_status()
 
@@ -215,9 +213,7 @@ defmodule Brain.SystemStatus do
     }
   end
 
-  @doc """
-  Returns the embedder status with detailed initialization progress.
-  """
+  @doc "Returns the embedder status with detailed initialization progress.\n"
   def get_embedder_status do
     if Code.ensure_loaded?(Brain.Memory.Embedder) and Process.whereis(Brain.Memory.Embedder) do
       detailed = Brain.Memory.Embedder.get_status()
@@ -248,14 +244,12 @@ defmodule Brain.SystemStatus do
     end
   end
 
-  @doc """
-  Returns the memory store status.
-  """
+  @doc "Returns the memory store status.\n"
   def get_memory_store_status do
     if Code.ensure_loaded?(Brain.Memory.Store) and Process.whereis(Brain.Memory.Store) do
       stats =
         try do
-          Brain.Memory.Store.stats()
+          Store.stats()
         catch
           :exit, _ -> %{episode_count: 0, semantic_count: 0}
         end
@@ -280,9 +274,7 @@ defmodule Brain.SystemStatus do
     end
   end
 
-  @doc """
-  Returns the brain status.
-  """
+  @doc "Returns the brain status.\n"
   def get_brain_status do
     if Code.ensure_loaded?(Brain) and Process.whereis(Brain) do
       %{
@@ -301,14 +293,12 @@ defmodule Brain.SystemStatus do
     end
   end
 
-  @doc """
-  Returns the NLP pipeline status.
-  """
+  @doc "Returns the NLP pipeline status.\n"
   def get_nlp_pipeline_status do
     classifier_ready =
       if Code.ensure_loaded?(Brain.ML.IntentClassifierSimple) do
         try do
-          Brain.ML.IntentClassifierSimple.is_loaded?()
+          IntentClassifierSimple.is_loaded?()
         catch
           :exit, _ -> false
         end
@@ -319,7 +309,7 @@ defmodule Brain.SystemStatus do
     gazetteer_ready =
       if Code.ensure_loaded?(Brain.ML.Gazetteer) do
         try do
-          Brain.ML.Gazetteer.is_loaded?()
+          Gazetteer.is_loaded?()
         catch
           :exit, _ -> false
         end
@@ -332,8 +322,18 @@ defmodule Brain.SystemStatus do
     %{
       running: true,
       ready: all_ready,
-      status: if(all_ready, do: :ready, else: :loading),
-      label: if(all_ready, do: "Ready", else: "Loading models..."),
+      status:
+        if(all_ready) do
+          :ready
+        else
+          :loading
+        end,
+      label:
+        if(all_ready) do
+          "Ready"
+        else
+          "Loading models..."
+        end,
       components: %{
         intent_classifier: classifier_ready,
         gazetteer: gazetteer_ready
@@ -341,9 +341,7 @@ defmodule Brain.SystemStatus do
     }
   end
 
-  @doc """
-  Returns true if all systems are ready.
-  """
+  @doc "Returns true if all systems are ready.\n"
   def all_ready? do
     status = get_all()
     models = get_ml_models_status()
@@ -366,9 +364,7 @@ defmodule Brain.SystemStatus do
     core_ready and nlp_ready and models_ready and template_ready
   end
 
-  @doc """
-  Returns the status of all ML models.
-  """
+  @doc "Returns the status of all ML models.\n"
   def get_ml_models_status do
     models_path = get_models_path()
 
@@ -379,11 +375,12 @@ defmodule Brain.SystemStatus do
       gazetteer: get_model_file_status(models_path, "gazetteer.term"),
       intent_classifier: get_agent_status(Brain.ML.IntentClassifierSimple),
       entity_extractor: get_agent_status(Brain.ML.EntityExtractor),
-      # LSTM models
-      unified_model: get_lstm_status(Brain.ML.LSTM.UnifiedModel, models_path, "lstm/unified_model.term"),
-      multi_task_model: get_lstm_status(Brain.ML.LSTM.MultiTaskModel, models_path, "lstm/lstm_multitask.term"),
-      response_scorer: get_lstm_status(Brain.Response.LSTMResponse, models_path, "lstm/response_scorer.term"),
-      # Latest evaluation
+      unified_model:
+        get_lstm_status(Brain.ML.LSTM.UnifiedModel, models_path, "lstm/unified_model.term"),
+      multi_task_model:
+        get_lstm_status(Brain.ML.LSTM.MultiTaskModel, models_path, "lstm/lstm_multitask.term"),
+      response_scorer:
+        get_lstm_status(Brain.Response.LSTMResponse, models_path, "lstm/response_scorer.term"),
       last_evaluation: get_last_evaluation(),
       checked_at: DateTime.utc_now()
     }
@@ -403,15 +400,13 @@ defmodule Brain.SystemStatus do
 
   defp get_last_evaluation do
     try do
-      Brain.ML.EvaluationStore.latest("intent")
+      EvaluationStore.latest("intent")
     rescue
       _ -> nil
     end
   end
 
-  @doc """
-  Returns code analysis system status.
-  """
+  @doc "Returns code analysis system status.\n"
   def get_code_analysis_status do
     gazetteer_status = get_code_gazetteer_status()
     grammar_status = get_language_grammar_status()
@@ -425,19 +420,103 @@ defmodule Brain.SystemStatus do
   end
 
   @doc """
-  Returns CodeGazetteer status.
+  Returns comprehensive status of external services.
+
+  Includes:
+  - GenServer status (CredentialVault, Cache)
+  - Registered services and their configuration status
+  - Dispatch metrics (success rate, avg latency)
+  - Cache performance (hit rate)
+  - Health check results
   """
+  def get_services_status do
+    alias Brain.Services.{Dispatcher, CredentialVault, Cache}
+
+    # GenServer statuses
+    vault_ready = CredentialVault.ready?()
+    cache_ready = Cache.ready?()
+
+    # Get registered services info
+    services =
+      Dispatcher.list_services()
+      |> Enum.map(fn service_info ->
+        service_name = service_info.name
+
+        # Get metrics for this service from aggregator
+        metrics = Aggregator.get_service_metrics()
+        service_metrics = get_in(metrics, [:by_service, service_name]) || %{}
+
+        Map.merge(service_info, %{
+          total_dispatches: Map.get(service_metrics, :total_dispatches, 0),
+          success_count: Map.get(service_metrics, :success_count, 0),
+          error_count: Map.get(service_metrics, :error_count, 0),
+          success_rate: Map.get(service_metrics, :success_rate, 0.0),
+          last_dispatch: Map.get(service_metrics, :last_dispatch),
+          health_status: Map.get(service_metrics, :health_status)
+        })
+      end)
+
+    # Overall dispatch metrics
+    all_metrics = Aggregator.get_service_metrics()
+    dispatch_metrics = Map.get(all_metrics, :dispatch, %{})
+    cache_metrics = Map.get(all_metrics, :cache, %{})
+
+    %{
+      genservers: %{
+        credential_vault: %{ready: vault_ready, name: "Credential Vault"},
+        cache: %{ready: cache_ready, name: "Service Cache"}
+      },
+      services: services,
+      dispatch_metrics: %{
+        total_count: Map.get(dispatch_metrics, :count, 0),
+        avg_ms: Map.get(dispatch_metrics, :avg_ms, 0.0),
+        error_count: Map.get(dispatch_metrics, :error_count, 0)
+      },
+      cache_metrics: %{
+        hits: Map.get(cache_metrics, :hits, 0),
+        misses: Map.get(cache_metrics, :misses, 0),
+        hit_rate: Map.get(cache_metrics, :hit_rate, 0.0)
+      },
+      ready: vault_ready and cache_ready,
+      checked_at: DateTime.utc_now()
+    }
+  rescue
+    _ ->
+      %{
+        genservers: %{
+          credential_vault: %{ready: false, name: "Credential Vault"},
+          cache: %{ready: false, name: "Service Cache"}
+        },
+        services: [],
+        dispatch_metrics: %{total_count: 0, avg_ms: 0.0, error_count: 0},
+        cache_metrics: %{hits: 0, misses: 0, hit_rate: 0.0},
+        ready: false,
+        checked_at: DateTime.utc_now()
+      }
+  end
+
+  @doc "Returns CodeGazetteer status.\n"
   def get_code_gazetteer_status do
     if Code.ensure_loaded?(Brain.Code.CodeGazetteer) and Process.whereis(Brain.Code.CodeGazetteer) do
       try do
-        stats = Brain.Code.CodeGazetteer.stats()
-        ready = Brain.Code.CodeGazetteer.ready?()
+        stats = CodeGazetteer.stats()
+        ready = CodeGazetteer.ready?()
 
         %{
           running: true,
           ready: ready,
-          status: if(ready, do: :ready, else: :initializing),
-          label: if(ready, do: "Ready", else: "Initializing"),
+          status:
+            if(ready) do
+              :ready
+            else
+              :initializing
+            end,
+          label:
+            if(ready) do
+              "Ready"
+            else
+              "Initializing"
+            end,
           stats: %{
             total_symbols: Map.get(stats, :symbols, 0),
             total_relations: Map.get(stats, :relations, 0),
@@ -461,18 +540,24 @@ defmodule Brain.SystemStatus do
       ready: false,
       status: :not_started,
       label: "Not started",
-      stats: %{total_symbols: 0, total_relations: 0, total_files: 0, total_languages: 0, language_list: [], worlds_tracked: 0}
+      stats: %{
+        total_symbols: 0,
+        total_relations: 0,
+        total_files: 0,
+        total_languages: 0,
+        language_list: [],
+        worlds_tracked: 0
+      }
     }
   end
 
-  @doc """
-  Returns LanguageGrammar status.
-  """
+  @doc "Returns LanguageGrammar status.\n"
   def get_language_grammar_status do
-    if Code.ensure_loaded?(Brain.Code.LanguageGrammar) and Process.whereis(Brain.Code.LanguageGrammar) do
+    if Code.ensure_loaded?(Brain.Code.LanguageGrammar) and
+         Process.whereis(Brain.Code.LanguageGrammar) do
       try do
-        ready = Brain.Code.LanguageGrammar.ready?()
-        languages = Brain.Code.LanguageGrammar.list_languages()
+        ready = LanguageGrammar.ready?()
+        languages = LanguageGrammar.list_languages()
 
         available_count = Enum.count(languages, & &1.available)
         total_count = length(languages)
@@ -480,8 +565,18 @@ defmodule Brain.SystemStatus do
         %{
           running: true,
           ready: ready,
-          status: if(ready, do: :ready, else: :initializing),
-          label: if(ready, do: "Ready (#{available_count}/#{total_count} grammars)", else: "Initializing"),
+          status:
+            if(ready) do
+              :ready
+            else
+              :initializing
+            end,
+          label:
+            if(ready) do
+              "Ready (#{available_count}/#{total_count} grammars)"
+            else
+              "Initializing"
+            end,
           stats: %{
             available_grammars: available_count,
             total_grammars: total_count,
@@ -506,23 +601,21 @@ defmodule Brain.SystemStatus do
     }
   end
 
-  @doc """
-  Returns training worlds status.
-  """
+  @doc "Returns training worlds status.\n"
   def get_training_worlds_status do
     if Code.ensure_loaded?(World.Manager) and Process.whereis(World.Manager) do
       try do
-        worlds = World.Manager.list_worlds()
+        worlds = Manager.list_worlds()
 
         world_summaries =
           Enum.map(worlds, fn world ->
             metrics =
-              case World.Manager.get_metrics(world.id) do
-                {:ok, m} -> World.Metrics.summary(m)
+              case Manager.get_metrics(world.id) do
+                {:ok, m} -> Metrics.summary(m)
                 _ -> nil
               end
 
-            candidates_count = length(World.Manager.get_candidates(world.id, limit: 1000))
+            candidates_count = length(Manager.get_candidates(world.id, limit: 1000))
 
             %{
               id: world.id,
@@ -536,13 +629,13 @@ defmodule Brain.SystemStatus do
 
         persisted_count =
           try do
-            World.Persistence.list_persisted_worlds() |> length()
+            Persistence.list_persisted_worlds() |> length()
           catch
             _, _ -> 0
           end
 
         %{
-          manager_ready: World.Manager.ready?(),
+          manager_ready: Manager.ready?(),
           active_worlds: length(worlds),
           persisted_worlds: persisted_count,
           worlds: world_summaries,
@@ -557,12 +650,7 @@ defmodule Brain.SystemStatus do
     end
   end
 
-  @doc """
-  Returns readiness details for a specific world.
-
-  Options:
-    - `:world_id` - The world ID to check (default: "default")
-  """
+  @doc "Returns readiness details for a specific world.\n\nOptions:\n  - `:world_id` - The world ID to check (default: \"default\")\n"
   def get_readiness_details(opts \\ []) do
     world_id = Keyword.get(opts, :world_id, "default")
 
@@ -574,11 +662,11 @@ defmodule Brain.SystemStatus do
 
     %{
       core: %{
-        embedder: get_in(status, [:embedder, :ready]) || get_in(status, [:embedder, :phase]) == :idle,
+        embedder:
+          get_in(status, [:embedder, :ready]) || get_in(status, [:embedder, :phase]) == :idle,
         memory_store: get_in(status, [:memory_store, :ready]) || false,
         brain: get_in(status, [:brain, :ready]) || false
       },
-      # Global embedder status (legacy, for backward compatibility)
       embedder_details: %{
         ready: embedder_status.ready,
         phase: embedder_status.phase,
@@ -588,9 +676,7 @@ defmodule Brain.SystemStatus do
         vocabulary_size: embedder_status.vocabulary_size,
         elapsed_ms: embedder_status.elapsed_ms
       },
-      # World-specific embedder status
       world_embedder: world_embedder_status,
-      # World-specific ML models status
       world_models: world_models_status,
       nlp_pipeline: %{
         ready: get_in(status, [:nlp_pipeline, :ready]) || false,
@@ -608,13 +694,11 @@ defmodule Brain.SystemStatus do
     }
   end
 
-  @doc """
-  Returns the status of the world-specific embedder.
-  """
+  @doc "Returns the status of the world-specific embedder.\n"
   def get_world_embedder_status(world_id) do
     if Code.ensure_loaded?(World.Embedder) and function_exported?(World.Embedder, :get_status, 1) do
       try do
-        status = World.Embedder.get_status(world_id)
+        status = Embedder.get_status(world_id)
 
         %{
           world_id: world_id,
@@ -664,36 +748,34 @@ defmodule Brain.SystemStatus do
   end
 
   defp build_world_embedder_label(%{phase: phase, phase_label: label}) when is_binary(label) do
-    # Include phase information in the label for better debugging
     phase_str = phase |> to_string() |> String.replace("_", " ") |> String.capitalize()
     "#{phase_str}: #{label}"
   end
 
-  defp build_world_embedder_label(_), do: "Unknown status"
+  defp build_world_embedder_label(_) do
+    "Unknown status"
+  end
 
-  @doc """
-  Returns the ML model status for a specific training world.
-  """
+  @doc "Returns the ML model status for a specific training world.\n"
   def get_world_models_status(world_id) when is_binary(world_id) do
     if Code.ensure_loaded?(World.ModelRegistry) and Process.whereis(World.ModelRegistry) do
       try do
-        has_models = World.ModelRegistry.world_has_models?(world_id)
-        models = if has_models do
-          case World.ModelRegistry.get_world_models(world_id) do
-            {:ok, m} -> m
-            _ -> nil
-          end
-        else
-          nil
-        end
+        has_models = ModelRegistry.world_has_models?(world_id)
 
-        # Extract model details if available
+        models =
+          if has_models do
+            case ModelRegistry.get_world_models(world_id) do
+              {:ok, m} -> m
+              _ -> nil
+            end
+          else
+            nil
+          end
+
         classifier = models[:classifier]
         embedder = models[:embedder]
         entity_model = models[:entity_model]
         pos_model = models[:pos_model]
-
-        # Extract vocab sizes from actual model structure
         classifier_vocab_size = extract_vocab_size(classifier, :vocabulary)
         embedder_vocab_size = extract_vocab_size(embedder, :vocabulary)
         pos_model_tags = extract_vocab_size(pos_model, :tag_vocabulary)
@@ -703,7 +785,12 @@ defmodule Brain.SystemStatus do
           world_id: world_id,
           has_models: has_models,
           models: models,
-          status: if(has_models, do: :ready, else: :not_loaded),
+          status:
+            if(has_models) do
+              :ready
+            else
+              :not_loaded
+            end,
           is_loading: false,
           is_loaded: has_models,
           has_classifier: classifier != nil and map_size(classifier) > 0,
@@ -745,18 +832,20 @@ defmodule Brain.SystemStatus do
     }
   end
 
-  defp extract_vocab_size(nil, _key), do: 0
+  defp extract_vocab_size(nil, _key) do
+    0
+  end
+
   defp extract_vocab_size(model, key) when is_map(model) do
     case Map.get(model, key) do
       vocab when is_map(vocab) -> map_size(vocab)
       _ -> 0
     end
   end
-  defp extract_vocab_size(_, _), do: 0
 
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
+  defp extract_vocab_size(_, _) do
+    0
+  end
 
   defp summarize_system(status) do
     %{
@@ -771,11 +860,25 @@ defmodule Brain.SystemStatus do
     }
   end
 
-  defp phase_to_status(:ready), do: :ready
-  defp phase_to_status(:idle), do: :idle
-  defp phase_to_status(:not_started), do: :not_started
-  defp phase_to_status(:busy), do: :building_vocabulary
-  defp phase_to_status(_), do: :building_vocabulary
+  defp phase_to_status(:ready) do
+    :ready
+  end
+
+  defp phase_to_status(:idle) do
+    :idle
+  end
+
+  defp phase_to_status(:not_started) do
+    :not_started
+  end
+
+  defp phase_to_status(:busy) do
+    :building_vocabulary
+  end
+
+  defp phase_to_status(_) do
+    :building_vocabulary
+  end
 
   defp build_embedder_label(%{ready: true, vocabulary_size: size}) do
     "Ready (#{size} terms)"
@@ -814,10 +917,21 @@ defmodule Brain.SystemStatus do
     "#{base}#{progress_str}#{elapsed_str}"
   end
 
-  defp phase_label(:tokenizing), do: "Tokenizing texts"
-  defp phase_label(:building_frequencies), do: "Building frequencies"
-  defp phase_label(:calculating_idf), do: "Calculating IDF weights"
-  defp phase_label(_), do: "Initializing"
+  defp phase_label(:tokenizing) do
+    "Tokenizing texts"
+  end
+
+  defp phase_label(:building_frequencies) do
+    "Building frequencies"
+  end
+
+  defp phase_label(:calculating_idf) do
+    "Calculating IDF weights"
+  end
+
+  defp phase_label(_) do
+    "Initializing"
+  end
 
   defp get_models_path do
     Application.get_env(:brain, :ml, [])[:models_path] ||
@@ -825,13 +939,12 @@ defmodule Brain.SystemStatus do
       Brain.priv_path("ml_models")
   end
 
-  # Check if the gazetteer.term file is loaded by the Gazetteer GenServer
   defp get_model_file_status(models_path, "gazetteer.term" = filename) do
     path = Path.join(models_path, filename)
-    
-    is_loaded = 
+
+    is_loaded =
       try do
-        Brain.ML.Gazetteer.loaded?()
+        Gazetteer.loaded?()
       catch
         :exit, _ -> false
       end
@@ -839,13 +952,12 @@ defmodule Brain.SystemStatus do
     build_model_file_status(path, is_loaded)
   end
 
-  # Check if the classifier.term file is loaded by the IntentClassifierSimple GenServer
   defp get_model_file_status(models_path, "classifier.term" = filename) do
     path = Path.join(models_path, filename)
-    
-    is_loaded = 
+
+    is_loaded =
       try do
-        Brain.ML.IntentClassifierSimple.is_loaded?()
+        IntentClassifierSimple.is_loaded?()
       catch
         :exit, _ -> false
       end
@@ -853,13 +965,12 @@ defmodule Brain.SystemStatus do
     build_model_file_status(path, is_loaded)
   end
 
-  # POS model - loaded on-demand, check if file is valid and loadable
   defp get_model_file_status(models_path, "pos_model.term" = filename) do
     path = Path.join(models_path, filename)
-    
-    is_loaded = 
+
+    is_loaded =
       try do
-        case Brain.ML.POSTagger.load_model(path) do
+        case POSTagger.load_model(path) do
           {:ok, _model} -> true
           _ -> false
         end
@@ -870,13 +981,12 @@ defmodule Brain.SystemStatus do
     build_model_file_status(path, is_loaded)
   end
 
-  # Entity model - loaded on-demand, check if file is valid and loadable
   defp get_model_file_status(models_path, "entity_model.term" = filename) do
     path = Path.join(models_path, filename)
-    
-    is_loaded = 
+
+    is_loaded =
       try do
-        case Brain.ML.EntityTrainer.load_model() do
+        case EntityTrainer.load_model() do
           {:ok, _model} -> true
           _ -> false
         end
@@ -887,7 +997,6 @@ defmodule Brain.SystemStatus do
     build_model_file_status(path, is_loaded)
   end
 
-  # Other model files - just check if file exists
   defp get_model_file_status(models_path, filename) do
     path = Path.join(models_path, filename)
     build_model_file_status(path, false)
@@ -915,17 +1024,15 @@ defmodule Brain.SystemStatus do
     end
   end
 
-  # Specialized status check for EntityExtractor (GenServer with is_loaded? API)
   defp get_agent_status(Brain.ML.EntityExtractor = module) do
     pid = Process.whereis(module)
 
     if pid do
       process_info = get_process_info(pid)
-      
-      # EntityExtractor has its own is_loaded? method that checks if maps are loaded
-      is_loaded = 
+
+      is_loaded =
         try do
-          Brain.ML.EntityExtractor.is_loaded?()
+          EntityExtractor.is_loaded?()
         catch
           :exit, _ -> false
         end
@@ -1035,8 +1142,18 @@ defmodule Brain.SystemStatus do
     %{
       status
       | ready: ready,
-        status: if(ready, do: :ready, else: :initializing),
-        label: if(ready, do: "Ready", else: "Initializing...")
+        status:
+          if(ready) do
+            :ready
+          else
+            :initializing
+          end,
+        label:
+          if(ready) do
+            "Ready"
+          else
+            "Initializing..."
+          end
     }
   end
 
@@ -1054,13 +1171,29 @@ defmodule Brain.SystemStatus do
 
   defp enhance_status(status, module, :has_ready_and_stats) do
     ready = safe_call_ready(module)
-    stats = if ready, do: safe_call_stats(module), else: nil
+
+    stats =
+      if ready do
+        safe_call_stats(module)
+      else
+        nil
+      end
 
     %{
       status
       | ready: ready,
-        status: if(ready, do: :ready, else: :initializing),
-        label: if(ready, do: "Ready", else: "Initializing..."),
+        status:
+          if(ready) do
+            :ready
+          else
+            :initializing
+          end,
+        label:
+          if(ready) do
+            "Ready"
+          else
+            "Initializing..."
+          end,
         stats: stats
     }
   end
@@ -1144,13 +1277,21 @@ defmodule Brain.SystemStatus do
           utilization_status: utilization_status
       }
     else
-      %{status | utilization_status: if(status.running, do: :normal, else: :not_started)}
+      %{
+        status
+        | utilization_status:
+            if(status.running) do
+              :normal
+            else
+              :not_started
+            end
+      }
     end
   end
 
   defp get_metric_for_module(metric_name) do
     try do
-      case Brain.Metrics.Aggregator.get_metric(metric_name) do
+      case Aggregator.get_metric(metric_name) do
         nil ->
           %{count: 0, rate_per_minute: 0.0, last_updated: nil}
 
@@ -1241,17 +1382,33 @@ defmodule Brain.SystemStatus do
     Enum.reduce(categories, {0, 0}, fn {_category, servers}, {running, total} ->
       category_stats =
         Enum.reduce(servers, {0, 0}, fn {_module, status}, {r, t} ->
-          {r + if(status.running, do: 1, else: 0), t + 1}
+          {r +
+             if(status.running) do
+               1
+             else
+               0
+             end, t + 1}
         end)
 
       {running + elem(category_stats, 0), total + elem(category_stats, 1)}
     end)
   end
 
-  defp health_status_label(score) when score >= 90, do: :healthy
-  defp health_status_label(score) when score >= 70, do: :degraded
-  defp health_status_label(score) when score >= 50, do: :warning
-  defp health_status_label(_score), do: :critical
+  defp health_status_label(score) when score >= 90 do
+    :healthy
+  end
+
+  defp health_status_label(score) when score >= 70 do
+    :degraded
+  end
+
+  defp health_status_label(score) when score >= 50 do
+    :warning
+  end
+
+  defp health_status_label(_score) do
+    :critical
+  end
 
   defp get_uptime_seconds do
     case :erlang.statistics(:wall_clock) do

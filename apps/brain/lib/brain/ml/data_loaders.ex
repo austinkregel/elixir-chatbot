@@ -1,13 +1,7 @@
 defmodule Brain.ML.DataLoaders do
-  @moduledoc """
-  Data loading utilities for training data from various sources.
+  @moduledoc "Data loading utilities for training data from various sources.\n\nSupports:\n- CSV files (cities, artists, emojis)\n- JSON files (entities, intents in Dialogflow format)\n- Entity normalization and standardization\n"
 
-  Supports:
-  - CSV files (cities, artists, emojis)
-  - JSON files (entities, intents in Dialogflow format)
-  - Entity normalization and standardization
-  """
-
+  alias Brain.ML.Tokenizer
   require Logger
 
   @type entity_entry :: %{
@@ -22,14 +16,7 @@ defmodule Brain.ML.DataLoaders do
           entities: [%{text: String.t(), type: String.t(), alias: String.t()}]
         }
 
-  # ============================================================================
-  # CSV Loading
-  # ============================================================================
-
-  @doc """
-  Load world cities from CSV file.
-  Returns a list of city entries with name, country, subcountry, and geonameid.
-  """
+  @doc "Load world cities from CSV file.\nReturns a list of city entries with name, country, subcountry, and geonameid.\n"
   def load_cities(path \\ nil) do
     path = path || get_data_path("world-cities.csv")
 
@@ -45,10 +32,7 @@ defmodule Brain.ML.DataLoaders do
     end
   end
 
-  @doc """
-  Load US cities from CSV file (comprehensive dataset with ~30k cities).
-  Returns a list of city entries with city, state_code, state_name, county, latitude, longitude.
-  """
+  @doc "Load US cities from CSV file (comprehensive dataset with ~30k cities).\nReturns a list of city entries with city, state_code, state_name, county, latitude, longitude.\n"
   def load_us_cities(path \\ nil) do
     path = path || get_data_path("us_cities.csv")
 
@@ -74,10 +58,7 @@ defmodule Brain.ML.DataLoaders do
     end
   end
 
-  @doc """
-  Load music artists from CSV file.
-  Returns a list of artist entries with name, genre, country, etc.
-  """
+  @doc "Load music artists from CSV file.\nReturns a list of artist entries with name, genre, country, etc.\n"
   def load_artists(path \\ nil) do
     path = path || get_data_path("Global Music Artists.csv")
 
@@ -95,10 +76,7 @@ defmodule Brain.ML.DataLoaders do
     end
   end
 
-  @doc """
-  Load emoji definitions from CSV file.
-  Returns a list of emoji entries with group, subgroup, representation, name, etc.
-  """
+  @doc "Load emoji definitions from CSV file.\nReturns a list of emoji entries with group, subgroup, representation, name, etc.\n"
   def load_emojis(path \\ nil) do
     path = path || get_data_path("emojis.csv")
 
@@ -124,14 +102,7 @@ defmodule Brain.ML.DataLoaders do
     end
   end
 
-  # ============================================================================
-  # JSON Entity Loading
-  # ============================================================================
-
-  @doc """
-  Load all entity definitions from the entities directory.
-  Returns a map of entity_type => list of entity entries.
-  """
+  @doc "Load all entity definitions from the entities directory.\nReturns a map of entity_type => list of entity entries.\n"
   def load_all_entities(path \\ nil) do
     entities_dir = path || get_data_path("entities")
 
@@ -169,10 +140,7 @@ defmodule Brain.ML.DataLoaders do
     end
   end
 
-  @doc """
-  Load a single entity definition file.
-  Supports both _entries_en.json format and regular .json format.
-  """
+  @doc "Load a single entity definition file.\nSupports both _entries_en.json format and regular .json format.\n"
   def load_entity_file(path, entity_type) do
     case File.read(path) do
       {:ok, content} ->
@@ -191,18 +159,8 @@ defmodule Brain.ML.DataLoaders do
     end
   end
 
-  # ============================================================================
-  # Intent Loading with Entity Annotations
-  # ============================================================================
-
-  @doc """
-  Load all intent training data.
-
-  First tries the consolidated gold standard (preferred), then falls back to
-  legacy data/intents directory if gold standard is empty.
-  """
+  @doc "Load all intent training data.\n\nFirst tries the consolidated gold standard (preferred), then falls back to\nlegacy data/intents directory if gold standard is empty.\n"
   def load_all_intents(path \\ nil) do
-    # Try gold standard first (consolidated data)
     gold_standard_path =
       Application.app_dir(:brain)
       |> Path.join("priv/evaluation/intent/gold_standard.json")
@@ -213,7 +171,6 @@ defmodule Brain.ML.DataLoaders do
         {:ok, examples}
 
       _ ->
-        # Fall back to legacy directory
         load_all_intents_legacy(path)
     end
   end
@@ -271,15 +228,12 @@ defmodule Brain.ML.DataLoaders do
         {:ok, examples}
 
       {:error, _reason} ->
-        # No legacy directory either - return empty
         Logger.debug("No legacy intents directory found")
         {:ok, []}
     end
   end
 
-  @doc """
-  Load a single intent file and extract training examples with entity annotations.
-  """
+  @doc "Load a single intent file and extract training examples with entity annotations.\n"
   def load_intent_file(path, intent_name) do
     case File.read(path) do
       {:ok, content} ->
@@ -297,14 +251,7 @@ defmodule Brain.ML.DataLoaders do
     end
   end
 
-  # ============================================================================
-  # Smalltalk Responses Loading
-  # ============================================================================
-
-  @doc """
-  Load custom smalltalk responses.
-  Returns a map of action => list of response strings.
-  """
+  @doc "Load custom smalltalk responses.\nReturns a map of action => list of response strings.\n"
   def load_smalltalk_responses(path \\ nil) do
     path = path || get_data_path("customSmalltalkResponses_en.json")
 
@@ -340,24 +287,13 @@ defmodule Brain.ML.DataLoaders do
     end
   end
 
-  # ============================================================================
-  # Entity Normalization
-  # ============================================================================
-
-  @doc """
-  Build a normalized lookup map from entity entries.
-  Maps lowercase synonym -> entity info or list of entity infos.
-
-  If an entry has a `types` array, each type becomes a separate entity entry.
-  The code simply reads what's in the data without interpretation.
-  """
+  @doc "Build a normalized lookup map from entity entries.\nMaps lowercase synonym -> entity info or list of entity infos.\n\nIf an entry has a `types` array, each type becomes a separate entity entry.\nThe code simply reads what's in the data without interpretation.\n"
   def build_entity_lookup(entities) when is_map(entities) do
     Enum.reduce(entities, %{}, fn {_file_entity_type, entries}, acc ->
       Enum.reduce(entries, acc, fn entry, inner_acc ->
         value = entry.value
         synonyms = Map.get(entry, :synonyms, [])
 
-        # Add all synonyms (including the value itself) to the lookup
         Enum.reduce([value | synonyms], inner_acc, fn synonym, lookup ->
           normalized = normalize_text(synonym)
 
@@ -372,47 +308,45 @@ defmodule Brain.ML.DataLoaders do
     end)
   end
 
-  # Build entity entries directly from data structure
-  # If entry has `types` array, create an entry for each type
-  # Otherwise, create a single entry with the `entity_type` field
   defp build_entries_from_data(entry, value, original) do
     types = Map.get(entry, :types) || Map.get(entry, "types")
 
-    if is_list(types) and length(types) > 0 do
-      # Entry has explicit types array - create an entry for each
+    if is_list(types) and types != [] do
       Enum.map(types, fn type_data ->
         build_entry_from_type_data(type_data, value, original)
       end)
     else
-      # Single type entry - use entity_type field
       entity_type = Map.get(entry, :entity_type) || Map.get(entry, "entity_type") || "unknown"
       metadata = Map.get(entry, :metadata) || Map.get(entry, "metadata") || %{}
 
-      [%{
-        entity_type: entity_type,
-        value: value,
-        original: original,
-        metadata: metadata
-      }]
+      [
+        %{
+          entity_type: entity_type,
+          value: value,
+          original: original,
+          metadata: metadata
+        }
+      ]
     end
   end
 
-  # Build a single entry from type data - just pass through all fields
   defp build_entry_from_type_data(type_data, value, original) do
-    # Start with the type data as-is
     type_data
     |> Map.put(:value, value)
     |> Map.put(:original, original)
-    # Ensure entity_type is present
     |> ensure_entity_type()
   end
 
   defp ensure_entity_type(entry) do
     entity_type = Map.get(entry, :entity_type) || Map.get(entry, "entity_type")
-    if entity_type, do: entry, else: Map.put(entry, :entity_type, "unknown")
+
+    if entity_type do
+      entry
+    else
+      Map.put(entry, :entity_type, "unknown")
+    end
   end
 
-  # Add entries to lookup, handling single vs multiple entries
   defp add_entries_to_lookup(lookup, normalized, entries) when is_list(entries) do
     case Map.get(lookup, normalized) do
       nil ->
@@ -430,10 +364,7 @@ defmodule Brain.ML.DataLoaders do
     end
   end
 
-  @doc """
-  Build city lookup from loaded city data.
-  Maps lowercase city name -> city info
-  """
+  @doc "Build city lookup from loaded city data.\nMaps lowercase city name -> city info\n"
   def build_city_lookup(cities) when is_list(cities) do
     Enum.reduce(cities, %{}, fn city, acc ->
       name = Map.get(city, :name) || ""
@@ -452,7 +383,6 @@ defmodule Brain.ML.DataLoaders do
     end)
   end
 
-  # Common English words that happen to be city names - skip standalone matching
   @ambiguous_city_names ~w(
     tell me you can the and for in on at to be is are was were
     will would could should have has had do does did may might
@@ -463,12 +393,7 @@ defmodule Brain.ML.DataLoaders do
     burns wells ford bridge mills dale glen grove
   )
 
-  @doc """
-  Build US city lookup from loaded US city data.
-  Maps lowercase city name -> city info with state.
-  Also creates entries for "city, state" format.
-  Filters out ambiguous city names that are common English words.
-  """
+  @doc "Build US city lookup from loaded US city data.\nMaps lowercase city name -> city info with state.\nAlso creates entries for \"city, state\" format.\nFilters out ambiguous city names that are common English words.\n"
   def build_us_city_lookup(cities) when is_list(cities) do
     Enum.reduce(cities, %{}, fn city, acc ->
       name = Map.get(city, :city) || ""
@@ -476,8 +401,6 @@ defmodule Brain.ML.DataLoaders do
       state_name = Map.get(city, :state_name) || ""
       county = Map.get(city, :county) || ""
       normalized = normalize_text(name)
-
-      # Skip very short names or common English words for standalone matching
       is_ambiguous = String.length(normalized) <= 3 or normalized in @ambiguous_city_names
 
       if String.length(normalized) >= 2 do
@@ -492,7 +415,6 @@ defmodule Brain.ML.DataLoaders do
           region: state_name
         }
 
-        # For ambiguous names, only add with state qualifier (not standalone)
         acc =
           if is_ambiguous do
             acc
@@ -501,13 +423,9 @@ defmodule Brain.ML.DataLoaders do
           end
 
         acc
-        # City, State Code with comma (e.g., "owosso, mi")
         |> Map.put("#{normalized}, #{String.downcase(state_code)}", city_info)
-        # City, State Name with comma (e.g., "owosso, michigan")
         |> Map.put("#{normalized}, #{String.downcase(state_name)}", city_info)
-        # City State Code without comma (e.g., "owosso mi")
         |> Map.put("#{normalized} #{String.downcase(state_code)}", city_info)
-        # City State Name without comma (e.g., "owosso michigan")
         |> Map.put("#{normalized} #{String.downcase(state_name)}", city_info)
       else
         acc
@@ -515,10 +433,7 @@ defmodule Brain.ML.DataLoaders do
     end)
   end
 
-  @doc """
-  Build artist lookup from loaded artist data.
-  Maps lowercase artist name -> artist info
-  """
+  @doc "Build artist lookup from loaded artist data.\nMaps lowercase artist name -> artist info\n"
   def build_artist_lookup(artists) when is_list(artists) do
     Enum.reduce(artists, %{}, fn artist, acc ->
       name = Map.get(artist, :artist_name) || ""
@@ -537,10 +452,7 @@ defmodule Brain.ML.DataLoaders do
     end)
   end
 
-  @doc """
-  Build emoji lookup from loaded emoji data.
-  Maps lowercase emoji name -> emoji info
-  """
+  @doc "Build emoji lookup from loaded emoji data.\nMaps lowercase emoji name -> emoji info\n"
   def build_emoji_lookup(emojis) when is_list(emojis) do
     Enum.reduce(emojis, %{}, fn emoji, acc ->
       name = Map.get(emoji, :name) || ""
@@ -559,129 +471,82 @@ defmodule Brain.ML.DataLoaders do
     end)
   end
 
-  # ============================================================================
-  # LSTM Multi-Task Training Data Loading
-  # ============================================================================
-
-  @doc """
-  Load intent training data formatted for LSTM training.
-  
-  Returns a list of training examples with tokenized text, intent labels,
-  and entity annotations in BIO format.
-  
-  ## Options
-  - `:include_negative` - Include negative examples (default: true)
-  - `:tokenizer` - Tokenizer function (default: Brain.ML.Tokenizer.tokenize/1)
-  
-  ## Returns
-  `{:ok, examples}` where each example is:
-  ```
-  %{
-    tokens: ["what", "is", "the", "weather"],
-    intent: "weather.query",
-    entities: [%{text: "London", type: "location", start: 5, end: 5}],
-    bio_tags: ["O", "O", "O", "O", "B-LOC"],  # For NER training
-    negative_for: nil | "meta.self_knowledge"  # If this is a negative example
-  }
-  ```
-  """
+  @doc "Load intent training data formatted for LSTM training.\n\nReturns a list of training examples with tokenized text, intent labels,\nand entity annotations in BIO format.\n\n## Options\n- `:include_negative` - Include negative examples (default: true)\n- `:tokenizer` - Tokenizer function (default: Brain.ML.Tokenizer.tokenize/1)\n\n## Returns\n`{:ok, examples}` where each example is:\n```\n%{\n  tokens: [\"what\", \"is\", \"the\", \"weather\"],\n  intent: \"weather.query\",\n  entities: [%{text: \"London\", type: \"location\", start: 5, end: 5}],\n  bio_tags: [\"O\", \"O\", \"O\", \"O\", \"B-LOC\"],  # For NER training\n  negative_for: nil | \"meta.self_knowledge\"  # If this is a negative example\n}\n```\n"
   def load_intent_training_data_for_lstm(opts \\ []) do
     include_negative = Keyword.get(opts, :include_negative, true)
-    tokenizer = Keyword.get(opts, :tokenizer, &Brain.ML.Tokenizer.tokenize/1)
-    
+    tokenizer = Keyword.get(opts, :tokenizer, &Tokenizer.tokenize/1)
+
     with {:ok, positive_examples} <- load_all_intents(),
          {:ok, negative_examples} <- load_negative_examples() do
-      
-      # Process positive examples
-      processed_positives = 
+      processed_positives =
         positive_examples
-        |> Enum.map(fn example -> 
+        |> Enum.map(fn example ->
           process_example_for_lstm(example, tokenizer, nil)
         end)
         |> Enum.filter(&(&1 != nil))
-      
-      # Process negative examples if requested
-      processed_negatives = 
+
+      processed_negatives =
         if include_negative do
           negative_examples
-          |> Enum.map(fn example -> 
+          |> Enum.map(fn example ->
             process_example_for_lstm(example, tokenizer, example[:negative_for])
           end)
           |> Enum.filter(&(&1 != nil))
         else
           []
         end
-      
+
       all_examples = processed_positives ++ processed_negatives
-      
+
       Logger.info("Loaded LSTM training data", %{
         positive_examples: length(processed_positives),
         negative_examples: length(processed_negatives),
         total: length(all_examples)
       })
-      
+
       {:ok, all_examples}
     end
   end
-  
-  @doc """
-  Load negative training examples from *_negative_en.json files.
-  
-  Negative examples are phrases that should NOT be classified as a particular intent.
-  They help the model learn to distinguish between similar-sounding but semantically
-  different inputs (e.g., "tell me about the weather" should NOT be meta.self_knowledge).
-  
-  ## Format
-  Each negative example file contains:
-  ```json
-  [
-    {"text": "tell me about the weather", "correct_intent": "weather.query"},
-    {"text": "what can you tell me about music", "correct_intent": "music.search"}
-  ]
-  ```
-  
-  The filename indicates what intent these are negative for (e.g., meta.self_knowledge_negative_en.json).
-  """
+
+  @doc "Load negative training examples from *_negative_en.json files.\n\nNegative examples are phrases that should NOT be classified as a particular intent.\nThey help the model learn to distinguish between similar-sounding but semantically\ndifferent inputs (e.g., \"tell me about the weather\" should NOT be meta.self_knowledge).\n\n## Format\nEach negative example file contains:\n```json\n[\n  {\"text\": \"tell me about the weather\", \"correct_intent\": \"weather.query\"},\n  {\"text\": \"what can you tell me about music\", \"correct_intent\": \"music.search\"}\n]\n```\n\nThe filename indicates what intent these are negative for (e.g., meta.self_knowledge_negative_en.json).\n"
   def load_negative_examples(path \\ nil) do
     negative_dir = path || get_data_path("intents/negative_examples")
-    
+
     case File.ls(negative_dir) do
       {:ok, files} ->
         negative_files = Enum.filter(files, &String.ends_with?(&1, ".json"))
-        
+
         examples =
           Enum.flat_map(negative_files, fn file ->
             file_path = Path.join(negative_dir, file)
             negative_for = extract_negative_intent_name(file)
-            
+
             case load_negative_file(file_path, negative_for) do
               {:ok, file_examples} -> file_examples
               {:error, _} -> []
             end
           end)
-        
+
         Logger.info("Loaded negative examples", %{
           files: length(negative_files),
           examples: length(examples)
         })
-        
+
         {:ok, examples}
-      
+
       {:error, reason} ->
         Logger.warning("Failed to list intents directory for negatives", %{reason: reason})
-        {:ok, []}  # Return empty list, not an error (negatives are optional)
+        {:ok, []}
     end
   end
-  
-  @doc """
-  Load a single negative examples file.
-  """
+
+  @doc "Load a single negative examples file.\n"
   def load_negative_file(path, negative_for) do
     case File.read(path) do
       {:ok, content} ->
         case Jason.decode(content) do
           {:ok, data} when is_list(data) ->
-            examples = 
+            examples =
               Enum.map(data, fn item ->
                 %{
                   text: Map.get(item, "text", ""),
@@ -691,174 +556,148 @@ defmodule Brain.ML.DataLoaders do
                 }
               end)
               |> Enum.filter(fn ex -> ex.text != "" end)
-            
+
             {:ok, examples}
-          
+
           {:error, reason} ->
             {:error, reason}
         end
-      
+
       {:error, reason} ->
         {:error, reason}
     end
   end
-  
-  @doc """
-  Build vocabulary from LSTM training examples.
-  
-  Returns a map of token -> index.
-  Special tokens:
-  - 0: <PAD>
-  - 1: <UNK>
-  - 2: <BOS> (beginning of sequence)
-  - 3: <EOS> (end of sequence)
-  """
+
+  @doc "Build vocabulary from LSTM training examples.\n\nReturns a map of token -> index.\nSpecial tokens:\n- 0: <PAD>\n- 1: <UNK>\n- 2: <BOS> (beginning of sequence)\n- 3: <EOS> (end of sequence)\n"
   def build_lstm_vocabulary(examples, opts \\ []) do
     min_freq = Keyword.get(opts, :min_freq, 2)
-    max_vocab = Keyword.get(opts, :max_vocab, 10000)
-    
-    # Count token frequencies
+    max_vocab = Keyword.get(opts, :max_vocab, 10_000)
+
     token_freqs =
       examples
       |> Enum.flat_map(fn ex -> ex.tokens end)
       |> Enum.frequencies()
-    
-    # Filter by frequency and take top tokens
+
     tokens =
       token_freqs
       |> Enum.filter(fn {_token, freq} -> freq >= min_freq end)
       |> Enum.sort_by(fn {_token, freq} -> -freq end)
-      |> Enum.take(max_vocab - 4)  # Reserve space for special tokens
+      |> Enum.take(max_vocab - 4)
       |> Enum.map(fn {token, _freq} -> token end)
-    
-    # Build vocabulary with special tokens
+
     special_tokens = ["<PAD>", "<UNK>", "<BOS>", "<EOS>"]
     all_tokens = special_tokens ++ tokens
-    
+
     vocab =
       all_tokens
       |> Enum.with_index()
       |> Enum.into(%{})
-    
+
     Logger.info("Built LSTM vocabulary", %{
       size: map_size(vocab),
       unique_tokens: length(tokens)
     })
-    
+
     vocab
   end
-  
-  @doc """
-  Build intent label vocabulary from training examples.
-  
-  Returns `{label_to_idx, idx_to_label}` maps.
-  """
+
+  @doc "Build intent label vocabulary from training examples.\n\nReturns `{label_to_idx, idx_to_label}` maps.\n"
   def build_intent_vocabulary(examples) do
     intents =
       examples
       |> Enum.map(fn ex -> ex.intent end)
       |> Enum.uniq()
       |> Enum.sort()
-    
-    label_to_idx = 
+
+    label_to_idx =
       intents
       |> Enum.with_index()
       |> Enum.into(%{})
-    
+
     idx_to_label =
       label_to_idx
       |> Enum.map(fn {k, v} -> {v, k} end)
       |> Enum.into(%{})
-    
+
     Logger.info("Built intent vocabulary", %{num_intents: length(intents)})
-    
+
     {label_to_idx, idx_to_label}
   end
-  
-  @doc """
-  Build BIO tag vocabulary for NER training.
-  
-  Extracts all entity types from training data and creates BIO tags.
-  """
+
+  @doc "Build BIO tag vocabulary for NER training.\n\nExtracts all entity types from training data and creates BIO tags.\n"
   def build_bio_vocabulary(examples) do
     entity_types =
       examples
-      |> Enum.flat_map(fn ex -> 
-        Enum.map(ex.entities || [], fn e -> 
+      |> Enum.flat_map(fn ex ->
+        Enum.map(ex.entities || [], fn e ->
           e[:type] || e["type"] || "unknown"
         end)
       end)
       |> Enum.uniq()
       |> Enum.sort()
-    
-    # Build BIO tags: O, B-TYPE, I-TYPE for each type
-    bio_tags = ["O"] ++ Enum.flat_map(entity_types, fn type ->
-      ["B-#{type}", "I-#{type}"]
-    end)
-    
+
+    bio_tags =
+      ["O"] ++
+        Enum.flat_map(entity_types, fn type ->
+          ["B-#{type}", "I-#{type}"]
+        end)
+
     bio_to_idx =
       bio_tags
       |> Enum.with_index()
       |> Enum.into(%{})
-    
+
     idx_to_bio =
       bio_to_idx
       |> Enum.map(fn {k, v} -> {v, k} end)
       |> Enum.into(%{})
-    
+
     Logger.info("Built BIO vocabulary", %{
       entity_types: length(entity_types),
       bio_tags: length(bio_tags)
     })
-    
+
     {bio_to_idx, idx_to_bio}
   end
-  
-  @doc """
-  Convert tokens to indices using vocabulary.
-  
-  Unknown tokens are mapped to <UNK> (index 1).
-  """
+
+  @doc "Convert tokens to indices using vocabulary.\n\nUnknown tokens are mapped to <UNK> (index 1).\n"
   def tokens_to_indices(tokens, vocab) do
     unk_idx = Map.get(vocab, "<UNK>", 1)
     Enum.map(tokens, fn token -> Map.get(vocab, token, unk_idx) end)
   end
-  
-  @doc """
-  Pad or truncate sequence to target length.
-  """
+
+  @doc "Pad or truncate sequence to target length.\n"
   def pad_sequence(indices, target_length, pad_idx \\ 0) do
     current_length = length(indices)
-    
+
     cond do
       current_length == target_length -> indices
       current_length > target_length -> Enum.take(indices, target_length)
       true -> indices ++ List.duplicate(pad_idx, target_length - current_length)
     end
   end
-  
-  # Process a single example for LSTM training
+
   defp process_example_for_lstm(example, tokenizer, negative_for) do
     text = example[:text] || example["text"] || ""
     intent = example[:intent] || example["intent"] || "unknown"
     entities = example[:entities] || example["entities"] || []
-    
+
     if text == "" do
       nil
     else
       raw_tokens = tokenizer.(text)
-      
-      # Normalize tokens to strings (tokenizer may return maps or strings)
-      tokens = Enum.map(raw_tokens, fn token ->
-        cond do
-          is_binary(token) -> token
-          is_map(token) -> token[:text] || token["text"] || to_string(token)
-          true -> to_string(token)
-        end
-      end)
-      
+
+      tokens =
+        Enum.map(raw_tokens, fn token ->
+          cond do
+            is_binary(token) -> token
+            is_map(token) -> token[:text] || token["text"] || to_string(token)
+            true -> to_string(token)
+          end
+        end)
+
       bio_tags = generate_bio_tags(tokens, text, entities)
-      
+
       %{
         tokens: tokens,
         intent: intent,
@@ -868,55 +707,50 @@ defmodule Brain.ML.DataLoaders do
       }
     end
   end
-  
-  # Generate BIO tags for tokens based on entity annotations
+
   defp generate_bio_tags(tokens, text, entities) when is_binary(text) do
-    # Filter to only binary tokens and build character-to-entity mapping
     valid_tokens = Enum.filter(tokens, &is_binary/1)
     char_entities = build_char_entity_map(text, entities)
-    
-    # Map tokens to BIO tags
-    {bio_tags, _pos} = 
+
+    {bio_tags, _pos} =
       Enum.map_reduce(valid_tokens, 0, fn token, pos ->
-        # Find token position in text (simple approach)
         token_start = find_token_position(text, token, pos)
         token_len = String.length(token)
         token_end = token_start + max(token_len - 1, 0)
-        
-        # Check if token overlaps with any entity
         tag = get_bio_tag_for_range(char_entities, token_start, token_end)
-        
+
         {tag, token_end + 1}
       end)
-    
-    # Pad back to original length if we filtered any tokens
+
     if length(bio_tags) < length(tokens) do
       bio_tags ++ List.duplicate("O", length(tokens) - length(bio_tags))
     else
       bio_tags
     end
   end
-  
+
   defp generate_bio_tags(tokens, _text, _entities) do
-    # Fallback - all tokens are O if text is not valid
     List.duplicate("O", length(tokens))
   end
-  
+
   defp build_char_entity_map(text, entities) do
     text_length = String.length(text)
-    
-    # Initialize all positions as "O"
     initial_map = for i <- 0..(text_length - 1), into: %{}, do: {i, {"O", nil}}
-    
-    # Mark entity positions
+
     Enum.reduce(entities, initial_map, fn entity, acc ->
       start_pos = entity[:start_pos] || entity["start_pos"] || -1
       end_pos = entity[:end_pos] || entity["end_pos"] || -1
       entity_type = entity[:type] || entity["type"] || "unknown"
-      
+
       if start_pos >= 0 and end_pos >= 0 do
         Enum.reduce(start_pos..end_pos, acc, fn pos, inner_acc ->
-          tag = if pos == start_pos, do: "B", else: "I"
+          tag =
+            if pos == start_pos do
+              "B"
+            else
+              "I"
+            end
+
           Map.put(inner_acc, pos, {tag, entity_type})
         end)
       else
@@ -924,52 +758,52 @@ defmodule Brain.ML.DataLoaders do
       end
     end)
   end
-  
+
   defp find_token_position(text, token, start_from) when is_binary(text) and is_binary(token) do
     text_lower = String.downcase(text)
     token_lower = String.downcase(token)
     text_byte_size = byte_size(text_lower)
-    
-    # Guard against invalid scope
+
     if start_from >= text_byte_size or token_lower == "" do
       start_from
     else
       remaining_size = text_byte_size - start_from
-      
+
       case :binary.match(text_lower, token_lower, scope: {start_from, remaining_size}) do
         {pos, _len} -> pos
         :nomatch -> start_from
       end
     end
   end
-  
-  defp find_token_position(_text, _token, start_from), do: start_from
-  
+
+  defp find_token_position(_text, _token, start_from) do
+    start_from
+  end
+
   defp get_bio_tag_for_range(char_entities, start_pos, _end_pos) do
-    # Check the first character of the token range
     case Map.get(char_entities, start_pos, {"O", nil}) do
-      {"O", _} -> "O"
-      {"B", type} -> "B-#{type}"
+      {"O", _} ->
+        "O"
+
+      {"B", type} ->
+        "B-#{type}"
+
       {"I", type} ->
-        # Check if we should use B (token starts inside entity but is first token of entity span)
         prev_pos = max(0, start_pos - 1)
+
         case Map.get(char_entities, prev_pos, {"O", nil}) do
-          {_, ^type} -> "I-#{type}"  # Same entity continues
-          _ -> "B-#{type}"  # New entity token
+          {_, ^type} -> "I-#{type}"
+          _ -> "B-#{type}"
         end
     end
   end
-  
+
   defp extract_negative_intent_name(filename) do
     filename
     |> String.replace("_negative_en.json", "")
     |> String.replace("_negative.json", "")
     |> String.replace(" ", ".")
   end
-
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
 
   defp get_data_path(filename) do
     base_path = Application.get_env(:brain, :ml)[:training_data_path] || "data"
@@ -989,7 +823,6 @@ defmodule Brain.ML.DataLoaders do
           |> Enum.into(%{})
         end)
         |> Enum.filter(fn row ->
-          # Filter out empty rows
           Enum.any?(row, fn {_k, v} -> v != "" and v != nil end)
         end)
 
@@ -999,7 +832,6 @@ defmodule Brain.ML.DataLoaders do
   end
 
   defp parse_csv_line(line) do
-    # Simple CSV parsing that handles quoted fields
     parse_csv_fields(line, [], "", false)
   end
 
@@ -1008,22 +840,18 @@ defmodule Brain.ML.DataLoaders do
   end
 
   defp parse_csv_fields(<<"\"", rest::binary>>, acc, current, false) do
-    # Start of quoted field
     parse_csv_fields(rest, acc, current, true)
   end
 
   defp parse_csv_fields(<<"\"\"", rest::binary>>, acc, current, true) do
-    # Escaped quote inside quoted field
     parse_csv_fields(rest, acc, current <> "\"", true)
   end
 
   defp parse_csv_fields(<<"\"", rest::binary>>, acc, current, true) do
-    # End of quoted field
     parse_csv_fields(rest, acc, current, false)
   end
 
   defp parse_csv_fields(<<",", rest::binary>>, acc, current, false) do
-    # Field separator (not in quotes)
     parse_csv_fields(rest, [String.trim(current) | acc], "", false)
   end
 
@@ -1056,7 +884,9 @@ defmodule Brain.ML.DataLoaders do
     parse_entity_data(entries, entity_type)
   end
 
-  defp parse_entity_data(_, _entity_type), do: []
+  defp parse_entity_data(_, _entity_type) do
+    []
+  end
 
   defp extract_intent_name(filename) do
     filename
@@ -1069,7 +899,6 @@ defmodule Brain.ML.DataLoaders do
   end
 
   defp normalize_intent_name(name) do
-    # Remove context annotations like "context_heating"
     name
     |> String.replace(~r/\s*-\s*context_\w+/, "")
     |> String.replace(~r/\s*-\s*comment_.*$/, "")
@@ -1099,7 +928,6 @@ defmodule Brain.ML.DataLoaders do
   end
 
   defp parse_intent_data(%{"responses" => responses}, intent_name) when is_list(responses) do
-    # Extract from response messages (for non-usersays files)
     Enum.flat_map(responses, fn resp ->
       msgs = Map.get(resp, "messages", [])
 
@@ -1120,17 +948,17 @@ defmodule Brain.ML.DataLoaders do
     end)
   end
 
-  defp parse_intent_data(_, _intent_name), do: []
+  defp parse_intent_data(_, _intent_name) do
+    []
+  end
 
   defp extract_example_with_entities(example) do
     case Map.get(example, "data") do
       nil ->
-        # Simple text field
         text = Map.get(example, "text", "")
         {:ok, text, []}
 
       data when is_list(data) ->
-        # Dialogflow format with entity annotations
         {text, entities, _pos} =
           Enum.reduce(data, {"", [], 0}, fn item, {acc_text, acc_entities, pos} ->
             item_text = Map.get(item, "text", "")
@@ -1174,5 +1002,7 @@ defmodule Brain.ML.DataLoaders do
     |> String.trim()
   end
 
-  defp normalize_text(_), do: ""
+  defp normalize_text(_) do
+    ""
+  end
 end

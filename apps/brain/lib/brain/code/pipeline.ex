@@ -1,50 +1,11 @@
 defmodule Brain.Code.Pipeline do
-  @moduledoc """
-  Orchestrates the code analysis pipeline.
+  @moduledoc "Orchestrates the code analysis pipeline.\n\nThis module coordinates the complete code analysis process:\n1. Parse source code into AST\n2. Extract symbols (functions, classes, variables)\n3. Map relationships (calls, inheritance, imports)\n4. Generate semantic descriptions\n5. Store results in world context\n\n## Usage\n\n    # Analyze a single file\n    {:ok, result} = Brain.Code.Pipeline.process_file(\n      \"/path/to/file.py\",\n      world_id: \"my_world\"\n    )\n\n    # Analyze source code directly\n    {:ok, result} = Brain.Code.Pipeline.process(\n      \"def hello(): print('world')\",\n      :python,\n      world_id: \"my_world\"\n    )\n\n    # Analyze a directory\n    {:ok, results} = Brain.Code.Pipeline.process_directory(\n      \"/path/to/project\",\n      world_id: \"my_world\"\n    )\n\n## Result Structure\n\n    %{\n      language: :python,\n      file_path: \"/path/to/file.py\",\n      symbols: [...],\n      relations: [...],\n      summary: \"...\",\n      stats: %{...}\n    }\n"
 
-  This module coordinates the complete code analysis process:
-  1. Parse source code into AST
-  2. Extract symbols (functions, classes, variables)
-  3. Map relationships (calls, inheritance, imports)
-  4. Generate semantic descriptions
-  5. Store results in world context
-
-  ## Usage
-
-      # Analyze a single file
-      {:ok, result} = Brain.Code.Pipeline.process_file(
-        "/path/to/file.py",
-        world_id: "my_world"
-      )
-
-      # Analyze source code directly
-      {:ok, result} = Brain.Code.Pipeline.process(
-        "def hello(): print('world')",
-        :python,
-        world_id: "my_world"
-      )
-
-      # Analyze a directory
-      {:ok, results} = Brain.Code.Pipeline.process_directory(
-        "/path/to/project",
-        world_id: "my_world"
-      )
-
-  ## Result Structure
-
-      %{
-        language: :python,
-        file_path: "/path/to/file.py",
-        symbols: [...],
-        relations: [...],
-        summary: "...",
-        stats: %{...}
-      }
-  """
-
+  alias Brain.Memory.Store
+  alias Brain.Code.LanguageGrammar
   require Logger
 
-  alias Brain.Code.{Parser, SymbolExtractor, RelationMapper, CodeGazetteer}
+  alias Brain.Code.{Parser, SymbolExtractor, RelationMapper}
   alias Brain.Telemetry
 
   @type process_result :: %{
@@ -56,88 +17,65 @@ defmodule Brain.Code.Pipeline do
           stats: map(),
           errors: [String.t()]
         }
-
-  # File extensions to process
   @code_extensions ~w(.c .h .cpp .cc .cxx .hpp .java .cs .php .py .rb .ex .exs .go)
-
-  # Maximum file size to process (10MB)
   @max_file_size 10 * 1024 * 1024
 
-  # ============================================================================
-  # Public API
-  # ============================================================================
-
-  @doc """
-  Processes source code through the complete analysis pipeline.
-
-  ## Parameters
-    - `source_code` - The source code to analyze
-    - `language` - The programming language
-    - `opts` - Options
-
-  ## Options
-    - `:world_id` - World ID for storing results (required for storage)
-    - `:file_path` - Source file path for location tracking
-    - `:store` - Whether to store in CodeGazetteer (default: true if world_id provided)
-    - `:generate_summary` - Generate natural language summary (default: true)
-    - `:progress_callback` - Function for progress updates
-
-  ## Returns
-    `{:ok, result}` or `{:error, reason}`
-  """
+  @doc "Processes source code through the complete analysis pipeline.\n\n## Parameters\n  - `source_code` - The source code to analyze\n  - `language` - The programming language\n  - `opts` - Options\n\n## Options\n  - `:world_id` - World ID for storing results (required for storage)\n  - `:file_path` - Source file path for location tracking\n  - `:store` - Whether to store in CodeGazetteer (default: true if world_id provided)\n  - `:generate_summary` - Generate natural language summary (default: true)\n  - `:progress_callback` - Function for progress updates\n\n## Returns\n  `{:ok, result}` or `{:error, reason}`\n"
   @spec process(String.t(), atom(), keyword()) :: {:ok, process_result()} | {:error, term()}
-  def process(source_code, language, opts \\ []) when is_binary(source_code) and is_atom(language) do
+  def process(source_code, language, opts \\ [])
+      when is_binary(source_code) and is_atom(language) do
     world_id = Keyword.get(opts, :world_id)
     file_path = Keyword.get(opts, :file_path)
     store = Keyword.get(opts, :store, world_id != nil)
     generate_summary = Keyword.get(opts, :generate_summary, true)
     progress_callback = Keyword.get(opts, :progress_callback)
 
-    Telemetry.span(:code_pipeline, %{language: language, world_id: world_id, file_path: file_path}, fn ->
-      start_time = System.monotonic_time(:millisecond)
+    Telemetry.span(
+      :code_pipeline,
+      %{language: language, world_id: world_id, file_path: file_path},
+      fn ->
+        start_time = System.monotonic_time(:millisecond)
 
-      report_progress(progress_callback, :started, %{language: language})
+        report_progress(progress_callback, :started, %{language: language})
+        report_progress(progress_callback, :parsing, %{})
 
-      # Step 1: Parse
-      report_progress(progress_callback, :parsing, %{})
+        result =
+          case Parser.parse(source_code, language) do
+            {:ok, ast} ->
+              process_ast(ast, language, source_code, %{
+                world_id: world_id,
+                file_path: file_path,
+                store: store,
+                generate_summary: generate_summary,
+                progress_callback: progress_callback
+              })
 
-      result = case Parser.parse(source_code, language) do
-        {:ok, ast} ->
-          process_ast(ast, language, source_code, %{
-            world_id: world_id,
-            file_path: file_path,
-            store: store,
-            generate_summary: generate_summary,
-            progress_callback: progress_callback
-          })
+            {:error, reason} ->
+              {:error, {:parse_failed, reason}}
+          end
 
-        {:error, reason} ->
-          {:error, {:parse_failed, reason}}
+        case result do
+          {:ok, process_result} ->
+            duration_ms = System.monotonic_time(:millisecond) - start_time
+
+            Telemetry.emit_code_file_processed(
+              file_path || "inline",
+              language,
+              length(process_result.symbols),
+              length(process_result.relations),
+              duration_ms
+            )
+
+          _ ->
+            :ok
+        end
+
+        result
       end
-
-      # Emit file processed event on success
-      case result do
-        {:ok, process_result} ->
-          duration_ms = System.monotonic_time(:millisecond) - start_time
-          Telemetry.emit_code_file_processed(
-            file_path || "inline",
-            language,
-            length(process_result.symbols),
-            length(process_result.relations),
-            duration_ms
-          )
-        _ -> :ok
-      end
-
-      result
-    end)
+    )
   end
 
-  @doc """
-  Processes a source file.
-
-  Automatically detects the language from the file extension.
-  """
+  @doc "Processes a source file.\n\nAutomatically detects the language from the file extension.\n"
   @spec process_file(String.t(), keyword()) :: {:ok, process_result()} | {:error, term()}
   def process_file(file_path, opts \\ []) when is_binary(file_path) do
     with :ok <- validate_file(file_path),
@@ -151,36 +89,25 @@ defmodule Brain.Code.Pipeline do
     end
   end
 
-  @doc """
-  Processes all code files in a directory.
-
-  ## Options
-    - `:world_id` - World ID for storing results
-    - `:recursive` - Process subdirectories (default: true)
-    - `:extensions` - File extensions to process (default: all supported)
-    - `:exclude` - Patterns to exclude (e.g., ["node_modules", ".git"])
-    - `:max_files` - Maximum files to process (default: 1000)
-    - `:progress_callback` - Function for progress updates
-
-  ## Returns
-    `{:ok, results}` where results is a list of individual file results
-  """
+  @doc "Processes all code files in a directory.\n\n## Options\n  - `:world_id` - World ID for storing results\n  - `:recursive` - Process subdirectories (default: true)\n  - `:extensions` - File extensions to process (default: all supported)\n  - `:exclude` - Patterns to exclude (e.g., [\"node_modules\", \".git\"])\n  - `:max_files` - Maximum files to process (default: 1000)\n  - `:progress_callback` - Function for progress updates\n\n## Returns\n  `{:ok, results}` where results is a list of individual file results\n"
   @spec process_directory(String.t(), keyword()) :: {:ok, [process_result()]} | {:error, term()}
   def process_directory(dir_path, opts \\ []) do
     recursive = Keyword.get(opts, :recursive, true)
     extensions = Keyword.get(opts, :extensions, @code_extensions)
-    exclude = Keyword.get(opts, :exclude, ["node_modules", ".git", "_build", "deps", "__pycache__"])
+
+    exclude =
+      Keyword.get(opts, :exclude, ["node_modules", ".git", "_build", "deps", "__pycache__"])
+
     max_files = Keyword.get(opts, :max_files, 1000)
     progress_callback = Keyword.get(opts, :progress_callback)
 
-    # Find all matching files
-    files = find_code_files(dir_path, recursive, extensions, exclude)
-              |> Enum.take(max_files)
+    files =
+      find_code_files(dir_path, recursive, extensions, exclude)
+      |> Enum.take(max_files)
 
     total = length(files)
     Logger.info("Processing #{total} code files in #{dir_path}")
 
-    # Process each file
     results =
       files
       |> Enum.with_index(1)
@@ -198,6 +125,7 @@ defmodule Brain.Code.Pipeline do
               current: idx,
               total: total
             })
+
             {:ok, file, result}
 
           {:error, reason} ->
@@ -207,15 +135,13 @@ defmodule Brain.Code.Pipeline do
               total: total,
               error: reason
             })
+
             {:error, file, reason}
         end
       end)
 
-    # Separate successes and failures
     successes = Enum.filter(results, fn {status, _, _} -> status == :ok end)
     failures = Enum.filter(results, fn {status, _, _} -> status == :error end)
-
-    # Aggregate stats
     total_symbols = Enum.sum(Enum.map(successes, fn {:ok, _, r} -> length(r.symbols) end))
     total_relations = Enum.sum(Enum.map(successes, fn {:ok, _, r} -> length(r.relations) end))
 
@@ -226,36 +152,31 @@ defmodule Brain.Code.Pipeline do
       total_relations: total_relations
     })
 
-    {:ok, %{
-      files_processed: length(successes),
-      files_failed: length(failures),
-      total_symbols: total_symbols,
-      total_relations: total_relations,
-      results: Enum.map(successes, fn {:ok, _, r} -> r end),
-      errors: Enum.map(failures, fn {:error, f, r} -> {f, r} end)
-    }}
+    {:ok,
+     %{
+       files_processed: length(successes),
+       files_failed: length(failures),
+       total_symbols: total_symbols,
+       total_relations: total_relations,
+       results: Enum.map(successes, fn {:ok, _, r} -> r end),
+       errors: Enum.map(failures, fn {:error, f, r} -> {f, r} end)
+     }}
   end
 
-  @doc """
-  Checks if a file is a supported code file.
-  """
+  @doc "Checks if a file is a supported code file.\n"
   @spec code_file?(String.t()) :: boolean()
   def code_file?(file_path) do
     ext = Path.extname(file_path) |> String.downcase()
     ext in @code_extensions
   end
 
-  @doc """
-  Returns supported file extensions.
-  """
+  @doc "Returns supported file extensions.\n"
   @spec supported_extensions() :: [String.t()]
-  def supported_extensions, do: @code_extensions
+  def supported_extensions do
+    @code_extensions
+  end
 
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
-
-  defp process_ast(ast, language, source_code, opts) do
+  defp process_ast(ast, language, _source_code, opts) do
     %{
       world_id: world_id,
       file_path: file_path,
@@ -264,42 +185,31 @@ defmodule Brain.Code.Pipeline do
       progress_callback: progress_callback
     } = opts
 
-    # Step 2: Extract symbols
     report_progress(progress_callback, :extracting_symbols, %{})
 
-    extraction_opts = [
-      file_path: file_path,
-      world_id: world_id,
-      store: store
-    ]
+    extraction_opts = [file_path: file_path, world_id: world_id, store: store]
 
     extraction_result = SymbolExtractor.extract(ast, language, extraction_opts)
     symbols = extraction_result.symbols
 
     Logger.debug("Extracted #{length(symbols)} symbols")
-
-    # Step 3: Map relationships
     report_progress(progress_callback, :mapping_relations, %{})
 
-    relation_opts = [
-      world_id: world_id,
-      store: store
-    ]
+    relation_opts = [world_id: world_id, store: store]
 
     relation_result = RelationMapper.map_relations(ast, symbols, language, relation_opts)
     relations = relation_result.relations
 
     Logger.debug("Mapped #{length(relations)} relations")
 
-    # Step 4: Generate summary (if requested)
-    summary = if generate_summary do
-      report_progress(progress_callback, :generating_summary, %{})
-      generate_code_summary(symbols, relations, language)
-    else
-      ""
-    end
+    summary =
+      if generate_summary do
+        report_progress(progress_callback, :generating_summary, %{})
+        generate_code_summary(symbols, relations, language)
+      else
+        ""
+      end
 
-    # Step 5: Build result
     result = %{
       language: language,
       file_path: file_path,
@@ -318,7 +228,6 @@ defmodule Brain.Code.Pipeline do
       errors: extraction_result.errors
     }
 
-    # Store episode if world_id provided
     if world_id && store do
       store_analysis_episode(world_id, result)
     end
@@ -333,63 +242,72 @@ defmodule Brain.Code.Pipeline do
   end
 
   defp generate_code_summary(symbols, relations, language) do
-    # Generate a natural language summary of the code
     functions = Enum.filter(symbols, fn s -> s.entity_type == "code.function" end)
     classes = Enum.filter(symbols, fn s -> s.entity_type == "code.class" end)
     imports = Enum.filter(symbols, fn s -> s.entity_type == "code.import" end)
 
     parts = []
 
-    parts = if length(classes) > 0 do
-      class_names = Enum.map(classes, & &1.name) |> Enum.take(5) |> Enum.join(", ")
-      part = if length(classes) > 5 do
-        "Defines #{length(classes)} classes including #{class_names}"
-      else
-        "Defines classes: #{class_names}"
-      end
-      [part | parts]
-    else
-      parts
-    end
+    parts =
+      if classes != [] do
+        class_names = Enum.map(classes, & &1.name) |> Enum.take(5) |> Enum.join(", ")
 
-    parts = if length(functions) > 0 do
-      func_names = Enum.map(functions, & &1.name) |> Enum.take(5) |> Enum.join(", ")
-      part = if length(functions) > 5 do
-        "Contains #{length(functions)} functions including #{func_names}"
-      else
-        "Functions: #{func_names}"
-      end
-      [part | parts]
-    else
-      parts
-    end
+        part =
+          if length(classes) > 5 do
+            "Defines #{length(classes)} classes including #{class_names}"
+          else
+            "Defines classes: #{class_names}"
+          end
 
-    parts = if length(imports) > 0 do
-      import_names = Enum.map(imports, & &1.name) |> Enum.take(3) |> Enum.join(", ")
-      part = "Imports: #{import_names}"
-      [part | parts]
-    else
-      parts
-    end
+        [part | parts]
+      else
+        parts
+      end
+
+    parts =
+      if functions != [] do
+        func_names = Enum.map(functions, & &1.name) |> Enum.take(5) |> Enum.join(", ")
+
+        part =
+          if length(functions) > 5 do
+            "Contains #{length(functions)} functions including #{func_names}"
+          else
+            "Functions: #{func_names}"
+          end
+
+        [part | parts]
+      else
+        parts
+      end
+
+    parts =
+      if imports != [] do
+        import_names = Enum.map(imports, & &1.name) |> Enum.take(3) |> Enum.join(", ")
+        part = "Imports: #{import_names}"
+        [part | parts]
+      else
+        parts
+      end
 
     call_count = Enum.count(relations, fn r -> r.type == :calls end)
-    parts = if call_count > 0 do
-      ["#{call_count} function calls" | parts]
-    else
-      parts
-    end
+
+    parts =
+      if call_count > 0 do
+        ["#{call_count} function calls" | parts]
+      else
+        parts
+      end
 
     summary = Enum.reverse(parts) |> Enum.join(". ")
 
     if summary == "" do
-      "#{Parser.language_supported?(language) && Brain.Code.LanguageGrammar.language_name(language) || to_string(language)} source file"
+      "#{(Parser.language_supported?(language) && LanguageGrammar.language_name(language)) || to_string(language)} source file"
     else
       summary
     end
   end
 
   defp store_analysis_episode(world_id, result) do
-    # Store as an episode in the world's memory
     state = "Analyzed #{result.file_path || "source code"}"
     action = "code_analysis"
     outcome = result.summary
@@ -401,8 +319,8 @@ defmodule Brain.Code.Pipeline do
       "relations:#{result.stats.relation_count}"
     ]
 
-    # Add function names as tags
-    function_tags = result.symbols
+    function_tags =
+      result.symbols
       |> Enum.filter(fn s -> s.entity_type == "code.function" end)
       |> Enum.take(5)
       |> Enum.map(fn s -> "fn:#{s.name}" end)
@@ -410,7 +328,7 @@ defmodule Brain.Code.Pipeline do
     all_tags = tags ++ function_tags
 
     try do
-      Brain.Memory.Store.add_episode(state, action, outcome, all_tags, world_id: world_id)
+      Store.add_episode(state, action, outcome, all_tags, world_id: world_id)
     rescue
       e ->
         Logger.warning("Failed to store code analysis episode: #{inspect(e)}")
@@ -453,7 +371,10 @@ defmodule Brain.Code.Pipeline do
     end)
   end
 
-  defp report_progress(nil, _stage, _data), do: :ok
+  defp report_progress(nil, _stage, _data) do
+    :ok
+  end
+
   defp report_progress(callback, stage, data) when is_function(callback) do
     callback.(%{stage: stage, data: data})
   end

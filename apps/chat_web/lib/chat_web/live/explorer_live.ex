@@ -304,7 +304,7 @@ defmodule ChatWeb.ExplorerLive do
           <.stat_card label="Semantics" value={length(@semantics)} />
           <.stat_card label="Knowledge" value={map_size(@knowledge)} />
         </div>
-        
+
     <!-- Tabs -->
         <div class="flex flex-wrap items-center gap-4">
           <div class="tabs tabs-boxed">
@@ -344,7 +344,7 @@ defmodule ChatWeb.ExplorerLive do
               label="Knowledge"
             />
           </div>
-          
+
     <!-- Search -->
           <div class="flex-1 max-w-md">
             <input
@@ -358,7 +358,7 @@ defmodule ChatWeb.ExplorerLive do
             />
           </div>
         </div>
-        
+
     <!-- Type Selector (for entities tab) -->
         <%= if @tab == :entities and length(@entity_types) > 0 do %>
           <div class="flex flex-wrap gap-2">
@@ -377,7 +377,7 @@ defmodule ChatWeb.ExplorerLive do
             <% end %>
           </div>
         <% end %>
-        
+
     <!-- Recently Promoted Toast -->
         <%= if MapSet.size(@recently_promoted) > 0 do %>
           <div class="bg-success/10 border border-success/30 rounded-xl px-4 py-3 flex items-center gap-3 animate-fade-in">
@@ -390,7 +390,7 @@ defmodule ChatWeb.ExplorerLive do
             </div>
           </div>
         <% end %>
-        
+
     <!-- Content -->
         <div class="bg-base-100 rounded-xl border border-base-300/50 overflow-hidden">
           <%= case @tab do %>

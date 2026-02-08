@@ -1,48 +1,5 @@
 defmodule Mix.Tasks.TrainingWorld do
-  @moduledoc """
-  Mix tasks for managing training worlds.
-
-  ## Commands
-
-      # Create a new world
-      mix training_world.create "world_name" [--mode=ephemeral|persistent]
-
-      # Ingest files into a world
-      mix training_world.ingest "world_id" "path/to/files/*.txt"
-
-      # View world metrics
-      mix training_world.metrics "world_id"
-
-      # View discovered entities
-      mix training_world.entities "world_id" [--sort=confidence|occurrences]
-
-      # View ambiguous entities
-      mix training_world.ambiguous "world_id"
-
-      # View events
-      mix training_world.events "world_id" [--type=event_type] [--limit=100]
-
-      # Compare two worlds
-      mix training_world.compare "world_id_1" "world_id_2"
-
-      # Export world data
-      mix training_world.export "world_id" [--output=file.json]
-
-      # Merge worlds
-      mix training_world.merge "source_id" "target_id" [--require-review]
-
-      # List all worlds
-      mix training_world.list
-
-      # Destroy a world
-      mix training_world.destroy "world_id"
-
-      # Checkpoint a persistent world
-      mix training_world.checkpoint "world_id"
-
-      # Load a persisted world
-      mix training_world.load "world_id"
-  """
+  @moduledoc "Mix tasks for managing training worlds.\n\n## Commands\n\n    # Create a new world\n    mix training_world.create \"world_name\" [--mode=ephemeral|persistent]\n\n    # Ingest files into a world\n    mix training_world.ingest \"world_id\" \"path/to/files/*.txt\"\n\n    # View world metrics\n    mix training_world.metrics \"world_id\"\n\n    # View discovered entities\n    mix training_world.entities \"world_id\" [--sort=confidence|occurrences]\n\n    # View ambiguous entities\n    mix training_world.ambiguous \"world_id\"\n\n    # View events\n    mix training_world.events \"world_id\" [--type=event_type] [--limit=100]\n\n    # Compare two worlds\n    mix training_world.compare \"world_id_1\" \"world_id_2\"\n\n    # Export world data\n    mix training_world.export \"world_id\" [--output=file.json]\n\n    # Merge worlds\n    mix training_world.merge \"source_id\" \"target_id\" [--require-review]\n\n    # List all worlds\n    mix training_world.list\n\n    # Destroy a world\n    mix training_world.destroy \"world_id\"\n\n    # Checkpoint a persistent world\n    mix training_world.checkpoint \"world_id\"\n\n    # Load a persisted world\n    mix training_world.load \"world_id\"\n"
 
   use Mix.Task
 
@@ -73,6 +30,7 @@ defmodule Mix.Tasks.TrainingWorld do
 end
 
 defmodule Mix.Tasks.TrainingWorld.Create do
+  alias World.Manager
   use Mix.Task
 
   @shortdoc "Create a new training world"
@@ -91,7 +49,7 @@ defmodule Mix.Tasks.TrainingWorld.Create do
             _ -> :ephemeral
           end
 
-        case World.Manager.create(name, mode: mode) do
+        case Manager.create(name, mode: mode) do
           {:ok, world} ->
             Mix.shell().info("Created training world: #{world.id}")
             Mix.shell().info("  Name: #{world.name}")
@@ -112,6 +70,7 @@ defmodule Mix.Tasks.TrainingWorld.Create do
 end
 
 defmodule Mix.Tasks.TrainingWorld.Ingest do
+  alias World.DocumentIngestor
   use Mix.Task
 
   @shortdoc "Ingest files into a training world"
@@ -119,9 +78,7 @@ defmodule Mix.Tasks.TrainingWorld.Ingest do
   @impl Mix.Task
   def run(args) do
     {opts, rest, _} =
-      OptionParser.parse(args,
-        strict: [chunk_size: :integer, stream: :boolean]
-      )
+      OptionParser.parse(args, strict: [chunk_size: :integer, stream: :boolean])
 
     case rest do
       [world_id, pattern] ->
@@ -129,7 +86,7 @@ defmodule Mix.Tasks.TrainingWorld.Ingest do
 
         files = Path.wildcard(pattern)
 
-        if length(files) == 0 do
+        if files == [] do
           Mix.shell().error("No files found matching: #{pattern}")
         else
           Mix.shell().info("Found #{length(files)} files to ingest")
@@ -159,7 +116,7 @@ defmodule Mix.Tasks.TrainingWorld.Ingest do
             progress_callback: progress_callback
           ]
 
-          case World.DocumentIngestor.ingest_files(world_id, files, ingest_opts) do
+          case DocumentIngestor.ingest_files(world_id, files, ingest_opts) do
             {:ok, result} ->
               Mix.shell().info("")
               Mix.shell().info("Ingestion complete:")
@@ -169,12 +126,10 @@ defmodule Mix.Tasks.TrainingWorld.Ingest do
               Mix.shell().info("  Entities discovered: #{result.entities_discovered}")
               Mix.shell().info("  Processing time: #{result.processing_time_ms}ms")
 
-              if length(result.failed_files) > 0 do
+              if result.failed_files != [] do
                 Mix.shell().error("  Failed files: #{length(result.failed_files)}")
               end
 
-            # Note: ingest_files always returns {:ok, _} with failed_files list
-            # This branch kept for future error handling if needed
             other ->
               Mix.shell().error("Unexpected result: #{inspect(other)}")
           end
@@ -191,6 +146,8 @@ defmodule Mix.Tasks.TrainingWorld.Ingest do
 end
 
 defmodule Mix.Tasks.TrainingWorld.Metrics do
+  alias World.Metrics
+  alias World.Manager
   use Mix.Task
 
   @shortdoc "View training world metrics"
@@ -201,9 +158,9 @@ defmodule Mix.Tasks.TrainingWorld.Metrics do
       [world_id] ->
         ensure_started()
 
-        case World.Manager.get_metrics(world_id) do
+        case Manager.get_metrics(world_id) do
           {:ok, metrics} ->
-            summary = World.Metrics.summary(metrics)
+            summary = Metrics.summary(metrics)
 
             Mix.shell().info("World Metrics: #{world_id}")
             Mix.shell().info("=" |> String.duplicate(50))
@@ -244,6 +201,7 @@ defmodule Mix.Tasks.TrainingWorld.Metrics do
 end
 
 defmodule Mix.Tasks.TrainingWorld.Entities do
+  alias World.Manager
   use Mix.Task
 
   @shortdoc "View discovered entities in a training world"
@@ -266,9 +224,9 @@ defmodule Mix.Tasks.TrainingWorld.Entities do
         limit = Keyword.get(opts, :limit, 50)
 
         candidates =
-          World.Manager.get_candidates(world_id, sort: sort, limit: limit)
+          Manager.get_candidates(world_id, sort: sort, limit: limit)
 
-        if length(candidates) == 0 do
+        if candidates == [] do
           Mix.shell().info("No entity candidates found")
         else
           Mix.shell().info("Entity Candidates (sorted by #{sort}):")
@@ -314,6 +272,7 @@ defmodule Mix.Tasks.TrainingWorld.Entities do
 end
 
 defmodule Mix.Tasks.TrainingWorld.Ambiguous do
+  alias World.Manager
   use Mix.Task
 
   @shortdoc "View ambiguous entities in a training world"
@@ -324,11 +283,11 @@ defmodule Mix.Tasks.TrainingWorld.Ambiguous do
       [world_id] ->
         ensure_started()
 
-        case World.Manager.get_metrics(world_id) do
+        case Manager.get_metrics(world_id) do
           {:ok, metrics} ->
             ambiguities = metrics.ambiguous_entities
 
-            if length(ambiguities) == 0 do
+            if ambiguities == [] do
               Mix.shell().info("No ambiguous entities found")
             else
               Mix.shell().info("Ambiguous Entities (need human review):")
@@ -364,6 +323,7 @@ defmodule Mix.Tasks.TrainingWorld.Ambiguous do
 end
 
 defmodule Mix.Tasks.TrainingWorld.Events do
+  alias World.Manager
   use Mix.Task
 
   @shortdoc "View events in a training world"
@@ -380,13 +340,17 @@ defmodule Mix.Tasks.TrainingWorld.Events do
         filters = []
 
         filters =
-          if t = Keyword.get(opts, :type), do: [type: String.to_atom(t)] ++ filters, else: filters
+          if t = Keyword.get(opts, :type) do
+            [type: String.to_atom(t)] ++ filters
+          else
+            filters
+          end
 
         filters = [limit: Keyword.get(opts, :limit, 50)] ++ filters
 
-        events = World.Manager.get_events(world_id, filters)
+        events = Manager.get_events(world_id, filters)
 
-        if length(events) == 0 do
+        if events == [] do
           Mix.shell().info("No events found")
         else
           Mix.shell().info("Events:")
@@ -418,6 +382,7 @@ defmodule Mix.Tasks.TrainingWorld.Events do
 end
 
 defmodule Mix.Tasks.TrainingWorld.Compare do
+  alias World.Manager
   use Mix.Task
 
   @shortdoc "Compare two training worlds"
@@ -428,7 +393,7 @@ defmodule Mix.Tasks.TrainingWorld.Compare do
       [world_id_1, world_id_2] ->
         ensure_started()
 
-        case World.Manager.compare(world_id_1, world_id_2) do
+        case Manager.compare(world_id_1, world_id_2) do
           {:ok, diff} ->
             Mix.shell().info("World Comparison")
             Mix.shell().info("=" |> String.duplicate(50))
@@ -444,12 +409,18 @@ defmodule Mix.Tasks.TrainingWorld.Compare do
               Mix.shell().info("Type distribution differences:")
 
               Enum.each(diff.type_distribution_diff, fn {type, count_diff} ->
-                sign = if count_diff > 0, do: "+", else: ""
+                sign =
+                  if count_diff > 0 do
+                    "+"
+                  else
+                    ""
+                  end
+
                 Mix.shell().info("  #{type}: #{sign}#{count_diff}")
               end)
             end
 
-            if length(diff.unique_to_world1) > 0 do
+            if diff.unique_to_world1 != [] do
               Mix.shell().info("")
 
               Mix.shell().info(
@@ -457,7 +428,7 @@ defmodule Mix.Tasks.TrainingWorld.Compare do
               )
             end
 
-            if length(diff.unique_to_world2) > 0 do
+            if diff.unique_to_world2 != [] do
               Mix.shell().info(
                 "Types unique to world 2: #{Enum.join(diff.unique_to_world2, ", ")}"
               )
@@ -478,6 +449,7 @@ defmodule Mix.Tasks.TrainingWorld.Compare do
 end
 
 defmodule Mix.Tasks.TrainingWorld.Export do
+  alias World.Manager
   use Mix.Task
 
   @shortdoc "Export training world data"
@@ -490,11 +462,9 @@ defmodule Mix.Tasks.TrainingWorld.Export do
       [world_id] ->
         ensure_started()
 
-        case World.Manager.export(world_id) do
+        case Manager.export(world_id) do
           {:ok, data} ->
             output_file = Keyword.get(opts, :output, "#{world_id}_export.json")
-
-            # Prepare data for JSON export
             export_data = prepare_for_json(data)
 
             case Jason.encode(export_data, pretty: true) do
@@ -536,21 +506,37 @@ defmodule Mix.Tasks.TrainingWorld.Export do
     end)
   end
 
-  defp struct_to_map(other), do: prepare_value(other)
+  defp struct_to_map(other) do
+    prepare_value(other)
+  end
 
-  defp prepare_value(%DateTime{} = dt), do: DateTime.to_iso8601(dt)
-  defp prepare_value(%_{} = struct), do: struct_to_map(struct)
+  defp prepare_value(%DateTime{} = dt) do
+    DateTime.to_iso8601(dt)
+  end
+
+  defp prepare_value(%_{} = struct) do
+    struct_to_map(struct)
+  end
 
   defp prepare_value(map) when is_map(map) do
     Enum.into(map, %{}, fn {k, v} -> {k, prepare_value(v)} end)
   end
 
-  defp prepare_value(list) when is_list(list), do: Enum.map(list, &prepare_value/1)
-  defp prepare_value(atom) when is_atom(atom), do: Atom.to_string(atom)
-  defp prepare_value(other), do: other
+  defp prepare_value(list) when is_list(list) do
+    Enum.map(list, &prepare_value/1)
+  end
+
+  defp prepare_value(atom) when is_atom(atom) do
+    Atom.to_string(atom)
+  end
+
+  defp prepare_value(other) do
+    other
+  end
 end
 
 defmodule Mix.Tasks.TrainingWorld.Merge do
+  alias World.Manager
   use Mix.Task
 
   @shortdoc "Merge source world into target world"
@@ -569,7 +555,7 @@ defmodule Mix.Tasks.TrainingWorld.Merge do
           min_confidence: Keyword.get(opts, :min_confidence, 0.7)
         ]
 
-        case World.Manager.merge(source_id, target_id, merge_opts) do
+        case Manager.merge(source_id, target_id, merge_opts) do
           {:ok, count} ->
             Mix.shell().info("Merged #{count} entities from #{source_id} to #{target_id}")
 
@@ -603,6 +589,8 @@ defmodule Mix.Tasks.TrainingWorld.Merge do
 end
 
 defmodule Mix.Tasks.TrainingWorld.List do
+  alias World.Persistence
+  alias World.Manager
   use Mix.Task
 
   @shortdoc "List all training worlds"
@@ -610,17 +598,13 @@ defmodule Mix.Tasks.TrainingWorld.List do
   @impl Mix.Task
   def run(_args) do
     ensure_started()
-
-    # List active worlds (in memory)
-    active_worlds = World.Manager.list_worlds()
-
-    # List persisted worlds (on disk)
-    persisted_worlds = World.Persistence.list_persisted_worlds()
+    active_worlds = Manager.list_worlds()
+    persisted_worlds = Persistence.list_persisted_worlds()
 
     Mix.shell().info("Active Training Worlds:")
     Mix.shell().info("=" |> String.duplicate(60))
 
-    if length(active_worlds) == 0 do
+    if active_worlds == [] do
       Mix.shell().info("  No active worlds")
     else
       Enum.each(active_worlds, fn world ->
@@ -635,11 +619,17 @@ defmodule Mix.Tasks.TrainingWorld.List do
     Mix.shell().info("Persisted Worlds (on disk):")
     Mix.shell().info("=" |> String.duplicate(60))
 
-    if length(persisted_worlds) == 0 do
+    if persisted_worlds == [] do
       Mix.shell().info("  No persisted worlds")
     else
       Enum.each(persisted_worlds, fn world ->
-        active = if Enum.any?(active_worlds, &(&1.id == world.id)), do: " [ACTIVE]", else: ""
+        active =
+          if Enum.any?(active_worlds, &(&1.id == world.id)) do
+            " [ACTIVE]"
+          else
+            ""
+          end
+
         Mix.shell().info("  #{world.id}#{active}")
         Mix.shell().info("    Name: #{world.name}")
       end)
@@ -652,6 +642,7 @@ defmodule Mix.Tasks.TrainingWorld.List do
 end
 
 defmodule Mix.Tasks.TrainingWorld.Destroy do
+  alias World.Manager
   use Mix.Task
 
   @shortdoc "Destroy a training world"
@@ -664,7 +655,7 @@ defmodule Mix.Tasks.TrainingWorld.Destroy do
 
         Mix.shell().info("Destroying world: #{world_id}")
 
-        case World.Manager.destroy(world_id) do
+        case Manager.destroy(world_id) do
           :ok ->
             Mix.shell().info("World destroyed successfully")
 
@@ -683,6 +674,7 @@ defmodule Mix.Tasks.TrainingWorld.Destroy do
 end
 
 defmodule Mix.Tasks.TrainingWorld.Checkpoint do
+  alias World.Manager
   use Mix.Task
 
   @shortdoc "Save a persistent world to disk"
@@ -695,7 +687,7 @@ defmodule Mix.Tasks.TrainingWorld.Checkpoint do
 
         Mix.shell().info("Creating checkpoint for world: #{world_id}")
 
-        case World.Manager.checkpoint(world_id) do
+        case Manager.checkpoint(world_id) do
           :ok ->
             Mix.shell().info("Checkpoint created successfully")
 
@@ -717,6 +709,7 @@ defmodule Mix.Tasks.TrainingWorld.Checkpoint do
 end
 
 defmodule Mix.Tasks.TrainingWorld.Load do
+  alias World.Manager
   use Mix.Task
 
   @shortdoc "Load a persisted world from disk"
@@ -729,7 +722,7 @@ defmodule Mix.Tasks.TrainingWorld.Load do
 
         Mix.shell().info("Loading world from disk: #{world_id}")
 
-        case World.Manager.load_world(world_id) do
+        case Manager.load_world(world_id) do
           {:ok, world} ->
             Mix.shell().info("World loaded successfully")
             Mix.shell().info("  Name: #{world.name}")
@@ -753,39 +746,18 @@ defmodule Mix.Tasks.TrainingWorld.Load do
 end
 
 defmodule Mix.Tasks.TrainingWorld.Import do
+  alias World.Manager
+  alias Brain.ML.Gazetteer
   use Mix.Task
 
   @shortdoc "Import entities from a JSON file into a training world"
 
-  @moduledoc """
-  Imports pre-extracted entities into a training world's gazetteer overlay.
-
-  This is useful when you've already identified entities through preprocessing
-  and want to seed a training world with them.
-
-  ## Usage
-
-      mix training_world.import <world_id> <entities.json> [options]
-
-  ## Options
-
-    * `--promote` - Automatically promote entities to the gazetteer (default: false)
-    * `--skip-unknown` - Skip entities with type "unknown" (default: false)
-
-  ## JSON Format
-
-  The JSON file should have an "entities" array with objects containing:
-    - `value` - The entity text
-    - `entity_type` - The type (person, location, etc.)
-    - `metadata` - Optional metadata
-  """
+  @moduledoc "Imports pre-extracted entities into a training world's gazetteer overlay.\n\nThis is useful when you've already identified entities through preprocessing\nand want to seed a training world with them.\n\n## Usage\n\n    mix training_world.import <world_id> <entities.json> [options]\n\n## Options\n\n  * `--promote` - Automatically promote entities to the gazetteer (default: false)\n  * `--skip-unknown` - Skip entities with type \"unknown\" (default: false)\n\n## JSON Format\n\nThe JSON file should have an \"entities\" array with objects containing:\n  - `value` - The entity text\n  - `entity_type` - The type (person, location, etc.)\n  - `metadata` - Optional metadata\n"
 
   @impl Mix.Task
   def run(args) do
     {opts, rest, _} =
-      OptionParser.parse(args,
-        strict: [promote: :boolean, skip_unknown: :boolean]
-      )
+      OptionParser.parse(args, strict: [promote: :boolean, skip_unknown: :boolean])
 
     case rest do
       [world_id, json_file] ->
@@ -820,8 +792,7 @@ defmodule Mix.Tasks.TrainingWorld.Import do
 
     Mix.shell().info("Importing #{length(entities)} entities into world: #{world_id}")
 
-    # Check if world exists
-    case World.Manager.get(world_id) do
+    case Manager.get(world_id) do
       {:error, :not_found} ->
         Mix.shell().error("World not found: #{world_id}")
         return()
@@ -843,21 +814,24 @@ defmodule Mix.Tasks.TrainingWorld.Import do
             {imp, skip + 1, prom}
 
           true ->
-            # Add as candidate
             candidate = %{
               value: value,
               inferred_type: entity_type,
-              confidence: if(entity_type == "unknown", do: 0.5, else: 0.9),
+              confidence:
+                if(entity_type == "unknown") do
+                  0.5
+                else
+                  0.9
+                end,
               source: :import,
               metadata: Map.get(entity, "metadata", %{}),
               discovered_at: DateTime.utc_now()
             }
 
-            World.Manager.add_candidate(world_id, candidate)
+            Manager.add_candidate(world_id, candidate)
 
-            # Optionally promote to gazetteer
             if promote and entity_type != "unknown" do
-              Brain.ML.Gazetteer.add_to_world(world_id, value, entity_type)
+              Gazetteer.add_to_world(world_id, value, entity_type)
               {imp + 1, skip, prom + 1}
             else
               {imp + 1, skip, prom}
@@ -876,12 +850,11 @@ defmodule Mix.Tasks.TrainingWorld.Import do
       Mix.shell().info("  (Use --promote to add to gazetteer)")
     end
 
-    # Checkpoint if persistent
-    case World.Manager.get(world_id) do
+    case Manager.get(world_id) do
       {:ok, world} when world.mode == :persistent ->
         Mix.shell().info("")
         Mix.shell().info("Saving checkpoint...")
-        World.Manager.checkpoint(world_id)
+        Manager.checkpoint(world_id)
         Mix.shell().info("Checkpoint saved.")
 
       _ ->
@@ -889,7 +862,9 @@ defmodule Mix.Tasks.TrainingWorld.Import do
     end
   end
 
-  defp return, do: :ok
+  defp return do
+    :ok
+  end
 
   defp ensure_started do
     Mix.Task.run("app.start")

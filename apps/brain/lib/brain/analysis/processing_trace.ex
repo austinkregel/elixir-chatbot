@@ -1,16 +1,5 @@
 defmodule Brain.Analysis.ProcessingTrace do
-  @moduledoc """
-  Captures and formats the cognitive processing trace for UI visualization.
-
-  This module provides a structured view of what the system considered
-  when processing a user message, including:
-  - Semantic chunking (splitting multi-part messages)
-  - Racing analyzer results per chunk
-  - Fast-path triggers
-  - Backtracking decisions
-  - Slot detection
-  - Final interpretation with alternatives
-  """
+  @moduledoc "Captures and formats the cognitive processing trace for UI visualization.\n\nThis module provides a structured view of what the system considered\nwhen processing a user message, including:\n- Semantic chunking (splitting multi-part messages)\n- Racing analyzer results per chunk\n- Fast-path triggers\n- Backtracking decisions\n- Slot detection\n- Final interpretation with alternatives\n"
 
   alias Brain.Analysis.{
     Interpretation,
@@ -20,27 +9,18 @@ defmodule Brain.Analysis.ProcessingTrace do
     SemanticChunker,
     DiscourseAnalyzer,
     SpeechActClassifier,
-    IntentRegistry
+    IntentRegistry,
+    SlotDetector
   }
-
-  alias Brain.Analysis.SlotDetector
   alias Brain.ML.EntityExtractor
 
-  # Trace for the full message
   defstruct [
-    # Input
     :input_text,
     :timestamp,
-
-    # Chunking
     :chunk_count,
     :chunks,
-
-    # Overall metrics
     :total_processing_time_ms,
     :overall_strategy,
-
-    # Legacy fields for single-chunk display
     :fast_path_triggered,
     :triggering_heuristic,
     :analyzer_results,
@@ -62,7 +42,6 @@ defmodule Brain.Analysis.ProcessingTrace do
     :activation_normalized
   ]
 
-  # Trace for an individual chunk
   defmodule ChunkTrace do
     @moduledoc false
     defstruct [
@@ -92,64 +71,46 @@ defmodule Brain.Analysis.ProcessingTrace do
 
   @type t :: %__MODULE__{}
 
-  @doc """
-  Creates a processing trace from an interpretation and related context.
-  """
+  @doc "Creates a processing trace from an interpretation and related context.\n"
   def from_interpretation(%Interpretation{} = interp, opts \\ []) do
     backtrack_state = Keyword.get(opts, :backtrack_state)
     clarification = Keyword.get(opts, :clarification)
     racing_time = Keyword.get(opts, :racing_time_ms, 0)
-
-    # Calculate total activation
     all_activations = [interp.activation | Enum.map(interp.alternatives, & &1.activation)]
     total = Enum.sum(all_activations)
 
     %__MODULE__{
       input_text: interp.text,
       timestamp: System.system_time(:millisecond),
-
-      # Fast path
       fast_path_triggered: Interpretation.from_heuristic?(interp),
       triggering_heuristic: get_heuristic_info(interp.triggering_heuristic_id),
-
-      # Racing
       analyzer_results: format_analyzer_results(interp.analyzer_results),
       racing_time_ms: racing_time,
-
-      # Primary
       primary_intent: interp.intent,
       primary_activation: Float.round(interp.activation, 3),
       primary_source: interp.source,
       confidence_level: Interpretation.confidence_level(interp),
-
-      # Alternatives
       alternatives: format_alternatives(interp.alternatives),
-
-      # Slots
       entities_found: format_entities(interp.entities),
       slots_filled: get_filled_slots(interp.slots),
       slots_missing: Interpretation.missing_required(interp),
       needs_clarification: Interpretation.has_missing_required?(interp),
-
-      # Backtracking
-      backtrack_count: if(backtrack_state, do: backtrack_state.backtrack_count, else: 0),
+      backtrack_count:
+        if(backtrack_state) do
+          backtrack_state.backtrack_count
+        else
+          0
+        end,
       backtrack_reason: get_backtrack_reason(backtrack_state),
-
-      # Decision
       response_strategy: determine_strategy(interp, clarification),
       clarification_prompt: get_clarification_prompt(clarification),
-
-      # Stability
       total_activation: Float.round(total, 3),
       activation_normalized: total > 1.0
     }
   end
 
-  @doc """
-  Creates a simplified trace for display in the UI.
-  """
+  @doc "Creates a simplified trace for display in the UI.\n"
   def to_display_map(%__MODULE__{} = trace) do
-    # Convert chunk traces for display
     chunks_display =
       (trace.chunks || [])
       |> Enum.map(fn chunk ->
@@ -178,59 +139,36 @@ defmodule Brain.Analysis.ProcessingTrace do
       end)
 
     %{
-      # Multi-chunk info
       chunk_count: trace.chunk_count || 1,
       chunks: chunks_display,
       total_processing_ms: trace.total_processing_time_ms,
       overall_strategy: trace.overall_strategy,
-
-      # Header info (from primary chunk for backwards compatibility)
       intent: trace.primary_intent,
       confidence: format_confidence(trace.primary_activation),
       confidence_level: trace.confidence_level,
       source: format_source(trace.primary_source),
-
-      # What happened
       fast_path: trace.fast_path_triggered,
       heuristic_name: trace.triggering_heuristic && trace.triggering_heuristic[:id],
-
-      # Racing summary
       analyzers: trace.analyzer_results,
       racing_ms: trace.racing_time_ms,
-
-      # Alternatives
       alternatives: trace.alternatives,
-
-      # Context
       entities: trace.entities_found,
       slots_filled: trace.slots_filled,
       slots_missing: trace.slots_missing,
-
-      # Decision
       needs_clarification: trace.needs_clarification,
       clarification: trace.clarification_prompt,
       backtrack_count: trace.backtrack_count,
       backtrack_reason: trace.backtrack_reason,
-
-      # Health
       total_activation: trace.total_activation,
       was_normalized: trace.activation_normalized
     }
   end
 
-  @doc """
-  Runs a full trace of processing for a given input.
-
-  This is the main entry point for the UI to get processing details.
-  Uses semantic chunking to split multi-part messages.
-  """
+  @doc "Runs a full trace of processing for a given input.\n\nThis is the main entry point for the UI to get processing details.\nUses semantic chunking to split multi-part messages.\n"
   def trace_processing(text, opts \\ []) do
     start_time = System.monotonic_time(:millisecond)
-
-    # Step 1: Chunk the input into semantic units
     chunks = SemanticChunker.chunk(text)
 
-    # Step 2: Trace each chunk
     chunk_traces =
       chunks
       |> Enum.with_index()
@@ -239,13 +177,7 @@ defmodule Brain.Analysis.ProcessingTrace do
       end)
 
     total_time = System.monotonic_time(:millisecond) - start_time
-
-    # Step 3: Determine overall strategy
     overall_strategy = determine_overall_strategy(chunk_traces)
-
-    # Step 4: Build the combined trace
-    # For backwards compatibility, also populate the legacy single-interpretation fields
-    # using the most "important" chunk (prioritize questions/commands over greetings)
     primary_chunk = find_primary_chunk(chunk_traces)
 
     trace = %__MODULE__{
@@ -255,8 +187,6 @@ defmodule Brain.Analysis.ProcessingTrace do
       chunks: chunk_traces,
       total_processing_time_ms: total_time,
       overall_strategy: overall_strategy,
-
-      # Legacy fields from primary chunk
       fast_path_triggered: primary_chunk.fast_path_triggered,
       triggering_heuristic: primary_chunk.triggering_heuristic,
       analyzer_results: primary_chunk.analyzer_results,
@@ -278,7 +208,6 @@ defmodule Brain.Analysis.ProcessingTrace do
       activation_normalized: primary_chunk.activation_normalized
     }
 
-    # Return the primary interpretation for compatibility
     primary_interp = build_interpretation_from_chunk(primary_chunk, text)
 
     {trace, primary_interp}
@@ -286,14 +215,10 @@ defmodule Brain.Analysis.ProcessingTrace do
 
   defp trace_single_chunk(chunk_text, index, opts) do
     start_time = System.monotonic_time(:millisecond)
-
-    # Run racing analyzers
     interpretation = RacingAnalyzer.race(chunk_text, opts)
 
     racing_time = System.monotonic_time(:millisecond) - start_time
 
-    # Extract discourse and speech_act context for proper entity disambiguation
-    # This ensures entities are disambiguated with the same context as the main pipeline
     discourse_result =
       try do
         DiscourseAnalyzer.analyze(chunk_text, [])
@@ -312,13 +237,9 @@ defmodule Brain.Analysis.ProcessingTrace do
         _ -> nil
       end
 
-    # Extract entities with proper disambiguation context
     entity_opts =
       opts ++
-        [
-          discourse: discourse_result,
-          speech_act: speech_act_result
-        ]
+        [discourse: discourse_result, speech_act: speech_act_result]
 
     entities =
       try do
@@ -331,7 +252,6 @@ defmodule Brain.Analysis.ProcessingTrace do
 
     interpretation = Interpretation.with_entities(interpretation, entities)
 
-    # Detect slots
     slots =
       if interpretation.intent do
         SlotDetector.detect(interpretation.intent, entities)
@@ -340,8 +260,6 @@ defmodule Brain.Analysis.ProcessingTrace do
       end
 
     interpretation = Interpretation.with_slots(interpretation, slots)
-
-    # Check for contradictions
     backtrack_state = BacktrackController.new(chunk_text)
 
     {final_interp, final_backtrack, clarification} =
@@ -353,7 +271,6 @@ defmodule Brain.Analysis.ProcessingTrace do
           handle_backtrack(interpretation, backtrack_state, reason)
       end
 
-    # Calculate total activation
     all_activations = [
       final_interp.activation | Enum.map(final_interp.alternatives, & &1.activation)
     ]
@@ -397,11 +314,11 @@ defmodule Brain.Analysis.ProcessingTrace do
     end
   end
 
-  defp find_primary_chunk([]), do: %ChunkTrace{}
+  defp find_primary_chunk([]) do
+    %ChunkTrace{}
+  end
 
   defp find_primary_chunk(chunk_traces) do
-    # Priority: questions/commands > weather > other substantive > greetings
-    # Using IntentRegistry domain checks instead of string prefix matching
     priority_domains = [
       :question,
       :weather,
@@ -443,18 +360,14 @@ defmodule Brain.Analysis.ProcessingTrace do
     end
   end
 
-  # Private functions
-
   defp handle_backtrack(interp, state, reason) do
     case BacktrackController.attempt_backtrack(state, interp, reason) do
       {:ok, new_state, new_interp, _cost} ->
-        # Check the new interpretation
         case BacktrackController.check_for_contradictions(new_interp) do
           :ok ->
             {new_interp, new_state, nil}
 
           {:needs_backtrack, new_reason} ->
-            # Try again if we have budget
             handle_backtrack(new_interp, new_state, new_reason)
         end
 
@@ -466,7 +379,9 @@ defmodule Brain.Analysis.ProcessingTrace do
     end
   end
 
-  defp get_heuristic_info(nil), do: nil
+  defp get_heuristic_info(nil) do
+    nil
+  end
 
   defp get_heuristic_info(heuristic_id) do
     case HeuristicStore.get(heuristic_id) do
@@ -490,7 +405,9 @@ defmodule Brain.Analysis.ProcessingTrace do
     |> Enum.take(5)
   end
 
-  defp format_analyzer_results(_), do: []
+  defp format_analyzer_results(_) do
+    []
+  end
 
   defp format_alternatives(alternatives) when is_list(alternatives) do
     alternatives
@@ -504,7 +421,9 @@ defmodule Brain.Analysis.ProcessingTrace do
     end)
   end
 
-  defp format_alternatives(_), do: []
+  defp format_alternatives(_) do
+    []
+  end
 
   defp format_entities(entities) when is_list(entities) do
     Enum.map(entities, fn e ->
@@ -516,9 +435,13 @@ defmodule Brain.Analysis.ProcessingTrace do
     end)
   end
 
-  defp format_entities(_), do: []
+  defp format_entities(_) do
+    []
+  end
 
-  defp get_filled_slots(nil), do: %{}
+  defp get_filled_slots(nil) do
+    %{}
+  end
 
   defp get_filled_slots(%{filled_slots: slots}) when is_map(slots) do
     Map.new(slots, fn {k, v} ->
@@ -532,20 +455,37 @@ defmodule Brain.Analysis.ProcessingTrace do
     end)
   end
 
-  defp get_filled_slots(_), do: %{}
+  defp get_filled_slots(_) do
+    %{}
+  end
 
-  defp get_backtrack_reason(nil), do: nil
+  defp get_backtrack_reason(nil) do
+    nil
+  end
 
   defp get_backtrack_reason(%{demoted_interpretations: [%{reason: reason} | _]}) do
     format_backtrack_reason(reason)
   end
 
-  defp get_backtrack_reason(_), do: nil
+  defp get_backtrack_reason(_) do
+    nil
+  end
 
-  defp format_backtrack_reason({:missing_required, slots}), do: "Missing: #{inspect(slots)}"
-  defp format_backtrack_reason({:entity_mismatch, msg}), do: "Entity mismatch: #{msg}"
-  defp format_backtrack_reason({:low_confidence, val}), do: "Low confidence: #{val}"
-  defp format_backtrack_reason(other), do: inspect(other)
+  defp format_backtrack_reason({:missing_required, slots}) do
+    "Missing: #{inspect(slots)}"
+  end
+
+  defp format_backtrack_reason({:entity_mismatch, msg}) do
+    "Entity mismatch: #{msg}"
+  end
+
+  defp format_backtrack_reason({:low_confidence, val}) do
+    "Low confidence: #{val}"
+  end
+
+  defp format_backtrack_reason(other) do
+    inspect(other)
+  end
 
   defp determine_strategy(interp, clarification) do
     cond do
@@ -556,24 +496,38 @@ defmodule Brain.Analysis.ProcessingTrace do
     end
   end
 
-  defp get_clarification_prompt(nil), do: nil
-  defp get_clarification_prompt(%{prompt: prompt}), do: prompt
-  defp get_clarification_prompt(_), do: nil
+  defp get_clarification_prompt(nil) do
+    nil
+  end
+
+  defp get_clarification_prompt(%{prompt: prompt}) do
+    prompt
+  end
+
+  defp get_clarification_prompt(_) do
+    nil
+  end
 
   defp format_confidence(activation) when is_float(activation) do
     "#{round(activation * 100)}%"
   end
 
-  defp format_confidence(_), do: "0%"
+  defp format_confidence(_) do
+    "0%"
+  end
 
   defp format_source(source) when is_atom(source) do
     source
     |> Atom.to_string()
     |> String.replace("_", " ")
     |> String.split()
-    |> Enum.map(&String.capitalize/1)
-    |> Enum.join(" ")
+    |> Enum.map_join(
+      " ",
+      &String.capitalize/1
+    )
   end
 
-  defp format_source(_), do: "Unknown"
+  defp format_source(_) do
+    "Unknown"
+  end
 end

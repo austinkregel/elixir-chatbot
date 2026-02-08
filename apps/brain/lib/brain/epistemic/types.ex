@@ -1,33 +1,8 @@
 defmodule Brain.Epistemic.Types do
-  @moduledoc """
-  Core type definitions for the Epistemic Truth Maintenance System.
-
-  This module defines the fundamental structures used throughout the
-  epistemic layer:
-
-  - Belief: A piece of knowledge with confidence, source, and provenance
-  - Justification: Links beliefs in a dependency network (JTMS)
-  - Node: A node in the JTMS dependency network
-  - UserModel: Aggregated knowledge about a specific user
-  - SelfKnowledgeAssessment: Result of analyzing what the system knows
-  - DisclosureDecision: Whether and how to share a piece of knowledge
-  """
-
-  # ============================================================================
-  # Belief - Core knowledge representation
-  # ============================================================================
+  @moduledoc "Core type definitions for the Epistemic Truth Maintenance System.\n\nThis module defines the fundamental structures used throughout the\nepistemic layer:\n\n- Belief: A piece of knowledge with confidence, source, and provenance\n- Justification: Links beliefs in a dependency network (JTMS)\n- Node: A node in the JTMS dependency network\n- UserModel: Aggregated knowledge about a specific user\n- SelfKnowledgeAssessment: Result of analyzing what the system knows\n- DisclosureDecision: Whether and how to share a piece of knowledge\n"
 
   defmodule Belief do
-    @moduledoc """
-    A belief represents a piece of knowledge the system holds about
-    a subject (user, world, or self).
-
-    Each belief tracks:
-    - What it's about (subject/predicate/object triple)
-    - How confident we are (0.0 - 1.0)
-    - Where it came from (source and provenance)
-    - How stable it is (volatility)
-    """
+    @moduledoc "A belief represents a piece of knowledge the system holds about\na subject (user, world, or self).\n\nEach belief tracks:\n- What it's about (subject/predicate/object triple)\n- How confident we are (0.0 - 1.0)\n- Where it came from (source and provenance)\n- How stable it is (volatility)\n"
 
     @type source :: :explicit | :inferred | :assumed | :default | :learned
     @type subject :: :user | :world | :self | String.t()
@@ -64,9 +39,7 @@ defmodule Brain.Epistemic.Types do
       metadata: %{}
     ]
 
-    @doc """
-    Creates a new belief with auto-generated ID and timestamp.
-    """
+    @doc "Creates a new belief with auto-generated ID and timestamp.\n"
     def new(subject, predicate, object, opts \\ []) do
       %__MODULE__{
         id: generate_id(),
@@ -85,37 +58,39 @@ defmodule Brain.Epistemic.Types do
       }
     end
 
-    @doc """
-    Updates the confidence of a belief, optionally confirming it.
-    """
+    @doc "Updates the confidence of a belief, optionally confirming it.\n"
     def update_confidence(%__MODULE__{} = belief, new_confidence, confirm? \\ false) do
       belief
       |> Map.put(:confidence, clamp(new_confidence, 0.0, 1.0))
       |> maybe_confirm(confirm?)
     end
 
-    @doc """
-    Marks the belief as confirmed now.
-    """
+    @doc "Marks the belief as confirmed now.\n"
     def confirm(%__MODULE__{} = belief) do
       %{belief | last_confirmed: DateTime.utc_now()}
     end
 
-    @doc """
-    Checks if this belief is considered "high confidence" (>= threshold).
-    """
+    @doc "Checks if this belief is considered \"high confidence\" (>= threshold).\n"
     def high_confidence?(%__MODULE__{confidence: conf}, threshold \\ 0.7) do
       conf >= threshold
     end
 
-    @doc """
-    Checks if this belief is from an explicit user statement.
-    """
-    def explicit?(%__MODULE__{source: :explicit}), do: true
-    def explicit?(_), do: false
+    @doc "Checks if this belief is from an explicit user statement.\n"
+    def explicit?(%__MODULE__{source: :explicit}) do
+      true
+    end
 
-    defp maybe_confirm(belief, true), do: confirm(belief)
-    defp maybe_confirm(belief, false), do: belief
+    def explicit?(_) do
+      false
+    end
+
+    defp maybe_confirm(belief, true) do
+      confirm(belief)
+    end
+
+    defp maybe_confirm(belief, false) do
+      belief
+    end
 
     defp clamp(value, min, max) do
       value |> max(min) |> min(max)
@@ -126,22 +101,8 @@ defmodule Brain.Epistemic.Types do
     end
   end
 
-  # ============================================================================
-  # JTMS Node - Node in the dependency network
-  # ============================================================================
-
   defmodule Node do
-    @moduledoc """
-    A node in the JTMS dependency network.
-
-    Nodes can be:
-    - Premises (unconditionally true)
-    - Assumptions (can be enabled/retracted)
-    - Derived (justified by other nodes)
-    - Contradictions (mark inconsistent states)
-
-    The label (:in or :out) indicates the current belief status.
-    """
+    @moduledoc "A node in the JTMS dependency network.\n\nNodes can be:\n- Premises (unconditionally true)\n- Assumptions (can be enabled/retracted)\n- Derived (justified by other nodes)\n- Contradictions (mark inconsistent states)\n\nThe label (:in or :out) indicates the current belief status.\n"
 
     @type label :: :in | :out
     @type node_type :: :premise | :assumption | :derived | :contradiction
@@ -168,9 +129,7 @@ defmodule Brain.Epistemic.Types do
       metadata: %{}
     ]
 
-    @doc """
-    Creates a new node.
-    """
+    @doc "Creates a new node.\n"
     def new(datum, opts \\ []) do
       node_type = Keyword.get(opts, :node_type, :derived)
 
@@ -184,65 +143,62 @@ defmodule Brain.Epistemic.Types do
       }
     end
 
-    @doc """
-    Creates a premise node (always IN).
-    """
+    @doc "Creates a premise node (always IN).\n"
     def premise(datum, opts \\ []) do
       new(datum, Keyword.merge(opts, node_type: :premise))
     end
 
-    @doc """
-    Creates an assumption node.
-    """
+    @doc "Creates an assumption node.\n"
     def assumption(datum, enabled? \\ false, opts \\ []) do
       new(datum, Keyword.merge(opts, node_type: :assumption, assumption_enabled: enabled?))
     end
 
-    @doc """
-    Creates a contradiction marker node.
-    """
+    @doc "Creates a contradiction marker node.\n"
     def contradiction(datum, opts \\ []) do
       new(datum, Keyword.merge(opts, node_type: :contradiction))
     end
 
-    @doc """
-    Checks if the node is currently IN.
-    """
-    def in?(%__MODULE__{label: :in}), do: true
-    def in?(_), do: false
+    @doc "Checks if the node is currently IN.\n"
+    def in?(%__MODULE__{label: :in}) do
+      true
+    end
 
-    @doc """
-    Checks if the node is currently OUT.
-    """
-    def out?(%__MODULE__{label: :out}), do: true
-    def out?(_), do: false
+    def in?(_) do
+      false
+    end
 
-    defp initial_label(:premise, _opts), do: :in
+    @doc "Checks if the node is currently OUT.\n"
+    def out?(%__MODULE__{label: :out}) do
+      true
+    end
 
-    defp initial_label(:assumption, opts),
-      do: if(Keyword.get(opts, :assumption_enabled), do: :in, else: :out)
+    def out?(_) do
+      false
+    end
 
-    defp initial_label(_, _opts), do: :out
+    defp initial_label(:premise, _opts) do
+      :in
+    end
+
+    defp initial_label(:assumption, opts) do
+      if(Keyword.get(opts, :assumption_enabled)) do
+        :in
+      else
+        :out
+      end
+    end
+
+    defp initial_label(_, _opts) do
+      :out
+    end
 
     defp generate_id do
       :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
     end
   end
 
-  # ============================================================================
-  # Justification - Links in the dependency network
-  # ============================================================================
-
   defmodule Justification do
-    @moduledoc """
-    A justification links premise nodes to a conclusion node.
-
-    In JTMS, a justification is valid (label = :in) when:
-    - All nodes in the in_list are IN
-    - All nodes in the out_list are OUT
-
-    When valid, the justification supports its conclusion being IN.
-    """
+    @moduledoc "A justification links premise nodes to a conclusion node.\n\nIn JTMS, a justification is valid (label = :in) when:\n- All nodes in the in_list are IN\n- All nodes in the out_list are OUT\n\nWhen valid, the justification supports its conclusion being IN.\n"
 
     @type label :: :in | :out
 
@@ -255,23 +211,9 @@ defmodule Brain.Epistemic.Types do
             label: label()
           }
 
-    defstruct [
-      :id,
-      :conclusion_id,
-      :informant,
-      in_list: [],
-      out_list: [],
-      label: :out
-    ]
+    defstruct [:id, :conclusion_id, :informant, in_list: [], out_list: [], label: :out]
 
-    @doc """
-    Creates a new justification.
-
-    - in_list: Node IDs that must be IN for this justification to be valid
-    - out_list: Node IDs that must be OUT for this justification to be valid
-    - conclusion_id: The node this justification supports
-    - informant: What/who created this justification
-    """
+    @doc "Creates a new justification.\n\n- in_list: Node IDs that must be IN for this justification to be valid\n- out_list: Node IDs that must be OUT for this justification to be valid\n- conclusion_id: The node this justification supports\n- informant: What/who created this justification\n"
     def new(in_list, out_list, conclusion_id, informant) do
       %__MODULE__{
         id: generate_id(),
@@ -283,18 +225,12 @@ defmodule Brain.Epistemic.Types do
       }
     end
 
-    @doc """
-    Creates a simple justification (no out_list).
-    """
+    @doc "Creates a simple justification (no out_list).\n"
     def simple(premise_ids, conclusion_id, informant) when is_list(premise_ids) do
       new(premise_ids, [], conclusion_id, informant)
     end
 
-    @doc """
-    Checks if this justification would be valid given node labels.
-
-    Returns true if all in_list nodes are :in and all out_list nodes are :out.
-    """
+    @doc "Checks if this justification would be valid given node labels.\n\nReturns true if all in_list nodes are :in and all out_list nodes are :out.\n"
     def valid?(justification, node_labels) when is_map(node_labels) do
       all_in_are_in =
         Enum.all?(justification.in_list, fn id ->
@@ -314,21 +250,8 @@ defmodule Brain.Epistemic.Types do
     end
   end
 
-  # ============================================================================
-  # UserModel - Aggregated user knowledge
-  # ============================================================================
-
   defmodule UserModel do
-    @moduledoc """
-    An explicit, inspectable model of what the system knows about a user.
-
-    The UserModel aggregates beliefs about a specific user and tracks:
-    - Facts with their values
-    - Interaction patterns
-    - Epistemic bounds (confidence per fact)
-    - Provenance (how each fact was learned)
-    - Disclosure history (what has been shared)
-    """
+    @moduledoc "An explicit, inspectable model of what the system knows about a user.\n\nThe UserModel aggregates beliefs about a specific user and tracks:\n- Facts with their values\n- Interaction patterns\n- Epistemic bounds (confidence per fact)\n- Provenance (how each fact was learned)\n- Disclosure history (what has been shared)\n"
 
     @type provenance :: :explicit | :inferred | :assumed | :learned
 
@@ -354,9 +277,7 @@ defmodule Brain.Epistemic.Types do
       disclosure_history: []
     ]
 
-    @doc """
-    Creates a new UserModel for the given user ID.
-    """
+    @doc "Creates a new UserModel for the given user ID.\n"
     def new(user_id) do
       now = DateTime.utc_now()
 
@@ -367,9 +288,7 @@ defmodule Brain.Epistemic.Types do
       }
     end
 
-    @doc """
-    Updates a fact in the user model.
-    """
+    @doc "Updates a fact in the user model.\n"
     def update_fact(%__MODULE__{} = model, key, value, source, confidence) do
       %{
         model
@@ -380,9 +299,7 @@ defmodule Brain.Epistemic.Types do
       }
     end
 
-    @doc """
-    Gets a fact with its confidence and provenance.
-    """
+    @doc "Gets a fact with its confidence and provenance.\n"
     def get_fact(%__MODULE__{} = model, key) do
       case Map.get(model.facts, key) do
         nil ->
@@ -397,9 +314,7 @@ defmodule Brain.Epistemic.Types do
       end
     end
 
-    @doc """
-    Gets all facts above a confidence threshold.
-    """
+    @doc "Gets all facts above a confidence threshold.\n"
     def get_facts_above_confidence(%__MODULE__{} = model, min_confidence) do
       model.facts
       |> Enum.filter(fn {key, _value} ->
@@ -415,9 +330,7 @@ defmodule Brain.Epistemic.Types do
       end)
     end
 
-    @doc """
-    Records an interaction pattern.
-    """
+    @doc "Records an interaction pattern.\n"
     def record_pattern(%__MODULE__{} = model, pattern_type, data) do
       current = Map.get(model.interaction_patterns, pattern_type, [])
       updated = [data | current] |> Enum.take(100)
@@ -429,9 +342,7 @@ defmodule Brain.Epistemic.Types do
       }
     end
 
-    @doc """
-    Records that something was disclosed to the user.
-    """
+    @doc "Records that something was disclosed to the user.\n"
     def record_disclosure(%__MODULE__{} = model, disclosed_keys, context) do
       entry = %{
         keys: disclosed_keys,
@@ -447,22 +358,8 @@ defmodule Brain.Epistemic.Types do
     end
   end
 
-  # ============================================================================
-  # SelfKnowledgeAssessment - What the system knows it knows
-  # ============================================================================
-
   defmodule SelfKnowledgeAssessment do
-    @moduledoc """
-    The result of the system analyzing what it knows about a user.
-
-    Used to construct self-referential responses like:
-    "From what I remember, you mentioned X..."
-
-    Categorizes knowledge into:
-    - discloseable: Safe to share with confidence
-    - inferred_uncertain: Share with hedging
-    - should_avoid: Don't disclose (too personal, too uncertain, etc.)
-    """
+    @moduledoc "The result of the system analyzing what it knows about a user.\n\nUsed to construct self-referential responses like:\n\"From what I remember, you mentioned X...\"\n\nCategorizes knowledge into:\n- discloseable: Safe to share with confidence\n- inferred_uncertain: Share with hedging\n- should_avoid: Don't disclose (too personal, too uncertain, etc.)\n"
 
     @type knowledge_item :: %{
             key: atom() | String.t(),
@@ -489,9 +386,7 @@ defmodule Brain.Epistemic.Types do
       total_facts: 0
     ]
 
-    @doc """
-    Creates a new assessment for the given user.
-    """
+    @doc "Creates a new assessment for the given user.\n"
     def new(user_id) do
       %__MODULE__{
         user_id: user_id,
@@ -499,9 +394,7 @@ defmodule Brain.Epistemic.Types do
       }
     end
 
-    @doc """
-    Builds an assessment from a UserModel.
-    """
+    @doc "Builds an assessment from a UserModel.\n"
     def from_user_model(%UserModel{} = model, opts \\ []) do
       high_conf_threshold = Keyword.get(opts, :high_confidence, 0.7)
       low_conf_threshold = Keyword.get(opts, :low_confidence, 0.4)
@@ -531,27 +424,14 @@ defmodule Brain.Epistemic.Types do
       }
     end
 
-    @doc """
-    Checks if the assessment has any knowledge to share.
-    """
+    @doc "Checks if the assessment has any knowledge to share.\n"
     def has_knowledge?(%__MODULE__{discloseable: d, inferred_uncertain: i}) do
-      length(d) > 0 or length(i) > 0
+      d != [] or i != []
     end
   end
 
-  # ============================================================================
-  # DisclosureDecision - Whether/how to share knowledge
-  # ============================================================================
-
   defmodule DisclosureDecision do
-    @moduledoc """
-    The result of evaluating whether a piece of knowledge should be disclosed.
-
-    Answers the validation questions:
-    - V6: Is this socially appropriate to disclose?
-    - V7: Would this sound creepy if said confidently?
-    - V8: Should I hedge, ask permission, or generalize?
-    """
+    @moduledoc "The result of evaluating whether a piece of knowledge should be disclosed.\n\nAnswers the validation questions:\n- V6: Is this socially appropriate to disclose?\n- V7: Would this sound creepy if said confidently?\n- V8: Should I hedge, ask permission, or generalize?\n"
 
     @type hedging_level :: :none | :light | :strong
 
@@ -573,9 +453,7 @@ defmodule Brain.Epistemic.Types do
       ask_permission: false
     ]
 
-    @doc """
-    Creates a decision to disclose with no hedging.
-    """
+    @doc "Creates a decision to disclose with no hedging.\n"
     def disclose(reason \\ "High confidence explicit fact") do
       %__MODULE__{
         should_disclose: true,
@@ -584,9 +462,7 @@ defmodule Brain.Epistemic.Types do
       }
     end
 
-    @doc """
-    Creates a decision to disclose with hedging.
-    """
+    @doc "Creates a decision to disclose with hedging.\n"
     def disclose_with_hedging(level, reason) do
       %__MODULE__{
         should_disclose: true,
@@ -595,9 +471,7 @@ defmodule Brain.Epistemic.Types do
       }
     end
 
-    @doc """
-    Creates a decision to not disclose.
-    """
+    @doc "Creates a decision to not disclose.\n"
     def do_not_disclose(reason) do
       %__MODULE__{
         should_disclose: false,
@@ -605,9 +479,7 @@ defmodule Brain.Epistemic.Types do
       }
     end
 
-    @doc """
-    Creates a decision to ask permission first.
-    """
+    @doc "Creates a decision to ask permission first.\n"
     def ask_first(reason) do
       %__MODULE__{
         should_disclose: false,
@@ -617,16 +489,8 @@ defmodule Brain.Epistemic.Types do
     end
   end
 
-  # ============================================================================
-  # Configuration for epistemic features
-  # ============================================================================
-
   defmodule Config do
-    @moduledoc """
-    Configuration options for the epistemic system.
-
-    Allows enabling/disabling features for testing reproducibility.
-    """
+    @moduledoc "Configuration options for the epistemic system.\n\nAllows enabling/disabling features for testing reproducibility.\n"
 
     @type t :: %__MODULE__{
             enabled: boolean(),
@@ -644,9 +508,7 @@ defmodule Brain.Epistemic.Types do
               high_confidence_threshold: 0.7,
               low_confidence_threshold: 0.4
 
-    @doc """
-    Gets the current epistemic configuration.
-    """
+    @doc "Gets the current epistemic configuration.\n"
     def get do
       config = Application.get_env(:brain, :epistemic, [])
 
@@ -660,24 +522,18 @@ defmodule Brain.Epistemic.Types do
       }
     end
 
-    @doc """
-    Checks if epistemic features are enabled.
-    """
+    @doc "Checks if epistemic features are enabled.\n"
     def enabled? do
       get().enabled
     end
 
-    @doc """
-    Checks if automatic belief extraction is enabled.
-    """
+    @doc "Checks if automatic belief extraction is enabled.\n"
     def auto_extraction_enabled? do
       config = get()
       config.enabled and config.auto_belief_extraction
     end
 
-    @doc """
-    Checks if reflection is synchronous.
-    """
+    @doc "Checks if reflection is synchronous.\n"
     def sync_reflection? do
       get().reflection_mode == :sync
     end

@@ -1,11 +1,7 @@
 defmodule Brain.Analysis.Progress do
-  @moduledoc """
-  Lightweight progress reporting for the analysis pipeline.
+  @moduledoc "Lightweight progress reporting for the analysis pipeline.\n\nWhen `:progress` is present in opts (with `:conversation_id` and `:message_id`),\nthis module broadcasts LiveView-friendly events on the `brain:analysis` topic.\n"
 
-  When `:progress` is present in opts (with `:conversation_id` and `:message_id`),
-  this module broadcasts LiveView-friendly events on the `brain:analysis` topic.
-  """
-
+  alias Phoenix.PubSub
   @topic "brain:analysis"
 
   @spec report(keyword(), atom(), map()) :: :ok
@@ -26,7 +22,7 @@ defmodule Brain.Analysis.Progress do
           |> Map.put(:message_id, message_id)
           |> Map.put_new(:timestamp, System.system_time(:millisecond))
 
-        Phoenix.PubSub.broadcast(Brain.PubSub, @topic, {:analysis_progress, payload})
+        PubSub.broadcast(Brain.PubSub, @topic, {:analysis_progress, payload})
       end
     end
 

@@ -1,30 +1,11 @@
 defmodule Brain.Knowledge.Types do
-  @moduledoc """
-  Type definitions for the Knowledge Expansion System.
+  @moduledoc "Type definitions for the Knowledge Expansion System.\n\nProvides structs for representing research goals, findings, source information,\nreview candidates, learning sessions, and scientific investigation types.\n\n## Scientific Method Model\n\nThe knowledge expansion system follows the scientific method:\n\n1. **Observation** → User inputs, training data\n2. **Hypothesis** → Testable claims derived from questions\n3. **Investigation** → Systematic evidence gathering\n4. **Evidence** → Findings from sources (Finding struct)\n5. **Falsification** → Contradicting evidence falsifies hypotheses\n6. **Support** → Agreeing evidence supports hypotheses\n7. **Accumulation** → Knowledge builds through multiple investigations\n\nKey principle: We cannot prove a hypothesis true, only support it with evidence\nor falsify it with contradicting evidence.\n"
 
-  Provides structs for representing research goals, findings, source information,
-  review candidates, learning sessions, and scientific investigation types.
-
-  ## Scientific Method Model
-
-  The knowledge expansion system follows the scientific method:
-
-  1. **Observation** → User inputs, training data
-  2. **Hypothesis** → Testable claims derived from questions
-  3. **Investigation** → Systematic evidence gathering
-  4. **Evidence** → Findings from sources (Finding struct)
-  5. **Falsification** → Contradicting evidence falsifies hypotheses
-  6. **Support** → Agreeing evidence supports hypotheses
-  7. **Accumulation** → Knowledge builds through multiple investigations
-
-  Key principle: We cannot prove a hypothesis true, only support it with evidence
-  or falsify it with contradicting evidence.
-  """
+  alias Brain.Knowledge.Types
+  alias Brain.LinguisticData
 
   defmodule SourceInfo do
-    @moduledoc """
-    Information about a content source including reliability and bias metrics.
-    """
+    @moduledoc "Information about a content source including reliability and bias metrics.\n"
 
     @type bias_rating ::
             :left | :center_left | :center | :center_right | :right | :unknown
@@ -52,9 +33,7 @@ defmodule Brain.Knowledge.Types do
       trust_tier: :neutral
     ]
 
-    @doc """
-    Creates a new SourceInfo from a URL.
-    """
+    @doc "Creates a new SourceInfo from a URL.\n"
     def new(url, opts \\ []) when is_binary(url) do
       domain = extract_domain(url)
 
@@ -69,19 +48,15 @@ defmodule Brain.Knowledge.Types do
       }
     end
 
-    @doc """
-    Extracts the domain from a URL.
-    """
+    @doc "Extracts the domain from a URL.\n"
     def extract_domain(url) when is_binary(url) do
       case URI.parse(url) do
         %URI{host: host} when is_binary(host) ->
-          # Remove www. prefix if present
           host
           |> String.replace_leading("www.", "")
           |> String.downcase()
 
         _ ->
-          # Fallback for malformed URLs
           url
           |> String.downcase()
           |> String.replace_leading("http://", "")
@@ -94,9 +69,7 @@ defmodule Brain.Knowledge.Types do
   end
 
   defmodule Finding do
-    @moduledoc """
-    A factual claim extracted from a source.
-    """
+    @moduledoc "A factual claim extracted from a source.\n"
 
     alias Brain.Knowledge.Types.SourceInfo
 
@@ -127,9 +100,7 @@ defmodule Brain.Knowledge.Types do
       confidence: 0.5
     ]
 
-    @doc """
-    Creates a new Finding with a generated ID.
-    """
+    @doc "Creates a new Finding with a generated ID.\n"
     def new(claim, entity, source, opts \\ []) do
       %__MODULE__{
         id: generate_id(),
@@ -151,49 +122,7 @@ defmodule Brain.Knowledge.Types do
   end
 
   defmodule Hypothesis do
-    @moduledoc """
-    A testable claim derived from a research question.
-
-    Following the scientific method, a hypothesis must be:
-    - **Falsifiable**: Can be proven false with evidence
-    - **Testable**: Evidence can be gathered to evaluate it
-    - **Specific**: Clear enough to test
-
-    A hypothesis cannot be "proven true" - it can only be supported
-    by evidence or falsified by contradicting evidence.
-
-    ## Predictions
-
-    Each hypothesis includes a prediction - an "If/Then" statement that
-    describes the expected results if the hypothesis is true:
-    
-    > "If the hypothesis is true, then the results of the experiment will be..."
-
-    If predictions are confirmed, the hypothesis is supported.
-    If predictions are not supported, the hypothesis is falsified.
-
-    ## Replication
-
-    Repeating the experiment (finding multiple sources) increases confidence.
-    We should not expect exactly the same answer each time - variation is normal.
-    Replication enables us to see variation and obtain an average result.
-
-    ## States
-
-    - `:untested` - No evidence gathered yet
-    - `:testing` - Currently gathering evidence
-    - `:supported` - Evidence supports the hypothesis (not proven!)
-    - `:falsified` - Contradicting evidence disproves the hypothesis
-    - `:inconclusive` - Mixed or insufficient evidence
-
-    ## Example
-
-        hypothesis = Hypothesis.new(
-          "Paris is the capital of France",
-          derived_from: "What is the capital of France?",
-          prediction: "If Paris is the capital, then authoritative sources will confirm this."
-        )
-    """
+    @moduledoc "A testable claim derived from a research question.\n\nFollowing the scientific method, a hypothesis must be:\n- **Falsifiable**: Can be proven false with evidence\n- **Testable**: Evidence can be gathered to evaluate it\n- **Specific**: Clear enough to test\n\nA hypothesis cannot be \"proven true\" - it can only be supported\nby evidence or falsified by contradicting evidence.\n\n## Predictions\n\nEach hypothesis includes a prediction - an \"If/Then\" statement that\ndescribes the expected results if the hypothesis is true:\n\n> \"If the hypothesis is true, then the results of the experiment will be...\"\n\nIf predictions are confirmed, the hypothesis is supported.\nIf predictions are not supported, the hypothesis is falsified.\n\n## Replication\n\nRepeating the experiment (finding multiple sources) increases confidence.\nWe should not expect exactly the same answer each time - variation is normal.\nReplication enables us to see variation and obtain an average result.\n\n## States\n\n- `:untested` - No evidence gathered yet\n- `:testing` - Currently gathering evidence\n- `:supported` - Evidence supports the hypothesis (not proven!)\n- `:falsified` - Contradicting evidence disproves the hypothesis\n- `:inconclusive` - Mixed or insufficient evidence\n\n## Example\n\n    hypothesis = Hypothesis.new(\n      \"Paris is the capital of France\",\n      derived_from: \"What is the capital of France?\",\n      prediction: \"If Paris is the capital, then authoritative sources will confirm this.\"\n    )\n"
 
     alias Brain.Knowledge.Types.Finding
 
@@ -235,14 +164,7 @@ defmodule Brain.Knowledge.Types do
       replication_count: 0
     ]
 
-    @doc """
-    Creates a new hypothesis from a claim.
-
-    ## Options
-      - :entity - The entity this hypothesis is about
-      - :derived_from - The question that generated this hypothesis
-      - :prediction - The expected outcome if hypothesis is true (If/Then)
-    """
+    @doc "Creates a new hypothesis from a claim.\n\n## Options\n  - :entity - The entity this hypothesis is about\n  - :derived_from - The question that generated this hypothesis\n  - :prediction - The expected outcome if hypothesis is true (If/Then)\n"
     def new(claim, opts \\ []) when is_binary(claim) do
       prediction = Keyword.get(opts, :prediction) || generate_prediction(claim)
 
@@ -257,70 +179,58 @@ defmodule Brain.Knowledge.Types do
       }
     end
 
-    # Generate a default prediction from the claim
     defp generate_prediction(claim) do
       "If #{claim} is true, then independent sources will confirm this claim."
     end
 
-    @doc """
-    Adds supporting evidence to a hypothesis.
-
-    Supporting evidence increases confidence but does NOT prove the hypothesis.
-    """
+    @doc "Adds supporting evidence to a hypothesis.\n\nSupporting evidence increases confidence but does NOT prove the hypothesis.\n"
     def add_supporting_evidence(%__MODULE__{} = hypothesis, %Finding{} = finding) do
-      # Track replication: evidence from same domain counts as replication
-      is_replication = Enum.any?(hypothesis.supporting_evidence, fn existing ->
-        existing.source.domain == finding.source.domain
-      end)
+      is_replication =
+        Enum.any?(hypothesis.supporting_evidence, fn existing ->
+          existing.source.domain == finding.source.domain
+        end)
 
-      updated = %{hypothesis |
-        supporting_evidence: [finding | hypothesis.supporting_evidence],
-        source_count: hypothesis.source_count + 1,
-        replication_count: if(is_replication, do: hypothesis.replication_count + 1, else: hypothesis.replication_count),
-        status: :testing
+      updated = %{
+        hypothesis
+        | supporting_evidence: [finding | hypothesis.supporting_evidence],
+          source_count: hypothesis.source_count + 1,
+          replication_count:
+            if(is_replication) do
+              hypothesis.replication_count + 1
+            else
+              hypothesis.replication_count
+            end,
+          status: :testing
       }
+
       recalculate_confidence(updated)
     end
 
-    @doc """
-    Adds contradicting evidence to a hypothesis.
-
-    Contradicting evidence from reliable sources can falsify the hypothesis.
-    """
+    @doc "Adds contradicting evidence to a hypothesis.\n\nContradicting evidence from reliable sources can falsify the hypothesis.\n"
     def add_contradicting_evidence(%__MODULE__{} = hypothesis, %Finding{} = finding) do
-      updated = %{hypothesis |
-        contradicting_evidence: [finding | hypothesis.contradicting_evidence],
-        source_count: hypothesis.source_count + 1,
-        status: :testing
+      updated = %{
+        hypothesis
+        | contradicting_evidence: [finding | hypothesis.contradicting_evidence],
+          source_count: hypothesis.source_count + 1,
+          status: :testing
       }
+
       recalculate_confidence(updated)
     end
 
-    @doc """
-    Evaluates the hypothesis based on accumulated evidence.
-
-    Returns the hypothesis with updated status:
-    - `:supported` if supporting evidence outweighs contradicting
-    - `:falsified` if reliable contradicting evidence exists
-    - `:inconclusive` if evidence is mixed or insufficient
-    """
+    @doc "Evaluates the hypothesis based on accumulated evidence.\n\nReturns the hypothesis with updated status:\n- `:supported` if supporting evidence outweighs contradicting\n- `:falsified` if reliable contradicting evidence exists\n- `:inconclusive` if evidence is mixed or insufficient\n"
     def evaluate(%__MODULE__{} = hypothesis) do
       supporting_count = length(hypothesis.supporting_evidence)
       contradicting_count = length(hypothesis.contradicting_evidence)
-
-      # Calculate average reliability of contradicting evidence
       contradicting_reliability = average_reliability(hypothesis.contradicting_evidence)
 
       cond do
-        # Falsified: reliable contradicting evidence exists
         contradicting_count > 0 and contradicting_reliability >= 0.6 ->
           %{hypothesis | status: :falsified, tested_at: DateTime.utc_now()}
 
-        # Supported: multiple supporting sources, no contradictions
         supporting_count >= 2 and contradicting_count == 0 ->
           %{hypothesis | status: :supported, tested_at: DateTime.utc_now()}
 
-        # Mixed evidence
         supporting_count > 0 and contradicting_count > 0 ->
           if supporting_count > contradicting_count * 2 do
             %{hypothesis | status: :supported, tested_at: DateTime.utc_now()}
@@ -328,7 +238,6 @@ defmodule Brain.Knowledge.Types do
             %{hypothesis | status: :inconclusive, tested_at: DateTime.utc_now()}
           end
 
-        # Insufficient evidence
         supporting_count < 2 ->
           %{hypothesis | status: :inconclusive, tested_at: DateTime.utc_now()}
 
@@ -337,21 +246,12 @@ defmodule Brain.Knowledge.Types do
       end
     end
 
-    @doc """
-    Returns true if the hypothesis can be promoted to a fact.
-
-    A hypothesis can become a fact only if:
-    1. It is supported (not falsified)
-    2. It has high confidence (>= 0.7)
-    3. It has multiple independent sources (>= 2)
-    """
+    @doc "Returns true if the hypothesis can be promoted to a fact.\n\nA hypothesis can become a fact only if:\n1. It is supported (not falsified)\n2. It has high confidence (>= 0.7)\n3. It has multiple independent sources (>= 2)\n"
     def promotable?(%__MODULE__{} = hypothesis) do
       hypothesis.status == :supported and
         hypothesis.confidence >= 0.7 and
         count_unique_sources(hypothesis.supporting_evidence) >= 2
     end
-
-    # Private functions
 
     defp recalculate_confidence(%__MODULE__{} = hypothesis) do
       supporting_count = length(hypothesis.supporting_evidence)
@@ -361,29 +261,24 @@ defmodule Brain.Knowledge.Types do
       if total == 0 do
         %{hypothesis | confidence: 0.0, confidence_level: :none}
       else
-        # Base confidence from pass rate (what percentage of evidence supports)
         pass_rate = supporting_count / total
-
-        # Scale by source reliability
         reliability_factor = average_reliability(hypothesis.supporting_evidence)
-
-        # Bonus for having multiple independent sources
         unique_sources = count_unique_sources(hypothesis.supporting_evidence)
-        source_diversity_bonus = if unique_sources >= 2, do: 0.1, else: 0.0
 
-        # Penalty for low sample size (need at least 5 samples for reliable results)
+        source_diversity_bonus =
+          if unique_sources >= 2 do
+            0.1
+          else
+            0.0
+          end
+
         sample_size_factor = min(total / 5.0, 1.0)
 
-        # Combined confidence:
-        # - Pass rate is the primary factor (60% weight)
-        # - Reliability adjusts quality (20% weight)
-        # - Sample size matters (10% weight)
-        # - Source diversity bonus (10% weight)
         confidence =
           (pass_rate * 0.6 +
-           reliability_factor * 0.2 +
-           sample_size_factor * 0.1 +
-           source_diversity_bonus)
+             reliability_factor * 0.2 +
+             sample_size_factor * 0.1 +
+             source_diversity_bonus)
           |> max(0.0)
           |> min(1.0)
 
@@ -396,8 +291,8 @@ defmodule Brain.Knowledge.Types do
     defp confidence_to_level(confidence) do
       cond do
         confidence >= 0.85 -> :very_high
-        confidence >= 0.70 -> :high
-        confidence >= 0.50 -> :moderate
+        confidence >= 0.7 -> :high
+        confidence >= 0.5 -> :moderate
         confidence >= 0.25 -> :low
         true -> :none
       end
@@ -427,44 +322,9 @@ defmodule Brain.Knowledge.Types do
   end
 
   defmodule Investigation do
-    @moduledoc """
-    Represents a scientific investigation testing one or more hypotheses.
+    @moduledoc "Represents a scientific investigation testing one or more hypotheses.\n\nAn investigation follows the scientific method:\n1. Formulate hypotheses from questions\n2. Gather evidence from independent sources\n3. Evaluate hypotheses against evidence\n4. Report conclusions (supported, falsified, or inconclusive)\n\n## Experimental Variables\n\nFrom the scientific method, experiments involve three types of variables:\n\n- **Independent Variable**: What we vary (the sources we query)\n- **Dependent Variable**: What we measure (the findings/claims extracted)\n- **Constants**: What we hold fixed (NLP pipeline, corroboration rules)\n\n## Control Treatment\n\nA control treatment provides a baseline for comparison. In our context,\nthis could be:\n- Existing facts in the database (do new findings agree?)\n- Known reliable sources (Wikipedia, encyclopedias)\n\n## Replication\n\nWe require multiple independent sources (replication) to increase\nconfidence. Variation between sources is normal - replication helps\nus see this variation and obtain a consensus.\n\n## Key Principles\n\n- **Falsifiability**: Hypotheses can be disproven by contradicting evidence\n- **Cannot Prove True**: Only support with evidence, never absolute proof\n- **Accumulation**: Knowledge builds through many investigations\n"
 
-    An investigation follows the scientific method:
-    1. Formulate hypotheses from questions
-    2. Gather evidence from independent sources
-    3. Evaluate hypotheses against evidence
-    4. Report conclusions (supported, falsified, or inconclusive)
-
-    ## Experimental Variables
-
-    From the scientific method, experiments involve three types of variables:
-
-    - **Independent Variable**: What we vary (the sources we query)
-    - **Dependent Variable**: What we measure (the findings/claims extracted)
-    - **Constants**: What we hold fixed (NLP pipeline, corroboration rules)
-
-    ## Control Treatment
-
-    A control treatment provides a baseline for comparison. In our context,
-    this could be:
-    - Existing facts in the database (do new findings agree?)
-    - Known reliable sources (Wikipedia, encyclopedias)
-
-    ## Replication
-
-    We require multiple independent sources (replication) to increase
-    confidence. Variation between sources is normal - replication helps
-    us see this variation and obtain a consensus.
-
-    ## Key Principles
-
-    - **Falsifiability**: Hypotheses can be disproven by contradicting evidence
-    - **Cannot Prove True**: Only support with evidence, never absolute proof
-    - **Accumulation**: Knowledge builds through many investigations
-    """
-
-    alias Brain.Knowledge.Types.{Hypothesis, Finding}
+    alias Types.{Hypothesis, Finding}
 
     @type status :: :planning | :gathering_evidence | :evaluating | :concluded
     @type conclusion :: :hypotheses_supported | :hypotheses_falsified | :inconclusive | :mixed
@@ -502,15 +362,7 @@ defmodule Brain.Knowledge.Types do
       started_at: nil
     ]
 
-    @doc """
-    Creates a new investigation for a topic.
-
-    ## Options
-      - :hypotheses - Pre-formulated hypotheses
-      - :independent_variable - What we're varying (default: "source")
-      - :dependent_variable - What we're measuring (default: "claim")
-      - :constants - What we hold fixed (default: NLP pipeline settings)
-    """
+    @doc "Creates a new investigation for a topic.\n\n## Options\n  - :hypotheses - Pre-formulated hypotheses\n  - :independent_variable - What we're varying (default: \"source\")\n  - :dependent_variable - What we're measuring (default: \"claim\")\n  - :constants - What we hold fixed (default: NLP pipeline settings)\n"
     def new(topic, opts \\ []) when is_binary(topic) do
       %__MODULE__{
         id: generate_id(),
@@ -524,16 +376,12 @@ defmodule Brain.Knowledge.Types do
       }
     end
 
-    @doc """
-    Adds a hypothesis to the investigation.
-    """
+    @doc "Adds a hypothesis to the investigation.\n"
     def add_hypothesis(%__MODULE__{} = investigation, %Hypothesis{} = hypothesis) do
       %{investigation | hypotheses: investigation.hypotheses ++ [hypothesis]}
     end
 
-    @doc """
-    Formulates hypotheses from a list of questions.
-    """
+    @doc "Formulates hypotheses from a list of questions.\n"
     def formulate_hypotheses(%__MODULE__{} = investigation, questions) when is_list(questions) do
       hypotheses =
         questions
@@ -548,81 +396,65 @@ defmodule Brain.Knowledge.Types do
       %{investigation | hypotheses: investigation.hypotheses ++ hypotheses}
     end
 
-    @doc """
-    Sets the control treatment - baseline facts to compare against.
-
-    Control evidence provides a baseline for comparison:
-    - Existing facts in the database
-    - Known reliable sources (encyclopedias, etc.)
-    """
-    def set_control(%__MODULE__{} = investigation, control_findings) when is_list(control_findings) do
+    @doc "Sets the control treatment - baseline facts to compare against.\n\nControl evidence provides a baseline for comparison:\n- Existing facts in the database\n- Known reliable sources (encyclopedias, etc.)\n"
+    def set_control(%__MODULE__{} = investigation, control_findings)
+        when is_list(control_findings) do
       %{investigation | control_evidence: control_findings}
     end
 
-    @doc """
-    Records evidence and associates it with relevant hypotheses.
-    """
+    @doc "Records evidence and associates it with relevant hypotheses.\n"
     def record_evidence(%__MODULE__{} = investigation, findings) when is_list(findings) do
       updated_evidence = investigation.evidence ++ findings
 
-      # Associate each finding with relevant hypotheses
       updated_hypotheses =
         investigation.hypotheses
         |> Enum.map(fn hypothesis ->
           associate_evidence(hypothesis, findings)
         end)
 
-      %{investigation |
-        evidence: updated_evidence,
-        hypotheses: updated_hypotheses,
-        status: :gathering_evidence
+      %{
+        investigation
+        | evidence: updated_evidence,
+          hypotheses: updated_hypotheses,
+          status: :gathering_evidence
       }
     end
 
-    @doc """
-    Evaluates all hypotheses and concludes the investigation.
-    """
+    @doc "Evaluates all hypotheses and concludes the investigation.\n"
     def conclude(%__MODULE__{} = investigation) do
-      # Evaluate each hypothesis
       evaluated =
         investigation.hypotheses
         |> Enum.map(&Hypothesis.evaluate/1)
 
-      # Determine overall conclusion
       conclusion = determine_conclusion(evaluated)
 
-      %{investigation |
-        hypotheses: evaluated,
-        status: :concluded,
-        conclusion: conclusion,
-        concluded_at: DateTime.utc_now()
+      %{
+        investigation
+        | hypotheses: evaluated,
+          status: :concluded,
+          conclusion: conclusion,
+          concluded_at: DateTime.utc_now()
       }
     end
 
-    @doc """
-    Returns hypotheses that can be promoted to facts.
-    """
+    @doc "Returns hypotheses that can be promoted to facts.\n"
     def promotable_hypotheses(%__MODULE__{} = investigation) do
       investigation.hypotheses
       |> Enum.filter(&Hypothesis.promotable?/1)
     end
 
-    @doc """
-    Returns a summary of the investigation results.
-    """
+    @doc "Returns a summary of the investigation results.\n"
     def summary(%__MODULE__{} = investigation) do
       supported = Enum.count(investigation.hypotheses, &(&1.status == :supported))
       falsified = Enum.count(investigation.hypotheses, &(&1.status == :falsified))
       inconclusive = Enum.count(investigation.hypotheses, &(&1.status == :inconclusive))
 
-      # Count unique sources (independent variables)
       unique_sources =
         investigation.evidence
         |> Enum.map(& &1.source.domain)
         |> Enum.uniq()
         |> length()
 
-      # Count total replications across hypotheses
       total_replications =
         investigation.hypotheses
         |> Enum.map(& &1.replication_count)
@@ -646,19 +478,13 @@ defmodule Brain.Knowledge.Types do
       }
     end
 
-    # Private functions
-
     defp question_to_claim(question) when is_binary(question) do
-      # Transform question into a claim statement
-      # This is a simplified heuristic - the actual claim will be refined by evidence
       question
       |> String.trim_trailing("?")
       |> String.trim()
     end
 
     defp extract_entity_from_question(question) do
-      # Use tokenizer to extract likely entity (nouns/proper nouns)
-      # Simplified: return the question for now, will be refined by pipeline
       question
     end
 
@@ -676,14 +502,17 @@ defmodule Brain.Knowledge.Types do
           |> Tokenizer.tokenize_words()
           |> MapSet.new()
 
-        # Check token overlap to determine relevance
         overlap = MapSet.intersection(hypothesis_tokens, finding_tokens) |> MapSet.size()
         min_size = min(MapSet.size(hypothesis_tokens), MapSet.size(finding_tokens))
 
-        relevance = if min_size > 0, do: overlap / min_size, else: 0
+        relevance =
+          if min_size > 0 do
+            overlap / min_size
+          else
+            0
+          end
 
         if relevance >= 0.3 do
-          # Check if this evidence supports or contradicts
           if evidence_contradicts?(hyp.claim, finding.claim) do
             Hypothesis.add_contradicting_evidence(hyp, finding)
           else
@@ -696,16 +525,13 @@ defmodule Brain.Knowledge.Types do
     end
 
     defp evidence_contradicts?(claim, finding_claim) do
-      # Simplified contradiction detection using negation patterns
       c1 = String.downcase(claim)
       c2 = String.downcase(finding_claim)
 
-      negation_words = Brain.LinguisticData.negation_words()
+      negation_words = LinguisticData.negation_words()
 
       c1_negated = Enum.any?(negation_words, &String.contains?(c1, &1))
       c2_negated = Enum.any?(negation_words, &String.contains?(c2, &1))
-
-      # XOR: one has negation, other doesn't
       c1_negated != c2_negated
     end
 
@@ -738,18 +564,9 @@ defmodule Brain.Knowledge.Types do
   end
 
   defmodule ResearchGoal do
-    @moduledoc """
-    A research objective for the Learning Center to pursue.
+    @moduledoc "A research objective for the Learning Center to pursue.\n\n## Scientific Method Integration\n\nResearch goals now support the scientific method by:\n- Generating hypotheses from questions\n- Creating investigations to test those hypotheses\n- Tracking the scientific outcome (supported/falsified)\n"
 
-    ## Scientific Method Integration
-
-    Research goals now support the scientific method by:
-    - Generating hypotheses from questions
-    - Creating investigations to test those hypotheses
-    - Tracking the scientific outcome (supported/falsified)
-    """
-
-    alias Brain.Knowledge.Types.{Hypothesis, Investigation}
+    alias Types.{Hypothesis, Investigation}
 
     @type priority :: :low | :normal | :high
     @type status :: :pending | :in_progress | :completed | :failed
@@ -775,14 +592,7 @@ defmodule Brain.Knowledge.Types do
       status: :pending
     ]
 
-    @doc """
-    Creates a new ResearchGoal.
-
-    ## Options
-      - :questions - List of specific questions to answer
-      - :constraints - Map of constraints (e.g., %{min_sources: 2, max_age_days: 30})
-      - :priority - :low | :normal | :high
-    """
+    @doc "Creates a new ResearchGoal.\n\n## Options\n  - :questions - List of specific questions to answer\n  - :constraints - Map of constraints (e.g., %{min_sources: 2, max_age_days: 30})\n  - :priority - :low | :normal | :high\n"
     def new(topic, opts \\ []) when is_binary(topic) do
       %__MODULE__{
         id: generate_id(),
@@ -795,29 +605,16 @@ defmodule Brain.Knowledge.Types do
       }
     end
 
-    @doc """
-    Updates the status of a goal.
-    """
+    @doc "Updates the status of a goal.\n"
     def update_status(%__MODULE__{} = goal, new_status)
         when new_status in [:pending, :in_progress, :completed, :failed] do
       %{goal | status: new_status}
     end
 
-    @doc """
-    Generates hypotheses from the goal's questions.
-
-    Each question is transformed into a testable hypothesis.
-    If no questions exist, a hypothesis is generated from the topic.
-    """
+    @doc "Generates hypotheses from the goal's questions.\n\nEach question is transformed into a testable hypothesis.\nIf no questions exist, a hypothesis is generated from the topic.\n"
     def generate_hypotheses(%__MODULE__{} = goal) do
       if goal.questions == [] do
-        # Generate default hypotheses from topic
-        [
-          Hypothesis.new(goal.topic,
-            entity: goal.topic,
-            derived_from: "What is #{goal.topic}?"
-          )
-        ]
+        [Hypothesis.new(goal.topic, entity: goal.topic, derived_from: "What is #{goal.topic}?")]
       else
         goal.questions
         |> Enum.map(fn question ->
@@ -830,27 +627,14 @@ defmodule Brain.Knowledge.Types do
       end
     end
 
-    @doc """
-    Creates a scientific investigation from this goal.
-
-    The investigation will:
-    1. Formulate hypotheses from questions
-    2. Be ready to gather evidence
-    3. Track the scientific outcome
-    """
+    @doc "Creates a scientific investigation from this goal.\n\nThe investigation will:\n1. Formulate hypotheses from questions\n2. Be ready to gather evidence\n3. Track the scientific outcome\n"
     def to_investigation(%__MODULE__{} = goal) do
       hypotheses = generate_hypotheses(goal)
 
-      Investigation.new(goal.topic,
-        hypotheses: hypotheses
-      )
+      Investigation.new(goal.topic, hypotheses: hypotheses)
     end
 
-    # Private helpers
-
     defp question_to_claim(question) do
-      # Transform question to claim statement
-      # Remove question mark and "what is", "where is" etc.
       question
       |> String.trim_trailing("?")
       |> String.trim()
@@ -864,15 +648,12 @@ defmodule Brain.Knowledge.Types do
     end
 
     defp extract_entity(question, default_topic) do
-      # Try to extract entity from question using simple heuristics
-      # For more sophisticated extraction, use the NLP pipeline
       words =
         question
         |> String.downcase()
         |> String.replace(~r/[^\w\s]/, "")
         |> String.split()
 
-      # Filter out common question words
       stop_words = ~w(what is are where who when how does did the a an of in to)
 
       content_words =
@@ -892,11 +673,9 @@ defmodule Brain.Knowledge.Types do
   end
 
   defmodule ReviewCandidate do
-    @moduledoc """
-    A finding that has been vetted and is ready for admin review.
-    """
+    @moduledoc "A finding that has been vetted and is ready for admin review.\n"
 
-    alias Brain.Knowledge.Types.{Finding, SourceInfo}
+    alias Types.{Finding, SourceInfo}
 
     @type status :: :pending | :approved | :rejected | :deferred
 
@@ -927,9 +706,7 @@ defmodule Brain.Knowledge.Types do
       status: :pending
     ]
 
-    @doc """
-    Creates a new ReviewCandidate from a finding.
-    """
+    @doc "Creates a new ReviewCandidate from a finding.\n"
     def new(%Finding{} = finding, opts \\ []) do
       %__MODULE__{
         id: generate_id(),
@@ -943,23 +720,17 @@ defmodule Brain.Knowledge.Types do
       }
     end
 
-    @doc """
-    Marks a candidate as approved.
-    """
+    @doc "Marks a candidate as approved.\n"
     def approve(%__MODULE__{} = candidate, notes \\ nil) do
       %{candidate | status: :approved, reviewed_at: DateTime.utc_now(), reviewer_notes: notes}
     end
 
-    @doc """
-    Marks a candidate as rejected.
-    """
+    @doc "Marks a candidate as rejected.\n"
     def reject(%__MODULE__{} = candidate, notes \\ nil) do
       %{candidate | status: :rejected, reviewed_at: DateTime.utc_now(), reviewer_notes: notes}
     end
 
-    @doc """
-    Marks a candidate as deferred for later review.
-    """
+    @doc "Marks a candidate as deferred for later review.\n"
     def defer(%__MODULE__{} = candidate, notes \\ nil) do
       %{candidate | status: :deferred, reviewed_at: DateTime.utc_now(), reviewer_notes: notes}
     end
@@ -970,21 +741,9 @@ defmodule Brain.Knowledge.Types do
   end
 
   defmodule LearningSession do
-    @moduledoc """
-    Represents an active or completed learning session.
+    @moduledoc "Represents an active or completed learning session.\n\n## Scientific Method Integration\n\nA LearningSession now tracks the full scientific investigation lifecycle:\n- **Investigations**: Scientific investigations with hypotheses\n- **Hypotheses Tested**: Total hypotheses evaluated\n- **Hypotheses Supported**: Hypotheses backed by evidence\n- **Hypotheses Falsified**: Hypotheses disproven by contradicting evidence\n\nThis allows tracking the accumulation of scientific knowledge over time.\n"
 
-    ## Scientific Method Integration
-
-    A LearningSession now tracks the full scientific investigation lifecycle:
-    - **Investigations**: Scientific investigations with hypotheses
-    - **Hypotheses Tested**: Total hypotheses evaluated
-    - **Hypotheses Supported**: Hypotheses backed by evidence
-    - **Hypotheses Falsified**: Hypotheses disproven by contradicting evidence
-
-    This allows tracking the accumulation of scientific knowledge over time.
-    """
-
-    alias Brain.Knowledge.Types.{ResearchGoal, Investigation}
+    alias Types.{ResearchGoal, Investigation}
 
     @type status :: :active | :completed | :cancelled
 
@@ -1021,9 +780,7 @@ defmodule Brain.Knowledge.Types do
       status: :active
     ]
 
-    @doc """
-    Creates a new LearningSession.
-    """
+    @doc "Creates a new LearningSession.\n"
     def new(opts \\ []) do
       %__MODULE__{
         id: generate_id(),
@@ -1035,70 +792,52 @@ defmodule Brain.Knowledge.Types do
       }
     end
 
-    @doc """
-    Adds a goal to the session.
-    """
+    @doc "Adds a goal to the session.\n"
     def add_goal(%__MODULE__{} = session, %ResearchGoal{} = goal) do
       %{session | goals: session.goals ++ [goal]}
     end
 
-    @doc """
-    Adds a completed investigation to the session.
-
-    Updates hypothesis statistics based on the investigation results.
-    """
+    @doc "Adds a completed investigation to the session.\n\nUpdates hypothesis statistics based on the investigation results.\n"
     def add_investigation(%__MODULE__{} = session, %Investigation{} = investigation) do
-      # Count hypothesis outcomes
       supported = Enum.count(investigation.hypotheses, &(&1.status == :supported))
       falsified = Enum.count(investigation.hypotheses, &(&1.status == :falsified))
       tested = length(investigation.hypotheses)
 
-      %{session |
-        investigations: session.investigations ++ [investigation],
-        hypotheses_tested: session.hypotheses_tested + tested,
-        hypotheses_supported: session.hypotheses_supported + supported,
-        hypotheses_falsified: session.hypotheses_falsified + falsified
+      %{
+        session
+        | investigations: session.investigations ++ [investigation],
+          hypotheses_tested: session.hypotheses_tested + tested,
+          hypotheses_supported: session.hypotheses_supported + supported,
+          hypotheses_falsified: session.hypotheses_falsified + falsified
       }
     end
 
-    @doc """
-    Increments the findings count.
-    """
+    @doc "Increments the findings count.\n"
     def record_findings(%__MODULE__{} = session, count) when is_integer(count) and count >= 0 do
       %{session | findings_count: session.findings_count + count}
     end
 
-    @doc """
-    Records an approval.
-    """
+    @doc "Records an approval.\n"
     def record_approval(%__MODULE__{} = session) do
       %{session | approved_count: session.approved_count + 1}
     end
 
-    @doc """
-    Records a rejection.
-    """
+    @doc "Records a rejection.\n"
     def record_rejection(%__MODULE__{} = session) do
       %{session | rejected_count: session.rejected_count + 1}
     end
 
-    @doc """
-    Marks the session as completed.
-    """
+    @doc "Marks the session as completed.\n"
     def complete(%__MODULE__{} = session) do
       %{session | status: :completed, completed_at: DateTime.utc_now()}
     end
 
-    @doc """
-    Marks the session as cancelled.
-    """
+    @doc "Marks the session as cancelled.\n"
     def cancel(%__MODULE__{} = session) do
       %{session | status: :cancelled, completed_at: DateTime.utc_now()}
     end
 
-    @doc """
-    Returns a summary of the session's scientific outcomes.
-    """
+    @doc "Returns a summary of the session's scientific outcomes.\n"
     def scientific_summary(%__MODULE__{} = session) do
       %{
         topic: session.topic,
@@ -1106,10 +845,12 @@ defmodule Brain.Knowledge.Types do
         hypotheses_tested: session.hypotheses_tested,
         hypotheses_supported: session.hypotheses_supported,
         hypotheses_falsified: session.hypotheses_falsified,
-        support_rate: if(session.hypotheses_tested > 0,
-          do: session.hypotheses_supported / session.hypotheses_tested,
-          else: 0.0
-        ),
+        support_rate:
+          if(session.hypotheses_tested > 0) do
+            session.hypotheses_supported / session.hypotheses_tested
+          else
+            0.0
+          end,
         facts_approved: session.approved_count,
         facts_rejected: session.rejected_count
       }
@@ -1121,10 +862,7 @@ defmodule Brain.Knowledge.Types do
   end
 
   defmodule SourceProfile do
-    @moduledoc """
-    Extended profile for a source domain including historical data.
-    Used internally by SourceReliability GenServer.
-    """
+    @moduledoc "Extended profile for a source domain including historical data.\nUsed internally by SourceReliability GenServer.\n"
 
     @type t :: %__MODULE__{
             domain: String.t(),
@@ -1147,9 +885,7 @@ defmodule Brain.Knowledge.Types do
       admin_decisions: []
     ]
 
-    @doc """
-    Creates a new SourceProfile.
-    """
+    @doc "Creates a new SourceProfile.\n"
     def new(domain, opts \\ []) when is_binary(domain) do
       %__MODULE__{
         domain: String.downcase(domain),
@@ -1162,9 +898,7 @@ defmodule Brain.Knowledge.Types do
       }
     end
 
-    @doc """
-    Records an admin decision (approval or rejection) for this source.
-    """
+    @doc "Records an admin decision (approval or rejection) for this source.\n"
     def record_decision(%__MODULE__{} = profile, decision, opts \\ [])
         when decision in [:approved, :rejected] do
       entry = %{
@@ -1178,14 +912,11 @@ defmodule Brain.Knowledge.Types do
       %{profile | admin_decisions: updated_decisions, last_updated: DateTime.utc_now()}
     end
 
-    @doc """
-    Calculates the current reliability score based on base accuracy and admin feedback.
-    """
+    @doc "Calculates the current reliability score based on base accuracy and admin feedback.\n"
     def calculate_reliability(%__MODULE__{} = profile) do
       base = profile.factual_accuracy
       feedback_adjustment = calculate_feedback_adjustment(profile.admin_decisions)
 
-      # Weighted combination, capped at 0.0-1.0
       (base * 0.7 + feedback_adjustment * 0.3)
       |> max(0.0)
       |> min(1.0)
@@ -1195,18 +926,27 @@ defmodule Brain.Knowledge.Types do
       if decisions == [] do
         0.5
       else
-        # Weight recent decisions more heavily
         {weighted_sum, total_weight} =
           decisions
           |> Enum.with_index()
           |> Enum.reduce({0.0, 0.0}, fn {decision, idx}, {sum, weight} ->
-            # Exponential decay: more recent decisions have higher weight
             decay = :math.pow(0.9, idx)
-            value = if decision.decision == :approved, do: 1.0, else: 0.0
+
+            value =
+              if decision.decision == :approved do
+                1.0
+              else
+                0.0
+              end
+
             {sum + value * decay, weight + decay}
           end)
 
-        if total_weight > 0, do: weighted_sum / total_weight, else: 0.5
+        if total_weight > 0 do
+          weighted_sum / total_weight
+        else
+          0.5
+        end
       end
     end
   end

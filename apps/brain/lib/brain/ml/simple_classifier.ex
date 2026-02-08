@@ -1,10 +1,5 @@
 defmodule Brain.ML.SimpleClassifier do
-  @moduledoc """
-  A simple text classifier using TF-IDF and cosine similarity.
-  This is a lightweight alternative to the full SVM implementation.
-
-  Uses the Tokenizer module for unicode-aware tokenization.
-  """
+  @moduledoc "A simple text classifier using TF-IDF and cosine similarity.\nThis is a lightweight alternative to the full SVM implementation.\n\nUses the Tokenizer module for unicode-aware tokenization.\n"
 
   require Logger
 
@@ -12,11 +7,8 @@ defmodule Brain.ML.SimpleClassifier do
 
   def train(training_data) do
     Logger.info("Training simple classifier on #{length(training_data)} samples")
-
-    # Build TF-IDF vectors for each sample
     {texts, labels} = Enum.unzip(training_data)
 
-    # Build vocabulary using the new tokenizer
     all_words =
       texts
       |> Enum.flat_map(&tokenize/1)
@@ -27,8 +19,6 @@ defmodule Brain.ML.SimpleClassifier do
       |> Enum.map(fn {word, _count} -> word end)
 
     vocabulary = all_words |> Enum.with_index() |> Enum.into(%{})
-
-    # Calculate IDF weights
     num_docs = length(texts)
 
     idf_weights =
@@ -40,19 +30,16 @@ defmodule Brain.ML.SimpleClassifier do
       end)
       |> Enum.into(%{})
 
-    # Vectorize all training samples
     vectors =
       texts
       |> Enum.map(fn text ->
         vectorize(text, vocabulary, idf_weights)
       end)
 
-    # Group by label
     label_vectors =
       Enum.zip([labels, vectors])
       |> Enum.group_by(fn {label, _vector} -> label end, fn {_label, vector} -> vector end)
 
-    # Calculate centroid for each label
     label_centroids =
       label_vectors
       |> Enum.map(fn {label, vecs} ->
@@ -72,19 +59,11 @@ defmodule Brain.ML.SimpleClassifier do
     classify_with_details(text, model, top_k: 1)
   end
 
-  @doc """
-  Classifies text and returns detailed results including top-k scores and margin.
-  
-  Returns `{:ok, best_label, best_score, details}` where details contains:
-  - `:second_score` - score of second-best intent
-  - `:margin` - difference between best and second score
-  - `:top_k` - list of {label, score} tuples for top k intents
-  """
+  @doc "Classifies text and returns detailed results including top-k scores and margin.\n\nReturns `{:ok, best_label, best_score, details}` where details contains:\n- `:second_score` - score of second-best intent\n- `:margin` - difference between best and second score\n- `:top_k` - list of {label, score} tuples for top k intents\n"
   def classify_with_details(text, model, opts \\ []) do
     vector = vectorize(text, model.vocabulary, model.idf_weights)
     top_k = Keyword.get(opts, :top_k, 5)
 
-    # Calculate similarity to all centroids
     scored_intents =
       model.label_centroids
       |> Enum.map(fn {label, centroid} ->
@@ -93,9 +72,15 @@ defmodule Brain.ML.SimpleClassifier do
       end)
       |> Enum.sort_by(fn {_label, score} -> -score end)
 
-    # Extract top results
     [{best_label, best_score} | rest] = scored_intents
-    second_score = if length(rest) > 0, do: elem(List.first(rest), 1), else: 0.0
+
+    second_score =
+      if rest != [] do
+        elem(List.first(rest), 1)
+      else
+        0.0
+      end
+
     margin = best_score - second_score
     top_k_list = Enum.take(scored_intents, top_k)
 
@@ -109,9 +94,6 @@ defmodule Brain.ML.SimpleClassifier do
   end
 
   defp tokenize(text) do
-    # Use the new Tokenizer module for unicode-aware tokenization
-    # Expand contractions so "I'm" becomes "I am" - ensures consistent
-    # tokenization between contracted and expanded forms
     Tokenizer.tokenize_normalized(text, min_length: 2, expand_contractions: true)
   end
 
@@ -119,7 +101,6 @@ defmodule Brain.ML.SimpleClassifier do
     tokens = tokenize(text)
     token_freq = Enum.frequencies(tokens)
 
-    # Build TF-IDF vector
     vector =
       vocabulary
       |> Enum.map(fn {word, _idx} ->
@@ -128,7 +109,6 @@ defmodule Brain.ML.SimpleClassifier do
         tf * idf
       end)
 
-    # Normalize
     magnitude = :math.sqrt(Enum.reduce(vector, 0, fn val, acc -> acc + val * val end))
 
     if magnitude > 0 do
@@ -139,7 +119,7 @@ defmodule Brain.ML.SimpleClassifier do
   end
 
   defp calculate_centroid(vectors) do
-    if length(vectors) == 0 do
+    if vectors == [] do
       []
     else
       vec_length = length(List.first(vectors))
@@ -173,10 +153,8 @@ defmodule Brain.ML.SimpleClassifier do
       end
     end
   end
-  
-  @doc """
-  Save trained model to disk.
-  """
+
+  @doc "Save trained model to disk.\n"
   def save_model(model, path \\ nil) do
     model_path = path || get_model_path()
     File.mkdir_p!(Path.dirname(model_path))
@@ -185,13 +163,11 @@ defmodule Brain.ML.SimpleClassifier do
     Logger.info("Saved SimpleClassifier model", %{path: model_path})
     :ok
   end
-  
-  @doc """
-  Load trained model from disk.
-  """
+
+  @doc "Load trained model from disk.\n"
   def load_model(path \\ nil) do
     model_path = path || get_model_path()
-    
+
     case File.read(model_path) do
       {:ok, binary} ->
         try do
@@ -200,12 +176,12 @@ defmodule Brain.ML.SimpleClassifier do
         rescue
           e -> {:error, "Failed to deserialize model: #{inspect(e)}"}
         end
-      
+
       {:error, reason} ->
         {:error, "Failed to read model file: #{reason}"}
     end
   end
-  
+
   defp get_model_path do
     models_path = Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")
     Path.join(models_path, "simple_classifier.term")

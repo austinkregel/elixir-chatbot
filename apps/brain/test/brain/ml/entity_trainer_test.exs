@@ -37,8 +37,6 @@ defmodule Brain.ML.EntityTrainerTest do
 
       sequences = EntityTrainer.convert_to_bio_sequences(examples)
       seq = Enum.at(sequences, 0)
-
-      # All tokens should be tagged as Outside
       assert Enum.all?(seq.tags, fn tag -> tag == "O" end)
     end
 
@@ -56,20 +54,16 @@ defmodule Brain.ML.EntityTrainerTest do
       sequences = EntityTrainer.convert_to_bio_sequences(examples)
       seq = Enum.at(sequences, 0)
 
-      # Should have B-location for "New" and I-location for "York"
-      # (depending on exact tokenization)
       bio_tags =
         Enum.filter(seq.tags, fn tag ->
           String.starts_with?(tag, "B-") or String.starts_with?(tag, "I-")
         end)
 
-      assert length(bio_tags) >= 1
+      assert bio_tags != []
     end
 
     test "handles example with no entities" do
-      examples = [
-        %{text: "hello", intent: "greeting", entities: nil}
-      ]
+      examples = [%{text: "hello", intent: "greeting", entities: nil}]
 
       sequences = EntityTrainer.convert_to_bio_sequences(examples)
       assert length(sequences) == 1
@@ -82,8 +76,6 @@ defmodule Brain.ML.EntityTrainerTest do
       ]
 
       sequences = EntityTrainer.convert_to_bio_sequences(examples)
-
-      # Empty text should be filtered
       assert length(sequences) == 1
       assert Enum.at(sequences, 0).intent == "valid"
     end
@@ -127,10 +119,7 @@ defmodule Brain.ML.EntityTrainerTest do
     end
 
     test "handles sequence with no entities" do
-      token_tag_pairs = [
-        {"hello", "O"},
-        {"world", "O"}
-      ]
+      token_tag_pairs = [{"hello", "O"}, {"world", "O"}]
 
       entities = EntityTrainer.extract_entities_from_bio(token_tag_pairs)
       assert entities == []
@@ -142,10 +131,7 @@ defmodule Brain.ML.EntityTrainerTest do
     end
 
     test "handles consecutive entities of different types" do
-      token_tag_pairs = [
-        {"London", "B-location"},
-        {"Monday", "B-date"}
-      ]
+      token_tag_pairs = [{"London", "B-location"}, {"Monday", "B-date"}]
 
       entities = EntityTrainer.extract_entities_from_bio(token_tag_pairs)
 
@@ -153,11 +139,7 @@ defmodule Brain.ML.EntityTrainerTest do
     end
 
     test "handles entity at end of sequence" do
-      token_tag_pairs = [
-        {"weather", "O"},
-        {"in", "O"},
-        {"Paris", "B-location"}
-      ]
+      token_tag_pairs = [{"weather", "O"}, {"in", "O"}, {"Paris", "B-location"}]
 
       entities = EntityTrainer.extract_entities_from_bio(token_tag_pairs)
 
@@ -168,7 +150,6 @@ defmodule Brain.ML.EntityTrainerTest do
 
   describe "train/0" do
     test "trains model from intent data" do
-      # This test may take a while or fail if no training data exists
       result = EntityTrainer.train()
 
       case result do
@@ -177,12 +158,9 @@ defmodule Brain.ML.EntityTrainerTest do
           assert Map.has_key?(model, :feature_weights)
           assert Map.has_key?(model, :transition_weights)
           assert Map.has_key?(model, :tag_priors)
-
-          # Should have at least "O" tag
           assert Map.has_key?(model.tag_vocabulary, "O")
 
         {:error, _reason} ->
-          # May fail if no training data
           assert true
       end
     end
@@ -190,7 +168,6 @@ defmodule Brain.ML.EntityTrainerTest do
 
   describe "predict/2" do
     test "predicts tags for tokens using trained model" do
-      # Create a minimal mock model
       model = %{
         tag_vocabulary: %{"O" => 0, "B-location" => 1},
         feature_weights: %{
@@ -210,7 +187,6 @@ defmodule Brain.ML.EntityTrainerTest do
 
       assert length(predictions) == 3
 
-      # Each prediction should be {token, tag}
       Enum.each(predictions, fn {token, tag} ->
         assert is_binary(token)
         assert is_binary(tag)

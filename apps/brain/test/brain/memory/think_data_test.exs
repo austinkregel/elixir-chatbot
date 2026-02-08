@@ -50,7 +50,7 @@ defmodule Brain.Memory.ThinkDataTest do
     end
   end
 
-  # Test data for query_chat operation  
+  # Test data for query_chat operation
   @query_chat_test_cases [
     # {input, k, description}
     {"hello", 5, "simple greeting query"},
@@ -200,7 +200,7 @@ defmodule Brain.Memory.ThinkDataTest do
   describe "think(:stats, params)" do
     test "returns stats about memory" do
       result = Think.think(:stats, %{world_id: @test_world_id})
-      
+
       case result do
         {:ok, stats} ->
           assert is_map(stats) or is_tuple(stats)

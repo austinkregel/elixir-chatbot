@@ -138,5 +138,55 @@
     ],
     "text": "Learned 2 entities, 0 relationships, 1 facts from: Hello, I'm Austin",
     "timestamp": 1770562643920
+  },
+  {
+    "id": "177f9d2136db5fd2",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Can you tell me the weather for Owosso Michigan?",
+    "timestamp": 1770576842965
+  },
+  {
+    "id": "83eb9f0cd501a46d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Can you tell me the weather for Owosso Michigan?",
+    "timestamp": 1770576886509
+  },
+  {
+    "id": "b83f6217fc44440d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Can you tell me the weather for Owosso Michigan?",
+    "timestamp": 1770577182263
+  },
+  {
+    "id": "4aaa01db08fa1351",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Can you tell me the weather for Owosso Michigan?",
+    "timestamp": 1770577213090
+  },
+  {
+    "id": "f737d956c15b7c0b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Can you tell me the weather for Owosso Michigan?",
+    "timestamp": 1770577287597
   }
 ]

@@ -1,16 +1,14 @@
 defmodule Brain.Epistemic.DisclosurePolicyTest do
+  alias Brain.Epistemic.Types
   use ExUnit.Case, async: true
 
   alias Brain.Epistemic.DisclosurePolicy
-  alias Brain.Epistemic.Types.{Belief, SelfKnowledgeAssessment}
+  alias Types.{Belief, SelfKnowledgeAssessment}
 
   describe "evaluate_disclosure/2" do
     test "allows disclosure of safe explicit facts" do
       belief =
-        Belief.new(:user, :name, "Alice",
-          confidence: 0.95,
-          source: :explicit
-        )
+        Belief.new(:user, :name, "Alice", confidence: 0.95, source: :explicit)
 
       decision = DisclosurePolicy.evaluate_disclosure(belief)
 
@@ -20,10 +18,7 @@ defmodule Brain.Epistemic.DisclosurePolicyTest do
 
     test "blocks disclosure of sensitive information" do
       belief =
-        Belief.new(:user, :password, "secret123",
-          confidence: 1.0,
-          source: :explicit
-        )
+        Belief.new(:user, :password, "secret123", confidence: 1.0, source: :explicit)
 
       decision = DisclosurePolicy.evaluate_disclosure(belief)
 
@@ -33,10 +28,7 @@ defmodule Brain.Epistemic.DisclosurePolicyTest do
 
     test "blocks disclosure of very low confidence facts" do
       belief =
-        Belief.new(:user, :hobby, "skydiving",
-          confidence: 0.2,
-          source: :inferred
-        )
+        Belief.new(:user, :hobby, "skydiving", confidence: 0.2, source: :inferred)
 
       decision = DisclosurePolicy.evaluate_disclosure(belief)
 
@@ -45,12 +37,8 @@ defmodule Brain.Epistemic.DisclosurePolicyTest do
     end
 
     test "requires hedging for moderate confidence" do
-      # Use a predicate that's not in the require_high_confidence list
       belief =
-        Belief.new(:user, :hobby, "hiking",
-          confidence: 0.55,
-          source: :inferred
-        )
+        Belief.new(:user, :hobby, "hiking", confidence: 0.55, source: :inferred)
 
       decision = DisclosurePolicy.evaluate_disclosure(belief)
 
@@ -60,10 +48,7 @@ defmodule Brain.Epistemic.DisclosurePolicyTest do
 
     test "requires light hedging for good confidence" do
       belief =
-        Belief.new(:user, :timezone, "PST",
-          confidence: 0.75,
-          source: :inferred
-        )
+        Belief.new(:user, :timezone, "PST", confidence: 0.75, source: :inferred)
 
       decision = DisclosurePolicy.evaluate_disclosure(belief)
 
@@ -73,10 +58,7 @@ defmodule Brain.Epistemic.DisclosurePolicyTest do
 
     test "requires permission for inferred personal information" do
       belief =
-        Belief.new(:user, :occupation, "Doctor",
-          confidence: 0.7,
-          source: :inferred
-        )
+        Belief.new(:user, :occupation, "Doctor", confidence: 0.7, source: :inferred)
 
       decision = DisclosurePolicy.evaluate_disclosure(belief)
 
@@ -85,10 +67,7 @@ defmodule Brain.Epistemic.DisclosurePolicyTest do
 
     test "adds hedging for potentially creepy information" do
       belief =
-        Belief.new(:user, :daily_routine, "Wakes at 6am",
-          confidence: 0.9,
-          source: :inferred
-        )
+        Belief.new(:user, :daily_routine, "Wakes at 6am", confidence: 0.9, source: :inferred)
 
       context = %{relationship_duration: :new}
       decision = DisclosurePolicy.evaluate_disclosure(belief, context)
@@ -97,12 +76,8 @@ defmodule Brain.Epistemic.DisclosurePolicyTest do
     end
 
     test "less creepy when user initiated" do
-      # Use a predicate that's safe with inferred source when user initiated
       belief =
-        Belief.new(:user, :timezone, "PST",
-          confidence: 0.85,
-          source: :inferred
-        )
+        Belief.new(:user, :timezone, "PST", confidence: 0.85, source: :inferred)
 
       context = %{user_initiated: true}
       decision = DisclosurePolicy.evaluate_disclosure(belief, context)
@@ -153,8 +128,6 @@ defmodule Brain.Epistemic.DisclosurePolicyTest do
       }
 
       filtered = DisclosurePolicy.filter_discloseable(assessment)
-
-      # Password should be filtered out
       discloseable_keys = Enum.map(filtered.discloseable, & &1.key)
       refute :password in discloseable_keys
       assert :name in discloseable_keys
@@ -176,20 +149,14 @@ defmodule Brain.Epistemic.DisclosurePolicyTest do
   describe "violates_policy?/2" do
     test "returns true for sensitive data" do
       belief =
-        Belief.new(:user, :ssn, "123-45-6789",
-          confidence: 1.0,
-          source: :explicit
-        )
+        Belief.new(:user, :ssn, "123-45-6789", confidence: 1.0, source: :explicit)
 
       assert DisclosurePolicy.violates_policy?(belief) == true
     end
 
     test "returns false for safe data" do
       belief =
-        Belief.new(:user, :name, "Bob",
-          confidence: 0.95,
-          source: :explicit
-        )
+        Belief.new(:user, :name, "Bob", confidence: 0.95, source: :explicit)
 
       assert DisclosurePolicy.violates_policy?(belief) == false
     end

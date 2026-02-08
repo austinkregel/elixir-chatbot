@@ -1,41 +1,12 @@
 defmodule Tasks.Source do
-  @moduledoc """
-  Source adapter that provides domain-specific NLP tasks to Research Agents.
+  @moduledoc "Source adapter that provides domain-specific NLP tasks to Research Agents.\n\nThis allows the Learning Center to train its child agents using curated\nbenchmark tasks instead of (or in addition to) web sources.\n\n## Benefits\n\n- High-quality, human-verified Q&A pairs\n- Commonsense reasoning examples with explanations\n- Diverse domains (Wikipedia, News, Science, etc.)\n- No rate limiting or network latency\n- Reproducible training data\n\n## Usage\n\nConfigure agents to use the :task source:\n\n    LearningCenter.start_session(\"commonsense\", sources: [:task])\n\nOr combine with web sources:\n\n    LearningCenter.start_session(\"France\", sources: [:task, :web])\n\n## Task Selection\n\nTasks are matched to research goals by:\n- Category (e.g., \"Question Answering\" for factual queries)\n- Domain (e.g., \"Wikipedia\" for general knowledge)\n- Keywords in the topic/questions\n"
 
-  This allows the Learning Center to train its child agents using curated
-  benchmark tasks instead of (or in addition to) web sources.
-
-  ## Benefits
-
-  - High-quality, human-verified Q&A pairs
-  - Commonsense reasoning examples with explanations
-  - Diverse domains (Wikipedia, News, Science, etc.)
-  - No rate limiting or network latency
-  - Reproducible training data
-
-  ## Usage
-
-  Configure agents to use the :task source:
-
-      LearningCenter.start_session("commonsense", sources: [:task])
-
-  Or combine with web sources:
-
-      LearningCenter.start_session("France", sources: [:task, :web])
-
-  ## Task Selection
-
-  Tasks are matched to research goals by:
-  - Category (e.g., "Question Answering" for factual queries)
-  - Domain (e.g., "Wikipedia" for general knowledge)
-  - Keywords in the topic/questions
-  """
-
+  alias Tasks.Analyzer
+  alias Brain.Knowledge.Types
   require Logger
 
-  alias Brain.Knowledge.Types.{Finding, SourceInfo}
+  alias Types.{Finding, SourceInfo}
 
-  # Category mappings for different research goal types
   @category_mappings %{
     factual: ["Question Answering"],
     reasoning: ["Commonsense Classification", "Coherence Classification"],
@@ -44,18 +15,7 @@ defmodule Tasks.Source do
     general: ["Question Answering", "Commonsense Classification", "Text Categorization"]
   }
 
-  # ============================================================================
-  # Public API
-  # ============================================================================
-
-  @doc """
-  Fetches findings from domain-specific tasks matching a research goal.
-
-  ## Options
-    - `:max_tasks` - Maximum task files to use (default: 5)
-    - `:max_instances` - Maximum instances per task (default: 20)
-    - `:goal_type` - Type of goal for task selection (:factual, :reasoning, :general)
-  """
+  @doc "Fetches findings from domain-specific tasks matching a research goal.\n\n## Options\n  - `:max_tasks` - Maximum task files to use (default: 5)\n  - `:max_instances` - Maximum instances per task (default: 20)\n  - `:goal_type` - Type of goal for task selection (:factual, :reasoning, :general)\n"
   @spec fetch_for_goal(map(), keyword()) :: {:ok, [Finding.t()]} | {:error, term()}
   def fetch_for_goal(goal, opts \\ []) do
     max_tasks = Keyword.get(opts, :max_tasks, 5)
@@ -68,7 +28,6 @@ defmodule Tasks.Source do
       max_tasks: max_tasks
     )
 
-    # Select relevant tasks based on goal
     case select_tasks(goal, goal_type, max_tasks) do
       {:ok, tasks} ->
         findings = extract_findings_from_tasks(tasks, goal, max_instances)
@@ -86,18 +45,12 @@ defmodule Tasks.Source do
     end
   end
 
-  @doc """
-  Gets available tasks by category for browsing/selection.
-  
-  Uses ETS-based caching to avoid re-scanning files on every call.
-  Cache expires after 5 minutes.
-  """
+  @doc "Gets available tasks by category for browsing/selection.\n\nUses ETS-based caching to avoid re-scanning files on every call.\nCache expires after 5 minutes.\n"
   @spec available_tasks(keyword()) :: {:ok, map()} | {:error, term()}
   def available_tasks(_opts \\ []) do
     cache_key = :task_source_available_tasks
-    cache_ttl_ms = 300_000  # 5 minutes
-    
-    # Try to get from process dictionary cache first
+    cache_ttl_ms = 300_000
+
     case Process.get(cache_key) do
       {cached_at, result} when is_integer(cached_at) ->
         if System.monotonic_time(:millisecond) - cached_at < cache_ttl_ms do
@@ -105,16 +58,16 @@ defmodule Tasks.Source do
         else
           fetch_and_cache_tasks(cache_key)
         end
-      
+
       _ ->
         fetch_and_cache_tasks(cache_key)
     end
   end
 
   defp fetch_and_cache_tasks(cache_key) do
-    case Tasks.Analyzer.analyze_all(english_only: true) do
+    case Analyzer.analyze_all(english_only: true) do
       {:ok, analysis} ->
-        grouped = Tasks.Analyzer.group_by_category(analysis.useful_tasks)
+        grouped = Analyzer.group_by_category(analysis.useful_tasks)
         Process.put(cache_key, {System.monotonic_time(:millisecond), grouped})
         {:ok, grouped}
 
@@ -123,24 +76,14 @@ defmodule Tasks.Source do
     end
   end
 
-  @doc """
-  Creates training sessions from domain tasks for specific capabilities.
-
-  This is useful for systematic training of agent capabilities.
-
-  ## Capabilities
-    - :question_answering - Train on factual Q&A
-    - :commonsense - Train on reasoning and common knowledge
-    - :sentiment - Train on emotion detection
-    - :all - Train on all useful categories
-  """
+  @doc "Creates training sessions from domain tasks for specific capabilities.\n\nThis is useful for systematic training of agent capabilities.\n\n## Capabilities\n  - :question_answering - Train on factual Q&A\n  - :commonsense - Train on reasoning and common knowledge\n  - :sentiment - Train on emotion detection\n  - :all - Train on all useful categories\n"
   @spec create_training_sessions(atom(), keyword()) :: {:ok, [map()]} | {:error, term()}
   def create_training_sessions(capability, opts \\ []) do
     max_tasks = Keyword.get(opts, :max_tasks, 10)
 
     categories = capability_to_categories(capability)
 
-    case Tasks.Analyzer.analyze_all(categories: categories) do
+    case Analyzer.analyze_all(categories: categories) do
       {:ok, analysis} ->
         tasks = Enum.take(analysis.useful_tasks, max_tasks)
 
@@ -161,10 +104,6 @@ defmodule Tasks.Source do
         {:error, reason}
     end
   end
-
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
 
   defp infer_goal_type(goal) do
     topic = String.downcase(goal.topic || "")
@@ -189,12 +128,11 @@ defmodule Tasks.Source do
   defp select_tasks(goal, goal_type, max_tasks) do
     categories = Map.get(@category_mappings, goal_type, @category_mappings.general)
 
-    case Tasks.Analyzer.analyze_all(
+    case Analyzer.analyze_all(
            categories: categories,
            english_only: true
          ) do
       {:ok, analysis} ->
-        # Score tasks by relevance to goal
         scored_tasks =
           analysis.useful_tasks
           |> Enum.map(fn task ->
@@ -221,7 +159,6 @@ defmodule Tasks.Source do
 
     all_words = MapSet.new(topic_words ++ question_words)
 
-    # Score based on domain overlap
     domain_score =
       task.domains
       |> Enum.count(fn domain ->
@@ -229,7 +166,6 @@ defmodule Tasks.Source do
         Enum.any?(all_words, &String.contains?(domain_lower, &1))
       end)
 
-    # Score based on definition keywords
     definition_words =
       task.definition
       |> String.downcase()
@@ -237,8 +173,6 @@ defmodule Tasks.Source do
       |> MapSet.new()
 
     keyword_overlap = MapSet.intersection(all_words, definition_words) |> MapSet.size()
-
-    # Combined score
     domain_score * 2 + keyword_overlap + task.instance_count / 1000
   end
 
@@ -250,14 +184,15 @@ defmodule Tasks.Source do
   end
 
   defp extract_findings_from_task(task, goal, max_instances) do
-    case Tasks.Analyzer.load_instances(task.file, max_instances: max_instances) do
+    case Analyzer.load_instances(task.file, max_instances: max_instances) do
       {:ok, instances} ->
-        source_info = SourceInfo.new(
-          "task://#{task.task_id}",
-          title: task.task_id,
-          reliability_score: 0.95,
-          trust_tier: :verified
-        )
+        source_info =
+          SourceInfo.new(
+            "task://#{task.task_id}",
+            title: task.task_id,
+            reliability_score: 0.95,
+            trust_tier: :verified
+          )
 
         Enum.flat_map(instances, fn instance ->
           instance_to_findings(instance, task, source_info, goal)
@@ -276,10 +211,8 @@ defmodule Tasks.Source do
 
     category = List.first(task.categories) || "Unknown"
 
-    # Create findings based on category
     case category do
       "Question Answering" ->
-        # Q&A pairs become factual findings
         Enum.map(outputs, fn answer ->
           Finding.new(
             answer,
@@ -292,7 +225,6 @@ defmodule Tasks.Source do
         end)
 
       "Commonsense Classification" ->
-        # Commonsense with explanation
         base_claim =
           if explanation != "" do
             explanation
@@ -312,7 +244,6 @@ defmodule Tasks.Source do
         ]
 
       "Explanation" ->
-        # Explanations are valuable for reasoning
         Enum.map(outputs, fn explanation_text ->
           Finding.new(
             explanation_text,
@@ -325,7 +256,6 @@ defmodule Tasks.Source do
         end)
 
       _ ->
-        # Generic findings for other categories
         Enum.map(outputs, fn output ->
           Finding.new(
             output,
@@ -339,9 +269,7 @@ defmodule Tasks.Source do
     end
   end
 
-  # Extract the primary entity/subject from input text
   defp extract_entity(input) when is_binary(input) do
-    # Use first significant words as entity
     input
     |> String.split(~r/[\s\?\!\.]+/)
     |> Enum.reject(&(&1 in ~w(what who where when why how is are was were the a an)))
@@ -353,7 +281,9 @@ defmodule Tasks.Source do
     end
   end
 
-  defp extract_entity(_), do: "unknown"
+  defp extract_entity(_) do
+    "unknown"
+  end
 
   defp get_outputs(instance) do
     case Map.get(instance, "output") do
@@ -378,10 +308,10 @@ defmodule Tasks.Source do
         ["Explanation", "Question Decomposition", "Coreference Resolution"]
 
       :all ->
-        Tasks.Analyzer.useful_categories()
+        Analyzer.useful_categories()
 
       _ ->
-        Tasks.Analyzer.useful_categories()
+        Analyzer.useful_categories()
     end
   end
 end

@@ -1,10 +1,5 @@
 defmodule Brain.Knowledge.Academic.Paper do
-  @moduledoc """
-  Unified paper representation for academic sources.
-
-  This struct normalizes paper data from different academic APIs
-  (Semantic Scholar, arXiv, OpenAlex) into a common format.
-  """
+  @moduledoc "Unified paper representation for academic sources.\n\nThis struct normalizes paper data from different academic APIs\n(Semantic Scholar, arXiv, OpenAlex) into a common format.\n"
 
   alias Brain.Knowledge.Types.{Finding, SourceInfo}
 
@@ -48,9 +43,7 @@ defmodule Brain.Knowledge.Academic.Paper do
     source: :semantic_scholar
   ]
 
-  @doc """
-  Creates a new Paper struct.
-  """
+  @doc "Creates a new Paper struct.\n"
   def new(opts) when is_list(opts) do
     %__MODULE__{
       id: Keyword.fetch!(opts, :id),
@@ -69,24 +62,18 @@ defmodule Brain.Knowledge.Academic.Paper do
     }
   end
 
-  @doc """
-  Converts a Paper to a Finding struct for the knowledge system.
-
-  Uses the paper's abstract as the primary claim, with full metadata
-  preserved in the source info.
-  """
+  @doc "Converts a Paper to a Finding struct for the knowledge system.\n\nUses the paper's abstract as the primary claim, with full metadata\npreserved in the source info.\n"
   @spec to_finding(t()) :: Finding.t() | nil
-  def to_finding(%__MODULE__{abstract: nil}), do: nil
+  def to_finding(%__MODULE__{abstract: nil}) do
+    nil
+  end
 
   def to_finding(%__MODULE__{abstract: abstract}) when byte_size(abstract) < 50 do
-    # Abstract too short to be useful
     nil
   end
 
   def to_finding(%__MODULE__{} = paper) do
     source = to_source_info(paper)
-
-    # Use paper title as the entity
     entity = paper.title || "unknown"
 
     Finding.new(
@@ -99,9 +86,7 @@ defmodule Brain.Knowledge.Academic.Paper do
     )
   end
 
-  @doc """
-  Converts a Paper to a SourceInfo struct.
-  """
+  @doc "Converts a Paper to a SourceInfo struct.\n"
   @spec to_source_info(t()) :: SourceInfo.t()
   def to_source_info(%__MODULE__{} = paper) do
     url = paper.url || build_url(paper)
@@ -114,27 +99,23 @@ defmodule Brain.Knowledge.Academic.Paper do
     )
   end
 
-  @doc """
-  Gets the arXiv ID from external IDs if available.
-  """
+  @doc "Gets the arXiv ID from external IDs if available.\n"
   @spec arxiv_id(t()) :: String.t() | nil
   def arxiv_id(%__MODULE__{external_ids: ids}) do
     Map.get(ids, "ArXiv") || Map.get(ids, "arxiv")
   end
 
-  @doc """
-  Gets the DOI from external IDs if available.
-  """
+  @doc "Gets the DOI from external IDs if available.\n"
   @spec doi(t()) :: String.t() | nil
   def doi(%__MODULE__{external_ids: ids}) do
     Map.get(ids, "DOI") || Map.get(ids, "doi")
   end
 
-  @doc """
-  Gets the PDF URL for the paper, preferring arXiv.
-  """
+  @doc "Gets the PDF URL for the paper, preferring arXiv.\n"
   @spec pdf_url(t()) :: String.t() | nil
-  def pdf_url(%__MODULE__{pdf_url: url}) when is_binary(url), do: url
+  def pdf_url(%__MODULE__{pdf_url: url}) when is_binary(url) do
+    url
+  end
 
   def pdf_url(%__MODULE__{} = paper) do
     case arxiv_id(paper) do
@@ -143,11 +124,11 @@ defmodule Brain.Knowledge.Academic.Paper do
     end
   end
 
-  @doc """
-  Returns author names as a formatted string.
-  """
+  @doc "Returns author names as a formatted string.\n"
   @spec author_string(t()) :: String.t()
-  def author_string(%__MODULE__{authors: []}), do: "Unknown authors"
+  def author_string(%__MODULE__{authors: []}) do
+    "Unknown authors"
+  end
 
   def author_string(%__MODULE__{authors: authors}) do
     names = Enum.map(authors, fn a -> a.name || "Unknown" end)
@@ -159,16 +140,20 @@ defmodule Brain.Knowledge.Academic.Paper do
     end
   end
 
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
-
   defp build_context(%__MODULE__{} = paper) do
     parts = [
       "Title: #{paper.title}",
       "Authors: #{author_string(paper)}",
-      if(paper.venue, do: "Venue: #{paper.venue}", else: nil),
-      if(paper.year, do: "Year: #{paper.year}", else: nil),
+      if(paper.venue) do
+        "Venue: #{paper.venue}"
+      else
+        nil
+      end,
+      if(paper.year) do
+        "Year: #{paper.year}"
+      else
+        nil
+      end,
       "Citations: #{paper.citation_count}"
     ]
 
@@ -187,13 +172,35 @@ defmodule Brain.Knowledge.Academic.Paper do
     end
   end
 
-  defp source_reliability(:semantic_scholar), do: 0.95
-  defp source_reliability(:arxiv), do: 0.95
-  defp source_reliability(:openalex), do: 0.90
-  defp source_reliability(_), do: 0.80
+  defp source_reliability(:semantic_scholar) do
+    0.95
+  end
 
-  defp citation_to_confidence(count) when count > 500, do: 0.95
-  defp citation_to_confidence(count) when count > 100, do: 0.85
-  defp citation_to_confidence(count) when count > 10, do: 0.70
-  defp citation_to_confidence(_), do: 0.50
+  defp source_reliability(:arxiv) do
+    0.95
+  end
+
+  defp source_reliability(:openalex) do
+    0.9
+  end
+
+  defp source_reliability(_) do
+    0.8
+  end
+
+  defp citation_to_confidence(count) when count > 500 do
+    0.95
+  end
+
+  defp citation_to_confidence(count) when count > 100 do
+    0.85
+  end
+
+  defp citation_to_confidence(count) when count > 10 do
+    0.7
+  end
+
+  defp citation_to_confidence(_) do
+    0.5
+  end
 end

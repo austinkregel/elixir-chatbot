@@ -1,15 +1,14 @@
 defmodule Brain.Analysis.RacingAnalyzerTest do
+  alias Brain.ML.EntityExtractor
+  alias Brain.Analysis
   use ExUnit.Case, async: false
 
-  alias Brain.Analysis.{RacingAnalyzer, Interpretation, AnalyzerResult}
+  alias Analysis.{RacingAnalyzer, Interpretation, AnalyzerResult}
   import Brain.TestHelpers
 
   setup do
-    # Start common test services (PubSub, IntentClassifierSimple, Gazetteer, etc.)
     start_test_services()
-
-    # Ensure entity maps are loaded for entity extraction
-    Brain.ML.EntityExtractor.load_entity_maps()
+    EntityExtractor.load_entity_maps()
     :ok
   end
 
@@ -27,7 +26,6 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
       result = RacingAnalyzer.race("")
 
       assert %Interpretation{} = result
-      # Should still return a valid struct even for empty input
       assert result.text == ""
     end
 
@@ -37,7 +35,6 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
       assert %Interpretation{} = result
       assert is_list(result.alternatives)
 
-      # Alternatives should have the expected structure
       Enum.each(result.alternatives, fn alt ->
         assert Map.has_key?(alt, :intent)
         assert Map.has_key?(alt, :activation)
@@ -46,16 +43,12 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
     end
 
     test "respects skip_heuristics option" do
-      # With skip_heuristics, should not use heuristic fast path
       result = RacingAnalyzer.race("Hello", skip_heuristics: true)
 
       assert %Interpretation{} = result
-      # Source should not be :heuristic when skipped
-      # (unless it came from another source)
     end
 
     test "respects skip_memory option" do
-      # With skip_memory, should not use memory similarity
       result = RacingAnalyzer.race("Hello", skip_memory: true)
 
       assert %Interpretation{} = result
@@ -64,16 +57,12 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
 
   describe "check_fast_path/4" do
     test "returns :no_match when no heuristic fires" do
-      # Use a random/unlikely string that won't match heuristics
-      # check_fast_path(text, world_id, user_id, cohort_id)
       result = RacingAnalyzer.check_fast_path("xyzabc123randomtext", "default", nil, nil)
 
       assert result == :no_match
     end
 
     test "returns tuple structure when fast path fires" do
-      # If we get a fast path, it should have the right structure
-      # Note: This depends on having matching heuristics in the store
       result = RacingAnalyzer.check_fast_path("Hello", "default", nil, nil)
 
       case result do
@@ -83,7 +72,6 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
           assert interpretation.activation >= 0.85
 
         :no_match ->
-          # No heuristic matched - this is also valid
           assert true
       end
     end
@@ -96,21 +84,20 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
       assert %Interpretation{} = result
       assert is_list(result.analyzer_results)
 
-      # Find the structural analyzer result
       structural_result =
         Enum.find(result.analyzer_results, fn r ->
           r.analyzer == :structural
         end)
 
       if structural_result do
-        # Should detect as a question
         assert structural_result.intent =~ ~r/question/i or
                  "question_mark" in (structural_result.indicators || [])
       end
     end
 
     test "structural analyzer detects WH-words" do
-      result = RacingAnalyzer.race("Where are you from?", skip_heuristics: true, skip_memory: true)
+      result =
+        RacingAnalyzer.race("Where are you from?", skip_heuristics: true, skip_memory: true)
 
       assert %Interpretation{} = result
 
@@ -132,7 +119,6 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
       assert %Interpretation{} = result
       assert is_list(result.analyzer_results)
 
-      # Find the model analyzer result
       model_result =
         Enum.find(result.analyzer_results, fn r ->
           r.analyzer == :model
@@ -149,9 +135,7 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
       result = RacingAnalyzer.race("Turn on the lights", skip_heuristics: true, skip_memory: true)
 
       assert %Interpretation{} = result
-      assert length(result.analyzer_results) >= 1
-
-      # Should have results from different analyzers
+      assert result.analyzer_results != []
       analyzer_names = Enum.map(result.analyzer_results, & &1.analyzer)
       assert :structural in analyzer_names or :model in analyzer_names
     end
@@ -165,7 +149,6 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
       assert result.activation >= 0.0
       assert result.activation <= 1.0
 
-      # Check alternatives are also normalized
       Enum.each(result.alternatives, fn alt ->
         assert alt.activation >= 0.0
         assert alt.activation <= 1.0
@@ -178,8 +161,6 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
       total_activation =
         result.activation + Enum.sum(Enum.map(result.alternatives, & &1.activation))
 
-      # After normalization, total should not exceed 1.0
-      # (allowing small floating point tolerance)
       assert total_activation <= 1.05
     end
   end
@@ -191,8 +172,6 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
       _result = RacingAnalyzer.race("What's the weather in New York?")
 
       elapsed = System.monotonic_time(:millisecond) - start_time
-
-      # Should complete within 3 seconds
       assert elapsed < 3000
     end
   end

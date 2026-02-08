@@ -6,17 +6,12 @@ defmodule Brain.ML.TrainerTest do
 
   @moduletag :training
 
-  # These tests use real training which can be slow
-  # Run with: mix test --only training
-
   describe "load_training_data/0" do
     test "returns list of {text, intent} tuples" do
       data = Trainer.load_training_data()
 
       assert is_list(data)
-      assert length(data) > 0
-
-      # Check structure of first element
+      assert data != []
       {text, intent} = hd(data)
       assert is_binary(text)
       assert is_binary(intent)
@@ -32,18 +27,13 @@ defmodule Brain.ML.TrainerTest do
 
     test "parses Dialogflow-style usersays files" do
       data = Trainer.load_training_data()
-
-      # Should have data from various intents
       intents = Enum.map(data, fn {_text, intent} -> intent end) |> Enum.uniq()
-
-      # Should have multiple different intents
       assert length(intents) > 1
     end
   end
 
   describe "build_tfidf_vectorizer/1" do
     test "builds vocabulary from real training data" do
-      # Use enough real data to have a valid vocabulary
       training_data = Trainer.load_training_data() |> Enum.take(100)
 
       vectorizer = Trainer.build_tfidf_vectorizer(training_data)
@@ -52,8 +42,6 @@ defmodule Brain.ML.TrainerTest do
       assert Map.has_key?(vectorizer, :vocabulary)
       assert Map.has_key?(vectorizer, :idf_weights)
       assert Map.has_key?(vectorizer, :max_features)
-
-      # Vocabulary should contain words
       assert is_map(vectorizer.vocabulary)
       assert map_size(vectorizer.vocabulary) > 0
     end
@@ -62,8 +50,6 @@ defmodule Brain.ML.TrainerTest do
       training_data = Trainer.load_training_data() |> Enum.take(50)
 
       vectorizer = Trainer.build_tfidf_vectorizer(training_data)
-
-      # Check if idf_weights is a tensor
       assert Nx.is_tensor(vectorizer.idf_weights)
     end
   end
@@ -71,12 +57,10 @@ defmodule Brain.ML.TrainerTest do
   describe "train_svm_classifier/2" do
     @tag :slow
     test "produces model with training_vectors and label_encoder" do
-      # Use larger real training data subset to ensure enough vocabulary
       training_data = Trainer.load_training_data() |> Enum.take(200)
 
       vectorizer = Trainer.build_tfidf_vectorizer(training_data)
 
-      # Only run if we have a valid vectorizer
       if map_size(vectorizer.vocabulary) > 0 do
         try do
           classifier = Trainer.train_svm_classifier(training_data, vectorizer)
@@ -84,14 +68,11 @@ defmodule Brain.ML.TrainerTest do
           assert is_map(classifier)
           assert Map.has_key?(classifier, :model)
           assert Map.has_key?(classifier, :label_encoder)
-
-          # Check model structure
           model = classifier.model
           assert Map.has_key?(model, :training_vectors)
           assert Map.has_key?(model, :training_labels)
         rescue
           MatchError ->
-            # Known issue with the trainer - accept this for now
             :ok
         end
       end
@@ -112,13 +93,11 @@ defmodule Brain.ML.TrainerTest do
           assert Map.has_key?(label_encoder, :label_to_index)
           assert Map.has_key?(label_encoder, :index_to_label)
 
-          # Bidirectional mapping should be consistent
           Enum.each(label_encoder.label_to_index, fn {label, index} ->
             assert label_encoder.index_to_label[index] == label
           end)
         rescue
           MatchError ->
-            # Known issue with the trainer - accept this for now
             :ok
         end
       end
@@ -137,14 +116,11 @@ defmodule Brain.ML.TrainerTest do
       assert is_map(result)
       assert Map.has_key?(result, :gazetteer_entries)
       assert Map.has_key?(result, :entity_types)
-
-      # Should have some entries (from data files)
       assert is_integer(result.gazetteer_entries)
       assert is_integer(result.entity_types)
     end
   end
 
-  # These tests are slow and require full training - run explicitly
   describe "train_intent_classifier/2 (slow)" do
     @tag :slow
     @tag timeout: 180_000
@@ -164,8 +140,6 @@ defmodule Brain.ML.TrainerTest do
       assert result == :ok
       assert updated_stats.intent_samples > 0
       assert updated_stats.vocab_size > 0
-
-      # Check that model files were created
       assert File.exists?(Path.join(models_path, "classifier.term"))
       assert File.exists?(Path.join(models_path, "embedder.term"))
     end
@@ -208,12 +182,8 @@ defmodule Brain.ML.TrainerTest do
 
       assert {:ok, stats} = result
       assert is_map(stats)
-
-      # Check stats
       assert stats.intent_samples > 0
       assert stats.vocab_size > 0
-
-      # Check that key files were created
       assert File.exists?(Path.join(models_path, "classifier.term"))
       assert File.exists?(Path.join(models_path, "embedder.term"))
       assert File.exists?(Path.join(models_path, "gazetteer.term"))

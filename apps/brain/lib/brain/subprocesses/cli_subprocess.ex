@@ -191,7 +191,7 @@ defmodule Brain.Subprocesses.CliSubprocess do
         """
         Available commands:
         - help: Show this help
-        - status: Show subprocess status  
+        - status: Show subprocess status
         - conversations: List conversations
         - create <name>: Create conversation
         - send <id> <message>: Send message to conversation via Brain

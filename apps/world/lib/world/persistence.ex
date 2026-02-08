@@ -1,65 +1,30 @@
 defmodule World.Persistence do
-  @moduledoc """
-  Persistence layer for training worlds.
+  @moduledoc "Persistence layer for training worlds.\n\nHandles saving and loading world data:\n- Persistent worlds: Saved to JSON files in priv/training_worlds/\n- Ephemeral worlds: In-memory only (ETS), no disk persistence\n\nDirectory structure:\n  priv/training_worlds/{world_id}/\n    config.json          - World configuration\n    gazetteer_overlay.json - Entities added in this world\n    discovered_entities.json - Candidates pending promotion\n    events.jsonl         - Append-only event log\n    metrics.json         - Aggregated metrics\n    type_inferrer.json   - Learned type inference data\n    episodes.json        - Episodic memories (NEW)\n    semantics.json       - Semantic facts (NEW)\n    knowledge.json       - Learned knowledge (NEW)\n    intents/             - World-specific intent data (NEW)\n    models/              - World-specific trained models (NEW)\n"
 
-  Handles saving and loading world data:
-  - Persistent worlds: Saved to JSON files in priv/training_worlds/
-  - Ephemeral worlds: In-memory only (ETS), no disk persistence
-
-  Directory structure:
-    priv/training_worlds/{world_id}/
-      config.json          - World configuration
-      gazetteer_overlay.json - Entities added in this world
-      discovered_entities.json - Candidates pending promotion
-      events.jsonl         - Append-only event log
-      metrics.json         - Aggregated metrics
-      type_inferrer.json   - Learned type inference data
-      episodes.json        - Episodic memories (NEW)
-      semantics.json       - Semantic facts (NEW)
-      knowledge.json       - Learned knowledge (NEW)
-      intents/             - World-specific intent data (NEW)
-      models/              - World-specific trained models (NEW)
-  """
-
+  alias Brain.Memory.Store
+  alias Brain.Memory.Types
   require Logger
 
   alias World.{TrainingWorld, TypeInferrer}
   alias World.Metrics, as: WorldMetrics
   alias World.Events, as: WorldEvents
-  alias Brain.Memory.Types.{Episode, SemanticFact}
+  alias Types.{Episode, SemanticFact}
 
-  # ============================================================================
-  # Public API
-  # ============================================================================
-
-  @doc """
-  Returns the base path for training world storage.
-
-  In test mode (when `:test_world_sandbox` is enabled), returns a temp directory
-  to ensure test worlds are completely isolated from production worlds.
-  """
+  @doc "Returns the base path for training world storage.\n\nIn test mode (when `:test_world_sandbox` is enabled), returns a temp directory\nto ensure test worlds are completely isolated from production worlds.\n"
   def base_path do
     if Application.get_env(:world, :test_world_sandbox) do
-      # Test environment uses temp directory for complete isolation
       Path.join(System.tmp_dir!(), "chat_bot_test_worlds")
     else
-      # Use configured path or default to World app's priv directory
       Application.get_env(:world, :training_worlds_path) || World.priv_path("training_worlds")
     end
   end
 
-  @doc """
-  Returns the path for a specific world's data.
-  """
+  @doc "Returns the path for a specific world's data.\n"
   def world_path(world_id) do
     Path.join(base_path(), world_id)
   end
 
-  @doc """
-  Saves all world data to disk.
-
-  Only works for persistent worlds.
-  """
+  @doc "Saves all world data to disk.\n\nOnly works for persistent worlds.\n"
   def save(world_id, data) when is_binary(world_id) and is_map(data) do
     world = Map.get(data, :world)
 
@@ -88,9 +53,7 @@ defmodule World.Persistence do
     end
   end
 
-  @doc """
-  Loads a world from disk.
-  """
+  @doc "Loads a world from disk.\n"
   def load(world_id) when is_binary(world_id) do
     path = world_path(world_id)
 
@@ -103,7 +66,6 @@ defmodule World.Persistence do
            {:ok, episodes} <- load_episodes(path),
            {:ok, semantics} <- load_semantics(path),
            {:ok, knowledge} <- load_knowledge(path) do
-        # Load type inferrer data
         load_type_inferrer(path)
 
         {:ok,
@@ -127,9 +89,7 @@ defmodule World.Persistence do
     end
   end
 
-  @doc """
-  Deletes all persisted data for a world.
-  """
+  @doc "Deletes all persisted data for a world.\n"
   def delete(world_id) when is_binary(world_id) do
     path = world_path(world_id)
 
@@ -147,9 +107,7 @@ defmodule World.Persistence do
     end
   end
 
-  @doc """
-  Lists all persisted worlds.
-  """
+  @doc "Lists all persisted worlds.\n"
   def list_persisted_worlds do
     path = base_path()
 
@@ -180,17 +138,14 @@ defmodule World.Persistence do
     end
   end
 
-  @doc """
-  Saves world-specific memory (episodes and semantics) to disk.
-  """
+  @doc "Saves world-specific memory (episodes and semantics) to disk.\n"
   def save_memory(world_id) when is_binary(world_id) do
     path = world_path(world_id)
 
     if File.exists?(path) do
-      # Get episodes and semantics from the Memory.Store
-      case Brain.Memory.Store.all_episodes(world_id: world_id) do
+      case Store.all_episodes(world_id: world_id) do
         {:ok, episodes} ->
-          case Brain.Memory.Store.all_semantics(world_id: world_id) do
+          case Store.all_semantics(world_id: world_id) do
             {:ok, semantics} ->
               with :ok <- save_episodes(path, episodes),
                    :ok <- save_semantics(path, semantics) do
@@ -215,23 +170,19 @@ defmodule World.Persistence do
     end
   end
 
-  @doc """
-  Loads world-specific memory (episodes and semantics) into the Memory.Store.
-  """
+  @doc "Loads world-specific memory (episodes and semantics) into the Memory.Store.\n"
   def load_memory(world_id) when is_binary(world_id) do
     path = world_path(world_id)
 
     if File.exists?(path) do
       with {:ok, episodes} <- load_episodes(path),
            {:ok, semantics} <- load_semantics(path) do
-        # Add episodes to Memory.Store
         Enum.each(episodes, fn episode ->
-          Brain.Memory.Store.add_episode_direct(episode, world_id: world_id)
+          Store.add_episode_direct(episode, world_id: world_id)
         end)
 
-        # Add semantics to Memory.Store
         Enum.each(semantics, fn semantic ->
-          Brain.Memory.Store.add_semantic(semantic, world_id: world_id)
+          Store.add_semantic(semantic, world_id: world_id)
         end)
 
         Logger.info("Loaded world memory", %{
@@ -247,11 +198,7 @@ defmodule World.Persistence do
     end
   end
 
-  @doc """
-  Appends an event to the event log file.
-
-  More efficient than rewriting the entire events file.
-  """
+  @doc "Appends an event to the event log file.\n\nMore efficient than rewriting the entire events file.\n"
   def append_event(world_id, %WorldEvents{} = event) do
     path = world_path(world_id)
     events_path = Path.join(path, "events.jsonl")
@@ -272,10 +219,6 @@ defmodule World.Persistence do
       {:error, :world_not_found}
     end
   end
-
-  # ============================================================================
-  # Private Functions - Saving
-  # ============================================================================
 
   defp ensure_directory(path) do
     case File.mkdir_p(path) do
@@ -325,7 +268,9 @@ defmodule World.Persistence do
     write_json(metrics_path, data)
   end
 
-  defp save_metrics(_path, nil), do: :ok
+  defp save_metrics(_path, nil) do
+    :ok
+  end
 
   defp save_candidates(path, candidates) when is_list(candidates) do
     candidates_path = Path.join(path, "discovered_entities.json")
@@ -356,8 +301,10 @@ defmodule World.Persistence do
     content =
       events
       |> Enum.reverse()
-      |> Enum.map(&encode_event/1)
-      |> Enum.join("\n")
+      |> Enum.map_join(
+        "\n",
+        &encode_event/1
+      )
 
     case File.write(events_path, content <> "\n") do
       :ok -> :ok
@@ -391,7 +338,9 @@ defmodule World.Persistence do
     write_json(episodes_path, data)
   end
 
-  defp save_episodes(_path, _), do: :ok
+  defp save_episodes(_path, _) do
+    :ok
+  end
 
   defp save_semantics(path, semantics) when is_list(semantics) do
     semantics_path = Path.join(path, "semantics.json")
@@ -411,18 +360,18 @@ defmodule World.Persistence do
     write_json(semantics_path, data)
   end
 
-  defp save_semantics(_path, _), do: :ok
+  defp save_semantics(_path, _) do
+    :ok
+  end
 
   defp save_knowledge(path, knowledge) when is_map(knowledge) do
     knowledge_path = Path.join(path, "knowledge.json")
     write_json(knowledge_path, knowledge)
   end
 
-  defp save_knowledge(_path, _), do: :ok
-
-  # ============================================================================
-  # Private Functions - Loading
-  # ============================================================================
+  defp save_knowledge(_path, _) do
+    :ok
+  end
 
   defp load_config(path) do
     config_path = Path.join(path, "config.json")
@@ -553,7 +502,6 @@ defmodule World.Persistence do
 
     case read_json(inferrer_path) do
       {:ok, data} ->
-        # Convert string keys back to atoms where needed
         patterns =
           Map.get(data, "patterns", %{})
           |> Enum.into(%{}, fn {k, v} -> {k, v} end)
@@ -643,10 +591,6 @@ defmodule World.Persistence do
     end
   end
 
-  # ============================================================================
-  # Helpers
-  # ============================================================================
-
   defp write_json(path, data) do
     case Jason.encode(data, pretty: true) do
       {:ok, json} ->
@@ -711,12 +655,25 @@ defmodule World.Persistence do
     _ -> nil
   end
 
-  defp encode_datetime(nil), do: nil
-  defp encode_datetime(%DateTime{} = dt), do: DateTime.to_iso8601(dt)
-  defp encode_datetime(other), do: other
+  defp encode_datetime(nil) do
+    nil
+  end
 
-  defp parse_datetime(nil), do: nil
-  defp parse_datetime(""), do: nil
+  defp encode_datetime(%DateTime{} = dt) do
+    DateTime.to_iso8601(dt)
+  end
+
+  defp encode_datetime(other) do
+    other
+  end
+
+  defp parse_datetime(nil) do
+    nil
+  end
+
+  defp parse_datetime("") do
+    nil
+  end
 
   defp parse_datetime(str) when is_binary(str) do
     case DateTime.from_iso8601(str) do
@@ -725,7 +682,9 @@ defmodule World.Persistence do
     end
   end
 
-  defp parse_datetime(other), do: other
+  defp parse_datetime(other) do
+    other
+  end
 
   defp encode_cooccurrence_counts(counts) when is_map(counts) do
     Enum.into(counts, %{}, fn {{a, b}, count} ->
@@ -755,10 +714,18 @@ defmodule World.Persistence do
           k
         end
 
-      value = if is_map(v), do: atomize_keys(v), else: v
+      value =
+        if is_map(v) do
+          atomize_keys(v)
+        else
+          v
+        end
+
       {key, value}
     end)
   end
 
-  defp atomize_keys(other), do: other
+  defp atomize_keys(other) do
+    other
+  end
 end

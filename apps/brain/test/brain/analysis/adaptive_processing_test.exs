@@ -1,18 +1,11 @@
 defmodule Brain.Analysis.AdaptiveProcessingTest do
-  @moduledoc """
-  Tests for the adaptive cognitive processing system.
+  @moduledoc "Tests for the adaptive cognitive processing system.\n\nTests cover:\n- Activation normalization and limits\n- Analyzer calibration\n- Backtracking with thrash protection\n- Heuristic scope isolation\n"
 
-  Tests cover:
-  - Activation normalization and limits
-  - Analyzer calibration
-  - Backtracking with thrash protection
-  - Heuristic scope isolation
-  """
-
+  alias Brain.Analysis
   use ExUnit.Case, async: false
   import Brain.TestHelpers
 
-  alias Brain.Analysis.{
+  alias Analysis.{
     Interpretation,
     AnalyzerResult,
     ActivationPool,
@@ -21,10 +14,6 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
     HeuristicStore,
     OutcomeLearner
   }
-
-  # ============================================================================
-  # Interpretation Tests
-  # ============================================================================
 
   describe "Interpretation" do
     test "creates interpretation with activation levels" do
@@ -42,8 +31,8 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
         AnalyzerResult.new(:pattern_recognition, "weather.query", 0.85,
           calibrated_activation: 0.85
         ),
-        AnalyzerResult.new(:keyword, "news.query", 0.60, calibrated_activation: 0.60),
-        AnalyzerResult.new(:structural, "question.factual", 0.50, calibrated_activation: 0.50)
+        AnalyzerResult.new(:keyword, "news.query", 0.6, calibrated_activation: 0.6),
+        AnalyzerResult.new(:structural, "question.factual", 0.5, calibrated_activation: 0.5)
       ]
 
       interp = Interpretation.from_analyzer_results("What's the weather?", results)
@@ -71,7 +60,6 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
       assert promoted.intent == "weather.query"
       assert promoted.was_promoted == true
       assert promoted.backtrack_count == 1
-      # Original is now in alternatives
       assert Enum.any?(promoted.alternatives, &(&1.intent == "greeting"))
     end
 
@@ -82,10 +70,10 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
     end
 
     test "reports confidence level correctly" do
-      high = Interpretation.new("test", "text", 0.90, :keyword)
+      high = Interpretation.new("test", "text", 0.9, :keyword)
       medium = Interpretation.new("test", "text", 0.65, :keyword)
       low = Interpretation.new("test", "text", 0.35, :keyword)
-      very_low = Interpretation.new("test", "text", 0.10, :keyword)
+      very_low = Interpretation.new("test", "text", 0.1, :keyword)
 
       assert Interpretation.confidence_level(high) == :high
       assert Interpretation.confidence_level(medium) == :medium
@@ -93,10 +81,6 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
       assert Interpretation.confidence_level(very_low) == :very_low
     end
   end
-
-  # ============================================================================
-  # Activation Pool Tests
-  # ============================================================================
 
   describe "ActivationPool" do
     test "normalizes activations when sum exceeds 1.0" do
@@ -119,55 +103,35 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
       ]
 
       normalized = ActivationPool.normalize(interpretations)
-
-      # Should be unchanged (except for minimum enforcement)
       assert Enum.map(normalized, & &1.activation) == [0.3, 0.2]
     end
 
     test "applies boost with diminishing returns" do
-      # Below threshold - full effect
       result1 = ActivationPool.apply_boost(0.3, 0.2, :seeded)
       assert result1 > 0.3
-
-      # At threshold - reduced effect
       result2 = ActivationPool.apply_boost(0.7, 0.2, :seeded)
       boost_below = result1 - 0.3
       boost_at = result2 - 0.7
       assert boost_at < boost_below
-
-      # Above threshold - heavily dampened
       result3 = ActivationPool.apply_boost(0.9, 0.2, :seeded)
       boost_above = result3 - 0.9
-      # At 0.9, boost should be minimal (only 10% of requested boost applies)
       assert boost_above <= boost_at
-      # 10% of 0.2 boost, capped
       assert boost_above <= 0.04
     end
 
     test "respects source-specific boost caps" do
-      # Seeded has highest cap (0.40)
       seeded = ActivationPool.apply_boost(0.0, 1.0, :seeded)
-
-      # Learned user has lowest cap (0.15)
       user = ActivationPool.apply_boost(0.0, 1.0, :learned_user)
 
       assert seeded > user
-      # Can't exceed base + max_boost
       assert seeded <= 0.5
       assert user <= 0.25
     end
 
     test "applies stacked boosts with diminishing effect" do
-      boosts = [
-        {:seeded, 0.3},
-        {:learned_global, 0.2},
-        {:learned_user, 0.1}
-      ]
+      boosts = [seeded: 0.3, learned_global: 0.2, learned_user: 0.1]
 
       result = ActivationPool.apply_stacked_boosts(0.0, boosts)
-
-      # Result should be less than sum of all boosts
-      # because of diminishing stacking
       assert result < 0.6
       assert result > 0.3
     end
@@ -188,10 +152,6 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
       refute ActivationPool.approaching_limit?(low_interpretations, 0.9)
     end
   end
-
-  # ============================================================================
-  # Backtrack Controller Tests
-  # ============================================================================
 
   describe "BacktrackController" do
     test "allows backtracking within budget" do
@@ -214,7 +174,6 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
     test "forces clarification when budget exhausted" do
       state = %BacktrackController{
         input_text: "test input",
-        # At max
         backtrack_count: 2
       }
 
@@ -232,15 +191,12 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
     end
 
     test "detects oscillation between interpretations" do
-      # State shows we already went intent1 -> intent2, now trying to go back to intent1
       state = %BacktrackController{
         input_text: "test input",
         backtrack_count: 1,
-        # Previously was intent1
         interpretation_history: ["intent1"]
       }
 
-      # Currently at intent2, trying to backtrack to intent1 (which we came from)
       interp =
         Interpretation.new("intent2", "test input", 0.7, :keyword)
         |> Map.put(:alternatives, [
@@ -254,7 +210,6 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
     end
 
     test "checks for contradictions" do
-      # Missing required slots
       interp =
         Interpretation.new("weather.query", "What's the weather?", 0.8, :keyword)
         |> Interpretation.with_slots(%Brain.Analysis.SlotResult{
@@ -265,7 +220,6 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
       assert {:needs_backtrack, {:missing_required, _}} =
                BacktrackController.check_for_contradictions(interp)
 
-      # No contradictions
       ok_interp =
         Interpretation.new("greeting", "Hello", 0.9, :keyword)
         |> Interpretation.with_slots(%Brain.Analysis.SlotResult{all_required_filled: true})
@@ -287,36 +241,24 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
     end
   end
 
-  # ============================================================================
-  # Analyzer Calibration Tests
-  # ============================================================================
-
   describe "AnalyzerCalibration" do
     setup do
-      # Start calibration GenServer for tests
       ensure_process_started(AnalyzerCalibration, fn -> AnalyzerCalibration.start_link([]) end)
       :ok
     end
 
     test "calibrates raw scores" do
       {calibrated, error} = AnalyzerCalibration.calibrate(:keyword, 0.8)
-
-      # Calibrated should be <= raw (adjusted by historical accuracy)
       assert is_float(calibrated)
       assert calibrated <= 0.8
       assert is_float(error)
     end
 
     test "tracks outcomes and updates accuracy" do
-      # Track some outcomes
       AnalyzerCalibration.track_outcome(:structural, 0.75, true)
       AnalyzerCalibration.track_outcome(:structural, 0.75, true)
       AnalyzerCalibration.track_outcome(:structural, 0.75, false)
-
-      # Allow async processing
       Process.sleep(50)
-
-      # Accuracy for bucket 7 (0.7-0.8) should be updated
       accuracy = AnalyzerCalibration.get_bucket_accuracy(:structural, 7)
       assert is_float(accuracy)
     end
@@ -334,26 +276,19 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
     end
   end
 
-  # ============================================================================
-  # Heuristic Store Tests
-  # ============================================================================
-
   describe "HeuristicStore" do
     setup do
-      # Start heuristic store under ExUnit supervision
       ensure_started({HeuristicStore, seeded_path: "data/heuristics/seeded_heuristics.json"})
       :ok
     end
 
     test "matches global heuristics" do
-      # HeuristicStore.match_best(text, world_id, user_id \\ nil, cohort_id \\ nil)
       case HeuristicStore.match_best("Hello there!", "default") do
         {:ok, heuristic, confidence} ->
           assert heuristic.scope == :global
           assert confidence > 0.3
 
         {:error, :no_match} ->
-          # Acceptable if seeded file not loaded
           :ok
       end
     end
@@ -374,7 +309,6 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
     end
 
     test "isolates user-scoped heuristics" do
-      # Add user-specific heuristic with world_id
       {:ok, _user_heuristic} =
         HeuristicStore.add_heuristic(
           %{phrase: "the usual for user123"},
@@ -384,17 +318,13 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
           world_id: "default"
         )
 
-      # Should match for correct user
       user123_matches = HeuristicStore.match_scope(:user, "user123", "the usual for user123")
-      assert length(user123_matches) > 0
-
-      # Should NOT match for different user
+      assert user123_matches != []
       user456_matches = HeuristicStore.match_scope(:user, "user456", "the usual for user123")
       assert Enum.empty?(user456_matches)
     end
 
     test "respects scope activation caps" do
-      # Add heuristics at different scopes with world_id
       {:ok, global} =
         HeuristicStore.add_heuristic(
           %{phrase: "global test xyz"},
@@ -412,8 +342,7 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
           world_id: "default"
         )
 
-      # Global max boost is 0.40, user max boost is 0.15
-      assert global.max_activation_boost == 0.40
+      assert global.max_activation_boost == 0.4
       assert user.max_activation_boost == 0.15
     end
 
@@ -428,8 +357,6 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
       HeuristicStore.record_success(heuristic.id)
       HeuristicStore.record_success(heuristic.id)
       HeuristicStore.record_failure(heuristic.id)
-
-      # Allow async processing
       Process.sleep(50)
 
       updated = HeuristicStore.get(heuristic.id)
@@ -445,11 +372,12 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
           scope: :global
         )
 
-      # Initially healthy (not enough data)
       assert HeuristicStore.healthy?(healthy.id)
 
-      # Add some successes
-      for _ <- 1..5, do: HeuristicStore.record_success(healthy.id)
+      for _ <- 1..5 do
+        HeuristicStore.record_success(healthy.id)
+      end
+
       Process.sleep(50)
 
       assert HeuristicStore.healthy?(healthy.id)
@@ -463,25 +391,23 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
           scope: :global
         )
 
-      # Add failures to exceed threshold
-      for _ <- 1..2, do: HeuristicStore.record_success(heuristic.id)
-      for _ <- 1..5, do: HeuristicStore.record_failure(heuristic.id)
+      for _ <- 1..2 do
+        HeuristicStore.record_success(heuristic.id)
+      end
+
+      for _ <- 1..5 do
+        HeuristicStore.record_failure(heuristic.id)
+      end
 
       Process.sleep(50)
 
       updated = HeuristicStore.get(heuristic.id)
-      # Should be deprecated due to >20% failure rate
       assert updated.deprecated == true
     end
   end
 
-  # ============================================================================
-  # Outcome Learner Tests
-  # ============================================================================
-
   describe "OutcomeLearner" do
     setup do
-      # Start stores under ExUnit supervision
       ensure_started({HeuristicStore, seeded_path: "data/heuristics/seeded_heuristics.json"})
       ensure_started(AnalyzerCalibration)
 
@@ -508,7 +434,7 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
 
     test "assesses likely success from high confidence" do
       interp =
-        Interpretation.new("weather.query", "What's the weather?", 0.90, :pattern_recognition)
+        Interpretation.new("weather.query", "What's the weather?", 0.9, :pattern_recognition)
 
       outcome = OutcomeLearner.assess_outcome(interp, "Here's the weather...", nil)
 
@@ -527,15 +453,10 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
     end
 
     test "determines appropriate scope for pattern" do
-      # Phrase pattern -> user scope
       phrase_pattern = %{phrase: "my usual order"}
       assert OutcomeLearner.determine_scope(phrase_pattern, "user1", "cohort1") == :user
-
-      # Keyword pattern -> cohort scope
       keyword_pattern = %{keywords: ["weather", "forecast"]}
       assert OutcomeLearner.determine_scope(keyword_pattern, "user1", "cohort1") == :cohort
-
-      # First word pattern -> global scope
       first_word_pattern = %{first_word: ["play"]}
       assert OutcomeLearner.determine_scope(first_word_pattern, "user1", "cohort1") == :global
     end
@@ -549,39 +470,29 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
           :pattern_recognition
         )
 
-      # Should not crash and should record learning
-      outcome = OutcomeLearner.learn_from_outcome(interp, "Response",
-        user_id: "test_user",
-        world_id: "default"
-      )
+      outcome =
+        OutcomeLearner.learn_from_outcome(interp, "Response",
+          user_id: "test_user",
+          world_id: "default"
+        )
 
       assert outcome in [:likely_success, :uncertain]
     end
   end
 
-  # ============================================================================
-  # Integration Tests
-  # ============================================================================
-
   describe "Integration" do
     test "full pipeline: racing -> validation -> backtracking -> learning" do
-      # This tests the complete flow without actually running all services
-
-      # 1. Create initial interpretation (simulating racing result)
       initial =
-        Interpretation.new("weather.query", "What's the weather?", 0.80, :pattern_recognition)
+        Interpretation.new("weather.query", "What's the weather?", 0.8, :pattern_recognition)
         |> Map.put(:alternatives, [
-          %{intent: "question.factual", activation: 0.40, source: :structural, raw_score: 0.40}
+          %{intent: "question.factual", activation: 0.4, source: :structural, raw_score: 0.4}
         ])
         |> Interpretation.with_slots(%Brain.Analysis.SlotResult{
           all_required_filled: false,
           missing_required: ["location"]
         })
 
-      # 2. Check for contradictions
       assert {:needs_backtrack, _reason} = BacktrackController.check_for_contradictions(initial)
-
-      # 3. Attempt backtrack
       state = BacktrackController.new("What's the weather?")
 
       {:ok, new_state, promoted, _cost} =
@@ -589,19 +500,17 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
 
       assert promoted.intent == "question.factual"
       assert new_state.backtrack_count == 1
-
-      # 4. Normalize activations
       normalized = ActivationPool.normalize_with_alternatives(promoted)
       assert normalized.activation <= 1.0
-
-      # 5. Would then proceed to response and learning
     end
 
     test "stability: activation cannot exceed 1.0 even with many boosts" do
       base = 0.3
 
-      # Apply many stacked boosts
-      boosts = for _i <- 1..10, do: {:seeded, 0.2}
+      boosts =
+        for _i <- 1..10 do
+          {:seeded, 0.2}
+        end
 
       result = ActivationPool.apply_stacked_boosts(base, boosts)
 
@@ -615,24 +524,20 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
         Interpretation.new("intent1", "ambiguous input", 0.6, :keyword)
         |> Map.put(:alternatives, [
           %{intent: "intent2", activation: 0.55, source: :structural, raw_score: 0.55},
-          %{intent: "intent3", activation: 0.50, source: :model, raw_score: 0.50}
+          %{intent: "intent3", activation: 0.5, source: :model, raw_score: 0.5}
         ])
 
-      # First backtrack
       {:ok, state, interp, _} =
         BacktrackController.attempt_backtrack(state, interp, :contradiction)
 
-      # Second backtrack
       {:ok, state, interp, _} =
         BacktrackController.attempt_backtrack(state, interp, :contradiction)
 
-      # Third should be forced clarification
       result = BacktrackController.attempt_backtrack(state, interp, :contradiction)
       assert {:force_clarification, _} = result
     end
   end
 
-  # Helper to safely start a process
   defp ensure_process_started(name, start_fn) do
     case Process.whereis(name) do
       nil ->

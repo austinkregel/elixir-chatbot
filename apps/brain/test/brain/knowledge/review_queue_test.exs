@@ -1,16 +1,16 @@
 defmodule Brain.Knowledge.ReviewQueueTest do
+  alias Brain.Knowledge.Types
+  alias Brain.Knowledge
   use ExUnit.Case, async: false
   import Brain.TestHelpers
 
-  alias Brain.Knowledge.{ReviewQueue, SourceReliability}
-  alias Brain.Knowledge.Types.{Finding, SourceInfo, ReviewCandidate}
+  alias Knowledge.{ReviewQueue, SourceReliability}
+  alias Types.{Finding, SourceInfo, ReviewCandidate}
 
   setup do
     ensure_pubsub_started()
     ensure_started(SourceReliability)
     ensure_started(ReviewQueue)
-
-    # Clear queue before each test
     ReviewQueue.clear()
 
     :ok
@@ -68,8 +68,6 @@ defmodule Brain.Knowledge.ReviewQueueTest do
       ReviewQueue.add(high_conf)
 
       pending = ReviewQueue.get_pending()
-
-      # High confidence should come first
       assert hd(pending).aggregate_confidence == 0.9
     end
   end
@@ -129,11 +127,16 @@ defmodule Brain.Knowledge.ReviewQueueTest do
 
   describe "bulk_approve/1" do
     test "approves multiple candidates" do
-      candidates = for i <- 1..5, do: build_test_candidate("Entity#{i}", "Claim #{i}")
-      ids = Enum.map(candidates, fn c ->
-        ReviewQueue.add(c)
-        c.id
-      end)
+      candidates =
+        for i <- 1..5 do
+          build_test_candidate("Entity#{i}", "Claim #{i}")
+        end
+
+      ids =
+        Enum.map(candidates, fn c ->
+          ReviewQueue.add(c)
+          c.id
+        end)
 
       {:ok, count} = ReviewQueue.bulk_approve(ids)
 
@@ -144,11 +147,16 @@ defmodule Brain.Knowledge.ReviewQueueTest do
 
   describe "bulk_reject/1" do
     test "rejects multiple candidates" do
-      candidates = for i <- 1..3, do: build_test_candidate("Entity#{i}", "Claim #{i}")
-      ids = Enum.map(candidates, fn c ->
-        ReviewQueue.add(c)
-        c.id
-      end)
+      candidates =
+        for i <- 1..3 do
+          build_test_candidate("Entity#{i}", "Claim #{i}")
+        end
+
+      ids =
+        Enum.map(candidates, fn c ->
+          ReviewQueue.add(c)
+          c.id
+        end)
 
       {:ok, count} = ReviewQueue.bulk_reject(ids)
 
@@ -188,11 +196,7 @@ defmodule Brain.Knowledge.ReviewQueueTest do
     test "persists across restarts" do
       candidate = build_test_candidate("Persist", "Persistence test claim")
       ReviewQueue.add(candidate)
-
-      # Force persist
       ReviewQueue.persist()
-
-      # Simulate restart by stopping and restarting
       GenServer.stop(ReviewQueue)
       Process.sleep(100)
 
@@ -204,21 +208,14 @@ defmodule Brain.Knowledge.ReviewQueueTest do
     end
   end
 
-  # Helper functions
-
   defp build_test_candidate(entity, claim, opts \\ []) do
     confidence = Keyword.get(opts, :confidence, 0.7)
     domain = Keyword.get(opts, :domain, "test-source.com")
 
-    source = SourceInfo.new("https://#{domain}/article",
-      reliability_score: 0.8,
-      trust_tier: :verified
-    )
+    source =
+      SourceInfo.new("https://#{domain}/article", reliability_score: 0.8, trust_tier: :verified)
 
-    finding = Finding.new(claim, entity, source,
-      entity_type: "location",
-      confidence: confidence
-    )
+    finding = Finding.new(claim, entity, source, entity_type: "location", confidence: confidence)
 
     ReviewCandidate.new(finding, aggregate_confidence: confidence)
   end

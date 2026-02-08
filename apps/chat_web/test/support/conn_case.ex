@@ -1,52 +1,36 @@
 defmodule ChatWeb.ConnCase do
-  @moduledoc """
-  This module defines the test case to be used by
-  tests that require setting up a connection.
+  @moduledoc "This module defines the test case to be used by\ntests that require setting up a connection.\n\nSuch tests rely on `Phoenix.ConnTest` and also\nimport other functionality to make it easier\nto build common data structures.\n"
 
-  Such tests rely on `Phoenix.ConnTest` and also
-  import other functionality to make it easier
-  to build common data structures.
-  """
-
+  alias ChatWeb.Endpoint
+  alias Phoenix.ConnTest
   use ExUnit.CaseTemplate
 
   using do
     quote do
-      # Import conveniences for testing with connections
       import Plug.Conn
       import Phoenix.ConnTest
       import ChatWeb.ConnCase
 
       alias ChatWeb.Router.Helpers, as: Routes
-
-      # The default endpoint for testing
       @endpoint ChatWeb.Endpoint
-
-      # Set router for verified routes
       @router ChatWeb.Router
-
-      # Import Phoenix path sigil
       import Phoenix.VerifiedRoutes, only: [sigil_p: 2]
     end
   end
 
   setup tags do
-    # Ensure the endpoint is started for tests that need it
     unless tags[:skip_endpoint] do
       ensure_endpoint_started()
     end
 
-    %{conn: Phoenix.ConnTest.build_conn()}
+    %{conn: ConnTest.build_conn()}
   end
 
   defp ensure_endpoint_started do
-    # Check if the Endpoint is already started
     case Process.whereis(ChatWeb.Endpoint) do
       nil ->
-        # Start the endpoint
-        case ChatWeb.Endpoint.start_link() do
+        case Endpoint.start_link() do
           {:ok, _pid} ->
-            # Wait for ETS table to be ready
             wait_for_endpoint_ready()
 
           {:error, {:already_started, _pid}} ->
@@ -57,7 +41,6 @@ defmodule ChatWeb.ConnCase do
         end
 
       _pid ->
-        # Already started, but ensure ETS is ready
         wait_for_endpoint_ready()
     end
   end
@@ -70,8 +53,7 @@ defmodule ChatWeb.ConnCase do
 
   defp wait_for_endpoint_ready(attempts) do
     try do
-      # Try to access the config - this will fail if ETS table isn't ready
-      _ = ChatWeb.Endpoint.config(:secret_key_base)
+      _ = Endpoint.config(:secret_key_base)
       :ok
     rescue
       ArgumentError ->

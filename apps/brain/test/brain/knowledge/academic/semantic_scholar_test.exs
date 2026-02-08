@@ -3,7 +3,6 @@ defmodule Brain.Knowledge.Academic.SemanticScholarTest do
 
   alias Brain.Knowledge.Academic.Paper
 
-  # Tests that don't require API calls
   describe "Paper struct" do
     test "can convert to finding with valid abstract" do
       paper =
@@ -15,7 +14,7 @@ defmodule Brain.Knowledge.Academic.SemanticScholarTest do
           authors: [%{id: "1", name: "Ashish Vaswani"}],
           venue: "NeurIPS",
           year: 2017,
-          citation_count: 50000,
+          citation_count: 50_000,
           source: :semantic_scholar
         )
 
@@ -23,7 +22,6 @@ defmodule Brain.Knowledge.Academic.SemanticScholarTest do
 
       assert finding != nil
       assert finding.claim =~ "Transformer"
-      # High citation count should give high confidence
       assert finding.confidence >= 0.9
     end
 
@@ -158,7 +156,6 @@ defmodule Brain.Knowledge.Academic.SemanticScholarTest do
     end
   end
 
-  # Integration tests that hit real APIs (tagged for optional running)
   describe "search/2 (integration)" do
     @tag :integration
     @tag :external_api
@@ -168,7 +165,7 @@ defmodule Brain.Knowledge.Academic.SemanticScholarTest do
       {:ok, papers} = SemanticScholar.search("transformer attention", limit: 3)
 
       assert is_list(papers)
-      assert length(papers) > 0
+      assert papers != []
 
       [paper | _] = papers
       assert %Paper{} = paper

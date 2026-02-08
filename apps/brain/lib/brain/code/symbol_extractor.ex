@@ -1,34 +1,7 @@
 defmodule Brain.Code.SymbolExtractor do
-  @moduledoc """
-  Extracts symbols from parsed ASTs.
+  @moduledoc "Extracts symbols from parsed ASTs.\n\nThis module walks through AST nodes and extracts meaningful symbols\nsuch as functions, classes, variables, and imports. It understands\nlanguage-specific patterns for each supported language.\n\n## Extraction Process\n\n1. Parse source code into AST (via Brain.Code.Parser)\n2. Walk the AST recursively\n3. Match language-specific node patterns\n4. Extract symbol metadata (name, type, location, etc.)\n5. Build qualified names based on scope\n\n## Supported Constructs\n\n| Language | Functions | Classes | Variables | Imports |\n|----------|-----------|---------|-----------|---------|\n| Elixir   | def/defp  | defmodule | = | alias/import/use |\n| Python   | def       | class   | = | import/from |\n| Ruby     | def       | class/module | = | require |\n| Go       | func      | struct/interface | := | import |\n| Java     | method    | class/interface | var | import |\n| C        | function  | struct  | declaration | #include |\n| C++      | function  | class/struct | declaration | #include |\n| C#       | method    | class/interface | var | using |\n| PHP      | function  | class   | $ | use/require |\n"
 
-  This module walks through AST nodes and extracts meaningful symbols
-  such as functions, classes, variables, and imports. It understands
-  language-specific patterns for each supported language.
-
-  ## Extraction Process
-
-  1. Parse source code into AST (via Brain.Code.Parser)
-  2. Walk the AST recursively
-  3. Match language-specific node patterns
-  4. Extract symbol metadata (name, type, location, etc.)
-  5. Build qualified names based on scope
-
-  ## Supported Constructs
-
-  | Language | Functions | Classes | Variables | Imports |
-  |----------|-----------|---------|-----------|---------|
-  | Elixir   | def/defp  | defmodule | = | alias/import/use |
-  | Python   | def       | class   | = | import/from |
-  | Ruby     | def       | class/module | = | require |
-  | Go       | func      | struct/interface | := | import |
-  | Java     | method    | class/interface | var | import |
-  | C        | function  | struct  | declaration | #include |
-  | C++      | function  | class/struct | declaration | #include |
-  | C#       | method    | class/interface | var | using |
-  | PHP      | function  | class   | $ | use/require |
-  """
-
+  alias Brain.Code.Parser
   require Logger
 
   alias Brain.Code.CodeGazetteer
@@ -39,9 +12,6 @@ defmodule Brain.Code.SymbolExtractor do
           relations: [{String.t(), atom(), String.t()}],
           errors: [String.t()]
         }
-
-  # Node type patterns for each language
-  # These match both tree-sitter AST node types and our fallback parser types
   @patterns %{
     elixir: %{
       module: ["module_definition", "call"],
@@ -103,26 +73,7 @@ defmodule Brain.Code.SymbolExtractor do
     }
   }
 
-  # ============================================================================
-  # Public API
-  # ============================================================================
-
-  @doc """
-  Extracts all symbols from an AST.
-
-  ## Parameters
-    - `ast` - The parsed AST (from Brain.Code.Parser)
-    - `language` - The programming language
-    - `opts` - Options
-
-  ## Options
-    - `:file_path` - Source file path for location tracking
-    - `:world_id` - World ID for storing symbols (optional)
-    - `:store` - Whether to store in CodeGazetteer (default: false)
-
-  ## Returns
-    A map with `:symbols`, `:relations`, and `:errors`
-  """
+  @doc "Extracts all symbols from an AST.\n\n## Parameters\n  - `ast` - The parsed AST (from Brain.Code.Parser)\n  - `language` - The programming language\n  - `opts` - Options\n\n## Options\n  - `:file_path` - Source file path for location tracking\n  - `:world_id` - World ID for storing symbols (optional)\n  - `:store` - Whether to store in CodeGazetteer (default: false)\n\n## Returns\n  A map with `:symbols`, `:relations`, and `:errors`\n"
   @spec extract(map(), atom(), keyword()) :: extraction_result()
   def extract(ast, language, opts \\ []) when is_map(ast) and is_atom(language) do
     Telemetry.span(:code_extract, %{language: language}, fn ->
@@ -130,7 +81,6 @@ defmodule Brain.Code.SymbolExtractor do
       world_id = Keyword.get(opts, :world_id)
       store = Keyword.get(opts, :store, false)
 
-      # Initialize extraction context
       context = %{
         language: language,
         file_path: file_path,
@@ -140,10 +90,8 @@ defmodule Brain.Code.SymbolExtractor do
         errors: []
       }
 
-      # Walk the AST
       result = walk_ast(ast, context)
 
-      # Store if requested
       if store and world_id do
         store_symbols(world_id, result.symbols)
         store_relations(world_id, result.relations)
@@ -157,14 +105,11 @@ defmodule Brain.Code.SymbolExtractor do
     end)
   end
 
-  @doc """
-  Extracts symbols from source code directly.
-
-  Convenience function that parses and extracts in one step.
-  """
-  @spec extract_from_source(String.t(), atom(), keyword()) :: {:ok, extraction_result()} | {:error, term()}
+  @doc "Extracts symbols from source code directly.\n\nConvenience function that parses and extracts in one step.\n"
+  @spec extract_from_source(String.t(), atom(), keyword()) ::
+          {:ok, extraction_result()} | {:error, term()}
   def extract_from_source(source_code, language, opts \\ []) do
-    case Brain.Code.Parser.parse(source_code, language) do
+    case Parser.parse(source_code, language) do
       {:ok, ast} ->
         result = extract(ast, language, opts)
         {:ok, result}
@@ -174,12 +119,10 @@ defmodule Brain.Code.SymbolExtractor do
     end
   end
 
-  @doc """
-  Extracts symbols from a file.
-  """
+  @doc "Extracts symbols from a file.\n"
   @spec extract_from_file(String.t(), keyword()) :: {:ok, extraction_result()} | {:error, term()}
   def extract_from_file(file_path, opts \\ []) do
-    case Brain.Code.Parser.parse_file(file_path) do
+    case Parser.parse_file(file_path) do
       {:ok, ast} ->
         language = Map.get(ast, :language)
         opts = Keyword.put(opts, :file_path, file_path)
@@ -191,9 +134,7 @@ defmodule Brain.Code.SymbolExtractor do
     end
   end
 
-  @doc """
-  Gets the qualified name for a symbol given the current scope.
-  """
+  @doc "Gets the qualified name for a symbol given the current scope.\n"
   @spec build_qualified_name(String.t(), [String.t()], atom()) :: String.t()
   def build_qualified_name(name, scope_stack, language) do
     separator = scope_separator(language)
@@ -204,21 +145,10 @@ defmodule Brain.Code.SymbolExtractor do
     end
   end
 
-  # ============================================================================
-  # Private Functions - AST Walking
-  # ============================================================================
-
   defp walk_ast(node, context) when is_map(node) do
-    # Get language patterns
     patterns = Map.get(@patterns, context.language, %{})
-
-    # Check what type of node this is
     node_type = Map.get(node, :type, "")
-
-    # Try to extract based on node type
     context = extract_from_node(node, node_type, patterns, context)
-
-    # Recurse into children
     children = Map.get(node, :children, [])
 
     Enum.reduce(children, context, fn child, ctx ->
@@ -226,18 +156,18 @@ defmodule Brain.Code.SymbolExtractor do
     end)
   end
 
-  defp walk_ast(_, context), do: context
+  defp walk_ast(_, context) do
+    context
+  end
 
   defp extract_from_node(node, node_type, patterns, context) do
     cond do
-      # Check for function definitions
       matches_pattern?(node_type, Map.get(patterns, :function, [])) ->
         extract_function(node, context)
 
       matches_pattern?(node_type, Map.get(patterns, :method, [])) ->
         extract_function(node, context)
 
-      # Check for class/module definitions
       matches_pattern?(node_type, Map.get(patterns, :class, [])) ->
         extract_class(node, context)
 
@@ -247,11 +177,9 @@ defmodule Brain.Code.SymbolExtractor do
       matches_pattern?(node_type, Map.get(patterns, :struct, [])) ->
         extract_struct(node, context)
 
-      # Check for variable declarations
       matches_pattern?(node_type, Map.get(patterns, :variable, [])) ->
         extract_variable(node, context)
 
-      # Check for imports
       matches_pattern?(node_type, Map.get(patterns, :import, [])) ->
         extract_import(node, context)
 
@@ -264,11 +192,9 @@ defmodule Brain.Code.SymbolExtractor do
       matches_pattern?(node_type, Map.get(patterns, :use, [])) ->
         extract_import(node, context)
 
-      # Check for type definitions
       matches_pattern?(node_type, Map.get(patterns, :type, [])) ->
         extract_type(node, context)
 
-      # Check for namespace
       matches_pattern?(node_type, Map.get(patterns, :namespace, [])) ->
         extract_namespace(node, context)
 
@@ -277,17 +203,15 @@ defmodule Brain.Code.SymbolExtractor do
     end
   end
 
-  defp matches_pattern?(_node_type, []), do: false
+  defp matches_pattern?(_node_type, []) do
+    false
+  end
 
   defp matches_pattern?(node_type, patterns) when is_list(patterns) do
     Enum.any?(patterns, fn pattern ->
       String.contains?(node_type, pattern)
     end)
   end
-
-  # ============================================================================
-  # Symbol Extraction Functions
-  # ============================================================================
 
   defp extract_function(node, context) do
     name = find_name_in_node(node, context.language)
@@ -329,14 +253,12 @@ defmodule Brain.Code.SymbolExtractor do
         metadata: extract_class_metadata(node, context.language)
       }
 
-      # Push class to scope for nested definitions
-      new_context = %{context |
-        symbols: [symbol | context.symbols],
-        scope_stack: [name | context.scope_stack]
+      new_context = %{
+        context
+        | symbols: [symbol | context.symbols],
+          scope_stack: [name | context.scope_stack]
       }
 
-      # Process children with updated scope, then pop scope
-      # Note: This is handled by the recursive walk, not here
       new_context
     else
       context
@@ -360,10 +282,7 @@ defmodule Brain.Code.SymbolExtractor do
         metadata: %{}
       }
 
-      %{context |
-        symbols: [symbol | context.symbols],
-        scope_stack: [name | context.scope_stack]
-      }
+      %{context | symbols: [symbol | context.symbols], scope_stack: [name | context.scope_stack]}
     else
       context
     end
@@ -430,14 +349,10 @@ defmodule Brain.Code.SymbolExtractor do
         metadata: %{}
       }
 
-      # Also record as a relation
       current_module = List.first(context.scope_stack) || context.file_path || "unknown"
       relation = {current_module, :imports, import_target}
 
-      %{context |
-        symbols: [symbol | context.symbols],
-        relations: [relation | context.relations]
-      }
+      %{context | symbols: [symbol | context.symbols], relations: [relation | context.relations]}
     else
       context
     end
@@ -481,27 +396,18 @@ defmodule Brain.Code.SymbolExtractor do
         metadata: %{}
       }
 
-      %{context |
-        symbols: [symbol | context.symbols],
-        scope_stack: [name | context.scope_stack]
-      }
+      %{context | symbols: [symbol | context.symbols], scope_stack: [name | context.scope_stack]}
     else
       context
     end
   end
 
-  # ============================================================================
-  # Helper Functions
-  # ============================================================================
-
   defp find_name_in_node(node, _language) do
-    # Look for identifier children or name field
     cond do
       Map.has_key?(node, :name) ->
         node.name
 
       true ->
-        # Search children for identifier
         children = Map.get(node, :children, [])
 
         Enum.find_value(children, fn child ->
@@ -515,12 +421,15 @@ defmodule Brain.Code.SymbolExtractor do
   end
 
   defp find_variable_name(node, language) do
-    # Language-specific variable name extraction
     case language do
       :php ->
-        # PHP variables start with $
         text = Map.get(node, :text, "")
-        if String.starts_with?(text, "$"), do: text, else: find_name_in_node(node, language)
+
+        if String.starts_with?(text, "$") do
+          text
+        else
+          find_name_in_node(node, language)
+        end
 
       _ ->
         find_name_in_node(node, language)
@@ -528,29 +437,26 @@ defmodule Brain.Code.SymbolExtractor do
   end
 
   defp find_import_target(node, _language) do
-    # Look for the imported module/path
     text = Map.get(node, :text, "")
-
-    # Try to extract the module name from import statement
     children = Map.get(node, :children, [])
 
-    import_child = Enum.find(children, fn child ->
-      type = Map.get(child, :type, "")
-      String.contains?(type, "identifier") or
-        String.contains?(type, "dotted_name") or
-        String.contains?(type, "string")
-    end)
+    import_child =
+      Enum.find(children, fn child ->
+        type = Map.get(child, :type, "")
+
+        String.contains?(type, "identifier") or
+          String.contains?(type, "dotted_name") or
+          String.contains?(type, "string")
+      end)
 
     if import_child do
       Map.get(import_child, :text, "")
     else
-      # Fall back to trying to parse from text
       extract_import_from_text(text)
     end
   end
 
   defp extract_import_from_text(text) do
-    # Simple extraction - get first identifier-like string after import keyword
     text
     |> String.split(~r/\s+/)
     |> Enum.drop(1)
@@ -564,32 +470,43 @@ defmodule Brain.Code.SymbolExtractor do
   defp extract_function_metadata(node, language) do
     children = Map.get(node, :children, [])
 
-    # Try to find parameters
-    params = Enum.find(children, fn child ->
-      type = Map.get(child, :type, "")
-      String.contains?(type, "parameter") or String.contains?(type, "arguments")
-    end)
+    params =
+      Enum.find(children, fn child ->
+        type = Map.get(child, :type, "")
+        String.contains?(type, "parameter") or String.contains?(type, "arguments")
+      end)
 
-    arity = if params do
-      param_children = Map.get(params, :children, [])
-      length(param_children)
-    else
-      0
-    end
+    arity =
+      if params do
+        param_children = Map.get(params, :children, [])
+        length(param_children)
+      else
+        0
+      end
 
-    # Check visibility (language-specific)
-    visibility = case language do
-      :elixir ->
-        text = Map.get(node, :text, "")
-        if String.contains?(text, "defp"), do: :private, else: :public
+    visibility =
+      case language do
+        :elixir ->
+          text = Map.get(node, :text, "")
 
-      :python ->
-        name = find_name_in_node(node, language) || ""
-        if String.starts_with?(name, "_"), do: :private, else: :public
+          if String.contains?(text, "defp") do
+            :private
+          else
+            :public
+          end
 
-      _ ->
-        :public
-    end
+        :python ->
+          name = find_name_in_node(node, language) || ""
+
+          if String.starts_with?(name, "_") do
+            :private
+          else
+            :public
+          end
+
+        _ ->
+          :public
+      end
 
     %{arity: arity, visibility: visibility}
   end
@@ -597,13 +514,14 @@ defmodule Brain.Code.SymbolExtractor do
   defp extract_class_metadata(node, language) do
     children = Map.get(node, :children, [])
 
-    # Try to find superclass/extends
-    superclass = Enum.find_value(children, fn child ->
-      type = Map.get(child, :type, "")
-      if String.contains?(type, "superclass") or String.contains?(type, "extends") do
-        find_name_in_node(child, language)
-      end
-    end)
+    superclass =
+      Enum.find_value(children, fn child ->
+        type = Map.get(child, :type, "")
+
+        if String.contains?(type, "superclass") or String.contains?(type, "extends") do
+          find_name_in_node(child, language)
+        end
+      end)
 
     %{superclass: superclass}
   end
@@ -623,7 +541,6 @@ defmodule Brain.Code.SymbolExtractor do
   end
 
   defp is_parameter?(name) do
-    # Simple heuristic - parameters are usually short and common names
     name in ["self", "this", "cls", "_", "__"]
   end
 

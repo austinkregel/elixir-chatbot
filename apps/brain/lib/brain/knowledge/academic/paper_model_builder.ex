@@ -1,64 +1,21 @@
 defmodule Brain.Knowledge.Academic.PaperModelBuilder do
-  @moduledoc """
-  Builds a running epistemic model from academic papers.
+  @moduledoc "Builds a running epistemic model from academic papers.\n\nEach paper's claims become JTMS nodes with justifications.\nCitations create dependency links between papers.\nContradictions are automatically detected and handled.\n\n## Architecture\n\n1. **Paper Ingested** → Extract claims from abstract\n2. **Claims → JTMS Nodes** → High-citation papers become premises\n3. **Claims → BeliefStore** → Stored with academic provenance\n4. **Contradiction Check** → Compare against existing beliefs\n5. **High-Confidence → FactDatabase** → Promoted after corroboration\n\n## Node Types\n\n- `:premise` - Established facts (citation_count > 100)\n- `:assumption` - New claims from recent papers\n- `:derived` - Claims supported by multiple papers\n- `:contradiction` - Conflicting claims between papers\n\n## Example\n\n    {:ok, node_ids} = PaperModelBuilder.ingest_paper(paper)\n    {:ok, all_node_ids} = PaperModelBuilder.ingest_papers(papers)\n"
 
-  Each paper's claims become JTMS nodes with justifications.
-  Citations create dependency links between papers.
-  Contradictions are automatically detected and handled.
-
-  ## Architecture
-
-  1. **Paper Ingested** → Extract claims from abstract
-  2. **Claims → JTMS Nodes** → High-citation papers become premises
-  3. **Claims → BeliefStore** → Stored with academic provenance
-  4. **Contradiction Check** → Compare against existing beliefs
-  5. **High-Confidence → FactDatabase** → Promoted after corroboration
-
-  ## Node Types
-
-  - `:premise` - Established facts (citation_count > 100)
-  - `:assumption` - New claims from recent papers
-  - `:derived` - Claims supported by multiple papers
-  - `:contradiction` - Conflicting claims between papers
-
-  ## Example
-
-      {:ok, node_ids} = PaperModelBuilder.ingest_paper(paper)
-      {:ok, all_node_ids} = PaperModelBuilder.ingest_papers(papers)
-  """
-
+  alias Brain.LinguisticData
+  alias Brain.Epistemic
   require Logger
 
   alias Brain.Analysis.Pipeline
-  alias Brain.Epistemic.{JTMS, BeliefStore}
+  alias Epistemic.{JTMS, BeliefStore}
   alias Brain.Epistemic.Types.Belief
   alias Brain.Knowledge.Academic.Paper
   alias Brain.Knowledge.Corroborator
-
-  # Minimum abstract length to extract claims from
   @min_abstract_length 100
-
-  # Citation thresholds for node type determination
   @premise_threshold 100
   @high_confidence_threshold 500
-
-  # Similarity threshold for contradiction detection
   @contradiction_similarity_threshold 0.7
 
-  # ============================================================================
-  # Public API
-  # ============================================================================
-
-  @doc """
-  Ingests a single paper into the epistemic model.
-
-  Creates JTMS nodes for claims, stores beliefs with academic provenance,
-  and checks for contradictions with existing knowledge.
-
-  ## Returns
-    - {:ok, node_ids} - List of created JTMS node IDs
-    - {:error, reason} - If ingestion failed
-  """
+  @doc "Ingests a single paper into the epistemic model.\n\nCreates JTMS nodes for claims, stores beliefs with academic provenance,\nand checks for contradictions with existing knowledge.\n\n## Returns\n  - {:ok, node_ids} - List of created JTMS node IDs\n  - {:error, reason} - If ingestion failed\n"
   @spec ingest_paper(Paper.t()) :: {:ok, [String.t()]} | {:error, term()}
   def ingest_paper(%Paper{} = paper) do
     Logger.debug("Ingesting paper into epistemic model",
@@ -68,20 +25,14 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
     )
 
     try do
-      # 1. Extract claims from abstract
       claims = extract_claims(paper)
 
       if claims == [] do
         Logger.debug("No claims extracted from paper", paper_id: paper.id)
         {:ok, []}
       else
-        # 2. Create JTMS nodes for each claim
         node_ids = create_jtms_nodes(claims, paper)
-
-        # 3. Store as beliefs with academic provenance
         store_beliefs(claims, paper)
-
-        # 4. Check for contradictions with existing beliefs
         check_contradictions(claims, node_ids, paper)
 
         Logger.info("Paper ingested into epistemic model",
@@ -94,20 +45,13 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
       end
     rescue
       e ->
-        Logger.error("Failed to ingest paper",
-          paper_id: paper.id,
-          error: Exception.message(e)
-        )
+        Logger.error("Failed to ingest paper", paper_id: paper.id, error: Exception.message(e))
 
         {:error, {:ingestion_failed, Exception.message(e)}}
     end
   end
 
-  @doc """
-  Ingests multiple papers into the epistemic model.
-
-  Processes papers in sequence to properly detect cross-paper contradictions.
-  """
+  @doc "Ingests multiple papers into the epistemic model.\n\nProcesses papers in sequence to properly detect cross-paper contradictions.\n"
   @spec ingest_papers([Paper.t()]) :: {:ok, [String.t()]} | {:error, term()}
   def ingest_papers(papers) when is_list(papers) do
     results =
@@ -135,20 +79,18 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
     end
   end
 
-  @doc """
-  Extracts claims from a paper's abstract using the NLP pipeline.
-
-  Returns a list of claim strings extracted from the abstract.
-  """
+  @doc "Extracts claims from a paper's abstract using the NLP pipeline.\n\nReturns a list of claim strings extracted from the abstract.\n"
   @spec extract_claims(Paper.t()) :: [String.t()]
-  def extract_claims(%Paper{abstract: nil}), do: []
+  def extract_claims(%Paper{abstract: nil}) do
+    []
+  end
 
-  def extract_claims(%Paper{abstract: abstract}) when byte_size(abstract) < @min_abstract_length do
+  def extract_claims(%Paper{abstract: abstract})
+      when byte_size(abstract) < @min_abstract_length do
     []
   end
 
   def extract_claims(%Paper{abstract: abstract}) do
-    # Use the Analysis Pipeline to extract claims
     case Pipeline.process(abstract, skip_entity_extraction: true) do
       %{analyses: analyses} when is_list(analyses) ->
         analyses
@@ -159,40 +101,42 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
         |> Enum.uniq()
 
       _ ->
-        # Fallback: split abstract into sentences
         fallback_extract_claims(abstract)
     end
   rescue
     e ->
-      Logger.warning("Claim extraction failed, using fallback",
-        error: Exception.message(e)
-      )
+      Logger.warning("Claim extraction failed, using fallback", error: Exception.message(e))
 
       fallback_extract_claims(abstract)
   end
 
-  @doc """
-  Calculates confidence score based on citation count.
-  """
+  @doc "Calculates confidence score based on citation count.\n"
   @spec citation_to_confidence(non_neg_integer()) :: float()
-  def citation_to_confidence(count) when count > @high_confidence_threshold, do: 0.95
-  def citation_to_confidence(count) when count > @premise_threshold, do: 0.85
-  def citation_to_confidence(count) when count > 10, do: 0.70
-  def citation_to_confidence(_), do: 0.50
+  def citation_to_confidence(count) when count > @high_confidence_threshold do
+    0.95
+  end
 
-  @doc """
-  Determines the JTMS node type based on paper metadata.
-  """
+  def citation_to_confidence(count) when count > @premise_threshold do
+    0.85
+  end
+
+  def citation_to_confidence(count) when count > 10 do
+    0.7
+  end
+
+  def citation_to_confidence(_) do
+    0.5
+  end
+
+  @doc "Determines the JTMS node type based on paper metadata.\n"
   @spec determine_node_type(Paper.t()) :: :premise | :assumption
   def determine_node_type(%Paper{citation_count: count}) when count > @premise_threshold do
     :premise
   end
 
-  def determine_node_type(_paper), do: :assumption
-
-  # ============================================================================
-  # Private Functions - JTMS Integration
-  # ============================================================================
+  def determine_node_type(_paper) do
+    :assumption
+  end
 
   defp create_jtms_nodes(claims, paper) do
     node_type = determine_node_type(paper)
@@ -230,10 +174,6 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
     }
   end
 
-  # ============================================================================
-  # Private Functions - BeliefStore Integration
-  # ============================================================================
-
   defp store_beliefs(claims, paper) do
     confidence = citation_to_confidence(paper.citation_count)
 
@@ -269,39 +209,29 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
     end)
   end
 
-  # ============================================================================
-  # Private Functions - Contradiction Detection
-  # ============================================================================
-
   defp check_contradictions(claims, node_ids, paper) do
-    # Query existing beliefs for potential contradictions
     case BeliefStore.query_beliefs(predicate: :paper_claim, min_confidence: 0.5) do
       {:ok, existing_beliefs} ->
-        # Compare each new claim against existing beliefs
         Enum.each(Enum.zip(claims, node_ids), fn {claim, node_id} ->
           check_claim_contradictions(claim, node_id, existing_beliefs, paper)
         end)
 
       {:error, _} ->
-        # BeliefStore not available, skip contradiction check
         :ok
     end
   end
 
   defp check_claim_contradictions(claim, node_id, existing_beliefs, paper) do
-    # Filter beliefs from other papers (not self-contradiction)
     other_beliefs =
       Enum.reject(existing_beliefs, fn belief ->
         get_in(belief.metadata, [:paper_id]) == paper.id
       end)
 
-    # Find potentially contradicting beliefs
     Enum.each(other_beliefs, fn belief ->
       existing_claim = belief.object
 
       case Corroborator.compare_claims(claim, existing_claim) do
         {:ok, similarity} when similarity > @contradiction_similarity_threshold ->
-          # High similarity - check if they contradict
           if claims_contradict?(claim, existing_claim) do
             register_contradiction(node_id, belief, paper)
           end
@@ -311,31 +241,24 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
       end
     end)
   rescue
-    # Corroborator might not be available
     _ -> :ok
   end
 
   defp claims_contradict?(claim1, claim2) do
-    # Simple heuristic: check for negation patterns
     c1 = String.downcase(claim1)
     c2 = String.downcase(claim2)
 
-    negation_words = Brain.LinguisticData.negation_words()
+    negation_words = LinguisticData.negation_words()
 
     c1_has_negation = Enum.any?(negation_words, &String.contains?(c1, &1))
     c2_has_negation = Enum.any?(negation_words, &String.contains?(c2, &1))
-
-    # XOR: one has negation, other doesn't = likely contradiction
     c1_has_negation != c2_has_negation
   end
 
   defp register_contradiction(new_node_id, existing_belief, new_paper) do
-    # Get the JTMS node ID for the existing belief if it has one
     existing_node_id = existing_belief.node_id
 
     if existing_node_id do
-      # Register mutual contradiction in JTMS
-      # Note: metadata could be used for enhanced conflict resolution in future
       _metadata = %{
         source: :knowledge_expansion,
         new_fact: %{
@@ -363,12 +286,7 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
     end
   end
 
-  # ============================================================================
-  # Private Functions - Claim Extraction
-  # ============================================================================
-
   defp is_assertive_claim?(analysis) do
-    # Consider assertive speech acts as claims
     case analysis do
       %{speech_act: %{category: :assertive}} -> true
       %{speech_act: %{category: :commissive}} -> false
@@ -378,11 +296,15 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
     end
   end
 
-  defp extract_claim_text(%{text: text}) when is_binary(text), do: String.trim(text)
-  defp extract_claim_text(_), do: nil
+  defp extract_claim_text(%{text: text}) when is_binary(text) do
+    String.trim(text)
+  end
+
+  defp extract_claim_text(_) do
+    nil
+  end
 
   defp fallback_extract_claims(abstract) when is_binary(abstract) do
-    # Simple sentence splitting as fallback
     abstract
     |> String.split(~r/[.!?]+/)
     |> Enum.map(&String.trim/1)
@@ -392,7 +314,6 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
   end
 
   defp is_substantive_sentence?(sentence) do
-    # Filter out very short or likely non-claim sentences
     word_count = sentence |> String.split() |> length()
     word_count >= 5 and word_count <= 50
   end

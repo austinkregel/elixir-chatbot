@@ -224,7 +224,7 @@ defmodule Brain.Code.Tokenizer do
     end
 
     source_after_start = String.slice(source, String.length(start_marker)..-1//1)
-    
+
     case String.split(source_after_start, end_marker, parts: 2) do
       [content, rest] ->
         full_comment = start_marker <> content <> end_marker
@@ -277,7 +277,7 @@ defmodule Brain.Code.Tokenizer do
   defp consume_string(source, language) do
     # Detect quote type
     {quote_char, is_triple} = detect_quote(source, language)
-    
+
     if is_triple do
       consume_triple_quoted(source, quote_char)
     else
@@ -310,7 +310,7 @@ defmodule Brain.Code.Tokenizer do
   defp consume_triple_quoted(source, quote) do
     quote_len = String.length(quote)
     rest = String.slice(source, quote_len..-1//1)
-    
+
     case find_closing_quote(rest, quote, false) do
       {:found, content, remaining} ->
         full_string = quote <> content <> quote
@@ -325,7 +325,7 @@ defmodule Brain.Code.Tokenizer do
 
   defp consume_quoted(source, quote) do
     rest = String.slice(source, String.length(quote)..-1//1)
-    
+
     case find_closing_quote(rest, quote, true) do
       {:found, content, remaining} ->
         {quote <> content <> quote, remaining, 0}
@@ -348,7 +348,7 @@ defmodule Brain.Code.Tokenizer do
     else
       first = String.first(source)
       rest = String.slice(source, 1..-1//1)
-      
+
       if handle_escapes and first == "\\" and String.length(rest) > 0 do
         escaped = String.first(rest)
         rest2 = String.slice(rest, 1..-1//1)
@@ -417,7 +417,7 @@ defmodule Brain.Code.Tokenizer do
 
   defp is_identifier_start?(source, language) do
     first = String.first(source)
-    
+
     cond do
       first == nil -> false
       language == :php and first == "$" -> true
@@ -498,7 +498,7 @@ defmodule Brain.Code.Tokenizer do
 
   defp consume_while(source, valid_chars, acc) do
     first = String.first(source)
-    
+
     if first in valid_chars do
       rest = String.slice(source, 1..-1//1)
       consume_while(rest, valid_chars, acc <> first)

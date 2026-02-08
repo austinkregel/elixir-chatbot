@@ -57,14 +57,11 @@ defmodule Brain.Response.ChunkSegmenterTest do
 
       assert is_binary(chunk.text)
       assert is_atom(chunk.type)
-      # embedding may be nil if embedder not ready
     end
 
     test "classifies greeting chunk" do
       text = "Hello!"
       [chunk | _] = ChunkSegmenter.segment(text)
-
-      # Using heuristic fallback when embedder not ready
       assert chunk.type == :greeting
     end
 
@@ -119,13 +116,11 @@ defmodule Brain.Response.ChunkSegmenterTest do
 
       assert is_list(result)
       assert length(result) >= 3
-
-      # Check that source_intent is set correctly
       greeting_chunks = Enum.filter(result, fn c -> c.source_intent == "greetings" end)
       weather_chunks = Enum.filter(result, fn c -> c.source_intent == "weather" end)
 
       assert length(greeting_chunks) >= 2
-      assert length(weather_chunks) >= 1
+      assert weather_chunks != []
     end
 
     test "handles empty templates" do
@@ -161,8 +156,6 @@ defmodule Brain.Response.ChunkSegmenterTest do
   end
 
   describe "heuristic classification" do
-    # These test the fallback classification when embedder isn't ready
-
     test "classifies 'Welcome!' as greeting" do
       text = "Welcome!"
       [chunk | _] = ChunkSegmenter.segment(text)
@@ -190,7 +183,6 @@ defmodule Brain.Response.ChunkSegmenterTest do
     test "classifies 'What would you like?' as offer" do
       text = "What would you like to do?"
       [chunk | _] = ChunkSegmenter.segment(text)
-      # May classify as clarification due to question format
       assert chunk.type in [:offer, :clarification]
     end
 

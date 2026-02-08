@@ -1,12 +1,5 @@
 defmodule Brain.FactDatabase.Integration do
-  @moduledoc """
-  Integration layer between FactDatabase and the epistemic system.
-
-  This module provides:
-  1. Dynamic fact addition (learned facts can be added to the database)
-  2. Integration with epistemic user model (facts as beliefs)
-  3. Truth maintenance verification (facts registered with JTMS)
-  """
+  @moduledoc "Integration layer between FactDatabase and the epistemic system.\n\nThis module provides:\n1. Dynamic fact addition (learned facts can be added to the database)\n2. Integration with epistemic user model (facts as beliefs)\n3. Truth maintenance verification (facts registered with JTMS)\n"
 
   alias Brain.FactDatabase
   alias Brain.FactDatabase.Fact
@@ -14,19 +7,7 @@ defmodule Brain.FactDatabase.Integration do
   alias Brain.Epistemic.Types.Belief
   require Logger
 
-  @doc """
-  Adds a new fact to the database dynamically.
-
-  This allows the system to learn and grow its fact database.
-  The fact is also registered with the epistemic system for verification.
-
-  Options:
-  - :category - Category for the fact (default: "learned")
-  - :verification_source - Source of verification
-  - :confidence - Confidence level (0.0-1.0, default: 0.8)
-  - :register_with_jtms - Whether to register with JTMS (default: true)
-  - :create_belief - Whether to create a belief (default: true)
-  """
+  @doc "Adds a new fact to the database dynamically.\n\nThis allows the system to learn and grow its fact database.\nThe fact is also registered with the epistemic system for verification.\n\nOptions:\n- :category - Category for the fact (default: \"learned\")\n- :verification_source - Source of verification\n- :confidence - Confidence level (0.0-1.0, default: 0.8)\n- :register_with_jtms - Whether to register with JTMS (default: true)\n- :create_belief - Whether to create a belief (default: true)\n"
   def add_fact(entity, fact_text, opts \\ []) do
     category = Keyword.get(opts, :category, "learned")
     entity_type = Keyword.get(opts, :entity_type)
@@ -35,7 +16,6 @@ defmodule Brain.FactDatabase.Integration do
     register_with_jtms? = Keyword.get(opts, :register_with_jtms, true)
     create_belief? = Keyword.get(opts, :create_belief, true)
 
-    # Create fact using Fact struct
     new_fact =
       Fact.new(
         id: "learned_#{generate_id()}",
@@ -48,10 +28,8 @@ defmodule Brain.FactDatabase.Integration do
         learned_at: System.system_time(:second)
       )
 
-    # Store in learned facts file
     store_learned_fact(new_fact)
 
-    # Register with JTMS if requested
     node_id =
       if register_with_jtms? do
         register_fact_with_jtms(new_fact.id, entity, fact_text, confidence)
@@ -59,7 +37,6 @@ defmodule Brain.FactDatabase.Integration do
         nil
       end
 
-    # Create belief if requested
     if create_belief? do
       create_fact_belief(entity, fact_text, confidence, verification_source, node_id)
     end
@@ -75,25 +52,15 @@ defmodule Brain.FactDatabase.Integration do
     {:ok, new_fact.id, new_fact}
   end
 
-  @doc """
-  Verifies a fact against existing beliefs and the truth maintenance system.
-
-  Returns:
-  - {:verified, confidence} - Fact is consistent with existing beliefs
-  - {:contradicted, conflicting_beliefs} - Fact contradicts existing beliefs
-  - {:uncertain, reason} - Cannot verify (low confidence, no data, etc.)
-  """
+  @doc "Verifies a fact against existing beliefs and the truth maintenance system.\n\nReturns:\n- {:verified, confidence} - Fact is consistent with existing beliefs\n- {:contradicted, conflicting_beliefs} - Fact contradicts existing beliefs\n- {:uncertain, reason} - Cannot verify (low confidence, no data, etc.)\n"
   def verify_fact(entity, fact_text) do
-    # Check against existing beliefs
     case BeliefStore.query_beliefs(subject: :world, predicate: normalize_entity(entity)) do
       {:ok, [_ | _] = beliefs} ->
-        # Check for contradictions
         contradictions = find_contradictions(fact_text, beliefs)
 
         if contradictions != [] do
           {:contradicted, contradictions}
         else
-          # Check confidence levels
           max_confidence = Enum.max_by(beliefs, & &1.confidence, fn -> nil end)
 
           if max_confidence && max_confidence.confidence >= 0.7 do
@@ -108,26 +75,17 @@ defmodule Brain.FactDatabase.Integration do
     end
   end
 
-  @doc """
-  Syncs facts from the FactDatabase to the epistemic system as beliefs.
-
-  This creates beliefs for all facts in the database, allowing them to be
-  verified and tracked by the truth maintenance system.
-  """
+  @doc "Syncs facts from the FactDatabase to the epistemic system as beliefs.\n\nThis creates beliefs for all facts in the database, allowing them to be\nverified and tracked by the truth maintenance system.\n"
   def sync_facts_to_beliefs(opts \\ []) do
     category = Keyword.get(opts, :category)
     min_confidence = Keyword.get(opts, :min_confidence, 0.7)
-
-    # Query facts from database (returns Fact structs)
     facts = FactDatabase.query(category: category, limit: 1000)
 
-    # Filter by confidence
     verified_facts =
       Enum.filter(facts, fn fact ->
         fact.confidence >= min_confidence
       end)
 
-    # Create beliefs for each fact
     created =
       Enum.map(verified_facts, fn fact ->
         verification_source = fact.verification_source || "fact_database"
@@ -145,11 +103,8 @@ defmodule Brain.FactDatabase.Integration do
 
         case BeliefStore.add_belief(belief) do
           {:ok, belief_id} ->
-            # Register with JTMS as a premise (high confidence verified fact)
             if fact.confidence >= 0.9 do
-              case JTMS.create_premise("fact:#{belief_id}",
-                     metadata: %{fact_id: fact.id}
-                   ) do
+              case JTMS.create_premise("fact:#{belief_id}", metadata: %{fact_id: fact.id}) do
                 {:ok, node_id} ->
                   BeliefStore.link_to_node(belief_id, node_id)
                   1
@@ -171,16 +126,10 @@ defmodule Brain.FactDatabase.Integration do
     {:ok, created}
   end
 
-  @doc """
-  Checks if a fact contradicts any existing beliefs or facts.
-
-  Uses the JTMS to check for contradictions.
-  """
+  @doc "Checks if a fact contradicts any existing beliefs or facts.\n\nUses the JTMS to check for contradictions.\n"
   def check_contradiction(entity, fact_text) do
-    # Query for existing beliefs about this entity
     case BeliefStore.query_beliefs(subject: :world, predicate: normalize_entity(entity)) do
       {:ok, beliefs} ->
-        # Check each belief for contradiction
         contradictions =
           Enum.filter(beliefs, fn belief ->
             contradicts?(fact_text, belief.object)
@@ -197,10 +146,7 @@ defmodule Brain.FactDatabase.Integration do
     end
   end
 
-  # Private Functions
-
   defp store_learned_fact(%Fact{} = fact) do
-    # Store learned facts in a separate file (configurable for test isolation)
     default_path = Path.join([File.cwd!(), "data/facts/learned.json"])
     learned_file = Application.get_env(:brain, :learned_facts_path, default_path)
 
@@ -220,13 +166,9 @@ defmodule Brain.FactDatabase.Integration do
         []
       end
 
-    # Convert Fact struct to map for JSON serialization
     fact_map = Fact.to_map(fact)
-
-    # Add new fact (as map for JSON compatibility)
     updated_facts = [fact_map | existing_facts]
 
-    # Write back
     data = %{
       "category" => "learned",
       "description" => "Facts learned dynamically from conversations",
@@ -235,22 +177,23 @@ defmodule Brain.FactDatabase.Integration do
 
     File.mkdir_p!(Path.dirname(learned_file))
     File.write!(learned_file, Jason.encode!(data, pretty: true))
-
-    # Reload fact database
     FactDatabase.reload()
   end
 
   defp register_fact_with_jtms(fact_id, entity, fact_text, confidence) do
     if Process.whereis(JTMS) do
-      # Create a premise node for high-confidence facts, assumption for lower confidence
-      node_type = if confidence >= 0.9, do: :premise, else: :assumption
+      node_type =
+        if confidence >= 0.9 do
+          :premise
+        else
+          :assumption
+        end
 
       case JTMS.create_node("fact:#{fact_id}",
              node_type: node_type,
              metadata: %{entity: entity, fact: fact_text, fact_id: fact_id}
            ) do
         {:ok, node_id} ->
-          # Enable assumption if it's an assumption node
           if node_type == :assumption do
             JTMS.enable_assumption(node_id)
           end
@@ -292,22 +235,19 @@ defmodule Brain.FactDatabase.Integration do
   end
 
   defp contradicts?(text1, text2) when is_binary(text1) and is_binary(text2) do
-    # Simple contradiction detection: check for negations or opposite statements
     normalized1 = String.downcase(text1)
     normalized2 = String.downcase(text2)
-
-    # Check for explicit contradictions
     has_negation = String.contains?(normalized1, "not ") or String.contains?(normalized2, "not ")
     is_opposite = check_opposite_meaning(normalized1, normalized2)
 
     has_negation or is_opposite
   end
 
-  defp contradicts?(_text1, _text2), do: false
+  defp contradicts?(_text1, _text2) do
+    false
+  end
 
   defp check_opposite_meaning(text1, text2) do
-    # Simple heuristic: check if one says "is X" and other says "is not X" or "is Y" where Y is opposite
-    # This is a simplified check - could be enhanced with more sophisticated NLP
     cond do
       String.contains?(text1, " is ") and String.contains?(text2, " is not ") -> true
       String.contains?(text1, " is not ") and String.contains?(text2, " is ") -> true
@@ -322,8 +262,13 @@ defmodule Brain.FactDatabase.Integration do
     |> String.to_atom()
   end
 
-  defp normalize_entity(entity) when is_atom(entity), do: entity
-  defp normalize_entity(_), do: :unknown
+  defp normalize_entity(entity) when is_atom(entity) do
+    entity
+  end
+
+  defp normalize_entity(_) do
+    :unknown
+  end
 
   defp generate_id do
     :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)

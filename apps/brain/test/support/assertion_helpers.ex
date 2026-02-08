@@ -1,7 +1,7 @@
 defmodule Brain.AssertionHelpers do
   @moduledoc """
   Helper functions for common test assertions.
-  
+
   These helpers reduce repetition and improve readability of test assertions.
   They provide positive assertions for common response patterns.
   """

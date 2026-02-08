@@ -1,14 +1,12 @@
 defmodule Brain.Memory.ThinkTest do
+  alias Brain.Memory
   use ExUnit.Case, async: false
   import Brain.TestHelpers
 
-  alias Brain.Memory.{Think, Store, Embedder}
+  alias Memory.{Think, Store, Embedder}
 
   setup do
-    # PubSub is started globally in test_helper.exs
     ensure_pubsub_started()
-
-    # Start the embedder under ExUnit supervision
     ensure_started(Embedder)
 
     texts = [
@@ -20,8 +18,6 @@ defmodule Brain.Memory.ThinkTest do
     ]
 
     Embedder.build_vocabulary(texts)
-
-    # Start the store under ExUnit supervision with unique path per test
     ensure_started({Store, persistence_path: "/tmp/test_think_#{:rand.uniform(100_000)}.term"})
 
     Store.clear()
@@ -52,15 +48,14 @@ defmodule Brain.Memory.ThinkTest do
 
   describe "think(:query_chat)" do
     test "queries for similar episodes" do
-      # Add some episodes first
       Think.think(:add_episode, %{state: "hello world", action: "greeting", tags: ["greeting"]})
       Think.think(:add_episode, %{state: "goodbye world", action: "farewell", tags: ["farewell"]})
 
       {:ok, {:chat_results, results}} = Think.think(:query_chat, %{input: "hello friend", k: 5})
 
       assert is_list(results)
-      # Results are {id, similarity} tuples
-      if length(results) > 0 do
+
+      if results != [] do
         [{id, sim} | _] = results
         assert is_binary(id)
         assert is_float(sim)
@@ -85,7 +80,6 @@ defmodule Brain.Memory.ThinkTest do
 
   describe "think(:consolidate)" do
     test "consolidates episodes into semantic facts" do
-      # Add similar episodes
       Think.think(:add_episode, %{state: "hello world", action: "greeting", tags: ["greeting"]})
       Think.think(:add_episode, %{state: "hello there", action: "greeting", tags: ["greeting"]})
       Think.think(:add_episode, %{state: "hi friend", action: "greeting", tags: ["greeting"]})

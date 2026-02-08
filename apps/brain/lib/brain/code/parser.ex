@@ -599,7 +599,7 @@ defmodule Brain.Code.Parser do
   end
 
   # Convert tree-sitter tree to our AST format
-  defp tree_to_ast(tree, source_code) when is_map(tree) do
+  defp tree_to_ast(tree, _source_code) when is_map(tree) do
     # Already in map format
     tree
   end

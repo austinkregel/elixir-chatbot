@@ -26,8 +26,6 @@ defmodule Brain.ML.TokenizerTest do
 
     test "handles punctuation" do
       tokens = Tokenizer.tokenize("Hello, world!")
-
-      # Should separate punctuation
       texts = Enum.map(tokens, & &1.text)
       assert "Hello" in texts
       assert "," in texts
@@ -39,14 +37,9 @@ defmodule Brain.ML.TokenizerTest do
       tokens = Tokenizer.tokenize("I'm going to don't")
 
       texts = Enum.map(tokens, & &1.text)
-
-      # Tokenizer may keep contractions together or split them
-      # Just verify we get reasonable output
       assert length(texts) >= 4
       assert "going" in texts
       assert "to" in texts
-
-      # Either contracted form or split form is acceptable
       has_contraction = "I'm" in texts or ("I" in texts and "m" in texts)
       assert has_contraction
     end
@@ -209,7 +202,7 @@ defmodule Brain.ML.TokenizerTest do
       tokens = Tokenizer.tokenize("My birthday is in January")
       dates = Tokenizer.extract_dates(tokens)
 
-      assert length(dates) >= 1
+      assert dates != []
       types = Enum.map(dates, fn {type, _, _, _} -> type end)
       assert :month_name in types
     end

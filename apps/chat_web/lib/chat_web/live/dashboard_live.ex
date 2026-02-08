@@ -1,15 +1,9 @@
 defmodule ChatWeb.DashboardLive do
-  @moduledoc """
-  Operational dashboard for monitoring GenServer statuses, performance metrics,
-  and system health indicators.
+  @moduledoc "Operational dashboard for monitoring GenServer statuses, performance metrics,\nand system health indicators.\n\nProvides real-time visibility into:\n- All GenServers organized by category (Core, Epistemic, Analysis, ML, Storage)\n- Performance metrics (processing times, throughput, queue sizes)\n- Health indicators (uptime, error rates, overall health score)\n- World-specific memory and knowledge stats\n"
 
-  Provides real-time visibility into:
-  - All GenServers organized by category (Core, Epistemic, Analysis, ML, Storage)
-  - Performance metrics (processing times, throughput, queue sizes)
-  - Health indicators (uptime, error rates, overall health score)
-  - World-specific memory and knowledge stats
-  """
-
+  alias Brain.ML.CorpusManager
+  alias Brain.SystemStatus
+  alias World.Manager
   use ChatWeb, :live_view
   require Logger
 
@@ -17,16 +11,24 @@ defmodule ChatWeb.DashboardLive do
 
   alias Brain.Memory.Store, as: MemoryStore
   alias Brain.KnowledgeStore
+  @refresh_interval_ms 2000
 
-  # Refresh interval in milliseconds
-  @refresh_interval_ms 2_000
-
-  @default_expanded [:core, :epistemic, :analysis, :ml, :knowledge, :learning, :storage, :metrics, :code_analysis]
+  @default_expanded [
+    :core,
+    :epistemic,
+    :analysis,
+    :ml,
+    :knowledge,
+    :learning,
+    :storage,
+    :metrics,
+    :code_analysis,
+    :services
+  ]
 
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
-      # Start periodic refresh
       :timer.send_interval(@refresh_interval_ms, self(), :refresh_dashboard)
     end
 
@@ -35,7 +37,6 @@ defmodule ChatWeb.DashboardLive do
 
   @impl true
   def handle_params(_params, _uri, socket) do
-    # Load initial data with world context
     world_id = socket.assigns.current_world_id
 
     socket =
@@ -49,6 +50,7 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:world_memory_stats, load_world_memory_stats(world_id))
       |> assign(:world_models_status, load_world_models_status(world_id))
       |> assign(:code_analysis_status, load_code_analysis_status())
+      |> assign(:services_status, load_services_status())
       |> assign(:last_updated, DateTime.utc_now())
       |> assign(:expanded_categories, MapSet.new(@default_expanded))
       |> assign(:auto_refresh, true)
@@ -98,6 +100,7 @@ defmodule ChatWeb.DashboardLive do
         |> assign(:world_memory_stats, load_world_memory_stats(world_id))
         |> assign(:world_models_status, load_world_models_status(world_id))
         |> assign(:code_analysis_status, load_code_analysis_status())
+        |> assign(:services_status, load_services_status())
         |> assign(:last_updated, DateTime.utc_now())
 
       {:noreply, socket}
@@ -107,7 +110,6 @@ defmodule ChatWeb.DashboardLive do
   end
 
   def handle_info({:world_context_changed, world_id}, socket) do
-    # World was changed from another LiveView or tab - sync our data
     {:noreply, reload_world_data(socket, world_id)}
   end
 
@@ -131,19 +133,17 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:world_memory_stats, load_world_memory_stats(world_id))
       |> assign(:world_models_status, load_world_models_status(world_id))
       |> assign(:code_analysis_status, load_code_analysis_status())
+      |> assign(:services_status, load_services_status())
       |> assign(:last_updated, DateTime.utc_now())
 
     {:noreply, socket}
   end
 
   def handle_event("switch_world", %{"world_id" => world_id}, socket) do
-    # World context hook already updated current_world_id and broadcast the change
-    # Reload all world-specific data
     {:noreply, reload_world_data(socket, world_id)}
   end
 
   def handle_event("refresh_worlds", _params, socket) do
-    # World context hook already refreshed available_worlds
     {:noreply, socket}
   end
 
@@ -162,7 +162,7 @@ defmodule ChatWeb.DashboardLive do
   end
 
   def handle_event("reload_training_worlds", _params, socket) do
-    case World.Manager.reload_persisted_worlds() do
+    case Manager.reload_persisted_worlds() do
       {:ok, loaded} ->
         socket =
           socket
@@ -183,143 +183,349 @@ defmodule ChatWeb.DashboardLive do
     |> assign(:readiness_details, load_readiness_details(world_id))
   end
 
-  # ============================================================================
-  # Data Loading Functions
-  # ============================================================================
-
   defp load_genserver_status do
-    Brain.SystemStatus.get_all_genservers_status()
+    SystemStatus.get_all_genservers_status()
   end
 
   defp load_performance_metrics do
-    Brain.SystemStatus.get_performance_metrics()
+    SystemStatus.get_performance_metrics()
   end
 
   defp load_health_indicators do
-    Brain.SystemStatus.get_health_indicators()
+    SystemStatus.get_health_indicators()
   end
 
   defp load_ml_models_status do
-    Brain.SystemStatus.get_ml_models_status()
+    SystemStatus.get_ml_models_status()
   end
 
   defp load_readiness_details(world_id) do
-    Brain.SystemStatus.get_readiness_details(world_id: world_id)
+    SystemStatus.get_readiness_details(world_id: world_id)
   end
 
   defp load_training_worlds_status do
-    Brain.SystemStatus.get_training_worlds_status()
+    SystemStatus.get_training_worlds_status()
   end
 
   defp load_world_models_status(world_id) do
-    Brain.SystemStatus.get_world_models_status(world_id)
+    SystemStatus.get_world_models_status(world_id)
   end
 
   defp load_code_analysis_status do
-    Brain.SystemStatus.get_code_analysis_status()
+    SystemStatus.get_code_analysis_status()
   end
 
-  # ============================================================================
-  # Helper Functions for Template
-  # ============================================================================
+  defp load_services_status do
+    SystemStatus.get_services_status()
+  end
 
-  def category_label(:core), do: "Core Systems"
-  def category_label(:epistemic), do: "Epistemic System"
-  def category_label(:analysis), do: "Analysis System"
-  def category_label(:ml), do: "Machine Learning"
-  def category_label(:knowledge), do: "Knowledge Expansion"
-  def category_label(:learning), do: "Training Worlds"
-  def category_label(:storage), do: "Storage"
-  def category_label(:metrics), do: "Metrics & Telemetry"
-  def category_label(:code_analysis), do: "Code Analysis"
-  def category_label(other), do: to_string(other) |> String.capitalize()
+  def category_label(:core) do
+    "Core Systems"
+  end
 
-  def category_icon(:core), do: "hero-cpu-chip"
-  def category_icon(:epistemic), do: "hero-light-bulb"
-  def category_icon(:analysis), do: "hero-chart-bar"
-  def category_icon(:ml), do: "hero-sparkles"
-  def category_icon(:knowledge), do: "hero-book-open"
-  def category_icon(:learning), do: "hero-academic-cap"
-  def category_icon(:storage), do: "hero-circle-stack"
-  def category_icon(:metrics), do: "hero-chart-pie"
-  def category_icon(:code_analysis), do: "hero-code-bracket"
-  def category_icon(_), do: "hero-cube"
+  def category_label(:epistemic) do
+    "Epistemic System"
+  end
 
-  def status_color(:ready), do: "text-success"
-  def status_color(:running), do: "text-success"
-  def status_color(:initializing), do: "text-warning"
-  def status_color(:building_vocabulary), do: "text-warning"
-  def status_color(:tokenizing), do: "text-warning"
-  def status_color(:building_frequencies), do: "text-warning"
-  def status_color(:calculating_idf), do: "text-warning"
-  def status_color(:loading), do: "text-warning"
-  def status_color(:busy), do: "text-warning"
-  def status_color(:idle), do: "text-info"
-  def status_color(:not_started), do: "text-error"
-  def status_color(_), do: "text-base-content/50"
+  def category_label(:analysis) do
+    "Analysis System"
+  end
 
-  # Note: status_dot_color is no longer used, we use <.status_dot> component instead
-  def status_dot_color(:ready), do: "bg-success"
-  def status_dot_color(:running), do: "bg-success"
-  def status_dot_color(:initializing), do: "bg-warning"
-  def status_dot_color(:building_vocabulary), do: "bg-warning"
-  def status_dot_color(:tokenizing), do: "bg-warning"
-  def status_dot_color(:building_frequencies), do: "bg-warning"
-  def status_dot_color(:calculating_idf), do: "bg-warning"
-  def status_dot_color(:loading), do: "bg-warning"
-  def status_dot_color(:busy), do: "bg-warning"
-  def status_dot_color(:idle), do: "bg-info"
-  def status_dot_color(:not_started), do: "bg-error"
-  def status_dot_color(_), do: "bg-base-content/50"
+  def category_label(:ml) do
+    "Machine Learning"
+  end
 
-  def health_status_color(:healthy), do: "text-success"
-  def health_status_color(:degraded), do: "text-warning"
-  def health_status_color(:warning), do: "text-warning"
-  def health_status_color(:critical), do: "text-error"
-  def health_status_color(_), do: "text-base-content/50"
+  def category_label(:knowledge) do
+    "Knowledge Expansion"
+  end
 
-  def health_badge_class(:healthy), do: "badge-success"
-  def health_badge_class(:degraded), do: "badge-warning"
-  def health_badge_class(:warning), do: "badge-warning"
-  def health_badge_class(:critical), do: "badge-error"
-  def health_badge_class(_), do: "badge-ghost"
+  def category_label(:learning) do
+    "Training Worlds"
+  end
 
-  # Maps health status to UI component variant atoms
-  def health_variant(:healthy), do: :success
-  def health_variant(:degraded), do: :warning
-  def health_variant(:warning), do: :warning
-  def health_variant(:critical), do: :error
-  def health_variant(_), do: :default
+  def category_label(:storage) do
+    "Storage"
+  end
 
-  def format_bytes(nil), do: "-"
-  def format_bytes(bytes) when bytes < 1024, do: "#{bytes} B"
-  def format_bytes(bytes) when bytes < 1024 * 1024, do: "#{Float.round(bytes / 1024, 1)} KB"
-  def format_bytes(bytes), do: "#{Float.round(bytes / (1024 * 1024), 2)} MB"
+  def category_label(:metrics) do
+    "Metrics & Telemetry"
+  end
 
-  def format_uptime(seconds) when seconds < 60, do: "#{seconds}s"
-  def format_uptime(seconds) when seconds < 3600, do: "#{div(seconds, 60)}m #{rem(seconds, 60)}s"
+  def category_label(:code_analysis) do
+    "Code Analysis"
+  end
 
-  def format_uptime(seconds) when seconds < 86400 do
+  def category_label(:services) do
+    "External Services"
+  end
+
+  def category_label(other) do
+    to_string(other) |> String.capitalize()
+  end
+
+  def category_icon(:core) do
+    "hero-cpu-chip"
+  end
+
+  def category_icon(:epistemic) do
+    "hero-light-bulb"
+  end
+
+  def category_icon(:analysis) do
+    "hero-chart-bar"
+  end
+
+  def category_icon(:ml) do
+    "hero-sparkles"
+  end
+
+  def category_icon(:knowledge) do
+    "hero-book-open"
+  end
+
+  def category_icon(:learning) do
+    "hero-academic-cap"
+  end
+
+  def category_icon(:storage) do
+    "hero-circle-stack"
+  end
+
+  def category_icon(:metrics) do
+    "hero-chart-pie"
+  end
+
+  def category_icon(:code_analysis) do
+    "hero-code-bracket"
+  end
+
+  def category_icon(:services) do
+    "hero-cloud"
+  end
+
+  def category_icon(_) do
+    "hero-cube"
+  end
+
+  def status_color(:ready) do
+    "text-success"
+  end
+
+  def status_color(:running) do
+    "text-success"
+  end
+
+  def status_color(:initializing) do
+    "text-warning"
+  end
+
+  def status_color(:building_vocabulary) do
+    "text-warning"
+  end
+
+  def status_color(:tokenizing) do
+    "text-warning"
+  end
+
+  def status_color(:building_frequencies) do
+    "text-warning"
+  end
+
+  def status_color(:calculating_idf) do
+    "text-warning"
+  end
+
+  def status_color(:loading) do
+    "text-warning"
+  end
+
+  def status_color(:busy) do
+    "text-warning"
+  end
+
+  def status_color(:idle) do
+    "text-info"
+  end
+
+  def status_color(:not_started) do
+    "text-error"
+  end
+
+  def status_color(_) do
+    "text-base-content/50"
+  end
+
+  def status_dot_color(:ready) do
+    "bg-success"
+  end
+
+  def status_dot_color(:running) do
+    "bg-success"
+  end
+
+  def status_dot_color(:initializing) do
+    "bg-warning"
+  end
+
+  def status_dot_color(:building_vocabulary) do
+    "bg-warning"
+  end
+
+  def status_dot_color(:tokenizing) do
+    "bg-warning"
+  end
+
+  def status_dot_color(:building_frequencies) do
+    "bg-warning"
+  end
+
+  def status_dot_color(:calculating_idf) do
+    "bg-warning"
+  end
+
+  def status_dot_color(:loading) do
+    "bg-warning"
+  end
+
+  def status_dot_color(:busy) do
+    "bg-warning"
+  end
+
+  def status_dot_color(:idle) do
+    "bg-info"
+  end
+
+  def status_dot_color(:not_started) do
+    "bg-error"
+  end
+
+  def status_dot_color(_) do
+    "bg-base-content/50"
+  end
+
+  def health_status_color(:healthy) do
+    "text-success"
+  end
+
+  def health_status_color(:degraded) do
+    "text-warning"
+  end
+
+  def health_status_color(:warning) do
+    "text-warning"
+  end
+
+  def health_status_color(:critical) do
+    "text-error"
+  end
+
+  def health_status_color(_) do
+    "text-base-content/50"
+  end
+
+  def health_badge_class(:healthy) do
+    "badge-success"
+  end
+
+  def health_badge_class(:degraded) do
+    "badge-warning"
+  end
+
+  def health_badge_class(:warning) do
+    "badge-warning"
+  end
+
+  def health_badge_class(:critical) do
+    "badge-error"
+  end
+
+  def health_badge_class(_) do
+    "badge-ghost"
+  end
+
+  def health_variant(:healthy) do
+    :success
+  end
+
+  def health_variant(:degraded) do
+    :warning
+  end
+
+  def health_variant(:warning) do
+    :warning
+  end
+
+  def health_variant(:critical) do
+    :error
+  end
+
+  def health_variant(_) do
+    :default
+  end
+
+  def format_bytes(nil) do
+    "-"
+  end
+
+  def format_bytes(bytes) when bytes < 1024 do
+    "#{bytes} B"
+  end
+
+  def format_bytes(bytes) when bytes < 1024 * 1024 do
+    "#{Float.round(bytes / 1024, 1)} KB"
+  end
+
+  def format_bytes(bytes) do
+    "#{Float.round(bytes / (1024 * 1024), 2)} MB"
+  end
+
+  def format_uptime(seconds) when seconds < 60 do
+    "#{seconds}s"
+  end
+
+  def format_uptime(seconds) when seconds < 3600 do
+    "#{div(seconds, 60)}m #{rem(seconds, 60)}s"
+  end
+
+  def format_uptime(seconds) when seconds < 86_400 do
     hours = div(seconds, 3600)
     minutes = div(rem(seconds, 3600), 60)
     "#{hours}h #{minutes}m"
   end
 
   def format_uptime(seconds) do
-    days = div(seconds, 86400)
-    hours = div(rem(seconds, 86400), 3600)
+    days = div(seconds, 86_400)
+    hours = div(rem(seconds, 86_400), 3600)
     "#{days}d #{hours}h"
   end
 
-  def format_rate(nil), do: "-"
-  def format_rate(rate) when is_float(rate), do: "#{Float.round(rate, 1)}/min"
-  def format_rate(rate), do: "#{rate}/min"
+  def format_rate(nil) do
+    "-"
+  end
 
-  def format_ms(nil), do: "-"
-  def format_ms(ms) when is_float(ms), do: "#{Float.round(ms, 1)}ms"
-  def format_ms(ms), do: "#{ms}ms"
+  def format_rate(rate) when is_float(rate) do
+    "#{Float.round(rate, 1)}/min"
+  end
 
-  def format_datetime(nil), do: "-"
+  def format_rate(rate) do
+    "#{rate}/min"
+  end
+
+  def format_ms(nil) do
+    "-"
+  end
+
+  def format_ms(ms) when is_float(ms) do
+    "#{Float.round(ms, 1)}ms"
+  end
+
+  def format_ms(ms) do
+    "#{ms}ms"
+  end
+
+  def format_datetime(nil) do
+    "-"
+  end
 
   def format_datetime(%DateTime{} = dt) do
     Calendar.strftime(dt, "%H:%M:%S")
@@ -339,71 +545,221 @@ defmodule ChatWeb.DashboardLive do
     Map.get(categories, category, %{}) |> map_size()
   end
 
-  # Category styling helpers
-  def category_bg_class(:core), do: "bg-primary/10"
-  def category_bg_class(:epistemic), do: "bg-secondary/10"
-  def category_bg_class(:analysis), do: "bg-accent/10"
-  def category_bg_class(:ml), do: "bg-warning/10"
-  def category_bg_class(:knowledge), do: "bg-cyan-500/10"
-  def category_bg_class(:learning), do: "bg-error/10"
-  def category_bg_class(:storage), do: "bg-info/10"
-  def category_bg_class(:metrics), do: "bg-success/10"
-  def category_bg_class(:code_analysis), do: "bg-violet-500/10"
-  def category_bg_class(_), do: "bg-base-200"
+  def category_bg_class(:core) do
+    "bg-primary/10"
+  end
 
-  def category_text_class(:core), do: "text-primary"
-  def category_text_class(:epistemic), do: "text-secondary"
-  def category_text_class(:analysis), do: "text-accent"
-  def category_text_class(:ml), do: "text-warning"
-  def category_text_class(:knowledge), do: "text-cyan-500"
-  def category_text_class(:learning), do: "text-error"
-  def category_text_class(:storage), do: "text-info"
-  def category_text_class(:metrics), do: "text-success"
-  def category_text_class(:code_analysis), do: "text-violet-500"
-  def category_text_class(_), do: "text-base-content"
+  def category_bg_class(:epistemic) do
+    "bg-secondary/10"
+  end
 
-  # Badge variant based on status
-  def status_badge_variant(:ready), do: :success
-  def status_badge_variant(:running), do: :success
-  def status_badge_variant(:initializing), do: :warning
-  def status_badge_variant(:building_vocabulary), do: :warning
-  def status_badge_variant(:tokenizing), do: :warning
-  def status_badge_variant(:building_frequencies), do: :warning
-  def status_badge_variant(:calculating_idf), do: :warning
-  def status_badge_variant(:loading), do: :warning
-  def status_badge_variant(:busy), do: :warning
-  def status_badge_variant(:idle), do: :info
-  def status_badge_variant(:not_started), do: :error
-  def status_badge_variant(_), do: :default
+  def category_bg_class(:analysis) do
+    "bg-accent/10"
+  end
 
-  # Format stat values for display
-  def format_stat_value(value) when is_binary(value), do: value
-  def format_stat_value(value) when is_integer(value), do: Integer.to_string(value)
-  def format_stat_value(value) when is_float(value), do: Float.round(value, 2) |> to_string()
-  def format_stat_value(value) when is_boolean(value), do: to_string(value)
-  def format_stat_value(value) when is_list(value), do: "[#{length(value)}]"
-  def format_stat_value(value) when is_map(value), do: "{#{map_size(value)}}"
-  def format_stat_value(value), do: inspect(value)
+  def category_bg_class(:ml) do
+    "bg-warning/10"
+  end
 
-  # ============================================================================
-  # ML Model Status Helpers
-  # ============================================================================
+  def category_bg_class(:knowledge) do
+    "bg-cyan-500/10"
+  end
 
-  def model_status_variant(%{exists: true, loaded: true}), do: :success
-  def model_status_variant(%{exists: true, loaded: false}), do: :warning
-  def model_status_variant(%{exists: false}), do: :error
-  def model_status_variant(%{loaded: true}), do: :success
-  def model_status_variant(%{loaded: false}), do: :error
-  def model_status_variant(_), do: :default
+  def category_bg_class(:learning) do
+    "bg-error/10"
+  end
 
-  def model_status_label(%{exists: true, loaded: true}), do: "Loaded"
-  def model_status_label(%{exists: true, loaded: false}), do: "Not Loaded"
-  def model_status_label(%{exists: false}), do: "Not Trained"
-  def model_status_label(%{loaded: true}), do: "Loaded"
-  def model_status_label(%{loaded: false}), do: "Not Loaded"
-  def model_status_label(_), do: "Unknown"
+  def category_bg_class(:storage) do
+    "bg-info/10"
+  end
 
-  def format_model_datetime(nil), do: "Never"
+  def category_bg_class(:metrics) do
+    "bg-success/10"
+  end
+
+  def category_bg_class(:code_analysis) do
+    "bg-violet-500/10"
+  end
+
+  def category_bg_class(:services) do
+    "bg-sky-500/10"
+  end
+
+  def category_bg_class(_) do
+    "bg-base-200"
+  end
+
+  def category_text_class(:core) do
+    "text-primary"
+  end
+
+  def category_text_class(:epistemic) do
+    "text-secondary"
+  end
+
+  def category_text_class(:analysis) do
+    "text-accent"
+  end
+
+  def category_text_class(:ml) do
+    "text-warning"
+  end
+
+  def category_text_class(:knowledge) do
+    "text-cyan-500"
+  end
+
+  def category_text_class(:learning) do
+    "text-error"
+  end
+
+  def category_text_class(:storage) do
+    "text-info"
+  end
+
+  def category_text_class(:metrics) do
+    "text-success"
+  end
+
+  def category_text_class(:code_analysis) do
+    "text-violet-500"
+  end
+
+  def category_text_class(:services) do
+    "text-sky-500"
+  end
+
+  def category_text_class(_) do
+    "text-base-content"
+  end
+
+  def status_badge_variant(:ready) do
+    :success
+  end
+
+  def status_badge_variant(:running) do
+    :success
+  end
+
+  def status_badge_variant(:initializing) do
+    :warning
+  end
+
+  def status_badge_variant(:building_vocabulary) do
+    :warning
+  end
+
+  def status_badge_variant(:tokenizing) do
+    :warning
+  end
+
+  def status_badge_variant(:building_frequencies) do
+    :warning
+  end
+
+  def status_badge_variant(:calculating_idf) do
+    :warning
+  end
+
+  def status_badge_variant(:loading) do
+    :warning
+  end
+
+  def status_badge_variant(:busy) do
+    :warning
+  end
+
+  def status_badge_variant(:idle) do
+    :info
+  end
+
+  def status_badge_variant(:not_started) do
+    :error
+  end
+
+  def status_badge_variant(_) do
+    :default
+  end
+
+  def format_stat_value(value) when is_binary(value) do
+    value
+  end
+
+  def format_stat_value(value) when is_integer(value) do
+    Integer.to_string(value)
+  end
+
+  def format_stat_value(value) when is_float(value) do
+    Float.round(value, 2) |> to_string()
+  end
+
+  def format_stat_value(value) when is_boolean(value) do
+    to_string(value)
+  end
+
+  def format_stat_value(value) when is_list(value) do
+    "[#{length(value)}]"
+  end
+
+  def format_stat_value(value) when is_map(value) do
+    "{#{map_size(value)}}"
+  end
+
+  def format_stat_value(value) do
+    inspect(value)
+  end
+
+  def model_status_variant(%{exists: true, loaded: true}) do
+    :success
+  end
+
+  def model_status_variant(%{exists: true, loaded: false}) do
+    :warning
+  end
+
+  def model_status_variant(%{exists: false}) do
+    :error
+  end
+
+  def model_status_variant(%{loaded: true}) do
+    :success
+  end
+
+  def model_status_variant(%{loaded: false}) do
+    :error
+  end
+
+  def model_status_variant(_) do
+    :default
+  end
+
+  def model_status_label(%{exists: true, loaded: true}) do
+    "Loaded"
+  end
+
+  def model_status_label(%{exists: true, loaded: false}) do
+    "Not Loaded"
+  end
+
+  def model_status_label(%{exists: false}) do
+    "Not Trained"
+  end
+
+  def model_status_label(%{loaded: true}) do
+    "Loaded"
+  end
+
+  def model_status_label(%{loaded: false}) do
+    "Not Loaded"
+  end
+
+  def model_status_label(_) do
+    "Unknown"
+  end
+
+  def format_model_datetime(nil) do
+    "Never"
+  end
 
   def format_model_datetime(%DateTime{} = dt) do
     Calendar.strftime(dt, "%Y-%m-%d %H:%M")
@@ -413,69 +769,125 @@ defmodule ChatWeb.DashboardLive do
     "#{year}-#{String.pad_leading("#{month}", 2, "0")}-#{String.pad_leading("#{day}", 2, "0")} #{String.pad_leading("#{hour}", 2, "0")}:#{String.pad_leading("#{min}", 2, "0")}"
   end
 
-  def format_model_datetime(_), do: "-"
+  def format_model_datetime(_) do
+    "-"
+  end
 
-  def training_status_variant(:completed), do: :success
-  def training_status_variant(:in_progress), do: :warning
-  def training_status_variant(:failed), do: :error
-  def training_status_variant(_), do: :default
+  def training_status_variant(:completed) do
+    :success
+  end
 
-  def training_status_label(:completed), do: "Completed"
-  def training_status_label(:in_progress), do: "In Progress"
-  def training_status_label(:failed), do: "Failed"
-  def training_status_label(nil), do: "Never Run"
-  def training_status_label(_), do: "Unknown"
+  def training_status_variant(:in_progress) do
+    :warning
+  end
 
-  def model_name(:pos_model), do: "POS Tagger"
-  def model_name(:entity_model), do: "Entity Model"
-  def model_name(:classifier), do: "Intent Classifier"
-  def model_name(:gazetteer), do: "Gazetteer"
-  def model_name(:intent_classifier), do: "Intent Classifier (Agent)"
-  def model_name(:entity_extractor), do: "Entity Extractor (Agent)"
-  def model_name(:pos_tagger), do: "POS Tagger"
-  def model_name(:entity_trainer), do: "Entity Trainer"
-  def model_name(:unified_model), do: "Unified LSTM"
-  def model_name(:multi_task_model), do: "Multi-Task LSTM"
-  def model_name(:response_scorer), do: "Response Scorer"
+  def training_status_variant(:failed) do
+    :error
+  end
 
-  def model_name(other),
-    do: other |> to_string() |> String.replace("_", " ") |> String.capitalize()
+  def training_status_variant(_) do
+    :default
+  end
 
-  # Get list of file-based models for display
+  def training_status_label(:completed) do
+    "Completed"
+  end
+
+  def training_status_label(:in_progress) do
+    "In Progress"
+  end
+
+  def training_status_label(:failed) do
+    "Failed"
+  end
+
+  def training_status_label(nil) do
+    "Never Run"
+  end
+
+  def training_status_label(_) do
+    "Unknown"
+  end
+
+  def model_name(:pos_model) do
+    "POS Tagger"
+  end
+
+  def model_name(:entity_model) do
+    "Entity Model"
+  end
+
+  def model_name(:classifier) do
+    "Intent Classifier"
+  end
+
+  def model_name(:gazetteer) do
+    "Gazetteer"
+  end
+
+  def model_name(:intent_classifier) do
+    "Intent Classifier (Agent)"
+  end
+
+  def model_name(:entity_extractor) do
+    "Entity Extractor (Agent)"
+  end
+
+  def model_name(:pos_tagger) do
+    "POS Tagger"
+  end
+
+  def model_name(:entity_trainer) do
+    "Entity Trainer"
+  end
+
+  def model_name(:unified_model) do
+    "Unified LSTM"
+  end
+
+  def model_name(:multi_task_model) do
+    "Multi-Task LSTM"
+  end
+
+  def model_name(:response_scorer) do
+    "Response Scorer"
+  end
+
+  def model_name(other) do
+    other |> to_string() |> String.replace("_", " ") |> String.capitalize()
+  end
+
   def file_based_models(ml_models_status) do
     [:pos_model, :entity_model, :classifier, :gazetteer]
     |> Enum.map(fn key -> {key, Map.get(ml_models_status, key)} end)
     |> Enum.filter(fn {_k, v} -> v != nil end)
   end
 
-  # Get list of agent-based models for display
   def agent_based_models(ml_models_status) do
     [:intent_classifier, :entity_extractor]
     |> Enum.map(fn key -> {key, Map.get(ml_models_status, key)} end)
     |> Enum.filter(fn {_k, v} -> v != nil end)
   end
 
-  # Get list of LSTM models for display
   def lstm_models(ml_models_status) do
     [:unified_model, :multi_task_model, :response_scorer]
     |> Enum.map(fn key -> {key, Map.get(ml_models_status, key)} end)
     |> Enum.filter(fn {_k, v} -> v != nil end)
   end
 
-  # Get corpus size info
   def corpus_info do
     try do
-      size_info = Brain.ML.CorpusManager.size_by_category()
+      size_info = CorpusManager.size_by_category()
 
       %{
-        total: Brain.ML.CorpusManager.format_bytes(size_info.total),
-        utilization: Brain.ML.CorpusManager.utilization_percent(),
+        total: CorpusManager.format_bytes(size_info.total),
+        utilization: CorpusManager.utilization_percent(),
         categories: %{
-          training: Brain.ML.CorpusManager.format_bytes(size_info.training_data),
-          models: Brain.ML.CorpusManager.format_bytes(size_info.ml_models),
-          evaluation: Brain.ML.CorpusManager.format_bytes(size_info.evaluation),
-          worlds: Brain.ML.CorpusManager.format_bytes(size_info.training_worlds),
-          knowledge: Brain.ML.CorpusManager.format_bytes(size_info.knowledge)
+          training: CorpusManager.format_bytes(size_info.training_data),
+          models: CorpusManager.format_bytes(size_info.ml_models),
+          evaluation: CorpusManager.format_bytes(size_info.evaluation),
+          worlds: CorpusManager.format_bytes(size_info.training_worlds),
+          knowledge: CorpusManager.format_bytes(size_info.knowledge)
         }
       }
     rescue
@@ -483,58 +895,104 @@ defmodule ChatWeb.DashboardLive do
     end
   end
 
-  # Get training stats from performance metrics
   def get_training_stats(performance_metrics) do
     Map.get(performance_metrics, :training, %{})
   end
 
-  # Get all categories including learning, metrics, and code_analysis categories
+  @doc """
+  Returns all categories in display order.
+  Uses the keys from genserver_status.categories if available, falling back to defaults.
+  """
   def all_categories do
-    [:core, :epistemic, :analysis, :ml, :knowledge, :learning, :storage, :metrics, :code_analysis]
+    [:core, :epistemic, :analysis, :ml, :knowledge, :learning, :services, :storage, :metrics, :code_analysis]
   end
 
-  # ============================================================================
-  # Embedder Status Helpers
-  # ============================================================================
-
   @doc """
-  Determine the status dot indicator for the embedder.
-  Idle is shown as info (blue), building as warning, ready as success.
+  Returns categories that exist in the current genserver status data.
+  This ensures we only display categories that have actual data.
   """
-  def embedder_status_for_dot(%{ready: true}), do: :ready
-  def embedder_status_for_dot(%{phase: :idle}), do: :idle
-  def embedder_status_for_dot(%{phase: :not_started}), do: :not_started
-  def embedder_status_for_dot(_), do: :initializing
+  def available_categories(genserver_status) do
+    existing = Map.keys(genserver_status.categories) |> MapSet.new()
+    all_categories() |> Enum.filter(&MapSet.member?(existing, &1))
+  end
 
-  @doc """
-  Check if the embedder is actively building vocabulary (should show progress).
-  Returns false for idle state (on-demand, not yet used).
-  """
-  def embedder_is_building?(%{ready: true}), do: false
-  def embedder_is_building?(%{phase: :idle}), do: false
-  def embedder_is_building?(%{phase: :not_started}), do: false
-  def embedder_is_building?(_), do: true
+  @doc "Determine the status dot indicator for the embedder.\nIdle is shown as info (blue), building as warning, ready as success.\n"
+  def embedder_status_for_dot(%{ready: true}) do
+    :ready
+  end
 
-  # ============================================================================
-  # World Embedder Status Helpers
-  # ============================================================================
+  def embedder_status_for_dot(%{phase: :idle}) do
+    :idle
+  end
 
-  @doc """
-  Determine the status dot indicator for the world-specific embedder.
-  """
-  def world_embedder_status_for_dot(%{ready: true}), do: :ready
-  def world_embedder_status_for_dot(%{phase: :not_initialized}), do: :idle
-  def world_embedder_status_for_dot(%{phase: :table_not_ready}), do: :warning
-  def world_embedder_status_for_dot(%{phase: :no_data}), do: :warning
-  def world_embedder_status_for_dot(_), do: :initializing
+  def embedder_status_for_dot(%{phase: :not_started}) do
+    :not_started
+  end
 
-  @doc """
-  Check if the world embedder is actively building vocabulary.
-  """
-  def world_embedder_is_building?(%{ready: true}), do: false
-  def world_embedder_is_building?(%{phase: :not_initialized}), do: false
-  def world_embedder_is_building?(%{phase: :table_not_ready}), do: false
-  def world_embedder_is_building?(%{phase: :no_data}), do: false
-  def world_embedder_is_building?(%{phase: :ready}), do: false
-  def world_embedder_is_building?(_), do: true
+  def embedder_status_for_dot(_) do
+    :initializing
+  end
+
+  @doc "Check if the embedder is actively building vocabulary (should show progress).\nReturns false for idle state (on-demand, not yet used).\n"
+  def embedder_is_building?(%{ready: true}) do
+    false
+  end
+
+  def embedder_is_building?(%{phase: :idle}) do
+    false
+  end
+
+  def embedder_is_building?(%{phase: :not_started}) do
+    false
+  end
+
+  def embedder_is_building?(_) do
+    true
+  end
+
+  @doc "Determine the status dot indicator for the world-specific embedder.\n"
+  def world_embedder_status_for_dot(%{ready: true}) do
+    :ready
+  end
+
+  def world_embedder_status_for_dot(%{phase: :not_initialized}) do
+    :idle
+  end
+
+  def world_embedder_status_for_dot(%{phase: :table_not_ready}) do
+    :warning
+  end
+
+  def world_embedder_status_for_dot(%{phase: :no_data}) do
+    :warning
+  end
+
+  def world_embedder_status_for_dot(_) do
+    :initializing
+  end
+
+  @doc "Check if the world embedder is actively building vocabulary.\n"
+  def world_embedder_is_building?(%{ready: true}) do
+    false
+  end
+
+  def world_embedder_is_building?(%{phase: :not_initialized}) do
+    false
+  end
+
+  def world_embedder_is_building?(%{phase: :table_not_ready}) do
+    false
+  end
+
+  def world_embedder_is_building?(%{phase: :no_data}) do
+    false
+  end
+
+  def world_embedder_is_building?(%{phase: :ready}) do
+    false
+  end
+
+  def world_embedder_is_building?(_) do
+    true
+  end
 end

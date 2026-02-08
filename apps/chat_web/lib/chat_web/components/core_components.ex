@@ -1,51 +1,20 @@
 defmodule ChatWeb.CoreComponents do
-  @moduledoc """
-  Provides core UI components.
-
-  At first glance, this module may seem daunting, but its goal is to provide
-  core building blocks for your application, such as tables, forms, and
-  inputs. The components consist mostly of markup and are well-documented
-  with doc strings and declarative assigns. You may customize and style
-  them in any way you want, based on your application growth and needs.
-
-  The foundation for styling is Tailwind CSS, a utility-first CSS framework,
-  augmented with daisyUI, a Tailwind CSS plugin that provides UI components
-  and themes. Here are useful references:
-
-    * [daisyUI](https://daisyui.com/docs/intro/) - a good place to get
-      started and see the available components.
-
-    * [Tailwind CSS](https://tailwindcss.com) - the foundational framework
-      we build on. You will use it for layout, sizing, flexbox, grid, and
-      spacing.
-
-    * [Heroicons](https://heroicons.com) - see `icon/1` for usage.
-
-    * [Phoenix.Component](https://hexdocs.pm/phoenix_live_view/Phoenix.Component.html) -
-      the component system used by Phoenix. Some components, such as `<.link>`
-      and `<.form>`, are defined there.
-
-  """
+  @moduledoc "Provides core UI components.\n\nAt first glance, this module may seem daunting, but its goal is to provide\ncore building blocks for your application, such as tables, forms, and\ninputs. The components consist mostly of markup and are well-documented\nwith doc strings and declarative assigns. You may customize and style\nthem in any way you want, based on your application growth and needs.\n\nThe foundation for styling is Tailwind CSS, a utility-first CSS framework,\naugmented with daisyUI, a Tailwind CSS plugin that provides UI components\nand themes. Here are useful references:\n\n  * [daisyUI](https://daisyui.com/docs/intro/) - a good place to get\n    started and see the available components.\n\n  * [Tailwind CSS](https://tailwindcss.com) - the foundational framework\n    we build on. You will use it for layout, sizing, flexbox, grid, and\n    spacing.\n\n  * [Heroicons](https://heroicons.com) - see `icon/1` for usage.\n\n  * [Phoenix.Component](https://hexdocs.pm/phoenix_live_view/Phoenix.Component.html) -\n    the component system used by Phoenix. Some components, such as `<.link>`\n    and `<.form>`, are defined there.\n\n"
+  alias Phoenix.HTML.Form
+  alias Phoenix.Component
   use Phoenix.Component
   use Gettext, backend: ChatWeb.Gettext
 
   alias Phoenix.LiveView.JS
 
-  @doc """
-  Renders flash notices.
+  @doc "Renders flash notices.\n\n## Examples\n\n    <.flash kind={:info} flash={@flash} />\n    <.flash kind={:info} phx-mounted={show(\"#flash\")}>Welcome Back!</.flash>\n"
+  attr(:id, :string, doc: "the optional id of flash container")
+  attr(:flash, :map, default: %{}, doc: "the map of flash messages to display")
+  attr(:title, :string, default: nil)
+  attr(:kind, :atom, values: [:info, :error], doc: "used for styling and flash lookup")
+  attr(:rest, :global, doc: "the arbitrary HTML attributes to add to the flash container")
 
-  ## Examples
-
-      <.flash kind={:info} flash={@flash} />
-      <.flash kind={:info} phx-mounted={show("#flash")}>Welcome Back!</.flash>
-  """
-  attr :id, :string, doc: "the optional id of flash container"
-  attr :flash, :map, default: %{}, doc: "the map of flash messages to display"
-  attr :title, :string, default: nil
-  attr :kind, :atom, values: [:info, :error], doc: "used for styling and flash lookup"
-  attr :rest, :global, doc: "the arbitrary HTML attributes to add to the flash container"
-
-  slot :inner_block, doc: "the optional inner block that renders the flash message"
+  slot(:inner_block, doc: "the optional inner block that renders the flash message")
 
   def flash(assigns) do
     assigns = assign_new(assigns, :id, fn -> "flash-#{assigns.kind}" end)
@@ -79,22 +48,14 @@ defmodule ChatWeb.CoreComponents do
     """
   end
 
-  @doc """
-  Renders a button with navigation support.
-
-  ## Examples
-
-      <.button>Send!</.button>
-      <.button phx-click="go" variant="primary">Send!</.button>
-      <.button navigate={~p"/"}>Home</.button>
-  """
-  attr :rest, :global, include: ~w(href navigate patch method download name value disabled)
-  attr :class, :string
-  attr :variant, :string, values: ~w(primary)
-  slot :inner_block, required: true
+  @doc "Renders a button with navigation support.\n\n## Examples\n\n    <.button>Send!</.button>\n    <.button phx-click=\"go\" variant=\"primary\">Send!</.button>\n    <.button navigate={~p\"/\"}>Home</.button>\n"
+  attr(:rest, :global, include: ~w(href navigate patch method download name value disabled))
+  attr(:class, :string)
+  attr(:variant, :string, values: ~w(primary))
+  slot(:inner_block, required: true)
 
   def button(%{rest: rest} = assigns) do
-    variants = %{"primary" => "btn-primary", nil => "btn-primary btn-soft"}
+    variants = %{"primary" => "btn-primary", nil: "btn-primary btn-soft"}
 
     assigns =
       assign_new(assigns, :class, fn ->
@@ -116,64 +77,53 @@ defmodule ChatWeb.CoreComponents do
     end
   end
 
-  @doc """
-  Renders an input with label and error messages.
+  @doc "Renders an input with label and error messages.\n\nA `Phoenix.HTML.FormField` may be passed as argument,\nwhich is used to retrieve the input name, id, and values.\nOtherwise all attributes may be passed explicitly.\n\n## Types\n\nThis function accepts all HTML input types, considering that:\n\n  * You may also set `type=\"select\"` to render a `<select>` tag\n\n  * `type=\"checkbox\"` is used exclusively to render boolean values\n\n  * For live file uploads, see `Phoenix.Component.live_file_input/1`\n\nSee https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input\nfor more information. Unsupported types, such as hidden and radio,\nare best written directly in your templates.\n\n## Examples\n\n    <.input field={@form[:email]} type=\"email\" />\n    <.input name=\"my-input\" errors={[\"oh no!\"]} />\n"
+  attr(:id, :any, default: nil)
+  attr(:name, :any)
+  attr(:label, :string, default: nil)
+  attr(:value, :any)
 
-  A `Phoenix.HTML.FormField` may be passed as argument,
-  which is used to retrieve the input name, id, and values.
-  Otherwise all attributes may be passed explicitly.
-
-  ## Types
-
-  This function accepts all HTML input types, considering that:
-
-    * You may also set `type="select"` to render a `<select>` tag
-
-    * `type="checkbox"` is used exclusively to render boolean values
-
-    * For live file uploads, see `Phoenix.Component.live_file_input/1`
-
-  See https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input
-  for more information. Unsupported types, such as hidden and radio,
-  are best written directly in your templates.
-
-  ## Examples
-
-      <.input field={@form[:email]} type="email" />
-      <.input name="my-input" errors={["oh no!"]} />
-  """
-  attr :id, :any, default: nil
-  attr :name, :any
-  attr :label, :string, default: nil
-  attr :value, :any
-
-  attr :type, :string,
+  attr(:type, :string,
     default: "text",
     values: ~w(checkbox color date datetime-local email file month number password
                search select tel text textarea time url week)
+  )
 
-  attr :field, Phoenix.HTML.FormField,
+  attr(:field, Phoenix.HTML.FormField,
     doc: "a form field struct retrieved from the form, for example: @form[:email]"
+  )
 
-  attr :errors, :list, default: []
-  attr :checked, :boolean, doc: "the checked flag for checkbox inputs"
-  attr :prompt, :string, default: nil, doc: "the prompt for select inputs"
-  attr :options, :list, doc: "the options to pass to Phoenix.HTML.Form.options_for_select/2"
-  attr :multiple, :boolean, default: false, doc: "the multiple flag for select inputs"
-  attr :class, :string, default: nil, doc: "the input class to use over defaults"
-  attr :error_class, :string, default: nil, doc: "the input error class to use over defaults"
+  attr(:errors, :list, default: [])
+  attr(:checked, :boolean, doc: "the checked flag for checkbox inputs")
+  attr(:prompt, :string, default: nil, doc: "the prompt for select inputs")
+  attr(:options, :list, doc: "the options to pass to Phoenix.HTML.Form.options_for_select/2")
+  attr(:multiple, :boolean, default: false, doc: "the multiple flag for select inputs")
+  attr(:class, :string, default: nil, doc: "the input class to use over defaults")
+  attr(:error_class, :string, default: nil, doc: "the input error class to use over defaults")
 
-  attr :rest, :global,
+  attr(:rest, :global,
     include: ~w(accept autocomplete capture cols disabled form list max maxlength min minlength
                 multiple pattern placeholder readonly required rows size step)
+  )
 
   def input(%{field: %Phoenix.HTML.FormField{} = field} = assigns) do
-    errors = if Phoenix.Component.used_input?(field), do: field.errors, else: []
+    errors =
+      if Component.used_input?(field) do
+        field.errors
+      else
+        []
+      end
 
     assigns
     |> assign(field: nil, id: assigns.id || field.id)
     |> assign(:errors, Enum.map(errors, &translate_error(&1)))
-    |> assign_new(:name, fn -> if assigns.multiple, do: field.name <> "[]", else: field.name end)
+    |> assign_new(:name, fn ->
+      if assigns.multiple do
+        field.name <> "[]"
+      else
+        field.name
+      end
+    end)
     |> assign_new(:value, fn -> field.value end)
     |> input()
   end
@@ -181,7 +131,7 @@ defmodule ChatWeb.CoreComponents do
   def input(%{type: "checkbox"} = assigns) do
     assigns =
       assign_new(assigns, :checked, fn ->
-        Phoenix.HTML.Form.normalize_value("checkbox", assigns[:value])
+        Form.normalize_value("checkbox", assigns[:value])
       end)
 
     ~H"""
@@ -246,7 +196,6 @@ defmodule ChatWeb.CoreComponents do
     """
   end
 
-  # All other inputs text, datetime-local, url, password, etc. are handled here...
   def input(assigns) do
     ~H"""
     <div class="fieldset mb-2">
@@ -269,7 +218,6 @@ defmodule ChatWeb.CoreComponents do
     """
   end
 
-  # Helper used by inputs to generate form errors
   defp error(assigns) do
     ~H"""
     <p class="mt-1.5 flex gap-2 items-center text-sm text-error">
@@ -279,12 +227,10 @@ defmodule ChatWeb.CoreComponents do
     """
   end
 
-  @doc """
-  Renders a header with title.
-  """
-  slot :inner_block, required: true
-  slot :subtitle
-  slot :actions
+  @doc "Renders a header with title.\n"
+  slot(:inner_block, required: true)
+  slot(:subtitle)
+  slot(:actions)
 
   def header(assigns) do
     ~H"""
@@ -302,30 +248,22 @@ defmodule ChatWeb.CoreComponents do
     """
   end
 
-  @doc """
-  Renders a table with generic styling.
+  @doc "Renders a table with generic styling.\n\n## Examples\n\n    <.table id=\"users\" rows={@users}>\n      <:col :let={user} label=\"id\">{user.id}</:col>\n      <:col :let={user} label=\"username\">{user.username}</:col>\n    </.table>\n"
+  attr(:id, :string, required: true)
+  attr(:rows, :list, required: true)
+  attr(:row_id, :any, default: nil, doc: "the function for generating the row id")
+  attr(:row_click, :any, default: nil, doc: "the function for handling phx-click on each row")
 
-  ## Examples
-
-      <.table id="users" rows={@users}>
-        <:col :let={user} label="id">{user.id}</:col>
-        <:col :let={user} label="username">{user.username}</:col>
-      </.table>
-  """
-  attr :id, :string, required: true
-  attr :rows, :list, required: true
-  attr :row_id, :any, default: nil, doc: "the function for generating the row id"
-  attr :row_click, :any, default: nil, doc: "the function for handling phx-click on each row"
-
-  attr :row_item, :any,
+  attr(:row_item, :any,
     default: &Function.identity/1,
     doc: "the function for mapping each row before calling the :col and :action slots"
+  )
 
   slot :col, required: true do
-    attr :label, :string
+    attr(:label, :string)
   end
 
-  slot :action, doc: "the slot for showing user actions in the last table column"
+  slot(:action, doc: "the slot for showing user actions in the last table column")
 
   def table(assigns) do
     assigns =
@@ -365,18 +303,9 @@ defmodule ChatWeb.CoreComponents do
     """
   end
 
-  @doc """
-  Renders a data list.
-
-  ## Examples
-
-      <.list>
-        <:item title="Title">{@post.title}</:item>
-        <:item title="Views">{@post.views}</:item>
-      </.list>
-  """
+  @doc "Renders a data list.\n\n## Examples\n\n    <.list>\n      <:item title=\"Title\">{@post.title}</:item>\n      <:item title=\"Views\">{@post.views}</:item>\n    </.list>\n"
   slot :item, required: true do
-    attr :title, :string, required: true
+    attr(:title, :string, required: true)
   end
 
   def list(assigns) do
@@ -392,34 +321,15 @@ defmodule ChatWeb.CoreComponents do
     """
   end
 
-  @doc """
-  Renders a [Heroicon](https://heroicons.com).
-
-  Heroicons come in three styles – outline, solid, and mini.
-  By default, the outline style is used, but solid and mini may
-  be applied by using the `-solid` and `-mini` suffix.
-
-  You can customize the size and colors of the icons by setting
-  width, height, and background color classes.
-
-  Icons are extracted from the `deps/heroicons` directory and bundled within
-  your compiled app.css by the plugin in `assets/vendor/heroicons.js`.
-
-  ## Examples
-
-      <.icon name="hero-x-mark" />
-      <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
-  """
-  attr :name, :string, required: true
-  attr :class, :any, default: "size-4"
+  @doc "Renders a [Heroicon](https://heroicons.com).\n\nHeroicons come in three styles – outline, solid, and mini.\nBy default, the outline style is used, but solid and mini may\nbe applied by using the `-solid` and `-mini` suffix.\n\nYou can customize the size and colors of the icons by setting\nwidth, height, and background color classes.\n\nIcons are extracted from the `deps/heroicons` directory and bundled within\nyour compiled app.css by the plugin in `assets/vendor/heroicons.js`.\n\n## Examples\n\n    <.icon name=\"hero-x-mark\" />\n    <.icon name=\"hero-arrow-path\" class=\"ml-1 size-3 motion-safe:animate-spin\" />\n"
+  attr(:name, :string, required: true)
+  attr(:class, :any, default: "size-4")
 
   def icon(%{name: "hero-" <> _} = assigns) do
     ~H"""
     <span class={[@name, @class]} />
     """
   end
-
-  ## JS Commands
 
   def show(js \\ %JS{}, selector) do
     JS.show(js,
@@ -442,20 +352,8 @@ defmodule ChatWeb.CoreComponents do
     )
   end
 
-  @doc """
-  Translates an error message using gettext.
-  """
+  @doc "Translates an error message using gettext.\n"
   def translate_error({msg, opts}) do
-    # When using gettext, we typically pass the strings we want
-    # to translate as a static argument:
-    #
-    #     # Translate the number of files with plural rules
-    #     dngettext("errors", "1 file", "%{count} files", count)
-    #
-    # However the error messages in our forms and APIs are generated
-    # dynamically, so we need to translate them by calling Gettext
-    # with our gettext backend as first argument. Translations are
-    # available in the errors.po file (as we use the "errors" domain).
     if count = opts[:count] do
       Gettext.dngettext(ChatWeb.Gettext, "errors", msg, msg, count, opts)
     else
@@ -463,10 +361,10 @@ defmodule ChatWeb.CoreComponents do
     end
   end
 
-  @doc """
-  Translates the errors for a field from a keyword list of errors.
-  """
+  @doc "Translates the errors for a field from a keyword list of errors.\n"
   def translate_errors(errors, field) when is_list(errors) do
-    for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
+    for {^field, {msg, opts}} <- errors do
+      translate_error({msg, opts})
+    end
   end
 end

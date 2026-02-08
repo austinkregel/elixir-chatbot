@@ -278,4 +278,177 @@ defmodule Brain.Response.ConditionEvaluatorTest do
       assert ConditionEvaluator.evaluate("  has_entity:person  ", context) == true
     end
   end
+
+  describe "evaluate/2 with enrichment conditions" do
+    test "enriched returns true when field is present with atom key" do
+      context = %{
+        enriched_data: %{temperature: "72°F", conditions: "sunny"}
+      }
+
+      assert ConditionEvaluator.evaluate("enriched:temperature", context) == true
+    end
+
+    test "enriched returns true when field is present with string key" do
+      context = %{
+        enriched_data: %{"temperature" => "72°F", "conditions" => "sunny"}
+      }
+
+      assert ConditionEvaluator.evaluate("enriched:temperature", context) == true
+    end
+
+    test "enriched returns false when field is not present" do
+      context = %{
+        enriched_data: %{conditions: "sunny"}
+      }
+
+      assert ConditionEvaluator.evaluate("enriched:temperature", context) == false
+    end
+
+    test "enriched returns false when enriched_data is empty" do
+      context = %{
+        enriched_data: %{}
+      }
+
+      assert ConditionEvaluator.evaluate("enriched:temperature", context) == false
+    end
+
+    test "enriched returns false when enriched_data is not present" do
+      context = %{}
+      assert ConditionEvaluator.evaluate("enriched:temperature", context) == false
+    end
+
+    test "enrichment_failed returns true when status is :failed" do
+      context = %{
+        enrichment_status: :failed
+      }
+
+      assert ConditionEvaluator.evaluate("enrichment_failed", context) == true
+    end
+
+    test "enrichment_failed returns false when status is :success" do
+      context = %{
+        enrichment_status: :success
+      }
+
+      assert ConditionEvaluator.evaluate("enrichment_failed", context) == false
+    end
+
+    test "enrichment_failed returns false when status is not set" do
+      context = %{}
+      assert ConditionEvaluator.evaluate("enrichment_failed", context) == false
+    end
+
+    test "enrichment_success returns true when status is :success" do
+      context = %{
+        enrichment_status: :success
+      }
+
+      assert ConditionEvaluator.evaluate("enrichment_success", context) == true
+    end
+
+    test "enrichment_success returns false when status is :failed" do
+      context = %{
+        enrichment_status: :failed
+      }
+
+      assert ConditionEvaluator.evaluate("enrichment_success", context) == false
+    end
+  end
+
+  describe "evaluate/2 with NOT conditions" do
+    test "NOT negates a true condition" do
+      context = %{
+        entities: [%{entity_type: "person", value: "Austin"}]
+      }
+
+      assert ConditionEvaluator.evaluate("NOT has_entity:person", context) == false
+    end
+
+    test "NOT negates a false condition" do
+      context = %{
+        entities: []
+      }
+
+      assert ConditionEvaluator.evaluate("NOT has_entity:person", context) == true
+    end
+
+    test "NOT works with enrichment conditions" do
+      context = %{
+        enriched_data: %{temperature: "72°F"}
+      }
+
+      assert ConditionEvaluator.evaluate("NOT enriched:humidity", context) == true
+    end
+
+    test "AND with NOT works correctly" do
+      context = %{
+        filled_slots: ["location"],
+        enriched_data: %{}
+      }
+
+      condition = "slot_filled:location AND NOT enriched:temperature"
+      assert ConditionEvaluator.evaluate(condition, context) == true
+    end
+  end
+
+  describe "evaluate/2 with compound enrichment conditions" do
+    test "enriched AND slot_filled combination" do
+      context = %{
+        filled_slots: ["location"],
+        enriched_data: %{temperature: "72°F", conditions: "sunny"}
+      }
+
+      condition = "slot_filled:location AND enriched:temperature"
+      assert ConditionEvaluator.evaluate(condition, context) == true
+    end
+
+    test "enriched AND slot_filled fails when enrichment missing" do
+      context = %{
+        filled_slots: ["location"],
+        enriched_data: %{}
+      }
+
+      condition = "slot_filled:location AND enriched:temperature"
+      assert ConditionEvaluator.evaluate(condition, context) == false
+    end
+
+    test "complex weather template condition" do
+      context = %{
+        filled_slots: ["location"],
+        enriched_data: %{temperature: "72°F", conditions: "sunny", humidity: "45%"},
+        enrichment_status: :success
+      }
+
+      condition = "enriched:temperature AND enriched:humidity"
+      assert ConditionEvaluator.evaluate(condition, context) == true
+    end
+
+    test "fallback template condition when enrichment fails" do
+      context = %{
+        filled_slots: ["location"],
+        enriched_data: %{},
+        enrichment_status: :failed
+      }
+
+      condition = "slot_filled:location AND enrichment_failed"
+      assert ConditionEvaluator.evaluate(condition, context) == true
+    end
+  end
+
+  describe "parse/1 with NOT" do
+    test "parses NOT expression" do
+      result = ConditionEvaluator.parse("NOT has_entity:person")
+      assert result == {:not, {:condition, "has_entity", "person"}}
+    end
+
+    test "parses AND with NOT" do
+      result = ConditionEvaluator.parse("slot_filled:location AND NOT enriched:temperature")
+
+      assert result == {
+               :and,
+               {:condition, "slot_filled", "location"},
+               {:not, {:condition, "enriched", "temperature"}}
+             }
+    end
+  end
 end

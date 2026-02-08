@@ -1,4 +1,5 @@
 defmodule Brain.ML.NLPIntegrationTest do
+  alias Brain.ML.SimpleClassifier
   use ExUnit.Case, async: false
   import Brain.TestHelpers
 
@@ -7,10 +8,8 @@ defmodule Brain.ML.NLPIntegrationTest do
   alias Brain.ML.NLPPipeline
 
   setup do
-    # Ensure PubSub is running (started in test_helper.exs)
     ensure_pubsub_started()
 
-    # Ensure models are trained
     Application.put_env(:chat_bot, :ml,
       enabled: true,
       confidence_threshold: 0.5,
@@ -18,7 +17,6 @@ defmodule Brain.ML.NLPIntegrationTest do
       training_data_path: "data"
     )
 
-    # Start the IntentClassifierSimple under ExUnit supervision
     ensure_started(IntentClassifierSimple)
     IntentClassifierSimple.load_models()
     EntityExtractor.load_entity_maps()
@@ -45,8 +43,6 @@ defmodule Brain.ML.NLPIntegrationTest do
     test "extracts room entities" do
       entities = EntityExtractor.extract_entities("turn off the kitchen lights")
       assert is_list(entities)
-
-      # Should find kitchen as a room
       kitchen_entity = Enum.find(entities, fn e -> e.value == "kitchen" end)
       assert kitchen_entity != nil
     end
@@ -55,7 +51,6 @@ defmodule Brain.ML.NLPIntegrationTest do
       entities = EntityExtractor.extract_entities("play music by the beatles")
       beatles = Enum.find(entities, fn e -> String.downcase(e.value) == "the beatles" end)
 
-      # May or may not find depending on entity data
       if beatles do
         assert beatles.entity_type =~ "music"
       end
@@ -84,7 +79,6 @@ defmodule Brain.ML.NLPIntegrationTest do
     test "extracts brand-like device hints from product sentence (best-effort)" do
       text = "I just bought a new iPhone 15 Pro Max in titanium."
       entities = EntityExtractor.extract_entities(text)
-      # We may or may not have brand coverage; ensure function is robust
       assert is_list(entities)
     end
   end
@@ -113,17 +107,12 @@ defmodule Brain.ML.NLPIntegrationTest do
   describe "Classical NLP Processing" do
     test "uses classical NLP for high-confidence intents" do
       {:ok, result} = NLPPipeline.process("play some music")
-
-      # Check that we got a result
       assert result.intent != nil
       assert result.confidence > 0.0
     end
 
     test "handles low confidence gracefully" do
-      # Ambiguous or unknown input
       result = NLPPipeline.process("xyzabc nonsense input")
-
-      # Should still return a result (even if confidence is low)
       assert {:ok, %{confidence: confidence}} = result
       assert is_float(confidence)
     end
@@ -138,13 +127,11 @@ defmodule Brain.ML.NLPIntegrationTest do
         {"turn off lights", "lights.off"}
       ]
 
-      model = Brain.ML.SimpleClassifier.train(training_data)
+      model = SimpleClassifier.train(training_data)
 
       assert map_size(model.vocabulary) > 0
       assert map_size(model.label_centroids) == 4
-
-      # Test classification
-      {:ok, label, score, _details} = Brain.ML.SimpleClassifier.classify("play some music", model)
+      {:ok, label, score, _details} = SimpleClassifier.classify("play some music", model)
       assert label == "music.play"
       assert score > 0.0
     end
@@ -156,9 +143,9 @@ defmodule Brain.ML.NLPIntegrationTest do
         {"turn on lights", "lights.on"}
       ]
 
-      model = Brain.ML.SimpleClassifier.train(training_data)
+      model = SimpleClassifier.train(training_data)
 
-      {:ok, label, _score, _details} = Brain.ML.SimpleClassifier.classify("play the radio", model)
+      {:ok, label, _score, _details} = SimpleClassifier.classify("play the radio", model)
       assert label == "music.play"
     end
   end

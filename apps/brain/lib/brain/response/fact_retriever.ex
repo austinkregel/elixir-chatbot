@@ -68,7 +68,7 @@ defmodule Brain.Response.FactRetriever do
         end
       end)
       |> List.flatten()
-      |> Enum.uniq_by(fn 
+      |> Enum.uniq_by(fn
         %{id: id} -> id
         %{"id" => id} -> id
         fact when is_struct(fact) -> Map.get(fact, :id, fact)

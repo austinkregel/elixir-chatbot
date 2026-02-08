@@ -1,13 +1,9 @@
 defmodule Brain.Subprocesses.HttpSubprocess do
-  @moduledoc """
-  HTTP subprocess GenServer for handling web requests.
-  Provides HTTP API endpoints for the chat bot functionality.
-  """
+  @moduledoc "HTTP subprocess GenServer for handling web requests.\nProvides HTTP API endpoints for the chat bot functionality.\n"
 
+  alias Plug.Conn
   use GenServer
   require Logger
-
-  # Client API
 
   def start_link(opts \\ []) do
     subprocess_id = Keyword.get(opts, :subprocess_id, generate_id())
@@ -43,11 +39,8 @@ defmodule Brain.Subprocesses.HttpSubprocess do
     GenServer.cast(via_tuple(subprocess_id), {:send_learning_summary, conversation_id, summary})
   end
 
-  # Server Callbacks
-
   @impl true
   def init({subprocess_id, port, memory_snapshot}) do
-    # Initialize state
     state = %{
       subprocess_id: subprocess_id,
       port: port,
@@ -63,7 +56,6 @@ defmodule Brain.Subprocesses.HttpSubprocess do
       http_server: nil
     }
 
-    # Start HTTP server
     case start_http_server(port, subprocess_id) do
       {:ok, http_server} ->
         Logger.info("HTTP subprocess started", %{
@@ -118,7 +110,6 @@ defmodule Brain.Subprocesses.HttpSubprocess do
 
   @impl true
   def handle_call(:create_conversation, _from, state) do
-    # Create a Brain-level conversation so evaluate/3 works
     conversation_id =
       case Brain.create_conversation() do
         {:ok, id} -> id
@@ -168,10 +159,8 @@ defmodule Brain.Subprocesses.HttpSubprocess do
         {:reply, {:error, "Conversation not found"}, state}
 
       conversation ->
-        # Process the input (simplified for now)
         response = process_http_input(input, conversation)
 
-        # Update conversation
         updated_conversation = %{
           conversation
           | messages:
@@ -185,7 +174,6 @@ defmodule Brain.Subprocesses.HttpSubprocess do
           | conversations: Map.put(state.conversations, conversation_id, updated_conversation)
         }
 
-        # Add to learning data
         learning_entry = %{
           conversation_id: conversation_id,
           input: input,
@@ -212,7 +200,6 @@ defmodule Brain.Subprocesses.HttpSubprocess do
       summary_length: String.length(summary)
     })
 
-    # Process learning summary (simplified for now)
     updated_learning_data = %{
       state.learning_data
       | insights:
@@ -237,15 +224,12 @@ defmodule Brain.Subprocesses.HttpSubprocess do
       uptime: System.system_time(:millisecond) - state.start_time
     })
 
-    # Stop HTTP server if running
     if state.http_server do
       DynamicSupervisor.terminate_child(Brain.Subprocesses.Supervisor, state.http_server)
     end
 
     :ok
   end
-
-  # Private Functions
 
   defp via_tuple(subprocess_id) do
     {:via, Registry, {Brain.SubprocessRegistry, {:http_subprocess, subprocess_id}}}
@@ -260,15 +244,14 @@ defmodule Brain.Subprocesses.HttpSubprocess do
   end
 
   defp start_http_server(port, subprocess_id) do
-    # Create a simple HTTP handler
     handler = fn conn ->
       case conn.request_path do
         "/status" ->
           status = get_status(subprocess_id)
 
           conn
-          |> Plug.Conn.put_resp_content_type("application/json")
-          |> Plug.Conn.send_resp(200, Jason.encode!(status))
+          |> Conn.put_resp_content_type("application/json")
+          |> Conn.send_resp(200, Jason.encode!(status))
 
         "/conversations" ->
           case conn.method do
@@ -276,76 +259,72 @@ defmodule Brain.Subprocesses.HttpSubprocess do
               conversations = get_conversations(subprocess_id)
 
               conn
-              |> Plug.Conn.put_resp_content_type("application/json")
-              |> Plug.Conn.send_resp(200, Jason.encode!(conversations))
+              |> Conn.put_resp_content_type("application/json")
+              |> Conn.send_resp(200, Jason.encode!(conversations))
 
             "POST" ->
               case create_conversation(subprocess_id) do
                 {:ok, conversation_id} ->
                   conn
-                  |> Plug.Conn.put_resp_content_type("application/json")
-                  |> Plug.Conn.send_resp(201, Jason.encode!(%{conversation_id: conversation_id}))
+                  |> Conn.put_resp_content_type("application/json")
+                  |> Conn.send_resp(201, Jason.encode!(%{conversation_id: conversation_id}))
 
                 {:error, reason} ->
                   conn
-                  |> Plug.Conn.put_resp_content_type("application/json")
-                  |> Plug.Conn.send_resp(400, Jason.encode!(%{error: reason}))
+                  |> Conn.put_resp_content_type("application/json")
+                  |> Conn.send_resp(400, Jason.encode!(%{error: reason}))
               end
 
             _ ->
               conn
-              |> Plug.Conn.send_resp(405, "Method not allowed")
+              |> Conn.send_resp(405, "Method not allowed")
           end
 
         path ->
           if String.starts_with?(path, "/conversations/") do
-            # Extract conversation ID and handle conversation-specific requests
             conversation_id = String.replace_prefix(path, "/conversations/", "")
 
             case conn.method do
               "POST" ->
-                # Handle message to conversation
-                {:ok, body, _conn} = Plug.Conn.read_body(conn)
+                {:ok, body, _conn} = Conn.read_body(conn)
                 input_data = Jason.decode!(body)
                 input = input_data["input"]
 
                 case route_to_conversation(subprocess_id, conversation_id, input) do
                   {:ok, response} ->
                     conn
-                    |> Plug.Conn.put_resp_content_type("application/json")
-                    |> Plug.Conn.send_resp(200, Jason.encode!(%{response: response}))
+                    |> Conn.put_resp_content_type("application/json")
+                    |> Conn.send_resp(200, Jason.encode!(%{response: response}))
 
                   {:error, reason} ->
                     conn
-                    |> Plug.Conn.put_resp_content_type("application/json")
-                    |> Plug.Conn.send_resp(400, Jason.encode!(%{error: reason}))
+                    |> Conn.put_resp_content_type("application/json")
+                    |> Conn.send_resp(400, Jason.encode!(%{error: reason}))
                 end
 
               "DELETE" ->
-                # End conversation
                 case end_conversation(subprocess_id, conversation_id) do
                   :ok ->
                     conn
-                    |> Plug.Conn.send_resp(204, "")
+                    |> Conn.send_resp(204, "")
 
                   {:error, reason} ->
                     conn
-                    |> Plug.Conn.put_resp_content_type("application/json")
-                    |> Plug.Conn.send_resp(400, Jason.encode!(%{error: reason}))
+                    |> Conn.put_resp_content_type("application/json")
+                    |> Conn.send_resp(400, Jason.encode!(%{error: reason}))
                 end
 
               _ ->
                 conn
-                |> Plug.Conn.send_resp(405, "Method not allowed")
+                |> Conn.send_resp(405, "Method not allowed")
             end
           else
             conn
-            |> Plug.Conn.send_resp(404, "Not found")
+            |> Conn.send_resp(404, "Not found")
           end
       end
     end
 
-    # Start Bandit HTTP server
     Bandit.start_link(
       scheme: :http,
       port: port,
@@ -354,13 +333,11 @@ defmodule Brain.Subprocesses.HttpSubprocess do
   end
 
   defp process_http_input(input, conversation) do
-    # Route through the main Brain.evaluate pipeline for full NLP processing
     case Brain.evaluate(conversation.id, input) do
       {:ok, response} when is_binary(response) ->
         response
 
       {:ok, nil} ->
-        # ResponseGate deferred - no response needed
         ""
 
       {:error, reason} ->

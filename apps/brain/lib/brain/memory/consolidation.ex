@@ -1,32 +1,12 @@
 defmodule Brain.Memory.Consolidation do
-  @moduledoc """
-  Consolidation logic for episodic memories.
-
-  Ported from the Rust cognitive_memory_system consolidation module.
-
-  Clusters similar episodes and creates aggregated semantic facts.
-  Consolidation allows the system to distill knowledge from raw
-  experiences into higher-level structures.
-  """
+  @moduledoc "Consolidation logic for episodic memories.\n\nPorted from the Rust cognitive_memory_system consolidation module.\n\nClusters similar episodes and creates aggregated semantic facts.\nConsolidation allows the system to distill knowledge from raw\nexperiences into higher-level structures.\n"
 
   alias Brain.Memory.Types.SemanticFact
   alias Brain.Memory.{Store, VectorIndex}
 
   require Logger
 
-  @doc """
-  Consolidate similar episodes into semantic facts.
-
-  Episodes with embeddings whose cosine similarity exceeds the threshold
-  will be clustered together. For each cluster with at least min_cluster_size
-  members, a new SemanticFact is created.
-
-  Options:
-  - threshold: minimum cosine similarity for clustering (default: 0.8)
-  - min_cluster_size: minimum episodes per cluster (default: 2)
-
-  Returns the number of new semantic facts created.
-  """
+  @doc "Consolidate similar episodes into semantic facts.\n\nEpisodes with embeddings whose cosine similarity exceeds the threshold\nwill be clustered together. For each cluster with at least min_cluster_size\nmembers, a new SemanticFact is created.\n\nOptions:\n- threshold: minimum cosine similarity for clustering (default: 0.8)\n- min_cluster_size: minimum episodes per cluster (default: 2)\n\nReturns the number of new semantic facts created.\n"
   def consolidate(opts \\ []) do
     threshold = Keyword.get(opts, :threshold, 0.8)
     min_cluster_size = Keyword.get(opts, :min_cluster_size, 2)
@@ -36,19 +16,16 @@ defmodule Brain.Memory.Consolidation do
       min_cluster_size: min_cluster_size
     )
 
-    # Get all episodes
     {:ok, episodes} = Store.all_episodes()
 
     if length(episodes) < min_cluster_size do
       Logger.info("Not enough episodes for consolidation", count: length(episodes))
       {:ok, 0}
     else
-      # Find clusters of similar episodes
       clusters = find_clusters(episodes, threshold, min_cluster_size)
 
       Logger.info("Found clusters", count: length(clusters))
 
-      # Create semantic facts from clusters
       new_semantics =
         Enum.reduce(clusters, 0, fn cluster, acc ->
           case create_semantic_from_cluster(cluster) do
@@ -62,19 +39,13 @@ defmodule Brain.Memory.Consolidation do
     end
   end
 
-  @doc """
-  Find clusters of similar episodes based on embedding similarity.
-  Uses greedy clustering - assigns each episode to the first cluster
-  it's similar enough to, or creates a new cluster.
-  """
+  @doc "Find clusters of similar episodes based on embedding similarity.\nUses greedy clustering - assigns each episode to the first cluster\nit's similar enough to, or creates a new cluster.\n"
   def find_clusters(episodes, threshold, min_cluster_size) do
-    # Build clusters greedily
     {clusters, _visited} =
       Enum.reduce(episodes, {[], MapSet.new()}, fn episode, {clusters_acc, visited} ->
         if MapSet.member?(visited, episode.id) do
           {clusters_acc, visited}
         else
-          # Find all episodes similar to this one
           cluster =
             Enum.filter(episodes, fn other ->
               not MapSet.member?(visited, other.id) and
@@ -90,7 +61,6 @@ defmodule Brain.Memory.Consolidation do
 
             {[cluster | clusters_acc], new_visited}
           else
-            # Mark as visited but don't create cluster
             {clusters_acc, MapSet.put(visited, episode.id)}
           end
         end
@@ -99,33 +69,22 @@ defmodule Brain.Memory.Consolidation do
     Enum.reverse(clusters)
   end
 
-  @doc """
-  Create a semantic fact from a cluster of episodes.
-  """
-  def create_semantic_from_cluster(cluster) when is_list(cluster) and length(cluster) > 0 do
-    # Aggregate representation
+  @doc "Create a semantic fact from a cluster of episodes.\n"
+  def create_semantic_from_cluster(cluster) when is_list(cluster) and cluster != [] do
     representation = aggregate_representation(cluster)
-
-    # Compute mean embedding
     embeddings = Enum.map(cluster, & &1.embedding)
     mean_embedding = VectorIndex.mean_vector(embeddings)
-
-    # Collect evidence IDs
     evidence_ids = Enum.map(cluster, & &1.id)
 
-    # Merge tags
     tags =
       cluster
       |> Enum.flat_map(& &1.tags)
       |> Enum.uniq()
 
-    # Create the semantic fact
     semantic = SemanticFact.new(representation, mean_embedding, evidence_ids, tags)
 
-    # Add to store
     case Store.add_semantic(semantic) do
       {:ok, semantic_id} ->
-        # Link episodes to this semantic fact
         Enum.each(evidence_ids, fn ep_id ->
           Store.link_episode_to_semantic(ep_id, semantic_id)
         end)
@@ -137,16 +96,11 @@ defmodule Brain.Memory.Consolidation do
     end
   end
 
-  def create_semantic_from_cluster([]), do: {:error, :empty_cluster}
-
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
+  def create_semantic_from_cluster([]) do
+    {:error, :empty_cluster}
+  end
 
   defp aggregate_representation(cluster) do
-    # Create a summary representation from the cluster
-    # For now, we use the most common action and aggregate tags
-
     actions = Enum.frequencies(Enum.map(cluster, & &1.action))
     {most_common_action, _count} = Enum.max_by(actions, fn {_action, count} -> count end)
 

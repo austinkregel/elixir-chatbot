@@ -1,31 +1,15 @@
 defmodule World.DocumentIngestor do
-  @moduledoc """
-  Processes large documents for entity discovery and learning.
+  @moduledoc "Processes large documents for entity discovery and learning.\n\nHandles:\n- Chunking large files into manageable pieces\n- Streaming processing to avoid memory issues\n- Progress tracking and reporting\n- Batch entity discovery\n- **Code file analysis** (routes to Brain.Code.Pipeline)\n\n## Code File Support\n\nWhen processing files with code extensions (.py, .ex, .go, etc.), the\ningestor automatically routes them to `Brain.Code.Pipeline` for proper\nAST-based analysis instead of NLP-based processing.\n\nSupported code extensions: .c, .h, .cpp, .cc, .java, .cs, .php, .py, .rb, .ex, .exs, .go\n"
 
-  Handles:
-  - Chunking large files into manageable pieces
-  - Streaming processing to avoid memory issues
-  - Progress tracking and reporting
-  - Batch entity discovery
-  - **Code file analysis** (routes to Brain.Code.Pipeline)
-
-  ## Code File Support
-
-  When processing files with code extensions (.py, .ex, .go, etc.), the
-  ingestor automatically routes them to `Brain.Code.Pipeline` for proper
-  AST-based analysis instead of NLP-based processing.
-
-  Supported code extensions: .c, .h, .cpp, .cc, .java, .cs, .php, .py, .rb, .ex, .exs, .go
-  """
-
+  alias Brain.ML.Gazetteer
+  alias Brain.Code.Pipeline
+  alias Brain.ML
   require Logger
 
-  alias Brain.ML.{Tokenizer, POSTagger}
+  alias ML.{Tokenizer, POSTagger}
   alias World.{EntityDiscoverer, TypeInferrer}
   alias World.Manager, as: WorldManager, as: WorldManager
   alias World.Metrics, as: WorldMetrics
-
-  # Code file extensions - route these to Brain.Code.Pipeline
   @code_extensions ~w(.c .h .cpp .cc .cxx .hpp .java .cs .php .py .pyw .rb .ex .exs .go)
 
   @type ingest_opts :: [
@@ -42,31 +26,10 @@ defmodule World.DocumentIngestor do
           entities_discovered: non_neg_integer(),
           processing_time_ms: non_neg_integer()
         }
-
-  # Default chunk size in characters
   @default_chunk_size 5000
-  # Default overlap between chunks
   @default_overlap 200
 
-  # ============================================================================
-  # Public API
-  # ============================================================================
-
-  @doc """
-  Ingests a single file into a training world.
-
-  For code files (.py, .ex, .go, etc.), automatically routes to
-  `Brain.Code.Pipeline` for AST-based analysis.
-
-  For text/document files, uses NLP-based chunking and entity discovery.
-
-  ## Options
-    - `:chunk_size` - Characters per chunk (default: 5000)
-    - `:overlap` - Overlap between chunks (default: 200)
-    - `:progress_callback` - Function called with progress updates
-    - `:learn_types` - Whether to learn type patterns from known entities (default: true)
-    - `:force_text` - Force text processing even for code files (default: false)
-  """
+  @doc "Ingests a single file into a training world.\n\nFor code files (.py, .ex, .go, etc.), automatically routes to\n`Brain.Code.Pipeline` for AST-based analysis.\n\nFor text/document files, uses NLP-based chunking and entity discovery.\n\n## Options\n  - `:chunk_size` - Characters per chunk (default: 5000)\n  - `:overlap` - Overlap between chunks (default: 200)\n  - `:progress_callback` - Function called with progress updates\n  - `:learn_types` - Whether to learn type patterns from known entities (default: true)\n  - `:force_text` - Force text processing even for code files (default: false)\n"
   def ingest_file(world_id, file_path, opts \\ [])
       when is_binary(world_id) and is_binary(file_path) do
     force_text = Keyword.get(opts, :force_text, false)
@@ -78,21 +41,17 @@ defmodule World.DocumentIngestor do
     end
   end
 
-  @doc """
-  Checks if a file is a code file based on its extension.
-  """
+  @doc "Checks if a file is a code file based on its extension.\n"
   @spec is_code_file?(String.t()) :: boolean()
   def is_code_file?(file_path) do
     ext = Path.extname(file_path) |> String.downcase()
     ext in @code_extensions
   end
 
-  # Handles code file ingestion via Brain.Code.Pipeline
   defp ingest_code_file(world_id, file_path, opts) do
     start_time = System.monotonic_time(:millisecond)
     progress_callback = Keyword.get(opts, :progress_callback)
 
-    # Report starting code analysis
     if progress_callback do
       progress_callback.(%{
         type: :code_analysis_started,
@@ -100,11 +59,10 @@ defmodule World.DocumentIngestor do
       })
     end
 
-    case Brain.Code.Pipeline.process_file(file_path, world_id: world_id, store: true) do
+    case Pipeline.process_file(file_path, world_id: world_id, store: true) do
       {:ok, result} ->
         duration = System.monotonic_time(:millisecond) - start_time
 
-        # Record code file processed event
         WorldManager.record_event(world_id, :code_file_processed, %{
           file_path: file_path,
           language: result.language,
@@ -113,7 +71,6 @@ defmodule World.DocumentIngestor do
           duration_ms: duration
         })
 
-        # Report completion
         if progress_callback do
           progress_callback.(%{
             type: :code_analysis_completed,
@@ -122,15 +79,15 @@ defmodule World.DocumentIngestor do
           })
         end
 
-        # Convert to standard ingest result format
-        {:ok, %{
-          documents_processed: 1,
-          total_chunks: 1,
-          total_tokens: result.stats.symbol_count,
-          entities_discovered: result.stats.symbol_count,
-          processing_time_ms: duration,
-          code_analysis: result
-        }}
+        {:ok,
+         %{
+           documents_processed: 1,
+           total_chunks: 1,
+           total_tokens: result.stats.symbol_count,
+           entities_discovered: result.stats.symbol_count,
+           processing_time_ms: duration,
+           code_analysis: result
+         }}
 
       {:error, reason} ->
         Logger.warning("Code file analysis failed", %{file: file_path, reason: reason})
@@ -147,7 +104,6 @@ defmodule World.DocumentIngestor do
     end
   end
 
-  # Handles text file ingestion (original logic)
   defp ingest_text_file(world_id, file_path, opts) do
     start_time = System.monotonic_time(:millisecond)
 
@@ -156,7 +112,6 @@ defmodule World.DocumentIngestor do
         result = ingest_text(world_id, content, opts)
         duration = System.monotonic_time(:millisecond) - start_time
 
-        # Record document processed event
         WorldManager.record_event(world_id, :document_processed, %{
           file_path: file_path,
           chunks: result.total_chunks,
@@ -171,11 +126,7 @@ defmodule World.DocumentIngestor do
     end
   end
 
-  @doc """
-  Ingests multiple files into a training world.
-
-  Processes files sequentially and aggregates results.
-  """
+  @doc "Ingests multiple files into a training world.\n\nProcesses files sequentially and aggregates results.\n"
   def ingest_files(world_id, file_paths, opts \\ [])
       when is_binary(world_id) and is_list(file_paths) do
     start_time = System.monotonic_time(:millisecond)
@@ -186,7 +137,6 @@ defmodule World.DocumentIngestor do
       file_paths
       |> Enum.with_index(1)
       |> Enum.map(fn {file_path, idx} ->
-        # Report progress
         if progress_callback do
           progress_callback.(%{
             type: :file_started,
@@ -227,7 +177,6 @@ defmodule World.DocumentIngestor do
         end
       end)
 
-    # Aggregate results
     successful = Enum.filter(results, fn r -> elem(r, 0) == :ok end)
     failed = Enum.filter(results, fn r -> elem(r, 0) == :error end)
 
@@ -242,77 +191,69 @@ defmodule World.DocumentIngestor do
       failed_files: Enum.map(failed, fn {:error, path, _} -> path end)
     }
 
-    # Record batch completion
     WorldManager.record_event(world_id, :batch_complete, aggregated)
 
     {:ok, aggregated}
   end
 
-  @doc """
-  Ingests a directory of files matching a pattern.
-
-  Uses Path.wildcard for pattern matching.
-
-  ## Options
-    - `:include_code` - Include code files in processing (default: true)
-    - `:recursive` - Process subdirectories (default: false for pattern, true for code)
-    - All other options are passed to `ingest_file/3`
-  """
+  @doc "Ingests a directory of files matching a pattern.\n\nUses Path.wildcard for pattern matching.\n\n## Options\n  - `:include_code` - Include code files in processing (default: true)\n  - `:recursive` - Process subdirectories (default: false for pattern, true for code)\n  - All other options are passed to `ingest_file/3`\n"
   def ingest_directory(world_id, dir_path, pattern \\ "*.txt", opts \\ []) do
     include_code = Keyword.get(opts, :include_code, true)
     recursive = Keyword.get(opts, :recursive, false)
 
-    # Get text files matching pattern
-    full_pattern = if recursive do
-      Path.join([dir_path, "**", pattern])
-    else
-      Path.join(dir_path, pattern)
-    end
+    full_pattern =
+      if recursive do
+        Path.join([dir_path, "**", pattern])
+      else
+        Path.join(dir_path, pattern)
+      end
 
     text_files = Path.wildcard(full_pattern)
 
-    # Get code files if requested
-    code_files = if include_code do
-      find_code_files(dir_path, recursive)
-    else
-      []
-    end
+    code_files =
+      if include_code do
+        find_code_files(dir_path, recursive)
+      else
+        []
+      end
 
     all_files = Enum.uniq(text_files ++ code_files)
 
-    if length(all_files) == 0 do
+    if all_files == [] do
       {:error, :no_files_found}
     else
       text_count = length(text_files)
       code_count = length(code_files)
+
       Logger.info("Found files to ingest", %{
         total: length(all_files),
         text_files: text_count,
         code_files: code_count,
         pattern: full_pattern
       })
+
       ingest_files(world_id, all_files, opts)
     end
   end
 
-  @doc """
-  Ingests only code files from a directory.
-
-  This is a convenience function for analyzing codebases.
-
-  ## Options
-    - `:recursive` - Process subdirectories (default: true)
-    - `:extensions` - Code extensions to include (default: all supported)
-    - `:exclude` - Patterns to exclude (default: ["node_modules", ".git", "_build"])
-  """
+  @doc "Ingests only code files from a directory.\n\nThis is a convenience function for analyzing codebases.\n\n## Options\n  - `:recursive` - Process subdirectories (default: true)\n  - `:extensions` - Code extensions to include (default: all supported)\n  - `:exclude` - Patterns to exclude (default: [\"node_modules\", \".git\", \"_build\"])\n"
   def ingest_codebase(world_id, dir_path, opts \\ []) do
     recursive = Keyword.get(opts, :recursive, true)
     extensions = Keyword.get(opts, :extensions, @code_extensions)
-    exclude = Keyword.get(opts, :exclude, ["node_modules", ".git", "_build", "deps", "__pycache__", "vendor"])
+
+    exclude =
+      Keyword.get(opts, :exclude, [
+        "node_modules",
+        ".git",
+        "_build",
+        "deps",
+        "__pycache__",
+        "vendor"
+      ])
 
     files = find_code_files(dir_path, recursive, extensions, exclude)
 
-    if length(files) == 0 do
+    if files == [] do
       {:error, :no_code_files_found}
     else
       Logger.info("Found code files to analyze", %{count: length(files), dir: dir_path})
@@ -320,13 +261,13 @@ defmodule World.DocumentIngestor do
     end
   end
 
-  # Find code files in a directory
   defp find_code_files(dir_path, recursive, extensions \\ @code_extensions, exclude \\ []) do
-    pattern = if recursive do
-      Path.join(dir_path, "**/*")
-    else
-      Path.join(dir_path, "*")
-    end
+    pattern =
+      if recursive do
+        Path.join(dir_path, "**/*")
+      else
+        Path.join(dir_path, "*")
+      end
 
     Path.wildcard(pattern)
     |> Enum.filter(fn path ->
@@ -343,9 +284,7 @@ defmodule World.DocumentIngestor do
     end)
   end
 
-  @doc """
-  Ingests raw text content into a training world.
-  """
+  @doc "Ingests raw text content into a training world.\n"
   def ingest_text(world_id, text, opts \\ []) when is_binary(world_id) and is_binary(text) do
     chunk_size = Keyword.get(opts, :chunk_size, @default_chunk_size)
     overlap = Keyword.get(opts, :overlap, @default_overlap)
@@ -354,23 +293,19 @@ defmodule World.DocumentIngestor do
 
     start_time = System.monotonic_time(:millisecond)
 
-    # Load POS model once for all chunks
     pos_model =
       case POSTagger.load_model() do
         {:ok, model} -> model
         {:error, _} -> nil
       end
 
-    # Split into chunks
     chunks = chunk_text(text, chunk_size, overlap)
     total_chunks = length(chunks)
 
-    # Process each chunk
     {total_tokens, total_entities} =
       chunks
       |> Enum.with_index(1)
       |> Enum.reduce({0, 0}, fn {chunk, idx}, {tokens_acc, entities_acc} ->
-        # Report progress
         if progress_callback do
           progress_callback.(%{
             type: :chunk_processed,
@@ -379,7 +314,6 @@ defmodule World.DocumentIngestor do
           })
         end
 
-        # Process chunk
         {chunk_tokens, chunk_entities} =
           process_chunk(chunk, world_id, pos_model, learn_types)
 
@@ -388,7 +322,6 @@ defmodule World.DocumentIngestor do
 
     duration = System.monotonic_time(:millisecond) - start_time
 
-    # Update world metrics
     WorldManager.update_metrics(world_id, fn metrics ->
       WorldMetrics.record_document(metrics, total_tokens, total_chunks, duration)
     end)
@@ -402,14 +335,11 @@ defmodule World.DocumentIngestor do
     }
   end
 
-  @doc """
-  Streams a large file for processing without loading it entirely into memory.
-  """
+  @doc "Streams a large file for processing without loading it entirely into memory.\n"
   def stream_file(world_id, file_path, opts \\ []) do
     chunk_size = Keyword.get(opts, :chunk_size, @default_chunk_size)
     learn_types = Keyword.get(opts, :learn_types, true)
 
-    # Load POS model once
     pos_model =
       case POSTagger.load_model() do
         {:ok, model} -> model
@@ -457,56 +387,37 @@ defmodule World.DocumentIngestor do
     end
   end
 
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
-
   defp chunk_text(text, chunk_size, _overlap) when byte_size(text) <= chunk_size do
     [text]
   end
 
   defp chunk_text(text, chunk_size, overlap) do
-    # Split into chunks with overlap
-    # Try to break at sentence boundaries when possible
-
     do_chunk(text, chunk_size, overlap, [])
   end
 
-  defp do_chunk("", _chunk_size, _overlap, acc), do: Enum.reverse(acc)
+  defp do_chunk("", _chunk_size, _overlap, acc) do
+    Enum.reverse(acc)
+  end
 
   defp do_chunk(text, chunk_size, _overlap, acc) when byte_size(text) <= chunk_size do
     Enum.reverse([text | acc])
   end
 
   defp do_chunk(text, chunk_size, overlap, acc) do
-    # Take chunk_size characters
     chunk = String.slice(text, 0, chunk_size)
-
-    # Try to find a sentence boundary near the end
     chunk = adjust_to_sentence_boundary(chunk)
-
-    # Calculate where to start next chunk (with overlap)
     actual_chunk_size = String.length(chunk)
     next_start = max(0, actual_chunk_size - overlap)
-
-    # Get remaining text
     remaining = String.slice(text, next_start..-1//1)
 
     do_chunk(remaining, chunk_size, overlap, [chunk | acc])
   end
 
   defp adjust_to_sentence_boundary(chunk) do
-    # Look for sentence-ending punctuation in the last portion
-    # This uses character analysis, not regex
-
     chunk_length = String.length(chunk)
     search_window = min(200, div(chunk_length, 4))
     search_start = chunk_length - search_window
-
-    # Get the portion to search
     end_portion = String.slice(chunk, search_start..-1//1)
-
-    # Find the last sentence boundary
     last_boundary = find_last_sentence_boundary(end_portion)
 
     case last_boundary do
@@ -514,14 +425,12 @@ defmodule World.DocumentIngestor do
         chunk
 
       boundary_offset ->
-        # Cut at the boundary
         cut_point = search_start + boundary_offset + 1
         String.slice(chunk, 0, cut_point)
     end
   end
 
   defp find_last_sentence_boundary(text) do
-    # Scan for sentence-ending punctuation followed by space
     graphemes = String.graphemes(text)
 
     graphemes
@@ -535,7 +444,9 @@ defmodule World.DocumentIngestor do
     end)
   end
 
-  defp sentence_ender?(grapheme), do: grapheme in [".", "!", "?"]
+  defp sentence_ender?(grapheme) do
+    grapheme in [".", "!", "?"]
+  end
 
   defp followed_by_space_or_end?(graphemes, idx) do
     case Enum.at(graphemes, idx + 1) do
@@ -548,11 +459,9 @@ defmodule World.DocumentIngestor do
   end
 
   defp process_chunk(chunk, world_id, pos_model, learn_types) do
-    # Tokenize
     tokens = Tokenizer.tokenize(chunk)
     token_count = length(tokens)
 
-    # Discover entities
     discoveries =
       if pos_model do
         EntityDiscoverer.discover_entities(chunk, world_id, model: pos_model)
@@ -562,7 +471,6 @@ defmodule World.DocumentIngestor do
 
     entity_count = length(discoveries)
 
-    # Learn type patterns from known entities if enabled
     if learn_types and pos_model do
       learn_from_known_entities(chunk, world_id, pos_model, tokens)
     end
@@ -574,18 +482,13 @@ defmodule World.DocumentIngestor do
     token_texts = Enum.map(tokens, & &1.text)
     pos_predictions = POSTagger.predict(token_texts, pos_model)
 
-    # Find known entities (not PROPN, but in gazetteer)
     pos_predictions
     |> Enum.with_index()
     |> Enum.each(fn {{token_text, _tag}, idx} ->
-      # Check if this token is a known entity
-      known_types = Brain.ML.Gazetteer.lookup_all_types(token_text, world_id)
+      known_types = Gazetteer.lookup_all_types(token_text, world_id)
 
       if length(known_types) == 1 do
-        # Single known type - learn from this context
         entity_type = Map.get(hd(known_types), :entity_type) || Map.get(hd(known_types), :type)
-
-        # Extract context
         context_window = 5
         start_idx = max(0, idx - context_window)
         end_idx = min(length(tokens) - 1, idx + context_window)

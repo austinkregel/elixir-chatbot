@@ -1,19 +1,12 @@
 defmodule Mix.Tasks.Evaluate.Intent do
+  alias Brain.Analysis.SpeechActClassifier
+  alias Brain.ML
   @shortdoc "Evaluate intent classification accuracy"
-  @moduledoc """
-  Evaluate intent classification against gold standard data.
-
-  ## Usage
-
-      mix evaluate.intent              # Run evaluation
-      mix evaluate.intent --save       # Save results
-      mix evaluate.intent --compare    # Compare with previous
-      mix evaluate.intent --verbose    # Show confusion matrix
-  """
+  @moduledoc "Evaluate intent classification against gold standard data.\n\n## Usage\n\n    mix evaluate.intent              # Run evaluation\n    mix evaluate.intent --save       # Save results\n    mix evaluate.intent --compare    # Compare with previous\n    mix evaluate.intent --verbose    # Show confusion matrix\n"
 
   use Mix.Task
 
-  alias Brain.ML.{Evaluation, EvaluationStore}
+  alias ML.{Evaluation, EvaluationStore}
 
   @impl Mix.Task
   def run(args) do
@@ -69,7 +62,14 @@ defmodule Mix.Tasks.Evaluate.Intent do
       case runs do
         [_current | [previous | _]] ->
           delta = EvaluationStore.compare(previous, result)
-          sign = if delta.accuracy_delta >= 0, do: "+", else: ""
+
+          sign =
+            if delta.accuracy_delta >= 0 do
+              "+"
+            else
+              ""
+            end
+
           IO.puts("\n--- Comparison with previous ---")
           IO.puts("  Accuracy: #{sign}#{Float.round(delta.accuracy_delta * 100, 1)}%")
           IO.puts("  Macro F1: #{sign}#{Float.round(delta.macro_f1_delta * 100, 1)}%")
@@ -88,7 +88,7 @@ defmodule Mix.Tasks.Evaluate.Intent do
       expected = example["intent"]
 
       predicted =
-        case Brain.Analysis.SpeechActClassifier.classify(text) do
+        case SpeechActClassifier.classify(text) do
           %{indicators: indicators} ->
             indicators
             |> Enum.find_value("unknown", fn indicator ->
@@ -116,20 +116,28 @@ defmodule Mix.Tasks.Evaluate.Intent do
     label_width = all_labels |> Enum.map(&String.length(to_string(&1))) |> Enum.max(fn -> 10 end)
     label_width = max(label_width, 10)
     cell_width = 5
-
-    # Header
     header = String.pad_trailing("Actual \\ Pred", label_width + 2)
-    header = header <> Enum.map_join(all_labels, " ", &String.pad_leading(String.slice(to_string(&1), 0, cell_width), cell_width))
+
+    header =
+      header <>
+        Enum.map_join(
+          all_labels,
+          " ",
+          &String.pad_leading(String.slice(to_string(&1), 0, cell_width), cell_width)
+        )
+
     IO.puts(header)
     IO.puts(String.duplicate("-", String.length(header)))
 
-    # Rows
     Enum.each(all_labels, fn actual ->
       row = String.pad_trailing(to_string(actual), label_width + 2)
-      cells = Enum.map_join(all_labels, " ", fn predicted ->
-        count = get_in(cm, [actual, predicted]) || 0
-        String.pad_leading(to_string(count), cell_width)
-      end)
+
+      cells =
+        Enum.map_join(all_labels, " ", fn predicted ->
+          count = get_in(cm, [actual, predicted]) || 0
+          String.pad_leading(to_string(count), cell_width)
+        end)
+
       IO.puts(row <> cells)
     end)
   end

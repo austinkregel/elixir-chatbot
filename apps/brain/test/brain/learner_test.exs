@@ -82,7 +82,7 @@ defmodule Brain.LearnerDataTest do
     # {persona, entities, input, description}
     {@test_persona, [], "empty entities", "empty entity list"},
     {@test_persona, [%{value: "Paris", entity: "location"}], "Paris is nice", "single location entity"},
-    {@test_persona, [%{value: "John", entity: "person"}, %{value: "Seattle", entity: "location"}], 
+    {@test_persona, [%{value: "John", entity: "person"}, %{value: "Seattle", entity: "location"}],
       "John lives in Seattle", "multiple entities"},
     {@test_persona, [%{"value" => "Test", "entity" => "device"}], "Test device", "string key entity"},
   ]

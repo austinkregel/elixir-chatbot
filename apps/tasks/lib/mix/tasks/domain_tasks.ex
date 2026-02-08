@@ -1,26 +1,7 @@
 defmodule Mix.Tasks.DomainTasks.Analyze do
   @shortdoc "Analyzes domain-specific task files for chatbot training potential"
 
-  @moduledoc """
-  Analyzes the domain_specific_tasks directory and reports on available tasks.
-
-  This task scans all NLP benchmark task files and categorizes them by:
-  - NLP category (Question Answering, Commonsense, etc.)
-  - Domain (Wikipedia, Movies, Commonsense, etc.)
-  - Language (English-only by default)
-  - Suitability for chatbot training
-
-  ## Usage
-
-      mix domain_tasks.analyze [options]
-
-  ## Options
-
-    * `--tasks-path` - Path to tasks directory (default: data/domain_specific_tasks)
-    * `--all-languages` - Include non-English tasks
-    * `--show-skipped` - Show skipped task details
-    * `--output` - Output file for JSON report (optional)
-  """
+  @moduledoc "Analyzes the domain_specific_tasks directory and reports on available tasks.\n\nThis task scans all NLP benchmark task files and categorizes them by:\n- NLP category (Question Answering, Commonsense, etc.)\n- Domain (Wikipedia, Movies, Commonsense, etc.)\n- Language (English-only by default)\n- Suitability for chatbot training\n\n## Usage\n\n    mix domain_tasks.analyze [options]\n\n## Options\n\n  * `--tasks-path` - Path to tasks directory (default: data/domain_specific_tasks)\n  * `--all-languages` - Include non-English tasks\n  * `--show-skipped` - Show skipped task details\n  * `--output` - Output file for JSON report (optional)\n"
 
   use Mix.Task
 
@@ -38,7 +19,6 @@ defmodule Mix.Tasks.DomainTasks.Analyze do
         ]
       )
 
-    # Start application for Logger
     Mix.Task.run("app.start")
 
     tasks_path = Keyword.get(opts, :tasks_path, "data/domain_specific_tasks")
@@ -74,8 +54,6 @@ defmodule Mix.Tasks.DomainTasks.Analyze do
     Mix.shell().info("  Useful for training: #{length(result.useful_tasks)}")
     Mix.shell().info("  Skipped: #{length(result.skipped_tasks)}")
     Mix.shell().info("")
-
-    # Calculate total instances
     useful_instances = result.useful_tasks |> Enum.map(& &1.instance_count) |> Enum.sum()
     Mix.shell().info("  Total useful instances: #{useful_instances}")
     Mix.shell().info("")
@@ -88,9 +66,19 @@ defmodule Mix.Tasks.DomainTasks.Analyze do
     |> Enum.sort_by(fn {_, count} -> -count end)
     |> Enum.each(fn {category, count} ->
       useful_marker =
-        if category in TaskAnalyzer.useful_categories(), do: " [USEFUL]", else: ""
+        if category in TaskAnalyzer.useful_categories() do
+          " [USEFUL]"
+        else
+          ""
+        end
 
-      skip_marker = if category in TaskAnalyzer.skip_categories(), do: " [SKIP]", else: ""
+      skip_marker =
+        if category in TaskAnalyzer.skip_categories() do
+          " [SKIP]"
+        else
+          ""
+        end
+
       Mix.shell().info("  #{category}: #{count}#{useful_marker}#{skip_marker}")
     end)
 
@@ -112,7 +100,7 @@ defmodule Mix.Tasks.DomainTasks.Analyze do
 
     Mix.shell().info("")
 
-    if show_skipped and length(result.skipped_tasks) > 0 do
+    if show_skipped and result.skipped_tasks != [] do
       Mix.shell().info("-" |> String.duplicate(60))
       Mix.shell().info("Skipped Tasks (first 20):")
       Mix.shell().info("-" |> String.duplicate(60))
@@ -162,42 +150,11 @@ defmodule Mix.Tasks.DomainTasks.Analyze do
 end
 
 defmodule Mix.Tasks.DomainTasks.Transform do
+  alias World.Manager
+  alias World.Persistence
   @shortdoc "Transforms domain tasks into chatbot training data"
 
-  @moduledoc """
-  Transforms domain-specific NLP task files into training data for the chatbot.
-
-  This task reads NLP benchmark task files and converts them into:
-  - Intent training samples (for classifier training)
-  - Knowledge facts (for semantic memory)
-  - Entity candidates (for gazetteer)
-
-  ## Usage
-
-      mix domain_tasks.transform [options]
-
-  ## Options
-
-    * `--world-id` - Target training world (default: "default")
-    * `--tasks-path` - Path to tasks directory (default: data/domain_specific_tasks)
-    * `--categories` - Comma-separated list of categories to include
-    * `--max-instances` - Maximum instances per task (default: 1000)
-    * `--max-tasks` - Maximum number of tasks to process (default: all)
-    * `--dry-run` - Preview without writing to disk
-    * `--output-dir` - Output directory for transformed data (default: data/training/domain_tasks)
-    * `--skip-entity-extraction` - Skip entity extraction for faster processing
-
-  ## Examples
-
-      # Process all useful tasks
-      mix domain_tasks.transform
-
-      # Process only Question Answering tasks with limit
-      mix domain_tasks.transform --categories "Question Answering" --max-instances 500
-
-      # Dry run to preview
-      mix domain_tasks.transform --dry-run --max-tasks 10
-  """
+  @moduledoc "Transforms domain-specific NLP task files into training data for the chatbot.\n\nThis task reads NLP benchmark task files and converts them into:\n- Intent training samples (for classifier training)\n- Knowledge facts (for semantic memory)\n- Entity candidates (for gazetteer)\n\n## Usage\n\n    mix domain_tasks.transform [options]\n\n## Options\n\n  * `--world-id` - Target training world (default: \"default\")\n  * `--tasks-path` - Path to tasks directory (default: data/domain_specific_tasks)\n  * `--categories` - Comma-separated list of categories to include\n  * `--max-instances` - Maximum instances per task (default: 1000)\n  * `--max-tasks` - Maximum number of tasks to process (default: all)\n  * `--dry-run` - Preview without writing to disk\n  * `--output-dir` - Output directory for transformed data (default: data/training/domain_tasks)\n  * `--skip-entity-extraction` - Skip entity extraction for faster processing\n\n## Examples\n\n    # Process all useful tasks\n    mix domain_tasks.transform\n\n    # Process only Question Answering tasks with limit\n    mix domain_tasks.transform --categories \"Question Answering\" --max-instances 500\n\n    # Dry run to preview\n    mix domain_tasks.transform --dry-run --max-tasks 10\n"
 
   use Mix.Task
 
@@ -224,7 +181,6 @@ defmodule Mix.Tasks.DomainTasks.Transform do
         ]
       )
 
-    # Start application
     Mix.Task.run("app.start")
 
     world_id = Keyword.get(opts, :world_id, "default")
@@ -247,11 +203,18 @@ defmodule Mix.Tasks.DomainTasks.Transform do
     Mix.shell().info("  Tasks path: #{tasks_path}")
     Mix.shell().info("  Categories: #{length(categories)} selected")
     Mix.shell().info("  Max instances per task: #{max_instances}")
-    Mix.shell().info("  Entity extraction: #{if extract_entities, do: "enabled", else: "disabled"}")
+
+    Mix.shell().info(
+      "  Entity extraction: #{if extract_entities do
+        "enabled"
+      else
+        "disabled"
+      end}"
+    )
+
     Mix.shell().info("  Dry run: #{dry_run}")
     Mix.shell().info("")
 
-    # Analyze tasks first
     case TaskAnalyzer.analyze_all(tasks_path: tasks_path, categories: categories) do
       {:ok, analysis} ->
         tasks_to_process =
@@ -264,7 +227,7 @@ defmodule Mix.Tasks.DomainTasks.Transform do
         Mix.shell().info("Found #{length(tasks_to_process)} tasks to process")
         Mix.shell().info("")
 
-        if length(tasks_to_process) == 0 do
+        if tasks_to_process == [] do
           Mix.shell().info("No tasks to process. Check your category filter.")
         else
           process_tasks(tasks_to_process, %{
@@ -284,20 +247,17 @@ defmodule Mix.Tasks.DomainTasks.Transform do
   defp process_tasks(tasks, config) do
     total = length(tasks)
     start_time = System.monotonic_time(:second)
-
-    # Group tasks by category for better organization
     by_category = TaskAnalyzer.group_by_category(tasks)
 
     Mix.shell().info("Processing #{total} tasks across #{map_size(by_category)} categories...")
     Mix.shell().info("")
 
-    # Process each task
     {all_samples, all_facts, all_entities, processed} =
       tasks
       |> Enum.with_index(1)
       |> Enum.reduce({[], [], [], 0}, fn {task, idx}, {samples, facts, entities, count} ->
         progress = Float.round(idx / total * 100, 1)
-        IO.write("\r  Processing: #{idx}/#{total} (#{progress}%) - #{task.task_id}")
+        IO.write("  Processing: #{idx}/#{total} (#{progress}%) - #{task.task_id}")
 
         transform_opts = [
           max_instances: config.max_instances,
@@ -337,8 +297,7 @@ defmodule Mix.Tasks.DomainTasks.Transform do
       Mix.shell().info("[DRY RUN] No data written to disk.")
       Mix.shell().info("")
 
-      # Show sample of data
-      if length(all_samples) > 0 do
+      if all_samples != [] do
         Mix.shell().info("Sample training data:")
         sample = Enum.take(all_samples, 3)
 
@@ -347,10 +306,8 @@ defmodule Mix.Tasks.DomainTasks.Transform do
         end)
       end
     else
-      # Write data to disk
       write_training_data(all_samples, all_facts, all_entities, config)
 
-      # Integrate with world if not dry run
       if config.world_id != "none" do
         integrate_with_world(all_samples, all_facts, all_entities, config)
       end
@@ -362,16 +319,10 @@ defmodule Mix.Tasks.DomainTasks.Transform do
 
   defp write_training_data(samples, facts, entities, config) do
     output_dir = config.output_dir
-
-    # Create output directory
     File.mkdir_p!(output_dir)
-
-    # Group samples by intent
     by_intent = Enum.group_by(samples, & &1.intent)
 
     Mix.shell().info("Writing training data to: #{output_dir}")
-
-    # Write intent files
     intents_dir = Path.join(output_dir, "intents")
     File.mkdir_p!(intents_dir)
 
@@ -379,7 +330,6 @@ defmodule Mix.Tasks.DomainTasks.Transform do
       file_name = "#{normalize_filename(intent)}.json"
       file_path = Path.join(intents_dir, file_name)
 
-      # Convert to expected format
       data =
         Enum.map(intent_samples, fn s ->
           %{
@@ -400,8 +350,7 @@ defmodule Mix.Tasks.DomainTasks.Transform do
 
     Mix.shell().info("  Written #{map_size(by_intent)} intent files")
 
-    # Write knowledge facts
-    if length(facts) > 0 do
+    if facts != [] do
       facts_file = Path.join(output_dir, "knowledge_facts.json")
 
       facts_data =
@@ -423,8 +372,7 @@ defmodule Mix.Tasks.DomainTasks.Transform do
       Mix.shell().info("  Written #{length(facts)} knowledge facts")
     end
 
-    # Write entity candidates
-    if length(entities) > 0 do
+    if entities != [] do
       entities_file = Path.join(output_dir, "entity_candidates.json")
 
       entities_data =
@@ -455,11 +403,9 @@ defmodule Mix.Tasks.DomainTasks.Transform do
 
     Mix.shell().info("Integrating with world: #{world_id}")
 
-    # Check if world exists
-    case World.Manager.get(world_id) do
+    case Manager.get(world_id) do
       {:ok, _world} ->
-        # Add entity candidates
-        if length(entities) > 0 do
+        if entities != [] do
           unique_entities = Enum.uniq_by(entities, fn e -> {e.value, e.inferred_type} end)
 
           Enum.each(unique_entities, fn entity ->
@@ -472,15 +418,14 @@ defmodule Mix.Tasks.DomainTasks.Transform do
               discovered_at: DateTime.utc_now()
             }
 
-            World.Manager.add_candidate(world_id, candidate)
+            Manager.add_candidate(world_id, candidate)
           end)
 
           Mix.shell().info("  Added #{length(unique_entities)} entity candidates to world")
         end
 
-        # Save knowledge facts to world
-        if length(facts) > 0 do
-          world_path = World.Persistence.world_path(world_id)
+        if facts != [] do
+          world_path = Persistence.world_path(world_id)
           knowledge_file = Path.join(world_path, "domain_knowledge.json")
 
           case Jason.encode(facts, pretty: true) do
@@ -493,8 +438,7 @@ defmodule Mix.Tasks.DomainTasks.Transform do
           end
         end
 
-        # Checkpoint the world
-        World.Manager.checkpoint(world_id)
+        Manager.checkpoint(world_id)
         Mix.shell().info("  World checkpoint saved")
 
       {:error, :not_found} ->
@@ -516,19 +460,7 @@ end
 defmodule Mix.Tasks.DomainTasks.List do
   @shortdoc "Lists available domain task files"
 
-  @moduledoc """
-  Lists domain task files with optional filtering.
-
-  ## Usage
-
-      mix domain_tasks.list [options]
-
-  ## Options
-
-    * `--category` - Filter by category
-    * `--domain` - Filter by domain
-    * `--limit` - Maximum tasks to show (default: 50)
-  """
+  @moduledoc "Lists domain task files with optional filtering.\n\n## Usage\n\n    mix domain_tasks.list [options]\n\n## Options\n\n  * `--category` - Filter by category\n  * `--domain` - Filter by domain\n  * `--limit` - Maximum tasks to show (default: 50)\n"
 
   use Mix.Task
 
@@ -537,13 +469,7 @@ defmodule Mix.Tasks.DomainTasks.List do
   @impl Mix.Task
   def run(args) do
     {opts, _, _} =
-      OptionParser.parse(args,
-        strict: [
-          category: :string,
-          domain: :string,
-          limit: :integer
-        ]
-      )
+      OptionParser.parse(args, strict: [category: :string, domain: :string, limit: :integer])
 
     Mix.Task.run("app.start")
 
@@ -575,15 +501,22 @@ defmodule Mix.Tasks.DomainTasks.List do
     end
   end
 
-  defp maybe_filter_category(tasks, nil), do: tasks
+  defp maybe_filter_category(tasks, nil) do
+    tasks
+  end
 
   defp maybe_filter_category(tasks, category) do
     Enum.filter(tasks, fn task ->
-      Enum.any?(task.categories, &String.contains?(String.downcase(&1), String.downcase(category)))
+      Enum.any?(
+        task.categories,
+        &String.contains?(String.downcase(&1), String.downcase(category))
+      )
     end)
   end
 
-  defp maybe_filter_domain(tasks, nil), do: tasks
+  defp maybe_filter_domain(tasks, nil) do
+    tasks
+  end
 
   defp maybe_filter_domain(tasks, domain) do
     Enum.filter(tasks, fn task ->

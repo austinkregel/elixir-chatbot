@@ -1,28 +1,36 @@
 defmodule Brain.Analysis.IntentPromoterTest do
+  alias Brain.Analysis
   use ExUnit.Case, async: false
 
-  alias Brain.Analysis.{IntentPromoter, Types.IntentReviewCandidate}
+  alias Analysis.{IntentPromoter, Types.IntentReviewCandidate}
 
   @test_intent "test.intent.promotion"
   @test_text "What is the test intent?"
 
   setup do
-    # Clean up test files
     intent_file = get_test_intent_file()
-    if File.exists?(intent_file), do: File.rm(intent_file)
+
+    if File.exists?(intent_file) do
+      File.rm(intent_file)
+    end
 
     registry_path = Brain.priv_path("analysis/intent_registry.json")
-    # Backup original registry
-    original_registry = if File.exists?(registry_path), do: File.read!(registry_path), else: nil
+
+    original_registry =
+      if File.exists?(registry_path) do
+        File.read!(registry_path)
+      else
+        nil
+      end
 
     on_exit(fn ->
-      # Restore original registry
       if original_registry do
         File.write!(registry_path, original_registry)
       end
 
-      # Clean up test intent file
-      if File.exists?(intent_file), do: File.rm(intent_file)
+      if File.exists?(intent_file) do
+        File.rm(intent_file)
+      end
     end)
 
     %{intent_file: intent_file, registry_path: registry_path}
@@ -30,7 +38,6 @@ defmodule Brain.Analysis.IntentPromoterTest do
 
   describe "promote_as_variation/1" do
     test "writes training example to existing intent file", %{intent_file: intent_file} do
-      # Create initial file
       File.mkdir_p!(Path.dirname(intent_file))
       File.write!(intent_file, Jason.encode!([], pretty: true))
 
@@ -40,16 +47,14 @@ defmodule Brain.Analysis.IntentPromoterTest do
           promoted_to_intent: "weather.query"
         )
 
-      # Mock the actual intent file path
-      # Note: This test may need adjustment based on actual file structure
-      assert File.exists?(intent_file) || true  # File may not exist yet, that's ok
+      assert File.exists?(intent_file) || true
     end
   end
 
   describe "promote_as_new_intent/2" do
     test "creates new intent entry in registry", %{registry_path: registry_path} do
-      # Ensure registry exists
       File.mkdir_p!(Path.dirname(registry_path))
+
       if not File.exists?(registry_path) do
         File.write!(registry_path, Jason.encode!(%{}, pretty: true))
       end
@@ -60,8 +65,6 @@ defmodule Brain.Analysis.IntentPromoterTest do
           promoted_to_intent: @test_intent
         )
 
-      # Test would require mocking file operations or using a test registry
-      # For now, just verify the function exists and can be called
       assert function_exported?(IntentPromoter, :promote, 2)
     end
   end

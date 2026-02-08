@@ -1,25 +1,15 @@
 defmodule ChatWeb.CodeAnalysisLive do
-  @moduledoc """
-  LiveView for interacting with the code analysis system.
+  @moduledoc "LiveView for interacting with the code analysis system.\n\nProvides:\n- Code parsing and symbol extraction\n- Symbol browser and search\n- Relationship visualization\n- Codebase analysis tools\n- Performance metrics and statistics\n- Knowledge exploration\n"
 
-  Provides:
-  - Code parsing and symbol extraction
-  - Symbol browser and search
-  - Relationship visualization
-  - Codebase analysis tools
-  - Performance metrics and statistics
-  - Knowledge exploration
-  """
-
+  alias Brain.Metrics.Aggregator
+  alias Brain.SystemStatus
   use ChatWeb, :live_view
   require Logger
 
   import ChatWeb.AppShell
 
   alias Brain.Code.{Pipeline, CodeGazetteer}
-
-  # Refresh interval for status updates
-  @refresh_interval_ms 5_000
+  @refresh_interval_ms 5000
 
   @impl true
   def mount(_params, _session, socket) do
@@ -84,7 +74,6 @@ defmodule ChatWeb.CodeAnalysisLive do
   end
 
   def handle_event("switch_world", %{"world_id" => world_id}, socket) do
-    # Reload symbols for the new world
     socket =
       socket
       |> assign(:world_id, world_id)
@@ -95,7 +84,6 @@ defmodule ChatWeb.CodeAnalysisLive do
   end
 
   def handle_event("refresh_worlds", _params, socket) do
-    # World context hook already refreshed available_worlds
     {:noreply, socket}
   end
 
@@ -109,7 +97,12 @@ defmodule ChatWeb.CodeAnalysisLive do
   end
 
   def handle_event("filter_type", %{"type" => type}, socket) do
-    type = if type == "", do: nil, else: type
+    type =
+      if type == "" do
+        nil
+      else
+        type
+      end
 
     socket =
       socket
@@ -120,7 +113,12 @@ defmodule ChatWeb.CodeAnalysisLive do
   end
 
   def handle_event("filter_language", %{"language" => language}, socket) do
-    language = if language == "", do: nil, else: String.to_existing_atom(language)
+    language =
+      if language == "" do
+        nil
+      else
+        String.to_existing_atom(language)
+      end
 
     socket =
       socket
@@ -201,10 +199,10 @@ defmodule ChatWeb.CodeAnalysisLive do
   def handle_event("select_symbol", %{"name" => name}, socket) do
     world_id = socket.assigns.world_id
 
-    # Find the symbol and load its relations
     case CodeGazetteer.lookup_qualified(world_id, name) do
       {:ok, symbol} ->
         relations = load_symbol_relations(world_id, symbol)
+
         socket =
           socket
           |> assign(:selected_symbol, symbol)
@@ -240,12 +238,8 @@ defmodule ChatWeb.CodeAnalysisLive do
     {:noreply, socket}
   end
 
-  # ============================================================================
-  # Private Functions
-  # ============================================================================
-
   defp load_code_status do
-    Brain.SystemStatus.get_code_analysis_status()
+    SystemStatus.get_code_analysis_status()
   end
 
   defp load_world_symbols(socket) do
@@ -258,12 +252,10 @@ defmodule ChatWeb.CodeAnalysisLive do
       if String.length(query) > 0 do
         CodeGazetteer.search(world_id, query, entity_type: type, language: language, limit: 100)
       else
-        # Load by type if specified, otherwise sample from all types
         if type do
           CodeGazetteer.list_by_type(world_id, type)
           |> Enum.take(100)
         else
-          # Get a sample from each type
           CodeGazetteer.entity_types()
           |> Enum.flat_map(fn t ->
             CodeGazetteer.list_by_type(world_id, t) |> Enum.take(10)
@@ -278,12 +270,12 @@ defmodule ChatWeb.CodeAnalysisLive do
   defp load_world_stats(socket) do
     world_id = socket.assigns.world_id
 
-    # Get breakdown by type and collect all symbols
     {type_breakdown, all_symbols} =
       CodeGazetteer.entity_types()
       |> Enum.reduce({[], []}, fn type, {types_acc, symbols_acc} ->
         symbols = CodeGazetteer.list_by_type(world_id, type)
         count = length(symbols)
+
         if count > 0 do
           {[{type, count} | types_acc], symbols ++ symbols_acc}
         else
@@ -293,7 +285,6 @@ defmodule ChatWeb.CodeAnalysisLive do
 
     type_breakdown = Enum.sort_by(type_breakdown, fn {_, count} -> -count end)
 
-    # Get breakdown by language (filter out nil languages)
     language_breakdown =
       all_symbols
       |> Enum.group_by(& &1.language)
@@ -301,7 +292,6 @@ defmodule ChatWeb.CodeAnalysisLive do
       |> Enum.map(fn {lang, symbols} -> {lang, length(symbols)} end)
       |> Enum.sort_by(fn {_, count} -> -count end)
 
-    # Get unique files (filter out nil paths)
     files =
       all_symbols
       |> Enum.map(& &1.file_path)
@@ -309,7 +299,6 @@ defmodule ChatWeb.CodeAnalysisLive do
       |> Enum.uniq()
       |> Enum.sort()
 
-    # Compute accurate stats from the actual data
     total_symbols = length(all_symbols)
     total_relations = CodeGazetteer.stats(world_id) |> Map.get(:relations, 0)
 
@@ -328,10 +317,8 @@ defmodule ChatWeb.CodeAnalysisLive do
   end
 
   defp load_metrics(socket) do
-    # Get performance metrics from the aggregator
-    metrics = Brain.Metrics.Aggregator.get_metrics()
+    metrics = Aggregator.get_metrics()
 
-    # Extract code-specific metrics
     code_metrics = %{
       pipeline: Map.get(metrics, :code_pipeline, %{}),
       parse: Map.get(metrics, :code_parse, %{}),
@@ -344,22 +331,18 @@ defmodule ChatWeb.CodeAnalysisLive do
 
   defp load_symbol_relations(world_id, symbol) do
     qualified_name = symbol.qualified_name
-
-    # Get all relation types for this symbol
     relation_types = [:calls, :called_by, :extends, :implements, :imports, :uses]
 
     Enum.flat_map(relation_types, fn rel_type ->
       case CodeGazetteer.get_relations(world_id, qualified_name, rel_type) do
         targets when is_list(targets) ->
           Enum.map(targets, fn target -> %{type: rel_type, target: target} end)
-        _ -> []
+
+        _ ->
+          []
       end
     end)
   end
-
-  # ============================================================================
-  # Helper Functions for Template
-  # ============================================================================
 
   def supported_languages do
     [:elixir, :python, :ruby, :go, :java, :c, :cpp, :csharp, :php]
@@ -369,100 +352,339 @@ defmodule ChatWeb.CodeAnalysisLive do
     CodeGazetteer.entity_types()
   end
 
-  def language_name(:c), do: "C"
-  def language_name(:cpp), do: "C++"
-  def language_name(:csharp), do: "C#"
-  def language_name(:php), do: "PHP"
-  def language_name(lang), do: lang |> to_string() |> String.capitalize()
+  def language_name(:c) do
+    "C"
+  end
 
-  def entity_type_label("code.function"), do: "Function"
-  def entity_type_label("code.class"), do: "Class"
-  def entity_type_label("code.method"), do: "Method"
-  def entity_type_label("code.variable"), do: "Variable"
-  def entity_type_label("code.constant"), do: "Constant"
-  def entity_type_label("code.type"), do: "Type"
-  def entity_type_label("code.interface"), do: "Interface"
-  def entity_type_label("code.enum"), do: "Enum"
-  def entity_type_label("code.namespace"), do: "Namespace"
-  def entity_type_label("code.import"), do: "Import"
-  def entity_type_label("code.keyword"), do: "Keyword"
-  def entity_type_label("code.parameter"), do: "Parameter"
-  def entity_type_label("code.field"), do: "Field"
-  def entity_type_label("code.macro"), do: "Macro"
-  def entity_type_label(type), do: type |> String.replace("code.", "") |> String.capitalize()
+  def language_name(:cpp) do
+    "C++"
+  end
 
-  def entity_type_icon("code.function"), do: "hero-code-bracket"
-  def entity_type_icon("code.class"), do: "hero-cube"
-  def entity_type_icon("code.method"), do: "hero-arrow-right-circle"
-  def entity_type_icon("code.variable"), do: "hero-variable"
-  def entity_type_icon("code.constant"), do: "hero-hashtag"
-  def entity_type_icon("code.type"), do: "hero-tag"
-  def entity_type_icon("code.interface"), do: "hero-puzzle-piece"
-  def entity_type_icon("code.enum"), do: "hero-list-bullet"
-  def entity_type_icon("code.namespace"), do: "hero-folder"
-  def entity_type_icon("code.import"), do: "hero-arrow-down-tray"
-  def entity_type_icon("code.keyword"), do: "hero-key"
-  def entity_type_icon("code.parameter"), do: "hero-arrow-right"
-  def entity_type_icon("code.field"), do: "hero-rectangle-stack"
-  def entity_type_icon("code.macro"), do: "hero-bolt"
-  def entity_type_icon(_), do: "hero-code-bracket"
+  def language_name(:csharp) do
+    "C#"
+  end
 
-  def entity_type_color("code.function"), do: "text-blue-500"
-  def entity_type_color("code.class"), do: "text-purple-500"
-  def entity_type_color("code.method"), do: "text-blue-400"
-  def entity_type_color("code.variable"), do: "text-green-500"
-  def entity_type_color("code.constant"), do: "text-amber-500"
-  def entity_type_color("code.type"), do: "text-cyan-500"
-  def entity_type_color("code.interface"), do: "text-violet-500"
-  def entity_type_color("code.enum"), do: "text-orange-500"
-  def entity_type_color("code.namespace"), do: "text-rose-500"
-  def entity_type_color("code.import"), do: "text-gray-500"
-  def entity_type_color("code.keyword"), do: "text-pink-500"
-  def entity_type_color(_), do: "text-base-content"
+  def language_name(:php) do
+    "PHP"
+  end
 
-  def entity_type_bg("code.function"), do: "bg-blue-500/10"
-  def entity_type_bg("code.class"), do: "bg-purple-500/10"
-  def entity_type_bg("code.method"), do: "bg-blue-400/10"
-  def entity_type_bg("code.variable"), do: "bg-green-500/10"
-  def entity_type_bg("code.constant"), do: "bg-amber-500/10"
-  def entity_type_bg("code.type"), do: "bg-cyan-500/10"
-  def entity_type_bg("code.interface"), do: "bg-violet-500/10"
-  def entity_type_bg("code.enum"), do: "bg-orange-500/10"
-  def entity_type_bg("code.namespace"), do: "bg-rose-500/10"
-  def entity_type_bg("code.import"), do: "bg-gray-500/10"
-  def entity_type_bg(_), do: "bg-base-200"
+  def language_name(lang) do
+    lang |> to_string() |> String.capitalize()
+  end
 
-  def relation_label(:calls), do: "Calls"
-  def relation_label(:called_by), do: "Called by"
-  def relation_label(:extends), do: "Extends"
-  def relation_label(:implements), do: "Implements"
-  def relation_label(:imports), do: "Imports"
-  def relation_label(:uses), do: "Uses"
-  def relation_label(rel), do: rel |> to_string() |> String.replace("_", " ") |> String.capitalize()
+  def entity_type_label("code.function") do
+    "Function"
+  end
 
-  def relation_icon(:calls), do: "hero-arrow-right"
-  def relation_icon(:called_by), do: "hero-arrow-left"
-  def relation_icon(:extends), do: "hero-arrow-up"
-  def relation_icon(:implements), do: "hero-puzzle-piece"
-  def relation_icon(:imports), do: "hero-arrow-down-tray"
-  def relation_icon(:uses), do: "hero-link"
-  def relation_icon(_), do: "hero-arrow-right"
+  def entity_type_label("code.class") do
+    "Class"
+  end
 
-  def format_metric_value(nil), do: "-"
-  def format_metric_value(%{avg_ms: avg}) when is_number(avg), do: "#{Float.round(avg * 1.0, 1)}ms"
-  def format_metric_value(_), do: "-"
+  def entity_type_label("code.method") do
+    "Method"
+  end
 
-  def format_metric_count(nil), do: "0"
-  def format_metric_count(%{count: count}), do: Integer.to_string(count)
-  def format_metric_count(_), do: "0"
+  def entity_type_label("code.variable") do
+    "Variable"
+  end
 
-  def format_metric_rate(nil), do: "-"
-  def format_metric_rate(%{rate_per_minute: rate}) when is_number(rate), do: "#{Float.round(rate * 1.0, 1)}/min"
-  def format_metric_rate(_), do: "-"
+  def entity_type_label("code.constant") do
+    "Constant"
+  end
 
-  def truncate_path(nil), do: "-"
+  def entity_type_label("code.type") do
+    "Type"
+  end
+
+  def entity_type_label("code.interface") do
+    "Interface"
+  end
+
+  def entity_type_label("code.enum") do
+    "Enum"
+  end
+
+  def entity_type_label("code.namespace") do
+    "Namespace"
+  end
+
+  def entity_type_label("code.import") do
+    "Import"
+  end
+
+  def entity_type_label("code.keyword") do
+    "Keyword"
+  end
+
+  def entity_type_label("code.parameter") do
+    "Parameter"
+  end
+
+  def entity_type_label("code.field") do
+    "Field"
+  end
+
+  def entity_type_label("code.macro") do
+    "Macro"
+  end
+
+  def entity_type_label(type) do
+    type |> String.replace("code.", "") |> String.capitalize()
+  end
+
+  def entity_type_icon("code.function") do
+    "hero-code-bracket"
+  end
+
+  def entity_type_icon("code.class") do
+    "hero-cube"
+  end
+
+  def entity_type_icon("code.method") do
+    "hero-arrow-right-circle"
+  end
+
+  def entity_type_icon("code.variable") do
+    "hero-variable"
+  end
+
+  def entity_type_icon("code.constant") do
+    "hero-hashtag"
+  end
+
+  def entity_type_icon("code.type") do
+    "hero-tag"
+  end
+
+  def entity_type_icon("code.interface") do
+    "hero-puzzle-piece"
+  end
+
+  def entity_type_icon("code.enum") do
+    "hero-list-bullet"
+  end
+
+  def entity_type_icon("code.namespace") do
+    "hero-folder"
+  end
+
+  def entity_type_icon("code.import") do
+    "hero-arrow-down-tray"
+  end
+
+  def entity_type_icon("code.keyword") do
+    "hero-key"
+  end
+
+  def entity_type_icon("code.parameter") do
+    "hero-arrow-right"
+  end
+
+  def entity_type_icon("code.field") do
+    "hero-rectangle-stack"
+  end
+
+  def entity_type_icon("code.macro") do
+    "hero-bolt"
+  end
+
+  def entity_type_icon(_) do
+    "hero-code-bracket"
+  end
+
+  def entity_type_color("code.function") do
+    "text-blue-500"
+  end
+
+  def entity_type_color("code.class") do
+    "text-purple-500"
+  end
+
+  def entity_type_color("code.method") do
+    "text-blue-400"
+  end
+
+  def entity_type_color("code.variable") do
+    "text-green-500"
+  end
+
+  def entity_type_color("code.constant") do
+    "text-amber-500"
+  end
+
+  def entity_type_color("code.type") do
+    "text-cyan-500"
+  end
+
+  def entity_type_color("code.interface") do
+    "text-violet-500"
+  end
+
+  def entity_type_color("code.enum") do
+    "text-orange-500"
+  end
+
+  def entity_type_color("code.namespace") do
+    "text-rose-500"
+  end
+
+  def entity_type_color("code.import") do
+    "text-gray-500"
+  end
+
+  def entity_type_color("code.keyword") do
+    "text-pink-500"
+  end
+
+  def entity_type_color(_) do
+    "text-base-content"
+  end
+
+  def entity_type_bg("code.function") do
+    "bg-blue-500/10"
+  end
+
+  def entity_type_bg("code.class") do
+    "bg-purple-500/10"
+  end
+
+  def entity_type_bg("code.method") do
+    "bg-blue-400/10"
+  end
+
+  def entity_type_bg("code.variable") do
+    "bg-green-500/10"
+  end
+
+  def entity_type_bg("code.constant") do
+    "bg-amber-500/10"
+  end
+
+  def entity_type_bg("code.type") do
+    "bg-cyan-500/10"
+  end
+
+  def entity_type_bg("code.interface") do
+    "bg-violet-500/10"
+  end
+
+  def entity_type_bg("code.enum") do
+    "bg-orange-500/10"
+  end
+
+  def entity_type_bg("code.namespace") do
+    "bg-rose-500/10"
+  end
+
+  def entity_type_bg("code.import") do
+    "bg-gray-500/10"
+  end
+
+  def entity_type_bg(_) do
+    "bg-base-200"
+  end
+
+  def relation_label(:calls) do
+    "Calls"
+  end
+
+  def relation_label(:called_by) do
+    "Called by"
+  end
+
+  def relation_label(:extends) do
+    "Extends"
+  end
+
+  def relation_label(:implements) do
+    "Implements"
+  end
+
+  def relation_label(:imports) do
+    "Imports"
+  end
+
+  def relation_label(:uses) do
+    "Uses"
+  end
+
+  def relation_label(rel) do
+    rel |> to_string() |> String.replace("_", " ") |> String.capitalize()
+  end
+
+  def relation_icon(:calls) do
+    "hero-arrow-right"
+  end
+
+  def relation_icon(:called_by) do
+    "hero-arrow-left"
+  end
+
+  def relation_icon(:extends) do
+    "hero-arrow-up"
+  end
+
+  def relation_icon(:implements) do
+    "hero-puzzle-piece"
+  end
+
+  def relation_icon(:imports) do
+    "hero-arrow-down-tray"
+  end
+
+  def relation_icon(:uses) do
+    "hero-link"
+  end
+
+  def relation_icon(_) do
+    "hero-arrow-right"
+  end
+
+  def format_metric_value(nil) do
+    "-"
+  end
+
+  def format_metric_value(%{avg_ms: avg}) when is_number(avg) do
+    "#{Float.round(avg * 1.0, 1)}ms"
+  end
+
+  def format_metric_value(_) do
+    "-"
+  end
+
+  def format_metric_count(nil) do
+    "0"
+  end
+
+  def format_metric_count(%{count: count}) do
+    Integer.to_string(count)
+  end
+
+  def format_metric_count(_) do
+    "0"
+  end
+
+  def format_metric_rate(nil) do
+    "-"
+  end
+
+  def format_metric_rate(%{rate_per_minute: rate}) when is_number(rate) do
+    "#{Float.round(rate * 1.0, 1)}/min"
+  end
+
+  def format_metric_rate(_) do
+    "-"
+  end
+
+  def truncate_path(nil) do
+    "-"
+  end
+
   def truncate_path(path) when byte_size(path) > 50 do
     "..." <> String.slice(path, -47, 47)
   end
-  def truncate_path(path), do: path
+
+  def truncate_path(path) do
+    path
+  end
 end
