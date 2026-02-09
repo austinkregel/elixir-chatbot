@@ -1,3 +1,8 @@
+## :bangbang: Disclaimer :bangbang:
+This application was vibe coded with Claude and Cursor over the course of several months. I did try rather hard to ensure that the built systems do what they describe, but the _whole_ time was a constant battle with every model trying to take shortcuts like string matching, regex, or hardcoding intents, or switching to python while writing some of the pipelines.
+
+While this is my pet-project, I cannot guarantee that it works as intended or that . It has sigificantly ballooned in scope since I started it, and I have left it unattended sometimes while implementing different parts. No one has permission to use this in a production environment, and no I wouldn't recommend it.
+
 ## ChatBot (Elixir/Phoenix)
 
 This is a Phoenix LiveView chatbot application built around **classical NLP techniques** (no LLMs): TF‑IDF vectorization, intent classification, entity extraction (gazetteer + learned maps), slot filling + clarification, and a cognitive memory + “epistemic” user-model system.
