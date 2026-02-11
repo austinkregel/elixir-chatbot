@@ -114,7 +114,7 @@ defmodule Brain.Response.MemoryAugmented do
         if outcome == "" do
           true
         else
-          outcome_tokens = Tokenizer.tokenize(outcome) |> MapSet.new()
+          outcome_tokens = Tokenizer.tokenize_normalized(outcome) |> MapSet.new()
           pos = not MapSet.disjoint?(outcome_tokens, @positive_outcome_tokens)
           neg = not MapSet.disjoint?(outcome_tokens, @negative_outcome_tokens)
 

@@ -855,8 +855,8 @@ defmodule Brain.Response.Generator do
     content_set = MapSet.new(content_words)
 
     Enum.find(facts, fn fact ->
-      fact_tokens = Brain.ML.Tokenizer.tokenize(fact.fact) |> MapSet.new()
-      entity_tokens = Brain.ML.Tokenizer.tokenize(fact.entity) |> MapSet.new()
+      fact_tokens = Brain.ML.Tokenizer.tokenize_normalized(fact.fact) |> MapSet.new()
+      entity_tokens = Brain.ML.Tokenizer.tokenize_normalized(fact.entity) |> MapSet.new()
       all_fact_tokens = MapSet.union(fact_tokens, entity_tokens)
 
       not MapSet.disjoint?(content_set, all_fact_tokens)

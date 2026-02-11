@@ -7,7 +7,11 @@ defmodule Brain.Knowledge.ResearchAgentTest do
   alias Types.{ResearchGoal, Finding}
 
   setup_all do
-    Brain.TestHelpers.require_services!([Brain.Knowledge.SourceReliability])
+    Brain.TestHelpers.require_services!([
+      Brain.Knowledge.SourceReliability,
+      Brain.ML.SentimentClassifierSimple
+    ])
+
     :ok
   end
 

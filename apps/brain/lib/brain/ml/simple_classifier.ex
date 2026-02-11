@@ -9,9 +9,12 @@ defmodule Brain.ML.SimpleClassifier do
     Logger.info("Training simple classifier on #{length(training_data)} samples")
     {texts, labels} = Enum.unzip(training_data)
 
+    # Tokenize all documents once up front to avoid repeated tokenization
+    doc_tokens = Enum.map(texts, &tokenize/1)
+
     all_words =
-      texts
-      |> Enum.flat_map(&tokenize/1)
+      doc_tokens
+      |> Enum.flat_map(& &1)
       |> Enum.frequencies()
       |> Enum.filter(fn {_word, count} -> count >= 2 end)
       |> Enum.sort_by(fn {_word, count} -> -count end)
@@ -21,10 +24,13 @@ defmodule Brain.ML.SimpleClassifier do
     vocabulary = all_words |> Enum.with_index() |> Enum.into(%{})
     num_docs = length(texts)
 
+    # Pre-compute token sets for IDF calculation (avoids re-tokenizing per vocab word)
+    doc_token_sets = Enum.map(doc_tokens, &MapSet.new/1)
+
     idf_weights =
       vocabulary
       |> Enum.map(fn {word, _idx} ->
-        doc_freq = Enum.count(texts, fn text -> word in tokenize(text) end)
+        doc_freq = Enum.count(doc_token_sets, fn token_set -> MapSet.member?(token_set, word) end)
         idf = :math.log(num_docs / max(doc_freq, 1))
         {word, idf}
       end)

@@ -88,6 +88,18 @@ apps/*/cover/
 
 apps/world/priv/training_worlds/*
 
+# Runtime memory and knowledge stores (contain conversation data)
+apps/*/priv/memory/
+apps/*/test/memory/
+apps/*/test/knowledge/
+apps/*/test/data/
+
 # Encrypted credentials (API keys, secrets)
 apps/brain/priv/secrets/
 !apps/brain/priv/secrets/.gitkeep
+apps/brain/priv/evaluation/
+!apps/brain/priv/evaluation/.gitkeep
+
+!apps/brain/priv/evaluation/results/.gitkeep
+
+*.term

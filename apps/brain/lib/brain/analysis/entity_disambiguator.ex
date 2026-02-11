@@ -278,8 +278,8 @@ defmodule Brain.Analysis.EntityDisambiguator do
     if entity_value == "" or String.length(entity_value) < 2 do
       false
     else
-      tokens = Tokenizer.tokenize(text)
-      entity_tokens = Tokenizer.tokenize(entity_value)
+      tokens = Tokenizer.tokenize_normalized(text)
+      entity_tokens = Tokenizer.tokenize_normalized(entity_value)
 
       # Check "prefix + entity" patterns
       prefix_match =

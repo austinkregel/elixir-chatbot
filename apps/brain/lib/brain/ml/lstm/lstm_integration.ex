@@ -281,15 +281,15 @@ defmodule Brain.ML.LSTM.Integration do
 
         sentiment =
           case classify_sentiment(text) do
-            {:ok, result} -> result
-            {:error, _} -> %{label: :unknown, confidence: 0.0}
+            {:ok, result} ->
+              result
+
+            {:error, reason} ->
+              raise "Sentiment classification failed: #{inspect(reason)}. " <>
+                      "Run `mix train` to train the sentiment classifier."
           end
 
-        speech_act =
-          case classify_speech_act(text) do
-            {:ok, result} -> result
-            {:error, _} -> %{label: :unknown, confidence: 0.0}
-          end
+        {:ok, speech_act} = classify_speech_act(text)
 
         {:ok,
          %{

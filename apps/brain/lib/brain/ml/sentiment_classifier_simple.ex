@@ -51,6 +51,54 @@ defmodule Brain.ML.SentimentClassifierSimple do
     GenServer.call(name, :reload, 10_000)
   end
 
+  @doc """
+  Loads (or trains on-the-fly from gold standard) the sentiment model.
+
+  If a serialized model file exists on disk, loads it directly.
+  Otherwise, trains a fresh model from the sentiment gold standard data
+  and loads it into the GenServer.
+
+  Training happens outside the GenServer process to avoid blocking it.
+
+  Returns `{:ok, :loaded}` or `{:error, reason}`.
+  """
+  def load_models(opts \\ []) do
+    name = Keyword.get(opts, :name, __MODULE__)
+
+    # First, try telling the GenServer to reload from disk
+    case GenServer.call(name, :reload, 10_000) do
+      :ok ->
+        {:ok, :loaded}
+
+      {:error, _} ->
+        # No model on disk — train outside the GenServer process to avoid blocking
+        case train_from_gold_standard() do
+          {:ok, model} ->
+            GenServer.call(name, {:load_trained_model, model}, 10_000)
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+    end
+  end
+
+  @doc false
+  def train_from_gold_standard do
+    gold = Brain.ML.EvaluationStore.load_gold_standard("sentiment")
+
+    training_data =
+      gold
+      |> Enum.filter(fn ex -> is_binary(ex["text"]) and is_binary(ex["sentiment"]) end)
+      |> Enum.map(fn ex -> {ex["text"], ex["sentiment"]} end)
+
+    if training_data == [] do
+      {:error, :no_training_data}
+    else
+      model = SimpleClassifier.train(training_data)
+      {:ok, model}
+    end
+  end
+
   # --- GenServer callbacks ---
 
   @impl true
@@ -63,15 +111,30 @@ defmodule Brain.ML.SentimentClassifierSimple do
   def handle_info(:load_model, state) do
     case do_load_model() do
       {:ok, model} ->
-        Logger.info("SentimentClassifier: model loaded",
+        Logger.info("SentimentClassifier: model loaded from disk",
           vocab_size: map_size(model.vocabulary),
           label_count: map_size(model.label_centroids)
         )
 
         {:noreply, %{state | model: model}}
 
-      {:error, reason} ->
-        Logger.warning("SentimentClassifier: model not available (#{inspect(reason)}). Run `mix train` to train.")
+      {:error, _disk_reason} ->
+        # No model on disk -- train asynchronously from gold standard
+        me = self()
+
+        Task.start(fn ->
+          case train_from_gold_standard() do
+            {:ok, model} ->
+              GenServer.call(me, {:load_trained_model, model}, 10_000)
+
+            {:error, train_reason} ->
+              Logger.error(
+                "SentimentClassifier: no model and no training data (#{inspect(train_reason)}). " <>
+                  "Run `mix train` to train the sentiment classifier."
+              )
+          end
+        end)
+
         {:noreply, state}
     end
   end
@@ -107,6 +170,16 @@ defmodule Brain.ML.SentimentClassifierSimple do
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
+  end
+
+  @impl true
+  def handle_call({:load_trained_model, model}, _from, state) do
+    Logger.info("SentimentClassifier: model loaded from gold standard training",
+      vocab_size: map_size(model.vocabulary),
+      label_count: map_size(model.label_centroids)
+    )
+
+    {:reply, {:ok, :loaded}, %{state | model: model}}
   end
 
   defp do_load_model do

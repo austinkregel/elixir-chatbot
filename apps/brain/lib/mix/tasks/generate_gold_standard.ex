@@ -204,7 +204,7 @@ defmodule Mix.Tasks.GenerateGoldStandard do
         c -> to_string(c)
       end
 
-    intent_tokens = Brain.ML.Tokenizer.tokenize(intent)
+    intent_tokens = Brain.ML.Tokenizer.tokenize_normalized(intent)
     intent_token_set = MapSet.new(intent_tokens)
 
     cond do

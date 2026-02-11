@@ -211,7 +211,7 @@ defmodule Brain.Learner do
   @self_ref_nouns MapSet.new(~w(name age job work location home favorite preference))
 
   defp is_self_referential_statement?(input) do
-    tokens = Brain.ML.Tokenizer.tokenize(input)
+    tokens = Brain.ML.Tokenizer.tokenize_normalized(input)
     first = Enum.at(tokens, 0)
     second = Enum.at(tokens, 1)
     third = Enum.at(tokens, 2)

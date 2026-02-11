@@ -4,6 +4,7 @@ defmodule Brain.TestHelpers do
   alias Brain.Analysis.Pipeline
   alias Brain.TestWorldSandbox
   alias Brain.ML.IntentClassifierSimple
+  alias Brain.ML.SentimentClassifierSimple
   alias Brain.ML.EntityExtractor
   alias Brain.ML.Gazetteer
   import ExUnit.Callbacks
@@ -66,6 +67,7 @@ defmodule Brain.TestHelpers do
     {:ok, _} = ensure_started(Brain.KnowledgeStore)
     {:ok, _} = ensure_started(Brain.MemoryStore)
     {:ok, _} = ensure_started(Brain.ML.IntentClassifierSimple)
+    {:ok, _} = ensure_started(Brain.ML.SentimentClassifierSimple)
     {:ok, _} = ensure_started(Brain.Epistemic.BeliefStore)
     {:ok, _} = ensure_started(Brain.FactDatabase)
 
@@ -74,7 +76,14 @@ defmodule Brain.TestHelpers do
     end
 
     EntityExtractor.load_entity_maps()
-    IntentClassifierSimple.load_models()
+
+    unless IntentClassifierSimple.ready?() do
+      IntentClassifierSimple.load_models()
+    end
+
+    unless SentimentClassifierSimple.ready?() do
+      SentimentClassifierSimple.load_models()
+    end
 
     :ok
   end
@@ -413,6 +422,7 @@ defmodule Brain.TestHelpers do
         Brain.ML.InformalExpansions,
         Brain.ML.Gazetteer,
         Brain.ML.IntentClassifierSimple,
+        Brain.ML.SentimentClassifierSimple,
         Brain.ML.EntityExtractor,
         Brain.Response.TemplateStore,
         Brain.Response.TemplateBlender,

@@ -647,7 +647,7 @@ defmodule Brain.Knowledge.Types do
     @question_prefixes MapSet.new(~w(what where who when how is are was were does did))
 
     defp remove_question_prefix(text) do
-      tokens = Brain.ML.Tokenizer.tokenize(text)
+      tokens = Brain.ML.Tokenizer.tokenize_normalized(text)
 
       tokens
       |> Enum.drop_while(fn token -> MapSet.member?(@question_prefixes, token) end)
@@ -660,7 +660,7 @@ defmodule Brain.Knowledge.Types do
 
       content_words =
         question
-        |> Brain.ML.Tokenizer.tokenize()
+        |> Brain.ML.Tokenizer.tokenize_normalized()
         |> Enum.reject(&MapSet.member?(stop_words, &1))
 
       if content_words != [] do

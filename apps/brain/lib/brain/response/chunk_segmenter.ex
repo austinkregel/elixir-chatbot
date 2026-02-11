@@ -142,7 +142,8 @@ defmodule Brain.Response.ChunkSegmenter do
   @acknowledgment_tokens MapSet.new(~w(okay sure understood acknowledged right))
 
   defp classify_by_heuristic(sentence) do
-    tokens = Tokenizer.tokenize(sentence)
+    raw_tokens = Tokenizer.tokenize(sentence)
+    tokens = Enum.map(raw_tokens, fn t -> t.normalized || t.text end)
     token_set = MapSet.new(tokens)
     first_token = List.first(tokens)
 

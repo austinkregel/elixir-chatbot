@@ -18,7 +18,7 @@
       "test"
     ],
     "confidence_threshold": 0.4,
-    "learned_at": "2026-02-11T05:33:27.328378Z"
+    "learned_at": "2026-02-11T20:31:17.624575Z"
   },
   "feedback_stats": {
     "clarifications_needed": 4,
@@ -27,10 +27,10 @@
     "optional_responses_proceeded": 0,
     "responses_deferred": 0,
     "silence_frustrations": 0,
-    "successful_responses": 122,
-    "total_interactions": 126
+    "successful_responses": 137,
+    "total_interactions": 141
   },
-  "last_updated": "2026-02-11T05:42:33.576853Z",
+  "last_updated": "2026-02-11T20:32:41.004034Z",
   "response_optionality": {
     "acknowledgment_defer_confidence": 0.7,
     "admin_locked": false,
@@ -44,7 +44,7 @@
   "speech_acts": {
     "admin_locked": false,
     "confidence_threshold": 0.35,
-    "learned_at": "2026-02-11T05:33:27.328700Z"
+    "learned_at": "2026-02-11T20:31:17.827077Z"
   },
   "version": "1.0.0"
 }

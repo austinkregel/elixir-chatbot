@@ -118,11 +118,10 @@ defmodule Brain.Knowledge.ResearchAgent do
   @question_words MapSet.new(~w(what where when who how why is are was were does do did))
 
   defp question_to_query(question) when is_binary(question) do
-    tokens = Brain.ML.Tokenizer.tokenize(question)
+    tokens = Brain.ML.Tokenizer.tokenize_normalized(question)
 
     tokens
     |> Enum.drop_while(fn token -> MapSet.member?(@question_words, token) end)
-    |> Enum.reject(fn token -> token == "?" end)
     |> Enum.join(" ")
     |> String.trim()
   end

@@ -23,7 +23,6 @@ defmodule Brain.Analysis.Pipeline do
 
   alias Brain.ML.EntityExtractor
   alias Brain.ML.LSTM.MultiTaskModel
-  alias Brain.ML.LSTM.UnifiedModel
 
   alias Brain.FactDatabase.Integration, as: FactIntegration
   alias Brain.Epistemic.BeliefStore
@@ -167,10 +166,12 @@ defmodule Brain.Analysis.Pipeline do
     sentiment_task =
       Task.async(fn ->
         case Brain.ML.LSTM.Integration.classify_sentiment(chunk.text) do
-          {:ok, result} -> result
+          {:ok, result} ->
+            result
+
           {:error, reason} ->
-            Logger.warning("Sentiment classification unavailable: #{inspect(reason)}")
-            %{label: :unknown, confidence: 0.0}
+            raise "Sentiment classification failed: #{inspect(reason)}. " <>
+                    "Run `mix train` to train the sentiment classifier."
         end
       end)
 
@@ -198,7 +199,9 @@ defmodule Brain.Analysis.Pipeline do
       catch
         :exit, {:timeout, _} ->
           Task.shutdown(sentiment_task, :brutal_kill)
-          %{label: :neutral, confidence: 0.5}
+
+          raise "Sentiment classification timed out. " <>
+                  "Ensure the sentiment classifier is trained and responsive."
       end
 
     Progress.report(opts, :discourse_complete, %{

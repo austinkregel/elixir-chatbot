@@ -347,8 +347,8 @@ defmodule Brain.Response.LSTMResponse do
   end
 
   defp compute_response_score(query, response, state) do
-    query_tokens = Tokenizer.tokenize(query)
-    response_tokens = Tokenizer.tokenize(response)
+    query_tokens = Tokenizer.tokenize_normalized(query)
+    response_tokens = Tokenizer.tokenize_normalized(response)
 
     query_indices = DataLoaders.tokens_to_indices(query_tokens, state.vocabularies.token_vocab)
 
@@ -383,7 +383,7 @@ defmodule Brain.Response.LSTMResponse do
 
         token_vocab =
           DataLoaders.build_lstm_vocabulary(
-            Enum.map(all_texts, &%{text: &1, tokens: Tokenizer.tokenize(&1)}),
+            Enum.map(all_texts, &%{text: &1, tokens: Tokenizer.tokenize_normalized(&1)}),
             max_vocab: config.max_vocab
           )
 
@@ -471,7 +471,7 @@ defmodule Brain.Response.LSTMResponse do
         queries =
           batch
           |> Enum.map(fn pair ->
-            tokens = Tokenizer.tokenize(pair.query)
+            tokens = Tokenizer.tokenize_normalized(pair.query)
 
             indices =
               DataLoaders.tokens_to_indices(tokens, training_data.vocabularies.token_vocab)
@@ -483,7 +483,7 @@ defmodule Brain.Response.LSTMResponse do
         responses =
           batch
           |> Enum.map(fn pair ->
-            tokens = Tokenizer.tokenize(pair.response)
+            tokens = Tokenizer.tokenize_normalized(pair.response)
 
             indices =
               DataLoaders.tokens_to_indices(tokens, training_data.vocabularies.token_vocab)
