@@ -5,7 +5,7 @@ defmodule World.Application do
 
   @impl true
   def start(_type, _args) do
-    children = [World.Manager, World.ModelRegistry]
+    children = [World.Manager, World.ModelRegistry, World.EntityPromoter]
 
     opts = [strategy: :one_for_one, name: World.Supervisor]
     result = Supervisor.start_link(children, opts)

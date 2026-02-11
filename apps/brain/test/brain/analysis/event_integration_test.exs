@@ -36,6 +36,8 @@ defmodule Brain.Analysis.EventIntegrationTest do
           is_list(analysis.events) and analysis.events != []
         end)
 
+      assert has_events, "Expected at least one analysis to contain events"
+
       Enum.each(result.analyses, fn analysis ->
         assert is_list(analysis.events)
       end)

@@ -4,7 +4,7 @@ defmodule Brain.Epistemic.Types do
   defmodule Belief do
     @moduledoc "A belief represents a piece of knowledge the system holds about\na subject (user, world, or self).\n\nEach belief tracks:\n- What it's about (subject/predicate/object triple)\n- How confident we are (0.0 - 1.0)\n- Where it came from (source and provenance)\n- How stable it is (volatility)\n"
 
-    @type source :: :explicit | :inferred | :assumed | :default | :learned
+    @type source :: :explicit | :inferred | :assumed | :default | :learned | :consolidated
     @type subject :: :user | :world | :self | String.t()
 
     @type t :: %__MODULE__{
@@ -14,6 +14,7 @@ defmodule Brain.Epistemic.Types do
             object: any(),
             confidence: float(),
             source: source(),
+            source_authority: atom() | nil,
             provenance: list(String.t()),
             volatility: float(),
             last_confirmed: DateTime.t() | nil,
@@ -30,6 +31,7 @@ defmodule Brain.Epistemic.Types do
       :object,
       :confidence,
       :source,
+      :source_authority,
       :last_confirmed,
       :created_at,
       :user_id,
@@ -48,6 +50,7 @@ defmodule Brain.Epistemic.Types do
         object: object,
         confidence: Keyword.get(opts, :confidence, 0.5),
         source: Keyword.get(opts, :source, :inferred),
+        source_authority: Keyword.get(opts, :source_authority),
         provenance: Keyword.get(opts, :provenance, []),
         volatility: Keyword.get(opts, :volatility, 0.5),
         user_id: Keyword.get(opts, :user_id),
@@ -498,7 +501,11 @@ defmodule Brain.Epistemic.Types do
             reflection_mode: :async | :sync | :disabled,
             consolidation_interval_ms: non_neg_integer(),
             high_confidence_threshold: float(),
-            low_confidence_threshold: float()
+            low_confidence_threshold: float(),
+            decay_rate: float(),
+            decay_exempt_sources: [atom()],
+            decay_interval_ms: non_neg_integer(),
+            decay_min_age_ms: non_neg_integer()
           }
 
     defstruct enabled: true,
@@ -506,7 +513,11 @@ defmodule Brain.Epistemic.Types do
               reflection_mode: :async,
               consolidation_interval_ms: 3_600_000,
               high_confidence_threshold: 0.7,
-              low_confidence_threshold: 0.4
+              low_confidence_threshold: 0.4,
+              decay_rate: 0.05,
+              decay_exempt_sources: [:explicit, :learned],
+              decay_interval_ms: 3_600_000,
+              decay_min_age_ms: 86_400_000
 
     @doc "Gets the current epistemic configuration.\n"
     def get do
@@ -518,7 +529,11 @@ defmodule Brain.Epistemic.Types do
         reflection_mode: Keyword.get(config, :reflection_mode, :async),
         consolidation_interval_ms: Keyword.get(config, :consolidation_interval_ms, 3_600_000),
         high_confidence_threshold: Keyword.get(config, :high_confidence_threshold, 0.7),
-        low_confidence_threshold: Keyword.get(config, :low_confidence_threshold, 0.4)
+        low_confidence_threshold: Keyword.get(config, :low_confidence_threshold, 0.4),
+        decay_rate: Keyword.get(config, :decay_rate, 0.05),
+        decay_exempt_sources: Keyword.get(config, :decay_exempt_sources, [:explicit, :learned]),
+        decay_interval_ms: Keyword.get(config, :decay_interval_ms, 3_600_000),
+        decay_min_age_ms: Keyword.get(config, :decay_min_age_ms, 86_400_000)
       }
     end
 

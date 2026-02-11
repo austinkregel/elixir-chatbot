@@ -105,7 +105,7 @@ defmodule Tasks.AnalyzerTest do
 
   describe "analyze_all/1" do
     test "analyzes all task files in directory" do
-      {:ok, result} = Tasks.Analyzer.analyze_all(tasks_path: @test_tasks_path)
+      {:ok, result} = Analyzer.analyze_all(tasks_path: @test_tasks_path)
 
       assert result.total_tasks == 3
       assert length(result.useful_tasks) == 2
@@ -113,14 +113,14 @@ defmodule Tasks.AnalyzerTest do
     end
 
     test "filters by english only" do
-      {:ok, result} = Tasks.Analyzer.analyze_all(tasks_path: @test_tasks_path, english_only: true)
+      {:ok, result} = Analyzer.analyze_all(tasks_path: @test_tasks_path, english_only: true)
 
       # Translation task outputs Spanish, so only 2 are english-only
       assert result.english_only == 2
     end
 
     test "counts tasks by category" do
-      {:ok, result} = Tasks.Analyzer.analyze_all(tasks_path: @test_tasks_path)
+      {:ok, result} = Analyzer.analyze_all(tasks_path: @test_tasks_path)
 
       assert Map.get(result.by_category, "Question Answering") == 1
       assert Map.get(result.by_category, "Commonsense Classification") == 1
@@ -131,7 +131,7 @@ defmodule Tasks.AnalyzerTest do
   describe "parse_task_file/1" do
     test "parses task file and extracts metadata" do
       file_path = Path.join(@test_tasks_path, "task_test_qa.json")
-      metadata = Tasks.Analyzer.parse_task_file(file_path)
+      metadata = Analyzer.parse_task_file(file_path)
 
       assert metadata.task_id == "task_test_qa"
       assert metadata.categories == ["Question Answering"]
@@ -143,7 +143,7 @@ defmodule Tasks.AnalyzerTest do
     end
 
     test "returns nil for invalid file" do
-      metadata = Tasks.Analyzer.parse_task_file("nonexistent.json")
+      metadata = Analyzer.parse_task_file("nonexistent.json")
       assert is_nil(metadata)
     end
   end
@@ -157,7 +157,7 @@ defmodule Tasks.AnalyzerTest do
         output_language: "English"
       }
 
-      assert Tasks.Analyzer.useful_task?(task)
+      assert Analyzer.useful_task?(task)
     end
 
     test "returns false for skip categories" do
@@ -168,7 +168,7 @@ defmodule Tasks.AnalyzerTest do
         output_language: "Spanish"
       }
 
-      refute Tasks.Analyzer.useful_task?(task)
+      refute Analyzer.useful_task?(task)
     end
   end
 
@@ -179,7 +179,7 @@ defmodule Tasks.AnalyzerTest do
         output_language: "English"
       }
 
-      assert Tasks.Analyzer.english_task?(task)
+      assert Analyzer.english_task?(task)
     end
 
     test "returns false for non-english task" do
@@ -188,14 +188,14 @@ defmodule Tasks.AnalyzerTest do
         output_language: "German"
       }
 
-      refute Tasks.Analyzer.english_task?(task)
+      refute Analyzer.english_task?(task)
     end
   end
 
   describe "load_instances/2" do
     test "loads instances from task file" do
       file_path = Path.join(@test_tasks_path, "task_test_qa.json")
-      {:ok, instances} = Tasks.Analyzer.load_instances(file_path)
+      {:ok, instances} = Analyzer.load_instances(file_path)
 
       # Should include examples + instances
       assert length(instances) == 3
@@ -203,14 +203,14 @@ defmodule Tasks.AnalyzerTest do
 
     test "respects max_instances option" do
       file_path = Path.join(@test_tasks_path, "task_test_qa.json")
-      {:ok, instances} = Tasks.Analyzer.load_instances(file_path, max_instances: 2)
+      {:ok, instances} = Analyzer.load_instances(file_path, max_instances: 2)
 
       assert length(instances) == 2
     end
 
     test "can exclude examples" do
       file_path = Path.join(@test_tasks_path, "task_test_qa.json")
-      {:ok, instances} = Tasks.Analyzer.load_instances(file_path, include_examples: false)
+      {:ok, instances} = Analyzer.load_instances(file_path, include_examples: false)
 
       # Only instances, no examples
       assert length(instances) == 2
@@ -220,7 +220,7 @@ defmodule Tasks.AnalyzerTest do
   describe "get_definition/1" do
     test "extracts task definition" do
       file_path = Path.join(@test_tasks_path, "task_test_qa.json")
-      {:ok, definition} = Tasks.Analyzer.get_definition(file_path)
+      {:ok, definition} = Analyzer.get_definition(file_path)
 
       assert definition == "Answer the question."
     end
@@ -234,7 +234,7 @@ defmodule Tasks.AnalyzerTest do
         %{categories: ["Commonsense Classification"], task_id: "t3"}
       ]
 
-      grouped = Tasks.Analyzer.group_by_category(tasks)
+      grouped = Analyzer.group_by_category(tasks)
 
       assert length(grouped["Question Answering"]) == 2
       assert length(grouped["Commonsense Classification"]) == 1

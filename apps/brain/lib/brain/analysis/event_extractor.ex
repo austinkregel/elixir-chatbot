@@ -112,9 +112,6 @@ defmodule Brain.Analysis.EventExtractor do
         {:ok, events, :continue} ->
           # Continue processing next batch
           {:cont, {:ok, acc_events ++ events}}
-
-        {:error, reason} ->
-          {:halt, {:error, reason}}
       end
     end)
   end

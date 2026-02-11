@@ -104,11 +104,12 @@ defmodule Brain.Metrics.Aggregator do
       dispatch_metrics = get_metric(:service_dispatch) || %{count: 0}
       enrichment_metrics = get_metric(:service_enrichment) || %{count: 0}
 
-      # Get per-service metrics
+      # Get per-service metrics by finding services in raw data counters
+      # Look for {:counter, {:service, name}, :count} entries in raw_data_table
       by_service =
-        @metrics_table
-        |> :ets.match({{:service, :"$1"}, :"$2"})
-        |> Enum.map(fn [name, _] -> name end)
+        @raw_data_table
+        |> :ets.match({{:counter, {:service, :"$1"}, :count}, :"$2"})
+        |> Enum.map(fn [name, _count] -> name end)
         |> Enum.uniq()
         |> Enum.map(fn service ->
           count = get_counter_for_service({:service, service}, :count)
@@ -167,6 +168,60 @@ defmodule Brain.Metrics.Aggregator do
     end
   rescue
     _ -> nil
+  end
+
+  @doc """
+  Gets epistemic system metrics. Reads directly from ETS - non-blocking.
+
+  Returns a map with:
+  - `:total_verifications` - Total fact verification count
+  - `:by_status` - Count by status (verified, contradicted, uncertain, unchecked)
+  - `:contradiction_count` - Total contradictions detected
+  - `:last_verifications` - Last verification per status type
+  """
+  def get_epistemic_metrics do
+    try do
+      total = get_counter_value(:fact_verification, :count)
+      contradictions = get_counter_value(:fact_verification, :contradiction_count)
+
+      # Get counts by status
+      by_status =
+        [:verified, :contradicted, :uncertain, :unchecked]
+        |> Enum.map(fn status ->
+          count = get_counter_value({:fact_verification_status, status}, :count)
+          {status, count}
+        end)
+        |> Map.new()
+
+      # Get last verification per status
+      last_verifications =
+        [:verified, :contradicted, :uncertain]
+        |> Enum.map(fn status ->
+          last = get_last_event({:fact_verification_last, status})
+          {status, last}
+        end)
+        |> Enum.filter(fn {_, v} -> v != nil end)
+        |> Map.new()
+
+      %{
+        total_verifications: total,
+        contradiction_count: contradictions,
+        by_status: by_status,
+        last_verifications: last_verifications
+      }
+    catch
+      :error, :badarg ->
+        %{total_verifications: 0, contradiction_count: 0, by_status: %{}, last_verifications: %{}}
+    end
+  end
+
+  defp get_counter_value(key, field) do
+    case :ets.lookup(@raw_data_table, {:counter, key, field}) do
+      [{{:counter, ^key, ^field}, count}] -> count
+      [] -> 0
+    end
+  rescue
+    _ -> 0
   end
 
   @doc "Records a duration metric. Use cast for non-blocking.\n"
@@ -516,6 +571,38 @@ defmodule Brain.Metrics.Aggregator do
   end
 
   @impl true
+  def handle_cast({:record_fact_verification, status, subject, beliefs_count, duration_ms}, state) do
+    now = System.monotonic_time(:millisecond)
+
+    # Track overall fact verification metrics
+    add_raw_data_point(:fact_verification, duration_ms, now)
+    increment_counter(:fact_verification, :count)
+
+    # Track by status (verified, contradicted, uncertain, unchecked)
+    status_key = {:fact_verification_status, status}
+    increment_counter(status_key, :count)
+
+    # Track contradictions specifically
+    if status == :contradicted do
+      increment_counter(:fact_verification, :contradiction_count)
+    end
+
+    # Store last verification info
+    :ets.insert(
+      @metrics_table,
+      {{:fact_verification_last, status},
+       %{
+         subject: subject,
+         beliefs_count: beliefs_count,
+         duration_ms: duration_ms,
+         timestamp: now
+       }}
+    )
+
+    {:noreply, state}
+  end
+
+  @impl true
   def handle_call(:reset, _from, state) do
     :ets.delete_all_objects(@metrics_table)
     :ets.delete_all_objects(@raw_data_table)
@@ -649,7 +736,10 @@ defmodule Brain.Metrics.Aggregator do
       :code_pipeline,
       :code_parse,
       :code_extract,
-      :code_gazetteer_lookup
+      :code_gazetteer_lookup,
+      # External services
+      :service_dispatch,
+      :service_enrichment
     ]
 
     Enum.each(metrics, fn metric_name ->

@@ -52,31 +52,24 @@ defmodule Brain.Response.Generator do
   defp build_slot_map_for_enrichment(_), do: %{}
 
   defp maybe_enrich_response({:ok, response, type}, context) do
-    case Enricher.enrich_response(response, context) do
-      {:ok, enriched_response} ->
-        # If enrichment added data, update the type
-        if Map.get(context, :enrichment_status) == :success do
-          {:ok, enriched_response, type}
-        else
-          {:ok, enriched_response, type}
-        end
-
-      {:error, _} ->
-        {:ok, response, type}
-    end
+    {:ok, enriched_response} = Enricher.enrich_response(response, context)
+    {:ok, enriched_response, type}
   end
 
   defp maybe_enrich_response(other, _context), do: other
 
   defp build_generation_context(intent, entities, query_text) do
-    build_generation_context_with_events(intent, entities, query_text, [])
+    build_generation_context_with_events(intent, entities, query_text, [], %{})
   end
 
-  defp build_generation_context_with_events(intent, entities, query_text, events) do
+  defp build_generation_context_with_events(intent, entities, query_text, events, opts \\ %{}) do
     similar_episodes = retrieve_similar_episodes(intent, entities, query_text)
     event_episodes = retrieve_event_episodes(events)
     event_slots = build_context_from_events(events, entities)
     confidence = 0.7
+
+    # Extract epistemic context from opts
+    epistemic_context = Map.get(opts, :epistemic_context, %{})
 
     %{
       similar_episodes: similar_episodes ++ event_episodes,
@@ -85,7 +78,8 @@ defmodule Brain.Response.Generator do
       entities: entities,
       query_text: query_text,
       events: events,
-      event_slots: event_slots
+      event_slots: event_slots,
+      epistemic_context: epistemic_context
     }
   end
 
@@ -297,6 +291,10 @@ defmodule Brain.Response.Generator do
     end
   end
 
+  defp maybe_improve_response(other, _query, _intent, _entities) do
+    other
+  end
+
   defp try_special_handlers(intent, entities, query_text) do
     domain = IntentRegistry.domain(intent)
 
@@ -333,10 +331,6 @@ defmodule Brain.Response.Generator do
       nil -> "default"
       world_id -> world_id
     end
-  end
-
-  defp maybe_improve_response(other, _query, _intent, _entities) do
-    other
   end
 
   @doc "Generate a response with full path tracking for debugging/inspection.\n\nReturns:\n- {:ok, response, response_type, path} where path is a list of steps taken\n\nThe path shows exactly how the response was reached:\n- Which handlers were tried\n- Why each was skipped or selected\n- What data stores were accessed\n"
@@ -520,6 +514,9 @@ defmodule Brain.Response.Generator do
 
     overall_sentiment = aggregate_sentiment(analysis_model.analyses)
 
+    # Extract epistemic context from the first analysis chunk
+    epistemic_context = extract_epistemic_context(analysis_model.analyses)
+
     expressives =
       speech_acts
       |> Enum.filter(&(&1.category == :expressive))
@@ -531,6 +528,12 @@ defmodule Brain.Response.Generator do
       directives != [] or
         (intent != nil and intent != "" and
            not IntentRegistry.greeting?(intent))
+
+    # Check for epistemic contradictions FIRST — these should always produce a
+    # response regardless of whether we think there's substantive content,
+    # because assertive statements about facts are substantive even when
+    # they don't map to a directive intent.
+    has_contradiction = Map.get(epistemic_context, :status) == :contradicted
 
     response_parts = []
     response_types = []
@@ -550,8 +553,10 @@ defmodule Brain.Response.Generator do
       end
 
     {response_parts, response_types} =
-      if has_substantive_content do
-        {:ok, substantive_response, response_type} = generate(intent, entities, query_text)
+      if has_substantive_content or has_contradiction do
+        {:ok, substantive_response, response_type} =
+          generate_with_epistemic_context(intent, entities, query_text, epistemic_context)
+
         {[substantive_response | response_parts], [response_type | response_types]}
       else
         {response_parts, response_types}
@@ -583,6 +588,47 @@ defmodule Brain.Response.Generator do
     response = maybe_add_sentiment_prefix(response, overall_sentiment)
 
     {response, primary_type}
+  end
+
+  # Extracts epistemic context from analysis chunks for response generation.
+  # Aggregates across ALL chunks — if any chunk is :contradicted, the overall
+  # status is :contradicted. This prevents multi-chunk inputs from hiding
+  # contradictions that appear in non-first chunks.
+  defp extract_epistemic_context([]) do
+    %{}
+  end
+
+  defp extract_epistemic_context(analyses) do
+    # Find the most "severe" epistemic status across all chunks
+    # Priority: :contradicted > :uncertain > :verified > :unchecked
+    status_priority = %{contradicted: 3, uncertain: 2, verified: 1, unchecked: 0}
+
+    {best_status, best_verification, all_beliefs} =
+      Enum.reduce(analyses, {:unchecked, nil, []}, fn analysis, {acc_status, acc_verification, acc_beliefs} ->
+        chunk_status = Map.get(analysis, :epistemic_status, :unchecked)
+        chunk_verification = Map.get(analysis, :fact_verification)
+        chunk_beliefs = Map.get(analysis, :related_beliefs, [])
+
+        if Map.get(status_priority, chunk_status, 0) > Map.get(status_priority, acc_status, 0) do
+          {chunk_status, chunk_verification, acc_beliefs ++ chunk_beliefs}
+        else
+          {acc_status, acc_verification, acc_beliefs ++ chunk_beliefs}
+        end
+      end)
+
+    %{
+      status: best_status,
+      verification: best_verification,
+      beliefs: Enum.uniq(all_beliefs)
+    }
+  end
+
+  # Generate response with epistemic context awareness
+  defp generate_with_epistemic_context(intent, entities, query_text, epistemic_context) do
+    events = []
+    context = build_generation_context_with_events(intent, entities, query_text, events, %{epistemic_context: epistemic_context})
+    result = run_generative_pipeline(intent, entities, query_text, context)
+    maybe_enrich_response(result, context)
   end
 
   @doc "Formats a code snippet for display in a response.\n\n## Options\n  - `:language` - The programming language for syntax highlighting\n  - `:start_line` - Starting line number\n  - `:max_lines` - Maximum lines to show (default: 20)\n"
@@ -846,23 +892,6 @@ defmodule Brain.Response.Generator do
         {:mismatch, List.first(numbers_to_check)}
       end
     end
-  end
-
-  defp find_entity_value(entities, entity_type) when is_list(entities) do
-    entity =
-      Enum.find(entities, fn e ->
-        e[:entity_type] == entity_type
-      end)
-
-    if entity do
-      entity[:value] || entity["value"]
-    else
-      nil
-    end
-  end
-
-  defp find_entity_value(_, _) do
-    nil
   end
 
   defp extract_entity_names_for_facts(entities) when is_list(entities) do

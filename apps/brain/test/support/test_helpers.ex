@@ -59,11 +59,15 @@ defmodule Brain.TestHelpers do
     ensure_pubsub_started()
     {:ok, _} = ensure_started({Registry, keys: :unique, name: Brain.SubprocessRegistry})
     {:ok, _} = ensure_started(Brain.Metrics.Aggregator)
+    {:ok, _} = ensure_started(Brain.Services.CredentialVault)
+    {:ok, _} = ensure_started(Brain.Services.Cache)
     {:ok, _} = ensure_started(Brain.ML.Gazetteer)
     {:ok, _} = ensure_started(Brain.Analysis.LearningStore)
     {:ok, _} = ensure_started(Brain.KnowledgeStore)
     {:ok, _} = ensure_started(Brain.MemoryStore)
     {:ok, _} = ensure_started(Brain.ML.IntentClassifierSimple)
+    {:ok, _} = ensure_started(Brain.Epistemic.BeliefStore)
+    {:ok, _} = ensure_started(Brain.FactDatabase)
 
     if Gazetteer.is_loaded?() == false do
       Gazetteer.load_all()
@@ -376,6 +380,275 @@ defmodule Brain.TestHelpers do
 
       _ ->
         nil
+    end
+  end
+
+  # ============================================================================
+  # Service Readiness Assertions
+  # ============================================================================
+
+  @ready_timeout_ms 180_000
+
+  @doc """
+  Asserts that all listed services are started and ready within the deadline.
+
+  Polls each service's `ready?()` / `is_loaded?()` function every 200ms.
+  If any service is not ready after #{@ready_timeout_ms}ms (3 minutes),
+  the test FAILS immediately with a message naming the exact unready service(s).
+
+  ## Usage
+
+      # Explicit module list
+      require_services!([Brain.ML.IntentClassifierSimple, Brain.ML.Gazetteer])
+
+      # Service profiles (convenience)
+      require_services!(:ml_inference)
+      require_services!(:brain)
+  """
+  def require_services!(services, opts \\ [])
+
+  def require_services!(:ml_inference, opts) do
+    require_services!(
+      [
+        Brain.ML.InformalExpansions,
+        Brain.ML.Gazetteer,
+        Brain.ML.IntentClassifierSimple,
+        Brain.ML.EntityExtractor,
+        Brain.Response.TemplateStore,
+        Brain.Response.TemplateBlender,
+        Brain.Analysis.AnalyzerCalibration
+      ],
+      opts
+    )
+  end
+
+  def require_services!(:full_pipeline, opts) do
+    require_services!(:ml_inference, opts)
+    # LSTM services are optional (graceful degradation expected)
+  end
+
+  def require_services!(:brain, opts) do
+    require_services!(:ml_inference, opts)
+
+    require_services!(
+      [
+        Brain.Memory.Store,
+        Brain.Memory.Embedder,
+        Brain.Epistemic.BeliefStore,
+        Brain.Knowledge.SourceReliability,
+        Brain.KnowledgeStore,
+        Brain.FactDatabase,
+        Brain.MemoryStore
+      ],
+      opts
+    )
+  end
+
+  def require_services!(modules, opts) when is_list(modules) do
+    import ExUnit.Assertions
+    timeout = Keyword.get(opts, :timeout, @ready_timeout_ms)
+    poll_interval = 200
+    deadline = System.monotonic_time(:millisecond) + timeout
+
+    unready =
+      Enum.filter(modules, fn mod ->
+        not poll_until_ready(mod, deadline, poll_interval)
+      end)
+
+    assert unready == [],
+           """
+           Required services not ready within #{div(timeout, 1000)}s:
+           #{Enum.map_join(unready, "\n  ", &("- " <> inspect(&1)))}
+
+           This means the test's GenServer dependencies failed to initialize.
+           Check that the service starts correctly and its ready?() returns true.
+           """
+  end
+
+  defp poll_until_ready(mod, deadline, interval) do
+    cond do
+      service_ready?(mod) ->
+        true
+
+      System.monotonic_time(:millisecond) >= deadline ->
+        false
+
+      true ->
+        Process.sleep(interval)
+        poll_until_ready(mod, deadline, interval)
+    end
+  end
+
+  defp service_ready?(mod) do
+    cond do
+      function_exported?(mod, :ready?, 0) ->
+        mod.ready?()
+
+      function_exported?(mod, :is_loaded?, 0) ->
+        mod.is_loaded?()
+
+      function_exported?(mod, :is_loaded?, 1) ->
+        mod.is_loaded?([])
+
+      function_exported?(mod, :loaded?, 0) ->
+        mod.loaded?()
+
+      true ->
+        # If no readiness check exists, just check the process is alive
+        Process.whereis(mod) != nil
+    end
+  rescue
+    _ -> false
+  catch
+    :exit, _ -> false
+  end
+
+  # ============================================================================
+  # Response-Based Intent Classifier (for testing)
+  # ============================================================================
+
+  @doc """
+  Classifies a system response back to the intent that likely generated it.
+
+  Uses TF-IDF cosine similarity against all known response templates
+  from the templates.json file. This lets tests assert "the response
+  was generated for a weather intent" rather than string-matching
+  on specific words.
+
+  ## Usage
+
+      response = Brain.respond("What's the weather?", conversation_id)
+      assert_response_intent(response, "weather")
+      # Passes if the closest matching intent starts with "weather"
+
+      {intent, score} = classify_response(response)
+      assert String.starts_with?(intent, "smalltalk.greetings")
+
+  ## Returns
+
+  `{intent, similarity_score}` where intent is the best-matching intent name
+  and score is 0.0-1.0 cosine similarity.
+  """
+  def classify_response(response_text) when is_binary(response_text) do
+    templates = load_response_templates()
+
+    if templates == %{} do
+      {"unknown", 0.0}
+    else
+      response_tokens = tokenize_for_tfidf(response_text)
+
+      {best_intent, best_score} =
+        templates
+        |> Enum.map(fn {intent, template_texts} ->
+          max_similarity =
+            template_texts
+            |> Enum.map(fn template_text ->
+              template_tokens = tokenize_for_tfidf(template_text)
+              cosine_similarity(response_tokens, template_tokens)
+            end)
+            |> Enum.max(fn -> 0.0 end)
+
+          {intent, max_similarity}
+        end)
+        |> Enum.max_by(fn {_intent, score} -> score end, fn -> {"unknown", 0.0} end)
+
+      {best_intent, best_score}
+    end
+  end
+
+  @doc """
+  Asserts that a response was generated for an intent matching the given prefix.
+
+  ## Example
+
+      assert_response_intent("Hello! How can I help?", "smalltalk.greetings")
+      assert_response_intent("The weather in London is sunny.", "weather")
+  """
+  def assert_response_intent(response_text, intent_prefix, opts \\ []) do
+    import ExUnit.Assertions
+    min_score = Keyword.get(opts, :min_score, 0.1)
+
+    {best_intent, score} = classify_response(response_text)
+
+    assert String.starts_with?(best_intent, intent_prefix) and score >= min_score,
+           """
+           Expected response to match intent prefix "#{intent_prefix}"
+           Got: #{best_intent} (score: #{Float.round(score, 3)})
+           Response: #{String.slice(response_text, 0, 100)}
+           """
+  end
+
+  # Load response templates from the templates.json file.
+  # Returns a map of intent -> list of template strings.
+  # Uses process dictionary as a simple cache within a test run.
+  defp load_response_templates do
+    case Process.get(:_test_response_templates) do
+      nil ->
+        templates = do_load_response_templates()
+        Process.put(:_test_response_templates, templates)
+        templates
+
+      cached ->
+        cached
+    end
+  end
+
+  defp do_load_response_templates do
+    templates_path = Brain.priv_path("response/templates.json")
+
+    case File.read(templates_path) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, data} when is_map(data) ->
+            data
+            |> Enum.map(fn {intent, info} ->
+              texts =
+                info
+                |> Map.get("templates", [])
+                |> Enum.map(fn t -> Map.get(t, "text", "") end)
+                |> Enum.filter(&(&1 != ""))
+
+              {intent, texts}
+            end)
+            |> Enum.filter(fn {_intent, texts} -> texts != [] end)
+            |> Map.new()
+
+          _ ->
+            %{}
+        end
+
+      {:error, _} ->
+        %{}
+    end
+  end
+
+  # Simple bag-of-words tokenization for TF-IDF similarity
+  defp tokenize_for_tfidf(text) do
+    text
+    |> String.downcase()
+    |> String.replace(~r/[^a-z0-9\s]/, "")
+    |> String.split()
+    |> Enum.frequencies()
+  end
+
+  # Cosine similarity between two term-frequency maps
+  defp cosine_similarity(tf1, tf2) when tf1 == %{} or tf2 == %{}, do: 0.0
+
+  defp cosine_similarity(tf1, tf2) do
+    all_terms = Map.keys(tf1) ++ Map.keys(tf2) |> Enum.uniq()
+
+    dot =
+      Enum.reduce(all_terms, 0.0, fn term, acc ->
+        acc + (Map.get(tf1, term, 0) * Map.get(tf2, term, 0))
+      end)
+
+    mag1 = :math.sqrt(Enum.reduce(tf1, 0.0, fn {_k, v}, acc -> acc + v * v end))
+    mag2 = :math.sqrt(Enum.reduce(tf2, 0.0, fn {_k, v}, acc -> acc + v * v end))
+
+    if mag1 == 0.0 or mag2 == 0.0 do
+      0.0
+    else
+      dot / (mag1 * mag2)
     end
   end
 end

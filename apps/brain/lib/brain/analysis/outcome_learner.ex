@@ -62,6 +62,12 @@ defmodule Brain.Analysis.OutcomeLearner do
 
     track_pattern(interp, outcome, user_id, cohort_id)
 
+    # Generate training example from high-confidence confirmed outcomes
+    if outcome in [:success, :likely_success] and interp.activation >= 0.8 and
+         interp.intent != nil and interp.text != nil do
+      maybe_buffer_training_example(interp.text, interp.intent)
+    end
+
     outcome
   end
 
@@ -249,6 +255,14 @@ defmodule Brain.Analysis.OutcomeLearner do
       Map.has_key?(pattern, :first_word) -> hd(pattern.first_word)
       true -> ""
     end
+  end
+
+  defp maybe_buffer_training_example(text, intent) do
+    if Brain.ML.TrainingExampleBuffer.ready?() do
+      Brain.ML.TrainingExampleBuffer.add_example(text, intent)
+    end
+  rescue
+    _ -> :ok
   end
 
   defp track_pattern(%Interpretation{} = interp, outcome, user_id, cohort_id) do

@@ -1,21 +1,40 @@
 {
+  "devices": {
+    "computer": {
+      "confidence": 0.9,
+      "name": "computer",
+      "type": "device"
+    }
+  },
   "facts": [
     {
       "confidence": 0.7110000000000001,
       "entity": "Austin",
       "fact": "Hello, I'm Austin.",
-      "timestamp": 1770327314528
+      "timestamp": 1770749223271
     },
     {
       "confidence": 0.7110000000000001,
       "entity": "Austin",
       "fact": "Hello, I'm Austin. Can you tell me about the weather in Owosso?",
       "timestamp": 1770158558605
+    },
+    {
+      "confidence": 0.7110000000000001,
+      "entity": "Owosso",
+      "fact": "Can you tell me the weather in Owosso?",
+      "timestamp": 1770749755880
+    },
+    {
+      "confidence": 0.7110000000000001,
+      "entity": "Austin",
+      "fact": "Hello, I'm Austin! I've heard that the sky is actually purple.",
+      "timestamp": 1770751573025
     }
   ],
   "people": {
     "Austin": {
-      "confidence": 0.73,
+      "confidence": 0.79,
       "name": "Austin",
       "type": "person"
     }

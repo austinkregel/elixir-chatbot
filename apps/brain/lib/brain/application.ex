@@ -1,5 +1,12 @@
 defmodule Brain.Application do
   @moduledoc false
+
+  # These modules are in sibling umbrella apps that depend on :brain.
+  # They're available at runtime but not at compile time.
+  @compile {:no_warn_undefined, [World.Embedder, World.ModelRegistry]}
+
+  require Logger
+
   alias Brain.ML.IntentClassifierSimple
   alias World.Embedder
   alias Brain.ML.EntityExtractor
@@ -21,11 +28,13 @@ defmodule Brain.Application do
       Brain.Analysis.LearningStore,
       Brain.Analysis.AnalyzerCalibration,
       {Brain.Analysis.HeuristicStore, [seeded_path: "data/heuristics/seeded_heuristics.json"]},
+      Brain.Analysis.ComprehensionAssessor,
       Brain.KnowledgeStore,
       Brain.FactDatabase,
       Brain.MemoryStore,
       Brain.Memory.Embedder,
       Brain.Memory.Store,
+      Brain.Epistemic.SourceAuthority,
       Brain.Epistemic.JTMS,
       Brain.Epistemic.BeliefStore,
       Brain.Epistemic.UserModelStore,
@@ -47,7 +56,10 @@ defmodule Brain.Application do
       Brain.Knowledge.SourceReliability,
       Brain.Knowledge.ReviewQueue,
       Brain.Knowledge.LearningCenter,
+      Brain.Knowledge.LearningTriggers,
+      Brain.Analysis.IntentRegistry,
       Brain.Analysis.IntentReviewQueue,
+      Brain.Analysis.IntentAutoPromoter,
       {Brain, Application.get_env(:brain, :artifact_path, "priv/static/demo.echo.json")}
     ]
 
@@ -101,6 +113,11 @@ defmodule Brain.Application do
         Logger.debug("Entity extractor still loading...")
       end
 
+      # Ensure the embedder is loaded (may not be loaded by ModelRegistry)
+      unless Brain.Memory.Embedder.ready?() do
+        load_embedder_fallback()
+      end
+
       if Code.ensure_loaded?(World.Embedder) do
         Embedder.init()
         Logger.info("World embedder system initialized")
@@ -117,6 +134,31 @@ defmodule Brain.Application do
 
       {:error, _} ->
         :ok
+    end
+
+    # Also load the embedder model if available
+    load_embedder_fallback()
+  end
+
+  defp load_embedder_fallback do
+    embedder_path =
+      case Application.get_env(:brain, :ml, [])[:models_path] do
+        nil -> Path.join(:code.priv_dir(:brain), "ml_models/embedder.term")
+        path -> Path.join(path, "embedder.term")
+      end
+
+    if File.exists?(embedder_path) do
+      case File.read(embedder_path) do
+        {:ok, binary} ->
+          model = :erlang.binary_to_term(binary)
+          Brain.Memory.Embedder.load_model(model)
+          Logger.info("Embedder vocabulary loaded via fallback")
+
+        {:error, reason} ->
+          Logger.warning("Failed to read embedder model: #{inspect(reason)}")
+      end
+    else
+      Logger.debug("No embedder model found at #{embedder_path}")
     end
   end
 end

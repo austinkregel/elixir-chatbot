@@ -16,8 +16,6 @@ defmodule Brain.ML.EvaluationStore do
 
   require Logger
 
-  @results_dir "evaluation/results"
-
   @doc """
   Save an evaluation result to disk.
   """

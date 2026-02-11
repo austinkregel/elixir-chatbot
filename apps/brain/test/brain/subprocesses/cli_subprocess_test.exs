@@ -1,6 +1,12 @@
 defmodule Brain.Subprocesses.CliSubprocessTest do
   use ExUnit.Case, async: true
   alias Brain.Subprocesses.CliSubprocess
+  import Brain.TestHelpers
+
+  setup_all do
+    Brain.TestHelpers.require_services!(:brain)
+    :ok
+  end
 
   setup do
     subprocess_id = "test_cli_#{:rand.uniform(1000)}"
@@ -50,13 +56,16 @@ defmodule Brain.Subprocesses.CliSubprocessTest do
     assert is_binary(result)
     assert String.contains?(result, "Created conversation")
 
-    # Send message
-    {:ok, result} = CliSubprocess.execute_command(subprocess_id, "send abc123 Hello there!")
-    assert is_binary(result)
-    assert String.contains?(result, "Hello there!")
+    # Extract the real conversation ID from "Created conversation 'my_chat' with Brain ID: <id>"
+    [_, conv_id] = Regex.run(~r/Brain ID: (\S+)/, result)
 
-    # End conversation
-    {:ok, result} = CliSubprocess.execute_command(subprocess_id, "end abc123")
+    # Send message using the real conversation ID
+    {:ok, result} = CliSubprocess.execute_command(subprocess_id, "send #{conv_id} Hello there!")
+    assert is_binary(result)
+    assert_response_intent(result, "smalltalk.greetings")
+
+    # End conversation using the real conversation ID
+    {:ok, result} = CliSubprocess.execute_command(subprocess_id, "end #{conv_id}")
     assert is_binary(result)
     assert String.contains?(result, "Ended conversation")
   end

@@ -51,6 +51,7 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:world_models_status, load_world_models_status(world_id))
       |> assign(:code_analysis_status, load_code_analysis_status())
       |> assign(:services_status, load_services_status())
+      |> assign(:epistemic_metrics, load_epistemic_metrics())
       |> assign(:last_updated, DateTime.utc_now())
       |> assign(:expanded_categories, MapSet.new(@default_expanded))
       |> assign(:auto_refresh, true)
@@ -101,6 +102,7 @@ defmodule ChatWeb.DashboardLive do
         |> assign(:world_models_status, load_world_models_status(world_id))
         |> assign(:code_analysis_status, load_code_analysis_status())
         |> assign(:services_status, load_services_status())
+        |> assign(:epistemic_metrics, load_epistemic_metrics())
         |> assign(:last_updated, DateTime.utc_now())
 
       {:noreply, socket}
@@ -134,6 +136,7 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:world_models_status, load_world_models_status(world_id))
       |> assign(:code_analysis_status, load_code_analysis_status())
       |> assign(:services_status, load_services_status())
+      |> assign(:epistemic_metrics, load_epistemic_metrics())
       |> assign(:last_updated, DateTime.utc_now())
 
     {:noreply, socket}
@@ -217,6 +220,10 @@ defmodule ChatWeb.DashboardLive do
 
   defp load_services_status do
     SystemStatus.get_services_status()
+  end
+
+  defp load_epistemic_metrics do
+    Brain.Metrics.Aggregator.get_epistemic_metrics()
   end
 
   def category_label(:core) do
@@ -306,6 +313,19 @@ defmodule ChatWeb.DashboardLive do
   def category_icon(_) do
     "hero-cube"
   end
+
+  # Epistemic status helpers for dashboard display
+  def status_badge_class(:verified), do: "bg-success/20 text-success border border-success/30"
+  def status_badge_class(:contradicted), do: "bg-error/20 text-error border border-error/30"
+  def status_badge_class(:uncertain), do: "bg-warning/20 text-warning border border-warning/30"
+  def status_badge_class(:unchecked), do: "bg-base-300/50 text-base-content/60 border border-base-300"
+  def status_badge_class(_), do: "bg-base-300/50 text-base-content/60 border border-base-300"
+
+  def status_icon(:verified), do: "hero-check-circle"
+  def status_icon(:contradicted), do: "hero-x-circle"
+  def status_icon(:uncertain), do: "hero-question-mark-circle"
+  def status_icon(:unchecked), do: "hero-minus-circle"
+  def status_icon(_), do: "hero-minus-circle"
 
   def status_color(:ready) do
     "text-success"

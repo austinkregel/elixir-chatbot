@@ -1,12 +1,17 @@
 defmodule Brain.Knowledge.ResearchAgent do
   @moduledoc "Stateless worker module for fetching and analyzing web content.\n\nResearch agents:\n- Accept a research goal (topic/questions)\n- Fetch content from web sources\n- Extract factual claims using the Analysis Pipeline\n- Return structured findings with source metadata\n\nAgents are designed to be run as supervised Tasks through the\nLearning Center's AgentSupervisor.\n\n## Example\n\n    goal = ResearchGoal.new(\"France\", questions: [\"What is the capital?\"])\n    {:ok, findings} = ResearchAgent.research(goal)\n"
 
+  # Tasks.Source is in a sibling umbrella app that depends on :brain.
+  # It's available at runtime but not at compile time.
+  @compile {:no_warn_undefined, Tasks.Source}
+
   alias Brain.Knowledge.Academic
   alias Brain.Knowledge.Types
   alias Brain.Knowledge
   require Logger
 
   alias Brain.Analysis.Pipeline
+  alias Brain.Analysis.ComprehensionAssessor
   alias Knowledge.{HtmlProcessor, SourceReliability}
   alias Types.{Finding, SourceInfo, ResearchGoal}
   alias Brain.Telemetry
@@ -197,13 +202,8 @@ Answer: #{finding.claim}",
 
       Logger.debug("Fetched academic papers", query: query, paper_count: length(papers))
 
-      case PaperModelBuilder.ingest_papers(papers) do
-        {:ok, _node_ids} ->
-          Logger.debug("Ingested papers into epistemic model", count: length(papers))
-
-        {:error, reason} ->
-          Logger.warning("Failed to ingest papers", error: inspect(reason))
-      end
+      {:ok, _node_ids} = PaperModelBuilder.ingest_papers(papers)
+      Logger.debug("Ingested papers into epistemic model", count: length(papers))
 
       Enum.map(papers, &paper_to_raw_result/1)
     end)
@@ -348,10 +348,33 @@ Citations: #{paper.citation_count}"
     else
       case Pipeline.process(clean_content, skip_entity_extraction: false) do
         %{analyses: analyses} ->
-          analyses
-          |> Enum.filter(&is_factual_claim?/1)
-          |> Enum.map(&build_finding(&1, source, clean_content))
-          |> Enum.reject(&is_nil/1)
+          # Comprehension gate: assess whether we understand this text
+          {profile, analyses} = assess_comprehension(analyses)
+
+          if profile.learnable do
+            confidence_multiplier =
+              if profile.verdict == :partial, do: profile.composite_score, else: 1.0
+
+            analyses
+            |> Enum.filter(&is_factual_claim?/1)
+            |> Enum.map(
+              &build_finding(&1, source, clean_content,
+                comprehension_profile_id: profile.id,
+                confidence_multiplier: confidence_multiplier
+              )
+            )
+            |> Enum.reject(&is_nil/1)
+          else
+            gap_descriptions =
+              profile.gaps |> Enum.map(& &1.description) |> Enum.join("; ")
+
+            Logger.debug(
+              "Comprehension gate blocked content: verdict=#{profile.verdict}, gaps=[#{gap_descriptions}]",
+              url: source.url
+            )
+
+            []
+          end
 
         _ ->
           []
@@ -404,7 +427,7 @@ Citations: #{paper.citation_count}"
     end
   end
 
-  defp build_finding(analysis, source, raw_content) do
+  defp build_finding(analysis, source, raw_content, opts) do
     entities = Map.get(analysis, :entities, [])
 
     primary_entity =
@@ -417,13 +440,37 @@ Citations: #{paper.citation_count}"
       entity_value = Map.get(primary_entity, :value) || Map.get(primary_entity, "value")
       entity_type = Map.get(primary_entity, :entity_type) || Map.get(primary_entity, "type")
 
+      base_confidence = Map.get(analysis, :confidence, 0.5)
+      multiplier = Keyword.get(opts, :confidence_multiplier, 1.0)
+      profile_id = Keyword.get(opts, :comprehension_profile_id)
+
       Finding.new(claim, entity_value || "unknown", source,
         entity_type: entity_type,
         raw_context: extract_context(raw_content, claim),
-        confidence: Map.get(analysis, :confidence, 0.5)
+        confidence: base_confidence * multiplier,
+        comprehension_profile_id: profile_id
       )
     else
       nil
+    end
+  end
+
+  defp assess_comprehension(analyses) do
+    if ComprehensionAssessor.ready?() do
+      profile = ComprehensionAssessor.assess(analyses)
+      {profile, analyses}
+    else
+      # Fallback: pass everything through when assessor is unavailable
+      fallback_profile = %Brain.Analysis.ComprehensionAssessor.ComprehensionProfile{
+        id: "fallback",
+        composite_score: 1.0,
+        verdict: :comprehended,
+        learnable: true,
+        gaps: [],
+        dimensions: %{}
+      }
+
+      {fallback_profile, analyses}
     end
   end
 

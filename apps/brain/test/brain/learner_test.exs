@@ -35,16 +35,8 @@ defmodule Brain.LearnerDataTest do
       @description description
 
       test "#{description}" do
-        result = Learner.learn_from_input(@persona, @input)
-
-        case result do
-          {:ok, data} ->
-            assert is_map(data)
-
-          {:error, _reason} ->
-            # Errors acceptable for edge cases
-            assert true
-        end
+        {:ok, data} = Learner.learn_from_input(@persona, @input)
+        assert is_map(data)
       end
     end
   end
@@ -64,15 +56,7 @@ defmodule Brain.LearnerDataTest do
       @description description
 
       test "#{description}" do
-        result = Learner.learn_from_input(@persona, @input, @opts)
-
-        case result do
-          {:ok, _data} ->
-            assert true
-
-          {:error, _reason} ->
-            assert true
-        end
+        assert {:ok, _data} = Learner.learn_from_input(@persona, @input, @opts)
       end
     end
   end
@@ -95,15 +79,8 @@ defmodule Brain.LearnerDataTest do
       @description description
 
       test "#{description}" do
-        result = Learner.learn_from_classical_extraction(@persona, @entities, @input)
-
-        case result do
-          {:ok, data} ->
-            assert is_map(data)
-
-          {:error, _reason} ->
-            assert true
-        end
+        {:ok, data} = Learner.learn_from_classical_extraction(@persona, @entities, @input)
+        assert is_map(data)
       end
     end
   end

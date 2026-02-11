@@ -39,6 +39,7 @@ defmodule Brain.Telemetry do
 
   - `[:chat_bot, :epistemic, :jtms_justify, :start | :stop | :exception]` - JTMS justification operations
   - `[:chat_bot, :epistemic, :belief_operation, :start | :stop | :exception]` - BeliefStore operations
+  - `[:chat_bot, :epistemic, :fact_verification, :stop]` - Fact verification during analysis
 
   ## Analysis Events
 
@@ -99,6 +100,7 @@ defmodule Brain.Telemetry do
   # Epistemic System Events
   @jtms_justify [:chat_bot, :epistemic, :jtms_justify]
   @belief_operation [:chat_bot, :epistemic, :belief_operation]
+  @epistemic_fact_verification [:chat_bot, :epistemic, :fact_verification]
 
   # Analysis Events
   @racing_analysis [:chat_bot, :analysis, :racing]
@@ -210,6 +212,8 @@ defmodule Brain.Telemetry do
        &__MODULE__.handle_span_stop/4, %{metric: :belief_operation}},
       {"chatbot-belief-operation-exception", @belief_operation ++ [:exception],
        &__MODULE__.handle_span_exception/4, %{metric: :belief_operation}},
+      {"chatbot-fact-verification-stop", @epistemic_fact_verification ++ [:stop],
+       &__MODULE__.handle_fact_verification/4, %{}},
 
       # Racing Analyzer handlers
       {"chatbot-racing-analysis-stop", @racing_analysis ++ [:stop], &__MODULE__.handle_span_stop/4,
@@ -553,6 +557,27 @@ defmodule Brain.Telemetry do
   end
 
   @doc """
+  Emits a fact verification event from the epistemic system.
+
+  ## Parameters
+  - `status` - Verification status (:verified, :contradicted, :uncertain, :unchecked)
+  - `subject` - The subject being verified
+  - `duration_ms` - Verification duration in milliseconds
+  - `metadata` - Additional metadata (beliefs_count, verification_result)
+  """
+  def emit_fact_verification(status, subject, duration_ms, metadata \\ %{}) do
+    :telemetry.execute(
+      @epistemic_fact_verification ++ [:stop],
+      %{duration: duration_ms},
+      Map.merge(metadata, %{
+        status: status,
+        subject: subject,
+        timestamp: System.monotonic_time(:millisecond)
+      })
+    )
+  end
+
+  @doc """
   Emits a code file processed event.
   """
   def emit_code_file_processed(file_path, language, symbols_count, relations_count, duration_ms) do
@@ -760,7 +785,8 @@ defmodule Brain.Telemetry do
   @doc false
   def handle_service_dispatch(_event, measurements, metadata, _config) do
     if Process.whereis(Brain.Metrics.Aggregator) do
-      duration_ms = native_to_ms(measurements[:duration])
+      # Duration is already in milliseconds from emit_service_dispatch
+      duration_ms = measurements[:duration] || 0
 
       GenServer.cast(
         Brain.Metrics.Aggregator,
@@ -783,7 +809,8 @@ defmodule Brain.Telemetry do
   @doc false
   def handle_service_health_check(_event, measurements, metadata, _config) do
     if Process.whereis(Brain.Metrics.Aggregator) do
-      duration_ms = native_to_ms(measurements[:duration])
+      # Duration is already in milliseconds from the emit function
+      duration_ms = measurements[:duration] || 0
 
       GenServer.cast(
         Brain.Metrics.Aggregator,
@@ -799,6 +826,23 @@ defmodule Brain.Telemetry do
         Brain.Metrics.Aggregator,
         {:record_service_credential, metadata[:operation], metadata[:service],
          measurements[:count]}
+      )
+    end
+  end
+
+  # ============================================================================
+  # Epistemic System Handlers
+  # ============================================================================
+
+  @doc false
+  def handle_fact_verification(_event, measurements, metadata, _config) do
+    if Process.whereis(Brain.Metrics.Aggregator) do
+      duration_ms = measurements[:duration] || 0
+
+      GenServer.cast(
+        Brain.Metrics.Aggregator,
+        {:record_fact_verification, metadata[:status], metadata[:subject],
+         metadata[:beliefs_count] || 0, duration_ms}
       )
     end
   end

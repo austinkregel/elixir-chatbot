@@ -547,20 +547,20 @@ defmodule Brain.ML.LSTM.Trainer do
 
     grad_fn = fn enc_p ->
       Defn.value_and_grad(
+        intent_params,
         fn int_p ->
           Defn.value_and_grad(
+            ner_params,
             fn ner_p ->
               forward_fn.(enc_p, int_p, ner_p)
-            end,
-            ner_params
+            end
           )
-        end,
-        intent_params
+        end
       )
     end
 
     {{{loss, ner_grads}, int_grads}, enc_grads} =
-      Defn.value_and_grad(grad_fn, encoder_params).()
+      Defn.value_and_grad(encoder_params, grad_fn).()
 
     {loss, {enc_grads, int_grads, ner_grads}}
   end
@@ -1459,15 +1459,15 @@ defmodule Brain.ML.LSTM.Trainer do
       IntentHead.compute_loss(predictions, targets)
     end
 
-    {{loss, encoder_grads}, intent_grads} =
+    {{loss, intent_grads}, encoder_grads} =
       Defn.value_and_grad(
+        encoder_params,
         fn enc_p ->
           Defn.value_and_grad(
-            fn int_p -> grad_fn.(enc_p, int_p) end,
-            intent_params
+            intent_params,
+            fn int_p -> grad_fn.(enc_p, int_p) end
           )
-        end,
-        encoder_params
+        end
       ).()
 
     {loss, {encoder_grads, intent_grads}}

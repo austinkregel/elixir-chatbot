@@ -1,6 +1,10 @@
 defmodule Brain.Memory.Embedder do
   @moduledoc "Embedding utilities for the cognitive memory system.\n\nProduces TF-IDF based embeddings for text that can be used in\nsimilarity search. This replaces the byte frequency approach\nfrom the Rust implementation with a more semantically meaningful\nTF-IDF vectorization.\n\nThe embedder maintains a vocabulary and IDF weights that are\nbuilt from training data and used to consistently embed new text.\n\n## World Scoping\n\nThis module provides both global and world-scoped embedding:\n- `embed/1` - Uses the global/default vocabulary\n- `embed/2` - Uses world-specific vocabulary via WorldEmbedder\n\nWorld-specific embeddings are managed by `World.Embedder`\nand are built lazily from world-specific episodes.\n"
 
+  # World.Embedder is in a sibling umbrella app that depends on :brain.
+  # It's available at runtime but not at compile time.
+  @compile {:no_warn_undefined, World.Embedder}
+
   alias Phoenix.PubSub
   alias Brain.Telemetry
   use GenServer

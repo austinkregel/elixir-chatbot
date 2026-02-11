@@ -55,6 +55,100 @@ defmodule Brain.ML.SimpleClassifier do
     }
   end
 
+  @doc """
+  Incrementally updates a model with new training examples.
+
+  `new_examples` is a list of `{text, label}` tuples.
+  Updates vocabulary, IDF weights, and adjusts centroids without full retrain.
+
+  Returns `{updated_model, incremental_update_count}`.
+  """
+  def update_model(model, new_examples, incremental_count \\ 0) do
+    {texts, labels} = Enum.unzip(new_examples)
+
+    # Extend vocabulary with new words
+    all_words =
+      texts
+      |> Enum.flat_map(&Tokenizer.tokenize/1)
+      |> Enum.frequencies()
+      |> Enum.filter(fn {_word, count} -> count >= 1 end)
+
+    existing_vocab = model.vocabulary
+    max_index = if map_size(existing_vocab) > 0, do: Enum.max(Map.values(existing_vocab)), else: -1
+
+    new_words =
+      all_words
+      |> Enum.reject(fn {word, _} -> Map.has_key?(existing_vocab, word) end)
+
+    extended_vocab =
+      new_words
+      |> Enum.with_index(max_index + 1)
+      |> Enum.reduce(existing_vocab, fn {{word, _count}, idx}, acc ->
+        Map.put(acc, word, idx)
+      end)
+
+    # Update IDF weights (approximate with new docs)
+    num_new_docs = length(texts)
+    doc_word_sets = Enum.map(texts, fn text -> text |> Tokenizer.tokenize() |> MapSet.new() end)
+
+    new_idf =
+      extended_vocab
+      |> Map.keys()
+      |> Enum.reduce(model.idf_weights, fn word, idf_acc ->
+        new_doc_freq = Enum.count(doc_word_sets, &MapSet.member?(&1, word))
+
+        if new_doc_freq > 0 do
+          old_idf = Map.get(idf_acc, word, 0.0)
+          new_idf = :math.log(num_new_docs / max(new_doc_freq, 1))
+          # EMA blend of old and new IDF
+          blended = old_idf * 0.8 + new_idf * 0.2
+          Map.put(idf_acc, word, blended)
+        else
+          idf_acc
+        end
+      end)
+
+    # Adjust centroids with new examples
+    new_vectors =
+      texts
+      |> Enum.map(&vectorize(&1, extended_vocab, new_idf))
+      |> Enum.zip(labels)
+
+    updated_centroids =
+      Enum.reduce(new_vectors, model.label_centroids, fn {vec, label}, centroids ->
+        case Map.get(centroids, label) do
+          nil ->
+            Map.put(centroids, label, vec)
+
+          existing ->
+            # Running average: blend new vector with existing centroid
+            blended = blend_vectors(existing, vec, 0.9)
+            Map.put(centroids, label, blended)
+        end
+      end)
+
+    updated_model = %{
+      model
+      | vocabulary: extended_vocab,
+        idf_weights: new_idf,
+        label_centroids: updated_centroids
+    }
+
+    {updated_model, incremental_count + 1}
+  end
+
+  defp blend_vectors(v1, v2, alpha) when is_map(v1) and is_map(v2) do
+    all_keys = MapSet.union(MapSet.new(Map.keys(v1)), MapSet.new(Map.keys(v2)))
+
+    Map.new(all_keys, fn k ->
+      val1 = Map.get(v1, k, 0.0)
+      val2 = Map.get(v2, k, 0.0)
+      {k, val1 * alpha + val2 * (1.0 - alpha)}
+    end)
+  end
+
+  defp blend_vectors(v1, _v2, _alpha), do: v1
+
   def classify(text, model) do
     classify_with_details(text, model, top_k: 1)
   end

@@ -49,6 +49,7 @@ defmodule ChatWeb.ChatLive do
       |> assign(:selected_message_id, nil)
       |> assign(:world_models_loading, false)
       |> assign(:world_models_status, get_world_models_status(socket))
+      |> assign(:inspector_correction_form, nil)
 
     {:ok, socket}
   end
@@ -221,6 +222,88 @@ defmodule ChatWeb.ChatLive do
       {:noreply, socket}
     else
       {:noreply, socket}
+    end
+  end
+
+  # ---- Inspector belief actions ----
+
+  def handle_event("inspector_confirm_belief", %{"belief_id" => belief_id}, socket) do
+    alias Brain.Epistemic.BeliefStore
+
+    case BeliefStore.confirm_belief(belief_id) do
+      {:ok, _updated} ->
+        {:noreply, put_flash(socket, :info, "Belief confirmed")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to confirm: #{inspect(reason)}")}
+    end
+  end
+
+  def handle_event("inspector_retract_belief", %{"belief_id" => belief_id}, socket) do
+    alias Brain.Epistemic.BeliefStore
+
+    case BeliefStore.retract_belief(belief_id) do
+      :ok ->
+        {:noreply, put_flash(socket, :info, "Belief retracted")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to retract: #{inspect(reason)}")}
+    end
+  end
+
+  def handle_event("show_correction_form", _params, socket) do
+    form = %{"subject" => "self", "predicate" => "", "object" => "", "authority" => "mentor"}
+    {:noreply, assign(socket, :inspector_correction_form, form)}
+  end
+
+  def handle_event("cancel_correction_form", _params, socket) do
+    {:noreply, assign(socket, :inspector_correction_form, nil)}
+  end
+
+  def handle_event("submit_correction_belief", params, socket) do
+    alias Brain.Epistemic.BeliefStore
+
+    subject = (params["subject"] || "self") |> String.trim()
+    predicate = (params["predicate"] || "") |> String.trim()
+    object = (params["object"] || "") |> String.trim()
+    authority = (params["authority"] || "mentor") |> String.trim()
+
+    if predicate != "" and object != "" do
+      subject_atom =
+        case subject do
+          "user" -> :user
+          "world" -> :world
+          _ -> :self
+        end
+
+      predicate_atom =
+        try do
+          String.to_existing_atom(predicate)
+        rescue
+          _ -> String.to_atom(predicate)
+        end
+
+      authority_atom =
+        try do
+          String.to_existing_atom(authority)
+        rescue
+          _ -> String.to_atom(authority)
+        end
+
+      case BeliefStore.add_belief_with_authority(subject_atom, predicate_atom, object, authority_atom) do
+        {:ok, _id} ->
+          socket =
+            socket
+            |> assign(:inspector_correction_form, nil)
+            |> put_flash(:info, "Guided belief added (#{authority})")
+
+          {:noreply, socket}
+
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, "Failed: #{inspect(reason)}")}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Predicate and object are required")}
     end
   end
 
@@ -514,6 +597,251 @@ defmodule ChatWeb.ChatLive do
     "progress"
   end
 
+  @doc false
+  def stage_icon(step) do
+    case step do
+      :pipeline_start -> "▶"
+      :chunking_complete -> "✂"
+      :chunk_start -> "📦"
+      :discourse_complete -> "🗣"
+      :speech_act_complete -> "💬"
+      :sentiment_complete -> "😊"
+      :entities_extracted -> "🏷"
+      :events_extracted -> "📅"
+      :intent_determined -> "🎯"
+      :entities_filtered -> "🔍"
+      :fact_verification -> "✓"
+      :slots_detected -> "🧩"
+      :context_resolved -> "🔗"
+      :anaphora_resolved -> "↩"
+      :chunk_complete -> "✅"
+      :strategy_determined -> "📋"
+      :pipeline_complete -> "⏹"
+      :racing_complete -> "⚡"
+      :memory_query -> "🧠"
+      :response_generated -> "💭"
+      :followup_detected -> "↪"
+      :meta_cognitive_query -> "🪞"
+      :fast_path_used -> "⚡"
+      :fast_path_bypassed -> "⏭"
+      :fast_path_miss -> "⏭"
+      :response_gate_start -> "🚦"
+      :response_gate_complete -> "🚦"
+      :nlp_pipeline_start -> "⚙"
+      :nlp_pipeline_complete -> "⚙"
+      :learning_complete -> "📚"
+      _ -> "•"
+    end
+  end
+
+  @doc false
+  def stage_color(step) do
+    case step do
+      s when s in [:pipeline_start, :pipeline_complete] ->
+        "bg-primary/10"
+
+      s when s in [:chunk_start, :chunk_complete] ->
+        "bg-info/10"
+
+      s
+      when s in [
+             :discourse_complete,
+             :speech_act_complete,
+             :sentiment_complete,
+             :intent_determined
+           ] ->
+        "bg-base-200/50"
+
+      s when s in [:entities_extracted, :entities_filtered, :events_extracted] ->
+        "bg-success/5"
+
+      :fact_verification ->
+        "bg-violet-500/10"
+
+      s when s in [:slots_detected, :context_resolved, :anaphora_resolved] ->
+        "bg-warning/5"
+
+      s when s in [:strategy_determined, :response_gate_start, :response_gate_complete] ->
+        "bg-info/5"
+
+      s when s in [:racing_complete, :fast_path_used, :fast_path_bypassed, :fast_path_miss] ->
+        "bg-amber-500/10"
+
+      :memory_query ->
+        "bg-cyan-500/10"
+
+      :response_generated ->
+        "bg-success/10"
+
+      s when s in [:nlp_pipeline_start, :nlp_pipeline_complete] ->
+        "bg-indigo-500/5"
+
+      :learning_complete ->
+        "bg-purple-500/5"
+
+      s when s in [:followup_detected, :meta_cognitive_query] ->
+        "bg-orange-500/10"
+
+      _ ->
+        "bg-base-200/50"
+    end
+  end
+
+  @doc false
+  def stage_detail(step) when is_map(step) do
+    step_name = step[:step] || step["step"]
+
+    case step_name do
+      :pipeline_start ->
+        len = step[:text_length] || step["text_length"]
+        if len, do: "#{len} chars", else: ""
+
+      :chunking_complete ->
+        count = step[:chunk_count] || step["chunk_count"]
+        if count, do: "#{count} chunk(s)", else: ""
+
+      :chunk_start ->
+        text = step[:chunk_text] || step["chunk_text"]
+        if text, do: "\"#{String.slice(text, 0, 40)}#{if String.length(text || "") > 40, do: "…", else: ""}\"", else: ""
+
+      :discourse_complete ->
+        addr = step[:addressee] || step["addressee"]
+        conf = step[:confidence] || step["confidence"]
+        parts = []
+        parts = if addr, do: parts ++ ["→ #{addr}"], else: parts
+        parts = if is_number(conf), do: parts ++ ["#{Float.round(conf * 100, 1)}%"], else: parts
+        Enum.join(parts, " ")
+
+      :speech_act_complete ->
+        cat = step[:category] || step["category"]
+        sub = step[:sub_type] || step["sub_type"]
+        is_q = step[:is_question] || step["is_question"]
+
+        parts = []
+        parts = if cat, do: parts ++ ["#{cat}"], else: parts
+        parts = if sub, do: parts ++ ["/#{sub}"], else: parts
+        parts = if is_q, do: parts ++ ["(question)"], else: parts
+        Enum.join(parts, "")
+
+      :sentiment_complete ->
+        label = step[:label] || step["label"]
+        conf = step[:confidence] || step["confidence"]
+        parts = []
+        parts = if label, do: parts ++ ["#{label}"], else: parts
+        parts = if is_number(conf), do: parts ++ ["#{Float.round(conf * 100, 1)}%"], else: parts
+        Enum.join(parts, " ")
+
+      :entities_extracted ->
+        count = step[:entity_count] || step["entity_count"] || 0
+        "#{count} entity(ies)"
+
+      :events_extracted ->
+        count = step[:event_count] || step["event_count"] || 0
+        "#{count} event(s)"
+
+      :intent_determined ->
+        intent = step[:intent] || step["intent"]
+        method = step[:intent_method] || step["intent_method"]
+        conf = step[:intent_confidence] || step["intent_confidence"]
+        parts = []
+        parts = if intent, do: parts ++ ["#{intent}"], else: parts
+        parts = if method, do: parts ++ ["via #{method}"], else: parts
+        parts = if is_number(conf), do: parts ++ ["(#{Float.round(conf * 100, 1)}%)"], else: parts
+        Enum.join(parts, " ")
+
+      :entities_filtered ->
+        orig = step[:original_count] || step["original_count"] || 0
+        filt = step[:filtered_count] || step["filtered_count"] || 0
+        "#{orig} → #{filt}"
+
+      :fact_verification ->
+        status = step[:epistemic_status] || step["epistemic_status"]
+        belief_count = step[:related_beliefs_count] || step["related_beliefs_count"] || 0
+        parts = []
+        parts = if status, do: parts ++ ["#{status}"], else: parts
+        parts = if belief_count > 0, do: parts ++ ["#{belief_count} belief(s)"], else: parts
+        Enum.join(parts, ", ")
+
+      :slots_detected ->
+        filled = step[:filled_count] || step["filled_count"] || 0
+        missing = length(step[:missing_required] || step["missing_required"] || [])
+        "#{filled} filled, #{missing} missing"
+
+      :context_resolved ->
+        all_filled = step[:all_required_filled] || step["all_required_filled"]
+        if all_filled, do: "all required filled", else: "missing required slots"
+
+      :strategy_determined ->
+        strategy = step[:overall_strategy] || step["overall_strategy"]
+        if strategy, do: "#{step_label(strategy)}", else: ""
+
+      :pipeline_complete ->
+        elapsed = step[:elapsed_ms] || step["elapsed_ms"]
+        if elapsed, do: "#{elapsed}ms total", else: ""
+
+      :racing_complete ->
+        fast = step[:fast_path] || step["fast_path"]
+        elapsed = step[:elapsed_ms] || step["elapsed_ms"]
+        parts = []
+        parts = if fast, do: parts ++ ["fast path hit"], else: parts ++ ["no fast path"]
+        parts = if elapsed, do: parts ++ ["#{elapsed}ms"], else: parts
+        Enum.join(parts, ", ")
+
+      :memory_query ->
+        count = step[:match_count] || step["match_count"] || 0
+        sim = step[:top_similarity] || step["top_similarity"] || 0.0
+        sim_str = if is_number(sim), do: "#{Float.round(sim * 100, 1)}%", else: "-"
+        "#{count} match(es), top #{sim_str}"
+
+      :response_generated ->
+        type = step[:response_type] || step["response_type"]
+        strategy = step[:strategy] || step["strategy"]
+        parts = []
+        parts = if type, do: parts ++ ["#{type}"], else: parts
+        parts = if strategy, do: parts ++ ["(#{step_label(strategy)})"], else: parts
+        Enum.join(parts, " ")
+
+      :followup_detected ->
+        prev = step[:previous_intent] || step["previous_intent"]
+        if prev, do: "continuing #{prev}", else: ""
+
+      :fast_path_used ->
+        intent = step[:intent] || step["intent"]
+        source = step[:source] || step["source"]
+        parts = []
+        parts = if intent, do: parts ++ ["#{intent}"], else: parts
+        parts = if source, do: parts ++ ["via #{source}"], else: parts
+        Enum.join(parts, " ")
+
+      :fast_path_bypassed ->
+        reason = step[:reason] || step["reason"]
+        if reason, do: "#{reason}", else: "needs full analysis"
+
+      :fast_path_miss ->
+        "no heuristic match"
+
+      :response_gate_complete ->
+        decision = step[:decision] || step["decision"]
+        if decision, do: "#{decision}", else: ""
+
+      :nlp_pipeline_complete ->
+        method = step[:method] || step["method"]
+        intent = step[:final_intent] || step["final_intent"] || step[:nlp_intent] || step["nlp_intent"]
+        parts = []
+        parts = if method, do: parts ++ ["#{method}"], else: parts
+        parts = if intent, do: parts ++ ["→ #{intent}"], else: parts
+        Enum.join(parts, " ")
+
+      :learning_complete ->
+        "knowledge updated"
+
+      _ ->
+        ""
+    end
+  end
+
+  def stage_detail(_), do: ""
+
   def strategy_badge_variant(:can_respond) do
     :success
   end
@@ -632,6 +960,70 @@ defmodule ChatWeb.ChatLive do
             source: Map.get(payload, :source) || Map.get(payload, "source")
           })
 
+        :followup_detected ->
+          Map.put(details, :followup, %{
+            previous_intent:
+              Map.get(payload, :previous_intent) || Map.get(payload, "previous_intent"),
+            previous_entities:
+              Map.get(payload, :previous_entities) || Map.get(payload, "previous_entities") || 0
+          })
+
+        :meta_cognitive_query ->
+          Map.put(
+            details,
+            :meta_cognitive,
+            Map.get(payload, :query_type) || Map.get(payload, "query_type")
+          )
+
+        :fast_path_used ->
+          Map.put(details, :fast_path, %{
+            used: true,
+            intent: Map.get(payload, :intent) || Map.get(payload, "intent"),
+            source: Map.get(payload, :source) || Map.get(payload, "source"),
+            activation: Map.get(payload, :activation) || Map.get(payload, "activation"),
+            domain: Map.get(payload, :domain) || Map.get(payload, "domain")
+          })
+
+        :fast_path_bypassed ->
+          Map.put(details, :fast_path, %{
+            used: false,
+            bypassed: true,
+            intent: Map.get(payload, :intent) || Map.get(payload, "intent"),
+            domain: Map.get(payload, :domain) || Map.get(payload, "domain"),
+            reason: Map.get(payload, :reason) || Map.get(payload, "reason")
+          })
+
+        :fast_path_miss ->
+          Map.put(details, :fast_path, %{used: false, bypassed: false})
+
+        :response_gate_start ->
+          details
+
+        :response_gate_complete ->
+          Map.put(details, :response_gate, %{
+            decision: Map.get(payload, :decision) || Map.get(payload, "decision"),
+            confidence: Map.get(payload, :confidence) || Map.get(payload, "confidence"),
+            reason: Map.get(payload, :reason) || Map.get(payload, "reason")
+          })
+
+        :nlp_pipeline_start ->
+          details
+
+        :nlp_pipeline_complete ->
+          Map.put(details, :nlp_pipeline, %{
+            method: Map.get(payload, :method) || Map.get(payload, "method"),
+            reason: Map.get(payload, :reason) || Map.get(payload, "reason"),
+            nlp_confidence:
+              Map.get(payload, :nlp_confidence) || Map.get(payload, "nlp_confidence"),
+            nlp_intent: Map.get(payload, :nlp_intent) || Map.get(payload, "nlp_intent"),
+            final_intent: Map.get(payload, :final_intent) || Map.get(payload, "final_intent"),
+            entities_count:
+              Map.get(payload, :entities_count) || Map.get(payload, "entities_count") || 0
+          })
+
+        :learning_complete ->
+          details
+
         _ ->
           details
       end
@@ -725,6 +1117,39 @@ defmodule ChatWeb.ChatLive do
               filled_slots:
                 Map.get(payload, :filled_slots) || Map.get(payload, "filled_slots") || %{}
             })
+
+          :sentiment_complete ->
+            Map.put(chunk, :sentiment, %{
+              label: Map.get(payload, :label) || Map.get(payload, "label"),
+              confidence: Map.get(payload, :confidence) || Map.get(payload, "confidence")
+            })
+
+          :events_extracted ->
+            Map.put(chunk, :events, %{
+              event_count: Map.get(payload, :event_count) || Map.get(payload, "event_count") || 0,
+              events: Map.get(payload, :events) || Map.get(payload, "events") || []
+            })
+
+          :fact_verification ->
+            chunk
+            |> Map.put(
+              :epistemic_status,
+              Map.get(payload, :epistemic_status) || Map.get(payload, "epistemic_status")
+            )
+            |> Map.put(
+              :fact_verification,
+              Map.get(payload, :fact_verification) || Map.get(payload, "fact_verification")
+            )
+            |> Map.put(
+              :related_beliefs_count,
+              Map.get(payload, :related_beliefs_count) ||
+                Map.get(payload, "related_beliefs_count") || 0
+            )
+            |> Map.put(
+              :related_beliefs,
+              Map.get(payload, :related_beliefs) ||
+                Map.get(payload, "related_beliefs") || []
+            )
 
           :chunk_complete ->
             chunk
@@ -1307,4 +1732,62 @@ defmodule ChatWeb.ChatLive do
         []
     end
   end
+
+  # Epistemic status helpers for processing inspector
+  def epistemic_status_class(:verified), do: "text-success font-medium"
+  def epistemic_status_class(:contradicted), do: "text-error font-medium"
+  def epistemic_status_class(:uncertain), do: "text-warning font-medium"
+  def epistemic_status_class(:unchecked), do: "text-base-content/60"
+  def epistemic_status_class(_), do: "text-base-content/60"
+
+  def sentiment_label_class(:positive), do: "text-success font-medium"
+  def sentiment_label_class(:negative), do: "text-error font-medium"
+  def sentiment_label_class(:neutral), do: "text-base-content/70"
+  def sentiment_label_class("positive"), do: "text-success font-medium"
+  def sentiment_label_class("negative"), do: "text-error font-medium"
+  def sentiment_label_class("neutral"), do: "text-base-content/70"
+  def sentiment_label_class(_), do: "text-base-content/60"
+
+  def format_verification(nil), do: "-"
+  def format_verification({:verified, conf}) when is_number(conf), do: "Verified (#{Float.round(conf * 100, 1)}%)"
+  def format_verification({:contradicted, beliefs}) when is_list(beliefs), do: "Contradicted (#{length(beliefs)} conflicts)"
+  def format_verification({:uncertain, reason}), do: "Uncertain: #{reason}"
+  def format_verification(_), do: "-"
+
+  @doc false
+  def collect_all_beliefs(dev) when is_map(dev) do
+    chunks = Map.get(dev, :chunks, %{})
+
+    chunks
+    |> Enum.sort_by(fn {i, _} -> i end)
+    |> Enum.flat_map(fn {_idx, chunk} ->
+      status = chunk[:epistemic_status]
+      beliefs = chunk[:related_beliefs] || []
+      Enum.map(beliefs, fn b -> Map.put(b, :_chunk_status, status) end)
+    end)
+    |> Enum.uniq_by(fn b -> b[:id] || b end)
+  end
+
+  def collect_all_beliefs(_), do: []
+
+  @doc false
+  def collect_epistemic_statuses(dev) when is_map(dev) do
+    chunks = Map.get(dev, :chunks, %{})
+
+    chunks
+    |> Enum.map(fn {_idx, chunk} -> chunk[:epistemic_status] end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  def collect_epistemic_statuses(_), do: []
+
+  @doc false
+  def worst_epistemic_status(statuses) when is_list(statuses) do
+    priority = %{contradicted: 3, uncertain: 2, verified: 1, unchecked: 0}
+
+    statuses
+    |> Enum.max_by(fn s -> Map.get(priority, s, 0) end, fn -> :unchecked end)
+  end
+
+  def worst_epistemic_status(_), do: :unchecked
 end

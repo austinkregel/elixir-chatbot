@@ -83,7 +83,8 @@ defmodule Brain.Knowledge.Types do
             extracted_at: DateTime.t(),
             confidence: float(),
             corroboration_group: String.t() | nil,
-            embedding: [float()] | nil
+            embedding: [float()] | nil,
+            comprehension_profile_id: String.t() | nil
           }
 
     @enforce_keys [:id, :claim, :entity, :source]
@@ -95,6 +96,7 @@ defmodule Brain.Knowledge.Types do
       :source,
       :corroboration_group,
       :embedding,
+      :comprehension_profile_id,
       raw_context: "",
       extracted_at: nil,
       confidence: 0.5
@@ -112,7 +114,8 @@ defmodule Brain.Knowledge.Types do
         extracted_at: Keyword.get(opts, :extracted_at, DateTime.utc_now()),
         confidence: Keyword.get(opts, :confidence, 0.5),
         corroboration_group: Keyword.get(opts, :corroboration_group),
-        embedding: Keyword.get(opts, :embedding)
+        embedding: Keyword.get(opts, :embedding),
+        comprehension_profile_id: Keyword.get(opts, :comprehension_profile_id)
       }
     end
 

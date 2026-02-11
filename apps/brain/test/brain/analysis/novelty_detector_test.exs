@@ -25,7 +25,7 @@ defmodule Brain.Analysis.NoveltyDetectorTest do
   describe "is_substantive?/2" do
     test "returns true for directive speech acts" do
       speech_act = %{category: :directive, sub_type: :command}
-      assert NoveltyDetector.is_substantive?(speech_act, "device.control")
+      assert NoveltyDetector.is_substantive?(speech_act, "smarthome.device.switch.on")
     end
 
     test "returns true for assertive speech acts" do
@@ -35,7 +35,7 @@ defmodule Brain.Analysis.NoveltyDetectorTest do
 
     test "returns false for well-handled expressives" do
       speech_act = %{category: :expressive, sub_type: :greeting}
-      refute NoveltyDetector.is_substantive?(speech_act, "smalltalk.greeting")
+      refute NoveltyDetector.is_substantive?(speech_act, "smalltalk.greetings.hello")
     end
 
     test "returns true for other expressives" do

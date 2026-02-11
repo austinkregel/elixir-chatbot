@@ -130,7 +130,7 @@ defmodule Tasks.TransformerTest do
     test "transforms QA task into training samples and knowledge facts" do
       file_path = Path.join(@test_tasks_path, "task_test_qa.json")
 
-      {:ok, result} = Tasks.Transformer.transform_task(file_path, extract_entities: false)
+      {:ok, result} = Transformer.transform_task(file_path, extract_entities: false)
       assert length(result.training_samples) == 3
       sample = Enum.find(result.training_samples, &(&1.id == "test-qa-1"))
       assert sample.text == "Who wrote Romeo and Juliet?"
@@ -147,7 +147,7 @@ defmodule Tasks.TransformerTest do
     test "transforms sentiment task into training samples" do
       file_path = Path.join(@test_tasks_path, "task_test_sentiment.json")
 
-      {:ok, result} = Tasks.Transformer.transform_task(file_path, extract_entities: false)
+      {:ok, result} = Transformer.transform_task(file_path, extract_entities: false)
 
       assert length(result.training_samples) == 2
       positive_sample = Enum.find(result.training_samples, &(&1.text =~ "fantastic"))
@@ -161,7 +161,7 @@ defmodule Tasks.TransformerTest do
     test "transforms paraphrasing task into multiple samples" do
       file_path = Path.join(@test_tasks_path, "task_test_paraphrase.json")
 
-      {:ok, result} = Tasks.Transformer.transform_task(file_path, extract_entities: false)
+      {:ok, result} = Transformer.transform_task(file_path, extract_entities: false)
       assert length(result.training_samples) >= 2
       intents = Enum.map(result.training_samples, & &1.intent)
       assert "paraphrase.original" in intents
@@ -171,7 +171,7 @@ defmodule Tasks.TransformerTest do
     test "transforms commonsense task with explanations" do
       file_path = Path.join(@test_tasks_path, "task_test_commonsense.json")
 
-      {:ok, result} = Tasks.Transformer.transform_task(file_path, extract_entities: false)
+      {:ok, result} = Transformer.transform_task(file_path, extract_entities: false)
 
       assert length(result.training_samples) == 2
       sample = List.first(result.training_samples)
@@ -183,13 +183,13 @@ defmodule Tasks.TransformerTest do
       file_path = Path.join(@test_tasks_path, "task_test_qa.json")
 
       {:ok, result} =
-        Tasks.Transformer.transform_task(file_path, max_instances: 1, extract_entities: false)
+        Transformer.transform_task(file_path, max_instances: 1, extract_entities: false)
 
       assert length(result.training_samples) == 1
     end
 
     test "returns error for nonexistent file" do
-      {:error, reason} = Tasks.Transformer.transform_task("nonexistent.json")
+      {:error, reason} = Transformer.transform_task("nonexistent.json")
       assert reason == :parse_failed
     end
   end
@@ -197,7 +197,7 @@ defmodule Tasks.TransformerTest do
   describe "text_to_training_sample/4" do
     test "creates training sample with tokenization and POS tagging" do
       sample =
-        Tasks.Transformer.text_to_training_sample(
+        Transformer.text_to_training_sample(
           "What is the weather today?",
           "weather.query",
           "test-id-1",
@@ -215,7 +215,7 @@ defmodule Tasks.TransformerTest do
 
     test "includes metadata when provided" do
       sample =
-        Tasks.Transformer.text_to_training_sample(
+        Transformer.text_to_training_sample(
           "Hello world",
           "greeting",
           "test-id-2",
@@ -233,7 +233,7 @@ defmodule Tasks.TransformerTest do
         Path.join(@test_tasks_path, "task_test_sentiment.json")
       ]
 
-      {:ok, result} = Tasks.Transformer.transform_tasks(files, extract_entities: false)
+      {:ok, result} = Transformer.transform_tasks(files, extract_entities: false)
       assert length(result.training_samples) >= 5
     end
 
@@ -246,7 +246,7 @@ defmodule Tasks.TransformerTest do
       progress_reports = :ets.new(:progress, [:set, :public])
 
       {:ok, _result} =
-        Tasks.Transformer.transform_tasks(files,
+        Transformer.transform_tasks(files,
           extract_entities: false,
           progress_callback: fn progress ->
             :ets.insert(progress_reports, {progress.current, progress})
@@ -271,7 +271,7 @@ defmodule Tasks.TransformerTest do
 
       metadata = %{task_id: "test_qa", categories: ["Question Answering"]}
 
-      result = Tasks.Transformer.convert_qa(instances, metadata, "", extract_entities: false)
+      result = Transformer.convert_qa(instances, metadata, "", extract_entities: false)
 
       assert length(result.training_samples) == 1
       assert length(result.knowledge_facts) == 1
@@ -294,7 +294,7 @@ defmodule Tasks.TransformerTest do
       metadata = %{task_id: "test_sent", categories: ["Sentiment Analysis"]}
 
       result =
-        Tasks.Transformer.convert_sentiment(instances, metadata, "", extract_entities: false)
+        Transformer.convert_sentiment(instances, metadata, "", extract_entities: false)
 
       assert length(result.training_samples) == 3
 
@@ -317,7 +317,7 @@ defmodule Tasks.TransformerTest do
       metadata = %{task_id: "test_cs", categories: ["Commonsense Classification"]}
 
       result =
-        Tasks.Transformer.convert_commonsense(instances, metadata, "", extract_entities: false)
+        Transformer.convert_commonsense(instances, metadata, "", extract_entities: false)
 
       assert length(result.training_samples) == 1
       assert length(result.knowledge_facts) == 1

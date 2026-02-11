@@ -1,6 +1,10 @@
 defmodule Brain.Memory.Store do
   @moduledoc "Storage layer for the cognitive memory system.\n\nPorted from the Rust cognitive_memory_system MemoryStore.\n\nManages collections of episodic and semantic memories with separate\nvector indices for efficient retrieval. Supports persistence to disk.\n\n## World Scoping\n\nAll operations support an optional `world_id` parameter for data isolation.\nIf not specified, operations use the \"default\" world.\n\nEpisodes and semantic facts are stored per-world, allowing complete\nisolation between training worlds while sharing the same GenServer.\n"
 
+  # World.Embedder is in a sibling umbrella app that depends on :brain.
+  # It's available at runtime but not at compile time.
+  @compile {:no_warn_undefined, World.Embedder}
+
   alias Brain.Telemetry
   alias Brain.Memory
   alias Brain.Memory.Types

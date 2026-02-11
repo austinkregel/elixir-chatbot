@@ -142,7 +142,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
   setup_all do
     Application.ensure_all_started(:brain)
-    :timer.sleep(500)
+    Brain.TestHelpers.require_services!(:brain)
     :ok
   end
 

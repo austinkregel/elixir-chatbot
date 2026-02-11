@@ -591,6 +591,29 @@
               </button>
             </div>
           </div>
+
+          <div class="px-2 pb-2">
+            <div class="text-[10px] uppercase tracking-wider text-base-content/40 mb-1 px-1">
+              Epistemic
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <button
+                phx-click="set_dev_tab"
+                phx-value-message_id={@selected_message_id}
+                phx-value-tab="beliefs"
+                class={[
+                  "px-2 py-1 text-xs rounded transition-colors",
+                  if(active_tab == "beliefs",
+                    do: "bg-primary text-primary-content",
+                    else: "bg-base-200 hover:bg-base-300 text-base-content/70"
+                  )
+                ]}
+                title="Beliefs checked during fact verification"
+              >
+                <.icon name="hero-eye" class="size-3 inline mr-1" />Beliefs
+              </button>
+            </div>
+          </div>
         </div>
         
 <!-- Tab Content -->
@@ -598,24 +621,42 @@
           <%= if active_tab == "stages" do %>
             <div class="space-y-2">
               <div class="flex items-center justify-between text-xs text-base-content/60 mb-3">
-                <span>Processing stages</span>
+                <span>Processing stages ({length(analysis_steps)} steps)</span>
                 <%= if dev[:elapsed_ms] do %>
                   <.badge variant={:info}>{dev.elapsed_ms}ms</.badge>
                 <% end %>
               </div>
 
-              <div class="space-y-1 max-h-96 overflow-y-auto">
+              <div class="space-y-1 max-h-[600px] overflow-y-auto">
                 <%= for step <- analysis_steps do %>
-                  <div class="flex items-center justify-between gap-3 py-1.5 px-2 rounded bg-base-200/50 text-xs">
-                    <span class="text-base-content/80 capitalize">
-                      {step_label(step.step)}
-                    </span>
-                    <div class="flex items-center gap-2 text-base-content/50">
-                      <%= if step[:chunk_index] != nil do %>
-                        <span>chunk {step.chunk_index + 1}</span>
-                      <% end %>
-                      <%= if dev[:started_at] && step[:timestamp] do %>
-                        <span>+{step.timestamp - dev.started_at}ms</span>
+                  <% step_name = step[:step] || step["step"]
+                  step_icon = stage_icon(step_name)
+                  step_color = stage_color(step_name)
+                  step_detail = stage_detail(step) %>
+                  <div class={["flex items-start gap-2 py-1.5 px-2 rounded text-xs", step_color]}>
+                    <span class="shrink-0 mt-0.5">{step_icon}</span>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center justify-between gap-2">
+                        <span class="text-base-content/80 font-medium capitalize truncate">
+                          {step_label(step_name)}
+                        </span>
+                        <div class="flex items-center gap-2 text-base-content/50 shrink-0">
+                          <%= if step[:chunk_index] != nil do %>
+                            <span class="px-1 py-0.5 bg-base-300/50 rounded text-[10px]">
+                              C{step.chunk_index + 1}
+                            </span>
+                          <% end %>
+                          <%= if dev[:started_at] && step[:timestamp] do %>
+                            <span class="text-[10px] font-mono">
+                              +{step.timestamp - dev.started_at}ms
+                            </span>
+                          <% end %>
+                        </div>
+                      </div>
+                      <%= if step_detail != "" do %>
+                        <div class="text-[10px] text-base-content/50 mt-0.5 truncate">
+                          {step_detail}
+                        </div>
                       <% end %>
                     </div>
                   </div>
@@ -688,6 +729,77 @@
                           <span>{get_in(chunk, [:speech_act, :is_question]) || "false"}</span>
                           <span class="text-base-content/60">Confidence:</span>
                           <span>{get_in(chunk, [:speech_act, :confidence]) || "-"}</span>
+                        </div>
+                      </div>
+
+<!-- Sentiment Analysis -->
+                      <div class="p-2 bg-base-200/50 rounded">
+                        <div class="font-medium text-base-content mb-1">Sentiment</div>
+                        <div class="grid grid-cols-2 gap-1">
+                          <span class="text-base-content/60">Label:</span>
+                          <span class={sentiment_label_class(get_in(chunk, [:sentiment, :label]))}>
+                            {get_in(chunk, [:sentiment, :label]) || "-"}
+                          </span>
+                          <span class="text-base-content/60">Confidence:</span>
+                          <span>{get_in(chunk, [:sentiment, :confidence]) || "-"}</span>
+                        </div>
+                      </div>
+
+<!-- Events -->
+                      <% events_data = chunk[:events] || %{} %>
+                      <div class="p-2 bg-base-200/50 rounded">
+                        <div class="font-medium text-base-content mb-1 flex items-center justify-between">
+                          <span>Events</span>
+                          <span class="text-base-content/50 font-normal">
+                            {events_data[:event_count] || 0} found
+                          </span>
+                        </div>
+                        <%= if length(events_data[:events] || []) > 0 do %>
+                          <div class="space-y-1 mt-1">
+                            <%= for event <- (events_data[:events] || []) do %>
+                              <div class="p-1.5 bg-base-300/50 rounded text-[11px]">
+                                <div class="flex items-center justify-between">
+                                  <span class="font-mono text-primary">
+                                    {event[:type] || event["type"] || "unknown"}
+                                  </span>
+                                  <%= if event[:confidence] || event["confidence"] do %>
+                                    <span class="text-base-content/50">
+                                      {Float.round(
+                                        (event[:confidence] || event["confidence"]) * 100,
+                                        1
+                                      )}%
+                                    </span>
+                                  <% end %>
+                                </div>
+                                <%= if event[:action] || event["action"] do %>
+                                  <div class="text-base-content/60 mt-0.5">
+                                    {event[:action] || event["action"]}
+                                  </div>
+                                <% end %>
+                              </div>
+                            <% end %>
+                          </div>
+                        <% else %>
+                          <div class="text-base-content/40 italic text-[11px]">
+                            No events detected
+                          </div>
+                        <% end %>
+                      </div>
+                      
+<!-- Epistemic Context -->
+                      <div class="p-2 bg-violet-500/10 rounded border border-violet-500/20">
+                        <div class="font-medium text-base-content mb-1 flex items-center gap-1">
+                          <span class="text-violet-500">●</span> Epistemic Context
+                        </div>
+                        <div class="grid grid-cols-2 gap-1">
+                          <span class="text-base-content/60">Status:</span>
+                          <span class={epistemic_status_class(chunk[:epistemic_status])}>
+                            {chunk[:epistemic_status] || "unchecked"}
+                          </span>
+                          <span class="text-base-content/60">Verification:</span>
+                          <span class="text-xs">{format_verification(chunk[:fact_verification])}</span>
+                          <span class="text-base-content/60">Related beliefs:</span>
+                          <span>{length(chunk[:related_beliefs] || [])} beliefs</span>
                         </div>
                       </div>
                       
@@ -1444,6 +1556,270 @@
                   <pre class="text-[10px] font-mono bg-base-200 p-3 rounded overflow-x-auto whitespace-pre-wrap break-all text-base-content/80">{inspect(analysis_steps, pretty: true, limit: :infinity, width: 60)}</pre>
                 </.card_body>
               </.card>
+            </div>
+          <% end %>
+
+          <%= if active_tab == "beliefs" do %>
+            <% all_beliefs = collect_all_beliefs(dev)
+            all_statuses = collect_epistemic_statuses(dev)
+            worst_status = worst_epistemic_status(all_statuses)
+            contradiction_count = Enum.count(all_statuses, & &1 == :contradicted)
+            verified_count = Enum.count(all_statuses, & &1 == :verified)
+            uncertain_count = Enum.count(all_statuses, & &1 == :uncertain) %>
+            <div class="space-y-3 max-h-[600px] overflow-y-auto">
+              <!-- Epistemic Summary -->
+              <.card>
+                <.card_body class="p-3">
+                  <div class="text-xs font-semibold text-base-content mb-2">
+                    Epistemic Summary
+                  </div>
+                  <div class="text-xs text-base-content/70 space-y-2">
+                    <div class="flex justify-between items-center">
+                      <span class="font-medium">Overall Status:</span>
+                      <span class={epistemic_status_class(worst_status)}>
+                        {worst_status || "unchecked"}
+                      </span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="font-medium">Beliefs Checked:</span>
+                      <span>{length(all_beliefs)}</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 pt-1">
+                      <div class="text-center p-1.5 bg-success/10 rounded">
+                        <div class="text-success font-bold">{verified_count}</div>
+                        <div class="text-[10px] text-base-content/50">Verified</div>
+                      </div>
+                      <div class="text-center p-1.5 bg-error/10 rounded">
+                        <div class="text-error font-bold">{contradiction_count}</div>
+                        <div class="text-[10px] text-base-content/50">Contradicted</div>
+                      </div>
+                      <div class="text-center p-1.5 bg-warning/10 rounded">
+                        <div class="text-warning font-bold">{uncertain_count}</div>
+                        <div class="text-[10px] text-base-content/50">Uncertain</div>
+                      </div>
+                    </div>
+                  </div>
+                </.card_body>
+              </.card>
+
+              <!-- Related Beliefs -->
+              <%= if length(all_beliefs) > 0 do %>
+                <.card>
+                  <.card_body class="p-3">
+                    <div class="text-xs font-semibold text-base-content mb-2">
+                      Related Beliefs
+                    </div>
+                    <div class="space-y-2">
+                      <%= for belief <- all_beliefs do %>
+                        <% b_conf = belief[:confidence] || 0.0
+                        b_source = belief[:source]
+                        b_status = belief[:_chunk_status] %>
+                        <div class={[
+                          "p-2.5 rounded border text-xs",
+                          case b_status do
+                            :contradicted -> "bg-error/5 border-error/20"
+                            :verified -> "bg-success/5 border-success/20"
+                            :uncertain -> "bg-warning/5 border-warning/20"
+                            _ -> "bg-base-200/50 border-base-300"
+                          end
+                        ]}>
+                          <!-- Subject / Predicate / Object -->
+                          <div class="flex items-center gap-1.5 mb-1.5">
+                            <span class="font-mono text-primary font-medium">
+                              {belief[:subject]}
+                            </span>
+                            <span class="text-base-content/40">/</span>
+                            <span class="font-mono text-base-content/70">
+                              {belief[:predicate]}
+                            </span>
+                            <span class="text-base-content/40">/</span>
+                            <span class="font-mono font-medium">
+                              {belief[:object]}
+                            </span>
+                          </div>
+
+                          <!-- Confidence bar -->
+                          <div class="flex items-center gap-2 mb-1.5">
+                            <span class="text-base-content/50 w-16 shrink-0">Confidence:</span>
+                            <div class="flex-1 bg-base-300 rounded-full h-1.5">
+                              <div
+                                class={[
+                                  "h-1.5 rounded-full",
+                                  cond do
+                                    b_conf >= 0.8 -> "bg-success"
+                                    b_conf >= 0.5 -> "bg-warning"
+                                    true -> "bg-error"
+                                  end
+                                ]}
+                                style={"width: #{Float.round(b_conf * 100, 1)}%"}
+                              >
+                              </div>
+                            </div>
+                            <span class="font-mono text-[10px] w-10 text-right">
+                              {Float.round(b_conf * 100, 1)}%
+                            </span>
+                          </div>
+
+                          <!-- Source + Authority + JTMS badges + Actions -->
+                          <div class="flex items-center gap-2">
+                            <%= if belief[:source_authority] do %>
+                              <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-secondary/20 text-secondary">
+                                {belief[:source_authority]}
+                              </span>
+                            <% end %>
+                            <%= if b_source do %>
+                              <span class={[
+                                "px-1.5 py-0.5 rounded text-[10px] font-medium",
+                                case b_source do
+                                  :explicit -> "bg-primary/20 text-primary"
+                                  :learned -> "bg-info/20 text-info"
+                                  :inferred -> "bg-warning/20 text-warning"
+                                  :assumed -> "bg-base-300 text-base-content/60"
+                                  _ -> "bg-base-300 text-base-content/60"
+                                end
+                              ]}>
+                                {b_source}
+                              </span>
+                            <% end %>
+                            <%= if belief[:node_id] do %>
+                              <span class="px-1.5 py-0.5 rounded text-[10px] bg-violet-500/20 text-violet-400">
+                                JTMS
+                              </span>
+                            <% end %>
+                            <%= if b_status == :contradicted do %>
+                              <span class="text-[10px] text-error font-medium">
+                                CONTRADICTED
+                              </span>
+                            <% end %>
+
+                            <!-- Inline action buttons -->
+                            <%= if belief[:id] do %>
+                              <div class="flex items-center gap-1 ml-auto">
+                                <button
+                                  phx-click="inspector_confirm_belief"
+                                  phx-value-belief_id={belief[:id]}
+                                  class="btn btn-xs btn-ghost btn-square text-success"
+                                  title="Confirm belief (+10% confidence)"
+                                >
+                                  <.icon name="hero-check-circle" class="size-3.5" />
+                                </button>
+                                <button
+                                  phx-click="inspector_retract_belief"
+                                  phx-value-belief_id={belief[:id]}
+                                  data-confirm="Retract this belief?"
+                                  class="btn btn-xs btn-ghost btn-square text-error"
+                                  title="Retract belief"
+                                >
+                                  <.icon name="hero-x-circle" class="size-3.5" />
+                                </button>
+                              </div>
+                            <% end %>
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
+
+                    <!-- "Add guided belief" mini-form -->
+                    <div class="mt-3 pt-3 border-t border-base-300/50">
+                      <%= if @inspector_correction_form do %>
+                        <form phx-submit="submit_correction_belief" class="space-y-2">
+                          <div class="flex items-center gap-2 mb-1">
+                            <.icon name="hero-light-bulb" class="size-4 text-primary" />
+                            <span class="text-[10px] font-semibold">Add Guided Belief</span>
+                          </div>
+                          <div class="grid grid-cols-3 gap-2">
+                            <select name="subject" class="select select-bordered select-xs w-full">
+                              <option value="self" selected={@inspector_correction_form["subject"] == "self"}>self</option>
+                              <option value="user" selected={@inspector_correction_form["subject"] == "user"}>user</option>
+                              <option value="world" selected={@inspector_correction_form["subject"] == "world"}>world</option>
+                            </select>
+                            <input
+                              type="text"
+                              name="predicate"
+                              value={@inspector_correction_form["predicate"]}
+                              placeholder="predicate"
+                              class="input input-bordered input-xs w-full"
+                              required
+                            />
+                            <input
+                              type="text"
+                              name="object"
+                              value={@inspector_correction_form["object"]}
+                              placeholder="value"
+                              class="input input-bordered input-xs w-full"
+                              required
+                            />
+                          </div>
+                          <div class="flex items-center gap-2">
+                            <select name="authority" class="select select-bordered select-xs flex-1">
+                              <option value="mentor" selected={@inspector_correction_form["authority"] == "mentor"}>Mentor</option>
+                              <option value="academic_expert" selected={@inspector_correction_form["authority"] == "academic_expert"}>Academic Expert</option>
+                              <option value="industry_expert" selected={@inspector_correction_form["authority"] == "industry_expert"}>Industry Expert</option>
+                              <option value="friend" selected={@inspector_correction_form["authority"] == "friend"}>Friend</option>
+                              <option value="hobbyist" selected={@inspector_correction_form["authority"] == "hobbyist"}>Hobbyist</option>
+                              <option value="student" selected={@inspector_correction_form["authority"] == "student"}>Student</option>
+                              <option value="acquaintance" selected={@inspector_correction_form["authority"] == "acquaintance"}>Acquaintance</option>
+                              <option value="stranger" selected={@inspector_correction_form["authority"] == "stranger"}>Stranger</option>
+                            </select>
+                            <div class="flex gap-1">
+                              <button type="button" phx-click="cancel_correction_form" class="btn btn-ghost btn-xs">Cancel</button>
+                              <button type="submit" class="btn btn-primary btn-xs">Add</button>
+                            </div>
+                          </div>
+                        </form>
+                      <% else %>
+                        <button phx-click="show_correction_form" class="btn btn-ghost btn-xs gap-1 w-full">
+                          <.icon name="hero-plus" class="size-3" />
+                          <span class="text-[10px]">Add guided belief</span>
+                        </button>
+                      <% end %>
+                    </div>
+                  </.card_body>
+                </.card>
+              <% else %>
+                <div class="text-center text-base-content/50 py-6">
+                  <.icon name="hero-eye-slash" class="size-8 mx-auto mb-2 opacity-50" />
+                  <p class="text-xs">No beliefs were checked for this message</p>
+                  <p class="text-[10px] text-base-content/40 mt-1">
+                    Beliefs are checked for assertive statements about verifiable facts
+                  </p>
+                </div>
+              <% end %>
+
+              <!-- Per-Chunk Breakdown -->
+              <% chunks_with_beliefs = Enum.filter(
+                Enum.sort_by(Map.get(dev, :chunks, %{}), fn {i, _} -> i end),
+                fn {_, chunk} -> length(chunk[:related_beliefs] || []) > 0 end
+              ) %>
+              <%= if length(chunks_with_beliefs) > 0 do %>
+                <.card>
+                  <.card_body class="p-3">
+                    <div class="text-xs font-semibold text-base-content mb-2">
+                      Per-Chunk Verification
+                    </div>
+                    <div class="space-y-2">
+                      <%= for {idx, chunk} <- chunks_with_beliefs do %>
+                        <div class="p-2 bg-base-200/50 rounded">
+                          <div class="flex items-center justify-between mb-1">
+                            <span class="font-medium text-xs">Chunk {idx + 1}</span>
+                            <span class={epistemic_status_class(chunk[:epistemic_status])}>
+                              {chunk[:epistemic_status] || "unchecked"}
+                            </span>
+                          </div>
+                          <%= if chunk[:chunk_text] do %>
+                            <div class="text-[10px] text-base-content/50 mb-1.5 truncate">
+                              "{chunk.chunk_text}"
+                            </div>
+                          <% end %>
+                          <div class="text-[10px] text-base-content/60">
+                            {length(chunk[:related_beliefs] || [])} belief(s) checked
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
+                  </.card_body>
+                </.card>
+              <% end %>
             </div>
           <% end %>
         </div>

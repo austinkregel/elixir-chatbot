@@ -197,24 +197,31 @@ defmodule Brain.Analysis.EventExtractorGPUTest do
       results = Map.put(results, :binary, binary_time / 5)
 
       # Test with EXLA if available
-      try do
-        Nx.default_backend(EXLA.Backend)
+      exla_result =
+        try do
+          Nx.default_backend(EXLA.Backend)
 
-        # Warm up (JIT)
-        _ = EventExtractor.find_verb_positions(input)
+          # Warm up (JIT)
+          _ = EventExtractor.find_verb_positions(input)
 
-        {exla_time, _} = :timer.tc(fn ->
-          for _ <- 1..5 do
-            EventExtractor.find_verb_positions(input)
-          end
-        end)
+          {exla_time, _} = :timer.tc(fn ->
+            for _ <- 1..5 do
+              EventExtractor.find_verb_positions(input)
+            end
+          end)
 
-        results = Map.put(results, :exla, exla_time / 5)
-      rescue
-        _ ->
-          IO.puts("\nEXLA backend not available, skipping comparison")
-          results = Map.put(results, :exla, nil)
-      end
+          {:ok, exla_time / 5}
+        rescue
+          _ ->
+            IO.puts("\nEXLA backend not available, skipping comparison")
+            {:error, :unavailable}
+        end
+
+      results =
+        case exla_result do
+          {:ok, timing} -> Map.put(results, :exla, timing)
+          {:error, _} -> Map.put(results, :exla, nil)
+        end
 
       # Restore original backend
       Nx.default_backend(original_backend)
@@ -229,8 +236,8 @@ defmodule Brain.Analysis.EventExtractorGPUTest do
         IO.puts("Speedup: #{Float.round(speedup, 2)}x")
 
         # EXLA should be faster or at least not slower for large inputs
-        assert speedup >= @min_speedup_small,
-               "EXLA slower than BinaryBackend: #{speedup}x"
+        assert speedup >= @min_speedup_large,
+               "EXLA slower than BinaryBackend: #{speedup}x (expected >= #{@min_speedup_large}x)"
       end
     end
   end

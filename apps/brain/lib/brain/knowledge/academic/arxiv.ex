@@ -191,6 +191,16 @@ defmodule Brain.Knowledge.Academic.Arxiv do
     end
   end
 
+  defp parse_atom_feed(xml_body) when is_list(xml_body) do
+    # Handle charlist input
+    parse_atom_feed(List.to_string(xml_body))
+  end
+
+  defp parse_atom_feed(_other) do
+    # Unknown format - return empty
+    []
+  end
+
   defp parse_entry(entry) do
     id = get_text(entry, ~c"./id/text()")
     arxiv_id = extract_arxiv_id(id)
@@ -246,7 +256,16 @@ defmodule Brain.Knowledge.Academic.Arxiv do
     %{id: nil, name: name}
   end
 
-  defp get_text(node, xpath) do
+  defp get_text(node, xpath) when is_list(xpath) do
+    # xpath is already a charlist
+    case :xmerl_xpath.string(xpath, node) do
+      [text_node | _] -> extract_text_value(text_node)
+      [] -> nil
+    end
+  end
+
+  defp get_text(node, xpath) when is_binary(xpath) do
+    # Convert string to charlist for xmerl
     case :xmerl_xpath.string(String.to_charlist(xpath), node) do
       [text_node | _] -> extract_text_value(text_node)
       [] -> nil

@@ -85,13 +85,26 @@ defmodule Brain.Response.Synthesizer do
     domain = IntentRegistry.domain(intent) || infer_domain(intent)
     confidence = Keyword.get(opts, :confidence, 0.7)
     similar_episodes = Keyword.get(opts, :similar_episodes, [])
+    context = Keyword.get(opts, :context, %{})
 
-    case adapt_from_episodes(similar_episodes, entities) do
+    # Check epistemic context FIRST — contradictions and uncertainty should
+    # take priority over memory-based or domain-based responses. This ensures
+    # contradictions are surfaced even when the intent has no domain mapping
+    # or when memory episodes would otherwise short-circuit the pipeline.
+    epistemic_context = Map.get(context, :epistemic_context, %{})
+
+    case handle_epistemic_context(epistemic_context, entities, confidence) do
       {:ok, response} ->
         {:ok, response}
 
-      :no_adaptation ->
-        synthesize_from_domain(domain, intent, entities, confidence, opts)
+      :continue ->
+        case adapt_from_episodes(similar_episodes, entities) do
+          {:ok, response} ->
+            {:ok, response}
+
+          :no_adaptation ->
+            synthesize_from_domain(domain, intent, entities, confidence, opts)
+        end
     end
   end
 
@@ -107,29 +120,38 @@ defmodule Brain.Response.Synthesizer do
     domain_config = Map.get(@domain_knowledge, domain_str, %{})
     context = Keyword.get(opts, :context, %{})
 
-    if map_size(domain_config) == 0 do
-      :not_synthesized
-    else
-      # Check if we have enriched data - if so, prefer enriched templates
-      case try_enriched_response(domain_config, entities, context, confidence) do
-        {:ok, response} ->
-          {:ok, response}
+    # Check for epistemic contradictions before normal synthesis
+    epistemic_context = Map.get(context, :epistemic_context, %{})
 
-        :not_enriched ->
-          # Fall back to standard response frames
-          frame_key = determine_frame_key(domain_config, entities)
-          frames = get_in(domain_config, ["response_frames", frame_key]) || []
+    case handle_epistemic_context(epistemic_context, entities, confidence) do
+      {:ok, response} ->
+        {:ok, response}
 
-          if frames == [] do
-            :not_synthesized
-          else
-            frame = Enum.random(frames)
-            filled_response = fill_entity_slots(frame, entities)
-            final_response = maybe_add_acknowledgment(filled_response, confidence, domain_config)
+      :continue ->
+        if map_size(domain_config) == 0 do
+          :not_synthesized
+        else
+          # Check if we have enriched data - if so, prefer enriched templates
+          case try_enriched_response(domain_config, entities, context, confidence) do
+            {:ok, response} ->
+              {:ok, response}
 
-            {:ok, final_response}
+            :not_enriched ->
+              # Fall back to standard response frames
+              frame_key = determine_frame_key(domain_config, entities)
+              frames = get_in(domain_config, ["response_frames", frame_key]) || []
+
+              if frames == [] do
+                :not_synthesized
+              else
+                frame = Enum.random(frames)
+                filled_response = fill_entity_slots(frame, entities)
+                final_response = maybe_add_acknowledgment(filled_response, confidence, domain_config)
+
+                {:ok, final_response}
+              end
           end
-      end
+        end
     end
   end
 
@@ -755,4 +777,63 @@ defmodule Brain.Response.Synthesizer do
 
     "#{main}. #{closing}"
   end
+
+  # ============================================================================
+  # Epistemic Context Handling
+  # ============================================================================
+
+  # Handles epistemic context to generate appropriate responses for
+  # contradicted or uncertain claims.
+  # Returns: {:ok, response} or :continue
+  defp handle_epistemic_context(%{status: :contradicted} = context, _entities, _confidence) do
+    beliefs = Map.get(context, :beliefs, [])
+    synthesize_contradiction_response(beliefs)
+  end
+
+  defp handle_epistemic_context(%{status: :uncertain}, _entities, confidence) when confidence < 0.6 do
+    synthesize_uncertain_response()
+  end
+
+  defp handle_epistemic_context(_, _, _) do
+    :continue
+  end
+
+  defp synthesize_contradiction_response([belief | _rest]) do
+    # Extract the stored belief to contrast with the claim
+    stored_object = get_belief_object(belief)
+
+    responses = [
+      "That's interesting - I have #{stored_object} recorded. Did something change?",
+      "Hmm, that doesn't match what I know. I thought it was #{stored_object}.",
+      "That's different from what I have on record (#{stored_object}). Could you tell me more?",
+      "That's surprising - my records show #{stored_object}. Has that changed?"
+    ]
+
+    {:ok, Enum.random(responses)}
+  end
+
+  defp synthesize_contradiction_response([]) do
+    responses = [
+      "That's an unusual observation. Could you tell me more?",
+      "That's interesting. I hadn't heard that before.",
+      "I'm not sure about that. Can you help me understand?"
+    ]
+
+    {:ok, Enum.random(responses)}
+  end
+
+  defp synthesize_uncertain_response do
+    responses = [
+      "I'm not entirely sure what you mean. Could you clarify?",
+      "I'm having trouble understanding that. Could you rephrase it?",
+      "I'm not certain how to respond to that."
+    ]
+
+    {:ok, Enum.random(responses)}
+  end
+
+  defp get_belief_object(%{object: object}) when is_binary(object), do: object
+  defp get_belief_object(%{object: object}) when is_atom(object), do: to_string(object)
+  defp get_belief_object(%{"object" => object}) when is_binary(object), do: object
+  defp get_belief_object(_), do: "something different"
 end

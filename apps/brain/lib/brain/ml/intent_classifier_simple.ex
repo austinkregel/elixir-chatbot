@@ -1,6 +1,10 @@
 defmodule Brain.ML.IntentClassifierSimple do
   @moduledoc "Intent classifier using simple TF-IDF and nearest centroid classification.\n\n## World Scoping\n\nSupports world-specific models with inheritance fallback:\n1. Try world-specific model (priv/training_worlds/{world_id}/models/classifier.term)\n2. Fall back to default model (priv/ml_models/classifier.term)\n\nWorld-specific models can be trained using:\n`mix train_models --world star_trek`\n\n## Integration with WorldModelRegistry\n\nThis classifier subscribes to `world_models:status` PubSub events to:\n- Reload models when a world's models are updated\n- Unload models when requested\n"
 
+  # World.Persistence is in a sibling umbrella app that depends on :brain.
+  # It's available at runtime but not at compile time.
+  @compile {:no_warn_undefined, World.Persistence}
+
   alias Brain.ML.SimpleClassifier
   alias World.Persistence
   alias Phoenix.PubSub
@@ -22,15 +26,39 @@ defmodule Brain.ML.IntentClassifierSimple do
   end
 
   @doc """
-  Loads the default classifier model.
+  Incrementally updates the classifier model for a world with new training examples.
+
+  `new_examples` is a list of `{text, label}` tuples.
+  Returns `{:ok, incremental_count}` or `{:error, reason}`.
+  Triggers a full retrain after 200 incremental updates.
 
   ## Options
     - `:server` - The server to call (default: `#{__MODULE__}`)
   """
+  def incremental_update(new_examples, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    world_id = Keyword.get(opts, :world_id, @default_world_id)
+    GenServer.call(server, {:incremental_update, world_id, new_examples})
+  end
+
   def load_models(opts \\ []) do
     server = Keyword.get(opts, :server, __MODULE__)
     world_id = Keyword.get(opts, :world_id, @default_world_id)
     GenServer.call(server, {:load_model, world_id})
+  end
+
+  @doc """
+  Returns true if the default classifier model is loaded and ready.
+
+  This is a convenience function for readiness checks that follows
+  the standard `ready?/0` pattern used across the codebase.
+  """
+  def ready? do
+    try do
+      is_loaded?()
+    catch
+      :exit, _ -> false
+    end
   end
 
   @doc """
@@ -186,6 +214,46 @@ defmodule Brain.ML.IntentClassifierSimple do
     }
 
     {:reply, status, state}
+  end
+
+  @impl true
+  def handle_call({:incremental_update, world_id, new_examples}, _from, state) do
+    case Map.get(state.models, world_id) do
+      nil ->
+        {:reply, {:error, :no_model_loaded}, state}
+
+      model ->
+        incremental_count = Map.get(model, :incremental_update_count, 0)
+
+        {updated_model, new_count} =
+          SimpleClassifier.update_model(model, new_examples, incremental_count)
+
+        updated_model = Map.put(updated_model, :incremental_update_count, new_count)
+
+        # Full retrain after 200 incremental updates
+        if new_count >= 200 do
+          Logger.info("IntentClassifier: incremental drift guard triggered, scheduling full retrain",
+            world_id: world_id,
+            incremental_updates: new_count
+          )
+
+          Phoenix.PubSub.broadcast(
+            Brain.PubSub,
+            "training:requests",
+            {:retrain_requested, world_id, :drift_guard}
+          )
+        end
+
+        new_models = Map.put(state.models, world_id, updated_model)
+
+        Logger.debug("IntentClassifier: incremental update applied",
+          world_id: world_id,
+          examples: length(new_examples),
+          incremental_count: new_count
+        )
+
+        {:reply, {:ok, new_count}, %{state | models: new_models}}
+    end
   end
 
   @impl true

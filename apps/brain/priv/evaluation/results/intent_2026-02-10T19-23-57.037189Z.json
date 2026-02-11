@@ -1,0 +1,2690 @@
+{
+  "timestamp": "2026-02-10T19:23:57.037189Z",
+  "task": "intent",
+  "confusion_matrix": {
+    "communication.text": {
+      "communication.text": 14,
+      "message": 1
+    },
+    "smalltalk.user.needs_advice": {
+      "calendar.query": 1,
+      "meta.self_knowledge": 1,
+      "smalltalk.agent.talk_to_me": 1,
+      "smalltalk.dialog.what_do_you_mean": 1,
+      "smalltalk.user.needs_advice": 18,
+      "weather.outfit": 1
+    },
+    "smarthome": {
+      "calendar.schedule": 1,
+      "meta.self_knowledge": 1,
+      "music_player_control.repeat": 1,
+      "smalltalk.greetings.goodmorning": 1,
+      "smalltalk.user.sad": 1,
+      "smarthome": 13,
+      "smarthome.device.switch.check": 3,
+      "smarthome.heating.schedule.up": 1,
+      "smarthome.heating.switch.schedule.on": 1,
+      "smarthome.lights.brightness.schedule.down": 1,
+      "smarthome.lights.switch.schedule.on": 1
+    },
+    "smarthome.device.brightness.down.implicit": {
+      "smarthome.device.brightness.down.implicit": 4,
+      "smarthome.lights.brightness.down.implicit": 2
+    },
+    "meta.self_knowledge": {
+      "meta.self_knowledge": 20
+    },
+    "smarthome.device.brightness.check.implicit": {
+      "smarthome.device.brightness.check.implicit": 2,
+      "smarthome.device.brightness.up.implicit": 1,
+      "smarthome.lights.brightness.check.implicit": 1
+    },
+    "smalltalk.agent.busy": {
+      "meta.memory_check": 1,
+      "smalltalk.agent.busy": 16,
+      "smalltalk.user.busy": 1
+    },
+    "smarthome.heating.schedule.down": {
+      "smarthome.heating.down": 4,
+      "smarthome.heating.schedule.down": 22,
+      "smarthome.heating.schedule.up": 1
+    },
+    "smalltalk.greetings.whatsup": {
+      "smalltalk.greetings.whatsup": 17,
+      "smalltalk.user.lonely": 6
+    },
+    "smalltalk.agent.clever": {
+      "meta.memory_check": 1,
+      "meta.self_knowledge": 3,
+      "smalltalk.agent.be_clever": 1,
+      "smalltalk.agent.clever": 28,
+      "smalltalk.greetings.how_are_you": 1
+    },
+    "music.play": {
+      "music.play": 212,
+      "smalltalk.agent.crazy": 1,
+      "smalltalk.greetings.nice_to_talk_to_you": 2,
+      "reminder.create": 1,
+      "music_player_control.add_playlist": 8,
+      "smalltalk.greetings.hello": 1,
+      "music.shuffle": 1,
+      "smarthome.locks.open": 2,
+      "smarthome.device.volume": 5,
+      "smarthome.heating.down.implicit": 2,
+      "smalltalk.agent.there": 1,
+      "smalltalk.dialog.what_do_you_mean": 2,
+      "music_player_control.resume": 2,
+      "smalltalk.agent.good": 1,
+      "smarthome.device.volume.unmute.implicit": 7,
+      "smalltalk.agent.age": 2,
+      "music_player_control.stop": 8,
+      "smalltalk.greetings.goodnight": 1,
+      "knowledge.capital": 1,
+      "smalltalk.agent.bad": 1,
+      "smarthome.heating.check": 1,
+      "smalltalk.user.likes_agent": 7,
+      "smarthome.device.volume.up": 1,
+      "communication.call": 1,
+      "smalltalk.user.wants_to_talk": 5,
+      "smalltalk.appraisal.no_problem": 1,
+      "smalltalk.user.loves_agent": 5,
+      "smarthome.device.switch.on": 6,
+      "music_player_control.play": 7,
+      "smalltalk.appraisal.bad": 1,
+      "music_player_control.add_favorite": 3,
+      "time.query": 1,
+      "smalltalk.agent.origin": 2,
+      "smalltalk.user.sad": 1,
+      "smalltalk.user.looks_like": 1,
+      "music.search": 8,
+      "smarthome.device.volume.down.implicit": 1,
+      "display.show": 1,
+      "code.explain": 1,
+      "smalltalk.user.lonely": 2
+    },
+    "smalltalk.agent.crazy": {
+      "smalltalk.agent.bad": 1,
+      "smalltalk.agent.crazy": 16
+    },
+    "message": {
+      "message": 4
+    },
+    "statement.observation": {
+      "smalltalk.appraisal.good": 1,
+      "smarthome.device.volume.down.implicit": 1,
+      "smarthome.heating.check.implicit": 1,
+      "smarthome.heating.down.implicit": 1,
+      "smarthome.heating.up.implicit": 1,
+      "smarthome.lights.brightness.check.implicit": 1,
+      "smarthome.lights.switch.on": 1,
+      "smarthome.locks.open": 1,
+      "statement.observation": 12
+    },
+    "smalltalk.dialog.hold_on": {
+      "smalltalk.dialog.hold_on": 7,
+      "smalltalk.dialog.i_do_not_care": 1
+    },
+    "smarthome.lights.brightness.down": {
+      "smarthome": 1,
+      "smarthome.device.brightness.down": 2,
+      "smarthome.device.brightness.schedule.down": 1,
+      "smarthome.heating": 1,
+      "smarthome.lights.brightness.check": 2,
+      "smarthome.lights.brightness.down": 53,
+      "smarthome.lights.brightness.down.implicit": 9,
+      "smarthome.lights.brightness.schedule.down": 3,
+      "smarthome.lights.brightness.set": 1,
+      "smarthome.lights.brightness.up": 1,
+      "smarthome.lights.saturation.down": 1,
+      "smarthome.lights.switch.on": 2
+    },
+    "news.search - next": {
+      "music_player_control.skip_forward": 1,
+      "weather.activity": 1,
+      "web.search - next": 8
+    },
+    "smarthome.device.switch.check.off": {
+      "smarthome.device.switch.check.off": 18
+    },
+    "smalltalk.greetings.nice_to_talk_to_you": {
+      "smalltalk.greetings.nice_to_talk_to_you": 7
+    },
+    "smarthome.lights.brightness.set": {
+      "smarthome.device.brightness.set": 1,
+      "smarthome.lights.brightness.check": 2,
+      "smarthome.lights.brightness.down": 2,
+      "smarthome.lights.brightness.set": 15,
+      "smarthome.lights.switch.on": 1
+    },
+    "smalltalk.agent.occupation": {
+      "smalltalk.agent.occupation": 8,
+      "smalltalk.appraisal.well_done": 1
+    },
+    "smalltalk.user.introduction": {
+      "code.find_usage": 1,
+      "communication.call": 12,
+      "smalltalk.greetings.hello": 4,
+      "smalltalk.greetings.nice_to_meet_you": 5,
+      "smalltalk.user.introduction": 39,
+      "smalltalk.user.sad": 18,
+      "weather.activity": 2
+    },
+    "analysis.trend": {
+      "analysis.trend": 9,
+      "smalltalk.greetings.whatsup": 1
+    },
+    "reminder.create": {
+      "reminder.create": 15
+    },
+    "smalltalk.agent.residence": {
+      "smalltalk.agent.origin": 2,
+      "smalltalk.agent.residence": 21
+    },
+    "smarthome.lights.hue.check": {
+      "smarthome.lights.hue.check": 17
+    },
+    "smarthome.device.brightness.up": {
+      "smarthome.device.brightness.schedule.down": 1,
+      "smarthome.device.brightness.schedule.up": 3,
+      "smarthome.device.brightness.up": 33,
+      "smarthome.heating": 1,
+      "smarthome.lights.brightness.check": 1,
+      "smarthome.lights.brightness.check.implicit": 1,
+      "smarthome.lights.brightness.down.implicit": 1,
+      "smarthome.lights.brightness.schedule.up": 3,
+      "smarthome.lights.brightness.up": 2,
+      "smarthome.lights.brightness.up.implicit": 8,
+      "smarthome.locks.lock": 1
+    },
+    "smarthome.device.brightness.down": {
+      "smalltalk.dialog.i_do_not_care": 1,
+      "smarthome": 2,
+      "smarthome.device.brightness.check": 1,
+      "smarthome.device.brightness.down": 41,
+      "smarthome.device.brightness.schedule.down": 5,
+      "smarthome.device.brightness.set": 1,
+      "smarthome.device.brightness.up": 4,
+      "smarthome.device.brightness.up.implicit": 1,
+      "smarthome.heating": 1,
+      "smarthome.lights.brightness.check": 1,
+      "smarthome.lights.brightness.check.implicit": 1,
+      "smarthome.lights.brightness.down": 4,
+      "smarthome.lights.brightness.down.implicit": 10
+    },
+    "smarthome.device.switch.schedule.on": {
+      "smalltalk.greetings.goodmorning": 1,
+      "smarthome.device.switch.on": 1,
+      "smarthome.device.switch.schedule.on": 9
+    },
+    "status.report": {
+      "smalltalk.greetings.how_are_you": 1,
+      "status.report": 14
+    },
+    "music_player_control.add_playlist": {
+      "music_player_control.add_playlist": 7
+    },
+    "smarthome.heating.schedule.set": {
+      "smarthome.heating.schedule.set": 7
+    },
+    "smalltalk.greetings.hello": {
+      "calendar.query": 1,
+      "meta.memory_check": 4,
+      "smalltalk.agent.can_you_help": 2,
+      "smalltalk.agent.good": 1,
+      "smalltalk.dialog.wrong": 1,
+      "smalltalk.greetings.goodnight": 1,
+      "smalltalk.greetings.hello": 19,
+      "smalltalk.greetings.nice_to_meet_you": 3,
+      "smalltalk.greetings.nice_to_see_you": 1,
+      "smalltalk.greetings.whatsup": 1,
+      "smalltalk.user.here": 1,
+      "smalltalk.user.introduction": 1,
+      "smalltalk.user.lonely": 5,
+      "time.query": 1
+    },
+    "smarthome.heating.set": {
+      "smarthome.heating.check": 3,
+      "smarthome.heating.down": 3,
+      "smarthome.heating.schedule.set": 1,
+      "smarthome.heating.set": 52,
+      "smarthome.heating.switch.on": 5
+    },
+    "smalltalk.user.tired": {
+      "smalltalk.user.back": 1,
+      "smalltalk.user.lonely": 1,
+      "smalltalk.user.sad": 2,
+      "smalltalk.user.tired": 4
+    },
+    "smalltalk.emotions.wow": {
+      "smalltalk.emotions.wow": 3,
+      "smalltalk.user.lonely": 2
+    },
+    "smalltalk.user.wants_to_see_agent_again": {
+      "smalltalk.user.misses_agent": 1,
+      "smalltalk.user.wants_to_see_agent_again": 6
+    },
+    "smarthome.lights.saturation.up": {
+      "smarthome.lights.saturation.down": 1,
+      "smarthome.lights.saturation.up": 23
+    },
+    "music.shuffle": {
+      "music.shuffle": 14,
+      "music_player_control.shuffle": 1
+    },
+    "smalltalk.agent.acquaintance": {
+      "knowledge.define": 1,
+      "meta.self_knowledge": 3,
+      "smalltalk.agent.acquaintance": 10,
+      "smalltalk.agent.bad": 1,
+      "smalltalk.agent.boss": 1,
+      "smalltalk.agent.residence": 1,
+      "smalltalk.agent.there": 1
+    },
+    "smarthome.locks.schedule.unlock": {
+      "smarthome.locks.schedule.unlock": 25,
+      "smarthome.locks.unlock": 2
+    },
+    "search.locate": {
+      "music.search": 1,
+      "search.locate": 13,
+      "smalltalk.user.looks_like": 1
+    },
+    "smarthome.device.brightness.check": {
+      "smalltalk.agent.acquaintance": 1,
+      "smarthome.device.brightness.check": 12,
+      "smarthome.device.brightness.down.implicit": 2,
+      "smarthome.lights.brightness.check": 3
+    },
+    "smalltalk.user.joking": {
+      "smalltalk.user.joking": 10
+    },
+    "smalltalk.agent.sure": {
+      "smalltalk.agent.sure": 5
+    },
+    "music_player_control.pause": {
+      "music_player_control.pause": 8
+    },
+    "smarthome.lights.switch.check.off": {
+      "smarthome.lights.switch.check.off": 9
+    },
+    "smarthome.heating.switch.off": {
+      "smarthome.heating.switch.off": 3
+    },
+    "smarthome.device.switch": {
+      "meta.self_knowledge": 1,
+      "smarthome.device.switch": 13,
+      "smarthome.device.switch.check": 3,
+      "smarthome.device.volume": 1
+    },
+    "smarthome.lights.brightness.up": {
+      "smarthome": 1,
+      "smarthome.device.brightness.up": 8,
+      "smarthome.heating": 2,
+      "smarthome.lights.brightness.check": 1,
+      "smarthome.lights.brightness.check.implicit": 1,
+      "smarthome.lights.brightness.schedule.up": 5,
+      "smarthome.lights.brightness.up": 32,
+      "smarthome.lights.brightness.up.implicit": 8,
+      "smarthome.lights.switch.on": 1,
+      "smarthome.locks.lock": 1
+    },
+    "smalltalk.user.will_be_back": {
+      "smalltalk.user.will_be_back": 5
+    },
+    "smarthome.device.switch.schedule.off": {
+      "smarthome.device.switch.schedule.off": 11,
+      "smarthome.device.switch.schedule.on": 2
+    },
+    "smarthome.lights.switch.schedule.off": {
+      "smarthome.lights.brightness.schedule.up": 1,
+      "smarthome.lights.switch.off": 2,
+      "smarthome.lights.switch.schedule.off": 27
+    },
+    "smarthome.device.volume.mute": {
+      "smarthome.device.switch.off": 1,
+      "smarthome.device.volume.mute": 24
+    },
+    "smalltalk.user.does_not_want_to_talk": {
+      "smalltalk.user.does_not_want_to_talk": 6,
+      "time.query": 1
+    },
+    "smarthome.lights.switch.check": {
+      "smarthome.lights.switch.check": 4
+    },
+    "smarthome.device.volume.mute.implicit": {
+      "smarthome.device.volume.mute.implicit": 3
+    },
+    "smalltalk.appraisal.welcome": {
+      "smalltalk.appraisal.welcome": 8,
+      "smalltalk.user.lonely": 1
+    },
+    "web.search - previous": {
+      "music_player_control.skip_backward": 1,
+      "news.search - previous": 8,
+      "smalltalk.user.will_be_back": 1
+    },
+    "display.zoom": {
+      "display.enhance": 1,
+      "display.zoom": 6,
+      "smalltalk.user.lonely": 1,
+      "smarthome.device.switch": 2
+    },
+    "smarthome.locks.open": {
+      "smalltalk.user.lonely": 1,
+      "smarthome.locks.check.open": 2,
+      "smarthome.locks.open": 23,
+      "smarthome.locks.schedule.open": 1
+    },
+    "smarthome.lights.brightness.down.implicit": {
+      "smarthome.lights.brightness.down.implicit": 10
+    },
+    "smalltalk.dialog.hug": {
+      "smalltalk.dialog.hug": 15
+    },
+    "account.spending.check": {
+      "account.earning.check": 1,
+      "account.spending.check": 16,
+      "smalltalk.greetings.nice_to_see_you": 1
+    },
+    "smarthome.device.volume": {
+      "smalltalk.user.wants_to_see_agent_again": 3,
+      "smarthome": 1,
+      "smarthome.device.switch.check": 5,
+      "smarthome.device.volume": 22,
+      "smarthome.device.volume.check": 4,
+      "smarthome.device.volume.check.implicit": 3,
+      "smarthome.device.volume.up": 1,
+      "smarthome.device.volume.up.implicit": 1,
+      "smarthome.heating": 2,
+      "smarthome.heating.check": 1,
+      "smarthome.heating.schedule.up": 4,
+      "smarthome.lights.brightness.up": 2,
+      "smarthome.lights.hue.down": 1,
+      "time.query": 2
+    },
+    "smalltalk.dialog.sorry": {
+      "smalltalk.agent.residence": 1,
+      "smalltalk.agent.talk_to_me": 1,
+      "smalltalk.dialog.sorry": 19,
+      "smalltalk.user.lonely": 3
+    },
+    "smarthome.lights.brightness.up.implicit": {
+      "smarthome.lights.brightness.up.implicit": 9
+    },
+    "smalltalk.user.going_to_bed": {
+      "smalltalk.user.going_to_bed": 9
+    },
+    "weather.activity": {
+      "meta.self_knowledge": 1,
+      "smalltalk.agent.right": 1,
+      "smalltalk.greetings.goodevening": 2,
+      "smalltalk.user.has_birthday": 1,
+      "smarthome.device.volume": 1,
+      "smarthome.heating.check.implicit": 1,
+      "weather.activity": 24
+    },
+    "smarthome.heating.down.implicit": {
+      "smarthome.heating.check.implicit": 3,
+      "smarthome.heating.down.implicit": 16
+    },
+    "timer.check": {
+      "time.query": 1,
+      "timer.check": 6,
+      "timer.set": 3
+    },
+    "smarthome.heating.up.implicit": {
+      "smalltalk.user.here": 1,
+      "smarthome.heating.up.implicit": 23
+    },
+    "calendar.query": {
+      "calendar.query": 11,
+      "communication.email": 1,
+      "music_player_control.skip_forward": 1,
+      "smalltalk.greetings.whatsup": 1,
+      "smalltalk.user.looks_like": 1
+    },
+    "smalltalk.agent.there": {
+      "smalltalk.agent.there": 8
+    },
+    "smalltalk.dialog.what_do_you_mean": {
+      "smalltalk.dialog.what_do_you_mean": 5
+    },
+    "news.search": {
+      "display.show": 3,
+      "meta.self_knowledge": 1,
+      "news.search": 37,
+      "smalltalk.agent.origin": 1,
+      "smalltalk.greetings.how_are_you": 1,
+      "smarthome.device.switch.check": 1
+    },
+    "music_player_control.resume": {
+      "music_player_control.resume": 8,
+      "music_player_control.stop": 1,
+      "smalltalk.user.wants_to_see_agent_again": 1
+    },
+    "smalltalk.user.back": {
+      "smalltalk.user.back": 3,
+      "smalltalk.user.here": 2,
+      "smalltalk.user.will_be_back": 1
+    },
+    "music_player_control.skip_forward": {
+      "music_player_control.add_favorite": 1,
+      "music_player_control.play": 1,
+      "music_player_control.skip_backward": 1,
+      "music_player_control.skip_forward": 21,
+      "weather.activity": 1,
+      "web.search - next": 1
+    },
+    "smarthome.lights.switch.schedule.on": {
+      "smarthome.lights.brightness.schedule.up": 1,
+      "smarthome.lights.switch.on": 4,
+      "smarthome.lights.switch.schedule.off": 1,
+      "smarthome.lights.switch.schedule.on": 28
+    },
+    "display.enhance": {
+      "display.enhance": 9,
+      "smarthome.device.switch": 1
+    },
+    "smalltalk.agent.good": {
+      "smalltalk.agent.bad": 1,
+      "smalltalk.agent.good": 38,
+      "smalltalk.agent.right": 1,
+      "smalltalk.appraisal.well_done": 2,
+      "smalltalk.greetings.how_are_you": 2,
+      "smarthome.device.volume.mute.implicit": 1
+    },
+    "smalltalk.user.busy": {
+      "smalltalk.appraisal.well_done": 1,
+      "smalltalk.user.busy": 4,
+      "smalltalk.user.sad": 2,
+      "time.query": 2
+    },
+    "smalltalk.agent.hobby": {
+      "meta.memory_check": 1,
+      "smalltalk.agent.hobby": 5,
+      "smalltalk.agent.residence": 1
+    },
+    "smarthome.heating.switch.schedule.on": {
+      "smarthome.heating.switch.schedule.on": 3
+    },
+    "smalltalk.appraisal.well_done": {
+      "smalltalk.appraisal.well_done": 6,
+      "smalltalk.user.lonely": 1,
+      "smarthome.device.switch.check": 1,
+      "weather.activity": 1
+    },
+    "smarthome.lights.brightness.check": {
+      "smalltalk.agent.acquaintance": 1,
+      "smarthome.lights.brightness.check": 16,
+      "smarthome.lights.brightness.down.implicit": 2
+    },
+    "smalltalk.user.excited": {
+      "smalltalk.user.excited": 5,
+      "smalltalk.user.sad": 1
+    },
+    "todo.add": {
+      "meta.memory_check": 1,
+      "todo.add": 13,
+      "todo.list": 1
+    },
+    "smarthome.heating.schedule.up": {
+      "smarthome.heating.schedule.set": 2,
+      "smarthome.heating.schedule.up": 19,
+      "smarthome.heating.switch.schedule.on": 1,
+      "smarthome.heating.up": 3
+    },
+    "knowledge.translate": {
+      "knowledge.translate": 13,
+      "smalltalk.dialog.what_do_you_mean": 1,
+      "smalltalk.greetings.whatsup": 1
+    },
+    "smarthome.device.volume.unmute.implicit": {
+      "smarthome.device.volume.unmute.implicit": 2
+    },
+    "smalltalk.agent.age": {
+      "smalltalk.agent.age": 8
+    },
+    "communication.email": {
+      "communication.email": 14,
+      "smarthome.locks.open": 1
+    },
+    "music_player_control.stop": {
+      "music_player_control.stop": 8,
+      "smarthome.device.brightness.check.implicit": 1,
+      "smarthome.device.switch.off": 1
+    },
+    "web.search": {
+      "meta.self_knowledge": 1,
+      "search.locate": 2,
+      "smalltalk.agent.funny": 1,
+      "smalltalk.greetings.whatsup": 1,
+      "smalltalk.user.looks_like": 1,
+      "smarthome.device.switch.check": 1,
+      "smarthome.device.volume": 2,
+      "web.search": 15
+    },
+    "smalltalk.greetings.goodnight": {
+      "smalltalk.agent.right": 1,
+      "smalltalk.appraisal.thank_you": 1,
+      "smalltalk.greetings.goodnight": 14
+    },
+    "smarthome.heating.up": {
+      "smarthome": 1,
+      "smarthome.device.switch": 2,
+      "smarthome.heating.check": 4,
+      "smarthome.heating.check.implicit": 3,
+      "smarthome.heating.down.implicit": 2,
+      "smarthome.heating.schedule.down": 1,
+      "smarthome.heating.schedule.up": 5,
+      "smarthome.heating.set": 2,
+      "smarthome.heating.switch.on": 2,
+      "smarthome.heating.up": 57,
+      "smarthome.heating.up.implicit": 3
+    },
+    "weather.query": {
+      "meta.self_knowledge": 8,
+      "music_player_control.add_favorite": 1,
+      "music_player_control.skip_forward": 6,
+      "smalltalk.greetings.goodevening": 2,
+      "smalltalk.greetings.goodmorning": 1,
+      "smalltalk.greetings.how_are_you": 1,
+      "smalltalk.greetings.whatsup": 1,
+      "smarthome": 1,
+      "smarthome.device.switch.on": 1,
+      "smarthome.device.volume": 2,
+      "smarthome.heating.schedule.up": 1,
+      "status.diagnostic": 1,
+      "weather": 87,
+      "weather.condition": 1,
+      "weather.temperature": 2
+    },
+    "smalltalk.emotions.ha_ha": {
+      "smalltalk.agent.funny": 1,
+      "smalltalk.emotions.ha_ha": 19,
+      "smalltalk.user.lonely": 9,
+      "smarthome.device.volume.down.implicit": 1
+    },
+    "smarthome.lights.saturation.set": {
+      "smarthome.lights.saturation.set": 10
+    },
+    "music_player_control.repeat": {
+      "music.play": 1,
+      "music_player_control.add_favorite": 1,
+      "music_player_control.play": 1,
+      "music_player_control.repeat": 18,
+      "smalltalk.user.wants_to_see_agent_again": 1,
+      "time.query": 2,
+      "web.search - repeat": 5
+    },
+    "weather.outfit": {
+      "meta.self_knowledge": 1,
+      "smalltalk.greetings.how_are_you": 2,
+      "smalltalk.user.has_birthday": 1,
+      "smarthome.device.volume": 1,
+      "weather": 1,
+      "weather.outfit": 23
+    },
+    "analysis.analyze": {
+      "analysis.analyze": 15
+    },
+    "smalltalk.greetings.nice_to_meet_you": {
+      "meta.self_knowledge": 1,
+      "smalltalk.greetings.nice_to_meet_you": 17
+    },
+    "smarthome.device.switch.check.on": {
+      "smarthome": 1,
+      "smarthome.device.switch.check.on": 16
+    },
+    "smarthome.lights.switch.on": {
+      "display.show": 1,
+      "smalltalk.user.can_not_sleep": 2,
+      "smalltalk.user.joking": 1,
+      "smarthome.device.switch.on": 6,
+      "smarthome.heating.switch.on": 1,
+      "smarthome.lights.brightness.down": 1,
+      "smarthome.lights.brightness.set": 2,
+      "smarthome.lights.brightness.up.implicit": 1,
+      "smarthome.lights.switch.check": 1,
+      "smarthome.lights.switch.check.off": 2,
+      "smarthome.lights.switch.on": 81,
+      "weather.activity": 1,
+      "weather.outfit": 1
+    },
+    "code.signature": {
+      "code.explain": 1,
+      "code.signature": 14,
+      "communication.call": 1,
+      "display.show": 1,
+      "smalltalk.greetings.how_are_you": 1,
+      "smalltalk.greetings.whatsup": 2
+    },
+    "knowledge.capital": {
+      "knowledge.capital": 15
+    },
+    "account.earning.check": {
+      "account.balance.check": 1,
+      "account.earning.check": 9,
+      "account.spending.check": 2,
+      "meta.self_knowledge": 1,
+      "smalltalk.greetings.nice_to_see_you": 2
+    },
+    "account.open": {
+      "account.open": 5
+    },
+    "music_player_control.skip_backward": {
+      "music_player_control.skip_backward": 10,
+      "news.search - previous": 3,
+      "smalltalk.user.will_be_back": 2
+    },
+    "smalltalk.agent.bad": {
+      "smalltalk.agent.bad": 25,
+      "smalltalk.appraisal.no_problem": 1,
+      "time.query": 1
+    },
+    "news.search - repeat": {
+      "music_player_control.repeat": 1,
+      "web.search - repeat": 9
+    },
+    "smarthome.device.volume.check": {
+      "meta.self_knowledge": 1,
+      "smalltalk.greetings.whatsup": 1,
+      "smarthome": 1,
+      "smarthome.device.switch.check": 8,
+      "smarthome.device.volume": 2,
+      "smarthome.device.volume.check": 33,
+      "smarthome.device.volume.set": 2
+    },
+    "smalltalk.user.misses_agent": {
+      "smalltalk.agent.good": 1,
+      "smalltalk.user.misses_agent": 6
+    },
+    "alarm.set": {
+      "alarm.set": 15
+    },
+    "smarthome.heating": {
+      "meta.memory_check": 1,
+      "smalltalk.appraisal.no_problem": 2,
+      "smarthome.heating": 22,
+      "smarthome.heating.down": 1
+    },
+    "smalltalk.agent.boss": {
+      "smalltalk.agent.boss": 7
+    },
+    "smarthome.device.switch.off": {
+      "smalltalk.appraisal.no_problem": 1,
+      "smarthome.device.switch.check": 1,
+      "smarthome.device.switch.check.off": 5,
+      "smarthome.device.switch.off": 83,
+      "smarthome.device.switch.schedule.off": 2,
+      "smarthome.device.switch.schedule.on": 1,
+      "smarthome.heating.switch.off": 13,
+      "smarthome.lights.switch.off": 1
+    },
+    "smalltalk.dialog.i_do_not_care": {
+      "smalltalk.dialog.i_do_not_care": 8,
+      "smalltalk.user.lonely": 1
+    },
+    "smarthome.device.brightness.set": {
+      "smarthome.device.brightness.schedule.down": 2,
+      "smarthome.device.brightness.set": 16
+    },
+    "smalltalk.agent.happy": {
+      "smalltalk.agent.bad": 1,
+      "smalltalk.agent.happy": 10
+    },
+    "code.find_usage": {
+      "code.find_usage": 14,
+      "code.signature": 1,
+      "communication.call": 1,
+      "knowledge.capital": 1,
+      "smalltalk.agent.boss": 2,
+      "smalltalk.greetings.whatsup": 1
+    },
+    "weather.temperature": {
+      "music_player_control.skip_forward": 1,
+      "smalltalk.agent.right": 2,
+      "smarthome.device.switch.check.on": 1,
+      "smarthome.heating.check": 6,
+      "smarthome.heating.check.implicit": 4,
+      "smarthome.heating.down.implicit": 4,
+      "smarthome.heating.up.implicit": 7,
+      "weather.temperature": 24
+    },
+    "smalltalk.user.angry": {
+      "smalltalk.user.angry": 6,
+      "smalltalk.user.sad": 2
+    },
+    "smarthome.heating.check": {
+      "smalltalk.greetings.whatsup": 2,
+      "smarthome.device.volume.check": 1,
+      "smarthome.heating.check": 33,
+      "smarthome.heating.set": 1,
+      "smarthome.heating.switch.on": 1
+    },
+    "smarthome.locks.schedule.close": {
+      "smarthome.locks.check.close": 1,
+      "smarthome.locks.close": 3,
+      "smarthome.locks.schedule.close": 33
+    },
+    "smalltalk.agent.ready": {
+      "smalltalk.agent.ready": 7
+    },
+    "smarthome.heating.down": {
+      "smalltalk.user.here": 1,
+      "smarthome": 2,
+      "smarthome.device.switch": 2,
+      "smarthome.device.switch.check": 1,
+      "smarthome.heating.check": 8,
+      "smarthome.heating.check.implicit": 5,
+      "smarthome.heating.down": 72,
+      "smarthome.heating.down.implicit": 1,
+      "smarthome.heating.schedule.down": 7,
+      "smarthome.heating.set": 6,
+      "smarthome.heating.switch.on": 1,
+      "smarthome.heating.up.implicit": 4
+    },
+    "smarthome.device.volume.check.implicit": {
+      "smarthome.device.volume.check.implicit": 3
+    },
+    "smalltalk.user.likes_agent": {
+      "meta.privacy_probe": 2,
+      "smalltalk.agent.funny": 1,
+      "smalltalk.agent.good": 6,
+      "smalltalk.agent.my_friend": 1,
+      "smalltalk.agent.residence": 1,
+      "smalltalk.dialog.sorry": 1,
+      "smalltalk.user.likes_agent": 65
+    },
+    "smarthome.heating.switch.on": {
+      "smarthome.heating.switch.on": 3
+    },
+    "web.search - repeat": {
+      "music_player_control.repeat": 1,
+      "web.search - repeat": 9
+    },
+    "smalltalk.agent.fired": {
+      "smalltalk.agent.bad": 1,
+      "smalltalk.agent.fired": 12,
+      "smalltalk.user.does_not_want_to_talk": 1,
+      "smalltalk.user.sad": 1
+    },
+    "calendar.cancel": {
+      "calendar.cancel": 9,
+      "calendar.schedule": 1
+    },
+    "smarthome.lights.switch.check.on": {
+      "smarthome.device.switch.check.on": 1,
+      "smarthome.lights.switch.check": 3,
+      "smarthome.lights.switch.check.off": 2,
+      "smarthome.lights.switch.check.on": 8,
+      "smarthome.lights.switch.on": 4,
+      "status.diagnostic": 1
+    },
+    "smarthome.device.volume.up": {
+      "smarthome.device.brightness.down.implicit": 2,
+      "smarthome.device.switch.on": 1,
+      "smarthome.device.volume.mute.implicit": 1,
+      "smarthome.device.volume.set": 1,
+      "smarthome.device.volume.up": 29,
+      "smarthome.heating.schedule.up": 1,
+      "smarthome.lights.saturation.up": 1
+    },
+    "meta.memory_check": {
+      "meta.memory_check": 13,
+      "meta.self_knowledge": 1,
+      "smalltalk.agent.boss": 1
+    },
+    "smalltalk.user.waits": {
+      "smalltalk.dialog.hold_on": 1,
+      "smalltalk.user.waits": 4
+    },
+    "calendar.schedule": {
+      "calendar.schedule": 14,
+      "communication.call": 1
+    },
+    "smarthome.device.volume.set": {
+      "smarthome.device.volume.set": 19
+    },
+    "smalltalk.greetings.nice_to_see_you": {
+      "smalltalk.greetings.nice_to_see_you": 15,
+      "smalltalk.user.wants_to_see_agent_again": 2
+    },
+    "smarthome.locks.lock": {
+      "smarthome.locks.check.lock": 3,
+      "smarthome.locks.lock": 17,
+      "smarthome.locks.schedule.lock": 2
+    },
+    "smalltalk.agent.answer_my_question": {
+      "smalltalk.agent.answer_my_question": 18,
+      "smalltalk.user.lonely": 2
+    },
+    "smarthome.device.brightness.schedule.down": {
+      "smarthome.device.brightness.schedule.down": 4
+    },
+    "smalltalk.user.bored": {
+      "smalltalk.agent.boring": 3,
+      "smalltalk.agent.talk_to_me": 1,
+      "smalltalk.user.bored": 4
+    },
+    "smalltalk.agent.be_clever": {
+      "smalltalk.agent.be_clever": 8
+    },
+    "communication.call": {
+      "communication.call": 12,
+      "music_player_control.add_favorite": 1,
+      "smalltalk.agent.my_friend": 1,
+      "smalltalk.user.has_birthday": 1
+    },
+    "smalltalk.agent.chatbot": {
+      "smalltalk.agent.bad": 1,
+      "smalltalk.agent.chatbot": 7
+    },
+    "smalltalk.user.wants_to_talk": {
+      "smalltalk.agent.talk_to_me": 2,
+      "smalltalk.greetings.nice_to_talk_to_you": 1,
+      "smalltalk.user.wants_to_talk": 8
+    },
+    "smarthome.heating.switch.schedule.off": {
+      "smarthome.heating.switch.schedule.off": 3
+    },
+    "smalltalk.appraisal.no_problem": {
+      "smalltalk.appraisal.no_problem": 7,
+      "smalltalk.dialog.i_do_not_care": 1,
+      "smalltalk.user.lonely": 1
+    },
+    "smarthome.locks.check": {
+      "smarthome.locks.check": 6
+    },
+    "smalltalk.agent.hungry": {
+      "smalltalk.agent.hungry": 7,
+      "smalltalk.user.likes_agent": 1
+    },
+    "smalltalk.user.loves_agent": {
+      "smalltalk.agent.good": 1,
+      "smalltalk.user.loves_agent": 8
+    },
+    "meta.privacy_probe": {
+      "meta.memory_check": 1,
+      "meta.privacy_probe": 13,
+      "meta.self_knowledge": 1
+    },
+    "payment.due_date": {
+      "payment.due_date": 10
+    },
+    "smalltalk.agent.funny": {
+      "smalltalk.agent.bad": 1,
+      "smalltalk.agent.chatbot": 1,
+      "smalltalk.agent.funny": 13
+    },
+    "smarthome.lights.hue.down": {
+      "smarthome.lights.brightness.down": 1,
+      "smarthome.lights.hue.down": 26
+    },
+    "smarthome.device.switch.on": {
+      "smarthome.device.brightness.schedule.down": 1,
+      "smarthome.device.switch.check": 1,
+      "smarthome.device.switch.check.on": 2,
+      "smarthome.device.switch.on": 97,
+      "smarthome.device.switch.schedule.on": 3,
+      "smarthome.heating.switch.on": 1,
+      "smarthome.lights.switch.on": 1
+    },
+    "music_player_control.play": {
+      "music.play": 1,
+      "music_player_control.play": 10
+    },
+    "smarthome.lights.saturation.down": {
+      "smarthome.lights.saturation.down": 29,
+      "smarthome.lights.saturation.up": 1
+    },
+    "smarthome.lights.brightness.schedule.up": {
+      "smarthome.lights.brightness.schedule.up": 5
+    },
+    "smalltalk.agent.boring": {
+      "smalltalk.agent.boring": 7
+    },
+    "smalltalk.appraisal.good": {
+      "account.balance.check": 1,
+      "meta.self_knowledge": 1,
+      "music_player_control.add_favorite": 2,
+      "smalltalk.agent.beautiful": 1,
+      "smalltalk.agent.clever": 1,
+      "smalltalk.agent.good": 2,
+      "smalltalk.appraisal.bad": 3,
+      "smalltalk.appraisal.good": 50,
+      "smalltalk.appraisal.no_problem": 1,
+      "smalltalk.appraisal.thank_you": 2,
+      "smalltalk.appraisal.well_done": 2,
+      "smalltalk.greetings.goodnight": 3,
+      "smalltalk.greetings.nice_to_talk_to_you": 4,
+      "smalltalk.user.angry": 1,
+      "smalltalk.user.good": 1,
+      "smalltalk.user.lonely": 4,
+      "smarthome.device.switch.check": 3,
+      "smarthome.device.volume.unmute.implicit": 3,
+      "smarthome.lights.brightness.check.implicit": 4,
+      "weather.activity": 2
+    },
+    "smarthome.heating.check.implicit": {
+      "smarthome.heating.check.implicit": 11,
+      "smarthome.heating.down.implicit": 2,
+      "smarthome.heating.up.implicit": 5
+    },
+    "smarthome.locks.schedule.open": {
+      "smarthome.locks.open": 3,
+      "smarthome.locks.schedule.open": 26
+    },
+    "smalltalk.agent.can_you_help": {
+      "meta.memory_check": 1,
+      "smalltalk.agent.can_you_help": 33,
+      "smalltalk.agent.right": 1,
+      "smalltalk.agent.talk_to_me": 1,
+      "smalltalk.user.likes_agent": 1,
+      "smalltalk.user.lonely": 2,
+      "smalltalk.user.needs_advice": 1,
+      "weather.outfit": 1
+    },
+    "account.balance.check": {
+      "account.balance.check": 23,
+      "account.open": 1
+    },
+    "knowledge.define": {
+      "code.signature": 2,
+      "knowledge.define": 10,
+      "smalltalk.dialog.what_do_you_mean": 3
+    },
+    "smarthome.locks.check.open": {
+      "smarthome.locks.check.open": 8,
+      "smarthome.locks.open": 1
+    },
+    "smarthome.locks.unlock": {
+      "smarthome.locks.check.unlock": 2,
+      "smarthome.locks.schedule.unlock": 1,
+      "smarthome.locks.unlock": 20
+    },
+    "smarthome.device.switch.check": {
+      "smarthome.device.switch.check": 7
+    },
+    "music_player_control.shuffle": {
+      "music_player_control.shuffle": 5
+    },
+    "smalltalk.user.has_birthday": {
+      "smalltalk.user.has_birthday": 6
+    },
+    "smarthome.lights.saturation.check": {
+      "smarthome.lights.saturation.check": 16,
+      "smarthome.lights.switch.check.on": 1
+    },
+    "status.diagnostic": {
+      "smalltalk.user.testing_agent": 1,
+      "status.diagnostic": 9
+    },
+    "smalltalk.user.can_not_sleep": {
+      "smalltalk.user.can_not_sleep": 5,
+      "smalltalk.user.sad": 3
+    },
+    "smarthome.device.volume.down": {
+      "smarthome.device.volume.down": 36,
+      "smarthome.device.volume.down.implicit": 2,
+      "smarthome.lights.hue.down": 1
+    },
+    "smalltalk.greetings.goodmorning": {
+      "smalltalk.greetings.goodmorning": 12
+    },
+    "todo.list": {
+      "display.show": 1,
+      "smalltalk.user.looks_like": 1,
+      "todo.list": 8
+    },
+    "smarthome.device.brightness.schedule.up": {
+      "smarthome.device.brightness.schedule.up": 4
+    },
+    "alarm.snooze": {
+      "alarm.snooze": 9,
+      "smalltalk.user.can_not_sleep": 1
+    },
+    "smalltalk.appraisal.bad": {
+      "smalltalk.agent.bad": 1,
+      "smalltalk.agent.beautiful": 1,
+      "smalltalk.appraisal.bad": 30,
+      "smalltalk.appraisal.good": 12,
+      "smalltalk.appraisal.no_problem": 1,
+      "smalltalk.dialog.i_do_not_care": 3,
+      "smalltalk.user.lonely": 2,
+      "smarthome.device.volume.check.implicit": 1
+    },
+    "smarthome.lights.brightness.check.implicit": {
+      "smarthome.lights.brightness.check.implicit": 1,
+      "smarthome.lights.brightness.down.implicit": 1,
+      "smarthome.lights.brightness.up.implicit": 1
+    },
+    "smarthome.locks.close": {
+      "smarthome.locks.check.close": 3,
+      "smarthome.locks.check.lock": 1,
+      "smarthome.locks.close": 18,
+      "smarthome.locks.schedule.close": 1
+    },
+    "smarthome.lights.hue.set": {
+      "smarthome.lights.hue.set": 14,
+      "smarthome.lights.hue.up": 2
+    },
+    "music_player_control.add_favorite": {
+      "music_player_control.add_favorite": 9,
+      "smalltalk.user.loves_agent": 1,
+      "todo.add": 1
+    },
+    "time.query": {
+      "time.query": 15
+    },
+    "smalltalk.greetings.goodevening": {
+      "smalltalk.greetings.goodevening": 6
+    },
+    "smarthome.lights.brightness.schedule.down": {
+      "smarthome.lights.brightness.schedule.down": 5
+    },
+    "date.query": {
+      "date.query": 11,
+      "smalltalk.greetings.whatsup": 4
+    },
+    "smalltalk.greetings.bye": {
+      "smalltalk.agent.talk_to_me": 2,
+      "smalltalk.appraisal.good": 2,
+      "smalltalk.greetings.bye": 18,
+      "smalltalk.greetings.nice_to_see_you": 6,
+      "smalltalk.user.can_not_sleep": 1,
+      "smalltalk.user.going_to_bed": 1,
+      "smalltalk.user.lonely": 1,
+      "time.query": 1,
+      "weather.activity": 2
+    },
+    "smalltalk.agent.beautiful": {
+      "smalltalk.agent.bad": 2,
+      "smalltalk.agent.beautiful": 38,
+      "smalltalk.agent.good": 3,
+      "smalltalk.user.looks_like": 12
+    },
+    "smalltalk.agent.origin": {
+      "smalltalk.agent.origin": 9,
+      "smalltalk.agent.residence": 2
+    },
+    "smarthome.locks.check.lock": {
+      "smarthome.locks.check.lock": 8
+    },
+    "web.search - next": {
+      "music_player_control.skip_forward": 1,
+      "weather.activity": 1,
+      "web.search - next": 8
+    },
+    "news.search - previous": {
+      "music_player_control.skip_backward": 1,
+      "news.search - previous": 8,
+      "smalltalk.user.will_be_back": 1
+    },
+    "smarthome.device.volume.unmute": {
+      "smarthome.device.volume.mute": 7,
+      "smarthome.device.volume.unmute": 12
+    },
+    "smalltalk.greetings.how_are_you": {
+      "meta.memory_check": 1,
+      "smalltalk.agent.bad": 1,
+      "smalltalk.agent.good": 1,
+      "smalltalk.agent.residence": 2,
+      "smalltalk.agent.right": 2,
+      "smalltalk.greetings.goodevening": 2,
+      "smalltalk.greetings.goodmorning": 1,
+      "smalltalk.greetings.how_are_you": 27,
+      "smalltalk.user.good": 1,
+      "smarthome.device.switch.schedule.on": 1
+    },
+    "smarthome.locks.check.unlock": {
+      "smarthome.locks.check.unlock": 7
+    },
+    "smalltalk.dialog.wrong": {
+      "smalltalk.dialog.wrong": 12
+    },
+    "smarthome.lights.hue.up": {
+      "smarthome.lights.hue.up": 32
+    },
+    "smalltalk.appraisal.thank_you": {
+      "smalltalk.agent.can_you_help": 2,
+      "smalltalk.agent.my_friend": 1,
+      "smalltalk.appraisal.thank_you": 25,
+      "smalltalk.greetings.nice_to_talk_to_you": 1,
+      "smalltalk.user.lonely": 3,
+      "smalltalk.user.loves_agent": 1,
+      "smarthome.lights.brightness.check.implicit": 1
+    },
+    "smarthome.locks.schedule.lock": {
+      "smarthome.locks.check.lock": 2,
+      "smarthome.locks.lock": 1,
+      "smarthome.locks.schedule.lock": 38
+    },
+    "smarthome.locks.check.close": {
+      "smarthome.locks.check.close": 7
+    },
+    "weather.condition": {
+      "meta.self_knowledge": 1,
+      "smalltalk.agent.there": 3,
+      "smalltalk.user.here": 1,
+      "weather": 1,
+      "weather.condition": 41
+    },
+    "smalltalk.agent.marry_user": {
+      "smalltalk.agent.be_clever": 1,
+      "smalltalk.agent.good": 1,
+      "smalltalk.agent.marry_user": 6,
+      "smalltalk.user.wants_to_talk": 1
+    },
+    "smalltalk.agent.real": {
+      "smalltalk.agent.bad": 1,
+      "smalltalk.agent.real": 11
+    },
+    "smarthome.device.volume.up.implicit": {
+      "smarthome.device.volume.up.implicit": 2
+    },
+    "smalltalk.user.sad": {
+      "smalltalk.user.does_not_want_to_talk": 1,
+      "smalltalk.user.happy": 1,
+      "smalltalk.user.sad": 7
+    },
+    "smalltalk.agent.my_friend": {
+      "meta.privacy_probe": 1,
+      "smalltalk.agent.good": 1,
+      "smalltalk.agent.my_friend": 33,
+      "smalltalk.user.wants_to_talk": 1
+    },
+    "smarthome.device.brightness.up.implicit": {
+      "smarthome.device.brightness.up.implicit": 3,
+      "smarthome.device.volume.up.implicit": 1
+    },
+    "smalltalk.agent.right": {
+      "smalltalk.agent.bad": 1,
+      "smalltalk.agent.good": 1,
+      "smalltalk.agent.right": 19,
+      "smalltalk.dialog.wrong": 1
+    },
+    "smalltalk.user.here": {
+      "smalltalk.user.here": 5
+    },
+    "smalltalk.user.looks_like": {
+      "smalltalk.user.looks_like": 6
+    },
+    "smalltalk.agent.birth_date": {
+      "date.query": 1,
+      "smalltalk.agent.birth_date": 5,
+      "smalltalk.agent.origin": 1
+    },
+    "smalltalk.user.good": {
+      "smalltalk.user.good": 6
+    },
+    "music.search": {
+      "knowledge.capital": 1,
+      "meta.self_knowledge": 1,
+      "music.search": 81,
+      "music_player_control.add_playlist": 4,
+      "search.locate": 4,
+      "smalltalk.agent.can_you_help": 1,
+      "smalltalk.agent.fired": 1,
+      "smalltalk.agent.origin": 1,
+      "smalltalk.appraisal.thank_you": 1,
+      "smalltalk.greetings.how_are_you": 1,
+      "smalltalk.user.looks_like": 4,
+      "smalltalk.user.loves_agent": 1,
+      "smarthome.device.switch.on": 1,
+      "smarthome.device.volume": 4
+    },
+    "smarthome.device.volume.down.implicit": {
+      "smarthome.device.volume.down.implicit": 3
+    },
+    "display.show": {
+      "display.show": 15
+    },
+    "smalltalk.user.happy": {
+      "smalltalk.user.happy": 6
+    },
+    "smalltalk.user.sleepy": {
+      "smalltalk.user.can_not_sleep": 1,
+      "smalltalk.user.sad": 2,
+      "smalltalk.user.sleepy": 2
+    },
+    "code.explain": {
+      "account.open": 1,
+      "code.explain": 30,
+      "code.signature": 1,
+      "meta.self_knowledge": 2,
+      "smalltalk.agent.can_you_help": 1,
+      "smalltalk.agent.talk_to_me": 1,
+      "smalltalk.appraisal.well_done": 1,
+      "smalltalk.greetings.whatsup": 3
+    },
+    "smarthome.lights.switch.off": {
+      "smarthome.device.switch.off": 2,
+      "smarthome.lights.brightness.down": 1,
+      "smarthome.lights.brightness.down.implicit": 1,
+      "smarthome.lights.switch.check.off": 2,
+      "smarthome.lights.switch.off": 48,
+      "smarthome.lights.switch.schedule.off": 1
+    },
+    "timer.set": {
+      "smarthome.lights.hue.down": 1,
+      "timer.set": 14
+    },
+    "smalltalk.agent.talk_to_me": {
+      "knowledge.translate": 1,
+      "smalltalk.agent.talk_to_me": 15,
+      "smalltalk.greetings.nice_to_talk_to_you": 1,
+      "smalltalk.user.does_not_want_to_talk": 1,
+      "smalltalk.user.wants_to_talk": 1
+    },
+    "smalltalk.agent.annoying": {
+      "meta.privacy_probe": 1,
+      "smalltalk.agent.annoying": 10,
+      "smalltalk.agent.bad": 1
+    },
+    "smalltalk.user.testing_agent": {
+      "smalltalk.user.testing_agent": 8
+    },
+    "smalltalk.user.lonely": {
+      "smalltalk.user.lonely": 6
+    }
+  },
+  "accuracy": 0.7582482325216026,
+  "macro_f1": 0.7539208517672549,
+  "weighted_f1": 0.7667355608889685,
+  "total_examples": 5092,
+  "notes": null,
+  "per_class": {
+    "communication.text": {
+      "f1": 0.9655,
+      "precision": 1.0,
+      "recall": 0.9333,
+      "support": 15
+    },
+    "smalltalk.user.needs_advice": {
+      "f1": 0.8571,
+      "precision": 0.9474,
+      "recall": 0.7826,
+      "support": 23
+    },
+    "smarthome": {
+      "f1": 0.5306,
+      "precision": 0.5417,
+      "recall": 0.52,
+      "support": 25
+    },
+    "smarthome.device.brightness.down.implicit": {
+      "f1": 0.5714,
+      "precision": 0.5,
+      "recall": 0.6667,
+      "support": 6
+    },
+    "meta.self_knowledge": {
+      "f1": 0.5634,
+      "precision": 0.3922,
+      "recall": 1.0,
+      "support": 20
+    },
+    "smarthome.device.brightness.check.implicit": {
+      "f1": 0.5714,
+      "precision": 0.6667,
+      "recall": 0.5,
+      "support": 4
+    },
+    "smalltalk.agent.busy": {
+      "f1": 0.9412,
+      "precision": 1.0,
+      "recall": 0.8889,
+      "support": 18
+    },
+    "smarthome.heating.schedule.down": {
+      "f1": 0.7719,
+      "precision": 0.7333,
+      "recall": 0.8148,
+      "support": 27
+    },
+    "smalltalk.greetings.whatsup": {
+      "f1": 0.5763,
+      "precision": 0.4722,
+      "recall": 0.7391,
+      "support": 23
+    },
+    "smalltalk.agent.clever": {
+      "f1": 0.8889,
+      "precision": 0.9655,
+      "recall": 0.8235,
+      "support": 34
+    },
+    "music.play": {
+      "f1": 0.7985,
+      "precision": 0.9907,
+      "recall": 0.6688,
+      "support": 317
+    },
+    "smalltalk.agent.crazy": {
+      "f1": 0.9412,
+      "precision": 0.9412,
+      "recall": 0.9412,
+      "support": 17
+    },
+    "message": {
+      "f1": 0.8889,
+      "precision": 0.8,
+      "recall": 1.0,
+      "support": 4
+    },
+    "statement.observation": {
+      "f1": 0.75,
+      "precision": 1.0,
+      "recall": 0.6,
+      "support": 20
+    },
+    "smalltalk.dialog.hold_on": {
+      "f1": 0.875,
+      "precision": 0.875,
+      "recall": 0.875,
+      "support": 8
+    },
+    "smarthome.lights.brightness.down": {
+      "f1": 0.7626,
+      "precision": 0.8548,
+      "recall": 0.6883,
+      "support": 77
+    },
+    "news.search - next": {
+      "f1": 0.0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "support": 10
+    },
+    "smarthome.device.switch.check.off": {
+      "f1": 0.878,
+      "precision": 0.7826,
+      "recall": 1.0,
+      "support": 18
+    },
+    "smalltalk.greetings.nice_to_talk_to_you": {
+      "f1": 0.6087,
+      "precision": 0.4375,
+      "recall": 1.0,
+      "support": 7
+    },
+    "smarthome.lights.brightness.set": {
+      "f1": 0.7692,
+      "precision": 0.8333,
+      "recall": 0.7143,
+      "support": 21
+    },
+    "smalltalk.agent.occupation": {
+      "f1": 0.9412,
+      "precision": 1.0,
+      "recall": 0.8889,
+      "support": 9
+    },
+    "smalltalk.user.introduction": {
+      "f1": 0.6446,
+      "precision": 0.975,
+      "recall": 0.4815,
+      "support": 81
+    },
+    "analysis.trend": {
+      "f1": 0.9474,
+      "precision": 1.0,
+      "recall": 0.9,
+      "support": 10
+    },
+    "reminder.create": {
+      "f1": 0.9677,
+      "precision": 0.9375,
+      "recall": 1.0,
+      "support": 15
+    },
+    "smalltalk.agent.residence": {
+      "f1": 0.8077,
+      "precision": 0.7241,
+      "recall": 0.913,
+      "support": 23
+    },
+    "smarthome.lights.hue.check": {
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 17
+    },
+    "smarthome.device.brightness.up": {
+      "f1": 0.66,
+      "precision": 0.7333,
+      "recall": 0.6,
+      "support": 55
+    },
+    "smarthome.device.brightness.down": {
+      "f1": 0.7069,
+      "precision": 0.9535,
+      "recall": 0.5616,
+      "support": 73
+    },
+    "smarthome.device.switch.schedule.on": {
+      "f1": 0.6667,
+      "precision": 0.5625,
+      "recall": 0.8182,
+      "support": 11
+    },
+    "status.report": {
+      "f1": 0.9655,
+      "precision": 1.0,
+      "recall": 0.9333,
+      "support": 15
+    },
+    "music_player_control.add_playlist": {
+      "f1": 0.5385,
+      "precision": 0.3684,
+      "recall": 1.0,
+      "support": 7
+    },
+    "smarthome.heating.schedule.set": {
+      "f1": 0.8235,
+      "precision": 0.7,
+      "recall": 1.0,
+      "support": 7
+    },
+    "smalltalk.greetings.hello": {
+      "f1": 0.5758,
+      "precision": 0.7917,
+      "recall": 0.4524,
+      "support": 42
+    },
+    "smarthome.heating.set": {
+      "f1": 0.832,
+      "precision": 0.8525,
+      "recall": 0.8125,
+      "support": 64
+    },
+    "smalltalk.user.tired": {
+      "f1": 0.6667,
+      "precision": 1.0,
+      "recall": 0.5,
+      "support": 8
+    },
+    "smalltalk.emotions.wow": {
+      "f1": 0.75,
+      "precision": 1.0,
+      "recall": 0.6,
+      "support": 5
+    },
+    "smalltalk.user.wants_to_see_agent_again": {
+      "f1": 0.6,
+      "precision": 0.4615,
+      "recall": 0.8571,
+      "support": 7
+    },
+    "smarthome.lights.saturation.up": {
+      "f1": 0.9388,
+      "precision": 0.92,
+      "recall": 0.9583,
+      "support": 24
+    },
+    "music.shuffle": {
+      "f1": 0.9333,
+      "precision": 0.9333,
+      "recall": 0.9333,
+      "support": 15
+    },
+    "smalltalk.agent.acquaintance": {
+      "f1": 0.6667,
+      "precision": 0.8333,
+      "recall": 0.5556,
+      "support": 18
+    },
+    "smarthome.locks.schedule.unlock": {
+      "f1": 0.9434,
+      "precision": 0.9615,
+      "recall": 0.9259,
+      "support": 27
+    },
+    "search.locate": {
+      "f1": 0.7647,
+      "precision": 0.6842,
+      "recall": 0.8667,
+      "support": 15
+    },
+    "smarthome.device.brightness.check": {
+      "f1": 0.7742,
+      "precision": 0.9231,
+      "recall": 0.6667,
+      "support": 18
+    },
+    "smalltalk.user.joking": {
+      "f1": 0.9524,
+      "precision": 0.9091,
+      "recall": 1.0,
+      "support": 10
+    },
+    "smalltalk.agent.sure": {
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 5
+    },
+    "music_player_control.pause": {
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 8
+    },
+    "smarthome.lights.switch.check.off": {
+      "f1": 0.75,
+      "precision": 0.6,
+      "recall": 1.0,
+      "support": 9
+    },
+    "smarthome.heating.switch.off": {
+      "f1": 0.3158,
+      "precision": 0.1875,
+      "recall": 1.0,
+      "support": 3
+    },
+    "smarthome.device.switch": {
+      "f1": 0.6842,
+      "precision": 0.65,
+      "recall": 0.7222,
+      "support": 18
+    },
+    "smarthome.lights.brightness.up": {
+      "f1": 0.6598,
+      "precision": 0.8649,
+      "recall": 0.5333,
+      "support": 60
+    },
+    "smalltalk.user.will_be_back": {
+      "f1": 0.6667,
+      "precision": 0.5,
+      "recall": 1.0,
+      "support": 5
+    },
+    "smarthome.device.switch.schedule.off": {
+      "f1": 0.8462,
+      "precision": 0.8462,
+      "recall": 0.8462,
+      "support": 13
+    },
+    "smarthome.lights.switch.schedule.off": {
+      "f1": 0.9153,
+      "precision": 0.931,
+      "recall": 0.9,
+      "support": 30
+    },
+    "smarthome.device.volume.mute": {
+      "f1": 0.8571,
+      "precision": 0.7742,
+      "recall": 0.96,
+      "support": 25
+    },
+    "smalltalk.user.does_not_want_to_talk": {
+      "f1": 0.75,
+      "precision": 0.6667,
+      "recall": 0.8571,
+      "support": 7
+    },
+    "smarthome.lights.switch.check": {
+      "f1": 0.6667,
+      "precision": 0.5,
+      "recall": 1.0,
+      "support": 4
+    },
+    "smarthome.device.volume.mute.implicit": {
+      "f1": 0.75,
+      "precision": 0.6,
+      "recall": 1.0,
+      "support": 3
+    },
+    "smalltalk.appraisal.welcome": {
+      "f1": 0.9412,
+      "precision": 1.0,
+      "recall": 0.8889,
+      "support": 9
+    },
+    "web.search - previous": {
+      "f1": 0.0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "support": 10
+    },
+    "display.zoom": {
+      "f1": 0.75,
+      "precision": 1.0,
+      "recall": 0.6,
+      "support": 10
+    },
+    "smarthome.locks.open": {
+      "f1": 0.7931,
+      "precision": 0.7419,
+      "recall": 0.8519,
+      "support": 27
+    },
+    "smarthome.lights.brightness.down.implicit": {
+      "f1": 0.4348,
+      "precision": 0.2778,
+      "recall": 1.0,
+      "support": 10
+    },
+    "smalltalk.dialog.hug": {
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 15
+    },
+    "account.spending.check": {
+      "f1": 0.8889,
+      "precision": 0.8889,
+      "recall": 0.8889,
+      "support": 18
+    },
+    "smarthome.device.volume": {
+      "f1": 0.4783,
+      "precision": 0.55,
+      "recall": 0.4231,
+      "support": 52
+    },
+    "smalltalk.dialog.sorry": {
+      "f1": 0.8636,
+      "precision": 0.95,
+      "recall": 0.7917,
+      "support": 24
+    },
+    "smarthome.lights.brightness.up.implicit": {
+      "f1": 0.5,
+      "precision": 0.3333,
+      "recall": 1.0,
+      "support": 9
+    },
+    "smalltalk.user.going_to_bed": {
+      "f1": 0.9474,
+      "precision": 0.9,
+      "recall": 1.0,
+      "support": 9
+    },
+    "weather.activity": {
+      "f1": 0.7273,
+      "precision": 0.6857,
+      "recall": 0.7742,
+      "support": 31
+    },
+    "smarthome.heating.down.implicit": {
+      "f1": 0.6809,
+      "precision": 0.5714,
+      "recall": 0.8421,
+      "support": 19
+    },
+    "timer.check": {
+      "f1": 0.75,
+      "precision": 1.0,
+      "recall": 0.6,
+      "support": 10
+    },
+    "smarthome.heating.up.implicit": {
+      "f1": 0.6866,
+      "precision": 0.5349,
+      "recall": 0.9583,
+      "support": 24
+    },
+    "calendar.query": {
+      "f1": 0.7857,
+      "precision": 0.8462,
+      "recall": 0.7333,
+      "support": 15
+    },
+    "smalltalk.agent.there": {
+      "f1": 0.7619,
+      "precision": 0.6154,
+      "recall": 1.0,
+      "support": 8
+    },
+    "smalltalk.dialog.what_do_you_mean": {
+      "f1": 0.5882,
+      "precision": 0.4167,
+      "recall": 1.0,
+      "support": 5
+    },
+    "news.search": {
+      "f1": 0.9136,
+      "precision": 1.0,
+      "recall": 0.8409,
+      "support": 44
+    },
+    "music_player_control.resume": {
+      "f1": 0.8,
+      "precision": 0.8,
+      "recall": 0.8,
+      "support": 10
+    },
+    "smalltalk.user.back": {
+      "f1": 0.6,
+      "precision": 0.75,
+      "recall": 0.5,
+      "support": 6
+    },
+    "music_player_control.skip_forward": {
+      "f1": 0.7368,
+      "precision": 0.6774,
+      "recall": 0.8077,
+      "support": 26
+    },
+    "smarthome.lights.switch.schedule.on": {
+      "f1": 0.8889,
+      "precision": 0.9655,
+      "recall": 0.8235,
+      "support": 34
+    },
+    "display.enhance": {
+      "f1": 0.9,
+      "precision": 0.9,
+      "recall": 0.9,
+      "support": 10
+    },
+    "smalltalk.agent.good": {
+      "f1": 0.7451,
+      "precision": 0.6667,
+      "recall": 0.8444,
+      "support": 45
+    },
+    "smalltalk.user.busy": {
+      "f1": 0.5714,
+      "precision": 0.8,
+      "recall": 0.4444,
+      "support": 9
+    },
+    "smalltalk.agent.hobby": {
+      "f1": 0.8333,
+      "precision": 1.0,
+      "recall": 0.7143,
+      "support": 7
+    },
+    "smarthome.heating.switch.schedule.on": {
+      "f1": 0.75,
+      "precision": 0.6,
+      "recall": 1.0,
+      "support": 3
+    },
+    "smalltalk.appraisal.well_done": {
+      "f1": 0.5455,
+      "precision": 0.4615,
+      "recall": 0.6667,
+      "support": 9
+    },
+    "smarthome.lights.brightness.check": {
+      "f1": 0.7111,
+      "precision": 0.6154,
+      "recall": 0.8421,
+      "support": 19
+    },
+    "smalltalk.user.excited": {
+      "f1": 0.9091,
+      "precision": 1.0,
+      "recall": 0.8333,
+      "support": 6
+    },
+    "todo.add": {
+      "f1": 0.8966,
+      "precision": 0.9286,
+      "recall": 0.8667,
+      "support": 15
+    },
+    "smarthome.heating.schedule.up": {
+      "f1": 0.6667,
+      "precision": 0.5938,
+      "recall": 0.76,
+      "support": 25
+    },
+    "knowledge.translate": {
+      "f1": 0.8966,
+      "precision": 0.9286,
+      "recall": 0.8667,
+      "support": 15
+    },
+    "smarthome.device.volume.unmute.implicit": {
+      "f1": 0.2857,
+      "precision": 0.1667,
+      "recall": 1.0,
+      "support": 2
+    },
+    "smalltalk.agent.age": {
+      "f1": 0.8889,
+      "precision": 0.8,
+      "recall": 1.0,
+      "support": 8
+    },
+    "communication.email": {
+      "f1": 0.9333,
+      "precision": 0.9333,
+      "recall": 0.9333,
+      "support": 15
+    },
+    "music_player_control.stop": {
+      "f1": 0.5926,
+      "precision": 0.4706,
+      "recall": 0.8,
+      "support": 10
+    },
+    "web.search": {
+      "f1": 0.7692,
+      "precision": 1.0,
+      "recall": 0.625,
+      "support": 24
+    },
+    "smalltalk.greetings.goodnight": {
+      "f1": 0.8,
+      "precision": 0.7368,
+      "recall": 0.875,
+      "support": 16
+    },
+    "smarthome.heating.up": {
+      "f1": 0.8028,
+      "precision": 0.95,
+      "recall": 0.6951,
+      "support": 82
+    },
+    "weather.query": {
+      "f1": 0.0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "support": 116
+    },
+    "smalltalk.emotions.ha_ha": {
+      "f1": 0.7755,
+      "precision": 1.0,
+      "recall": 0.6333,
+      "support": 30
+    },
+    "smarthome.lights.saturation.set": {
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 10
+    },
+    "music_player_control.repeat": {
+      "f1": 0.72,
+      "precision": 0.8571,
+      "recall": 0.6207,
+      "support": 29
+    },
+    "weather.outfit": {
+      "f1": 0.8364,
+      "precision": 0.8846,
+      "recall": 0.7931,
+      "support": 29
+    },
+    "analysis.analyze": {
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 15
+    },
+    "smalltalk.greetings.nice_to_meet_you": {
+      "f1": 0.7907,
+      "precision": 0.68,
+      "recall": 0.9444,
+      "support": 18
+    },
+    "smarthome.device.switch.check.on": {
+      "f1": 0.8649,
+      "precision": 0.8,
+      "recall": 0.9412,
+      "support": 17
+    },
+    "smarthome.lights.switch.on": {
+      "f1": 0.8265,
+      "precision": 0.8526,
+      "recall": 0.802,
+      "support": 101
+    },
+    "code.signature": {
+      "f1": 0.7368,
+      "precision": 0.7778,
+      "recall": 0.7,
+      "support": 20
+    },
+    "knowledge.capital": {
+      "f1": 0.9091,
+      "precision": 0.8333,
+      "recall": 1.0,
+      "support": 15
+    },
+    "account.earning.check": {
+      "f1": 0.72,
+      "precision": 0.9,
+      "recall": 0.6,
+      "support": 15
+    },
+    "account.open": {
+      "f1": 0.8333,
+      "precision": 0.7143,
+      "recall": 1.0,
+      "support": 5
+    },
+    "music_player_control.skip_backward": {
+      "f1": 0.7143,
+      "precision": 0.7692,
+      "recall": 0.6667,
+      "support": 15
+    },
+    "smalltalk.agent.bad": {
+      "f1": 0.7463,
+      "precision": 0.625,
+      "recall": 0.9259,
+      "support": 27
+    },
+    "news.search - repeat": {
+      "f1": 0.0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "support": 10
+    },
+    "smarthome.device.volume.check": {
+      "f1": 0.7674,
+      "precision": 0.8684,
+      "recall": 0.6875,
+      "support": 48
+    },
+    "smalltalk.user.misses_agent": {
+      "f1": 0.8571,
+      "precision": 0.8571,
+      "recall": 0.8571,
+      "support": 7
+    },
+    "alarm.set": {
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 15
+    },
+    "smarthome.heating": {
+      "f1": 0.8,
+      "precision": 0.7586,
+      "recall": 0.8462,
+      "support": 26
+    },
+    "smalltalk.agent.boss": {
+      "f1": 0.7778,
+      "precision": 0.6364,
+      "recall": 1.0,
+      "support": 7
+    },
+    "smarthome.device.switch.off": {
+      "f1": 0.8557,
+      "precision": 0.954,
+      "recall": 0.7757,
+      "support": 107
+    },
+    "smalltalk.dialog.i_do_not_care": {
+      "f1": 0.6957,
+      "precision": 0.5714,
+      "recall": 0.8889,
+      "support": 9
+    },
+    "smarthome.device.brightness.set": {
+      "f1": 0.8889,
+      "precision": 0.8889,
+      "recall": 0.8889,
+      "support": 18
+    },
+    "smalltalk.agent.happy": {
+      "f1": 0.9524,
+      "precision": 1.0,
+      "recall": 0.9091,
+      "support": 11
+    },
+    "code.find_usage": {
+      "f1": 0.8,
+      "precision": 0.9333,
+      "recall": 0.7,
+      "support": 20
+    },
+    "weather.temperature": {
+      "f1": 0.64,
+      "precision": 0.9231,
+      "recall": 0.4898,
+      "support": 49
+    },
+    "smalltalk.user.angry": {
+      "f1": 0.8,
+      "precision": 0.8571,
+      "recall": 0.75,
+      "support": 8
+    },
+    "smarthome.heating.check": {
+      "f1": 0.7021,
+      "precision": 0.5893,
+      "recall": 0.8684,
+      "support": 38
+    },
+    "smarthome.locks.schedule.close": {
+      "f1": 0.9296,
+      "precision": 0.9706,
+      "recall": 0.8919,
+      "support": 37
+    },
+    "smalltalk.agent.ready": {
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 7
+    },
+    "smarthome.heating.down": {
+      "f1": 0.7579,
+      "precision": 0.9,
+      "recall": 0.6545,
+      "support": 110
+    },
+    "smarthome.device.volume.check.implicit": {
+      "f1": 0.6,
+      "precision": 0.4286,
+      "recall": 1.0,
+      "support": 3
+    },
+    "smalltalk.user.likes_agent": {
+      "f1": 0.8609,
+      "precision": 0.8784,
+      "recall": 0.8442,
+      "support": 77
+    },
+    "smarthome.heating.switch.on": {
+      "f1": 0.3529,
+      "precision": 0.2143,
+      "recall": 1.0,
+      "support": 3
+    },
+    "web.search - repeat": {
+      "f1": 0.5455,
+      "precision": 0.3913,
+      "recall": 0.9,
+      "support": 10
+    },
+    "smalltalk.agent.fired": {
+      "f1": 0.8571,
+      "precision": 0.9231,
+      "recall": 0.8,
+      "support": 15
+    },
+    "calendar.cancel": {
+      "f1": 0.9474,
+      "precision": 1.0,
+      "recall": 0.9,
+      "support": 10
+    },
+    "smarthome.lights.switch.check.on": {
+      "f1": 0.5714,
+      "precision": 0.8889,
+      "recall": 0.4211,
+      "support": 19
+    },
+    "smarthome.device.volume.up": {
+      "f1": 0.8657,
+      "precision": 0.9355,
+      "recall": 0.8056,
+      "support": 36
+    },
+    "meta.memory_check": {
+      "f1": 0.65,
+      "precision": 0.52,
+      "recall": 0.8667,
+      "support": 15
+    },
+    "smalltalk.user.waits": {
+      "f1": 0.8889,
+      "precision": 1.0,
+      "recall": 0.8,
+      "support": 5
+    },
+    "calendar.schedule": {
+      "f1": 0.9032,
+      "precision": 0.875,
+      "recall": 0.9333,
+      "support": 15
+    },
+    "smarthome.device.volume.set": {
+      "f1": 0.9268,
+      "precision": 0.8636,
+      "recall": 1.0,
+      "support": 19
+    },
+    "smalltalk.greetings.nice_to_see_you": {
+      "f1": 0.7143,
+      "precision": 0.6,
+      "recall": 0.8824,
+      "support": 17
+    },
+    "smarthome.locks.lock": {
+      "f1": 0.8095,
+      "precision": 0.85,
+      "recall": 0.7727,
+      "support": 22
+    },
+    "smalltalk.agent.answer_my_question": {
+      "f1": 0.9474,
+      "precision": 1.0,
+      "recall": 0.9,
+      "support": 20
+    },
+    "smarthome.device.brightness.schedule.down": {
+      "f1": 0.4444,
+      "precision": 0.2857,
+      "recall": 1.0,
+      "support": 4
+    },
+    "smalltalk.user.bored": {
+      "f1": 0.6667,
+      "precision": 1.0,
+      "recall": 0.5,
+      "support": 8
+    },
+    "smalltalk.agent.be_clever": {
+      "f1": 0.8889,
+      "precision": 0.8,
+      "recall": 1.0,
+      "support": 8
+    },
+    "communication.call": {
+      "f1": 0.5581,
+      "precision": 0.4286,
+      "recall": 0.8,
+      "support": 15
+    },
+    "smalltalk.agent.chatbot": {
+      "f1": 0.875,
+      "precision": 0.875,
+      "recall": 0.875,
+      "support": 8
+    },
+    "smalltalk.user.wants_to_talk": {
+      "f1": 0.5926,
+      "precision": 0.5,
+      "recall": 0.7273,
+      "support": 11
+    },
+    "smarthome.heating.switch.schedule.off": {
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 3
+    },
+    "smalltalk.appraisal.no_problem": {
+      "f1": 0.6087,
+      "precision": 0.5,
+      "recall": 0.7778,
+      "support": 9
+    },
+    "smarthome.locks.check": {
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 6
+    },
+    "smalltalk.agent.hungry": {
+      "f1": 0.9333,
+      "precision": 1.0,
+      "recall": 0.875,
+      "support": 8
+    },
+    "smalltalk.user.loves_agent": {
+      "f1": 0.64,
+      "precision": 0.5,
+      "recall": 0.8889,
+      "support": 9
+    },
+    "meta.privacy_probe": {
+      "f1": 0.8125,
+      "precision": 0.7647,
+      "recall": 0.8667,
+      "support": 15
+    },
+    "payment.due_date": {
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 10
+    },
+    "smalltalk.agent.funny": {
+      "f1": 0.8387,
+      "precision": 0.8125,
+      "recall": 0.8667,
+      "support": 15
+    },
+    "smarthome.lights.hue.down": {
+      "f1": 0.9286,
+      "precision": 0.8966,
+      "recall": 0.963,
+      "support": 27
+    },
+    "smarthome.device.switch.on": {
+      "f1": 0.8858,
+      "precision": 0.8584,
+      "recall": 0.9151,
+      "support": 106
+    },
+    "music_player_control.play": {
+      "f1": 0.6667,
+      "precision": 0.5263,
+      "recall": 0.9091,
+      "support": 11
+    },
+    "smarthome.lights.saturation.down": {
+      "f1": 0.9508,
+      "precision": 0.9355,
+      "recall": 0.9667,
+      "support": 30
+    },
+    "smarthome.lights.brightness.schedule.up": {
+      "f1": 0.5,
+      "precision": 0.3333,
+      "recall": 1.0,
+      "support": 5
+    },
+    "smalltalk.agent.boring": {
+      "f1": 0.8235,
+      "precision": 0.7,
+      "recall": 1.0,
+      "support": 7
+    },
+    "smalltalk.appraisal.good": {
+      "f1": 0.641,
+      "precision": 0.7692,
+      "recall": 0.5495,
+      "support": 91
+    },
+    "smarthome.heating.check.implicit": {
+      "f1": 0.4783,
+      "precision": 0.3929,
+      "recall": 0.6111,
+      "support": 18
+    },
+    "smarthome.locks.schedule.open": {
+      "f1": 0.9286,
+      "precision": 0.963,
+      "recall": 0.8966,
+      "support": 29
+    },
+    "smalltalk.agent.can_you_help": {
+      "f1": 0.825,
+      "precision": 0.8462,
+      "recall": 0.8049,
+      "support": 41
+    },
+    "account.balance.check": {
+      "f1": 0.9388,
+      "precision": 0.92,
+      "recall": 0.9583,
+      "support": 24
+    },
+    "knowledge.define": {
+      "f1": 0.7692,
+      "precision": 0.9091,
+      "recall": 0.6667,
+      "support": 15
+    },
+    "smarthome.locks.check.open": {
+      "f1": 0.8421,
+      "precision": 0.8,
+      "recall": 0.8889,
+      "support": 9
+    },
+    "smarthome.locks.unlock": {
+      "f1": 0.8889,
+      "precision": 0.9091,
+      "recall": 0.8696,
+      "support": 23
+    },
+    "smarthome.device.switch.check": {
+      "f1": 0.3333,
+      "precision": 0.2,
+      "recall": 1.0,
+      "support": 7
+    },
+    "music_player_control.shuffle": {
+      "f1": 0.9091,
+      "precision": 0.8333,
+      "recall": 1.0,
+      "support": 5
+    },
+    "smalltalk.user.has_birthday": {
+      "f1": 0.8,
+      "precision": 0.6667,
+      "recall": 1.0,
+      "support": 6
+    },
+    "smarthome.lights.saturation.check": {
+      "f1": 0.9697,
+      "precision": 1.0,
+      "recall": 0.9412,
+      "support": 17
+    },
+    "status.diagnostic": {
+      "f1": 0.8571,
+      "precision": 0.8182,
+      "recall": 0.9,
+      "support": 10
+    },
+    "smalltalk.user.can_not_sleep": {
+      "f1": 0.5556,
+      "precision": 0.5,
+      "recall": 0.625,
+      "support": 8
+    },
+    "smarthome.device.volume.down": {
+      "f1": 0.96,
+      "precision": 1.0,
+      "recall": 0.9231,
+      "support": 39
+    },
+    "smalltalk.greetings.goodmorning": {
+      "f1": 0.8571,
+      "precision": 0.75,
+      "recall": 1.0,
+      "support": 12
+    },
+    "todo.list": {
+      "f1": 0.8421,
+      "precision": 0.8889,
+      "recall": 0.8,
+      "support": 10
+    },
+    "smarthome.device.brightness.schedule.up": {
+      "f1": 0.7273,
+      "precision": 0.5714,
+      "recall": 1.0,
+      "support": 4
+    },
+    "alarm.snooze": {
+      "f1": 0.9474,
+      "precision": 1.0,
+      "recall": 0.9,
+      "support": 10
+    },
+    "smalltalk.appraisal.bad": {
+      "f1": 0.7059,
+      "precision": 0.8824,
+      "recall": 0.5882,
+      "support": 51
+    },
+    "smarthome.lights.brightness.check.implicit": {
+      "f1": 0.1429,
+      "precision": 0.0909,
+      "recall": 0.3333,
+      "support": 3
+    },
+    "smarthome.locks.close": {
+      "f1": 0.8182,
+      "precision": 0.8571,
+      "recall": 0.7826,
+      "support": 23
+    },
+    "smarthome.lights.hue.set": {
+      "f1": 0.9333,
+      "precision": 1.0,
+      "recall": 0.875,
+      "support": 16
+    },
+    "music_player_control.add_favorite": {
+      "f1": 0.6207,
+      "precision": 0.5,
+      "recall": 0.8182,
+      "support": 11
+    },
+    "time.query": {
+      "f1": 0.7143,
+      "precision": 0.5556,
+      "recall": 1.0,
+      "support": 15
+    },
+    "smalltalk.greetings.goodevening": {
+      "f1": 0.6667,
+      "precision": 0.5,
+      "recall": 1.0,
+      "support": 6
+    },
+    "smarthome.lights.brightness.schedule.down": {
+      "f1": 0.7143,
+      "precision": 0.5556,
+      "recall": 1.0,
+      "support": 5
+    },
+    "date.query": {
+      "f1": 0.8148,
+      "precision": 0.9167,
+      "recall": 0.7333,
+      "support": 15
+    },
+    "smalltalk.greetings.bye": {
+      "f1": 0.6923,
+      "precision": 1.0,
+      "recall": 0.5294,
+      "support": 34
+    },
+    "smalltalk.agent.beautiful": {
+      "f1": 0.8,
+      "precision": 0.95,
+      "recall": 0.6909,
+      "support": 55
+    },
+    "smalltalk.agent.origin": {
+      "f1": 0.6667,
+      "precision": 0.5625,
+      "recall": 0.8182,
+      "support": 11
+    },
+    "smarthome.locks.check.lock": {
+      "f1": 0.7273,
+      "precision": 0.5714,
+      "recall": 1.0,
+      "support": 8
+    },
+    "web.search - next": {
+      "f1": 0.5926,
+      "precision": 0.4706,
+      "recall": 0.8,
+      "support": 10
+    },
+    "news.search - previous": {
+      "f1": 0.5517,
+      "precision": 0.4211,
+      "recall": 0.8,
+      "support": 10
+    },
+    "smarthome.device.volume.unmute": {
+      "f1": 0.7742,
+      "precision": 1.0,
+      "recall": 0.6316,
+      "support": 19
+    },
+    "smalltalk.greetings.how_are_you": {
+      "f1": 0.7105,
+      "precision": 0.7297,
+      "recall": 0.6923,
+      "support": 39
+    },
+    "smarthome.locks.check.unlock": {
+      "f1": 0.875,
+      "precision": 0.7778,
+      "recall": 1.0,
+      "support": 7
+    },
+    "smalltalk.dialog.wrong": {
+      "f1": 0.9231,
+      "precision": 0.8571,
+      "recall": 1.0,
+      "support": 12
+    },
+    "smarthome.lights.hue.up": {
+      "f1": 0.9697,
+      "precision": 0.9412,
+      "recall": 1.0,
+      "support": 32
+    },
+    "smalltalk.appraisal.thank_you": {
+      "f1": 0.7937,
+      "precision": 0.8621,
+      "recall": 0.7353,
+      "support": 34
+    },
+    "weather": {
+      "f1": 0.0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "support": 0
+    },
+    "smarthome.locks.schedule.lock": {
+      "f1": 0.9383,
+      "precision": 0.95,
+      "recall": 0.9268,
+      "support": 41
+    },
+    "smarthome.locks.check.close": {
+      "f1": 0.7778,
+      "precision": 0.6364,
+      "recall": 1.0,
+      "support": 7
+    },
+    "weather.condition": {
+      "f1": 0.9213,
+      "precision": 0.9762,
+      "recall": 0.8723,
+      "support": 47
+    },
+    "smalltalk.agent.marry_user": {
+      "f1": 0.8,
+      "precision": 1.0,
+      "recall": 0.6667,
+      "support": 9
+    },
+    "smalltalk.agent.real": {
+      "f1": 0.9565,
+      "precision": 1.0,
+      "recall": 0.9167,
+      "support": 12
+    },
+    "smarthome.device.volume.up.implicit": {
+      "f1": 0.6667,
+      "precision": 0.5,
+      "recall": 1.0,
+      "support": 2
+    },
+    "smalltalk.user.sad": {
+      "f1": 0.2857,
+      "precision": 0.175,
+      "recall": 0.7778,
+      "support": 9
+    },
+    "smalltalk.agent.my_friend": {
+      "f1": 0.9167,
+      "precision": 0.9167,
+      "recall": 0.9167,
+      "support": 36
+    },
+    "smarthome.device.brightness.up.implicit": {
+      "f1": 0.6667,
+      "precision": 0.6,
+      "recall": 0.75,
+      "support": 4
+    },
+    "smalltalk.agent.right": {
+      "f1": 0.7755,
+      "precision": 0.7037,
+      "recall": 0.8636,
+      "support": 22
+    },
+    "smalltalk.user.here": {
+      "f1": 0.625,
+      "precision": 0.4545,
+      "recall": 1.0,
+      "support": 5
+    },
+    "smalltalk.user.looks_like": {
+      "f1": 0.3636,
+      "precision": 0.2222,
+      "recall": 1.0,
+      "support": 6
+    },
+    "smalltalk.agent.birth_date": {
+      "f1": 0.8333,
+      "precision": 1.0,
+      "recall": 0.7143,
+      "support": 7
+    },
+    "smalltalk.user.good": {
+      "f1": 0.8571,
+      "precision": 0.75,
+      "recall": 1.0,
+      "support": 6
+    },
+    "music.search": {
+      "f1": 0.8265,
+      "precision": 0.9,
+      "recall": 0.7642,
+      "support": 106
+    },
+    "smarthome.device.volume.down.implicit": {
+      "f1": 0.5455,
+      "precision": 0.375,
+      "recall": 1.0,
+      "support": 3
+    },
+    "display.show": {
+      "f1": 0.8108,
+      "precision": 0.6818,
+      "recall": 1.0,
+      "support": 15
+    },
+    "smalltalk.user.happy": {
+      "f1": 0.9231,
+      "precision": 0.8571,
+      "recall": 1.0,
+      "support": 6
+    },
+    "smalltalk.user.sleepy": {
+      "f1": 0.5714,
+      "precision": 1.0,
+      "recall": 0.4,
+      "support": 5
+    },
+    "code.explain": {
+      "f1": 0.8333,
+      "precision": 0.9375,
+      "recall": 0.75,
+      "support": 40
+    },
+    "smarthome.lights.switch.off": {
+      "f1": 0.9057,
+      "precision": 0.9412,
+      "recall": 0.8727,
+      "support": 55
+    },
+    "timer.set": {
+      "f1": 0.875,
+      "precision": 0.8235,
+      "recall": 0.9333,
+      "support": 15
+    },
+    "smalltalk.agent.talk_to_me": {
+      "f1": 0.6977,
+      "precision": 0.625,
+      "recall": 0.7895,
+      "support": 19
+    },
+    "smalltalk.agent.annoying": {
+      "f1": 0.9091,
+      "precision": 1.0,
+      "recall": 0.8333,
+      "support": 12
+    },
+    "smalltalk.user.testing_agent": {
+      "f1": 0.9412,
+      "precision": 0.8889,
+      "recall": 1.0,
+      "support": 8
+    },
+    "smalltalk.user.lonely": {
+      "f1": 0.2,
+      "precision": 0.1111,
+      "recall": 1.0,
+      "support": 6
+    }
+  }
+}

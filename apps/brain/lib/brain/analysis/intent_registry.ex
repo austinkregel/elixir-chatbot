@@ -1,30 +1,107 @@
 defmodule Brain.Analysis.IntentRegistry do
   @moduledoc """
-  Centralized registry for intent metadata.
-  Replaces scattered keyword-based intent checks with structured lookups.
+  Centralized registry for intent metadata, backed by GenServer + ETS.
 
-  This module provides a single source of truth for intent properties including:
+  Provides a single source of truth for intent properties including:
   - Domain (weather, music, device, navigation, smalltalk, etc.)
   - Category (expressive, directive, assertive)
   - Speech act type (greeting, farewell, command, request_information, etc.)
   - Required and optional entities
   - Entity mappings and clarification templates
+
+  At runtime, data is served from ETS for fast concurrent reads.
+  A compile-time fallback registry is kept for cases where the GenServer
+  is not yet started (compilation, tests, startup race).
+
+  New intents can be registered at runtime via `register_intent/2`.
   """
 
-  # Load registry at compile time
+  use GenServer
+  require Logger
+
+  @ets_table :intent_registry
   @registry_path "priv/analysis/intent_registry.json"
   @external_resource @registry_path
 
-  @registry (case File.read(@registry_path) do
-               {:ok, content} ->
-                 case Jason.decode(content) do
-                   {:ok, data} -> data
-                   {:error, _} -> %{}
-                 end
+  # Compile-time fallback loaded from the same JSON
+  @fallback_registry (case File.read(@registry_path) do
+                        {:ok, content} ->
+                          case Jason.decode(content) do
+                            {:ok, data} -> data
+                            {:error, _} -> %{}
+                          end
 
-               {:error, _} ->
-                 %{}
-             end)
+                        {:error, _} ->
+                          %{}
+                      end)
+
+  # Speech act to intent mapping (static, no need for ETS)
+  @speech_act_intent_map %{
+    greeting: "smalltalk.greetings.hello",
+    farewell: "smalltalk.greetings.bye",
+    thanks: "smalltalk.appraisal.thank_you",
+    apology: "smalltalk.dialog.sorry",
+    how_are_you: "smalltalk.greetings.how_are_you",
+    compliment: "smalltalk.appraisal.good",
+    backchannel: "smalltalk.confirmation.ok",
+    continuation: "smalltalk.dialog.continue"
+  }
+
+  # --- GenServer lifecycle ---
+
+  def start_link(opts \\ []) do
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
+  end
+
+  @impl true
+  def init(opts) do
+    table = :ets.new(@ets_table, [:named_table, :set, :public, read_concurrency: true])
+
+    # Load from JSON on init
+    registry = load_registry(opts)
+
+    for {intent, meta} <- registry do
+      :ets.insert(table, {intent, meta})
+    end
+
+    Logger.info("IntentRegistry loaded #{map_size(registry)} intents into ETS")
+
+    {:ok, %{registry_path: registry_json_path(opts)}}
+  end
+
+  # --- Core lookup helper ---
+
+  # Single internal helper wrapping ETS lookup with fallback
+  defp get_entry(intent) when is_binary(intent) do
+    if :ets.whereis(@ets_table) != :undefined do
+      case :ets.lookup(@ets_table, intent) do
+        [{^intent, meta}] -> meta
+        [] -> nil
+      end
+    else
+      # Fallback to compile-time data when ETS not available
+      Map.get(@fallback_registry, intent)
+    end
+  rescue
+    ArgumentError ->
+      Map.get(@fallback_registry, intent)
+  end
+
+  defp get_entry(_), do: nil
+
+  # Helper to get all entries from ETS or fallback
+  defp all_entries do
+    if :ets.whereis(@ets_table) != :undefined do
+      :ets.tab2list(@ets_table) |> Map.new()
+    else
+      @fallback_registry
+    end
+  rescue
+    ArgumentError -> @fallback_registry
+  end
+
+  # --- Public API ---
 
   @doc """
   Get full metadata for an intent.
@@ -34,7 +111,7 @@ defmodule Brain.Analysis.IntentRegistry do
   def get(""), do: nil
 
   def get(intent) when is_binary(intent) do
-    Map.get(@registry, intent)
+    get_entry(intent)
   end
 
   def get(intent) when is_atom(intent), do: get(to_string(intent))
@@ -120,8 +197,8 @@ defmodule Brain.Analysis.IntentRegistry do
 
   ## Examples
 
-      iex> IntentRegistry.expected_entity_types("device.control")
-      ["device", "lights", "heating", "locks-status", "room", "color", "condition"]
+      iex> IntentRegistry.expected_entity_types("smarthome.device.switch.on")
+      ["device", "room"]
 
       iex> IntentRegistry.expected_entity_types("weather.query")
       ["location", "room", "city", "ambiguous_name_location", "date", "relative_date", "sys-date", "time", "sys-time", "unit-temperature"]
@@ -131,7 +208,9 @@ defmodule Brain.Analysis.IntentRegistry do
   """
   def expected_entity_types(intent) do
     case get(intent) do
-      nil -> []
+      nil ->
+        []
+
       meta ->
         meta
         |> Map.get("entity_mappings", %{})
@@ -192,18 +271,6 @@ defmodule Brain.Analysis.IntentRegistry do
   def continuation?(intent), do: speech_act(intent) == :continuation
 
   # Speech act to intent mapping
-  # Maps expressive speech act sub_types to their canonical intent names
-
-  @speech_act_intent_map %{
-    greeting: "smalltalk.greetings.hello",
-    farewell: "smalltalk.greetings.bye",
-    thanks: "smalltalk.appraisal.thank_you",
-    apology: "smalltalk.dialog.sorry",
-    how_are_you: "smalltalk.greetings.how_are_you",
-    compliment: "smalltalk.appraisal.good",
-    backchannel: "smalltalk.confirmation.ok",
-    continuation: "smalltalk.dialog.continue"
-  }
 
   @doc """
   Get the canonical intent name for a speech act sub_type.
@@ -283,14 +350,14 @@ defmodule Brain.Analysis.IntentRegistry do
 
   @doc "List all registered intents."
   def list_intents do
-    Map.keys(@registry)
+    all_entries() |> Map.keys()
   end
 
   @doc "List all intents for a given domain."
   def list_by_domain(domain) when is_atom(domain) do
     domain_str = to_string(domain)
 
-    @registry
+    all_entries()
     |> Enum.filter(fn {_intent, meta} -> meta["domain"] == domain_str end)
     |> Enum.map(fn {intent, _meta} -> intent end)
   end
@@ -299,7 +366,7 @@ defmodule Brain.Analysis.IntentRegistry do
   def list_by_category(category) when is_atom(category) do
     category_str = to_string(category)
 
-    @registry
+    all_entries()
     |> Enum.filter(fn {_intent, meta} -> meta["category"] == category_str end)
     |> Enum.map(fn {intent, _meta} -> intent end)
   end
@@ -331,10 +398,110 @@ defmodule Brain.Analysis.IntentRegistry do
 
   def humanize(_), do: "something"
 
-  # Private helpers
+  # --- Runtime registration ---
+
+  @doc """
+  Register a new intent at runtime. Persists to JSON for restart durability.
+  """
+  def register_intent(intent, metadata, name \\ __MODULE__)
+      when is_binary(intent) and is_map(metadata) do
+    GenServer.call(name, {:register_intent, intent, metadata})
+  end
+
+  @doc """
+  Checks if the GenServer is ready.
+  """
+  def ready?(name \\ __MODULE__) do
+    try do
+      GenServer.call(name, :ready?, 100)
+    catch
+      :exit, _ -> false
+    end
+  end
+
+  @doc """
+  Reload the registry from JSON file.
+  """
+  def reload(name \\ __MODULE__) do
+    GenServer.call(name, :reload)
+  end
+
+  # --- GenServer callbacks ---
+
+  @impl true
+  def handle_call({:register_intent, intent, metadata}, _from, state) do
+    :ets.insert(@ets_table, {intent, metadata})
+
+    # Persist to JSON
+    persist_registry(state.registry_path)
+
+    Logger.info("IntentRegistry: registered new intent '#{intent}'")
+    {:reply, :ok, state}
+  end
+
+  def handle_call(:ready?, _from, state) do
+    {:reply, true, state}
+  end
+
+  def handle_call(:reload, _from, state) do
+    registry = load_registry_from_path(state.registry_path)
+
+    :ets.delete_all_objects(@ets_table)
+
+    for {intent, meta} <- registry do
+      :ets.insert(@ets_table, {intent, meta})
+    end
+
+    Logger.info("IntentRegistry reloaded #{map_size(registry)} intents")
+    {:reply, :ok, state}
+  end
+
+  # --- Private helpers ---
 
   defp to_atom_or_nil(nil), do: nil
   defp to_atom_or_nil(""), do: nil
   defp to_atom_or_nil(str) when is_binary(str), do: String.to_atom(str)
   defp to_atom_or_nil(atom) when is_atom(atom), do: atom
+
+  defp load_registry(opts) do
+    path = registry_json_path(opts)
+    load_registry_from_path(path)
+  end
+
+  defp load_registry_from_path(path) do
+    case File.read(path) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, data} when is_map(data) -> data
+          _ -> @fallback_registry
+        end
+
+      {:error, _} ->
+        @fallback_registry
+    end
+  end
+
+  defp registry_json_path(opts) do
+    case Keyword.get(opts, :registry_path) do
+      nil ->
+        case :code.priv_dir(:brain) do
+          {:error, _} -> @registry_path
+          priv_dir -> Path.join(priv_dir, "analysis/intent_registry.json")
+        end
+
+      path ->
+        path
+    end
+  end
+
+  defp persist_registry(path) do
+    all = all_entries()
+    json = Jason.encode!(all, pretty: true)
+    dir = Path.dirname(path)
+    File.mkdir_p!(dir)
+    File.write!(path, json)
+  rescue
+    e ->
+      Logger.warning("Failed to persist intent registry: #{Exception.message(e)}")
+  end
 end

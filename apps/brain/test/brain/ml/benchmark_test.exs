@@ -8,8 +8,14 @@ defmodule Brain.ML.BenchmarkTest do
   alias Brain.ML
   use ExUnit.Case, async: false
   @moduletag :benchmark
+  @moduletag timeout: 300_000
 
   alias ML.{Evaluation, EvaluationStore}
+
+  setup_all do
+    Brain.TestHelpers.require_services!(:ml_inference)
+    :ok
+  end
 
   describe "intent classification" do
     @tag :benchmark

@@ -1,6 +1,10 @@
 defmodule Brain.KnowledgeStore do
   @moduledoc "Knowledge store for persistent storage of learned facts about users, pets, rooms, devices, etc.\nProvides functions to store and retrieve structured knowledge.\n\n## World Scoping\n\nSupports both legacy persona-based storage and new world-scoped storage.\nWorld-scoped knowledge is stored in `priv/training_worlds/{world_id}/knowledge.json`.\nPersona-based knowledge remains in `priv/knowledge/{persona}.json`.\n"
 
+  # World.Persistence is in a sibling umbrella app that depends on :brain.
+  # It's available at runtime but not at compile time.
+  @compile {:no_warn_undefined, World.Persistence}
+
   alias World.Persistence
   use GenServer
   require Logger

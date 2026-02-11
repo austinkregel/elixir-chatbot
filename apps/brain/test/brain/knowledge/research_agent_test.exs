@@ -6,6 +6,11 @@ defmodule Brain.Knowledge.ResearchAgentTest do
   alias Brain.Knowledge.ResearchAgent
   alias Types.{ResearchGoal, Finding}
 
+  setup_all do
+    Brain.TestHelpers.require_services!([Brain.Knowledge.SourceReliability])
+    :ok
+  end
+
   setup do
     ensure_pubsub_started()
 

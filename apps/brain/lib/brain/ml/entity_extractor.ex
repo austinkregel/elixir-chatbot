@@ -702,7 +702,11 @@ defmodule Brain.ML.EntityExtractor do
     end
   end
 
-  @doc "Extract proper nouns that aren't in the gazetteer using the LSTM NER model.\n\nThis handles novel names like \"Ephbaum\" that the gazetteer doesn't know about.\nThe LSTM NER model is trained to recognize named entities based on context,\nfalling back to POS tagger if LSTM is not available.\n"
+  # Extract proper nouns that aren't in the gazetteer using the LSTM NER model.
+  #
+  # This handles novel names like "Ephbaum" that the gazetteer doesn't know about.
+  # The LSTM NER model is trained to recognize named entities based on context,
+  # falling back to POS tagger if LSTM is not available.
   defp extract_proper_noun_hints(tokens, entity_maps) do
     case extract_with_lstm_ner(tokens, entity_maps) do
       {:ok, entities} when entities != [] ->

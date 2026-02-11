@@ -6,6 +6,11 @@ defmodule Brain.ML.TrainerTest do
 
   @moduletag :training
 
+  setup_all do
+    Brain.TestHelpers.require_services!(:ml_inference)
+    :ok
+  end
+
   describe "load_training_data/0" do
     test "returns list of {text, intent} tuples" do
       data = Trainer.load_training_data()

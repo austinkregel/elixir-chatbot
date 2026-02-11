@@ -31,10 +31,10 @@
     "optional_responses_proceeded": 0,
     "responses_deferred": 0,
     "silence_frustrations": 0,
-    "successful_responses": 19,
-    "total_interactions": 20
+    "successful_responses": 47,
+    "total_interactions": 48
   },
-  "last_updated": "2026-02-08T19:01:32.531278Z",
+  "last_updated": "2026-02-10T21:35:00.952188Z",
   "response_optionality": {
     "acknowledgment_defer_confidence": 0.7,
     "admin_locked": false,

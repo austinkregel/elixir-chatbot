@@ -131,11 +131,19 @@ end
 defmodule Brain.Analysis.ChunkAnalysis do
   @moduledoc "Complete analysis for a single chunk, combining results from all analyzers.\n"
 
-  alias Analysis.{DiscourseResult, SpeechActResult, SlotResult, SlotDetector}
+  alias Brain.Analysis.{DiscourseResult, SpeechActResult, SlotResult, SlotDetector}
   alias Brain.Analysis.Types.Event
   alias Brain.Analysis.InternalModel
 
   @type sentiment :: %{label: atom(), confidence: float()} | nil
+
+  @type fact_verification ::
+          {:verified, float()}
+          | {:contradicted, list(map())}
+          | {:uncertain, atom()}
+          | nil
+
+  @type epistemic_status :: :unchecked | :verified | :contradicted | :uncertain
 
   @type t :: %__MODULE__{
           chunk_index: non_neg_integer(),
@@ -150,7 +158,10 @@ defmodule Brain.Analysis.ChunkAnalysis do
           clarification_prompts: list(String.t()),
           confidence: float(),
           events: list(Event.t()),
-          sentiment: sentiment()
+          sentiment: sentiment(),
+          fact_verification: fact_verification(),
+          related_beliefs: list(map()),
+          epistemic_status: epistemic_status()
         }
 
   defstruct [
@@ -166,7 +177,10 @@ defmodule Brain.Analysis.ChunkAnalysis do
     clarification_prompts: [],
     confidence: 0.0,
     events: [],
-    sentiment: nil
+    sentiment: nil,
+    fact_verification: nil,
+    related_beliefs: [],
+    epistemic_status: :unchecked
   ]
 
   @doc "Creates a new chunk analysis.\n"
@@ -199,7 +213,13 @@ defmodule Brain.Analysis.ChunkAnalysis do
   @doc "Determines response strategy based on analysis results.\n"
   def determine_response_strategy(%__MODULE__{} = analysis) do
     cond do
-      analysis.discourse.addressee != :bot ->
+      # Only defer when clearly not addressed to the bot.
+      # :ambiguous and :unknown addressees should still be handled,
+      # especially for directives/commands (e.g. "Remind me to call mom").
+      analysis.discourse.addressee in [:user, :third_party] ->
+        %{analysis | response_strategy: :defer_to_user}
+
+      analysis.discourse.addressee not in [:bot, :ambiguous, :unknown] ->
         %{analysis | response_strategy: :defer_to_user}
 
       analysis.missing_context != [] ->

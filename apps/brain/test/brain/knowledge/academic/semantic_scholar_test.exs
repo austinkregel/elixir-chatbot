@@ -156,20 +156,36 @@ defmodule Brain.Knowledge.Academic.SemanticScholarTest do
     end
   end
 
-  describe "search/2 (integration)" do
-    @tag :integration
-    @tag :external_api
+  describe "search/2 (with snapshot)" do
+    setup do
+      # Load the snapshot for this test (server is started globally in test_helper.exs)
+      {:ok, _} = Brain.Test.HTTPSnapshot.use_snapshot("semantic_scholar/search_transformer")
+      :ok
+    end
+
     test "returns papers for a valid query" do
       alias Brain.Knowledge.Academic.SemanticScholar
 
       {:ok, papers} = SemanticScholar.search("transformer attention", limit: 3)
 
       assert is_list(papers)
-      assert papers != []
+      assert length(papers) == 3
 
       [paper | _] = papers
       assert %Paper{} = paper
       assert paper.source == :semantic_scholar
+      assert paper.title == "Attention Is All You Need"
+      assert paper.year == 2017
+    end
+
+    test "papers have expected fields from snapshot" do
+      alias Brain.Knowledge.Academic.SemanticScholar
+
+      {:ok, papers} = SemanticScholar.search("transformer attention", limit: 3)
+
+      [first | _] = papers
+      assert first.citation_count == 95000
+      assert first.venue =~ "Neural Information Processing"
     end
   end
 end

@@ -89,6 +89,9 @@ defmodule Brain.Memory.Consolidation do
           Store.link_episode_to_semantic(ep_id, semantic_id)
         end)
 
+        # Bridge to BeliefStore for epistemic integration
+        Brain.Epistemic.ConsolidationBridge.bridge_semantic_fact(semantic)
+
         {:ok, semantic_id}
 
       error ->

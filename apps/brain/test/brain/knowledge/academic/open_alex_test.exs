@@ -1,9 +1,13 @@
 defmodule Brain.Knowledge.Academic.OpenAlexTest do
   use ExUnit.Case, async: true
 
-  describe "search/2 (integration)" do
-    @tag :integration
-    @tag :external_api
+  describe "search/2 (with snapshot)" do
+    setup do
+      # Load the snapshot for this test (server is started globally in test_helper.exs)
+      {:ok, _} = Brain.Test.HTTPSnapshot.use_snapshot("open_alex/search_transformer")
+      :ok
+    end
+
     test "returns papers for a valid query" do
       alias Brain.Knowledge.Academic.OpenAlex
       alias Brain.Knowledge.Academic.Paper
@@ -11,19 +15,22 @@ defmodule Brain.Knowledge.Academic.OpenAlexTest do
       {:ok, papers} = OpenAlex.search("transformer attention", limit: 3)
 
       assert is_list(papers)
+      assert length(papers) == 3
 
-      if papers != [] do
-        [paper | _] = papers
-        assert %Paper{} = paper
-        assert paper.source == :openalex
-        assert paper.id =~ ~r/^W\d+$/
-      end
+      [paper | _] = papers
+      assert %Paper{} = paper
+      assert paper.source == :openalex
+      assert paper.title == "Attention Is All You Need"
     end
   end
 
-  describe "search_cs/2 (integration)" do
-    @tag :integration
-    @tag :external_api
+  describe "search_cs/2 (with snapshot)" do
+    setup do
+      # Use the CS-filtered snapshot (server is started globally in test_helper.exs)
+      {:ok, _} = Brain.Test.HTTPSnapshot.use_snapshot("open_alex/search_cs")
+      :ok
+    end
+
     test "applies CS concept filter" do
       alias Brain.Knowledge.Academic.OpenAlex
 

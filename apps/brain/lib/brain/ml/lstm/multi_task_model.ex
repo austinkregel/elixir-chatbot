@@ -223,15 +223,9 @@ defmodule Brain.ML.LSTM.MultiTaskModel do
 
   defp load_tfidf_fallback(state) do
     if state.fallback_enabled do
-      case load_or_build_tfidf() do
-        {:ok, tfidf_model} ->
-          Logger.info("TF-IDF fallback model loaded")
-          %{state | tfidf_model: tfidf_model, status: :fallback_only}
-
-        {:error, reason} ->
-          Logger.error("Failed to load TF-IDF fallback", %{reason: reason})
-          %{state | status: :no_model}
-      end
+      {:ok, tfidf_model} = load_or_build_tfidf()
+      Logger.info("TF-IDF fallback model loaded")
+      %{state | tfidf_model: tfidf_model, status: :fallback_only}
     else
       %{state | status: :no_model}
     end
@@ -243,15 +237,10 @@ defmodule Brain.ML.LSTM.MultiTaskModel do
         {:ok, model}
 
       {:error, _} ->
-        case DataLoaders.load_all_intents() do
-          {:ok, examples} ->
-            training_data = Enum.map(examples, fn ex -> {ex.text, ex.intent} end)
-            model = SimpleClassifier.train(training_data)
-            {:ok, model}
-
-          error ->
-            error
-        end
+        {:ok, examples} = DataLoaders.load_all_intents()
+        training_data = Enum.map(examples, fn ex -> {ex.text, ex.intent} end)
+        model = SimpleClassifier.train(training_data)
+        {:ok, model}
     end
   end
 

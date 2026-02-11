@@ -108,9 +108,11 @@ defmodule Brain.ML.InformalExpansions do
   defp get_expansion(lower_token) do
     case Process.whereis(__MODULE__) do
       nil ->
-        # Agent not started - try direct lookup from compiled data
-        # This allows usage even before supervision tree starts
-        fallback_lookup(lower_token)
+        # Agent not started - return nil immediately.
+        # Fallback file reads per-token are too expensive during training
+        # (5000+ samples x many tokens = thousands of disk reads).
+        # The system works without expansions; they're a nice-to-have.
+        nil
 
       _pid ->
         Agent.get(__MODULE__, fn state ->
@@ -123,9 +125,12 @@ defmodule Brain.ML.InformalExpansions do
     path = Path.join(Application.app_dir(:brain, "priv"), "../" <> @data_file)
 
     # Try multiple paths since we might be in different contexts
+    # (umbrella root, app directory, or compiled app context)
     paths_to_try = [
       @data_file,
       Path.join(File.cwd!(), @data_file),
+      # Umbrella app context: apps/brain -> ../../data/...
+      Path.join([File.cwd!(), "..", "..", @data_file]),
       path
     ]
 
@@ -166,26 +171,6 @@ defmodule Brain.ML.InformalExpansions do
           expansions: %{}
         }
     end
-  end
-
-  # Fallback for when agent isn't started yet
-  # Loads directly from file (slower but works during startup)
-  defp fallback_lookup(lower_token) do
-    path = Path.join(File.cwd!(), @data_file)
-
-    if File.exists?(path) do
-      case File.read(path) |> then(&Jason.decode(elem(&1, 1))) do
-        {:ok, data} ->
-          Map.get(data["expansions"] || %{}, lower_token)
-
-        _ ->
-          nil
-      end
-    else
-      nil
-    end
-  rescue
-    _ -> nil
   end
 
   # Preserve the original case pattern when expanding

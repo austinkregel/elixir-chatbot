@@ -58,9 +58,6 @@ defmodule Brain.ML.LSTM.AccuracyComparisonTest do
       )
 
       # Test confusable cases
-      tfidf_correct = 0
-      lstm_correct = 0
-
       results =
         Enum.map(@confusable_cases, fn {text, expected_domain} ->
           # TF-IDF classification

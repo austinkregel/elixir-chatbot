@@ -177,6 +177,46 @@ defmodule Brain.Epistemic.BeliefStore do
     GenServer.call(__MODULE__, {:confirm_belief, belief_id, confidence_boost})
   end
 
+  @doc """
+  Adds a belief with source authority context.
+
+  The confidence and decay behaviour are determined by the authority
+  profile loaded from SourceAuthority. This replaces the old
+  `add_admin_belief/4` function.
+
+  ## Parameters
+
+    - subject: :user | :world | :self | String.t()
+    - predicate: atom or string identifying the property
+    - object: the value of the belief
+    - authority_key: atom like :mentor, :academic_expert, :stranger
+    - opts: additional keyword options (merged; authority defaults take precedence)
+  """
+  def add_belief_with_authority(subject, predicate, object, authority_key, opts \\ []) do
+    alias Brain.Epistemic.SourceAuthority
+
+    effective_conf = SourceAuthority.effective_confidence(authority_key)
+
+    merged_opts =
+      Keyword.merge(
+        [
+          source: :explicit,
+          confidence: effective_conf,
+          source_authority: authority_key,
+          provenance: ["authority:#{authority_key}"]
+        ],
+        opts
+      )
+
+    result = add_belief(subject, predicate, object, merged_opts)
+
+    if match?({:ok, _}, result) do
+      SourceAuthority.record_outcome(authority_key, :added)
+    end
+
+    result
+  end
+
   @doc "Links a belief to a JTMS node.\n"
   def link_to_node(belief_id, node_id) do
     GenServer.call(__MODULE__, {:link_to_node, belief_id, node_id})
@@ -222,6 +262,10 @@ defmodule Brain.Epistemic.BeliefStore do
 
     state = maybe_load_from_disk(state)
 
+    # Schedule confidence decay tick
+    decay_interval = Config.get().decay_interval_ms
+    if decay_interval > 0, do: Process.send_after(self(), :decay_tick, decay_interval)
+
     Logger.info("BeliefStore initialized", belief_count: map_size(state.beliefs))
 
     {:ok, state}
@@ -233,6 +277,10 @@ defmodule Brain.Epistemic.BeliefStore do
     new_by_user = add_to_index(state.by_user, belief.user_id, belief.id)
     new_by_subject = add_to_index(state.by_subject, belief.subject, belief.id)
     new_by_predicate = add_to_index(state.by_predicate, belief.predicate, belief.id)
+
+    # Create JTMS node for justification tracking
+    belief = maybe_create_jtms_node(belief)
+    new_beliefs = Map.put(new_beliefs, belief.id, belief)
 
     new_state = %{
       state
@@ -257,9 +305,15 @@ defmodule Brain.Epistemic.BeliefStore do
       nil ->
         {:reply, {:error, :not_found}, state}
 
-      _belief ->
+      belief ->
         new_retracted = MapSet.put(state.retracted, belief_id)
         new_state = %{state | retracted: new_retracted}
+
+        # Track credibility for the source authority
+        if belief.source_authority do
+          alias Brain.Epistemic.SourceAuthority
+          SourceAuthority.record_outcome(belief.source_authority, :contradicted)
+        end
 
         Logger.debug("Belief retracted", id: belief_id)
 
@@ -325,6 +379,12 @@ defmodule Brain.Epistemic.BeliefStore do
         new_beliefs = Map.put(state.beliefs, belief_id, updated)
         new_state = %{state | beliefs: new_beliefs}
 
+        # Track credibility for the source authority
+        if belief.source_authority do
+          alias Brain.Epistemic.SourceAuthority
+          SourceAuthority.record_outcome(belief.source_authority, :confirmed)
+        end
+
         {:reply, {:ok, updated}, new_state}
     end
   end
@@ -387,6 +447,108 @@ defmodule Brain.Epistemic.BeliefStore do
   @impl true
   def handle_call(:ready?, _from, state) do
     {:reply, true, state}
+  end
+
+  @impl true
+  def handle_info(:decay_tick, state) do
+    config = Config.get()
+    new_state = apply_confidence_decay(state, config)
+
+    # Re-schedule
+    if config.decay_interval_ms > 0 do
+      Process.send_after(self(), :decay_tick, config.decay_interval_ms)
+    end
+
+    {:noreply, new_state}
+  end
+
+  def handle_info(_msg, state), do: {:noreply, state}
+
+  defp apply_confidence_decay(state, config) do
+    now = DateTime.utc_now()
+    min_age_seconds = div(config.decay_min_age_ms, 1000)
+
+    {updated_beliefs, retracted_ids} =
+      Enum.reduce(state.beliefs, {%{}, []}, fn {id, belief}, {acc, retracted} ->
+        if belief.source in config.decay_exempt_sources or MapSet.member?(state.retracted, id) do
+          {Map.put(acc, id, belief), retracted}
+        else
+          # Only decay if last_confirmed is old enough
+          age_seconds =
+            case Map.get(belief, :last_confirmed) do
+              nil -> min_age_seconds + 1
+              ts -> DateTime.diff(now, ts, :second)
+            end
+
+          if age_seconds >= min_age_seconds do
+            # Authority-aware decay rate
+            rate =
+              if belief.source_authority do
+                alias Brain.Epistemic.SourceAuthority
+
+                SourceAuthority.effective_decay_rate(
+                  belief.source_authority,
+                  config.decay_rate
+                )
+              else
+                config.decay_rate
+              end
+
+            new_confidence = belief.confidence * (1.0 - rate)
+
+            if new_confidence < 0.1 do
+              # Auto-retract
+              Logger.debug("Belief auto-retracted due to decay",
+                id: id,
+                subject: belief.subject,
+                predicate: belief.predicate
+              )
+
+              {Map.put(acc, id, %{belief | confidence: 0.0}), [id | retracted]}
+            else
+              {Map.put(acc, id, %{belief | confidence: new_confidence}), retracted}
+            end
+          else
+            {Map.put(acc, id, belief), retracted}
+          end
+        end
+      end)
+
+    new_retracted = Enum.reduce(retracted_ids, state.retracted, &MapSet.put(&2, &1))
+
+    %{state | beliefs: updated_beliefs, retracted: new_retracted}
+  end
+
+  defp maybe_create_jtms_node(%Belief{node_id: node_id} = belief)
+       when not is_nil(node_id) do
+    # Already has a JTMS node
+    belief
+  end
+
+  defp maybe_create_jtms_node(%Belief{source: source} = belief) do
+    alias Brain.Epistemic.JTMS
+
+    datum = "belief:#{belief.subject}:#{belief.predicate}:#{belief.object}"
+
+    result =
+      case source do
+        :explicit ->
+          JTMS.create_premise(datum)
+
+        _ ->
+          # :inferred, :learned, :consolidated — retractable assumptions
+          JTMS.create_assumption(datum, true)
+      end
+
+    case result do
+      {:ok, node_id} ->
+        %{belief | node_id: node_id}
+
+      _ ->
+        belief
+    end
+  rescue
+    _ -> belief
   end
 
   defp add_to_index(index, nil, _id) do

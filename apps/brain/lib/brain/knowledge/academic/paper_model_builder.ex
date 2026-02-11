@@ -52,7 +52,7 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
   end
 
   @doc "Ingests multiple papers into the epistemic model.\n\nProcesses papers in sequence to properly detect cross-paper contradictions.\n"
-  @spec ingest_papers([Paper.t()]) :: {:ok, [String.t()]} | {:error, term()}
+  @spec ingest_papers([Paper.t()]) :: {:ok, [String.t()]}
   def ingest_papers(papers) when is_list(papers) do
     results =
       papers

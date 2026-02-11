@@ -1,0 +1,94 @@
+{
+  "profiles": {
+    "mentor": {
+      "label": "Mentor",
+      "description": "Trusted guide with deep subject knowledge and personal relationship",
+      "initial_confidence": 0.85,
+      "decay_rate_multiplier": 0.5,
+      "jtms_node_type": "assumption",
+      "credibility_floor": 0.3,
+      "category": "personal"
+    },
+    "academic_expert": {
+      "label": "Academic Expert",
+      "description": "Published researcher or professor in a relevant field",
+      "initial_confidence": 0.90,
+      "decay_rate_multiplier": 0.3,
+      "jtms_node_type": "assumption",
+      "credibility_floor": 0.4,
+      "category": "professional"
+    },
+    "industry_expert": {
+      "label": "Industry Expert",
+      "description": "Practitioner with professional expertise in a domain",
+      "initial_confidence": 0.85,
+      "decay_rate_multiplier": 0.4,
+      "jtms_node_type": "assumption",
+      "credibility_floor": 0.35,
+      "category": "professional"
+    },
+    "postgraduate": {
+      "label": "Postgraduate",
+      "description": "Graduate student or recent graduate with focused study",
+      "initial_confidence": 0.75,
+      "decay_rate_multiplier": 0.6,
+      "jtms_node_type": "assumption",
+      "credibility_floor": 0.25,
+      "category": "academic"
+    },
+    "student": {
+      "label": "Student",
+      "description": "Undergraduate or learner actively studying a subject",
+      "initial_confidence": 0.60,
+      "decay_rate_multiplier": 0.8,
+      "jtms_node_type": "assumption",
+      "credibility_floor": 0.2,
+      "category": "academic"
+    },
+    "hobbyist": {
+      "label": "Hobbyist",
+      "description": "Enthusiast with practical but informal knowledge",
+      "initial_confidence": 0.65,
+      "decay_rate_multiplier": 0.7,
+      "jtms_node_type": "assumption",
+      "credibility_floor": 0.2,
+      "category": "personal"
+    },
+    "friend": {
+      "label": "Friend",
+      "description": "Personal relationship with general trust but no specific expertise",
+      "initial_confidence": 0.70,
+      "decay_rate_multiplier": 0.6,
+      "jtms_node_type": "assumption",
+      "credibility_floor": 0.25,
+      "category": "personal"
+    },
+    "acquaintance": {
+      "label": "Acquaintance",
+      "description": "Known person with limited trust established",
+      "initial_confidence": 0.55,
+      "decay_rate_multiplier": 0.8,
+      "jtms_node_type": "assumption",
+      "credibility_floor": 0.15,
+      "category": "personal"
+    },
+    "stranger": {
+      "label": "Stranger",
+      "description": "Unknown source with no established trust",
+      "initial_confidence": 0.40,
+      "decay_rate_multiplier": 1.0,
+      "jtms_node_type": "assumption",
+      "credibility_floor": 0.1,
+      "category": "unknown"
+    },
+    "parody": {
+      "label": "Parody / Satire",
+      "description": "Intentionally fictional or satirical source — not factual",
+      "initial_confidence": 0.05,
+      "decay_rate_multiplier": 2.0,
+      "jtms_node_type": "assumption",
+      "credibility_floor": 0.0,
+      "category": "entertainment"
+    }
+  }
+}

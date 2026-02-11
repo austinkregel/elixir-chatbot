@@ -13,7 +13,7 @@ defmodule ChatWeb.GettextTest do
     end
 
     test "can translate simple strings" do
-      result = Gettext.gettext(ChatWeb.Gettext, "Hello")
+      result = Gettext.dgettext(ChatWeb.Gettext, "default", "Hello")
       assert result == "Hello"
     end
 

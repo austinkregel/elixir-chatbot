@@ -71,7 +71,6 @@ defmodule Brain.Response.LSTMResponse do
     :exit, _ -> {:ok, Enum.with_index(responses, fn r, i -> {r, 1.0 - i * 0.1} end)}
   end
 
-  @doc "Select the best response from candidates using LSTM scoring.\n"
   @doc "Reload the model from disk without restarting the GenServer.\n"
   def reload(name \\ __MODULE__) do
     GenServer.call(name, :reload, 30_000)
@@ -314,7 +313,7 @@ defmodule Brain.Response.LSTMResponse do
 
     memory_response =
       case MemoryAugmented.generate(intent, entities) do
-        {:ok, response} -> [response]
+        {:ok, response, _meta} -> [response]
         _ -> []
       end
 

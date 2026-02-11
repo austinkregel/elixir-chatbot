@@ -87,7 +87,7 @@ defmodule Brain.Response.GeneratorTest do
       ]
 
       log = with_captured_logs(fn ->
-        {:ok, response, type} = Generator.generate("device.control", entities, nil)
+        {:ok, response, type} = Generator.generate("smarthome.device.switch.on", entities, nil)
 
         assert is_binary(response)
         # Response should mention lights/device or be a valid control response
@@ -202,7 +202,7 @@ defmodule Brain.Response.GeneratorTest do
         analyses: [
           %{
             speech_act: %{category: :directive, sub_type: :command, is_question: false},
-            intent: "device.control",
+            intent: "smarthome.device.switch.on",
             entities: [%{entity_type: "device", value: "lights"}],
             confidence: 0.9
           }
@@ -213,7 +213,7 @@ defmodule Brain.Response.GeneratorTest do
 
       with_captured_logs(fn ->
         {response, type} =
-          Generator.generate_from_analysis(analysis_model, "device.control", entities, nil)
+          Generator.generate_from_analysis(analysis_model, "smarthome.device.switch.on", entities, nil)
 
         assert is_binary(response)
         assert type in [:domain, :template, :fallback, :synthesized]

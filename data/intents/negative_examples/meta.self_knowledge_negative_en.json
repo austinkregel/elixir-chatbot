@@ -1,0 +1,12 @@
+[
+  {"text": "tell me about the weather", "correct_intent": "weather.query"},
+  {"text": "what can you tell me about music", "correct_intent": "music.search"},
+  {"text": "tell me a joke", "correct_intent": "smalltalk.humor.joke"},
+  {"text": "what time is it", "correct_intent": "time.query"},
+  {"text": "tell me about France", "correct_intent": "knowledge.query"},
+  {"text": "what do you know about dogs", "correct_intent": "knowledge.query"},
+  {"text": "can you explain quantum physics", "correct_intent": "knowledge.query"},
+  {"text": "how does photosynthesis work", "correct_intent": "knowledge.query"},
+  {"text": "tell me something interesting", "correct_intent": "smalltalk.general_knowledge"},
+  {"text": "what happened in the news today", "correct_intent": "news.query"}
+]

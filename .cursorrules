@@ -20,10 +20,11 @@ These rules MUST be followed in all code contributions:
 
 | App | Purpose |
 |-----|---------|
-| `brain` | Core NLP, ML (classical + LSTM), Memory, Epistemic, Response, Code Analysis, Telemetry |
-| `world` | Training worlds, entity discovery, type inference |
+| `brain` | Core NLP, ML (classical + LSTM), Memory, Epistemic, Response, Knowledge, Code Analysis, Telemetry, Autonomous Learning |
+| `world` | Training worlds, entity discovery, type inference, entity auto-promotion |
 | `tasks` | NLP benchmark task data curation |
 | `chat_web` | Phoenix 1.8 web layer with LiveView |
+| `fourth_wall` | Code maintenance tooling, automated Credo fixers |
 
 ### Core Architecture
 
@@ -41,14 +42,23 @@ apps/
 │   │   ├── event_extractor.ex
 │   │   ├── racing_analyzer.ex       # Fast-path heuristic matching
 │   │   ├── response_gate.ex         # Response optionality
-│   │   └── outcome_learner.ex
+│   │   ├── outcome_learner.ex       # Outcome learning + training example generation
+│   │   ├── intent_registry.ex       # Runtime-updatable GenServer+ETS (compile-time fallback)
+│   │   ├── intent_review_queue.ex   # Novel intent candidate review queue
+│   │   ├── intent_auto_promoter.ex  # Auto-approves variations of existing intents
+│   │   ├── novelty_detector.ex      # Novelty detection + PubSub gap publishing
+│   │   └── comprehension_assessor.ex # 8-dimension comprehension gate GenServer
+│   │       ├── comprehension_profile.ex  # Comprehension profile struct
+│   │       └── dimension_evaluators.ex   # 8 dimension evaluator functions
 │   ├── memory/                # Cognitive memory system
 │   │   ├── embedder.ex        # TF-IDF vectorization
 │   │   ├── store.ex           # Episode/semantic memory
+│   │   ├── consolidation.ex   # Episode clustering → SemanticFacts (+ ConsolidationBridge)
 │   │   └── think.ex           # High-level memory API
 │   ├── ml/                    # Machine learning
 │   │   ├── tokenizer.ex       # Text tokenization (use this, not regex)
-│   │   ├── intent_classifier_simple.ex  # TF-IDF + cosine similarity
+│   │   ├── simple_classifier.ex      # Stateless TF-IDF classifier (with incremental update_model/3)
+│   │   ├── intent_classifier_simple.ex  # GenServer wrapping SimpleClassifier (+ incremental_update/2)
 │   │   ├── entity_extractor.ex
 │   │   ├── gazetteer.ex       # ETS-backed entity lookup
 │   │   ├── pos_tagger.ex
@@ -58,6 +68,7 @@ apps/
 │   │   ├── evaluation_store.ex # Historical evaluation results
 │   │   ├── corpus_manager.ex  # Corpus size monitoring (<50 GB)
 │   │   ├── training_server.ex # Async training jobs + scheduling
+│   │   ├── training_example_buffer.ex  # ETS buffer → incremental TF-IDF updates
 │   │   └── lstm/              # Deep learning models (Axon/Nx)
 │   │       ├── unified_model.ex       # Multi-task: intent + NER + sentiment + speech act
 │   │       ├── multi_task_model.ex    # Multi-task: intent + NER + POS
@@ -74,16 +85,27 @@ apps/
 │   │   ├── template_store.ex, template_blender.ex
 │   │   └── response_quality.ex
 │   ├── knowledge/             # Knowledge expansion
-│   │   ├── learning_center.ex, review_queue.ex
+│   │   ├── learning_center.ex       # Research session orchestrator
+│   │   ├── review_queue.ex          # Candidate review (with auto-approval rules)
+│   │   ├── learning_triggers.ex     # Conversation-driven auto-research triggers
 │   │   ├── source_reliability.ex, corroborator.ex
-│   │   └── research_agent.ex
+│   │   └── research_agent.ex        # Content fetching + comprehension gate
 │   ├── epistemic/             # Belief/knowledge system (JTMS)
+│   │   ├── belief_store.ex    # Beliefs + JTMS integration + confidence decay
+│   │   ├── jtms.ex            # Justification Truth Maintenance System
+│   │   ├── consolidation_bridge.ex  # SemanticFact → Belief bridge
+│   │   ├── contradiction_handler.ex
+│   │   └── types.ex           # Belief, Config (with decay settings), etc.
+│   ├── services/              # External service integration
+│   │   ├── credential_vault.ex, cache.ex
+│   │   └── weather.ex
 │   └── code/                  # Code analysis pipeline
 │       ├── pipeline.ex, parser.ex, symbol_extractor.ex
 │       └── code_gazetteer.ex
 ├── world/lib/world/
 │   ├── manager.ex, training_world.ex, context.ex
 │   ├── entity_discoverer.ex, type_inferrer.ex
+│   ├── entity_promoter.ex     # Auto-promotes discovered entities to Gazetteer
 │   └── model_registry.ex
 ├── tasks/lib/tasks/
 │   ├── analyzer.ex, transformer.ex, source.ex
@@ -192,6 +214,8 @@ Brain.Response.LSTMResponse.reload()
 ### Configuration
 
 - `priv/analysis/slot_schemas.json` - Required/optional slots per intent
+- `priv/analysis/intent_registry.json` - Intent metadata (runtime-updatable via GenServer)
+- `priv/analysis/comprehension_weights.json` - EMA-evolved comprehension dimension weights
 - `data/intents/*.json` - Training data for intent classification
 - `data/entities/*.json` - Entity definitions for gazetteer
 - `priv/ml_models/` - Trained classical model files (`.term`)
@@ -246,6 +270,11 @@ mix regenerate_test_models --all      # Regenerate all test models
 
 ## Testing
 
+When writing tests, do not use external APIs. Use snapshots instead.
+See `test/support/http_snapshot.ex` for more information.
+
+
+
 ### Running Tests
 
 ```bash
@@ -277,17 +306,52 @@ mix test --exclude requires_lstm   # Skip LSTM-dependent tests
 - Use `<Layouts.app>` wrapper in templates
 - Use `<.input>` and `<.form>` components
 - WorldContext on_mount hook for persistent world selection
-- PubSub topics: `brain:status`, `brain:learning`, `brain:conversations`, `training:progress`
+- PubSub topics: `brain:status`, `brain:learning`, `brain:conversations`, `training:progress`, `knowledge:review`, `learning:novel_input`, `training:requests`, `world_models:status`
 - No inline `<script>` tags - use app.js hooks
 - Tailwind CSS + daisyUI for styling
 
 ### ML Framework Stack
 
-- `Nx` ~0.7 - Numerical computing
-- `Axon` ~0.6 - Neural network framework
-- `EXLA` ~0.7 - XLA compiler backend (GPU acceleration)
+- `Nx` ~0.10 - Numerical computing
+- `Axon` ~0.8 - Neural network framework
+- `EXLA` ~0.10 - XLA compiler backend (GPU acceleration)
 - `Scholar` ~0.3 - Statistical/ML functions
 - Erlang `:erlang.binary_to_term` / `term_to_binary` for model serialization
+
+## Autonomous Learning System
+
+The system learns autonomously from conversations, research, and outcomes.
+All autonomous features are opt-in and gated by safety mechanisms.
+
+### Key Modules
+
+| Module | Purpose |
+|--------|---------|
+| `ComprehensionAssessor` | 8-dimension self-interrogation gate for knowledge acquisition |
+| `ComprehensionProfile` | Assessment result struct (verdict, gaps, learnable flag) |
+| `DimensionEvaluators` | 8 evaluator functions reading from ChunkAnalysis fields |
+| `IntentRegistry` (GenServer) | Runtime-updatable intent metadata (ETS + JSON persistence, compile-time fallback) |
+| `IntentAutoPromoter` | Auto-approves intent variations (5/day cap) |
+| `LearningTriggers` | Conversation novelty → auto-triggered research sessions (2/day cap) |
+| `ReviewQueue` (auto-approval) | Auto-approves high-confidence corroborated findings (10/day cap) |
+| `TrainingExampleBuffer` | Collects high-activation outcomes → incremental TF-IDF updates |
+| `ConsolidationBridge` | Bridges SemanticFacts from memory consolidation to BeliefStore |
+| `EntityPromoter` | Auto-promotes discovered entities to Gazetteer (>= 3 occurrences) |
+| `BeliefStore` (decay) | Inferred belief confidence decay + JTMS node creation |
+
+### PubSub Topics (Autonomous Learning)
+
+| Topic | Events | Subscribers |
+|-------|--------|-------------|
+| `knowledge:review` | `:candidate_approved`, `:candidate_rejected`, `:candidate_added` | ComprehensionAssessor (weight evolution) |
+| `learning:novel_input` | `{:novel_input, text, score, domain}` | LearningTriggers |
+| `training:requests` | `{:retrain_requested, world_id, :drift_guard}` | TrainingServer |
+
+### Config Kill Switches
+
+- `auto_extraction_enabled` (epistemic config) — gates event→belief extraction
+- `auto_approval_enabled` (application env) — gates ReviewQueue auto-approval
+- `intent_promotion_enabled` (application env) — gates novelty detection → review queue
 
 ## Quick Reference
 
@@ -318,4 +382,22 @@ Brain.Analysis.SlotDetector.detect("weather.query", [])
 
 # Test evaluation
 Brain.ML.Evaluation.accuracy(predictions, actuals)
+
+# Comprehension assessment
+Brain.Analysis.ComprehensionAssessor.assess(chunk_analyses)
+Brain.Analysis.ComprehensionAssessor.stats()
+Brain.Analysis.ComprehensionAssessor.reset_weights()
+
+# Runtime intent registration
+Brain.Analysis.IntentRegistry.register_intent("my.new_intent", %{"domain" => "custom", "category" => "directive"})
+
+# Learning triggers status
+Brain.Knowledge.LearningTriggers.stats()
+
+# Training example buffer status
+Brain.ML.TrainingExampleBuffer.stats()
+Brain.ML.TrainingExampleBuffer.flush()
+
+# Entity promoter status
+World.EntityPromoter.stats()
 ```

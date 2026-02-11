@@ -348,15 +348,19 @@ flowchart TB
         WORLD["WorldManager"]
         WCTX["WorldContext"]
         ENTDISC["EntityDiscoverer"]
+        ENTPROM["EntityPromoter"]
         OUTCOME["OutcomeLearner"]
         HEUR["HeuristicStore"]
+        TEB["TrainingExampleBuffer"]
     end
 
     subgraph Knowledge["Knowledge Expansion"]
         LC["LearningCenter"]
         RA["ResearchAgent"]
+        COMPRA["ComprehensionAssessor"]
         RQ["ReviewQueue"]
         SR["SourceReliability"]
+        LTRIG["LearningTriggers"]
     end
 
     subgraph Stores["Data Stores"]
@@ -416,16 +420,27 @@ flowchart TB
     ENTDISC --> WORLD
     WORLD --> GAZ
 
-    %% Knowledge expansion
+    %% Knowledge expansion with comprehension gate
     LC --> RA
-    RA --> RQ
+    RA --> COMPRA
+    COMPRA --> RQ
     RQ --> BELIEF
     SR --> RA
+    LTRIG --> LC
+
+    %% Autonomous entity/intent learning
+    ENTDISC --> ENTPROM
+    ENTPROM --> GAZ
+    OUTCOME --> TEB
+    TEB --> IC
 
     %% Response generation
     GEN --> TS
     GEN --> FD
     GEN --> MSTORE
+
+    %% Memory consolidation bridge
+    CONSOL --> BELIEF
 
     %% Learner
     BRAIN --> KS
@@ -436,6 +451,9 @@ flowchart TB
     style JTMS fill:#f9f,stroke:#333,stroke-width:2px
     style WORLD fill:#9f9,stroke:#333,stroke-width:2px
     style LC fill:#ff9,stroke:#333,stroke-width:2px
+    style COMPRA fill:#f9f,stroke:#333,stroke-width:2px
+    style LTRIG fill:#ff9,stroke:#333,stroke-width:2px
+    style TEB fill:#fbb,stroke:#333,stroke-width:2px
 ```
 
 ## Application Startup Order
@@ -473,6 +491,7 @@ flowchart TD
     subgraph Adaptive["Adaptive Processing"]
         AC[Analysis.AnalyzerCalibration]
         HS[Analysis.HeuristicStore]
+        CA[Analysis.ComprehensionAssessor]
         IC[ML.IntentClassifierSimple]
         WM[Learning.WorldManager]
         WMR[Learning.WorldModelRegistry]
@@ -485,11 +504,19 @@ flowchart TD
         SR[Knowledge.SourceReliability]
         RQ[Knowledge.ReviewQueue]
         LC[Knowledge.LearningCenter]
+        LT[Knowledge.LearningTriggers]
+    end
+
+    subgraph AutoLearning["Autonomous Learning"]
+        IR[Analysis.IntentRegistry - GenServer]
+        IRQ[Analysis.IntentReviewQueue]
+        IAP[Analysis.IntentAutoPromoter]
+        EPROM[World.EntityPromoter]
     end
 
     subgraph Main["Main Components"]
         BRAIN[Brain]
-        EP[ChatBotWeb.Endpoint]
+        ENDPOINT[ChatBotWeb.Endpoint]
     end
 
     Core --> ML --> Epistemic --> Adaptive --> Knowledge --> Main
@@ -1672,6 +1699,197 @@ Benefits over web sources:
 - No network latency or rate limiting
 - Reproducible training
 - Diverse domains (Wikipedia, Science, News, etc.)
+
+## Autonomous Learning System
+
+The system learns autonomously from conversations, research outcomes, and analysis feedback.
+All autonomous features are opt-in, gated by safety mechanisms, and rate-limited.
+
+### Autonomous Learning Overview
+
+```mermaid
+flowchart TB
+    subgraph Conversation["Conversation Processing"]
+        PIPE["Pipeline.process"]
+        NOVELTY["NoveltyDetector"]
+        OUTCOME["OutcomeLearner"]
+        EVENTS["EventExtractor"]
+    end
+
+    subgraph Triggers["Learning Triggers"]
+        LT["LearningTriggers<br/>(GenServer)"]
+        PUBSUB_NOVEL[("PubSub<br/>learning:novel_input")]
+    end
+
+    subgraph ComprehensionGate["Comprehension Gate"]
+        CA["ComprehensionAssessor<br/>(GenServer + ETS)"]
+        DE["DimensionEvaluators<br/>(8 dimensions)"]
+        CP["ComprehensionProfile<br/>(verdict + gaps)"]
+    end
+
+    subgraph Knowledge["Knowledge Pipeline"]
+        LC["LearningCenter"]
+        RA["ResearchAgent"]
+        COR["Corroborator"]
+        RQ["ReviewQueue<br/>(auto-approval)"]
+    end
+
+    subgraph BeliefPipeline["Belief Pipeline"]
+        BS["BeliefStore<br/>(+ JTMS nodes)"]
+        DECAY["Confidence Decay"]
+        CB["ConsolidationBridge"]
+        CONSOL["Memory.Consolidation"]
+    end
+
+    subgraph IntentLearning["Intent Learning"]
+        IR["IntentRegistry<br/>(GenServer+ETS)"]
+        IAP["IntentAutoPromoter"]
+        IRQ["IntentReviewQueue"]
+    end
+
+    subgraph ModelUpdates["Incremental Model Updates"]
+        TEB["TrainingExampleBuffer<br/>(ETS)"]
+        ICS["IntentClassifierSimple<br/>(incremental_update)"]
+    end
+
+    subgraph EntityLearning["Entity Learning"]
+        EP["EntityPromoter"]
+        GAZ["Gazetteer"]
+        ED["EntityDiscoverer"]
+    end
+
+    %% Conversation → Triggers
+    PIPE --> NOVELTY -->|novel input| PUBSUB_NOVEL --> LT
+    LT -->|3+ in domain / 24h| LC
+
+    %% Knowledge Pipeline with Comprehension Gate
+    LC --> RA
+    RA --> CA
+    CA --> DE --> CP
+    CP -->|learnable| COR
+    CP -->|not learnable| BLOCK["Blocked (logged)"]
+    COR --> RQ
+    RQ -->|auto-approve| BS
+    RQ -->|manual review| ADMIN["Admin"]
+
+    %% Belief Pipeline
+    EVENTS --> BS
+    BS -->|JTMS| JTMS_NODE["JTMS Node"]
+    CONSOL --> CB --> BS
+    DECAY -.->|periodic| BS
+
+    %% Intent Learning
+    NOVELTY --> IRQ
+    IAP -->|variations only| IRQ
+    IRQ -->|approved| IR
+
+    %% Model Updates
+    OUTCOME -->|activation >= 0.8| TEB
+    TEB -->|50+ examples| ICS
+
+    %% Entity Promotion
+    ED --> EP
+    EP -->|>= 3 occurrences| GAZ
+
+    %% Weight Evolution
+    RQ -->|approval/rejection| CA_WEIGHTS["Weight Evolution<br/>(EMA)"]
+    CA_WEIGHTS --> CA
+
+    %% Styling
+    style CA fill:#f9f,stroke:#333,stroke-width:2px
+    style LT fill:#ff9,stroke:#333,stroke-width:2px
+    style RQ fill:#9f9,stroke:#333,stroke-width:2px
+    style BS fill:#bbf,stroke:#333,stroke-width:2px
+    style TEB fill:#fbb,stroke:#333,stroke-width:2px
+    style BLOCK fill:#f99,stroke:#333,stroke-width:2px
+```
+
+### Comprehension Assessment Flow
+
+The ComprehensionAssessor gates knowledge acquisition by scoring text understanding across 8 dimensions:
+
+```mermaid
+flowchart LR
+    subgraph Input["Pipeline Output"]
+        CA_LIST["List<ChunkAnalysis>"]
+    end
+
+    subgraph Dimensions["8 Dimension Evaluators"]
+        D1["Referential Clarity<br/>WHAT is this about?"]
+        D2["Actor Identification<br/>WHO is involved?"]
+        D3["Propositional Content<br/>WHAT is claimed?"]
+        D4["Temporal Grounding<br/>WHEN does it apply?"]
+        D5["Contextual Sufficiency<br/>Enough CONTEXT?"]
+        D6["Epistemic Grounding<br/>Relates to known FACTS?"]
+        D7["Structural Coherence<br/>Makes SENSE? (hard gate)"]
+        D8["Illocutionary Clarity<br/>WHAT KIND of speech?"]
+    end
+
+    subgraph Scoring["Profile Building"]
+        WEIGHTS["Evolved Weights<br/>(EMA from outcomes)"]
+        COMPOSITE["Weighted Composite Score"]
+        VERDICT{"Verdict"}
+    end
+
+    subgraph Outcomes[""]
+        COMP[":comprehended (>= 0.7)<br/>learnable ✓"]
+        PART[":partial (>= 0.4)<br/>learnable ✓ (penalty)"]
+        OPAQ[":opaque (>= 0.2)<br/>blocked ✗"]
+        GARB[":garbled (< 0.2)<br/>blocked ✗"]
+    end
+
+    CA_LIST --> D1 & D2 & D3 & D4 & D5 & D6 & D7 & D8
+    D1 & D2 & D3 & D4 & D5 & D6 & D7 & D8 --> COMPOSITE
+    WEIGHTS --> COMPOSITE
+    COMPOSITE --> VERDICT
+    VERDICT --> COMP & PART & OPAQ & GARB
+    D7 -->|"score < 0.2"| GARB
+
+    style D7 fill:#f99,stroke:#333,stroke-width:2px
+    style COMP fill:#9f9
+    style PART fill:#ff9
+    style OPAQ fill:#fbb
+    style GARB fill:#f66
+```
+
+### Safety Mechanisms
+
+| Mechanism | Details |
+|-----------|---------|
+| Comprehension gate | Composite < 0.4 blocks text from learning pipeline |
+| Structural coherence hard gate | Score < 0.2 = `:garbled` regardless of other dimensions |
+| Partial verdict penalty | Findings from `:partial` comprehension get `confidence * composite_score` |
+| Cold-start protection | Dimension weights don't evolve until 10+ outcomes |
+| Weight rollback | Last 5 weight snapshots persisted; `reset_weights/0` reverts to equal weights |
+| Auto-approval cap | 10/day (ReviewQueue), 5/day (IntentAutoPromoter) |
+| Auto-trigger cap | 2 LearningCenter sessions per day |
+| Config kill switches | `auto_extraction_enabled`, `auto_approval_enabled` |
+| Confidence decay | Inferred beliefs decay 5%/tick; auto-retracted below 0.1 |
+| Incremental drift guard | Full retrain after 200 incremental TF-IDF updates |
+| Human-in-the-loop | Genuinely new intents always require human approval |
+| World isolation | Entity promotions use world-scoped `Gazetteer.add_to_world/4` |
+| Backpressure | Belief extraction via `Task.Supervisor` with max_children limits |
+| IntentRegistry fallback | Compile-time `@fallback_registry` prevents breakage if GenServer unavailable |
+
+### Supervision Tree (New Components)
+
+These components are added to the supervision trees:
+
+**Brain.Application** (`apps/brain/lib/brain/application.ex`):
+```
+... existing children ...
+├── ComprehensionAssessor    (after HeuristicStore, before KnowledgeStore)
+├── IntentRegistry           (before IntentReviewQueue)
+├── IntentAutoPromoter       (after IntentReviewQueue)
+└── LearningTriggers         (after LearningCenter)
+```
+
+**World.Application** (`apps/world/lib/world/application.ex`):
+```
+├── World.Manager
+├── World.ModelRegistry
+└── World.EntityPromoter     (new)
+```
 
 ## Classical NLP Components
 

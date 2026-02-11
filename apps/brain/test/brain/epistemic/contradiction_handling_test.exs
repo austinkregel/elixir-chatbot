@@ -227,11 +227,17 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
           source: :explicit
         )
 
-      result = Integration.verify_fact("france", "The capital is not Paris")
-      assert {:contradicted, conflicting_beliefs} = result
+      log =
+        capture_log(fn ->
+          result = Integration.verify_fact("france", "The capital is not Paris")
+          assert {:contradicted, conflicting_beliefs} = result
 
-      assert length(conflicting_beliefs) == 1,
-             "Expected 1 conflicting belief, got: #{inspect(conflicting_beliefs)}"
+          assert length(conflicting_beliefs) == 1,
+                 "Expected 1 conflicting belief, got: #{inspect(conflicting_beliefs)}"
+        end)
+
+      assert log =~ "contradict" or log =~ "conflict" or log =~ "Contradiction",
+             "Expected log to contain a contradiction warning, got: #{inspect(log)}"
 
       {:ok, beliefs} = BeliefStore.query_beliefs(subject: :world, predicate: :france)
       paris_beliefs = Enum.filter(beliefs, &(&1.object == "The capital is Paris"))

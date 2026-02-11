@@ -25,6 +25,9 @@ defmodule Brain.Analysis.Pipeline do
   alias Brain.ML.LSTM.MultiTaskModel
   alias Brain.ML.LSTM.UnifiedModel
 
+  alias Brain.FactDatabase.Integration, as: FactIntegration
+  alias Brain.Epistemic.BeliefStore
+
   alias Brain.Telemetry
   require Logger
 
@@ -266,6 +269,28 @@ defmodule Brain.Analysis.Pipeline do
         |> Enum.uniq()
     })
 
+    # Epistemic fact verification - check claims against existing beliefs
+    fact_result = verify_facts_in_chunk(chunk.text, relevant_entities, speech_act_result, opts)
+
+    Progress.report(opts, :fact_verification, %{
+      chunk_index: chunk.index,
+      epistemic_status: fact_result.status,
+      fact_verification: fact_result.verification,
+      related_beliefs_count: length(fact_result.beliefs),
+      related_beliefs:
+        Enum.map(fact_result.beliefs, fn belief ->
+          %{
+            id: Map.get(belief, :id),
+            subject: Map.get(belief, :subject),
+            predicate: Map.get(belief, :predicate),
+            object: Map.get(belief, :object),
+            confidence: Map.get(belief, :confidence),
+            source: Map.get(belief, :source),
+            node_id: Map.get(belief, :node_id)
+          }
+        end)
+    })
+
     slot_result = SlotDetector.detect(intent, relevant_entities)
 
     Progress.report(opts, :slots_detected, %{
@@ -313,9 +338,15 @@ defmodule Brain.Analysis.Pipeline do
       |> Map.put(:entities, relevant_entities)
       |> Map.put(:slots, resolved_slots)
       |> Map.put(:missing_context, resolved_slots.missing_required)
+      |> Map.put(:fact_verification, fact_result.verification)
+      |> Map.put(:related_beliefs, fact_result.beliefs)
+      |> Map.put(:epistemic_status, fact_result.status)
       |> ChunkAnalysis.with_events(events)
       |> calculate_confidence()
       |> ChunkAnalysis.determine_response_strategy()
+
+    # Async belief extraction from events (non-blocking)
+    maybe_extract_beliefs_from_events(events, opts)
 
     Progress.report(opts, :chunk_complete, %{
       chunk_index: chunk.index,
@@ -484,7 +515,7 @@ defmodule Brain.Analysis.Pipeline do
             "information.request"
 
           speech_act.category == :expressive ->
-            "smalltalk.general"
+            "smalltalk.acknowledgment"
 
           speech_act.category == :assertive ->
             "unknown"
@@ -493,6 +524,31 @@ defmodule Brain.Analysis.Pipeline do
             "unknown"
         end
     end
+  end
+
+  defp maybe_extract_beliefs_from_events([], _opts), do: :ok
+
+  defp maybe_extract_beliefs_from_events(events, opts) do
+    user_id = Keyword.get(opts, :user_id)
+
+    if user_id && Brain.Epistemic.Types.Config.auto_extraction_enabled?() do
+      Task.Supervisor.start_child(
+        Brain.Knowledge.AgentSupervisor,
+        fn ->
+          try do
+            Brain.Epistemic.BeliefStore.extract_beliefs_from_events(events, user_id)
+          rescue
+            e ->
+              require Logger
+              Logger.debug("Belief extraction from events failed: #{Exception.message(e)}")
+          end
+        end
+      )
+    end
+
+    :ok
+  rescue
+    _ -> :ok
   end
 
   defp calculate_confidence(analysis) do
@@ -531,8 +587,15 @@ defmodule Brain.Analysis.Pipeline do
           0.5
       end
 
+    # Reduce slot weight when classifier confidence is low to prevent
+    # slot filling from inflating confidence for misclassified intents.
+    # When speech_act_conf < 0.5, slot filling shouldn't boost confidence.
+    slot_weight = if speech_act_conf < 0.5, do: 0.1, else: 0.3
+    discourse_weight = 0.3
+    speech_act_weight = 0.6 - slot_weight
+
     confidence =
-      (discourse_conf * 0.3 + speech_act_conf * 0.4 + slot_conf * 0.3)
+      (discourse_conf * discourse_weight + speech_act_conf * speech_act_weight + slot_conf * slot_weight)
       |> Float.round(3)
 
     %{analysis | confidence: confidence}
@@ -671,6 +734,15 @@ defmodule Brain.Analysis.Pipeline do
               novelty_score,
               opts
             )
+
+            # Publish novel input for LearningTriggers
+            inferred_domain =
+              case IntentRegistry.domain(intent) do
+                nil -> :unknown
+                d -> d
+              end
+
+            broadcast_novel_input(text, novelty_score, inferred_domain)
           end
 
         :not_novel ->
@@ -679,6 +751,18 @@ defmodule Brain.Analysis.Pipeline do
     else
       :ok
     end
+  end
+
+  defp broadcast_novel_input(text, novelty_score, domain) do
+    if Process.whereis(Brain.PubSub) do
+      Phoenix.PubSub.broadcast(
+        Brain.PubSub,
+        "learning:novel_input",
+        {:novel_input, text, novelty_score, domain}
+      )
+    end
+  rescue
+    _ -> :ok
   end
 
   defp record_novel_candidate(
@@ -724,5 +808,123 @@ defmodule Brain.Analysis.Pipeline do
       {:error, reason} ->
         Logger.warning("Failed to record novel intent candidate", reason: inspect(reason))
     end
+  end
+
+  # ============================================================================
+  # Epistemic Fact Verification
+  # ============================================================================
+
+  # Verifies factual claims in a chunk against existing beliefs.
+  # Only runs for assertive statements (observations, claims). Returns
+  # epistemic context that can influence response generation.
+  # Returns: %{verification: result, beliefs: list, status: atom}
+  defp verify_facts_in_chunk(text, entities, speech_act, _opts) do
+    # Only verify for assertive statements (observations, claims)
+    if speech_act.category == :assertive do
+      subject = extract_subject_from_entities(entities, text)
+
+      case subject do
+        nil ->
+          %{verification: nil, beliefs: [], status: :unchecked}
+
+        subject_text ->
+          start_time = System.monotonic_time(:millisecond)
+
+          # Query related beliefs from the epistemic store
+          beliefs = query_related_beliefs(subject_text)
+
+          # Verify the claim against existing beliefs
+          verification = safe_verify_fact(subject_text, text)
+
+          status =
+            case verification do
+              {:verified, _} -> :verified
+              {:contradicted, _} -> :contradicted
+              {:uncertain, _} -> :uncertain
+              _ -> :unchecked
+            end
+
+          duration_ms = System.monotonic_time(:millisecond) - start_time
+
+          # Emit telemetry for fact verification
+          Telemetry.emit_fact_verification(status, subject_text, duration_ms, %{
+            beliefs_count: length(beliefs),
+            verification_result: verification
+          })
+
+          %{verification: verification, beliefs: beliefs, status: status}
+      end
+    else
+      %{verification: nil, beliefs: [], status: :unchecked}
+    end
+  end
+
+  defp extract_subject_from_entities(entities, text) do
+    # Try to find a subject entity (e.g., "sky", "grass", "car")
+    subject_entity =
+      Enum.find(entities, fn entity ->
+        entity_type = Map.get(entity, :entity_type) || Map.get(entity, "entity_type")
+        # Look for common subject types
+        entity_type in ["object", "thing", "location", "person", "noun"]
+      end)
+
+    case subject_entity do
+      nil ->
+        # Fall back to extracting subject from text using simple heuristics
+        extract_subject_from_text(text)
+
+      entity ->
+        Map.get(entity, :value) || Map.get(entity, "value") || Map.get(entity, :match)
+    end
+  end
+
+  defp extract_subject_from_text(text) do
+    # Simple extraction: look for "The X is Y" or "X is Y" patterns
+    # Using tokenization (no regex per .cursorrules)
+    # Tokenizer returns maps with :normalized and :text fields
+    tokens = Brain.ML.Tokenizer.tokenize(text)
+
+    # Extract normalized words from token maps
+    words =
+      tokens
+      |> Enum.filter(fn token -> Map.get(token, :type) == :word end)
+      |> Enum.map(fn token -> Map.get(token, :normalized) || Map.get(token, :text) end)
+      |> Enum.map(&String.downcase/1)
+
+    case words do
+      ["the", subject | _rest] -> subject
+      [subject, "is" | _rest] when subject not in ["it", "this", "that"] -> subject
+      _ -> nil
+    end
+  end
+
+  defp query_related_beliefs(subject_text) do
+    predicate = normalize_predicate(subject_text)
+
+    case BeliefStore.query_beliefs(subject: :world, predicate: predicate, min_confidence: 0.5) do
+      {:ok, beliefs} -> beliefs
+      _ -> []
+    end
+  rescue
+    _ -> []
+  end
+
+  defp normalize_predicate(text) when is_binary(text) do
+    text
+    |> String.downcase()
+    |> String.trim()
+    |> String.to_atom()
+  rescue
+    _ -> :unknown
+  end
+
+  defp normalize_predicate(_), do: :unknown
+
+  defp safe_verify_fact(subject, text) do
+    FactIntegration.verify_fact(subject, text)
+  rescue
+    error ->
+      Logger.warning("Fact verification failed", error: inspect(error))
+      {:uncertain, :verification_error}
   end
 end

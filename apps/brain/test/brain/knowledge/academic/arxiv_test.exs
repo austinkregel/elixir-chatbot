@@ -37,21 +37,25 @@ defmodule Brain.Knowledge.Academic.ArxivTest do
     end
   end
 
-  describe "search/2 (integration)" do
-    @tag :integration
-    @tag :external_api
+  describe "search/2 (with snapshot)" do
+    setup do
+      # Load the snapshot for this test (server is started globally in test_helper.exs)
+      {:ok, _} = Brain.Test.HTTPSnapshot.use_snapshot("arxiv/search_transformer")
+      :ok
+    end
+
     test "returns papers for a valid query" do
       alias Brain.Knowledge.Academic.Paper
 
       {:ok, papers} = Arxiv.search("transformer attention", limit: 3)
 
       assert is_list(papers)
+      assert length(papers) == 3
 
-      if papers != [] do
-        [paper | _] = papers
-        assert %Paper{} = paper
-        assert paper.source == :arxiv
-      end
+      [paper | _] = papers
+      assert %Paper{} = paper
+      assert paper.source == :arxiv
+      assert paper.title == "Attention Is All You Need"
     end
   end
 end

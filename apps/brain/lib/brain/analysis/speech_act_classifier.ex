@@ -9,57 +9,6 @@ defmodule Brain.Analysis.SpeechActClassifier do
   alias Brain.Memory.Embedder
   require Logger
 
-  @intent_to_speech_act %{
-    "Default.Welcome.Intent" => {:expressive, :greeting},
-    "Default.Fallback.Intent" => {:assertive, :statement},
-    "smalltalk.greetings.hello" => {:expressive, :greeting},
-    "smalltalk.greetings.goodmorning" => {:expressive, :greeting},
-    "smalltalk.greetings.goodevening" => {:expressive, :greeting},
-    "smalltalk.greetings.nice_to_meet_you" => {:expressive, :greeting},
-    "smalltalk.greetings.nice_to_see_you" => {:expressive, :greeting},
-    "smalltalk.greetings.nice_to_talk_to_you" => {:expressive, :greeting},
-    "smalltalk.greetings.whatsup" => {:expressive, :greeting},
-    "smalltalk.greetings.bye" => {:expressive, :farewell},
-    "smalltalk.greetings.goodnight" => {:expressive, :farewell},
-    "smalltalk.appraisal.thank_you" => {:expressive, :thanks},
-    "smalltalk.appraisal.sorry" => {:expressive, :apology},
-    "smalltalk.dialog.sorry" => {:expressive, :apology},
-    "smalltalk.greetings.how_are_you" => {:directive, :request_information},
-    "smalltalk.agent.acquaintance" => {:directive, :request_information},
-    "smalltalk.agent.age" => {:directive, :request_information},
-    "smalltalk.agent.name" => {:directive, :request_information},
-    "smalltalk.agent.can_you_help" => {:directive, :request_action},
-    "smalltalk.agent.there" => {:directive, :request_information},
-    "smalltalk.user.name" => {:assertive, :statement},
-    "smalltalk.user.age" => {:assertive, :statement},
-    "smalltalk.user.location" => {:assertive, :statement},
-    "smalltalk.user.introduction" => {:assertive, :statement},
-    "smalltalk.user.origin" => {:assertive, :statement},
-    "smalltalk.confirmation.yes" => {:assertive, :confirmation},
-    "smalltalk.confirmation.no" => {:assertive, :denial},
-    "music.play" => {:directive, :command},
-    "music.stop" => {:directive, :command},
-    "music.pause" => {:directive, :command},
-    "music.next" => {:directive, :command},
-    "music.previous" => {:directive, :command},
-    "smarthome.lights.on" => {:directive, :command},
-    "smarthome.lights.off" => {:directive, :command},
-    "smarthome.lights.dim" => {:directive, :command},
-    "smarthome.temperature" => {:directive, :command},
-    "smalltalk.appraisal" => {:expressive, :general},
-    "smalltalk.agent" => {:directive, :request_information},
-    "smalltalk.user" => {:assertive, :statement},
-    "smalltalk.greetings" => {:expressive, :greeting},
-    "smalltalk.dialog" => {:directive, :general},
-    "smalltalk.emotions" => {:expressive, :general},
-    "music" => {:directive, :command},
-    "smarthome" => {:directive, :command},
-    "weather" => {:directive, :request_information},
-    "reminder" => {:directive, :command},
-    "timer" => {:directive, :command},
-    "navigation" => {:directive, :request_information}
-  }
-
   @doc "Classifies the speech act of the given text using multiple analysis passes.\n\nReturns a SpeechActResult struct.\n"
   def classify(text) when is_binary(text) do
     analyses = run_all_analyses(text)
@@ -245,6 +194,8 @@ defmodule Brain.Analysis.SpeechActClassifier do
 
     has_modal = has_modal_verb?(normalized)
 
+    is_tell_request = is_imperative and is_tell_pronoun_pattern?(normalized)
+
     {category, sub_type, confidence} =
       cond do
         is_continuation ->
@@ -254,6 +205,9 @@ defmodule Brain.Analysis.SpeechActClassifier do
           {:directive, :request_action, 0.8}
 
         is_question ->
+          {:directive, :request_information, 0.85}
+
+        is_tell_request ->
           {:directive, :request_information, 0.85}
 
         is_imperative ->
@@ -283,12 +237,39 @@ defmodule Brain.Analysis.SpeechActClassifier do
     }
   end
 
-  defp analyze_keywords(_normalized) do
+  @greeting_tokens ~w(hello hi hey howdy greetings hiya holla heya ello yo sup
+                       wassup wazzup whaddup ayy howdy)
+  @farewell_tokens ~w(bye goodbye goodnight farewell cya later)
+  @thanks_tokens ~w(thanks thank)
+  @apology_tokens ~w(sorry apologize apologies)
+
+  defp analyze_keywords(normalized) do
+    tokens = Tokenizer.tokenize(normalized)
+    first_token = List.first(tokens)
+
+    {category, sub_type, confidence} =
+      cond do
+        first_token in @greeting_tokens and length(tokens) <= 3 ->
+          {:expressive, :greeting, 0.75}
+
+        first_token in @farewell_tokens ->
+          {:expressive, :farewell, 0.7}
+
+        Enum.any?(tokens, fn t -> t in @thanks_tokens end) ->
+          {:expressive, :thanks, 0.65}
+
+        Enum.any?(tokens, fn t -> t in @apology_tokens end) ->
+          {:expressive, :apology, 0.65}
+
+        true ->
+          {nil, nil, 0.0}
+      end
+
     %{
       scores: %{},
-      category: nil,
-      sub_type: nil,
-      confidence: 0.0,
+      category: category,
+      sub_type: sub_type,
+      confidence: confidence,
       source: :keyword
     }
   end
@@ -637,6 +618,17 @@ defmodule Brain.Analysis.SpeechActClassifier do
     end
   end
 
+  @tell_pronouns ["me", "us"]
+
+  defp is_tell_pronoun_pattern?(normalized) do
+    words = normalized |> String.split() |> Enum.take(3)
+
+    case words do
+      ["tell", pronoun | _] -> pronoun in @tell_pronouns
+      _ -> false
+    end
+  end
+
   defp has_modal_verb?(normalized) do
     words = String.split(normalized)
 
@@ -658,46 +650,50 @@ defmodule Brain.Analysis.SpeechActClassifier do
   end
 
   defp intent_to_speech_act(intent) do
-    case Map.get(@intent_to_speech_act, intent) do
+    # Look up speech act from the IntentRegistry (exact match first)
+    case IntentRegistry.get(intent) do
       nil ->
-        find_prefix_match(intent)
+        # Try prefix match in both directions:
+        # 1. Intent is more specific than registry key (e.g. "weather.query.today" matches "weather.query")
+        # 2. Intent is broader than registry key (e.g. "weather" matches "weather.query")
+        find_registry_prefix_match(intent)
 
-      result ->
-        result
+      _meta ->
+        category = IntentRegistry.category(intent) || :assertive
+        sub_type = IntentRegistry.speech_act(intent) || :statement
+        {category, sub_type}
     end
   end
 
-  defp find_prefix_match(intent) do
-    matching_prefixes =
-      @intent_to_speech_act
-      |> Enum.filter(fn {prefix, _} -> String.starts_with?(intent, prefix) end)
-      |> Enum.sort_by(fn {prefix, _} -> -String.length(prefix) end)
+  defp find_registry_prefix_match(intent) do
+    all_intents = IntentRegistry.list_intents()
 
-    case matching_prefixes do
-      [{_prefix, result} | _] -> result
-      [] -> {:assertive, :statement}
+    # First try: intent is more specific than a registry key
+    # e.g. classified "smalltalk.greetings.hello" matches registered "smalltalk.greetings"
+    specific_matches =
+      all_intents
+      |> Enum.filter(fn registered -> String.starts_with?(intent, registered <> ".") end)
+      |> Enum.sort_by(&(-String.length(&1)))
+
+    # Second try: intent is broader than registry keys
+    # e.g. classified "weather" matches registered "weather.query", "weather.condition"
+    # Sort by shortest (most general child) first
+    broad_matches =
+      all_intents
+      |> Enum.filter(fn registered -> String.starts_with?(registered, intent <> ".") end)
+      |> Enum.sort_by(&String.length/1)
+
+    best = List.first(specific_matches) || List.first(broad_matches)
+
+    case best do
+      nil ->
+        {:assertive, :statement}
+
+      matched ->
+        category = IntentRegistry.category(matched) || :assertive
+        sub_type = IntentRegistry.speech_act(matched) || :statement
+        {category, sub_type}
     end
   end
 
-  @doc "Maps speech act types to categories. Used for backwards compatibility.\n"
-  def map_to_speech_act(type, _normalized, _text) do
-    case type do
-      :question -> {:directive, :request_information}
-      :request_action -> {:directive, :request_action}
-      :request_information -> {:directive, :request_information}
-      :command -> {:directive, :command}
-      :greeting -> {:expressive, :greeting}
-      :farewell -> {:expressive, :farewell}
-      :thanks -> {:expressive, :thanks}
-      :apology -> {:expressive, :apology}
-      :promise -> {:commissive, :promise}
-      :offer -> {:commissive, :offer}
-      :statement -> {:assertive, :statement}
-      :backchannel -> {:expressive, :backchannel}
-      :compliment -> {:expressive, :compliment}
-      :acknowledgment -> {:expressive, :acknowledgment}
-      :continuation -> {:assertive, :continuation}
-      _ -> {:assertive, :statement}
-    end
-  end
 end

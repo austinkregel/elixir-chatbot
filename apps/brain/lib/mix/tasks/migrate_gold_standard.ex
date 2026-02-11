@@ -181,14 +181,9 @@ Previewing migration for #{length(intent_names)} intent(s)...")
 
       IO.puts("\nRun without --preview to write to intent_registry.json")
     else
-      case GoldStandardMigrator.merge_into_intent_registry(extracted, write: true) do
-        {:ok, merged} ->
-          IO.puts("Merged into intent_registry.json (#{map_size(merged)} total intents)")
-          IO.puts("\nRun `mix migrate_gold_standard --destructive` to complete migration.\n")
-
-        {:error, reason} ->
-          IO.puts("Error: #{inspect(reason)}")
-      end
+      {:ok, merged} = GoldStandardMigrator.merge_into_intent_registry(extracted, write: true)
+      IO.puts("Merged into intent_registry.json (#{map_size(merged)} total intents)")
+      IO.puts("\nRun `mix migrate_gold_standard --destructive` to complete migration.\n")
     end
   end
 
@@ -244,14 +239,9 @@ Previewing migration for #{length(intent_names)} intent(s)...")
 
       IO.puts("\nRun without --preview to write to priv/response/templates.json")
     else
-      case GoldStandardMigrator.write_templates_json(templates, write: true) do
-        {:ok, path} ->
-          IO.puts("Wrote to #{path}")
-          IO.puts("\nRun `mix migrate_gold_standard --destructive` to complete migration.\n")
-
-        {:error, reason} ->
-          IO.puts("Error: #{inspect(reason)}")
-      end
+      {:ok, path} = GoldStandardMigrator.write_templates_json(templates, write: true)
+      IO.puts("Wrote to #{path}")
+      IO.puts("\nRun `mix migrate_gold_standard --destructive` to complete migration.\n")
     end
   end
 
@@ -292,20 +282,16 @@ Previewing migration for #{length(intent_names)} intent(s)...")
         IO.puts("\nWARNING: This will permanently delete these directories!")
         Process.sleep(2000)
 
-        case GoldStandardMigrator.delete_source_directories() do
-          {:ok, deleted} ->
-            IO.puts("
+        {:ok, deleted} = GoldStandardMigrator.delete_source_directories()
+
+        IO.puts("
 Deleted #{length(deleted)} items:")
 
-            Enum.each(deleted, fn item ->
-              IO.puts("  - #{item}")
-            end)
+        Enum.each(deleted, fn item ->
+          IO.puts("  - #{item}")
+        end)
 
-            IO.puts("")
-
-          {:error, reason} ->
-            IO.puts("Error: #{inspect(reason)}")
-        end
+        IO.puts("")
       end
     end
   end
@@ -354,39 +340,25 @@ Migrating #{length(intent_names)} intent(s) [#{mode} mode]...")
         opts
       end
 
-    case GoldStandardMigrator.migrate_intents(intent_names, opts) do
-      {:ok, %{intent_count: ic, ner_count: nc, deleted_files: deleted}} ->
-        IO.puts("\nMigration complete:")
-        IO.puts("  Intent examples: #{ic}")
-        IO.puts("  NER examples:    #{nc}")
+    {:ok, %{intent_count: ic, ner_count: nc, deleted_files: deleted}} =
+      GoldStandardMigrator.migrate_intents(intent_names, opts)
 
-        if deleted != [] do
-          IO.puts("  Files deleted:   #{length(deleted)}")
-        end
+    IO.puts("\nMigration complete:")
+    IO.puts("  Intent examples: #{ic}")
+    IO.puts("  NER examples:    #{nc}")
 
-        stats = GoldStandardMigrator.gold_standard_stats()
-        IO.puts("\nUpdated gold standard sizes:")
-
-        Enum.each(stats, fn {task, count} ->
-          IO.puts("  #{task}: #{count} examples")
-        end)
-
-        IO.puts("\nRun `mix evaluate --save` to evaluate against the new gold standard.\n")
-
-      {:ok, %{intent_count: ic, ner_count: nc}} ->
-        IO.puts("\nMigration complete:")
-        IO.puts("  Intent examples: #{ic}")
-        IO.puts("  NER examples:    #{nc}")
-
-        stats = GoldStandardMigrator.gold_standard_stats()
-        IO.puts("\nUpdated gold standard sizes:")
-
-        Enum.each(stats, fn {task, count} ->
-          IO.puts("  #{task}: #{count} examples")
-        end)
-
-        IO.puts("\nRun `mix evaluate --save` to evaluate against the new gold standard.\n")
+    if deleted != [] do
+      IO.puts("  Files deleted:   #{length(deleted)}")
     end
+
+    stats = GoldStandardMigrator.gold_standard_stats()
+    IO.puts("\nUpdated gold standard sizes:")
+
+    Enum.each(stats, fn {task, count} ->
+      IO.puts("  #{task}: #{count} examples")
+    end)
+
+    IO.puts("\nRun `mix evaluate --save` to evaluate against the new gold standard.\n")
   end
 
   defp resolve_intent_names(nil) do

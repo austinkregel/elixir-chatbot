@@ -154,30 +154,26 @@ defmodule Brain.Memory.Think do
   def load_training_data do
     Logger.info("Loading training data into memory system...")
 
-    case DataLoaders.load_all_intents() do
-      {:ok, examples} ->
-        texts = Enum.map(examples, & &1.text)
-        Embedder.build_vocabulary(texts)
+    {:ok, examples} = DataLoaders.load_all_intents()
 
-        count =
-          Enum.reduce(examples, 0, fn example, acc ->
-            case think(:add_episode, %{
-                   state: example.text,
-                   action: example.intent,
-                   outcome: "",
-                   tags: [example.intent | extract_entity_types(example.entities)]
-                 }) do
-              {:ok, _} -> acc + 1
-              {:error, _} -> acc
-            end
-          end)
+    texts = Enum.map(examples, & &1.text)
+    Embedder.build_vocabulary(texts)
 
-        Logger.info("Loaded training data as episodes", count: count)
-        {:ok, count}
+    count =
+      Enum.reduce(examples, 0, fn example, acc ->
+        case think(:add_episode, %{
+               state: example.text,
+               action: example.intent,
+               outcome: "",
+               tags: [example.intent | extract_entity_types(example.entities)]
+             }) do
+          {:ok, _} -> acc + 1
+          {:error, _} -> acc
+        end
+      end)
 
-      {:error, reason} ->
-        {:error, reason}
-    end
+    Logger.info("Loaded training data as episodes", count: count)
+    {:ok, count}
   end
 
   defp extract_entity_types(entities) when is_list(entities) do

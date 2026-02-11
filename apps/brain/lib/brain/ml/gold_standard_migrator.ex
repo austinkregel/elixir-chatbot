@@ -721,7 +721,7 @@ defmodule Brain.ML.GoldStandardMigrator do
     end)
   end
 
-  defp normalize_context_variants(examples, opts \\ []) do
+  defp normalize_context_variants(examples, opts) do
     merge_contexts? = Keyword.get(opts, :merge_context_variants, false)
 
     if merge_contexts? do

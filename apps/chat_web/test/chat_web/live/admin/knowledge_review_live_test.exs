@@ -153,7 +153,7 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
       view |> element("button", "Start Learning Session") |> render_click()
 
       view
-      |> form("form", %{topic: "European capitals"})
+      |> form("form[phx-submit=start_session]", %{topic: "European capitals"})
       |> render_submit()
 
       sessions = LearningCenter.list_sessions()

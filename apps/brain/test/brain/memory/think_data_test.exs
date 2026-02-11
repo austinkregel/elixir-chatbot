@@ -75,9 +75,8 @@ defmodule Brain.Memory.ThinkDataTest do
             assert is_list(results)
             assert length(results) <= @k
 
-          {:error, _reason} ->
-            # Acceptable if store/embedder not ready
-            assert true
+          {:error, reason} ->
+            assert reason in [:embedder_not_ready, :store_not_available, :vocabulary_building]
         end
       end
     end
@@ -104,8 +103,8 @@ defmodule Brain.Memory.ThinkDataTest do
           {:ok, {:semantic_results, results}} ->
             assert is_list(results)
 
-          {:error, _reason} ->
-            assert true
+          {:error, reason} ->
+            assert reason in [:embedder_not_ready, :store_not_available, :vocabulary_building]
         end
       end
     end
@@ -126,16 +125,9 @@ defmodule Brain.Memory.ThinkDataTest do
 
       test "#{description}" do
         params = Map.put(@params, :world_id, @test_world_id)
-        result = Think.think(:consolidate, params)
-
-        case result do
-          {:ok, {:consolidated, count}} ->
-            assert is_integer(count)
-            assert count >= 0
-
-          {:error, _reason} ->
-            assert true
-        end
+        {:ok, {:consolidated, count}} = Think.think(:consolidate, params)
+        assert is_integer(count)
+        assert count >= 0
       end
     end
   end
@@ -144,20 +136,14 @@ defmodule Brain.Memory.ThinkDataTest do
   describe "edge cases" do
     test "handles empty params for add_episode" do
       result = Think.think(:add_episode, %{world_id: @test_world_id})
-      # Should succeed with empty strings or return error
-      case result do
-        {:ok, _} -> assert true
-        {:error, _} -> assert true
-      end
+      # Should succeed with empty strings or return a known error
+      assert match?({:ok, _}, result) or match?({:error, _}, result)
     end
 
     test "handles minimal params" do
       result = Think.think(:add_episode, %{state: "test", world_id: @test_world_id})
       # Should handle gracefully
-      case result do
-        {:ok, _} -> assert true
-        {:error, _} -> assert true
-      end
+      assert match?({:ok, _}, result) or match?({:error, _}, result)
     end
   end
 
@@ -181,17 +167,12 @@ defmodule Brain.Memory.ThinkDataTest do
             world_id: @test_world_id
           })
 
-          case query_result do
-            {:ok, {:chat_results, _results}} ->
-              assert true
+          assert match?({:ok, {:chat_results, _}}, query_result) or
+                   match?({:error, _}, query_result)
 
-            {:error, _} ->
-              assert true
-          end
-
-        {:error, _} ->
-          # Skip if add failed
-          assert true
+        {:error, reason} ->
+          # Skip if add failed due to known startup issues
+          assert reason in [:embedder_not_ready, :store_not_available, :vocabulary_building]
       end
     end
   end
@@ -199,14 +180,8 @@ defmodule Brain.Memory.ThinkDataTest do
   # Test other operations
   describe "think(:stats, params)" do
     test "returns stats about memory" do
-      result = Think.think(:stats, %{world_id: @test_world_id})
-
-      case result do
-        {:ok, stats} ->
-          assert is_map(stats) or is_tuple(stats)
-        {:error, _} ->
-          assert true
-      end
+      {:ok, stats} = Think.think(:stats, %{world_id: @test_world_id})
+      assert is_map(stats) or is_tuple(stats)
     end
   end
 end

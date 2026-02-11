@@ -1685,6 +1685,10 @@
   },
   {
     "intent": "music.play",
+    "text": "Play Bohemian Rhapsody"
+  },
+  {
+    "intent": "music.play",
     "text": "play song Thriller"
   },
   {
@@ -17216,519 +17220,519 @@
     "text": "now I need this to be unlocked"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "tell me the weather in Rome in Fahrenheit"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what's the weather in New York this morning"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather in Brooklyn in Celsius"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what's the weather supposed to be next Friday in San Francisco"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "I'd like to know the weather for November 13 in Zurich"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what will be the weather like in Tokyo on the next weekend"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what's the weather today"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "show me the weather in Milan for Wednesday"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather forecast in Oakland"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "tomorrow's weather report for Brussels"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather in Valencia for today"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "show me the weather in Fahrenheit"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what's the weather supposed to be in Moscow"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "I'd like to know the weather in Madrid"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what's the weather like at New York"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "show me the weather in Munich"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather report for Paris"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather in London"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what's the weather supposed to be this week"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "I'd like to get the weather for July 22"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what will be the weather like on the weekend"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "tell me the weather for the next week"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather forecast for Tuesday"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather outside this evening"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "tomorrow's weather"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather today"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what's it like outside"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "now tell me the weather forecast in Aspen"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather today in New York"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather outside"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what's the weather supposed to be"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what is today's weather going to be in London"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what's the weather forecast for today"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "I'd like to know the weather"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what's the weather like"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "show me the weather"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "how is the weather today"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather report"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "how's the weather in Rome"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what's the weather for tomorrow"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what's the weather forecast in San Francisco"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather in Moscow tomorrow"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather forecast in Denver"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what is the weather today"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what's the weather like in San Diego tomorrow"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what is the weather going to be like today"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather Seattle"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what was the weather for March 2nd"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "the weather in Miami is what"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "forecast in Tokyo"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what is the weather for Greenville"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what's the weather going to be like later today"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what will be the weather today"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "tell me what's the weather like in Atlanta"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what is today's weather"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what is the weather like today"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather for April 3"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "today's weather in London"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what's the weather like in New York"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what is the weather forecast for tomorrow morning"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "how's the weather going to be today"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "India weather report"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather Montana"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what is the current weather at SVO"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what's the weather going to be tomorrow"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what is today's weather like"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather in New York this morning"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what is the weather for Kernersville"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what is the current weather in Pune"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "find weather India"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather in Mamda"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather forecast in Oakland next week"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather of Salalah"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather in Khanapur"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "how's the weather today"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "how's the weather gonna be on Monday"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "current forecast in Valencia"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather in Nirmal"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what is the weather in Cape Town"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather Durban"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "could you give me the weather forecast for Hong Kong please"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what is the weather tomorrow in Canberra"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what is the weather tomorrow in Campbell"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "show me weather for today"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what's the weather like in Delft"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather in Paris in Celsius"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather in London in 5 days"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "whats the weather like near Owosso, Mi"
   },
   {
-    "intent": "weather",
+    "intent": "weather.activity",
     "text": "what about swimming"
   },
   {
-    "intent": "weather",
+    "intent": "weather.activity",
     "text": "and for skating"
   },
   {
-    "intent": "weather",
+    "intent": "weather.activity",
     "text": "skiing"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what about Paris"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "and in London"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "Moscow"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what about Aspen"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "now in Aspen"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what about Oakland"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "can you check Seattle"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what about San Francisco"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "weather in petoskey michigan"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what's the weather in Black River, New York"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "tomorrow in Madrid"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "and what about Paris next Friday"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "in Moscow this weekend"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what about Princeton tomorrow"
   },
   {
-    "intent": "weather",
+    "intent": "weather.condition",
     "text": "and rain"
   },
   {
-    "intent": "weather",
+    "intent": "weather.condition",
     "text": "what about snowing"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "this evening"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "for next month too"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "and next weekend"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "check next week"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "check for next Monday"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what about tomorrow"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "and what about tomorrow"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "on Wednesday"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "will it change at 5 pm"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "what about today"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "and tomorrow"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "and during next week"
   },
   {
-    "intent": "weather",
+    "intent": "weather.query",
     "text": "how about Saturday"
   },
   {
-    "intent": "weather",
+    "intent": "weather.outfit",
     "text": "what about sunglasses"
   },
   {
-    "intent": "weather",
+    "intent": "weather.outfit",
     "text": "how about raincoat"
   },
   {
-    "intent": "weather",
+    "intent": "weather.outfit",
     "text": "and my umbrella"
   },
   {
-    "intent": "weather",
+    "intent": "weather.outfit",
     "text": "and umbrella"
   },
   {
-    "intent": "weather",
+    "intent": "weather.outfit",
     "text": "how about my raincoat"
   },
   {
-    "intent": "weather",
+    "intent": "weather.outfit",
     "text": "my coat"
   },
   {
-    "intent": "weather",
+    "intent": "weather.outfit",
     "text": "raincoat"
   },
   {
-    "intent": "weather",
+    "intent": "weather.outfit",
     "text": "and raincoat"
   },
   {
@@ -18822,5 +18826,1545 @@
   {
     "intent": "smalltalk.user.introduction",
     "text": "I'm Paris"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "The sky is green"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "The grass looks blue"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "That wall is red"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "It looks cloudy outside"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "The car is broken"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "This coffee is cold"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "It is green"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "The light is on"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "Everything is blue"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "That looks nice"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "The water is warm"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "This room is dark"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "The music is loud"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "It seems broken"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "The door is open"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "The sky is blue today"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "It is really hot"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "The floor is wet"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "That looks expensive"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "The window is cracked"
+  },
+  {
+    "intent": "calendar.schedule",
+    "text": "Schedule a meeting tomorrow"
+  },
+  {
+    "intent": "calendar.schedule",
+    "text": "Book a meeting with the team"
+  },
+  {
+    "intent": "calendar.schedule",
+    "text": "Set up a call for Friday"
+  },
+  {
+    "intent": "calendar.schedule",
+    "text": "Schedule a meeting for next week"
+  },
+  {
+    "intent": "calendar.schedule",
+    "text": "Book an appointment"
+  },
+  {
+    "intent": "calendar.schedule",
+    "text": "Schedule a call with Sarah"
+  },
+  {
+    "intent": "calendar.schedule",
+    "text": "Put a meeting on my calendar"
+  },
+  {
+    "intent": "calendar.schedule",
+    "text": "Add a meeting to my schedule"
+  },
+  {
+    "intent": "calendar.schedule",
+    "text": "Schedule lunch with John"
+  },
+  {
+    "intent": "calendar.schedule",
+    "text": "Book the conference room"
+  },
+  {
+    "intent": "calendar.schedule",
+    "text": "Schedule a team sync"
+  },
+  {
+    "intent": "calendar.schedule",
+    "text": "Set up a 3pm meeting"
+  },
+  {
+    "intent": "calendar.schedule",
+    "text": "Create a calendar event"
+  },
+  {
+    "intent": "calendar.schedule",
+    "text": "Add an event to my calendar"
+  },
+  {
+    "intent": "calendar.schedule",
+    "text": "Schedule a one on one"
+  },
+  {
+    "intent": "calendar.query",
+    "text": "What's on my calendar today"
+  },
+  {
+    "intent": "calendar.query",
+    "text": "Show my schedule for tomorrow"
+  },
+  {
+    "intent": "calendar.query",
+    "text": "Any meetings this week"
+  },
+  {
+    "intent": "calendar.query",
+    "text": "What do I have scheduled"
+  },
+  {
+    "intent": "calendar.query",
+    "text": "Check my calendar"
+  },
+  {
+    "intent": "calendar.query",
+    "text": "What's my schedule look like"
+  },
+  {
+    "intent": "calendar.query",
+    "text": "Do I have any meetings today"
+  },
+  {
+    "intent": "calendar.query",
+    "text": "Show me my appointments"
+  },
+  {
+    "intent": "calendar.query",
+    "text": "Am I free tomorrow afternoon"
+  },
+  {
+    "intent": "calendar.query",
+    "text": "What meetings do I have"
+  },
+  {
+    "intent": "calendar.query",
+    "text": "When is my next meeting"
+  },
+  {
+    "intent": "calendar.query",
+    "text": "Show today's schedule"
+  },
+  {
+    "intent": "calendar.query",
+    "text": "What's happening this afternoon"
+  },
+  {
+    "intent": "calendar.query",
+    "text": "Check my availability"
+  },
+  {
+    "intent": "calendar.query",
+    "text": "Any events tomorrow"
+  },
+  {
+    "intent": "calendar.cancel",
+    "text": "Cancel my meeting with John"
+  },
+  {
+    "intent": "calendar.cancel",
+    "text": "Remove the 3pm appointment"
+  },
+  {
+    "intent": "calendar.cancel",
+    "text": "Cancel the meeting"
+  },
+  {
+    "intent": "calendar.cancel",
+    "text": "Delete the appointment"
+  },
+  {
+    "intent": "calendar.cancel",
+    "text": "Remove the event from my calendar"
+  },
+  {
+    "intent": "calendar.cancel",
+    "text": "Cancel tomorrow's meeting"
+  },
+  {
+    "intent": "calendar.cancel",
+    "text": "Clear my schedule for Friday"
+  },
+  {
+    "intent": "calendar.cancel",
+    "text": "Cancel the team sync"
+  },
+  {
+    "intent": "calendar.cancel",
+    "text": "Remove my 2pm appointment"
+  },
+  {
+    "intent": "calendar.cancel",
+    "text": "Delete the calendar event"
+  },
+  {
+    "intent": "reminder.create",
+    "text": "Remind me to call mom"
+  },
+  {
+    "intent": "reminder.create",
+    "text": "Set a reminder for tomorrow"
+  },
+  {
+    "intent": "reminder.create",
+    "text": "Remind me at 5pm to leave"
+  },
+  {
+    "intent": "reminder.create",
+    "text": "Remind me to pick up groceries"
+  },
+  {
+    "intent": "reminder.create",
+    "text": "Set a reminder to take medicine"
+  },
+  {
+    "intent": "reminder.create",
+    "text": "Remind me about the meeting"
+  },
+  {
+    "intent": "reminder.create",
+    "text": "Create a reminder"
+  },
+  {
+    "intent": "reminder.create",
+    "text": "Remind me to send the email"
+  },
+  {
+    "intent": "reminder.create",
+    "text": "Set a reminder for 9am"
+  },
+  {
+    "intent": "reminder.create",
+    "text": "Remind me later"
+  },
+  {
+    "intent": "reminder.create",
+    "text": "Add a reminder"
+  },
+  {
+    "intent": "reminder.create",
+    "text": "Remind me to water the plants"
+  },
+  {
+    "intent": "reminder.create",
+    "text": "Set up a reminder"
+  },
+  {
+    "intent": "reminder.create",
+    "text": "Remind me next week"
+  },
+  {
+    "intent": "reminder.create",
+    "text": "Can you remind me to call John"
+  },
+  {
+    "intent": "alarm.set",
+    "text": "Set an alarm for 7am"
+  },
+  {
+    "intent": "alarm.set",
+    "text": "Wake me up at 6:30"
+  },
+  {
+    "intent": "alarm.set",
+    "text": "Set a morning alarm"
+  },
+  {
+    "intent": "alarm.set",
+    "text": "Set an alarm"
+  },
+  {
+    "intent": "alarm.set",
+    "text": "Wake me up early"
+  },
+  {
+    "intent": "alarm.set",
+    "text": "Set alarm for 8 o'clock"
+  },
+  {
+    "intent": "alarm.set",
+    "text": "Create an alarm"
+  },
+  {
+    "intent": "alarm.set",
+    "text": "Set a wake up alarm"
+  },
+  {
+    "intent": "alarm.set",
+    "text": "Alarm at 5:30am"
+  },
+  {
+    "intent": "alarm.set",
+    "text": "Set an alarm for tomorrow morning"
+  },
+  {
+    "intent": "alarm.set",
+    "text": "Wake me at 7"
+  },
+  {
+    "intent": "alarm.set",
+    "text": "Add an alarm"
+  },
+  {
+    "intent": "alarm.set",
+    "text": "Set alarm for 6am every day"
+  },
+  {
+    "intent": "alarm.set",
+    "text": "I need an alarm for 9am"
+  },
+  {
+    "intent": "alarm.set",
+    "text": "Set a recurring alarm"
+  },
+  {
+    "intent": "alarm.snooze",
+    "text": "Snooze the alarm"
+  },
+  {
+    "intent": "alarm.snooze",
+    "text": "Snooze for 5 minutes"
+  },
+  {
+    "intent": "alarm.snooze",
+    "text": "Snooze"
+  },
+  {
+    "intent": "alarm.snooze",
+    "text": "Give me 5 more minutes"
+  },
+  {
+    "intent": "alarm.snooze",
+    "text": "Snooze it"
+  },
+  {
+    "intent": "alarm.snooze",
+    "text": "Hit snooze"
+  },
+  {
+    "intent": "alarm.snooze",
+    "text": "Snooze for 10 minutes"
+  },
+  {
+    "intent": "alarm.snooze",
+    "text": "Let me sleep more"
+  },
+  {
+    "intent": "alarm.snooze",
+    "text": "Snooze the alarm please"
+  },
+  {
+    "intent": "alarm.snooze",
+    "text": "Stop the alarm and snooze"
+  },
+  {
+    "intent": "timer.set",
+    "text": "Set a timer for 10 minutes"
+  },
+  {
+    "intent": "timer.set",
+    "text": "Start a 5 minute timer"
+  },
+  {
+    "intent": "timer.set",
+    "text": "Set a timer"
+  },
+  {
+    "intent": "timer.set",
+    "text": "Timer for 30 seconds"
+  },
+  {
+    "intent": "timer.set",
+    "text": "Start a countdown"
+  },
+  {
+    "intent": "timer.set",
+    "text": "Set a 15 minute timer"
+  },
+  {
+    "intent": "timer.set",
+    "text": "Create a timer"
+  },
+  {
+    "intent": "timer.set",
+    "text": "Timer for 2 hours"
+  },
+  {
+    "intent": "timer.set",
+    "text": "Start a timer for cooking"
+  },
+  {
+    "intent": "timer.set",
+    "text": "Set an egg timer"
+  },
+  {
+    "intent": "timer.set",
+    "text": "Begin a 20 minute timer"
+  },
+  {
+    "intent": "timer.set",
+    "text": "Start the timer"
+  },
+  {
+    "intent": "timer.set",
+    "text": "Set a workout timer"
+  },
+  {
+    "intent": "timer.set",
+    "text": "Timer 3 minutes"
+  },
+  {
+    "intent": "timer.set",
+    "text": "Count down 10 minutes"
+  },
+  {
+    "intent": "timer.check",
+    "text": "How much time is left"
+  },
+  {
+    "intent": "timer.check",
+    "text": "Check the timer"
+  },
+  {
+    "intent": "timer.check",
+    "text": "How long on the timer"
+  },
+  {
+    "intent": "timer.check",
+    "text": "Timer status"
+  },
+  {
+    "intent": "timer.check",
+    "text": "What's left on the timer"
+  },
+  {
+    "intent": "timer.check",
+    "text": "How many minutes left"
+  },
+  {
+    "intent": "timer.check",
+    "text": "Is the timer still running"
+  },
+  {
+    "intent": "timer.check",
+    "text": "Show the timer"
+  },
+  {
+    "intent": "timer.check",
+    "text": "Time remaining"
+  },
+  {
+    "intent": "timer.check",
+    "text": "How much time do I have left"
+  },
+  {
+    "intent": "todo.add",
+    "text": "Add buy groceries to my todo list"
+  },
+  {
+    "intent": "todo.add",
+    "text": "Add task call dentist"
+  },
+  {
+    "intent": "todo.add",
+    "text": "Add to my todo list"
+  },
+  {
+    "intent": "todo.add",
+    "text": "Create a new task"
+  },
+  {
+    "intent": "todo.add",
+    "text": "Add a task"
+  },
+  {
+    "intent": "todo.add",
+    "text": "Put this on my todo list"
+  },
+  {
+    "intent": "todo.add",
+    "text": "Add pick up dry cleaning to tasks"
+  },
+  {
+    "intent": "todo.add",
+    "text": "New todo item"
+  },
+  {
+    "intent": "todo.add",
+    "text": "Add send report to my list"
+  },
+  {
+    "intent": "todo.add",
+    "text": "Create a todo"
+  },
+  {
+    "intent": "todo.add",
+    "text": "Add item to checklist"
+  },
+  {
+    "intent": "todo.add",
+    "text": "Remember to finish the project"
+  },
+  {
+    "intent": "todo.add",
+    "text": "Add a new task to my list"
+  },
+  {
+    "intent": "todo.add",
+    "text": "Put clean room on my todo"
+  },
+  {
+    "intent": "todo.add",
+    "text": "Add task reply to emails"
+  },
+  {
+    "intent": "todo.list",
+    "text": "Show my tasks"
+  },
+  {
+    "intent": "todo.list",
+    "text": "What's on my todo list"
+  },
+  {
+    "intent": "todo.list",
+    "text": "Show my todo list"
+  },
+  {
+    "intent": "todo.list",
+    "text": "List my tasks"
+  },
+  {
+    "intent": "todo.list",
+    "text": "What tasks do I have"
+  },
+  {
+    "intent": "todo.list",
+    "text": "Show all todos"
+  },
+  {
+    "intent": "todo.list",
+    "text": "What's left on my list"
+  },
+  {
+    "intent": "todo.list",
+    "text": "Display my tasks"
+  },
+  {
+    "intent": "todo.list",
+    "text": "Check my todo list"
+  },
+  {
+    "intent": "todo.list",
+    "text": "What do I need to do"
+  },
+  {
+    "intent": "communication.call",
+    "text": "Call John"
+  },
+  {
+    "intent": "communication.call",
+    "text": "Phone mom"
+  },
+  {
+    "intent": "communication.call",
+    "text": "Make a call to Sarah"
+  },
+  {
+    "intent": "communication.call",
+    "text": "Call my wife"
+  },
+  {
+    "intent": "communication.call",
+    "text": "Dial the office"
+  },
+  {
+    "intent": "communication.call",
+    "text": "Phone call to dad"
+  },
+  {
+    "intent": "communication.call",
+    "text": "Ring my brother"
+  },
+  {
+    "intent": "communication.call",
+    "text": "Call the restaurant"
+  },
+  {
+    "intent": "communication.call",
+    "text": "Make a phone call"
+  },
+  {
+    "intent": "communication.call",
+    "text": "Call work"
+  },
+  {
+    "intent": "communication.call",
+    "text": "Phone my friend"
+  },
+  {
+    "intent": "communication.call",
+    "text": "Dial this number"
+  },
+  {
+    "intent": "communication.call",
+    "text": "Call Michael"
+  },
+  {
+    "intent": "communication.call",
+    "text": "Start a phone call"
+  },
+  {
+    "intent": "communication.call",
+    "text": "Call the doctor's office"
+  },
+  {
+    "intent": "communication.email",
+    "text": "Check my email"
+  },
+  {
+    "intent": "communication.email",
+    "text": "Read my inbox"
+  },
+  {
+    "intent": "communication.email",
+    "text": "Show unread emails"
+  },
+  {
+    "intent": "communication.email",
+    "text": "Open my email"
+  },
+  {
+    "intent": "communication.email",
+    "text": "Check for new emails"
+  },
+  {
+    "intent": "communication.email",
+    "text": "Do I have any emails"
+  },
+  {
+    "intent": "communication.email",
+    "text": "Show my messages"
+  },
+  {
+    "intent": "communication.email",
+    "text": "Read my mail"
+  },
+  {
+    "intent": "communication.email",
+    "text": "Check inbox"
+  },
+  {
+    "intent": "communication.email",
+    "text": "Any new emails"
+  },
+  {
+    "intent": "communication.email",
+    "text": "Show email from John"
+  },
+  {
+    "intent": "communication.email",
+    "text": "Open mail"
+  },
+  {
+    "intent": "communication.email",
+    "text": "Read my unread messages"
+  },
+  {
+    "intent": "communication.email",
+    "text": "Check my work email"
+  },
+  {
+    "intent": "communication.email",
+    "text": "What's in my inbox"
+  },
+  {
+    "intent": "time.query",
+    "text": "What time is it"
+  },
+  {
+    "intent": "time.query",
+    "text": "Tell me the time"
+  },
+  {
+    "intent": "time.query",
+    "text": "Current time"
+  },
+  {
+    "intent": "time.query",
+    "text": "What's the time"
+  },
+  {
+    "intent": "time.query",
+    "text": "What time do you have"
+  },
+  {
+    "intent": "time.query",
+    "text": "Time please"
+  },
+  {
+    "intent": "time.query",
+    "text": "Give me the time"
+  },
+  {
+    "intent": "time.query",
+    "text": "What is the current time"
+  },
+  {
+    "intent": "time.query",
+    "text": "Do you know the time"
+  },
+  {
+    "intent": "time.query",
+    "text": "Show the time"
+  },
+  {
+    "intent": "time.query",
+    "text": "What time is it now"
+  },
+  {
+    "intent": "time.query",
+    "text": "Time check"
+  },
+  {
+    "intent": "time.query",
+    "text": "What's the current time"
+  },
+  {
+    "intent": "time.query",
+    "text": "Clock"
+  },
+  {
+    "intent": "time.query",
+    "text": "What time is it in New York"
+  },
+  {
+    "intent": "date.query",
+    "text": "What's the date today"
+  },
+  {
+    "intent": "date.query",
+    "text": "What day is it"
+  },
+  {
+    "intent": "date.query",
+    "text": "Today's date"
+  },
+  {
+    "intent": "date.query",
+    "text": "What is today's date"
+  },
+  {
+    "intent": "date.query",
+    "text": "What date is it"
+  },
+  {
+    "intent": "date.query",
+    "text": "Tell me the date"
+  },
+  {
+    "intent": "date.query",
+    "text": "What's today"
+  },
+  {
+    "intent": "date.query",
+    "text": "Current date"
+  },
+  {
+    "intent": "date.query",
+    "text": "What day of the week is it"
+  },
+  {
+    "intent": "date.query",
+    "text": "What is the date"
+  },
+  {
+    "intent": "date.query",
+    "text": "Is today Monday"
+  },
+  {
+    "intent": "date.query",
+    "text": "What month is it"
+  },
+  {
+    "intent": "date.query",
+    "text": "What year is it"
+  },
+  {
+    "intent": "date.query",
+    "text": "Show the date"
+  },
+  {
+    "intent": "date.query",
+    "text": "What's the date"
+  },
+  {
+    "intent": "knowledge.define",
+    "text": "Define serendipity"
+  },
+  {
+    "intent": "knowledge.define",
+    "text": "What does ephemeral mean"
+  },
+  {
+    "intent": "knowledge.define",
+    "text": "Definition of ubiquitous"
+  },
+  {
+    "intent": "knowledge.define",
+    "text": "Define the word algorithm"
+  },
+  {
+    "intent": "knowledge.define",
+    "text": "What is the meaning of paradigm"
+  },
+  {
+    "intent": "knowledge.define",
+    "text": "Define democracy"
+  },
+  {
+    "intent": "knowledge.define",
+    "text": "What does symbiosis mean"
+  },
+  {
+    "intent": "knowledge.define",
+    "text": "Meaning of entropy"
+  },
+  {
+    "intent": "knowledge.define",
+    "text": "Define quantum"
+  },
+  {
+    "intent": "knowledge.define",
+    "text": "What is the definition of synergy"
+  },
+  {
+    "intent": "knowledge.define",
+    "text": "Define empathy"
+  },
+  {
+    "intent": "knowledge.define",
+    "text": "What does pragmatic mean"
+  },
+  {
+    "intent": "knowledge.define",
+    "text": "Define the term metaphor"
+  },
+  {
+    "intent": "knowledge.define",
+    "text": "What is the meaning of resilience"
+  },
+  {
+    "intent": "knowledge.define",
+    "text": "Define ambiguous"
+  },
+  {
+    "intent": "knowledge.capital",
+    "text": "What is the capital of France"
+  },
+  {
+    "intent": "knowledge.capital",
+    "text": "Capital of Japan"
+  },
+  {
+    "intent": "knowledge.capital",
+    "text": "What's the capital of Germany"
+  },
+  {
+    "intent": "knowledge.capital",
+    "text": "Capital city of Spain"
+  },
+  {
+    "intent": "knowledge.capital",
+    "text": "What is the capital of Australia"
+  },
+  {
+    "intent": "knowledge.capital",
+    "text": "What's the capital of Italy"
+  },
+  {
+    "intent": "knowledge.capital",
+    "text": "Capital of Brazil"
+  },
+  {
+    "intent": "knowledge.capital",
+    "text": "What is the capital of Canada"
+  },
+  {
+    "intent": "knowledge.capital",
+    "text": "Capital of India"
+  },
+  {
+    "intent": "knowledge.capital",
+    "text": "What's the capital of China"
+  },
+  {
+    "intent": "knowledge.capital",
+    "text": "Capital of Mexico"
+  },
+  {
+    "intent": "knowledge.capital",
+    "text": "What is the capital of Russia"
+  },
+  {
+    "intent": "knowledge.capital",
+    "text": "Capital of South Korea"
+  },
+  {
+    "intent": "knowledge.capital",
+    "text": "What city is the capital of Egypt"
+  },
+  {
+    "intent": "knowledge.capital",
+    "text": "What's the capital of the UK"
+  },
+  {
+    "intent": "knowledge.translate",
+    "text": "Translate hello to Spanish"
+  },
+  {
+    "intent": "knowledge.translate",
+    "text": "How do you say goodbye in French"
+  },
+  {
+    "intent": "knowledge.translate",
+    "text": "Translate thank you to German"
+  },
+  {
+    "intent": "knowledge.translate",
+    "text": "What is hello in Japanese"
+  },
+  {
+    "intent": "knowledge.translate",
+    "text": "Translate good morning to Italian"
+  },
+  {
+    "intent": "knowledge.translate",
+    "text": "How do you say yes in Chinese"
+  },
+  {
+    "intent": "knowledge.translate",
+    "text": "Translate please to Portuguese"
+  },
+  {
+    "intent": "knowledge.translate",
+    "text": "What's goodbye in Korean"
+  },
+  {
+    "intent": "knowledge.translate",
+    "text": "Translate I love you to French"
+  },
+  {
+    "intent": "knowledge.translate",
+    "text": "How do you say water in Spanish"
+  },
+  {
+    "intent": "knowledge.translate",
+    "text": "Translate this to German"
+  },
+  {
+    "intent": "knowledge.translate",
+    "text": "What is the word for cat in Japanese"
+  },
+  {
+    "intent": "knowledge.translate",
+    "text": "How to say excuse me in Italian"
+  },
+  {
+    "intent": "knowledge.translate",
+    "text": "Translate help to Russian"
+  },
+  {
+    "intent": "knowledge.translate",
+    "text": "What does bonjour mean"
+  },
+  {
+    "intent": "display.show",
+    "text": "Show me the report"
+  },
+  {
+    "intent": "display.show",
+    "text": "Display the chart"
+  },
+  {
+    "intent": "display.show",
+    "text": "Pull up the document"
+  },
+  {
+    "intent": "display.show",
+    "text": "Show the graph"
+  },
+  {
+    "intent": "display.show",
+    "text": "Display the data"
+  },
+  {
+    "intent": "display.show",
+    "text": "Show me the image"
+  },
+  {
+    "intent": "display.show",
+    "text": "Display this on screen"
+  },
+  {
+    "intent": "display.show",
+    "text": "Show the presentation"
+  },
+  {
+    "intent": "display.show",
+    "text": "Pull up the spreadsheet"
+  },
+  {
+    "intent": "display.show",
+    "text": "Display the map"
+  },
+  {
+    "intent": "display.show",
+    "text": "Show me the results"
+  },
+  {
+    "intent": "display.show",
+    "text": "Display the file"
+  },
+  {
+    "intent": "display.show",
+    "text": "Show on main screen"
+  },
+  {
+    "intent": "display.show",
+    "text": "Put this on the display"
+  },
+  {
+    "intent": "display.show",
+    "text": "Show the video"
+  },
+  {
+    "intent": "display.zoom",
+    "text": "Zoom in"
+  },
+  {
+    "intent": "display.zoom",
+    "text": "Zoom out"
+  },
+  {
+    "intent": "display.zoom",
+    "text": "Enlarge the image"
+  },
+  {
+    "intent": "display.zoom",
+    "text": "Make it bigger"
+  },
+  {
+    "intent": "display.zoom",
+    "text": "Zoom in on that"
+  },
+  {
+    "intent": "display.zoom",
+    "text": "Zoom out please"
+  },
+  {
+    "intent": "display.zoom",
+    "text": "Magnify"
+  },
+  {
+    "intent": "display.zoom",
+    "text": "Zoom to fit"
+  },
+  {
+    "intent": "display.zoom",
+    "text": "Make it smaller"
+  },
+  {
+    "intent": "display.zoom",
+    "text": "Zoom closer"
+  },
+  {
+    "intent": "display.enhance",
+    "text": "Enhance the image"
+  },
+  {
+    "intent": "display.enhance",
+    "text": "Improve the resolution"
+  },
+  {
+    "intent": "display.enhance",
+    "text": "Enhance"
+  },
+  {
+    "intent": "display.enhance",
+    "text": "Make it clearer"
+  },
+  {
+    "intent": "display.enhance",
+    "text": "Sharpen the image"
+  },
+  {
+    "intent": "display.enhance",
+    "text": "Enhance the quality"
+  },
+  {
+    "intent": "display.enhance",
+    "text": "Improve the picture"
+  },
+  {
+    "intent": "display.enhance",
+    "text": "Clean up the image"
+  },
+  {
+    "intent": "display.enhance",
+    "text": "Make it higher resolution"
+  },
+  {
+    "intent": "display.enhance",
+    "text": "Enhance and clarify"
+  },
+  {
+    "intent": "search.locate",
+    "text": "Locate John"
+  },
+  {
+    "intent": "search.locate",
+    "text": "Find the quarterly report"
+  },
+  {
+    "intent": "search.locate",
+    "text": "Search for the document"
+  },
+  {
+    "intent": "search.locate",
+    "text": "Find my keys"
+  },
+  {
+    "intent": "search.locate",
+    "text": "Locate the file"
+  },
+  {
+    "intent": "search.locate",
+    "text": "Search for Sarah"
+  },
+  {
+    "intent": "search.locate",
+    "text": "Find the presentation"
+  },
+  {
+    "intent": "search.locate",
+    "text": "Locate my phone"
+  },
+  {
+    "intent": "search.locate",
+    "text": "Search for images"
+  },
+  {
+    "intent": "search.locate",
+    "text": "Find the spreadsheet"
+  },
+  {
+    "intent": "search.locate",
+    "text": "Look for the email"
+  },
+  {
+    "intent": "search.locate",
+    "text": "Search for documents"
+  },
+  {
+    "intent": "search.locate",
+    "text": "Find a restaurant nearby"
+  },
+  {
+    "intent": "search.locate",
+    "text": "Locate the nearest gas station"
+  },
+  {
+    "intent": "search.locate",
+    "text": "Search for the meeting notes"
+  },
+  {
+    "intent": "analysis.analyze",
+    "text": "Analyze the data"
+  },
+  {
+    "intent": "analysis.analyze",
+    "text": "Run analysis on sales"
+  },
+  {
+    "intent": "analysis.analyze",
+    "text": "Analyze this dataset"
+  },
+  {
+    "intent": "analysis.analyze",
+    "text": "Perform data analysis"
+  },
+  {
+    "intent": "analysis.analyze",
+    "text": "Analyze the results"
+  },
+  {
+    "intent": "analysis.analyze",
+    "text": "Run a statistical analysis"
+  },
+  {
+    "intent": "analysis.analyze",
+    "text": "Analyze the report"
+  },
+  {
+    "intent": "analysis.analyze",
+    "text": "Break down the numbers"
+  },
+  {
+    "intent": "analysis.analyze",
+    "text": "Analyze customer feedback"
+  },
+  {
+    "intent": "analysis.analyze",
+    "text": "Do a deep dive analysis"
+  },
+  {
+    "intent": "analysis.analyze",
+    "text": "Analyze performance metrics"
+  },
+  {
+    "intent": "analysis.analyze",
+    "text": "Run the numbers"
+  },
+  {
+    "intent": "analysis.analyze",
+    "text": "Analyze the patterns"
+  },
+  {
+    "intent": "analysis.analyze",
+    "text": "Perform a comparison"
+  },
+  {
+    "intent": "analysis.analyze",
+    "text": "Analyze the spreadsheet"
+  },
+  {
+    "intent": "analysis.trend",
+    "text": "Show me the trend"
+  },
+  {
+    "intent": "analysis.trend",
+    "text": "Display the trend analysis"
+  },
+  {
+    "intent": "analysis.trend",
+    "text": "What's the trend"
+  },
+  {
+    "intent": "analysis.trend",
+    "text": "Show trending patterns"
+  },
+  {
+    "intent": "analysis.trend",
+    "text": "Display trend data"
+  },
+  {
+    "intent": "analysis.trend",
+    "text": "Show the upward trend"
+  },
+  {
+    "intent": "analysis.trend",
+    "text": "Trend over time"
+  },
+  {
+    "intent": "analysis.trend",
+    "text": "Show the sales trend"
+  },
+  {
+    "intent": "analysis.trend",
+    "text": "Display the trend graph"
+  },
+  {
+    "intent": "analysis.trend",
+    "text": "What's trending"
+  },
+  {
+    "intent": "status.report",
+    "text": "Status report"
+  },
+  {
+    "intent": "status.report",
+    "text": "System status"
+  },
+  {
+    "intent": "status.report",
+    "text": "Give me a status update"
+  },
+  {
+    "intent": "status.report",
+    "text": "What's the current status"
+  },
+  {
+    "intent": "status.report",
+    "text": "Report status"
+  },
+  {
+    "intent": "status.report",
+    "text": "Show system status"
+  },
+  {
+    "intent": "status.report",
+    "text": "Get status"
+  },
+  {
+    "intent": "status.report",
+    "text": "Status check"
+  },
+  {
+    "intent": "status.report",
+    "text": "Project status"
+  },
+  {
+    "intent": "status.report",
+    "text": "How is everything running"
+  },
+  {
+    "intent": "status.report",
+    "text": "Current system state"
+  },
+  {
+    "intent": "status.report",
+    "text": "What's the status"
+  },
+  {
+    "intent": "status.report",
+    "text": "Show the status"
+  },
+  {
+    "intent": "status.report",
+    "text": "Status please"
+  },
+  {
+    "intent": "status.report",
+    "text": "Give me the status"
+  },
+  {
+    "intent": "status.diagnostic",
+    "text": "Run diagnostics"
+  },
+  {
+    "intent": "status.diagnostic",
+    "text": "Check system health"
+  },
+  {
+    "intent": "status.diagnostic",
+    "text": "Diagnostic test"
+  },
+  {
+    "intent": "status.diagnostic",
+    "text": "Run a diagnostic check"
+  },
+  {
+    "intent": "status.diagnostic",
+    "text": "System diagnostics"
+  },
+  {
+    "intent": "status.diagnostic",
+    "text": "Health check"
+  },
+  {
+    "intent": "status.diagnostic",
+    "text": "Run system check"
+  },
+  {
+    "intent": "status.diagnostic",
+    "text": "Perform diagnostics"
+  },
+  {
+    "intent": "status.diagnostic",
+    "text": "Check for problems"
+  },
+  {
+    "intent": "status.diagnostic",
+    "text": "Run a health check"
+  },
+  {
+    "intent": "communication.text",
+    "text": "Send a text to Sarah"
+  },
+  {
+    "intent": "communication.text",
+    "text": "Text John"
+  },
+  {
+    "intent": "communication.text",
+    "text": "Send a message to mom"
+  },
+  {
+    "intent": "communication.text",
+    "text": "Text my wife"
+  },
+  {
+    "intent": "communication.text",
+    "text": "Send text message"
+  },
+  {
+    "intent": "communication.text",
+    "text": "Message dad"
+  },
+  {
+    "intent": "communication.text",
+    "text": "Send a text"
+  },
+  {
+    "intent": "communication.text",
+    "text": "Text message to Sarah"
+  },
+  {
+    "intent": "communication.text",
+    "text": "Send an SMS"
+  },
+  {
+    "intent": "communication.text",
+    "text": "Text my brother"
+  },
+  {
+    "intent": "communication.text",
+    "text": "Send message"
+  },
+  {
+    "intent": "communication.text",
+    "text": "Text Michael"
+  },
+  {
+    "intent": "communication.text",
+    "text": "Send a text to my friend"
+  },
+  {
+    "intent": "communication.text",
+    "text": "SMS John"
+  },
+  {
+    "intent": "communication.text",
+    "text": "Message my sister"
+  },
+  {
+    "intent": "smalltalk.greetings.whatsup",
+    "text": "sup"
+  },
+  {
+    "intent": "smalltalk.greetings.whatsup",
+    "text": "wazzup"
+  },
+  {
+    "intent": "smalltalk.greetings.whatsup",
+    "text": "yo"
+  },
+  {
+    "intent": "smalltalk.greetings.whatsup",
+    "text": "yo yo"
+  },
+  {
+    "intent": "smalltalk.greetings.whatsup",
+    "text": "what up"
+  },
+  {
+    "intent": "smalltalk.greetings.whatsup",
+    "text": "whaddup"
+  },
+  {
+    "intent": "smalltalk.greetings.whatsup",
+    "text": "ayy"
+  },
+  {
+    "intent": "smalltalk.greetings.hello",
+    "text": "hiya"
+  },
+  {
+    "intent": "smalltalk.greetings.hello",
+    "text": "holla"
+  },
+  {
+    "intent": "smalltalk.greetings.hello",
+    "text": "ello"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "text": "My name is Jolene"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "text": "I'm Jolene"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "text": "Call me Jolene"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "text": "Hi, my name is Austin"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "text": "I'm Austin"
   }
 ]

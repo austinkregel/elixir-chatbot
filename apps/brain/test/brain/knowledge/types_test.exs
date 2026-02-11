@@ -122,11 +122,13 @@ defmodule Brain.Knowledge.TypesTest do
       finding = Finding.new("Test", "Entity", source)
       candidate = ReviewCandidate.new(finding)
 
+      before_approval = DateTime.utc_now()
       approved = ReviewCandidate.approve(candidate, "Looks good")
 
       assert approved.status == :approved
       assert approved.reviewer_notes == "Looks good"
-      assert approved.reviewed_at != nil
+      assert %DateTime{} = approved.reviewed_at
+      assert DateTime.compare(approved.reviewed_at, before_approval) != :lt
     end
 
     test "reject updates status and timestamp" do
@@ -166,10 +168,13 @@ defmodule Brain.Knowledge.TypesTest do
 
     test "completes session" do
       session = LearningSession.new()
+
+      before_completion = DateTime.utc_now()
       completed = LearningSession.complete(session)
 
       assert completed.status == :completed
-      assert completed.completed_at != nil
+      assert %DateTime{} = completed.completed_at
+      assert DateTime.compare(completed.completed_at, before_completion) != :lt
     end
   end
 

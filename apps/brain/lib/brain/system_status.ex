@@ -1,5 +1,11 @@
 defmodule Brain.SystemStatus do
   @moduledoc "Reports the status of various background systems for UI display.\nProvides comprehensive monitoring of all GenServers in the application.\n"
+
+  # These modules are in sibling umbrella apps that depend on :brain.
+  # They're available at runtime but not at compile time.
+  @compile {:no_warn_undefined,
+            [World.ModelRegistry, World.Embedder, World.Manager, World.Persistence, World.Metrics]}
+
   alias Brain.Metrics.Aggregator
   alias Brain.ML.EntityExtractor
   alias Brain.ML.EntityTrainer

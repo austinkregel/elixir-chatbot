@@ -5758,5 +5758,1695 @@
     ],
     "text": "Learned 7 entities, 0 relationships, 0 facts from: John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John.",
     "timestamp": 1770530367613
+  },
+  {
+    "id": "887c050497e6ba64",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen lights",
+    "timestamp": 1770652847569
+  },
+  {
+    "id": "0038833de21fff59",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 7 entities, 0 relationships, 0 facts from: John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John.",
+    "timestamp": 1770652847703
+  },
+  {
+    "id": "d92e721a5fdd97d0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: I am John and I am 30 years old",
+    "timestamp": 1770652847823
+  },
+  {
+    "id": "3d2b741b4d4dacbb",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello, how are you today? The weather is nice.",
+    "timestamp": 1770652848099
+  },
+  {
+    "id": "af831819d9049f0a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello world",
+    "timestamp": 1770652848206
+  },
+  {
+    "id": "1b95dc24dff6c4a3",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "I am learning about machine learning and artificial intelligence.",
+    "timestamp": 1770652848328
+  },
+  {
+    "id": "02e494ad4b86c715",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: My car is a red Toyota Camry that I bought last year. It has great fuel efficiency and is very reliable.",
+    "timestamp": 1770652848476
+  },
+  {
+    "id": "dfff136c7a09d58b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Turn off the living room TV",
+    "timestamp": 1770652848588
+  },
+  {
+    "id": "73bee63c5d2fe1a1",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Turn off the living room TV",
+    "timestamp": 1770653208387
+  },
+  {
+    "id": "2b08c5fe6289e194",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello world",
+    "timestamp": 1770653208495
+  },
+  {
+    "id": "331a79ecf1b3a6be",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in New York?",
+    "timestamp": 1770653208605
+  },
+  {
+    "id": "74c90f168af1cc6b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: My car is a red Toyota Camry that I bought last year. It has great fuel efficiency and is very reliable.",
+    "timestamp": 1770653208740
+  },
+  {
+    "id": "4d971d944a59c929",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 7 entities, 0 relationships, 0 facts from: John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John.",
+    "timestamp": 1770653208868
+  },
+  {
+    "id": "f6ff28d5613b601c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen lights",
+    "timestamp": 1770653208970
+  },
+  {
+    "id": "1fed40858062e0ba",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello, how are you today? The weather is nice.",
+    "timestamp": 1770653209081
+  },
+  {
+    "id": "3e99a504e25a234c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: I am John and I am 30 years old",
+    "timestamp": 1770653209190
+  },
+  {
+    "id": "f8c7bc4d8ecc5b1e",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "I am learning about machine learning and artificial intelligence.",
+    "timestamp": 1770653209303
+  },
+  {
+    "id": "aa33b067e98d13bd",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "I am learning about machine learning and artificial intelligence.",
+    "timestamp": 1770653411720
+  },
+  {
+    "id": "080659041dc05870",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Turn off the living room TV",
+    "timestamp": 1770653411829
+  },
+  {
+    "id": "75e7a4fd646c8812",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen lights",
+    "timestamp": 1770653411943
+  },
+  {
+    "id": "87b7491eb2f6d5d3",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: My car is a red Toyota Camry that I bought last year. It has great fuel efficiency and is very reliable.",
+    "timestamp": 1770653412077
+  },
+  {
+    "id": "c6062d454ed4a9fb",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: I am John and I am 30 years old",
+    "timestamp": 1770653412196
+  },
+  {
+    "id": "2aa38e93d1625470",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 7 entities, 0 relationships, 0 facts from: John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John.",
+    "timestamp": 1770653412329
+  },
+  {
+    "id": "c86642448a9dbede",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello world",
+    "timestamp": 1770653412443
+  },
+  {
+    "id": "b76e2b8829fc74f5",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in New York?",
+    "timestamp": 1770653412571
+  },
+  {
+    "id": "0fe57ab020d52a92",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 5 entities, 0 relationships, 0 facts from: My car is a red Toyota Camry that I bought last year. It has great fuel efficiency and is very reliable.",
+    "timestamp": 1770654227617
+  },
+  {
+    "id": "81a0a04144ad4459",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 7 entities, 0 relationships, 0 facts from: John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John.",
+    "timestamp": 1770654227890
+  },
+  {
+    "id": "97aefeeebc6daed0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: I am John and I am 30 years old",
+    "timestamp": 1770654228125
+  },
+  {
+    "id": "c29fbd71db6ebf32",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen lights",
+    "timestamp": 1770654228351
+  },
+  {
+    "id": "e9acc44641fb45e2",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, how are you today? The weather is nice.",
+    "timestamp": 1770654228584
+  },
+  {
+    "id": "60b82ac2a6b73938",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn off the living room TV",
+    "timestamp": 1770654228817
+  },
+  {
+    "id": "7295f732c90f99ab",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am learning about machine learning and artificial intelligence.",
+    "timestamp": 1770654229048
+  },
+  {
+    "id": "3fbeccfc7f7d1fee",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello world",
+    "timestamp": 1770654229263
+  },
+  {
+    "id": "bdc08664c50a1c9d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in New York?",
+    "timestamp": 1770654229521
+  },
+  {
+    "id": "1f9d2ce4210175bc",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 5 entities, 0 relationships, 0 facts from: My car is a red Toyota Camry that I bought last year. It has great fuel efficiency and is very reliable.",
+    "timestamp": 1770656607764
+  },
+  {
+    "id": "b50d5a4db58f7787",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 7 entities, 0 relationships, 0 facts from: John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John.",
+    "timestamp": 1770656608043
+  },
+  {
+    "id": "005c373f3a77e4a7",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in New York?",
+    "timestamp": 1770656608293
+  },
+  {
+    "id": "6e8e7e82e9437ac4",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, how are you today? The weather is nice.",
+    "timestamp": 1770656608535
+  },
+  {
+    "id": "7ec36aee4f131fca",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: I am John and I am 30 years old",
+    "timestamp": 1770656608783
+  },
+  {
+    "id": "55a061e9c389ad98",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen lights",
+    "timestamp": 1770656609019
+  },
+  {
+    "id": "a379601e7e8b93fe",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn off the living room TV",
+    "timestamp": 1770656609256
+  },
+  {
+    "id": "d7474c94ea7aa774",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am learning about machine learning and artificial intelligence.",
+    "timestamp": 1770656609502
+  },
+  {
+    "id": "d61c2e6455f37992",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello world",
+    "timestamp": 1770656609719
+  },
+  {
+    "id": "6773f8bbfc194d91",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 7 entities, 0 relationships, 0 facts from: John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John.",
+    "timestamp": 1770657327343
+  },
+  {
+    "id": "2f541ab9c952dba9",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: I am John and I am 30 years old",
+    "timestamp": 1770657327588
+  },
+  {
+    "id": "f4ed919bff6fad89",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen lights",
+    "timestamp": 1770657327833
+  },
+  {
+    "id": "c23959d4308e5be3",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in New York?",
+    "timestamp": 1770657328069
+  },
+  {
+    "id": "e31141069732aee3",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 5 entities, 0 relationships, 0 facts from: My car is a red Toyota Camry that I bought last year. It has great fuel efficiency and is very reliable.",
+    "timestamp": 1770657328329
+  },
+  {
+    "id": "65492121324d938f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, how are you today? The weather is nice.",
+    "timestamp": 1770657328594
+  },
+  {
+    "id": "aadc2b200b71f740",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn off the living room TV",
+    "timestamp": 1770657328819
+  },
+  {
+    "id": "e29600c377ebcc83",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am learning about machine learning and artificial intelligence.",
+    "timestamp": 1770657329054
+  },
+  {
+    "id": "7e76307d642618e6",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello world",
+    "timestamp": 1770657329298
+  },
+  {
+    "id": "0eac60dc979e0089",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John.",
+    "timestamp": 1770658814239
+  },
+  {
+    "id": "525316c88245f450",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen lights",
+    "timestamp": 1770658814351
+  },
+  {
+    "id": "923e97d9343b6129",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am John and I am 30 years old",
+    "timestamp": 1770658814468
+  },
+  {
+    "id": "7318ffa5fb1f2269",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in New York?",
+    "timestamp": 1770658814584
+  },
+  {
+    "id": "8d84c9f69ac558df",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 5 entities, 0 relationships, 0 facts from: My car is a red Toyota Camry that I bought last year. It has great fuel efficiency and is very reliable.",
+    "timestamp": 1770658814728
+  },
+  {
+    "id": "0d900e1e5d76a71d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello world",
+    "timestamp": 1770658814833
+  },
+  {
+    "id": "ac2dc902e2ef1b20",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am learning about machine learning and artificial intelligence.",
+    "timestamp": 1770658814955
+  },
+  {
+    "id": "4c0c221a916a6593",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn off the living room TV",
+    "timestamp": 1770658815070
+  },
+  {
+    "id": "a464e5bde4880c87",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, how are you today? The weather is nice.",
+    "timestamp": 1770658815190
+  },
+  {
+    "id": "0f91a25337b820e7",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in New York?",
+    "timestamp": 1770659512700
+  },
+  {
+    "id": "8ca18f01fda22b76",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: I am John and I am 30 years old",
+    "timestamp": 1770659512924
+  },
+  {
+    "id": "728c2abb9e615d29",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am learning about machine learning and artificial intelligence.",
+    "timestamp": 1770659513189
+  },
+  {
+    "id": "4640988a6b01dd0e",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 5 entities, 0 relationships, 0 facts from: My car is a red Toyota Camry that I bought last year. It has great fuel efficiency and is very reliable.",
+    "timestamp": 1770659513450
+  },
+  {
+    "id": "dc6dee2e7d1d7ad0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 7 entities, 0 relationships, 0 facts from: John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John.",
+    "timestamp": 1770659513709
+  },
+  {
+    "id": "c1b5d11bcb6f4cbf",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello world",
+    "timestamp": 1770659513933
+  },
+  {
+    "id": "8ddbec820c1dd4f6",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn off the living room TV",
+    "timestamp": 1770659514159
+  },
+  {
+    "id": "675d74c3c3bdada5",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen lights",
+    "timestamp": 1770659514376
+  },
+  {
+    "id": "db9b8f7c036ad439",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, how are you today? The weather is nice.",
+    "timestamp": 1770659514621
+  },
+  {
+    "id": "a69c9de03ea87ad6",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John.",
+    "timestamp": 1770659735664
+  },
+  {
+    "id": "ef37a200b444204d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn off the living room TV",
+    "timestamp": 1770659735942
+  },
+  {
+    "id": "6a2b04a863e3ab09",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello world",
+    "timestamp": 1770659736221
+  },
+  {
+    "id": "d769bb66e5463f5a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen lights",
+    "timestamp": 1770659736509
+  },
+  {
+    "id": "6c49ff527b0e78cf",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, how are you today? The weather is nice.",
+    "timestamp": 1770659736808
+  },
+  {
+    "id": "6299414805f41e26",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 5 entities, 0 relationships, 0 facts from: My car is a red Toyota Camry that I bought last year. It has great fuel efficiency and is very reliable.",
+    "timestamp": 1770659737160
+  },
+  {
+    "id": "0c40e7f003d45948",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am learning about machine learning and artificial intelligence.",
+    "timestamp": 1770659737453
+  },
+  {
+    "id": "d86d4cf88def8a29",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am John and I am 30 years old",
+    "timestamp": 1770659737748
+  },
+  {
+    "id": "761fe8d19f86649a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in New York?",
+    "timestamp": 1770659738035
+  },
+  {
+    "id": "f8cc4f0446949351",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen lights",
+    "timestamp": 1770661045000
+  },
+  {
+    "id": "84de364a6be8c55e",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, how are you today? The weather is nice.",
+    "timestamp": 1770661045264
+  },
+  {
+    "id": "0cb16b5e2faa4f4b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 5 entities, 0 relationships, 0 facts from: My car is a red Toyota Camry that I bought last year. It has great fuel efficiency and is very reliable.",
+    "timestamp": 1770661045545
+  },
+  {
+    "id": "aebb8873edded151",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am learning about machine learning and artificial intelligence.",
+    "timestamp": 1770661045799
+  },
+  {
+    "id": "611b0ba14cab5507",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello world",
+    "timestamp": 1770661046027
+  },
+  {
+    "id": "4cec67b39464810d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: I am John and I am 30 years old",
+    "timestamp": 1770661046280
+  },
+  {
+    "id": "2ba38e563c03bf93",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn off the living room TV",
+    "timestamp": 1770661046527
+  },
+  {
+    "id": "dfcdb473e9a997d0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 7 entities, 0 relationships, 0 facts from: John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John.",
+    "timestamp": 1770661046797
+  },
+  {
+    "id": "2f9751ed35eed6d8",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in New York?",
+    "timestamp": 1770661047052
+  },
+  {
+    "id": "95b26e9860de8680",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in New York?",
+    "timestamp": 1770737458284
+  },
+  {
+    "id": "f6ef17edfa67088b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen lights",
+    "timestamp": 1770737458399
+  },
+  {
+    "id": "b3ab72f2bded59ab",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: I am John and I am 30 years old",
+    "timestamp": 1770737458527
+  },
+  {
+    "id": "32fbc5c3ac83aef7",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn off the living room TV",
+    "timestamp": 1770737458640
+  },
+  {
+    "id": "331a680028ccb8e9",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello world",
+    "timestamp": 1770737458743
+  },
+  {
+    "id": "3ad1fd574b30533b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 5 entities, 0 relationships, 0 facts from: My car is a red Toyota Camry that I bought last year. It has great fuel efficiency and is very reliable.",
+    "timestamp": 1770737458894
+  },
+  {
+    "id": "4fa144de264e9f22",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 7 entities, 0 relationships, 0 facts from: John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John.",
+    "timestamp": 1770737459040
+  },
+  {
+    "id": "2f2a960d40f57c37",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, how are you today? The weather is nice.",
+    "timestamp": 1770737459168
+  },
+  {
+    "id": "b6716d496af2157e",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am learning about machine learning and artificial intelligence.",
+    "timestamp": 1770737459294
+  },
+  {
+    "id": "a4490a0bd22409ca",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello world",
+    "timestamp": 1770739310515
+  },
+  {
+    "id": "58429ee067777911",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: I am John and I am 30 years old",
+    "timestamp": 1770739310768
+  },
+  {
+    "id": "4c8bcea4b2280c72",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen lights",
+    "timestamp": 1770739311005
+  },
+  {
+    "id": "f3e767dae9fce2a8",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, how are you today? The weather is nice.",
+    "timestamp": 1770739311269
+  },
+  {
+    "id": "f5923a210c9d804b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in New York?",
+    "timestamp": 1770739311533
+  },
+  {
+    "id": "ef8e66fd6b510549",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn off the living room TV",
+    "timestamp": 1770739311776
+  },
+  {
+    "id": "91a9ebdafca4b6ac",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am learning about machine learning and artificial intelligence.",
+    "timestamp": 1770739312026
+  },
+  {
+    "id": "30054133bb33cbf7",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 5 entities, 0 relationships, 0 facts from: My car is a red Toyota Camry that I bought last year. It has great fuel efficiency and is very reliable.",
+    "timestamp": 1770739312313
+  },
+  {
+    "id": "16a783a7637dbf82",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 7 entities, 0 relationships, 0 facts from: John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John.",
+    "timestamp": 1770739312596
+  },
+  {
+    "id": "34eab527a1bd95bd",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 5 entities, 0 relationships, 0 facts from: My car is a red Toyota Camry that I bought last year. It has great fuel efficiency and is very reliable.",
+    "timestamp": 1770740394657
+  },
+  {
+    "id": "66abb34c354c6d7b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello world",
+    "timestamp": 1770740394771
+  },
+  {
+    "id": "6a44ad88535cda2e",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in New York?",
+    "timestamp": 1770740394898
+  },
+  {
+    "id": "d3cea618e98aee4c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am John and I am 30 years old",
+    "timestamp": 1770740395025
+  },
+  {
+    "id": "1918607c2c4cbde3",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John.",
+    "timestamp": 1770740395176
+  },
+  {
+    "id": "51458cecc6cb757d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am learning about machine learning and artificial intelligence.",
+    "timestamp": 1770740395303
+  },
+  {
+    "id": "aae01e8d3872fe31",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen lights",
+    "timestamp": 1770740395421
+  },
+  {
+    "id": "5924ee0b36030592",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, how are you today? The weather is nice.",
+    "timestamp": 1770740395550
+  },
+  {
+    "id": "17bb39027871d14d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn off the living room TV",
+    "timestamp": 1770740395666
+  },
+  {
+    "id": "a54797db0010a4f2",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John.",
+    "timestamp": 1770749809808
+  },
+  {
+    "id": "0c6c315fc5596686",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, how are you today? The weather is nice.",
+    "timestamp": 1770749809956
+  },
+  {
+    "id": "4e16230454a6faa0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in New York?",
+    "timestamp": 1770749810077
+  },
+  {
+    "id": "5bef93f0b3a95e1b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 5 entities, 0 relationships, 0 facts from: My car is a red Toyota Camry that I bought last year. It has great fuel efficiency and is very reliable.",
+    "timestamp": 1770749810233
+  },
+  {
+    "id": "2548d32ef096c373",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am John and I am 30 years old",
+    "timestamp": 1770749810356
+  },
+  {
+    "id": "94fc916fef767d1d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am learning about machine learning and artificial intelligence.",
+    "timestamp": 1770749810481
+  },
+  {
+    "id": "ef61f6447f51ff4c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn off the living room TV",
+    "timestamp": 1770749810589
+  },
+  {
+    "id": "93b1df49b66fa514",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello world",
+    "timestamp": 1770749810698
+  },
+  {
+    "id": "195323569fdce921",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen lights",
+    "timestamp": 1770749810816
+  },
+  {
+    "id": "be893bae97c57012",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 7 entities, 0 relationships, 0 facts from: John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John.",
+    "timestamp": 1770761835806
+  },
+  {
+    "id": "658110b8ea492bf9",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in New York?",
+    "timestamp": 1770761836065
+  },
+  {
+    "id": "d43a61e138c2e8d6",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen lights",
+    "timestamp": 1770761836301
+  },
+  {
+    "id": "92e411e7a23cf4d7",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello world",
+    "timestamp": 1770761836543
+  },
+  {
+    "id": "e1b9d9333f7a35c6",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, how are you today? The weather is nice.",
+    "timestamp": 1770761836792
+  },
+  {
+    "id": "0a5e28ee56221eb7",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am learning about machine learning and artificial intelligence.",
+    "timestamp": 1770761837027
+  },
+  {
+    "id": "c2038730caeeab25",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn off the living room TV",
+    "timestamp": 1770761837265
+  },
+  {
+    "id": "aac3bccf8ebbec50",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 5 entities, 0 relationships, 0 facts from: My car is a red Toyota Camry that I bought last year. It has great fuel efficiency and is very reliable.",
+    "timestamp": 1770761837532
+  },
+  {
+    "id": "c93da2c7030f0003",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: I am John and I am 30 years old",
+    "timestamp": 1770761837764
+  },
+  {
+    "id": "d82655b7ba1a3389",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn off the living room TV",
+    "timestamp": 1770773576034
+  },
+  {
+    "id": "3b32dee98ac1afad",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello world",
+    "timestamp": 1770773576258
+  },
+  {
+    "id": "baf97dca7fbed99b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in New York?",
+    "timestamp": 1770773576497
+  },
+  {
+    "id": "d665927ea4bec68f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am learning about machine learning and artificial intelligence.",
+    "timestamp": 1770773576739
+  },
+  {
+    "id": "22c4f61c6dc49f93",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 7 entities, 0 relationships, 0 facts from: John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John.",
+    "timestamp": 1770773576997
+  },
+  {
+    "id": "9764f28ff7551314",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen lights",
+    "timestamp": 1770773577225
+  },
+  {
+    "id": "7e5a5ac2ab90c69a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, how are you today? The weather is nice.",
+    "timestamp": 1770773577466
+  },
+  {
+    "id": "821b7085f8a9c6f6",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: I am John and I am 30 years old",
+    "timestamp": 1770773577707
+  },
+  {
+    "id": "da9cf6c80a7e0022",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 5 entities, 0 relationships, 0 facts from: My car is a red Toyota Camry that I bought last year. It has great fuel efficiency and is very reliable.",
+    "timestamp": 1770773577974
+  },
+  {
+    "id": "5783e507a7614abf",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello world",
+    "timestamp": 1770782029368
+  },
+  {
+    "id": "04e21cae93104021",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 0 facts from: John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John.",
+    "timestamp": 1770782029513
+  },
+  {
+    "id": "235c329821604047",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am John and I am 30 years old",
+    "timestamp": 1770782029631
+  },
+  {
+    "id": "9edb6b95a823b50d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am learning about machine learning and artificial intelligence.",
+    "timestamp": 1770782029754
+  },
+  {
+    "id": "101f9b2360e5dcc0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, how are you today? The weather is nice.",
+    "timestamp": 1770782029882
+  },
+  {
+    "id": "883664f20a7fb052",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen lights",
+    "timestamp": 1770782029985
+  },
+  {
+    "id": "a0d667f03f1b75a7",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 5 entities, 0 relationships, 0 facts from: My car is a red Toyota Camry that I bought last year. It has great fuel efficiency and is very reliable.",
+    "timestamp": 1770782030134
+  },
+  {
+    "id": "25a26068d0279e39",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn off the living room TV",
+    "timestamp": 1770782030239
+  },
+  {
+    "id": "58c716e4a6d711cc",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in New York?",
+    "timestamp": 1770782030381
+  },
+  {
+    "id": "8e5a0aa9258b7763",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in New York?",
+    "timestamp": 1770783139596
+  },
+  {
+    "id": "a737e85fea588697",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello world",
+    "timestamp": 1770783139825
+  },
+  {
+    "id": "faa79d8077159a4e",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am learning about machine learning and artificial intelligence.",
+    "timestamp": 1770783140064
+  },
+  {
+    "id": "919c08660a5217ef",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, how are you today? The weather is nice.",
+    "timestamp": 1770783140315
+  },
+  {
+    "id": "5525898d540ffb41",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: I am John and I am 30 years old",
+    "timestamp": 1770783140547
+  },
+  {
+    "id": "9caeac59c0b914fd",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 5 entities, 0 relationships, 0 facts from: My car is a red Toyota Camry that I bought last year. It has great fuel efficiency and is very reliable.",
+    "timestamp": 1770783140809
+  },
+  {
+    "id": "389d588815088dff",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn off the living room TV",
+    "timestamp": 1770783141046
+  },
+  {
+    "id": "2262e8d4bee53abe",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 7 entities, 0 relationships, 0 facts from: John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John.",
+    "timestamp": 1770783141318
+  },
+  {
+    "id": "a884d36c00e87ddb",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen lights",
+    "timestamp": 1770783141564
+  },
+  {
+    "id": "d4dab51072fab912",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn off the living room TV",
+    "timestamp": 1770783475935
+  },
+  {
+    "id": "8e94e408dcf9f20d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: I am John and I am 30 years old",
+    "timestamp": 1770783476192
+  },
+  {
+    "id": "72402a19af3eaafa",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in New York?",
+    "timestamp": 1770783476447
+  },
+  {
+    "id": "af439e441e582402",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 7 entities, 0 relationships, 0 facts from: John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John.",
+    "timestamp": 1770783476753
+  },
+  {
+    "id": "7879de0886a89812",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello world",
+    "timestamp": 1770783476989
+  },
+  {
+    "id": "760507f5e4e09850",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Hello, how are you today? The weather is nice.",
+    "timestamp": 1770783477239
+  },
+  {
+    "id": "01a172201f42c40f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 5 entities, 0 relationships, 0 facts from: My car is a red Toyota Camry that I bought last year. It has great fuel efficiency and is very reliable.",
+    "timestamp": 1770783477522
+  },
+  {
+    "id": "1518f74eedf0dd25",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen lights",
+    "timestamp": 1770783477748
+  },
+  {
+    "id": "46e4a85024fb4ef3",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am learning about machine learning and artificial intelligence.",
+    "timestamp": 1770783477982
   }
 ]

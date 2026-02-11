@@ -1,16 +1,22 @@
 defmodule Brain.Subprocesses.ConversationSubprocessTest do
   use ExUnit.Case, async: true
   alias Brain.Subprocesses.ConversationSubprocess
+  import Brain.TestHelpers
+
+  setup_all do
+    Brain.TestHelpers.require_services!(:brain)
+    :ok
+  end
 
   setup do
     subprocess_id = "test_conv_#{:rand.uniform(1000)}"
-    conversation_id = "conv_#{:rand.uniform(1000)}"
     memory_snapshot = %{knowledge: %{}, global_memory: []}
 
+    # Don't pass a conversation_id so the subprocess creates a real one
+    # via Brain.create_conversation(), which registers it with Brain
     {:ok, pid} =
       ConversationSubprocess.start_link(
         subprocess_id: subprocess_id,
-        conversation_id: conversation_id,
         memory_snapshot: memory_snapshot
       )
 
@@ -18,17 +24,14 @@ defmodule Brain.Subprocesses.ConversationSubprocessTest do
       DynamicSupervisor.terminate_child(Brain.Subprocesses.Supervisor, pid)
     end)
 
-    %{subprocess_id: subprocess_id, conversation_id: conversation_id, pid: pid}
+    %{subprocess_id: subprocess_id, pid: pid}
   end
 
-  test "starts and returns conversation state", %{
-    subprocess_id: subprocess_id,
-    conversation_id: conversation_id
-  } do
+  test "starts and returns conversation state", %{subprocess_id: subprocess_id} do
     state = ConversationSubprocess.get_conversation_state(subprocess_id)
 
     assert state.subprocess_id == subprocess_id
-    assert state.conversation_id == conversation_id
+    assert is_binary(state.conversation_id)
     assert is_integer(state.uptime)
     assert state.is_shutting_down == false
     assert state.is_interrupted == false
@@ -38,12 +41,12 @@ defmodule Brain.Subprocesses.ConversationSubprocessTest do
     # First input
     {:ok, response1} = ConversationSubprocess.evaluate_input(subprocess_id, "Hello there!")
     assert is_binary(response1)
-    assert String.contains?(response1, "Hello there!")
+    assert_response_intent(response1, "smalltalk.greetings")
 
     # Second input (should have context)
     {:ok, response2} = ConversationSubprocess.evaluate_input(subprocess_id, "How are you?")
     assert is_binary(response2)
-    assert String.contains?(response2, "How are you?")
+    assert_response_intent(response2, "smalltalk")
 
     # Verify conversation state shows messages
     state = ConversationSubprocess.get_conversation_state(subprocess_id)

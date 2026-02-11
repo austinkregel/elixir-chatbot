@@ -188,5 +188,295 @@
     ],
     "text": "Learned 1 entities, 0 relationships, 0 facts from: Can you tell me the weather for Owosso Michigan?",
     "timestamp": 1770577287597
+  },
+  {
+    "id": "46ef9aa5e96c719c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Can you tell me the weather for Miami FL?",
+    "timestamp": 1770577519907
+  },
+  {
+    "id": "337a65f6807db563",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: The sky is green",
+    "timestamp": 1770577741254
+  },
+  {
+    "id": "d8b856579e3b3ee0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Can you tell me the weather for Miami FL",
+    "timestamp": 1770577841451
+  },
+  {
+    "id": "b9e0b9d7a81bd59f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello, I'm Austin. It's nice to meet you.",
+    "timestamp": 1770610369087
+  },
+  {
+    "id": "3c212022f5785807",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I've heard the sky is purple",
+    "timestamp": 1770610405394
+  },
+  {
+    "id": "0673783a862439d7",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's my name?",
+    "timestamp": 1770652642246
+  },
+  {
+    "id": "c75f3e984be43dca",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 1 facts from: The sky is purple",
+    "timestamp": 1770652668518
+  },
+  {
+    "id": "171bbf764259500a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, can you tell me about the weather?",
+    "timestamp": 1770659753430
+  },
+  {
+    "id": "8d97b1a14f20c7af",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather like in Owosso MI?",
+    "timestamp": 1770659779506
+  },
+  {
+    "id": "c2e22f3a84564050",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I'm Austin",
+    "timestamp": 1770659813545
+  },
+  {
+    "id": "ed75b97c01a5e77b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 1 facts from: Hello, I'm Austin.",
+    "timestamp": 1770749223271
+  },
+  {
+    "id": "022166b59facc0c8",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Can you tell me about the  weather in Owosso Michigan?",
+    "timestamp": 1770749239924
+  },
+  {
+    "id": "02c056877a590374",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 1 facts from: Please tell me the weather for Owosso",
+    "timestamp": 1770749259003
+  },
+  {
+    "id": "e2e1daedbf1d6156",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 1 facts from: The sky is purple",
+    "timestamp": 1770749268954
+  },
+  {
+    "id": "bcfed332e5e56397",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I live in Owosso",
+    "timestamp": 1770749524783
+  },
+  {
+    "id": "703b1e472d74b615",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 1 facts from: Can you tell me the weather in Owosso?",
+    "timestamp": 1770749755881
+  },
+  {
+    "id": "b49c5139baea53fc",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 1 facts from: The sky is purple",
+    "timestamp": 1770749780024
+  },
+  {
+    "id": "2c01f32a1cd44191",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, can you tell me the weather?",
+    "timestamp": 1770750002214
+  },
+  {
+    "id": "41ac8a64da46e4ae",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello!",
+    "timestamp": 1770750151348
+  },
+  {
+    "id": "59e258b69626e6ca",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 1 facts from: The sky is blue!",
+    "timestamp": 1770750170909
+  },
+  {
+    "id": "46869842db6c9ec9",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Who am I?",
+    "timestamp": 1770750242894
+  },
+  {
+    "id": "add33c8af741c1ef",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 1 facts from: The sky is purple",
+    "timestamp": 1770750274113
+  },
+  {
+    "id": "870d0a3732d4ad1b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello! You can call me Eph",
+    "timestamp": 1770751090172
+  },
+  {
+    "id": "7404ad84c25781e0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: The sky is blue",
+    "timestamp": 1770751118966
+  },
+  {
+    "id": "23bc73632420a92e",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 4 entities, 0 relationships, 1 facts from: Hello, I'm Austin! I've heard that the sky is actually purple.",
+    "timestamp": 1770751573026
+  },
+  {
+    "id": "e24726e3b4c222bb",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: What's the status",
+    "timestamp": 1770751616197
+  },
+  {
+    "id": "e40ccbdca9db4a6b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Computer, status",
+    "timestamp": 1770751622192
+  },
+  {
+    "id": "58e43617d9725d71",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: status report",
+    "timestamp": 1770752346583
+  },
+  {
+    "id": "8894ea301b7d0eca",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: The sky is blue",
+    "timestamp": 1770759296049
   }
 ]

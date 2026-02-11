@@ -32,28 +32,24 @@ defmodule Brain.ML.EntityTrainer do
       %{model: :entity_trainer, started_at: DateTime.utc_now()}
     )
 
+    {:ok, examples} = DataLoaders.load_all_intents()
+
+    Logger.info("Converting examples to BIO format", %{count: length(examples)})
+    sequences = convert_to_bio_sequences(examples)
+    Logger.info("Generated BIO sequences", %{count: length(sequences)})
+
     result =
-      case DataLoaders.load_all_intents() do
-        {:ok, examples} ->
-          Logger.info("Converting examples to BIO format", %{count: length(examples)})
-          sequences = convert_to_bio_sequences(examples)
-          Logger.info("Generated BIO sequences", %{count: length(sequences)})
+      if sequences != [] do
+        model = train_sequence_model(sequences)
 
-          if sequences != [] do
-            model = train_sequence_model(sequences)
+        Logger.info("Entity model trained", %{
+          tag_count: map_size(model.tag_vocabulary),
+          feature_count: map_size(model.feature_weights)
+        })
 
-            Logger.info("Entity model trained", %{
-              tag_count: map_size(model.tag_vocabulary),
-              feature_count: map_size(model.feature_weights)
-            })
-
-            {:ok, model, length(sequences)}
-          else
-            {:error, "No valid training sequences generated"}
-          end
-
-        {:error, reason} ->
-          {:error, reason}
+        {:ok, model, length(sequences)}
+      else
+        {:error, "No valid training sequences generated"}
       end
 
     duration_ms = System.monotonic_time(:millisecond) - start_time

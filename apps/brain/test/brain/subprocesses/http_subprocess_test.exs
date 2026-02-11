@@ -1,6 +1,12 @@
 defmodule Brain.Subprocesses.HttpSubprocessTest do
   use ExUnit.Case, async: true
   alias Brain.Subprocesses.HttpSubprocess
+  import Brain.TestHelpers
+
+  setup_all do
+    Brain.TestHelpers.require_services!(:brain)
+    :ok
+  end
 
   setup do
     subprocess_id = "test_http_#{:rand.uniform(1000)}"
@@ -41,7 +47,7 @@ defmodule Brain.Subprocesses.HttpSubprocessTest do
       HttpSubprocess.route_to_conversation(subprocess_id, conversation_id, "Hello")
 
     assert is_binary(response)
-    assert String.contains?(response, "Hello")
+    assert_response_intent(response, "smalltalk.greetings")
     :ok = HttpSubprocess.end_conversation(subprocess_id, conversation_id)
     conversations = HttpSubprocess.get_conversations(subprocess_id)
     assert conversations == []

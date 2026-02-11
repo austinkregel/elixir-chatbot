@@ -16,10 +16,9 @@ defmodule Brain.Knowledge.AcademicValidator do
   @moderate_confidence_boost 0.1
   @low_confidence_boost 0.05
 
-  @doc "Validates a finding against peer-reviewed academic literature.\n\nChecks both the BeliefStore (for previously ingested papers) and\noptionally searches live academic APIs.\n\n## Options\n  - :live_search - Search live APIs if no match in BeliefStore (default: false)\n  - :min_confidence - Minimum confidence for matches (default: 0.6)\n\n## Returns\n  - {:ok, {:corroborated, details}} - Finding matches academic literature\n  - {:ok, {:contradicted, details}} - Finding conflicts with academic sources\n  - {:ok, :insufficient_evidence} - Not enough academic data\n  - {:error, reason} - Validation failed\n"
+  @doc "Validates a finding against peer-reviewed academic literature.\n\nChecks both the BeliefStore (for previously ingested papers) and\noptionally searches live academic APIs.\n\n## Options\n  - :live_search - Search live APIs if no match in BeliefStore (default: false)\n  - :min_confidence - Minimum confidence for matches (default: 0.6)\n\n## Returns\n  - {:ok, {:corroborated, details}} - Finding matches academic literature\n  - {:ok, {:contradicted, details}} - Finding conflicts with academic sources\n  - {:ok, :insufficient_evidence} - Not enough academic data\n"
   @spec validate(Finding.t(), keyword()) ::
           {:ok, {:corroborated, map()} | {:contradicted, map()} | :insufficient_evidence}
-          | {:error, term()}
   def validate(%Finding{} = finding, opts \\ []) do
     live_search = Keyword.get(opts, :live_search, false)
     min_confidence = Keyword.get(opts, :min_confidence, 0.6)
@@ -42,9 +41,6 @@ defmodule Brain.Knowledge.AcademicValidator do
         else
           {:ok, :insufficient_evidence}
         end
-
-      {:error, _} = error ->
-        error
     end
   end
 
@@ -54,10 +50,8 @@ defmodule Brain.Knowledge.AcademicValidator do
     results =
       findings
       |> Enum.map(fn finding ->
-        case validate(finding, opts) do
-          {:ok, result} -> result
-          {:error, _} -> :validation_error
-        end
+        {:ok, result} = validate(finding, opts)
+        result
       end)
 
     {:ok, results}

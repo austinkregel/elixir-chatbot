@@ -1,6 +1,10 @@
 defmodule Mix.Tasks.RegenerateTestModels do
   @moduledoc "Regenerate LSTM model .term files for test compatibility.\n\nWhen LSTM model files become incompatible with current library versions\n(Nx, EXLA, Axon, OTP), this task regenerates them.\n\n## Usage\n\n    mix regenerate_test_models [options]\n\n## Options\n\n  --all            Regenerate all model types\n  --unified        Regenerate unified model\n  --multi-task     Regenerate multi-task model\n  --response       Regenerate response scorer model\n  --minimal        Generate minimal test models (fast, small vocab)\n  --check          Check compatibility without regenerating\n\n## Examples\n\n    # Check if models need regeneration\n    mix regenerate_test_models --check\n\n    # Regenerate all models\n    mix regenerate_test_models --all\n\n    # Generate minimal models for fast testing\n    mix regenerate_test_models --minimal\n\n## Version Compatibility\n\nModels are serialized using `:erlang.term_to_binary/1`. The internal format\nof Nx tensors depends on:\n\n- Nx version\n- EXLA version (for EXLA-backed tensors)\n- OTP version (for term_to_binary format)\n\nWhen you update these libraries, models need to be regenerated.\n\n## Workflow\n\n1. Run `mix regenerate_test_models --check` to see if models are incompatible\n2. Run `mix regenerate_test_models --all` to regenerate\n3. Run `mix test` to verify tests pass\n4. Commit the new .term files\n"
 
+  # Brain.LSTMTestHelpers is only available in test environment.
+  # This mix task is typically run in test context.
+  @compile {:no_warn_undefined, Brain.LSTMTestHelpers}
+
   alias Brain.LSTMTestHelpers
   use Mix.Task
   require Logger

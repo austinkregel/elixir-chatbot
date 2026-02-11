@@ -1,6 +1,10 @@
 defmodule Brain.Analysis.EntityDisambiguator do
   @moduledoc "Disambiguates entities when multiple types are possible,\nusing speech act, discourse, and POS-tagged syntactic context.\n\nWhen the gazetteer returns multiple possible entity types for the same\ntext (e.g., \"Austin\" could be a person or a location), this module\nuses contextual features to determine the most likely interpretation.\n\nAlso handles cases where a single-type entity (e.g., \"Nice\" as location)\nis being used as a proper noun/name in context (e.g., \"I'm Nice\"),\nrecognizing proper noun usage and mapping it to the appropriate entity type.\n\n## Features Used\n\n- **POS tags**: What part of speech precedes/follows the entity\n- **Discourse indicators**: Is this a self-referential statement?\n- **Speech act context**: Is this a greeting, question, command?\n- **Intent hints**: What domain does the intent belong to?\n\nUses IntentRegistry for intent domain lookups instead of keyword matching.\n\n## Usage\n\n    # With POS-tagged tokens\n    pos_tagged = [{\"I\", \"PRON\"}, {\"am\", \"VERB\"}, {\"Austin\", \"PROPN\"}]\n    entities = [%{value: \"Austin\", types: [person_info, location_info], ...}]\n    context = %{discourse: discourse_result, speech_act: speech_act_result}\n\n    disambiguated = EntityDisambiguator.disambiguate(entities, pos_tagged, context)\n\n"
 
+  # World.TypeInferrer is in a sibling umbrella app that depends on :brain.
+  # It's available at runtime but not at compile time.
+  @compile {:no_warn_undefined, World.TypeInferrer}
+
   alias Brain.Analysis
   require Logger
 

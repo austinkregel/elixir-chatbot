@@ -10738,5 +10738,2805 @@
     ],
     "text": "Learned 2 entities, 0 relationships, 0 facts from: John lives in Seattle",
     "timestamp": 1770530164866
+  },
+  {
+    "id": "d345f37a29f00363",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello there",
+    "timestamp": 1770652765824
+  },
+  {
+    "id": "a69ca774e1227804",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Weather in Paris",
+    "timestamp": 1770652766013
+  },
+  {
+    "id": "b1e7277da8b7e3f0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test device",
+    "timestamp": 1770652766042
+  },
+  {
+    "id": "7c539a8d4b0ccbd6",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: The living room light is on",
+    "timestamp": 1770652766233
+  },
+  {
+    "id": "f291faed58c0a8b3",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "Test's & query <script>",
+    "timestamp": 1770652766428
+  },
+  {
+    "id": "998b7a55a0bc2fca",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen light",
+    "timestamp": 1770652766614
+  },
+  {
+    "id": "472df16b0647fe00",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "日本語テスト",
+    "timestamp": 1770652766788
+  },
+  {
+    "id": "4897f99122876049",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My cat is named Whiskers",
+    "timestamp": 1770652766973
+  },
+  {
+    "id": "b4778d516fa092ee",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Paris is nice",
+    "timestamp": 1770652767004
+  },
+  {
+    "id": "d25c341c52b9b0b4",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: empty entities",
+    "timestamp": 1770652767033
+  },
+  {
+    "id": "2631f7543248ddc9",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "a",
+    "timestamp": 1770652767230
+  },
+  {
+    "id": "eb3abe83c731f25a",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "",
+    "timestamp": 1770652767425
+  },
+  {
+    "id": "b28892a1f56cad57",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I live in Seattle",
+    "timestamp": 1770652767612
+  },
+  {
+    "id": "26cc09053489bf48",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Paris is nice",
+    "timestamp": 1770652928590
+  },
+  {
+    "id": "0d51b341077e10a3",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: John lives in Seattle",
+    "timestamp": 1770652928629
+  },
+  {
+    "id": "86aee2347d965442",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: empty entities",
+    "timestamp": 1770652928654
+  },
+  {
+    "id": "a4754c5acf244165",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test device",
+    "timestamp": 1770652928677
+  },
+  {
+    "id": "ee594dbe902b5d28",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test device",
+    "timestamp": 1770653293986
+  },
+  {
+    "id": "c1536851a6ef811e",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: John lives in Seattle",
+    "timestamp": 1770653294011
+  },
+  {
+    "id": "e8610a52c1333527",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: empty entities",
+    "timestamp": 1770653294034
+  },
+  {
+    "id": "53580a615b7cf467",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Paris is nice",
+    "timestamp": 1770653294058
+  },
+  {
+    "id": "ded71969e2ee420e",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Paris is nice",
+    "timestamp": 1770653455092
+  },
+  {
+    "id": "9d77fccc41fdab99",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test device",
+    "timestamp": 1770653455124
+  },
+  {
+    "id": "2ebba176095fe1b3",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: empty entities",
+    "timestamp": 1770653455149
+  },
+  {
+    "id": "b9b79d2fc6e709f3",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: John lives in Seattle",
+    "timestamp": 1770653455172
+  },
+  {
+    "id": "073978752582b073",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen light",
+    "timestamp": 1770654286100
+  },
+  {
+    "id": "e4555f4eab085f0d",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "a",
+    "timestamp": 1770654286170
+  },
+  {
+    "id": "109d0f0f4a1edcd9",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Weather in Paris",
+    "timestamp": 1770654286227
+  },
+  {
+    "id": "a4d6c4ba970e6f91",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Paris is nice",
+    "timestamp": 1770654286252
+  },
+  {
+    "id": "693247792b5c80d1",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: empty entities",
+    "timestamp": 1770654286274
+  },
+  {
+    "id": "0f00a86586ce8117",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "",
+    "timestamp": 1770654286330
+  },
+  {
+    "id": "e66f181b3c2b885e",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My cat is named Whiskers",
+    "timestamp": 1770654286396
+  },
+  {
+    "id": "aff21fadd7964327",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: The living room light is on",
+    "timestamp": 1770654286468
+  },
+  {
+    "id": "5bd84564dc7041c6",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: John lives in Seattle",
+    "timestamp": 1770654286494
+  },
+  {
+    "id": "b541cf0a229cf9d9",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: John is my friend",
+    "timestamp": 1770654286566
+  },
+  {
+    "id": "951a28a614e75c2c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Play some jazz music",
+    "timestamp": 1770654286634
+  },
+  {
+    "id": "de320b6412503974",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "Test's & query <script>",
+    "timestamp": 1770654286703
+  },
+  {
+    "id": "20ff38ee191d8eb0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello there",
+    "timestamp": 1770654286770
+  },
+  {
+    "id": "25a8fbefeb596854",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I live in Seattle",
+    "timestamp": 1770654286836
+  },
+  {
+    "id": "56392a3babecd34b",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "日本語テスト",
+    "timestamp": 1770654286920
+  },
+  {
+    "id": "6923afe46bb2cab2",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test device",
+    "timestamp": 1770654286954
+  },
+  {
+    "id": "8d6452cfae002bde",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 99 entities, 0 relationships, 0 facts from: This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence.",
+    "timestamp": 1770654288070
+  },
+  {
+    "id": "51ca3b9f2d8d1bf9",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen light",
+    "timestamp": 1770656704687
+  },
+  {
+    "id": "d6fc048039b60802",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "a",
+    "timestamp": 1770656704871
+  },
+  {
+    "id": "d47816faf5871760",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I live in Seattle",
+    "timestamp": 1770656705055
+  },
+  {
+    "id": "595b79133d5d3089",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Paris is nice",
+    "timestamp": 1770656705085
+  },
+  {
+    "id": "141861ab13a61d8d",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "日本語テスト",
+    "timestamp": 1770656705267
+  },
+  {
+    "id": "c8a9f9133e550035",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: The living room light is on",
+    "timestamp": 1770656705462
+  },
+  {
+    "id": "0d67ae7dec76bb77",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test's & query <script>",
+    "timestamp": 1770656705666
+  },
+  {
+    "id": "597978795d800341",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 99 entities, 0 relationships, 0 facts from: This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence.",
+    "timestamp": 1770656706952
+  },
+  {
+    "id": "581b6c4cecb5cd62",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: empty entities",
+    "timestamp": 1770656706984
+  },
+  {
+    "id": "85cf84952f860205",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "",
+    "timestamp": 1770656707150
+  },
+  {
+    "id": "d85af71348acf362",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My cat is named Whiskers",
+    "timestamp": 1770656707340
+  },
+  {
+    "id": "0cc0aa31a57178f9",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test device",
+    "timestamp": 1770656707371
+  },
+  {
+    "id": "f4e5385b11afe360",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "John is my friend",
+    "timestamp": 1770656707561
+  },
+  {
+    "id": "be4ec7eb8632e700",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Weather in Paris",
+    "timestamp": 1770656707747
+  },
+  {
+    "id": "ec9131255f03cf3f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Play some jazz music",
+    "timestamp": 1770656707943
+  },
+  {
+    "id": "226aa28f2001fbaa",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello there",
+    "timestamp": 1770656708134
+  },
+  {
+    "id": "812579f6630b561a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: John lives in Seattle",
+    "timestamp": 1770656708166
+  },
+  {
+    "id": "81bebe858b7f9ceb",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: John lives in Seattle",
+    "timestamp": 1770657287121
+  },
+  {
+    "id": "500fbb7626669c0f",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "a",
+    "timestamp": 1770657287303
+  },
+  {
+    "id": "7263e667afdbbd57",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Paris is nice",
+    "timestamp": 1770657287335
+  },
+  {
+    "id": "f7c0a5b5a471967f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Weather in Paris",
+    "timestamp": 1770657287529
+  },
+  {
+    "id": "90afa09c184bcb64",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 99 entities, 0 relationships, 0 facts from: This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence.",
+    "timestamp": 1770657288861
+  },
+  {
+    "id": "bed07a281537e4f5",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: empty entities",
+    "timestamp": 1770657288898
+  },
+  {
+    "id": "2e36ba4efd647b04",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test's & query <script>",
+    "timestamp": 1770657289112
+  },
+  {
+    "id": "7f4905a8b402f832",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "",
+    "timestamp": 1770657289290
+  },
+  {
+    "id": "b85614ab18892311",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "日本語テスト",
+    "timestamp": 1770657289472
+  },
+  {
+    "id": "4c5b98abd13a19ab",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My cat is named Whiskers",
+    "timestamp": 1770657289659
+  },
+  {
+    "id": "72be6e5eae1646af",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I live in Seattle",
+    "timestamp": 1770657289858
+  },
+  {
+    "id": "19f2b65a671be4bd",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test device",
+    "timestamp": 1770657289896
+  },
+  {
+    "id": "4f3dcc1657f2ea52",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen light",
+    "timestamp": 1770657290095
+  },
+  {
+    "id": "c2afc8fa8ab6874b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: The living room light is on",
+    "timestamp": 1770657290305
+  },
+  {
+    "id": "8584da28e94374e8",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: John is my friend",
+    "timestamp": 1770657290506
+  },
+  {
+    "id": "cf8542f85d02e7de",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Play some jazz music",
+    "timestamp": 1770657290702
+  },
+  {
+    "id": "f939c1f376e802f0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello there",
+    "timestamp": 1770657290888
+  },
+  {
+    "id": "cfbd693d6dcdf6b1",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test's & query <script>",
+    "timestamp": 1770658815258
+  },
+  {
+    "id": "6a9d80d6babd1210",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: empty entities",
+    "timestamp": 1770658815288
+  },
+  {
+    "id": "f97afd33b6a4f840",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 99 entities, 0 relationships, 0 facts from: This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence.",
+    "timestamp": 1770658816358
+  },
+  {
+    "id": "40d42ec2a7339dd9",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "a",
+    "timestamp": 1770658816456
+  },
+  {
+    "id": "15ab6395835a4f47",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My cat is named Whiskers",
+    "timestamp": 1770658816553
+  },
+  {
+    "id": "547a92f787cd51dc",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test device",
+    "timestamp": 1770658816592
+  },
+  {
+    "id": "603f4ca747587a09",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "日本語テスト",
+    "timestamp": 1770658816685
+  },
+  {
+    "id": "fa21fa2d21349fd3",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "",
+    "timestamp": 1770658816752
+  },
+  {
+    "id": "6d8b6cf7f834b7d7",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I live in Seattle",
+    "timestamp": 1770658816849
+  },
+  {
+    "id": "21c6c55e12619ea4",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen light",
+    "timestamp": 1770658816938
+  },
+  {
+    "id": "f769de5a3a61166f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello there",
+    "timestamp": 1770658817014
+  },
+  {
+    "id": "24786bac869c2ee2",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: John lives in Seattle",
+    "timestamp": 1770658817040
+  },
+  {
+    "id": "cfdb13e202f77a36",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Paris is nice",
+    "timestamp": 1770658817066
+  },
+  {
+    "id": "efe9101fc848b418",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Play some jazz music",
+    "timestamp": 1770658817155
+  },
+  {
+    "id": "3ccc3bccb9e578ec",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "John is my friend",
+    "timestamp": 1770658817239
+  },
+  {
+    "id": "b343cd8f9d8b6938",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: The living room light is on",
+    "timestamp": 1770658817337
+  },
+  {
+    "id": "3df223873c8de89e",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Weather in Paris",
+    "timestamp": 1770658817421
+  },
+  {
+    "id": "3739a678f8189d43",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I live in Seattle",
+    "timestamp": 1770659390188
+  },
+  {
+    "id": "df32e18a6e5c5f6e",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "",
+    "timestamp": 1770659390365
+  },
+  {
+    "id": "d8491879dace5079",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test device",
+    "timestamp": 1770659390397
+  },
+  {
+    "id": "f4ebc0902b79a19c",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "Test's & query <script>",
+    "timestamp": 1770659390600
+  },
+  {
+    "id": "c020145fda56fd88",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: John lives in Seattle",
+    "timestamp": 1770659390635
+  },
+  {
+    "id": "cefec26577c28e63",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: empty entities",
+    "timestamp": 1770659390671
+  },
+  {
+    "id": "5b664843bceaba64",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Play some jazz music",
+    "timestamp": 1770659390869
+  },
+  {
+    "id": "b3b79e494698c893",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 99 entities, 0 relationships, 0 facts from: This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence.",
+    "timestamp": 1770659392211
+  },
+  {
+    "id": "f6abb7c390a1445c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen light",
+    "timestamp": 1770659392411
+  },
+  {
+    "id": "98fb52373377c843",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "a",
+    "timestamp": 1770659392604
+  },
+  {
+    "id": "f81dffb3d857ce10",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello there",
+    "timestamp": 1770659392801
+  },
+  {
+    "id": "c67ee67f51241de9",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "John is my friend",
+    "timestamp": 1770659392993
+  },
+  {
+    "id": "4712e5ac707abb90",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My cat is named Whiskers",
+    "timestamp": 1770659393193
+  },
+  {
+    "id": "6bc8a683c2cb3c6c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Paris is nice",
+    "timestamp": 1770659393227
+  },
+  {
+    "id": "44aebc610e4b3a9e",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: The living room light is on",
+    "timestamp": 1770659393429
+  },
+  {
+    "id": "cf2f92c2b56eac28",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Weather in Paris",
+    "timestamp": 1770659393630
+  },
+  {
+    "id": "de58aa4335776db5",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "日本語テスト",
+    "timestamp": 1770659393826
+  },
+  {
+    "id": "f68006e8b82c4544",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "Test's & query <script>",
+    "timestamp": 1770659689709
+  },
+  {
+    "id": "d1e65953ee4e6cf5",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: John lives in Seattle",
+    "timestamp": 1770659689753
+  },
+  {
+    "id": "8c6ea189c41eb5ad",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "a",
+    "timestamp": 1770659689949
+  },
+  {
+    "id": "4472a5c77eda7b86",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "日本語テスト",
+    "timestamp": 1770659690142
+  },
+  {
+    "id": "0702c5ac6e915391",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: John is my friend",
+    "timestamp": 1770659690336
+  },
+  {
+    "id": "8c9972426b1ae957",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello there",
+    "timestamp": 1770659690533
+  },
+  {
+    "id": "724b3ff026ab65db",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My cat is named Whiskers",
+    "timestamp": 1770659690732
+  },
+  {
+    "id": "50961efc8ef2ca7a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: The living room light is on",
+    "timestamp": 1770659690936
+  },
+  {
+    "id": "ff1c5af9def4faa0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 99 entities, 0 relationships, 0 facts from: This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence.",
+    "timestamp": 1770659692259
+  },
+  {
+    "id": "ca682d813232ab73",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: empty entities",
+    "timestamp": 1770659692292
+  },
+  {
+    "id": "a26a2c5f559c3f7f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen light",
+    "timestamp": 1770659692495
+  },
+  {
+    "id": "b183ba56f5ac3be6",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Paris is nice",
+    "timestamp": 1770659692528
+  },
+  {
+    "id": "53bb6100a2ababdf",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test device",
+    "timestamp": 1770659692561
+  },
+  {
+    "id": "5c8b5ce01fb1f56e",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Play some jazz music",
+    "timestamp": 1770659692759
+  },
+  {
+    "id": "d5ebbf6fbcb3da61",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Weather in Paris",
+    "timestamp": 1770659692961
+  },
+  {
+    "id": "1c7edd931cd74188",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "",
+    "timestamp": 1770659693138
+  },
+  {
+    "id": "332ccf9e1647fead",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I live in Seattle",
+    "timestamp": 1770659693338
+  },
+  {
+    "id": "d7ffa00036a1cc9a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Weather in Paris",
+    "timestamp": 1770661715192
+  },
+  {
+    "id": "6f992fe6b3d36902",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My cat is named Whiskers",
+    "timestamp": 1770661715287
+  },
+  {
+    "id": "d5fb9f9779bebdfb",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: The living room light is on",
+    "timestamp": 1770661715377
+  },
+  {
+    "id": "1f1c74e7d01d7632",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen light",
+    "timestamp": 1770661715475
+  },
+  {
+    "id": "5ba248a9320ffa0a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Play some jazz music",
+    "timestamp": 1770661715562
+  },
+  {
+    "id": "9ceb43652078e13e",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello there",
+    "timestamp": 1770661715645
+  },
+  {
+    "id": "eed2a1c12cf360ae",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test device",
+    "timestamp": 1770661715680
+  },
+  {
+    "id": "e4d002bcd0ee24a0",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "",
+    "timestamp": 1770661715747
+  },
+  {
+    "id": "748fae3e69772aac",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: John lives in Seattle",
+    "timestamp": 1770661715776
+  },
+  {
+    "id": "84ed423c5700bbec",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "John is my friend",
+    "timestamp": 1770661715869
+  },
+  {
+    "id": "9eb022a0473ead4a",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "Test's & query <script>",
+    "timestamp": 1770661716018
+  },
+  {
+    "id": "afd899028cb619ce",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "a",
+    "timestamp": 1770661716083
+  },
+  {
+    "id": "d2293bcf2e2c8922",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: empty entities",
+    "timestamp": 1770661716110
+  },
+  {
+    "id": "12b4f164c2e3bae2",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Paris is nice",
+    "timestamp": 1770661716135
+  },
+  {
+    "id": "2feebbb8d433bb26",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "日本語テスト",
+    "timestamp": 1770661716211
+  },
+  {
+    "id": "a5d2b798cb7277a1",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I live in Seattle",
+    "timestamp": 1770661716283
+  },
+  {
+    "id": "40b74822dedbf1fc",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 99 entities, 0 relationships, 0 facts from: This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence.",
+    "timestamp": 1770661717348
+  },
+  {
+    "id": "49a1a0d7ac311ccd",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I live in Seattle",
+    "timestamp": 1770737677004
+  },
+  {
+    "id": "be31eceb906a1330",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 99 entities, 0 relationships, 0 facts from: This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence.",
+    "timestamp": 1770737678092
+  },
+  {
+    "id": "97bfa41f4b68f0c6",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My cat is named Whiskers",
+    "timestamp": 1770737678171
+  },
+  {
+    "id": "27bd26b6142b282c",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "",
+    "timestamp": 1770737678235
+  },
+  {
+    "id": "f5d2c9372d8b4681",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: John is my friend",
+    "timestamp": 1770737678311
+  },
+  {
+    "id": "d8d592f7bd2a32c0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Paris is nice",
+    "timestamp": 1770737678334
+  },
+  {
+    "id": "4ba495e375bac168",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Weather in Paris",
+    "timestamp": 1770737678415
+  },
+  {
+    "id": "06f463e9119af072",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello there",
+    "timestamp": 1770737678494
+  },
+  {
+    "id": "48258a6c9c7e7e27",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "日本語テスト",
+    "timestamp": 1770737678571
+  },
+  {
+    "id": "0577c5414a0389bb",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen light",
+    "timestamp": 1770737678648
+  },
+  {
+    "id": "20ede252d7e584b5",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "a",
+    "timestamp": 1770737678728
+  },
+  {
+    "id": "3838a2f0a40b2738",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: John lives in Seattle",
+    "timestamp": 1770737678757
+  },
+  {
+    "id": "08b53143b2bed2d8",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: empty entities",
+    "timestamp": 1770737678782
+  },
+  {
+    "id": "2450347c3d7aec08",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: The living room light is on",
+    "timestamp": 1770737678870
+  },
+  {
+    "id": "378b3e3318c627c5",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test device",
+    "timestamp": 1770737678894
+  },
+  {
+    "id": "17fb44a63d7376fa",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Play some jazz music",
+    "timestamp": 1770737678973
+  },
+  {
+    "id": "b1ce3c249dddc076",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test's & query <script>",
+    "timestamp": 1770737679058
+  },
+  {
+    "id": "5e5c1d3a003d7d56",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello there",
+    "timestamp": 1770739145466
+  },
+  {
+    "id": "00f97429fad930ec",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "Test's & query <script>",
+    "timestamp": 1770739145666
+  },
+  {
+    "id": "e07fe5ced7384c2c",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "",
+    "timestamp": 1770739145847
+  },
+  {
+    "id": "ae3aed7cd686a092",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test device",
+    "timestamp": 1770739145897
+  },
+  {
+    "id": "0faf5d6d0cad56df",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Paris is nice",
+    "timestamp": 1770739145937
+  },
+  {
+    "id": "0d1639d0889ac57c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: empty entities",
+    "timestamp": 1770739145973
+  },
+  {
+    "id": "0e66fb00e00585b1",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My cat is named Whiskers",
+    "timestamp": 1770739146179
+  },
+  {
+    "id": "77eab4530384767f",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "日本語テスト",
+    "timestamp": 1770739146381
+  },
+  {
+    "id": "2ac7a1d1859fe55c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: The living room light is on",
+    "timestamp": 1770739146585
+  },
+  {
+    "id": "ab4c05715e4ba83b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I live in Seattle",
+    "timestamp": 1770739146790
+  },
+  {
+    "id": "2ef9b7be12eb42a1",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: John lives in Seattle",
+    "timestamp": 1770739146827
+  },
+  {
+    "id": "c0a1296fcfccd625",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: John is my friend",
+    "timestamp": 1770739147025
+  },
+  {
+    "id": "e6599c53bae62601",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 99 entities, 0 relationships, 0 facts from: This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence.",
+    "timestamp": 1770739148353
+  },
+  {
+    "id": "1ba448fed7e5e55e",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Play some jazz music",
+    "timestamp": 1770739148552
+  },
+  {
+    "id": "a7bb914dd8788008",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Weather in Paris",
+    "timestamp": 1770739148747
+  },
+  {
+    "id": "97c9c294dd6ddfb0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen light",
+    "timestamp": 1770739148947
+  },
+  {
+    "id": "2572e16dbc7eb5a9",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "a",
+    "timestamp": 1770739149136
+  },
+  {
+    "id": "f47e5ade8266ecb8",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "Test's & query <script>",
+    "timestamp": 1770739578417
+  },
+  {
+    "id": "4fcffd57fb7d057f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen light",
+    "timestamp": 1770739578627
+  },
+  {
+    "id": "a650b8666f8145be",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello there",
+    "timestamp": 1770739578832
+  },
+  {
+    "id": "4f4074ca92848145",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: empty entities",
+    "timestamp": 1770739578877
+  },
+  {
+    "id": "52ecaaeca925e6b7",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I live in Seattle",
+    "timestamp": 1770739579091
+  },
+  {
+    "id": "4706aa098d0cf35b",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "",
+    "timestamp": 1770739579272
+  },
+  {
+    "id": "9df66ff3a477c7d2",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "a",
+    "timestamp": 1770739579471
+  },
+  {
+    "id": "7b9ea3befb8ac011",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Paris is nice",
+    "timestamp": 1770739579507
+  },
+  {
+    "id": "de29b335ff27cc2f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: John lives in Seattle",
+    "timestamp": 1770739579544
+  },
+  {
+    "id": "d20504f6c570c0fe",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test device",
+    "timestamp": 1770739579582
+  },
+  {
+    "id": "fc631a892b5c2c10",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Play some jazz music",
+    "timestamp": 1770739579780
+  },
+  {
+    "id": "3c9b25b251941b82",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "日本語テスト",
+    "timestamp": 1770739579971
+  },
+  {
+    "id": "9b0cf88c0b655fb2",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My cat is named Whiskers",
+    "timestamp": 1770739580166
+  },
+  {
+    "id": "7bf2f3ef391fa9ba",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: The living room light is on",
+    "timestamp": 1770739580376
+  },
+  {
+    "id": "4e32e4651e4b6c2d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 99 entities, 0 relationships, 0 facts from: This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence.",
+    "timestamp": 1770739581701
+  },
+  {
+    "id": "722d505e96e05a5f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: John is my friend",
+    "timestamp": 1770739581900
+  },
+  {
+    "id": "fdd513e3b2052733",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Weather in Paris",
+    "timestamp": 1770739582090
+  },
+  {
+    "id": "31a3fe057e092802",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: John lives in Seattle",
+    "timestamp": 1770749101106
+  },
+  {
+    "id": "371f98ad27517525",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 99 entities, 0 relationships, 0 facts from: This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence.",
+    "timestamp": 1770749102487
+  },
+  {
+    "id": "fd0396fd369a9ed1",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "a",
+    "timestamp": 1770749102674
+  },
+  {
+    "id": "649590c9dcd8242b",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "Test's & query <script>",
+    "timestamp": 1770749102883
+  },
+  {
+    "id": "47af743b289d394c",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "日本語テスト",
+    "timestamp": 1770749103074
+  },
+  {
+    "id": "8e7c8927fa1757ce",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test device",
+    "timestamp": 1770749103112
+  },
+  {
+    "id": "518b540edbdf9533",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: The living room light is on",
+    "timestamp": 1770749103309
+  },
+  {
+    "id": "a4ba7a693b596c6a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: empty entities",
+    "timestamp": 1770749103349
+  },
+  {
+    "id": "73c6986d96ef4756",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I live in Seattle",
+    "timestamp": 1770749103549
+  },
+  {
+    "id": "6b4e17f78d1445e0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen light",
+    "timestamp": 1770749103753
+  },
+  {
+    "id": "8a651008bb49050e",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Paris is nice",
+    "timestamp": 1770749103788
+  },
+  {
+    "id": "cb3515cc93b00629",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "",
+    "timestamp": 1770749103962
+  },
+  {
+    "id": "f36a5799eb445d63",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Play some jazz music",
+    "timestamp": 1770749104159
+  },
+  {
+    "id": "7a8da307575c74e3",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: John is my friend",
+    "timestamp": 1770749104358
+  },
+  {
+    "id": "db400d6bd28552a2",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello there",
+    "timestamp": 1770749104558
+  },
+  {
+    "id": "afdec52e8c2ac2fa",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My cat is named Whiskers",
+    "timestamp": 1770749104757
+  },
+  {
+    "id": "411b2fae21f06976",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Weather in Paris",
+    "timestamp": 1770749104954
+  },
+  {
+    "id": "e56eb75dd286ef6d",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "a",
+    "timestamp": 1770761905691
+  },
+  {
+    "id": "dd1d029a2fce457c",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "Test's & query <script>",
+    "timestamp": 1770761905879
+  },
+  {
+    "id": "4ac7d1ba220300d6",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I live in Seattle",
+    "timestamp": 1770761906065
+  },
+  {
+    "id": "5d39395404d07c6e",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My cat is named Whiskers",
+    "timestamp": 1770761906262
+  },
+  {
+    "id": "87f79f0221504fbf",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test device",
+    "timestamp": 1770761906294
+  },
+  {
+    "id": "0404056309e938ad",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "日本語テスト",
+    "timestamp": 1770761906480
+  },
+  {
+    "id": "adfcc5d7d547febf",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: John lives in Seattle",
+    "timestamp": 1770761906514
+  },
+  {
+    "id": "60ee2c902e8d8723",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Weather in Paris",
+    "timestamp": 1770761906705
+  },
+  {
+    "id": "e7175ae74eadcf79",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello there",
+    "timestamp": 1770761906889
+  },
+  {
+    "id": "bd77a1407bcb6554",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: empty entities",
+    "timestamp": 1770761906922
+  },
+  {
+    "id": "4ae7c7fab2c1d1ca",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: The living room light is on",
+    "timestamp": 1770761907110
+  },
+  {
+    "id": "908b0277bbd2425d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Paris is nice",
+    "timestamp": 1770761907141
+  },
+  {
+    "id": "25778da3291bf138",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 99 entities, 0 relationships, 0 facts from: This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence.",
+    "timestamp": 1770761908303
+  },
+  {
+    "id": "8988ff2c686f354b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Play some jazz music",
+    "timestamp": 1770761908485
+  },
+  {
+    "id": "b15eb0a674607faf",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "John is my friend",
+    "timestamp": 1770761908673
+  },
+  {
+    "id": "0715f64349d3b6e3",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen light",
+    "timestamp": 1770761908855
+  },
+  {
+    "id": "967efb77e619087f",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "",
+    "timestamp": 1770761909026
+  },
+  {
+    "id": "8950e5778a577e5d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: John is my friend",
+    "timestamp": 1770773509901
+  },
+  {
+    "id": "7c244502248d18e5",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "Test's & query <script>",
+    "timestamp": 1770773510105
+  },
+  {
+    "id": "cd9dd2810459f3b2",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Weather in Paris",
+    "timestamp": 1770773510295
+  },
+  {
+    "id": "5ae9160bd4428b36",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test device",
+    "timestamp": 1770773510332
+  },
+  {
+    "id": "3b82f054ac281bfa",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello there",
+    "timestamp": 1770773510517
+  },
+  {
+    "id": "27edbbe09ba98caa",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I live in Seattle",
+    "timestamp": 1770773510712
+  },
+  {
+    "id": "242164bbd1a7723f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Paris is nice",
+    "timestamp": 1770773510743
+  },
+  {
+    "id": "704f8a751e23527c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: empty entities",
+    "timestamp": 1770773510780
+  },
+  {
+    "id": "7e3dd6cb23db8c6e",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Play some jazz music",
+    "timestamp": 1770773510975
+  },
+  {
+    "id": "45909f833e51234c",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "a",
+    "timestamp": 1770773511160
+  },
+  {
+    "id": "7be9d5ac8367fce4",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 99 entities, 0 relationships, 0 facts from: This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence.",
+    "timestamp": 1770773512415
+  },
+  {
+    "id": "e0b0901e90df15a9",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "日本語テスト",
+    "timestamp": 1770773512607
+  },
+  {
+    "id": "6d5bc56406c2bcee",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My cat is named Whiskers",
+    "timestamp": 1770773512799
+  },
+  {
+    "id": "ffc4b3b6215e86e6",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: The living room light is on",
+    "timestamp": 1770773512994
+  },
+  {
+    "id": "b014a15bad4d220c",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "",
+    "timestamp": 1770773513165
+  },
+  {
+    "id": "48b9127bbd3ff38c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen light",
+    "timestamp": 1770773513359
+  },
+  {
+    "id": "0172c2312f745615",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: John lives in Seattle",
+    "timestamp": 1770773513395
+  },
+  {
+    "id": "fb099c60101f0a5f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Weather in Paris",
+    "timestamp": 1770782098039
+  },
+  {
+    "id": "42a2a6d65f13caab",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello there",
+    "timestamp": 1770782098107
+  },
+  {
+    "id": "3f2b7b6ad576f329",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: empty entities",
+    "timestamp": 1770782098138
+  },
+  {
+    "id": "1c0d2278ffdd3f11",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "a",
+    "timestamp": 1770782098209
+  },
+  {
+    "id": "77417c5e22804653",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "",
+    "timestamp": 1770782098265
+  },
+  {
+    "id": "4a311e9de516cb61",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Play some jazz music",
+    "timestamp": 1770782098340
+  },
+  {
+    "id": "411b3a6b720b7780",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: The living room light is on",
+    "timestamp": 1770782098421
+  },
+  {
+    "id": "9ce00816b20829c4",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My cat is named Whiskers",
+    "timestamp": 1770782098498
+  },
+  {
+    "id": "7d7c8004da5d9700",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen light",
+    "timestamp": 1770782098568
+  },
+  {
+    "id": "719b5f34dcc25dd0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: John is my friend",
+    "timestamp": 1770782098636
+  },
+  {
+    "id": "3c7a3ab2a9ff8e61",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: John lives in Seattle",
+    "timestamp": 1770782098664
+  },
+  {
+    "id": "aacdfb0de917bfc4",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test's & query <script>",
+    "timestamp": 1770782098742
+  },
+  {
+    "id": "dabcd86bcb67cb18",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 99 entities, 0 relationships, 0 facts from: This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence.",
+    "timestamp": 1770782099809
+  },
+  {
+    "id": "125925e3b9c4cdf3",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test device",
+    "timestamp": 1770782099837
+  },
+  {
+    "id": "412287effa5b92b1",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "日本語テスト",
+    "timestamp": 1770782099905
+  },
+  {
+    "id": "177817fb00f04554",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Paris is nice",
+    "timestamp": 1770782099936
+  },
+  {
+    "id": "c5c462a8006bd854",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I live in Seattle",
+    "timestamp": 1770782100013
+  },
+  {
+    "id": "ecb66788e50e6696",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: John is my friend",
+    "timestamp": 1770783478362
+  },
+  {
+    "id": "e7825ff9a0d9f5d1",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "",
+    "timestamp": 1770783478545
+  },
+  {
+    "id": "49cf16ad408ea3ba",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I live in Seattle",
+    "timestamp": 1770783478750
+  },
+  {
+    "id": "526c25e832779be0",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "a",
+    "timestamp": 1770783478956
+  },
+  {
+    "id": "f0d9668e30d89e6c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello there",
+    "timestamp": 1770783479157
+  },
+  {
+    "id": "2fc282fc1d450c12",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test device",
+    "timestamp": 1770783479196
+  },
+  {
+    "id": "1aca8ae735379ae4",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "日本語テスト",
+    "timestamp": 1770783479401
+  },
+  {
+    "id": "90857826a316f28c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: John lives in Seattle",
+    "timestamp": 1770783479452
+  },
+  {
+    "id": "8d885fe3ed5bacbd",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 99 entities, 0 relationships, 0 facts from: This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence. This is a test sentence.",
+    "timestamp": 1770783480768
+  },
+  {
+    "id": "da3e55fe58efc9c5",
+    "role": "user",
+    "tags": [
+      "general",
+      "conversation"
+    ],
+    "text": "Test's & query <script>",
+    "timestamp": 1770783480967
+  },
+  {
+    "id": "ca042c653aac457c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: The living room light is on",
+    "timestamp": 1770783481170
+  },
+  {
+    "id": "4ea00454db5c2180",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Turn on the kitchen light",
+    "timestamp": 1770783481370
+  },
+  {
+    "id": "f9994141026a0a85",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: empty entities",
+    "timestamp": 1770783481406
+  },
+  {
+    "id": "897ef380da5dca37",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Paris is nice",
+    "timestamp": 1770783481464
+  },
+  {
+    "id": "c06944b3a02b5af0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Weather in Paris",
+    "timestamp": 1770783481684
+  },
+  {
+    "id": "0396bcb791f494bd",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My cat is named Whiskers",
+    "timestamp": 1770783481890
+  },
+  {
+    "id": "909929516c1d7a4f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Play some jazz music",
+    "timestamp": 1770783482091
   }
 ]

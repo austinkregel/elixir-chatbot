@@ -1,6 +1,10 @@
 defmodule Brain.Code.Summarizer do
   @moduledoc "Generates natural language descriptions from code constructs.\n\nThis module analyzes code symbols and their relationships to produce\nhuman-readable explanations of what code does. It uses:\n\n- Symbol names and naming conventions\n- Function signatures and parameters\n- Class hierarchies and relationships\n- Import dependencies\n- Call patterns\n\n## Usage\n\n    # Summarize a function\n    summary = Brain.Code.Summarizer.summarize_function(function_symbol)\n    # => \"Calculates the tax amount for an order based on the region and subtotal\"\n\n    # Summarize a class\n    summary = Brain.Code.Summarizer.summarize_class(class_symbol, world_id)\n    # => \"Manages user authentication, providing login, logout, and session handling\"\n\n    # Summarize a file\n    summary = Brain.Code.Summarizer.summarize_file(world_id, file_path)\n    # => \"Defines the billing module with 5 functions for payment processing\"\n"
 
+  # World.CodeContext is in a sibling umbrella app that depends on :brain.
+  # It's available at runtime but not at compile time.
+  @compile {:no_warn_undefined, World.CodeContext}
+
   require Logger
 
   alias World.CodeContext
@@ -51,17 +55,6 @@ defmodule Brain.Code.Summarizer do
     {"enable", "enables"},
     {"disable", "disables"}
   ]
-  @suffix_meanings %{
-    "er" => "that performs",
-    "or" => "that performs",
-    "able" => "that can be",
-    "ible" => "that can be",
-    "tion" => "for",
-    "sion" => "for",
-    "ment" => "for",
-    "ness" => "representing",
-    "ity" => "representing"
-  }
   @class_patterns [
     {"Controller", "handles HTTP requests for"},
     {"Service", "provides services for"},

@@ -16,6 +16,8 @@ config :phoenix, :plug_init_mode, :runtime
 
 # Brain app test configuration
 config :brain,
+  # Use mock HTTP client for snapshot-based testing (no external API calls)
+  http_client: Brain.Test.MockHTTP,
   # Use test-specific directories
   knowledge_dir: "test/knowledge",
   memory_dir: "test/memory",

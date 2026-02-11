@@ -5,6 +5,11 @@ defmodule Brain.Analysis.SpeechActClassifierTest do
   alias Brain.Analysis.SpeechActResult
   import Brain.TestHelpers
 
+  setup_all do
+    Brain.TestHelpers.require_services!(:ml_inference)
+    :ok
+  end
+
   setup do
     # Start services needed for model-based classification
     start_test_services()

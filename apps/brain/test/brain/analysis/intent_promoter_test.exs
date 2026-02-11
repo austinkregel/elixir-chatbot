@@ -47,7 +47,15 @@ defmodule Brain.Analysis.IntentPromoterTest do
           promoted_to_intent: "weather.query"
         )
 
-      assert File.exists?(intent_file) || true
+      assert {:ok, :variation_added} = IntentPromoter.promote(candidate)
+
+      # Verify file was updated with the training example
+      assert File.exists?(intent_file),
+             "Intent training file should exist after promotion"
+
+      {:ok, content} = File.read(intent_file)
+      {:ok, data} = Jason.decode(content)
+      assert length(data) >= 1, "Expected at least one training example in file"
     end
   end
 
@@ -66,6 +74,15 @@ defmodule Brain.Analysis.IntentPromoterTest do
         )
 
       assert function_exported?(IntentPromoter, :promote, 2)
+
+      # new_intent requires domain option
+      assert {:ok, :new_intent_created} =
+               IntentPromoter.promote(candidate, domain: "test", category: "directive")
+
+      # Verify registry was updated
+      {:ok, content} = File.read(registry_path)
+      {:ok, registry} = Jason.decode(content)
+      assert Map.has_key?(registry, @test_intent), "Registry should contain the new intent"
     end
   end
 

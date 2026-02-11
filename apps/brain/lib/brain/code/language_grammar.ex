@@ -36,6 +36,10 @@ defmodule Brain.Code.LanguageGrammar do
   - etc.
   """
 
+  # TreeSitter is an optional dependency (not currently installed).
+  # See mix.exs for installation instructions.
+  @compile {:no_warn_undefined, TreeSitter}
+
   use GenServer
   require Logger
 

@@ -32,9 +32,9 @@ defmodule Brain.MixProject do
       {:telemetry, "~> 1.0"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
-      {:nx, "~> 0.7"},
-      {:axon, "~> 0.6"},
-      {:exla, "~> 0.7"},
+      {:nx, "~> 0.10"},
+      {:axon, "~> 0.8"},
+      {:exla, "~> 0.10"},
       # NOTE: scholar is available for statistical/ML functions but not currently
       # called directly. Do not confuse with Brain.Knowledge.Academic.SemanticScholar
       # which is an API client for the Semantic Scholar academic search service.

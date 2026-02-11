@@ -1,0 +1,82 @@
+{
+  "Contributors": ["ChatBot Team"],
+  "Source": "curated",
+  "URL": "",
+  "Categories": ["Question Answering"],
+  "Domains": ["Wikipedia", "General Knowledge"],
+  "Input_language": ["English"],
+  "Output_language": ["English"],
+  "Instruction_language": ["English"],
+  "Definition": ["Given a question, provide a concise factual answer."],
+  "Positive Examples": [
+    {
+      "input": "What is the capital of France?",
+      "output": ["Paris"],
+      "explanation": "Paris is the capital and largest city of France."
+    },
+    {
+      "input": "Who wrote Romeo and Juliet?",
+      "output": ["William Shakespeare"],
+      "explanation": "William Shakespeare wrote the tragedy Romeo and Juliet around 1595."
+    }
+  ],
+  "Negative Examples": [
+    {
+      "input": "What do you think about the weather?",
+      "output": ["This is an opinion question, not a factual question."],
+      "explanation": "This requires subjective judgment rather than factual recall."
+    }
+  ],
+  "Instances": [
+    {
+      "id": "qa-001",
+      "input": "What is the largest planet in our solar system?",
+      "output": ["Jupiter"]
+    },
+    {
+      "id": "qa-002",
+      "input": "What year did World War II end?",
+      "output": ["1945"]
+    },
+    {
+      "id": "qa-003",
+      "input": "Who painted the Mona Lisa?",
+      "output": ["Leonardo da Vinci"]
+    },
+    {
+      "id": "qa-004",
+      "input": "What is the chemical symbol for water?",
+      "output": ["H2O"]
+    },
+    {
+      "id": "qa-005",
+      "input": "What is the speed of light in a vacuum?",
+      "output": ["299,792,458 meters per second", "approximately 300,000 km/s"]
+    },
+    {
+      "id": "qa-006",
+      "input": "What is the tallest mountain in the world?",
+      "output": ["Mount Everest"]
+    },
+    {
+      "id": "qa-007",
+      "input": "Who is the author of 1984?",
+      "output": ["George Orwell"]
+    },
+    {
+      "id": "qa-008",
+      "input": "What is the smallest country in the world by area?",
+      "output": ["Vatican City"]
+    },
+    {
+      "id": "qa-009",
+      "input": "What element has the atomic number 1?",
+      "output": ["Hydrogen"]
+    },
+    {
+      "id": "qa-010",
+      "input": "What is the longest river in the world?",
+      "output": ["The Nile", "Nile River"]
+    }
+  ]
+}

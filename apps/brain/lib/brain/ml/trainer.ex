@@ -267,20 +267,15 @@ defmodule Brain.ML.Trainer do
 
   @doc "Load training data from intent files using DataLoaders.\nReturns a list of {text, intent_label} tuples.\n"
   def load_training_data do
-    case DataLoaders.load_all_intents() do
-      {:ok, examples} ->
-        examples
-        |> Enum.map(fn example ->
-          {example.text, example.intent}
-        end)
-        |> Enum.filter(fn {text, _intent} ->
-          String.trim(text) != ""
-        end)
+    {:ok, examples} = DataLoaders.load_all_intents()
 
-      {:error, reason} ->
-        Logger.error("Failed to load training data", %{reason: reason})
-        load_training_data_legacy()
-    end
+    examples
+    |> Enum.map(fn example ->
+      {example.text, example.intent}
+    end)
+    |> Enum.filter(fn {text, _intent} ->
+      String.trim(text) != ""
+    end)
   end
 
   @doc "Legacy training data loading (fallback).\nNow loads from gold standard first, falls back to legacy directory.\n"

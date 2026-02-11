@@ -1,6 +1,10 @@
 defmodule Brain do
   @moduledoc "The Brain GenServer manages the AI personality, subprocesses, and global memory.\nThis is the core component that orchestrates all chat bot functionality.\n"
 
+  # World.Context is in a sibling umbrella app that depends on :brain.
+  # It's available at runtime but not at compile time.
+  @compile {:no_warn_undefined, World.Context}
+
   alias Brain.ML.Tokenizer
   alias Brain.ML.IntentClassifierSimple
   alias Brain.Learner
@@ -752,6 +756,11 @@ defmodule Brain do
         previous_intent: previous_context[:intent]
       })
 
+      Progress.report(opts, :followup_detected, %{
+        previous_intent: previous_context[:intent],
+        previous_entities: length(previous_context[:entities] || [])
+      })
+
       handle_followup_message(persona, input, previous_context)
     else
       process_new_message(persona, input, memory, opts)
@@ -764,6 +773,10 @@ defmodule Brain do
     Process.put(:current_world_id, world_id)
 
     if Config.enabled?() and SelfKnowledgeAnalyzer.is_self_knowledge_query?(input) do
+      Progress.report(opts, :meta_cognitive_query, %{
+        query_type: :self_knowledge
+      })
+
       handle_meta_cognitive_query(persona, input, user_id, opts)
     else
       case RacingAnalyzer.check_fast_path(input, world_id, user_id, nil) do
@@ -778,6 +791,13 @@ defmodule Brain do
               activation: interpretation.activation
             })
 
+            Progress.report(opts, :fast_path_used, %{
+              intent: interpretation.intent,
+              source: interpretation.source,
+              activation: interpretation.activation,
+              domain: intent_domain
+            })
+
             handle_fast_path_response(persona, interpretation, memory, opts)
           else
             Logger.debug("Fast path bypassed (needs entity extraction)", %{
@@ -785,10 +805,17 @@ defmodule Brain do
               domain: intent_domain
             })
 
+            Progress.report(opts, :fast_path_bypassed, %{
+              intent: interpretation.intent,
+              domain: intent_domain,
+              reason: :needs_entity_extraction
+            })
+
             process_standard_message(persona, input, memory, opts)
           end
 
         :no_match ->
+          Progress.report(opts, :fast_path_miss, %{})
           process_standard_message(persona, input, memory, opts)
       end
     end
@@ -830,9 +857,12 @@ defmodule Brain do
       prompts: analysis_model.suggested_prompts
     })
 
+    Progress.report(opts, :response_gate_start, %{})
+
     case ResponseGate.evaluate(analysis_model, memory, opts) do
       {:defer, reason} ->
         Logger.info("Response deferred by ResponseGate", reason)
+        Progress.report(opts, :response_gate_complete, %{decision: :defer, reason: reason[:reason]})
 
         Progress.report(opts, :response_generated, %{
           response_type: :deferred,
@@ -844,6 +874,12 @@ defmodule Brain do
         {nil, :response_deferred, Map.put(context, :defer_reason, reason)}
 
       {:optional, confidence, reason} ->
+        Progress.report(opts, :response_gate_complete, %{
+          decision: :optional,
+          confidence: confidence,
+          reason: reason[:reason]
+        })
+
         defer_threshold = get_defer_threshold(opts)
 
         if confidence >= defer_threshold do
@@ -872,7 +908,8 @@ defmodule Brain do
           proceed_with_standard_response(persona, input, memory, analysis_model, opts)
         end
 
-      {:respond, _reason} ->
+      {:respond, reason} ->
+        Progress.report(opts, :response_gate_complete, %{decision: :respond, reason: reason[:reason]})
         proceed_with_standard_response(persona, input, memory, analysis_model, opts)
     end
   end
@@ -1254,12 +1291,25 @@ defmodule Brain do
 
     num_chunks = length(analysis_model.analyses)
 
+    Progress.report(opts, :nlp_pipeline_start, %{
+      num_chunks: num_chunks,
+      analysis_intent: analysis_intent,
+      analysis_entity_count: length(analysis_entities)
+    })
+
     {intent, entities, method} =
       if num_chunks > 1 do
         Logger.debug("Multi-chunk input: skipping NLPPipeline, using only per-chunk analysis", %{
           num_chunks: num_chunks,
           analysis_entity_count: length(analysis_entities),
           selected_intent: analysis_intent
+        })
+
+        Progress.report(opts, :nlp_pipeline_complete, %{
+          method: :analysis_only,
+          reason: :multi_chunk,
+          intent: analysis_intent,
+          entities_count: length(analysis_entities)
         })
 
         {analysis_intent, analysis_entities, :analysis_only}
@@ -1279,10 +1329,26 @@ defmodule Brain do
                 :classical_low_confidence
               end
 
+            Progress.report(opts, :nlp_pipeline_complete, %{
+              method: method,
+              nlp_confidence: conf,
+              nlp_intent: nlp_intent,
+              final_intent: intent,
+              entities_count: length(entities)
+            })
+
             {intent, entities, method}
 
           {:error, reason} ->
             Logger.warning("NLP pipeline failed", %{reason: reason})
+
+            Progress.report(opts, :nlp_pipeline_complete, %{
+              method: :analysis_only,
+              reason: :pipeline_error,
+              intent: analysis_intent,
+              entities_count: length(analysis_entities)
+            })
+
             {analysis_intent, analysis_entities, :analysis_only}
         end
       end
@@ -1317,6 +1383,11 @@ defmodule Brain do
     }
 
     Learner.learn_from_conversation(persona.name, input, analysis_for_learning)
+
+    Progress.report(opts, :learning_complete, %{
+      intent: intent,
+      entities_count: length(entities)
+    })
 
     {response, response_type} =
       generate_analysis_response_with_type(intent, entities, analysis_model, persona, input)

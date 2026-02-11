@@ -24,6 +24,10 @@ defmodule Brain.Code.Parser do
       :python = Brain.Code.Parser.detect_language("script.py")
   """
 
+  # TreeSitter is an optional dependency (not currently installed).
+  # See mix.exs for installation instructions.
+  @compile {:no_warn_undefined, TreeSitter}
+
   require Logger
 
   alias Brain.Code.LanguageGrammar

@@ -1,8 +1,8 @@
 {
   "chunker": {
     "admin_locked": false,
-    "learned_at": null,
-    "max_chunk_words": 50,
+    "learned_at": "2026-02-11T03:51:53.813638Z",
+    "max_chunk_words": 60,
     "min_chunk_words": 3,
     "split_on_conjunctions": true
   },
@@ -18,19 +18,19 @@
       "test"
     ],
     "confidence_threshold": 0.4,
-    "learned_at": "2026-02-08T05:57:54.292065Z"
+    "learned_at": "2026-02-11T03:51:53.712592Z"
   },
   "feedback_stats": {
-    "clarifications_needed": 12,
+    "clarifications_needed": 4,
     "deferral_confirmations": 0,
     "optional_responses_deferred": 0,
     "optional_responses_proceeded": 0,
     "responses_deferred": 0,
     "silence_frustrations": 0,
-    "successful_responses": 121,
-    "total_interactions": 133
+    "successful_responses": 154,
+    "total_interactions": 158
   },
-  "last_updated": "2026-02-08T06:00:54.617264Z",
+  "last_updated": "2026-02-11T04:04:04.160449Z",
   "response_optionality": {
     "acknowledgment_defer_confidence": 0.7,
     "admin_locked": false,
@@ -44,7 +44,7 @@
   "speech_acts": {
     "admin_locked": false,
     "confidence_threshold": 0.35,
-    "learned_at": "2026-02-08T05:57:54.191174Z"
+    "learned_at": "2026-02-11T03:51:53.712470Z"
   },
   "version": "1.0.0"
 }

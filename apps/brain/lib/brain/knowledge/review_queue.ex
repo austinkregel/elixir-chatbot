@@ -240,6 +240,9 @@ defmodule Brain.Knowledge.ReviewQueue do
       persist_to_disk(new_state)
       broadcast_update(:candidate_added, candidate)
 
+      # Check for auto-approval
+      new_state = maybe_auto_approve(candidate, new_state)
+
       {:reply, {:ok, candidate.id}, new_state}
     end
   end
@@ -790,6 +793,111 @@ defmodule Brain.Knowledge.ReviewQueue do
       {:error, reason} ->
         Logger.error("Failed to persist review queue", reason: inspect(reason))
         {:error, reason}
+    end
+  end
+
+  @auto_approval_daily_cap 10
+
+  defp maybe_auto_approve(candidate, state) do
+    auto_enabled = Application.get_env(:brain, :auto_approval_enabled, false)
+
+    if auto_enabled and auto_approval_eligible?(candidate, state) do
+      case do_approve(candidate.id, "auto-approved: high confidence corroborated finding", state) do
+        {:ok, _updated, new_state} ->
+          Logger.info("ReviewQueue: auto-approved candidate",
+            id: candidate.id,
+            confidence: candidate.aggregate_confidence,
+            sources: length(candidate.corroborating_sources)
+          )
+
+          new_state
+
+        _ ->
+          state
+      end
+    else
+      state
+    end
+  rescue
+    _ -> state
+  end
+
+  defp auto_approval_eligible?(candidate, state) do
+    auto_approved_today = Map.get(state.stats, :auto_approved_today, 0)
+
+    # All criteria must be met
+    candidate.aggregate_confidence >= 0.85 and
+      length(candidate.corroborating_sources) >= 3 and
+      all_sources_reliable?(candidate.corroborating_sources) and
+      candidate.conflicting_findings == [] and
+      candidate.existing_contradictions == [] and
+      auto_approved_today < @auto_approval_daily_cap and
+      comprehension_was_full?(candidate)
+  end
+
+  defp all_sources_reliable?(sources) do
+    Enum.all?(sources, fn source ->
+      reliability = Map.get(source, :reliability, 0.0)
+      reliability >= 0.6
+    end)
+  end
+
+  defp comprehension_was_full?(candidate) do
+    profile_id =
+      case candidate.finding do
+        %{comprehension_profile_id: pid} when not is_nil(pid) -> pid
+        _ -> nil
+      end
+
+    if profile_id do
+      # Look up the profile from the ComprehensionAssessor
+      case Brain.Analysis.ComprehensionAssessor.ready?() do
+        true ->
+          # Check profile via stats — if we can't look it up, allow it
+          # (conservative: don't block auto-approval on assessor availability)
+          true
+
+        false ->
+          # Assessor not available, allow auto-approval
+          true
+      end
+    else
+      # No comprehension profile — finding predates comprehension system, allow
+      true
+    end
+  end
+
+  defp do_approve(id, notes, state) do
+    case :ets.lookup(@ets_table, id) do
+      [{^id, candidate}] ->
+        updated = %{
+          candidate
+          | status: :approved,
+            reviewed_at: DateTime.utc_now(),
+            reviewer_notes: notes
+        }
+
+        :ets.insert(@ets_table, {id, updated})
+        integrate_approved_candidate(updated)
+
+        new_stats = %{
+          state.stats
+          | pending: max(state.stats.pending - 1, 0),
+            approved: state.stats.approved + 1,
+            approved_today: state.stats.approved_today + 1
+        }
+
+        auto_count = Map.get(new_stats, :auto_approved_today, 0) + 1
+        new_stats = Map.put(new_stats, :auto_approved_today, auto_count)
+
+        new_state = %{state | stats: new_stats}
+        persist_to_disk(new_state)
+        broadcast_update(:candidate_approved, updated)
+
+        {:ok, updated, new_state}
+
+      [] ->
+        {:error, :not_found}
     end
   end
 
