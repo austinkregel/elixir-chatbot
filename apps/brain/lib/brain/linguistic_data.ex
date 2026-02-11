@@ -1,10 +1,13 @@
 defmodule Brain.LinguisticData do
   @moduledoc """
-  Provides linguistic data loaded from priv/knowledge/linguistic.json.
+  Provides linguistic utility data loaded from priv/knowledge/linguistic.json.
 
-  This module centralizes access to commonly used linguistic patterns like
-  negation words and sentiment lexicons, avoiding hardcoded lists scattered
-  across the codebase.
+  This module provides access to linguistic utility patterns such as negation
+  words, intensifiers, and hedges. These are structural linguistic features,
+  NOT classifiers.
+
+  For sentiment classification, use `Brain.ML.SentimentClassifierSimple`.
+  For speech act classification, use `Brain.Analysis.SpeechActClassifier`.
 
   Data is loaded at compile time via @external_resource for efficiency.
   """
@@ -35,34 +38,6 @@ defmodule Brain.LinguisticData do
     Map.get(@data, "negation_words", [
       "not", "no", "never", "none", "cannot", "can't", "won't", "don't"
     ])
-  end
-
-  @doc """
-  Returns the list of positive sentiment words.
-
-  ## Examples
-
-      iex> Brain.LinguisticData.positive_words()
-      ["good", "great", "love", ...]
-  """
-  def positive_words do
-    get_in(@data, ["sentiment", "positive"]) || [
-      "good", "great", "love", "happy", "thanks", "awesome", "nice", "excellent"
-    ]
-  end
-
-  @doc """
-  Returns the list of negative sentiment words.
-
-  ## Examples
-
-      iex> Brain.LinguisticData.negative_words()
-      ["bad", "hate", "terrible", ...]
-  """
-  def negative_words do
-    get_in(@data, ["sentiment", "negative"]) || [
-      "bad", "hate", "terrible", "awful", "annoying", "frustrating", "worst"
-    ]
   end
 
   @doc """
@@ -106,19 +81,5 @@ defmodule Brain.LinguisticData do
   """
   def negation?(word) when is_binary(word) do
     String.downcase(word) in negation_words()
-  end
-
-  @doc """
-  Checks if a word has positive sentiment.
-  """
-  def positive?(word) when is_binary(word) do
-    String.downcase(word) in positive_words()
-  end
-
-  @doc """
-  Checks if a word has negative sentiment.
-  """
-  def negative?(word) when is_binary(word) do
-    String.downcase(word) in negative_words()
   end
 end

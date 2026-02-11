@@ -4,6 +4,96 @@
     "best_val_loss": null,
     "config": {
       "batch_size": 32,
+      "epochs": 30,
+      "hidden_size": 128
+    },
+    "epochs_completed": 30,
+    "final_train_accuracy": null,
+    "final_train_loss": null,
+    "final_val_accuracy": null,
+    "final_val_loss": null,
+    "name": "train_20260211_074050",
+    "notes": "Master pipeline. Tasks: tfidf:ok, pos:ok, unified:ok, response:ok",
+    "timestamp": "2026-02-11T07:40:50.047979Z",
+    "training_time_seconds": 736
+  },
+  {
+    "best_val_accuracy": null,
+    "best_val_loss": null,
+    "config": {
+      "batch_size": 32,
+      "epochs": 50,
+      "hidden_size": 128
+    },
+    "epochs_completed": 50,
+    "final_train_accuracy": null,
+    "final_train_loss": null,
+    "final_val_accuracy": null,
+    "final_val_loss": null,
+    "name": "train_20260211_072703",
+    "notes": "Master pipeline. Tasks: tfidf:ok, pos:ok, unified:ok, response:ok",
+    "timestamp": "2026-02-11T07:27:03.606545Z",
+    "training_time_seconds": 860
+  },
+  {
+    "best_val_accuracy": null,
+    "best_val_loss": null,
+    "config": {
+      "batch_size": 32,
+      "epochs": 50,
+      "hidden_size": 128
+    },
+    "epochs_completed": 50,
+    "final_train_accuracy": null,
+    "final_train_loss": null,
+    "final_val_accuracy": null,
+    "final_val_loss": null,
+    "name": "train_20260211_065414",
+    "notes": "Master pipeline. Tasks: tfidf:ok, pos:ok, unified:ok, response:ok",
+    "timestamp": "2026-02-11T06:54:14.807373Z",
+    "training_time_seconds": 890
+  },
+  {
+    "best_val_accuracy": null,
+    "best_val_loss": null,
+    "config": {
+      "embedding_size": 128,
+      "epochs": 20,
+      "hidden_size": 128
+    },
+    "epochs_completed": 20,
+    "final_train_accuracy": null,
+    "final_train_loss": null,
+    "final_val_accuracy": null,
+    "final_val_loss": null,
+    "name": "unified_20260211_063632",
+    "notes": "Unified multi-task LSTM. Vocab: 1071, Intents: 235",
+    "timestamp": "2026-02-11T06:36:32.976332Z",
+    "training_time_seconds": 120
+  },
+  {
+    "best_val_accuracy": null,
+    "best_val_loss": null,
+    "config": {
+      "batch_size": 32,
+      "epochs": 50,
+      "hidden_size": 128
+    },
+    "epochs_completed": 50,
+    "final_train_accuracy": null,
+    "final_train_loss": null,
+    "final_val_accuracy": null,
+    "final_val_loss": null,
+    "name": "train_20260211_063431",
+    "notes": "Master pipeline. Tasks: tfidf:ok, pos:ok, unified:ok, response:ok",
+    "timestamp": "2026-02-11T06:34:31.678921Z",
+    "training_time_seconds": 867
+  },
+  {
+    "best_val_accuracy": null,
+    "best_val_loss": null,
+    "config": {
+      "batch_size": 32,
       "epochs": 50,
       "hidden_size": 128
     },

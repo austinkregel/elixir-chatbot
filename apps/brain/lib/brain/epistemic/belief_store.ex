@@ -195,7 +195,16 @@ defmodule Brain.Epistemic.BeliefStore do
   def add_belief_with_authority(subject, predicate, object, authority_key, opts \\ []) do
     alias Brain.Epistemic.SourceAuthority
 
-    effective_conf = SourceAuthority.effective_confidence(authority_key)
+    effective_conf =
+      if SourceAuthority.ready?() do
+        try do
+          SourceAuthority.effective_confidence(authority_key)
+        catch
+          :exit, _ -> 0.5
+        end
+      else
+        0.5
+      end
 
     merged_opts =
       Keyword.merge(
@@ -210,8 +219,12 @@ defmodule Brain.Epistemic.BeliefStore do
 
     result = add_belief(subject, predicate, object, merged_opts)
 
-    if match?({:ok, _}, result) do
-      SourceAuthority.record_outcome(authority_key, :added)
+    if match?({:ok, _}, result) and SourceAuthority.ready?() do
+      try do
+        SourceAuthority.record_outcome(authority_key, :added)
+      catch
+        :exit, _ -> :ok
+      end
     end
 
     result
@@ -309,10 +322,17 @@ defmodule Brain.Epistemic.BeliefStore do
         new_retracted = MapSet.put(state.retracted, belief_id)
         new_state = %{state | retracted: new_retracted}
 
-        # Track credibility for the source authority
+        # Track credibility for the source authority (best-effort)
         if belief.source_authority do
           alias Brain.Epistemic.SourceAuthority
-          SourceAuthority.record_outcome(belief.source_authority, :contradicted)
+
+          if SourceAuthority.ready?() do
+            try do
+              SourceAuthority.record_outcome(belief.source_authority, :contradicted)
+            catch
+              :exit, _ -> :ok
+            end
+          end
         end
 
         Logger.debug("Belief retracted", id: belief_id)
@@ -379,10 +399,17 @@ defmodule Brain.Epistemic.BeliefStore do
         new_beliefs = Map.put(state.beliefs, belief_id, updated)
         new_state = %{state | beliefs: new_beliefs}
 
-        # Track credibility for the source authority
+        # Track credibility for the source authority (best-effort)
         if belief.source_authority do
           alias Brain.Epistemic.SourceAuthority
-          SourceAuthority.record_outcome(belief.source_authority, :confirmed)
+
+          if SourceAuthority.ready?() do
+            try do
+              SourceAuthority.record_outcome(belief.source_authority, :confirmed)
+            catch
+              :exit, _ -> :ok
+            end
+          end
         end
 
         {:reply, {:ok, updated}, new_state}
@@ -481,15 +508,23 @@ defmodule Brain.Epistemic.BeliefStore do
             end
 
           if age_seconds >= min_age_seconds do
-            # Authority-aware decay rate
+            # Authority-aware decay rate (falls back to base rate if SourceAuthority unavailable)
             rate =
               if belief.source_authority do
                 alias Brain.Epistemic.SourceAuthority
 
-                SourceAuthority.effective_decay_rate(
-                  belief.source_authority,
+                if SourceAuthority.ready?() do
+                  try do
+                    SourceAuthority.effective_decay_rate(
+                      belief.source_authority,
+                      config.decay_rate
+                    )
+                  catch
+                    :exit, _ -> config.decay_rate
+                  end
+                else
                   config.decay_rate
-                )
+                end
               else
                 config.decay_rate
               end

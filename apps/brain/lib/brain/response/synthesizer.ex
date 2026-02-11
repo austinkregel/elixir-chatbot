@@ -509,16 +509,7 @@ defmodule Brain.Response.Synthesizer do
   end
 
   defp infer_domain(intent) when is_binary(intent) do
-    cond do
-      String.starts_with?(intent, "weather") -> :weather
-      String.starts_with?(intent, "music") -> :music
-      String.starts_with?(intent, "device") or String.starts_with?(intent, "smarthome") -> :device
-      String.starts_with?(intent, "news") -> :news
-      String.starts_with?(intent, "reminder") -> :reminder
-      String.starts_with?(intent, "code") -> :code
-      String.starts_with?(intent, "question") -> :question
-      true -> nil
-    end
+    Brain.Analysis.IntentRegistry.domain(intent)
   end
 
   defp infer_domain(_) do

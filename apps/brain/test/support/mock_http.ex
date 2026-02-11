@@ -67,6 +67,15 @@ defmodule Brain.Test.MockHTTP do
     end
   end
 
+  # URLs that are used to test error handling - return appropriate errors silently
+  @test_error_urls [
+    "not-a-valid-url",
+    "httpstat.us",
+    "test-rate-limit.com",
+    "example-timeout.test",
+    "invalid-domain.test"
+  ]
+
   @doc """
   Makes a GET request, returning {:ok, response} or {:error, reason}.
 
@@ -74,39 +83,50 @@ defmodule Brain.Test.MockHTTP do
   This is the primary interface used by Brain services.
   """
   def get(url, opts \\ []) do
-    params = Keyword.get(opts, :params, %{})
+    # Check if this is a test URL for error handling (don't warn, just return error)
+    if is_test_error_url?(url) do
+      {:error, {:test_error_url, url}}
+    else
+      params = Keyword.get(opts, :params, %{})
 
-    # Parse query params from URL if present (weather service embeds params in URL)
-    {base_url, url_params} = parse_url_params(url)
-    all_params = Map.merge(url_params, stringify_keys(params))
+      # Parse query params from URL if present (weather service embeds params in URL)
+      {base_url, url_params} = parse_url_params(url)
+      all_params = Map.merge(url_params, stringify_keys(params))
 
-    case HTTPSnapshot.get_response(base_url, all_params) do
-      {:ok, response} ->
-        {:ok,
-         %{
-           status: response.status,
-           headers: response.headers,
-           body: response.body
-         }}
+      case HTTPSnapshot.get_response(base_url, all_params) do
+        {:ok, response} ->
+          {:ok,
+           %{
+             status: response.status,
+             headers: response.headers,
+             body: response.body
+           }}
 
-      {:error, :no_snapshot} ->
-        error_msg = """
-        No HTTP snapshot found for request:
-          URL: #{url}
-          Base URL: #{base_url}
-          Params: #{inspect(all_params)}
+        {:error, :no_snapshot} ->
+          error_msg = """
+          No HTTP snapshot found for request:
+            URL: #{url}
+            Base URL: #{base_url}
+            Params: #{inspect(all_params)}
 
-        To record a snapshot, run:
-          MIX_ENV=test mix snapshot.record
+          To record a snapshot, run:
+            MIX_ENV=test mix snapshot.record
 
-        Or create a fixture file manually at:
-          test/fixtures/http_snapshots/<name>.json
-        """
+          Or create a fixture file manually at:
+            test/fixtures/http_snapshots/<name>.json
+          """
 
-        Logger.warning(error_msg)
-        {:error, {:no_snapshot, url}}
+          Logger.warning(error_msg)
+          {:error, {:no_snapshot, url}}
+      end
     end
   end
+
+  defp is_test_error_url?(url) when is_binary(url) do
+    Enum.any?(@test_error_urls, fn pattern -> String.contains?(url, pattern) end)
+  end
+
+  defp is_test_error_url?(_), do: false
 
   defp parse_url_params(url) do
     case String.split(url, "?", parts: 2) do

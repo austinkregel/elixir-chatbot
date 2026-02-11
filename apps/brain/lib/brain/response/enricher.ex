@@ -59,14 +59,12 @@ defmodule Brain.Response.Enricher do
     # Check which services are available for this intent
     available_services = get_available_services(intent, context)
 
-    # If no services available, mark as not configured
     if available_services == [] do
       context
       |> Map.put(:enrichment_status, :not_configured)
       |> Map.put(:enriched_data, %{})
       |> Map.put(:available_services, [])
     else
-      # Try to get enrichment data
       case Dispatcher.dispatch(intent, slots, context) do
         {:ok, enrichment_data} ->
           context

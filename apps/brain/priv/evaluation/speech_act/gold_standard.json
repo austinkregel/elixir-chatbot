@@ -1,1 +1,890 @@
-[]
+[
+  {
+    "text": "Greetings!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "I'm really sorry.",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "I'm sorry I'm so late . I had a really bad day .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "It's $ 308 a night .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "What a surprise!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "About how much will it cost ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Wow, that's amazing!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Sir , we are terribly sorry for that.We will refund the charge and send your laundry to your room 3 hours later . Is that all right ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "See ya!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Hello , Mr . Black , how are you ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "It's OK . Please have a taste of it .",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Yes , Chinese people love drinking tea so much . Some even claim they can't live without tea .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Oh , one more thing , where can I mail this letter ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Good evening!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "How come ? Last time I saw you . You told me it was a good job , and you'd like to take it as a career . That was only one month ago . Why this sudden change ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "I'm sorry about that.",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "I think it \u2019 s a distance of 180 kilometers from here to London , so it should be a two-hour drive on the motorway .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Good morning!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Don't worry , young man . Lat me give you an examination . First let me take a look at your throat . Open your mouth and say'ah ' .",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Let's go !",
+    "speech_act": "directive"
+  },
+  {
+    "text": "I need to buy some flowers for my wife .",
+    "speech_act": "directive"
+  },
+  {
+    "text": "I wouldn't recommend it . I think we should wait until she comes round .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "My plans are to be there April 14th to the 17th .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "I needed to be fast .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Good evening , Saliva . What's that wonderful aroma from your kitchen ? What are you doing now ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Good evening , madam . Can I help you ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "I did , but he wasn't able to either .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "There's a new girl in school , have you seen her yet ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Yes . I bought this sheet here yesterday .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "True . I would like to have some salmon sashimi and a roast salmon head .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "twenty of them are going abroad to China and America .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "we can \u2019 t . if we went that fast , we would break the speed limit .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Sorry for the trouble.",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Pardon me.",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Well done!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Well , people from Asia to Europe all enjoy tea .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "I had a skydiving accident over the weekend and won \u2019 t be able to come to school today .",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Sure , John Sandals .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Take a seat inside and see what you think.So you will take the Porsche then , sir ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "That would be great ! Is it expensive ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Would you tell me the essential qualities a secretary should maintain ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "They want the government to reduce the price of the gasoline .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Sure . And I'd like you to get some cold medicine for me when you go to the doctor's .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Sounds good ! Let \u2019 s see , I want .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Oh , they look nice . May I try that black one on ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Ah .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "A bank's acceptance will add to the costs of our imports . You can rest assured that we will accept the draft and honour it when it comes due .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Next , please . Hello , may I help you , sir ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Farewell!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "You surely know a lot about Chinese tea .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "I like the sound of that .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Oh my goodness!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "you \u2019 re right . We will be able to travel at high speeds at the beginning and end of the journey , because we will be in built-up areas .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "I think I might have a dahl .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "How much is it ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Mike , I don't think that it's a good idea to go out again . I really need to focus on getting packed and ready to move back home .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "We have new room rates , sir . Will that be acceptable to you ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "It is a good idea . What dish are you cooking now ? !",
+    "speech_act": "directive"
+  },
+  {
+    "text": "I can't really deal with any distractions right now , but I appreciate the nice evening we spent together .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Good afternoon!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Oh no!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Yes , a very pleasant journey indeed . Thank you .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Yes ...",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Let me see . En .. just a minute . Here it is . I need your signature on this note .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Sound great . Let's go !",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Wait . Let me tell the lady what we would like to order in front of the seafood fridge first .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "There are three in my family , my parents and myself . My father is a teacher and my mother is a worker .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "do you have any going anywhere in the EU ? If you do , those are less expensive .",
+    "speech_act": "directive"
+  },
+  {
+    "text": "I apologize for the confusion.",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "I'm so grateful!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Catch you later!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "How long will you be out of class ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "I'm sorry to hear it . What's wrong with her ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "That's terrible!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "I am steaming fish in a pressure cooker . Have you ever tried steamed fish ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Yes . When I spread it out back home , I found this hole .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Howdy!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Is this Friday okay ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Tell me a little bit about yourself , please .",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Goodbye!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "what would you do without me ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Yes , I did . But I wasn't qualified for most of the jobs that I was interested in .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Excuse me, my mistake.",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Room service , is there anything I can do for you ?",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "wow ! That \u2019 s fast ! I don \u2019 t think we will be traveling that fast on the motorway .",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Have a good night!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Surely of course .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Well , now I want to change the date from 24th to 28th .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Sour-peppery soup .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "I just don't know how to bring it up . Well , all right . She has the right to know anyways .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "That's very kind of you . Thank you .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "She's probably about five feet .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "That's wonderful!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "No problem .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "I also want to pack up my package . This is the notes .",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Yes , that is today's sale price .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Hey, what's up?",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Yes , of course . We have Treasury Notes with two , three and five-year terms available .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Thanks for letting me know!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "I \u2019 m sorry , but you won \u2019 t be able to view it today .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "You are right .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Thanks!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Hey, how are you?",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Why'd you pull me over ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "You're made a good choice . This china tea set is unusual .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "No , but I'll be able to tomorrow .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "What are your personal weaknesses ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "What ? Oh , what we live ! Thank you very much for your help , miss .",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Yes , I have been working in the Public Relations Section of a company in the past two years . I plan the advertising campaign and cooperate the work of artists and typographers . Sometimes I have to do the work of a specialist when there \u2019 s something urgent .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "You \u2018 re welcome .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "A good rest is all you need , and drink more water . I'll write you a prescription .",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Well , let me check for you . I am sorry , sir . They mistook your order as a normal one.Actualty it's an express laundry , is that right ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Of course . The fitting room is right over there .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Why not ? It is a good opportunity for me to practise cooking .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Great . We can chat while enjoying a cup there .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Well , we use the exhaust gases from our printing presses to provide energy to heat our dryers .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Come on man ! I even got dope and acid ! Try some !",
+    "speech_act": "directive"
+  },
+  {
+    "text": "I'll go home and get Sara's number . I'll call her first myself .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "I don't know what to tell you .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "This is the very thing I've been dreaming of .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Things are going well with me .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "OK sir , please wait a minute .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "I see . Let me have a look . It seems that your toilet is clogged , and that \u2019 s why it won \u2019 t flush . Let me just get my plunger . No , that \u2019 s not working either . I suspect that there \u2019 s some sort of foreign object in the pipes that \u2018 s causing a blockage . That \u2019 s what \u2019 s making your toilet overflow .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Hello!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Do you want the truth ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "You can take it in a couple weeks .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "That sounds like a good idea .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Hello, how are you doing?",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "My name is Dunlin and I live in Beijing . I was born in 1980 . I will graduate from Peking University this July . I have majored in accounting .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Have a great day!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "sure . How many would you like ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "No , I am ok , really .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Above all , I have learned that what is good for the company is good for me . So I follow the instructions strictly and always keep my boss informed .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "It was made in Jingdezhen .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "The last four charges on the page .",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Hey man , you wanna buy some weed ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Bye bye!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "No problem at all . Could I have your full name , please ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "we really were lucky . We got the last available table for two---and we didn't even have a reservation ! Did you see the long lines behind us ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Talk to you soon!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Fine . Well , thanks for calling and letting me know you will be absent . I hope you feel better soon .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Very well , thank you . It's nice to meet you again . I am awfully sorry for not being able to meet you at the airport , as I was busy yesterday . I do hope you had a very enjoyable trip from New York .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "What other sources of energy do you use ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Thank you for everything!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Oh , yeah . Oulong tea is good for one's health . isn't it ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Later!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Certainly .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Thanks . I can watch TV now .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "See you later!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Take care!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Thank you, that was very kind!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Really ? I'II take it and I'm leaving here tomorrow . Is it possible for you to send one in black to me by mail when you get it in ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "I don't know . Can I purchase Treasury Certificates here at this counter ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Oh , umm , no thanks .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Sure .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "and the bubble wrap ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "We don't use any fossil fuels . Most of our power comes from hydro-electric plants . We're hoping to use even more energy from alternative sources in the future - perhaps even wind power .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Thanks for your help!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Sure . Just leave it to me . I'll finish it .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Good morning , doctor . I have a terrible headache .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Very good .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "A dozen will be fine .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "It's ten after six.We ' re late.But dinner is at six thirty .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Hi, nice to meet you!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "that \u2019 s another quid .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "I have no problem with that .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Of course . Wait for a moment , please .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "I'm afraid there's been a mistake .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Could you show me where the Chinesc-style clothing is located ? I want to buy a silk coat .",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Yes , I have booked a room for 24th . It's a double room .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Look at the show on TV . I am watching a food show at a very famous seafood restaurant . I really want to eat at that restaurant . I am a seafood lover .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "You need a babysitter .",
+    "speech_act": "directive"
+  },
+  {
+    "text": "I needed to get something really quick .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Everything is fine , and how are you ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Of course ! It's area code 626-555-1739 .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Great , Mr . Sandals . Your reservation is confirmed . Now all I need is your phone number .",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Awesome!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "San Francisco ? No , sir.We only have this office here . You will have to return it here .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Hi there!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "That's fine . What about operating the fax and duplicator ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Definitely nonsmoking . I can't handle that smell .",
+    "speech_act": "directive"
+  },
+  {
+    "text": "We're sorry that this has happened , and I guarantee that the same mistake won't happen again .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Hey!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Congratulations!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "I have studied its skills recently at a training school . I plan to run a restaurant , so I have to practise cooking !",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Can I have another try ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Okay , I'll do it next time .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "How exciting!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Draft beer and cans beer . Which do you prefer ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "I could have Suzy stay at my place .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Certainly , sir .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Yes , I'd ask Jill , the girl I've had before , but I need someone overnight.Maybe even for two nights .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "you can buy the bubble wrap here , but you \u2019 ll have to stand in line over here to post your passage .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "I really appreciate it!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "No , thank you .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "I'll just go and check it for you , sir .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Thank you so much!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "I think I'll have a beer .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "These roses should make your wife very happy .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "See you tomorrow!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "That's basically it .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Yes , in most circumstances .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "I understand .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Sorry!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "I have the same idea as yours .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Is there anything else you'd like to get ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Oh , okay . Can I do that right now ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "My apologies.",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Could I have some fruit ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "thanks a lot . You \u2019 Ve been very helpful .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Oh , that suits you very well . Besides it is believed in China that the red color brings happiness and good luck .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "no . let me take a look ... it \u2019 s longer than my car .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Where do you want to go ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "Thank you . Oh , it's very delicious .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "I should be able to return by next Monday .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "I didn't think of it.Thank you.And I do apologize for being late .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "Much appreciated!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "OK .",
+    "speech_act": "commissive"
+  },
+  {
+    "text": "You have to make an appointment first .",
+    "speech_act": "assertive"
+  },
+  {
+    "text": "Thanks a lot!",
+    "speech_act": "expressive"
+  },
+  {
+    "text": "Is 6 o \u2019 clock Friday evening okay ?",
+    "speech_act": "directive"
+  },
+  {
+    "text": "I got a ticket yesterday .",
+    "speech_act": "assertive"
+  }
+]

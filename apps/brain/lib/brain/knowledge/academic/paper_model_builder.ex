@@ -306,8 +306,8 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
 
   defp fallback_extract_claims(abstract) when is_binary(abstract) do
     abstract
-    |> String.split(~r/[.!?]+/)
-    |> Enum.map(&String.trim/1)
+    |> Brain.ML.Tokenizer.split_sentences()
+    |> Enum.map(fn sent -> String.trim(sent.text) end)
     |> Enum.reject(&(&1 == ""))
     |> Enum.filter(&is_substantive_sentence?/1)
     |> Enum.take(5)

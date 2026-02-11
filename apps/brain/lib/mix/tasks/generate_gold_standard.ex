@@ -11,6 +11,7 @@ defmodule Mix.Tasks.GenerateGoldStandard do
       mix generate_gold_standard --sentiment        # Generate sentiment only
       mix generate_gold_standard --preview          # Preview without writing
       mix generate_gold_standard --limit 50         # Max examples per category
+      mix generate_gold_standard --force            # Overwrite existing gold standard files
 
   ## How it works
 
@@ -35,6 +36,7 @@ defmodule Mix.Tasks.GenerateGoldStandard do
     Mix.Task.run("app.start")
 
     preview? = "--preview" in args
+    force? = "--force" in args
     speech_act_only? = "--speech-act" in args
     sentiment_only? = "--sentiment" in args
     limit = parse_limit(args)
@@ -52,164 +54,166 @@ defmodule Mix.Tasks.GenerateGoldStandard do
     IO.puts("\nLoaded #{length(intent_examples)} intent examples")
 
     if both? or speech_act_only? do
-      generate_speech_act_gold(intent_examples, preview?, limit)
+      generate_speech_act_gold(intent_examples, preview?, force?, limit)
     end
 
     if both? or sentiment_only? do
-      generate_sentiment_gold(intent_examples, preview?, limit)
+      generate_sentiment_gold(intent_examples, preview?, force?, limit)
     end
 
     IO.puts("")
   end
 
-  defp generate_speech_act_gold(intent_examples, preview?, limit) do
+  defp generate_speech_act_gold(intent_examples, preview?, force?, limit) do
     IO.puts("\n" <> String.duplicate("=", 50))
     IO.puts("SPEECH ACT GOLD STANDARD")
     IO.puts(String.duplicate("=", 50))
 
-    speech_act_examples =
-      intent_examples
-      |> Enum.map(fn ex ->
-        %{
-          "text" => ex["text"],
-          "speech_act" => infer_speech_act(ex["intent"])
-        }
-      end)
-      |> Enum.reject(fn ex -> ex["speech_act"] == "unknown" end)
-      |> maybe_limit_per_category(limit, "speech_act")
+    path = EvaluationStore.gold_standard_path("speech_act")
 
-    # Count by category
-    by_category = Enum.group_by(speech_act_examples, & &1["speech_act"])
+    if not force? and not preview? and File.exists?(path) do
+      existing = EvaluationStore.load_gold_standard("speech_act")
 
-    IO.puts("\nDistribution:")
+      IO.puts(
+        "\nExisting gold standard found with #{length(existing)} examples. Use --force to overwrite."
+      )
 
-    Enum.each(by_category, fn {cat, examples} ->
-      IO.puts("  #{cat}: #{length(examples)}")
-    end)
-
-    IO.puts("\nTotal: #{length(speech_act_examples)} examples")
-
-    if preview? do
-      IO.puts("\nSample examples:")
-
-      speech_act_examples
-      |> Enum.take(5)
-      |> Enum.each(fn ex ->
-        IO.puts("  [#{ex["speech_act"]}] #{String.slice(ex["text"], 0, 50)}")
-      end)
-
-      IO.puts("\nRun without --preview to write to gold_standard.json")
+      return_early()
     else
-      path = EvaluationStore.gold_standard_path("speech_act")
-      File.mkdir_p!(Path.dirname(path))
-      File.write!(path, Jason.encode!(speech_act_examples, pretty: true))
-      IO.puts("\nWritten to: #{path}")
+      speech_act_examples =
+        intent_examples
+        |> Enum.map(fn ex ->
+          %{
+            "text" => ex["text"],
+            "speech_act" => infer_speech_act(ex["intent"])
+          }
+        end)
+        |> Enum.reject(fn ex -> ex["speech_act"] == "unknown" end)
+        |> maybe_limit_per_category(limit, "speech_act")
+
+      # Count by category
+      by_category = Enum.group_by(speech_act_examples, & &1["speech_act"])
+
+      IO.puts("\nDistribution:")
+
+      Enum.each(by_category, fn {cat, examples} ->
+        IO.puts("  #{cat}: #{length(examples)}")
+      end)
+
+      IO.puts("\nTotal: #{length(speech_act_examples)} examples")
+
+      if preview? do
+        IO.puts("\nSample examples:")
+
+        speech_act_examples
+        |> Enum.take(5)
+        |> Enum.each(fn ex ->
+          IO.puts("  [#{ex["speech_act"]}] #{String.slice(ex["text"], 0, 50)}")
+        end)
+
+        IO.puts("\nRun without --preview to write to gold_standard.json")
+      else
+        File.mkdir_p!(Path.dirname(path))
+        File.write!(path, Jason.encode!(speech_act_examples, pretty: true))
+        IO.puts("\nWritten to: #{path}")
+      end
     end
   end
 
-  defp generate_sentiment_gold(intent_examples, preview?, limit) do
+  defp generate_sentiment_gold(intent_examples, preview?, force?, limit) do
     IO.puts("\n" <> String.duplicate("=", 50))
     IO.puts("SENTIMENT GOLD STANDARD")
     IO.puts(String.duplicate("=", 50))
 
-    sentiment_examples =
-      intent_examples
-      |> Enum.map(fn ex ->
-        %{
-          "text" => ex["text"],
-          "sentiment" => infer_sentiment(ex["intent"])
-        }
-      end)
-      |> Enum.reject(fn ex -> ex["sentiment"] == "unknown" end)
-      |> maybe_limit_per_category(limit, "sentiment")
+    path = EvaluationStore.gold_standard_path("sentiment")
 
-    # Count by category
-    by_category = Enum.group_by(sentiment_examples, & &1["sentiment"])
+    if not force? and not preview? and File.exists?(path) do
+      existing = EvaluationStore.load_gold_standard("sentiment")
 
-    IO.puts("\nDistribution:")
+      IO.puts(
+        "\nExisting gold standard found with #{length(existing)} examples. Use --force to overwrite."
+      )
 
-    Enum.each(by_category, fn {cat, examples} ->
-      IO.puts("  #{cat}: #{length(examples)}")
-    end)
-
-    IO.puts("\nTotal: #{length(sentiment_examples)} examples")
-
-    if preview? do
-      IO.puts("\nSample examples:")
-
-      sentiment_examples
-      |> Enum.take(5)
-      |> Enum.each(fn ex ->
-        IO.puts("  [#{ex["sentiment"]}] #{String.slice(ex["text"], 0, 50)}")
-      end)
-
-      IO.puts("\nRun without --preview to write to gold_standard.json")
+      return_early()
     else
-      path = EvaluationStore.gold_standard_path("sentiment")
-      File.mkdir_p!(Path.dirname(path))
-      File.write!(path, Jason.encode!(sentiment_examples, pretty: true))
-      IO.puts("\nWritten to: #{path}")
+      sentiment_examples =
+        intent_examples
+        |> Enum.map(fn ex ->
+          %{
+            "text" => ex["text"],
+            "sentiment" => infer_sentiment(ex["intent"])
+          }
+        end)
+        |> Enum.reject(fn ex -> ex["sentiment"] == "unknown" end)
+        |> maybe_limit_per_category(limit, "sentiment")
+
+      # Count by category
+      by_category = Enum.group_by(sentiment_examples, & &1["sentiment"])
+
+      IO.puts("\nDistribution:")
+
+      Enum.each(by_category, fn {cat, examples} ->
+        IO.puts("  #{cat}: #{length(examples)}")
+      end)
+
+      IO.puts("\nTotal: #{length(sentiment_examples)} examples")
+
+      if preview? do
+        IO.puts("\nSample examples:")
+
+        sentiment_examples
+        |> Enum.take(5)
+        |> Enum.each(fn ex ->
+          IO.puts("  [#{ex["sentiment"]}] #{String.slice(ex["text"], 0, 50)}")
+        end)
+
+        IO.puts("\nRun without --preview to write to gold_standard.json")
+      else
+        File.mkdir_p!(Path.dirname(path))
+        File.write!(path, Jason.encode!(sentiment_examples, pretty: true))
+        IO.puts("\nWritten to: #{path}")
+      end
     end
   end
 
-  # Infer speech act from intent name
+  # Infer speech act from intent name using IntentRegistry metadata
   defp infer_speech_act(intent) when is_binary(intent) do
-    intent_lower = String.downcase(intent)
-
-    cond do
-      # Directive: requests, commands, questions
-      String.contains?(intent_lower, ~w(query check set control play search
-        turn switch volume brightness temperature open close lock unlock
-        remind alarm timer schedule navigate)) ->
-        "directive"
-
-      # Expressive: emotions, social acts
-      String.contains?(intent_lower, ~w(greeting bye thank sorry appraisal
-        likes hate love good bad beautiful annoying user. emotion)) ->
-        "expressive"
-
-      # Assertive: statements of fact
-      String.contains?(intent_lower, ~w(news fact tell explain describe
-        meta self_knowledge info)) ->
-        "assertive"
-
-      # Commissive: promises, offers
-      String.contains?(intent_lower, ~w(help offer promise will can)) ->
-        "commissive"
-
-      # Default based on prefix
-      String.starts_with?(intent_lower, "smalltalk") ->
-        "expressive"
-
-      String.starts_with?(intent_lower, "meta") ->
-        "assertive"
-
-      true ->
-        # Most intents are directive (user asking for something)
-        "directive"
+    case Brain.Analysis.IntentRegistry.category(intent) do
+      nil -> "directive"
+      category -> to_string(category)
     end
   end
 
   defp infer_speech_act(_), do: "unknown"
 
-  # Infer sentiment from intent name
+  # Sentiment domains/categories known to carry sentiment
+  @positive_domains MapSet.new(~w(likes appraisal.positive love appreciation gratitude))
+  @negative_domains MapSet.new(~w(hate appraisal.negative frustration complaint))
+
+  # Infer sentiment from intent using IntentRegistry domain metadata
   defp infer_sentiment(intent) when is_binary(intent) do
-    intent_lower = String.downcase(intent)
+    domain =
+      case Brain.Analysis.IntentRegistry.domain(intent) do
+        nil -> nil
+        d -> to_string(d)
+      end
+
+    category =
+      case Brain.Analysis.IntentRegistry.category(intent) do
+        nil -> nil
+        c -> to_string(c)
+      end
+
+    intent_tokens = Brain.ML.Tokenizer.tokenize(intent)
+    intent_token_set = MapSet.new(intent_tokens)
 
     cond do
-      # Positive sentiment
-      String.contains?(intent_lower, ~w(likes good beautiful thanks love
-        great nice awesome happy excited clever)) ->
-        "positive"
-
-      # Negative sentiment
-      String.contains?(intent_lower, ~w(bad annoying hate sorry sad angry
-        frustrated disappointed upset)) ->
-        "negative"
-
-      # Most intents are neutral (informational requests)
-      true ->
-        "neutral"
+      domain != nil and MapSet.member?(@positive_domains, domain) -> "positive"
+      domain != nil and MapSet.member?(@negative_domains, domain) -> "negative"
+      not MapSet.disjoint?(intent_token_set, MapSet.new(~w(likes good beautiful thanks love great nice awesome happy))) -> "positive"
+      not MapSet.disjoint?(intent_token_set, MapSet.new(~w(bad annoying hate sorry sad angry frustrated disappointed))) -> "negative"
+      category == "expressive" -> "neutral"
+      true -> "neutral"
     end
   end
 
@@ -224,6 +228,8 @@ defmodule Mix.Tasks.GenerateGoldStandard do
       Enum.take(Enum.shuffle(cat_examples), limit)
     end)
   end
+
+  defp return_early, do: :skipped
 
   defp parse_limit(args) do
     case Enum.find_index(args, &(&1 == "--limit")) do

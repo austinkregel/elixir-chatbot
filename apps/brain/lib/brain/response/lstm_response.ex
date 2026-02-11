@@ -327,12 +327,13 @@ defmodule Brain.Response.LSTMResponse do
   end
 
   defp infer_speech_acts(query) do
-    cond do
-      String.ends_with?(query, "?") -> [:directive]
-      String.starts_with?(String.downcase(query), "hi") -> [:expressive, :greeting]
-      String.starts_with?(String.downcase(query), "hello") -> [:expressive, :greeting]
-      String.starts_with?(String.downcase(query), "please") -> [:directive]
-      true -> [:assertive]
+    result = Brain.Analysis.SpeechActClassifier.classify(query)
+    acts = [result.category]
+
+    if result.sub_type != :unknown and result.sub_type != nil do
+      acts ++ [result.sub_type]
+    else
+      acts
     end
   end
 

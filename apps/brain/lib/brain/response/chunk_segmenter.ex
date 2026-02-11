@@ -2,6 +2,7 @@ defmodule Brain.Response.ChunkSegmenter do
   @moduledoc "Segments response templates into typed chunks for template blending.\n\nUses sentence boundaries and embedding-based classification to identify\nchunk types. Chunks can then be recombined to generate novel responses.\n\n## Chunk Types\n\n- `:greeting` - Opening phrases (\"Hello!\", \"Nice to meet you!\")\n- `:acknowledgment` - Confirmation phrases (\"I understand.\", \"Got it.\")\n- `:body` - Substantive content (\"The weather in $location is...\")\n- `:offer` - Invitations for next action (\"What can I help with?\")\n- `:clarification` - Requests for missing info (\"Which location?\")\n- `:closing` - Farewell phrases (\"Have a great day!\", \"Goodbye!\")\n\n## Usage\n\n    ChunkSegmenter.segment(\"Hello! The weather is sunny. Anything else?\")\n    # => [\n    #   %Chunk{text: \"Hello!\", type: :greeting},\n    #   %Chunk{text: \"The weather is sunny.\", type: :body},\n    #   %Chunk{text: \"Anything else?\", type: :offer}\n    # ]\n"
 
   alias Brain.Memory.Embedder
+  alias Brain.ML.Tokenizer
 
   require Logger
 
@@ -134,43 +135,42 @@ defmodule Brain.Response.ChunkSegmenter do
     best_type
   end
 
+  @greeting_tokens MapSet.new(~w(hello hi hey welcome howdy greetings))
+  @closing_tokens MapSet.new(~w(goodbye bye farewell))
+  @offer_tokens MapSet.new(~w(help assist anything))
+  @clarification_start_tokens MapSet.new(~w(which what where when how))
+  @acknowledgment_tokens MapSet.new(~w(okay sure understood acknowledged right))
+
   defp classify_by_heuristic(sentence) do
-    lower = String.downcase(sentence)
+    tokens = Tokenizer.tokenize(sentence)
+    token_set = MapSet.new(tokens)
+    first_token = List.first(tokens)
 
     cond do
-      String.starts_with?(lower, "hello") or
-        String.starts_with?(lower, "hi") or
-        String.starts_with?(lower, "hey") or
-        String.starts_with?(lower, "good morning") or
-        String.starts_with?(lower, "good afternoon") or
-        String.starts_with?(lower, "nice to meet") or
-          String.starts_with?(lower, "welcome") ->
+      first_token in @greeting_tokens or
+        (first_token == "good" and Enum.at(tokens, 1) in ~w(morning afternoon evening)) or
+        (first_token == "nice" and Enum.at(tokens, 1) == "to" and Enum.at(tokens, 2) == "meet") ->
         :greeting
 
-      String.starts_with?(lower, "goodbye") or
-        String.starts_with?(lower, "bye") or
-        String.starts_with?(lower, "take care") or
-        String.starts_with?(lower, "see you") or
-          String.contains?(lower, "have a great day") ->
+      first_token in @closing_tokens or
+        (first_token == "take" and Enum.at(tokens, 1) == "care") or
+        (first_token == "see" and Enum.at(tokens, 1) == "you") or
+        (MapSet.member?(token_set, "great") and MapSet.member?(token_set, "day")) ->
         :closing
 
-      String.contains?(lower, "can i help") or
-        String.contains?(lower, "anything else") or
-        String.contains?(lower, "what would you like") or
-          (String.ends_with?(lower, "?") and String.contains?(lower, "help")) ->
+      not MapSet.disjoint?(token_set, @offer_tokens) and
+          (MapSet.member?(token_set, "else") or MapSet.member?(token_set, "can") or
+             MapSet.member?(token_set, "would")) ->
         :offer
 
-      String.starts_with?(lower, "which") or
-        String.starts_with?(lower, "what") or
-        String.contains?(lower, "need to know") or
-          (String.ends_with?(lower, "?") and String.length(sentence) < 30) ->
+      first_token in @clarification_start_tokens or
+        (MapSet.member?(token_set, "need") and MapSet.member?(token_set, "know")) or
+        (List.last(tokens) == "?" and length(tokens) < 8) ->
         :clarification
 
-      String.starts_with?(lower, "i understand") or
-        String.starts_with?(lower, "got it") or
-        String.starts_with?(lower, "okay") or
-        String.starts_with?(lower, "sure") or
-          lower == "right." ->
+      (first_token == "i" and Enum.at(tokens, 1) == "understand") or
+        (first_token == "got" and Enum.at(tokens, 1) == "it") or
+        first_token in @acknowledgment_tokens ->
         :acknowledgment
 
       true ->

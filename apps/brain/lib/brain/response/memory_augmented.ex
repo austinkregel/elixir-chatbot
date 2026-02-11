@@ -97,18 +97,33 @@ defmodule Brain.Response.MemoryAugmented do
     end
   end
 
+  @positive_tags MapSet.new(~w(successful positive completed resolved))
+  @negative_tags MapSet.new(~w(failed negative error rejected))
+  @positive_outcome_tokens MapSet.new(~w(success successful completed resolved))
+  @negative_outcome_tokens MapSet.new(~w(error failed failure rejected))
+
   defp positive_outcome?(episode) do
-    tags = episode.tags || []
-    outcome = episode.outcome || ""
+    tags = MapSet.new(episode.tags || [])
 
     cond do
-      "successful" in tags -> true
-      "positive" in tags -> true
-      "failed" in tags -> false
-      "negative" in tags -> false
-      String.contains?(outcome, "success") -> true
-      String.contains?(outcome, "error") -> false
-      true -> true
+      not MapSet.disjoint?(tags, @positive_tags) -> true
+      not MapSet.disjoint?(tags, @negative_tags) -> false
+      true ->
+        outcome = episode.outcome || ""
+
+        if outcome == "" do
+          true
+        else
+          outcome_tokens = Tokenizer.tokenize(outcome) |> MapSet.new()
+          pos = not MapSet.disjoint?(outcome_tokens, @positive_outcome_tokens)
+          neg = not MapSet.disjoint?(outcome_tokens, @negative_outcome_tokens)
+
+          cond do
+            pos and not neg -> true
+            neg and not pos -> false
+            true -> true
+          end
+        end
     end
   end
 

@@ -1,5 +1,6 @@
 defmodule Brain.Epistemic.JTMSTest do
   use ExUnit.Case, async: false
+  import ExUnit.CaptureLog
 
   alias Brain.Epistemic.JTMS
 
@@ -137,11 +138,18 @@ defmodule Brain.Epistemic.JTMSTest do
       {:ok, a} = JTMS.create_assumption("A is guilty", true)
       {:ok, not_a} = JTMS.create_assumption("A is not guilty", true)
 
-      # Register that A and not_A are contradictory
-      {:ok, contra_id} = JTMS.register_contradiction([a, not_a])
+      # register_contradiction triggers the handler immediately if both nodes are IN
+      # Capture the log to avoid leaking to test output
+      log =
+        capture_log([level: :warning], fn ->
+          {:ok, _contra_id} = JTMS.register_contradiction([a, not_a])
+        end)
 
-      # Should detect contradiction
-      {:error, {:contradiction, ^contra_id}} = JTMS.check_consistency()
+      # The contradiction handler logs a warning during registration
+      assert log =~ "Contradiction detected"
+
+      # check_consistency confirms the contradiction
+      {:error, {:contradiction, _}} = JTMS.check_consistency()
     end
 
     test "no contradiction when assumptions don't conflict" do

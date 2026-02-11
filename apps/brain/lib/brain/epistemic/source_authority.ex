@@ -240,8 +240,11 @@ defmodule Brain.Epistemic.SourceAuthority do
     new_tracking = Map.put(state.tracking, key, tracking)
     new_state = %{state | tracking: new_tracking, last_updated: DateTime.utc_now()}
 
-    # Auto-persist after significant changes
-    if rem(tracking.confirmed_count + tracking.contradicted_count, 5) == 0 do
+    # Auto-persist after every 5 credibility-affecting outcomes
+    total_credibility_events = tracking.confirmed_count + tracking.contradicted_count
+
+    if outcome in [:confirmed, :contradicted] and total_credibility_events > 0 and
+         rem(total_credibility_events, 5) == 0 do
       persist_learned_data(new_state)
     end
 

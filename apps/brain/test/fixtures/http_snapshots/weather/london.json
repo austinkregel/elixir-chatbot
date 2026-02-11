@@ -4,29 +4,29 @@
     "q": "London",
     "units": "metric"
   },
-  "recorded_at": "2026-02-11T03:47:39.639272Z",
+  "recorded_at": "2026-02-11T04:51:32.390676Z",
   "response": {
     "body": {
       "base": "stations",
       "clouds": {
-        "all": 100
+        "all": 75
       },
       "cod": 200,
       "coord": {
         "lat": 51.5085,
         "lon": -0.1257
       },
-      "dt": 1770781202,
+      "dt": 1770785413,
       "id": 2643743,
       "main": {
-        "feels_like": 7.7,
+        "feels_like": 8.39,
         "grnd_level": 978,
-        "humidity": 94,
+        "humidity": 93,
         "pressure": 982,
         "sea_level": 982,
-        "temp": 9.8,
-        "temp_max": 10.16,
-        "temp_min": 8.92
+        "temp": 9.94,
+        "temp_max": 10.3,
+        "temp_min": 9.39
       },
       "name": "London",
       "sys": {
@@ -40,15 +40,15 @@
       "visibility": 10000,
       "weather": [
         {
-          "description": "overcast clouds",
+          "description": "broken clouds",
           "icon": "04n",
-          "id": 804,
+          "id": 803,
           "main": "Clouds"
         }
       ],
       "wind": {
         "deg": 240,
-        "speed": 4.12
+        "speed": 3.09
       }
     },
     "headers": {
@@ -68,7 +68,7 @@
         "application/json; charset=utf-8"
       ],
       "date": [
-        "Wed, 11 Feb 2026 03:47:39 GMT"
+        "Wed, 11 Feb 2026 04:51:32 GMT"
       ],
       "x-cache-key": [
         "/data/2.5/weather?q=london&units=metric"

@@ -215,9 +215,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
   end
 
   describe "Learner contradiction handling" do
-    test "logs warning when learned fact contradicts existing belief" do
-      import ExUnit.CaptureLog
-
+    test "detects contradiction when learned fact contradicts existing belief" do
       {:ok, _belief_id} =
         BeliefStore.add_belief(
           :world,
@@ -227,17 +225,12 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
           source: :explicit
         )
 
-      log =
-        capture_log(fn ->
-          result = Integration.verify_fact("france", "The capital is not Paris")
-          assert {:contradicted, conflicting_beliefs} = result
+      # verify_fact detects the contradiction and returns it
+      result = Integration.verify_fact("france", "The capital is not Paris")
+      assert {:contradicted, conflicting_beliefs} = result
 
-          assert length(conflicting_beliefs) == 1,
-                 "Expected 1 conflicting belief, got: #{inspect(conflicting_beliefs)}"
-        end)
-
-      assert log =~ "contradict" or log =~ "conflict" or log =~ "Contradiction",
-             "Expected log to contain a contradiction warning, got: #{inspect(log)}"
+      assert length(conflicting_beliefs) == 1,
+             "Expected 1 conflicting belief, got: #{inspect(conflicting_beliefs)}"
 
       {:ok, beliefs} = BeliefStore.query_beliefs(subject: :world, predicate: :france)
       paris_beliefs = Enum.filter(beliefs, &(&1.object == "The capital is Paris"))
@@ -346,14 +339,25 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
 
   describe "JTMS integration with contradictions" do
     test "registers contradiction in JTMS when beliefs conflict" do
+      import ExUnit.CaptureLog
+
       {:ok, node1} =
         JTMS.create_assumption("User is from New York", true)
 
       {:ok, node2} =
         JTMS.create_assumption("User is from Chicago", true)
 
-      {:ok, contra_id} = JTMS.register_contradiction([node1, node2])
-      assert {:error, {:contradiction, ^contra_id}} = JTMS.check_consistency()
+      # register_contradiction triggers the handler immediately if both nodes are IN
+      # Capture the log to avoid leaking to test output
+      log =
+        capture_log([level: :warning], fn ->
+          {:ok, _} = JTMS.register_contradiction([node1, node2])
+        end)
+
+      # The contradiction was detected during registration
+      assert log =~ "Contradiction detected"
+
+      {:error, {:contradiction, contra_id}} = JTMS.check_consistency()
       contradictions = JTMS.get_contradictions()
       assert length(contradictions) == 1
       contradiction_node = hd(contradictions)
@@ -361,15 +365,27 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
     end
 
     test "contradiction handler receives notification" do
+      import ExUnit.CaptureLog
+
       {:ok, node1} = JTMS.create_assumption("Fact A is true", true)
       {:ok, node2} = JTMS.create_assumption("Fact A is not true", true)
-      {:ok, contra_id} = JTMS.register_contradiction([node1, node2])
-      result = JTMS.check_consistency()
-      assert {:error, {:contradiction, ^contra_id}} = result
+
+      # register_contradiction triggers the handler immediately if both nodes are IN
+      # Capture the log to avoid leaking to test output
+      log =
+        capture_log([level: :warning], fn ->
+          {:ok, _} = JTMS.register_contradiction([node1, node2])
+        end)
+
+      # The contradiction was detected during registration
+      assert log =~ "Contradiction detected"
+
+      {:error, {:contradiction, contra_id}} = JTMS.check_consistency()
       contradictions = JTMS.get_contradictions()
       assert length(contradictions) == 1
       contradiction_node = hd(contradictions)
       assert contradiction_node.label == :in
+      assert contradiction_node.id == contra_id
     end
   end
 

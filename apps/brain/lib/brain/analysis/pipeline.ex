@@ -166,13 +166,11 @@ defmodule Brain.Analysis.Pipeline do
 
     sentiment_task =
       Task.async(fn ->
-        if UnifiedModel.ready?() do
-          case UnifiedModel.classify_sentiment(chunk.text) do
-            {:ok, result} -> result
-            _ -> %{label: :neutral, confidence: 0.5}
-          end
-        else
-          %{label: :neutral, confidence: 0.5}
+        case Brain.ML.LSTM.Integration.classify_sentiment(chunk.text) do
+          {:ok, result} -> result
+          {:error, reason} ->
+            Logger.warning("Sentiment classification unavailable: #{inspect(reason)}")
+            %{label: :unknown, confidence: 0.0}
         end
       end)
 

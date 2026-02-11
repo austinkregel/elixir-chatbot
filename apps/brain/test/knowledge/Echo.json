@@ -4,13 +4,13 @@
       "confidence": 0.7110000000000001,
       "entity": "Austin",
       "fact": "Hello, I'm Austin. It is nice to meet you.",
-      "timestamp": 1770783493257
+      "timestamp": 1770787792592
     },
     {
       "confidence": 0.7110000000000001,
       "entity": "Austin",
       "fact": "Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
-      "timestamp": 1770782986245
+      "timestamp": 1770788467451
     },
     {
       "confidence": 0.702,
@@ -106,7 +106,7 @@
       "confidence": 0.7110000000000001,
       "entity": "Savannah",
       "fact": "Hello, I'm Savannah",
-      "timestamp": 1770782490923
+      "timestamp": 1770786262485
     }
   ],
   "people": {
@@ -116,7 +116,7 @@
       "type": "person"
     },
     "Austin": {
-      "confidence": 0.73,
+      "confidence": 0.79,
       "name": "Austin",
       "type": "person"
     },
@@ -146,7 +146,7 @@
       "type": "person"
     },
     "Dallas": {
-      "confidence": 0.79,
+      "confidence": 0.73,
       "name": "Dallas",
       "type": "person"
     },

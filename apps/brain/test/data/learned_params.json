@@ -18,19 +18,19 @@
       "test"
     ],
     "confidence_threshold": 0.4,
-    "learned_at": "2026-02-11T04:17:57.997012Z"
+    "learned_at": "2026-02-11T05:33:27.328378Z"
   },
   "feedback_stats": {
-    "clarifications_needed": 2,
+    "clarifications_needed": 4,
     "deferral_confirmations": 0,
     "optional_responses_deferred": 0,
     "optional_responses_proceeded": 0,
     "responses_deferred": 0,
     "silence_frustrations": 0,
-    "successful_responses": 48,
-    "total_interactions": 50
+    "successful_responses": 122,
+    "total_interactions": 126
   },
-  "last_updated": "2026-02-11T04:20:35.909543Z",
+  "last_updated": "2026-02-11T05:42:33.576853Z",
   "response_optionality": {
     "acknowledgment_defer_confidence": 0.7,
     "admin_locked": false,
@@ -44,7 +44,7 @@
   "speech_acts": {
     "admin_locked": false,
     "confidence_threshold": 0.35,
-    "learned_at": "2026-02-11T04:17:57.997081Z"
+    "learned_at": "2026-02-11T05:33:27.328700Z"
   },
   "version": "1.0.0"
 }

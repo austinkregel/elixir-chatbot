@@ -83,9 +83,12 @@ defmodule BrainTest do
       Brain.evaluate(conversation_id, "Test message")
 
       # Capture logs during urgent interrupt handling (including warnings)
+      # The cast is async, so we need to wait for the GenServer to process
       log =
         capture_log([level: :warning], fn ->
           Brain.handle_urgent_interrupt("test_reason", %{test: "data"})
+          # Wait for async GenServer.cast to be processed
+          Process.sleep(50)
         end)
 
       # Assert the warning was logged (if logs are present)
@@ -104,9 +107,12 @@ defmodule BrainTest do
       Brain.evaluate(conversation_id, "Test message")
 
       # Capture logs during urgent emergency handling (including errors)
+      # The cast is async, so we need to wait for the GenServer to process
       log =
         capture_log([level: :error], fn ->
           Brain.handle_urgent_emergency("emergency_reason", %{test: "data"})
+          # Wait for async GenServer.cast to be processed
+          Process.sleep(50)
         end)
 
       # Assert the error was logged

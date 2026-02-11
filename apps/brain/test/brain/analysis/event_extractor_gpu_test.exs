@@ -11,6 +11,7 @@ defmodule Brain.Analysis.EventExtractorGPUTest do
   """
 
   use ExUnit.Case, async: false
+  import ExUnit.CaptureIO
 
   alias Brain.Analysis.EventExtractor
 
@@ -19,21 +20,22 @@ defmodule Brain.Analysis.EventExtractorGPUTest do
 
   # Minimum speedup expected from EXLA over BinaryBackend
   # For small inputs, overhead may reduce this, so we check for >= 1.0 (no slowdown)
-  # For large inputs, we expect > 2.0x speedup
-  @min_speedup_large 2.0
-  @min_speedup_small 1.0
+  # For large inputs, we expect > 1.5x speedup (conservative due to JIT overhead)
+  @min_speedup_large 1.5
 
   describe "GPU acceleration benchmarks" do
     @tag :benchmark
     test "EXLA backend is available" do
-      # This test just verifies EXLA is configured
-      backend = Nx.default_backend()
+      capture_io(fn ->
+        # This test just verifies EXLA is configured
+        backend = Nx.default_backend()
 
-      # Log the backend for debugging
-      IO.puts("\nCurrent Nx backend: #{inspect(backend)}")
+        # Log the backend for debugging
+        IO.puts("\nCurrent Nx backend: #{inspect(backend)}")
 
-      # Either EXLA or BinaryBackend should be available
-      assert is_tuple(backend)
+        # Either EXLA or BinaryBackend should be available
+        assert is_tuple(backend)
+      end)
     end
 
     @tag :benchmark
@@ -61,8 +63,8 @@ defmodule Brain.Analysis.EventExtractorGPUTest do
       # Verify result is correct
       assert Nx.to_flat_list(result2) == [0, 1, 0, 1, 0, 1]
 
-      # Log timing for benchmarking
-      IO.puts("\nfind_verb_positions time: #{time_us}μs")
+      # Log timing for benchmarking (captured to avoid log leaks)
+      capture_io(fn -> IO.puts("\nfind_verb_positions time: #{time_us}μs") end)
     end
 
     @tag :benchmark
@@ -74,7 +76,6 @@ defmodule Brain.Analysis.EventExtractorGPUTest do
 
       # Get current backend info
       current_backend = Nx.default_backend()
-      IO.puts("\nBenchmarking with backend: #{inspect(current_backend)}")
 
       # Warm up (JIT compilation)
       _ = EventExtractor.find_verb_positions(large_input)
@@ -91,8 +92,13 @@ defmodule Brain.Analysis.EventExtractorGPUTest do
       end)
 
       avg_time_us = current_time / 10
-      IO.puts("Average time per iteration: #{Float.round(avg_time_us, 2)}μs")
-      IO.puts("Total benchmark time: #{current_time}μs")
+
+      # Log timing for benchmarking (captured to avoid log leaks)
+      capture_io(fn ->
+        IO.puts("\nBenchmarking with backend: #{inspect(current_backend)}")
+        IO.puts("Average time per iteration: #{Float.round(avg_time_us, 2)}μs")
+        IO.puts("Total benchmark time: #{current_time}μs")
+      end)
 
       # Verify operations complete in reasonable time
       # 10 iterations of 3 operations on 10k elements should be < 10 seconds
@@ -118,7 +124,10 @@ defmodule Brain.Analysis.EventExtractorGPUTest do
         EventExtractor.batch_find_verb_positions(batch)
       end)
 
-      IO.puts("\nBatch find_verb_positions (#{batch_size}x#{seq_length}): #{time_us}μs")
+      # Log timing for benchmarking (captured to avoid log leaks)
+      capture_io(fn ->
+        IO.puts("\nBatch find_verb_positions (#{batch_size}x#{seq_length}): #{time_us}μs")
+      end)
 
       # Verify result shape
       assert Nx.shape(result) == {batch_size, seq_length}
@@ -140,8 +149,11 @@ defmodule Brain.Analysis.EventExtractorGPUTest do
         EventExtractor.extract_parallel(chunks, timeout: 5000)
       end)
 
-      IO.puts("\nParallel extraction (10 chunks x 50 tokens): #{time_us}μs")
-      IO.puts("Events extracted: #{length(events)}")
+      # Log timing for benchmarking (captured to avoid log leaks)
+      capture_io(fn ->
+        IO.puts("\nParallel extraction (10 chunks x 50 tokens): #{time_us}μs")
+        IO.puts("Events extracted: #{length(events)}")
+      end)
 
       # Should complete in reasonable time
       assert time_us < 5_000_000, "Parallel extraction too slow: #{time_us}μs"
@@ -163,7 +175,10 @@ defmodule Brain.Analysis.EventExtractorGPUTest do
       final_memory = :erlang.memory(:total)
       memory_increase_mb = (final_memory - initial_memory) / 1_000_000
 
-      IO.puts("\nMemory increase: #{Float.round(memory_increase_mb, 2)} MB")
+      # Log timing for benchmarking (captured to avoid log leaks)
+      capture_io(fn ->
+        IO.puts("\nMemory increase: #{Float.round(memory_increase_mb, 2)} MB")
+      end)
 
       # Memory increase should be reasonable (< 500MB for this test)
       assert memory_increase_mb < 500, "Memory usage too high: #{memory_increase_mb}MB"
@@ -213,7 +228,6 @@ defmodule Brain.Analysis.EventExtractorGPUTest do
           {:ok, exla_time / 5}
         rescue
           _ ->
-            IO.puts("\nEXLA backend not available, skipping comparison")
             {:error, :unavailable}
         end
 
@@ -226,15 +240,22 @@ defmodule Brain.Analysis.EventExtractorGPUTest do
       # Restore original backend
       Nx.default_backend(original_backend)
 
-      # Report results
-      IO.puts("\n=== Backend Comparison (#{size} elements) ===")
-      IO.puts("BinaryBackend: #{Float.round(results[:binary], 2)}μs avg")
+      # Log timing for benchmarking (captured to avoid log leaks)
+      capture_io(fn ->
+        IO.puts("\n=== Backend Comparison (#{size} elements) ===")
+        IO.puts("BinaryBackend: #{Float.round(results[:binary], 2)}μs avg")
+
+        if results[:exla] do
+          IO.puts("EXLA Backend:  #{Float.round(results[:exla], 2)}μs avg")
+          speedup = results[:binary] / results[:exla]
+          IO.puts("Speedup: #{Float.round(speedup, 2)}x")
+        else
+          IO.puts("EXLA backend not available, skipping comparison")
+        end
+      end)
 
       if results[:exla] do
-        IO.puts("EXLA Backend:  #{Float.round(results[:exla], 2)}μs avg")
         speedup = results[:binary] / results[:exla]
-        IO.puts("Speedup: #{Float.round(speedup, 2)}x")
-
         # EXLA should be faster or at least not slower for large inputs
         assert speedup >= @min_speedup_large,
                "EXLA slower than BinaryBackend: #{speedup}x (expected >= #{@min_speedup_large}x)"

@@ -874,10 +874,27 @@ defmodule Brain.ML.LSTM.Trainer do
                   will would shall should can could may might must) -> "AUX"
       lower in ~w(play turn show tell get make find want need like know think) -> "VERB"
       lower in ~w(please now today tomorrow here there very really) -> "ADV"
-      Regex.match?(~r/^\d+$/, token) -> "NUM"
-      Regex.match?(~r/^[.,!?;:]$/, token) -> "PUNCT"
-      String.match?(token, ~r/^[A-Z][a-z]+$/) -> "PROPN"
+      all_digits?(token) -> "NUM"
+      token in ~w(. , ! ? ; :) -> "PUNCT"
+      capitalized_word?(token) -> "PROPN"
       true -> "NOUN"
+    end
+  end
+
+  defp all_digits?(token) do
+    token != "" and token |> String.graphemes() |> Enum.all?(&(&1 in ~w(0 1 2 3 4 5 6 7 8 9)))
+  end
+
+  defp capitalized_word?(token) do
+    graphemes = String.graphemes(token)
+
+    case graphemes do
+      [first | rest] when rest != [] ->
+        first == String.upcase(first) and first != String.downcase(first) and
+          Enum.all?(rest, fn g -> g == String.downcase(g) and g != String.upcase(g) end)
+
+      _ ->
+        false
     end
   end
 

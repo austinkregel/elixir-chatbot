@@ -31278,5 +31278,2085 @@
     ],
     "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in Austin, Texas?",
     "timestamp": 1770783614001
+  },
+  {
+    "id": "4ae1c0b1b28656a1",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, world!",
+    "timestamp": 1770784192259
+  },
+  {
+    "id": "a56bf01e3b597fdf",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Test message",
+    "timestamp": 1770784192662
+  },
+  {
+    "id": "11783ae2ff8d3550",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: First message",
+    "timestamp": 1770784192933
+  },
+  {
+    "id": "947d0c032a5f86d7",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Second message",
+    "timestamp": 1770784193151
+  },
+  {
+    "id": "2442f9594e74b91a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Third message",
+    "timestamp": 1770784193371
+  },
+  {
+    "id": "41b9687b4e55a9d0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Test message",
+    "timestamp": 1770784193778
+  },
+  {
+    "id": "0ace6faa7691c4fd",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Heyyy",
+    "timestamp": 1770784341729
+  },
+  {
+    "id": "bc1a199901405801",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, I'm O'Brien",
+    "timestamp": 1770784342086
+  },
+  {
+    "id": "5a69c0f7b4d3bd01",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, I'm Paris",
+    "timestamp": 1770784342359
+  },
+  {
+    "id": "3bc789865482706a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi, my name is Jolene",
+    "timestamp": 1770784342617
+  },
+  {
+    "id": "8ec5ec2cf641bcd8",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, my name is Georgia",
+    "timestamp": 1770784342872
+  },
+  {
+    "id": "3e09e61cd0752cc1",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hi, I'm Mary-Jane",
+    "timestamp": 1770784343127
+  },
+  {
+    "id": "bbb0402b691420fa",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Yo",
+    "timestamp": 1770784343373
+  },
+  {
+    "id": "85f350910948ba13",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: The name's Bond, James Bond",
+    "timestamp": 1770784343668
+  },
+  {
+    "id": "ef9732027ccf5682",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: What's up!",
+    "timestamp": 1770784343954
+  },
+  {
+    "id": "50596a3d6cb95a12",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello, I'm Austin. What's the weather? Play some music. Turn on the lights.\nGood morning! What time is it? Set a reminder. How are you today?\nGoodbye! Wait, actually, hello again. What can you do?",
+    "timestamp": 1770784344673
+  },
+  {
+    "id": "26c8bb93d7e33075",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Goodmorning!",
+    "timestamp": 1770784344937
+  },
+  {
+    "id": "113b0542832c5c35",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hiya!",
+    "timestamp": 1770784345405
+  },
+  {
+    "id": "2ceab0b82a5fdc5c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hlelo, I'm Austin",
+    "timestamp": 1770784345707
+  },
+  {
+    "id": "2ce75c9694f96cb7",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi, my name is Dallas",
+    "timestamp": 1770784345968
+  },
+  {
+    "id": "d24179bf585baf75",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, my friends call me Ace",
+    "timestamp": 1770784346237
+  },
+  {
+    "id": "4aca94041f8c5ff8",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi, I'm Brooklyn",
+    "timestamp": 1770784346586
+  },
+  {
+    "id": "6242cd979b073d13",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, world!",
+    "timestamp": 1770784641552
+  },
+  {
+    "id": "be54d515356b1957",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Test message",
+    "timestamp": 1770784642066
+  },
+  {
+    "id": "a93581337d0d1518",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: First message",
+    "timestamp": 1770784643031
+  },
+  {
+    "id": "76b4385351f33119",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Second message",
+    "timestamp": 1770784643484
+  },
+  {
+    "id": "9b2775bfd0235309",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Third message",
+    "timestamp": 1770784643936
+  },
+  {
+    "id": "1834f084f1dba6c1",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My favorite color is blue",
+    "timestamp": 1770784645028
+  },
+  {
+    "id": "518cb7c1c66cb71f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 1 facts from: Actually, my favorite color is red",
+    "timestamp": 1770784645506
+  },
+  {
+    "id": "486f32811d8fa538",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I'm from New York",
+    "timestamp": 1770784646147
+  },
+  {
+    "id": "3c4396459566a4de",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Actually, I'm from Chicago",
+    "timestamp": 1770784646622
+  },
+  {
+    "id": "70e21cbfa49a6657",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: First message",
+    "timestamp": 1770784748186
+  },
+  {
+    "id": "0c7b5a182eb5b96a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Second message",
+    "timestamp": 1770784748715
+  },
+  {
+    "id": "f7da175b0ca71b39",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Third message",
+    "timestamp": 1770784749223
+  },
+  {
+    "id": "861bc82677d5e94a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, world!",
+    "timestamp": 1770784749861
+  },
+  {
+    "id": "a766516dc4be2d60",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Test message",
+    "timestamp": 1770784750386
+  },
+  {
+    "id": "3c2184f59ca6482a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My favorite color is blue",
+    "timestamp": 1770784751317
+  },
+  {
+    "id": "a081a3dc6595fd05",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 1 facts from: Actually, my favorite color is red",
+    "timestamp": 1770784751776
+  },
+  {
+    "id": "b26c732d80437d58",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I'm from New York",
+    "timestamp": 1770784752998
+  },
+  {
+    "id": "54bf3917af328edc",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Actually, I'm from Chicago",
+    "timestamp": 1770784753479
+  },
+  {
+    "id": "2fcbced5b9b7618e",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Test message",
+    "timestamp": 1770784815811
+  },
+  {
+    "id": "32301246f6860b3d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, world!",
+    "timestamp": 1770784816714
+  },
+  {
+    "id": "46dd62199d2b2ff4",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: First message",
+    "timestamp": 1770784817199
+  },
+  {
+    "id": "356a2cf389274d45",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Second message",
+    "timestamp": 1770784817638
+  },
+  {
+    "id": "ac9742fafc3e46bd",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Third message",
+    "timestamp": 1770784818077
+  },
+  {
+    "id": "ae18db9bfc155176",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My favorite color is blue",
+    "timestamp": 1770784818968
+  },
+  {
+    "id": "833ef3840f44e847",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 1 facts from: Actually, my favorite color is red",
+    "timestamp": 1770784819435
+  },
+  {
+    "id": "49847b8f4fd1e966",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I'm from New York",
+    "timestamp": 1770784820396
+  },
+  {
+    "id": "026d47427791d8ac",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Actually, I'm from Chicago",
+    "timestamp": 1770784820865
+  },
+  {
+    "id": "8868f3e46266e6ab",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, world!",
+    "timestamp": 1770784869357
+  },
+  {
+    "id": "95865d2afc6e50ac",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Test message",
+    "timestamp": 1770784869889
+  },
+  {
+    "id": "0b039875933d25af",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: First message",
+    "timestamp": 1770784870859
+  },
+  {
+    "id": "710698d377f82b98",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Second message",
+    "timestamp": 1770784871294
+  },
+  {
+    "id": "3f5ff91dd92acb48",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Third message",
+    "timestamp": 1770784871729
+  },
+  {
+    "id": "86af72a71fe3d128",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I'm from New York",
+    "timestamp": 1770784872317
+  },
+  {
+    "id": "e5a6d24d33371619",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Actually, I'm from Chicago",
+    "timestamp": 1770784872794
+  },
+  {
+    "id": "dadb3a8073294a90",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My favorite color is blue",
+    "timestamp": 1770784873341
+  },
+  {
+    "id": "3ec1b877ce5a3060",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 1 facts from: Actually, my favorite color is red",
+    "timestamp": 1770784873805
+  },
+  {
+    "id": "d5766cdfa3c44ddb",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Test message",
+    "timestamp": 1770784912950
+  },
+  {
+    "id": "842819bbf9e0d0cc",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: First message",
+    "timestamp": 1770784913567
+  },
+  {
+    "id": "d02d65a89cfc4d47",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Second message",
+    "timestamp": 1770784914021
+  },
+  {
+    "id": "54c08ddee9d9ba25",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Third message",
+    "timestamp": 1770784914468
+  },
+  {
+    "id": "bcf52049543d5a3f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, world!",
+    "timestamp": 1770784915304
+  },
+  {
+    "id": "b1e1d5ebc447d541",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My favorite color is blue",
+    "timestamp": 1770784916214
+  },
+  {
+    "id": "0e3edfc89f48451d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 1 facts from: Actually, my favorite color is red",
+    "timestamp": 1770784916669
+  },
+  {
+    "id": "0cc02b73dd39096b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I'm from New York",
+    "timestamp": 1770784917643
+  },
+  {
+    "id": "e84eae9aafd05882",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Actually, I'm from Chicago",
+    "timestamp": 1770784918114
+  },
+  {
+    "id": "2003293b6d83e897",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I'm from New York",
+    "timestamp": 1770784994308
+  },
+  {
+    "id": "6827524f48006775",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 1 facts from: Actually, I'm from Chicago",
+    "timestamp": 1770784994794
+  },
+  {
+    "id": "0babb2dfc30d1ab4",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My favorite color is blue",
+    "timestamp": 1770784995550
+  },
+  {
+    "id": "a8d057858651cf06",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 1 facts from: Actually, my favorite color is red",
+    "timestamp": 1770784996008
+  },
+  {
+    "id": "b9afa871298a64a8",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: How are you?",
+    "timestamp": 1770785051034
+  },
+  {
+    "id": "23b26961192bd613",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My favorite color is blue",
+    "timestamp": 1770785267374
+  },
+  {
+    "id": "7593313bd8df4db8",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 1 facts from: Actually, my favorite color is red",
+    "timestamp": 1770785267595
+  },
+  {
+    "id": "498bc847281c853a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I'm from New York",
+    "timestamp": 1770785268145
+  },
+  {
+    "id": "12b608551bbf282b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Actually, I'm from Chicago",
+    "timestamp": 1770785268368
+  },
+  {
+    "id": "00b6492e305b6b96",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, world!",
+    "timestamp": 1770785273666
+  },
+  {
+    "id": "edfde7be3180acf9",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test message",
+    "timestamp": 1770785274050
+  },
+  {
+    "id": "dc78d2c997677890",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Test message",
+    "timestamp": 1770785274374
+  },
+  {
+    "id": "e1b41cd8845a4965",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: First message",
+    "timestamp": 1770785274653
+  },
+  {
+    "id": "ac2afa3190154362",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Second message",
+    "timestamp": 1770785274828
+  },
+  {
+    "id": "cc1b971ef7db3d55",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Third message",
+    "timestamp": 1770785275022
+  },
+  {
+    "id": "1a95959040161350",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: How are you?",
+    "timestamp": 1770785529295
+  },
+  {
+    "id": "2aa38e3eb6ff1d73",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, world!",
+    "timestamp": 1770785593977
+  },
+  {
+    "id": "56c52f07f8d02092",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Test message",
+    "timestamp": 1770785594445
+  },
+  {
+    "id": "e7d4485a90933519",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: First message",
+    "timestamp": 1770785594972
+  },
+  {
+    "id": "119ef9ba57df79c2",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Second message",
+    "timestamp": 1770785595414
+  },
+  {
+    "id": "0631cc96e4fd48f3",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Third message",
+    "timestamp": 1770785595850
+  },
+  {
+    "id": "b0b9db0e9d2176f4",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I'm from New York",
+    "timestamp": 1770785601412
+  },
+  {
+    "id": "5afc1b793f9f8798",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Actually, I'm from Chicago",
+    "timestamp": 1770785601860
+  },
+  {
+    "id": "7eedd540acacbe30",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My favorite color is blue",
+    "timestamp": 1770785602859
+  },
+  {
+    "id": "98ec87ebc9947855",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 1 facts from: Actually, my favorite color is red",
+    "timestamp": 1770785603304
+  },
+  {
+    "id": "70839c4a1e90df8a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 1 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1770785674102
+  },
+  {
+    "id": "082ebe515a4c1e91",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in Austin?",
+    "timestamp": 1770785690373
+  },
+  {
+    "id": "4b2921cd2f8ea02d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My name is Austin",
+    "timestamp": 1770785700017
+  },
+  {
+    "id": "a5ae9864759fee4e",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 1 facts from: Hello, I'm Austin",
+    "timestamp": 1770785703636
+  },
+  {
+    "id": "31a78e1b657a8f7f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi, I'm Austin",
+    "timestamp": 1770785707402
+  },
+  {
+    "id": "a8ea1e796e716f83",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in Austin, Texas?",
+    "timestamp": 1770785707864
+  },
+  {
+    "id": "93974f649c47fc12",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am Austin",
+    "timestamp": 1770785711384
+  },
+  {
+    "id": "d46ce39280c487ff",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Remind me to call mom tomorrow",
+    "timestamp": 1770785861905
+  },
+  {
+    "id": "f1f0885cd338dd53",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: See you later!",
+    "timestamp": 1770785862125
+  },
+  {
+    "id": "180bb57978d7c7bf",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Goodbye!",
+    "timestamp": 1770785862316
+  },
+  {
+    "id": "f40e7fed7af39e77",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 1 facts from: Find me some jazz music",
+    "timestamp": 1770785862513
+  },
+  {
+    "id": "e8e9deccd3c5bfbd",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello!",
+    "timestamp": 1770785862749
+  },
+  {
+    "id": "83c1e2bf6b3c3223",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello! What's the weather in NYC?",
+    "timestamp": 1770785862974
+  },
+  {
+    "id": "ff0211fc04413115",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: What can you do?",
+    "timestamp": 1770785863226
+  },
+  {
+    "id": "94b0609c5febc9ff",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Thank you!",
+    "timestamp": 1770785863523
+  },
+  {
+    "id": "3849f5c6c223d644",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Bye!",
+    "timestamp": 1770785863768
+  },
+  {
+    "id": "44c7472c4da6820f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Play some Taylor Swift",
+    "timestamp": 1770785864014
+  },
+  {
+    "id": "1200dd9b306dbe6c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: What's the weather?",
+    "timestamp": 1770785864260
+  },
+  {
+    "id": "1fe65ef086877798",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Play Bohemian Rhapsody",
+    "timestamp": 1770785864478
+  },
+  {
+    "id": "c6805289d7bcb514",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in Dallas?",
+    "timestamp": 1770785864729
+  },
+  {
+    "id": "d6b2c2f602c5c881",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: How are you doing today?",
+    "timestamp": 1770785864983
+  },
+  {
+    "id": "b8223668eb7479a9",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My name is Alex",
+    "timestamp": 1770785865230
+  },
+  {
+    "id": "207c9dfb078f5378",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: How are you?",
+    "timestamp": 1770785865453
+  },
+  {
+    "id": "7376e22a2bd2c3d8",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Play some music",
+    "timestamp": 1770785865679
+  },
+  {
+    "id": "fdc9a65060efd684",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: What time is it?",
+    "timestamp": 1770785865909
+  },
+  {
+    "id": "5ea8d4275a47445d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi, my name is Sarah",
+    "timestamp": 1770785866129
+  },
+  {
+    "id": "ef16ee1cd33da725",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello! What's the weather like in New York?",
+    "timestamp": 1770785866431
+  },
+  {
+    "id": "4db975ddce95832d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hi! Play some music please.",
+    "timestamp": 1770785866676
+  },
+  {
+    "id": "6db5f97446fa76b1",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: What can you do?",
+    "timestamp": 1770785866933
+  },
+  {
+    "id": "b81f791bc97f7532",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What is your name?",
+    "timestamp": 1770785867203
+  },
+  {
+    "id": "b11b09ebf8b90ef5",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 1 facts from: Hello,    I'm    Austin",
+    "timestamp": 1770786261218
+  },
+  {
+    "id": "0d30af1d85538df7",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi, my name is Dallas",
+    "timestamp": 1770786261475
+  },
+  {
+    "id": "9d89a1875dcd7979",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Good night, I'm Sydney",
+    "timestamp": 1770786261744
+  },
+  {
+    "id": "760c6bf640952c95",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi, my name is Charlotte",
+    "timestamp": 1770786262011
+  },
+  {
+    "id": "6f5dbc0f28123e01",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 1 facts from: Hello, I'm Savannah",
+    "timestamp": 1770786262492
+  },
+  {
+    "id": "f8a2d25c95b598a8",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hey, I'm Dakota",
+    "timestamp": 1770786262817
+  },
+  {
+    "id": "c6de052d51152f5d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi, you can call me Bobby",
+    "timestamp": 1770786263089
+  },
+  {
+    "id": "4bc8393e1abefbfa",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hiya!",
+    "timestamp": 1770786263391
+  },
+  {
+    "id": "b9c7514b013a5725",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi, I'm AuStIn",
+    "timestamp": 1770786263647
+  },
+  {
+    "id": "9ea5139d77474548",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Aloha",
+    "timestamp": 1770786263990
+  },
+  {
+    "id": "c4a5a84274260ff5",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi, my name is Jolene",
+    "timestamp": 1770786264260
+  },
+  {
+    "id": "c7fbe57f0642f439",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Yo",
+    "timestamp": 1770786264498
+  },
+  {
+    "id": "cdd397ac4ceeb41a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I'm Dallas. Play some music.",
+    "timestamp": 1770786265005
+  },
+  {
+    "id": "7fb41319af6f7183",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Good afternoon, I'm Dallas",
+    "timestamp": 1770786265276
+  },
+  {
+    "id": "4c5970dc7461d2f3",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: I go by Max",
+    "timestamp": 1770786265518
+  },
+  {
+    "id": "065690c8832e48fb",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: What's up!",
+    "timestamp": 1770786265888
+  },
+  {
+    "id": "943bf348f8c10e07",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Heyyy",
+    "timestamp": 1770786266180
+  },
+  {
+    "id": "557c49c762f47848",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi, I'm Orlando",
+    "timestamp": 1770786266501
+  },
+  {
+    "id": "4baa34f1c3fcdd39",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Sup",
+    "timestamp": 1770786266799
+  },
+  {
+    "id": "20865fe0b97b7748",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi, my name is Mercedes",
+    "timestamp": 1770786267040
+  },
+  {
+    "id": "7c1d920af106890f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: The name's Bond, James Bond",
+    "timestamp": 1770786267349
+  },
+  {
+    "id": "78212d0d3b5ddf12",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Wassup",
+    "timestamp": 1770786267637
+  },
+  {
+    "id": "94c2073d2c2fd2c2",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Helo, I'm Austin",
+    "timestamp": 1770786267941
+  },
+  {
+    "id": "ce618e34dcb1d7ca",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Good evening, I'm Paris",
+    "timestamp": 1770786268267
+  },
+  {
+    "id": "d86805e3a742631a",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: G'day mate",
+    "timestamp": 1770786268575
+  },
+  {
+    "id": "666f3027f6b3c436",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: How are you?",
+    "timestamp": 1770787773279
+  },
+  {
+    "id": "ac5a017d729e5132",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in Dallas?",
+    "timestamp": 1770787786210
+  },
+  {
+    "id": "65af4d76e85769cf",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello! Can you tell me about the weather?",
+    "timestamp": 1770787786874
+  },
+  {
+    "id": "560c46679dd1da56",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hi! Play some music please.",
+    "timestamp": 1770787787541
+  },
+  {
+    "id": "b33ffffd451253a8",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Play some Taylor Swift",
+    "timestamp": 1770787787988
+  },
+  {
+    "id": "423fd66a57141ef5",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Thank you!",
+    "timestamp": 1770787788438
+  },
+  {
+    "id": "d9ad8a3e7f7400d5",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hi, my name is Sarah",
+    "timestamp": 1770787788901
+  },
+  {
+    "id": "7d6b5e261aec6501",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Play some music",
+    "timestamp": 1770787789642
+  },
+  {
+    "id": "743f4eb99acd40a3",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello!",
+    "timestamp": 1770787790087
+  },
+  {
+    "id": "be02c007e7de785d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: How are you?",
+    "timestamp": 1770787790677
+  },
+  {
+    "id": "9479182579594486",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello! What's the weather like in New York?",
+    "timestamp": 1770787791357
+  },
+  {
+    "id": "e51e3858f142da45",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: See you later!",
+    "timestamp": 1770787791864
+  },
+  {
+    "id": "3051e50796fe5734",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 1 facts from: Hello, I'm Austin. It is nice to meet you.",
+    "timestamp": 1770787792599
+  },
+  {
+    "id": "942f7b8f34301d26",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello! What's the weather in NYC?",
+    "timestamp": 1770787793282
+  },
+  {
+    "id": "27f8ecd7b0c47da6",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Remind me to call mom tomorrow",
+    "timestamp": 1770787793760
+  },
+  {
+    "id": "f9cc6e2071b82ddb",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Bye!",
+    "timestamp": 1770787794202
+  },
+  {
+    "id": "805f2f928a83b733",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: What can you do?",
+    "timestamp": 1770787794653
+  },
+  {
+    "id": "3c2df27f14645c8b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: What can you do?",
+    "timestamp": 1770787795115
+  },
+  {
+    "id": "a507c47b988f6cce",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello!",
+    "timestamp": 1770787795563
+  },
+  {
+    "id": "ac1eedb97498369d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: How are you doing today?",
+    "timestamp": 1770787796025
+  },
+  {
+    "id": "d5e68a8c9e258a0d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: What's the weather?",
+    "timestamp": 1770787796512
+  },
+  {
+    "id": "1c402ffbb6cfe687",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What is your name?",
+    "timestamp": 1770787797015
+  },
+  {
+    "id": "f77919c285ebcf19",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Goodbye!",
+    "timestamp": 1770787797501
+  },
+  {
+    "id": "97e72eea6effa182",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My name is Alex",
+    "timestamp": 1770787797961
+  },
+  {
+    "id": "b1a5a6f7442f363d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Play Bohemian Rhapsody",
+    "timestamp": 1770787798412
+  },
+  {
+    "id": "ce0354be1b076b08",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: What time is it?",
+    "timestamp": 1770787798867
+  },
+  {
+    "id": "00022c1178631be0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 1 facts from: Find me some jazz music",
+    "timestamp": 1770787799323
+  },
+  {
+    "id": "cd4bc84a5fd2799b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My favorite color is blue",
+    "timestamp": 1770787800224
+  },
+  {
+    "id": "ebcdbe74913f9e6f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 1 facts from: Actually, my favorite color is red",
+    "timestamp": 1770787800686
+  },
+  {
+    "id": "5fc9e546f1c6c752",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I'm from New York",
+    "timestamp": 1770787801195
+  },
+  {
+    "id": "9d33b63291ad97ce",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Actually, I'm from Chicago",
+    "timestamp": 1770787801656
+  },
+  {
+    "id": "2be67aa0ee7ca0f3",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Test message",
+    "timestamp": 1770788000345
+  },
+  {
+    "id": "7c70328b8b14fb37",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Test message",
+    "timestamp": 1770788000830
+  },
+  {
+    "id": "4bac2fbd95091151",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, world!",
+    "timestamp": 1770788001349
+  },
+  {
+    "id": "471a67a727696e52",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: First message",
+    "timestamp": 1770788001917
+  },
+  {
+    "id": "298dced49ef2bb59",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Second message",
+    "timestamp": 1770788002329
+  },
+  {
+    "id": "ae4ae9a74b69352c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Third message",
+    "timestamp": 1770788002751
+  },
+  {
+    "id": "43ba37c1f9b841c0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 1 facts from: Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
+    "timestamp": 1770788467458
+  },
+  {
+    "id": "5bf0a3a5d79d4bc0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi, I'm Austin",
+    "timestamp": 1770788470751
+  },
+  {
+    "id": "a2d4c031d6a37584",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in Austin, Texas?",
+    "timestamp": 1770788471028
+  },
+  {
+    "id": "a28c1acf8c880285",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My name is Austin",
+    "timestamp": 1770788486462
+  },
+  {
+    "id": "6c614e6090ac1e10",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, I'm Austin",
+    "timestamp": 1770788498601
+  },
+  {
+    "id": "a55a8a1b8f4684a1",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: What's the weather in Austin?",
+    "timestamp": 1770788504644
+  },
+  {
+    "id": "bc01cb541a4695dd",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hello, I'm Austin",
+    "timestamp": 1770788510623
+  },
+  {
+    "id": "501c7a2143a188a6",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: I am Austin",
+    "timestamp": 1770788513711
+  },
+  {
+    "id": "2abd8f419ff3d55d",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 0 facts from: Hello, I'm Luna",
+    "timestamp": 1770788515186
+  },
+  {
+    "id": "5a2e1f9ed4b076e9",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi, I'm AuStIn",
+    "timestamp": 1770788515554
+  },
+  {
+    "id": "6df1d7ed96a4c4c9",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Heyyy",
+    "timestamp": 1770788515818
+  },
+  {
+    "id": "0c78065f9d5201f3",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: My name is Alex",
+    "timestamp": 1770788516164
+  },
+  {
+    "id": "c0bde9b58500c93f",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hello, my friends call me Ace",
+    "timestamp": 1770788516453
+  },
+  {
+    "id": "02b85026f8a366a1",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 1 facts from: Hello, I'm Lincoln",
+    "timestamp": 1770788516724
+  },
+  {
+    "id": "8035e3071c851471",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi! I'm Austin. What's the weather?",
+    "timestamp": 1770788517296
+  },
+  {
+    "id": "351d7d2200df1bde",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hi, I'm John Smith",
+    "timestamp": 1770788517872
+  },
+  {
+    "id": "05cb996d3d5074ce",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: This is sentence number 1. This is sentence number 2. This is sentence number 3. This is sentence number 4. This is sentence number 5. This is sentence number 6. This is sentence number 7. This is sentence number 8. This is sentence number 9. This is sentence number 10. This is sentence number 11. This is sentence number 12. This is sentence number 13. This is sentence number 14. This is sentence number 15. This is sentence number 16. This is sentence number 17. This is sentence number 18. This is sentence number 19. This is sentence number 20. This is sentence number 21. This is sentence number 22. This is sentence number 23. This is sentence number 24. This is sentence number 25. This is sentence number 26. This is sentence number 27. This is sentence number 28. This is sentence number 29. This is sentence number 30. This is sentence number 31. This is sentence number 32. This is sentence number 33. This is sentence number 34. This is sentence number 35. This is sentence number 36. This is sentence number 37. This is sentence number 38. This is sentence number 39. This is sentence number 40. This is sentence number 41. This is sentence number 42. This is sentence number 43. This is sentence number 44. This is sentence number 45. This is sentence number 46. This is sentence number 47. This is sentence number 48. This is sentence number 49. This is sentence number 50. This is sentence number 51. This is sentence number 52. This is sentence number 53. This is sentence number 54. This is sentence number 55. This is sentence number 56. This is sentence number 57. This is sentence number 58. This is sentence number 59. This is sentence number 60. This is sentence number 61. This is sentence number 62. This is sentence number 63. This is sentence number 64. This is sentence number 65. This is sentence number 66. This is sentence number 67. This is sentence number 68. This is sentence number 69. This is sentence number 70. This is sentence number 71. This is sentence number 72. This is sentence number 73. This is sentence number 74. This is sentence number 75. This is sentence number 76. This is sentence number 77. This is sentence number 78. This is sentence number 79. This is sentence number 80. This is sentence number 81. This is sentence number 82. This is sentence number 83. This is sentence number 84. This is sentence number 85. This is sentence number 86. This is sentence number 87. This is sentence number 88. This is sentence number 89. This is sentence number 90. This is sentence number 91. This is sentence number 92. This is sentence number 93. This is sentence number 94. This is sentence number 95. This is sentence number 96. This is sentence number 97. This is sentence number 98. This is sentence number 99. This is sentence number 100.",
+    "timestamp": 1770788523203
+  },
+  {
+    "id": "1fec2c1fabe06682",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Sup",
+    "timestamp": 1770788523471
+  },
+  {
+    "id": "1c7159bde8725900",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 0 entities, 0 relationships, 0 facts from: Hi, I'm Mary-Jane",
+    "timestamp": 1770788523749
+  },
+  {
+    "id": "2ccc1a94bdc2c435",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 1 facts from: Hello, I'm Alexa",
+    "timestamp": 1770788524034
+  },
+  {
+    "id": "c9bffc175f355dd0",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 2 entities, 0 relationships, 1 facts from: Hello, I'm Iris",
+    "timestamp": 1770788524635
+  },
+  {
+    "id": "24cfe0610384320e",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 1 entities, 0 relationships, 0 facts from: Hi, my name is Charlotte",
+    "timestamp": 1770788524916
+  },
+  {
+    "id": "185ebb2b93827da2",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 3 entities, 0 relationships, 0 facts from: Good evening, I'm Paris",
+    "timestamp": 1770788525201
+  },
+  {
+    "id": "4dc5d8d034e9e5a9",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 9 entities, 0 relationships, 0 facts from: Hello, I'm person 1. Play song number 2. Turn on light 3. This is statement 4. What's the weather in city 5? Hello, I'm person 6. Play song number 7. Turn on light 8. This is statement 9. What's the weather in city 10? Hello, I'm person 11. Play song number 12. Turn on light 13. This is statement 14. What's the weather in city 15? Hello, I'm person 16. Play song number 17. Turn on light 18. This is statement 19. What's the weather in city 20? Hello, I'm person 21. Play song number 22. Turn on light 23. This is statement 24. What's the weather in city 25? Hello, I'm person 26. Play song number 27. Turn on light 28. This is statement 29. What's the weather in city 30?",
+    "timestamp": 1770788526053
   }
 ]

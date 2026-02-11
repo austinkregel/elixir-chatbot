@@ -326,7 +326,8 @@ defmodule Brain.ML.LSTM.UnifiedModel do
     input = prepare_input(tokens, state.vocabularies.token_vocab, state.config)
     encoder_output = Axon.predict(state.encoder, state.params.encoder, %{"input" => input})
     pooled = Nx.mean(encoder_output, axes: [1])
-    run_sentiment_head(pooled, state)
+    {label, confidence} = run_sentiment_head(pooled, state)
+    %{label: label, confidence: confidence}
   end
 
   defp do_classify_speech_act(text, state) do
@@ -334,7 +335,8 @@ defmodule Brain.ML.LSTM.UnifiedModel do
     input = prepare_input(tokens, state.vocabularies.token_vocab, state.config)
     encoder_output = Axon.predict(state.encoder, state.params.encoder, %{"input" => input})
     pooled = Nx.mean(encoder_output, axes: [1])
-    run_speech_act_head(pooled, state)
+    {label, confidence} = run_speech_act_head(pooled, state)
+    %{label: label, confidence: confidence}
   end
 
   defp do_extract_entities(text, state) do
@@ -466,6 +468,8 @@ defmodule Brain.ML.LSTM.UnifiedModel do
       intent_to_idx = intents |> Enum.with_index() |> Map.new()
       idx_to_intent = intent_to_idx |> Enum.map(fn {k, v} -> {v, k} end) |> Map.new()
 
+      sentiment_to_idx = @sentiment_labels |> Enum.with_index() |> Map.new()
+
       bio_tags = [
         "O",
         "B-PER",
@@ -490,14 +494,17 @@ defmodule Brain.ML.LSTM.UnifiedModel do
         intent_to_idx: intent_to_idx,
         idx_to_intent: idx_to_intent,
         bio_to_idx: bio_to_idx,
-        idx_to_bio: idx_to_bio
+        idx_to_bio: idx_to_bio,
+        sentiment_to_idx: sentiment_to_idx
       }
 
       intent_data = prepare_intent_data(intent_examples, vocabularies, config)
+      sentiment_data = prepare_sentiment_data(vocabularies, config)
 
       {:ok,
        %{
          intent: intent_data,
+         sentiment: sentiment_data,
          vocabularies: vocabularies
        }}
     end
@@ -515,6 +522,26 @@ defmodule Brain.ML.LSTM.UnifiedModel do
     end)
   end
 
+  defp prepare_sentiment_data(vocabularies, config) do
+    gold = Brain.ML.EvaluationStore.load_gold_standard("sentiment")
+
+    if gold == [] do
+      Logger.warning("No sentiment gold standard data found. Sentiment head will not be trained.")
+      []
+    else
+      gold
+      |> Enum.filter(fn ex -> is_binary(ex["text"]) and is_binary(ex["sentiment"]) end)
+      |> Enum.map(fn ex ->
+        tokens = Tokenizer.tokenize(ex["text"])
+        indices = DataLoaders.tokens_to_indices(tokens, vocabularies.token_vocab)
+        padded = DataLoaders.pad_sequence(indices, config.max_seq_length)
+        sentiment_idx = Map.get(vocabularies.sentiment_to_idx, ex["sentiment"], 1)
+
+        %{input: padded, sentiment: sentiment_idx}
+      end)
+    end
+  end
+
   defp train_all_tasks(model, training_data, config) do
     Logger.info("Training unified model...")
 
@@ -527,10 +554,34 @@ defmodule Brain.ML.LSTM.UnifiedModel do
         config
       )
 
-    %{
+    sentiment_params =
+      if training_data.sentiment != [] do
+        Logger.info("Training sentiment head on #{length(training_data.sentiment)} examples...")
+
+        train_head_with_frozen_encoder(
+          model.encoder,
+          model.sentiment_head,
+          training_data.sentiment,
+          :sentiment,
+          length(@sentiment_labels),
+          encoder_params.encoder,
+          config
+        )
+      else
+        Logger.warning("No sentiment training data. Sentiment head will not be trained.")
+        nil
+      end
+
+    params = %{
       encoder: encoder_params.encoder,
       intent: encoder_params.intent
     }
+
+    if sentiment_params do
+      Map.put(params, :sentiment, sentiment_params)
+    else
+      params
+    end
   end
 
   # Multi-task training pattern: We build an end-to-end combined model for training
@@ -598,6 +649,72 @@ defmodule Brain.ML.LSTM.UnifiedModel do
       encoder: trained_state,
       intent: trained_state
     }
+  end
+
+  # Trains a classification head with the encoder frozen (using pre-trained encoder params).
+  # Used for sentiment, speech act, etc. after the encoder is trained on intent.
+  defp train_head_with_frozen_encoder(
+         encoder,
+         _head,
+         data,
+         head_name,
+         num_classes,
+         encoder_params,
+         config
+       ) do
+    name = to_string(head_name)
+    shuffled = Enum.shuffle(data)
+    split_idx = floor(length(shuffled) * 0.9)
+    {train_list, _val_list} = Enum.split(shuffled, split_idx)
+
+    # Pre-compute encoder outputs (frozen encoder)
+    encoded_data =
+      train_list
+      |> Enum.chunk_every(config.batch_size)
+      |> Enum.filter(fn batch -> length(batch) == config.batch_size end)
+      |> Enum.map(fn batch ->
+        inputs = batch |> Enum.map(& &1.input) |> Nx.tensor(type: :s64)
+        label_key = head_name
+        labels = batch |> Enum.map(&Map.get(&1, label_key)) |> Nx.tensor(type: :s64) |> Nx.new_axis(1)
+
+        encoder_output = Axon.predict(encoder, encoder_params, %{"input" => inputs})
+        pooled = Nx.mean(encoder_output, axes: [1])
+
+        targets =
+          Nx.equal(
+            Nx.iota({config.batch_size, num_classes}, axis: 1),
+            labels
+          )
+          |> Nx.as_type(:f32)
+
+        {pooled, targets}
+      end)
+
+    # Build a standalone head model for training
+    head_model =
+      Axon.input("#{name}_input", shape: {nil, config.hidden_size * 2})
+      |> Axon.dense(64, activation: :relu, name: "#{name}_dense")
+      |> Axon.dropout(rate: 0.1)
+      |> Axon.dense(num_classes, activation: :softmax, name: "#{name}_output")
+
+    loop =
+      head_model
+      |> Loop.trainer(
+        :categorical_cross_entropy,
+        Optimizers.adam(learning_rate: config.learning_rate)
+      )
+      |> Loop.metric(:accuracy)
+
+    train_data =
+      encoded_data
+      |> Enum.map(fn {pooled, targets} ->
+        {%{"#{name}_input" => pooled}, targets}
+      end)
+
+    head_epochs = min(config.epochs, 10)
+    Logger.info("Training #{name} head on #{length(train_data)} batches for #{head_epochs} epochs")
+
+    Loop.run(loop, train_data, %{}, epochs: head_epochs, compiler: EXLA, strict?: false)
   end
 
   # Model architecture is reconstructed from config during load since Axon models

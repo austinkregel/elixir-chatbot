@@ -2,7 +2,7 @@ defmodule Mix.Tasks.Evaluate.Ner do
   alias Brain.ML.EntityExtractor
   alias Brain.ML
   @shortdoc "Evaluate named entity recognition accuracy"
-  @moduledoc "Evaluate NER against gold standard data.\n\n## Usage\n\n    mix evaluate.ner              # Run evaluation\n    mix evaluate.ner --save       # Save results\n    mix evaluate.ner --verbose    # Show per-type details\n\n## Gold Standard Format\n\n    [\n      {\n        \"text\": \"What's the weather in London?\",\n        \"entities\": [{\"value\": \"London\", \"type\": \"location\"}]\n      }\n    ]\n"
+  @moduledoc "Evaluate NER against gold standard data.\n\n## Usage\n\n    mix evaluate.ner              # Run evaluation\n    mix evaluate.ner --save       # Save results\n    mix evaluate.ner --verbose    # Show per-type details\n\n## Gold Standard Format\n\nAccepts either `\"entities\"` or `\"expected\"` as the key for entity annotations:\n\n    [\n      {\n        \"text\": \"What's the weather in London?\",\n        \"entities\": [{\"value\": \"London\", \"type\": \"location\"}]\n      }\n    ]\n"
 
   use Mix.Task
 
@@ -53,7 +53,7 @@ defmodule Mix.Tasks.Evaluate.Ner do
   defp evaluate_all(gold) do
     Enum.reduce(gold, {[], []}, fn example, {preds, acts} ->
       text = example["text"]
-      expected_entities = example["entities"] || []
+      expected_entities = example["entities"] || example["expected"] || []
 
       extracted =
         try do

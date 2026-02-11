@@ -4,13 +4,13 @@
     "per_page": 3,
     "search": "transformer attention"
   },
-  "recorded_at": "2026-02-11T03:47:37.438789Z",
+  "recorded_at": "2026-02-11T04:51:30.357349Z",
   "response": {
     "body": {
       "group_by": [],
       "meta": {
         "count": 178596,
-        "db_response_time_ms": 82,
+        "db_response_time_ms": 57,
         "groups_count": null,
         "page": 1,
         "per_page": 3
@@ -3386,7 +3386,7 @@
         "DYNAMIC"
       ],
       "cf-ray": [
-        "9cc0ddad5b2352a6-ORD"
+        "9cc13b415b62e1eb-ORD"
       ],
       "connection": [
         "keep-alive"
@@ -3395,16 +3395,16 @@
         "application/json"
       ],
       "date": [
-        "Wed, 11 Feb 2026 03:47:37 GMT"
+        "Wed, 11 Feb 2026 04:51:30 GMT"
       ],
       "nel": [
         "{\"report_to\":\"heroku-nel\",\"response_headers\":[\"Via\"],\"max_age\":3600,\"success_fraction\":0.01,\"failure_fraction\":0.1}"
       ],
       "report-to": [
-        "{\"group\":\"heroku-nel\",\"endpoints\":[{\"url\":\"https://nel.heroku.com/reports?s=aVPNObkDKqaCoiwz6HFhW1U4w2cu37cS3c5j5JiMQGY%3D\\u0026sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d\\u0026ts=1770781657\"}],\"max_age\":3600}"
+        "{\"group\":\"heroku-nel\",\"endpoints\":[{\"url\":\"https://nel.heroku.com/reports?s=WT2N0egrRRtdlAHkIOP3U9aj2g2ycxzmrjlDSEKd83o%3D\\u0026sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d\\u0026ts=1770785490\"}],\"max_age\":3600}"
       ],
       "reporting-endpoints": [
-        "heroku-nel=\"https://nel.heroku.com/reports?s=aVPNObkDKqaCoiwz6HFhW1U4w2cu37cS3c5j5JiMQGY%3D&sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d&ts=1770781657\""
+        "heroku-nel=\"https://nel.heroku.com/reports?s=WT2N0egrRRtdlAHkIOP3U9aj2g2ycxzmrjlDSEKd83o%3D&sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d&ts=1770785490\""
       ],
       "server": [
         "cloudflare"
@@ -3422,10 +3422,10 @@
         "10000"
       ],
       "x-ratelimit-remaining": [
-        "9950"
+        "9910"
       ],
       "x-ratelimit-reset": [
-        "72743"
+        "68910"
       ]
     },
     "status": 200

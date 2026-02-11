@@ -2,6 +2,7 @@ defmodule ChatWeb.ChatLive do
   @moduledoc "LiveView for the chat interface.\nProvides real-time chat functionality with the AI brain.\nUses global world context from WorldContext hook.\n"
 
   alias Brain.Epistemic.UserModelStore
+  alias Brain.Epistemic.SourceAuthority
   alias Brain.KnowledgeStore
   alias Brain.Memory.Store
   alias Brain.SystemStatus
@@ -50,6 +51,7 @@ defmodule ChatWeb.ChatLive do
       |> assign(:world_models_loading, false)
       |> assign(:world_models_status, get_world_models_status(socket))
       |> assign(:inspector_correction_form, nil)
+      |> assign(:authority_profiles, [])
 
     {:ok, socket}
   end
@@ -253,7 +255,24 @@ defmodule ChatWeb.ChatLive do
 
   def handle_event("show_correction_form", _params, socket) do
     form = %{"subject" => "self", "predicate" => "", "object" => "", "authority" => "mentor"}
-    {:noreply, assign(socket, :inspector_correction_form, form)}
+
+    authority_profiles =
+      if SourceAuthority.ready?() do
+        try do
+          SourceAuthority.list_profiles()
+        catch
+          :exit, _ -> []
+        end
+      else
+        []
+      end
+
+    socket =
+      socket
+      |> assign(:inspector_correction_form, form)
+      |> assign(:authority_profiles, authority_profiles)
+
+    {:noreply, socket}
   end
 
   def handle_event("cancel_correction_form", _params, socket) do
@@ -1790,4 +1809,41 @@ defmodule ChatWeb.ChatLive do
   end
 
   def worst_epistemic_status(_), do: :unchecked
+
+  # ── Authority helpers (shared with template) ──────────────────
+
+  defp group_authority_profiles(profiles) do
+    profiles
+    |> Enum.group_by(fn p -> p.profile.category end)
+    |> Enum.sort_by(fn {cat, _} ->
+      case cat do
+        "professional" -> 0
+        "academic" -> 1
+        "personal" -> 2
+        "unknown" -> 3
+        "entertainment" -> 4
+        _ -> 5
+      end
+    end)
+  end
+
+  defp authority_badge_class("professional"), do: "badge-info"
+  defp authority_badge_class("personal"), do: "badge-secondary"
+  defp authority_badge_class("academic"), do: "badge-accent"
+  defp authority_badge_class("entertainment"), do: "badge-warning"
+  defp authority_badge_class("unknown"), do: "badge-ghost"
+  defp authority_badge_class(_), do: "badge-ghost"
+
+  defp authority_category(authority_key) do
+    if SourceAuthority.ready?() do
+      case SourceAuthority.get_profile(authority_key) do
+        nil -> "unknown"
+        profile -> profile.category
+      end
+    else
+      "unknown"
+    end
+  rescue
+    _ -> "unknown"
+  end
 end

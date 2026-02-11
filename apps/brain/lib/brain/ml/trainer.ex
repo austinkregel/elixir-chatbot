@@ -42,7 +42,9 @@ defmodule Brain.ML.Trainer do
       vocab_size: 0,
       entity_types: 0,
       gazetteer_entries: 0,
-      entity_model_trained: false
+      entity_model_trained: false,
+      sentiment_samples: 0,
+      sentiment_labels: 0
     }
 
     {stats, result} = train_intent_classifier(stats, models_path: models_path)
@@ -51,6 +53,7 @@ defmodule Brain.ML.Trainer do
       :ok ->
         stats = train_entity_model(stats, models_path: models_path)
         stats = build_gazetteer_data(stats, models_path: models_path)
+        stats = train_sentiment_classifier(stats, models_path: models_path)
 
         Logger.info("Training pipeline completed", stats)
         {:ok, stats}
@@ -110,6 +113,57 @@ defmodule Brain.ML.Trainer do
     model.vocabulary
     |> Enum.map(fn {word, _idx} -> {word, 1.0} end)
     |> Map.new()
+  end
+
+  @doc """
+  Train the sentiment classifier from gold standard data.
+
+  Loads sentiment-labeled examples from priv/evaluation/sentiment/gold_standard.json,
+  trains a TF-IDF centroid-based classifier, and saves it as sentiment_classifier.term.
+
+  ## Options
+    - models_path: Override the default models output path
+  """
+  def train_sentiment_classifier(stats \\ %{}, opts \\ []) do
+    models_path =
+      Keyword.get(opts, :models_path) ||
+        Application.get_env(:brain, :ml)[:models_path] ||
+        Brain.priv_path("ml_models")
+
+    Logger.info("Training sentiment classifier...")
+
+    gold = ML.EvaluationStore.load_gold_standard("sentiment")
+
+    if gold == [] do
+      Logger.warning("No sentiment gold standard data found. Skipping sentiment classifier training.")
+      Logger.warning("Add examples to: priv/evaluation/sentiment/gold_standard.json")
+      stats
+    else
+      training_data =
+        gold
+        |> Enum.filter(fn ex -> is_binary(ex["text"]) and is_binary(ex["sentiment"]) end)
+        |> Enum.map(fn ex -> {ex["text"], ex["sentiment"]} end)
+
+      Logger.info("Loaded sentiment training data", %{samples: length(training_data)})
+
+      model = SimpleClassifier.train(training_data)
+
+      Logger.info("Trained sentiment classifier", %{
+        vocab_size: map_size(model.vocabulary),
+        num_labels: map_size(model.label_centroids)
+      })
+
+      File.mkdir_p!(models_path)
+      model_path = Path.join(models_path, "sentiment_classifier.term")
+      File.write!(model_path, :erlang.term_to_binary(model))
+      Logger.info("Sentiment classifier saved", %{path: model_path})
+
+      %{
+        stats
+        | sentiment_samples: length(training_data),
+          sentiment_labels: map_size(model.label_centroids)
+      }
+    end
   end
 
   @doc "Train the entity recognition model using BIO tagging.\n\n## Options\n  - models_path: Override the default models output path\n"

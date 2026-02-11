@@ -6,6 +6,7 @@ defmodule Brain.Analysis.EntityDisambiguator do
   @compile {:no_warn_undefined, World.TypeInferrer}
 
   alias Brain.Analysis
+  alias Brain.ML.Tokenizer
   require Logger
 
   alias Analysis.{IntentRegistry, EntityTypes}
@@ -258,42 +259,56 @@ defmodule Brain.Analysis.EntityDisambiguator do
     Map.get(context, :entity_value, "")
   end
 
+  # Introduction pattern prefixes as token sequences (entity token follows these)
+  @introduction_prefixes [
+    ~w(i am),
+    ~w(im),
+    ~w(my name is),
+    ~w(name is),
+    ~w(call me),
+    ~w(called),
+    ~w(i go by),
+    ~w(go by),
+    ~w(this is)
+  ]
+
   @doc "Check if text contains an introduction pattern with the given entity value.\n\nDetects patterns like:\n- \"I'm [Name]\" / \"I am [Name]\"\n- \"My name is [Name]\"\n- \"This is [Name]\" (when self-referential)\n- \"Call me [Name]\"\n- \"I go by [Name]\"\n- \"[Name] here\" (at start)\n"
   def text_has_introduction_pattern?(text, entity_value)
       when is_binary(text) and is_binary(entity_value) do
-    return_false_if_empty = entity_value == "" or String.length(entity_value) < 2
-
-    if return_false_if_empty do
+    if entity_value == "" or String.length(entity_value) < 2 do
       false
     else
-      lower_text = String.downcase(text)
-      lower_entity = String.downcase(entity_value)
+      tokens = Tokenizer.tokenize(text)
+      entity_tokens = Tokenizer.tokenize(entity_value)
 
-      introduction_patterns = [
-        "i'm #{lower_entity}",
-        "i am #{lower_entity}",
-        "im #{lower_entity}",
-        "my name is #{lower_entity}",
-        "my name's #{lower_entity}",
-        "name is #{lower_entity}",
-        "name's #{lower_entity}",
-        "call me #{lower_entity}",
-        "called #{lower_entity}",
-        "i go by #{lower_entity}",
-        "go by #{lower_entity}",
-        "it's #{lower_entity}",
-        "this is #{lower_entity}",
-        "#{lower_entity} here"
-      ]
+      # Check "prefix + entity" patterns
+      prefix_match =
+        Enum.any?(@introduction_prefixes, fn prefix ->
+          pattern = prefix ++ entity_tokens
+          contains_subsequence?(tokens, pattern)
+        end)
 
-      Enum.any?(introduction_patterns, fn pattern ->
-        String.contains?(lower_text, pattern)
-      end)
+      # Check "entity + here" pattern (e.g. "Austin here")
+      suffix_match = contains_subsequence?(tokens, entity_tokens ++ ~w(here))
+
+      prefix_match or suffix_match
     end
   end
 
   def text_has_introduction_pattern?(_, _) do
     false
+  end
+
+  defp contains_subsequence?(tokens, pattern) when is_list(tokens) and is_list(pattern) do
+    pattern_len = length(pattern)
+
+    if pattern_len == 0 or length(tokens) < pattern_len do
+      false
+    else
+      tokens
+      |> Enum.chunk_every(pattern_len, 1, :discard)
+      |> Enum.any?(fn window -> window == pattern end)
+    end
   end
 
   defp extract_features(entity, pos_tagged, context) do

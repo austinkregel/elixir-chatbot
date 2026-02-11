@@ -1,15 +1,79 @@
 defmodule Brain.ML.LSTM.Integration do
-  @moduledoc "Integration layer for using LSTM models alongside existing TF-IDF classifiers.\n\nThis module is called from the main analysis pipeline as an **ensemble\nfallback**.  When `Brain.Analysis.SpeechActClassifier` obtains a low-confidence\nresult from the LSTM `MultiTaskModel` (below the ensemble threshold), it\ndelegates to `Integration.classify_intent/1` which combines TF-IDF and LSTM\npredictions via ensemble voting to produce a more robust classification.\n\nThe pipeline still invokes LSTM models directly via\n`Brain.ML.LSTM.MultiTaskModel` and `Brain.ML.LSTM.UnifiedModel` for\nhigh-confidence predictions; this module is only consulted when the primary\nLSTM confidence is insufficient.\n\n## Provides\n\n1. Get hybrid predictions combining TF-IDF and LSTM\n2. Fallback gracefully when LSTM is not available\n3. Ensemble voting for improved accuracy\n\n## Hybrid Approach\n\nThe system uses both TF-IDF (fast, interpretable) and LSTM (accurate, contextual):\n\n    User Input\n        │\n        ├──> TF-IDF Classifier (fast, always available)\n        │         │\n        │         ▼\n        │    {intent, confidence}\n        │\n        └──> LSTM Classifier (if available)\n                  │\n                  ▼\n             {intent, confidence}\n\n        │         │\n        ▼         ▼\n     Ensemble Combiner\n             │\n             ▼\n     Final Prediction\n\n## Usage\n\n    # Get best prediction using all available models\n    Integration.classify_intent(\"What's the weather?\")\n    # => {:ok, {\"weather.query\", 0.87, :ensemble}}\n\n    # Get full analysis with all models\n    Integration.analyze(\"Play some music\")\n    # => {:ok, %{\n    #   intent: {\"music.play\", 0.92},\n    #   entities: [...],\n    #   source: :lstm\n    # }}\n"
+  @moduledoc """
+  Integration layer for using LSTM models alongside existing TF-IDF classifiers.
 
-  alias Brain.LinguisticData
+  This module is called from the main analysis pipeline as an **ensemble
+  fallback**.  When `Brain.Analysis.SpeechActClassifier` obtains a low-confidence
+  result from the LSTM `MultiTaskModel` (below the ensemble threshold), it
+  delegates to `Integration.classify_intent/1` which combines TF-IDF and LSTM
+  predictions via ensemble voting to produce a more robust classification.
+
+  The pipeline still invokes LSTM models directly via
+  `Brain.ML.LSTM.MultiTaskModel` and `Brain.ML.LSTM.UnifiedModel` for
+  high-confidence predictions; this module is only consulted when the primary
+  LSTM confidence is insufficient.
+
+  ## Provides
+
+  1. Get hybrid predictions combining TF-IDF and LSTM
+  2. Ensemble voting for improved accuracy
+  3. Sentiment classification via trained TF-IDF or LSTM models
+  4. Speech act classification via the SpeechActClassifier pipeline
+
+  ## Hybrid Approach
+
+  The system uses both TF-IDF (fast, interpretable) and LSTM (accurate, contextual):
+
+      User Input
+          │
+          ├──> TF-IDF Classifier (fast, always available)
+          │         │
+          │         ▼
+          │    {intent, confidence}
+          │
+          └──> LSTM Classifier (if available)
+                    │
+                    ▼
+               {intent, confidence}
+
+          │         │
+          ▼         ▼
+       Ensemble Combiner
+               │
+               ▼
+       Final Prediction
+
+  ## Usage
+
+      # Get best prediction using all available models
+      Integration.classify_intent("What's the weather?")
+      # => {:ok, {"weather.query", 0.87, :ensemble}}
+
+      # Get full analysis with all models
+      Integration.analyze("Play some music")
+      # => {:ok, %{
+      #   intent: {"music.play", 0.92},
+      #   entities: [...],
+      #   source: :lstm
+      # }}
+  """
+
   alias Brain.ML.EntityExtractor
   alias Brain.ML.LSTM
   require Logger
 
   alias Brain.ML.IntentClassifierSimple
+  alias Brain.ML.SentimentClassifierSimple
   alias LSTM.{AxonTrainer, UnifiedModel}
 
-  @doc "Classify intent using the best available method.\n\nReturns `{:ok, {intent, confidence, source}}` where source is:\n- `:lstm` - LSTM model prediction\n- `:tfidf` - TF-IDF model prediction\n- `:ensemble` - Combined prediction from both\n"
+  @doc """
+  Classify intent using the best available method.
+
+  Returns `{:ok, {intent, confidence, source}}` where source is:
+  - `:lstm` - LSTM model prediction
+  - `:tfidf` - TF-IDF model prediction
+  - `:ensemble` - Combined prediction from both
+  """
   def classify_intent(text, opts \\ []) do
     use_ensemble = Keyword.get(opts, :ensemble, true)
     tfidf_result = get_tfidf_prediction(text)
@@ -30,7 +94,9 @@ defmodule Brain.ML.LSTM.Integration do
     end
   end
 
-  @doc "Get full NLP analysis using LSTM if available, falling back to TF-IDF.\n"
+  @doc """
+  Get full NLP analysis using LSTM if available, with TF-IDF components.
+  """
   def analyze(text, opts \\ []) do
     case UnifiedModel.ready?() && UnifiedModel.analyze(text) do
       {:ok, result} ->
@@ -41,29 +107,83 @@ defmodule Brain.ML.LSTM.Integration do
     end
   end
 
-  @doc "Get sentiment using LSTM if available, falling back to keyword heuristics.\n"
-  def classify_sentiment(text) do
-    case UnifiedModel.ready?() && UnifiedModel.classify_sentiment(text) do
-      {:ok, result} ->
-        {:ok, result}
+  @doc """
+  Classify sentiment using ensemble of available models (LSTM + TF-IDF).
 
-      _ ->
-        {:ok, keyword_sentiment(text)}
+  When both LSTM and TF-IDF are available, uses confidence-weighted voting.
+  When only one is available, uses that model directly.
+  When neither is available, returns `{:error, :no_sentiment_classifier}`.
+  """
+  def classify_sentiment(text) do
+    lstm_result =
+      if UnifiedModel.ready?() do
+        case UnifiedModel.classify_sentiment(text) do
+          {:ok, result} -> {:ok, result}
+          _ -> :unavailable
+        end
+      else
+        :unavailable
+      end
+
+    tfidf_result =
+      if SentimentClassifierSimple.ready?() do
+        case SentimentClassifierSimple.classify(text) do
+          {:ok, result} -> {:ok, result}
+          _ -> :unavailable
+        end
+      else
+        :unavailable
+      end
+
+    case {lstm_result, tfidf_result} do
+      {{:ok, lstm}, {:ok, tfidf}} ->
+        {:ok, ensemble_sentiment(lstm, tfidf)}
+
+      {{:ok, lstm}, :unavailable} ->
+        {:ok, lstm}
+
+      {:unavailable, {:ok, tfidf}} ->
+        {:ok, tfidf}
+
+      {:unavailable, :unavailable} ->
+        {:error, :no_sentiment_classifier}
     end
   end
 
-  @doc "Get speech act using LSTM if available, falling back to structural analysis.\n"
+  defp ensemble_sentiment(lstm, tfidf) do
+    if lstm.label == tfidf.label do
+      # Both agree -- boost confidence
+      combined = 1.0 - (1.0 - lstm.confidence) * (1.0 - tfidf.confidence)
+      %{label: lstm.label, confidence: combined}
+    else
+      # Disagree -- pick the higher confidence prediction
+      if lstm.confidence >= tfidf.confidence do
+        lstm
+      else
+        tfidf
+      end
+    end
+  end
+
+  @doc """
+  Get speech act using LSTM if available, otherwise SpeechActClassifier pipeline.
+
+  Returns `{:ok, %{label: atom, confidence: float}}` or `{:error, reason}`.
+  """
   def classify_speech_act(text) do
     case UnifiedModel.ready?() && UnifiedModel.classify_speech_act(text) do
       {:ok, result} ->
         {:ok, result}
 
       _ ->
-        {:ok, structural_speech_act(text)}
+        result = Brain.Analysis.SpeechActClassifier.classify(text)
+        {:ok, %{label: result.category, confidence: result.confidence}}
     end
   end
 
-  @doc "Extract entities using LSTM NER if available, falling back to gazetteer.\n"
+  @doc """
+  Extract entities using LSTM NER if available, otherwise entity extractor.
+  """
   def extract_entities(text, opts \\ []) do
     case UnifiedModel.ready?() && UnifiedModel.extract_entities(text) do
       {:ok, entities} when is_list(entities) and entities != [] ->
@@ -78,15 +198,16 @@ defmodule Brain.ML.LSTM.Integration do
     end
   end
 
-  @doc "Check if LSTM models are available and ready.\n"
+  @doc "Check if LSTM models are available and ready."
   def lstm_available? do
     UnifiedModel.ready?()
   end
 
-  @doc "Get status of all available models.\n"
+  @doc "Get status of all available models."
   def model_status do
     %{
       tfidf: IntentClassifierSimple.ready?(),
+      tfidf_sentiment: SentimentClassifierSimple.ready?(),
       lstm_unified: UnifiedModel.ready?(),
       lstm_intent: check_axon_model()
     }
@@ -158,45 +279,29 @@ defmodule Brain.ML.LSTM.Integration do
             _ -> []
           end
 
+        sentiment =
+          case classify_sentiment(text) do
+            {:ok, result} -> result
+            {:error, _} -> %{label: :unknown, confidence: 0.0}
+          end
+
+        speech_act =
+          case classify_speech_act(text) do
+            {:ok, result} -> result
+            {:error, _} -> %{label: :unknown, confidence: 0.0}
+          end
+
         {:ok,
          %{
            intent: {intent, confidence},
            entities: entities,
-           sentiment: keyword_sentiment(text),
-           speech_act: structural_speech_act(text),
+           sentiment: sentiment,
+           speech_act: speech_act,
            source: :tfidf
          }}
 
       error ->
         error
-    end
-  end
-
-  defp keyword_sentiment(text) do
-    lower = String.downcase(text)
-
-    positive_words = LinguisticData.positive_words()
-    negative_words = LinguisticData.negative_words()
-
-    pos_count = Enum.count(positive_words, &String.contains?(lower, &1))
-    neg_count = Enum.count(negative_words, &String.contains?(lower, &1))
-
-    cond do
-      pos_count > neg_count -> {:positive, 0.6 + 0.1 * pos_count}
-      neg_count > pos_count -> {:negative, 0.6 + 0.1 * neg_count}
-      true -> {:neutral, 0.8}
-    end
-  end
-
-  defp structural_speech_act(text) do
-    cond do
-      String.ends_with?(text, "?") -> {:directive, 0.9}
-      String.starts_with?(String.downcase(text), "please") -> {:directive, 0.8}
-      String.starts_with?(String.downcase(text), "can you") -> {:directive, 0.85}
-      String.starts_with?(String.downcase(text), "hi") -> {:expressive, 0.9}
-      String.starts_with?(String.downcase(text), "hello") -> {:expressive, 0.9}
-      String.starts_with?(String.downcase(text), "thanks") -> {:expressive, 0.9}
-      true -> {:assertive, 0.7}
     end
   end
 end

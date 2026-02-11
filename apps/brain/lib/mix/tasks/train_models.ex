@@ -294,12 +294,15 @@ defmodule Mix.Tasks.TrainModels do
   end
 
   defp run_pos_training_internal(models_path) do
-    training_file = "data/training/pos/sequences.json"
+    gold_standard_path = Brain.priv_path("evaluation/intent/gold_standard.json")
 
-    if File.exists?(training_file) do
-      Mix.shell().info("  Loading POS training data from #{training_file}...")
+    Mix.shell().info("  Loading POS training data from gold standard...")
+    sequences = load_pos_from_gold_standard(gold_standard_path)
 
-      case POSTagger.train_from_file(training_file) do
+    if sequences != [] do
+      Mix.shell().info("  Found #{length(sequences)} POS-annotated sequences from gold standard")
+
+      case POSTagger.train(sequences) do
         {:ok, model} ->
           save_path = Path.join(models_path, "pos_model.term")
 
@@ -324,80 +327,40 @@ defmodule Mix.Tasks.TrainModels do
           {:error, reason}
       end
     else
-      training_dir = "data/training/intents"
-
-      if File.exists?(training_dir) do
-        Mix.shell().info("  Loading POS training data from enriched intents...")
-        sequences = load_pos_from_enriched_intents(training_dir)
-
-        if sequences != [] do
-          Mix.shell().info("  Found #{length(sequences)} sequences with POS annotations")
-
-          case POSTagger.train(sequences) do
-            {:ok, model} ->
-              save_path = Path.join(models_path, "pos_model.term")
-
-              case POSTagger.save_model(model, save_path) do
-                {:ok, path} ->
-                  Mix.shell().info("  POS model saved to #{path}")
-
-                  {:ok,
-                   %{
-                     pos_model_trained: true,
-                     pos_tag_count: map_size(model.tag_vocabulary),
-                     pos_feature_count: map_size(model.feature_weights)
-                   }}
-
-                {:error, reason} ->
-                  {:error, reason}
-              end
-
-            {:error, reason} ->
-              {:error, reason}
-          end
-        else
-          Mix.shell().info("  No POS training data found. Run 'mix migrate_training_data' first.")
-          {:error, :no_training_data}
-        end
-      else
-        Mix.shell().info("  POS training data not found at #{training_file}")
-        Mix.shell().info("  Run 'mix migrate_training_data' to generate POS annotations.")
-        {:error, :no_training_data}
-      end
+      Mix.shell().info("  No POS-annotated data in gold standard. Skipping POS training.")
+      Mix.shell().info("  Run: python scripts/enrich_gold_standard_pos.py")
+      {:error, :no_training_data}
     end
   end
 
-  defp load_pos_from_enriched_intents(training_dir) do
-    training_dir
-    |> Path.join("*.json")
-    |> Path.wildcard()
-    |> Enum.flat_map(fn file ->
-      case File.read(file) do
-        {:ok, content} ->
-          case Jason.decode(content) do
-            {:ok, examples} when is_list(examples) ->
-              examples
-              |> Enum.filter(fn ex ->
-                tokens = ex["tokens"] || []
-                tags = ex["pos_tags"] || []
-                tokens != [] and length(tokens) == length(tags)
-              end)
-              |> Enum.map(fn ex ->
-                %{
-                  tokens: ex["tokens"],
-                  tags: ex["pos_tags"],
-                  source: ex["intent"]
-                }
-              end)
+  defp load_pos_from_gold_standard(gold_standard_path) do
+    case File.read(gold_standard_path) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, examples} when is_list(examples) ->
+            examples
+            |> Enum.filter(fn ex ->
+              tokens = ex["tokens"] || []
+              tags = ex["pos_tags"] || []
+              tokens != [] and length(tokens) == length(tags)
+            end)
+            |> Enum.map(fn ex ->
+              %{
+                tokens: ex["tokens"],
+                tags: ex["pos_tags"],
+                source: ex["intent"]
+              }
+            end)
 
-            _ ->
-              []
-          end
+          _ ->
+            Mix.shell().info("  Warning: Could not parse #{gold_standard_path}")
+            []
+        end
 
-        _ ->
-          []
-      end
-    end)
+      {:error, reason} ->
+        Mix.shell().info("  Warning: Could not read #{gold_standard_path}: #{inspect(reason)}")
+        []
+    end
   end
 
   defp display_data_sources(training_data_path) do

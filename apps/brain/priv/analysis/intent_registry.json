@@ -1502,6 +1502,7 @@
     "category": "expressive",
     "clarification_templates": {},
     "domain": "smalltalk",
+    "enrichment_sources": ["system_stats"],
     "entity_mappings": {},
     "input_contexts": [],
     "optional": [],
@@ -5061,6 +5062,7 @@
     "defaults": {},
     "description": "Run system diagnostics or health check",
     "domain": "status",
+    "enrichment_sources": ["system_stats"],
     "entity_mappings": {},
     "input_contexts": [],
     "optional": [],
@@ -5074,6 +5076,7 @@
     "defaults": {},
     "description": "Get status report or update",
     "domain": "status",
+    "enrichment_sources": ["system_stats"],
     "entity_mappings": {},
     "input_contexts": [],
     "optional": [

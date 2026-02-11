@@ -644,24 +644,24 @@ defmodule Brain.Knowledge.Types do
       |> remove_question_prefix()
     end
 
+    @question_prefixes MapSet.new(~w(what where who when how is are was were does did))
+
     defp remove_question_prefix(text) do
-      text
-      |> String.replace(~r/^(what is |what are |where is |who is |when did |how does )/i, "")
+      tokens = Brain.ML.Tokenizer.tokenize(text)
+
+      tokens
+      |> Enum.drop_while(fn token -> MapSet.member?(@question_prefixes, token) end)
+      |> Enum.join(" ")
       |> String.trim()
     end
 
     defp extract_entity(question, default_topic) do
-      words =
-        question
-        |> String.downcase()
-        |> String.replace(~r/[^\w\s]/, "")
-        |> String.split()
-
-      stop_words = ~w(what is are where who when how does did the a an of in to)
+      stop_words = MapSet.new(~w(what is are where who when how does did the a an of in to))
 
       content_words =
-        words
-        |> Enum.reject(&(&1 in stop_words))
+        question
+        |> Brain.ML.Tokenizer.tokenize()
+        |> Enum.reject(&MapSet.member?(stop_words, &1))
 
       if content_words != [] do
         Enum.join(content_words, " ")

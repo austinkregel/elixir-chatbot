@@ -36,6 +36,7 @@ defmodule Brain.ML.LSTM.ModelCompatibilityTest do
   """
 
   use ExUnit.Case, async: false
+  import ExUnit.CaptureIO
 
   # Don't exclude this test - it should always run to detect compatibility issues
   @moduletag :lstm_compatibility
@@ -51,14 +52,16 @@ defmodule Brain.ML.LSTM.ModelCompatibilityTest do
       assert is_binary(versions.otp), "OTP version should be available"
       assert is_binary(versions.elixir), "Elixir version should be available"
 
-      # Log versions for debugging
-      IO.puts("\n=== ML Library Versions ===")
-      IO.puts("Nx: #{versions.nx}")
-      IO.puts("EXLA: #{versions.exla}")
-      IO.puts("Axon: #{versions.axon}")
-      IO.puts("OTP: #{versions.otp}")
-      IO.puts("Elixir: #{versions.elixir}")
-      IO.puts("===========================\n")
+      # Log versions for debugging (captured to avoid log leaks)
+      capture_io(fn ->
+        IO.puts("\n=== ML Library Versions ===")
+        IO.puts("Nx: #{versions.nx}")
+        IO.puts("EXLA: #{versions.exla}")
+        IO.puts("Axon: #{versions.axon}")
+        IO.puts("OTP: #{versions.otp}")
+        IO.puts("Elixir: #{versions.elixir}")
+        IO.puts("===========================\n")
+      end)
     end
 
     test "unified model file exists" do
@@ -174,8 +177,10 @@ defmodule Brain.ML.LSTM.ModelCompatibilityTest do
           case LSTMTestHelpers.unified_model_ready?() do
             {:ok, false} ->
               # GenServer is running but model didn't load
-              # This is expected if model is incompatible
-              IO.puts("\nUnifiedModel is running but not ready (model may be incompatible)")
+              # This is expected if model is incompatible (captured to avoid log leaks)
+              capture_io(fn ->
+                IO.puts("\nUnifiedModel is running but not ready (model may be incompatible)")
+              end)
               assert true
 
             {:error, :not_running} ->

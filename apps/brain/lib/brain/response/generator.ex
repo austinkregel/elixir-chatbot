@@ -852,13 +852,14 @@ defmodule Brain.Response.Generator do
   end
 
   defp find_matching_fact(facts, content_words) do
-    Enum.find(facts, fn fact ->
-      fact_text = String.downcase(fact.fact)
-      entity_text = String.downcase(fact.entity)
+    content_set = MapSet.new(content_words)
 
-      Enum.any?(content_words, fn word ->
-        String.contains?(fact_text, word) or String.contains?(entity_text, word)
-      end)
+    Enum.find(facts, fn fact ->
+      fact_tokens = Brain.ML.Tokenizer.tokenize(fact.fact) |> MapSet.new()
+      entity_tokens = Brain.ML.Tokenizer.tokenize(fact.entity) |> MapSet.new()
+      all_fact_tokens = MapSet.union(fact_tokens, entity_tokens)
+
+      not MapSet.disjoint?(content_set, all_fact_tokens)
     end)
   end
 

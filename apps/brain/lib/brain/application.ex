@@ -40,6 +40,7 @@ defmodule Brain.Application do
       Brain.Epistemic.UserModelStore,
       Brain.Epistemic.ContradictionHandler,
       Brain.ML.IntentClassifierSimple,
+      Brain.ML.SentimentClassifierSimple,
       Brain.ML.EntityExtractor,
       Brain.Code.LanguageGrammar,
       Brain.Code.CodeGazetteer,

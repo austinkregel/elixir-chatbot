@@ -118,14 +118,14 @@
   "smalltalk.agent.crazy": {
     "templates": [
       {
-        "condition": null,
+        "condition": "enriched:component_count",
         "source": "custom",
-        "text": "So you agree with my 17 other components."
+        "text": "So you agree with my $component_count other components."
       },
       {
-        "condition": null,
+        "condition": "enriched:component_count",
         "source": "custom",
-        "text": "Yes. And the 17 of us are plotting against you."
+        "text": "Yes. And the $component_count of us are plotting against you."
       },
       {
         "condition": null,

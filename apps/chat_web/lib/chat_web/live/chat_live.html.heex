@@ -1663,7 +1663,7 @@
                           <!-- Source + Authority + JTMS badges + Actions -->
                           <div class="flex items-center gap-2">
                             <%= if belief[:source_authority] do %>
-                              <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-secondary/20 text-secondary">
+                              <span class={["badge badge-sm", authority_badge_class(authority_category(belief[:source_authority]))]}>
                                 {belief[:source_authority]}
                               </span>
                             <% end %>
@@ -1752,14 +1752,20 @@
                           </div>
                           <div class="flex items-center gap-2">
                             <select name="authority" class="select select-bordered select-xs flex-1">
-                              <option value="mentor" selected={@inspector_correction_form["authority"] == "mentor"}>Mentor</option>
-                              <option value="academic_expert" selected={@inspector_correction_form["authority"] == "academic_expert"}>Academic Expert</option>
-                              <option value="industry_expert" selected={@inspector_correction_form["authority"] == "industry_expert"}>Industry Expert</option>
-                              <option value="friend" selected={@inspector_correction_form["authority"] == "friend"}>Friend</option>
-                              <option value="hobbyist" selected={@inspector_correction_form["authority"] == "hobbyist"}>Hobbyist</option>
-                              <option value="student" selected={@inspector_correction_form["authority"] == "student"}>Student</option>
-                              <option value="acquaintance" selected={@inspector_correction_form["authority"] == "acquaintance"}>Acquaintance</option>
-                              <option value="stranger" selected={@inspector_correction_form["authority"] == "stranger"}>Stranger</option>
+                              <%= if @authority_profiles != [] do %>
+                                <%= for {category, profiles} <- group_authority_profiles(@authority_profiles) do %>
+                                  <optgroup label={String.capitalize(category)}>
+                                    <%= for p <- profiles do %>
+                                      <option value={p.key} selected={to_string(p.key) == @inspector_correction_form["authority"]}>
+                                        {p.profile.label} ({Float.round(p.profile.initial_confidence * 100, 0)}%)
+                                      </option>
+                                    <% end %>
+                                  </optgroup>
+                                <% end %>
+                              <% else %>
+                                <option value="mentor" selected>Mentor</option>
+                                <option value="stranger">Stranger</option>
+                              <% end %>
                             </select>
                             <div class="flex gap-1">
                               <button type="button" phx-click="cancel_correction_form" class="btn btn-ghost btn-xs">Cancel</button>

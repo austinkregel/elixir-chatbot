@@ -371,6 +371,23 @@ defmodule Brain.Analysis.IntentRegistry do
     |> Enum.map(fn {intent, _meta} -> intent end)
   end
 
+  @doc "Get enrichment sources for an intent. Returns a list like [\"system_stats\"]."
+  def enrichment_sources(intent) do
+    case get(intent) do
+      nil -> []
+      meta -> meta["enrichment_sources"] || []
+    end
+  end
+
+  @doc "List all intents that require a given enrichment source."
+  def intents_with_enrichment_source(source) when is_binary(source) do
+    all_entries()
+    |> Enum.filter(fn {_intent, meta} ->
+      source in (meta["enrichment_sources"] || [])
+    end)
+    |> Enum.map(fn {intent, _meta} -> intent end)
+  end
+
   @doc """
   Converts intent name to human-readable format.
 

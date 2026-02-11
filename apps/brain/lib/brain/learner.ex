@@ -207,21 +207,29 @@ defmodule Brain.Learner do
     end
   end
 
+  @self_ref_verbs MapSet.new(~w(am was have had will would like love hate work live think feel want need))
+  @self_ref_nouns MapSet.new(~w(name age job work location home favorite preference))
+
   defp is_self_referential_statement?(input) do
-    lower = String.downcase(input)
+    tokens = Brain.ML.Tokenizer.tokenize(input)
+    first = Enum.at(tokens, 0)
+    second = Enum.at(tokens, 1)
+    third = Enum.at(tokens, 2)
 
-    self_patterns = [
-      ~r/^i\s+(am|was|have|had|will|would|like|love|hate|work|live|think|feel|want|need)\b/,
-      ~r/^my\s+(name|age|job|work|location|home|favorite|preference)\b/,
-      ~r/^i'm\b/,
-      ~r/^i've\b/,
-      ~r/\bmy\s+name\s+is\b/,
-      ~r/\bi\s+am\s+from\b/,
-      ~r/\bi\s+live\s+in\b/,
-      ~r/\bcall\s+me\b/
-    ]
-
-    Enum.any?(self_patterns, &Regex.match?(&1, lower))
+    cond do
+      # "i am/was/have/..." or "i'm/i've" (tokenizer expands contractions)
+      first == "i" and MapSet.member?(@self_ref_verbs, second || "") -> true
+      # "my name/age/job/..."
+      first == "my" and MapSet.member?(@self_ref_nouns, second || "") -> true
+      # "my name is ..."
+      first == "my" and second == "name" and third == "is" -> true
+      # "call me ..."
+      first == "call" and second == "me" -> true
+      # "i am from ...", "i live in ..."
+      first == "i" and second == "am" and third == "from" -> true
+      first == "i" and second == "live" and third == "in" -> true
+      true -> false
+    end
   end
 
   defp get_entity_field(entity, keys) when is_list(keys) do
