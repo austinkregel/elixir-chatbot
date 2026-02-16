@@ -59,39 +59,56 @@ defmodule Brain.Response.Enricher do
     # Check which services are available for this intent
     available_services = get_available_services(intent, context)
 
-    if available_services == [] do
-      context
-      |> Map.put(:enrichment_status, :not_configured)
-      |> Map.put(:enriched_data, %{})
-      |> Map.put(:available_services, [])
-    else
-      case Dispatcher.dispatch(intent, slots, context) do
-        {:ok, enrichment_data} ->
-          context
-          |> Map.put(:enriched_data, enrichment_data)
-          |> Map.put(:enrichment_status, :success)
-          |> Map.put(:enrichment_service, get_enrichment_service(intent))
-          |> Map.put(:available_services, available_services)
+    enriched =
+      if available_services == [] do
+        context
+        |> Map.put(:enrichment_status, :not_configured)
+        |> Map.put(:enriched_data, %{})
+        |> Map.put(:available_services, [])
+      else
+        case Dispatcher.dispatch(intent, slots, context) do
+          {:ok, enrichment_data} ->
+            context
+            |> Map.put(:enriched_data, enrichment_data)
+            |> Map.put(:enrichment_status, :success)
+            |> Map.put(:enrichment_service, get_enrichment_service(intent))
+            |> Map.put(:available_services, available_services)
 
-        {:error, reason} ->
-          Logger.debug("Enrichment failed",
-            intent: intent,
-            reason: inspect(reason)
-          )
+          {:error, reason} ->
+            Logger.debug("Enrichment failed",
+              intent: intent,
+              reason: inspect(reason)
+            )
 
-          context
-          |> Map.put(:enriched_data, %{})
-          |> Map.put(:enrichment_status, :failed)
-          |> Map.put(:enrichment_error, reason)
-          |> Map.put(:available_services, available_services)
+            context
+            |> Map.put(:enriched_data, %{})
+            |> Map.put(:enrichment_status, :failed)
+            |> Map.put(:enrichment_error, reason)
+            |> Map.put(:available_services, available_services)
 
-        :no_handler ->
-          context
-          |> Map.put(:enrichment_status, :not_configured)
-          |> Map.put(:enriched_data, %{})
-          |> Map.put(:available_services, [])
+          :no_handler ->
+            context
+            |> Map.put(:enrichment_status, :not_configured)
+            |> Map.put(:enriched_data, %{})
+            |> Map.put(:available_services, [])
+        end
       end
-    end
+
+    enrich_from_graph(enriched)
+  end
+
+  defp enrich_from_graph(context) do
+    entities = Map.get(context, :entities, [])
+    conversation_id = Map.get(context, :conversation_id)
+
+    graph_enrichment = %{
+      entity_context: Brain.Graph.Reader.entity_context(entities),
+      conversation_topics: if(conversation_id, do: Brain.Graph.Reader.conversation_topics(to_string(conversation_id)), else: [])
+    }
+
+    Map.put(context, :graph_enrichment, graph_enrichment)
+  rescue
+    _ -> context
   end
 
   @doc """
@@ -136,9 +153,16 @@ defmodule Brain.Response.Enricher do
     enriched_data = Map.get(context, :enriched_data, %{})
 
     Enum.all?(required_fields, fn field ->
-      field_atom = if is_binary(field), do: String.to_atom(field), else: field
-      Map.has_key?(enriched_data, field_atom) or Map.has_key?(enriched_data, to_string(field))
+      field_key = safe_field_atom(field)
+      Map.has_key?(enriched_data, field_key) or Map.has_key?(enriched_data, to_string(field))
     end)
+  end
+
+  defp safe_field_atom(field) when is_atom(field), do: field
+  defp safe_field_atom(field) when is_binary(field) do
+    String.to_existing_atom(field)
+  rescue
+    ArgumentError -> field
   end
 
   @doc """
@@ -210,24 +234,7 @@ defmodule Brain.Response.Enricher do
   defp get_required_enrichment(_), do: []
 
   defp substitute_enrichment_placeholders(text, enriched_data) when is_binary(text) do
-    Enum.reduce(enriched_data, text, fn {key, value}, acc ->
-      # Skip nested maps (like :raw)
-      if is_map(value) do
-        acc
-      else
-        key_str = to_string(key)
-        value_str = format_value(value)
-
-        acc
-        |> String.replace("$#{key_str}", value_str)
-        |> String.replace("@#{key_str}", value_str)
-      end
-    end)
+    Brain.Response.Formatting.substitute_placeholders(text, enriched_data)
   end
 
-  defp format_value(value) when is_binary(value), do: value
-  defp format_value(value) when is_number(value), do: to_string(value)
-  defp format_value(value) when is_atom(value), do: Atom.to_string(value)
-  defp format_value(value) when is_list(value), do: Enum.join(value, ", ")
-  defp format_value(value), do: inspect(value)
 end

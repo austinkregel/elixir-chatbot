@@ -2,9 +2,10 @@
 {:ok, _} = Application.ensure_all_started(:brain)
 {:ok, _} = Application.ensure_all_started(:tasks)
 
-# Configure ExUnit to exclude slow/integration tests by default
+# Configure ExUnit - only exclude explicitly incomplete/disabled tests
+# Any skipped behavior is untested behavior.
 ExUnit.configure(
-  exclude: [:slow, :integration, :training, :wip, :skip],
+  exclude: [:wip, :skip],
   timeout: 60_000
 )
 

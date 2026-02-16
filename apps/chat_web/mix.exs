@@ -31,8 +31,10 @@ defmodule ChatWeb.MixProject do
 
   defp deps do
     [
+      {:atlas, in_umbrella: true},
       {:brain, in_umbrella: true},
       {:world, in_umbrella: true},
+      {:fourth_wall, in_umbrella: true},
       {:tasks, in_umbrella: true},
       {:phoenix, "~> 1.8.1"},
       {:phoenix_html, "~> 4.1"},

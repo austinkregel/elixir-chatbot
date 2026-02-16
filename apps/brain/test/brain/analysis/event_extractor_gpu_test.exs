@@ -5,9 +5,8 @@ defmodule Brain.Analysis.EventExtractorGPUTest do
   These tests verify that EXLA provides measurable speedup over the
   BinaryBackend for tensor operations in event extraction.
 
-  Note: These tests are tagged :benchmark and :gpu - run with:
-    mix test --only benchmark
-    mix test --only gpu
+  Tests run with whatever Nx backend is available. When EXLA is not present,
+  comparison tests assert on BinaryBackend performance instead.
   """
 
   use ExUnit.Case, async: false

@@ -477,7 +477,11 @@ defmodule Brain.Analysis.IntentRegistry do
 
   defp to_atom_or_nil(nil), do: nil
   defp to_atom_or_nil(""), do: nil
-  defp to_atom_or_nil(str) when is_binary(str), do: String.to_atom(str)
+  defp to_atom_or_nil(str) when is_binary(str) do
+    String.to_existing_atom(str)
+  rescue
+    ArgumentError -> nil
+  end
   defp to_atom_or_nil(atom) when is_atom(atom), do: atom
 
   defp load_registry(opts) do

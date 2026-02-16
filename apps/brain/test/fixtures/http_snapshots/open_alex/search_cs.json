@@ -5,13 +5,13 @@
     "per_page": 3,
     "search": "machine learning"
   },
-  "recorded_at": "2026-02-11T04:51:31.257138Z",
+  "recorded_at": "2026-02-16T16:49:13.545008Z",
   "response": {
     "body": {
       "group_by": [],
       "meta": {
-        "count": 1950375,
-        "db_response_time_ms": 229,
+        "count": 1954919,
+        "db_response_time_ms": 388,
         "groups_count": null,
         "page": 1,
         "per_page": 3
@@ -291,7 +291,7 @@
             ]
           },
           "type": "preprint",
-          "relevance_score": 17729.736,
+          "relevance_score": 17651.127,
           "fwci": null,
           "awards": [],
           "referenced_works_count": 13,
@@ -314,11 +314,11 @@
           },
           "counts_by_year": [
             {
-              "cited_by_count": 34,
+              "cited_by_count": 46,
               "year": 2026
             },
             {
-              "cited_by_count": 3028,
+              "cited_by_count": 3034,
               "year": 2025
             },
             {
@@ -375,7 +375,7 @@
             }
           ],
           "content_urls": null,
-          "updated_date": "2026-02-10T21:29:10.735309",
+          "updated_date": "2026-02-15T07:36:51.736424",
           "sustainable_development_goals": [
             {
               "display_name": "Quality Education",
@@ -469,7 +469,7 @@
           ],
           "funders": [],
           "has_fulltext": false,
-          "cited_by_count": 63180,
+          "cited_by_count": 63198,
           "created_date": "2025-10-10T00:00:00",
           "has_content": {
             "grobid_xml": false,
@@ -1596,7 +1596,7 @@
             ]
           },
           "type": "article",
-          "relevance_score": 12716.019,
+          "relevance_score": 12626.856,
           "fwci": 161.69270597,
           "awards": [],
           "referenced_works_count": 0,
@@ -1671,7 +1671,7 @@
               "year": 2014
             },
             {
-              "cited_by_count": 2160,
+              "cited_by_count": 2161,
               "year": 2013
             },
             {
@@ -1680,7 +1680,7 @@
             }
           ],
           "content_urls": null,
-          "updated_date": "2025-11-06T03:46:38.306776",
+          "updated_date": "2026-02-14T14:00:54.825952",
           "sustainable_development_goals": [
             {
               "display_name": "Quality Education",
@@ -2179,7 +2179,7 @@
             ]
           },
           "type": "book",
-          "relevance_score": 11147.714,
+          "relevance_score": 11027.564,
           "fwci": 41.76036268,
           "awards": [],
           "referenced_works_count": 0,
@@ -2640,13 +2640,13 @@
         "*"
       ],
       "access-control-expose-headers": [
-        "Cache-Control, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Credits-Used, X-RateLimit-Credits-Required, X-RateLimit-Reset, Retry-After"
+        "Cache-Control, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Onetime-Remaining, X-RateLimit-Credits-Used, X-RateLimit-Credits-Required, X-RateLimit-Reset, Retry-After"
       ],
       "cf-cache-status": [
         "DYNAMIC"
       ],
       "cf-ray": [
-        "9cc13b45eeade1eb-ORD"
+        "9cee89f01a24170f-ORD"
       ],
       "connection": [
         "keep-alive"
@@ -2655,16 +2655,16 @@
         "application/json"
       ],
       "date": [
-        "Wed, 11 Feb 2026 04:51:31 GMT"
+        "Mon, 16 Feb 2026 16:49:32 GMT"
       ],
       "nel": [
         "{\"report_to\":\"heroku-nel\",\"response_headers\":[\"Via\"],\"max_age\":3600,\"success_fraction\":0.01,\"failure_fraction\":0.1}"
       ],
       "report-to": [
-        "{\"group\":\"heroku-nel\",\"endpoints\":[{\"url\":\"https://nel.heroku.com/reports?s=WT2N0egrRRtdlAHkIOP3U9aj2g2ycxzmrjlDSEKd83o%3D\\u0026sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d\\u0026ts=1770785490\"}],\"max_age\":3600}"
+        "{\"group\":\"heroku-nel\",\"endpoints\":[{\"url\":\"https://nel.heroku.com/reports?s=ZD%2BTFQmI10q9OLHrjAcShDdWf18xWprW0mh2wHMy8Z0%3D\\u0026sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d\\u0026ts=1771260572\"}],\"max_age\":3600}"
       ],
       "reporting-endpoints": [
-        "heroku-nel=\"https://nel.heroku.com/reports?s=WT2N0egrRRtdlAHkIOP3U9aj2g2ycxzmrjlDSEKd83o%3D&sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d&ts=1770785490\""
+        "heroku-nel=\"https://nel.heroku.com/reports?s=ZD%2BTFQmI10q9OLHrjAcShDdWf18xWprW0mh2wHMy8Z0%3D&sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d&ts=1771260572\""
       ],
       "server": [
         "cloudflare"
@@ -2681,11 +2681,14 @@
       "x-ratelimit-limit": [
         "10000"
       ],
+      "x-ratelimit-onetime-remaining": [
+        "0"
+      ],
       "x-ratelimit-remaining": [
         "9900"
       ],
       "x-ratelimit-reset": [
-        "68909"
+        "25828"
       ]
     },
     "status": 200

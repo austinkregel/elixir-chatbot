@@ -492,39 +492,61 @@ defmodule Brain.Knowledge.Types do
     end
 
     defp associate_evidence(%Hypothesis{} = hypothesis, findings) do
-      alias Brain.ML.Tokenizer
-
-      hypothesis_tokens =
-        hypothesis.claim
-        |> Tokenizer.tokenize_words()
-        |> MapSet.new()
-
       Enum.reduce(findings, hypothesis, fn finding, hyp ->
-        finding_tokens =
-          finding.claim
-          |> Tokenizer.tokenize_words()
-          |> MapSet.new()
-
-        overlap = MapSet.intersection(hypothesis_tokens, finding_tokens) |> MapSet.size()
-        min_size = min(MapSet.size(hypothesis_tokens), MapSet.size(finding_tokens))
-
-        relevance =
-          if min_size > 0 do
-            overlap / min_size
-          else
-            0
-          end
-
-        if relevance >= 0.3 do
-          if evidence_contradicts?(hyp.claim, finding.claim) do
-            Hypothesis.add_contradicting_evidence(hyp, finding)
-          else
-            Hypothesis.add_supporting_evidence(hyp, finding)
-          end
-        else
+        # Skip findings with empty claims
+        if finding.claim == nil or finding.claim == "" do
           hyp
+        else
+          # Use TF-IDF cosine similarity instead of token overlap
+          base_similarity = text_similarity(hyp.claim, finding.claim)
+
+          # Entity-match boost: if finding entity matches hypothesis entity, add 0.15
+          entity_boost =
+            if hyp.entity && finding.entity &&
+                 String.downcase(to_string(hyp.entity)) ==
+                   String.downcase(to_string(finding.entity)) do
+              0.15
+            else
+              0.0
+            end
+
+          relevance = min(base_similarity + entity_boost, 1.0)
+
+          if relevance >= 0.5 do
+            if evidence_contradicts?(hyp.claim, finding.claim) do
+              Hypothesis.add_contradicting_evidence(hyp, finding)
+            else
+              Hypothesis.add_supporting_evidence(hyp, finding)
+            end
+          else
+            hyp
+          end
         end
       end)
+    end
+
+    defp text_similarity(text_a, text_b) when is_binary(text_a) and is_binary(text_b) do
+      alias Brain.Memory.Embedder
+
+      if Embedder.ready?() do
+        with {:ok, vec_a} <- Embedder.embed(text_a),
+             {:ok, vec_b} <- Embedder.embed(text_b) do
+          Embedder.cosine_similarity(vec_a, vec_b)
+        else
+          _ -> token_overlap_similarity(text_a, text_b)
+        end
+      else
+        token_overlap_similarity(text_a, text_b)
+      end
+    end
+
+    defp token_overlap_similarity(text_a, text_b) do
+      tokens_a = text_a |> Brain.ML.Tokenizer.tokenize_words() |> MapSet.new()
+      tokens_b = text_b |> Brain.ML.Tokenizer.tokenize_words() |> MapSet.new()
+      overlap = MapSet.intersection(tokens_a, tokens_b) |> MapSet.size()
+      union = MapSet.union(tokens_a, tokens_b) |> MapSet.size()
+
+      if union > 0, do: overlap / union, else: 0.0
     end
 
     defp evidence_contradicts?(claim, finding_claim) do
@@ -614,21 +636,55 @@ defmodule Brain.Knowledge.Types do
       %{goal | status: new_status}
     end
 
-    @doc "Generates hypotheses from the goal's questions.\n\nEach question is transformed into a testable hypothesis.\nIf no questions exist, a hypothesis is generated from the topic.\n"
+    @doc "Generates hypotheses from the goal's questions.\n\nEach question is transformed into a testable hypothesis.\nIf no questions exist, a hypothesis is generated from the topic.\nReturns empty list for system IDs (containing ':') with no questions.\n"
     def generate_hypotheses(%__MODULE__{} = goal) do
       if goal.questions == [] do
-        [Hypothesis.new(goal.topic, entity: goal.topic, derived_from: "What is #{goal.topic}?")]
+        # System IDs (e.g. "task_training:commonsense") are not real entities
+        if system_id?(goal.topic) do
+          []
+        else
+          entity = goal.topic
+
+          [
+            Hypothesis.new(
+              "#{entity} is a notable entity",
+              entity: entity,
+              derived_from: "What is #{entity}?",
+              prediction:
+                "If #{entity} is a notable entity, then sources discussing #{entity} should describe its defining characteristics."
+            ),
+            Hypothesis.new(
+              "#{entity} can be verified by independent sources",
+              entity: entity,
+              derived_from: "Can #{entity} be independently verified?",
+              prediction:
+                "If #{entity} can be verified, then multiple independent sources will contain consistent information about #{entity}."
+            )
+          ]
+        end
       else
         goal.questions
         |> Enum.map(fn question ->
+          claim = question_to_claim(question)
+          entity = extract_entity(question, goal.topic)
+
           Hypothesis.new(
-            question_to_claim(question),
-            entity: extract_entity(question, goal.topic),
-            derived_from: question
+            claim,
+            entity: entity,
+            derived_from: question,
+            prediction:
+              "If #{claim}, then sources discussing #{entity} should confirm this specific aspect."
           )
         end)
       end
     end
+
+    defp system_id?(topic) when is_binary(topic) do
+      Brain.ML.Tokenizer.tokenize_words(topic)
+      |> Enum.any?(&String.contains?(&1, ":"))
+    end
+
+    defp system_id?(_), do: false
 
     @doc "Creates a scientific investigation from this goal.\n\nThe investigation will:\n1. Formulate hypotheses from questions\n2. Be ready to gather evidence\n3. Track the scientific outcome\n"
     def to_investigation(%__MODULE__{} = goal) do

@@ -1,7 +1,7 @@
 defmodule World.Context do
   @moduledoc "Provides unified API for world-scoped data access with inheritance.\n\nAll data lookups (entities, memories, intents, knowledge) go through this module,\nwhich resolves data through the world's inheritance chain:\n\n  1. World-specific data\n  2. Base world data (if world has a base_world)\n  3. Empty/default\n\nThis ensures complete data isolation between worlds while allowing\ntemplate-based inheritance for efficient world creation.\n"
 
-  alias World.Manager, as: WorldManager, as: WorldManager
+  alias World.Manager, as: WorldManager
   alias Brain.ML.Gazetteer
 
   alias Brain.ML.IntentClassifierSimple

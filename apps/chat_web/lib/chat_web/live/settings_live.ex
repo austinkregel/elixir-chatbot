@@ -53,6 +53,7 @@ defmodule ChatWeb.SettingsLive do
       |> assign(:new_entity_value, "")
       |> assign(:new_entity_type, "location")
       |> assign(:training_sessions, [])
+      |> assign(:expanded_session_id, nil)
       |> assign(:available_tasks, %{})
       |> assign(:selected_capability, :all)
       |> assign(:starting_training, false)
@@ -62,6 +63,7 @@ defmodule ChatWeb.SettingsLive do
       |> assign(:ml_training_status, :idle)
       |> assign(:ml_selected_model, "unified")
       |> assign(:ml_epochs, "20")
+      |> assign(:ml_head_epochs, "20")
       |> assign(:ml_batch_size, "32")
       |> assign(:ml_experiment_name, "")
       |> assign(:ml_training_log, [])
@@ -512,6 +514,19 @@ defmodule ChatWeb.SettingsLive do
     end
   end
 
+  def handle_event("toggle_session_detail", %{"id" => session_id}, socket) do
+    current = socket.assigns.expanded_session_id
+
+    new_id =
+      if current == session_id do
+        nil
+      else
+        session_id
+      end
+
+    {:noreply, assign(socket, :expanded_session_id, new_id)}
+  end
+
   def handle_event("cancel_session", %{"id" => session_id}, socket) do
     case LearningCenter.cancel_session(session_id) do
       :ok ->
@@ -528,6 +543,7 @@ defmodule ChatWeb.SettingsLive do
       socket
       |> assign(:ml_selected_model, params["model_type"] || socket.assigns.ml_selected_model)
       |> assign(:ml_epochs, params["epochs"] || socket.assigns.ml_epochs)
+      |> assign(:ml_head_epochs, params["head_epochs"] || socket.assigns.ml_head_epochs)
       |> assign(:ml_batch_size, params["batch_size"] || socket.assigns.ml_batch_size)
       |> assign(
         :ml_experiment_name,
@@ -547,11 +563,12 @@ defmodule ChatWeb.SettingsLive do
       end
 
     epochs = parse_integer(socket.assigns.ml_epochs, 20)
+    head_epochs = parse_integer(socket.assigns.ml_head_epochs, 20)
     batch_size = parse_integer(socket.assigns.ml_batch_size, 32)
     experiment_name = socket.assigns.ml_experiment_name
 
     config =
-      [epochs: epochs, batch_size: batch_size]
+      [epochs: epochs, head_epochs: head_epochs, batch_size: batch_size]
       |> then(fn cfg ->
         if experiment_name != "" do
           Keyword.put(cfg, :name, experiment_name)
@@ -640,9 +657,10 @@ defmodule ChatWeb.SettingsLive do
 
     interval_hours = parse_integer(socket.assigns.ml_schedule_interval, 24)
     epochs = parse_integer(socket.assigns.ml_epochs, 20)
+    head_epochs = parse_integer(socket.assigns.ml_head_epochs, 20)
     batch_size = parse_integer(socket.assigns.ml_batch_size, 32)
 
-    config = [epochs: epochs, batch_size: batch_size]
+    config = [epochs: epochs, head_epochs: head_epochs, batch_size: batch_size]
 
     case TrainingServer.schedule(model_type, config, interval_hours) do
       {:ok, schedule_id} ->
@@ -984,6 +1002,7 @@ defmodule ChatWeb.SettingsLive do
           <% :training -> %>
             <.training_section
               training_sessions={@training_sessions}
+              expanded_session_id={@expanded_session_id}
               available_tasks={@available_tasks}
               selected_capability={@selected_capability}
               starting_training={@starting_training}
@@ -996,6 +1015,7 @@ defmodule ChatWeb.SettingsLive do
               training_status={@ml_training_status}
               selected_model={@ml_selected_model}
               epochs={@ml_epochs}
+              head_epochs={@ml_head_epochs}
               batch_size={@ml_batch_size}
               experiment_name={@ml_experiment_name}
               training_log={@ml_training_log}
@@ -1360,8 +1380,11 @@ defmodule ChatWeb.SettingsLive do
 
       <!-- Active Sessions -->
       <div class="bg-base-100 rounded-xl border border-base-300/50">
-        <div class="p-4 border-b border-base-300">
+        <div class="p-4 border-b border-base-300 flex items-center justify-between">
           <h3 class="font-semibold">Training Sessions</h3>
+          <.link navigate={~p"/sessions"} class="text-sm text-primary hover:underline">
+            View All Sessions
+          </.link>
         </div>
         <%= if length(@training_sessions) == 0 do %>
           <div class="p-8 text-center text-base-content/50">
@@ -1372,49 +1395,250 @@ defmodule ChatWeb.SettingsLive do
         <% else %>
           <div class="divide-y divide-base-300/50">
             <%= for session <- @training_sessions do %>
-              <div class="p-4 hover:bg-base-200/50">
-                <div class="flex items-center justify-between mb-2">
-                  <div>
-                    <div class="font-medium">{session.topic}</div>
-                    <div class="text-sm text-base-content/60 font-mono">{session.id}</div>
+              <% is_expanded = @expanded_session_id == session.id %>
+              <% failed_goals = Enum.count(session.goals, &(&1.status == :failed)) %>
+              <% completed_goals = Enum.count(session.goals, &(&1.status == :completed)) %>
+              <% total_goals = length(session.goals) %>
+              <div class={["transition-colors", if(is_expanded, do: "bg-base-200/30", else: "hover:bg-base-200/50")]}>
+                <!-- Session Header (clickable) -->
+                <div
+                  class="p-4 cursor-pointer"
+                  phx-click="toggle_session_detail"
+                  phx-value-id={session.id}
+                >
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                      <.icon
+                        name={if is_expanded, do: "hero-chevron-down", else: "hero-chevron-right"}
+                        class="size-4 text-base-content/40"
+                      />
+                      <div>
+                        <div class="font-medium">{session.topic || "Untitled Session"}</div>
+                        <div class="text-xs text-base-content/40 font-mono">{session.id}</div>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class={["badge badge-sm", session_status_badge(session.status)]}>
+                        {session.status}
+                      </span>
+                      <%= if session.status == :active do %>
+                        <button
+                          phx-click="cancel_session"
+                          phx-value-id={session.id}
+                          class="btn btn-ghost btn-xs text-error"
+                          title="Cancel session"
+                        >
+                          <.icon name="hero-stop" class="size-4" />
+                        </button>
+                      <% end %>
+                    </div>
                   </div>
-                  <div class="flex items-center gap-2">
-                    <%= if session.status == :active do %>
-                      <button
-                        phx-click="cancel_session"
-                        phx-value-id={session.id}
-                        class="btn btn-ghost btn-xs text-error"
-                        title="Cancel session"
-                      >
-                        <.icon name="hero-stop" class="size-4" /> Cancel
-                      </button>
-                    <% end %>
-                  </div>
-                </div>
-                <div class="flex flex-wrap gap-2">
-                  <span class={["badge badge-sm", session_status_badge(session.status)]}>
-                    {session.status}
-                  </span>
-                  <span class="text-xs text-base-content/50">
-                    {length(session.goals)} goal(s)
-                  </span>
-                  <%= if session.hypotheses_tested > 0 do %>
-                    <span class="badge badge-sm badge-outline" title="Scientific Investigation">
-                      <.icon name="hero-beaker" class="size-3 mr-1" />
-                      {session.hypotheses_tested} tested
+
+                  <!-- Summary stats row -->
+                  <div class="flex flex-wrap gap-3 ml-6 text-xs">
+                    <span class="flex items-center gap-1 text-base-content/60">
+                      <.icon name="hero-flag" class="size-3" />
+                      {completed_goals}/{total_goals} goals
                     </span>
-                    <%= if session.hypotheses_supported > 0 do %>
-                      <span class="badge badge-sm badge-success badge-outline">
-                        {session.hypotheses_supported} supported
+                    <%= if failed_goals > 0 do %>
+                      <span class="flex items-center gap-1 text-error">
+                        <.icon name="hero-exclamation-triangle" class="size-3" />
+                        {failed_goals} failed
                       </span>
                     <% end %>
-                    <%= if session.hypotheses_falsified > 0 do %>
-                      <span class="badge badge-sm badge-error badge-outline">
-                        {session.hypotheses_falsified} falsified
+                    <%= if session.findings_count > 0 do %>
+                      <span class="flex items-center gap-1 text-info">
+                        <.icon name="hero-document-magnifying-glass" class="size-3" />
+                        {session.findings_count} findings
                       </span>
                     <% end %>
-                  <% end %>
+                    <%= if session.approved_count > 0 do %>
+                      <span class="flex items-center gap-1 text-success">
+                        <.icon name="hero-check-circle" class="size-3" />
+                        {session.approved_count} approved
+                      </span>
+                    <% end %>
+                    <%= if session.rejected_count > 0 do %>
+                      <span class="flex items-center gap-1 text-error/70">
+                        <.icon name="hero-x-circle" class="size-3" />
+                        {session.rejected_count} rejected
+                      </span>
+                    <% end %>
+                    <%= if session.hypotheses_tested > 0 do %>
+                      <span class="flex items-center gap-1 text-base-content/60">
+                        <.icon name="hero-beaker" class="size-3" />
+                        {session.hypotheses_tested} hypotheses
+                      </span>
+                    <% end %>
+                    <%= if session.started_at do %>
+                      <span class="text-base-content/40">
+                        Started {Calendar.strftime(session.started_at, "%H:%M:%S")}
+                      </span>
+                    <% end %>
+                    <%= if session.completed_at do %>
+                      <span class="text-base-content/40">
+                        Completed {Calendar.strftime(session.completed_at, "%H:%M:%S")}
+                      </span>
+                    <% end %>
+                  </div>
                 </div>
+
+                <!-- Expanded Detail Panel -->
+                <%= if is_expanded do %>
+                  <div class="px-4 pb-4 ml-6 space-y-4">
+                    <!-- Goals Detail -->
+                    <div class="bg-base-100 rounded-lg border border-base-300/30">
+                      <div class="px-3 py-2 border-b border-base-300/30">
+                        <h4 class="text-sm font-semibold text-base-content/80">
+                          Research Goals ({total_goals})
+                        </h4>
+                      </div>
+                      <%= if total_goals == 0 do %>
+                        <div class="p-3 text-sm text-base-content/50">No goals defined</div>
+                      <% else %>
+                        <div class="divide-y divide-base-300/20">
+                          <%= for goal <- session.goals do %>
+                            <div class="p-3">
+                              <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1 min-w-0">
+                                  <div class="flex items-center gap-2 mb-1">
+                                    <span class={["badge badge-xs", goal_status_badge(goal.status)]}>
+                                      {goal.status}
+                                    </span>
+                                    <span class="font-medium text-sm truncate">{goal.topic}</span>
+                                    <%= if goal.priority != :normal do %>
+                                      <span class={["badge badge-xs badge-outline", priority_badge(goal.priority)]}>
+                                        {goal.priority}
+                                      </span>
+                                    <% end %>
+                                  </div>
+                                  <%= if length(goal.questions) > 0 do %>
+                                    <div class="ml-2 mt-1 space-y-0.5">
+                                      <%= for question <- goal.questions do %>
+                                        <div class="text-xs text-base-content/50 flex items-start gap-1">
+                                          <span class="text-base-content/30 shrink-0">Q:</span>
+                                          <span>{display_value(question)}</span>
+                                        </div>
+                                      <% end %>
+                                    </div>
+                                  <% end %>
+                                  <%= if map_size(goal.constraints) > 0 do %>
+                                    <div class="flex flex-wrap gap-1 mt-1 ml-2">
+                                      <%= for {key, val} <- goal.constraints do %>
+                                        <span class="badge badge-xs badge-ghost">{key}: {display_value(val)}</span>
+                                      <% end %>
+                                    </div>
+                                  <% end %>
+                                </div>
+                                <div class="shrink-0">
+                                  <%= case goal.status do %>
+                                    <% :completed -> %>
+                                      <.icon name="hero-check-circle" class="size-5 text-success" />
+                                    <% :failed -> %>
+                                      <.icon name="hero-x-circle" class="size-5 text-error" />
+                                    <% :in_progress -> %>
+                                      <span class="loading loading-spinner loading-xs text-warning"></span>
+                                    <% _ -> %>
+                                      <.icon name="hero-clock" class="size-5 text-base-content/30" />
+                                  <% end %>
+                                </div>
+                              </div>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </div>
+
+                    <!-- Investigations Detail -->
+                    <%= if length(session.investigations) > 0 do %>
+                      <div class="bg-base-100 rounded-lg border border-base-300/30">
+                        <div class="px-3 py-2 border-b border-base-300/30">
+                          <h4 class="text-sm font-semibold text-base-content/80">
+                            <.icon name="hero-beaker" class="size-4 inline-block mr-1" />
+                            Scientific Investigations ({length(session.investigations)})
+                          </h4>
+                        </div>
+                        <div class="divide-y divide-base-300/20">
+                          <%= for investigation <- session.investigations do %>
+                            <div class="p-3">
+                              <div class="flex items-center justify-between mb-2">
+                                <span class="font-medium text-sm">{investigation.topic}</span>
+                                <div class="flex items-center gap-2">
+                                  <span class={["badge badge-xs", investigation_status_badge(investigation.status)]}>
+                                    {investigation.status}
+                                  </span>
+                                  <%= if investigation.conclusion do %>
+                                    <span class={["badge badge-xs", conclusion_badge(investigation.conclusion)]}>
+                                      {investigation.conclusion}
+                                    </span>
+                                  <% end %>
+                                </div>
+                              </div>
+                              <!-- Hypotheses within investigation -->
+                              <%= if length(investigation.hypotheses) > 0 do %>
+                                <div class="ml-2 space-y-1">
+                                  <%= for hypothesis <- investigation.hypotheses do %>
+                                    <div class="flex items-start gap-2 text-xs">
+                                      <span class={["badge badge-xs shrink-0 mt-0.5", hypothesis_status_badge(hypothesis.status)]}>
+                                        {hypothesis.status}
+                                      </span>
+                                      <div class="min-w-0">
+                                        <span class="text-base-content/70">{hypothesis.claim}</span>
+                                        <%= if hypothesis.confidence > 0 do %>
+                                          <span class="text-base-content/40 ml-1">
+                                            ({Float.round(hypothesis.confidence * 100, 1)}% confidence)
+                                          </span>
+                                        <% end %>
+                                      </div>
+                                    </div>
+                                  <% end %>
+                                </div>
+                              <% end %>
+                              <!-- Evidence counts -->
+                              <div class="flex flex-wrap gap-2 mt-2 text-xs text-base-content/50">
+                                <span>{length(investigation.evidence)} evidence items</span>
+                                <%= if length(investigation.control_evidence) > 0 do %>
+                                  <span>{length(investigation.control_evidence)} control items</span>
+                                <% end %>
+                                <%= if investigation.concluded_at do %>
+                                  <span>
+                                    Concluded {Calendar.strftime(investigation.concluded_at, "%H:%M:%S")}
+                                  </span>
+                                <% end %>
+                              </div>
+                            </div>
+                          <% end %>
+                        </div>
+                      </div>
+                    <% end %>
+
+                    <!-- Session Metrics Summary -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      <div class="bg-base-100 rounded-lg border border-base-300/30 p-3 text-center">
+                        <div class="text-lg font-bold">{session.findings_count}</div>
+                        <div class="text-xs text-base-content/50">Findings</div>
+                      </div>
+                      <div class="bg-base-100 rounded-lg border border-base-300/30 p-3 text-center">
+                        <div class="text-lg font-bold text-success">{session.approved_count}</div>
+                        <div class="text-xs text-base-content/50">Approved</div>
+                      </div>
+                      <div class="bg-base-100 rounded-lg border border-base-300/30 p-3 text-center">
+                        <div class="text-lg font-bold text-error">{session.rejected_count}</div>
+                        <div class="text-xs text-base-content/50">Rejected</div>
+                      </div>
+                      <div class="bg-base-100 rounded-lg border border-base-300/30 p-3 text-center">
+                        <div class="text-lg font-bold">
+                          <%= if session.hypotheses_tested > 0 do %>
+                            {Float.round(session.hypotheses_supported / session.hypotheses_tested * 100, 1)}%
+                          <% else %>
+                            N/A
+                          <% end %>
+                        </div>
+                        <div class="text-xs text-base-content/50">Support Rate</div>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
               </div>
             <% end %>
           </div>
@@ -1538,7 +1762,7 @@ defmodule ChatWeb.SettingsLive do
           Start an async training job for a specific model. Training runs in the background.
         </p>
         <form phx-change="update_ml_training_form" phx-submit="start_ml_training">
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
             <div class="form-control">
               <label class="label">
                 <span class="label-text">Model Type</span>
@@ -1557,7 +1781,7 @@ defmodule ChatWeb.SettingsLive do
             </div>
             <div class="form-control">
               <label class="label">
-                <span class="label-text">Epochs</span>
+                <span class="label-text">Encoder Epochs</span>
               </label>
               <input
                 type="number"
@@ -1566,6 +1790,20 @@ defmodule ChatWeb.SettingsLive do
                 min="1"
                 max="200"
                 class="input input-bordered"
+              />
+            </div>
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Head Epochs</span>
+              </label>
+              <input
+                type="number"
+                name="head_epochs"
+                value={@head_epochs}
+                min="1"
+                max="200"
+                class="input input-bordered"
+                title="Epochs for task heads (sentiment, speech act) trained with frozen encoder"
               />
             </div>
             <div class="form-control">
@@ -1714,6 +1952,44 @@ defmodule ChatWeb.SettingsLive do
   defp session_status_badge(_) do
     "badge-ghost"
   end
+
+  defp goal_status_badge(:completed), do: "badge-success"
+  defp goal_status_badge(:failed), do: "badge-error"
+  defp goal_status_badge(:in_progress), do: "badge-warning"
+  defp goal_status_badge(:pending), do: "badge-ghost"
+  defp goal_status_badge(_), do: "badge-ghost"
+
+  defp priority_badge(:high), do: "badge-error"
+  defp priority_badge(:low), do: "badge-ghost"
+  defp priority_badge(_), do: ""
+
+  defp investigation_status_badge(:concluded), do: "badge-success"
+  defp investigation_status_badge(:evaluating), do: "badge-warning"
+  defp investigation_status_badge(:gathering_evidence), do: "badge-info"
+  defp investigation_status_badge(:planning), do: "badge-ghost"
+  defp investigation_status_badge(_), do: "badge-ghost"
+
+  defp conclusion_badge(:hypotheses_supported), do: "badge-success"
+  defp conclusion_badge(:hypotheses_falsified), do: "badge-error"
+  defp conclusion_badge(:inconclusive), do: "badge-warning"
+  defp conclusion_badge(:mixed), do: "badge-warning"
+  defp conclusion_badge(_), do: "badge-ghost"
+
+  defp hypothesis_status_badge(:supported), do: "badge-success"
+  defp hypothesis_status_badge(:falsified), do: "badge-error"
+  defp hypothesis_status_badge(:inconclusive), do: "badge-warning"
+  defp hypothesis_status_badge(:testing), do: "badge-info"
+  defp hypothesis_status_badge(:untested), do: "badge-ghost"
+  defp hypothesis_status_badge(_), do: "badge-ghost"
+
+  defp display_value(val) when is_binary(val), do: val
+  defp display_value(val) when is_atom(val), do: Atom.to_string(val)
+  defp display_value(val) when is_number(val), do: to_string(val)
+  defp display_value(%{text: text}) when is_binary(text), do: text
+  defp display_value(%{claim: claim}) when is_binary(claim), do: claim
+  defp display_value(val) when is_map(val), do: inspect(val, limit: 5, pretty: false)
+  defp display_value(val) when is_list(val), do: Enum.map_join(val, ", ", &display_value/1)
+  defp display_value(val), do: inspect(val)
 
   defp templates_section(assigns) do
     ~H"""

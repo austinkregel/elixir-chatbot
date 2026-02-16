@@ -74,6 +74,7 @@ defmodule Brain.Knowledge.LearningTriggers do
     {:reply, stats, state}
   end
 
+  @impl true
   def handle_call(:ready?, _from, state) do
     {:reply, true, state}
   end
@@ -101,12 +102,14 @@ defmodule Brain.Knowledge.LearningTriggers do
     {:noreply, state}
   end
 
+  @impl true
   def handle_info(:cleanup, state) do
     state = cleanup_old_inputs(state)
     Process.send_after(self(), :cleanup, @cleanup_interval_ms)
     {:noreply, state}
   end
 
+  @impl true
   def handle_info(_msg, state), do: {:noreply, state}
 
   # --- Private ---

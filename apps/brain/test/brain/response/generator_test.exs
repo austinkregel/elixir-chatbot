@@ -1,5 +1,5 @@
 defmodule Brain.Response.GeneratorTest do
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
 
   alias Brain.Response.Generator
   import Brain.TestHelpers

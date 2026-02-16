@@ -1,6 +1,6 @@
 defmodule Brain.Memory.StoreTest do
   alias Brain.Memory
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
   import Brain.TestHelpers
 
   alias Memory.{Store, Embedder}

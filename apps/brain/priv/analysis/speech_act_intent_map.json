@@ -1,0 +1,9 @@
+{
+  "question": "question.factual",
+  "command": "action.request",
+  "request_action": "action.request",
+  "request_information": "information.request",
+  "expressive": "smalltalk.acknowledgment",
+  "assertive": "unknown",
+  "default": "unknown"
+}

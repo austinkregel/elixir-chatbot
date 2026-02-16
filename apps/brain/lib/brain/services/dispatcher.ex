@@ -183,13 +183,8 @@ defmodule Brain.Services.Dispatcher do
     world = Map.get(context, :world_id) || Map.get(context, :world, "default")
 
     # Check if service is enabled
-    unless service_enabled?(service) do
-      Logger.debug("Service disabled", service: service.name())
-      {:error, :service_disabled}
-    end
-
-    # Get credentials
-    case get_credentials(service, world) do
+    if service_enabled?(service) do
+      case get_credentials(service, world) do
       {:ok, credentials} ->
         # Call the service
         start_time = System.monotonic_time(:millisecond)
@@ -219,6 +214,10 @@ defmodule Brain.Services.Dispatcher do
         )
 
         {:error, :missing_credentials}
+    end
+    else
+      Logger.debug("Service disabled", service: service.name())
+      {:error, :service_disabled}
     end
   end
 

@@ -32,16 +32,28 @@ defmodule Mix.Tasks.CredoFix do
     verbose? = Keyword.get(opts, :verbose, false)
     length_style = Keyword.get(opts, :length_style, "pattern_match")
 
+    allowed_fixer_strings = Enum.map(@available_fixers ++ @planned_fixers, &Atom.to_string/1)
+
     only =
       case Keyword.get(opts, :only) do
         nil -> nil
-        str -> str |> String.split(",") |> Enum.map(&String.to_atom/1)
+        str ->
+          str
+          |> String.split(",", trim: true)
+          |> Enum.map(&String.trim/1)
+          |> Enum.filter(&(&1 in allowed_fixer_strings))
+          |> Enum.map(&String.to_existing_atom/1)
       end
 
     exclude =
       case Keyword.get(opts, :exclude) do
         nil -> []
-        str -> str |> String.split(",") |> Enum.map(&String.to_atom/1)
+        str ->
+          str
+          |> String.split(",", trim: true)
+          |> Enum.map(&String.trim/1)
+          |> Enum.filter(&(&1 in allowed_fixer_strings))
+          |> Enum.map(&String.to_existing_atom/1)
       end
 
     if only do

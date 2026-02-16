@@ -15,24 +15,33 @@ defmodule Brain.Subprocesses.HttpSubprocess do
     )
   end
 
+  @doc "Returns true if the HTTP subprocess is ready to accept requests."
+  def ready?(subprocess_id) do
+    try do
+      GenServer.call(via_tuple(subprocess_id), :ready?, 100)
+    catch
+      :exit, _ -> false
+    end
+  end
+
   def get_status(subprocess_id) do
-    GenServer.call(via_tuple(subprocess_id), :get_status)
+    GenServer.call(via_tuple(subprocess_id), :get_status, 5_000)
   end
 
   def get_conversations(subprocess_id) do
-    GenServer.call(via_tuple(subprocess_id), :get_conversations)
+    GenServer.call(via_tuple(subprocess_id), :get_conversations, 5_000)
   end
 
   def create_conversation(subprocess_id) do
-    GenServer.call(via_tuple(subprocess_id), :create_conversation)
+    GenServer.call(via_tuple(subprocess_id), :create_conversation, 30_000)
   end
 
   def end_conversation(subprocess_id, conversation_id) do
-    GenServer.call(via_tuple(subprocess_id), {:end_conversation, conversation_id})
+    GenServer.call(via_tuple(subprocess_id), {:end_conversation, conversation_id}, 5_000)
   end
 
   def route_to_conversation(subprocess_id, conversation_id, input) do
-    GenServer.call(via_tuple(subprocess_id), {:route_to_conversation, conversation_id, input})
+    GenServer.call(via_tuple(subprocess_id), {:route_to_conversation, conversation_id, input}, 60_000)
   end
 
   def send_learning_summary(subprocess_id, conversation_id, summary) do
@@ -41,8 +50,11 @@ defmodule Brain.Subprocesses.HttpSubprocess do
 
   @impl true
   def init({subprocess_id, port, memory_snapshot}) do
+    user_id = "http_#{subprocess_id}"
+
     state = %{
       subprocess_id: subprocess_id,
+      user_id: user_id,
       port: port,
       memory_snapshot: memory_snapshot,
       conversations: %{},
@@ -75,6 +87,11 @@ defmodule Brain.Subprocesses.HttpSubprocess do
 
         {:stop, reason}
     end
+  end
+
+  @impl true
+  def handle_call(:ready?, _from, state) do
+    {:reply, true, state}
   end
 
   @impl true
@@ -159,7 +176,7 @@ defmodule Brain.Subprocesses.HttpSubprocess do
         {:reply, {:error, "Conversation not found"}, state}
 
       conversation ->
-        response = process_http_input(input, conversation)
+        response = process_http_input(input, conversation, state.user_id)
 
         updated_conversation = %{
           conversation
@@ -332,8 +349,8 @@ defmodule Brain.Subprocesses.HttpSubprocess do
     )
   end
 
-  defp process_http_input(input, conversation) do
-    case Brain.evaluate(conversation.id, input) do
+  defp process_http_input(input, conversation, user_id) do
+    case Brain.evaluate(conversation.id, input, user_id: user_id) do
       {:ok, response} when is_binary(response) ->
         response
 

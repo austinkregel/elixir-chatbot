@@ -77,7 +77,7 @@ defmodule Brain.Memory.Embedder do
 
   @doc "Compute cosine similarity between two embedding vectors.\nReturns a float in [-1, 1].\n"
   def cosine_similarity(vec_a, vec_b) when is_list(vec_a) and is_list(vec_b) do
-    compute_cosine_similarity(vec_a, vec_b)
+    FourthWall.Math.cosine_similarity(vec_a, vec_b)
   end
 
   @doc "Check if the embedder is initialized with vocabulary.\nUses a short timeout to avoid blocking if embedder is busy.\n"
@@ -434,22 +434,4 @@ defmodule Brain.Memory.Embedder do
     end
   end
 
-  defp compute_cosine_similarity(vec1, vec2) do
-    if length(vec1) != length(vec2) or vec1 == [] do
-      0.0
-    else
-      dot_product =
-        Enum.zip(vec1, vec2)
-        |> Enum.reduce(0, fn {a, b}, acc -> acc + a * b end)
-
-      mag1 = :math.sqrt(Enum.reduce(vec1, 0, fn val, acc -> acc + val * val end))
-      mag2 = :math.sqrt(Enum.reduce(vec2, 0, fn val, acc -> acc + val * val end))
-
-      if mag1 > 0 and mag2 > 0 do
-        dot_product / (mag1 * mag2)
-      else
-        0.0
-      end
-    end
-  end
 end

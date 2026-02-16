@@ -11,16 +11,22 @@ defmodule Brain.Memory.Store do
   use GenServer
 
   alias Types.{Episode, SemanticFact}
-  alias Memory.{Embedder, VectorIndex}
+  alias Memory.{Consolidation, Embedder, VectorIndex}
   alias World.Embedder, as: WorldEmbedder
 
   require Logger
 
-  defp default_persistence_path do
-    Brain.priv_path("data/memory_store.term")
-  end
-
   @default_world_id "default"
+  @consolidate_interval_ms 15 * 60 * 1000
+
+  @doc "Returns true if the Store is ready to accept requests."
+  def ready?(name \\ __MODULE__) do
+    try do
+      GenServer.call(name, :ready?, 100)
+    catch
+      :exit, _ -> false
+    end
+  end
 
   @doc """
   Starts the Memory Store.
@@ -202,24 +208,22 @@ defmodule Brain.Memory.Store do
 
   @doc "Persist the store to disk.\n"
   def persist do
-    GenServer.call(__MODULE__, :persist)
+    GenServer.call(__MODULE__, :persist, 30_000)
   end
 
   @doc "Clear all data from the store.\n\n## Options\n  - world_id: The world to clear (default: nil for all worlds)\n"
   def clear(opts \\ []) do
     world_id = Keyword.get(opts, :world_id, nil)
-    GenServer.call(__MODULE__, {:clear, world_id})
+    GenServer.call(__MODULE__, {:clear, world_id}, 30_000)
   end
 
   @doc "Lists all world IDs that have data in the store.\n"
   def list_worlds do
-    GenServer.call(__MODULE__, :list_worlds)
+    GenServer.call(__MODULE__, :list_worlds, 5_000)
   end
 
   @impl true
-  def init(opts) do
-    config_path = Application.get_env(:brain, :memory_store_path, default_persistence_path())
-    persistence_path = Keyword.get(opts, :persistence_path, config_path)
+  def init(_opts) do
     episode_index = VectorIndex.new(:memory_episode_index)
     semantic_index = VectorIndex.new(:memory_semantic_index)
 
@@ -227,11 +231,10 @@ defmodule Brain.Memory.Store do
       episodes: %{},
       semantics: %{},
       episode_index: episode_index,
-      semantic_index: semantic_index,
-      persistence_path: persistence_path
+      semantic_index: semantic_index
     }
 
-    state = maybe_load_from_disk(state)
+    state = load_from_atlas(state)
 
     total_episodes = count_all_episodes(state.episodes)
     total_semantics = count_all_semantics(state.semantics)
@@ -242,7 +245,32 @@ defmodule Brain.Memory.Store do
       worlds: map_size(state.episodes)
     )
 
+    Process.send_after(self(), :consolidate_scheduled, @consolidate_interval_ms)
+
     {:ok, state}
+  end
+
+  @impl true
+  def handle_info(:consolidate_scheduled, state) do
+    Task.start(fn ->
+      case __MODULE__.list_worlds() do
+        {:ok, world_ids} ->
+          Enum.each(world_ids, fn world_id ->
+            try do
+              Consolidation.consolidate(world_id: world_id)
+            rescue
+              e ->
+                Logger.warning("Consolidation failed for world #{world_id}: #{Exception.message(e)}")
+            end
+          end)
+
+        _ ->
+          :ok
+      end
+    end)
+
+    Process.send_after(self(), :consolidate_scheduled, @consolidate_interval_ms)
+    {:noreply, state}
   end
 
   @impl true
@@ -259,6 +287,7 @@ defmodule Brain.Memory.Store do
         new_episodes = Map.put(state.episodes, world_id, new_world_episodes)
         new_state = %{state | episodes: new_episodes}
 
+        Brain.AtlasIntegration.persist_episode(episode, world_id)
         {:reply, {:ok, episode.id}, new_state}
 
       {:error, _reason} ->
@@ -268,6 +297,7 @@ defmodule Brain.Memory.Store do
         new_episodes = Map.put(state.episodes, world_id, new_world_episodes)
         new_state = %{state | episodes: new_episodes}
 
+        Brain.AtlasIntegration.persist_episode(episode, world_id)
         {:reply, {:ok, episode.id}, new_state}
     end
   end
@@ -281,6 +311,7 @@ defmodule Brain.Memory.Store do
     new_episodes = Map.put(state.episodes, world_id, new_world_episodes)
     new_state = %{state | episodes: new_episodes}
 
+    Brain.AtlasIntegration.persist_episode(episode, world_id)
     {:reply, {:ok, episode.id}, new_state}
   end
 
@@ -344,6 +375,7 @@ defmodule Brain.Memory.Store do
     new_semantics = Map.put(state.semantics, world_id, new_world_semantics)
     new_state = %{state | semantics: new_semantics}
 
+    Brain.AtlasIntegration.persist_semantic(semantic, world_id)
     {:reply, {:ok, semantic.id}, new_state}
   end
 
@@ -392,6 +424,7 @@ defmodule Brain.Memory.Store do
         updated = %{episode | semantic_id: semantic_id}
         new_world_episodes = Map.put(world_episodes, episode_id, updated)
         new_episodes = Map.put(state.episodes, world_id, new_world_episodes)
+        Brain.AtlasIntegration.link_episode_semantic(episode_id, semantic_id)
         {:reply, :ok, %{state | episodes: new_episodes}}
     end
   end
@@ -436,9 +469,13 @@ defmodule Brain.Memory.Store do
   end
 
   @impl true
+  def handle_call(:ready?, _from, state) do
+    {:reply, true, state}
+  end
+
+  @impl true
   def handle_call(:persist, _from, state) do
-    result = persist_to_disk(state)
-    {:reply, result, state}
+    {:reply, :ok, state}
   end
 
   @impl true
@@ -479,113 +516,52 @@ defmodule Brain.Memory.Store do
     |> Enum.reduce(0, fn world_sems, acc -> acc + map_size(world_sems) end)
   end
 
-  defp maybe_load_from_disk(state) do
-    path = state.persistence_path
+  defp load_from_atlas(state) do
+    case Brain.AtlasIntegration.load_episodes(@default_world_id) do
+      {:ok, episodes} when episodes != %{} ->
+        loaded_episodes = %{@default_world_id => episodes}
 
-    if File.exists?(path) do
-      case File.read(path) do
-        {:ok, binary} ->
-          try do
-            data = :erlang.binary_to_term(binary)
-            {episodes, semantics} = migrate_data_format(data)
+        Enum.each(episodes, fn {id, ep} ->
+          if is_list(ep.embedding) and ep.embedding != [] do
+            VectorIndex.insert(state.episode_index, {@default_world_id, id}, ep.embedding)
+          end
+        end)
 
-            Enum.each(episodes, fn {world_id, world_episodes} ->
-              Enum.each(world_episodes, fn {id, ep} ->
-                if is_list(ep.embedding) and ep.embedding != [] do
-                  VectorIndex.insert(state.episode_index, {world_id, id}, ep.embedding)
-                end
-              end)
+        state = %{state | episodes: loaded_episodes}
+
+        case Brain.AtlasIntegration.load_semantics(@default_world_id) do
+          {:ok, semantics} when semantics != %{} ->
+            loaded_semantics = %{@default_world_id => semantics}
+
+            Enum.each(semantics, fn {id, sem} ->
+              if is_list(sem.embedding) and sem.embedding != [] do
+                VectorIndex.insert(state.semantic_index, {@default_world_id, id}, sem.embedding)
+              end
             end)
 
-            Enum.each(semantics, fn {world_id, world_semantics} ->
-              Enum.each(world_semantics, fn {id, sem} ->
-                if is_list(sem.embedding) and sem.embedding != [] do
-                  VectorIndex.insert(state.semantic_index, {world_id, id}, sem.embedding)
-                end
-              end)
-            end)
-
-            Logger.info("Loaded memory store from disk",
-              episodes: count_all_episodes(episodes),
-              semantics: count_all_semantics(semantics),
-              worlds: map_size(episodes)
+            Logger.info("Loaded memory store from Atlas",
+              episodes: map_size(episodes),
+              semantics: map_size(semantics)
             )
 
-            %{state | episodes: episodes, semantics: semantics}
-          rescue
-            e ->
-              Logger.warning("Failed to load memory store: #{inspect(e)}")
-              state
-          end
+            %{state | semantics: loaded_semantics}
 
-        {:error, reason} ->
-          Logger.warning("Could not read memory store file: #{inspect(reason)}")
-          state
-      end
-    else
+          _ ->
+            Logger.info("Loaded memory store from Atlas (episodes only)",
+              episodes: map_size(episodes)
+            )
+
+            state
+        end
+
+      _ ->
+        Logger.debug("No memory data in Atlas, starting with empty store")
+        state
+    end
+  rescue
+    e ->
+      Logger.warning("Failed to load memory store from Atlas: #{inspect(e)}")
       state
-    end
-  end
-
-  defp migrate_data_format(data) do
-    episodes = Map.get(data, :episodes, %{})
-    semantics = Map.get(data, :semantics, %{})
-
-    episodes =
-      if is_old_format?(episodes) do
-        %{@default_world_id => episodes}
-      else
-        episodes
-      end
-
-    semantics =
-      if is_old_format?(semantics) do
-        %{@default_world_id => semantics}
-      else
-        semantics
-      end
-
-    {episodes, semantics}
-  end
-
-  defp is_old_format?(data) when is_map(data) do
-    case Map.values(data) |> List.first() do
-      %Episode{} -> true
-      %SemanticFact{} -> true
-      _ -> false
-    end
-  end
-
-  defp is_old_format?(_) do
-    false
-  end
-
-  defp persist_to_disk(state) do
-    path = state.persistence_path
-    path |> Path.dirname() |> File.mkdir_p!()
-
-    data = %{
-      episodes: state.episodes,
-      semantics: state.semantics,
-      version: 2
-    }
-
-    binary = :erlang.term_to_binary(data)
-
-    case File.write(path, binary) do
-      :ok ->
-        Logger.info("Memory store persisted to disk",
-          episodes: count_all_episodes(state.episodes),
-          semantics: count_all_semantics(state.semantics),
-          worlds: map_size(state.episodes)
-        )
-
-        :ok
-
-      {:error, reason} ->
-        Logger.error("Failed to persist memory store: #{inspect(reason)}")
-        {:error, reason}
-    end
   end
 
   defp get_embedding(world_id, text) do

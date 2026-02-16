@@ -162,18 +162,13 @@ defmodule Brain.Analysis.ContextResolver do
     end) || :not_found
   end
 
-  defp find_related_entity(slot_name, entities) do
-    # Map slot names to related entity types
-    related_mappings = %{
-      "location" => ~w(location room city place-name geo-location address state country region),
-      "device" => ~w(device lights heating thermostat switch outlet),
-      "time" => ~w(time sys-time clock),
-      "date" => ~w(date relative_date sys-date day month year),
-      "temperature" => ~w(temperature number unit-temperature),
-      "query" => ~w(query search-term topic)
-    }
+  @external_resource Path.join(:code.priv_dir(:brain), "analysis/related_slot_mappings.json")
+  @related_slot_mappings Path.join(:code.priv_dir(:brain), "analysis/related_slot_mappings.json")
+                         |> File.read!()
+                         |> Jason.decode!()
 
-    related_types = Map.get(related_mappings, slot_name, [])
+  defp find_related_entity(slot_name, entities) do
+    related_types = Map.get(@related_slot_mappings, slot_name, [])
 
     Enum.find_value(related_types, fn type ->
       Map.get(entities, type)
@@ -246,11 +241,11 @@ defmodule Brain.Analysis.ContextResolver do
       {:ok, %{entity_type: "slot_mapping", metadata: meta}} ->
         # Get predicates from the slot mapping
         keys = meta["user_model_keys"] || meta[:user_model_keys] || []
-        Enum.map(keys, &String.to_atom/1)
+        Enum.map(keys, &safe_atom_key/1)
 
       _ ->
         # Fall back to hardcoded mappings
-        Map.get(@slot_to_predicate_fallback, slot_name, [String.to_atom(slot_name)])
+        Map.get(@slot_to_predicate_fallback, slot_name, [safe_atom_key(slot_name)])
     end
   end
 
@@ -265,7 +260,7 @@ defmodule Brain.Analysis.ContextResolver do
         # Already filled
         acc
       else
-        case Map.get(profile, slot_name) || Map.get(profile, String.to_atom(slot_name)) do
+        case Map.get(profile, slot_name) || Map.get(profile, safe_atom_key(slot_name)) do
           nil ->
             acc
 
@@ -289,7 +284,7 @@ defmodule Brain.Analysis.ContextResolver do
         # Check both string and atom keys
         value =
           Map.get(profile, slot_name) ||
-            Map.get(profile, String.to_atom(slot_name))
+            Map.get(profile, safe_atom_key(slot_name))
 
         case value do
           nil -> acc
@@ -297,6 +292,13 @@ defmodule Brain.Analysis.ContextResolver do
         end
       end
     end)
+  end
+
+  defp safe_atom_key(val) when is_atom(val), do: val
+  defp safe_atom_key(val) when is_binary(val) do
+    String.to_existing_atom(val)
+  rescue
+    ArgumentError -> :unknown
   end
 
   defp generate_default_prompt(slot_name) do

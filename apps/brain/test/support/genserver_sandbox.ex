@@ -3,7 +3,6 @@ defmodule Brain.GenServerSandbox do
 
   alias ExUnit.Callbacks
   alias Brain.ML.Gazetteer
-  alias Brain.ML.IntentClassifierSimple
   use GenServer
   require Logger
 
@@ -27,7 +26,7 @@ defmodule Brain.GenServerSandbox do
 
     if Process.whereis(Brain.ML.IntentClassifierSimple) do
       try do
-        IntentClassifierSimple.load_models()
+        Brain.Test.ModelFactory.train_and_load_test_models()
       catch
         _, _ -> :ok
       end

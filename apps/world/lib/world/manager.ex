@@ -2,6 +2,7 @@ defmodule World.Manager do
   @moduledoc "Manages training world lifecycle - creation, destruction, checkpointing.\n\nThis GenServer maintains the registry of active training worlds and\ncoordinates their data isolation while sharing computational processes.\n"
 
   alias Brain.ML.Gazetteer
+  alias Brain.Memory.Store, as: MemoryStore
   use GenServer
   require Logger
 
@@ -20,12 +21,12 @@ defmodule World.Manager do
 
   @doc "Creates a new training world.\n\n## Options\n  - `:mode` - :ephemeral (default) or :persistent\n  - `:base` - ID of parent world to inherit from (nil = empty)\n  - `:config` - Custom configuration map\n  - `:metadata` - Additional metadata\n"
   def create(name, opts \\ []) when is_binary(name) do
-    GenServer.call(__MODULE__, {:create_world, name, opts})
+    GenServer.call(__MODULE__, {:create_world, name, opts}, 30_000)
   end
 
   @doc "Destroys a training world and cleans up its data.\n"
   def destroy(world_id) when is_binary(world_id) do
-    GenServer.call(__MODULE__, {:destroy_world, world_id})
+    GenServer.call(__MODULE__, {:destroy_world, world_id}, 30_000)
   end
 
   @doc "Gets a training world by ID.\n"
@@ -141,7 +142,7 @@ defmodule World.Manager do
 
   @doc "Promotes a candidate to the world's gazetteer overlay.\n"
   def promote_candidate(world_id, candidate_value, entity_type) do
-    GenServer.call(__MODULE__, {:promote_candidate, world_id, candidate_value, entity_type})
+    GenServer.call(__MODULE__, {:promote_candidate, world_id, candidate_value, entity_type}, 30_000)
   end
 
   @doc "Creates a checkpoint for a persistent world.\n"
@@ -156,7 +157,7 @@ defmodule World.Manager do
 
   @doc "Exports a world's data for review.\n"
   def export(world_id) when is_binary(world_id) do
-    GenServer.call(__MODULE__, {:export, world_id})
+    GenServer.call(__MODULE__, {:export, world_id}, 60_000)
   end
 
   @doc "Compares two worlds.\n"
@@ -354,13 +355,27 @@ defmodule World.Manager do
           events = get_events(world_id)
           overlay = Gazetteer.get_world_overlay(world_id)
 
+          episodes =
+            case MemoryStore.all_episodes(world_id: world_id) do
+              {:ok, eps} -> eps
+              _ -> []
+            end
+
+          semantics =
+            case MemoryStore.all_semantics(world_id: world_id) do
+              {:ok, sems} -> sems
+              _ -> []
+            end
+
           result =
             WorldPersistence.save(world_id, %{
               world: world,
               metrics: metrics,
               candidates: candidates,
               events: events,
-              overlay: overlay
+              overlay: overlay,
+              episodes: episodes,
+              semantics: semantics
             })
 
           case result do

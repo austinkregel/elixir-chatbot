@@ -19,18 +19,22 @@ defmodule Brain.Response.Generator do
 
   @doc "Generate a response with event context for better slot filling.\n\nWhen events are provided, they are used to:\n- Provide action/actor/object slots for template filling\n- Enhance context retrieval from memory\n- Improve response relevance based on user intent structure\n\n## Examples\n\n    events = [%Event{action: %{lemma: \"play\"}, object: %{text: \"jazz\"}}]\n    generate_with_events(\"music.play\", entities, \"Play some jazz\", events)\n"
   def generate_with_events(intent, entities, query_text, events) when is_list(events) do
-    context = build_generation_context_with_events(intent, entities, query_text, events)
+    Brain.Telemetry.span(:response_generate, %{intent: intent}, fn ->
+      context = build_generation_context_with_events(intent, entities, query_text, events)
 
-    # Build slot map for enrichment from entity list
-    slots = build_slot_map_for_enrichment(entities)
+      # Build slot map for enrichment from entity list
+      slots = build_slot_map_for_enrichment(entities)
+      filled_slots = slots |> Map.keys() |> Enum.map(&to_string/1)
+      context = Map.put(context, :filled_slots, filled_slots)
 
-    # Prepare context with enrichment data (before pipeline, for template conditions)
-    context = Enricher.prepare_context(intent, slots, context)
+      # Prepare context with enrichment data (before pipeline, for template conditions)
+      context = Enricher.prepare_context(intent, slots, context)
 
-    result = run_generative_pipeline(intent, entities, query_text, context)
-    result = maybe_enrich_response(result, context)
-    result = maybe_refine_with_lstm(result, query_text, intent, entities)
-    maybe_improve_response(result, query_text, intent, entities)
+      result = run_generative_pipeline(intent, entities, query_text, context)
+      result = maybe_enrich_response(result, context)
+      result = maybe_refine_with_lstm(result, query_text, intent, entities)
+      maybe_improve_response(result, query_text, intent, entities)
+    end)
   end
 
   defp build_slot_map_for_enrichment(entities) when is_list(entities) do
@@ -41,7 +45,7 @@ defmodule Brain.Response.Generator do
 
       if type && value do
         # Use lowercase atom for slot name
-        slot_name = type |> to_string() |> String.downcase() |> String.to_atom()
+        slot_name = safe_slot_atom(type)
         Map.put(acc, slot_name, value)
       else
         acc
@@ -50,6 +54,14 @@ defmodule Brain.Response.Generator do
   end
 
   defp build_slot_map_for_enrichment(_), do: %{}
+
+  defp safe_slot_atom(type) when is_atom(type), do: type
+  defp safe_slot_atom(type) when is_binary(type) do
+    normalized = type |> to_string() |> String.downcase()
+    String.to_existing_atom(normalized)
+  rescue
+    ArgumentError -> :entity
+  end
 
   defp maybe_enrich_response({:ok, response, type}, context) do
     {:ok, enriched_response} = Enricher.enrich_response(response, context)
@@ -71,6 +83,12 @@ defmodule Brain.Response.Generator do
     # Extract epistemic context from opts
     epistemic_context = Map.get(opts, :epistemic_context, %{})
 
+    # Enrich with graph context
+    graph_context = Brain.Graph.Reader.entity_context(entities)
+    graph_relations = extract_graph_relations(graph_context)
+    user_id = Map.get(opts, :user_id)
+    user_prefs = if user_id, do: Brain.Graph.Reader.user_preferences(user_id), else: []
+
     %{
       similar_episodes: similar_episodes ++ event_episodes,
       confidence: confidence,
@@ -79,9 +97,29 @@ defmodule Brain.Response.Generator do
       query_text: query_text,
       events: events,
       event_slots: event_slots,
-      epistemic_context: epistemic_context
+      epistemic_context: epistemic_context,
+      graph_context: graph_context,
+      graph_relations: graph_relations,
+      user_prefs: user_prefs
     }
   end
+
+  defp extract_graph_relations(graph_context) when is_list(graph_context) do
+    Enum.flat_map(graph_context, fn
+      %{node: %{properties: props}, neighbors: neighbors} when neighbors != [] ->
+        entity_name = Map.get(props, "name", "")
+
+        Enum.map(neighbors, fn neighbor ->
+          neighbor_name = Map.get(neighbor.properties, "name", "")
+          %{from: entity_name, to: neighbor_name}
+        end)
+
+      _ ->
+        []
+    end)
+  end
+
+  defp extract_graph_relations(_), do: []
 
   defp retrieve_event_episodes(events) when is_list(events) and events != [] do
     case get_primary_action(events) do
@@ -112,6 +150,12 @@ defmodule Brain.Response.Generator do
     Map.merge(base_slots, event_slots)
   end
 
+  @external_resource Path.join(:code.priv_dir(:brain), "knowledge/entity_slot_mappings.json")
+  @entity_slot_config Path.join(:code.priv_dir(:brain), "knowledge/entity_slot_mappings.json")
+                      |> File.read!()
+                      |> Jason.decode!()
+  @entity_type_to_slot Map.get(@entity_slot_config, "entity_type_to_slot", %{})
+
   defp build_entity_slots(entities) when is_list(entities) do
     Enum.reduce(entities, %{}, fn entity, acc ->
       type =
@@ -119,13 +163,9 @@ defmodule Brain.Response.Generator do
 
       value = Map.get(entity, :value) || Map.get(entity, "value") || Map.get(entity, :text)
 
-      case type do
-        t when t in ["location", "city", "place"] -> Map.put(acc, :location, value)
-        t when t in ["person", "name"] -> Map.put(acc, :person, value)
-        t when t in ["song", "music-artist", "artist"] -> Map.put(acc, :music, value)
-        t when t in ["device", "lights", "heating"] -> Map.put(acc, :device, value)
-        t when t in ["date", "time"] -> Map.put(acc, :when, value)
-        _ -> acc
+      case Map.get(@entity_type_to_slot, type) do
+        nil -> acc
+        slot_name -> Map.put(acc, String.to_atom(slot_name), value)
       end
     end)
   end
@@ -616,10 +656,25 @@ defmodule Brain.Response.Generator do
         end
       end)
 
+    unique_beliefs = Enum.uniq(all_beliefs)
+
+    justification_chains =
+      unique_beliefs
+      |> Enum.flat_map(fn belief ->
+        node_id = Map.get(belief, :node_id) || Map.get(belief, "node_id")
+
+        if node_id do
+          Brain.Graph.Reader.belief_justification_chain(to_string(node_id))
+        else
+          []
+        end
+      end)
+
     %{
       status: best_status,
       verification: best_verification,
-      beliefs: Enum.uniq(all_beliefs)
+      beliefs: unique_beliefs,
+      justification_chains: justification_chains
     }
   end
 
@@ -627,6 +682,13 @@ defmodule Brain.Response.Generator do
   defp generate_with_epistemic_context(intent, entities, query_text, epistemic_context) do
     events = []
     context = build_generation_context_with_events(intent, entities, query_text, events, %{epistemic_context: epistemic_context})
+
+    # Prepare context with enrichment data (weather service, etc.) before synthesis
+    slots = build_slot_map_for_enrichment(entities)
+    filled_slots = slots |> Map.keys() |> Enum.map(&to_string/1)
+    context = context |> Map.put(:filled_slots, filled_slots)
+    context = Enricher.prepare_context(intent, slots, context)
+
     result = run_generative_pipeline(intent, entities, query_text, context)
     maybe_enrich_response(result, context)
   end
@@ -664,8 +726,12 @@ defmodule Brain.Response.Generator do
 
     query_str = query_text || ""
 
+    # Expand query with graph-derived related concepts
+    {_original, related_terms} = Brain.Graph.Reader.expand_query(query_str, entities)
+    expanded_query = if related_terms != [], do: query_str <> " " <> Enum.join(Enum.take(related_terms, 3), " "), else: query_str
+
     if SemanticFactRetriever.ready?() and query_str != "" do
-      results = SemanticFactRetriever.search(query_str, limit: 3, threshold: 0.25)
+      results = SemanticFactRetriever.search(expanded_query, limit: 3, threshold: 0.25)
 
       if results != [] do
         response = format_semantic_results(query_str, results)

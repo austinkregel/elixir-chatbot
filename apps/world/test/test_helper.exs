@@ -2,11 +2,10 @@
 {:ok, _} = Application.ensure_all_started(:brain)
 {:ok, _} = Application.ensure_all_started(:world)
 
-# Configure ExUnit to exclude slow/integration tests by default
-# Run with: mix test --include slow --include integration --include requires_pos_model
-# to run the full suite
+# Configure ExUnit - only exclude explicitly incomplete/disabled tests
+# Any skipped behavior is untested behavior.
 ExUnit.configure(
-  exclude: [:slow, :integration, :training, :wip, :skip, :requires_pos_model, :requires_file_system],
+  exclude: [:wip, :skip],
   timeout: 60_000
 )
 

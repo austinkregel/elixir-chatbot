@@ -13,18 +13,28 @@ defmodule Brain.Subprocesses.ConversationSubprocess do
     subprocess_id = Keyword.get(opts, :subprocess_id, generate_id())
     conversation_id = Keyword.get(opts, :conversation_id)
     memory_snapshot = Keyword.get(opts, :memory_snapshot, %{})
+    user_id = Keyword.get(opts, :user_id) || "conv_#{subprocess_id}"
 
-    GenServer.start_link(__MODULE__, {subprocess_id, conversation_id, memory_snapshot},
+    GenServer.start_link(__MODULE__, {subprocess_id, conversation_id, memory_snapshot, user_id},
       name: via_tuple(subprocess_id)
     )
   end
 
+  @doc "Returns true if the Conversation subprocess is ready to accept requests."
+  def ready?(subprocess_id) do
+    try do
+      GenServer.call(via_tuple(subprocess_id), :ready?, 100)
+    catch
+      :exit, _ -> false
+    end
+  end
+
   def evaluate_input(subprocess_id, input) do
-    GenServer.call(via_tuple(subprocess_id), {:evaluate_input, input})
+    GenServer.call(via_tuple(subprocess_id), {:evaluate_input, input}, 60_000)
   end
 
   def get_conversation_state(subprocess_id) do
-    GenServer.call(via_tuple(subprocess_id), :get_conversation_state)
+    GenServer.call(via_tuple(subprocess_id), :get_conversation_state, 5_000)
   end
 
   def send_learning_summary(subprocess_id, summary) do
@@ -38,7 +48,12 @@ defmodule Brain.Subprocesses.ConversationSubprocess do
   # Server Callbacks
 
   @impl true
-  def init({subprocess_id, conversation_id, memory_snapshot}) do
+  def init(args) do
+    {subprocess_id, conversation_id, memory_snapshot, user_id} =
+      case args do
+        {sid, cid, snap} -> {sid, cid, snap, "conv_#{elem(args, 0)}"}
+        {sid, cid, snap, uid} -> {sid, cid, snap, uid}
+      end
     # Ensure a Brain-level conversation exists so evaluate/3 works
     resolved_conversation_id =
       if conversation_id do
@@ -55,6 +70,7 @@ defmodule Brain.Subprocesses.ConversationSubprocess do
       subprocess_id: subprocess_id,
       conversation_id: resolved_conversation_id,
       memory_snapshot: memory_snapshot,
+      user_id: user_id,
       conversation_memory: [],
       learning_data: %{
         interactions: [],
@@ -73,6 +89,11 @@ defmodule Brain.Subprocesses.ConversationSubprocess do
     })
 
     {:ok, state}
+  end
+
+  @impl true
+  def handle_call(:ready?, _from, state) do
+    {:reply, true, state}
   end
 
   @impl true
@@ -204,8 +225,9 @@ defmodule Brain.Subprocesses.ConversationSubprocess do
   defp process_conversation_input(input, state) do
     # Route through the main Brain.evaluate pipeline for full NLP processing
     conv_id = state.conversation_id
+    user_id = Map.get(state, :user_id, "conv_#{state.subprocess_id}")
 
-    case Brain.evaluate(conv_id, input) do
+    case Brain.evaluate(conv_id, input, user_id: user_id) do
       {:ok, response} when is_binary(response) ->
         response
 

@@ -68,5 +68,25 @@
     ],
     "text": "Learned 9 entities, 0 relationships, 0 facts from: Hello, I'm person 1. Play song number 2. Turn on light 3. This is statement 4. What's the weather in city 5? Hello, I'm person 6. Play song number 7. Turn on light 8. This is statement 9. What's the weather in city 10? Hello, I'm person 11. Play song number 12. Turn on light 13. This is statement 14. What's the weather in city 15? Hello, I'm person 16. Play song number 17. Turn on light 18. This is statement 19. What's the weather in city 20? Hello, I'm person 21. Play song number 22. Turn on light 23. This is statement 24. What's the weather in city 25? Hello, I'm person 26. Play song number 27. Turn on light 28. This is statement 29. What's the weather in city 30?",
     "timestamp": 1770831017398
+  },
+  {
+    "id": "dd8502a7093f8b9c",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 9 entities, 0 relationships, 0 facts from: Hello, I'm person 1. Play song number 2. Turn on light 3. This is statement 4. What's the weather in city 5? Hello, I'm person 6. Play song number 7. Turn on light 8. This is statement 9. What's the weather in city 10? Hello, I'm person 11. Play song number 12. Turn on light 13. This is statement 14. What's the weather in city 15? Hello, I'm person 16. Play song number 17. Turn on light 18. This is statement 19. What's the weather in city 20? Hello, I'm person 21. Play song number 22. Turn on light 23. This is statement 24. What's the weather in city 25? Hello, I'm person 26. Play song number 27. Turn on light 28. This is statement 29. What's the weather in city 30?",
+    "timestamp": 1771131865608
+  },
+  {
+    "id": "1ea97a34e5b3295b",
+    "role": "system",
+    "tags": [
+      "learning",
+      "context"
+    ],
+    "text": "Learned 9 entities, 0 relationships, 0 facts from: Hello, I'm person 1. Play song number 2. Turn on light 3. This is statement 4. What's the weather in city 5? Hello, I'm person 6. Play song number 7. Turn on light 8. This is statement 9. What's the weather in city 10? Hello, I'm person 11. Play song number 12. Turn on light 13. This is statement 14. What's the weather in city 15? Hello, I'm person 16. Play song number 17. Turn on light 18. This is statement 19. What's the weather in city 20? Hello, I'm person 21. Play song number 22. Turn on light 23. This is statement 24. What's the weather in city 25? Hello, I'm person 26. Play song number 27. Turn on light 28. This is statement 29. What's the weather in city 30?",
+    "timestamp": 1771137077842
   }
 ]

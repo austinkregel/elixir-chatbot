@@ -77,6 +77,11 @@ defmodule Brain.Telemetry do
   @memory_query [:chat_bot, :memory, :query]
   @memory_embed [:chat_bot, :memory, :embed]
   @gazetteer_lookup [:chat_bot, :gazetteer, :lookup]
+
+  # Response and Fact Database
+  @response_generate [:chat_bot, :response, :generate]
+  @response_template_lookup [:chat_bot, :response, :template_lookup]
+  @fact_database_query [:chat_bot, :fact_database, :query]
   @entity_extract [:chat_bot, :entity, :extract]
   @ml_train [:chat_bot, :ml, :train]
   @model_load [:chat_bot, :ml, :load]
@@ -147,6 +152,16 @@ defmodule Brain.Telemetry do
       # Memory query handlers
       {"chatbot-memory-query-stop", @memory_query ++ [:stop], &__MODULE__.handle_span_stop/4,
        %{metric: :memory_query}},
+
+      # Response generation
+      {"chatbot-response-generate-stop", @response_generate ++ [:stop],
+       &__MODULE__.handle_span_stop/4, %{metric: :response_generate}},
+      {"chatbot-response-template-lookup-stop", @response_template_lookup ++ [:stop],
+       &__MODULE__.handle_span_stop/4, %{metric: :response_template_lookup}},
+
+      # Fact database
+      {"chatbot-fact-database-query-stop", @fact_database_query ++ [:stop],
+       &__MODULE__.handle_span_stop/4, %{metric: :fact_database_query}},
 
       # Memory embed handlers
       {"chatbot-memory-embed-stop", @memory_embed ++ [:stop], &__MODULE__.handle_span_stop/4,
@@ -279,6 +294,9 @@ defmodule Brain.Telemetry do
       "chatbot-pipeline-process-exception",
       "chatbot-memory-query-stop",
       "chatbot-memory-embed-stop",
+      "chatbot-response-generate-stop",
+      "chatbot-response-template-lookup-stop",
+      "chatbot-fact-database-query-stop",
       "chatbot-gazetteer-lookup-stop",
       "chatbot-entity-extract-stop",
       "chatbot-ml-train-start",
@@ -302,6 +320,7 @@ defmodule Brain.Telemetry do
       "chatbot-knowledge-corroborate-exception",
       "chatbot-knowledge-review-stop",
       # Epistemic events
+      "chatbot-fact-verification-stop",
       "chatbot-jtms-justify-stop",
       "chatbot-jtms-justify-exception",
       "chatbot-belief-operation-stop",
@@ -382,6 +401,27 @@ defmodule Brain.Telemetry do
 
   def span(:gazetteer_lookup, metadata, fun) do
     :telemetry.span(@gazetteer_lookup, metadata, fn ->
+      result = fun.()
+      {result, %{}}
+    end)
+  end
+
+  def span(:response_generate, metadata, fun) do
+    :telemetry.span(@response_generate, metadata, fn ->
+      result = fun.()
+      {result, %{}}
+    end)
+  end
+
+  def span(:response_template_lookup, metadata, fun) do
+    :telemetry.span(@response_template_lookup, metadata, fn ->
+      result = fun.()
+      {result, %{}}
+    end)
+  end
+
+  def span(:fact_database_query, metadata, fun) do
+    :telemetry.span(@fact_database_query, metadata, fn ->
       result = fun.()
       {result, %{}}
     end)

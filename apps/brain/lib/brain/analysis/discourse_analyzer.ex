@@ -292,17 +292,10 @@ defmodule Brain.Analysis.DiscourseAnalyzer do
   end
 
   defp has_modal_you_pattern?(normalized) do
-    modal_you_patterns = [
-      "can you",
-      "could you",
-      "would you",
-      "will you",
-      "might you",
-      "should you",
-      "do you"
-    ]
-
-    Enum.any?(modal_you_patterns, &String.contains?(normalized, &1))
+    case Brain.ML.MicroClassifiers.classify(:modal_directive, normalized) do
+      {:ok, "directive", score} when score > 0.3 -> true
+      _ -> false
+    end
   end
 
   defp is_question?(text) do

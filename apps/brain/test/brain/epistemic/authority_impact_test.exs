@@ -8,7 +8,7 @@ defmodule Brain.Epistemic.AuthorityImpactTest do
   between authority levels.
   """
 
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
 
   alias Brain.Epistemic.{BeliefStore, SourceAuthority, JTMS, ContradictionHandler, UserModelStore}
   alias Brain.FactDatabase

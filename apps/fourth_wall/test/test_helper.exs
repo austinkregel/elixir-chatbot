@@ -1,9 +1,10 @@
 # FourthWall test helper
 # This app is standalone - no dependencies on Brain or other apps
 
-# Configure ExUnit
+# Configure ExUnit - only exclude explicitly incomplete/disabled tests
+# Any skipped behavior is untested behavior.
 ExUnit.configure(
-  exclude: [:slow, :integration, :wip, :skip],
+  exclude: [:wip, :skip],
   timeout: 60_000
 )
 

@@ -1,7 +1,6 @@
 defmodule Brain.Knowledge.Corroborator do
   @moduledoc "Analyzes findings for cross-source agreement and conflict detection.\n\nThe Corroborator implements the **evidence evaluation** phase of the\nscientific method:\n\n## Scientific Method Integration\n\n1. **Hypothesis Testing**: Evaluates hypotheses against gathered evidence\n2. **Falsifiability**: Contradicting evidence can falsify hypotheses\n3. **Support**: Agreeing evidence supports (but doesn't prove) hypotheses\n4. **Independent Verification**: Requires 2+ independent sources\n\nKey principle: \"We cannot prove a hypothesis true, only support it with\nevidence or falsify it with contradicting evidence.\"\n\n## Features\n\n- Groups findings by semantic similarity using TF-IDF embeddings\n- Requires 2+ independent sources for high-confidence facts\n- Detects conflicting claims between sources\n- Computes aggregate confidence scores based on corroboration\n- Evaluates hypotheses and determines if they are supported/falsified\n\n## Example\n\n    findings = [\n      %Finding{claim: \"Paris is the capital of France\", source: %{domain: \"source1.com\"}},\n      %Finding{claim: \"France's capital is Paris\", source: %{domain: \"source2.com\"}}\n    ]\n\n    {:ok, candidates} = Corroborator.corroborate(findings)\n    # => Single ReviewCandidate with 2 corroborating sources\n\n    # Or with hypothesis testing:\n    {:ok, investigation} = Corroborator.test_hypotheses(investigation, findings)\n"
 
-  alias Brain.LinguisticData
   alias Brain.Knowledge.Types
   require Logger
 
@@ -452,44 +451,10 @@ defmodule Brain.Knowledge.Corroborator do
     false
   end
 
-  defp has_negation_difference?(c1, c2) do
-    negation_words = LinguisticData.negation_words()
+  defp has_negation_difference?(c1, c2),
+    do: Brain.Knowledge.ContradictionDetector.has_negation_difference?(c1, c2)
 
-    c1_has_negation = Enum.any?(negation_words, &String.contains?(c1, &1))
-    c2_has_negation = Enum.any?(negation_words, &String.contains?(c2, &1))
-    c1_has_negation != c2_has_negation
-  end
+  defp has_number_disagreement?(c1, c2),
+    do: Brain.Knowledge.ContradictionDetector.has_number_disagreement?(c1, c2)
 
-  defp has_number_disagreement?(c1, c2) do
-    numbers1 = extract_numbers(c1)
-    numbers2 = extract_numbers(c2)
-
-    if numbers1 != [] and numbers2 != [] do
-      Enum.any?(Enum.zip(numbers1, numbers2), fn {n1, n2} ->
-        min_val = min(n1, n2)
-        max_val = max(n1, n2)
-        min_val > 0 and (max_val - min_val) / min_val > 0.2
-      end)
-    else
-      false
-    end
-  end
-
-  defp extract_numbers(text) do
-    ~r/\d+(?:,\d{3})*(?:\.\d+)?/
-    |> Regex.scan(text)
-    |> List.flatten()
-    |> Enum.map(&parse_number/1)
-    |> Enum.reject(&is_nil/1)
-  end
-
-  defp parse_number(str) do
-    str
-    |> String.replace(",", "")
-    |> Float.parse()
-    |> case do
-      {num, _} -> num
-      :error -> nil
-    end
-  end
 end

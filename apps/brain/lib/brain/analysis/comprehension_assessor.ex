@@ -137,6 +137,7 @@ defmodule Brain.Analysis.ComprehensionAssessor do
     {:reply, profile, state}
   end
 
+  @impl true
   def handle_call(:stats, _from, state) do
     stats = %{
       total_assessments: get_stat(:total_assessments),
@@ -151,6 +152,7 @@ defmodule Brain.Analysis.ComprehensionAssessor do
     {:reply, stats, state}
   end
 
+  @impl true
   def handle_call(:reset_weights, _from, state) do
     weights = default_weights()
     store_weights(weights)
@@ -161,6 +163,7 @@ defmodule Brain.Analysis.ComprehensionAssessor do
     {:reply, :ok, %{state | weights: weights, weight_history: []}}
   end
 
+  @impl true
   def handle_call(:ready?, _from, state) do
     {:reply, true, state}
   end
@@ -191,6 +194,7 @@ defmodule Brain.Analysis.ComprehensionAssessor do
     end
   end
 
+  @impl true
   def handle_info({:candidate_rejected, candidate}, state) do
     profile_id = extract_profile_id(candidate)
 
@@ -202,12 +206,14 @@ defmodule Brain.Analysis.ComprehensionAssessor do
     end
   end
 
+  @impl true
   def handle_info(:cleanup_profiles, state) do
     cleanup_expired_profiles()
     Process.send_after(self(), :cleanup_profiles, @cleanup_interval_ms)
     {:noreply, state}
   end
 
+  @impl true
   def handle_info(_msg, state) do
     {:noreply, state}
   end

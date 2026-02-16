@@ -100,7 +100,10 @@ defmodule Brain.Response.FactRetriever do
   def format_single_fact(%Brain.FactDatabase.Fact{} = fact) do
     # If fact already mentions the entity, return as-is
     # Otherwise, prepend entity name
-    if String.contains?(String.downcase(fact.fact), String.downcase(fact.entity)) do
+    fact_tokens = fact.fact |> Brain.ML.Tokenizer.tokenize_normalized() |> MapSet.new()
+    entity_tokens = fact.entity |> Brain.ML.Tokenizer.tokenize_normalized() |> MapSet.new()
+
+    if not MapSet.disjoint?(fact_tokens, entity_tokens) do
       fact.fact
     else
       "#{fact.entity}: #{fact.fact}"
@@ -112,7 +115,10 @@ defmodule Brain.Response.FactRetriever do
     fact_text = Map.get(fact, "fact", Map.get(fact, :fact, ""))
     entity = Map.get(fact, "entity", Map.get(fact, :entity, ""))
 
-    if String.contains?(String.downcase(fact_text), String.downcase(entity)) do
+    fact_tokens = fact_text |> Brain.ML.Tokenizer.tokenize_normalized() |> MapSet.new()
+    entity_tokens = entity |> Brain.ML.Tokenizer.tokenize_normalized() |> MapSet.new()
+
+    if not MapSet.disjoint?(fact_tokens, entity_tokens) do
       fact_text
     else
       "#{entity}: #{fact_text}"

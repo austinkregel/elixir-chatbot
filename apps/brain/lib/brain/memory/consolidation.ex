@@ -10,13 +10,16 @@ defmodule Brain.Memory.Consolidation do
   def consolidate(opts \\ []) do
     threshold = Keyword.get(opts, :threshold, 0.8)
     min_cluster_size = Keyword.get(opts, :min_cluster_size, 2)
+    world_id = Keyword.get(opts, :world_id)
+    store_opts = if world_id, do: [world_id: world_id], else: []
 
     Logger.info("Starting consolidation",
       threshold: threshold,
-      min_cluster_size: min_cluster_size
+      min_cluster_size: min_cluster_size,
+      world_id: world_id
     )
 
-    {:ok, episodes} = Store.all_episodes()
+    {:ok, episodes} = Store.all_episodes(store_opts)
 
     if length(episodes) < min_cluster_size do
       Logger.info("Not enough episodes for consolidation", count: length(episodes))
@@ -91,6 +94,8 @@ defmodule Brain.Memory.Consolidation do
 
         # Bridge to BeliefStore for epistemic integration
         Brain.Epistemic.ConsolidationBridge.bridge_semantic_fact(semantic)
+
+        Brain.Graph.Writer.write_semantic_cluster(semantic, evidence_ids)
 
         {:ok, semantic_id}
 

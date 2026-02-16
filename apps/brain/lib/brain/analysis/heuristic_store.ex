@@ -172,7 +172,7 @@ defmodule Brain.Analysis.HeuristicStore do
       Logger.warning("HeuristicStore.add_heuristic called without world_id for scope #{scope}")
       {:error, :world_id_required}
     else
-      GenServer.call(__MODULE__, {:add_heuristic, pattern, conclusion, opts})
+      GenServer.call(__MODULE__, {:add_heuristic, pattern, conclusion, opts}, 5_000)
     end
   end
 
@@ -228,11 +228,20 @@ defmodule Brain.Analysis.HeuristicStore do
     end)
   end
 
+  @doc "Returns true if the HeuristicStore is ready to accept requests."
+  def ready?(name \\ __MODULE__) do
+    try do
+      GenServer.call(name, :ready?, 100)
+    catch
+      :exit, _ -> false
+    end
+  end
+
   @doc """
   Returns statistics about the heuristic store.
   """
   def stats do
-    GenServer.call(__MODULE__, :stats)
+    GenServer.call(__MODULE__, :stats, 5_000)
   end
 
   @doc """
@@ -255,7 +264,7 @@ defmodule Brain.Analysis.HeuristicStore do
   Deprecates a heuristic (marks it as inactive).
   """
   def deprecate(heuristic_id) do
-    GenServer.call(__MODULE__, {:deprecate, heuristic_id})
+    GenServer.call(__MODULE__, {:deprecate, heuristic_id}, 5_000)
   end
 
   # Server Callbacks
@@ -290,6 +299,11 @@ defmodule Brain.Analysis.HeuristicStore do
     })
 
     {:ok, %{seeded_path: seeded_path, worlds_path: worlds_path}}
+  end
+
+  @impl true
+  def handle_call(:ready?, _from, state) do
+    {:reply, true, state}
   end
 
   @impl true
@@ -682,7 +696,8 @@ defmodule Brain.Analysis.HeuristicStore do
 
   defp atomize_keys(map) when is_map(map) do
     Map.new(map, fn
-      {k, v} when is_binary(k) -> {String.to_atom(k), atomize_keys(v)}
+      {k, v} when is_binary(k) ->
+        {safe_atomize_key(k), atomize_keys(v)}
       {k, v} -> {k, atomize_keys(v)}
     end)
   end
@@ -692,4 +707,10 @@ defmodule Brain.Analysis.HeuristicStore do
   end
 
   defp atomize_keys(value), do: value
+
+  defp safe_atomize_key(k) when is_binary(k) do
+    String.to_existing_atom(k)
+  rescue
+    ArgumentError -> k
+  end
 end

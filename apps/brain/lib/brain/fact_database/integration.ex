@@ -75,11 +75,24 @@ defmodule Brain.FactDatabase.Integration do
     end
   end
 
-  @doc "Syncs facts from the FactDatabase to the epistemic system as beliefs.\n\nThis creates beliefs for all facts in the database, allowing them to be\nverified and tracked by the truth maintenance system.\n"
+  @doc """
+  Syncs facts from the FactDatabase to the epistemic system as beliefs.
+
+  Curated facts are registered with `:curated_fact` source authority and as
+  JTMS premises (unconditionally true, no decay). Learned facts use their
+  original source and are registered as JTMS assumptions.
+
+  Options:
+  - `:category` - Filter by category
+  - `:min_confidence` - Minimum confidence threshold (default: 0.7)
+  - `:layer` - `:curated`, `:learned`, or `:all` (default: `:all`)
+  """
   def sync_facts_to_beliefs(opts \\ []) do
     category = Keyword.get(opts, :category)
     min_confidence = Keyword.get(opts, :min_confidence, 0.7)
-    facts = FactDatabase.query(category: category, limit: 1000)
+    layer = Keyword.get(opts, :layer, :all)
+
+    facts = FactDatabase.query(category: category, limit: 1000, layer: layer)
 
     verified_facts =
       Enum.filter(facts, fn fact ->
@@ -88,42 +101,81 @@ defmodule Brain.FactDatabase.Integration do
 
     created =
       Enum.map(verified_facts, fn fact ->
-        verification_source = fact.verification_source || "fact_database"
-
-        belief =
-          Belief.new(:world, normalize_entity(fact.entity), fact.fact,
-            source: :learned,
-            confidence: fact.confidence,
-            provenance: ["fact_database", verification_source],
-            metadata: %{
-              fact_id: fact.id,
-              category: fact.category
-            }
-          )
-
-        case BeliefStore.add_belief(belief) do
-          {:ok, belief_id} ->
-            if fact.confidence >= 0.9 do
-              case JTMS.create_premise("fact:#{belief_id}", metadata: %{fact_id: fact.id}) do
-                {:ok, node_id} ->
-                  BeliefStore.link_to_node(belief_id, node_id)
-                  1
-
-                _ ->
-                  1
-              end
-            else
-              1
-            end
-
-          _ ->
-            0
-        end
+        is_curated = FactDatabase.curated?(fact.id)
+        sync_fact_to_belief(fact, is_curated)
       end)
       |> Enum.sum()
 
-    Logger.info("Synced facts to beliefs", %{facts_synced: created})
+    Logger.info("Synced facts to beliefs", %{facts_synced: created, layer: layer})
     {:ok, created}
+  end
+
+  defp sync_fact_to_belief(fact, true = _is_curated) do
+    verification_source = fact.verification_source || "curated_fact_database"
+
+    belief =
+      Belief.new(:world, normalize_entity(fact.entity), fact.fact,
+        source: :curated_fact,
+        source_authority: :curated_fact,
+        confidence: 1.0,
+        provenance: ["curated_fact_database", verification_source],
+        metadata: %{
+          fact_id: fact.id,
+          category: fact.category,
+          immutable: true
+        }
+      )
+
+    case BeliefStore.add_belief(belief) do
+      {:ok, belief_id} ->
+        case JTMS.create_premise("curated_fact:#{belief_id}",
+               metadata: %{fact_id: fact.id, immutable: true}
+             ) do
+          {:ok, node_id} ->
+            BeliefStore.link_to_node(belief_id, node_id)
+            1
+
+          _ ->
+            1
+        end
+
+      _ ->
+        0
+    end
+  end
+
+  defp sync_fact_to_belief(fact, false = _is_curated) do
+    verification_source = fact.verification_source || "learned_fact_database"
+
+    belief =
+      Belief.new(:world, normalize_entity(fact.entity), fact.fact,
+        source: :learned,
+        confidence: fact.confidence,
+        provenance: ["fact_database", verification_source],
+        metadata: %{
+          fact_id: fact.id,
+          category: fact.category
+        }
+      )
+
+    case BeliefStore.add_belief(belief) do
+      {:ok, belief_id} ->
+        if fact.confidence >= 0.9 do
+          case JTMS.create_premise("fact:#{belief_id}", metadata: %{fact_id: fact.id}) do
+            {:ok, node_id} ->
+              BeliefStore.link_to_node(belief_id, node_id)
+              1
+
+            _ ->
+              1
+          end
+        else
+          1
+        end
+
+      _ ->
+        0
+    end
   end
 
   @doc "Checks if a fact contradicts any existing beliefs or facts.\n\nUses the JTMS to check for contradictions.\n"
@@ -147,37 +199,16 @@ defmodule Brain.FactDatabase.Integration do
   end
 
   defp store_learned_fact(%Fact{} = fact) do
-    default_path = Path.join([File.cwd!(), "data/facts/learned.json"])
-    learned_file = Application.get_env(:brain, :learned_facts_path, default_path)
+    if FactDatabase.curated?(fact.id) do
+      Logger.warning("Rejected attempt to overwrite curated fact via Integration",
+        fact_id: fact.id
+      )
 
-    existing_facts =
-      if File.exists?(learned_file) do
-        case File.read(learned_file) do
-          {:ok, content} ->
-            case Jason.decode(content) do
-              {:ok, data} -> Map.get(data, "facts", [])
-              _ -> []
-            end
-
-          _ ->
-            []
-        end
-      else
-        []
-      end
-
-    fact_map = Fact.to_map(fact)
-    updated_facts = [fact_map | existing_facts]
-
-    data = %{
-      "category" => "learned",
-      "description" => "Facts learned dynamically from conversations",
-      "facts" => updated_facts
-    }
-
-    File.mkdir_p!(Path.dirname(learned_file))
-    File.write!(learned_file, Jason.encode!(data, pretty: true))
-    FactDatabase.reload()
+      {:error, :curated_fact_immutable}
+    else
+      Brain.AtlasIntegration.persist_learned_fact(fact)
+      FactDatabase.reload()
+    end
   end
 
   defp register_fact_with_jtms(fact_id, entity, fact_text, confidence) do
@@ -234,32 +265,14 @@ defmodule Brain.FactDatabase.Integration do
     end)
   end
 
-  defp contradicts?(text1, text2) when is_binary(text1) and is_binary(text2) do
-    normalized1 = String.downcase(text1)
-    normalized2 = String.downcase(text2)
-    has_negation = String.contains?(normalized1, "not ") or String.contains?(normalized2, "not ")
-    is_opposite = check_opposite_meaning(normalized1, normalized2)
-
-    has_negation or is_opposite
-  end
-
-  defp contradicts?(_text1, _text2) do
-    false
-  end
-
-  defp check_opposite_meaning(text1, text2) do
-    cond do
-      String.contains?(text1, " is ") and String.contains?(text2, " is not ") -> true
-      String.contains?(text1, " is not ") and String.contains?(text2, " is ") -> true
-      true -> false
-    end
-  end
+  defp contradicts?(text1, text2),
+    do: Brain.Knowledge.ContradictionDetector.contradicts?(text1, text2)
 
   defp normalize_entity(entity) when is_binary(entity) do
-    entity
-    |> String.downcase()
-    |> String.replace(" ", "_")
-    |> String.to_atom()
+    normalized = entity |> String.downcase() |> String.replace(" ", "_")
+    String.to_existing_atom(normalized)
+  rescue
+    ArgumentError -> :unknown
   end
 
   defp normalize_entity(entity) when is_atom(entity) do

@@ -209,7 +209,7 @@ defmodule Brain.Response.ConditionEvaluator do
 
   defp eval_condition("confidence", level, context) do
     confidence = Map.get(context, :confidence, 0.0)
-    threshold = Map.get(@confidence_thresholds, String.to_atom(level), 0.5)
+    threshold = Map.get(@confidence_thresholds, safe_atom(level), 0.5)
 
     case level do
       "high" -> confidence >= threshold
@@ -244,9 +244,9 @@ defmodule Brain.Response.ConditionEvaluator do
     enriched_data = Map.get(context, :enriched_data, %{})
 
     # Support both atom and string keys
-    field_atom = String.to_atom(field_name)
+    field_key = safe_atom(field_name)
 
-    Map.has_key?(enriched_data, field_atom) or Map.has_key?(enriched_data, field_name)
+    Map.has_key?(enriched_data, field_key) or Map.has_key?(enriched_data, field_name)
   end
 
   defp eval_condition("service_available", service_name, context) do
@@ -255,12 +255,12 @@ defmodule Brain.Response.ConditionEvaluator do
     available_services = Map.get(context, :available_services, [])
 
     if available_services != [] do
-      service_name in available_services or String.to_atom(service_name) in available_services
+      service_name in available_services or safe_atom(service_name) in available_services
     else
       # Fall back to checking dispatcher
       alias Brain.Services.Dispatcher
       world = Map.get(context, :world_id) || Map.get(context, :world, "default")
-      Dispatcher.service_available?(String.to_atom(service_name), world: world)
+      Dispatcher.service_available?(safe_atom(service_name), world: world)
     end
   end
 
@@ -284,6 +284,13 @@ defmodule Brain.Response.ConditionEvaluator do
   # ============================================================================
   # Helpers
   # ============================================================================
+
+  defp safe_atom(val) when is_atom(val), do: val
+  defp safe_atom(val) when is_binary(val) do
+    String.to_existing_atom(val)
+  rescue
+    ArgumentError -> :unknown
+  end
 
   defp get_entity_type(entity) when is_map(entity) do
     entity[:entity_type] || entity["entity_type"] || ""

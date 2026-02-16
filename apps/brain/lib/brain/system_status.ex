@@ -42,6 +42,7 @@ defmodule Brain.SystemStatus do
     ml: [
       {Brain.ML.Gazetteer, "Gazetteer", :has_stats},
       {Brain.ML.InformalExpansions, "Informal Expansions", :has_ready},
+      {Brain.ML.MicroClassifiers, "Micro Classifiers", :has_ready},
       {Brain.Response.TemplateStore, "Template Store", :has_ready}
     ],
     knowledge: [
@@ -93,7 +94,8 @@ defmodule Brain.SystemStatus do
       embedder: get_embedder_status(),
       memory_store: get_memory_store_status(),
       brain: get_brain_status(),
-      nlp_pipeline: get_nlp_pipeline_status()
+      nlp_pipeline: get_nlp_pipeline_status(),
+      micro_classifiers: get_micro_classifiers_status()
     }
   end
 
@@ -1420,6 +1422,35 @@ defmodule Brain.SystemStatus do
     case :erlang.statistics(:wall_clock) do
       {uptime_ms, _} -> div(uptime_ms, 1000)
       _ -> 0
+    end
+  end
+
+  @doc "Returns the status of micro-classifiers.\n"
+  def get_micro_classifiers_status do
+    alias Brain.ML.MicroClassifiers
+
+    if Code.ensure_loaded?(MicroClassifiers) do
+      MicroClassifiers.status()
+    else
+      %{ready: false, classifiers: %{}}
+    end
+  end
+
+  @doc "Returns response timing metrics from the aggregator.\n"
+  def get_response_timing do
+    try do
+      metrics = Aggregator.get_metrics()
+      brain_eval = Map.get(metrics, :brain_evaluate, %{})
+      pipeline = Map.get(metrics, :pipeline_process, %{})
+
+      %{
+        brain_avg_ms: Map.get(brain_eval, :avg_ms, 0),
+        brain_count: Map.get(brain_eval, :count, 0),
+        pipeline_avg_ms: Map.get(pipeline, :avg_ms, 0),
+        pipeline_count: Map.get(pipeline, :count, 0)
+      }
+    catch
+      _, _ -> %{brain_avg_ms: 0, brain_count: 0, pipeline_avg_ms: 0, pipeline_count: 0}
     end
   end
 

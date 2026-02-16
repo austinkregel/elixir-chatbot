@@ -19,6 +19,7 @@ defmodule Brain.Application do
   def start(_type, _args) do
     children = [
       {Phoenix.PubSub, [name: Brain.PubSub]},
+      {Task.Supervisor, [name: Brain.AtlasTaskSupervisor]},
       Brain.Metrics.Aggregator,
       {Registry, [keys: :unique, name: Brain.SubprocessRegistry]},
       Brain.Services.CredentialVault,
@@ -26,6 +27,7 @@ defmodule Brain.Application do
       Brain.ML.InformalExpansions,
       Brain.ML.Gazetteer,
       Brain.Analysis.LearningStore,
+      Brain.Analysis.OutcomeLearner.Store,
       Brain.Analysis.AnalyzerCalibration,
       {Brain.Analysis.HeuristicStore, [seeded_path: "data/heuristics/seeded_heuristics.json"]},
       Brain.Analysis.ComprehensionAssessor,
@@ -39,6 +41,7 @@ defmodule Brain.Application do
       Brain.Epistemic.BeliefStore,
       Brain.Epistemic.UserModelStore,
       Brain.Epistemic.ContradictionHandler,
+      Brain.ML.MicroClassifiers,
       Brain.ML.IntentClassifierSimple,
       Brain.ML.SentimentClassifierSimple,
       Brain.ML.EntityExtractor,

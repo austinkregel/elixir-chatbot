@@ -34,8 +34,8 @@ defmodule Brain.ML.LSTM.Trainer do
     with {:ok, raw_examples} <- DataLoaders.load_intent_training_data_for_lstm(),
          {:ok, train_data, val_data, vocabularies} <- prepare_training_data(raw_examples, config) do
       {encoder, intent_head} = build_intent_model(vocabularies, config)
-      encoder_params = SharedEncoder.init_params(encoder)
-      intent_params = IntentHead.init_params(intent_head, config.hidden_size * 2)
+      encoder_params = SharedEncoder.init_params(encoder) |> transfer_params_to_binary()
+      intent_params = IntentHead.init_params(intent_head, config.hidden_size * 2) |> transfer_params_to_binary()
 
       {trained_encoder_params, trained_intent_params, metrics} =
         train_loop(
@@ -115,9 +115,9 @@ defmodule Brain.ML.LSTM.Trainer do
          {:ok, train_data, val_data, vocabularies} <-
            prepare_joint_training_data(raw_examples, config) do
       {encoder, intent_head, ner_head} = build_joint_model(vocabularies, config)
-      encoder_params = SharedEncoder.init_params(encoder)
-      intent_params = IntentHead.init_params(intent_head, config.hidden_size * 2)
-      ner_params = NERHead.init_params(ner_head, config.hidden_size * 2)
+      encoder_params = SharedEncoder.init_params(encoder) |> transfer_params_to_binary()
+      intent_params = IntentHead.init_params(intent_head, config.hidden_size * 2) |> transfer_params_to_binary()
+      ner_params = NERHead.init_params(ner_head, config.hidden_size * 2) |> transfer_params_to_binary()
 
       {trained_encoder_params, trained_intent_params, trained_ner_params, metrics} =
         joint_train_loop(
@@ -533,12 +533,25 @@ defmodule Brain.ML.LSTM.Trainer do
          ner_params,
          config
        ) do
-    forward_fn = fn enc_p, int_p, ner_p ->
-      {token_outputs, sentence_vector} =
-        SharedEncoder.encode(encoder, inputs, enc_p)
+    encoder_params = transfer_params_to_binary(encoder_params)
+    intent_params = transfer_params_to_binary(intent_params)
+    ner_params = transfer_params_to_binary(ner_params)
+    inputs = Nx.backend_transfer(inputs, Nx.BinaryBackend)
+    intent_targets = Nx.backend_transfer(intent_targets, Nx.BinaryBackend)
+    bio_targets = Nx.backend_transfer(bio_targets, Nx.BinaryBackend)
+    masks = Nx.backend_transfer(masks, Nx.BinaryBackend)
 
-      intent_preds = IntentHead.forward(intent_head, sentence_vector, int_p)
-      ner_preds = NERHead.forward(ner_head, token_outputs, ner_p)
+    {_, enc_token_predict_fn} = Axon.build(encoder.token_outputs_model, mode: :train)
+    {_, enc_sentence_predict_fn} = Axon.build(encoder.sentence_vector_model, mode: :train)
+    {_, int_predict_fn} = Axon.build(intent_head, mode: :train)
+    {_, ner_predict_fn} = Axon.build(ner_head, mode: :train)
+
+    forward_fn = fn enc_p, int_p, ner_p ->
+      token_outputs = enc_token_predict_fn.(enc_p, %{"input" => inputs})
+      sentence_vector = enc_sentence_predict_fn.(enc_p, %{"input" => inputs})
+
+      intent_preds = int_predict_fn.(int_p, %{"sentence_vector" => sentence_vector})
+      ner_preds = ner_predict_fn.(ner_p, %{"token_outputs" => token_outputs})
 
       intent_loss = IntentHead.compute_loss(intent_preds, intent_targets)
       ner_loss = NERHead.compute_loss(ner_preds, bio_targets, masks)
@@ -632,10 +645,10 @@ defmodule Brain.ML.LSTM.Trainer do
     with {:ok, raw_examples} <- DataLoaders.load_intent_training_data_for_lstm(),
          {:ok, train_data, val_data, vocabularies} <- prepare_multitask_data(raw_examples, config) do
       {encoder, intent_head, ner_head, pos_head} = build_multitask_model(vocabularies, config)
-      encoder_params = SharedEncoder.init_params(encoder)
-      intent_params = IntentHead.init_params(intent_head, config.hidden_size * 2)
-      ner_params = NERHead.init_params(ner_head, config.hidden_size * 2)
-      pos_params = POSHead.init_params(pos_head, config.hidden_size * 2)
+      encoder_params = SharedEncoder.init_params(encoder) |> transfer_params_to_binary()
+      intent_params = IntentHead.init_params(intent_head, config.hidden_size * 2) |> transfer_params_to_binary()
+      ner_params = NERHead.init_params(ner_head, config.hidden_size * 2) |> transfer_params_to_binary()
+      pos_params = POSHead.init_params(pos_head, config.hidden_size * 2) |> transfer_params_to_binary()
 
       {trained_enc, trained_int, trained_ner, trained_pos, metrics} =
         multitask_train_loop(
@@ -1468,11 +1481,17 @@ defmodule Brain.ML.LSTM.Trainer do
          encoder_params,
          intent_params
        ) do
-    grad_fn = fn enc_p, int_p ->
-      {_token_outputs, sentence_vector} =
-        SharedEncoder.encode(encoder, inputs, enc_p)
+    encoder_params = transfer_params_to_binary(encoder_params)
+    intent_params = transfer_params_to_binary(intent_params)
+    inputs = Nx.backend_transfer(inputs, Nx.BinaryBackend)
+    targets = Nx.backend_transfer(targets, Nx.BinaryBackend)
 
-      predictions = IntentHead.forward(intent_head, sentence_vector, int_p)
+    {_, enc_predict_fn} = Axon.build(encoder.sentence_vector_model, mode: :train)
+    {_, int_predict_fn} = Axon.build(intent_head, mode: :train)
+
+    grad_fn = fn enc_p, int_p ->
+      sentence_vector = enc_predict_fn.(enc_p, %{"input" => inputs})
+      predictions = int_predict_fn.(int_p, %{"sentence_vector" => sentence_vector})
       IntentHead.compute_loss(predictions, targets)
     end
 
@@ -1503,7 +1522,7 @@ defmodule Brain.ML.LSTM.Trainer do
         |> List.to_tuple()
 
       {p, u} ->
-        Nx.add(p, u)
+        Nx.add(p, u) |> Nx.backend_transfer(Nx.BinaryBackend)
     end
   end
 
@@ -1648,4 +1667,26 @@ defmodule Brain.ML.LSTM.Trainer do
   defp format_duration(ms) do
     "#{Float.round(ms / 60000, 1)}m"
   end
+
+  @doc false
+  defp transfer_params_to_binary(%Nx.Tensor{} = tensor) do
+    Nx.backend_transfer(tensor, Nx.BinaryBackend)
+  end
+
+  defp transfer_params_to_binary(%Axon.ModelState{data: data} = model_state) do
+    %{model_state | data: transfer_params_to_binary(data)}
+  end
+
+  defp transfer_params_to_binary(%{} = params) do
+    Map.new(params, fn {k, v} -> {k, transfer_params_to_binary(v)} end)
+  end
+
+  defp transfer_params_to_binary(params) when is_tuple(params) do
+    params
+    |> Tuple.to_list()
+    |> Enum.map(&transfer_params_to_binary/1)
+    |> List.to_tuple()
+  end
+
+  defp transfer_params_to_binary(other), do: other
 end

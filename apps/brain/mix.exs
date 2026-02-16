@@ -28,6 +28,8 @@ defmodule Brain.MixProject do
 
   defp deps do
     [
+      {:atlas, in_umbrella: true},
+      {:fourth_wall, in_umbrella: true},
       {:phoenix_pubsub, "~> 2.1"},
       {:telemetry, "~> 1.0"},
       {:telemetry_metrics, "~> 1.0"},

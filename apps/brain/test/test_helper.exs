@@ -1,24 +1,24 @@
 # Start Brain application to get PubSub and core services
 {:ok, _} = Application.ensure_all_started(:brain)
 
+# Set Atlas.Repo to sandbox mode for test isolation
+if Process.whereis(Atlas.Repo) do
+  Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :manual)
+end
+
 # Start HTTP snapshot server for external API mocking
 {:ok, _} = Brain.Test.HTTPSnapshot.start_link()
 
 # Configure ExUnit
-# By default, only exclude tests that are explicitly marked as:
-# - :slow - Very slow tests (>30s)
-# - :training - Tests that train models (expensive)
+# Only exclude explicitly incomplete/disabled tests:
 # - :wip - Work in progress tests
 # - :skip - Temporarily disabled tests
-# - :benchmark - Performance benchmark tests
-# - :gpu - GPU-specific tests
 #
-# Optional exclusions (add via command line):
+# All other tags (:slow, :training, :benchmark, :gpu, :integration) run by default.
+# Any skipped behavior is untested behavior.
+#
+# Optional exclusions (add via command line if needed):
 # - :requires_lstm - Tests requiring compatible LSTM .term files
-#
-# Run with: mix test --include slow to run the full suite including slow tests
-#
-# To skip LSTM-dependent tests when models are incompatible:
 #   mix test --exclude requires_lstm
 #
 # ============================================================================
@@ -38,7 +38,7 @@
 #   MIX_ENV=test mix snapshot.record --list
 #
 ExUnit.configure(
-  exclude: [:slow, :training, :wip, :skip, :benchmark, :gpu],
+  exclude: [:wip, :skip],
   timeout: 60_000
 )
 

@@ -65,6 +65,7 @@ defmodule Mix.Tasks.Train do
           skip_unified: :boolean,
           skip_response: :boolean,
           skip_seq2seq: :boolean,
+          include_graph: :boolean,
           epochs: :integer,
           batch_size: :integer,
           hidden_size: :integer,
@@ -111,6 +112,13 @@ defmodule Mix.Tasks.Train do
 
     start_time = System.monotonic_time(:second)
     results = run_training_pipeline(opts, skip_list)
+
+    if opts[:include_graph] do
+      Mix.shell().info("")
+      Mix.shell().info("  Running graph-to-training integration...")
+      Mix.Tasks.TrainFromGraph.run([])
+    end
+
     total_duration = System.monotonic_time(:second) - start_time
     display_summary(results, total_duration)
     experiment_name = opts[:name] || generate_experiment_name("train")

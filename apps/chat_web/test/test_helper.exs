@@ -3,11 +3,15 @@
 {:ok, _} = Application.ensure_all_started(:world)
 {:ok, _} = Application.ensure_all_started(:chat_web)
 
-# Configure ExUnit to exclude slow/integration tests by default
-# Run with: mix test --include slow --include integration
-# to run the full suite
+# Set Atlas.Repo to sandbox mode for test isolation
+if Process.whereis(Atlas.Repo) do
+  Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :manual)
+end
+
+# Configure ExUnit - only exclude explicitly incomplete/disabled tests
+# Any skipped behavior is untested behavior.
 ExUnit.configure(
-  exclude: [:slow, :integration, :training, :wip, :skip],
+  exclude: [:wip, :skip],
   timeout: 60_000
 )
 

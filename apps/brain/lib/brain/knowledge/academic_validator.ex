@@ -1,7 +1,6 @@
 defmodule Brain.Knowledge.AcademicValidator do
   @moduledoc "Validates findings against peer-reviewed academic literature.\n\nUses the epistemic layer (BeliefStore, FactDatabase) to cross-reference\nclaims and provide confidence boosts when corroborated by academic sources.\n\n## Validation Outcomes\n\n- `:corroborated` - Finding matches academic literature (confidence boost)\n- `:contradicted` - Finding conflicts with academic sources (triggers review)\n- `:insufficient_evidence` - Not enough academic data to validate\n\n## Example\n\n    {:ok, result} = AcademicValidator.validate(finding)\n    # => {:corroborated, %{boost: 0.15, sources: [...]}}\n\n    {:ok, results} = AcademicValidator.bulk_validate(findings)\n"
 
-  alias Brain.LinguisticData
   alias Brain.Knowledge.Academic
   alias Brain.Knowledge.Types
   require Logger
@@ -172,12 +171,7 @@ defmodule Brain.Knowledge.AcademicValidator do
   defp has_contradiction?(claim, belief) do
     c1 = String.downcase(claim)
     c2 = String.downcase(belief.object)
-
-    negation_words = LinguisticData.negation_words()
-
-    c1_has_negation = Enum.any?(negation_words, &String.contains?(c1, &1))
-    c2_has_negation = Enum.any?(negation_words, &String.contains?(c2, &1))
-    c1_has_negation != c2_has_negation
+    Brain.Knowledge.ContradictionDetector.has_negation_difference?(c1, c2)
   end
 
   defp calculate_boost(best_match, total_matches) do

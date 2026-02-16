@@ -104,6 +104,8 @@ defmodule Brain.Analysis.Pipeline do
 
     record_pipeline_result(model)
 
+    Brain.Graph.Writer.write_analysis(model)
+
     Progress.report(opts, :pipeline_complete, %{elapsed_ms: elapsed})
 
     model
@@ -170,8 +172,9 @@ defmodule Brain.Analysis.Pipeline do
             result
 
           {:error, reason} ->
-            raise "Sentiment classification failed: #{inspect(reason)}. " <>
-                    "Run `mix train` to train the sentiment classifier."
+            Logger.warning("Sentiment classification failed: #{inspect(reason)}. " <>
+              "Using neutral fallback.")
+            %{label: :neutral, score: 0.5}
         end
       end)
 
@@ -200,8 +203,8 @@ defmodule Brain.Analysis.Pipeline do
         :exit, {:timeout, _} ->
           Task.shutdown(sentiment_task, :brutal_kill)
 
-          raise "Sentiment classification timed out. " <>
-                  "Ensure the sentiment classifier is trained and responsive."
+          Logger.warning("Sentiment classification timed out. Using neutral fallback.")
+          %{label: :neutral, score: 0.5}
       end
 
     Progress.report(opts, :discourse_complete, %{
@@ -496,33 +499,32 @@ defmodule Brain.Analysis.Pipeline do
     end)
   end
 
+  @external_resource Path.join(:code.priv_dir(:brain), "analysis/speech_act_intent_map.json")
+  @speech_act_intent_map Path.join(:code.priv_dir(:brain), "analysis/speech_act_intent_map.json")
+                         |> File.read!()
+                         |> Jason.decode!()
+
   defp infer_intent_from_speech_act(speech_act, _text) do
     case IntentRegistry.intent_for_speech_act(speech_act.sub_type) do
       canonical_intent when is_binary(canonical_intent) ->
         canonical_intent
 
       nil ->
+        sub_type_str = to_string(speech_act.sub_type)
+        category_str = to_string(speech_act.category)
+
         cond do
           speech_act.is_question ->
-            "question.factual"
+            Map.get(@speech_act_intent_map, "question", "question.factual")
 
-          speech_act.sub_type == :command ->
-            "action.request"
+          Map.has_key?(@speech_act_intent_map, sub_type_str) ->
+            Map.get(@speech_act_intent_map, sub_type_str)
 
-          speech_act.sub_type == :request_action ->
-            "action.request"
-
-          speech_act.sub_type == :request_information ->
-            "information.request"
-
-          speech_act.category == :expressive ->
-            "smalltalk.acknowledgment"
-
-          speech_act.category == :assertive ->
-            "unknown"
+          Map.has_key?(@speech_act_intent_map, category_str) ->
+            Map.get(@speech_act_intent_map, category_str)
 
           true ->
-            "unknown"
+            Map.get(@speech_act_intent_map, "default", "unknown")
         end
     end
   end
@@ -530,9 +532,9 @@ defmodule Brain.Analysis.Pipeline do
   defp maybe_extract_beliefs_from_events([], _opts), do: :ok
 
   defp maybe_extract_beliefs_from_events(events, opts) do
-    user_id = Keyword.get(opts, :user_id)
+    user_id = Keyword.get(opts, :user_id) || "anonymous"
 
-    if user_id && Brain.Epistemic.Types.Config.auto_extraction_enabled?() do
+    if Brain.Epistemic.Types.Config.auto_extraction_enabled?() do
       Task.Supervisor.start_child(
         Brain.Knowledge.AgentSupervisor,
         fn ->
@@ -911,12 +913,10 @@ defmodule Brain.Analysis.Pipeline do
   end
 
   defp normalize_predicate(text) when is_binary(text) do
-    text
-    |> String.downcase()
-    |> String.trim()
-    |> String.to_atom()
+    normalized = text |> String.downcase() |> String.trim()
+    String.to_existing_atom(normalized)
   rescue
-    _ -> :unknown
+    ArgumentError -> :unknown
   end
 
   defp normalize_predicate(_), do: :unknown

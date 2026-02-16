@@ -46,6 +46,10 @@ defmodule Brain.Metrics.Aggregator do
           model_loads = Map.get(acc, :model_loads, %{})
           Map.put(acc, :model_loads, Map.put(model_loads, name, data))
 
+        {{:readiness, name}, data}, acc ->
+          readiness = Map.get(acc, :readiness, %{})
+          Map.put(acc, :readiness, Map.put(readiness, name, data))
+
         _, acc ->
           acc
       end)
@@ -239,9 +243,23 @@ defmodule Brain.Metrics.Aggregator do
     GenServer.cast(__MODULE__, {:record_queue_size, genserver_name, queue_length})
   end
 
+  @doc "Records readiness state for a subsystem. Use cast for non-blocking.\n"
+  def record_readiness(system_name, ready?) when is_atom(system_name) or is_binary(system_name) do
+    GenServer.cast(__MODULE__, {:record_readiness, system_name, ready?})
+  end
+
+  @doc "Returns true if the Aggregator is ready to accept requests."
+  def ready?(name \\ __MODULE__) do
+    try do
+      GenServer.call(name, :ready?, 100)
+    catch
+      :exit, _ -> false
+    end
+  end
+
   @doc "Resets all metrics. Useful for testing.\n"
   def reset do
-    GenServer.call(__MODULE__, :reset)
+    GenServer.call(__MODULE__, :reset, 5_000)
   end
 
   @doc "Gets training metrics. Reads directly from ETS - non-blocking.\nReturns a map of model name to training stats.\n"
@@ -304,6 +322,24 @@ defmodule Brain.Metrics.Aggregator do
   @impl true
   def handle_cast({:record_error_event, error_type, _details}, state) do
     increment_error_counter(error_type)
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:record_readiness, system_name, ready?}, state) do
+    try do
+      :ets.insert(
+        @metrics_table,
+        {{:readiness, system_name},
+         %{
+           ready?: ready?,
+           timestamp: System.monotonic_time(:millisecond)
+         }}
+      )
+    catch
+      :error, :badarg -> :ok
+    end
+
     {:noreply, state}
   end
 
@@ -603,6 +639,11 @@ defmodule Brain.Metrics.Aggregator do
   end
 
   @impl true
+  def handle_call(:ready?, _from, state) do
+    {:reply, true, state}
+  end
+
+  @impl true
   def handle_call(:reset, _from, state) do
     :ets.delete_all_objects(@metrics_table)
     :ets.delete_all_objects(@raw_data_table)
@@ -624,6 +665,9 @@ defmodule Brain.Metrics.Aggregator do
       :memory_query,
       :memory_embed,
       :gazetteer_lookup,
+      :response_generate,
+      :response_template_lookup,
+      :fact_database_query,
       :knowledge_research,
       :knowledge_corroborate,
       :knowledge_review,
@@ -733,13 +777,25 @@ defmodule Brain.Metrics.Aggregator do
       :memory_query,
       :memory_embed,
       :gazetteer_lookup,
+      :response_generate,
+      :response_template_lookup,
+      :fact_database_query,
       :code_pipeline,
       :code_parse,
       :code_extract,
       :code_gazetteer_lookup,
       # External services
       :service_dispatch,
-      :service_enrichment
+      :service_enrichment,
+      # Knowledge expansion
+      :knowledge_research,
+      :knowledge_corroborate,
+      :knowledge_review,
+      # Epistemic
+      :jtms_justify,
+      :belief_operation,
+      # Racing analyzer
+      :racing_analysis
     ]
 
     Enum.each(metrics, fn metric_name ->

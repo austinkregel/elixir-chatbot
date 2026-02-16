@@ -11,7 +11,7 @@ defmodule ChatWeb.DashboardLive do
 
   alias Brain.Memory.Store, as: MemoryStore
   alias Brain.KnowledgeStore
-  @refresh_interval_ms 2000
+  @refresh_interval_ms 5000
 
   @default_expanded [
     :core,
@@ -52,6 +52,9 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:code_analysis_status, load_code_analysis_status())
       |> assign(:services_status, load_services_status())
       |> assign(:epistemic_metrics, load_epistemic_metrics())
+      |> assign(:micro_classifiers_status, load_micro_classifiers_status())
+      |> assign(:response_timing, load_response_timing())
+      |> assign(:atlas_stats, load_atlas_stats())
       |> assign(:last_updated, DateTime.utc_now())
       |> assign(:expanded_categories, MapSet.new(@default_expanded))
       |> assign(:auto_refresh, true)
@@ -103,6 +106,9 @@ defmodule ChatWeb.DashboardLive do
         |> assign(:code_analysis_status, load_code_analysis_status())
         |> assign(:services_status, load_services_status())
         |> assign(:epistemic_metrics, load_epistemic_metrics())
+        |> assign(:micro_classifiers_status, load_micro_classifiers_status())
+        |> assign(:response_timing, load_response_timing())
+        |> assign(:atlas_stats, load_atlas_stats())
         |> assign(:last_updated, DateTime.utc_now())
 
       {:noreply, socket}
@@ -137,6 +143,9 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:code_analysis_status, load_code_analysis_status())
       |> assign(:services_status, load_services_status())
       |> assign(:epistemic_metrics, load_epistemic_metrics())
+      |> assign(:micro_classifiers_status, load_micro_classifiers_status())
+      |> assign(:response_timing, load_response_timing())
+      |> assign(:atlas_stats, load_atlas_stats())
       |> assign(:last_updated, DateTime.utc_now())
 
     {:noreply, socket}
@@ -226,6 +235,28 @@ defmodule ChatWeb.DashboardLive do
     Brain.Metrics.Aggregator.get_epistemic_metrics()
   end
 
+  defp load_micro_classifiers_status do
+    SystemStatus.get_micro_classifiers_status()
+  end
+
+  defp load_response_timing do
+    SystemStatus.get_response_timing()
+  end
+
+  defp load_atlas_stats do
+    Atlas.Stats.get_overview()
+  rescue
+    _ ->
+      %{
+        connected: false,
+        repo: %{credentials: 0, beliefs: 0, episodes: 0, semantic_facts: 0, review_candidates: 0, learned_facts: 0},
+        graphs: %{},
+        connection_pool: %{pool_size: 0, checked_out: 0, idle: 0},
+        migrations: [],
+        query_metrics: %{}
+      }
+  end
+
   def category_label(:core) do
     "Core Systems"
   end
@@ -264,6 +295,10 @@ defmodule ChatWeb.DashboardLive do
 
   def category_label(:services) do
     "External Services"
+  end
+
+  def category_label(:atlas) do
+    "Atlas Database"
   end
 
   def category_label(other) do
@@ -308,6 +343,10 @@ defmodule ChatWeb.DashboardLive do
 
   def category_icon(:services) do
     "hero-cloud"
+  end
+
+  def category_icon(:atlas) do
+    "hero-map"
   end
 
   def category_icon(_) do
@@ -605,6 +644,10 @@ defmodule ChatWeb.DashboardLive do
     "bg-sky-500/10"
   end
 
+  def category_bg_class(:atlas) do
+    "bg-teal-500/10"
+  end
+
   def category_bg_class(_) do
     "bg-base-200"
   end
@@ -647,6 +690,10 @@ defmodule ChatWeb.DashboardLive do
 
   def category_text_class(:services) do
     "text-sky-500"
+  end
+
+  def category_text_class(:atlas) do
+    "text-teal-500"
   end
 
   def category_text_class(_) do

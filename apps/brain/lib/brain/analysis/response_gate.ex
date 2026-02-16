@@ -196,13 +196,19 @@ defmodule Brain.Analysis.ResponseGate do
 
   defp atomize_keys(map) when is_map(map) do
     Map.new(map, fn
-      {k, v} when is_binary(k) -> {String.to_atom(k), v}
+      {k, v} when is_binary(k) -> {safe_atomize_key(k), v}
       {k, v} -> {k, v}
     end)
   end
 
   defp atomize_keys(other) do
     other
+  end
+
+  defp safe_atomize_key(k) when is_binary(k) do
+    String.to_existing_atom(k)
+  rescue
+    ArgumentError -> k
   end
 
   defp default_params do

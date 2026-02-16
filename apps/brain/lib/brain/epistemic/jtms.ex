@@ -16,7 +16,7 @@ defmodule Brain.Epistemic.JTMS do
   @doc "Creates a new node in the dependency network.\n\nOptions:\n- :node_type - :premise | :assumption | :derived | :contradiction\n- :assumption_enabled - For assumptions, whether initially enabled\n- :metadata - Additional metadata\n\nReturns {:ok, node_id}\n"
   def create_node(datum, opts \\ []) do
     if Config.enabled?() do
-      GenServer.call(__MODULE__, {:create_node, datum, opts})
+      GenServer.call(__MODULE__, {:create_node, datum, opts}, 5_000)
     else
       {:ok, generate_id()}
     end
@@ -44,7 +44,7 @@ defmodule Brain.Epistemic.JTMS do
   def justify_node(in_list, out_list, conclusion_id, informant) do
     Telemetry.span(:jtms_justify, %{conclusion_id: conclusion_id, informant: informant}, fn ->
       if Config.enabled?() do
-        GenServer.call(__MODULE__, {:justify_node, in_list, out_list, conclusion_id, informant})
+        GenServer.call(__MODULE__, {:justify_node, in_list, out_list, conclusion_id, informant}, 5_000)
       else
         {:ok, generate_id()}
       end
@@ -58,72 +58,72 @@ defmodule Brain.Epistemic.JTMS do
 
   @doc "Enables an assumption node, making it IN.\nTriggers label propagation.\n"
   def enable_assumption(node_id) do
-    GenServer.call(__MODULE__, {:enable_assumption, node_id})
+    GenServer.call(__MODULE__, {:enable_assumption, node_id}, 5_000)
   end
 
   @doc "Retracts an assumption node, making it OUT.\nTriggers label propagation.\n"
   def retract_assumption(node_id) do
-    GenServer.call(__MODULE__, {:retract_assumption, node_id})
+    GenServer.call(__MODULE__, {:retract_assumption, node_id}, 5_000)
   end
 
   @doc "Checks if a node is currently IN.\n"
   def is_in?(node_id) do
-    GenServer.call(__MODULE__, {:is_in?, node_id})
+    GenServer.call(__MODULE__, {:is_in?, node_id}, 5_000)
   end
 
   @doc "Gets the current label of a node.\n"
   def get_label(node_id) do
-    GenServer.call(__MODULE__, {:get_label, node_id})
+    GenServer.call(__MODULE__, {:get_label, node_id}, 5_000)
   end
 
   @doc "Gets a node by ID.\n"
   def get_node(node_id) do
-    GenServer.call(__MODULE__, {:get_node, node_id})
+    GenServer.call(__MODULE__, {:get_node, node_id}, 5_000)
   end
 
   @doc "Gets the justification chain explaining why a node is IN.\nReturns the list of justifications supporting the node.\n"
   def why_node(node_id) do
-    GenServer.call(__MODULE__, {:why_node, node_id})
+    GenServer.call(__MODULE__, {:why_node, node_id}, 5_000)
   end
 
   @doc "Gets all nodes that depend on the given node (forward chaining).\n"
   def consequences_of(node_id) do
-    GenServer.call(__MODULE__, {:consequences_of, node_id})
+    GenServer.call(__MODULE__, {:consequences_of, node_id}, 5_000)
   end
 
   @doc "Gets all nodes that the given node depends on (backward chaining).\n"
   def antecedents_of(node_id) do
-    GenServer.call(__MODULE__, {:antecedents_of, node_id})
+    GenServer.call(__MODULE__, {:antecedents_of, node_id}, 5_000)
   end
 
   @doc "Registers a set of node IDs as mutually contradictory.\nWhen all are IN, triggers contradiction handling.\n"
   def register_contradiction(node_ids, informant \\ "contradiction_rule") do
-    GenServer.call(__MODULE__, {:register_contradiction, node_ids, informant})
+    GenServer.call(__MODULE__, {:register_contradiction, node_ids, informant}, 5_000)
   end
 
   @doc "Checks consistency of the network.\nReturns {:ok, :consistent} or {:error, {:contradiction, node_id}}.\n"
   def check_consistency do
-    GenServer.call(__MODULE__, :check_consistency)
+    GenServer.call(__MODULE__, :check_consistency, 5_000)
   end
 
   @doc "Gets all current contradictions (contradiction nodes that are IN).\n"
   def get_contradictions do
-    GenServer.call(__MODULE__, :get_contradictions)
+    GenServer.call(__MODULE__, :get_contradictions, 5_000)
   end
 
   @doc "Sets the contradiction handler callback.\nThe callback receives {:contradiction, node_id, supporting_assumptions}.\n"
   def set_contradiction_handler(handler_fn) when is_function(handler_fn, 1) do
-    GenServer.call(__MODULE__, {:set_handler, handler_fn})
+    GenServer.call(__MODULE__, {:set_handler, handler_fn}, 5_000)
   end
 
   @doc "Gets network statistics.\n"
   def stats do
-    GenServer.call(__MODULE__, :stats)
+    GenServer.call(__MODULE__, :stats, 5_000)
   end
 
   @doc "Clears the entire network (for testing).\n"
   def clear do
-    GenServer.call(__MODULE__, :clear)
+    GenServer.call(__MODULE__, :clear, 30_000)
   end
 
   @doc "Checks if JTMS is ready.\n"
@@ -167,6 +167,8 @@ defmodule Brain.Epistemic.JTMS do
       end
 
     Logger.debug("Node created", id: node.id, type: node.node_type, label: node.label)
+
+    Brain.Graph.Writer.write_jtms_node(node)
 
     {:reply, {:ok, node.id}, new_state}
   end
@@ -212,6 +214,14 @@ defmodule Brain.Epistemic.JTMS do
         conclusion: conclusion_id
       )
 
+      Brain.Graph.Writer.write_justification(%{
+        id: justification.id,
+        informant: informant,
+        conclusion_id: conclusion_id,
+        in_list: in_list,
+        out_list: out_list
+      })
+
       {:reply, {:ok, justification.id}, new_state}
     end
   end
@@ -227,6 +237,8 @@ defmodule Brain.Epistemic.JTMS do
         new_nodes = Map.put(state.nodes, node_id, updated)
         new_state = %{state | nodes: new_nodes}
         new_state = propagate_from_node(new_state, node_id)
+
+        Brain.Graph.Writer.update_jtms_label(node_id, :in)
 
         {:reply, :ok, new_state}
 
@@ -246,6 +258,8 @@ defmodule Brain.Epistemic.JTMS do
         new_nodes = Map.put(state.nodes, node_id, updated)
         new_state = %{state | nodes: new_nodes}
         new_state = propagate_from_node(new_state, node_id)
+
+        Brain.Graph.Writer.update_jtms_label(node_id, :out)
 
         {:reply, :ok, new_state}
 
@@ -280,25 +294,9 @@ defmodule Brain.Epistemic.JTMS do
 
   @impl true
   def handle_call({:why_node, node_id}, _from, state) do
-    case Map.get(state.nodes, node_id) do
-      nil ->
-        {:reply, {:error, :not_found}, state}
-
-      node ->
-        just_ids = Map.get(state.node_to_justifications, node_id, [])
-
-        supporting =
-          just_ids
-          |> Enum.map(&Map.get(state.justifications, &1))
-          |> Enum.filter(fn j -> j != nil and j.conclusion_id == node_id end)
-          |> Enum.filter(fn j -> justification_valid?(j, state) end)
-
-        result = %{
-          node: node,
-          supporting_justifications: supporting
-        }
-
-        {:reply, {:ok, result}, state}
+    case do_why_node(node_id, state) do
+      {:ok, result} -> {:reply, {:ok, result}, state}
+      {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
 
@@ -363,6 +361,8 @@ defmodule Brain.Epistemic.JTMS do
     }
 
     new_state = propagate_from_justification(new_state, justification)
+
+    Brain.Graph.Writer.write_contradiction(node_ids)
 
     {:reply, {:ok, contra_node.id}, new_state}
   end
@@ -443,6 +443,7 @@ defmodule Brain.Epistemic.JTMS do
         updated_node = %{conclusion | label: :in}
         new_nodes = Map.put(state.nodes, conclusion.id, updated_node)
         state = %{state | nodes: new_nodes}
+        Brain.Graph.Writer.update_jtms_label(conclusion.id, :in)
         state = check_contradiction_triggered(state, conclusion.id)
         propagate_from_node(state, conclusion.id)
       else
@@ -495,6 +496,7 @@ defmodule Brain.Epistemic.JTMS do
         updated_node = %{conclusion | label: :out}
         new_nodes = Map.put(state.nodes, conclusion_id, updated_node)
         state = %{state | nodes: new_nodes}
+        Brain.Graph.Writer.update_jtms_label(conclusion_id, :out)
         propagate_from_node(state, conclusion_id)
       else
         state
@@ -563,8 +565,8 @@ defmodule Brain.Epistemic.JTMS do
           find_assumptions_recursive(state, rest, visited, assumptions)
 
         true ->
-          case handle_call({:why_node, node_id}, nil, state) do
-            {:reply, {:ok, result}, _} ->
+          case do_why_node(node_id, state) do
+            {:ok, result} ->
               antecedent_ids =
                 result.supporting_justifications
                 |> Enum.flat_map(fn j -> j.in_list end)
@@ -578,6 +580,29 @@ defmodule Brain.Epistemic.JTMS do
     end
   end
 
+  defp do_why_node(node_id, state) do
+    case Map.get(state.nodes, node_id) do
+      nil ->
+        {:error, :not_found}
+
+      node ->
+        just_ids = Map.get(state.node_to_justifications, node_id, [])
+
+        supporting =
+          just_ids
+          |> Enum.map(&Map.get(state.justifications, &1))
+          |> Enum.filter(fn j -> j != nil and j.conclusion_id == node_id end)
+          |> Enum.filter(fn j -> justification_valid?(j, state) end)
+
+        result = %{
+          node: node,
+          supporting_justifications: supporting
+        }
+
+        {:ok, result}
+    end
+  end
+
   defp default_contradiction_handler({:contradiction, node_id, assumptions}) do
     Logger.warning("Contradiction detected",
       node_id: node_id,
@@ -586,6 +611,6 @@ defmodule Brain.Epistemic.JTMS do
   end
 
   defp generate_id do
-    :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
+    FourthWall.ID.generate()
   end
 end

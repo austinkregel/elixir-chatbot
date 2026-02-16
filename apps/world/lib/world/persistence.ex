@@ -708,7 +708,7 @@ defmodule World.Persistence do
           try do
             String.to_existing_atom(k)
           rescue
-            _ -> String.to_atom(k)
+            ArgumentError -> k
           end
         else
           k

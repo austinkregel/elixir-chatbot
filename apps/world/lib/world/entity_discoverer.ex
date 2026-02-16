@@ -5,7 +5,7 @@ defmodule World.EntityDiscoverer do
   require Logger
 
   alias ML.{POSTagger, Tokenizer, Gazetteer}
-  alias World.Manager, as: WorldManager, as: WorldManager
+  alias World.Manager, as: WorldManager
   alias World.Metrics, as: WorldMetrics
 
   @type discovery_result :: %{
@@ -58,7 +58,7 @@ defmodule World.EntityDiscoverer do
   @doc "Finds entities that appear multiple times across a list of discoveries.\n\nReturns entities sorted by occurrence count, useful for identifying\ncandidates that should be promoted to the gazetteer.\n"
   def aggregate_discoveries(discoveries) when is_list(discoveries) do
     discoveries
-    |> Enum.filter(&(&1.status == :unknown))
+    |> Enum.filter(&((Map.get(&1, :status) || :unknown) == :unknown))
     |> Enum.group_by(&String.downcase(&1.value))
     |> Enum.map(fn {normalized, occurrences} ->
       first = hd(occurrences)
@@ -135,7 +135,6 @@ defmodule World.EntityDiscoverer do
 
         [prev | rest] ->
           if pn.token_index == prev.token_index + 1 do
-            prev_token = Enum.at(tokens, prev.token_index)
             curr_token = Enum.at(tokens, pn.token_index)
 
             merged = %{
@@ -147,7 +146,6 @@ defmodule World.EntityDiscoverer do
               token_indices: Map.get(prev, :token_indices, [prev.token_index]) ++ [pn.token_index]
             }
 
-            _ = prev_token
             [merged | rest]
           else
             [pn | acc]
@@ -206,10 +204,24 @@ defmodule World.EntityDiscoverer do
 
   defp infer_type_from_context(pn, tokens, pos_predictions) do
     context_tags = extract_context_tags(pn, pos_predictions)
-    confidence = calculate_context_confidence(context_tags)
-    inferred_type = infer_from_pos_context(context_tags, tokens, pn)
+    world_id = World.Context.default_world_id()
 
-    {inferred_type, confidence}
+    if world_id do
+      case World.TypeInferrer.infer_type(pn.value, tokens, context_tags, world_id) do
+        {type, confidence} when is_binary(type) and is_float(confidence) ->
+          {type, confidence}
+
+        _ ->
+          # Fallback to local context confidence
+          confidence = calculate_context_confidence(context_tags)
+          inferred_type = infer_from_pos_context(context_tags, tokens, pn)
+          {inferred_type, confidence}
+      end
+    else
+      confidence = calculate_context_confidence(context_tags)
+      inferred_type = infer_from_pos_context(context_tags, tokens, pn)
+      {inferred_type, confidence}
+    end
   end
 
   defp extract_context_tags(pn, pos_predictions) do

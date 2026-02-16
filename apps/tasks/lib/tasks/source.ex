@@ -110,18 +110,9 @@ defmodule Tasks.Source do
     questions = Enum.map(goal.questions || [], &String.downcase/1)
     all_text = topic <> " " <> Enum.join(questions, " ")
 
-    cond do
-      String.contains?(all_text, ["why", "how", "reason", "explain"]) ->
-        :reasoning
-
-      String.contains?(all_text, ["feel", "emotion", "sentiment", "opinion"]) ->
-        :sentiment
-
-      String.contains?(all_text, ["what", "who", "when", "where", "which"]) ->
-        :factual
-
-      true ->
-        :general
+    case Brain.ML.MicroClassifiers.classify(:goal_type, all_text) do
+      {:ok, label, _score} -> String.to_existing_atom(label)
+      _ -> :general
     end
   end
 
@@ -269,7 +260,9 @@ defmodule Tasks.Source do
     end
   end
 
+  # Extract the primary entity/subject from input text
   defp extract_entity(input) when is_binary(input) do
+    # Use first significant words as entity
     input
     |> String.split(~r/[\s\?\!\.]+/)
     |> Enum.reject(&(&1 in ~w(what who where when why how is are was were the a an)))
@@ -281,9 +274,7 @@ defmodule Tasks.Source do
     end
   end
 
-  defp extract_entity(_) do
-    "unknown"
-  end
+  defp extract_entity(_), do: "unknown"
 
   defp get_outputs(instance) do
     case Map.get(instance, "output") do
@@ -292,6 +283,18 @@ defmodule Tasks.Source do
       single -> [single]
     end
   end
+
+  @doc "Returns the task categories for a given capability atom.
+
+  ## Examples
+
+      iex> Tasks.Source.capability_categories(:question_answering)
+      [\"Question Answering\"]
+
+      iex> Tasks.Source.capability_categories(:all)
+      # All useful categories from Analyzer
+  "
+  def capability_categories(capability), do: capability_to_categories(capability)
 
   defp capability_to_categories(capability) do
     case capability do

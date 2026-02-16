@@ -1,7 +1,7 @@
 defmodule Brain.Epistemic.ContradictionHandlingTest do
   @moduledoc "Tests for handling contradictions when user input contradicts existing beliefs.\n\nThese tests verify:\n- Contradiction detection in fact verification\n- Learner handling of contradictory facts\n- Belief store queries for contradictions\n- End-to-end contradiction handling in conversations\n"
   alias Brain.Epistemic
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
 
   alias Epistemic.{BeliefStore, JTMS, ContradictionHandler, UserModelStore}
   alias Brain.FactDatabase

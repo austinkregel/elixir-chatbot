@@ -80,6 +80,13 @@ defmodule Brain.Response.Synthesizer do
                                "I'm still getting to know you. We haven't shared much yet."
                              ])
 
+  @external_resource Path.join(:code.priv_dir(:brain), "response/frame_key_mappings.json")
+  @frame_key_config Path.join(:code.priv_dir(:brain), "response/frame_key_mappings.json")
+                    |> File.read!()
+                    |> Jason.decode!()
+  @frame_key_mappings Map.get(@frame_key_config, "slot_to_frame_key", %{})
+  @frame_key_default Map.get(@frame_key_config, "default", "general")
+
   @doc "Synthesizes a response for any intent using domain knowledge and primitives.\n\nThis is the primary entry point for generative response creation.\n\n## Parameters\n- `intent` - The classified intent (e.g., \"weather.query\")\n- `entities` - List of extracted entities\n- `opts` - Options including:\n  - `:confidence` - Classification confidence (0.0-1.0)\n  - `:speech_act` - Speech act analysis result\n  - `:similar_episodes` - Similar past interactions from memory\n  - `:semantic_facts` - Retrieved semantic facts\n\n## Returns\n`{:ok, response}` or `:not_synthesized`\n"
   def synthesize(intent, entities, opts \\ []) do
     domain = IntentRegistry.domain(intent) || infer_domain(intent)
@@ -134,6 +141,7 @@ defmodule Brain.Response.Synthesizer do
           # Check if we have enriched data - if so, prefer enriched templates
           case try_enriched_response(domain_config, entities, context, confidence) do
             {:ok, response} ->
+              response = maybe_add_graph_context(response, context)
               {:ok, response}
 
             :not_enriched ->
@@ -147,12 +155,41 @@ defmodule Brain.Response.Synthesizer do
                 frame = Enum.random(frames)
                 filled_response = fill_entity_slots(frame, entities)
                 final_response = maybe_add_acknowledgment(filled_response, confidence, domain_config)
+                final_response = maybe_add_graph_context(final_response, context)
 
                 {:ok, final_response}
               end
           end
         end
     end
+  end
+
+  defp maybe_add_graph_context(response, context) do
+    graph_relations = Map.get(context, :graph_relations, [])
+    user_prefs = Map.get(context, :user_prefs, [])
+
+    cond do
+      graph_relations != [] ->
+        relation_hints =
+          graph_relations
+          |> Enum.take(2)
+          |> Enum.map(fn %{from: f, to: t} -> "#{f} is related to #{t}" end)
+          |> Enum.join("; ")
+
+        if String.length(relation_hints) > 0 do
+          response <> " (Related: " <> relation_hints <> ")"
+        else
+          response
+        end
+
+      user_prefs != [] ->
+        response
+
+      true ->
+        response
+    end
+  rescue
+    _ -> response
   end
 
   # Try to build a response using enriched_response_frames if enrichment succeeded
@@ -167,6 +204,18 @@ defmodule Brain.Response.Synthesizer do
       enrichment_status == :failed and Map.has_key?(enriched_frames, "service_error") ->
         frames = get_in(enriched_frames, ["service_error", "templates"]) || []
         select_and_fill_enriched_frame(frames, entities, enriched_data, domain_config, confidence)
+
+      # Service not configured - use honest "not available" templates instead of "Let me check..."
+      Map.has_key?(enriched_frames, "service_not_configured") ->
+        frame_config = enriched_frames["service_not_configured"]
+        condition = Map.get(frame_config, "condition")
+
+        if condition && Brain.Response.ConditionEvaluator.evaluate(condition, context) do
+          frames = Map.get(frame_config, "templates", [])
+          select_and_fill_enriched_frame(frames, entities, enriched_data, domain_config, confidence)
+        else
+          :not_enriched
+        end
 
       # No enriched data available
       enriched_data == %{} or enriched_data == nil ->
@@ -204,10 +253,17 @@ defmodule Brain.Response.Synthesizer do
 
   defp has_all_required_enrichment?(required_fields, enriched_data) do
     Enum.all?(required_fields, fn field ->
-      field_atom = if is_binary(field), do: String.to_atom(field), else: field
+      field_key = safe_field_atom(field)
       field_str = to_string(field)
-      Map.has_key?(enriched_data, field_atom) or Map.has_key?(enriched_data, field_str)
+      Map.has_key?(enriched_data, field_key) or Map.has_key?(enriched_data, field_str)
     end)
+  end
+
+  defp safe_field_atom(field) when is_atom(field), do: field
+  defp safe_field_atom(field) when is_binary(field) do
+    String.to_existing_atom(field)
+  rescue
+    ArgumentError -> field
   end
 
   defp has_required_entities?(_config, _entities) do
@@ -234,26 +290,8 @@ defmodule Brain.Response.Synthesizer do
   end
 
   defp fill_enrichment_slots(text, enriched_data) when is_binary(text) do
-    Enum.reduce(enriched_data, text, fn {key, value}, acc ->
-      # Skip nested maps
-      if is_map(value) do
-        acc
-      else
-        key_str = to_string(key)
-        value_str = format_enrichment_value(value)
-
-        acc
-        |> String.replace("$#{key_str}", value_str)
-        |> String.replace("@#{key_str}", value_str)
-      end
-    end)
+    Brain.Response.Formatting.substitute_placeholders(text, enriched_data)
   end
-
-  defp format_enrichment_value(value) when is_binary(value), do: value
-  defp format_enrichment_value(value) when is_number(value), do: to_string(value)
-  defp format_enrichment_value(value) when is_atom(value), do: Atom.to_string(value)
-  defp format_enrichment_value(value) when is_list(value), do: Enum.join(value, ", ")
-  defp format_enrichment_value(value), do: inspect(value)
 
   @doc "Synthesizes a clarification request when required slots are missing.\n"
   def synthesize_clarification(intent, entities, missing_slots, opts \\ []) do
@@ -420,18 +458,8 @@ defmodule Brain.Response.Synthesizer do
         "general"
 
       true ->
-        case Enum.sort(filled_required) do
-          ["location"] -> "has_location"
-          ["content", "date"] -> "create_with_date"
-          ["content"] -> "create_content_only"
-          ["device", "action"] -> "control_device"
-          ["music-artist"] -> "play_artist"
-          ["song"] -> "play_song"
-          ["music-artist", "song"] -> "play_artist_song"
-          ["topic"] -> "with_topic"
-          ["symbol"] -> "explain_symbol"
-          _ -> "general"
-        end
+        sorted_key = filled_required |> Enum.sort() |> Enum.join(",")
+        Map.get(@frame_key_mappings, sorted_key, @frame_key_default)
     end
   end
 
@@ -723,25 +751,7 @@ defmodule Brain.Response.Synthesizer do
     "something"
   end
 
-  defp format_value(value) when is_binary(value) do
-    value
-  end
-
-  defp format_value(value) when is_atom(value) do
-    Atom.to_string(value)
-  end
-
-  defp format_value(value) when is_number(value) do
-    to_string(value)
-  end
-
-  defp format_value(value) when is_list(value) do
-    Enum.join(value, ", ")
-  end
-
-  defp format_value(value) do
-    inspect(value)
-  end
+  defp format_value(value), do: Brain.Response.Formatting.format_value(value)
 
   defp join_with_and([]) do
     ""

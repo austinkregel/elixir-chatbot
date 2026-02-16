@@ -140,6 +140,12 @@ defmodule ChatWeb.AppShell do
             </div>
             <ul class="space-y-1">
               <.nav_item
+                href={~p"/sessions"}
+                icon="hero-beaker"
+                label="Sessions"
+                active={String.starts_with?(@current_path, "/sessions")}
+              />
+              <.nav_item
                 href={~p"/knowledge-review"}
                 icon="hero-academic-cap"
                 label="Knowledge Review"

@@ -134,6 +134,13 @@ config :exla,
   memory_fraction: 0.75,
   preallocate: true
 
+# ============================================================================
+# Atlas App Configuration (PostgreSQL + Apache AGE)
+# ============================================================================
+
+config :atlas,
+  ecto_repos: [Atlas.Repo]
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

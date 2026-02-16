@@ -341,7 +341,7 @@ defmodule Mix.Tasks.TrainingWorld.Events do
 
         filters =
           if t = Keyword.get(opts, :type) do
-            [type: String.to_atom(t)] ++ filters
+            [type: safe_event_type(t)] ++ filters
           else
             filters
           end
@@ -374,6 +374,13 @@ defmodule Mix.Tasks.TrainingWorld.Events do
           "Usage: mix training_world.events <world_id> [--type=event_type] [--limit=N]"
         )
     end
+  end
+
+  defp safe_event_type(t) when is_binary(t) do
+    String.to_existing_atom(t)
+  rescue
+    ArgumentError ->
+      Mix.raise("Unknown event type: #{t}. Use an existing atom like :entity_discovered")
   end
 
   defp ensure_started do

@@ -1,5 +1,5 @@
 defmodule Brain.Response.EnricherTest do
-  use ExUnit.Case, async: true
+  use Brain.Test.GraphCase, async: false
 
   alias Brain.Response.Enricher
 

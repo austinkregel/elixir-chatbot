@@ -30,6 +30,8 @@ defmodule ChatWeb.Router do
       live "/dashboard", DashboardLive
       live "/settings", SettingsLive
       live "/code", CodeAnalysisLive
+      live "/sessions", SessionsLive
+      live "/sessions/:session_id", SessionsLive
       live "/knowledge-review", Admin.KnowledgeReviewLive
       live "/intent-review", Admin.IntentReviewLive
       live "/accuracy", AccuracyLive

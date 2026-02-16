@@ -1,5 +1,14 @@
 {
   "profiles": {
+    "curated_fact": {
+      "label": "Curated Fact",
+      "description": "Verified, immutable grounding fact — axiomatic truth that anchors the system's shared reality. These facts are read-only and cannot be modified or deleted.",
+      "initial_confidence": 1.0,
+      "decay_rate_multiplier": 0.0,
+      "jtms_node_type": "premise",
+      "credibility_floor": 1.0,
+      "category": "axiomatic"
+    },
     "mentor": {
       "label": "Mentor",
       "description": "Trusted guide with deep subject knowledge and personal relationship",

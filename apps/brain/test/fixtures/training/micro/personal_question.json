@@ -1,0 +1,10 @@
+[
+  {"text": "what is your name", "label": "personal"},
+  {"text": "who are you", "label": "personal"},
+  {"text": "are you a robot", "label": "personal"},
+  {"text": "how old are you", "label": "personal"},
+  {"text": "what's the weather today", "label": "not_personal"},
+  {"text": "play some music", "label": "not_personal"},
+  {"text": "turn on the lights", "label": "not_personal"},
+  {"text": "set a timer", "label": "not_personal"}
+]

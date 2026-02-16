@@ -181,6 +181,12 @@ defmodule Brain.ML.IntentClassifierSimple do
   end
 
   @impl true
+  def handle_call({:load_trained_model, model}, _from, state) do
+    new_models = Map.put(state.models, @default_world_id, model)
+    {:reply, :ok, %{state | models: new_models}}
+  end
+
+  @impl true
   def handle_call({:is_loaded, world_id}, _from, state) do
     loaded = Map.has_key?(state.models, world_id)
     {:reply, loaded, state}

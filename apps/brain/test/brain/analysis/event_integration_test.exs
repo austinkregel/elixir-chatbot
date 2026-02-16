@@ -4,7 +4,7 @@ defmodule Brain.Analysis.EventIntegrationTest do
   alias Brain.Analysis.EventPatterns
   alias Brain.ML.EntityExtractor
   alias Brain.Analysis
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
 
   alias Analysis.{Pipeline, EventExtractor, ChunkAnalysis}
   alias Brain.Analysis.Types.Event

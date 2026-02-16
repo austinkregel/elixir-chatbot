@@ -207,7 +207,7 @@ defmodule Brain.ML.LSTM.ModelCompatibilityTest do
 
       # Verify it can be read back
       {:ok, binary} = File.read(model_path)
-      data = :erlang.binary_to_term(binary)
+      data = :erlang.binary_to_term(binary, [:safe])
 
       assert Map.has_key?(data, :params)
       assert Map.has_key?(data, :vocabularies)

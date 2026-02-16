@@ -36,6 +36,18 @@ defmodule ChatWeb.DashboardLiveTest do
       assert html =~ "World Models"
     end
 
+    test "displays GenServer status section", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/dashboard")
+
+      assert html =~ "Core" or html =~ "GenServer" or html =~ "Systems"
+    end
+
+    test "displays metrics section from Aggregator", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/dashboard")
+
+      assert html =~ "Metrics" or html =~ "Telemetry" or html =~ "Updated"
+    end
+
     test "displays auto-refresh toggle", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/dashboard")
 
@@ -87,6 +99,45 @@ defmodule ChatWeb.DashboardLiveTest do
 
       assert html =~ "World:"
       assert html =~ "default"
+    end
+  end
+
+  describe "readiness matrix" do
+    test "renders readiness matrix panel", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/dashboard")
+
+      assert html =~ "Readiness Matrix"
+      assert html =~ "Brain Core"
+      assert html =~ "Embedder"
+      assert html =~ "Memory Store"
+      assert html =~ "NLP Pipeline"
+      assert html =~ "Intent Classifier"
+      assert html =~ "Micro Classifiers"
+    end
+
+    test "shows overall readiness badge", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/dashboard")
+
+      assert html =~ "All Systems Ready" or html =~ "Some Systems Initializing"
+    end
+  end
+
+  describe "response timing panel" do
+    test "renders response timing section", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/dashboard")
+
+      assert html =~ "Response Timing"
+      assert html =~ "Brain Evaluate"
+      assert html =~ "Analysis Pipeline"
+    end
+  end
+
+  describe "micro classifiers panel" do
+    test "renders micro classifiers section", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/dashboard")
+
+      assert html =~ "Micro Classifiers"
+      assert html =~ "Lightweight TF-IDF"
     end
   end
 end

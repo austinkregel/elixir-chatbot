@@ -18,16 +18,25 @@ defmodule Brain.Subprocesses.CliSubprocess do
     )
   end
 
+  @doc "Returns true if the CLI subprocess is ready to accept requests."
+  def ready?(subprocess_id) do
+    try do
+      GenServer.call(via_tuple(subprocess_id), :ready?, 100)
+    catch
+      :exit, _ -> false
+    end
+  end
+
   def execute_command(subprocess_id, command) do
-    GenServer.call(via_tuple(subprocess_id), {:execute_command, command})
+    GenServer.call(via_tuple(subprocess_id), {:execute_command, command}, 30_000)
   end
 
   def get_status(subprocess_id) do
-    GenServer.call(via_tuple(subprocess_id), :get_status)
+    GenServer.call(via_tuple(subprocess_id), :get_status, 5_000)
   end
 
   def get_help(subprocess_id) do
-    GenServer.call(via_tuple(subprocess_id), :get_help)
+    GenServer.call(via_tuple(subprocess_id), :get_help, 5_000)
   end
 
   def handle_urgent_interrupt(subprocess_id, reason, data) do
@@ -38,9 +47,12 @@ defmodule Brain.Subprocesses.CliSubprocess do
 
   @impl true
   def init({subprocess_id, memory_snapshot}) do
+    user_id = "cli_#{subprocess_id}"
+
     # Initialize state
     state = %{
       subprocess_id: subprocess_id,
+      user_id: user_id,
       memory_snapshot: memory_snapshot,
       cli_memory: [],
       learning_data: %{
@@ -59,6 +71,11 @@ defmodule Brain.Subprocesses.CliSubprocess do
     })
 
     {:ok, state}
+  end
+
+  @impl true
+  def handle_call(:ready?, _from, state) do
+    {:reply, true, state}
   end
 
   @impl true
@@ -227,7 +244,7 @@ defmodule Brain.Subprocesses.CliSubprocess do
         case String.split(rest, " ", parts: 2) do
           [conversation_id, message] ->
             # Route through Brain.evaluate for full NLP processing
-            case Brain.evaluate(conversation_id, message) do
+            case Brain.evaluate(conversation_id, message, user_id: state.user_id) do
               {:ok, response} when is_binary(response) ->
                 response
 
@@ -246,7 +263,7 @@ defmodule Brain.Subprocesses.CliSubprocess do
         # Use or create a default conversation for this CLI subprocess
         conv_id = ensure_conversation_id(state)
 
-        case Brain.evaluate(conv_id, message) do
+        case Brain.evaluate(conv_id, message, user_id: state.user_id) do
           {:ok, response} when is_binary(response) ->
             response
 

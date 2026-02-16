@@ -61,6 +61,7 @@ defmodule Brain.Analysis.IntentAutoPromoter do
     {:reply, state, state}
   end
 
+  @impl true
   def handle_call(:ready?, _from, state) do
     {:reply, true, state}
   end
@@ -73,6 +74,7 @@ defmodule Brain.Analysis.IntentAutoPromoter do
     {:noreply, state}
   end
 
+  @impl true
   def handle_info(_msg, state), do: {:noreply, state}
 
   # --- Private ---

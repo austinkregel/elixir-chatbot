@@ -9,15 +9,6 @@ defmodule Brain.Analysis.IntentReviewQueue do
 
   @ets_table :intent_review_queue
 
-  defp persistence_path do
-    configured = Application.get_env(:brain, :intent_review_queue_path)
-
-    if configured do
-      configured
-    else
-      Brain.priv_path("data/intent_review_queue.term")
-    end
-  end
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -135,7 +126,7 @@ defmodule Brain.Analysis.IntentReviewQueue do
       }
     }
 
-    state = load_from_disk(state)
+    state = load_from_atlas(state)
 
     Logger.info("IntentReviewQueue initialized", pending: state.stats.pending)
 
@@ -145,10 +136,10 @@ defmodule Brain.Analysis.IntentReviewQueue do
   @impl true
   def handle_call({:add, candidate}, _from, state) do
     :ets.insert(@ets_table, {candidate.id, candidate})
+    Brain.AtlasIntegration.persist_intent_review_candidate(candidate)
 
     new_stats = %{state.stats | pending: state.stats.pending + 1}
     new_state = %{state | stats: new_stats}
-    persist_to_disk(new_state)
     broadcast_update(:candidate_added, candidate)
 
     {:reply, {:ok, candidate.id}, new_state}
@@ -204,7 +195,7 @@ defmodule Brain.Analysis.IntentReviewQueue do
       [{^id, candidate}] ->
         updated = IntentReviewCandidate.update_annotation(candidate, annotation_updates)
         :ets.insert(@ets_table, {id, updated})
-        persist_to_disk(state)
+        Brain.AtlasIntegration.persist_intent_review_candidate(updated)
         broadcast_update(:annotation_updated, updated)
         {:reply, {:ok, updated}, state}
 
@@ -232,7 +223,7 @@ defmodule Brain.Analysis.IntentReviewQueue do
         }
 
         new_state = %{state | stats: new_stats}
-        persist_to_disk(new_state)
+        Brain.AtlasIntegration.persist_intent_review_candidate(updated)
         broadcast_update(:candidate_approved, updated)
 
         Logger.info("Intent candidate approved",
@@ -265,7 +256,7 @@ defmodule Brain.Analysis.IntentReviewQueue do
         }
 
         new_state = %{state | stats: new_stats}
-        persist_to_disk(new_state)
+        Brain.AtlasIntegration.persist_intent_review_candidate(updated)
         broadcast_update(:candidate_rejected, updated)
 
         {:reply, {:ok, updated}, new_state}
@@ -289,8 +280,7 @@ defmodule Brain.Analysis.IntentReviewQueue do
         }
 
         new_state = %{state | stats: new_stats}
-
-        persist_to_disk(new_state)
+        Brain.AtlasIntegration.persist_intent_review_candidate(updated)
         broadcast_update(:candidate_deferred, updated)
 
         {:reply, {:ok, updated}, new_state}
@@ -311,6 +301,7 @@ defmodule Brain.Analysis.IntentReviewQueue do
           [{^id, candidate}] when candidate.status == :pending ->
             updated = IntentReviewCandidate.approve(candidate, "Bulk approved")
             :ets.insert(@ets_table, {id, updated})
+            Brain.AtlasIntegration.persist_intent_review_candidate(updated)
             count + 1
 
           _ ->
@@ -326,7 +317,6 @@ defmodule Brain.Analysis.IntentReviewQueue do
     }
 
     new_state = %{state | stats: new_stats}
-    persist_to_disk(new_state)
     broadcast_update(:bulk_approved, %{count: approved_count})
 
     {:reply, {:ok, approved_count}, new_state}
@@ -343,6 +333,7 @@ defmodule Brain.Analysis.IntentReviewQueue do
           [{^id, candidate}] when candidate.status == :pending ->
             updated = IntentReviewCandidate.reject(candidate, "Bulk rejected")
             :ets.insert(@ets_table, {id, updated})
+            Brain.AtlasIntegration.persist_intent_review_candidate(updated)
             count + 1
 
           _ ->
@@ -358,7 +349,6 @@ defmodule Brain.Analysis.IntentReviewQueue do
     }
 
     new_state = %{state | stats: new_stats}
-    persist_to_disk(new_state)
     broadcast_update(:bulk_rejected, %{count: rejected_count})
 
     {:reply, {:ok, rejected_count}, new_state}
@@ -387,14 +377,12 @@ defmodule Brain.Analysis.IntentReviewQueue do
         }
     }
 
-    persist_to_disk(new_state)
     {:reply, :ok, new_state}
   end
 
   @impl true
   def handle_call(:persist, _from, state) do
-    result = persist_to_disk(state)
-    {:reply, result, state}
+    {:reply, :ok, state}
   end
 
   @impl true
@@ -454,60 +442,46 @@ defmodule Brain.Analysis.IntentReviewQueue do
     candidates
   end
 
-  defp load_from_disk(state) do
-    path = persistence_path()
+  defp load_from_atlas(state) do
+    case Brain.AtlasIntegration.load_intent_review_candidates() do
+      {:ok, candidates} when candidates != [] ->
+        pending = 0
+        approved = 0
+        rejected = 0
+        deferred = 0
 
-    if File.exists?(path) do
-      case File.read(path) do
-        {:ok, binary} ->
-          try do
-            data = :erlang.binary_to_term(binary)
-            candidates = Map.get(data, :candidates, [])
-            stats = Map.get(data, :stats, state.stats)
+        {pending, approved, rejected, deferred} =
+          Enum.reduce(candidates, {pending, approved, rejected, deferred}, fn {id, candidate}, {p, a, r, d} ->
+            :ets.insert(@ets_table, {id, candidate})
 
-            Enum.each(candidates, fn {id, candidate} ->
-              :ets.insert(@ets_table, {id, candidate})
-            end)
+            case candidate.status do
+              :pending -> {p + 1, a, r, d}
+              :approved -> {p, a + 1, r, d}
+              :rejected -> {p, a, r + 1, d}
+              :deferred -> {p, a, r, d + 1}
+              _ -> {p, a, r, d}
+            end
+          end)
 
-            Logger.info("Loaded intent review queue from disk", candidates: length(candidates))
+        new_stats = %{
+          state.stats
+          | pending: pending,
+            approved: approved,
+            rejected: rejected,
+            deferred: deferred
+        }
 
-            %{state | stats: stats}
-          rescue
-            e ->
-              Logger.warning("Failed to parse intent review queue", error: inspect(e))
-              state
-          end
+        Logger.info("Loaded intent review queue from Atlas", candidates: length(candidates))
+        %{state | stats: new_stats}
 
-        {:error, reason} ->
-          Logger.warning("Failed to read intent review queue", reason: inspect(reason))
-          state
-      end
-    else
+      _ ->
+        Logger.debug("No intent review candidates in Atlas, starting with empty queue")
+        state
+    end
+  rescue
+    e ->
+      Logger.warning("Failed to load intent review queue from Atlas: #{inspect(e)}")
       state
-    end
-  end
-
-  defp persist_to_disk(state) do
-    path = persistence_path()
-
-    candidates = :ets.tab2list(@ets_table)
-
-    data = %{
-      candidates: candidates,
-      stats: state.stats,
-      version: 1
-    }
-
-    path |> Path.dirname() |> File.mkdir_p!()
-
-    case File.write(path, :erlang.term_to_binary(data)) do
-      :ok ->
-        :ok
-
-      {:error, reason} ->
-        Logger.error("Failed to persist intent review queue", reason: inspect(reason))
-        {:error, reason}
-    end
   end
 
   defp broadcast_update(event, data) do

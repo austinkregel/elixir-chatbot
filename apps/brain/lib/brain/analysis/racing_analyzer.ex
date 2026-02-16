@@ -297,23 +297,11 @@ defmodule Brain.Analysis.RacingAnalyzer do
     imperative_words =
       ~w(tell show give get find search look check turn set make create open close start stop play pause)
 
-    personal_patterns = [
-      "your name",
-      "you called",
-      "are you",
-      "do you",
-      "can you",
-      "will you",
-      "would you",
-      "how are",
-      "how do you",
-      "what do you",
-      "who are you",
-      "what are you",
-      "where are you from"
-    ]
-
-    is_personal = Enum.any?(personal_patterns, &String.contains?(text_lower, &1))
+    is_personal =
+      case Brain.ML.MicroClassifiers.classify(:personal_question, text_lower) do
+        {:ok, "personal", score} when score > 0.3 -> true
+        _ -> false
+      end
 
     {intent, confidence, indicators} =
       cond do

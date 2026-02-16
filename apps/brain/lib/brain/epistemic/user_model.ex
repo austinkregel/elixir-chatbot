@@ -9,9 +9,6 @@ defmodule Brain.Epistemic.UserModelStore do
 
   require Logger
 
-  defp default_persistence_path do
-    Brain.priv_path("data/user_models.term")
-  end
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -112,15 +109,9 @@ defmodule Brain.Epistemic.UserModelStore do
   end
 
   @impl true
-  def init(opts) do
-    persistence_path = Keyword.get(opts, :persistence_path, default_persistence_path())
-
-    state = %{
-      models: %{},
-      persistence_path: persistence_path
-    }
-
-    state = maybe_load_from_disk(state)
+  def init(_opts) do
+    state = %{models: %{}}
+    state = load_from_atlas(state)
 
     Logger.info("UserModelStore initialized", user_count: map_size(state.models))
 
@@ -152,6 +143,8 @@ defmodule Brain.Epistemic.UserModelStore do
     updated = UserModel.update_fact(model, key, value, source, confidence)
     new_models = Map.put(state.models, user_id, updated)
     new_state = %{state | models: new_models}
+
+    Brain.AtlasIntegration.persist_user_model(updated)
 
     Logger.debug("User fact updated",
       user_id: user_id,
@@ -198,6 +191,8 @@ defmodule Brain.Epistemic.UserModelStore do
     new_models = Map.put(state.models, user_id, updated)
     new_state = %{state | models: new_models}
 
+    Brain.AtlasIntegration.persist_user_model(updated)
+
     {:reply, :ok, new_state}
   end
 
@@ -207,6 +202,8 @@ defmodule Brain.Epistemic.UserModelStore do
     updated = UserModel.record_disclosure(model, disclosed_keys, context)
     new_models = Map.put(state.models, user_id, updated)
     new_state = %{state | models: new_models}
+
+    Brain.AtlasIntegration.persist_user_model(updated)
 
     {:reply, :ok, new_state}
   end
@@ -303,8 +300,7 @@ defmodule Brain.Epistemic.UserModelStore do
 
   @impl true
   def handle_call(:persist, _from, state) do
-    result = persist_to_disk(state)
-    {:reply, result, state}
+    {:reply, :ok, state}
   end
 
   @impl true
@@ -323,47 +319,19 @@ defmodule Brain.Epistemic.UserModelStore do
     {:reply, true, state}
   end
 
-  defp maybe_load_from_disk(state) do
-    path = state.persistence_path
+  defp load_from_atlas(state) do
+    case Brain.AtlasIntegration.load_user_models() do
+      {:ok, models} when models != %{} ->
+        Logger.info("Loaded UserModels from Atlas", user_count: map_size(models))
+        %{state | models: models}
 
-    if File.exists?(path) do
-      case File.read(path) do
-        {:ok, binary} ->
-          try do
-            models = :erlang.binary_to_term(binary)
-
-            Logger.info("Loaded UserModels from disk", user_count: map_size(models))
-
-            %{state | models: models}
-          rescue
-            e ->
-              Logger.warning("Failed to load UserModels: #{inspect(e)}")
-              state
-          end
-
-        {:error, reason} ->
-          Logger.warning("Could not read UserModels file: #{inspect(reason)}")
-          state
-      end
-    else
+      _ ->
+        Logger.debug("No user models in Atlas, starting with empty store")
+        state
+    end
+  rescue
+    e ->
+      Logger.warning("Failed to load UserModels from Atlas: #{inspect(e)}")
       state
-    end
-  end
-
-  defp persist_to_disk(state) do
-    path = state.persistence_path
-    path |> Path.dirname() |> File.mkdir_p!()
-
-    binary = :erlang.term_to_binary(state.models)
-
-    case File.write(path, binary) do
-      :ok ->
-        Logger.info("UserModels persisted to disk", user_count: map_size(state.models))
-        :ok
-
-      {:error, reason} ->
-        Logger.error("Failed to persist UserModels: #{inspect(reason)}")
-        {:error, reason}
-    end
   end
 end

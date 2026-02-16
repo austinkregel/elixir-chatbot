@@ -1,0 +1,10 @@
+[
+  {"text": "can you play some music", "label": "modal"},
+  {"text": "would you turn on the lights", "label": "modal"},
+  {"text": "could you set a timer", "label": "modal"},
+  {"text": "will you help me", "label": "modal"},
+  {"text": "play some music", "label": "not_modal"},
+  {"text": "turn on the lights", "label": "not_modal"},
+  {"text": "what is the weather", "label": "not_modal"},
+  {"text": "hello there", "label": "not_modal"}
+]

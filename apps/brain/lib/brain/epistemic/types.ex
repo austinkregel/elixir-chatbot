@@ -4,7 +4,7 @@ defmodule Brain.Epistemic.Types do
   defmodule Belief do
     @moduledoc "A belief represents a piece of knowledge the system holds about\na subject (user, world, or self).\n\nEach belief tracks:\n- What it's about (subject/predicate/object triple)\n- How confident we are (0.0 - 1.0)\n- Where it came from (source and provenance)\n- How stable it is (volatility)\n"
 
-    @type source :: :explicit | :inferred | :assumed | :default | :learned | :consolidated
+    @type source :: :explicit | :inferred | :assumed | :default | :learned | :consolidated | :curated_fact
     @type subject :: :user | :world | :self | String.t()
 
     @type t :: %__MODULE__{
@@ -515,7 +515,7 @@ defmodule Brain.Epistemic.Types do
               high_confidence_threshold: 0.7,
               low_confidence_threshold: 0.4,
               decay_rate: 0.05,
-              decay_exempt_sources: [:explicit, :learned],
+              decay_exempt_sources: [:explicit, :learned, :curated_fact],
               decay_interval_ms: 3_600_000,
               decay_min_age_ms: 86_400_000
 
@@ -531,7 +531,7 @@ defmodule Brain.Epistemic.Types do
         high_confidence_threshold: Keyword.get(config, :high_confidence_threshold, 0.7),
         low_confidence_threshold: Keyword.get(config, :low_confidence_threshold, 0.4),
         decay_rate: Keyword.get(config, :decay_rate, 0.05),
-        decay_exempt_sources: Keyword.get(config, :decay_exempt_sources, [:explicit, :learned]),
+        decay_exempt_sources: Keyword.get(config, :decay_exempt_sources, [:explicit, :learned, :curated_fact]),
         decay_interval_ms: Keyword.get(config, :decay_interval_ms, 3_600_000),
         decay_min_age_ms: Keyword.get(config, :decay_min_age_ms, 86_400_000)
       }

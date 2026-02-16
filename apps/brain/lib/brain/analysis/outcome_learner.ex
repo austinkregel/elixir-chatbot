@@ -378,11 +378,10 @@ defmodule Brain.Analysis.OutcomeLearner do
   end
 
   defp is_clarification_response?(response) when is_binary(response) do
-    String.contains?(response, "?") and
-      (String.contains?(response, "which") or
-         String.contains?(response, "what") or
-         String.contains?(response, "could you") or
-         String.contains?(response, "clarify"))
+    case Brain.ML.MicroClassifiers.classify(:clarification_response, response) do
+      {:ok, "clarification", score} when score > 0.3 -> true
+      _ -> false
+    end
   end
 
   defp is_clarification_response?(%{type: :clarification}) do

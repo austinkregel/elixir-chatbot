@@ -100,7 +100,7 @@ defmodule Brain.LSTMTestHelpers do
     case File.read(model_path) do
       {:ok, binary} ->
         try do
-          data = :erlang.binary_to_term(binary)
+          data = :erlang.binary_to_term(binary, [:safe])
           validate_model_format(data, model_type)
         rescue
           ArgumentError ->

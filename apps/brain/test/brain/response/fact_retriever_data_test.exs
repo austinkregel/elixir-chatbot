@@ -2,7 +2,7 @@ defmodule Brain.Response.FactRetrieverDataTest do
   @moduledoc """
   Data-driven tests for FactRetriever covering fact lookup and formatting.
   """
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
   import Brain.TestHelpers
 
   alias Brain.Response.FactRetriever

@@ -2,12 +2,24 @@ defmodule Brain.FactDatabase do
   @moduledoc """
   Fact database for storing and querying verifiable general knowledge facts.
 
-  This module provides access to a curated database of true, verifiable facts
-  that can be used for testing and knowledge building. Facts are organized by
-  category and include verification sources.
+  This module manages two distinct layers of facts:
 
-  Facts are stored in JSON files under `data/facts/` and loaded at runtime.
-  All facts are returned as `Brain.FactDatabase.Fact` structs.
+  ## Curated Facts (Immutable)
+
+  Curated facts are grounding truths loaded from JSON files in `data/facts/`.
+  They represent agreed-upon reality — verifiable facts with authoritative sources.
+  These facts are **read-only**: no API can modify, delete, or overwrite them.
+  When registered with the epistemic system, they carry the `:curated_fact`
+  source authority (confidence 1.0, JTMS premise, no decay).
+
+  ## Learned Facts (Mutable)
+
+  Learned facts are acquired dynamically through conversation and research,
+  persisted to Atlas. They can be added, modified, and carry lower authority
+  levels based on their source.
+
+  All facts are returned as `Brain.FactDatabase.Fact` structs. Queries search
+  across both layers transparently.
   """
 
   use GenServer
@@ -17,7 +29,6 @@ defmodule Brain.FactDatabase do
 
   @default_facts_dir "data/facts"
 
-  # Get facts directory from config or use default
   defp facts_dir do
     Application.get_env(:brain, :facts_dir, @default_facts_dir)
   end
@@ -36,9 +47,12 @@ defmodule Brain.FactDatabase do
   - `:entity` - Filter by entity name (e.g., "France", "water")
   - `:search` - Search in fact text
   - `:limit` - Maximum number of results (default: 10)
+  - `:layer` - Filter by layer: `:curated`, `:learned`, or `:all` (default: `:all`)
   """
   def query(opts \\ []) do
-    GenServer.call(__MODULE__, {:query, opts})
+    Brain.Telemetry.span(:fact_database_query, %{opts: opts}, fn ->
+      GenServer.call(__MODULE__, {:query, opts}, 5_000)
+    end)
   end
 
   @doc """
@@ -70,22 +84,35 @@ defmodule Brain.FactDatabase do
   end
 
   @doc """
-  Reload facts from disk.
+  Reload facts from disk and Atlas.
+
+  Curated facts are re-read from the JSON files (immutable source of truth).
+  Learned facts are re-loaded from Atlas.
   """
   def reload do
     GenServer.call(__MODULE__, :reload)
   end
 
   @doc """
-  Add a fact dynamically (for learned facts).
-  This is a low-level function - use FactDatabase.Integration.add_fact/3 for full integration.
+  Add a learned fact dynamically.
+
+  This is a low-level function — use `FactDatabase.Integration.add_fact/3` for
+  full epistemic integration. The fact is added to the **learned** layer only.
+  Attempting to add a fact with an ID that matches a curated fact will be rejected.
   """
   def add_fact_direct(fact_map) when is_map(fact_map) do
     GenServer.call(__MODULE__, {:add_fact_direct, fact_map})
   end
 
   @doc """
-  Get statistics about the fact database.
+  Check whether a fact ID belongs to the curated (immutable) layer.
+  """
+  def curated?(fact_id) do
+    GenServer.call(__MODULE__, {:curated?, fact_id})
+  end
+
+  @doc """
+  Get statistics about the fact database, broken down by layer.
   """
   def stats do
     GenServer.call(__MODULE__, :stats)
@@ -107,15 +134,31 @@ defmodule Brain.FactDatabase do
 
   @impl true
   def init(_opts) do
-    facts = load_all_facts()
-    Logger.info("FactDatabase started", %{fact_count: length(facts)})
-    {:ok, %{facts: facts, loaded_at: System.system_time(:second)}}
+    curated = load_curated_facts()
+    learned = load_learned_facts()
+    curated_ids = MapSet.new(curated, & &1.id)
+
+    Logger.info("FactDatabase started", %{
+      curated_count: length(curated),
+      learned_count: length(learned)
+    })
+
+    {:ok, %{
+      curated: curated,
+      curated_ids: curated_ids,
+      learned: learned,
+      loaded_at: System.system_time(:second)
+    }}
   end
 
   @impl true
   def handle_call({:query, opts}, _from, state) do
+    layer = Keyword.get(opts, :layer, :all)
+
+    facts = select_layer(state, layer)
+
     results =
-      state.facts
+      facts
       |> filter_by_category(opts[:category])
       |> filter_by_entity(opts[:entity])
       |> search_in_text(opts[:search])
@@ -126,7 +169,7 @@ defmodule Brain.FactDatabase do
 
   @impl true
   def handle_call({:get_fact, id}, _from, state) do
-    fact = Enum.find(state.facts, &(&1.id == id))
+    fact = Enum.find(all_facts(state), &(&1.id == id))
     {:reply, fact, state}
   end
 
@@ -135,7 +178,7 @@ defmodule Brain.FactDatabase do
     normalized = String.downcase(entity_name)
 
     facts =
-      Enum.filter(state.facts, fn fact ->
+      Enum.filter(all_facts(state), fn fact ->
         String.downcase(fact.entity) == normalized
       end)
 
@@ -147,7 +190,7 @@ defmodule Brain.FactDatabase do
     normalized = String.downcase(category)
 
     facts =
-      Enum.filter(state.facts, fn fact ->
+      Enum.filter(all_facts(state), fn fact ->
         String.downcase(fact.category) == normalized
       end)
 
@@ -157,7 +200,7 @@ defmodule Brain.FactDatabase do
   @impl true
   def handle_call(:list_categories, _from, state) do
     categories =
-      state.facts
+      all_facts(state)
       |> Enum.map(& &1.category)
       |> Enum.uniq()
       |> Enum.sort()
@@ -167,29 +210,54 @@ defmodule Brain.FactDatabase do
 
   @impl true
   def handle_call(:reload, _from, _state) do
-    facts = load_all_facts()
-    Logger.info("FactDatabase reloaded", %{fact_count: length(facts)})
-    {:reply, :ok, %{facts: facts, loaded_at: System.system_time(:second)}}
+    curated = load_curated_facts()
+    learned = load_learned_facts()
+    curated_ids = MapSet.new(curated, & &1.id)
+
+    Logger.info("FactDatabase reloaded", %{
+      curated_count: length(curated),
+      learned_count: length(learned)
+    })
+
+    {:reply, :ok, %{
+      curated: curated,
+      curated_ids: curated_ids,
+      learned: learned,
+      loaded_at: System.system_time(:second)
+    }}
   end
 
   @impl true
   def handle_call({:add_fact_direct, fact_map}, _from, state) do
-    # Convert map to Fact struct (handles field normalization)
     fact = Fact.from_map(fact_map)
 
-    updated_facts = [fact | state.facts]
-    new_state = %{state | facts: updated_facts}
+    if MapSet.member?(state.curated_ids, fact.id) do
+      Logger.warning("Rejected attempt to overwrite curated fact", %{fact_id: fact.id})
+      {:reply, {:error, :curated_fact_immutable}, state}
+    else
+      updated_learned = [fact | state.learned]
+      new_state = %{state | learned: updated_learned}
 
-    Logger.debug("Added fact directly", %{fact_id: fact.id})
-    {:reply, {:ok, fact.id}, new_state}
+      Logger.debug("Added learned fact", %{fact_id: fact.id})
+      {:reply, {:ok, fact.id}, new_state}
+    end
+  end
+
+  @impl true
+  def handle_call({:curated?, fact_id}, _from, state) do
+    {:reply, MapSet.member?(state.curated_ids, fact_id), state}
   end
 
   @impl true
   def handle_call(:stats, _from, state) do
+    all = all_facts(state)
+
     stats = %{
-      total_facts: length(state.facts),
-      categories: state.facts |> Enum.map(& &1.category) |> Enum.uniq() |> length(),
-      entities: state.facts |> Enum.map(& &1.entity) |> Enum.uniq() |> length(),
+      total_facts: length(all),
+      curated_facts: length(state.curated),
+      learned_facts: length(state.learned),
+      categories: all |> Enum.map(& &1.category) |> Enum.uniq() |> length(),
+      entities: all |> Enum.map(& &1.entity) |> Enum.uniq() |> length(),
       loaded_at: state.loaded_at
     }
 
@@ -201,16 +269,25 @@ defmodule Brain.FactDatabase do
     {:reply, true, state}
   end
 
-  # Private Functions
+  # Private Functions — Layer helpers
 
-  defp load_all_facts do
+  defp all_facts(state), do: state.curated ++ state.learned
+
+  defp select_layer(state, :curated), do: state.curated
+  defp select_layer(state, :learned), do: state.learned
+  defp select_layer(state, _), do: all_facts(state)
+
+  # Private Functions — Loading
+
+  defp load_curated_facts do
     base_dir = facts_dir()
-    # If the path is absolute, use it directly; otherwise, join with cwd
-    facts_dir_path = if Path.type(base_dir) == :absolute do
-      base_dir
-    else
-      Path.join([File.cwd!(), base_dir])
-    end
+
+    facts_dir_path =
+      if Path.type(base_dir) == :absolute do
+        base_dir
+      else
+        Path.join([File.cwd!(), base_dir])
+      end
 
     if File.exists?(facts_dir_path) do
       facts_dir_path
@@ -218,12 +295,30 @@ defmodule Brain.FactDatabase do
       |> Path.wildcard()
       |> Enum.flat_map(&load_facts_file/1)
     else
-      handle_missing_file("Facts directory not found", facts_dir_path)
+      handle_missing_dir("Curated facts directory not found", facts_dir_path)
       []
     end
   end
 
-  defp handle_missing_file(message, path) do
+  defp load_learned_facts do
+    case Brain.AtlasIntegration.load_learned_facts() do
+      {:ok, facts} ->
+        Logger.debug("Loaded learned facts from Atlas", %{count: length(facts)})
+        facts
+
+      {:error, reason} ->
+        Logger.warning("Failed to load learned facts from Atlas",
+          reason: inspect(reason)
+        )
+        []
+    end
+  rescue
+    e ->
+      Logger.warning("Atlas unavailable for learned facts: #{inspect(e)}")
+      []
+  end
+
+  defp handle_missing_dir(message, path) do
     if Application.get_env(:brain, :strict_file_checks, false) do
       raise "#{message}: #{path}"
     else
@@ -241,7 +336,7 @@ defmodule Brain.FactDatabase do
               |> Map.get("facts", [])
               |> Enum.map(&Fact.from_map/1)
 
-            Logger.debug("Loaded facts from file", %{
+            Logger.debug("Loaded curated facts from file", %{
               file: Path.basename(file_path),
               count: length(facts)
             })

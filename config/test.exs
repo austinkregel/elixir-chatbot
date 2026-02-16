@@ -1,5 +1,15 @@
 import Config
 
+# Atlas database configuration for tests
+config :atlas, Atlas.Repo,
+  username: "chat_bot",
+  password: "chat_bot_dev",
+  hostname: "localhost",
+  database: "chat_bot_test#{System.get_env("MIX_TEST_PARTITION")}",
+  pool: Ecto.Adapters.SQL.Sandbox,
+  pool_size: System.schedulers_online() * 2,
+  types: Atlas.PostgrexTypes
+
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :chat_web, ChatWeb.Endpoint,
@@ -23,10 +33,6 @@ config :brain,
   memory_dir: "test/memory",
   # Isolated learned data paths to prevent test pollution
   learning_params_path: "test/data/learned_params.json",
-  learned_facts_path: "test/data/learned.json",
-  review_queue_path: "test/data/review_queue.term",
-  source_reliability_path: "test/data/source_reliability_learned.term",
-  memory_store_path: "test/data/memory_store.term",
   # Test fixture paths - use absolute paths relative to brain app
   facts_dir: Path.expand("../apps/brain/test/fixtures/facts", __DIR__),
   pattern_triggers_file: Path.expand("../apps/brain/test/fixtures/pattern_triggers.json", __DIR__),

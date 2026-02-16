@@ -1,0 +1,130 @@
+defmodule Brain.Test.GraphCase do
+  @moduledoc """
+  ExUnit case template for tests that require Atlas graph access.
+
+  Atlas is required infrastructure -- tests using this module will
+  fail immediately if Atlas.Repo is not available. There is no
+  graceful degradation; a missing database is a test environment
+  configuration error.
+
+  ## Usage
+
+      use Brain.Test.GraphCase, async: false
+
+  ## Tags
+
+  - `@tag seed_graphs: true` -- seeds all 6 graphs with baseline data
+  - `@tag seed_knowledge: true` -- seeds only knowledge_graph
+  - `@tag seed_pos: true` -- seeds only pos_graph
+  """
+  use ExUnit.CaseTemplate
+
+  using do
+    quote do
+      alias Atlas.Graph
+      alias Atlas.Graph.Types.{Vertex, Edge, Path}
+      import Brain.Test.GraphCase.Assertions
+      import Brain.Test.GraphSeeds
+    end
+  end
+
+  setup tags do
+    Brain.TestHelpers.start_test_services()
+
+    pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Atlas.Repo, shared: not tags[:async])
+    Ecto.Adapters.SQL.query!(Atlas.Repo, "LOAD 'age'", [])
+    Ecto.Adapters.SQL.query!(Atlas.Repo, "SET search_path = ag_catalog, \"$user\", public", [])
+
+    atlas_genservers = [
+      Brain.Services.CredentialVault,
+      Brain.Epistemic.SourceAuthority,
+      Brain.Epistemic.BeliefStore,
+      Brain.Memory.Store,
+      Brain.Knowledge.ReviewQueue,
+      Brain.Epistemic.UserModel,
+      Brain.Knowledge.SourceReliability,
+      Brain.Analysis.IntentReviewQueue,
+      Brain.FactDatabase
+    ]
+
+    for name <- atlas_genservers do
+      if genserver_pid = Process.whereis(name) do
+        Ecto.Adapters.SQL.Sandbox.allow(Atlas.Repo, pid, genserver_pid)
+      end
+    end
+
+    if task_sup = Process.whereis(Brain.AtlasIntegration.TaskSupervisor) do
+      Ecto.Adapters.SQL.Sandbox.allow(Atlas.Repo, pid, task_sup)
+    end
+
+    on_exit(fn ->
+      Brain.AtlasIntegration.drain()
+      Ecto.Adapters.SQL.Sandbox.stop_owner(pid)
+    end)
+
+    seed_data =
+      cond do
+        tags[:seed_graphs] ->
+          Brain.Test.GraphSeeds.seed_all()
+
+        tags[:seed_knowledge] ->
+          %{knowledge: Brain.Test.GraphSeeds.seed_knowledge_graph()}
+
+        tags[:seed_pos] ->
+          %{pos: Brain.Test.GraphSeeds.seed_pos_graph()}
+
+        true ->
+          %{}
+      end
+
+    {:ok, Map.put(seed_data, :sandbox_pid, pid)}
+  end
+end
+
+defmodule Brain.Test.GraphCase.Assertions do
+  @moduledoc """
+  Graph assertion helpers for tests using Brain.Test.GraphCase.
+  """
+
+  import ExUnit.Assertions
+
+  @doc "Assert a node with the given label and name property exists in the graph."
+  def assert_node_exists(graph, label, name) do
+    query = "MATCH (n:#{label}) WHERE n.name = '#{escape(name)}' RETURN n"
+
+    case Atlas.Graph.cypher(graph, query) do
+      {:ok, [[%Atlas.Graph.Types.Vertex{} = v] | _]} -> v
+      {:ok, []} -> flunk("Expected node #{label}{name: #{name}} in #{graph}, but none found")
+      {:error, reason} -> flunk("Graph query failed: #{inspect(reason)}")
+      other -> flunk("Unexpected query result: #{inspect(other)}")
+    end
+  end
+
+  @doc "Assert an edge with the given relationship type exists in the graph."
+  def assert_edge_exists(graph, rel_type) do
+    query = "MATCH ()-[r:#{rel_type}]->() RETURN r LIMIT 1"
+
+    case Atlas.Graph.cypher(graph, query) do
+      {:ok, [[%Atlas.Graph.Types.Edge{} = e] | _]} -> e
+      {:ok, []} -> flunk("Expected edge #{rel_type} in #{graph}, but none found")
+      {:error, reason} -> flunk("Graph query failed: #{inspect(reason)}")
+      other -> flunk("Unexpected query result: #{inspect(other)}")
+    end
+  end
+
+  @doc "Count nodes in a graph, optionally filtered by label."
+  def count_nodes(graph, label \\ nil) do
+    Atlas.Graph.count_nodes(graph, label)
+  end
+
+  @doc "Count edges in a graph, optionally filtered by relationship type."
+  def count_edges(graph, rel_type \\ nil) do
+    Atlas.Graph.count_edges(graph, rel_type)
+  end
+
+  defp escape(value) when is_binary(value) do
+    String.replace(value, "'", "\\'")
+  end
+
+  defp escape(value), do: to_string(value)
+end

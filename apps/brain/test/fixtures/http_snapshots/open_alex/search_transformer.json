@@ -4,13 +4,13 @@
     "per_page": 3,
     "search": "transformer attention"
   },
-  "recorded_at": "2026-02-11T04:51:30.357349Z",
+  "recorded_at": "2026-02-16T16:49:12.481888Z",
   "response": {
     "body": {
       "group_by": [],
       "meta": {
-        "count": 178596,
-        "db_response_time_ms": 57,
+        "count": 179113,
+        "db_response_time_ms": 142,
         "groups_count": null,
         "page": 1,
         "per_page": 3
@@ -658,7 +658,7 @@
             ]
           },
           "type": "article",
-          "relevance_score": 1217.0566,
+          "relevance_score": 1207.7357,
           "fwci": 77.78785844,
           "awards": [],
           "referenced_works_count": 78,
@@ -681,7 +681,7 @@
           },
           "counts_by_year": [
             {
-              "cited_by_count": 34,
+              "cited_by_count": 36,
               "year": 2026
             },
             {
@@ -706,7 +706,7 @@
             }
           ],
           "content_urls": null,
-          "updated_date": "2026-02-10T21:29:10.735309",
+          "updated_date": "2026-02-14T14:00:54.825952",
           "sustainable_development_goals": [],
           "apc_paid": null,
           "countries_distinct_count": 1,
@@ -822,7 +822,7 @@
           ],
           "funders": [],
           "has_fulltext": false,
-          "cited_by_count": 1792,
+          "cited_by_count": 1794,
           "created_date": "2025-10-10T00:00:00",
           "has_content": {
             "grobid_xml": false,
@@ -833,7 +833,7 @@
           "citation_normalized_percentile": {
             "is_in_top_10_percent": true,
             "is_in_top_1_percent": true,
-            "value": 0.99956772
+            "value": 0.99956779
           },
           "indexed_in": [
             "crossref"
@@ -1801,8 +1801,8 @@
             ]
           },
           "type": "article",
-          "relevance_score": 1081.8923,
-          "fwci": 170.32236634,
+          "relevance_score": 1069.0223,
+          "fwci": 170.86827136,
           "awards": [],
           "referenced_works_count": 67,
           "primary_topic": {
@@ -1824,7 +1824,7 @@
           },
           "counts_by_year": [
             {
-              "cited_by_count": 25,
+              "cited_by_count": 28,
               "year": 2026
             },
             {
@@ -1841,7 +1841,7 @@
             }
           ],
           "content_urls": null,
-          "updated_date": "2026-02-09T01:24:48.384031",
+          "updated_date": "2026-02-12T00:53:03.260389",
           "sustainable_development_goals": [],
           "apc_paid": null,
           "countries_distinct_count": 1,
@@ -1962,7 +1962,7 @@
           ],
           "funders": [],
           "has_fulltext": false,
-          "cited_by_count": 936,
+          "cited_by_count": 939,
           "created_date": "2025-10-10T00:00:00",
           "has_content": {
             "grobid_xml": false,
@@ -1973,7 +1973,7 @@
           "citation_normalized_percentile": {
             "is_in_top_10_percent": true,
             "is_in_top_1_percent": true,
-            "value": 0.99985435
+            "value": 0.99985436
           },
           "indexed_in": [
             "crossref"
@@ -2855,7 +2855,7 @@
             ]
           },
           "type": "article",
-          "relevance_score": 1008.49084,
+          "relevance_score": 999.01666,
           "fwci": 51.57605861,
           "awards": [],
           "referenced_works_count": 67,
@@ -2878,7 +2878,7 @@
           },
           "counts_by_year": [
             {
-              "cited_by_count": 19,
+              "cited_by_count": 23,
               "year": 2026
             },
             {
@@ -2899,7 +2899,7 @@
             }
           ],
           "content_urls": null,
-          "updated_date": "2026-02-09T09:26:11.010843",
+          "updated_date": "2026-02-13T15:27:49.765798",
           "sustainable_development_goals": [],
           "apc_paid": null,
           "countries_distinct_count": 2,
@@ -3005,7 +3005,7 @@
           ],
           "funders": [],
           "has_fulltext": false,
-          "cited_by_count": 766,
+          "cited_by_count": 770,
           "created_date": "2025-10-10T00:00:00",
           "has_content": {
             "grobid_xml": false,
@@ -3016,7 +3016,7 @@
           "citation_normalized_percentile": {
             "is_in_top_10_percent": true,
             "is_in_top_1_percent": true,
-            "value": 0.99850289
+            "value": 0.99850299
           },
           "indexed_in": [
             "crossref"
@@ -3380,13 +3380,13 @@
         "*"
       ],
       "access-control-expose-headers": [
-        "Cache-Control, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Credits-Used, X-RateLimit-Credits-Required, X-RateLimit-Reset, Retry-After"
+        "Cache-Control, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Onetime-Remaining, X-RateLimit-Credits-Used, X-RateLimit-Credits-Required, X-RateLimit-Reset, Retry-After"
       ],
       "cf-cache-status": [
         "DYNAMIC"
       ],
       "cf-ray": [
-        "9cc13b415b62e1eb-ORD"
+        "9cee89ea5f9d170f-ORD"
       ],
       "connection": [
         "keep-alive"
@@ -3395,16 +3395,16 @@
         "application/json"
       ],
       "date": [
-        "Wed, 11 Feb 2026 04:51:30 GMT"
+        "Mon, 16 Feb 2026 16:49:31 GMT"
       ],
       "nel": [
         "{\"report_to\":\"heroku-nel\",\"response_headers\":[\"Via\"],\"max_age\":3600,\"success_fraction\":0.01,\"failure_fraction\":0.1}"
       ],
       "report-to": [
-        "{\"group\":\"heroku-nel\",\"endpoints\":[{\"url\":\"https://nel.heroku.com/reports?s=WT2N0egrRRtdlAHkIOP3U9aj2g2ycxzmrjlDSEKd83o%3D\\u0026sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d\\u0026ts=1770785490\"}],\"max_age\":3600}"
+        "{\"group\":\"heroku-nel\",\"endpoints\":[{\"url\":\"https://nel.heroku.com/reports?s=iPLFcuYYncfGG9JkHVxkL8SDwgi8i82xqJ5kXa8zSWw%3D\\u0026sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d\\u0026ts=1771260571\"}],\"max_age\":3600}"
       ],
       "reporting-endpoints": [
-        "heroku-nel=\"https://nel.heroku.com/reports?s=WT2N0egrRRtdlAHkIOP3U9aj2g2ycxzmrjlDSEKd83o%3D&sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d&ts=1770785490\""
+        "heroku-nel=\"https://nel.heroku.com/reports?s=iPLFcuYYncfGG9JkHVxkL8SDwgi8i82xqJ5kXa8zSWw%3D&sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d&ts=1771260571\""
       ],
       "server": [
         "cloudflare"
@@ -3421,11 +3421,14 @@
       "x-ratelimit-limit": [
         "10000"
       ],
+      "x-ratelimit-onetime-remaining": [
+        "0"
+      ],
       "x-ratelimit-remaining": [
         "9910"
       ],
       "x-ratelimit-reset": [
-        "68910"
+        "25829"
       ]
     },
     "status": 200

@@ -16,6 +16,7 @@ defmodule Brain.ML.LSTM.UnifiedModel do
     learning_rate: 0.001,
     batch_size: 32,
     epochs: 20,
+    head_epochs: 20,
     max_seq_length: 50
   }
   @sentiment_labels ["negative", "neutral", "positive"]
@@ -677,8 +678,13 @@ defmodule Brain.ML.LSTM.UnifiedModel do
         label_key = head_name
         labels = batch |> Enum.map(&Map.get(&1, label_key)) |> Nx.tensor(type: :s64) |> Nx.new_axis(1)
 
-        encoder_output = Axon.predict(encoder, encoder_params, %{"input" => inputs})
+        encoder_output =
+          Axon.predict(encoder, encoder_params, %{"input" => inputs}, compiler: EXLA)
         pooled = Nx.mean(encoder_output, axes: [1])
+
+        # Transfer pre-computed tensors to BinaryBackend so the training loop
+        # (which manages its own EXLA compilation) doesn't hit backend mismatches
+        pooled = Nx.backend_transfer(pooled, Nx.BinaryBackend)
 
         targets =
           Nx.equal(
@@ -686,6 +692,7 @@ defmodule Brain.ML.LSTM.UnifiedModel do
             labels
           )
           |> Nx.as_type(:f32)
+          |> Nx.backend_transfer(Nx.BinaryBackend)
 
         {pooled, targets}
       end)
@@ -711,8 +718,8 @@ defmodule Brain.ML.LSTM.UnifiedModel do
         {%{"#{name}_input" => pooled}, targets}
       end)
 
-    head_epochs = min(config.epochs, 10)
-    Logger.info("Training #{name} head on #{length(train_data)} batches for #{head_epochs} epochs")
+    head_epochs = Map.get(config, :head_epochs, config.epochs)
+    Logger.info("Training #{name} head on #{length(train_data)} batches for #{head_epochs} epochs (encoder trained for #{config.epochs})")
 
     Loop.run(loop, train_data, %{}, epochs: head_epochs, compiler: EXLA, strict?: false)
   end

@@ -4,7 +4,7 @@ defmodule World.TypeInferrer do
   require Logger
 
   alias Brain.ML.Gazetteer
-  alias World.Manager, as: WorldManager, as: WorldManager
+  alias World.Manager, as: WorldManager
 
   @ets_patterns :type_inferrer_patterns
   @ets_cooccurrence :type_inferrer_cooccurrence

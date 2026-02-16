@@ -1,5 +1,23 @@
 import Config
 
+# Atlas database configuration for development
+config :atlas, Atlas.Repo,
+  username: "chat_bot",
+  password: "chat_bot_dev",
+  hostname: "localhost",
+  database: "chat_bot_dev",
+  stacktrace: true,
+  show_sensitive_data_on_connection_error: true,
+  pool_size: 10,
+  types: Atlas.PostgrexTypes
+
+config :atlas, auto_migrate: true, auto_import: true
+
+# Enable autonomous learning features for development
+config :brain,
+  auto_approval_enabled: true,
+  intent_promotion_enabled: true
+
 # Configure the endpoint
 config :chat_web, ChatWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.

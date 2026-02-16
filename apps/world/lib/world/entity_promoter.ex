@@ -26,7 +26,7 @@ defmodule World.EntityPromoter do
 
   @doc "Returns current promoter stats."
   def stats(name \\ __MODULE__) do
-    GenServer.call(name, :stats)
+    GenServer.call(name, :stats, 5_000)
   end
 
   @doc "Checks if the GenServer is ready."
@@ -60,6 +60,7 @@ defmodule World.EntityPromoter do
     {:reply, state, state}
   end
 
+  @impl true
   def handle_call(:ready?, _from, state) do
     {:reply, true, state}
   end
@@ -77,6 +78,7 @@ defmodule World.EntityPromoter do
     {:noreply, state}
   end
 
+  @impl true
   def handle_info(_msg, state), do: {:noreply, state}
 
   # --- Private ---

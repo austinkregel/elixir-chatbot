@@ -1,9 +1,10 @@
 defmodule Brain do
   @moduledoc "The Brain GenServer manages the AI personality, subprocesses, and global memory.\nThis is the core component that orchestrates all chat bot functionality.\n"
 
-  # World.Context is in a sibling umbrella app that depends on :brain.
-  # It's available at runtime but not at compile time.
+  # World.Context and World.Manager are in a sibling umbrella app that depends on :brain.
+  # They are available at runtime but not at compile time.
   @compile {:no_warn_undefined, World.Context}
+  @compile {:no_warn_undefined, World.Manager}
 
   alias Brain.ML.Tokenizer
   alias Brain.ML.IntentClassifierSimple
@@ -39,6 +40,7 @@ defmodule Brain do
   alias Types.{Belief, Config}
   alias Response.{Synthesizer, Generator}
   alias World.Context, as: WorldContext
+  alias World.Manager, as: WorldManager
 
   @doc "Returns the priv directory path for the brain app.\n\nUses `:code.priv_dir(:brain)` which correctly resolves the path\nregardless of which directory the application is run from.\n"
   def priv_dir do
@@ -311,6 +313,13 @@ defmodule Brain do
             {[user_message, assistant_message], response}
           end
 
+        Enum.each(new_messages, fn msg ->
+          analysis_for_msg =
+            if msg.role == "user", do: Map.get(context, :analysis_model), else: nil
+
+          Brain.Graph.Writer.write_message(conversation_id, msg, analysis_for_msg)
+        end)
+
         updated_conversation =
           conversation
           |> Map.put(:memory, conversation.memory ++ new_messages)
@@ -335,6 +344,7 @@ defmodule Brain do
         user_id = Keyword.get(opts, :user_id)
         entities = Map.get(context, :entities, [])
         extract_and_store_beliefs(input, entities, user_id, conversation_id)
+        feed_entities_to_world(entities, world_id)
 
         if learning_response != nil and processing_method != :response_deferred do
           Task.start(fn ->
@@ -386,6 +396,8 @@ defmodule Brain do
       conversation_id: conversation_id,
       world_id: world_id
     })
+
+    Brain.Graph.Writer.write_conversation(conversation)
 
     {:reply, {:ok, conversation_id}, updated_state}
   end
@@ -1246,7 +1258,7 @@ defmodule Brain do
     Logger.debug("Entity selection for intent", %{
       intent: analysis_intent,
       entities: Enum.map(analysis_entities, & &1[:entity_type]),
-      chunk_index: best_analysis && best_analysis.index
+      chunk_index: best_analysis && Map.get(best_analysis, :chunk_index)
     })
 
     slots_info =
@@ -1938,7 +1950,9 @@ defmodule Brain do
 
   @doc false
   def extract_and_store_beliefs(input, entities, user_id, conversation_id) do
-    if Config.auto_extraction_enabled?() and user_id do
+    user_id = user_id || "anonymous"
+
+    if Config.auto_extraction_enabled?() do
       Enum.each(entities, fn entity ->
         entity_type = entity[:entity_type]
         entity_value = entity[:value]
@@ -1981,6 +1995,40 @@ defmodule Brain do
     e ->
       Logger.warning("Failed to extract beliefs: #{inspect(e)}")
   end
+
+  defp feed_entities_to_world(entities, world_id) when is_list(entities) do
+    promotable_types = ~w(person location city country organization company place)
+    now = DateTime.utc_now()
+
+    Enum.each(entities, fn entity ->
+      value = entity[:value] || entity["value"]
+      type = entity[:entity_type] || entity["entity_type"] || "unknown"
+      type_str = to_string(type) |> String.downcase()
+
+      if value &&
+           (type_str in promotable_types or type_str == "unknown") &&
+           String.length(to_string(value)) >= 2 do
+        candidate = %{
+          value: to_string(value),
+          inferred_type: type_str,
+          confidence: entity[:confidence] || entity["confidence"] || 0.5,
+          discovered_at: now,
+          occurrences: 1
+        }
+
+        try do
+          WorldManager.add_candidate(world_id, candidate)
+        rescue
+          e ->
+            Logger.debug("Failed to add entity candidate to world: #{inspect(e)}")
+        end
+      end
+    end)
+
+    :ok
+  end
+
+  defp feed_entities_to_world(_, _), do: :ok
 
   defp is_user_fact?(entity_type) do
     user_fact_types = [

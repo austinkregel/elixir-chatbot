@@ -28,6 +28,7 @@ defmodule Tasks.MixProject do
   defp deps do
     [
       {:brain, in_umbrella: true},
+      {:world, in_umbrella: true},
       {:jason, "~> 1.2"}
     ]
   end

@@ -131,64 +131,12 @@ defmodule Brain.FactDatabase.Fact do
   """
   @spec infer_entity_type(String.t(), String.t()) :: String.t()
   def infer_entity_type(entity, category) do
-    entity_lower = String.downcase(entity)
-    category_lower = String.downcase(category)
+    # Combine entity name and category as input for the classifier
+    input = "#{String.downcase(entity)} #{String.downcase(category)}"
 
-    cond do
-      # Geography category - try to determine specific type
-      category_lower == "geography" ->
-        infer_geography_type(entity_lower)
-
-      # Science category - try to determine specific type
-      category_lower == "science" ->
-        infer_science_type(entity_lower)
-
-      # History category
-      category_lower == "history" ->
-        "historical_entity"
-
-      # General/learned - use category as type
-      true ->
-        category_lower
-    end
-  end
-
-  defp infer_geography_type(entity_lower) do
-    # Common country names (simplified list - could be expanded)
-    countries = ~w(france germany japan australia canada brazil china india russia
-                   united kingdom states spain italy mexico argentina egypt)
-
-    cond do
-      Enum.any?(countries, &String.contains?(entity_lower, &1)) ->
-        "country"
-
-      String.contains?(entity_lower, ["river", "lake", "ocean", "sea", "mountain"]) ->
-        "geographic_feature"
-
-      String.contains?(entity_lower, ["city", "town", "capital"]) ->
-        "city"
-
-      true ->
-        "location"
-    end
-  end
-
-  defp infer_science_type(entity_lower) do
-    cond do
-      String.contains?(entity_lower, ["water", "oxygen", "carbon", "hydrogen", "nitrogen"]) ->
-        "substance"
-
-      String.contains?(entity_lower, ["speed", "gravity", "force", "energy", "light"]) ->
-        "physical_constant"
-
-      String.contains?(entity_lower, ["earth", "sun", "moon", "mars", "jupiter"]) ->
-        "celestial_body"
-
-      String.contains?(entity_lower, ["cell", "dna", "protein", "gene"]) ->
-        "biological_entity"
-
-      true ->
-        "scientific_concept"
+    case Brain.ML.MicroClassifiers.classify(:entity_type, input) do
+      {:ok, label, _score} -> label
+      _ -> String.downcase(category)
     end
   end
 end

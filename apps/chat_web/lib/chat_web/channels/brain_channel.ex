@@ -38,13 +38,15 @@ defmodule ChatWeb.BrainChannel do
   end
 
   @impl true
-  def handle_in("evaluate", %{"conversation_id" => conversation_id, "input" => input}, socket) do
+  def handle_in("evaluate", %{"conversation_id" => conversation_id, "input" => input} = payload, socket) do
+    user_id = Map.get(payload, "user_id") || "ws_#{conversation_id}"
+
     Logger.info("Received evaluation request", %{
       conversation_id: conversation_id,
       input: String.slice(input, 0, 100)
     })
 
-    case Brain.evaluate(conversation_id, input) do
+    case Brain.evaluate(conversation_id, input, user_id: user_id) do
       {:ok, response} ->
         push(socket, "conversation_result", %{
           conversation_id: conversation_id,

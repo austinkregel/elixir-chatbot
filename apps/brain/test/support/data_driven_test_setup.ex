@@ -30,13 +30,9 @@ defmodule Brain.DataDrivenTestSetup do
     :ok
   end
 
-  @doc "Loads ML models. Returns :ok even if some models fail to load.\n"
+  @doc "Loads ML models via ModelFactory. Returns :ok even if some models fail to load.\n"
   def load_ml_models do
-    try do
-      IntentClassifierSimple.load_models()
-    catch
-      _, _ -> :ok
-    end
+    Brain.Test.ModelFactory.train_and_load_test_models()
 
     try do
       EntityExtractor.load_entity_maps()
@@ -98,13 +94,13 @@ defmodule Brain.DataDrivenTestSetup do
     :ok
   end
 
-  @doc "Checks if ML models are available.\n"
+  @doc "Checks if ML models are loaded and ready.\n"
   def ml_models_available? do
-    File.exists?("priv/ml_models/classifier.term")
+    IntentClassifierSimple.ready?()
   end
 
   @doc "Checks if POS model is available.\n"
   def pos_model_available? do
-    File.exists?("priv/ml_models/pos_model.term")
+    Brain.ML.POSTagger.ready?()
   end
 end

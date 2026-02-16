@@ -1,6 +1,6 @@
 defmodule Brain.Memory.ConsolidationTest do
   alias Brain.Memory
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
   import Brain.TestHelpers
 
   alias Memory.{Consolidation, Store, Embedder, VectorIndex}

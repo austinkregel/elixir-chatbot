@@ -9,9 +9,6 @@ defmodule Brain.Epistemic.BeliefStore do
 
   require Logger
 
-  defp default_persistence_path do
-    Brain.priv_path("data/belief_store.term")
-  end
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -21,7 +18,7 @@ defmodule Brain.Epistemic.BeliefStore do
   def add_belief(%Belief{} = belief) do
     Telemetry.span(:belief_operation, %{operation: :add, subject: belief.subject}, fn ->
       if Config.enabled?() do
-        GenServer.call(__MODULE__, {:add_belief, belief})
+        GenServer.call(__MODULE__, {:add_belief, belief}, 5_000)
       else
         {:ok, belief.id}
       end
@@ -36,18 +33,18 @@ defmodule Brain.Epistemic.BeliefStore do
 
   @doc "Retracts a belief by ID.\n\nThis marks the belief as retracted but keeps it for history.\nRelated justifications are updated.\n"
   def retract_belief(belief_id) do
-    GenServer.call(__MODULE__, {:retract_belief, belief_id})
+    GenServer.call(__MODULE__, {:retract_belief, belief_id}, 5_000)
   end
 
   @doc "Gets a belief by ID.\n"
   def get_belief(belief_id) do
-    GenServer.call(__MODULE__, {:get_belief, belief_id})
+    GenServer.call(__MODULE__, {:get_belief, belief_id}, 5_000)
   end
 
   @doc "Queries beliefs by subject and/or predicate.\n\nOptions:\n- :subject - Filter by subject (:user, :world, :self, or string)\n- :predicate - Filter by predicate\n- :user_id - Filter by user_id\n- :min_confidence - Minimum confidence threshold\n- :source - Filter by source (:explicit, :inferred, etc.)\n"
   def query_beliefs(opts \\ []) do
     Telemetry.span(:belief_operation, %{operation: :query, filters: opts}, fn ->
-      GenServer.call(__MODULE__, {:query_beliefs, opts})
+      GenServer.call(__MODULE__, {:query_beliefs, opts}, 5_000)
     end)
   end
 
@@ -103,7 +100,9 @@ defmodule Brain.Epistemic.BeliefStore do
                  confidence: confidence * 0.9,
                  user_id: user_id
                ) do
-            {:ok, belief_id} -> [belief_id | beliefs_created]
+            {:ok, belief_id} ->
+              Brain.Graph.Writer.write_belief(%{id: belief_id, subject: :user, predicate: predicate, object: object_text, confidence: confidence * 0.9})
+              [belief_id | beliefs_created]
             _ -> beliefs_created
           end
 
@@ -115,7 +114,9 @@ defmodule Brain.Epistemic.BeliefStore do
                  confidence: confidence * 0.7,
                  user_id: user_id
                ) do
-            {:ok, belief_id} -> [belief_id | beliefs_created]
+            {:ok, belief_id} ->
+              Brain.Graph.Writer.write_belief(%{id: belief_id, subject: :user, predicate: :interested_in, object: object_text, confidence: confidence * 0.7})
+              [belief_id | beliefs_created]
             _ -> beliefs_created
           end
 
@@ -127,7 +128,9 @@ defmodule Brain.Epistemic.BeliefStore do
                  confidence: confidence * 0.8,
                  user_id: user_id
                ) do
-            {:ok, belief_id} -> [belief_id | beliefs_created]
+            {:ok, belief_id} ->
+              Brain.Graph.Writer.write_belief(%{id: belief_id, subject: :user, predicate: :requests, object: "#{action_lemma} #{object_text}", confidence: confidence * 0.8})
+              [belief_id | beliefs_created]
             _ -> beliefs_created
           end
 
@@ -139,7 +142,9 @@ defmodule Brain.Epistemic.BeliefStore do
                  confidence: confidence * 0.8,
                  user_id: user_id
                ) do
-            {:ok, belief_id} -> [belief_id | beliefs_created]
+            {:ok, belief_id} ->
+              Brain.Graph.Writer.write_belief(%{id: belief_id, subject: :user, predicate: :believes, object: object_text, confidence: confidence * 0.8})
+              [belief_id | beliefs_created]
             _ -> beliefs_created
           end
 
@@ -169,12 +174,12 @@ defmodule Brain.Epistemic.BeliefStore do
 
   @doc "Updates the confidence of a belief.\n\nOptions:\n- :confirm - If true, also updates last_confirmed timestamp\n"
   def update_confidence(belief_id, new_confidence, opts \\ []) do
-    GenServer.call(__MODULE__, {:update_confidence, belief_id, new_confidence, opts})
+    GenServer.call(__MODULE__, {:update_confidence, belief_id, new_confidence, opts}, 5_000)
   end
 
   @doc "Confirms a belief (updates last_confirmed and optionally boosts confidence).\n"
   def confirm_belief(belief_id, confidence_boost \\ 0.1) do
-    GenServer.call(__MODULE__, {:confirm_belief, belief_id, confidence_boost})
+    GenServer.call(__MODULE__, {:confirm_belief, belief_id, confidence_boost}, 5_000)
   end
 
   @doc """
@@ -232,22 +237,22 @@ defmodule Brain.Epistemic.BeliefStore do
 
   @doc "Links a belief to a JTMS node.\n"
   def link_to_node(belief_id, node_id) do
-    GenServer.call(__MODULE__, {:link_to_node, belief_id, node_id})
+    GenServer.call(__MODULE__, {:link_to_node, belief_id, node_id}, 5_000)
   end
 
   @doc "Gets store statistics.\n"
   def stats do
-    GenServer.call(__MODULE__, :stats)
+    GenServer.call(__MODULE__, :stats, 5_000)
   end
 
   @doc "Persists the store to disk.\n"
   def persist do
-    GenServer.call(__MODULE__, :persist)
+    GenServer.call(__MODULE__, :persist, 30_000)
   end
 
   @doc "Clears all beliefs (useful for testing).\n"
   def clear do
-    GenServer.call(__MODULE__, :clear)
+    GenServer.call(__MODULE__, :clear, 30_000)
   end
 
   @doc "Checks if the store is ready.\n"
@@ -261,19 +266,16 @@ defmodule Brain.Epistemic.BeliefStore do
   end
 
   @impl true
-  def init(opts) do
-    persistence_path = Keyword.get(opts, :persistence_path, default_persistence_path())
-
+  def init(_opts) do
     state = %{
       beliefs: %{},
       by_user: %{},
       by_subject: %{},
       by_predicate: %{},
-      retracted: MapSet.new(),
-      persistence_path: persistence_path
+      retracted: MapSet.new()
     }
 
-    state = maybe_load_from_disk(state)
+    state = load_from_atlas(state)
 
     # Schedule confidence decay tick
     decay_interval = Config.get().decay_interval_ms
@@ -309,6 +311,9 @@ defmodule Brain.Epistemic.BeliefStore do
       predicate: belief.predicate
     )
 
+    # Write-through to Atlas
+    Brain.AtlasIntegration.persist_belief(belief)
+
     {:reply, {:ok, belief.id}, new_state}
   end
 
@@ -336,6 +341,7 @@ defmodule Brain.Epistemic.BeliefStore do
         end
 
         Logger.debug("Belief retracted", id: belief_id)
+        Brain.AtlasIntegration.retract_belief_in_atlas(belief_id)
 
         {:reply, :ok, new_state}
     end
@@ -378,6 +384,12 @@ defmodule Brain.Epistemic.BeliefStore do
         updated = Belief.update_confidence(belief, new_confidence, confirm?)
         new_beliefs = Map.put(state.beliefs, belief_id, updated)
         new_state = %{state | beliefs: new_beliefs}
+
+        Brain.AtlasIntegration.update_belief_confidence(
+          belief_id,
+          new_confidence,
+          if(confirm?, do: updated.last_confirmed)
+        )
 
         {:reply, {:ok, updated}, new_state}
     end
@@ -453,8 +465,7 @@ defmodule Brain.Epistemic.BeliefStore do
 
   @impl true
   def handle_call(:persist, _from, state) do
-    result = persist_to_disk(state)
-    {:reply, result, state}
+    {:reply, :ok, state}
   end
 
   @impl true
@@ -489,6 +500,7 @@ defmodule Brain.Epistemic.BeliefStore do
     {:noreply, new_state}
   end
 
+  @impl true
   def handle_info(_msg, state), do: {:noreply, state}
 
   defp apply_confidence_decay(state, config) do
@@ -620,62 +632,33 @@ defmodule Brain.Epistemic.BeliefStore do
     Enum.filter(beliefs, fn b -> b.confidence >= min_conf end)
   end
 
-  defp maybe_load_from_disk(state) do
-    path = state.persistence_path
+  defp load_from_atlas(state) do
+    case Brain.AtlasIntegration.load_beliefs() do
+      {:ok, beliefs} when beliefs != [] ->
+        Logger.info("Loading BeliefStore from Atlas", count: length(beliefs))
 
-    if File.exists?(path) do
-      case File.read(path) do
-        {:ok, binary} ->
-          try do
-            data = :erlang.binary_to_term(binary)
+        Enum.reduce(beliefs, state, fn belief, acc ->
+          new_beliefs = Map.put(acc.beliefs, belief.id, belief)
+          new_by_user = add_to_index(acc.by_user, belief.user_id, belief.id)
+          new_by_subject = add_to_index(acc.by_subject, belief.subject, belief.id)
+          new_by_predicate = add_to_index(acc.by_predicate, belief.predicate, belief.id)
 
-            Logger.info("Loaded BeliefStore from disk", beliefs: map_size(data.beliefs || %{}))
+          %{
+            acc
+            | beliefs: new_beliefs,
+              by_user: new_by_user,
+              by_subject: new_by_subject,
+              by_predicate: new_by_predicate
+          }
+        end)
 
-            %{
-              state
-              | beliefs: Map.get(data, :beliefs, %{}),
-                by_user: Map.get(data, :by_user, %{}),
-                by_subject: Map.get(data, :by_subject, %{}),
-                by_predicate: Map.get(data, :by_predicate, %{}),
-                retracted: Map.get(data, :retracted, MapSet.new())
-            }
-          rescue
-            e ->
-              Logger.warning("Failed to load BeliefStore: #{inspect(e)}")
-              state
-          end
-
-        {:error, reason} ->
-          Logger.warning("Could not read BeliefStore file: #{inspect(reason)}")
-          state
-      end
-    else
+      _ ->
+        Logger.debug("No beliefs in Atlas, starting with empty BeliefStore")
+        state
+    end
+  rescue
+    e ->
+      Logger.warning("Failed to load BeliefStore from Atlas: #{inspect(e)}")
       state
-    end
-  end
-
-  defp persist_to_disk(state) do
-    path = state.persistence_path
-    path |> Path.dirname() |> File.mkdir_p!()
-
-    data = %{
-      beliefs: state.beliefs,
-      by_user: state.by_user,
-      by_subject: state.by_subject,
-      by_predicate: state.by_predicate,
-      retracted: state.retracted
-    }
-
-    binary = :erlang.term_to_binary(data)
-
-    case File.write(path, binary) do
-      :ok ->
-        Logger.info("BeliefStore persisted to disk", beliefs: map_size(state.beliefs))
-        :ok
-
-      {:error, reason} ->
-        Logger.error("Failed to persist BeliefStore: #{inspect(reason)}")
-        {:error, reason}
-    end
   end
 end

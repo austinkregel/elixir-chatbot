@@ -120,6 +120,7 @@ defmodule Brain.ML.SentimentClassifierSimple do
 
       {:error, _disk_reason} ->
         # No model on disk -- train asynchronously from gold standard
+        Logger.warning("SentimentClassifier: no model on disk, training from gold standard (this may take a few seconds)")
         me = self()
 
         Task.start(fn ->

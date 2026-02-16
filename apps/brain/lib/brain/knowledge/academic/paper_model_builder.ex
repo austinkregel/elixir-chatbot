@@ -259,20 +259,6 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
     existing_node_id = existing_belief.node_id
 
     if existing_node_id do
-      _metadata = %{
-        source: :knowledge_expansion,
-        new_fact: %{
-          claim: new_paper.title,
-          paper_id: new_paper.id,
-          citation_count: new_paper.citation_count
-        },
-        existing_belief: %{
-          claim: existing_belief.object,
-          paper_id: get_in(existing_belief.metadata, [:paper_id]),
-          citation_count: get_in(existing_belief.metadata, [:citation_count])
-        }
-      }
-
       case JTMS.register_contradiction([new_node_id, existing_node_id], "academic_conflict") do
         {:ok, _contra_id} ->
           Logger.info("Academic contradiction registered",

@@ -1,0 +1,186 @@
+{
+  "category": "geography",
+  "description": "Geographic facts including country capitals, major cities, and geographic features",
+  "facts": [
+    {
+      "category": "geography",
+      "confidence": 1.0,
+      "entity": "France",
+      "entity_type": "country",
+      "fact": "The capital of France is Paris",
+      "id": "geo_001",
+      "verification_source": "World Atlas, CIA World Factbook"
+    },
+    {
+      "category": "geography",
+      "confidence": 1.0,
+      "entity": "United Kingdom",
+      "entity_type": "country",
+      "fact": "The capital of the United Kingdom is London",
+      "id": "geo_002",
+      "verification_source": "World Atlas, CIA World Factbook"
+    },
+    {
+      "category": "geography",
+      "confidence": 1.0,
+      "entity": "Germany",
+      "entity_type": "country",
+      "fact": "The capital of Germany is Berlin",
+      "id": "geo_003",
+      "verification_source": "World Atlas, CIA World Factbook"
+    },
+    {
+      "category": "geography",
+      "confidence": 1.0,
+      "entity": "Japan",
+      "entity_type": "country",
+      "fact": "The capital of Japan is Tokyo",
+      "id": "geo_004",
+      "verification_source": "World Atlas, CIA World Factbook"
+    },
+    {
+      "category": "geography",
+      "confidence": 1.0,
+      "entity": "Australia",
+      "entity_type": "country",
+      "fact": "The capital of Australia is Canberra",
+      "id": "geo_005",
+      "verification_source": "World Atlas, CIA World Factbook"
+    },
+    {
+      "category": "geography",
+      "confidence": 1.0,
+      "entity": "Canada",
+      "entity_type": "country",
+      "fact": "The capital of Canada is Ottawa",
+      "id": "geo_006",
+      "verification_source": "World Atlas, CIA World Factbook"
+    },
+    {
+      "category": "geography",
+      "confidence": 1.0,
+      "entity": "Brazil",
+      "entity_type": "country",
+      "fact": "The capital of Brazil is Brasília",
+      "id": "geo_007",
+      "verification_source": "World Atlas, CIA World Factbook"
+    },
+    {
+      "category": "geography",
+      "confidence": 1.0,
+      "entity": "India",
+      "entity_type": "country",
+      "fact": "The capital of India is New Delhi",
+      "id": "geo_008",
+      "verification_source": "World Atlas, CIA World Factbook"
+    },
+    {
+      "category": "geography",
+      "confidence": 1.0,
+      "entity": "China",
+      "entity_type": "country",
+      "fact": "The capital of China is Beijing",
+      "id": "geo_009",
+      "verification_source": "World Atlas, CIA World Factbook"
+    },
+    {
+      "category": "geography",
+      "confidence": 1.0,
+      "entity": "Russia",
+      "entity_type": "country",
+      "fact": "The capital of Russia is Moscow",
+      "id": "geo_010",
+      "verification_source": "World Atlas, CIA World Factbook"
+    },
+    {
+      "category": "geography",
+      "confidence": 1.0,
+      "entity": "Egypt",
+      "entity_type": "country",
+      "fact": "The capital of Egypt is Cairo",
+      "id": "geo_011",
+      "verification_source": "World Atlas, CIA World Factbook"
+    },
+    {
+      "category": "geography",
+      "confidence": 1.0,
+      "entity": "South Africa",
+      "entity_type": "location",
+      "fact": "South Africa has three capital cities: Cape Town (legislative), Pretoria (executive), and Bloemfontein (judicial)",
+      "id": "geo_012",
+      "verification_source": "World Atlas, CIA World Factbook"
+    },
+    {
+      "category": "geography",
+      "confidence": 1.0,
+      "entity": "Nile River",
+      "entity_type": "geographic_feature",
+      "fact": "The Nile River is the longest river in the world, approximately 6,650 kilometers long",
+      "id": "geo_013",
+      "verification_source": "National Geographic, Encyclopedia Britannica"
+    },
+    {
+      "category": "geography",
+      "confidence": 1.0,
+      "entity": "Mount Everest",
+      "entity_type": "location",
+      "fact": "Mount Everest is the highest mountain on Earth, with a peak elevation of 8,848.86 meters above sea level",
+      "id": "geo_014",
+      "verification_source": "National Geographic, Survey of India"
+    },
+    {
+      "category": "geography",
+      "confidence": 1.0,
+      "entity": "Pacific Ocean",
+      "entity_type": "geographic_feature",
+      "fact": "The Pacific Ocean is the largest ocean on Earth, covering approximately one-third of the Earth's surface",
+      "id": "geo_015",
+      "verification_source": "National Oceanic and Atmospheric Administration, Encyclopedia Britannica"
+    },
+    {
+      "category": "geography",
+      "confidence": 1.0,
+      "entity": "Sahara Desert",
+      "entity_type": "location",
+      "fact": "The Sahara Desert is the largest hot desert in the world, covering approximately 9.2 million square kilometers",
+      "id": "geo_016",
+      "verification_source": "National Geographic, Encyclopedia Britannica"
+    },
+    {
+      "category": "geography",
+      "confidence": 1.0,
+      "entity": "Amazon Rainforest",
+      "entity_type": "location",
+      "fact": "The Amazon Rainforest is the largest tropical rainforest in the world, covering approximately 5.5 million square kilometers",
+      "id": "geo_017",
+      "verification_source": "National Geographic, World Wildlife Fund"
+    },
+    {
+      "category": "geography",
+      "confidence": 1.0,
+      "entity": "United States",
+      "entity_type": "country",
+      "fact": "The capital of the United States is Washington, D.C.",
+      "id": "geo_018",
+      "verification_source": "World Atlas, CIA World Factbook"
+    },
+    {
+      "category": "geography",
+      "confidence": 1.0,
+      "entity": "Mexico",
+      "entity_type": "country",
+      "fact": "The capital of Mexico is Mexico City",
+      "id": "geo_019",
+      "verification_source": "World Atlas, CIA World Factbook"
+    },
+    {
+      "category": "geography",
+      "confidence": 1.0,
+      "entity": "Argentina",
+      "entity_type": "country",
+      "fact": "The capital of Argentina is Buenos Aires",
+      "id": "geo_020",
+      "verification_source": "World Atlas, CIA World Factbook"
+    }
+  ]
+}

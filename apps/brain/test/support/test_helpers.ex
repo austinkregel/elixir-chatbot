@@ -77,13 +77,8 @@ defmodule Brain.TestHelpers do
 
     EntityExtractor.load_entity_maps()
 
-    unless IntentClassifierSimple.ready?() do
-      IntentClassifierSimple.load_models()
-    end
-
-    unless SentimentClassifierSimple.ready?() do
-      SentimentClassifierSimple.load_models()
-    end
+    # Train and load minimal test models from fixture data
+    Brain.Test.ModelFactory.train_and_load_test_models()
 
     :ok
   end
@@ -521,9 +516,19 @@ defmodule Brain.TestHelpers do
   Classifies a system response back to the intent that likely generated it.
 
   Uses TF-IDF cosine similarity against all known response templates
-  from the templates.json file. This lets tests assert "the response
-  was generated for a weather intent" rather than string-matching
-  on specific words.
+  (from templates.json) and gold standard intent examples (from
+  evaluation/intent/gold_standard.json). This lets tests assert
+  "the response was generated for a weather intent" rather than
+  string-matching on specific words.
+
+  ## Data Sources
+
+  1. **templates.json** -- response templates the system actually generates
+  2. **intent/gold_standard.json** -- 5000+ labeled utterances covering 230+ intents
+
+  Both are merged into a single intent -> texts map. The gold standard
+  provides broad intent coverage (weather, music, smarthome, etc.) while
+  templates.json provides the actual response phrasing.
 
   ## Usage
 
@@ -567,6 +572,43 @@ defmodule Brain.TestHelpers do
   end
 
   @doc """
+  Returns all intents that match above a threshold, sorted by score descending.
+
+  Useful for understanding what the classifier sees in a response when
+  debugging assertion failures.
+
+  ## Example
+
+      classify_response_all("Hello! What's the weather?", min_score: 0.1)
+      # => [{"smalltalk.greetings.hello", 0.72}, {"weather.query", 0.35}, ...]
+  """
+  def classify_response_all(response_text, opts \\ []) when is_binary(response_text) do
+    min_score = Keyword.get(opts, :min_score, 0.05)
+    templates = load_response_templates()
+
+    if templates == %{} do
+      []
+    else
+      response_tokens = tokenize_for_tfidf(response_text)
+
+      templates
+      |> Enum.map(fn {intent, template_texts} ->
+        max_similarity =
+          template_texts
+          |> Enum.map(fn template_text ->
+            template_tokens = tokenize_for_tfidf(template_text)
+            cosine_similarity(response_tokens, template_tokens)
+          end)
+          |> Enum.max(fn -> 0.0 end)
+
+        {intent, max_similarity}
+      end)
+      |> Enum.filter(fn {_intent, score} -> score >= min_score end)
+      |> Enum.sort_by(fn {_intent, score} -> -score end)
+    end
+  end
+
+  @doc """
   Asserts that a response was generated for an intent matching the given prefix.
 
   ## Example
@@ -585,18 +627,86 @@ defmodule Brain.TestHelpers do
            Expected response to match intent prefix "#{intent_prefix}"
            Got: #{best_intent} (score: #{Float.round(score, 3)})
            Response: #{String.slice(response_text, 0, 100)}
+           Top matches: #{format_top_matches(response_text)}
            """
   end
 
-  # Load response templates from the templates.json file.
-  # Returns a map of intent -> list of template strings.
+  @doc """
+  Asserts that a response does NOT match any intent with the given prefix.
+
+  Uses a **dominance check**: the refutation fails only if an intent matching
+  the prefix is the top match, or its score is close to the top match's score.
+  This prevents false failures from baseline TF-IDF noise where common words
+  create weak similarity with many unrelated intents.
+
+  ## Options
+
+    * `:ratio` - Maximum allowed ratio of the matched intent's score to the
+      overall best score. Default 0.75. If the matched intent scores less than
+      75% of the best intent's score, it's considered noise and the refutation
+      passes.
+
+  ## Example
+
+      refute_response_intent("Hello! Nice to meet you!", "weather")
+      refute_response_intent(response, "music", ratio: 0.6)
+  """
+  def refute_response_intent(response_text, intent_prefix, opts \\ []) do
+    import ExUnit.Assertions
+    max_ratio = Keyword.get(opts, :ratio, 0.8)
+
+    all_matches = classify_response_all(response_text, min_score: 0.05)
+
+    {best_intent, best_score} =
+      case all_matches do
+        [{intent, score} | _] -> {intent, score}
+        [] -> {"unknown", 0.0}
+      end
+
+    prefix_matches =
+      Enum.filter(all_matches, fn {intent, _score} ->
+        String.starts_with?(intent, intent_prefix)
+      end)
+
+    case prefix_matches do
+      [] ->
+        :ok
+
+      [{matched_intent, matched_score} | _] ->
+        ratio = if best_score > 0, do: matched_score / best_score, else: 0.0
+
+        if ratio >= max_ratio do
+          flunk("""
+          Expected response NOT to match intent prefix "#{intent_prefix}"
+          But matched: #{matched_intent} (score: #{Float.round(matched_score, 3)}, ratio: #{Float.round(ratio, 3)} of best)
+          Best match: #{best_intent} (score: #{Float.round(best_score, 3)})
+          Response: #{String.slice(response_text, 0, 100)}
+          Top matches: #{format_top_matches(response_text)}
+          """)
+        else
+          :ok
+        end
+    end
+  end
+
+  defp format_top_matches(response_text) do
+    classify_response_all(response_text, min_score: 0.05)
+    |> Enum.take(5)
+    |> Enum.map(fn {intent, score} -> "#{intent}=#{Float.round(score, 3)}" end)
+    |> Enum.join(", ")
+  end
+
+  # Load response templates and gold standard intent data.
+  # Returns a merged map of intent -> list of text strings.
   # Uses process dictionary as a simple cache within a test run.
   defp load_response_templates do
     case Process.get(:_test_response_templates) do
       nil ->
         templates = do_load_response_templates()
-        Process.put(:_test_response_templates, templates)
-        templates
+        gold_standard = do_load_gold_standard_intents()
+        merged = merge_template_sources(templates, gold_standard)
+        Process.put(:_test_response_templates, merged)
+        merged
 
       cached ->
         cached
@@ -630,6 +740,46 @@ defmodule Brain.TestHelpers do
       {:error, _} ->
         %{}
     end
+  end
+
+  defp do_load_gold_standard_intents do
+    gold_standard_path =
+      case :code.priv_dir(:brain) do
+        {:error, _} -> Path.join(["apps", "brain", "priv", "evaluation", "intent", "gold_standard.json"])
+        priv_dir -> Path.join(priv_dir, "evaluation/intent/gold_standard.json")
+      end
+
+    case File.read(gold_standard_path) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, data} when is_list(data) ->
+            data
+            |> Enum.group_by(fn item -> item["intent"] end)
+            |> Enum.map(fn {intent, items} ->
+              texts =
+                items
+                |> Enum.map(fn item -> item["text"] end)
+                |> Enum.filter(&is_binary/1)
+                |> Enum.filter(&(&1 != ""))
+
+              {intent, texts}
+            end)
+            |> Enum.filter(fn {intent, texts} -> intent != nil and texts != [] end)
+            |> Map.new()
+
+          _ ->
+            %{}
+        end
+
+      {:error, _} ->
+        %{}
+    end
+  end
+
+  defp merge_template_sources(templates, gold_standard) do
+    Map.merge(templates, gold_standard, fn _intent, t_texts, gs_texts ->
+      Enum.uniq(t_texts ++ gs_texts)
+    end)
   end
 
   # Simple bag-of-words tokenization for TF-IDF similarity

@@ -29,6 +29,7 @@ defmodule World.MixProject do
   defp deps do
     [
       {:brain, in_umbrella: true},
+      {:fourth_wall, in_umbrella: true},
       {:jason, "~> 1.2"}
     ]
   end

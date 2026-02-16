@@ -3,13 +3,12 @@ defmodule Brain.Services.CredentialVault do
   Secure credential storage for external service API keys.
 
   Provides encrypted storage for sensitive credentials like API keys,
-  with world-scoped isolation and disk persistence.
+  with world-scoped isolation.
 
   ## Security Features
 
-  - Credentials encrypted at rest using `Plug.Crypto.encrypt/4`
-  - ETS for fast in-memory lookups
-  - Disk persistence to a git-ignored location
+  - Credentials encrypted at rest in Postgres via `Plug.Crypto.encrypt/4`
+  - ETS for fast in-memory lookups (decrypted on load)
   - Never exposes raw keys in logs or public APIs
   - World-scoped credentials for training environment isolation
 
@@ -35,7 +34,6 @@ defmodule Brain.Services.CredentialVault do
   require Logger
 
   @table_name :credential_vault
-  @persistence_file "credentials.enc"
   @default_world "default"
 
   # ============================================================================
@@ -61,7 +59,7 @@ defmodule Brain.Services.CredentialVault do
   """
   @spec store(atom(), atom(), String.t(), keyword()) :: :ok | {:error, term()}
   def store(service, key, value, opts \\ []) when is_atom(service) and is_atom(key) do
-    GenServer.call(__MODULE__, {:store, service, key, value, opts})
+    GenServer.call(__MODULE__, {:store, service, key, value, opts}, 5_000)
   end
 
   @doc """
@@ -78,7 +76,7 @@ defmodule Brain.Services.CredentialVault do
   """
   @spec get(atom(), atom(), keyword()) :: {:ok, String.t()} | {:error, :not_found}
   def get(service, key, opts \\ []) when is_atom(service) and is_atom(key) do
-    GenServer.call(__MODULE__, {:get, service, key, opts})
+    GenServer.call(__MODULE__, {:get, service, key, opts}, 5_000)
   end
 
   @doc """
@@ -86,7 +84,7 @@ defmodule Brain.Services.CredentialVault do
   """
   @spec delete(atom(), atom(), keyword()) :: :ok
   def delete(service, key, opts \\ []) when is_atom(service) and is_atom(key) do
-    GenServer.call(__MODULE__, {:delete, service, key, opts})
+    GenServer.call(__MODULE__, {:delete, service, key, opts}, 5_000)
   end
 
   @doc """
@@ -94,7 +92,7 @@ defmodule Brain.Services.CredentialVault do
   """
   @spec has_credential?(atom(), atom(), keyword()) :: boolean()
   def has_credential?(service, key, opts \\ []) when is_atom(service) and is_atom(key) do
-    GenServer.call(__MODULE__, {:has_credential?, service, key, opts})
+    GenServer.call(__MODULE__, {:has_credential?, service, key, opts}, 5_000)
   end
 
   @doc """
@@ -102,7 +100,7 @@ defmodule Brain.Services.CredentialVault do
   """
   @spec list_services(keyword()) :: [atom()]
   def list_services(opts \\ []) do
-    GenServer.call(__MODULE__, {:list_services, opts})
+    GenServer.call(__MODULE__, {:list_services, opts}, 5_000)
   end
 
   @doc """
@@ -110,7 +108,7 @@ defmodule Brain.Services.CredentialVault do
   """
   @spec list_keys(atom(), keyword()) :: [atom()]
   def list_keys(service, opts \\ []) when is_atom(service) do
-    GenServer.call(__MODULE__, {:list_keys, service, opts})
+    GenServer.call(__MODULE__, {:list_keys, service, opts}, 5_000)
   end
 
   @doc """
@@ -135,15 +133,12 @@ defmodule Brain.Services.CredentialVault do
 
     state = %{
       table: table,
-      encryption_key: get_encryption_key(),
-      persistence_path: get_persistence_path()
+      encryption_key: get_encryption_key()
     }
 
-    # Load persisted credentials
-    state = load_from_disk(state)
+    state = load_from_database(state)
 
     Logger.info("CredentialVault initialized",
-      persistence_path: state.persistence_path,
       services_loaded: length(list_services_internal(state))
     )
 
@@ -159,8 +154,7 @@ defmodule Brain.Services.CredentialVault do
     encrypted = encrypt_value(value, state.encryption_key)
     :ets.insert(state.table, {storage_key, encrypted})
 
-    # Persist to disk
-    persist_to_disk(state)
+    persist_to_database(state)
 
     Logger.debug("Credential stored",
       service: service,
@@ -200,7 +194,7 @@ defmodule Brain.Services.CredentialVault do
     storage_key = {world, service, key}
 
     :ets.delete(state.table, storage_key)
-    persist_to_disk(state)
+    persist_to_database(state)
 
     Logger.debug("Credential deleted",
       service: service,
@@ -293,18 +287,6 @@ defmodule Brain.Services.CredentialVault do
     end
   end
 
-  defp get_persistence_path do
-    # Store in priv/secrets/ which should be git-ignored
-    base_path =
-      Application.get_env(:brain, :secrets_path) ||
-        Path.join(Brain.priv_path(""), "secrets")
-
-    # Ensure directory exists
-    File.mkdir_p!(base_path)
-
-    Path.join(base_path, @persistence_file)
-  end
-
   defp encrypt_value(value, key) when is_binary(value) do
     # Use authenticated encryption
     Plug.Crypto.encrypt(key, "credential_vault", value, max_age: :infinity)
@@ -317,58 +299,53 @@ defmodule Brain.Services.CredentialVault do
     end
   end
 
-  defp persist_to_disk(state) do
-    # Get all entries and serialize
+  defp persist_to_database(state) do
     entries = :ets.tab2list(state.table)
 
-    # Encrypt the entire serialized data for additional security
-    serialized = :erlang.term_to_binary(entries)
-    encrypted = encrypt_value(serialized, state.encryption_key)
+    Brain.AtlasIntegration.async(fn ->
+      Enum.each(entries, fn {{world, service, key}, encrypted_value} ->
+        attrs = %{
+          world: to_string(world),
+          service: to_string(service),
+          key: to_string(key),
+          encrypted_value: encrypted_value
+        }
 
-    case File.write(state.persistence_path, encrypted) do
-      :ok ->
-        :ok
+        case Atlas.Repo.get_by(Atlas.Schemas.Credential, %{
+               world: attrs.world,
+               service: attrs.service,
+               key: attrs.key
+             }) do
+          nil ->
+            %Atlas.Schemas.Credential{}
+            |> Atlas.Schemas.Credential.changeset(attrs)
+            |> Atlas.Repo.insert()
 
-      {:error, reason} ->
-        Logger.error("Failed to persist credentials",
-          path: state.persistence_path,
-          reason: inspect(reason)
-        )
-    end
+          existing ->
+            existing
+            |> Atlas.Schemas.Credential.changeset(attrs)
+            |> Atlas.Repo.update()
+        end
+      end)
+    end)
   end
 
-  defp load_from_disk(state) do
-    case File.read(state.persistence_path) do
-      {:ok, encrypted} ->
-        case decrypt_value(encrypted, state.encryption_key) do
-          {:ok, serialized} ->
-            entries = :erlang.binary_to_term(serialized)
-            Enum.each(entries, fn entry -> :ets.insert(state.table, entry) end)
+  defp load_from_database(state) do
+    case Brain.AtlasIntegration.sync(fn ->
+           credentials = Atlas.Repo.all(Atlas.Schemas.Credential)
 
-            Logger.debug("Loaded credentials from disk",
-              entries_count: length(entries)
-            )
+           Enum.each(credentials, fn cred ->
+             storage_key = {cred.world, String.to_atom(cred.service), String.to_atom(cred.key)}
+             :ets.insert(state.table, {storage_key, cred.encrypted_value})
+           end)
 
-            state
-
-          {:error, reason} ->
-            Logger.warning("Failed to decrypt persisted credentials",
-              reason: inspect(reason)
-            )
-
-            state
-        end
-
-      {:error, :enoent} ->
-        # File doesn't exist yet, that's fine
-        state
-
+           Logger.debug("Loaded credentials from database",
+             entries_count: length(credentials)
+           )
+         end) do
+      {:ok, _} -> state
       {:error, reason} ->
-        Logger.warning("Failed to read persisted credentials",
-          path: state.persistence_path,
-          reason: inspect(reason)
-        )
-
+        Logger.warning("Failed to load credentials from database: #{reason}")
         state
     end
   end

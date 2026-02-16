@@ -1,0 +1,141 @@
+{
+  "category": "science",
+  "description": "Basic scientific facts about physics, chemistry, biology, and astronomy",
+  "facts": [
+    {
+      "category": "science",
+      "confidence": 1.0,
+      "entity": "water",
+      "entity_type": "substance",
+      "fact": "Water freezes at 0 degrees Celsius (32 degrees Fahrenheit) at standard atmospheric pressure",
+      "id": "sci_001",
+      "verification_source": "International Association for the Properties of Water and Steam, NIST"
+    },
+    {
+      "category": "science",
+      "confidence": 1.0,
+      "entity": "water",
+      "entity_type": "substance",
+      "fact": "Water boils at 100 degrees Celsius (212 degrees Fahrenheit) at standard atmospheric pressure",
+      "id": "sci_002",
+      "verification_source": "International Association for the Properties of Water and Steam, NIST"
+    },
+    {
+      "category": "science",
+      "confidence": 1.0,
+      "entity": "speed of light",
+      "entity_type": "physical_constant",
+      "fact": "The speed of light in a vacuum is approximately 299,792,458 meters per second",
+      "id": "sci_003",
+      "verification_source": "NIST, International Bureau of Weights and Measures"
+    },
+    {
+      "category": "science",
+      "confidence": 1.0,
+      "entity": "Earth",
+      "entity_type": "celestial_body",
+      "fact": "Earth's average distance from the Sun is approximately 149.6 million kilometers (93 million miles), known as one astronomical unit",
+      "id": "sci_004",
+      "verification_source": "NASA, International Astronomical Union"
+    },
+    {
+      "category": "science",
+      "confidence": 1.0,
+      "entity": "Earth",
+      "entity_type": "celestial_body",
+      "fact": "Earth's circumference at the equator is approximately 40,075 kilometers (24,901 miles)",
+      "id": "sci_005",
+      "verification_source": "NASA, National Geodetic Survey"
+    },
+    {
+      "category": "science",
+      "confidence": 1.0,
+      "entity": "gravity",
+      "entity_type": "physical_constant",
+      "fact": "The acceleration due to gravity on Earth's surface is approximately 9.8 meters per second squared",
+      "id": "sci_006",
+      "verification_source": "NIST, International Bureau of Weights and Measures"
+    },
+    {
+      "category": "science",
+      "confidence": 1.0,
+      "entity": "oxygen",
+      "entity_type": "substance",
+      "fact": "Oxygen makes up approximately 21% of Earth's atmosphere by volume",
+      "id": "sci_007",
+      "verification_source": "NASA, NOAA, Encyclopedia Britannica"
+    },
+    {
+      "category": "science",
+      "confidence": 1.0,
+      "entity": "nitrogen",
+      "entity_type": "substance",
+      "fact": "Nitrogen makes up approximately 78% of Earth's atmosphere by volume",
+      "id": "sci_008",
+      "verification_source": "NASA, NOAA, Encyclopedia Britannica"
+    },
+    {
+      "category": "science",
+      "confidence": 1.0,
+      "entity": "human body",
+      "entity_type": "scientific_concept",
+      "fact": "The average adult human body contains approximately 60% water by weight",
+      "id": "sci_009",
+      "verification_source": "National Academy of Sciences, Medical textbooks"
+    },
+    {
+      "category": "science",
+      "confidence": 1.0,
+      "entity": "DNA",
+      "entity_type": "biological_entity",
+      "fact": "DNA stands for deoxyribonucleic acid and contains the genetic instructions for all known living organisms",
+      "id": "sci_010",
+      "verification_source": "National Human Genome Research Institute, Encyclopedia Britannica"
+    },
+    {
+      "category": "science",
+      "confidence": 1.0,
+      "entity": "Sun",
+      "entity_type": "celestial_body",
+      "fact": "The Sun is a star located at the center of our solar system, approximately 4.6 billion years old",
+      "id": "sci_011",
+      "verification_source": "NASA, European Space Agency"
+    },
+    {
+      "category": "science",
+      "confidence": 1.0,
+      "entity": "Moon",
+      "entity_type": "celestial_body",
+      "fact": "The Moon is Earth's only natural satellite, located approximately 384,400 kilometers (238,900 miles) away",
+      "id": "sci_012",
+      "verification_source": "NASA, International Astronomical Union"
+    },
+    {
+      "category": "science",
+      "confidence": 1.0,
+      "entity": "periodic table",
+      "entity_type": "scientific_concept",
+      "fact": "The periodic table currently contains 118 confirmed chemical elements",
+      "id": "sci_013",
+      "verification_source": "International Union of Pure and Applied Chemistry (IUPAC)"
+    },
+    {
+      "category": "science",
+      "confidence": 1.0,
+      "entity": "photosynthesis",
+      "entity_type": "scientific_concept",
+      "fact": "Photosynthesis is the process by which plants convert carbon dioxide and water into glucose using sunlight energy",
+      "id": "sci_014",
+      "verification_source": "Encyclopedia Britannica, Biology textbooks"
+    },
+    {
+      "category": "science",
+      "confidence": 1.0,
+      "entity": "atoms",
+      "entity_type": "scientific_concept",
+      "fact": "Atoms consist of protons, neutrons, and electrons, with protons and neutrons in the nucleus and electrons orbiting around it",
+      "id": "sci_015",
+      "verification_source": "Encyclopedia Britannica, Physics textbooks"
+    }
+  ]
+}

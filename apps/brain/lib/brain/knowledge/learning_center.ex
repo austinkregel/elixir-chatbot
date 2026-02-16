@@ -1,7 +1,6 @@
 defmodule Brain.Knowledge.LearningCenter do
   @moduledoc "Central orchestrator for the Knowledge Expansion System.\n\nThe Learning Center:\n- Manages learning sessions (triggered or scheduled)\n- Maintains a goal queue with research objectives\n- Dispatches Research Agents as supervised Tasks\n- Collects and synthesizes agent findings\n- Routes vetted findings to the Admin review queue\n\n## Example\n\n    # Start a learning session\n    {:ok, session} = LearningCenter.start_session(\"European capitals\")\n\n    # Check session status\n    {:ok, session} = LearningCenter.get_session(session.id)\n\n    # List active sessions\n    sessions = LearningCenter.list_sessions()\n"
 
-  alias Brain.LinguisticData
   alias Brain.ML
   alias Brain.Knowledge.Types
   alias Brain.Knowledge
@@ -81,6 +80,7 @@ defmodule Brain.Knowledge.LearningCenter do
     state = %{
       sessions: %{},
       agent_tasks: %{},
+      task_sessions: MapSet.new(),
       scheduled: [],
       stats: %{
         total_sessions: 0,
@@ -97,7 +97,13 @@ defmodule Brain.Knowledge.LearningCenter do
   @impl true
   def handle_call({:start_session, topic, opts}, _from, state) do
     session = LearningSession.new(topic: topic)
-    goals = decompose_topic(topic, opts)
+
+    goals =
+      if Keyword.get(opts, :sources) == [:task] do
+        build_task_goals(topic, opts)
+      else
+        decompose_topic(topic, opts)
+      end
 
     session =
       Enum.reduce(goals, session, fn goal, sess ->
@@ -106,10 +112,17 @@ defmodule Brain.Knowledge.LearningCenter do
 
     {agent_refs, updated_state} = dispatch_agents(goals, session.id, opts, state)
 
+    is_task_session = Keyword.get(opts, :sources) == [:task]
+
     new_state = %{
       updated_state
       | sessions: Map.put(updated_state.sessions, session.id, session),
         agent_tasks: Map.merge(updated_state.agent_tasks, agent_refs),
+        task_sessions:
+          if(is_task_session,
+            do: MapSet.put(updated_state.task_sessions, session.id),
+            else: updated_state.task_sessions
+          ),
         stats: %{updated_state.stats | total_sessions: updated_state.stats.total_sessions + 1}
     }
 
@@ -118,6 +131,11 @@ defmodule Brain.Knowledge.LearningCenter do
       topic: topic,
       goals: length(goals)
     )
+
+    # Persist session to Atlas
+    source_type = if is_task_session, do: "task", else: "web"
+    persist_session_to_atlas(session, source_type)
+    Enum.each(goals, &persist_goal_to_atlas(&1, session.id))
 
     Process.send_after(self(), {:session_timeout, session.id}, @session_timeout_ms)
 
@@ -178,6 +196,7 @@ defmodule Brain.Knowledge.LearningCenter do
         }
 
         Logger.info("Session cancelled", session_id: session_id)
+        persist_session_update_to_atlas(cancelled_session)
 
         {:reply, :ok, new_state}
     end
@@ -228,13 +247,17 @@ defmodule Brain.Knowledge.LearningCenter do
         )
 
         new_state =
-          process_findings_scientifically(
-            state,
-            session_id,
-            goal_id,
-            findings,
-            remaining_tasks
-          )
+          if MapSet.member?(state.task_sessions, session_id) do
+            process_task_findings(state, session_id, goal_id, findings, remaining_tasks)
+          else
+            process_findings_scientifically(
+              state,
+              session_id,
+              goal_id,
+              findings,
+              remaining_tasks
+            )
+          end
 
         new_state = maybe_complete_session(new_state, session_id)
 
@@ -296,6 +319,7 @@ defmodule Brain.Knowledge.LearningCenter do
         Logger.warning("Session timed out", session_id: session_id)
         completed = LearningSession.complete(session)
         new_sessions = Map.put(state.sessions, session_id, completed)
+        persist_session_update_to_atlas(completed)
 
         {:noreply, %{state | sessions: new_sessions}}
 
@@ -372,10 +396,79 @@ defmodule Brain.Knowledge.LearningCenter do
       new_sessions = Map.put(state.sessions, session_id, updated_session)
       new_stats = %{state.stats | total_findings: state.stats.total_findings + length(findings)}
 
+      # Persist investigation + goal status + session update to Atlas
+      persist_investigation_to_atlas(concluded, session_id)
+      persist_goal_status_to_atlas(goal_id, :completed)
+      persist_session_update_to_atlas(updated_session)
+
       %{state | sessions: new_sessions, stats: new_stats, agent_tasks: remaining_tasks}
     else
       process_findings_traditional(state, session_id, goal_id, findings, remaining_tasks)
     end
+  end
+
+  defp process_task_findings(state, session_id, goal_id, findings, remaining_tasks) do
+    session = Map.get(state.sessions, session_id)
+
+    # Route task findings to TrainingExampleBuffer for model improvement
+    if Code.ensure_loaded?(Brain.ML.TrainingExampleBuffer) and
+         function_exported?(Brain.ML.TrainingExampleBuffer, :add_example, 2) do
+      Enum.each(findings, fn finding ->
+        if finding.claim && finding.entity do
+          try do
+            Brain.ML.TrainingExampleBuffer.add_example(finding.claim, finding.entity)
+          rescue
+            _ -> :ok
+          end
+        end
+      end)
+    end
+
+    # Mark goal as completed and update session metrics directly (no hypothesis testing)
+    updated_session =
+      if session do
+        updated_goals =
+          Enum.map(session.goals, fn goal ->
+            if goal.id == goal_id do
+              ResearchGoal.update_status(goal, :completed)
+            else
+              goal
+            end
+          end)
+
+        session
+        |> Map.put(:goals, updated_goals)
+        |> LearningSession.record_findings(length(findings))
+      else
+        session
+      end
+
+    new_sessions =
+      if updated_session do
+        Map.put(state.sessions, session_id, updated_session)
+      else
+        state.sessions
+      end
+
+    new_stats = %{
+      state.stats
+      | total_findings: state.stats.total_findings + length(findings)
+    }
+
+    Logger.info("Task findings processed directly (no hypothesis testing)",
+      session_id: session_id,
+      goal_id: goal_id,
+      findings: length(findings)
+    )
+
+    # Persist goal status and session update to Atlas
+    persist_goal_status_to_atlas(goal_id, :completed)
+
+    if updated_session do
+      persist_session_update_to_atlas(updated_session)
+    end
+
+    %{state | sessions: new_sessions, stats: new_stats, agent_tasks: remaining_tasks}
   end
 
   defp process_findings_traditional(state, session_id, goal_id, findings, remaining_tasks) do
@@ -388,6 +481,31 @@ defmodule Brain.Knowledge.LearningCenter do
 
     new_state = update_session_metrics(state, session_id, goal_id, findings, candidates)
     %{new_state | agent_tasks: remaining_tasks}
+  end
+
+  defp build_task_goals(topic, opts) do
+    capability = Keyword.get(opts, :capability, :all)
+    priority = Keyword.get(opts, :priority, :normal)
+
+    categories =
+      try do
+        Tasks.Source.capability_categories(capability)
+      rescue
+        _ -> [to_string(capability)]
+      end
+
+    categories
+    |> Enum.map(fn category ->
+      ResearchGoal.new("#{category} training",
+        questions: ["Train on #{category} benchmark tasks"],
+        constraints: %{source: :task, category: category},
+        priority: priority
+      )
+    end)
+    |> case do
+      [] -> [ResearchGoal.new(topic, priority: priority)]
+      goals -> goals
+    end
   end
 
   defp decompose_topic(topic, opts) do
@@ -584,33 +702,17 @@ defmodule Brain.Knowledge.LearningCenter do
     end)
   end
 
-  defp has_negation_difference?(c1, c2) do
-    negation_words = LinguisticData.negation_words()
-    c1_has_negation = Enum.any?(negation_words, &String.contains?(c1, &1))
-    c2_has_negation = Enum.any?(negation_words, &String.contains?(c2, &1))
-    c1_has_negation != c2_has_negation
-  end
+  defp has_negation_difference?(c1, c2),
+    do: Brain.Knowledge.ContradictionDetector.has_negation_difference?(c1, c2)
 
-  defp has_number_disagreement?(c1, c2) do
-    numbers1 = Regex.scan(~r/\d+/, c1) |> List.flatten()
-    numbers2 = Regex.scan(~r/\d+/, c2) |> List.flatten()
-
-    if numbers1 != [] and numbers2 != [] do
-      n1 = numbers1 |> Enum.map(&String.to_integer/1) |> Enum.max()
-      n2 = numbers2 |> Enum.map(&String.to_integer/1) |> Enum.max()
-      min_val = min(n1, n2)
-      max_val = max(n1, n2)
-      min_val > 0 and (max_val - min_val) / min_val > 0.2
-    else
-      false
-    end
-  end
+  defp has_number_disagreement?(c1, c2),
+    do: Brain.Knowledge.ContradictionDetector.has_number_disagreement?(c1, c2)
 
   defp normalize_predicate(entity) when is_binary(entity) do
-    entity
-    |> String.downcase()
-    |> String.replace(~r/[^a-z0-9]+/, "_")
-    |> String.to_atom()
+    normalized = entity |> String.downcase() |> String.replace(~r/[^a-z0-9]+/, "_")
+    String.to_existing_atom(normalized)
+  rescue
+    ArgumentError -> :unknown
   end
 
   defp normalize_predicate(_) do
@@ -666,6 +768,8 @@ defmodule Brain.Knowledge.LearningCenter do
         updated_session = Map.put(session, :goals, updated_goals)
         new_sessions = Map.put(state.sessions, session_id, updated_session)
 
+        persist_goal_status_to_atlas(goal_id, :failed)
+
         %{state | sessions: new_sessions}
     end
   end
@@ -695,6 +799,8 @@ defmodule Brain.Knowledge.LearningCenter do
             findings: completed.findings_count
           )
 
+          persist_session_update_to_atlas(completed)
+
           %{state | sessions: new_sessions}
         else
           state
@@ -717,5 +823,166 @@ defmodule Brain.Knowledge.LearningCenter do
     sessions
     |> Map.values()
     |> Enum.count(&(&1.status == :active))
+  end
+
+  # ============================================================================
+  # Atlas Persistence Helpers
+  # ============================================================================
+
+  defp atlas_available? do
+    Code.ensure_loaded?(Atlas.Learning) and
+      Code.ensure_loaded?(Atlas.Repo) and
+      match?({:ok, _}, try_atlas_repo())
+  end
+
+  defp try_atlas_repo do
+    try do
+      {:ok, Process.whereis(Atlas.Repo)}
+    rescue
+      _ -> {:error, :not_available}
+    catch
+      _, _ -> {:error, :not_available}
+    end
+  end
+
+  defp persist_session_to_atlas(%LearningSession{} = session, source_type) do
+    if atlas_available?() do
+      Task.start(fn ->
+        try do
+          Atlas.Learning.create_session(%{
+            id: session.id,
+            topic: session.topic,
+            status: to_string(session.status),
+            started_at: session.started_at,
+            findings_count: session.findings_count,
+            approved_count: session.approved_count,
+            rejected_count: session.rejected_count,
+            hypotheses_tested: session.hypotheses_tested,
+            hypotheses_supported: session.hypotheses_supported,
+            hypotheses_falsified: session.hypotheses_falsified,
+            source_type: source_type
+          })
+        rescue
+          e -> Logger.debug("Atlas session persist failed: #{inspect(e)}")
+        end
+      end)
+    end
+  end
+
+  defp persist_goal_to_atlas(%ResearchGoal{} = goal, session_id) do
+    if atlas_available?() do
+      Task.start(fn ->
+        try do
+          Atlas.Learning.create_goal(%{
+            id: goal.id,
+            session_id: session_id,
+            topic: goal.topic,
+            questions: goal.questions,
+            constraints: goal.constraints,
+            priority: to_string(goal.priority),
+            status: to_string(goal.status)
+          })
+        rescue
+          e -> Logger.debug("Atlas goal persist failed: #{inspect(e)}")
+        end
+      end)
+    end
+  end
+
+  defp persist_goal_status_to_atlas(goal_id, new_status) do
+    if atlas_available?() do
+      Task.start(fn ->
+        try do
+          Atlas.Learning.update_goal_status(goal_id, to_string(new_status))
+        rescue
+          e -> Logger.debug("Atlas goal status update failed: #{inspect(e)}")
+        end
+      end)
+    end
+  end
+
+  defp persist_investigation_to_atlas(%Investigation{} = investigation, session_id) do
+    if atlas_available?() do
+      Task.start(fn ->
+        try do
+          {:ok, db_investigation} =
+            Atlas.Learning.create_investigation(%{
+              id: investigation.id,
+              session_id: session_id,
+              topic: investigation.topic,
+              status: to_string(investigation.status),
+              conclusion: if(investigation.conclusion, do: to_string(investigation.conclusion)),
+              independent_variable: investigation.independent_variable,
+              dependent_variable: investigation.dependent_variable,
+              constants: investigation.constants,
+              methodology_notes: investigation.methodology_notes,
+              started_at: investigation.started_at,
+              concluded_at: investigation.concluded_at
+            })
+
+          # Persist hypotheses
+          Enum.each(investigation.hypotheses, fn hyp ->
+            Atlas.Learning.create_hypothesis(%{
+              id: hyp.id,
+              investigation_id: db_investigation.id,
+              claim: hyp.claim,
+              entity: hyp.entity,
+              derived_from: hyp.derived_from,
+              prediction: hyp.prediction,
+              status: to_string(hyp.status),
+              confidence: hyp.confidence,
+              confidence_level: to_string(hyp.confidence_level),
+              source_count: hyp.source_count,
+              replication_count: hyp.replication_count,
+              tested_at: hyp.tested_at
+            })
+          end)
+
+          # Persist evidence
+          Enum.each(investigation.evidence, fn finding ->
+            Atlas.Learning.create_evidence(%{
+              investigation_id: db_investigation.id,
+              claim: finding.claim,
+              entity: finding.entity,
+              entity_type: finding.entity_type,
+              source_url: finding.source && finding.source.url,
+              source_domain: finding.source && finding.source.domain,
+              source_title: finding.source && finding.source.title,
+              source_reliability: finding.source && finding.source.reliability_score,
+              source_bias: finding.source && to_string(finding.source.bias_rating),
+              source_trust_tier: finding.source && to_string(finding.source.trust_tier),
+              raw_context: finding.raw_context,
+              confidence: finding.confidence,
+              corroboration_group: finding.corroboration_group,
+              evidence_type: "unassociated",
+              extracted_at: finding.extracted_at
+            })
+          end)
+        rescue
+          e -> Logger.debug("Atlas investigation persist failed: #{inspect(e)}")
+        end
+      end)
+    end
+  end
+
+  defp persist_session_update_to_atlas(%LearningSession{} = session) do
+    if atlas_available?() do
+      Task.start(fn ->
+        try do
+          Atlas.Learning.update_session(session.id, %{
+            status: to_string(session.status),
+            completed_at: session.completed_at,
+            findings_count: session.findings_count,
+            approved_count: session.approved_count,
+            rejected_count: session.rejected_count,
+            hypotheses_tested: session.hypotheses_tested,
+            hypotheses_supported: session.hypotheses_supported,
+            hypotheses_falsified: session.hypotheses_falsified
+          })
+        rescue
+          e -> Logger.debug("Atlas session update failed: #{inspect(e)}")
+        end
+      end)
+    end
   end
 end

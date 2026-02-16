@@ -237,6 +237,7 @@ defmodule Brain.ML.LSTM.MultiTaskModel do
         {:ok, model}
 
       {:error, _} ->
+        Logger.warning("MultiTaskModel: no TF-IDF model on disk, training fallback from intent data (this may take a few seconds)")
         {:ok, examples} = DataLoaders.load_all_intents()
         training_data = Enum.map(examples, fn ex -> {ex.text, ex.intent} end)
         model = SimpleClassifier.train(training_data)

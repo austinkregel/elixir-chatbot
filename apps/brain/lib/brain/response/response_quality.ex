@@ -5,7 +5,7 @@ defmodule Brain.Response.ResponseQuality do
   require Logger
 
   alias Brain.ML.Tokenizer
-  alias Response.{LSTMResponse, Generator, TemplateStore}
+  alias Response.{LSTMResponse, TemplateStore}
 
   @quality_thresholds %{
     excellent: 0.85,
@@ -74,15 +74,18 @@ defmodule Brain.Response.ResponseQuality do
     }
   end
 
+  @max_improve_depth 2
+
   @doc "Attempt to improve a response if quality is below threshold.\n"
   def improve(query, response, opts \\ []) do
     intent = Keyword.get(opts, :intent)
     entities = Keyword.get(opts, :entities, [])
     threshold = Keyword.get(opts, :threshold, @quality_thresholds.acceptable)
+    depth = Keyword.get(opts, :depth, 0)
 
     analysis = analyze(query, response, opts)
 
-    if analysis.score >= threshold do
+    if analysis.score >= threshold or depth >= @max_improve_depth do
       {:ok, response, analysis}
     else
       improved = attempt_improvement(query, response, intent, entities, analysis)
@@ -235,20 +238,12 @@ defmodule Brain.Response.ResponseQuality do
   end
 
   def check_generic_fallback(%{response: response}, _opts) do
-    fallback_indicators = [
-      "i don't understand",
-      "i'm not sure what you mean",
-      "could you rephrase",
-      "i didn't get that",
-      "sorry, i can't help with that"
-    ]
+    case Brain.ML.MicroClassifiers.classify(:fallback_response, response) do
+      {:ok, "fallback", score} when score > 0.3 ->
+        %{severity: :high, message: "Response appears to be a fallback/error message"}
 
-    lower = String.downcase(response)
-
-    if Enum.any?(fallback_indicators, &String.contains?(lower, &1)) do
-      %{severity: :high, message: "Response appears to be a fallback/error message"}
-    else
-      nil
+      _ ->
+        nil
     end
   end
 
@@ -369,11 +364,8 @@ defmodule Brain.Response.ResponseQuality do
     end
   end
 
-  defp get_alternative_response(query, intent, entities) do
-    case Generator.generate(intent, entities, query) do
-      {:ok, response, _} -> response
-      _ -> get_template_response(intent, entities)
-    end
+  defp get_alternative_response(_query, intent, entities) do
+    get_template_response(intent, entities)
   end
 
   defp get_template_response(intent, _entities) do
@@ -386,11 +378,8 @@ defmodule Brain.Response.ResponseQuality do
     end
   end
 
-  defp get_detailed_response(query, intent, entities) do
-    case Generator.generate(intent, entities, query) do
-      {:ok, response, _} when byte_size(response) > 20 -> response
-      _ -> get_template_response(intent, entities)
-    end
+  defp get_detailed_response(_query, intent, entities) do
+    get_template_response(intent, entities)
   end
 
   defp select_lstm_best(query, intent, entities) do
@@ -425,13 +414,17 @@ defmodule Brain.Response.ResponseQuality do
           []
       end
 
-    generator_candidate =
-      case Generator.generate(intent, entities) do
-        {:ok, response, _} -> [response]
-        _ -> []
+    lstm_candidate =
+      if LSTMResponse.ready?() do
+        case LSTMResponse.generate(nil, intent, entities) do
+          {:ok, response, _score} -> [response]
+          _ -> []
+        end
+      else
+        []
       end
 
-    (template_candidates ++ generator_candidate ++ candidates)
+    (template_candidates ++ lstm_candidate ++ candidates)
     |> Enum.uniq()
     |> Enum.filter(&is_binary/1)
     |> Enum.filter(&(String.length(&1) > 0))

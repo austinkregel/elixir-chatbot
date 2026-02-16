@@ -30,14 +30,6 @@ defmodule Brain.Epistemic.SourceAuthority do
     Brain.priv_path("knowledge/source_authority_profiles.json")
   end
 
-  defp default_persistence_file do
-    Brain.priv_path("data/source_authority_learned.term")
-  end
-
-  defp persistence_file do
-    Application.get_env(:brain, :source_authority_path, default_persistence_file())
-  end
-
   # ────────────────────────────────────────────────────────────────
   # Public API
   # ────────────────────────────────────────────────────────────────
@@ -96,7 +88,7 @@ defmodule Brain.Epistemic.SourceAuthority do
     GenServer.call(__MODULE__, :list_profiles)
   end
 
-  @doc "Persists learned credibility data to disk."
+  @doc "Persists learned credibility data to Atlas."
   @spec persist() :: :ok | {:error, term()}
   def persist do
     GenServer.call(__MODULE__, :persist)
@@ -331,104 +323,117 @@ defmodule Brain.Epistemic.SourceAuthority do
   defp parse_profiles(data) do
     data
     |> Map.get("profiles", %{})
-    |> Enum.map(fn {key, info} ->
-      atom_key =
-        try do
-          String.to_existing_atom(key)
-        rescue
-          _ -> String.to_atom(key)
-        end
+    |> Enum.flat_map(fn {key, info} ->
+      case try_parse_profile_key(key) do
+        {:ok, atom_key} ->
+          profile = %{
+            label: Map.get(info, "label", key),
+            description: Map.get(info, "description", ""),
+            initial_confidence: Map.get(info, "initial_confidence", 0.5),
+            decay_rate_multiplier: Map.get(info, "decay_rate_multiplier", 1.0),
+            jtms_node_type: parse_jtms_node_type(Map.get(info, "jtms_node_type", "assumption")),
+            credibility_floor: Map.get(info, "credibility_floor", 0.0),
+            category: Map.get(info, "category", "unknown")
+          }
+          [{atom_key, profile}]
 
-      profile = %{
-        label: Map.get(info, "label", key),
-        description: Map.get(info, "description", ""),
-        initial_confidence: Map.get(info, "initial_confidence", 0.5),
-        decay_rate_multiplier: Map.get(info, "decay_rate_multiplier", 1.0),
-        jtms_node_type: parse_jtms_node_type(Map.get(info, "jtms_node_type", "assumption")),
-        credibility_floor: Map.get(info, "credibility_floor", 0.0),
-        category: Map.get(info, "category", "unknown")
-      }
-
-      {atom_key, profile}
+        :error ->
+          Logger.warning("SourceAuthority: skipping profile with unknown atom key", key: key)
+          []
+      end
     end)
     |> Map.new()
   end
+
+  defp try_parse_profile_key(key) when is_binary(key) do
+    {:ok, String.to_atom(key)}
+  rescue
+    ArgumentError -> :error
+  end
+
+  defp try_parse_profile_key(key) when is_atom(key), do: {:ok, key}
 
   defp parse_jtms_node_type("premise"), do: :premise
   defp parse_jtms_node_type("assumption"), do: :assumption
   defp parse_jtms_node_type(_), do: :assumption
 
   defp load_learned_data(state) do
-    path = persistence_file()
-    full_path = Path.join(File.cwd!(), path)
+    case Brain.AtlasIntegration.sync(fn ->
+           Atlas.Repo.all(Atlas.Schemas.SourceAuthority)
+         end) do
+      {:ok, records} when is_list(records) and records != [] ->
+        tracking =
+          records
+          |> Enum.map(fn r ->
+            key = String.to_atom(r.authority_key)
 
-    if File.exists?(full_path) do
-      case File.read(full_path) do
-        {:ok, binary} ->
-          try do
-            data = :erlang.binary_to_term(binary)
-            tracking = Map.get(data, :tracking, %{})
+            data = %{
+              confirmed_count: r.confirmed_count || 0,
+              contradicted_count: r.contradicted_count || 0,
+              total_added: r.total_added || 0,
+              last_updated: r.last_updated
+            }
 
-            Logger.info("Loaded learned authority data",
-              authorities: map_size(tracking)
-            )
+            {key, data}
+          end)
+          |> Map.new()
 
-            %{state | tracking: tracking, last_updated: Map.get(data, :last_updated)}
-          rescue
-            e ->
-              Logger.warning("Failed to parse learned authority data",
-                error: inspect(e)
-              )
+        Logger.info("Loaded learned authority data from Atlas",
+          authorities: map_size(tracking)
+        )
 
-              state
-          end
+        %{state | tracking: tracking}
 
-        {:error, reason} ->
-          Logger.warning("Failed to read learned authority data",
-            reason: inspect(reason)
-          )
+      {:ok, []} ->
+        state
 
-          state
-      end
-    else
-      state
+      {:error, reason} ->
+        Logger.warning("Failed to load learned authority data: #{inspect(reason)}")
+        state
     end
   end
 
   defp persist_learned_data(state) do
-    path = persistence_file()
-    full_path = Path.join(File.cwd!(), path)
-
-    # Only persist authorities that have data
-    learned_tracking =
+    tracking_snapshot =
       state.tracking
       |> Enum.filter(fn {_key, t} ->
         t.confirmed_count > 0 or t.contradicted_count > 0 or t.total_added > 0
       end)
       |> Map.new()
 
-    data = %{
-      tracking: learned_tracking,
-      last_updated: state.last_updated,
-      version: 1
-    }
+    profiles = state.profiles
 
-    full_path |> Path.dirname() |> File.mkdir_p!()
+    Brain.AtlasIntegration.async(fn ->
+      Enum.each(tracking_snapshot, fn {key, t} ->
+        floor =
+          case Map.get(profiles, key) do
+            %{credibility_floor: f} -> f
+            _ -> 0.0
+          end
 
-    case File.write(full_path, :erlang.term_to_binary(data)) do
-      :ok ->
-        Logger.debug("Persisted source authority data",
-          authorities: map_size(learned_tracking)
-        )
+        attrs = %{
+          authority_key: to_string(key),
+          confirmed_count: t.confirmed_count,
+          contradicted_count: t.contradicted_count,
+          total_added: t.total_added,
+          credibility: calculate_credibility(t.confirmed_count, t.contradicted_count, floor),
+          last_updated: t.last_updated
+        }
 
-        :ok
+        case Atlas.Repo.get_by(Atlas.Schemas.SourceAuthority, authority_key: attrs.authority_key) do
+          nil ->
+            %Atlas.Schemas.SourceAuthority{}
+            |> Atlas.Schemas.SourceAuthority.changeset(attrs)
+            |> Atlas.Repo.insert()
 
-      {:error, reason} ->
-        Logger.error("Failed to persist source authority data",
-          reason: inspect(reason)
-        )
+          existing ->
+            existing
+            |> Atlas.Schemas.SourceAuthority.changeset(attrs)
+            |> Atlas.Repo.update()
+        end
+      end)
+    end)
 
-        {:error, reason}
-    end
+    :ok
   end
 end

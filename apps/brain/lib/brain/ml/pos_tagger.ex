@@ -155,6 +155,110 @@ defmodule Brain.ML.POSTagger do
     end
   end
 
+  @doc """
+  Get the current POS model from disk.
+
+  Returns `{:ok, model}` or `{:error, reason}`.
+  """
+  def get_model do
+    load_model()
+  end
+
+  @doc """
+  Update model weights by blending graph-derived weights with existing model.
+
+  The `blend` option controls how much weight the graph data gets:
+  - `blend: 0.3` means 30% graph + 70% existing (default)
+  - `blend: 1.0` means 100% graph (replaces existing)
+  - `blend: 0.0` means 0% graph (no change)
+
+  ## Parameters
+
+  - `transition_weights` - Map of `%{from_tag => %{to_tag => frequency}}`
+  - `tag_priors` - Map of `%{tag => prior_probability}`
+  - `opts` - Options including `:blend` ratio
+
+  ## Returns
+
+  `:ok` on success, `{:error, reason}` on failure.
+  """
+  def update_weights(transition_weights, tag_priors, opts \\ []) do
+    blend = Keyword.get(opts, :blend, 0.3)
+
+    case load_model() do
+      {:ok, model} ->
+        blended_transitions = blend_maps(model.transition_weights, transition_weights, blend)
+        blended_priors = blend_flat_map(model.tag_priors, tag_priors, blend)
+
+        updated_model = %{
+          model
+          | transition_weights: blended_transitions,
+            tag_priors: blended_priors
+        }
+
+        case save_model(updated_model) do
+          {:ok, _path} ->
+            Logger.info("POS model weights updated with graph data", blend: blend)
+            :ok
+
+          error ->
+            error
+        end
+
+      {:error, reason} ->
+        Logger.warning("Cannot update POS weights - no model loaded", reason: inspect(reason))
+        {:error, reason}
+    end
+  end
+
+  defp blend_maps(existing, new_data, blend) when is_map(existing) and is_map(new_data) do
+    all_keys = MapSet.union(MapSet.new(Map.keys(existing)), MapSet.new(Map.keys(new_data)))
+
+    Map.new(all_keys, fn key ->
+      existing_inner = Map.get(existing, key, %{})
+      new_inner = Map.get(new_data, key, %{})
+
+      blended =
+        cond do
+          is_map(existing_inner) and is_map(new_inner) ->
+            blend_flat_map(existing_inner, new_inner, blend)
+
+          is_number(existing_inner) and is_number(new_inner) ->
+            existing_inner * (1 - blend) + new_inner * blend
+
+          is_map(existing_inner) ->
+            existing_inner
+
+          is_map(new_inner) ->
+            new_inner
+
+          true ->
+            existing_inner
+        end
+
+      {key, blended}
+    end)
+  end
+
+  defp blend_maps(existing, _, _), do: existing
+
+  defp blend_flat_map(existing, new_data, blend) when is_map(existing) and is_map(new_data) do
+    all_keys = MapSet.union(MapSet.new(Map.keys(existing)), MapSet.new(Map.keys(new_data)))
+
+    Map.new(all_keys, fn key ->
+      e = Map.get(existing, key, 0)
+      n = Map.get(new_data, key, 0)
+
+      if is_number(e) and is_number(n) do
+        {key, e * (1 - blend) + n * blend}
+      else
+        {key, e}
+      end
+    end)
+  end
+
+  defp blend_flat_map(existing, _, _), do: existing
+
   @doc "Predict POS tags for a sequence of tokens.\nReturns list of {token, predicted_tag} tuples.\n"
   def predict(tokens, model) when is_list(tokens) and is_map(model) do
     if tokens == [] do

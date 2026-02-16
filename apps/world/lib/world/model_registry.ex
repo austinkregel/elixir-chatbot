@@ -24,22 +24,22 @@ defmodule World.ModelRegistry do
 
   @doc "Returns the currently active world ID.\n"
   def get_active_world do
-    GenServer.call(__MODULE__, :get_active_world)
+    GenServer.call(__MODULE__, :get_active_world, 5_000)
   end
 
   @doc "Gets a specific model for a world.\nReturns {:ok, model} or {:error, reason}\n"
   def get_model(world_id, model_type) when is_binary(world_id) and model_type in @model_types do
-    GenServer.call(__MODULE__, {:get_model, world_id, model_type})
+    GenServer.call(__MODULE__, {:get_model, world_id, model_type}, 5_000)
   end
 
   @doc "Gets all models for a world.\nReturns {:ok, models_map} or {:error, reason}\n"
   def get_world_models(world_id) when is_binary(world_id) do
-    GenServer.call(__MODULE__, {:get_world_models, world_id})
+    GenServer.call(__MODULE__, {:get_world_models, world_id}, 5_000)
   end
 
   @doc "Gets the active world's models.\n"
   def get_active_models do
-    GenServer.call(__MODULE__, :get_active_models)
+    GenServer.call(__MODULE__, :get_active_models, 5_000)
   end
 
   @doc "Reloads models for a world from disk.\n"
@@ -49,17 +49,17 @@ defmodule World.ModelRegistry do
 
   @doc "Unloads models for a world to free memory.\n"
   def unload_world(world_id) when is_binary(world_id) do
-    GenServer.call(__MODULE__, {:unload_world, world_id})
+    GenServer.call(__MODULE__, {:unload_world, world_id}, 30_000)
   end
 
   @doc "Returns the status of models for a world.\n"
   def get_world_status(world_id) when is_binary(world_id) do
-    GenServer.call(__MODULE__, {:get_world_status, world_id})
+    GenServer.call(__MODULE__, {:get_world_status, world_id}, 5_000)
   end
 
   @doc "Returns the status of all loaded worlds.\n"
   def get_all_status do
-    GenServer.call(__MODULE__, :get_all_status)
+    GenServer.call(__MODULE__, :get_all_status, 5_000)
   end
 
   @doc "Checks if the registry is ready (has loaded default world).\n"

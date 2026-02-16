@@ -85,24 +85,8 @@ defmodule Brain.Memory.VectorIndex do
   end
 
   @doc "Compute cosine similarity between two vectors.\nReturns a value in [-1, 1].\n"
-  def cosine_similarity(vec_a, vec_b) when is_list(vec_a) and is_list(vec_b) do
-    if length(vec_a) != length(vec_b) or vec_a == [] do
-      0.0
-    else
-      dot_product =
-        Enum.zip(vec_a, vec_b)
-        |> Enum.reduce(0.0, fn {a, b}, acc -> acc + a * b end)
-
-      mag_a = :math.sqrt(Enum.reduce(vec_a, 0.0, fn val, acc -> acc + val * val end))
-      mag_b = :math.sqrt(Enum.reduce(vec_b, 0.0, fn val, acc -> acc + val * val end))
-
-      if mag_a > 0 and mag_b > 0 do
-        dot_product / (mag_a * mag_b)
-      else
-        0.0
-      end
-    end
-  end
+  def cosine_similarity(vec_a, vec_b) when is_list(vec_a) and is_list(vec_b),
+    do: FourthWall.Math.cosine_similarity(vec_a, vec_b)
 
   @doc "Compute euclidean distance between two vectors.\n"
   def euclidean_distance(vec_a, vec_b) when is_list(vec_a) and is_list(vec_b) do

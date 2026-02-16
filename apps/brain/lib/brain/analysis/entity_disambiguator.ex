@@ -12,42 +12,11 @@ defmodule Brain.Analysis.EntityDisambiguator do
   alias Analysis.{IntentRegistry, EntityTypes}
   alias World.TypeInferrer
 
-  @context_preferences %{
-    introduction: %{
-      "person" => 1.0,
-      "location" => 0.2,
-      "city" => 0.2,
-      "music-artist" => 0.3
-    },
-    location_query: %{
-      "location" => 1.0,
-      "city" => 1.0,
-      "person" => 0.1,
-      "music-artist" => 0.1
-    },
-    music: %{
-      "music-artist" => 1.0,
-      "person" => 0.3,
-      "location" => 0.1,
-      "city" => 0.1
-    },
-    device: %{
-      "device" => 1.0,
-      "lights" => 1.0,
-      "heating" => 1.0,
-      "room" => 0.8,
-      "music-artist" => 0.1,
-      "person" => 0.1,
-      "location" => 0.1,
-      "city" => 0.1
-    },
-    default: %{
-      "person" => 0.5,
-      "location" => 0.5,
-      "city" => 0.5,
-      "music-artist" => 0.5
-    }
-  }
+  @external_resource Path.join(:code.priv_dir(:brain), "analysis/context_preferences.json")
+  @context_preferences Path.join(:code.priv_dir(:brain), "analysis/context_preferences.json")
+                       |> File.read!()
+                       |> Jason.decode!()
+                       |> Enum.into(%{}, fn {k, v} -> {String.to_atom(k), v} end)
 
   @type entity_candidate :: %{
           value: String.t(),

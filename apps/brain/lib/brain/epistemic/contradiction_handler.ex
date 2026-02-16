@@ -14,32 +14,32 @@ defmodule Brain.Epistemic.ContradictionHandler do
 
   @doc "Handles a contradiction notification from the JTMS.\n\nReturns a resolution decision or {:needs_user_input, options}.\n"
   def handle_contradiction(node_id, supporting_assumptions) do
-    GenServer.call(__MODULE__, {:handle_contradiction, node_id, supporting_assumptions})
+    GenServer.call(__MODULE__, {:handle_contradiction, node_id, supporting_assumptions}, 5_000)
   end
 
   @doc "Resolves a contradiction by retracting the specified assumption.\n"
   def resolve_by_retraction(assumption_id) do
-    GenServer.call(__MODULE__, {:resolve_by_retraction, assumption_id})
+    GenServer.call(__MODULE__, {:resolve_by_retraction, assumption_id}, 5_000)
   end
 
   @doc "Gets all pending contradictions awaiting user resolution.\n"
   def get_pending do
-    GenServer.call(__MODULE__, :get_pending)
+    GenServer.call(__MODULE__, :get_pending, 5_000)
   end
 
   @doc "Gets resolution history.\n"
   def get_history(opts \\ []) do
-    GenServer.call(__MODULE__, {:get_history, opts})
+    GenServer.call(__MODULE__, {:get_history, opts}, 5_000)
   end
 
   @doc "Sets the resolution strategy.\n\nStrategies:\n- :auto_least_confident - Automatically retract least confident assumption\n- :auto_most_recent - Automatically retract most recent assumption\n- :manual - Always require user input\n- :hybrid - Auto for low stakes, manual for high stakes\n"
   def set_strategy(strategy) do
-    GenServer.call(__MODULE__, {:set_strategy, strategy})
+    GenServer.call(__MODULE__, {:set_strategy, strategy}, 5_000)
   end
 
   @doc "Registers a domain-specific resolution rule.\n\nRules are functions that take (node_id, assumptions) and return\n{:resolve, assumption_to_retract} or :no_match.\n"
   def register_rule(name, rule_fn) when is_function(rule_fn, 2) do
-    GenServer.call(__MODULE__, {:register_rule, name, rule_fn})
+    GenServer.call(__MODULE__, {:register_rule, name, rule_fn}, 5_000)
   end
 
   @doc "Checks if the handler is ready.\n"
@@ -55,7 +55,7 @@ defmodule Brain.Epistemic.ContradictionHandler do
   @doc "Gets statistics about the contradiction handler.\n"
   @spec stats() :: map()
   def stats do
-    GenServer.call(__MODULE__, :stats)
+    GenServer.call(__MODULE__, :stats, 5_000)
   end
 
   @impl true
@@ -97,6 +97,9 @@ defmodule Brain.Epistemic.ContradictionHandler do
 
     {:noreply, state}
   end
+
+  @impl true
+  def handle_info(_msg, state), do: {:noreply, state}
 
   @impl true
   def handle_call({:handle_contradiction, node_id, assumptions}, _from, state) do

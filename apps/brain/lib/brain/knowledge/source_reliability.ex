@@ -11,13 +11,6 @@ defmodule Brain.Knowledge.SourceReliability do
     Brain.priv_path("knowledge/source_reliability.json")
   end
 
-  defp default_persistence_file do
-    Brain.priv_path("data/source_reliability_learned.term")
-  end
-
-  defp persistence_file do
-    Application.get_env(:brain, :source_reliability_path, default_persistence_file())
-  end
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -92,7 +85,7 @@ defmodule Brain.Knowledge.SourceReliability do
     }
 
     state = load_bootstrap_data(state)
-    state = load_learned_data(state)
+    state = load_from_atlas(state)
 
     Logger.info("SourceReliability initialized",
       sources: map_size(state.sources),
@@ -149,8 +142,7 @@ defmodule Brain.Knowledge.SourceReliability do
 
   @impl true
   def handle_call(:persist, _from, state) do
-    result = persist_learned_data(state)
-    {:reply, result, state}
+    {:reply, :ok, state}
   end
 
   @impl true
@@ -174,13 +166,13 @@ defmodule Brain.Knowledge.SourceReliability do
     new_sources = Map.put(state.sources, normalized, updated_profile)
     new_state = %{state | sources: new_sources, last_updated: DateTime.utc_now()}
 
+    Brain.AtlasIntegration.persist_source_reliability(normalized, updated_profile)
+
     Logger.debug("Recorded feedback for source",
       domain: normalized,
       decision: decision,
       new_reliability: SourceProfile.calculate_reliability(updated_profile)
     )
-
-    persist_learned_data(new_state)
 
     {:noreply, new_state}
   end
@@ -295,62 +287,21 @@ defmodule Brain.Knowledge.SourceReliability do
     :neutral
   end
 
-  defp load_learned_data(state) do
-    persistence_path = Path.join(File.cwd!(), persistence_file())
+  defp load_from_atlas(state) do
+    case Brain.AtlasIntegration.load_source_reliability() do
+      {:ok, atlas_sources} when atlas_sources != %{} ->
+        merged_sources = Map.merge(state.sources, atlas_sources)
+        Logger.info("Loaded learned source data from Atlas", sources: map_size(atlas_sources))
+        %{state | sources: merged_sources}
 
-    if File.exists?(persistence_path) do
-      case File.read(persistence_path) do
-        {:ok, binary} ->
-          try do
-            data = :erlang.binary_to_term(binary)
-            learned_sources = Map.get(data, :sources, %{})
-            merged_sources = Map.merge(state.sources, learned_sources)
-
-            Logger.info("Loaded learned source data", sources: map_size(learned_sources))
-
-            %{state | sources: merged_sources, last_updated: Map.get(data, :last_updated)}
-          rescue
-            e ->
-              Logger.warning("Failed to parse learned data", error: inspect(e))
-              state
-          end
-
-        {:error, reason} ->
-          Logger.warning("Failed to read learned data", reason: inspect(reason))
-          state
-      end
-    else
+      _ ->
+        Logger.debug("No learned source data in Atlas")
+        state
+    end
+  rescue
+    e ->
+      Logger.warning("Failed to load source reliability from Atlas: #{inspect(e)}")
       state
-    end
-  end
-
-  defp persist_learned_data(state) do
-    persistence_path = Path.join(File.cwd!(), persistence_file())
-
-    learned_sources =
-      state.sources
-      |> Enum.filter(fn {_domain, profile} ->
-        profile.admin_decisions != []
-      end)
-      |> Map.new()
-
-    data = %{
-      sources: learned_sources,
-      last_updated: state.last_updated,
-      version: 1
-    }
-
-    persistence_path |> Path.dirname() |> File.mkdir_p!()
-
-    case File.write(persistence_path, :erlang.term_to_binary(data)) do
-      :ok ->
-        Logger.debug("Persisted learned source data", sources: map_size(learned_sources))
-        :ok
-
-      {:error, reason} ->
-        Logger.error("Failed to persist source data", reason: inspect(reason))
-        {:error, reason}
-    end
   end
 
   defp count_by_trust_tier(sources) do

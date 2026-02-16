@@ -68,7 +68,9 @@ defmodule Brain.Response.TemplateStore do
 
   @doc "Get response templates for a specific intent.\nReturns a list of template strings.\n"
   def get_templates(intent) do
-    GenServer.call(__MODULE__, {:get_templates, intent})
+    Brain.Telemetry.span(:response_template_lookup, %{intent: intent}, fn ->
+      GenServer.call(__MODULE__, {:get_templates, intent}, 5_000)
+    end)
   end
 
   @doc "Get a random response template for an intent.\n"
@@ -86,7 +88,7 @@ defmodule Brain.Response.TemplateStore do
 
   @doc "Get structured templates with conditions for an intent.\nReturns a list of %Template{} structs.\n"
   def get_structured_templates(intent) do
-    GenServer.call(__MODULE__, {:get_structured_templates, intent})
+    GenServer.call(__MODULE__, {:get_structured_templates, intent}, 5_000)
   end
 
   @doc "Filter templates by conditions that match the given context.\n"
@@ -131,17 +133,17 @@ defmodule Brain.Response.TemplateStore do
 
   @doc "Get slot parameter definitions for an intent.\nReturns list of %{name, dataType, required, value} maps.\n"
   def get_parameters(intent) do
-    GenServer.call(__MODULE__, {:get_parameters, intent})
+    GenServer.call(__MODULE__, {:get_parameters, intent}, 5_000)
   end
 
   @doc "List all loaded intents.\n"
   def list_intents do
-    GenServer.call(__MODULE__, :list_intents)
+    GenServer.call(__MODULE__, :list_intents, 5_000)
   end
 
   @doc "Get statistics about loaded templates.\n"
   def stats do
-    GenServer.call(__MODULE__, :stats)
+    GenServer.call(__MODULE__, :stats, 5_000)
   end
 
   @doc "Get the intent name for a speech act sub_type.\nDelegates to IntentRegistry for the canonical mapping.\n"
@@ -185,27 +187,27 @@ defmodule Brain.Response.TemplateStore do
 
   @doc "Add a new template for an intent.\n\nOptions:\n- `:condition` - Optional condition for when to use this template\n- `:source` - Source tag (default: :admin)\n\nReturns `{:ok, template}` or `{:error, reason}`.\n"
   def add_template(intent, text, opts \\ []) when is_binary(intent) and is_binary(text) do
-    GenServer.call(__MODULE__, {:add_template, intent, text, opts})
+    GenServer.call(__MODULE__, {:add_template, intent, text, opts}, 30_000)
   end
 
   @doc "Update an existing template text.\n\nReturns `{:ok, updated_template}` or `{:error, :not_found}`.\n"
   def update_template(intent, old_text, new_text) do
-    GenServer.call(__MODULE__, {:update_template, intent, old_text, new_text})
+    GenServer.call(__MODULE__, {:update_template, intent, old_text, new_text}, 5_000)
   end
 
   @doc "Remove a template from an intent.\n\nReturns `:ok` or `{:error, :not_found}`.\n"
   def remove_template(intent, text) do
-    GenServer.call(__MODULE__, {:remove_template, intent, text})
+    GenServer.call(__MODULE__, {:remove_template, intent, text}, 5_000)
   end
 
   @doc "List all templates for an intent with their metadata.\n\nReturns a list of maps with :text, :condition, :source fields.\n"
   def list_templates_with_metadata(intent) do
-    GenServer.call(__MODULE__, {:list_templates_with_metadata, intent})
+    GenServer.call(__MODULE__, {:list_templates_with_metadata, intent}, 5_000)
   end
 
   @doc "Check if there are unsaved admin changes.\n"
   def has_unsaved_changes? do
-    GenServer.call(__MODULE__, :has_unsaved_changes?)
+    GenServer.call(__MODULE__, :has_unsaved_changes?, 5_000)
   end
 
   @doc "Sync admin-added templates to the templates.json file.\n"
@@ -925,24 +927,14 @@ defmodule Brain.Response.TemplateStore do
     %{}
   end
 
-  defp entity_type_to_slot_names(entity_type) do
-    mappings = %{
-      "location" => ["location", "address", "place"],
-      "city" => ["location", "address", "city"],
-      "sys.location" => ["location", "address"],
-      "date" => ["date", "date-time"],
-      "time" => ["time", "date-time"],
-      "sys.date-time" => ["date-time", "date", "time"],
-      "music-artist" => ["artist", "music-artist"],
-      "sys.music-artist" => ["artist", "music-artist"],
-      "song" => ["song"],
-      "weather-condition" => ["condition", "weather-condition"],
-      "topic" => ["topic", "keyword", "category"],
-      "device" => ["device"],
-      "action" => ["action"]
-    }
+  @external_resource Path.join(:code.priv_dir(:brain), "knowledge/entity_slot_mappings.json")
+  @entity_slot_names_config Path.join(:code.priv_dir(:brain), "knowledge/entity_slot_mappings.json")
+                            |> File.read!()
+                            |> Jason.decode!()
+                            |> Map.get("entity_type_to_slot_names", %{})
 
-    Map.get(mappings, entity_type, [entity_type])
+  defp entity_type_to_slot_names(entity_type) do
+    Map.get(@entity_slot_names_config, entity_type, [entity_type])
   end
 
   defp get_parent_intent(intent) when is_binary(intent) do

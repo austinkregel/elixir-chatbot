@@ -1,0 +1,10 @@
+[
+  {"text": "I don't understand what you mean.", "label": "fallback"},
+  {"text": "I'm not sure what you mean by that.", "label": "fallback"},
+  {"text": "Could you rephrase that?", "label": "fallback"},
+  {"text": "Sorry, I can't help with that.", "label": "fallback"},
+  {"text": "The weather in New York is sunny.", "label": "not_fallback"},
+  {"text": "Playing jazz music for you.", "label": "not_fallback"},
+  {"text": "Hello! How can I help you today?", "label": "not_fallback"},
+  {"text": "The lights are now turned on.", "label": "not_fallback"}
+]

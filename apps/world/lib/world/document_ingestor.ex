@@ -8,7 +8,7 @@ defmodule World.DocumentIngestor do
 
   alias ML.{Tokenizer, POSTagger}
   alias World.{EntityDiscoverer, TypeInferrer}
-  alias World.Manager, as: WorldManager, as: WorldManager
+  alias World.Manager, as: WorldManager
   alias World.Metrics, as: WorldMetrics
   @code_extensions ~w(.c .h .cpp .cc .cxx .hpp .java .cs .php .py .pyw .rb .ex .exs .go)
 

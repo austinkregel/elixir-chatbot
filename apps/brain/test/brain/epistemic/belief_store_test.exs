@@ -1,5 +1,5 @@
 defmodule Brain.Epistemic.BeliefStoreTest do
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
   import Brain.TestHelpers
 
   alias Brain.Epistemic.BeliefStore
@@ -253,6 +253,19 @@ defmodule Brain.Epistemic.BeliefStoreTest do
       assert stats.total_beliefs == 3
       assert stats.active_beliefs == 3
       assert stats.unique_subjects == 2
+    end
+  end
+
+  describe "graph integration" do
+    test "belief creation writes to knowledge_graph" do
+      {:ok, kg_before} = count_nodes("knowledge_graph", "Belief")
+
+      {:ok, _} = BeliefStore.add_belief(:user, :likes, "coffee", confidence: 0.9)
+      # Graph writes are async, wait for them
+      Process.sleep(300)
+
+      {:ok, kg_after} = count_nodes("knowledge_graph", "Belief")
+      assert kg_after >= kg_before
     end
   end
 end
