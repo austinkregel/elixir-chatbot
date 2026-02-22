@@ -92,6 +92,11 @@ MIX_ENV=prod mix atlas.setup 2>&1 && ok "Atlas database created & migrated" || {
 }
 
 # ---------------------------------------------------------------------------
+step "Seed baseline data (facts, beliefs, worlds)"
+# ---------------------------------------------------------------------------
+MIX_ENV=prod mix atlas.seed 2>&1 && ok "Seeds applied" || warn "Seeding had issues (non-fatal)"
+
+# ---------------------------------------------------------------------------
 step "Download training corpora"
 # ---------------------------------------------------------------------------
 MIX_ENV=prod mix download_speech_act_corpus 2>&1 && ok "Speech act corpus ready"
@@ -144,7 +149,7 @@ step "Compile assets for production"
 # ---------------------------------------------------------------------------
 step "Tree-sitter grammars (make)"
 # ---------------------------------------------------------------------------
-make grammars && ok "Grammars compiled" || warn "Grammar compilation had issues (non-fatal)"
+make && ok "Grammars compiled" || warn "Grammar compilation had issues (non-fatal)"
 
 # ---------------------------------------------------------------------------
 ELAPSED=$(( SECONDS - START_TIME ))

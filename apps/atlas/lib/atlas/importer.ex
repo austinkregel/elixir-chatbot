@@ -230,7 +230,7 @@ defmodule Atlas.Importer do
               outcome: to_string(g(ep, :outcome) || ""),
               tags: g(ep, :tags) || [],
               embedding: g(ep, :embedding) || [],
-              semantic_id: g(ep, :semantic_id)
+              semantic_id: normalize_uuid(g(ep, :semantic_id))
             }
           end)
         end)
@@ -723,6 +723,26 @@ defmodule Atlas.Importer do
 
   defp safe_to_string(nil), do: nil
   defp safe_to_string(v), do: to_string(v)
+
+  # Converts a 32-char hex string to UUID format (8-4-4-4-12) or returns
+  # the value unchanged if it already looks like a UUID. Returns nil for
+  # anything that isn't a valid hex/UUID string.
+  defp normalize_uuid(nil), do: nil
+
+  defp normalize_uuid(<<a::binary-size(8), b::binary-size(4), c::binary-size(4),
+                        d::binary-size(4), e::binary-size(12)>>)
+       when byte_size(a) == 8 do
+    candidate = "#{a}-#{b}-#{c}-#{d}-#{e}"
+    if String.match?(candidate, ~r/\A[0-9a-fA-F-]{36}\z/), do: candidate, else: nil
+  end
+
+  defp normalize_uuid(<<_::binary-size(36)>> = val) do
+    if String.match?(val, ~r/\A[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\z/),
+      do: val,
+      else: nil
+  end
+
+  defp normalize_uuid(_), do: nil
 
   defp deep_to_maps(list) when is_list(list), do: Enum.map(list, &ensure_map/1)
   defp deep_to_maps(_), do: []

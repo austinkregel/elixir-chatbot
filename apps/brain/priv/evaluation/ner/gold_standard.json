@@ -1903,10 +1903,10 @@
     "expected": [
       {
         "type": "artist",
-        "value": "françoise hardy"
+        "value": "fran\u00e7oise hardy"
       }
     ],
-    "text": "play françoise hardy"
+    "text": "play fran\u00e7oise hardy"
   },
   {
     "expected": [
@@ -2937,10 +2937,10 @@
     "expected": [
       {
         "type": "song",
-        "value": "It’s Now or Never"
+        "value": "It\u2019s Now or Never"
       }
     ],
-    "text": "play It’s Now or Never"
+    "text": "play It\u2019s Now or Never"
   },
   {
     "expected": [
@@ -27789,5 +27789,806 @@
       }
     ],
     "text": "I'm Paris"
+  },
+  {
+    "text": "I am 30 years old",
+    "expected": [
+      {
+        "type": "age",
+        "value": "30"
+      }
+    ]
+  },
+  {
+    "text": "she is 25",
+    "expected": [
+      {
+        "type": "age",
+        "value": "25"
+      }
+    ]
+  },
+  {
+    "text": "he turned 40 last week",
+    "expected": [
+      {
+        "type": "age",
+        "value": "40"
+      }
+    ]
+  },
+  {
+    "text": "my son is 5 years old",
+    "expected": [
+      {
+        "type": "age",
+        "value": "5"
+      }
+    ]
+  },
+  {
+    "text": "I just turned 18",
+    "expected": [
+      {
+        "type": "age",
+        "value": "18"
+      }
+    ]
+  },
+  {
+    "text": "she will be 60 next month",
+    "expected": [
+      {
+        "type": "age",
+        "value": "60"
+      }
+    ]
+  },
+  {
+    "text": "the child is 3 years old",
+    "expected": [
+      {
+        "type": "age",
+        "value": "3"
+      }
+    ]
+  },
+  {
+    "text": "grandma is 85",
+    "expected": [
+      {
+        "type": "age",
+        "value": "85"
+      }
+    ]
+  },
+  {
+    "text": "are you over 21",
+    "expected": [
+      {
+        "type": "age",
+        "value": "21"
+      }
+    ]
+  },
+  {
+    "text": "call Mr. Johnson please",
+    "expected": [
+      {
+        "type": "last-name",
+        "value": "Johnson"
+      }
+    ]
+  },
+  {
+    "text": "send a message to Mrs. Williams",
+    "expected": [
+      {
+        "type": "last-name",
+        "value": "Williams"
+      }
+    ]
+  },
+  {
+    "text": "schedule meeting with Dr. Brown",
+    "expected": [
+      {
+        "type": "last-name",
+        "value": "Brown"
+      }
+    ]
+  },
+  {
+    "text": "email Professor Martinez about the project",
+    "expected": [
+      {
+        "type": "last-name",
+        "value": "Martinez"
+      }
+    ]
+  },
+  {
+    "text": "remind me to call Davis",
+    "expected": [
+      {
+        "type": "last-name",
+        "value": "Davis"
+      }
+    ]
+  },
+  {
+    "text": "text Wilson about dinner",
+    "expected": [
+      {
+        "type": "last-name",
+        "value": "Wilson"
+      }
+    ]
+  },
+  {
+    "text": "message Taylor about the meeting",
+    "expected": [
+      {
+        "type": "last-name",
+        "value": "Taylor"
+      }
+    ]
+  },
+  {
+    "text": "add Anderson to the invite list",
+    "expected": [
+      {
+        "type": "last-name",
+        "value": "Anderson"
+      }
+    ]
+  },
+  {
+    "text": "call Dr. Thompson right away",
+    "expected": [
+      {
+        "type": "last-name",
+        "value": "Thompson"
+      }
+    ]
+  },
+  {
+    "text": "speaker volume is way too high",
+    "expected": [
+      {
+        "type": "device-volume",
+        "value": "too high"
+      }
+    ]
+  },
+  {
+    "text": "the volume on the TV is too loud",
+    "expected": [
+      {
+        "type": "device-volume",
+        "value": "too loud"
+      }
+    ]
+  },
+  {
+    "text": "radio volume needs to go up",
+    "expected": [
+      {
+        "type": "device-volume",
+        "value": "go up"
+      }
+    ]
+  },
+  {
+    "text": "turn down the volume on the speaker",
+    "expected": [
+      {
+        "type": "device-volume",
+        "value": "down"
+      }
+    ]
+  },
+  {
+    "text": "the stereo volume is perfect",
+    "expected": [
+      {
+        "type": "device-volume",
+        "value": "perfect"
+      }
+    ]
+  },
+  {
+    "text": "bedroom speaker is too quiet",
+    "expected": [
+      {
+        "type": "device-volume",
+        "value": "too quiet"
+      }
+    ]
+  },
+  {
+    "text": "kitchen radio volume is at max",
+    "expected": [
+      {
+        "type": "device-volume",
+        "value": "at max"
+      }
+    ]
+  },
+  {
+    "text": "set TV volume to medium",
+    "expected": [
+      {
+        "type": "device-volume",
+        "value": "medium"
+      }
+    ]
+  },
+  {
+    "text": "open the file config.json",
+    "expected": [
+      {
+        "type": "file",
+        "value": "config.json"
+      }
+    ]
+  },
+  {
+    "text": "show me what's in utils.py",
+    "expected": [
+      {
+        "type": "file",
+        "value": "utils.py"
+      }
+    ]
+  },
+  {
+    "text": "explain the code in router.ex",
+    "expected": [
+      {
+        "type": "file",
+        "value": "router.ex"
+      }
+    ]
+  },
+  {
+    "text": "what does index.html do",
+    "expected": [
+      {
+        "type": "file",
+        "value": "index.html"
+      }
+    ]
+  },
+  {
+    "text": "check the file server.js",
+    "expected": [
+      {
+        "type": "file",
+        "value": "server.js"
+      }
+    ]
+  },
+  {
+    "text": "look at database.sql for errors",
+    "expected": [
+      {
+        "type": "file",
+        "value": "database.sql"
+      }
+    ]
+  },
+  {
+    "text": "find the bug in app.tsx",
+    "expected": [
+      {
+        "type": "file",
+        "value": "app.tsx"
+      }
+    ]
+  },
+  {
+    "text": "review changes in pipeline.ex",
+    "expected": [
+      {
+        "type": "file",
+        "value": "pipeline.ex"
+      }
+    ]
+  },
+  {
+    "text": "play top 20 songs of the year",
+    "expected": [
+      {
+        "type": "amount",
+        "value": "20"
+      }
+    ]
+  },
+  {
+    "text": "show me the best 3 albums",
+    "expected": [
+      {
+        "type": "amount",
+        "value": "3"
+      }
+    ]
+  },
+  {
+    "text": "play 15 songs by Drake",
+    "expected": [
+      {
+        "type": "amount",
+        "value": "15"
+      }
+    ]
+  },
+  {
+    "text": "find the top 50 tracks this week",
+    "expected": [
+      {
+        "type": "amount",
+        "value": "50"
+      }
+    ]
+  },
+  {
+    "text": "shuffle 8 songs from my playlist",
+    "expected": [
+      {
+        "type": "amount",
+        "value": "8"
+      }
+    ]
+  },
+  {
+    "text": "play the first 4 songs",
+    "expected": [
+      {
+        "type": "amount",
+        "value": "4"
+      }
+    ]
+  },
+  {
+    "text": "show last 7 played songs",
+    "expected": [
+      {
+        "type": "amount",
+        "value": "7"
+      }
+    ]
+  },
+  {
+    "text": "play songs from before 2000",
+    "expected": [
+      {
+        "type": "end-year",
+        "value": "2000"
+      }
+    ]
+  },
+  {
+    "text": "search music between 1990 and 2005",
+    "expected": [
+      {
+        "type": "end-year",
+        "value": "2005"
+      }
+    ]
+  },
+  {
+    "text": "find albums released before 1985",
+    "expected": [
+      {
+        "type": "end-year",
+        "value": "1985"
+      }
+    ]
+  },
+  {
+    "text": "play hits from 1960 to 1975",
+    "expected": [
+      {
+        "type": "end-year",
+        "value": "1975"
+      }
+    ]
+  },
+  {
+    "text": "songs released until 2010",
+    "expected": [
+      {
+        "type": "end-year",
+        "value": "2010"
+      }
+    ]
+  },
+  {
+    "text": "music from the 1970s through 1989",
+    "expected": [
+      {
+        "type": "end-year",
+        "value": "1989"
+      }
+    ]
+  },
+  {
+    "text": "play classics up to 1995",
+    "expected": [
+      {
+        "type": "end-year",
+        "value": "1995"
+      }
+    ]
+  },
+  {
+    "text": "call Sarah right now",
+    "expected": [
+      {
+        "type": "given-name",
+        "value": "Sarah"
+      }
+    ]
+  },
+  {
+    "text": "send a text to David",
+    "expected": [
+      {
+        "type": "given-name",
+        "value": "David"
+      }
+    ]
+  },
+  {
+    "text": "message Emily about the party",
+    "expected": [
+      {
+        "type": "given-name",
+        "value": "Emily"
+      }
+    ]
+  },
+  {
+    "text": "remind me to call Jessica",
+    "expected": [
+      {
+        "type": "given-name",
+        "value": "Jessica"
+      }
+    ]
+  },
+  {
+    "text": "text Robert about tomorrow",
+    "expected": [
+      {
+        "type": "given-name",
+        "value": "Robert"
+      }
+    ]
+  },
+  {
+    "text": "send a message to Lisa",
+    "expected": [
+      {
+        "type": "given-name",
+        "value": "Lisa"
+      }
+    ]
+  },
+  {
+    "text": "text John saying I'll be late",
+    "expected": [
+      {
+        "type": "message_content",
+        "value": "I'll be late"
+      }
+    ]
+  },
+  {
+    "text": "message Sarah that the meeting is cancelled",
+    "expected": [
+      {
+        "type": "message_content",
+        "value": "the meeting is cancelled"
+      }
+    ]
+  },
+  {
+    "text": "send mom a text saying call me back",
+    "expected": [
+      {
+        "type": "message_content",
+        "value": "call me back"
+      }
+    ]
+  },
+  {
+    "text": "text dad with the message pick me up at 5",
+    "expected": [
+      {
+        "type": "message_content",
+        "value": "pick me up at 5"
+      }
+    ]
+  },
+  {
+    "text": "message Mike that I'm on my way",
+    "expected": [
+      {
+        "type": "message_content",
+        "value": "I'm on my way"
+      }
+    ]
+  },
+  {
+    "text": "text Amy saying happy anniversary",
+    "expected": [
+      {
+        "type": "message_content",
+        "value": "happy anniversary"
+      }
+    ]
+  },
+  {
+    "text": "play songs from 2020",
+    "expected": [
+      {
+        "type": "year",
+        "value": "2020"
+      }
+    ]
+  },
+  {
+    "text": "find music from the year 1999",
+    "expected": [
+      {
+        "type": "year",
+        "value": "1999"
+      }
+    ]
+  },
+  {
+    "text": "songs released in 2018",
+    "expected": [
+      {
+        "type": "year",
+        "value": "2018"
+      }
+    ]
+  },
+  {
+    "text": "play hits from 2005",
+    "expected": [
+      {
+        "type": "year",
+        "value": "2005"
+      }
+    ]
+  },
+  {
+    "text": "search albums from 1985",
+    "expected": [
+      {
+        "type": "year",
+        "value": "1985"
+      }
+    ]
+  },
+  {
+    "text": "what were the top songs of 2012",
+    "expected": [
+      {
+        "type": "year",
+        "value": "2012"
+      }
+    ]
+  },
+  {
+    "text": "send an email to the team",
+    "expected": [
+      {
+        "type": "message_type",
+        "value": "email"
+      }
+    ]
+  },
+  {
+    "text": "write a letter to grandma",
+    "expected": [
+      {
+        "type": "message_type",
+        "value": "letter"
+      }
+    ]
+  },
+  {
+    "text": "compose a text for Sarah",
+    "expected": [
+      {
+        "type": "message_type",
+        "value": "text"
+      }
+    ]
+  },
+  {
+    "text": "send a voicemail to the office",
+    "expected": [
+      {
+        "type": "message_type",
+        "value": "voicemail"
+      }
+    ]
+  },
+  {
+    "text": "write a note to myself",
+    "expected": [
+      {
+        "type": "message_type",
+        "value": "note"
+      }
+    ]
+  },
+  {
+    "text": "how much did I spend at Walmart last month",
+    "expected": [
+      {
+        "type": "merchant",
+        "value": "Walmart"
+      }
+    ]
+  },
+  {
+    "text": "check my purchases at Target",
+    "expected": [
+      {
+        "type": "merchant",
+        "value": "Target"
+      }
+    ]
+  },
+  {
+    "text": "show transactions from Netflix",
+    "expected": [
+      {
+        "type": "merchant",
+        "value": "Netflix"
+      }
+    ]
+  },
+  {
+    "text": "did I pay Apple this month",
+    "expected": [
+      {
+        "type": "merchant",
+        "value": "Apple"
+      }
+    ]
+  },
+  {
+    "text": "spending at Costco this year",
+    "expected": [
+      {
+        "type": "merchant",
+        "value": "Costco"
+      }
+    ]
+  },
+  {
+    "text": "what's the temperature in Kelvin",
+    "expected": [
+      {
+        "type": "unit",
+        "value": "Kelvin"
+      }
+    ]
+  },
+  {
+    "text": "show weather in degrees Celsius",
+    "expected": [
+      {
+        "type": "unit",
+        "value": "Celsius"
+      }
+    ]
+  },
+  {
+    "text": "convert to Fahrenheit",
+    "expected": [
+      {
+        "type": "unit",
+        "value": "Fahrenheit"
+      }
+    ]
+  },
+  {
+    "text": "temperature outside in Celsius please",
+    "expected": [
+      {
+        "type": "unit",
+        "value": "Celsius"
+      }
+    ]
+  },
+  {
+    "text": "show me the latest news about AI",
+    "expected": [
+      {
+        "type": "keyword",
+        "value": "AI"
+      }
+    ]
+  },
+  {
+    "text": "search news for climate change",
+    "expected": [
+      {
+        "type": "keyword",
+        "value": "climate change"
+      }
+    ]
+  },
+  {
+    "text": "get headlines about the stock market",
+    "expected": [
+      {
+        "type": "keyword",
+        "value": "stock market"
+      }
+    ]
+  },
+  {
+    "text": "news about space exploration",
+    "expected": [
+      {
+        "type": "keyword",
+        "value": "space exploration"
+      }
+    ]
+  },
+  {
+    "text": "what's the weather on March 15",
+    "expected": [
+      {
+        "type": "date",
+        "value": "March 15"
+      }
+    ]
+  },
+  {
+    "text": "schedule something for July 4th",
+    "expected": [
+      {
+        "type": "date",
+        "value": "July 4th"
+      }
+    ]
+  },
+  {
+    "text": "remind me on February 14",
+    "expected": [
+      {
+        "type": "date",
+        "value": "February 14"
+      }
+    ]
+  },
+  {
+    "text": "play music from 2000 onwards",
+    "expected": [
+      {
+        "type": "start-year",
+        "value": "2000"
+      }
+    ]
+  },
+  {
+    "text": "play songs in Japanese",
+    "expected": [
+      {
+        "type": "language",
+        "value": "Japanese"
+      }
+    ]
   }
 ]

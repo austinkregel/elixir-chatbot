@@ -2,7 +2,7 @@ import Config
 
 # Atlas production database configured via runtime.exs (DATABASE_URL)
 config :atlas, Atlas.Repo, pool_size: 10, types: Atlas.PostgrexTypes
-config :atlas, auto_migrate: true
+config :atlas, auto_migrate: true, auto_import: true
 
 # Note we also include the path to a cache manifest
 # containing the digested version of static files. This

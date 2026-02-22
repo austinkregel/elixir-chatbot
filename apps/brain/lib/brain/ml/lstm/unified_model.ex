@@ -18,6 +18,7 @@ defmodule Brain.ML.LSTM.UnifiedModel do
     epochs: 50,
     head_epochs: 30,
     max_seq_length: 50,
+    min_examples_per_intent: 10,
     sentiment_lr_scale: 0.5,
     sentiment_epochs: 50,
     speech_act_epochs: 100,
@@ -236,7 +237,14 @@ defmodule Brain.ML.LSTM.UnifiedModel do
 
   @doc "Train the unified model on all tasks.\n\nThis trains a shared encoder with task-specific heads for:\n- Intent classification\n- NER (BIO tagging)\n- Sentiment analysis\n- Speech act classification\n"
   def train(opts \\ []) do
-    config = Map.merge(@default_config, Map.new(opts))
+    app_min = Application.get_env(:brain, :min_examples_per_intent)
+    app_overrides = if app_min, do: %{min_examples_per_intent: app_min}, else: %{}
+
+    config =
+      @default_config
+      |> Map.merge(app_overrides)
+      |> Map.merge(Map.new(opts))
+
     experiment_name = Keyword.get(opts, :name)
 
     Logger.info("Training UnifiedModel with config: #{inspect(config)}")

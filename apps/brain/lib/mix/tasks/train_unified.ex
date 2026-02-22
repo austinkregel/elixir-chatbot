@@ -1,5 +1,5 @@
 defmodule Mix.Tasks.TrainUnified do
-  @moduledoc "Train the unified LSTM model for multi-task NLP.\n\n## Usage\n\n    mix train_unified [options]\n\n## Options\n\n  --epochs N       Number of training epochs (default: 20)\n  --batch-size N   Batch size (default: 32)\n  --hidden-size N  LSTM hidden dimension (default: 128)\n  --lr FLOAT       Learning rate (default: 0.001)\n  --name NAME      Experiment name for tracking (default: unified_YYYYMMDD_HHMMSS)\n  --compare        Print experiment comparison table after training\n\n## Examples\n\n    # Train with defaults\n    mix train_unified\n\n    # Train with more epochs\n    mix train_unified --epochs 30 --name \"unified_30ep\"\n\nThis trains a shared LSTM encoder that powers:\n- Intent classification\n- Named Entity Recognition (NER)\n- Sentiment analysis\n- Speech act classification\n"
+  @moduledoc "Train the unified LSTM model for multi-task NLP.\n\n## Usage\n\n    mix train_unified [options]\n\n## Options\n\n  --epochs N          Number of training epochs (default: 20)\n  --batch-size N      Batch size (default: 32)\n  --hidden-size N     LSTM hidden dimension (default: 128)\n  --lr FLOAT          Learning rate (default: 0.001)\n  --name NAME         Experiment name for tracking (default: unified_YYYYMMDD_HHMMSS)\n  --compare           Print experiment comparison table after training\n  --min-examples N    Min examples per intent to include in training (default: 10)\n\n## Examples\n\n    # Train with defaults\n    mix train_unified\n\n    # Train with more epochs\n    mix train_unified --epochs 30 --name \"unified_30ep\"\n\n    # Lower intent threshold to include sparse intents\n    mix train_unified --min-examples 5\n\nThis trains a shared LSTM encoder that powers:\n- Intent classification\n- Named Entity Recognition (NER)\n- Sentiment analysis\n- Speech act classification\n"
 
   alias Brain.ML.LSTM.UnifiedModel
   use Mix.Task
@@ -19,7 +19,8 @@ defmodule Mix.Tasks.TrainUnified do
           embedding_size: :integer,
           lr: :float,
           name: :string,
-          compare: :boolean
+          compare: :boolean,
+          min_examples: :integer
         ]
       )
 
@@ -77,6 +78,13 @@ defmodule Mix.Tasks.TrainUnified do
     config =
       if opts[:name] do
         [{:name, opts[:name]} | config]
+      else
+        config
+      end
+
+    config =
+      if opts[:min_examples] do
+        [{:min_examples_per_intent, opts[:min_examples]} | config]
       else
         config
       end

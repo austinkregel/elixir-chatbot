@@ -40,8 +40,7 @@ defmodule ChatBot.Umbrella.MixProject do
       setup: [
         "cmd mix setup",
         "atlas.setup",
-        "do --app world training_world.create personal --mode=persistent",
-        "do --app world training_world.create work --mode=persistent",
+        "atlas.seed",
         "download_speech_act_corpus",
         "download_sentiment_corpus",
         "train",

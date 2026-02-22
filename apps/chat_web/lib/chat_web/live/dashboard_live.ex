@@ -53,6 +53,7 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:code_analysis_status, load_code_analysis_status())
       |> assign(:services_status, load_services_status())
       |> assign(:epistemic_metrics, load_epistemic_metrics())
+      |> assign(:knowledge_health, load_knowledge_health())
       |> assign(:micro_classifiers_status, load_micro_classifiers_status())
       |> assign(:response_timing, load_response_timing())
       |> assign(:atlas_stats, load_atlas_stats())
@@ -108,6 +109,7 @@ defmodule ChatWeb.DashboardLive do
         |> assign(:code_analysis_status, load_code_analysis_status())
         |> assign(:services_status, load_services_status())
         |> assign(:epistemic_metrics, load_epistemic_metrics())
+        |> assign(:knowledge_health, load_knowledge_health())
         |> assign(:micro_classifiers_status, load_micro_classifiers_status())
         |> assign(:response_timing, load_response_timing())
         |> assign(:atlas_stats, load_atlas_stats())
@@ -150,6 +152,7 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:code_analysis_status, load_code_analysis_status())
       |> assign(:services_status, load_services_status())
       |> assign(:epistemic_metrics, load_epistemic_metrics())
+      |> assign(:knowledge_health, load_knowledge_health())
       |> assign(:micro_classifiers_status, load_micro_classifiers_status())
       |> assign(:response_timing, load_response_timing())
       |> assign(:atlas_stats, load_atlas_stats())
@@ -240,7 +243,76 @@ defmodule ChatWeb.DashboardLive do
   end
 
   defp load_epistemic_metrics do
-    Brain.Metrics.Aggregator.get_epistemic_metrics()
+    metrics = Brain.Metrics.Aggregator.get_epistemic_metrics()
+    Map.put(metrics, :miss_reasons, Brain.Metrics.Aggregator.get_verification_miss_reasons())
+  end
+
+  defp load_knowledge_health do
+    fact_stats =
+      try do
+        if Brain.FactDatabase.ready?(), do: Brain.FactDatabase.stats(), else: %{}
+      catch
+        :exit, _ -> %{}
+      end
+
+    jtms_stats =
+      try do
+        if Brain.Epistemic.JTMS.ready?(), do: Brain.Epistemic.JTMS.stats(), else: %{}
+      catch
+        :exit, _ -> %{}
+      end
+
+    gazetteer_stats =
+      try do
+        Brain.ML.Gazetteer.stats()
+      rescue
+        _ -> %{}
+      end
+
+    belief_count =
+      try do
+        case Brain.Epistemic.BeliefStore.query_beliefs([]) do
+          {:ok, beliefs} -> length(beliefs)
+          _ -> 0
+        end
+      catch
+        :exit, _ -> 0
+      end
+
+    epistemic = Brain.Metrics.Aggregator.get_epistemic_metrics()
+    by_status = Map.get(epistemic, :by_status, %{})
+    verified = Map.get(by_status, :verified, 0)
+    total_checked = verified + Map.get(by_status, :uncertain, 0) + Map.get(by_status, :unchecked, 0)
+
+    verification_coverage =
+      if total_checked > 0, do: Float.round(verified / total_checked * 100, 1), else: 0.0
+
+    enrichment = Brain.Metrics.Aggregator.get_enrichment_metrics()
+
+    %{
+      curated_facts: Map.get(fact_stats, :curated_facts, 0),
+      learned_facts: Map.get(fact_stats, :learned_facts, 0),
+      total_facts: Map.get(fact_stats, :total_facts, 0),
+      beliefs: belief_count,
+      jtms_nodes: Map.get(jtms_stats, :total_nodes, 0),
+      jtms_justifications: Map.get(jtms_stats, :justifications, 0),
+      gazetteer_entities: Map.get(gazetteer_stats, :entities, 0),
+      gazetteer_types: Map.get(gazetteer_stats, :entity_types, 0),
+      gazetteer_loaded: Map.get(gazetteer_stats, :loaded, false),
+      verification_coverage: verification_coverage,
+      fact_hit_rate: Map.get(enrichment, :fact_hit_rate, 0.0),
+      semantic_hit_rate: Map.get(enrichment, :semantic_hit_rate, 0.0),
+      avg_facts_per_response: Map.get(enrichment, :avg_facts_per_response, 0.0)
+    }
+  rescue
+    _ ->
+      %{
+        curated_facts: 0, learned_facts: 0, total_facts: 0, beliefs: 0,
+        jtms_nodes: 0, jtms_justifications: 0,
+        gazetteer_entities: 0, gazetteer_types: 0, gazetteer_loaded: false,
+        verification_coverage: 0.0,
+        fact_hit_rate: 0.0, semantic_hit_rate: 0.0, avg_facts_per_response: 0.0
+      }
   end
 
   defp load_micro_classifiers_status do
@@ -407,6 +479,12 @@ defmodule ChatWeb.DashboardLive do
   def status_icon(:uncertain), do: "hero-question-mark-circle"
   def status_icon(:unchecked), do: "hero-minus-circle"
   def status_icon(_), do: "hero-minus-circle"
+
+  def reason_label(:no_subject), do: "No Subject"
+  def reason_label(:no_facts), do: "No Facts"
+  def reason_label(:no_beliefs), do: "No Beliefs"
+  def reason_label(:low_confidence), do: "Low Confidence"
+  def reason_label(other), do: to_string(other)
 
   def status_color(:ready) do
     "text-success"

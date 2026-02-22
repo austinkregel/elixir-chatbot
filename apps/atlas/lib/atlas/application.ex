@@ -40,10 +40,26 @@ defmodule Atlas.Application do
     end
   end
 
+  @auto_import_stores [
+    {"learned_facts", Atlas.Schemas.LearnedFact},
+    {"beliefs", Atlas.Schemas.Belief},
+    {"episodes", Atlas.Schemas.Episode},
+    {"semantic_facts", Atlas.Schemas.SemanticFact},
+    {"source_authority", Atlas.Schemas.SourceAuthority}
+  ]
+
   defp maybe_auto_import do
     if Application.get_env(:atlas, :auto_import, false) do
-      if Atlas.Repo.aggregate(Atlas.Schemas.Belief, :count) == 0 do
-        Atlas.Importer.import_all(quiet: true)
+      empty_stores =
+        @auto_import_stores
+        |> Enum.filter(fn {_name, schema} ->
+          Atlas.Repo.aggregate(schema, :count) == 0
+        end)
+        |> Enum.map(fn {name, _schema} -> name end)
+
+      if empty_stores != [] do
+        Logger.info("Atlas: Auto-importing stores with empty tables: #{Enum.join(empty_stores, ", ")}")
+        Atlas.Importer.import_all(quiet: true, only: empty_stores)
       end
     end
   rescue

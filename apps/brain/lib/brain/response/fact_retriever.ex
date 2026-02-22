@@ -46,10 +46,8 @@ defmodule Brain.Response.FactRetriever do
   """
   def get_facts_for_query(query \\ "", entities \\ []) do
     query_str = if is_binary(query), do: query, else: ""
-    # Handle nil entities
     entities = if is_list(entities), do: entities, else: []
 
-    # Try to get facts for each mentioned entity
     entity_facts =
       entities
       |> Enum.filter(&(not is_nil(&1)))
@@ -75,11 +73,20 @@ defmodule Brain.Response.FactRetriever do
         other -> other
       end)
 
-    # Also try keyword search if no entity facts found or query is provided
-    if entity_facts == [] and query_str != "" do
-      get_relevant_facts(search: query_str, limit: 3)
-    else
-      entity_facts
+    results =
+      if entity_facts == [] and query_str != "" do
+        get_relevant_facts(search: query_str, limit: 3)
+      else
+        entity_facts
+      end
+
+    record_fact_retrieval(length(results))
+    results
+  end
+
+  defp record_fact_retrieval(result_count) do
+    if Process.whereis(Brain.Metrics.Aggregator) do
+      GenServer.cast(Brain.Metrics.Aggregator, {:record_fact_retrieval, result_count})
     end
   end
 

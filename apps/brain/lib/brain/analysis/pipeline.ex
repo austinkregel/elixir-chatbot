@@ -1027,21 +1027,18 @@ defmodule Brain.Analysis.Pipeline do
   # epistemic context that can influence response generation.
   # Returns: %{verification: result, beliefs: list, status: atom}
   defp verify_facts_in_chunk(text, entities, speech_act, _opts) do
-    # Only verify for assertive statements (observations, claims)
     if speech_act.category == :assertive do
       subject = extract_subject_from_entities(entities, text)
 
       case subject do
         nil ->
+          record_verification_miss(:no_subject)
           %{verification: nil, beliefs: [], status: :unchecked}
 
         subject_text ->
           start_time = System.monotonic_time(:millisecond)
 
-          # Query related beliefs from the epistemic store
           beliefs = query_related_beliefs(subject_text)
-
-          # Verify the claim against existing beliefs
           verification = safe_verify_fact(subject_text, text)
 
           status =
@@ -1052,18 +1049,34 @@ defmodule Brain.Analysis.Pipeline do
               _ -> :unchecked
             end
 
+          miss_reason =
+            cond do
+              status in [:verified, :contradicted] -> nil
+              beliefs == [] -> :no_beliefs
+              status == :uncertain -> :no_facts
+              true -> nil
+            end
+
+          if miss_reason, do: record_verification_miss(miss_reason)
+
           duration_ms = System.monotonic_time(:millisecond) - start_time
 
-          # Emit telemetry for fact verification
           Telemetry.emit_fact_verification(status, subject_text, duration_ms, %{
             beliefs_count: length(beliefs),
-            verification_result: verification
+            verification_result: verification,
+            miss_reason: miss_reason
           })
 
           %{verification: verification, beliefs: beliefs, status: status}
       end
     else
       %{verification: nil, beliefs: [], status: :unchecked}
+    end
+  end
+
+  defp record_verification_miss(reason) do
+    if Process.whereis(Brain.Metrics.Aggregator) do
+      GenServer.cast(Brain.Metrics.Aggregator, {:record_verification_miss_reason, reason})
     end
   end
 

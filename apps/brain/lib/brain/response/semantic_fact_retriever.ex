@@ -67,8 +67,10 @@ defmodule Brain.Response.SemanticFactRetriever do
   def handle_call({:search, query, opts}, _from, state) do
     if state.ready and Embedder.ready?() do
       results = do_search(query, opts)
+      record_semantic_retrieval(length(results))
       {:reply, results, state}
     else
+      record_semantic_retrieval(0)
       {:reply, [], state}
     end
   end
@@ -93,6 +95,12 @@ defmodule Brain.Response.SemanticFactRetriever do
     }
 
     {:reply, stats, state}
+  end
+
+  defp record_semantic_retrieval(result_count) do
+    if Process.whereis(Brain.Metrics.Aggregator) do
+      GenServer.cast(Brain.Metrics.Aggregator, {:record_semantic_retrieval, result_count})
+    end
   end
 
   defp do_rebuild_index(state) do

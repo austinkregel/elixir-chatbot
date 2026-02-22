@@ -223,6 +223,75 @@ defmodule Brain.Metrics.Aggregator do
     end
   end
 
+  @doc """
+  Gets response enrichment metrics (fact/semantic retrieval hit rates).
+  Reads directly from ETS - non-blocking.
+  """
+  def get_enrichment_metrics do
+    try do
+      fact_total = get_counter_value(:fact_retrieval, :total)
+      fact_hits = get_counter_value(:fact_retrieval, :hits)
+      fact_results = get_counter_value(:fact_retrieval, :total_results)
+
+      semantic_total = get_counter_value(:semantic_retrieval, :total)
+      semantic_hits = get_counter_value(:semantic_retrieval, :hits)
+
+      fact_hit_rate =
+        if fact_total > 0, do: Float.round(fact_hits / fact_total * 100, 1), else: 0.0
+
+      semantic_hit_rate =
+        if semantic_total > 0, do: Float.round(semantic_hits / semantic_total * 100, 1), else: 0.0
+
+      avg_facts =
+        if fact_total > 0, do: Float.round(fact_results / fact_total, 1), else: 0.0
+
+      %{
+        fact_hit_rate: fact_hit_rate,
+        semantic_hit_rate: semantic_hit_rate,
+        avg_facts_per_response: avg_facts,
+        fact_queries: fact_total,
+        semantic_queries: semantic_total
+      }
+    catch
+      :error, :badarg ->
+        %{fact_hit_rate: 0.0, semantic_hit_rate: 0.0, avg_facts_per_response: 0.0,
+          fact_queries: 0, semantic_queries: 0}
+    end
+  end
+
+  @doc """
+  Gets fact verification miss reason breakdown.
+  Reads directly from ETS - non-blocking.
+  """
+  def get_verification_miss_reasons do
+    try do
+      reasons = [:no_subject, :no_facts, :no_beliefs, :low_confidence]
+
+      reason_counts =
+        Enum.map(reasons, fn reason ->
+          {reason, get_counter_value({:verification_miss, reason}, :count)}
+        end)
+        |> Map.new()
+
+      total = Enum.sum(Map.values(reason_counts))
+
+      reason_pcts =
+        if total > 0 do
+          Enum.map(reason_counts, fn {k, v} ->
+            {k, Float.round(v / total * 100, 1)}
+          end)
+          |> Map.new()
+        else
+          Map.new(reasons, &{&1, 0.0})
+        end
+
+      %{counts: reason_counts, percentages: reason_pcts, total: total}
+    catch
+      :error, :badarg ->
+        %{counts: %{}, percentages: %{}, total: 0}
+    end
+  end
+
   defp get_counter_value(key, field) do
     case :ets.lookup(@raw_data_table, {:counter, key, field}) do
       [{{:counter, ^key, ^field}, count}] -> count
@@ -672,6 +741,27 @@ defmodule Brain.Metrics.Aggregator do
        }}
     )
 
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:record_fact_retrieval, result_count}, state) do
+    increment_counter(:fact_retrieval, :total)
+    if result_count > 0, do: increment_counter(:fact_retrieval, :hits)
+    increment_counter(:fact_retrieval, :total_results, result_count)
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:record_semantic_retrieval, result_count}, state) do
+    increment_counter(:semantic_retrieval, :total)
+    if result_count > 0, do: increment_counter(:semantic_retrieval, :hits)
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:record_verification_miss_reason, reason}, state) do
+    increment_counter({:verification_miss, reason}, :count)
     {:noreply, state}
   end
 
