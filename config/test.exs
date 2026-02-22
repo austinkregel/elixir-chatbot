@@ -33,6 +33,10 @@ config :brain,
   memory_dir: "test/memory",
   # Isolated learned data paths to prevent test pollution
   learning_params_path: "test/data/learned_params.json",
+  # Isolated ML models path so test training never overwrites dev/prod models
+  ml: [
+    models_path: Path.expand("../apps/brain/test/ml_models", __DIR__)
+  ],
   # Test fixture paths - use absolute paths relative to brain app
   facts_dir: Path.expand("../apps/brain/test/fixtures/facts", __DIR__),
   pattern_triggers_file: Path.expand("../apps/brain/test/fixtures/pattern_triggers.json", __DIR__),

@@ -89,7 +89,7 @@ apps/*/cover/
 apps/world/priv/training_worlds/*
 
 # Runtime memory and knowledge stores (contain conversation data)
-apps/*/priv/memory/
+apps/*/priv/memory/*
 apps/*/test/memory/
 apps/*/test/knowledge/
 apps/*/test/data/
@@ -103,3 +103,11 @@ apps/brain/priv/evaluation/
 !apps/brain/priv/evaluation/results/.gitkeep
 
 *.term
+
+# Tree-sitter grammar sources (cloned at build time via Makefile)
+/vendor/tree-sitter-grammars/
+
+# Compiled tree-sitter shared libraries (built via `make grammars`)
+apps/brain/priv/code/grammars/*.so
+apps/*/priv/static/*
+apps/*/priv/static/*

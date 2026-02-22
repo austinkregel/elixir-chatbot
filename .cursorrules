@@ -25,7 +25,7 @@ These rules MUST be followed in all code contributions:
 | `world` | Training worlds, entity discovery, type inference, entity auto-promotion |
 | `tasks` | NLP benchmark task data curation |
 | `chat_web` | Phoenix 1.8 web layer with LiveView |
-| `fourth_wall` | Code maintenance tooling, automated Credo fixers |
+| `fourth_wall` | Shared toolkit: Math (cosine_similarity), ID (generate), Credo fixers, code maintenance |
 
 ### Core Architecture
 
@@ -72,10 +72,7 @@ apps/
 │   │   ├── training_example_buffer.ex  # ETS buffer → incremental TF-IDF updates
 │   │   └── lstm/              # Deep learning models (Axon/Nx)
 │   │       ├── unified_model.ex       # Multi-task: intent + NER + sentiment + speech act
-│   │       ├── multi_task_model.ex    # Multi-task: intent + NER + POS
-│   │       ├── shared_encoder.ex      # Bidirectional LSTM encoder
-│   │       ├── intent_head.ex, ner_head.ex, pos_head.ex
-│   │       ├── trainer.ex, axon_trainer.ex
+│   │       ├── axon_trainer.ex        # Standalone LSTM intent training (Axon Loop)
 │   │       ├── lstm_integration.ex    # Ensemble voting (TF-IDF + LSTM)
 │   │       └── experiment_tracker.ex  # A/B testing experiments
 │   ├── response/              # Response generation
@@ -146,8 +143,7 @@ Tokenizer → Token Sequence
 │ ├── Intent Head (UnifiedModel)   │
 │ ├── NER Head (UnifiedModel)      │
 │ ├── Sentiment Head (UnifiedModel)│
-│ ├── Speech Act Head (Unified)    │
-│ └── POS Head (MultiTaskModel)    │
+│ └── Speech Act Head (Unified)    │
 └──────────────────────────────────┘
     ↓
 LSTMIntegration (Ensemble: TF-IDF + LSTM when confidence < 0.6)
@@ -184,7 +180,6 @@ LSTM GenServers support hot-reloading after retraining:
 
 ```elixir
 Brain.ML.LSTM.UnifiedModel.reload()
-Brain.ML.LSTM.MultiTaskModel.reload()
 Brain.Response.LSTMResponse.reload()
 ```
 

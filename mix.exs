@@ -37,7 +37,15 @@ defmodule ChatBot.Umbrella.MixProject do
   defp aliases do
     [
       # Run setup in all child apps
-      setup: ["cmd mix setup"],
+      setup: [
+        "cmd mix setup",
+        "atlas.setup",
+        "do --app world training_world.create personal --mode=persistent",
+        "do --app world training_world.create work --mode=persistent",
+        "download_speech_act_corpus",
+        "download_sentiment_corpus",
+        "train",
+      ],
 
       # Precommit runs format check, Credo, and tests
       precommit: ["format --check-formatted", "credo --strict", "test"],
@@ -55,6 +63,11 @@ defmodule ChatBot.Umbrella.MixProject do
         "do --app world training_world.destroy default",
         "do --app world training_world.create default --mode=persistent"
       ],
+
+      # Atlas database shortcuts
+      "atlas.setup": ["do --app atlas ecto.create", "do --app atlas ecto.migrate"],
+      "atlas.reset": ["do --app atlas ecto.drop", "atlas.setup"],
+      "atlas.migrate": ["do --app atlas ecto.migrate"],
 
       # ML training shortcuts (using mix do --app instead of deprecated cmd --app)
       # Master training pipeline - trains ALL models
@@ -74,6 +87,7 @@ defmodule ChatBot.Umbrella.MixProject do
     [
       chat_bot: [
         applications: [
+          atlas: :permanent,
           brain: :permanent,
           world: :permanent,
           tasks: :permanent,
