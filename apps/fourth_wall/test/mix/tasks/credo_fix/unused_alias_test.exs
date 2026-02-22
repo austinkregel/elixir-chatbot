@@ -90,7 +90,7 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasTest do
         10 │   alias Brain.ML.LSTM
            │   ~
            │
-           └─ (brain 0.1.0) lib/brain/ml/lstm/multi_task_model.ex:153:7
+           └─ (brain 0.1.0) lib/brain/ml/lstm/unified_model.ex:153:7
       """
 
       result = UnusedAlias.parse_unused_alias_warnings(output, ["lib/"])
@@ -98,7 +98,7 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasTest do
       assert length(result) == 1
       [entry] = result
       assert entry.alias_name == "LSTM"
-      assert String.contains?(entry.file, "multi_task_model.ex")
+      assert String.contains?(entry.file, "unified_model.ex")
     end
   end
 

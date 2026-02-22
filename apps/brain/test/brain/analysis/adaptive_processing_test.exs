@@ -45,7 +45,7 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
 
     test "promotes alternative interpretation" do
       interp =
-        Interpretation.new("greeting", "Hello weather", 0.7, :keyword)
+        Interpretation.new("smalltalk.greetings.hello", "Hello weather", 0.7, :keyword)
         |> Map.put(:alternatives, [
           %{
             intent: "weather.query",
@@ -60,11 +60,11 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
       assert promoted.intent == "weather.query"
       assert promoted.was_promoted == true
       assert promoted.backtrack_count == 1
-      assert Enum.any?(promoted.alternatives, &(&1.intent == "greeting"))
+      assert Enum.any?(promoted.alternatives, &(&1.intent == "smalltalk.greetings.hello"))
     end
 
     test "returns error when no alternatives available" do
-      interp = Interpretation.new("greeting", "Hello", 0.9, :keyword)
+      interp = Interpretation.new("smalltalk.greetings.hello", "Hello", 0.9, :keyword)
 
       assert {:error, :no_alternatives} = Interpretation.promote_alternative(interp)
     end

@@ -20,12 +20,13 @@ defmodule Atlas.Schemas.SemanticFact do
     field :confidence, :float
     field :embedding, {:array, :float}, default: []
     field :source_episodes, {:array, :string}, default: []
+    field :tags, {:array, :string}, default: []
 
     timestamps(type: :utc_datetime_usec)
   end
 
   @required_fields ~w(content category confidence)a
-  @optional_fields ~w(world_id embedding source_episodes)a
+  @optional_fields ~w(world_id embedding source_episodes tags)a
 
   def changeset(semantic_fact, attrs) do
     semantic_fact

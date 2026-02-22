@@ -42,70 +42,111 @@
       "confidence": 0.7110000000000001,
       "entity": "Dallas",
       "fact": "I'm Dallas. Play some music.",
-      "timestamp": 1771198989911
+      "timestamp": 1771478356524
     },
     {
       "confidence": 0.81,
       "entity": "Bohemian Rhapsody",
       "fact": "Play Bohemian Rhapsody",
-      "timestamp": 1771263755073
+      "timestamp": 1771478440615
     },
     {
       "confidence": 0.7110000000000001,
       "entity": "Austin",
       "fact": "Hello, I'm Austin. It is nice to meet you.",
-      "timestamp": 1771272420311
+      "timestamp": 1771478443978
     },
     {
       "confidence": 0.7110000000000001,
       "entity": "Austin",
       "fact": "Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?",
-      "timestamp": 1771272625632
+      "timestamp": 1771478470696
     },
     {
       "confidence": 0.729,
       "entity": "Delilah",
       "fact": "Hello, I'm Delilah",
-      "timestamp": 1771271242010
+      "timestamp": 1771478350425
     },
     {
       "confidence": 0.7110000000000001,
       "entity": "Florence",
       "fact": "Hello, my name is Florence",
-      "timestamp": 1771258523663
+      "timestamp": 1771478288397
     },
     {
       "confidence": 0.7650000000000001,
       "entity": "John Smith",
       "fact": "Hi, I'm John Smith",
-      "timestamp": 1771271241698
+      "timestamp": 1771478313841
     },
     {
       "confidence": 0.7110000000000001,
       "entity": "Victoria",
       "fact": "Hi, I'm Victoria",
-      "timestamp": 1771270720727
+      "timestamp": 1771478309328
     },
     {
       "confidence": 0.81,
       "entity": "1",
       "fact": "History test message 1",
-      "timestamp": 1771272746210
+      "timestamp": 1771478642097
     },
     {
       "confidence": 0.81,
       "entity": "2",
       "fact": "History test message 2",
-      "timestamp": 1771272746283
+      "timestamp": 1771478642531
     },
     {
       "confidence": 0.7110000000000001,
       "entity": "Savannah",
       "fact": "Hello, I'm Savannah",
-      "timestamp": 1771271240887
+      "timestamp": 1771478352571
+    },
+    {
+      "confidence": 0.7110000000000001,
+      "entity": "New York",
+      "fact": "I'm from New York",
+      "timestamp": 1771478264295
+    },
+    {
+      "confidence": 0.7020000000000001,
+      "entity": "Korvo Mitski",
+      "fact": "Play some Korvo Mitski",
+      "timestamp": 1771478435994
+    },
+    {
+      "confidence": 0.7110000000000001,
+      "entity": "Mercedes",
+      "fact": "Hi, my name is Mercedes",
+      "timestamp": 1771478318718
+    },
+    {
+      "confidence": 0.7380000000000001,
+      "entity": "Charlotte",
+      "fact": "Hi, my name is Charlotte",
+      "timestamp": 1771478296006
+    },
+    {
+      "confidence": 0.7110000000000001,
+      "entity": "Brooklyn",
+      "fact": "Hi, I'm Brooklyn",
+      "timestamp": 1771478304343
+    },
+    {
+      "confidence": 0.7110000000000001,
+      "entity": "Austin",
+      "fact": "Hello, I'm Austin. I live in Owosso michigan. Can you tell me the weather?",
+      "timestamp": 1771629354576
     }
   ],
   "people": {
+    "Alex": {
+      "confidence": 0.72,
+      "name": "Alex",
+      "type": "person"
+    },
     "Alexa": {
       "confidence": 0.75,
       "name": "Alexa",
@@ -142,7 +183,7 @@
       "type": "person"
     },
     "Dallas": {
-      "confidence": 0.73,
+      "confidence": 0.79,
       "name": "Dallas",
       "type": "person"
     },
@@ -159,6 +200,11 @@
     "Georgia": {
       "confidence": 0.71,
       "name": "Georgia",
+      "type": "person"
+    },
+    "Hello": {
+      "confidence": 0.71,
+      "name": "Hello",
       "type": "person"
     },
     "Jackson": {
@@ -180,6 +226,11 @@
       ],
       "name": "John",
       "occupation": "developer",
+      "type": "person"
+    },
+    "John Smith": {
+      "confidence": 0.8500000000000001,
+      "name": "John Smith",
       "type": "person"
     },
     "Johnson": {

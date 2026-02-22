@@ -1,12 +1,12 @@
 defmodule Brain.Analysis.ProcessingTraceTest do
   alias Brain.ML.EntityExtractor
   alias Brain.Analysis
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
 
   alias Analysis.{ProcessingTrace, Interpretation}
   import Brain.TestHelpers
 
-  setup do
+  setup _context do
     start_test_services()
     EntityExtractor.load_entity_maps()
     :ok
@@ -15,19 +15,19 @@ defmodule Brain.Analysis.ProcessingTraceTest do
   describe "from_interpretation/2" do
     test "builds trace from Interpretation struct" do
       interpretation =
-        Interpretation.new("greeting.hello", "Hello there!", 0.85, :model)
+        Interpretation.new("smalltalk.greetings.hello", "Hello there!", 0.85, :model)
 
       trace = ProcessingTrace.from_interpretation(interpretation)
 
       assert %ProcessingTrace{} = trace
-      assert trace.primary_intent == "greeting.hello"
+      assert trace.primary_intent == "smalltalk.greetings.hello"
       assert trace.primary_activation == 0.85
       assert trace.input_text == "Hello there!"
     end
 
     test "captures fast path trigger info when heuristic matched" do
       interpretation =
-        Interpretation.new("greeting.hello", "Hello", 0.9, :heuristic)
+        Interpretation.new("smalltalk.greetings.hello", "Hello", 0.9, :heuristic)
         |> Interpretation.with_heuristic("greeting_heuristic_1", :global)
 
       trace = ProcessingTrace.from_interpretation(interpretation)
@@ -146,7 +146,7 @@ defmodule Brain.Analysis.ProcessingTraceTest do
   describe "to_display_map/1" do
     test "converts trace to UI-friendly map" do
       interpretation =
-        Interpretation.new("greeting.hello", "Hello!", 0.9, :heuristic)
+        Interpretation.new("smalltalk.greetings.hello", "Hello!", 0.9, :heuristic)
         |> Interpretation.with_heuristic("test_heuristic", :global)
 
       trace = ProcessingTrace.from_interpretation(interpretation)

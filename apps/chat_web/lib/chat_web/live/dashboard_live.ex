@@ -30,6 +30,7 @@ defmodule ChatWeb.DashboardLive do
   def mount(_params, _session, socket) do
     if connected?(socket) do
       :timer.send_interval(@refresh_interval_ms, self(), :refresh_dashboard)
+      Phoenix.PubSub.subscribe(Brain.PubSub, "evaluation:complete")
     end
 
     {:ok, socket}
@@ -55,6 +56,7 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:micro_classifiers_status, load_micro_classifiers_status())
       |> assign(:response_timing, load_response_timing())
       |> assign(:atlas_stats, load_atlas_stats())
+      |> assign(:evaluation_summary, load_evaluation_summary())
       |> assign(:last_updated, DateTime.utc_now())
       |> assign(:expanded_categories, MapSet.new(@default_expanded))
       |> assign(:auto_refresh, true)
@@ -109,12 +111,17 @@ defmodule ChatWeb.DashboardLive do
         |> assign(:micro_classifiers_status, load_micro_classifiers_status())
         |> assign(:response_timing, load_response_timing())
         |> assign(:atlas_stats, load_atlas_stats())
+        |> assign(:evaluation_summary, load_evaluation_summary())
         |> assign(:last_updated, DateTime.utc_now())
 
       {:noreply, socket}
     else
       {:noreply, socket}
     end
+  end
+
+  def handle_info({:evaluation_complete, _payload}, socket) do
+    {:noreply, assign(socket, :evaluation_summary, load_evaluation_summary())}
   end
 
   def handle_info({:world_context_changed, world_id}, socket) do
@@ -146,6 +153,7 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:micro_classifiers_status, load_micro_classifiers_status())
       |> assign(:response_timing, load_response_timing())
       |> assign(:atlas_stats, load_atlas_stats())
+      |> assign(:evaluation_summary, load_evaluation_summary())
       |> assign(:last_updated, DateTime.utc_now())
 
     {:noreply, socket}
@@ -255,6 +263,40 @@ defmodule ChatWeb.DashboardLive do
         migrations: [],
         query_metrics: %{}
       }
+  end
+
+  defp load_evaluation_summary do
+    aggregator_data = Brain.Metrics.Aggregator.get_evaluation_metrics()
+
+    if aggregator_data == %{} do
+      load_evaluation_from_store()
+    else
+      aggregator_data
+    end
+  rescue
+    _ -> %{}
+  end
+
+  defp load_evaluation_from_store do
+    ~w(intent ner sentiment speech_act)
+    |> Enum.reduce(%{}, fn task, acc ->
+      case Brain.ML.EvaluationStore.latest(task) do
+        nil ->
+          acc
+
+        result ->
+          Map.put(acc, task, %{
+            accuracy: result["accuracy"] || 0.0,
+            macro_f1: result["macro_f1"] || 0.0,
+            weighted_f1: result["weighted_f1"] || 0.0,
+            total_examples: result["total_examples"] || 0,
+            duration_ms: result["duration_ms"],
+            completed_at: result["timestamp"]
+          })
+      end
+    end)
+  rescue
+    _ -> %{}
   end
 
   def category_label(:core) do
@@ -590,6 +632,16 @@ defmodule ChatWeb.DashboardLive do
     Calendar.strftime(dt, "%H:%M:%S")
   end
 
+  def accuracy_color(accuracy) when is_number(accuracy) do
+    cond do
+      accuracy >= 0.8 -> "text-success"
+      accuracy >= 0.6 -> "text-warning"
+      true -> "text-error"
+    end
+  end
+
+  def accuracy_color(_), do: "text-base-content/50"
+
   def category_servers(categories, category) do
     Map.get(categories, category, %{})
     |> Enum.sort_by(fn {_module, status} -> status.name end)
@@ -912,10 +964,6 @@ defmodule ChatWeb.DashboardLive do
     "Unified LSTM"
   end
 
-  def model_name(:multi_task_model) do
-    "Multi-Task LSTM"
-  end
-
   def model_name(:response_scorer) do
     "Response Scorer"
   end
@@ -937,7 +985,7 @@ defmodule ChatWeb.DashboardLive do
   end
 
   def lstm_models(ml_models_status) do
-    [:unified_model, :multi_task_model, :response_scorer]
+    [:unified_model, :response_scorer]
     |> Enum.map(fn key -> {key, Map.get(ml_models_status, key)} end)
     |> Enum.filter(fn {_k, v} -> v != nil end)
   end

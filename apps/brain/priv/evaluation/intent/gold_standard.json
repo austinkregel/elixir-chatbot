@@ -2600,7 +2600,7 @@
     ]
   },
   {
-    "intent": "message",
+    "intent": "communication.text",
     "text": "text Mike and tell him I said happy birthday",
     "tokens": [
       "text",
@@ -2626,7 +2626,7 @@
     ]
   },
   {
-    "intent": "message",
+    "intent": "communication.text",
     "text": "message John Smith Hey man I'm sorry I missed your call",
     "tokens": [
       "message",
@@ -2658,7 +2658,7 @@
     ]
   },
   {
-    "intent": "message",
+    "intent": "communication.text",
     "text": "message andrew I'll let you know when I'm on my way",
     "tokens": [
       "message",
@@ -2692,7 +2692,7 @@
     ]
   },
   {
-    "intent": "message",
+    "intent": "communication.text",
     "text": "message Thaman on slack that I'll be there soon",
     "tokens": [
       "message",
@@ -36320,7 +36320,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "what about bathroom",
     "tokens": [
       "what",
@@ -36334,7 +36334,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "and the kitchen please",
     "tokens": [
       "and",
@@ -36350,7 +36350,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "ok now in the kitchen",
     "tokens": [
       "ok",
@@ -36368,7 +36368,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "and in the living room please",
     "tokens": [
       "and",
@@ -36388,7 +36388,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "and in the living room",
     "tokens": [
       "and",
@@ -36406,7 +36406,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "in kitchen too",
     "tokens": [
       "in",
@@ -36420,7 +36420,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "in the kitchen",
     "tokens": [
       "in",
@@ -36434,7 +36434,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "kitchen",
     "tokens": [
       "kitchen"
@@ -36444,7 +36444,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "living room as well please",
     "tokens": [
       "living",
@@ -36462,7 +36462,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "same for the living room",
     "tokens": [
       "same",
@@ -36480,7 +36480,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "living room too",
     "tokens": [
       "living",
@@ -36494,7 +36494,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "living room now",
     "tokens": [
       "living",
@@ -36508,7 +36508,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "living room",
     "tokens": [
       "living",
@@ -36520,7 +36520,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "do it every morning at 6 am",
     "tokens": [
       "do",
@@ -36542,7 +36542,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "every day",
     "tokens": [
       "every",
@@ -36554,7 +36554,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "it should be repeated every day at 8 am",
     "tokens": [
       "it",
@@ -36580,7 +36580,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "at 7 am",
     "tokens": [
       "at",
@@ -36594,7 +36594,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "schedule weekly",
     "tokens": [
       "schedule",
@@ -36606,7 +36606,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "at 7 pm",
     "tokens": [
       "at",
@@ -36620,7 +36620,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "and schedule for 9 am every day",
     "tokens": [
       "and",
@@ -36642,7 +36642,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "and repeat every day please",
     "tokens": [
       "and",
@@ -36660,7 +36660,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "it should be scheduled at 9 am",
     "tokens": [
       "it",
@@ -36682,7 +36682,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "ok and repeat daily",
     "tokens": [
       "ok",
@@ -36698,7 +36698,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "weekly",
     "tokens": [
       "weekly"
@@ -36708,7 +36708,7 @@
     ]
   },
   {
-    "intent": "smarthome",
+    "intent": "continuation",
     "text": "do it everyday",
     "tokens": [
       "do",
@@ -40314,7 +40314,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch",
+    "intent": "smarthome.lights.hue.set",
     "text": "make them red",
     "tokens": [
       "make",
@@ -40328,7 +40328,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch",
+    "intent": "smarthome.lights.hue.set",
     "text": "can you make it green now please",
     "tokens": [
       "can",
@@ -40350,7 +40350,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch",
+    "intent": "smarthome.lights.hue.set",
     "text": "change color to blue",
     "tokens": [
       "change",
@@ -40366,7 +40366,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch",
+    "intent": "smarthome.lights.hue.set",
     "text": "blue",
     "tokens": [
       "blue"
@@ -40376,7 +40376,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch",
+    "intent": "smarthome.lights.hue.set",
     "text": "make it red",
     "tokens": [
       "make",
@@ -40390,7 +40390,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch",
+    "intent": "smarthome.lights.hue.set",
     "text": "turn them green",
     "tokens": [
       "turn",
@@ -40404,7 +40404,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch",
+    "intent": "smarthome.lights.hue.set",
     "text": "I need it to be red now",
     "tokens": [
       "I",
@@ -40426,7 +40426,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch",
+    "intent": "smarthome.lights.hue.set",
     "text": "now blue",
     "tokens": [
       "now",
@@ -40438,7 +40438,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch",
+    "intent": "smarthome.lights.hue.set",
     "text": "turn it green",
     "tokens": [
       "turn",
@@ -40452,7 +40452,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch",
+    "intent": "smarthome.lights.hue.set",
     "text": "now make it red",
     "tokens": [
       "now",
@@ -40468,7 +40468,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch",
+    "intent": "smarthome.lights.hue.set",
     "text": "change to red",
     "tokens": [
       "change",
@@ -40482,7 +40482,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch",
+    "intent": "smarthome.lights.hue.set",
     "text": "what about thermostat",
     "tokens": [
       "what",
@@ -40496,7 +40496,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch",
+    "intent": "smarthome.lights.hue.set",
     "text": "video player",
     "tokens": [
       "video",
@@ -40508,7 +40508,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch",
+    "intent": "smarthome.lights.hue.set",
     "text": "and the video player too please",
     "tokens": [
       "and",
@@ -40528,7 +40528,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch",
+    "intent": "smarthome.lights.hue.set",
     "text": "video player too",
     "tokens": [
       "video",
@@ -40542,7 +40542,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch",
+    "intent": "smarthome.lights.hue.set",
     "text": "and tv",
     "tokens": [
       "and",
@@ -40554,7 +40554,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch",
+    "intent": "smarthome.lights.hue.set",
     "text": "and air conditioner",
     "tokens": [
       "and",
@@ -40568,7 +40568,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch",
+    "intent": "smarthome.lights.hue.set",
     "text": "also the air conditioner",
     "tokens": [
       "also",
@@ -40584,7 +40584,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch.check",
+    "intent": "continuation",
     "text": "and TV in kitchen as well",
     "tokens": [
       "and",
@@ -40604,7 +40604,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch.check",
+    "intent": "continuation",
     "text": "what about bedroom TV",
     "tokens": [
       "what",
@@ -40620,7 +40620,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch.check",
+    "intent": "continuation",
     "text": "and TV in kitchen too",
     "tokens": [
       "and",
@@ -40638,7 +40638,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch.check",
+    "intent": "continuation",
     "text": "what about thermostat in the kitchen",
     "tokens": [
       "what",
@@ -40658,7 +40658,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch.check",
+    "intent": "continuation",
     "text": "also video player in my kitchen",
     "tokens": [
       "also",
@@ -40678,7 +40678,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch.check",
+    "intent": "continuation",
     "text": "kitchen lights as well",
     "tokens": [
       "kitchen",
@@ -40694,7 +40694,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.switch.check",
+    "intent": "continuation",
     "text": "video player in bedroom too please",
     "tokens": [
       "video",
@@ -45872,7 +45872,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "and radio",
     "tokens": [
       "and",
@@ -45884,7 +45884,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "TV too please",
     "tokens": [
       "TV",
@@ -45898,7 +45898,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "TV too",
     "tokens": [
       "TV",
@@ -45910,7 +45910,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "now for TV",
     "tokens": [
       "now",
@@ -45924,7 +45924,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "I need TV also",
     "tokens": [
       "I",
@@ -45940,7 +45940,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "and the TV",
     "tokens": [
       "and",
@@ -45954,7 +45954,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "TV also",
     "tokens": [
       "TV",
@@ -45966,7 +45966,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "TV as well",
     "tokens": [
       "TV",
@@ -45980,7 +45980,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "I need TV too",
     "tokens": [
       "I",
@@ -45996,7 +45996,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "do the same for speakers",
     "tokens": [
       "do",
@@ -46014,7 +46014,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "do it for speakers",
     "tokens": [
       "do",
@@ -46030,7 +46030,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "for speakers too",
     "tokens": [
       "for",
@@ -46044,7 +46044,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "and the radio too",
     "tokens": [
       "and",
@@ -46060,7 +46060,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "speakers too",
     "tokens": [
       "speakers",
@@ -46072,7 +46072,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "down",
     "tokens": [
       "down"
@@ -46082,7 +46082,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "down once again",
     "tokens": [
       "down",
@@ -46096,7 +46096,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "down again",
     "tokens": [
       "down",
@@ -46108,7 +46108,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "and now down",
     "tokens": [
       "and",
@@ -46122,7 +46122,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "down one more time",
     "tokens": [
       "down",
@@ -46138,7 +46138,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "and down now",
     "tokens": [
       "and",
@@ -46152,7 +46152,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "less",
     "tokens": [
       "less"
@@ -46162,7 +46162,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "down once more",
     "tokens": [
       "down",
@@ -46176,7 +46176,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "down now",
     "tokens": [
       "down",
@@ -46188,7 +46188,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "now down",
     "tokens": [
       "now",
@@ -46200,7 +46200,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "and down",
     "tokens": [
       "and",
@@ -46212,7 +46212,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "to 5 right now",
     "tokens": [
       "to",
@@ -46228,7 +46228,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "by 5 points",
     "tokens": [
       "by",
@@ -46242,7 +46242,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "to 5",
     "tokens": [
       "to",
@@ -46254,7 +46254,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "to 5 points",
     "tokens": [
       "to",
@@ -46268,7 +46268,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "ok to 5 points",
     "tokens": [
       "ok",
@@ -46284,7 +46284,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "to 5 now",
     "tokens": [
       "to",
@@ -46298,7 +46298,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "by 5",
     "tokens": [
       "by",
@@ -46310,7 +46310,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "to 5 now please",
     "tokens": [
       "to",
@@ -46326,7 +46326,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "and to 6",
     "tokens": [
       "and",
@@ -46340,7 +46340,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "to 5 points please",
     "tokens": [
       "to",
@@ -46356,7 +46356,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "to 5 then",
     "tokens": [
       "to",
@@ -46370,7 +46370,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "in the kitchen",
     "tokens": [
       "in",
@@ -46384,7 +46384,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "living room",
     "tokens": [
       "living",
@@ -46396,7 +46396,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "and in the kitchen too",
     "tokens": [
       "and",
@@ -46414,7 +46414,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "for bedroom too",
     "tokens": [
       "for",
@@ -46428,7 +46428,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "now in the bedroom",
     "tokens": [
       "now",
@@ -46444,7 +46444,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "up",
     "tokens": [
       "up"
@@ -46454,7 +46454,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "up now",
     "tokens": [
       "up",
@@ -46466,7 +46466,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "again up",
     "tokens": [
       "again",
@@ -46478,7 +46478,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "up once more",
     "tokens": [
       "up",
@@ -46492,7 +46492,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "more",
     "tokens": [
       "more"
@@ -46502,7 +46502,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "up once again",
     "tokens": [
       "up",
@@ -46516,7 +46516,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "up one more time",
     "tokens": [
       "up",
@@ -46532,7 +46532,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "turn up",
     "tokens": [
       "turn",
@@ -46544,7 +46544,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "and now up",
     "tokens": [
       "and",
@@ -46558,7 +46558,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "turn it up",
     "tokens": [
       "turn",
@@ -46572,7 +46572,7 @@
     ]
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "continuation",
     "text": "up again",
     "tokens": [
       "up",
@@ -50308,7 +50308,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "set it to 20",
     "tokens": [
       "set",
@@ -50324,7 +50324,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "turn it up till 20 grad",
     "tokens": [
       "turn",
@@ -50344,7 +50344,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "set it to 20 grads",
     "tokens": [
       "set",
@@ -50362,7 +50362,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "make it 30 points",
     "tokens": [
       "make",
@@ -50378,7 +50378,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "can you do 72 degrees",
     "tokens": [
       "can",
@@ -50396,7 +50396,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "change to 20 grads",
     "tokens": [
       "change",
@@ -50412,7 +50412,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "change it to 20 grads",
     "tokens": [
       "change",
@@ -50430,7 +50430,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "set to 20 grads",
     "tokens": [
       "set",
@@ -50446,7 +50446,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "no 25 degrees",
     "tokens": [
       "no",
@@ -50460,7 +50460,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "set to 20",
     "tokens": [
       "set",
@@ -50474,7 +50474,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "make it 30",
     "tokens": [
       "make",
@@ -50488,7 +50488,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "change it to 20",
     "tokens": [
       "change",
@@ -50504,7 +50504,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "no 25",
     "tokens": [
       "no",
@@ -50516,7 +50516,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "change to 20",
     "tokens": [
       "change",
@@ -50530,7 +50530,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "turn it up by 15 degrees",
     "tokens": [
       "turn",
@@ -50550,7 +50550,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "10 less",
     "tokens": [
       "10",
@@ -50562,7 +50562,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "15 points less",
     "tokens": [
       "15",
@@ -50576,7 +50576,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "add 35 grad more",
     "tokens": [
       "add",
@@ -50592,7 +50592,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "add 25 more",
     "tokens": [
       "add",
@@ -50606,7 +50606,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "add more 30 points",
     "tokens": [
       "add",
@@ -50622,7 +50622,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "15 points more",
     "tokens": [
       "15",
@@ -50636,7 +50636,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "turn it down by 15 degrees",
     "tokens": [
       "turn",
@@ -50656,7 +50656,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "35 grads more",
     "tokens": [
       "35",
@@ -50670,7 +50670,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "20 more degrees",
     "tokens": [
       "20",
@@ -50684,7 +50684,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "more 30 points",
     "tokens": [
       "more",
@@ -50698,7 +50698,7 @@
     ]
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "text": "10 more",
     "tokens": [
       "10",
@@ -89570,5 +89570,33 @@
       "VERB",
       "ADJ"
     ]
+  },
+  {
+    "text": "I go by Max",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "I go by the name Alex",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "People call me Sam",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Everyone calls me Chris",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "You can call me Jordan",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "Just call me Taylor",
+    "intent": "smalltalk.user.introduction"
+  },
+  {
+    "text": "They call me Jamie",
+    "intent": "smalltalk.user.introduction"
   }
 ]

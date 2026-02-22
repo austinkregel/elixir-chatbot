@@ -1,10 +1,10 @@
 defmodule BrainTest do
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
   import ExUnit.CaptureLog
   alias Brain
   import Brain.TestHelpers
 
-  setup do
+  setup _context do
     start_brain_services()
     %{brain: Brain}
   end

@@ -5,7 +5,7 @@ defmodule Brain.FeatureTest do
   These tests check that user inputs produce sensible outputs.
   They REQUIRE trained models - if models are not loaded, tests fail fast.
   """
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
   use Brain.Test.ModelAssertions
 
   alias Brain
@@ -14,22 +14,14 @@ defmodule Brain.FeatureTest do
   @moduletag :requires_models
 
   setup_all do
-    # Start services
-    start_brain_services()
-
-    # Ensure all required GenServers are ready (3-minute deadline)
     Brain.TestHelpers.require_services!(:brain)
-
-    # Ensure models are loaded - fail fast if not
     require_models!([:tfidf, :gazetteer, :entities])
-
     :ok
   end
 
-  setup do
-    # Create a conversation for each test
+  setup _context do
+    start_brain_services()
     {:ok, conversation_id} = Brain.create_conversation()
-
     %{conversation_id: conversation_id}
   end
 
@@ -415,27 +407,32 @@ defmodule Brain.FeatureTest do
   end
 
   describe "music slot handling" do
-    test "play music with artist extracts artist slot", %{conversation_id: conv_id} do
-      {:ok, response, context} = evaluate_with_context(conv_id, "Play some Taylor Swift")
+    test "play music with unknown artist extracts and narrows artist entity", %{conversation_id: conv_id} do
+      # "Korvo Mitski" is completely absent from training data and Gazetteer.
+      # The system should:
+      # 1. POS-tag "Korvo Mitski" as proper nouns (PROPN)
+      # 2. Merge consecutive PROPNs into a single entity "Korvo Mitski"
+      # 3. Classify intent as music.play
+      # 4. Narrow entity type from "person" to "artist" via TypeHierarchy
+      # 5. Fill the music-artist slot
+      {:ok, response, context} = evaluate_with_context(conv_id, "Play some Korvo Mitski")
 
-      # Should classify as command and potentially extract artist
       assert_is_command(context)
 
-      # Check for artist extraction in slots, entities, or response
-      slots = Map.get(context, :slots, %{})
       entities = Map.get(context, :entities, [])
 
-      artist_in_slots = is_binary(get_in(slots, [:artist])) and
-                        String.downcase(slots[:artist]) =~ "taylor"
-      artist_in_entities = Enum.any?(entities, fn e ->
+      artist_entity = Enum.find(entities, fn e ->
         entity_text = e[:text] || e["text"] || e[:value] || e["value"] || e[:match] || ""
-        is_binary(entity_text) and String.downcase(entity_text) =~ "taylor"
+        is_binary(entity_text) and String.downcase(entity_text) =~ "korvo"
       end)
-      artist_in_response = response =~ ~r/taylor/i
 
-      # At least one should be true
-      assert artist_in_slots or artist_in_entities or artist_in_response,
-             "Expected artist 'Taylor Swift' extraction, got slots: #{inspect(slots)}"
+      assert artist_entity != nil,
+        "Expected 'Korvo Mitski' to be extracted as an entity. " <>
+        "Got entities: #{inspect(entities)}"
+
+      entity_type = artist_entity[:entity_type] || artist_entity["entity_type"]
+      assert entity_type in ["artist", "music-artist", "person"],
+        "Expected entity type to be artist, music-artist, or person, got: #{entity_type}"
 
       assert_has_response(response)
     end

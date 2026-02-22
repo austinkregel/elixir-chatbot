@@ -5,7 +5,13 @@
     "city": 0.2,
     "music-artist": 0.3
   },
-  "location_query": {
+  "weather": {
+    "location": 1.0,
+    "city": 1.0,
+    "person": 0.1,
+    "music-artist": 0.1
+  },
+  "navigation": {
     "location": 1.0,
     "city": 1.0,
     "person": 0.1,

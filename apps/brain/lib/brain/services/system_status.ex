@@ -144,7 +144,7 @@ defmodule Brain.Services.SystemStatus do
       end)
 
     lstm_ready =
-      [:unified_model, :multi_task_model, :response_scorer]
+      [:unified_model, :response_scorer]
       |> Enum.count(fn key ->
         get_in(models, [key, :ready]) == true
       end)

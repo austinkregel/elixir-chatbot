@@ -43,7 +43,7 @@ defmodule Mix.Tasks.TrainUnified do
       if opts[:epochs] do
         [{:epochs, opts[:epochs]} | config]
       else
-        [{:epochs, 20} | config]
+        config
       end
 
     config =

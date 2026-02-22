@@ -1,7 +1,7 @@
 defmodule Brain.Analysis.SlotDetector do
   @moduledoc "Detects required and optional slots for a given intent and fills them from entities.\n\nThis module:\n- Loads slot schemas from JSON configuration\n- Maps extracted entities to slots\n- Identifies missing required slots\n- Applies default values where configured\n- Provides clarification prompts for missing slots\n"
 
-  alias Brain.Analysis.{SlotResult, IntentRegistry, EntityTypes}
+  alias Brain.Analysis.{SlotResult, IntentRegistry}
 
   require Logger
 
@@ -62,7 +62,6 @@ defmodule Brain.Analysis.SlotDetector do
       |> Enum.map(fn {intent, schema} ->
         mappings = Map.get(schema, "entity_mappings", %{})
         required = Map.get(schema, "required", [])
-        domain = Map.get(schema, "domain", "unknown")
 
         matched_types =
           entity_types
@@ -83,7 +82,16 @@ defmodule Brain.Analysis.SlotDetector do
             1.0
           end
 
-        domain_priority = domain_priority_for_entities(domain, entity_types)
+        # Domain priority: how many of this intent's expected types appear in the entities.
+        # Derived from the intent's entity_mappings -- no hardcoded domain-type rules.
+        expected = IntentRegistry.expected_entity_types(intent)
+
+        domain_priority =
+          if expected != [] do
+            Enum.count(entity_types, &(&1 in expected))
+          else
+            0
+          end
 
         {intent, matched_types, fill_ratio, domain_priority}
       end)
@@ -95,20 +103,6 @@ defmodule Brain.Analysis.SlotDetector do
     case scored_schemas do
       [{intent, score, _, _} | _] when score > 0 -> {:ok, intent, score}
       _ -> {:error, :no_match}
-    end
-  end
-
-  defp domain_priority_for_entities(domain, entity_types) do
-    has_location = EntityTypes.has_location_type?(entity_types)
-    has_device = EntityTypes.has_device_type?(entity_types)
-    has_music = EntityTypes.has_music_type?(entity_types)
-
-    cond do
-      domain == "weather" and has_location -> 10
-      domain == "device" and has_device -> 10
-      domain == "music" and has_music -> 10
-      domain == "navigation" and has_location -> 5
-      true -> 0
     end
   end
 

@@ -6,12 +6,12 @@ defmodule Brain.Epistemic.SourceAuthorityTest do
   credibility tracking, and credibility floor enforcement.
   """
 
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
 
   alias Brain.Epistemic.SourceAuthority
   import Brain.TestHelpers
 
-  setup do
+  setup _context do
     ensure_started(SourceAuthority)
     SourceAuthority.clear()
     :ok

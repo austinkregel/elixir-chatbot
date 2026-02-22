@@ -1,8 +1,8 @@
 {
   "chunker": {
     "admin_locked": false,
-    "learned_at": "2026-02-16T20:07:50.888957Z",
-    "max_chunk_words": 60,
+    "learned_at": null,
+    "max_chunk_words": 50,
     "min_chunk_words": 3,
     "split_on_conjunctions": true
   },
@@ -15,22 +15,26 @@
   "discourse": {
     "admin_locked": false,
     "bot_names": [
-      "test"
+      "companion",
+      "bot",
+      "assistant",
+      "ai",
+      "echo"
     ],
     "confidence_threshold": 0.4,
-    "learned_at": "2026-02-16T20:07:50.787899Z"
+    "learned_at": null
   },
   "feedback_stats": {
-    "clarifications_needed": 43,
+    "clarifications_needed": 0,
     "deferral_confirmations": 0,
     "optional_responses_deferred": 0,
     "optional_responses_proceeded": 0,
     "responses_deferred": 0,
     "silence_frustrations": 0,
-    "successful_responses": 102,
-    "total_interactions": 145
+    "successful_responses": 112,
+    "total_interactions": 112
   },
-  "last_updated": "2026-02-16T20:11:11.445991Z",
+  "last_updated": "2026-02-19T16:22:56.313290Z",
   "response_optionality": {
     "acknowledgment_defer_confidence": 0.7,
     "admin_locked": false,
@@ -43,8 +47,8 @@
   },
   "speech_acts": {
     "admin_locked": false,
-    "confidence_threshold": 0.35,
-    "learned_at": "2026-02-16T20:07:50.788037Z"
+    "confidence_threshold": 0.3,
+    "learned_at": null
   },
   "version": "1.0.0"
 }

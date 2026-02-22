@@ -22,7 +22,7 @@ defmodule Brain.AtlasIntegration do
     _, _ -> false
   end
 
-  @doc "Execute an Atlas operation asynchronously. Logs errors but never crashes."
+  @doc "Execute an Atlas operation asynchronously via the AtlasTaskSupervisor."
   def async(fun) when is_function(fun, 0) do
     if available?() do
       Task.Supervisor.start_child(Brain.AtlasTaskSupervisor, fn ->
@@ -296,7 +296,7 @@ defmodule Brain.AtlasIntegration do
 
   @doc "Update episode's semantic_id link in Atlas."
   def link_episode_semantic(episode_id, semantic_id) do
-    async(fn ->
+    sync(fn ->
       case Atlas.Repo.get(Atlas.Schemas.Episode, episode_id) do
         nil -> :ok
 
@@ -308,8 +308,273 @@ defmodule Brain.AtlasIntegration do
     end)
   end
 
+  @doc """
+  Persist an episode to Atlas synchronously.
+
+  Returns `{:ok, episode_id}` or `{:error, reason}`.
+  Used by Memory.Store when Atlas is the primary store.
+  """
+  def persist_episode_sync(%Brain.Memory.Types.Episode{} = episode, world_id) do
+    case Ecto.UUID.cast(episode.id) do
+      {:ok, _uuid} ->
+        sync(fn ->
+          attrs = %{
+            id: episode.id,
+            world_id: world_id,
+            state: episode.state,
+            action: episode.action,
+            outcome: episode.outcome,
+            tags: episode.tags || [],
+            embedding: episode.embedding || [],
+            semantic_id: episode.semantic_id
+          }
+
+          case Atlas.Repo.get(Atlas.Schemas.Episode, episode.id) do
+            nil ->
+              %Atlas.Schemas.Episode{id: episode.id}
+              |> Atlas.Schemas.Episode.changeset(attrs)
+              |> Atlas.Repo.insert()
+
+            existing ->
+              existing
+              |> Atlas.Schemas.Episode.changeset(attrs)
+              |> Atlas.Repo.update()
+          end
+        end)
+        |> case do
+          {:ok, {:ok, _row}} -> {:ok, episode.id}
+          {:ok, {:error, changeset}} -> {:error, changeset}
+          {:error, reason} -> {:error, reason}
+        end
+
+      :error ->
+        {:error, :invalid_id_format}
+    end
+  end
+
+  @doc """
+  Persist a semantic fact to Atlas synchronously.
+
+  Returns `{:ok, semantic_id}` or `{:error, reason}`.
+  """
+  def persist_semantic_sync(%Brain.Memory.Types.SemanticFact{} = semantic, world_id) do
+    case Ecto.UUID.cast(semantic.id) do
+      {:ok, _uuid} ->
+        sync(fn ->
+          attrs = %{
+            id: semantic.id,
+            world_id: world_id,
+            content: semantic.representation,
+            category: "consolidated",
+            confidence: 0.5,
+            embedding: semantic.embedding || [],
+            source_episodes: semantic.evidence_ids || [],
+            tags: semantic.tags || []
+          }
+
+          case Atlas.Repo.get(Atlas.Schemas.SemanticFact, semantic.id) do
+            nil ->
+              %Atlas.Schemas.SemanticFact{id: semantic.id}
+              |> Atlas.Schemas.SemanticFact.changeset(attrs)
+              |> Atlas.Repo.insert()
+
+            existing ->
+              existing
+              |> Atlas.Schemas.SemanticFact.changeset(attrs)
+              |> Atlas.Repo.update()
+          end
+        end)
+        |> case do
+          {:ok, {:ok, _row}} -> {:ok, semantic.id}
+          {:ok, {:error, changeset}} -> {:error, changeset}
+          {:error, reason} -> {:error, reason}
+        end
+
+      :error ->
+        {:error, :invalid_id_format}
+    end
+  end
+
+  @doc """
+  Get a single episode from Atlas by ID and world_id.
+  """
+  def get_episode(id, world_id) do
+    import Ecto.Query
+
+    case Ecto.UUID.cast(id) do
+      {:ok, uuid} ->
+        sync(fn ->
+          Atlas.Schemas.Episode
+          |> where([e], e.id == ^uuid and e.world_id == ^world_id)
+          |> Atlas.Repo.one()
+        end)
+        |> case do
+          {:ok, nil} -> {:error, :not_found}
+          {:ok, row} -> {:ok, row_to_episode(row)}
+          {:error, reason} -> {:error, reason}
+        end
+
+      :error ->
+        {:error, :not_found}
+    end
+  end
+
+  @doc """
+  Query episodes by tags from Atlas.
+
+  Returns episodes that have at least one matching tag, ordered by
+  insertion time (most recent first).
+  """
+  def query_episodes_by_tags(world_id, tags, limit \\ 10) do
+    import Ecto.Query
+
+    sync(fn ->
+      Atlas.Schemas.Episode
+      |> where([e], e.world_id == ^world_id)
+      |> where([e], fragment("? && ?", e.tags, ^tags))
+      |> order_by([e], desc: e.inserted_at)
+      |> limit(^limit)
+      |> Atlas.Repo.all()
+    end)
+    |> case do
+      {:ok, rows} ->
+        {:ok, Enum.map(rows, &row_to_episode/1)}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Load all episodes for a world, returned as a list (not a map).
+  """
+  def list_episodes(world_id) do
+    import Ecto.Query
+
+    sync(fn ->
+      Atlas.Schemas.Episode
+      |> where([e], e.world_id == ^world_id)
+      |> order_by([e], desc: e.inserted_at)
+      |> Atlas.Repo.all()
+    end)
+    |> case do
+      {:ok, rows} -> {:ok, Enum.map(rows, &row_to_episode/1)}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  Load all semantic facts for a world, returned as a list.
+  """
+  def list_semantics(world_id) do
+    import Ecto.Query
+
+    sync(fn ->
+      Atlas.Schemas.SemanticFact
+      |> where([s], s.world_id == ^world_id)
+      |> order_by([s], desc: s.inserted_at)
+      |> Atlas.Repo.all()
+    end)
+    |> case do
+      {:ok, rows} -> {:ok, Enum.map(rows, &row_to_semantic/1)}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  Get a single semantic fact from Atlas by ID and world_id.
+  """
+  def get_semantic(id, world_id) do
+    import Ecto.Query
+
+    case Ecto.UUID.cast(id) do
+      {:ok, uuid} ->
+        sync(fn ->
+          Atlas.Schemas.SemanticFact
+          |> where([s], s.id == ^uuid and s.world_id == ^world_id)
+          |> Atlas.Repo.one()
+        end)
+        |> case do
+          {:ok, nil} -> {:error, :not_found}
+          {:ok, row} -> {:ok, row_to_semantic(row)}
+          {:error, reason} -> {:error, reason}
+        end
+
+      :error ->
+        {:error, :not_found}
+    end
+  end
+
+  @doc """
+  List all distinct world_ids that have episodes or semantics in Atlas.
+  """
+  def list_memory_worlds do
+    import Ecto.Query
+
+    sync(fn ->
+      episode_worlds =
+        Atlas.Schemas.Episode
+        |> select([e], e.world_id)
+        |> distinct(true)
+        |> Atlas.Repo.all()
+
+      semantic_worlds =
+        Atlas.Schemas.SemanticFact
+        |> select([s], s.world_id)
+        |> distinct(true)
+        |> Atlas.Repo.all()
+
+      Enum.uniq(episode_worlds ++ semantic_worlds)
+    end)
+    |> case do
+      {:ok, worlds} -> {:ok, worlds}
+      {:error, _} -> {:ok, []}
+    end
+  end
+
+  defp row_to_episode(row) do
+    %Brain.Memory.Types.Episode{
+      id: row.id,
+      state: row.state,
+      action: row.action,
+      outcome: row.outcome,
+      tags: row.tags || [],
+      embedding: row.embedding || [],
+      timestamp: DateTime.to_unix(row.inserted_at, :millisecond),
+      semantic_id: row.semantic_id
+    }
+  end
+
+  defp row_to_semantic(row) do
+    %Brain.Memory.Types.SemanticFact{
+      id: row.id,
+      representation: row.content,
+      embedding: row.embedding || [],
+      evidence_ids: row.source_episodes || [],
+      tags: row.tags || [],
+      timestamp: DateTime.to_unix(row.inserted_at, :millisecond)
+    }
+  end
+
   # ============================================================================
   # ReviewQueue Integration
+  @doc "Delete all episodes and semantic facts from Atlas for a world, or all worlds if nil."
+  def clear_memory(world_id \\ nil) do
+    import Ecto.Query
+
+    sync(fn ->
+      if world_id do
+        Atlas.Schemas.Episode |> where([e], e.world_id == ^world_id) |> Atlas.Repo.delete_all()
+        Atlas.Schemas.SemanticFact |> where([s], s.world_id == ^world_id) |> Atlas.Repo.delete_all()
+      else
+        Atlas.Repo.delete_all(Atlas.Schemas.Episode)
+        Atlas.Repo.delete_all(Atlas.Schemas.SemanticFact)
+      end
+
+      :ok
+    end)
+  end
+
   # ============================================================================
 
   @doc "Load all review candidates from Atlas."

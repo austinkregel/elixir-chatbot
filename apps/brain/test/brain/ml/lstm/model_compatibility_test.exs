@@ -44,6 +44,20 @@ defmodule Brain.ML.LSTM.ModelCompatibilityTest do
   alias Brain.LSTMTestHelpers
 
   describe "LSTM model version compatibility" do
+    setup do
+      models_path = Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")
+      lstm_dir = Path.join(models_path, "lstm")
+      unified_path = Path.join(lstm_dir, "unified_model.term")
+
+      unless File.exists?(unified_path) do
+        File.mkdir_p!(lstm_dir)
+        {:ok, path} = LSTMTestHelpers.generate_test_model(:unified, output_dir: lstm_dir)
+        File.rename!(path, unified_path)
+      end
+
+      :ok
+    end
+
     test "current ML library versions are available" do
       versions = LSTMTestHelpers.current_ml_versions()
 

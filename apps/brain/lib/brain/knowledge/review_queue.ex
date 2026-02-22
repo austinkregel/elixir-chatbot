@@ -466,6 +466,8 @@ defmodule Brain.Knowledge.ReviewQueue do
 
   @impl true
   def handle_call(:persist, _from, state) do
+    # Drain any pending async Atlas operations to ensure data is written
+    Brain.AtlasIntegration.drain()
     {:reply, :ok, state}
   end
 

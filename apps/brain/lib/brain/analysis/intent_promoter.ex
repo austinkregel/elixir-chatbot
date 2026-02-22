@@ -191,7 +191,7 @@ defmodule Brain.Analysis.IntentPromoter do
   defp retrain_and_reload do
     Logger.info("Starting model retraining after intent promotion...")
 
-    Task.start(fn ->
+    Brain.AtlasIntegration.async(fn ->
       case Trainer.train_and_save() do
         {:ok, stats} ->
           Logger.info("Model retraining completed", stats)

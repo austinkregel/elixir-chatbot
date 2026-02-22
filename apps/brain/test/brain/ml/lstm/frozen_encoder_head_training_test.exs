@@ -46,11 +46,13 @@ defmodule Brain.ML.LSTM.FrozenEncoderHeadTrainingTest do
         |> then(fn {seq, _state} -> seq end)
 
       # 2. Build combined encoder+head and train with EXLA (same as train_encoder_and_intent)
+      head_hidden = min(256, @num_classes * 2)
+
       combined_model =
         encoder
         |> Axon.nx(fn x -> Nx.mean(x, axes: [1]) end)
-        |> Axon.dense(64, activation: :relu, name: "intent_dense")
-        |> Axon.dropout(rate: 0.1)
+        |> Axon.dense(head_hidden, activation: :relu, name: "intent_dense")
+        |> Axon.dropout(rate: 0.3)
         |> Axon.dense(@num_classes, activation: :softmax, name: "intent_output")
 
       # Minimal fake data: 4 examples, 2 batches of 2
@@ -111,10 +113,12 @@ defmodule Brain.ML.LSTM.FrozenEncoderHeadTrainingTest do
         end)
 
       # 4. Build standalone head and train (same as train_head_with_frozen_encoder)
+      sentiment_hidden = min(256, @num_classes * 2)
+
       head_model =
         Axon.input("sentiment_input", shape: {nil, config.hidden_size})
-        |> Axon.dense(64, activation: :relu, name: "sentiment_dense")
-        |> Axon.dropout(rate: 0.1)
+        |> Axon.dense(sentiment_hidden, activation: :relu, name: "sentiment_dense")
+        |> Axon.dropout(rate: 0.3)
         |> Axon.dense(@num_classes, activation: :softmax, name: "sentiment_output")
 
       head_loop =

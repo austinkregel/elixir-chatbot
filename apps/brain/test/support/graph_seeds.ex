@@ -78,7 +78,7 @@ defmodule Brain.Test.GraphSeeds do
       name: "msg_2", role: "assistant", content: "The weather in London is currently clear."
     })
     {:ok, topic_weather} = Graph.add_node("conversation_graph", "Topic", %{name: "weather.query"})
-    {:ok, topic_greeting} = Graph.add_node("conversation_graph", "Topic", %{name: "greeting"})
+    {:ok, topic_greeting} = Graph.add_node("conversation_graph", "Topic", %{name: "smalltalk.greetings.hello"})
     {:ok, _} = Graph.add_edge("conversation_graph", conv.id, msg1.id, "CONTAINS")
     {:ok, _} = Graph.add_edge("conversation_graph", conv.id, msg2.id, "CONTAINS")
     {:ok, _} = Graph.add_edge("conversation_graph", msg1.id, msg2.id, "FOLLOWS")

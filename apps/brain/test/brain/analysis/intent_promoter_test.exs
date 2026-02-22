@@ -1,6 +1,6 @@
 defmodule Brain.Analysis.IntentPromoterTest do
   alias Brain.Analysis
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
 
   alias Analysis.{IntentPromoter, Types.IntentReviewCandidate}
 
@@ -42,9 +42,9 @@ defmodule Brain.Analysis.IntentPromoterTest do
       File.write!(intent_file, Jason.encode!([], pretty: true))
 
       candidate =
-        IntentReviewCandidate.new(@test_text, "weather.query", 0.5,
+        IntentReviewCandidate.new(@test_text, @test_intent, 0.5,
           promotion_action: :variation,
-          promoted_to_intent: "weather.query"
+          promoted_to_intent: @test_intent
         )
 
       assert {:ok, :variation_added} = IntentPromoter.promote(candidate)
@@ -73,6 +73,7 @@ defmodule Brain.Analysis.IntentPromoterTest do
           promoted_to_intent: @test_intent
         )
 
+      Code.ensure_loaded!(IntentPromoter)
       assert function_exported?(IntentPromoter, :promote, 2)
 
       # new_intent requires domain option

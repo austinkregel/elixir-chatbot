@@ -1,12 +1,12 @@
 defmodule Brain.Analysis.PipelineTest do
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
   import Brain.TestHelpers
 
   alias Brain.Analysis.Pipeline
   alias Brain.Analysis.InternalModel
   alias Brain.ML.EntityExtractor
 
-  setup do
+  setup _context do
     start_test_services()
     EntityExtractor.load_entity_maps()
     :ok

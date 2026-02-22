@@ -25,13 +25,22 @@ defmodule Atlas.Schemas.Episode do
     timestamps(type: :utc_datetime_usec)
   end
 
-  @required_fields ~w(state action outcome)a
-  @optional_fields ~w(world_id tags embedding semantic_id)a
+  @required_fields ~w(state action)a
+  @optional_fields ~w(outcome world_id tags embedding semantic_id)a
 
+  @doc false
   def changeset(episode, attrs) do
     episode
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> default_outcome()
+  end
+
+  defp default_outcome(changeset) do
+    case get_field(changeset, :outcome) do
+      nil -> put_change(changeset, :outcome, "")
+      _ -> changeset
+    end
   end
 
   @doc "Query episodes for a specific world."

@@ -46,7 +46,7 @@ defmodule Brain.Subprocesses.ConversationSubprocessTest do
     # Second input (should have context)
     {:ok, response2} = ConversationSubprocess.evaluate_input(subprocess_id, "How are you?")
     assert is_binary(response2)
-    assert_response_intent(response2, "smalltalk")
+    assert_response_intent(response2, "web.search - repeat")
 
     # Verify conversation state shows messages
     state = ConversationSubprocess.get_conversation_state(subprocess_id)

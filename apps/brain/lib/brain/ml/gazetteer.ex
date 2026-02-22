@@ -579,6 +579,11 @@ defmodule Brain.ML.Gazetteer do
           stats
       end
 
+    # Enrich from Atlas knowledge_graph entities
+    atlas_synced = sync_from_atlas()
+
+    stats = %{stats | entities: stats.entities + atlas_synced}
+
     # Build prefix index
     prefix_count = build_prefix_index()
 
@@ -595,6 +600,7 @@ defmodule Brain.ML.Gazetteer do
       cities: final_stats.cities,
       artists: final_stats.artists,
       emojis: final_stats.emojis,
+      atlas_synced: atlas_synced,
       load_time_ms: load_time
     })
 
@@ -846,6 +852,64 @@ defmodule Brain.ML.Gazetteer do
   # ============================================================================
   # Private Functions
   # ============================================================================
+
+  defp sync_from_atlas do
+    case Brain.Graph.Training.collect_gazetteer_entries() do
+      {:ok, entries} ->
+        count =
+          Enum.count(entries, fn {name, entity_type, metadata} ->
+            insert_entry_direct(name, entity_type, metadata)
+          end)
+
+        Logger.debug("Gazetteer enriched from Atlas knowledge_graph (#{count} entries)")
+        count
+
+      {:error, reason} ->
+        Logger.debug("Atlas Gazetteer sync skipped: #{inspect(reason)}")
+        0
+    end
+  rescue
+    e ->
+      Logger.debug("Atlas Gazetteer sync unavailable: #{inspect(e)}")
+      0
+  end
+
+  defp insert_entry_direct(name, entity_type, metadata) when is_binary(name) and name != "" do
+    normalized_key = normalize(name)
+
+    case :ets.lookup(@table_name, normalized_key) do
+      [{^normalized_key, _existing}] ->
+        false
+
+      [] ->
+        entity_info =
+          metadata
+          |> Map.put(:entity_type, entity_type)
+          |> Map.put(:type, entity_type)
+          |> Map.put(:value, name)
+          |> Map.put(:original_name, name)
+          |> Map.put(:source, :atlas)
+          |> Map.put(:added_at, System.system_time(:second))
+
+        :ets.insert(@table_name, {normalized_key, entity_info})
+
+        words = String.split(normalized_key)
+
+        if length(words) > 1 do
+          prefixes =
+            1..(length(words) - 1)
+            |> Enum.map(fn n -> Enum.take(words, n) |> Enum.join(" ") end)
+
+          Enum.each(prefixes, fn prefix ->
+            :ets.insert(@prefix_table, {prefix, true})
+          end)
+        end
+
+        true
+    end
+  end
+
+  defp insert_entry_direct(_, _, _), do: false
 
   defp update_entity_count(delta) do
     case :ets.lookup(@stats_table, :stats) do

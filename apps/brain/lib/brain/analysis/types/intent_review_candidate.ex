@@ -82,7 +82,9 @@ defmodule Brain.Analysis.Types.IntentReviewCandidate do
       top_k: Keyword.get(opts, :top_k, []),
       extracted_entities: Keyword.get(opts, :extracted_entities, []),
       slot_fill_summary: Keyword.get(opts, :slot_fill_summary, %{}),
-      annotation: Keyword.get(opts, :annotation, %{tags: [], notes: nil, domain_guess: nil, spans: []})
+      annotation: Keyword.get(opts, :annotation, %{tags: [], notes: nil, domain_guess: nil, spans: []}),
+      promotion_action: Keyword.get(opts, :promotion_action),
+      promoted_to_intent: Keyword.get(opts, :promoted_to_intent)
     }
   end
 

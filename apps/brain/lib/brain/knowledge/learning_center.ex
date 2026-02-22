@@ -1,4 +1,6 @@
 defmodule Brain.Knowledge.LearningCenter do
+  # Tasks.Source lives in the tasks app and may be unavailable at compile time
+  @compile {:no_warn_undefined, Tasks.Source}
   @moduledoc "Central orchestrator for the Knowledge Expansion System.\n\nThe Learning Center:\n- Manages learning sessions (triggered or scheduled)\n- Maintains a goal queue with research objectives\n- Dispatches Research Agents as supervised Tasks\n- Collects and synthesizes agent findings\n- Routes vetted findings to the Admin review queue\n\n## Example\n\n    # Start a learning session\n    {:ok, session} = LearningCenter.start_session(\"European capitals\")\n\n    # Check session status\n    {:ok, session} = LearningCenter.get_session(session.id)\n\n    # List active sessions\n    sessions = LearningCenter.list_sessions()\n"
 
   alias Brain.ML
@@ -488,10 +490,10 @@ defmodule Brain.Knowledge.LearningCenter do
     priority = Keyword.get(opts, :priority, :normal)
 
     categories =
-      try do
+      if Code.ensure_loaded?(Tasks.Source) and function_exported?(Tasks.Source, :capability_categories, 1) do
         Tasks.Source.capability_categories(capability)
-      rescue
-        _ -> [to_string(capability)]
+      else
+        [to_string(capability)]
       end
 
     categories
@@ -632,8 +634,13 @@ defmodule Brain.Knowledge.LearningCenter do
     available_slots = @max_concurrent_agents - map_size(state.agent_tasks)
     goals_to_dispatch = Enum.take(goals, available_slots)
 
+    # When the HTTP client is a mock (test env), default to mock mode
+    # to avoid hitting snapshot misses for auto-triggered research
+    http_client = Application.get_env(:brain, :http_client, Req)
+    mock_default = http_client != Req
+
     research_opts = [
-      mock: Keyword.get(opts, :mock, false),
+      mock: Keyword.get(opts, :mock, mock_default),
       sources: Keyword.get(opts, :sources, [:web]),
       max_pages: Keyword.get(opts, :max_tasks, 5),
       max_instances: Keyword.get(opts, :max_instances, 20)
@@ -847,141 +854,119 @@ defmodule Brain.Knowledge.LearningCenter do
 
   defp persist_session_to_atlas(%LearningSession{} = session, source_type) do
     if atlas_available?() do
-      Task.start(fn ->
-        try do
-          Atlas.Learning.create_session(%{
-            id: session.id,
-            topic: session.topic,
-            status: to_string(session.status),
-            started_at: session.started_at,
-            findings_count: session.findings_count,
-            approved_count: session.approved_count,
-            rejected_count: session.rejected_count,
-            hypotheses_tested: session.hypotheses_tested,
-            hypotheses_supported: session.hypotheses_supported,
-            hypotheses_falsified: session.hypotheses_falsified,
-            source_type: source_type
-          })
-        rescue
-          e -> Logger.debug("Atlas session persist failed: #{inspect(e)}")
-        end
+      Brain.AtlasIntegration.async(fn ->
+        Atlas.Learning.create_session(%{
+          id: session.id,
+          topic: session.topic,
+          status: to_string(session.status),
+          started_at: session.started_at,
+          findings_count: session.findings_count,
+          approved_count: session.approved_count,
+          rejected_count: session.rejected_count,
+          hypotheses_tested: session.hypotheses_tested,
+          hypotheses_supported: session.hypotheses_supported,
+          hypotheses_falsified: session.hypotheses_falsified,
+          source_type: source_type
+        })
       end)
     end
   end
 
   defp persist_goal_to_atlas(%ResearchGoal{} = goal, session_id) do
     if atlas_available?() do
-      Task.start(fn ->
-        try do
-          Atlas.Learning.create_goal(%{
-            id: goal.id,
-            session_id: session_id,
-            topic: goal.topic,
-            questions: goal.questions,
-            constraints: goal.constraints,
-            priority: to_string(goal.priority),
-            status: to_string(goal.status)
-          })
-        rescue
-          e -> Logger.debug("Atlas goal persist failed: #{inspect(e)}")
-        end
+      Brain.AtlasIntegration.async(fn ->
+        Atlas.Learning.create_goal(%{
+          id: goal.id,
+          session_id: session_id,
+          topic: goal.topic,
+          questions: goal.questions,
+          constraints: goal.constraints,
+          priority: to_string(goal.priority),
+          status: to_string(goal.status)
+        })
       end)
     end
   end
 
   defp persist_goal_status_to_atlas(goal_id, new_status) do
     if atlas_available?() do
-      Task.start(fn ->
-        try do
-          Atlas.Learning.update_goal_status(goal_id, to_string(new_status))
-        rescue
-          e -> Logger.debug("Atlas goal status update failed: #{inspect(e)}")
-        end
+      Brain.AtlasIntegration.async(fn ->
+        Atlas.Learning.update_goal_status(goal_id, to_string(new_status))
       end)
     end
   end
 
   defp persist_investigation_to_atlas(%Investigation{} = investigation, session_id) do
     if atlas_available?() do
-      Task.start(fn ->
-        try do
-          {:ok, db_investigation} =
-            Atlas.Learning.create_investigation(%{
-              id: investigation.id,
-              session_id: session_id,
-              topic: investigation.topic,
-              status: to_string(investigation.status),
-              conclusion: if(investigation.conclusion, do: to_string(investigation.conclusion)),
-              independent_variable: investigation.independent_variable,
-              dependent_variable: investigation.dependent_variable,
-              constants: investigation.constants,
-              methodology_notes: investigation.methodology_notes,
-              started_at: investigation.started_at,
-              concluded_at: investigation.concluded_at
-            })
+      Brain.AtlasIntegration.async(fn ->
+        {:ok, db_investigation} =
+          Atlas.Learning.create_investigation(%{
+            id: investigation.id,
+            session_id: session_id,
+            topic: investigation.topic,
+            status: to_string(investigation.status),
+            conclusion: if(investigation.conclusion, do: to_string(investigation.conclusion)),
+            independent_variable: investigation.independent_variable,
+            dependent_variable: investigation.dependent_variable,
+            constants: investigation.constants,
+            methodology_notes: investigation.methodology_notes,
+            started_at: investigation.started_at,
+            concluded_at: investigation.concluded_at
+          })
 
-          # Persist hypotheses
-          Enum.each(investigation.hypotheses, fn hyp ->
-            Atlas.Learning.create_hypothesis(%{
-              id: hyp.id,
-              investigation_id: db_investigation.id,
-              claim: hyp.claim,
-              entity: hyp.entity,
-              derived_from: hyp.derived_from,
-              prediction: hyp.prediction,
-              status: to_string(hyp.status),
-              confidence: hyp.confidence,
-              confidence_level: to_string(hyp.confidence_level),
-              source_count: hyp.source_count,
-              replication_count: hyp.replication_count,
-              tested_at: hyp.tested_at
-            })
-          end)
+        Enum.each(investigation.hypotheses, fn hyp ->
+          Atlas.Learning.create_hypothesis(%{
+            id: hyp.id,
+            investigation_id: db_investigation.id,
+            claim: hyp.claim,
+            entity: hyp.entity,
+            derived_from: hyp.derived_from,
+            prediction: hyp.prediction,
+            status: to_string(hyp.status),
+            confidence: hyp.confidence,
+            confidence_level: to_string(hyp.confidence_level),
+            source_count: hyp.source_count,
+            replication_count: hyp.replication_count,
+            tested_at: hyp.tested_at
+          })
+        end)
 
-          # Persist evidence
-          Enum.each(investigation.evidence, fn finding ->
-            Atlas.Learning.create_evidence(%{
-              investigation_id: db_investigation.id,
-              claim: finding.claim,
-              entity: finding.entity,
-              entity_type: finding.entity_type,
-              source_url: finding.source && finding.source.url,
-              source_domain: finding.source && finding.source.domain,
-              source_title: finding.source && finding.source.title,
-              source_reliability: finding.source && finding.source.reliability_score,
-              source_bias: finding.source && to_string(finding.source.bias_rating),
-              source_trust_tier: finding.source && to_string(finding.source.trust_tier),
-              raw_context: finding.raw_context,
-              confidence: finding.confidence,
-              corroboration_group: finding.corroboration_group,
-              evidence_type: "unassociated",
-              extracted_at: finding.extracted_at
-            })
-          end)
-        rescue
-          e -> Logger.debug("Atlas investigation persist failed: #{inspect(e)}")
-        end
+        Enum.each(investigation.evidence, fn finding ->
+          Atlas.Learning.create_evidence(%{
+            investigation_id: db_investigation.id,
+            claim: finding.claim,
+            entity: finding.entity,
+            entity_type: finding.entity_type,
+            source_url: finding.source && finding.source.url,
+            source_domain: finding.source && finding.source.domain,
+            source_title: finding.source && finding.source.title,
+            source_reliability: finding.source && finding.source.reliability_score,
+            source_bias: finding.source && to_string(finding.source.bias_rating),
+            source_trust_tier: finding.source && to_string(finding.source.trust_tier),
+            raw_context: finding.raw_context,
+            confidence: finding.confidence,
+            corroboration_group: finding.corroboration_group,
+            evidence_type: "unassociated",
+            extracted_at: finding.extracted_at
+          })
+        end)
       end)
     end
   end
 
   defp persist_session_update_to_atlas(%LearningSession{} = session) do
     if atlas_available?() do
-      Task.start(fn ->
-        try do
-          Atlas.Learning.update_session(session.id, %{
-            status: to_string(session.status),
-            completed_at: session.completed_at,
-            findings_count: session.findings_count,
-            approved_count: session.approved_count,
-            rejected_count: session.rejected_count,
-            hypotheses_tested: session.hypotheses_tested,
-            hypotheses_supported: session.hypotheses_supported,
-            hypotheses_falsified: session.hypotheses_falsified
-          })
-        rescue
-          e -> Logger.debug("Atlas session update failed: #{inspect(e)}")
-        end
+      Brain.AtlasIntegration.async(fn ->
+        Atlas.Learning.update_session(session.id, %{
+          status: to_string(session.status),
+          completed_at: session.completed_at,
+          findings_count: session.findings_count,
+          approved_count: session.approved_count,
+          rejected_count: session.rejected_count,
+          hypotheses_tested: session.hypotheses_tested,
+          hypotheses_supported: session.hypotheses_supported,
+          hypotheses_falsified: session.hypotheses_falsified
+        })
       end)
     end
   end

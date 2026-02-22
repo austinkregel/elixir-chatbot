@@ -1,6 +1,6 @@
 defmodule Brain.Epistemic.SelfKnowledgeFlowTest do
   alias Brain.Epistemic
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
   import Brain.TestHelpers
 
   alias Brain.Analysis.SelfKnowledgeAnalyzer
@@ -8,7 +8,7 @@ defmodule Brain.Epistemic.SelfKnowledgeFlowTest do
   alias Brain.Epistemic.Types.SelfKnowledgeAssessment
   alias Brain.Response.Synthesizer
 
-  setup do
+  setup _context do
     start_test_services()
     ensure_started(UserModelStore)
     ensure_started(BeliefStore)

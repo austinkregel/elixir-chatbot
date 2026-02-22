@@ -36,13 +36,13 @@ defmodule Brain.Response.TemplateStoreTest do
           text: "Hello!",
           condition: nil,
           embedding: nil,
-          intent: "greeting"
+          intent: "smalltalk.greetings.hello"
         },
         %TemplateStore.Template{
           text: "Hello $person!",
           condition: "has_entity:person",
           embedding: nil,
-          intent: "greeting"
+          intent: "smalltalk.greetings.hello"
         }
       ]
 
@@ -59,7 +59,7 @@ defmodule Brain.Response.TemplateStoreTest do
           text: "Hello!",
           condition: "",
           embedding: nil,
-          intent: "greeting"
+          intent: "smalltalk.greetings.hello"
         }
       ]
 
@@ -75,13 +75,13 @@ defmodule Brain.Response.TemplateStoreTest do
           text: "Here's the weather for $location.",
           condition: "slot_filled:location",
           embedding: nil,
-          intent: "weather"
+          intent: "weather.query"
         },
         %TemplateStore.Template{
           text: "What location?",
           condition: "slot_missing:location",
           embedding: nil,
-          intent: "weather"
+          intent: "weather.query"
         }
       ]
 

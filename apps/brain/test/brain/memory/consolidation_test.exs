@@ -37,9 +37,9 @@ defmodule Brain.Memory.ConsolidationTest do
       {:ok, emb_bye} = Embedder.embed("goodbye world")
 
       episodes = [
-        Episode.new("hello world", "greeting", "", ["greeting"], emb_hello1),
-        Episode.new("hello there", "greeting", "", ["greeting"], emb_hello2),
-        Episode.new("goodbye world", "farewell", "", ["farewell"], emb_bye)
+        Episode.new("hello world", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"], emb_hello1),
+        Episode.new("hello there", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"], emb_hello2),
+        Episode.new("goodbye world", "smalltalk.greetings.bye", "", ["smalltalk.greetings.bye"], emb_bye)
       ]
 
       clusters = Consolidation.find_clusters(episodes, 0.5, 2)
@@ -73,8 +73,8 @@ defmodule Brain.Memory.ConsolidationTest do
 
   describe "create_semantic_from_cluster" do
     test "creates a semantic fact from episode cluster" do
-      {:ok, id1} = Store.add_episode("hello world", "greeting", "hi", ["greeting"])
-      {:ok, id2} = Store.add_episode("hello there", "greeting", "hey", ["greeting"])
+      {:ok, id1} = Store.add_episode("hello world", "smalltalk.greetings.hello", "hi", ["smalltalk.greetings.hello"])
+      {:ok, id2} = Store.add_episode("hello there", "smalltalk.greetings.hello", "hey", ["smalltalk.greetings.hello"])
 
       {:ok, ep1} = Store.get_episode(id1)
       {:ok, ep2} = Store.get_episode(id2)
@@ -85,7 +85,7 @@ defmodule Brain.Memory.ConsolidationTest do
 
       assert is_binary(semantic_id)
       {:ok, semantic} = Store.get_semantic(semantic_id)
-      assert "greeting" in semantic.tags
+      assert "smalltalk.greetings.hello" in semantic.tags
       assert length(semantic.evidence_ids) == 2
       {:ok, updated_ep1} = Store.get_episode(id1)
       assert updated_ep1.semantic_id == semantic_id
@@ -98,9 +98,9 @@ defmodule Brain.Memory.ConsolidationTest do
 
   describe "consolidate" do
     test "creates semantic facts from similar episodes" do
-      {:ok, _} = Store.add_episode("hello world", "greeting", "", ["greeting"])
-      {:ok, _} = Store.add_episode("hello there", "greeting", "", ["greeting"])
-      {:ok, _} = Store.add_episode("hi friend", "greeting", "", ["greeting"])
+      {:ok, _} = Store.add_episode("hello world", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
+      {:ok, _} = Store.add_episode("hello there", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
+      {:ok, _} = Store.add_episode("hi friend", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
       {:ok, new_count} = Consolidation.consolidate(threshold: 0.3, min_cluster_size: 2)
       assert new_count >= 0
 
@@ -109,7 +109,7 @@ defmodule Brain.Memory.ConsolidationTest do
     end
 
     test "returns 0 when not enough episodes" do
-      {:ok, _} = Store.add_episode("hello", "greeting", "", [])
+      {:ok, _} = Store.add_episode("hello", "smalltalk.greetings.hello", "", [])
 
       {:ok, count} = Consolidation.consolidate(min_cluster_size: 5)
 

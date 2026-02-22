@@ -1,10 +1,18 @@
 {
-  "description": "Entity type groupings and synonyms for disambiguation and slot detection",
+  "description": "Entity type groupings, synonyms, hierarchy, disambiguation, and runtime config",
+  "type_hierarchy": {
+    "person": ["artist", "name"],
+    "artist": ["music-artist"],
+    "location": ["city", "room", "place-name", "geo-location", "ambiguous_name_location"],
+    "device": ["lights", "heating", "locks-status"],
+    "date-time": ["date", "relative_date", "sys-date", "day_name", "sys-time"],
+    "media": ["song", "music-album", "playlist", "album"]
+  },
   "type_groups": {
     "location_types": ["location", "city", "room", "ambiguous_name_location", "place-name", "geo-location"],
     "device_types": ["device", "lights", "heating", "locks-status"],
     "music_types": ["song", "music-artist", "music-album", "playlist"],
-    "person_types": ["person", "name"],
+    "person_types": ["person", "name", "artist", "music-artist"],
     "date_types": ["date", "relative_date", "sys-date", "day_name"],
     "time_types": ["time", "sys-time"]
   },
@@ -18,5 +26,38 @@
     "device_control": ["device", "lights", "heating", "room"],
     "weather_entities": ["location", "city"],
     "music_entities": ["music-artist", "song", "album"]
+  },
+  "config": {
+    "default_propn_type": "person",
+    "subject_capable_types": ["object", "thing", "location", "person", "noun"],
+    "temporal_parent_type": "date-time",
+    "temporal_types": ["sys-date", "date", "relative_date", "day", "weekday", "month", "day_name", "month_name", "time", "sys-time"],
+    "month_types": ["month", "month_name"],
+    "confidence_adjustments": {
+      "device": 0.1,
+      "room": 0.1,
+      "person": 0.1,
+      "location": 0.05,
+      "music-artist": 0.05,
+      "music_artist": 0.05
+    },
+    "pos_tag_roles": {
+      "proper_noun": "PROPN",
+      "verb_tags": ["VERB", "AUX"],
+      "preposition_tag": "ADP",
+      "determiner_tag": "DET",
+      "function_word_tags": ["DET", "ADP", "CONJ", "PART", "PUNCT"]
+    },
+    "ner_label_map": {
+      "per": "person",
+      "person": "person",
+      "loc": "location",
+      "location": "location",
+      "org": "organization",
+      "organization": "organization",
+      "gpe": "location",
+      "date": "date",
+      "time": "time"
+    }
   }
 }

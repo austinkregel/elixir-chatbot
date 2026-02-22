@@ -3,7 +3,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
 
   alias Brain.Analysis.{SpeechActResult, IntentRegistry}
   alias Brain.ML.{IntentClassifierSimple, POSTagger, Tokenizer}
-  alias Brain.ML.LSTM.{MultiTaskModel, Integration}
+  alias Brain.ML.LSTM.{UnifiedModel, Integration}
 
   alias Brain.Memory.Store
   alias Brain.Memory.Embedder
@@ -53,13 +53,16 @@ defmodule Brain.Analysis.SpeechActClassifier do
 
   defp classify_with_lstm(text) do
     if lstm_available?() do
-      case MultiTaskModel.classify_intent(text) do
+      case UnifiedModel.classify_intent(text) do
         {:ok, %{label: intent, confidence: confidence, scores: scores}} ->
           if confidence < @ensemble_threshold do
             ensemble_fallback(text, intent, confidence, scores)
           else
             {:ok, build_lstm_result(intent, confidence, scores)}
           end
+
+        {:ok, {intent, confidence}} ->
+          {:ok, build_lstm_result(intent, confidence, [])}
 
         {:error, _} = error ->
           error
@@ -165,7 +168,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
       nil ->
         available =
           try do
-            Code.ensure_loaded?(MultiTaskModel) and MultiTaskModel.ready?()
+            Code.ensure_loaded?(UnifiedModel) and UnifiedModel.ready?()
           rescue
             _ -> false
           catch
@@ -187,14 +190,11 @@ defmodule Brain.Analysis.SpeechActClassifier do
 
   defp analyze_structure(text, normalized) do
     is_question = has_question_structure?(text, normalized)
-    is_imperative = has_imperative_structure?(normalized)
     is_exclamatory = Tokenizer.ends_with_exclamation?(text)
     is_declarative = Tokenizer.ends_with_period?(text)
     is_continuation = has_continuation_structure?(text, normalized)
 
     has_modal = has_modal_verb?(normalized)
-
-    is_tell_request = is_imperative and is_tell_pronoun_pattern?(normalized)
 
     {category, sub_type, confidence} =
       cond do
@@ -207,25 +207,19 @@ defmodule Brain.Analysis.SpeechActClassifier do
         is_question ->
           {:directive, :request_information, 0.85}
 
-        is_tell_request ->
-          {:directive, :request_information, 0.85}
-
-        is_imperative ->
-          {:directive, :command, 0.8}
-
-        is_declarative and not is_question and not is_imperative ->
+        is_declarative and not is_question ->
           {:assertive, :statement, 0.7}
 
         is_exclamatory ->
           {:expressive, :general, 0.5}
 
         true ->
-          {:assertive, :statement, 0.4}
+          {:assertive, :statement, 0.2}
       end
 
     %{
       is_question: is_question,
-      is_imperative: is_imperative,
+      is_imperative: false,
       is_exclamatory: is_exclamatory,
       is_declarative: is_declarative,
       is_continuation: is_continuation,
@@ -237,41 +231,26 @@ defmodule Brain.Analysis.SpeechActClassifier do
     }
   end
 
-  @greeting_tokens ~w(hello hi hey howdy greetings hiya holla heya ello yo sup
-                       wassup wazzup whaddup ayy howdy)
-  @farewell_tokens ~w(bye goodbye goodnight farewell cya later)
-  @thanks_tokens ~w(thanks thank)
-  @apology_tokens ~w(sorry apologize apologies)
-
   defp analyze_keywords(normalized) do
-    tokens = Tokenizer.tokenize(normalized)
-    first_token = List.first(tokens)
+    case Brain.ML.SpeechActClassifierSimple.classify(normalized) do
+      {:ok, %{label: label, confidence: confidence}} when confidence > 0.2 ->
+        %{
+          scores: %{label => confidence},
+          category: label,
+          sub_type: :general,
+          confidence: confidence,
+          source: :keyword
+        }
 
-    {category, sub_type, confidence} =
-      cond do
-        first_token in @greeting_tokens and length(tokens) <= 3 ->
-          {:expressive, :greeting, 0.75}
-
-        first_token in @farewell_tokens ->
-          {:expressive, :farewell, 0.7}
-
-        Enum.any?(tokens, fn t -> t in @thanks_tokens end) ->
-          {:expressive, :thanks, 0.65}
-
-        Enum.any?(tokens, fn t -> t in @apology_tokens end) ->
-          {:expressive, :apology, 0.65}
-
-        true ->
-          {nil, nil, 0.0}
-      end
-
-    %{
-      scores: %{},
-      category: category,
-      sub_type: sub_type,
-      confidence: confidence,
-      source: :keyword
-    }
+      _ ->
+        %{
+          scores: %{},
+          category: nil,
+          sub_type: nil,
+          confidence: 0.0,
+          source: :keyword
+        }
+    end
   end
 
   defp analyze_pragmatics(_text, normalized) do
@@ -392,12 +371,10 @@ defmodule Brain.Analysis.SpeechActClassifier do
     is_imperative_from_intent =
       analyses.intent.sub_type == :command and analyses.intent.confidence > 0.3
 
-    is_imperative = analyses.structural.is_imperative or is_imperative_from_intent
-
     SpeechActResult.new(category, sub_type, confidence,
       indicators: indicators,
       is_question: analyses.structural.is_question,
-      is_imperative: is_imperative
+      is_imperative: is_imperative_from_intent
     )
   end
 
@@ -537,8 +514,8 @@ defmodule Brain.Analysis.SpeechActClassifier do
       end
 
     indicators =
-      if analyses.structural.is_imperative do
-        ["imperative_structure" | indicators]
+      if analyses.intent.sub_type == :command and analyses.intent.confidence > 0.3 do
+        ["imperative_from_intent" | indicators]
       else
         indicators
       end
@@ -591,43 +568,16 @@ defmodule Brain.Analysis.SpeechActClassifier do
     Tokenizer.ends_with_question?(text) or starts_with_interrogative_pos?(normalized)
   end
 
-  defp starts_with_interrogative_pos?(_normalized) do
-    false
+  defp starts_with_interrogative_pos?(normalized) do
+    first_word =
+      normalized
+      |> Tokenizer.tokenize_words()
+      |> List.first("")
+      |> String.downcase()
+
+    first_word in Tokenizer.question_words()
   end
 
-  defp has_imperative_structure?(normalized) do
-    words = normalized |> String.split() |> Enum.take(2)
-
-    case words do
-      [] ->
-        false
-
-      _ ->
-        case POSTagger.load_model() do
-          {:ok, model} ->
-            predictions = POSTagger.predict(words, model)
-
-            case predictions do
-              [{_word, "VERB"} | _] -> true
-              _ -> false
-            end
-
-          {:error, _} ->
-            false
-        end
-    end
-  end
-
-  @tell_pronouns ["me", "us"]
-
-  defp is_tell_pronoun_pattern?(normalized) do
-    words = normalized |> String.split() |> Enum.take(3)
-
-    case words do
-      ["tell", pronoun | _] -> pronoun in @tell_pronouns
-      _ -> false
-    end
-  end
 
   defp has_modal_verb?(normalized) do
     words = String.split(normalized)

@@ -385,8 +385,6 @@ defmodule Brain.SystemStatus do
       entity_extractor: get_agent_status(Brain.ML.EntityExtractor),
       unified_model:
         get_lstm_status(Brain.ML.LSTM.UnifiedModel, models_path, "lstm/unified_model.term"),
-      multi_task_model:
-        get_lstm_status(Brain.ML.LSTM.MultiTaskModel, models_path, "lstm/lstm_multitask.term"),
       response_scorer:
         get_lstm_status(Brain.Response.LSTMResponse, models_path, "lstm/response_scorer.term"),
       last_evaluation: get_last_evaluation(),

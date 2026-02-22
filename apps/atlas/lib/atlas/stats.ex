@@ -54,6 +54,16 @@ defmodule Atlas.Stats do
     end
   end
 
+  @doc "Get row counts for all relational tables."
+  def repo_stats do
+    repo_stats(connected?())
+  end
+
+  @doc "Get migration status as a list of {version, name, status} tuples."
+  def migration_status do
+    migration_status(connected?())
+  end
+
   @doc "Get telemetry-collected query metrics (always live, no DB queries)."
   def query_metrics do
     Atlas.Stats.Collector.get_metrics()

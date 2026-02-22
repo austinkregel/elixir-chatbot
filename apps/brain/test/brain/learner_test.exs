@@ -2,14 +2,14 @@ defmodule Brain.LearnerDataTest do
   @moduledoc """
   Data-driven tests for the Learner module covering learning from user inputs.
   """
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
   import Brain.TestHelpers
 
   alias Brain.Learner
 
   @test_persona "LearnerTestPersona"
 
-  setup do
+  setup _context do
     ensure_pubsub_started()
     ensure_started(Brain.KnowledgeStore)
     ensure_started(Brain.MemoryStore)

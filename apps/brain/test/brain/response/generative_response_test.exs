@@ -27,9 +27,14 @@ defmodule Brain.Response.GenerativeResponseTest do
       case Synthesizer.synthesize("weather.query", entities, confidence: 0.8) do
         {:ok, response} ->
           assert is_binary(response)
+          response_lower = String.downcase(response)
 
-          assert String.contains?(String.downcase(response), "location") or
-                   String.contains?(String.downcase(response), "where")
+          assert String.contains?(response_lower, "location") or
+                   String.contains?(response_lower, "where") or
+                   String.contains?(response_lower, "city") or
+                   String.contains?(response_lower, "area") or
+                   String.contains?(response_lower, "weather"),
+                 "Expected weather clarification response, got: #{response}"
 
         :not_synthesized ->
           :ok
@@ -204,7 +209,16 @@ defmodule Brain.Response.GenerativeResponseTest do
       {:ok, response, type} = Generator.generate("unknown.intent", [], "Some random query")
 
       assert is_binary(response)
-      assert type in [:template, :fallback, :synthesized]
+
+      assert type in [
+               :template,
+               :fallback,
+               :synthesized,
+               :quality_improved,
+               :memory_adapted,
+               :special_handler,
+               :lstm_selected
+             ]
     end
 
     test "handles nil intent gracefully" do

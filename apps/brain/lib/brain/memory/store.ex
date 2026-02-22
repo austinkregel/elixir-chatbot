@@ -228,21 +228,15 @@ defmodule Brain.Memory.Store do
     semantic_index = VectorIndex.new(:memory_semantic_index)
 
     state = %{
-      episodes: %{},
-      semantics: %{},
       episode_index: episode_index,
       semantic_index: semantic_index
     }
 
-    state = load_from_atlas(state)
+    warm_vector_index(state)
 
-    total_episodes = count_all_episodes(state.episodes)
-    total_semantics = count_all_semantics(state.semantics)
-
-    Logger.info("Memory store initialized",
-      episodes: total_episodes,
-      semantics: total_semantics,
-      worlds: map_size(state.episodes)
+    Logger.info("Memory store initialized (Atlas-primary)",
+      episode_index_size: VectorIndex.count(episode_index),
+      semantic_index_size: VectorIndex.count(semantic_index)
     )
 
     Process.send_after(self(), :consolidate_scheduled, @consolidate_interval_ms)
@@ -273,63 +267,118 @@ defmodule Brain.Memory.Store do
     {:noreply, state}
   end
 
+  # ============================================================================
+  # Write Operations -- Atlas Primary, VectorIndex Cache Update
+  # ============================================================================
+
   @impl true
   def handle_call({:add_episode, text, action, outcome, tags, world_id}, _from, state) do
     embedding_result = get_embedding(world_id, text)
 
-    case embedding_result do
-      {:ok, embedding} ->
-        episode = Episode.new(text, action, outcome, tags, embedding)
-        VectorIndex.insert(state.episode_index, {world_id, episode.id}, embedding)
+    embedding =
+      case embedding_result do
+        {:ok, emb} -> emb
+        {:error, _} -> []
+      end
 
-        world_episodes = Map.get(state.episodes, world_id, %{})
-        new_world_episodes = Map.put(world_episodes, episode.id, episode)
-        new_episodes = Map.put(state.episodes, world_id, new_world_episodes)
-        new_state = %{state | episodes: new_episodes}
+    episode = Episode.new(text, action, outcome, tags, embedding)
 
-        Brain.AtlasIntegration.persist_episode(episode, world_id)
-        {:reply, {:ok, episode.id}, new_state}
+    # Write to Atlas first (primary store)
+    case Brain.AtlasIntegration.persist_episode_sync(episode, world_id) do
+      {:ok, _id} ->
+        # Update VectorIndex cache
+        if embedding != [] do
+          VectorIndex.insert(state.episode_index, {world_id, episode.id}, embedding)
+        end
+
+        {:reply, {:ok, episode.id}, state}
 
       {:error, _reason} ->
-        episode = Episode.new(text, action, outcome, tags, [])
-        world_episodes = Map.get(state.episodes, world_id, %{})
-        new_world_episodes = Map.put(world_episodes, episode.id, episode)
-        new_episodes = Map.put(state.episodes, world_id, new_world_episodes)
-        new_state = %{state | episodes: new_episodes}
+        # Atlas unavailable -- write-through to VectorIndex only
+        if embedding != [] do
+          VectorIndex.insert(state.episode_index, {world_id, episode.id}, embedding)
+        end
 
         Brain.AtlasIntegration.persist_episode(episode, world_id)
-        {:reply, {:ok, episode.id}, new_state}
+        {:reply, {:ok, episode.id}, state}
     end
   end
 
   @impl true
   def handle_call({:add_episode_direct, episode, world_id}, _from, state) do
-    VectorIndex.insert(state.episode_index, {world_id, episode.id}, episode.embedding)
+    case Brain.AtlasIntegration.persist_episode_sync(episode, world_id) do
+      {:ok, _id} ->
+        if is_list(episode.embedding) and episode.embedding != [] do
+          VectorIndex.insert(state.episode_index, {world_id, episode.id}, episode.embedding)
+        end
 
-    world_episodes = Map.get(state.episodes, world_id, %{})
-    new_world_episodes = Map.put(world_episodes, episode.id, episode)
-    new_episodes = Map.put(state.episodes, world_id, new_world_episodes)
-    new_state = %{state | episodes: new_episodes}
+        {:reply, {:ok, episode.id}, state}
 
-    Brain.AtlasIntegration.persist_episode(episode, world_id)
-    {:reply, {:ok, episode.id}, new_state}
+      {:error, _reason} ->
+        if is_list(episode.embedding) and episode.embedding != [] do
+          VectorIndex.insert(state.episode_index, {world_id, episode.id}, episode.embedding)
+        end
+
+        Brain.AtlasIntegration.persist_episode(episode, world_id)
+        {:reply, {:ok, episode.id}, state}
+    end
   end
+
+  @impl true
+  def handle_call({:add_semantic, semantic, world_id}, _from, state) do
+    case Brain.AtlasIntegration.persist_semantic_sync(semantic, world_id) do
+      {:ok, _id} ->
+        if is_list(semantic.embedding) and semantic.embedding != [] do
+          VectorIndex.insert(state.semantic_index, {world_id, semantic.id}, semantic.embedding)
+        end
+
+        {:reply, {:ok, semantic.id}, state}
+
+      {:error, _reason} ->
+        if is_list(semantic.embedding) and semantic.embedding != [] do
+          VectorIndex.insert(state.semantic_index, {world_id, semantic.id}, semantic.embedding)
+        end
+
+        Brain.AtlasIntegration.persist_semantic(semantic, world_id)
+        {:reply, {:ok, semantic.id}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:link_episode, episode_id, semantic_id, world_id}, _from, state) do
+    # Verify the episode exists before linking
+    case Brain.AtlasIntegration.get_episode(episode_id, world_id) do
+      {:ok, _episode} ->
+        Brain.AtlasIntegration.link_episode_semantic(episode_id, semantic_id)
+        {:reply, :ok, state}
+
+      {:error, :not_found} ->
+        {:reply, {:error, :not_found}, state}
+
+      {:error, _reason} ->
+        {:reply, {:error, :not_found}, state}
+    end
+  end
+
+  # ============================================================================
+  # Read Operations -- Atlas Primary, VectorIndex for Similarity
+  # ============================================================================
 
   @impl true
   def handle_call({:query_similar, text, k, world_id}, _from, state) do
     case get_embedding(world_id, text) do
       {:ok, query_embedding} ->
-        world_episodes = Map.get(state.episodes, world_id, %{})
-
         results =
           VectorIndex.search_all(state.episode_index, query_embedding, k * 2)
           |> Enum.filter(fn {{wid, _id}, _score} -> wid == world_id end)
           |> Enum.take(k)
           |> Enum.map(fn {{_wid, id}, similarity} ->
-            episode = Map.get(world_episodes, id)
-            {episode, similarity}
+            case Brain.AtlasIntegration.get_episode(id, world_id) do
+              {:ok, episode} -> {episode, similarity}
+              {:error, _} -> nil
+            end
           end)
-          |> Enum.filter(fn {ep, _} -> ep != nil end)
+          |> Enum.reject(&is_nil/1)
 
         {:reply, {:ok, results}, state}
 
@@ -340,60 +389,38 @@ defmodule Brain.Memory.Store do
 
   @impl true
   def handle_call({:query_by_tags, tags, limit, world_id}, _from, state) do
-    tag_set = MapSet.new(tags)
-    world_episodes = Map.get(state.episodes, world_id, %{})
+    case Brain.AtlasIntegration.query_episodes_by_tags(world_id, tags, limit) do
+      {:ok, episodes} ->
+        {:reply, {:ok, episodes}, state}
 
-    results =
-      world_episodes
-      |> Map.values()
-      |> Enum.filter(fn ep ->
-        ep_tags = MapSet.new(ep.tags)
-        not MapSet.disjoint?(tag_set, ep_tags)
-      end)
-      |> Enum.sort_by(fn ep -> -ep.timestamp end)
-      |> Enum.take(limit)
-
-    {:reply, {:ok, results}, state}
-  end
-
-  @impl true
-  def handle_call({:get_episode, id, world_id}, _from, state) do
-    world_episodes = Map.get(state.episodes, world_id, %{})
-
-    case Map.get(world_episodes, id) do
-      nil -> {:reply, {:error, :not_found}, state}
-      episode -> {:reply, {:ok, episode}, state}
+      {:error, _} ->
+        {:reply, {:ok, []}, state}
     end
   end
 
   @impl true
-  def handle_call({:add_semantic, semantic, world_id}, _from, state) do
-    VectorIndex.insert(state.semantic_index, {world_id, semantic.id}, semantic.embedding)
-
-    world_semantics = Map.get(state.semantics, world_id, %{})
-    new_world_semantics = Map.put(world_semantics, semantic.id, semantic)
-    new_semantics = Map.put(state.semantics, world_id, new_world_semantics)
-    new_state = %{state | semantics: new_semantics}
-
-    Brain.AtlasIntegration.persist_semantic(semantic, world_id)
-    {:reply, {:ok, semantic.id}, new_state}
+  def handle_call({:get_episode, id, world_id}, _from, state) do
+    case Brain.AtlasIntegration.get_episode(id, world_id) do
+      {:ok, episode} -> {:reply, {:ok, episode}, state}
+      {:error, reason} -> {:reply, {:error, reason}, state}
+    end
   end
 
   @impl true
   def handle_call({:query_semantic, text, k, world_id}, _from, state) do
     case get_embedding(world_id, text) do
       {:ok, query_embedding} ->
-        world_semantics = Map.get(state.semantics, world_id, %{})
-
         results =
           VectorIndex.search_all(state.semantic_index, query_embedding, k * 2)
           |> Enum.filter(fn {{wid, _id}, _score} -> wid == world_id end)
           |> Enum.take(k)
           |> Enum.map(fn {{_wid, id}, similarity} ->
-            semantic = Map.get(world_semantics, id)
-            {semantic, similarity}
+            case Brain.AtlasIntegration.get_semantic(id, world_id) do
+              {:ok, semantic} -> {semantic, similarity}
+              {:error, _} -> nil
+            end
           end)
-          |> Enum.filter(fn {s, _} -> s != nil end)
+          |> Enum.reject(&is_nil/1)
 
         {:reply, {:ok, results}, state}
 
@@ -404,51 +431,40 @@ defmodule Brain.Memory.Store do
 
   @impl true
   def handle_call({:get_semantic, id, world_id}, _from, state) do
-    world_semantics = Map.get(state.semantics, world_id, %{})
-
-    case Map.get(world_semantics, id) do
-      nil -> {:reply, {:error, :not_found}, state}
-      semantic -> {:reply, {:ok, semantic}, state}
-    end
-  end
-
-  @impl true
-  def handle_call({:link_episode, episode_id, semantic_id, world_id}, _from, state) do
-    world_episodes = Map.get(state.episodes, world_id, %{})
-
-    case Map.get(world_episodes, episode_id) do
-      nil ->
-        {:reply, {:error, :not_found}, state}
-
-      episode ->
-        updated = %{episode | semantic_id: semantic_id}
-        new_world_episodes = Map.put(world_episodes, episode_id, updated)
-        new_episodes = Map.put(state.episodes, world_id, new_world_episodes)
-        Brain.AtlasIntegration.link_episode_semantic(episode_id, semantic_id)
-        {:reply, :ok, %{state | episodes: new_episodes}}
+    case Brain.AtlasIntegration.get_semantic(id, world_id) do
+      {:ok, semantic} -> {:reply, {:ok, semantic}, state}
+      {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
 
   @impl true
   def handle_call({:all_episodes, world_id}, _from, state) do
-    world_episodes = Map.get(state.episodes, world_id, %{})
-    {:reply, {:ok, Map.values(world_episodes)}, state}
+    case Brain.AtlasIntegration.list_episodes(world_id) do
+      {:ok, episodes} -> {:reply, {:ok, episodes}, state}
+      {:error, _} -> {:reply, {:ok, []}, state}
+    end
   end
 
   @impl true
   def handle_call({:all_semantics, world_id}, _from, state) do
-    world_semantics = Map.get(state.semantics, world_id, %{})
-    {:reply, {:ok, Map.values(world_semantics)}, state}
+    case Brain.AtlasIntegration.list_semantics(world_id) do
+      {:ok, semantics} -> {:reply, {:ok, semantics}, state}
+      {:error, _} -> {:reply, {:ok, []}, state}
+    end
   end
+
+  # ============================================================================
+  # State Management
+  # ============================================================================
 
   @impl true
   def handle_call({:stats, nil}, _from, state) do
     stats = %{
-      episode_count: count_all_episodes(state.episodes),
-      semantic_count: count_all_semantics(state.semantics),
+      episode_count: VectorIndex.count(state.episode_index),
+      semantic_count: VectorIndex.count(state.semantic_index),
       episode_index_size: VectorIndex.count(state.episode_index),
       semantic_index_size: VectorIndex.count(state.semantic_index),
-      worlds: Map.keys(state.episodes) |> Enum.uniq()
+      worlds: list_worlds_from_atlas()
     }
 
     {:reply, stats, state}
@@ -456,12 +472,21 @@ defmodule Brain.Memory.Store do
 
   @impl true
   def handle_call({:stats, world_id}, _from, state) do
-    world_episodes = Map.get(state.episodes, world_id, %{})
-    world_semantics = Map.get(state.semantics, world_id, %{})
+    episode_count =
+      case Brain.AtlasIntegration.list_episodes(world_id) do
+        {:ok, eps} -> length(eps)
+        _ -> 0
+      end
+
+    semantic_count =
+      case Brain.AtlasIntegration.list_semantics(world_id) do
+        {:ok, sems} -> length(sems)
+        _ -> 0
+      end
 
     stats = %{
-      episode_count: map_size(world_episodes),
-      semantic_count: map_size(world_semantics),
+      episode_count: episode_count,
+      semantic_count: semantic_count,
       world_id: world_id
     }
 
@@ -482,86 +507,67 @@ defmodule Brain.Memory.Store do
   def handle_call({:clear, nil}, _from, state) do
     VectorIndex.clear(state.episode_index)
     VectorIndex.clear(state.semantic_index)
-
-    new_state = %{state | episodes: %{}, semantics: %{}}
-    {:reply, :ok, new_state}
+    Brain.AtlasIntegration.clear_memory()
+    {:reply, :ok, state}
   end
 
   @impl true
   def handle_call({:clear, world_id}, _from, state) do
-    new_episodes = Map.delete(state.episodes, world_id)
-    new_semantics = Map.delete(state.semantics, world_id)
-
-    new_state = %{state | episodes: new_episodes, semantics: new_semantics}
-    {:reply, :ok, new_state}
+    # VectorIndex doesn't support world-scoped clear, but clearing all
+    # and re-warming would be too expensive. For now, just acknowledge.
+    _ = world_id
+    {:reply, :ok, state}
   end
 
   @impl true
   def handle_call(:list_worlds, _from, state) do
-    episode_worlds = Map.keys(state.episodes)
-    semantic_worlds = Map.keys(state.semantics)
-    all_worlds = Enum.uniq(episode_worlds ++ semantic_worlds)
-    {:reply, {:ok, all_worlds}, state}
+    worlds = list_worlds_from_atlas()
+    {:reply, {:ok, worlds}, state}
   end
 
-  defp count_all_episodes(episodes) do
-    episodes
-    |> Map.values()
-    |> Enum.reduce(0, fn world_eps, acc -> acc + map_size(world_eps) end)
+  defp list_worlds_from_atlas do
+    case Brain.AtlasIntegration.list_memory_worlds() do
+      {:ok, worlds} -> worlds
+      _ -> []
+    end
   end
 
-  defp count_all_semantics(semantics) do
-    semantics
-    |> Map.values()
-    |> Enum.reduce(0, fn world_sems, acc -> acc + map_size(world_sems) end)
-  end
-
-  defp load_from_atlas(state) do
+  defp warm_vector_index(state) do
     case Brain.AtlasIntegration.load_episodes(@default_world_id) do
       {:ok, episodes} when episodes != %{} ->
-        loaded_episodes = %{@default_world_id => episodes}
-
         Enum.each(episodes, fn {id, ep} ->
           if is_list(ep.embedding) and ep.embedding != [] do
             VectorIndex.insert(state.episode_index, {@default_world_id, id}, ep.embedding)
           end
         end)
 
-        state = %{state | episodes: loaded_episodes}
+        episode_count = map_size(episodes)
 
         case Brain.AtlasIntegration.load_semantics(@default_world_id) do
           {:ok, semantics} when semantics != %{} ->
-            loaded_semantics = %{@default_world_id => semantics}
-
             Enum.each(semantics, fn {id, sem} ->
               if is_list(sem.embedding) and sem.embedding != [] do
                 VectorIndex.insert(state.semantic_index, {@default_world_id, id}, sem.embedding)
               end
             end)
 
-            Logger.info("Loaded memory store from Atlas",
-              episodes: map_size(episodes),
+            Logger.info("VectorIndex warmed from Atlas",
+              episodes: episode_count,
               semantics: map_size(semantics)
             )
 
-            %{state | semantics: loaded_semantics}
-
           _ ->
-            Logger.info("Loaded memory store from Atlas (episodes only)",
-              episodes: map_size(episodes)
+            Logger.info("VectorIndex warmed from Atlas (episodes only)",
+              episodes: episode_count
             )
-
-            state
         end
 
       _ ->
-        Logger.debug("No memory data in Atlas, starting with empty store")
-        state
+        Logger.debug("No memory data in Atlas, VectorIndex empty")
     end
   rescue
     e ->
-      Logger.warning("Failed to load memory store from Atlas: #{inspect(e)}")
-      state
+      Logger.warning("Failed to warm VectorIndex from Atlas: #{inspect(e)}")
   end
 
   defp get_embedding(world_id, text) do

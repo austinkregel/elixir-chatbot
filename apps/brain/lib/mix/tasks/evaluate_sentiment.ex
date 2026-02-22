@@ -1,8 +1,9 @@
 defmodule Mix.Tasks.Evaluate.Sentiment do
+  alias Brain.Analysis.Pipeline
   alias Brain.ML.LSTM.Integration
   alias Brain.ML
   @shortdoc "Evaluate sentiment analysis accuracy"
-  @moduledoc "Evaluate sentiment classification against gold standard data.\n\n## Usage\n\n    mix evaluate.sentiment              # Run evaluation\n    mix evaluate.sentiment --save       # Save results\n    mix evaluate.sentiment --verbose    # Show per-class details\n\n## Gold Standard Format\n\n    [{\"text\": \"I love this!\", \"sentiment\": \"positive\"}, ...]\n"
+  @moduledoc "Evaluate sentiment classification against gold standard data.\n\nUses the full production pipeline for evaluation to measure real-world accuracy.\n\n## Usage\n\n    mix evaluate.sentiment              # Run evaluation\n    mix evaluate.sentiment --save       # Save results\n    mix evaluate.sentiment --verbose    # Show per-class details\n\n## Gold Standard Format\n\n    [{\"text\": \"I love this!\", \"sentiment\": \"positive\"}, ...]\n"
 
   use Mix.Task
 
@@ -26,17 +27,31 @@ defmodule Mix.Tasks.Evaluate.Sentiment do
 
     IO.puts("\n" <> String.duplicate("=", 60))
     IO.puts("SENTIMENT ANALYSIS EVALUATION (#{length(gold)} examples)")
+    IO.puts("(Using production pipeline)")
     IO.puts(String.duplicate("=", 60) <> "\n")
 
     status = Integration.model_status()
     IO.puts("Model status: LSTM=#{status.lstm_unified}, TF-IDF=#{status.tfidf}\n")
 
+    start_time = System.monotonic_time(:millisecond)
     {predictions, actuals} = evaluate_all(gold)
+    duration_ms = System.monotonic_time(:millisecond) - start_time
+
     result = Evaluation.build_result("sentiment", predictions, actuals)
 
     IO.puts("Overall Accuracy: #{Float.round(result.accuracy * 100, 1)}%")
     IO.puts("Macro F1:         #{Float.round(result.macro_f1 * 100, 1)}%")
+    IO.puts("Duration:         #{duration_ms}ms")
     IO.puts("")
+
+    broadcast_result(result, duration_ms)
+    Brain.Telemetry.emit_evaluation_complete("sentiment", %{
+      accuracy: result.accuracy,
+      macro_f1: result.macro_f1,
+      weighted_f1: result.weighted_f1,
+      total_examples: result.total_examples,
+      duration_ms: duration_ms
+    })
 
     if verbose? do
       cm = Evaluation.confusion_matrix(predictions, actuals)
@@ -59,14 +74,36 @@ defmodule Mix.Tasks.Evaluate.Sentiment do
       expected = example["sentiment"]
 
       predicted =
-        case Integration.classify_sentiment(text) do
-          {:ok, %{label: label}} -> to_string(label)
-          {:ok, {label, _confidence}} -> to_string(label)
+        try do
+          analysis = Pipeline.analyze_chunk(text, side_effects: false)
+
+          case analysis.sentiment do
+            %{label: label} -> to_string(label)
+            _ -> "neutral"
+          end
+        rescue
           _ -> "neutral"
+        catch
+          :exit, _ -> "neutral"
         end
 
       {[predicted | preds], [expected | acts]}
     end)
     |> then(fn {p, a} -> {Enum.reverse(p), Enum.reverse(a)} end)
+  end
+
+  defp broadcast_result(result, duration_ms) do
+    Phoenix.PubSub.broadcast(Brain.PubSub, "evaluation:complete",
+      {:evaluation_complete, %{
+        task: "sentiment",
+        accuracy: result.accuracy,
+        macro_f1: result.macro_f1,
+        weighted_f1: result.weighted_f1,
+        total_examples: result.total_examples,
+        duration_ms: duration_ms,
+        timestamp: DateTime.utc_now()
+      }})
+  rescue
+    _ -> :ok
   end
 end

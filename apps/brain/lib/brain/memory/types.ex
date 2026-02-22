@@ -10,6 +10,11 @@ defmodule Brain.Memory.Types do
   - Procedure: State-to-action mappings (for future extension)
   """
 
+  # Generate a proper UUID for Atlas compatibility
+  def generate_uuid do
+    Ecto.UUID.generate()
+  end
+
   defmodule Episode do
     @moduledoc """
     A single episode of experience. Episodes are the fundamental unit of
@@ -59,7 +64,7 @@ defmodule Brain.Memory.Types do
     end
 
     defp generate_id do
-      :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
+      Brain.Memory.Types.generate_uuid()
     end
   end
 
@@ -107,7 +112,7 @@ defmodule Brain.Memory.Types do
     end
 
     defp generate_id do
-      :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
+      Brain.Memory.Types.generate_uuid()
     end
   end
 
@@ -147,7 +152,7 @@ defmodule Brain.Memory.Types do
     end
 
     defp generate_id do
-      :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
+      Brain.Memory.Types.generate_uuid()
     end
   end
 

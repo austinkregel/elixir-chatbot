@@ -1,13 +1,13 @@
 defmodule Brain.Knowledge.ReviewQueueTest do
   alias Brain.Knowledge.Types
   alias Brain.Knowledge
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
   import Brain.TestHelpers
 
   alias Knowledge.{ReviewQueue, SourceReliability}
   alias Types.{Finding, SourceInfo, ReviewCandidate}
 
-  setup do
+  setup _context do
     ensure_pubsub_started()
     ensure_started(SourceReliability)
     ensure_started(ReviewQueue)

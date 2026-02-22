@@ -31,7 +31,7 @@ defmodule Brain.ML.BenchmarkTest do
 
       correct =
         Enum.count(results, fn {_text, intent} ->
-          intent_starts_with?(intent, "weather")
+          intent_starts_with?(intent, "weather.query")
         end)
 
       assert correct >= 3,
@@ -61,7 +61,7 @@ defmodule Brain.ML.BenchmarkTest do
 
       correct =
         Enum.count(results, fn {_text, intent} ->
-          intent_starts_with?(intent, "music")
+          intent_starts_with?(intent, "music.play")
         end)
 
       assert correct >= 2,

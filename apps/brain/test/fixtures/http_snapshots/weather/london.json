@@ -4,55 +4,51 @@
     "q": "London",
     "units": "metric"
   },
-  "recorded_at": "2026-02-16T16:49:14.696022Z",
+  "recorded_at": "2026-02-17T05:05:18.188063Z",
   "response": {
     "body": {
       "base": "stations",
       "clouds": {
-        "all": 40
+        "all": 75
       },
       "cod": 200,
       "coord": {
         "lat": 51.5085,
         "lon": -0.1257
       },
-      "dt": 1771259974,
+      "dt": 1771304354,
       "id": 2643743,
       "main": {
-        "feels_like": 3.41,
-        "grnd_level": 994,
-        "humidity": 75,
-        "pressure": 998,
-        "sea_level": 998,
-        "temp": 7.75,
-        "temp_max": 9.49,
-        "temp_min": 6.42
+        "feels_like": -1.32,
+        "grnd_level": 1006,
+        "humidity": 74,
+        "pressure": 1010,
+        "sea_level": 1010,
+        "temp": 3.31,
+        "temp_max": 4.03,
+        "temp_min": 2.53
       },
       "name": "London",
-      "rain": {
-        "1h": 1.54
-      },
       "sys": {
         "country": "GB",
-        "id": 268730,
-        "sunrise": 1771225982,
-        "sunset": 1771262185,
+        "id": 2075535,
+        "sunrise": 1771312265,
+        "sunset": 1771348695,
         "type": 2
       },
       "timezone": 0,
       "visibility": 10000,
       "weather": [
         {
-          "description": "moderate rain",
-          "icon": "10d",
-          "id": 501,
-          "main": "Rain"
+          "description": "broken clouds",
+          "icon": "04n",
+          "id": 803,
+          "main": "Clouds"
         }
       ],
       "wind": {
         "deg": 290,
-        "gust": 14.4,
-        "speed": 9.26
+        "speed": 6.17
       }
     },
     "headers": {
@@ -72,7 +68,7 @@
         "application/json; charset=utf-8"
       ],
       "date": [
-        "Mon, 16 Feb 2026 16:49:33 GMT"
+        "Tue, 17 Feb 2026 05:05:39 GMT"
       ],
       "x-cache-key": [
         "/data/2.5/weather?q=london&units=metric"

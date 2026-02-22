@@ -6,15 +6,15 @@ defmodule Brain.Memory.TypesTest do
 
   describe "Episode" do
     test "new/5 creates an episode with auto-generated id and timestamp" do
-      episode = Episode.new("hello", "greeting", "hi there", ["greeting"], [0.1, 0.2])
+      episode = Episode.new("hello", "smalltalk.greetings.hello", "hi there", ["smalltalk.greetings.hello"], [0.1, 0.2])
 
       assert episode.state == "hello"
-      assert episode.action == "greeting"
+      assert episode.action == "smalltalk.greetings.hello"
       assert episode.outcome == "hi there"
-      assert episode.tags == ["greeting"]
+      assert episode.tags == ["smalltalk.greetings.hello"]
       assert episode.embedding == [0.1, 0.2]
       assert is_binary(episode.id)
-      assert String.length(episode.id) == 32
+      assert String.length(episode.id) == 36
       assert is_integer(episode.timestamp)
       assert episode.semantic_id == nil
     end
@@ -37,14 +37,14 @@ defmodule Brain.Memory.TypesTest do
 
   describe "SemanticFact" do
     test "new/4 creates a semantic fact with auto-generated id and timestamp" do
-      fact = SemanticFact.new("greetings pattern", [0.1, 0.2], ["ep1", "ep2"], ["greeting"])
+      fact = SemanticFact.new("greetings pattern", [0.1, 0.2], ["ep1", "ep2"], ["smalltalk.greetings.hello"])
 
       assert fact.representation == "greetings pattern"
       assert fact.embedding == [0.1, 0.2]
       assert fact.evidence_ids == ["ep1", "ep2"]
-      assert fact.tags == ["greeting"]
+      assert fact.tags == ["smalltalk.greetings.hello"]
       assert is_binary(fact.id)
-      assert String.length(fact.id) == 32
+      assert String.length(fact.id) == 36
       assert is_integer(fact.timestamp)
     end
 
@@ -58,13 +58,13 @@ defmodule Brain.Memory.TypesTest do
 
   describe "Procedure" do
     test "new/3 creates a procedure with auto-generated id and timestamp" do
-      proc = Procedure.new("user greeting", "respond hello", ["greeting"])
+      proc = Procedure.new("user greeting", "respond hello", ["smalltalk.greetings.hello"])
 
       assert proc.state == "user greeting"
       assert proc.action == "respond hello"
-      assert proc.tags == ["greeting"]
+      assert proc.tags == ["smalltalk.greetings.hello"]
       assert is_binary(proc.id)
-      assert String.length(proc.id) == 32
+      assert String.length(proc.id) == 36
       assert is_integer(proc.timestamp)
     end
   end

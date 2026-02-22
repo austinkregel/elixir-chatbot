@@ -1,10 +1,10 @@
 defmodule Brain.Analysis.IntentReviewQueueTest do
   alias Brain.Analysis
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
 
   alias Analysis.{IntentReviewQueue, Types.IntentReviewCandidate}
 
-  setup do
+  setup _context do
     IntentReviewQueue.clear()
     :ok
   end

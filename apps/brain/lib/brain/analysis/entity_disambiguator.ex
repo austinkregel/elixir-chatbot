@@ -6,11 +6,22 @@ defmodule Brain.Analysis.EntityDisambiguator do
   @compile {:no_warn_undefined, World.TypeInferrer}
 
   alias Brain.Analysis
-  alias Brain.ML.Tokenizer
+  alias Brain.Graph.Reader
   require Logger
 
-  alias Analysis.{IntentRegistry, EntityTypes}
+  alias Analysis.{IntentRegistry, TypeHierarchy}
   alias World.TypeInferrer
+
+  @external_resource Path.join(:code.priv_dir(:brain), "analysis/entity_types.json")
+  @ambiguous_types (
+    Path.join(:code.priv_dir(:brain), "analysis/entity_types.json")
+    |> File.read!()
+    |> Jason.decode!()
+    |> Map.get("disambiguation_groups", %{})
+    |> Map.values()
+    |> List.flatten()
+    |> MapSet.new()
+  )
 
   @external_resource Path.join(:code.priv_dir(:brain), "analysis/context_preferences.json")
   @context_preferences Path.join(:code.priv_dir(:brain), "analysis/context_preferences.json")
@@ -47,12 +58,14 @@ defmodule Brain.Analysis.EntityDisambiguator do
     entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
     enriched_context = Map.put(context, :entity_value, entity_value)
 
+    default_propn_type = TypeHierarchy.config("default_propn_type", "person")
+
     cond do
       length(types) <= 1 and requires_inference?(entity_type) ->
         intro_confidence = introduction_confidence(pos_tagged, entity_position, enriched_context)
 
         if intro_confidence >= 0.7 do
-          if entity_type == "person" do
+          if TypeHierarchy.is_a?(entity_type, default_propn_type) or entity_type == default_propn_type do
             entity
             |> Map.put(:disambiguation_reason, "introduction_pattern")
             |> Map.put(:disambiguation_source, :context_analysis)
@@ -71,7 +84,9 @@ defmodule Brain.Analysis.EntityDisambiguator do
         single_type_name = get_type_name(single_type)
         intro_confidence = introduction_confidence(pos_tagged, entity_position, enriched_context)
 
-        if intro_confidence >= 0.7 and single_type_name in ["location", "city", "place-name"] do
+        is_not_person_type = not TypeHierarchy.compatible?(single_type_name, default_propn_type)
+
+        if intro_confidence >= 0.7 and is_not_person_type do
           create_person_type_from_intro(entity, intro_confidence)
         else
           select_type(entity, single_type)
@@ -81,7 +96,10 @@ defmodule Brain.Analysis.EntityDisambiguator do
         intro_confidence = introduction_confidence(pos_tagged, entity_position, enriched_context)
 
         if intro_confidence >= 0.7 do
-          person_type = Enum.find(types, fn t -> get_type_name(t) == "person" end)
+          person_type = Enum.find(types, fn t ->
+            tn = get_type_name(t)
+            tn == default_propn_type or TypeHierarchy.is_a?(tn, default_propn_type)
+          end)
 
           if person_type do
             select_type(entity, person_type)
@@ -105,9 +123,11 @@ defmodule Brain.Analysis.EntityDisambiguator do
   end
 
   defp create_person_type_from_intro(entity, intro_confidence) do
+    default_type = TypeHierarchy.config("default_propn_type", "person")
+
     name_type = %{
-      entity_type: "person",
-      entity: "person",
+      entity_type: default_type,
+      entity: default_type,
       value: Map.get(entity, :value) || Map.get(entity, "value"),
       confidence: intro_confidence,
       disambiguation_reason: "introduction_pattern"
@@ -116,10 +136,15 @@ defmodule Brain.Analysis.EntityDisambiguator do
     select_type(entity, name_type)
   end
 
-  @doc "Check if an entity type requires context-based disambiguation.\n\nTypes that require inference include:\n- Types with \"ambiguous_\" prefix\n- \"person\" and \"location\" types, which are often ambiguous (e.g., Austin)\n- These require context (intent, discourse) to determine the correct type\n"
+  @doc """
+  Check if an entity type requires context-based disambiguation.
+
+  Types that require inference are those listed in the `disambiguation_groups`
+  from `entity_types.json`, plus any type with the "ambiguous_" prefix.
+  """
   def requires_inference?(entity_type) when is_binary(entity_type) do
     String.starts_with?(entity_type, "ambiguous_") or
-      EntityTypes.is_person_type?(entity_type) or entity_type == "location"
+      MapSet.member?(@ambiguous_types, entity_type)
   end
 
   def requires_inference?(_) do
@@ -156,17 +181,13 @@ defmodule Brain.Analysis.EntityDisambiguator do
         original_type in expected_types ->
           original_type
 
-        IntentRegistry.weather_intent?(intent) or IntentRegistry.navigation_intent?(intent) ->
-          Enum.find(expected_types, "location", &(&1 in ["location", "city"]))
-
-        IntentRegistry.introduction_intent?(intent) ->
-          Enum.find(expected_types, "person", &(&1 in ["person", "name"]))
-
-        IntentRegistry.music_intent?(intent) ->
-          Enum.find(expected_types, inferred_type, &(&1 in ["music-artist", "song", "album"]))
-
         expected_types != [] ->
-          hd(expected_types)
+          compatible = Enum.find(expected_types, fn et ->
+            TypeHierarchy.compatible?(inferred_type, et) or
+              TypeHierarchy.compatible?(original_type, et)
+          end)
+
+          compatible || hd(expected_types)
 
         true ->
           inferred_type
@@ -179,131 +200,67 @@ defmodule Brain.Analysis.EntityDisambiguator do
     |> Map.put(:disambiguation_confidence, type_confidence)
   end
 
-  @doc "Detect if the context suggests an introduction pattern.\n\nReturns a confidence score (0.0 to 1.0) indicating how likely\nthis is an introduction context.\n\nUses multiple signals:\n- POS tag patterns (PRON + VERB before entity)\n- Text-based patterns (\"I'm [Name]\", \"My name is [Name]\", etc.)\n- Discourse indicators (self-referential)\n- Speech act context (greeting)\n"
+  @doc """
+  Detect if the context suggests an introduction pattern.
+
+  Returns a confidence score (0.0 to 1.0) indicating how likely
+  this is an introduction context.
+
+  All signals come from trained classifiers -- no hardcoded token matching:
+  - Intent classifier: classified as introduction domain
+  - POS tagger output: PRON + VERB preceding entity (trained model tags)
+  - Discourse analyzer: self-referential indicator
+  - Speech act classifier: greeting/expressive category
+  """
   def introduction_confidence(pos_tagged, entity_position, context) do
-    entity_value = extract_entity_value_from_context(context)
-    original_text = Map.get(context, :original_text, "")
+    intent = Map.get(context, :intent, "")
 
-    features = %{
-      pron_verb_pattern: has_pron_verb_before?(pos_tagged, entity_position),
-      text_intro_pattern: text_has_introduction_pattern?(original_text, entity_value),
-      self_referential: self_referential?(context),
-      greeting_context: greeting_context?(context)
-    }
-
-    text_intro_score =
-      if features.text_intro_pattern do
+    # Signal 1: Intent classifier says this is an introduction (strongest signal)
+    intent_score =
+      if IntentRegistry.introduction_intent?(intent) do
         0.7
       else
         0.0
       end
 
+    # Signal 2: Trained POS tagger output shows PRON+VERB before the entity
     pron_verb_score =
-      if features.pron_verb_pattern do
+      if has_pron_verb_before?(pos_tagged, entity_position) do
         0.5
       else
         0.0
       end
 
+    # Signal 3: Discourse analyzer flagged self-referential (trained model output)
     self_ref_score =
-      if features.self_referential do
+      if self_referential?(context) do
         0.2
       else
         0.0
       end
 
+    # Signal 4: Speech act classifier says greeting (trained model output)
     greeting_score =
-      if features.greeting_context do
+      if greeting_context?(context) do
         0.1
       else
         0.0
       end
 
-    pattern_score = max(text_intro_score, pron_verb_score)
-    score = pattern_score + self_ref_score + greeting_score
+    primary_score = max(intent_score, pron_verb_score)
+    score = primary_score + self_ref_score + greeting_score
     Float.round(min(score, 1.0), 4)
   end
 
-  defp extract_entity_value_from_context(context) do
-    Map.get(context, :entity_value, "")
-  end
-
-  # Introduction pattern prefixes as token sequences (entity token follows these)
-  @introduction_prefixes [
-    ~w(i am),
-    ~w(im),
-    ~w(my name is),
-    ~w(name is),
-    ~w(call me),
-    ~w(called),
-    ~w(i go by),
-    ~w(go by),
-    ~w(this is)
-  ]
-
-  @doc "Check if text contains an introduction pattern with the given entity value.\n\nDetects patterns like:\n- \"I'm [Name]\" / \"I am [Name]\"\n- \"My name is [Name]\"\n- \"This is [Name]\" (when self-referential)\n- \"Call me [Name]\"\n- \"I go by [Name]\"\n- \"[Name] here\" (at start)\n"
-  def text_has_introduction_pattern?(text, entity_value)
-      when is_binary(text) and is_binary(entity_value) do
-    if entity_value == "" or String.length(entity_value) < 2 do
-      false
-    else
-      tokens = Tokenizer.tokenize_normalized(text)
-      entity_tokens = Tokenizer.tokenize_normalized(entity_value)
-
-      # Check "prefix + entity" patterns
-      prefix_match =
-        Enum.any?(@introduction_prefixes, fn prefix ->
-          pattern = prefix ++ entity_tokens
-          contains_subsequence?(tokens, pattern)
-        end)
-
-      # Check "entity + here" pattern (e.g. "Austin here")
-      suffix_match = contains_subsequence?(tokens, entity_tokens ++ ~w(here))
-
-      prefix_match or suffix_match
-    end
-  end
-
-  def text_has_introduction_pattern?(_, _) do
-    false
-  end
-
-  defp contains_subsequence?(tokens, pattern) when is_list(tokens) and is_list(pattern) do
-    pattern_len = length(pattern)
-
-    if pattern_len == 0 or length(tokens) < pattern_len do
-      false
-    else
-      tokens
-      |> Enum.chunk_every(pattern_len, 1, :discard)
-      |> Enum.any?(fn window -> window == pattern end)
-    end
-  end
-
-  defp extract_features(entity, pos_tagged, context) do
-    entity_pos = get_entity_position(entity)
+  defp extract_features(_entity, _pos_tagged, context) do
     intent = Map.get(context, :intent, "")
+    domain = IntentRegistry.domain(intent)
 
     %{
-      preceding_pron: count_preceding_tag(pos_tagged, entity_pos, "PRON"),
-      preceding_verb: count_preceding_tag(pos_tagged, entity_pos, "VERB"),
-      pron_verb_adjacent: has_pron_verb_before?(pos_tagged, entity_pos),
-      self_referential: self_referential?(context),
-      greeting_context: greeting_context?(context),
-      question_context: question_context?(context),
-      command_context: command_context?(context),
-      weather_intent: weather_intent?(context),
-      music_intent: music_intent?(context),
-      navigation_intent: navigation_intent?(context),
-      device_intent: device_intent?(context),
       expected_entity_types: IntentRegistry.expected_entity_types(intent),
       intent: intent,
-      context_type: detect_context_type(context, pos_tagged, entity_pos)
+      domain: domain
     }
-  end
-
-  defp get_entity_position(entity) do
-    Map.get(entity, :start_pos) || Map.get(entity, "start_pos") || 0
   end
 
   defp get_entity_position(entity, pos_tagged) when is_list(pos_tagged) do
@@ -336,17 +293,6 @@ defmodule Brain.Analysis.EntityDisambiguator do
     end
   end
 
-  defp count_preceding_tag(pos_tagged, entity_pos, target_tag) when is_list(pos_tagged) do
-    preceding =
-      pos_tagged
-      |> Enum.take(entity_pos)
-      |> Enum.take(-3)
-
-    Enum.count(preceding, fn
-      {_token, tag} -> String.upcase(to_string(tag)) == target_tag
-      _ -> false
-    end)
-  end
 
   defp has_pron_verb_before?(pos_tagged, entity_pos) when is_list(pos_tagged) do
     preceding =
@@ -378,8 +324,10 @@ defmodule Brain.Analysis.EntityDisambiguator do
     discourse = Map.get(context, :discourse) || %{}
     indicators = Map.get(discourse, :indicators) || []
 
-    "self_referential" in indicators or
-      Enum.any?(indicators, &String.contains?(to_string(&1), "first_person"))
+    :self_referential in indicators or
+      "self_referential" in indicators or
+      :first_person in indicators or
+      "first_person" in indicators
   end
 
   defp greeting_context?(context) do
@@ -389,69 +337,10 @@ defmodule Brain.Analysis.EntityDisambiguator do
       Map.get(speech_act, :sub_type) in [:greeting, :nice_to_meet]
   end
 
-  defp question_context?(context) do
-    speech_act = Map.get(context, :speech_act) || %{}
-    Map.get(speech_act, :is_question, false)
-  end
 
-  defp command_context?(context) do
-    speech_act = Map.get(context, :speech_act) || %{}
-
-    Map.get(speech_act, :category) == :directive and
-      Map.get(speech_act, :sub_type) == :command
-  end
-
-  defp weather_intent?(context) do
-    intent = Map.get(context, :intent, "")
-    IntentRegistry.weather_intent?(intent)
-  end
-
-  defp music_intent?(context) do
-    intent = Map.get(context, :intent, "")
-    IntentRegistry.music_intent?(intent)
-  end
-
-  defp navigation_intent?(context) do
-    intent = Map.get(context, :intent, "")
-    IntentRegistry.navigation_intent?(intent)
-  end
-
-  defp device_intent?(context) do
-    intent = Map.get(context, :intent, "")
-    IntentRegistry.device_intent?(intent)
-  end
-
-  defp detect_context_type(context, pos_tagged, entity_pos) do
-    intent = Map.get(context, :intent, "")
-    domain = IntentRegistry.domain(intent)
-
-    cond do
-      IntentRegistry.introduction_intent?(intent) ->
-        :introduction
-
-      has_pron_verb_before?(pos_tagged, entity_pos) and self_referential?(context) ->
-        :introduction
-
-      domain == :device ->
-        :device
-
-      domain == :music ->
-        :music
-
-      domain in [:weather, :navigation] ->
-        :location_query
-
-      IntentRegistry.device_intent?(intent) ->
-        :device
-
-      true ->
-        :default
-    end
-  end
-
-  defp score_type(type_info, features, _context) do
+  defp score_type(type_info, features, context) do
     entity_type = get_type_name(type_info)
-    context_type = features.context_type
+    domain = features.domain
     expected_types = Map.get(features, :expected_entity_types, [])
 
     dynamic_score =
@@ -461,7 +350,7 @@ defmodule Brain.Analysis.EntityDisambiguator do
         0.0
       end
 
-    preferences = Map.get(@context_preferences, context_type, @context_preferences.default)
+    preferences = Map.get(@context_preferences, domain, @context_preferences.default)
     static_score = Map.get(preferences, entity_type, 0.3)
 
     base_score =
@@ -471,33 +360,81 @@ defmodule Brain.Analysis.EntityDisambiguator do
         static_score
       end
 
-    boost = calculate_feature_boost(entity_type, features)
+    atlas_boost = atlas_co_occurrence_boost(type_info, context)
 
-    base_score + boost
+    base_score + atlas_boost
   end
 
-  defp calculate_feature_boost(entity_type, features) do
-    cond do
-      features.pron_verb_adjacent and features.self_referential and
-          EntityTypes.is_person_type?(entity_type) ->
-        0.5
+  defp atlas_co_occurrence_boost(type_info, context) do
+    entity_value = Map.get(type_info, :value) || ""
+    entity_type = get_type_name(type_info)
 
-      features.device_intent and EntityTypes.is_device_type?(entity_type) ->
-        0.4
+    if entity_value == "" do
+      0.0
+    else
+      entity = %{entity_type: entity_type, value: entity_value}
 
-      features.weather_intent and EntityTypes.is_location_type?(entity_type) ->
-        0.4
+      case Reader.entity_context([entity]) do
+        [%{node: node, neighbors: neighbors}] when node != nil ->
+          intent = Map.get(context, :intent, "")
+          expected_types = IntentRegistry.expected_entity_types(intent)
+          neighbor_count = length(neighbors)
 
-      features.music_intent and EntityTypes.is_music_type?(entity_type) ->
-        0.4
+          # Check if neighbor labels/types align with what the intent expects.
+          # e.g., for weather.query expecting ["location"], if "Austin" as location
+          # has neighbors whose labels include Location-related types, that's a signal.
+          intent_aligned =
+            if expected_types != [] do
+              Enum.count(neighbors, fn neighbor ->
+                neighbor_labels = Map.get(neighbor, :labels, [])
+                neighbor_props = Map.get(neighbor, :properties, %{})
+                neighbor_type = Map.get(neighbor_props, "type", "")
 
-      features.greeting_context and EntityTypes.is_person_type?(entity_type) ->
-        0.3
+                neighbor_type_indicators =
+                  [neighbor_type | neighbor_labels]
+                  |> Enum.map(&String.downcase(to_string(&1)))
 
-      true ->
-        0.0
+                Enum.any?(expected_types, fn et ->
+                  et_lower = String.downcase(et)
+                  Enum.any?(neighbor_type_indicators, fn ind ->
+                    ind == et_lower or String.contains?(ind, et_lower)
+                  end)
+                end)
+              end)
+            else
+              0
+            end
+
+          # Intent-aligned neighbors are a strong disambiguation signal:
+          # Atlas confirms this entity type co-occurs with the intent's expected types
+          intent_boost =
+            cond do
+              intent_aligned >= 3 -> 0.35
+              intent_aligned >= 1 -> 0.25
+              true -> 0.0
+            end
+
+          # General existence in Atlas is a weaker but still useful signal
+          existence_boost =
+            cond do
+              neighbor_count >= 5 -> 0.15
+              neighbor_count >= 2 -> 0.1
+              neighbor_count >= 1 -> 0.05
+              true -> 0.0
+            end
+
+          max(intent_boost, existence_boost)
+
+        _ ->
+          0.0
+      end
     end
+  rescue
+    _ -> 0.0
+  catch
+    :exit, _ -> 0.0
   end
+
 
   defp get_type_name(type_info) when is_map(type_info) do
     Map.get(type_info, :entity_type, "unknown")

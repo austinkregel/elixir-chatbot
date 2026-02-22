@@ -1,6 +1,6 @@
 defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
   @moduledoc "Comprehensive edge case tests to explore the limits of the NLP system.\n\nThese tests cover cases that are NOT in the training data to understand\nhow the system handles:\n1. Names that overlap with cities/locations\n2. Unusual greeting patterns\n3. Names that overlap with songs or products\n4. Typos, informal language, and edge cases\n\nThe goal is not necessarily for all tests to pass, but to document\nexpected vs actual behavior and identify areas for improvement.\n\n## Snapshot Tests\n\nThis module also includes \"snapshot\" tests that capture the exact analysis\noutput for key inputs. These help:\n- Document expected behavior precisely\n- Catch regressions when implementation changes\n- Understand what the system actually detects\n\nRun snapshot tests with: `mix test test/brain/analysis/edge_cases_comprehensive_test.exs --only snapshot`\n"
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
   require Logger
 
   alias Brain
@@ -751,7 +751,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
     end
 
     @tag :stress_test
-    @tag :timeout
+    @tag timeout: 120_000
     test "does not take excessively long on moderately long input", %{conversation_id: conv_id} do
       moderate_input =
         1..30

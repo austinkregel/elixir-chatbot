@@ -837,12 +837,44 @@ defmodule Brain do
     intent = interpretation.intent
     {:ok, response, response_type} = Generator.generate(intent, [], nil)
 
+    intent_meta = IntentRegistry.get(intent)
+
+    speech_act =
+      if intent_meta do
+        category_str = Map.get(intent_meta, "category", "assertive")
+        sub_type_str = Map.get(intent_meta, "speech_act", "statement")
+
+        category_atom =
+          try do
+            String.to_existing_atom(category_str)
+          rescue
+            ArgumentError -> :assertive
+          end
+
+        sub_type_atom =
+          try do
+            String.to_existing_atom(sub_type_str)
+          rescue
+            ArgumentError -> :statement
+          end
+
+        %{
+          category: category_atom,
+          sub_type: sub_type_atom,
+          confidence: interpretation.activation,
+          is_question: category_str == "interrogative"
+        }
+      else
+        nil
+      end
+
     context = %{
       intent: intent,
       source: interpretation.source,
       fast_path: true,
       activation: interpretation.activation,
-      entities: []
+      entities: [],
+      speech_act: speech_act
     }
 
     Logger.info("Fast path response generated", %{
@@ -970,7 +1002,8 @@ defmodule Brain do
           strategy: :defer_to_user
         })
 
-        {simple_acknowledgment(persona), :not_addressed, %{}}
+        context = extract_context_from_analysis(analysis_model)
+        {simple_acknowledgment(persona), :not_addressed, context}
 
       :cannot_respond ->
         Progress.report(opts, :response_generated, %{
@@ -978,7 +1011,8 @@ defmodule Brain do
           strategy: :cannot_respond
         })
 
-        {simple_fallback_response(persona, input), :cannot_respond, %{}}
+        context = extract_context_from_analysis(analysis_model)
+        {simple_fallback_response(persona, input), :cannot_respond, context}
 
       _ ->
         try_nlp_with_analysis(persona, input, memory, analysis_model, opts)

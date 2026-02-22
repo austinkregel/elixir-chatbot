@@ -1,7 +1,7 @@
 defmodule Brain.Analysis.DisambiguationIntegrationTest do
   @moduledoc "End-to-end integration tests for entity disambiguation.\n\nThese tests verify that the full pipeline correctly:\n1. Classifies speech acts (greeting, question, command)\n2. Extracts entities with proper disambiguation\n3. Uses contextual signals (discourse, POS patterns) to resolve ambiguity\n4. Generates appropriate responses based on disambiguation\n\nKey test case: \"Hello, I'm Austin\" should:\n- Be classified as a greeting\n- Extract \"Austin\" as a person (not location)\n- Use the PRON+VERB pattern and self-referential discourse for disambiguation\n- Respond with a greeting, NOT weather information\n"
   alias Brain.ML
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
   import ExUnit.CaptureLog
   require Logger
 
@@ -31,7 +31,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
     end
   end
 
-  setup do
+  setup _context do
     start_test_services()
 
     case TelemetryCollector.start_link() do

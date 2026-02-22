@@ -617,34 +617,6 @@
     "required": [],
     "speech_act": "request"
   },
-  "message": {
-    "category": "assertive",
-    "clarification_templates": {},
-    "domain": "message",
-    "entity_mappings": {
-      "given-name": [
-        "sys.given-name"
-      ],
-      "last-name": [
-        "sys.last-name"
-      ],
-      "message_content": [
-        "message_content"
-      ],
-      "message_type": [
-        "message_type"
-      ]
-    },
-    "input_contexts": [],
-    "optional": [
-      "message_type",
-      "given-name",
-      "message_content",
-      "last-name"
-    ],
-    "output_contexts": [],
-    "required": []
-  },
   "meta.memory_check": {
     "category": "directive",
     "clarification_templates": {},
@@ -1360,7 +1332,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.age": {
     "category": "expressive",
@@ -1376,7 +1349,8 @@
       "age"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.annoying": {
     "category": "expressive",
@@ -1386,7 +1360,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.answer_my_question": {
     "category": "expressive",
@@ -1396,7 +1371,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.bad": {
     "category": "expressive",
@@ -1406,7 +1382,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.be_clever": {
     "category": "expressive",
@@ -1416,7 +1393,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.beautiful": {
     "category": "expressive",
@@ -1426,7 +1404,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.birth_date": {
     "category": "expressive",
@@ -1436,7 +1415,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.boring": {
     "category": "expressive",
@@ -1446,7 +1426,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.boss": {
     "category": "expressive",
@@ -1456,7 +1437,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.busy": {
     "category": "expressive",
@@ -1466,7 +1448,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.can_you_help": {
     "category": "expressive",
@@ -1476,7 +1459,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.chatbot": {
     "category": "expressive",
@@ -1486,7 +1470,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.clever": {
     "category": "expressive",
@@ -1496,18 +1481,22 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.crazy": {
     "category": "expressive",
     "clarification_templates": {},
     "domain": "smalltalk",
-    "enrichment_sources": ["system_stats"],
+    "enrichment_sources": [
+      "system_stats"
+    ],
     "entity_mappings": {},
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.fired": {
     "category": "expressive",
@@ -1517,7 +1506,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.funny": {
     "category": "expressive",
@@ -1527,7 +1517,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.good": {
     "category": "expressive",
@@ -1537,7 +1528,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.happy": {
     "category": "expressive",
@@ -1547,7 +1539,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.hobby": {
     "category": "expressive",
@@ -1557,7 +1550,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.hungry": {
     "category": "expressive",
@@ -1567,7 +1561,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.marry_user": {
     "category": "expressive",
@@ -1577,7 +1572,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.my_friend": {
     "category": "expressive",
@@ -1587,7 +1583,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.occupation": {
     "category": "expressive",
@@ -1597,7 +1594,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.origin": {
     "category": "expressive",
@@ -1607,7 +1605,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.ready": {
     "category": "expressive",
@@ -1617,7 +1616,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.real": {
     "category": "expressive",
@@ -1627,7 +1627,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.residence": {
     "category": "expressive",
@@ -1637,7 +1638,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.right": {
     "category": "expressive",
@@ -1647,7 +1649,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.sure": {
     "category": "expressive",
@@ -1657,7 +1660,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.talk_to_me": {
     "category": "expressive",
@@ -1667,7 +1671,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.agent.there": {
     "category": "expressive",
@@ -1677,7 +1682,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.apology": {
     "category": "expressive",
@@ -1698,7 +1704,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "appraisal"
   },
   "smalltalk.appraisal.good": {
     "category": "expressive",
@@ -1708,7 +1715,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "appraisal"
   },
   "smalltalk.appraisal.no_problem": {
     "category": "expressive",
@@ -1718,7 +1726,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "appraisal"
   },
   "smalltalk.appraisal.thank_you": {
     "category": "expressive",
@@ -1728,7 +1737,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "thanks"
   },
   "smalltalk.appraisal.welcome": {
     "category": "expressive",
@@ -1738,7 +1748,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "greeting"
   },
   "smalltalk.appraisal.well_done": {
     "category": "expressive",
@@ -1748,7 +1759,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "appraisal"
   },
   "smalltalk.backchannel": {
     "category": "expressive",
@@ -1780,7 +1792,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.dialog.hug": {
     "category": "expressive",
@@ -1790,7 +1803,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.dialog.i_do_not_care": {
     "category": "expressive",
@@ -1800,7 +1814,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.dialog.sorry": {
     "category": "expressive",
@@ -1810,7 +1825,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "apology"
   },
   "smalltalk.dialog.what_do_you_mean": {
     "category": "expressive",
@@ -1820,7 +1836,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.dialog.wrong": {
     "category": "expressive",
@@ -1830,7 +1847,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "general"
   },
   "smalltalk.emotions.ha_ha": {
     "category": "expressive",
@@ -1840,7 +1858,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "exclamation"
   },
   "smalltalk.emotions.wow": {
     "category": "expressive",
@@ -1850,7 +1869,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "exclamation"
   },
   "smalltalk.farewell": {
     "category": "expressive",
@@ -1871,7 +1891,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "farewell"
   },
   "smalltalk.greetings.goodevening": {
     "category": "expressive",
@@ -1881,7 +1902,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "greeting"
   },
   "smalltalk.greetings.goodmorning": {
     "category": "expressive",
@@ -1891,7 +1913,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "greeting"
   },
   "smalltalk.greetings.goodnight": {
     "category": "expressive",
@@ -1901,7 +1924,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "farewell"
   },
   "smalltalk.greetings.hello": {
     "category": "expressive",
@@ -1922,7 +1946,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "greeting"
   },
   "smalltalk.greetings.nice_to_meet_you": {
     "category": "expressive",
@@ -1932,7 +1957,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "greeting"
   },
   "smalltalk.greetings.nice_to_see_you": {
     "category": "expressive",
@@ -1942,7 +1968,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "greeting"
   },
   "smalltalk.greetings.nice_to_talk_to_you": {
     "category": "expressive",
@@ -1952,7 +1979,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "greeting"
   },
   "smalltalk.greetings.whatsup": {
     "category": "expressive",
@@ -1962,7 +1990,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "greeting"
   },
   "smalltalk.thanks": {
     "category": "expressive",
@@ -2000,7 +2029,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.back": {
     "category": "expressive",
@@ -2010,7 +2040,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.bored": {
     "category": "expressive",
@@ -2020,7 +2051,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.busy": {
     "category": "expressive",
@@ -2030,7 +2062,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.can_not_sleep": {
     "category": "expressive",
@@ -2040,7 +2073,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.does_not_want_to_talk": {
     "category": "expressive",
@@ -2050,7 +2084,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.excited": {
     "category": "expressive",
@@ -2060,7 +2095,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.going_to_bed": {
     "category": "expressive",
@@ -2070,7 +2106,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.good": {
     "category": "expressive",
@@ -2093,7 +2130,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.has_birthday": {
     "category": "expressive",
@@ -2103,7 +2141,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.here": {
     "category": "expressive",
@@ -2113,7 +2152,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.introduction": {
     "category": "expressive",
@@ -2143,7 +2183,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.likes_agent": {
     "category": "expressive",
@@ -2153,7 +2194,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.location": {
     "category": "expressive",
@@ -2181,7 +2223,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.looks_like": {
     "category": "expressive",
@@ -2191,7 +2234,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.loves_agent": {
     "category": "expressive",
@@ -2201,7 +2245,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.misses_agent": {
     "category": "expressive",
@@ -2211,7 +2256,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.name": {
     "category": "expressive",
@@ -2239,7 +2285,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.origin": {
     "category": "expressive",
@@ -2267,7 +2314,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.sleepy": {
     "category": "expressive",
@@ -2277,7 +2325,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.testing_agent": {
     "category": "expressive",
@@ -2287,7 +2336,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.tired": {
     "category": "expressive",
@@ -2297,7 +2347,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.waits": {
     "category": "expressive",
@@ -2307,7 +2358,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.wants_to_see_agent_again": {
     "category": "expressive",
@@ -2317,7 +2369,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.wants_to_talk": {
     "category": "expressive",
@@ -2327,7 +2380,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.user.will_be_back": {
     "category": "expressive",
@@ -2337,7 +2391,8 @@
     "input_contexts": [],
     "optional": [],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smarthome.device.brightness.check": {
     "category": "directive",
@@ -2365,7 +2420,8 @@
       "all"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.brightness.check.implicit": {
     "category": "directive",
@@ -2389,10 +2445,11 @@
       "device"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.brightness.down": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -2430,10 +2487,11 @@
         "name": "device-brightness"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.brightness.down.implicit": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -2463,10 +2521,11 @@
         "name": "room"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.brightness.schedule.down": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -2504,10 +2563,11 @@
         "name": "schedule"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.brightness.schedule.up": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -2545,7 +2605,8 @@
         "name": "schedule"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.brightness.set": {
     "category": "directive",
@@ -2584,10 +2645,11 @@
         "name": "device-brightness"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.brightness.up": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -2625,10 +2687,11 @@
         "name": "room"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.brightness.up.implicit": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -2658,7 +2721,8 @@
         "name": "room"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.switch.check.off": {
     "category": "directive",
@@ -2691,7 +2755,8 @@
         "name": "room"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.switch.check.on": {
     "category": "directive",
@@ -2724,10 +2789,11 @@
         "name": "room"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.switch.off": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {
       "device": "Which device?"
     },
@@ -2767,10 +2833,11 @@
         "name": "schedule"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.switch.on": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {
       "device": "Which device?"
     },
@@ -2814,10 +2881,11 @@
         "name": "device-brightness"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.switch.schedule.off": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {
       "date-time": "What time?"
     },
@@ -2857,10 +2925,11 @@
         "name": "schedule"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.switch.schedule.on": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {
       "date-time": "What time?"
     },
@@ -2900,7 +2969,8 @@
         "name": "schedule"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.volume.check": {
     "category": "directive",
@@ -2925,7 +2995,8 @@
         "name": "volume-check"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.volume.check.implicit": {
     "category": "directive",
@@ -2949,10 +3020,11 @@
       "room"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.volume.down": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -2982,10 +3054,11 @@
         "name": "device-volume"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.volume.down.implicit": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -3006,10 +3079,11 @@
       "room"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.volume.mute": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -3031,10 +3105,11 @@
         "name": "device-volume"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.volume.mute.implicit": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -3055,7 +3130,8 @@
       "room"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.volume.set": {
     "category": "directive",
@@ -3084,10 +3160,11 @@
         "name": "device-volume"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.volume.unmute": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -3109,10 +3186,11 @@
         "name": "device-volume"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.volume.unmute.implicit": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -3129,10 +3207,11 @@
       "room"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.volume.up": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -3162,10 +3241,11 @@
         "name": "device-volume"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.device.volume.up.implicit": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -3182,7 +3262,8 @@
       "room"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.heating.check": {
     "category": "directive",
@@ -3215,7 +3296,8 @@
         "name": "heating"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.heating.check.implicit": {
     "category": "directive",
@@ -3231,10 +3313,11 @@
       "room"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.heating.down": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -3276,10 +3359,11 @@
         "name": "schedule"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.heating.down.implicit": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -3305,10 +3389,11 @@
         "name": "room"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.heating.schedule.down": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {
       "date-time": "What time?"
     },
@@ -3352,7 +3437,8 @@
         "name": "schedule"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.heating.schedule.set": {
     "category": "directive",
@@ -3399,10 +3485,11 @@
         "name": "schedule"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.heating.schedule.up": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {
       "date-time": "What time?"
     },
@@ -3441,7 +3528,8 @@
       "all"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.heating.set": {
     "category": "directive",
@@ -3480,10 +3568,11 @@
         "name": "room"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.heating.switch.off": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -3500,10 +3589,11 @@
       "all"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.heating.switch.on": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -3520,10 +3610,11 @@
       "all"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.heating.switch.schedule.off": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -3557,10 +3648,11 @@
         "name": "schedule"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.heating.switch.schedule.on": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -3589,10 +3681,11 @@
       "all"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.heating.up": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -3634,10 +3727,11 @@
         "name": "schedule"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.heating.up.implicit": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -3663,7 +3757,8 @@
         "name": "room"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.brightness.check": {
     "category": "directive",
@@ -3695,7 +3790,8 @@
       "device"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.brightness.check.implicit": {
     "category": "directive",
@@ -3715,10 +3811,11 @@
       "all"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.brightness.down": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -3760,10 +3857,11 @@
         "name": "lights-brightness"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.brightness.down.implicit": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -3797,10 +3895,11 @@
         "name": "room"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.brightness.schedule.down": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -3842,10 +3941,11 @@
         "name": "schedule"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.brightness.schedule.up": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -3882,7 +3982,8 @@
       "device"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.brightness.set": {
     "category": "directive",
@@ -3925,10 +4026,11 @@
         "name": "lights-brightness"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.brightness.up": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -3970,10 +4072,11 @@
         "name": "room"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.brightness.up.implicit": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -4007,7 +4110,8 @@
         "name": "room"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.hue.check": {
     "category": "directive",
@@ -4039,10 +4143,11 @@
       "device"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.hue.down": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -4075,7 +4180,8 @@
       "all"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.hue.set": {
     "category": "directive",
@@ -4107,10 +4213,11 @@
       "all"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.hue.up": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -4143,7 +4250,8 @@
       "device"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.saturation.check": {
     "category": "directive",
@@ -4175,10 +4283,11 @@
       "device"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.saturation.down": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -4211,7 +4320,8 @@
       "all"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.saturation.set": {
     "category": "directive",
@@ -4243,10 +4353,11 @@
       "all"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.saturation.up": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -4279,7 +4390,8 @@
       "all"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.switch.check": {
     "category": "directive",
@@ -4307,7 +4419,8 @@
       "all"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.switch.check.off": {
     "category": "directive",
@@ -4344,7 +4457,8 @@
         "name": "room"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.switch.check.on": {
     "category": "directive",
@@ -4381,7 +4495,8 @@
         "name": "room"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.switch.off": {
     "category": "directive",
@@ -4490,7 +4605,7 @@
     "speech_act": "command"
   },
   "smarthome.lights.switch.schedule.off": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {
       "date-time": "What time?"
     },
@@ -4534,10 +4649,11 @@
         "name": "schedule"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.lights.switch.schedule.on": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {
       "date-time": "What time?"
     },
@@ -4581,7 +4697,8 @@
         "name": "schedule"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.locks.check": {
     "category": "directive",
@@ -4605,7 +4722,8 @@
       "all"
     ],
     "output_contexts": [],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.locks.check.close": {
     "category": "directive",
@@ -4638,7 +4756,8 @@
         "name": "open"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.locks.check.lock": {
     "category": "directive",
@@ -4671,7 +4790,8 @@
         "name": "unlock"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.locks.check.open": {
     "category": "directive",
@@ -4704,7 +4824,8 @@
         "name": "close"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.locks.check.unlock": {
     "category": "directive",
@@ -4737,10 +4858,11 @@
         "name": "lock"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.locks.close": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -4770,10 +4892,11 @@
         "name": "room"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.locks.lock": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -4803,10 +4926,11 @@
         "name": "room"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.locks.open": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -4836,10 +4960,11 @@
         "name": "room"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.locks.schedule.close": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {
       "date-time": "What time?"
     },
@@ -4879,10 +5004,11 @@
         "name": "schedule"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.locks.schedule.lock": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {
       "date-time": "What time?"
     },
@@ -4922,10 +5048,11 @@
         "name": "schedule"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.locks.schedule.open": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {
       "date-time": "What time?"
     },
@@ -4965,10 +5092,11 @@
         "name": "schedule"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.locks.schedule.unlock": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {
       "date-time": "What time?"
     },
@@ -5008,10 +5136,11 @@
         "name": "schedule"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "smarthome.locks.unlock": {
-    "category": "assertive",
+    "category": "directive",
     "clarification_templates": {},
     "domain": "smarthome",
     "entity_mappings": {
@@ -5041,7 +5170,8 @@
         "name": "room"
       }
     ],
-    "required": []
+    "required": [],
+    "speech_act": "command"
   },
   "statement.observation": {
     "category": "assertive",
@@ -5062,7 +5192,9 @@
     "defaults": {},
     "description": "Run system diagnostics or health check",
     "domain": "status",
-    "enrichment_sources": ["system_stats"],
+    "enrichment_sources": [
+      "system_stats"
+    ],
     "entity_mappings": {},
     "input_contexts": [],
     "optional": [],
@@ -5076,7 +5208,9 @@
     "defaults": {},
     "description": "Get status report or update",
     "domain": "status",
-    "enrichment_sources": ["system_stats"],
+    "enrichment_sources": [
+      "system_stats"
+    ],
     "entity_mappings": {},
     "input_contexts": [],
     "optional": [

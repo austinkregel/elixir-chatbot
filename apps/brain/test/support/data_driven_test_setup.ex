@@ -101,6 +101,6 @@ defmodule Brain.DataDrivenTestSetup do
 
   @doc "Checks if POS model is available.\n"
   def pos_model_available? do
-    Brain.ML.POSTagger.ready?()
+    Brain.ML.POSTagger.model_exists?()
   end
 end

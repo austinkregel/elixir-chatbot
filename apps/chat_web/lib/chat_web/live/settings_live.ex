@@ -2,7 +2,6 @@ defmodule ChatWeb.SettingsLive do
   @moduledoc "Settings page for world management and entity administration.\n\nFeatures:\n- World management (create, delete, configure)\n- Gazetteer entity management\n- System configuration\n"
 
   alias Brain.Response.LSTMResponse
-  alias Brain.ML.LSTM.MultiTaskModel
   alias Brain.ML.LSTM.UnifiedModel
   alias Phoenix.PubSub
   use ChatWeb, :live_view
@@ -210,15 +209,6 @@ defmodule ChatWeb.SettingsLive do
         :exit, _ -> false
       end
 
-    multi_task_ready =
-      try do
-        MultiTaskModel.ready?()
-      rescue
-        _ -> false
-      catch
-        :exit, _ -> false
-      end
-
     response_ready =
       try do
         LSTMResponse.ready?()
@@ -230,7 +220,6 @@ defmodule ChatWeb.SettingsLive do
 
     model_statuses = %{
       unified_model: unified_ready,
-      multi_task_model: multi_task_ready,
       response_scorer: response_ready
     }
 
@@ -615,12 +604,11 @@ defmodule ChatWeb.SettingsLive do
     socket = assign(socket, :ml_reloading, true)
 
     results =
-      [:unified, :multi_task, :response]
+      [:unified, :response]
       |> Enum.map(fn model ->
         try do
           case model do
             :unified -> {model, UnifiedModel.reload()}
-            :multi_task -> {model, MultiTaskModel.reload()}
             :response -> {model, LSTMResponse.reload()}
           end
         rescue
@@ -1706,20 +1694,6 @@ defmodule ChatWeb.SettingsLive do
               if(@model_statuses[:unified_model], do: "badge-success", else: "badge-ghost")
             ]}>
               {if @model_statuses[:unified_model], do: "Ready", else: "Not Ready"}
-            </span>
-          </div>
-        </div>
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="font-medium">Multi-Task Model</div>
-              <div class="text-sm text-base-content/60">Intent, NER, POS Tagging</div>
-            </div>
-            <span class={[
-              "badge",
-              if(@model_statuses[:multi_task_model], do: "badge-success", else: "badge-ghost")
-            ]}>
-              {if @model_statuses[:multi_task_model], do: "Ready", else: "Not Ready"}
             </span>
           </div>
         </div>

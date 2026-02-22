@@ -4,13 +4,13 @@
     "per_page": 3,
     "search": "transformer attention"
   },
-  "recorded_at": "2026-02-16T16:49:12.481888Z",
+  "recorded_at": "2026-02-17T05:05:08.885033Z",
   "response": {
     "body": {
       "group_by": [],
       "meta": {
         "count": 179113,
-        "db_response_time_ms": 142,
+        "db_response_time_ms": 58,
         "groups_count": null,
         "page": 1,
         "per_page": 3
@@ -658,7 +658,7 @@
             ]
           },
           "type": "article",
-          "relevance_score": 1207.7357,
+          "relevance_score": 1207.4429,
           "fwci": 77.78785844,
           "awards": [],
           "referenced_works_count": 78,
@@ -1801,7 +1801,7 @@
             ]
           },
           "type": "article",
-          "relevance_score": 1069.0223,
+          "relevance_score": 1069.3419,
           "fwci": 170.86827136,
           "awards": [],
           "referenced_works_count": 67,
@@ -3386,7 +3386,7 @@
         "DYNAMIC"
       ],
       "cf-ray": [
-        "9cee89ea5f9d170f-ORD"
+        "9cf2c001eee8fa06-ORD"
       ],
       "connection": [
         "keep-alive"
@@ -3395,16 +3395,16 @@
         "application/json"
       ],
       "date": [
-        "Mon, 16 Feb 2026 16:49:31 GMT"
+        "Tue, 17 Feb 2026 05:05:30 GMT"
       ],
       "nel": [
         "{\"report_to\":\"heroku-nel\",\"response_headers\":[\"Via\"],\"max_age\":3600,\"success_fraction\":0.01,\"failure_fraction\":0.1}"
       ],
       "report-to": [
-        "{\"group\":\"heroku-nel\",\"endpoints\":[{\"url\":\"https://nel.heroku.com/reports?s=iPLFcuYYncfGG9JkHVxkL8SDwgi8i82xqJ5kXa8zSWw%3D\\u0026sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d\\u0026ts=1771260571\"}],\"max_age\":3600}"
+        "{\"group\":\"heroku-nel\",\"endpoints\":[{\"url\":\"https://nel.heroku.com/reports?s=p96PZci4pcETHoo9V1%2FCgx4i4%2FTQapq%2FeAWG7Pf18bY%3D\\u0026sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d\\u0026ts=1771304730\"}],\"max_age\":3600}"
       ],
       "reporting-endpoints": [
-        "heroku-nel=\"https://nel.heroku.com/reports?s=iPLFcuYYncfGG9JkHVxkL8SDwgi8i82xqJ5kXa8zSWw%3D&sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d&ts=1771260571\""
+        "heroku-nel=\"https://nel.heroku.com/reports?s=p96PZci4pcETHoo9V1%2FCgx4i4%2FTQapq%2FeAWG7Pf18bY%3D&sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d&ts=1771304730\""
       ],
       "server": [
         "cloudflare"
@@ -3428,7 +3428,7 @@
         "9910"
       ],
       "x-ratelimit-reset": [
-        "25829"
+        "68070"
       ]
     },
     "status": 200

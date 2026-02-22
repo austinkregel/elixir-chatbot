@@ -311,6 +311,25 @@ defmodule Brain.ML.Tokenizer do
     end
   end
 
+  @question_words ~w(who what when where why how which whom whose)
+
+  @doc "Returns the set of English interrogative words (question words)."
+  def question_words, do: @question_words
+
+  @doc """
+  Checks whether two strings share any tokens after normalization.
+
+  Tokenizes both strings into words, lowercases them, and checks for
+  set intersection. Returns true if any tokens overlap.
+  """
+  def tokens_overlap?(a, b) when is_binary(a) and is_binary(b) do
+    a_tokens = a |> tokenize_words() |> MapSet.new(&String.downcase/1)
+    b_tokens = b |> tokenize_words() |> MapSet.new(&String.downcase/1)
+    not MapSet.disjoint?(a_tokens, b_tokens)
+  end
+
+  def tokens_overlap?(_, _), do: false
+
   @doc "Check if text ends with a question mark.\nTrims whitespace before checking.\nAccepts both binary strings and tokenized maps with a :text key.\n"
   def ends_with_question?(text) when is_binary(text) do
     text |> String.trim_trailing() |> do_ends_with_char(63)

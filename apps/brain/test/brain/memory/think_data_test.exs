@@ -2,7 +2,7 @@ defmodule Brain.Memory.ThinkDataTest do
   @moduledoc """
   Data-driven tests for Memory.Think covering the cognitive memory API.
   """
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
   import Brain.TestHelpers
 
   alias Brain.Memory.Think
@@ -10,7 +10,7 @@ defmodule Brain.Memory.ThinkDataTest do
 
   @test_world_id "think_test_#{:rand.uniform(100_000)}"
 
-  setup do
+  setup _context do
     ensure_pubsub_started()
     ensure_started(Brain.Memory.Embedder)
     ensure_started(Store)
@@ -21,8 +21,8 @@ defmodule Brain.Memory.ThinkDataTest do
   # Test data for add_episode operation
   @add_episode_test_cases [
     # {params, description}
-    {%{state: "user said hello", action: "greeting", outcome: "responded with hi"}, "basic episode"},
-    {%{state: "weather query", action: "query", outcome: "provided weather", tags: ["weather"]}, "episode with tags"},
+    {%{state: "user said hello", action: "smalltalk.greetings.hello", outcome: "responded with hi"}, "basic episode"},
+    {%{state: "weather query", action: "weather.query", outcome: "provided weather", tags: ["weather.query"]}, "episode with tags"},
     {%{state: "short", action: "a", outcome: "b"}, "minimal episode"},
     {%{state: String.duplicate("long ", 100), action: "long_action", outcome: "long_outcome"}, "long content episode"},
     {%{state: "世界你好", action: "unicode", outcome: "handled"}, "unicode content"},

@@ -12,12 +12,16 @@ defmodule Brain.ML.LSTM.UnifiedModel do
   @default_config %{
     embedding_size: 128,
     hidden_size: 128,
-    dropout: 0.1,
-    learning_rate: 0.001,
-    batch_size: 32,
-    epochs: 20,
-    head_epochs: 20,
-    max_seq_length: 50
+    dropout: 0.2,
+    learning_rate: 3.0e-4,
+    batch_size: 16,
+    epochs: 50,
+    head_epochs: 30,
+    max_seq_length: 50,
+    sentiment_lr_scale: 0.5,
+    sentiment_epochs: 50,
+    speech_act_epochs: 100,
+    speech_act_batch_size: 32
   }
   @sentiment_labels ["negative", "neutral", "positive"]
   @speech_act_labels ["assertive", "directive", "commissive", "expressive", "declarative"]
@@ -263,14 +267,14 @@ defmodule Brain.ML.LSTM.UnifiedModel do
     num_sentiments = length(@sentiment_labels)
     num_speech_acts = length(@speech_act_labels)
     encoder = build_encoder(vocab_size, config)
-    intent_head = build_classification_head(config.hidden_size * 2, num_intents, "intent")
-    ner_head = build_sequence_head(config.hidden_size * 2, num_bio_tags, "ner")
+    intent_head = build_classification_head(config.hidden_size, num_intents, "intent")
+    ner_head = build_sequence_head(config.hidden_size, num_bio_tags, "ner")
 
     sentiment_head =
-      build_classification_head(config.hidden_size * 2, num_sentiments, "sentiment")
+      build_classification_head(config.hidden_size, num_sentiments, "sentiment")
 
     speech_act_head =
-      build_classification_head(config.hidden_size * 2, num_speech_acts, "speech_act")
+      build_classification_head(config.hidden_size, num_speech_acts, "speech_act")
 
     %{
       encoder: encoder,
@@ -289,10 +293,12 @@ defmodule Brain.ML.LSTM.UnifiedModel do
   end
 
   defp build_classification_head(input_size, num_classes, name) do
+    hidden = min(256, num_classes * 2)
+
     Axon.input("#{name}_input", shape: {nil, input_size})
-    |> Axon.dense(64, activation: :relu, name: "#{name}_dense")
-    |> Axon.dropout(rate: 0.1)
-    |> Axon.dense(num_classes, activation: :softmax, name: "#{name}_output")
+    |> Axon.dense(hidden, activation: :relu, name: "#{name}_dense")
+    |> Axon.dropout(rate: 0.3)
+    |> Axon.dense(num_classes, name: "#{name}_output")
   end
 
   defp build_sequence_head(input_size, num_classes, name) do
@@ -304,7 +310,7 @@ defmodule Brain.ML.LSTM.UnifiedModel do
     tokens = Tokenizer.tokenize(text)
     input = prepare_input(tokens, state.vocabularies.token_vocab, state.config)
     encoder_output = Axon.predict(state.encoder, state.params.encoder, %{"input" => input})
-    pooled = Nx.mean(encoder_output, axes: [1])
+    pooled = masked_mean_pool(encoder_output, input)
 
     %{
       intent: run_intent_head(pooled, state),
@@ -318,7 +324,7 @@ defmodule Brain.ML.LSTM.UnifiedModel do
     tokens = Tokenizer.tokenize(text)
     input = prepare_input(tokens, state.vocabularies.token_vocab, state.config)
     encoder_output = Axon.predict(state.encoder, state.params.encoder, %{"input" => input})
-    pooled = Nx.mean(encoder_output, axes: [1])
+    pooled = masked_mean_pool(encoder_output, input)
     run_intent_head(pooled, state)
   end
 
@@ -326,7 +332,7 @@ defmodule Brain.ML.LSTM.UnifiedModel do
     tokens = Tokenizer.tokenize(text)
     input = prepare_input(tokens, state.vocabularies.token_vocab, state.config)
     encoder_output = Axon.predict(state.encoder, state.params.encoder, %{"input" => input})
-    pooled = Nx.mean(encoder_output, axes: [1])
+    pooled = masked_mean_pool(encoder_output, input)
     {label, confidence} = run_sentiment_head(pooled, state)
     %{label: label, confidence: confidence}
   end
@@ -335,7 +341,7 @@ defmodule Brain.ML.LSTM.UnifiedModel do
     tokens = Tokenizer.tokenize(text)
     input = prepare_input(tokens, state.vocabularies.token_vocab, state.config)
     encoder_output = Axon.predict(state.encoder, state.params.encoder, %{"input" => input})
-    pooled = Nx.mean(encoder_output, axes: [1])
+    pooled = masked_mean_pool(encoder_output, input)
     {label, confidence} = run_speech_act_head(pooled, state)
     %{label: label, confidence: confidence}
   end
@@ -348,10 +354,11 @@ defmodule Brain.ML.LSTM.UnifiedModel do
   end
 
   defp run_intent_head(pooled, state) do
-    output = Axon.predict(state.intent_head, state.params.intent, %{"intent_input" => pooled})
+    logits = Axon.predict(state.intent_head, state.params.intent, %{"intent_input" => pooled})
 
-    pred_idx = output |> Nx.argmax(axis: 1) |> Nx.to_flat_list() |> hd()
-    confidence = output |> Nx.to_flat_list() |> Enum.at(pred_idx)
+    pred_idx = logits |> Nx.argmax(axis: 1) |> Nx.to_flat_list() |> hd()
+    probs = Nx.exp(stable_log_softmax(logits))
+    confidence = probs |> Nx.to_flat_list() |> Enum.at(pred_idx)
     intent = Map.get(state.vocabularies.idx_to_intent, pred_idx, "unknown")
 
     {intent, confidence}
@@ -363,10 +370,11 @@ defmodule Brain.ML.LSTM.UnifiedModel do
         {:neutral, 0.5}
 
       params ->
-        output = Axon.predict(state.sentiment_head, params, %{"sentiment_input" => pooled})
+        logits = Axon.predict(state.sentiment_head, params, %{"sentiment_input" => pooled})
 
-        pred_idx = output |> Nx.argmax(axis: 1) |> Nx.to_flat_list() |> hd()
-        confidence = output |> Nx.to_flat_list() |> Enum.at(pred_idx)
+        pred_idx = logits |> Nx.argmax(axis: 1) |> Nx.to_flat_list() |> hd()
+        probs = Nx.exp(stable_log_softmax(logits))
+        confidence = probs |> Nx.to_flat_list() |> Enum.at(pred_idx)
         label = Enum.at(@sentiment_labels, pred_idx, "neutral")
 
         {String.to_atom(label), confidence}
@@ -379,10 +387,11 @@ defmodule Brain.ML.LSTM.UnifiedModel do
         {:assertive, 0.5}
 
       params ->
-        output = Axon.predict(state.speech_act_head, params, %{"speech_act_input" => pooled})
+        logits = Axon.predict(state.speech_act_head, params, %{"speech_act_input" => pooled})
 
-        pred_idx = output |> Nx.argmax(axis: 1) |> Nx.to_flat_list() |> hd()
-        confidence = output |> Nx.to_flat_list() |> Enum.at(pred_idx)
+        pred_idx = logits |> Nx.argmax(axis: 1) |> Nx.to_flat_list() |> hd()
+        probs = Nx.exp(stable_log_softmax(logits))
+        confidence = probs |> Nx.to_flat_list() |> Enum.at(pred_idx)
         label = Enum.at(@speech_act_labels, pred_idx, "assertive")
 
         {String.to_atom(label), confidence}
@@ -455,6 +464,20 @@ defmodule Brain.ML.LSTM.UnifiedModel do
     |> Enum.reverse()
   end
 
+  defp masked_mean_pool(encoder_output, input) do
+    mask = Nx.not_equal(input, 0) |> Nx.as_type(:f32) |> Nx.new_axis(-1)
+    masked = Nx.multiply(encoder_output, mask)
+    sum = Nx.sum(masked, axes: [1])
+    count = Nx.sum(mask, axes: [1]) |> Nx.max(1)
+    Nx.divide(sum, count)
+  end
+
+  defp stable_log_softmax(logits) do
+    max_logit = Nx.reduce_max(logits, axes: [-1], keep_axes: true)
+    shifted = Nx.subtract(logits, max_logit)
+    Nx.subtract(shifted, Nx.log(Nx.sum(Nx.exp(shifted), axes: [-1], keep_axes: true)))
+  end
+
   defp prepare_input(tokens, vocab, config) do
     indices = DataLoaders.tokens_to_indices(tokens, vocab)
     padded = DataLoaders.pad_sequence(indices, config.max_seq_length)
@@ -463,7 +486,48 @@ defmodule Brain.ML.LSTM.UnifiedModel do
 
   defp prepare_all_training_data(config) do
     with {:ok, intent_examples} <- DataLoaders.load_intent_training_data_for_lstm() do
-      token_vocab = DataLoaders.build_lstm_vocabulary(intent_examples, max_vocab: 8000)
+      min_examples = Map.get(config, :min_examples_per_intent, 10)
+
+      intent_examples =
+        if min_examples > 0 do
+          intent_counts = Enum.frequencies_by(intent_examples, & &1.intent)
+
+          valid_intents =
+            intent_counts
+            |> Enum.filter(fn {_intent, count} -> count >= min_examples end)
+            |> Enum.map(fn {intent, _count} -> intent end)
+            |> MapSet.new()
+
+          filtered = Enum.filter(intent_examples, &MapSet.member?(valid_intents, &1.intent))
+          removed = map_size(intent_counts) - MapSet.size(valid_intents)
+
+          Logger.info(
+            "Filtered intents with <#{min_examples} examples: removed #{removed} classes, " <>
+              "#{length(filtered)}/#{length(intent_examples)} examples retained"
+          )
+
+          filtered
+        else
+          intent_examples
+        end
+
+      sentiment_gold = Brain.ML.EvaluationStore.load_gold_standard("sentiment")
+        |> Enum.filter(fn ex -> is_binary(ex["text"]) and is_binary(ex["sentiment"]) end)
+
+      speech_act_gold = Brain.ML.EvaluationStore.load_gold_standard("speech_act")
+        |> Enum.filter(fn ex -> is_binary(ex["text"]) and is_binary(ex["speech_act"]) end)
+
+      extra_vocab_examples =
+        (sentiment_gold ++ speech_act_gold)
+        |> Enum.map(fn ex ->
+          %{tokens: Tokenizer.tokenize_words(ex["text"])}
+        end)
+
+      token_vocab =
+        DataLoaders.build_lstm_vocabulary(
+          intent_examples ++ extra_vocab_examples,
+          max_vocab: 8000
+        )
 
       intents = intent_examples |> Enum.map(& &1.intent) |> Enum.uniq() |> Enum.sort()
       intent_to_idx = intents |> Enum.with_index() |> Map.new()
@@ -500,12 +564,16 @@ defmodule Brain.ML.LSTM.UnifiedModel do
       }
 
       intent_data = prepare_intent_data(intent_examples, vocabularies, config)
-      sentiment_data = prepare_sentiment_data(vocabularies, config)
+      sentiment_data = prepare_sentiment_data(sentiment_gold, vocabularies, config)
+      {speech_act_data, speech_act_to_idx} = prepare_speech_act_data(speech_act_gold, vocabularies, config)
+
+      vocabularies = Map.put(vocabularies, :speech_act_to_idx, speech_act_to_idx)
 
       {:ok,
        %{
          intent: intent_data,
          sentiment: sentiment_data,
+         speech_act: speech_act_data,
          vocabularies: vocabularies
        }}
     end
@@ -514,7 +582,7 @@ defmodule Brain.ML.LSTM.UnifiedModel do
   defp prepare_intent_data(examples, vocabularies, config) do
     examples
     |> Enum.map(fn ex ->
-      tokens = ex.tokens || Tokenizer.tokenize(ex.text)
+      tokens = ex.tokens || Tokenizer.tokenize_words(ex.text)
       indices = DataLoaders.tokens_to_indices(tokens, vocabularies.token_vocab)
       padded = DataLoaders.pad_sequence(indices, config.max_seq_length)
       intent_idx = Map.get(vocabularies.intent_to_idx, ex.intent, 0)
@@ -523,23 +591,42 @@ defmodule Brain.ML.LSTM.UnifiedModel do
     end)
   end
 
-  defp prepare_sentiment_data(vocabularies, config) do
-    gold = Brain.ML.EvaluationStore.load_gold_standard("sentiment")
-
+  defp prepare_sentiment_data(gold, vocabularies, config) do
     if gold == [] do
       Logger.warning("No sentiment gold standard data found. Sentiment head will not be trained.")
       []
     else
       gold
-      |> Enum.filter(fn ex -> is_binary(ex["text"]) and is_binary(ex["sentiment"]) end)
       |> Enum.map(fn ex ->
-        tokens = Tokenizer.tokenize(ex["text"])
+        tokens = Tokenizer.tokenize_words(ex["text"])
         indices = DataLoaders.tokens_to_indices(tokens, vocabularies.token_vocab)
         padded = DataLoaders.pad_sequence(indices, config.max_seq_length)
         sentiment_idx = Map.get(vocabularies.sentiment_to_idx, ex["sentiment"], 1)
 
         %{input: padded, sentiment: sentiment_idx}
       end)
+    end
+  end
+
+  defp prepare_speech_act_data(gold, vocabularies, config) do
+    speech_act_to_idx = @speech_act_labels |> Enum.with_index() |> Map.new()
+
+    if gold == [] do
+      Logger.warning("No speech act gold standard data found. Speech act head will not be trained.")
+      {[], speech_act_to_idx}
+    else
+      data =
+        gold
+        |> Enum.map(fn ex ->
+          tokens = Tokenizer.tokenize_words(ex["text"])
+          indices = DataLoaders.tokens_to_indices(tokens, vocabularies.token_vocab)
+          padded = DataLoaders.pad_sequence(indices, config.max_seq_length)
+          speech_act_idx = Map.get(speech_act_to_idx, ex["speech_act"], 0)
+
+          %{input: padded, speech_act: speech_act_idx}
+        end)
+
+      {data, speech_act_to_idx}
     end
   end
 
@@ -555,34 +642,56 @@ defmodule Brain.ML.LSTM.UnifiedModel do
         config
       )
 
-    sentiment_params =
+    current_encoder_state = encoder_params.encoder
+
+    {sentiment_params, current_encoder_state} =
       if training_data.sentiment != [] do
         Logger.info("Training sentiment head on #{length(training_data.sentiment)} examples...")
 
-        train_head_with_frozen_encoder(
-          model.encoder,
-          model.sentiment_head,
-          training_data.sentiment,
-          :sentiment,
-          length(@sentiment_labels),
-          encoder_params.encoder,
-          config
-        )
+        state =
+          train_head_end_to_end(
+            model.encoder,
+            training_data.sentiment,
+            :sentiment,
+            length(@sentiment_labels),
+            current_encoder_state,
+            config
+          )
+
+        {state, state}
       else
         Logger.warning("No sentiment training data. Sentiment head will not be trained.")
-        nil
+        {nil, current_encoder_state}
+      end
+
+    {speech_act_params, current_encoder_state} =
+      if training_data.speech_act != [] do
+        Logger.info("Training speech act head on #{length(training_data.speech_act)} examples...")
+
+        state =
+          train_head_end_to_end(
+            model.encoder,
+            training_data.speech_act,
+            :speech_act,
+            length(@speech_act_labels),
+            current_encoder_state,
+            config
+          )
+
+        {state, state}
+      else
+        Logger.warning("No speech act training data. Speech act head will not be trained.")
+        {nil, current_encoder_state}
       end
 
     params = %{
-      encoder: encoder_params.encoder,
+      encoder: current_encoder_state,
       intent: encoder_params.intent
     }
 
-    if sentiment_params do
-      Map.put(params, :sentiment, sentiment_params)
-    else
-      params
-    end
+    params = if sentiment_params, do: Map.put(params, :sentiment, sentiment_params), else: params
+    params = if speech_act_params, do: Map.put(params, :speech_act, speech_act_params), else: params
+    params
   end
 
   # Multi-task training pattern: We build an end-to-end combined model for training
@@ -593,141 +702,319 @@ defmodule Brain.ML.LSTM.UnifiedModel do
   # requires an end-to-end model. Layer names (intent_dense, intent_output) match
   # between combined_model and intent_head so trained params transfer correctly.
   defp train_encoder_and_intent(encoder, intent_head, data, vocabularies, config) do
-    num_intents = map_size(vocabularies.intent_to_idx)
-    shuffled = Enum.shuffle(data)
-    split_idx = floor(length(shuffled) * 0.9)
-    {train_list, _val_list} = Enum.split(shuffled, split_idx)
+    Nx.with_default_backend(Nx.BinaryBackend, fn ->
+      num_intents = map_size(vocabularies.intent_to_idx)
+      label_smoothing = Map.get(config, :label_smoothing, 0.1)
 
-    batches =
-      train_list
-      |> Enum.chunk_every(config.batch_size)
-      |> Enum.filter(fn batch -> length(batch) == config.batch_size end)
-      |> Enum.map(fn batch ->
-        inputs = batch |> Enum.map(& &1.input) |> Nx.tensor(type: :s64)
-        intents = batch |> Enum.map(& &1.intent) |> Nx.tensor(type: :s64) |> Nx.new_axis(1)
+      # Stratified train/val split: ensure every intent appears in both sets
+      grouped = Enum.group_by(data, & &1.intent)
 
-        targets =
-          Nx.equal(
-            Nx.iota({config.batch_size, num_intents}, axis: 1),
-            intents
-          )
-          |> Nx.as_type(:f32)
+      {train_list, val_list} =
+        Enum.reduce(grouped, {[], []}, fn {_intent, group_examples}, {train_acc, val_acc} ->
+          shuffled_group = Enum.shuffle(group_examples)
+          split_at = max(1, floor(length(shuffled_group) * 0.9))
+          {train_part, val_part} = Enum.split(shuffled_group, split_at)
 
-        {inputs, targets}
-      end)
+          {train_part, val_part} =
+            if val_part == [] and length(train_part) > 1 do
+              {Enum.drop(train_part, -1), [List.last(train_part)]}
+            else
+              {train_part, val_part}
+            end
 
-    # Verify intent_head structure matches what we're building for training.
-    # intent_head is used for inference in run_intent_head/2 with the same layer names.
-    Logger.debug("Training with intent_head layers: #{inspect(Axon.get_output_shape(intent_head, %{"intent_input" => {1, config.hidden_size * 2}}))}")
+          {train_acc ++ train_part, val_acc ++ val_part}
+        end)
 
-    combined_model =
-      encoder
-      |> Axon.nx(fn x -> Nx.mean(x, axes: [1]) end)
-      |> Axon.dense(64, activation: :relu, name: "intent_dense")
-      |> Axon.dropout(rate: 0.1)
-      |> Axon.dense(num_intents, activation: :softmax, name: "intent_output")
+      train_list = Enum.shuffle(train_list)
+      val_list = Enum.shuffle(val_list)
 
-    loop =
-      combined_model
-      |> Loop.trainer(
-        :categorical_cross_entropy,
-        Optimizers.adam(learning_rate: config.learning_rate)
+      class_weights =
+        train_list
+        |> Enum.frequencies_by(& &1.intent)
+        |> then(fn freqs ->
+          total = length(train_list)
+
+          raw_weights =
+            0..(num_intents - 1)
+            |> Enum.map(fn idx ->
+              count = Map.get(freqs, idx, 1)
+              :math.sqrt(total / max(count, 1))
+            end)
+
+          mean_w = Enum.sum(raw_weights) / length(raw_weights)
+          Enum.map(raw_weights, fn w -> w / mean_w end) |> Nx.tensor(type: :f32)
+        end)
+
+      make_batches = fn examples ->
+        examples
+        |> Enum.chunk_every(config.batch_size)
+        |> Enum.filter(fn batch -> length(batch) == config.batch_size end)
+        |> Enum.map(fn batch ->
+          batch = pad_batch(batch, config.batch_size)
+          inputs = batch |> Enum.map(& &1.input) |> Nx.tensor(type: :s64)
+          mask = Nx.not_equal(inputs, 0) |> Nx.as_type(:f32) |> Nx.new_axis(-1)
+          intents = batch |> Enum.map(& &1.intent) |> Nx.tensor(type: :s64) |> Nx.new_axis(1)
+
+          one_hot =
+            Nx.equal(
+              Nx.iota({config.batch_size, num_intents}, axis: 1),
+              intents
+            )
+            |> Nx.as_type(:f32)
+
+          targets =
+            Nx.multiply(one_hot, 1.0 - label_smoothing)
+            |> Nx.add(label_smoothing / num_intents)
+
+          {%{"input" => inputs, "mask" => mask}, targets}
+        end)
+      end
+
+      train_data = make_batches.(train_list)
+      val_data = make_batches.(val_list)
+
+      Logger.debug("Training with intent_head layers: #{inspect(Axon.get_output_shape(intent_head, %{"intent_input" => {1, config.hidden_size}}))}")
+
+      head_hidden = min(256, num_intents * 2)
+
+      mask_input = Axon.input("mask", shape: {nil, config.max_seq_length, 1})
+
+      masked_pool = Axon.layer(
+        fn encoder_out, mask, _opts ->
+          masked = Nx.multiply(encoder_out, mask)
+          sum = Nx.sum(masked, axes: [1])
+          count = Nx.sum(mask, axes: [1]) |> Nx.max(1)
+          Nx.divide(sum, count)
+        end,
+        [encoder, mask_input],
+        name: "masked_mean_pool"
       )
-      |> Loop.metric(:accuracy)
 
-    train_data =
-      batches
-      |> Enum.map(fn {inputs, targets} ->
-        {%{"input" => inputs}, targets}
-      end)
+      combined_model =
+        masked_pool
+        |> Axon.dense(head_hidden, activation: :relu, name: "intent_dense")
+        |> Axon.dropout(rate: config.dropout)
+        |> Axon.dense(num_intents, name: "intent_output")
 
-    Logger.info("Training on #{length(train_data)} batches for #{config.epochs} epochs")
+      weighted_loss = fn y_true, logits ->
+        log_probs = stable_log_softmax(logits)
+        per_class_loss = Nx.negate(Nx.multiply(y_true, log_probs))
+        weighted = Nx.multiply(per_class_loss, Nx.reshape(class_weights, {1, num_intents}))
+        Nx.mean(Nx.sum(weighted, axes: [1]))
+      end
 
-    trained_state =
-      Loop.run(loop, train_data, %{}, epochs: config.epochs, compiler: EXLA, strict?: false)
+      loop =
+        combined_model
+        |> Loop.trainer(
+          weighted_loss,
+          Optimizers.adam(learning_rate: config.learning_rate)
+        )
+        |> Loop.metric(:accuracy)
+        |> exla_validate(combined_model, val_data)
+        |> Loop.early_stop("validation_loss", mode: :min, patience: 10)
 
-    %{
-      encoder: trained_state,
-      intent: trained_state
-    }
+      Logger.info("Training on #{length(train_data)} train / #{length(val_data)} val batches for up to #{config.epochs} epochs")
+
+      trained_state =
+        Loop.run(loop, train_data, %{}, epochs: config.epochs, compiler: EXLA, strict?: false)
+
+      %{
+        encoder: trained_state,
+        intent: trained_state
+      }
+    end)
   end
 
-  # Trains a classification head with the encoder frozen (using pre-trained encoder params).
-  # Used for sentiment, speech act, etc. after the encoder is trained on intent.
-  defp train_head_with_frozen_encoder(
+  # Fine-tunes the encoder end-to-end with a classification head.
+  # Gradient flows through both the head and encoder so the encoder
+  # adapts its representations for the target task. Uses a reduced
+  # learning rate to preserve intent-trained features.
+  #
+  # Per-head config overrides (in @default_config or opts):
+  #   {head_name}_lr_scale   — multiplier on base LR (default: 1/3)
+  #   {head_name}_epochs     — override head_epochs
+  #   {head_name}_batch_size — override batch_size
+  defp train_head_end_to_end(
          encoder,
-         _head,
          data,
          head_name,
          num_classes,
          encoder_params,
          config
        ) do
-    name = to_string(head_name)
-    shuffled = Enum.shuffle(data)
-    split_idx = floor(length(shuffled) * 0.9)
-    {train_list, _val_list} = Enum.split(shuffled, split_idx)
+    Nx.with_default_backend(Nx.BinaryBackend, fn ->
+      name = to_string(head_name)
+      label_smoothing = Map.get(config, :label_smoothing, 0.1)
 
-    # Pre-compute encoder outputs (frozen encoder)
-    encoded_data =
-      train_list
-      |> Enum.chunk_every(config.batch_size)
-      |> Enum.filter(fn batch -> length(batch) == config.batch_size end)
-      |> Enum.map(fn batch ->
-        inputs = batch |> Enum.map(& &1.input) |> Nx.tensor(type: :s64)
-        label_key = head_name
-        labels = batch |> Enum.map(&Map.get(&1, label_key)) |> Nx.tensor(type: :s64) |> Nx.new_axis(1)
+      lr_scale_key = :"#{head_name}_lr_scale"
+      lr_scale = Map.get(config, lr_scale_key, 1 / 3)
+      finetune_lr = config.learning_rate * lr_scale
 
-        encoder_output =
-          Axon.predict(encoder, encoder_params, %{"input" => inputs}, compiler: EXLA)
-        pooled = Nx.mean(encoder_output, axes: [1])
+      batch_size_key = :"#{head_name}_batch_size"
+      head_batch_size = Map.get(config, batch_size_key, config.batch_size)
 
-        # Transfer pre-computed tensors to BinaryBackend so the training loop
-        # (which manages its own EXLA compilation) doesn't hit backend mismatches
-        pooled = Nx.backend_transfer(pooled, Nx.BinaryBackend)
+      grouped = Enum.group_by(data, &Map.get(&1, head_name))
 
-        targets =
-          Nx.equal(
-            Nx.iota({config.batch_size, num_classes}, axis: 1),
-            labels
-          )
-          |> Nx.as_type(:f32)
-          |> Nx.backend_transfer(Nx.BinaryBackend)
+      {train_list, val_list} =
+        Enum.reduce(grouped, {[], []}, fn {_class, group_examples}, {train_acc, val_acc} ->
+          shuffled_group = Enum.shuffle(group_examples)
+          split_at = max(1, floor(length(shuffled_group) * 0.9))
+          {train_part, val_part} = Enum.split(shuffled_group, split_at)
 
-        {pooled, targets}
-      end)
+          {train_part, val_part} =
+            if val_part == [] and length(train_part) > 1 do
+              {Enum.drop(train_part, -1), [List.last(train_part)]}
+            else
+              {train_part, val_part}
+            end
 
-    # Build a standalone head model for training
-    head_model =
-      Axon.input("#{name}_input", shape: {nil, config.hidden_size * 2})
-      |> Axon.dense(64, activation: :relu, name: "#{name}_dense")
-      |> Axon.dropout(rate: 0.1)
-      |> Axon.dense(num_classes, activation: :softmax, name: "#{name}_output")
+          {train_acc ++ train_part, val_acc ++ val_part}
+        end)
 
-    loop =
-      head_model
-      |> Loop.trainer(
-        :categorical_cross_entropy,
-        Optimizers.adam(learning_rate: config.learning_rate)
+      train_list = Enum.shuffle(train_list)
+      val_list = Enum.shuffle(val_list)
+
+      class_weights =
+        train_list
+        |> Enum.frequencies_by(&Map.get(&1, head_name))
+        |> then(fn freqs ->
+          total = length(train_list)
+
+          raw_weights =
+            0..(num_classes - 1)
+            |> Enum.map(fn idx ->
+              count = Map.get(freqs, idx, 1)
+              :math.sqrt(total / max(count, 1))
+            end)
+
+          mean_w = Enum.sum(raw_weights) / length(raw_weights)
+          Enum.map(raw_weights, fn w -> w / mean_w end) |> Nx.tensor(type: :f32)
+        end)
+
+      make_batches = fn examples ->
+        examples
+        |> Enum.chunk_every(head_batch_size)
+        |> Enum.filter(fn batch -> length(batch) == head_batch_size end)
+        |> Enum.map(fn batch ->
+          batch = pad_batch(batch, head_batch_size)
+          inputs = batch |> Enum.map(& &1.input) |> Nx.tensor(type: :s64)
+          mask = Nx.not_equal(inputs, 0) |> Nx.as_type(:f32) |> Nx.new_axis(-1)
+
+          labels =
+            batch
+            |> Enum.map(&Map.get(&1, head_name))
+            |> Nx.tensor(type: :s64)
+            |> Nx.new_axis(1)
+
+          one_hot =
+            Nx.equal(
+              Nx.iota({head_batch_size, num_classes}, axis: 1),
+              labels
+            )
+            |> Nx.as_type(:f32)
+
+          targets =
+            Nx.multiply(one_hot, 1.0 - label_smoothing)
+            |> Nx.add(label_smoothing / num_classes)
+
+          {%{"input" => inputs, "mask" => mask}, targets}
+        end)
+      end
+
+      train_data = make_batches.(train_list)
+      val_data = make_batches.(val_list)
+
+      head_hidden = min(256, num_classes * 2)
+
+      mask_input = Axon.input("mask", shape: {nil, config.max_seq_length, 1})
+
+      masked_pool =
+        Axon.layer(
+          fn encoder_out, mask_val, _opts ->
+            masked = Nx.multiply(encoder_out, mask_val)
+            sum = Nx.sum(masked, axes: [1])
+            count = Nx.sum(mask_val, axes: [1]) |> Nx.max(1)
+            Nx.divide(sum, count)
+          end,
+          [encoder, mask_input],
+          name: "masked_mean_pool"
+        )
+
+      combined_model =
+        masked_pool
+        |> Axon.dense(head_hidden, activation: :relu, name: "#{name}_dense")
+        |> Axon.dropout(rate: config.dropout)
+        |> Axon.dense(num_classes, name: "#{name}_output")
+
+      weighted_loss = fn y_true, logits ->
+        log_probs = stable_log_softmax(logits)
+        per_class_loss = Nx.negate(Nx.multiply(y_true, log_probs))
+        weighted = Nx.multiply(per_class_loss, Nx.reshape(class_weights, {1, num_classes}))
+        Nx.mean(Nx.sum(weighted, axes: [1]))
+      end
+
+      loop =
+        combined_model
+        |> Loop.trainer(
+          weighted_loss,
+          Optimizers.adam(learning_rate: finetune_lr)
+        )
+        |> Loop.metric(:accuracy)
+        |> exla_validate(combined_model, val_data)
+        |> Loop.early_stop("validation_loss", mode: :min, patience: 8)
+
+      epochs_key = :"#{head_name}_epochs"
+
+      head_epochs =
+        Map.get(config, epochs_key) ||
+          Map.get(config, :head_epochs, config.epochs)
+
+      Logger.info(
+        "Training #{name} head on #{length(train_data)} train / #{length(val_data)} val batches " <>
+          "for up to #{head_epochs} epochs (lr=#{finetune_lr}, batch_size=#{head_batch_size})"
       )
-      |> Loop.metric(:accuracy)
 
-    train_data =
-      encoded_data
-      |> Enum.map(fn {pooled, targets} ->
-        {%{"#{name}_input" => pooled}, targets}
-      end)
+      Loop.run(loop, train_data, encoder_params, epochs: head_epochs, compiler: EXLA, strict?: false)
+    end)
+  end
 
-    head_epochs = Map.get(config, :head_epochs, config.epochs)
-    Logger.info("Training #{name} head on #{length(train_data)} batches for #{head_epochs} epochs (encoder trained for #{config.epochs})")
+  # Like Loop.validate/4 but passes compiler: EXLA to the internal evaluator
+  # run. The built-in Loop.validate calls Loop.run without a compiler, so the
+  # evaluator falls back to Nx.Defn.Evaluator. When model params live on EXLA
+  # (from training), the evaluator's BinaryBackend accumulation crashes on the
+  # EXLA output tensors.
+  defp exla_validate(%Loop{metrics: metric_fns} = loop, model, validation_data) do
+    evaluator = Loop.evaluator(model)
 
-    Loop.run(loop, train_data, %{}, epochs: head_epochs, compiler: EXLA, strict?: false)
+    validation_handler = fn %Axon.Loop.State{metrics: metrics, step_state: step_state} = state ->
+      %{model_state: model_state} = step_state
+
+      val_metrics =
+        Enum.reduce(metric_fns, evaluator, fn {k, {_, v}}, acc -> Loop.metric(acc, v, k) end)
+        |> Loop.run(validation_data, model_state, compiler: EXLA, strict?: false)
+        |> Access.get(0)
+        |> Map.new(fn {k, v} -> {"validation_#{k}", v} end)
+        |> Map.merge(metrics, fn _, _, v -> v end)
+
+      {:continue, %{state | metrics: val_metrics}}
+    end
+
+    Loop.handle_event(loop, :epoch_completed, validation_handler)
+  end
+
+  # Pad undersized last batch by repeating the last sample so EXLA
+  # compiled shapes remain consistent across all batches
+  defp pad_batch(batch, target_size) when length(batch) >= target_size, do: batch
+
+  defp pad_batch(batch, target_size) do
+    last = List.last(batch)
+    padding = List.duplicate(last, target_size - length(batch))
+    batch ++ padding
   end
 
   # Model architecture is reconstructed from config during load since Axon models
   # are built dynamically from hyperparameters (vocab_size, hidden_size, etc.)
   defp save_unified_model(_model, params, vocabularies, config) do
-    # Use world-scoped models_path from config if provided, otherwise use default
     models_path =
       Map.get(config, :models_path) ||
         Application.get_env(:brain, :ml)[:models_path] ||
@@ -738,8 +1025,10 @@ defmodule Brain.ML.LSTM.UnifiedModel do
 
     save_path = Path.join(lstm_path, "unified_model.term")
 
+    portable_params = transfer_params_to_binary_backend(params)
+
     data = %{
-      params: params,
+      params: portable_params,
       vocabularies: vocabularies,
       config: config
     }
@@ -749,6 +1038,20 @@ defmodule Brain.ML.LSTM.UnifiedModel do
 
     Logger.info("Unified model saved to #{save_path}")
   end
+
+  defp transfer_params_to_binary_backend(%Axon.ModelState{} = state) do
+    Axon.ModelState.new(transfer_params_to_binary_backend(state.data))
+  end
+
+  defp transfer_params_to_binary_backend(%Nx.Tensor{} = tensor) do
+    Nx.backend_copy(tensor, Nx.BinaryBackend)
+  end
+
+  defp transfer_params_to_binary_backend(map) when is_map(map) do
+    Map.new(map, fn {k, v} -> {k, transfer_params_to_binary_backend(v)} end)
+  end
+
+  defp transfer_params_to_binary_backend(other), do: other
 
   defp load_saved_model do
     models_path = Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")

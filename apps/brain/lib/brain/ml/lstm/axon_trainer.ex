@@ -11,13 +11,14 @@ defmodule Brain.ML.LSTM.AxonTrainer do
   @default_config %{
     embedding_size: 64,
     hidden_size: 64,
-    dropout: 0.1,
-    learning_rate: 0.001,
-    batch_size: 32,
-    epochs: 5,
+    dropout: 0.2,
+    learning_rate: 3.0e-4,
+    batch_size: 16,
+    epochs: 15,
     max_seq_length: 50,
     min_vocab_freq: 2,
-    max_vocab_size: 8000
+    max_vocab_size: 8000,
+    max_intents: nil
   }
 
   @doc "Train an intent classification model using LSTM with Axon's Loop API.\n\nThis is the recommended training method as it properly handles:\n- Gradient computation and backpropagation\n- JIT compilation for speed\n- Batching and shuffling\n- Metrics tracking\n\n## Options\n- `:embedding_size` - Dimension of word embeddings (default: 64)\n- `:hidden_size` - LSTM hidden dimension (default: 64)\n- `:learning_rate` - Adam learning rate (default: 0.001)\n- `:batch_size` - Training batch size (default: 32)\n- `:epochs` - Number of training epochs (default: 5)\n- `:name` - Experiment name for tracking (optional)\n"
@@ -29,18 +30,32 @@ defmodule Brain.ML.LSTM.AxonTrainer do
     Logger.info("Config: #{inspect(config)}")
 
     with {:ok, raw_examples} <- DataLoaders.load_intent_training_data_for_lstm(),
-         {:ok, train_data, val_data, vocabularies} <- prepare_data(raw_examples, config) do
+         filtered_examples <- maybe_filter_top_intents(raw_examples, config),
+         {:ok, train_data, val_data, vocabularies} <- prepare_data(filtered_examples, config) do
       model = build_intent_model(vocabularies, config)
 
       Logger.info("Training on #{length(train_data.inputs)} samples")
       Logger.info("Validation on #{length(val_data.inputs)} samples")
       Logger.info("Vocabulary size: #{map_size(vocabularies.token_vocab)}")
       Logger.info("Intent classes: #{map_size(vocabularies.intent_to_idx)}")
-      train_batches = create_batches(train_data, config.batch_size)
-      val_batches = create_batches(val_data, config.batch_size)
+      num_intents = map_size(vocabularies.intent_to_idx)
+      train_batches = create_batches(train_data, config.batch_size, num_intents)
+      val_batches = create_batches(val_data, config.batch_size, num_intents)
 
       Logger.info("Training batches: #{length(train_batches)}")
       Logger.info("Validation batches: #{length(val_batches)}")
+
+      # Weighted cross-entropy loss to handle class imbalance.
+      # backend_copy converts from EXLA.Backend to Nx.BinaryBackend so the
+      # tensor can be inlined into the EXLA-compiled defn expression.
+      weights = Nx.backend_copy(vocabularies.class_weights)
+
+      weighted_loss = fn y_true, logits ->
+        log_probs = stable_log_softmax(logits)
+        per_class_loss = Nx.negate(Nx.multiply(y_true, log_probs))
+        weighted = Nx.multiply(per_class_loss, Nx.reshape(weights, {1, num_intents}))
+        Nx.mean(Nx.sum(weighted, axes: [1]))
+      end
 
       metrics_state = %{
         best_val_accuracy: 0.0,
@@ -58,7 +73,7 @@ defmodule Brain.ML.LSTM.AxonTrainer do
       loop =
         model
         |> Loop.trainer(
-          :categorical_cross_entropy,
+          weighted_loss,
           Optimizers.adam(learning_rate: config.learning_rate)
         )
         |> Loop.metric(:accuracy)
@@ -152,14 +167,15 @@ defmodule Brain.ML.LSTM.AxonTrainer do
 
   @doc "Classify text using a trained model.\n"
   def classify(text, model_state) do
-    tokens = Tokenizer.tokenize(text)
+    tokens = Tokenizer.tokenize(text) |> Enum.map(& &1.text)
     indices = DataLoaders.tokens_to_indices(tokens, model_state.vocabularies.token_vocab)
     padded = DataLoaders.pad_sequence(indices, model_state.config.max_seq_length)
 
     input = Nx.tensor([padded], type: :s64)
-    output = Axon.predict(model_state.model, model_state.params, %{"input" => input})
-    pred_idx = output |> Nx.argmax(axis: 1) |> Nx.to_flat_list() |> hd()
-    confidence = output |> Nx.to_flat_list() |> Enum.at(pred_idx)
+    logits = Axon.predict(model_state.model, model_state.params, %{"input" => input})
+    pred_idx = logits |> Nx.argmax(axis: 1) |> Nx.to_flat_list() |> hd()
+    probs = Nx.exp(stable_log_softmax(logits))
+    confidence = probs |> Nx.to_flat_list() |> Enum.at(pred_idx)
 
     intent = Map.get(model_state.vocabularies.idx_to_intent, pred_idx, "unknown")
 
@@ -231,8 +247,28 @@ defmodule Brain.ML.LSTM.AxonTrainer do
       Nx.mean(x, axes: [1])
     end)
     |> Axon.dropout(rate: config.dropout)
-    |> Axon.dense(num_intents, activation: :softmax)
+    |> Axon.dense(num_intents)
   end
+
+  defp maybe_filter_top_intents(examples, %{max_intents: n}) when is_integer(n) and n > 0 do
+    top_intents =
+      examples
+      |> Enum.frequencies_by(& &1.intent)
+      |> Enum.sort_by(fn {_, count} -> count end, :desc)
+      |> Enum.take(n)
+      |> Enum.map(fn {intent, _} -> intent end)
+      |> MapSet.new()
+
+    filtered = Enum.filter(examples, fn ex -> ex.intent in top_intents end)
+
+    Logger.info(
+      "Filtered to top #{n} intents (#{length(filtered)} examples from #{length(examples)} total)"
+    )
+
+    filtered
+  end
+
+  defp maybe_filter_top_intents(examples, _config), do: examples
 
   defp prepare_data(examples, config) do
     token_vocab =
@@ -244,11 +280,36 @@ defmodule Brain.ML.LSTM.AxonTrainer do
     intents = examples |> Enum.map(& &1.intent) |> Enum.uniq() |> Enum.sort()
     intent_to_idx = intents |> Enum.with_index() |> Map.new()
     idx_to_intent = intent_to_idx |> Enum.map(fn {k, v} -> {v, k} end) |> Map.new()
+    num_intents = length(intents)
+
+    # Compute inverse-frequency class weights to handle class imbalance.
+    # Weight = total_samples / (num_classes * class_count)
+    intent_counts = Enum.frequencies_by(examples, & &1.intent)
+    total = length(examples)
+
+    # Use square root of inverse frequency for gentler class balancing.
+    # Raw inverse frequency (total / count) can produce 300x ratios between
+    # rare and common classes, causing gradient collapse. Square root compresses
+    # the range (e.g., 300x → ~17x), then normalizing to mean=1.0 keeps the
+    # overall loss magnitude stable.
+    raw_weights =
+      0..(num_intents - 1)
+      |> Enum.map(fn idx ->
+        intent_name = Map.get(idx_to_intent, idx, "unknown")
+        count = Map.get(intent_counts, intent_name, 1)
+        :math.sqrt(total / max(count, 1))
+      end)
+
+    mean_weight = Enum.sum(raw_weights) / length(raw_weights)
+    class_weights = Enum.map(raw_weights, fn w -> w / mean_weight end)
+
+    class_weights_tensor = Nx.tensor(class_weights, type: :f32)
 
     vocabularies = %{
       token_vocab: token_vocab,
       intent_to_idx: intent_to_idx,
-      idx_to_intent: idx_to_intent
+      idx_to_intent: idx_to_intent,
+      class_weights: class_weights_tensor
     }
 
     processed =
@@ -261,9 +322,29 @@ defmodule Brain.ML.LSTM.AxonTrainer do
         %{input: padded, intent: intent_idx}
       end)
 
-    shuffled = Enum.shuffle(processed)
-    split_idx = floor(length(shuffled) * 0.9)
-    {train_list, val_list} = Enum.split(shuffled, split_idx)
+    # Stratified split: ensure every intent appears in both train and val
+    grouped = Enum.group_by(processed, & &1.intent)
+
+    {train_list, val_list} =
+      Enum.reduce(grouped, {[], []}, fn {_intent, group_examples}, {train_acc, val_acc} ->
+        shuffled_group = Enum.shuffle(group_examples)
+        split_at = max(1, floor(length(shuffled_group) * 0.9))
+        {train_part, val_part} = Enum.split(shuffled_group, split_at)
+
+        # Ensure at least 1 example in val for each intent
+        {train_part, val_part} =
+          if val_part == [] and length(train_part) > 1 do
+            {Enum.drop(train_part, -1), [List.last(train_part)]}
+          else
+            {train_part, val_part}
+          end
+
+        {train_acc ++ train_part, val_acc ++ val_part}
+      end)
+
+    # Shuffle again so batches aren't grouped by intent
+    train_list = Enum.shuffle(train_list)
+    val_list = Enum.shuffle(val_list)
 
     train_data = %{
       inputs: Enum.map(train_list, & &1.input),
@@ -275,14 +356,12 @@ defmodule Brain.ML.LSTM.AxonTrainer do
       intents: Enum.map(val_list, & &1.intent)
     }
 
-    Logger.info("Prepared data: #{length(train_list)} train, #{length(val_list)} val")
+    Logger.info("Prepared data: #{length(train_list)} train, #{length(val_list)} val, #{num_intents} intents")
 
     {:ok, train_data, val_data, vocabularies}
   end
 
-  defp create_batches(data, batch_size) do
-    num_intents = data.intents |> Enum.max() |> Kernel.+(1)
-
+  defp create_batches(data, batch_size, num_intents) do
     data.inputs
     |> Enum.zip(data.intents)
     |> Enum.chunk_every(batch_size)
@@ -295,13 +374,19 @@ defmodule Brain.ML.LSTM.AxonTrainer do
 
       target_tensor =
         Nx.equal(
-          Nx.iota({length(intents), num_intents}, axis: 1),
+          Nx.iota({batch_size, num_intents}, axis: 1),
           intent_tensor
         )
         |> Nx.as_type(:f32)
 
       {%{"input" => input_tensor}, target_tensor}
     end)
+  end
+
+  defp stable_log_softmax(logits) do
+    max_logit = Nx.reduce_max(logits, axes: [-1], keep_axes: true)
+    shifted = Nx.subtract(logits, max_logit)
+    Nx.subtract(shifted, Nx.log(Nx.sum(Nx.exp(shifted), axes: [-1], keep_axes: true)))
   end
 
   defp save_model(result) do
@@ -344,7 +429,7 @@ defmodule Brain.ML.LSTM.AxonTrainer do
           |> then(fn {seq, _} -> seq end)
           |> Axon.nx(fn x -> Nx.mean(x, axes: [1]) end)
           |> Axon.dropout(rate: data.config.dropout)
-          |> Axon.dense(num_intents, activation: :softmax)
+          |> Axon.dense(num_intents)
 
         {:ok,
          %{

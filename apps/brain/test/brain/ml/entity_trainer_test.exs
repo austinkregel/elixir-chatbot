@@ -8,7 +8,7 @@ defmodule Brain.ML.EntityTrainerTest do
       examples = [
         %{
           text: "weather in London",
-          intent: "weather",
+          intent: "weather.query",
           entities: [
             %{text: "London", type: "location", alias: "address", start_pos: 11, end_pos: 16}
           ]
@@ -20,7 +20,7 @@ defmodule Brain.ML.EntityTrainerTest do
       assert length(sequences) == 1
       seq = Enum.at(sequences, 0)
 
-      assert seq.intent == "weather"
+      assert seq.intent == "weather.query"
       assert is_list(seq.tokens)
       assert is_list(seq.tags)
       assert length(seq.tokens) == length(seq.tags)
@@ -30,7 +30,7 @@ defmodule Brain.ML.EntityTrainerTest do
       examples = [
         %{
           text: "hello world",
-          intent: "greeting",
+          intent: "smalltalk.greetings.hello",
           entities: []
         }
       ]
@@ -44,7 +44,7 @@ defmodule Brain.ML.EntityTrainerTest do
       examples = [
         %{
           text: "weather in New York tomorrow",
-          intent: "weather",
+          intent: "weather.query",
           entities: [
             %{text: "New York", type: "location", alias: "address", start_pos: 11, end_pos: 18}
           ]
@@ -63,7 +63,7 @@ defmodule Brain.ML.EntityTrainerTest do
     end
 
     test "handles example with no entities" do
-      examples = [%{text: "hello", intent: "greeting", entities: nil}]
+      examples = [%{text: "hello", intent: "smalltalk.greetings.hello", entities: nil}]
 
       sequences = EntityTrainer.convert_to_bio_sequences(examples)
       assert length(sequences) == 1

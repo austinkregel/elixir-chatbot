@@ -45,7 +45,7 @@ defmodule Brain.Analysis.EventExtractor do
   # ============================================================================
 
   @doc """
-  Extract events from MultiTaskModel analysis result.
+  Extract events from analysis result with POS tags and entities.
 
   ## Options
   - `:max_events` - Maximum number of events to extract (default: 5)

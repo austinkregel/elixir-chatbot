@@ -2,19 +2,18 @@ defmodule Brain.KnowledgeStoreDataTest do
   @moduledoc """
   Data-driven tests for KnowledgeStore covering world and persona knowledge management.
   """
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
   import Brain.TestHelpers
 
   alias Brain.KnowledgeStore
 
   @test_world_id "test_world_#{:rand.uniform(100_000)}"
 
-  setup do
+  setup _context do
     ensure_pubsub_started()
     ensure_started(KnowledgeStore)
 
     on_exit(fn ->
-      # Cleanup test world
       try do
         KnowledgeStore.clear_world(@test_world_id)
       catch

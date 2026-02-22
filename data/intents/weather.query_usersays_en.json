@@ -1,0 +1,28 @@
+[
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "What is the test intent?",
+        "userDefined": false
+      }
+    ],
+    "id": "b6f3a08a472fb955",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 0
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "What is the test intent?",
+        "userDefined": false
+      }
+    ],
+    "id": "84c836ed955c50c5",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 0
+  }
+]

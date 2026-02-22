@@ -1,6 +1,6 @@
 defmodule Brain.Knowledge.ResearchAgentTest do
   alias Brain.Knowledge.Types
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
   import Brain.TestHelpers
 
   alias Brain.Knowledge.ResearchAgent
@@ -15,7 +15,7 @@ defmodule Brain.Knowledge.ResearchAgentTest do
     :ok
   end
 
-  setup do
+  setup _context do
     ensure_pubsub_started()
 
     case Agent.start_link(fn -> %{} end, name: Brain.Knowledge.RateLimiter) do

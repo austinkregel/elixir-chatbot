@@ -1,8 +1,8 @@
 defmodule Mix.Tasks.Evaluate.Intent do
-  alias Brain.Analysis.SpeechActClassifier
+  alias Brain.Analysis.Pipeline
   alias Brain.ML
   @shortdoc "Evaluate intent classification accuracy"
-  @moduledoc "Evaluate intent classification against gold standard data.\n\n## Usage\n\n    mix evaluate.intent              # Run evaluation\n    mix evaluate.intent --save       # Save results\n    mix evaluate.intent --compare    # Compare with previous\n    mix evaluate.intent --verbose    # Show confusion matrix\n"
+  @moduledoc "Evaluate intent classification against gold standard data.\n\nUses the full production pipeline for evaluation to measure real-world accuracy.\n\n## Usage\n\n    mix evaluate.intent              # Run evaluation\n    mix evaluate.intent --save       # Save results\n    mix evaluate.intent --compare    # Compare with previous\n    mix evaluate.intent --verbose    # Show confusion matrix\n"
 
   use Mix.Task
 
@@ -29,9 +29,12 @@ defmodule Mix.Tasks.Evaluate.Intent do
 
     IO.puts("\n" <> String.duplicate("=", 60))
     IO.puts("INTENT CLASSIFICATION EVALUATION (#{length(gold)} examples)")
+    IO.puts("(Using production pipeline)")
     IO.puts(String.duplicate("=", 60) <> "\n")
 
+    start_time = System.monotonic_time(:millisecond)
     {predictions, actuals} = evaluate_all(gold)
+    duration_ms = System.monotonic_time(:millisecond) - start_time
 
     cm = Evaluation.confusion_matrix(predictions, actuals)
     report = Evaluation.classification_report(cm)
@@ -41,10 +44,20 @@ defmodule Mix.Tasks.Evaluate.Intent do
     IO.puts("Macro F1:         #{Float.round(result.macro_f1 * 100, 1)}%")
     IO.puts("Weighted F1:      #{Float.round(result.weighted_f1 * 100, 1)}%")
     IO.puts("Total Examples:   #{result.total_examples}")
+    IO.puts("Duration:         #{duration_ms}ms")
     IO.puts("")
 
     IO.puts(Evaluation.format_report(report))
     IO.puts("")
+
+    broadcast_result(result, duration_ms)
+    Brain.Telemetry.emit_evaluation_complete("intent", %{
+      accuracy: result.accuracy,
+      macro_f1: result.macro_f1,
+      weighted_f1: result.weighted_f1,
+      total_examples: result.total_examples,
+      duration_ms: duration_ms
+    })
 
     if verbose? do
       IO.puts("\n--- Confusion Matrix ---\n")
@@ -88,23 +101,33 @@ defmodule Mix.Tasks.Evaluate.Intent do
       expected = example["intent"]
 
       predicted =
-        case SpeechActClassifier.classify(text) do
-          %{indicators: indicators} ->
-            indicators
-            |> Enum.find_value("unknown", fn indicator ->
-              case String.split(indicator, ":", parts: 2) do
-                ["intent", intent] -> intent
-                _ -> nil
-              end
-            end)
-
-          _ ->
-            "unknown"
+        try do
+          analysis = Pipeline.analyze_chunk(text, side_effects: false)
+          analysis.intent || "unknown"
+        rescue
+          _ -> "unknown"
+        catch
+          :exit, _ -> "unknown"
         end
 
       {[predicted | preds], [expected | acts]}
     end)
     |> then(fn {p, a} -> {Enum.reverse(p), Enum.reverse(a)} end)
+  end
+
+  defp broadcast_result(result, duration_ms) do
+    Phoenix.PubSub.broadcast(Brain.PubSub, "evaluation:complete",
+      {:evaluation_complete, %{
+        task: "intent",
+        accuracy: result.accuracy,
+        macro_f1: result.macro_f1,
+        weighted_f1: result.weighted_f1,
+        total_examples: result.total_examples,
+        duration_ms: duration_ms,
+        timestamp: DateTime.utc_now()
+      }})
+  rescue
+    _ -> :ok
   end
 
   defp print_confusion_matrix(cm) do

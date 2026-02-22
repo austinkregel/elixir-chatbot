@@ -82,23 +82,33 @@ defmodule Brain.Analysis.SlotDetectorTest do
   end
 
   describe "suggest_intent_from_entities/1" do
-    test "suggests weather intent from location entity" do
+    test "suggests a location-accepting intent from location entity" do
       entities = [
         %{entity_type: "location", value: "Paris", confidence: 0.9}
       ]
 
       {:ok, intent, _score} = SlotDetector.suggest_intent_from_entities(entities)
 
-      # With the fixed scoring algorithm, intents are scored by:
-      # 1. Number of unique entity types that match any slot
-      # 2. Tiebreaker: ratio of required slots that can be filled
-      #
-      # For a single location entity:
-      # - weather.query: 1 type match, 1/1 required slots = 100% fill ratio
-      # - navigation.directions: 1 type match, 1/1 required slots = 100% fill ratio
-      # Both are equally valid, but navigation.directions should NOT beat weather.query
-      # (which was the bug - it was scoring 2 because it counted 2 slots accepting location)
-      assert intent in ["weather.query", "weather.condition", "weather.forecast", "weather.current", "navigation.directions"]
+      # With only a location entity (no textual context), multiple intents
+      # are equally valid: weather, navigation, knowledge (capital queries),
+      # etc. The function should return any intent that accepts location.
+      location_intents =
+        Brain.Analysis.IntentRegistry.list_intents()
+        |> Enum.filter(fn name ->
+          case Brain.Analysis.IntentRegistry.get(name) do
+            nil -> false
+            meta ->
+              meta
+              |> Map.get("entity_mappings", %{})
+              |> Map.values()
+              |> List.flatten()
+              |> Enum.member?("location")
+          end
+        end)
+
+      assert intent in location_intents,
+        "Expected intent #{intent} to accept location entities. " <>
+        "Valid intents: #{inspect(Enum.take(location_intents, 10))}"
     end
 
     test "suggests device control from device entity" do

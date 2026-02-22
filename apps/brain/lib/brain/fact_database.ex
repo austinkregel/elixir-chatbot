@@ -33,6 +33,7 @@ defmodule Brain.FactDatabase do
     Application.get_env(:brain, :facts_dir, @default_facts_dir)
   end
 
+
   # Client API
 
   def start_link(opts \\ []) do
@@ -134,8 +135,7 @@ defmodule Brain.FactDatabase do
 
   @impl true
   def init(_opts) do
-    curated = load_curated_facts()
-    learned = load_learned_facts()
+    {curated, learned} = load_all_facts_from_atlas()
     curated_ids = MapSet.new(curated, & &1.id)
 
     Logger.info("FactDatabase started", %{
@@ -210,8 +210,7 @@ defmodule Brain.FactDatabase do
 
   @impl true
   def handle_call(:reload, _from, _state) do
-    curated = load_curated_facts()
-    learned = load_learned_facts()
+    {curated, learned} = load_all_facts_from_atlas()
     curated_ids = MapSet.new(curated, & &1.id)
 
     Logger.info("FactDatabase reloaded", %{
@@ -278,8 +277,47 @@ defmodule Brain.FactDatabase do
   defp select_layer(state, _), do: all_facts(state)
 
   # Private Functions — Loading
+  #
+  # All facts (curated + learned) live in atlas_learned_facts.
+  # The importer seeds them from data/facts/*.json.
+  # We partition into curated vs learned based on whether the fact
+  # has a learned_at timestamp — curated facts don't.
 
-  defp load_curated_facts do
+  defp load_all_facts_from_atlas do
+    case Brain.AtlasIntegration.load_learned_facts() do
+      {:ok, facts} ->
+        {curated, learned} = Enum.split_with(facts, &curated_fact?/1)
+
+        Logger.debug("Loaded facts from Atlas", %{
+          curated: length(curated),
+          learned: length(learned)
+        })
+
+        {curated, learned}
+
+      {:error, reason} ->
+        Logger.warning("Failed to load facts from Atlas, falling back to files",
+          reason: inspect(reason)
+        )
+        {load_curated_facts_from_files(), []}
+    end
+  rescue
+    e ->
+      Logger.warning("Atlas unavailable for facts: #{inspect(e)}")
+      {load_curated_facts_from_files(), []}
+  end
+
+  # Curated facts have no learned_at timestamp and come from known
+  # categories (geography, science, history, general)
+  @curated_categories MapSet.new(~w(geography science history general))
+
+  defp curated_fact?(%Fact{learned_at: nil, category: cat}) do
+    MapSet.member?(@curated_categories, String.downcase(cat))
+  end
+
+  defp curated_fact?(_), do: false
+
+  defp load_curated_facts_from_files do
     base_dir = facts_dir()
 
     facts_dir_path =
@@ -295,34 +333,10 @@ defmodule Brain.FactDatabase do
       |> Path.wildcard()
       |> Enum.flat_map(&load_facts_file/1)
     else
-      handle_missing_dir("Curated facts directory not found", facts_dir_path)
+      Logger.debug("No curated facts available (Atlas empty, no file fallback)",
+        %{path: facts_dir_path}
+      )
       []
-    end
-  end
-
-  defp load_learned_facts do
-    case Brain.AtlasIntegration.load_learned_facts() do
-      {:ok, facts} ->
-        Logger.debug("Loaded learned facts from Atlas", %{count: length(facts)})
-        facts
-
-      {:error, reason} ->
-        Logger.warning("Failed to load learned facts from Atlas",
-          reason: inspect(reason)
-        )
-        []
-    end
-  rescue
-    e ->
-      Logger.warning("Atlas unavailable for learned facts: #{inspect(e)}")
-      []
-  end
-
-  defp handle_missing_dir(message, path) do
-    if Application.get_env(:brain, :strict_file_checks, false) do
-      raise "#{message}: #{path}"
-    else
-      Logger.warning(message, %{path: path})
     end
   end
 
@@ -336,7 +350,7 @@ defmodule Brain.FactDatabase do
               |> Map.get("facts", [])
               |> Enum.map(&Fact.from_map/1)
 
-            Logger.debug("Loaded curated facts from file", %{
+            Logger.debug("Loaded facts from file", %{
               file: Path.basename(file_path),
               count: length(facts)
             })

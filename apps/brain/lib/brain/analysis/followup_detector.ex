@@ -2,7 +2,7 @@ defmodule Brain.Analysis.FollowupDetector do
   @moduledoc "Detects when a user message is providing follow-up context\nfor a previous intent rather than starting a new conversation.\n\nThis module helps handle multi-turn conversations where users provide\nadditional information (like location) in response to clarifying questions.\n\nUses POS tagging for grammatical detection rather than keyword lists.\n"
 
   alias Brain.ML.POSTagger
-  alias Brain.Analysis.EntityTypes
+  alias Brain.Analysis.IntentRegistry
   @max_followup_words 5
   @context_timeout_ms 5 * 60 * 1000
 
@@ -46,11 +46,14 @@ defmodule Brain.Analysis.FollowupDetector do
   def merge_with_previous(previous_context, new_entities) do
     merged_entities = (previous_context.previous_entities || []) ++ new_entities
 
+    intent = previous_context.intent
+
     {filled_slots, remaining_missing} =
       fill_slots_from_entities(
         previous_context.missing_slots || [],
         new_entities,
-        previous_context.previous_slots || %{}
+        previous_context.previous_slots || %{},
+        intent
       )
 
     %{
@@ -151,8 +154,8 @@ defmodule Brain.Analysis.FollowupDetector do
     now - timestamp > @context_timeout_ms
   end
 
-  defp fill_slots_from_entities(missing_slots, entities, existing_slots) do
-    slot_mappings = EntityTypes.type_synonyms()
+  defp fill_slots_from_entities(missing_slots, entities, existing_slots, intent) do
+    slot_mappings = IntentRegistry.entity_mappings(intent)
 
     Enum.reduce(missing_slots, {existing_slots, []}, fn slot_name, {filled, still_missing} ->
       matching_entity_types = Map.get(slot_mappings, slot_name, [slot_name])

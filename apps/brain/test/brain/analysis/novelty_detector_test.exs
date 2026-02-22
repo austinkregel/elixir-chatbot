@@ -43,4 +43,97 @@ defmodule Brain.Analysis.NoveltyDetectorTest do
       assert NoveltyDetector.is_substantive?(speech_act, "unknown")
     end
   end
+
+  describe "is_researchable?/3" do
+    test "rejects short social inputs like greetings and introductions" do
+      entities = [%{value: "Austin", entity_type: "person", confidence: 0.8}]
+      speech_act = %{category: :expressive, sub_type: :greeting}
+
+      refute NoveltyDetector.is_researchable?("Hello I'm Austin", entities, speech_act)
+    end
+
+    test "rejects inputs with too few tokens" do
+      entities = [%{value: "London", entity_type: "location", confidence: 0.9}]
+      speech_act = %{category: :directive, sub_type: :query}
+
+      refute NoveltyDetector.is_researchable?("weather London", entities, speech_act)
+    end
+
+    test "accepts directive inputs with location entities" do
+      entities = [%{value: "London", entity_type: "location", confidence: 0.9}]
+      speech_act = %{category: :directive, sub_type: :query}
+
+      assert NoveltyDetector.is_researchable?(
+               "What is the weather like in London today",
+               entities,
+               speech_act
+             )
+    end
+
+    test "accepts assertive claims about domain concepts" do
+      entities = [%{value: "Elixir", entity_type: "technology", confidence: 0.7}]
+      speech_act = %{category: :assertive, sub_type: :claim}
+
+      assert NoveltyDetector.is_researchable?(
+               "Elixir uses the BEAM virtual machine for concurrency",
+               entities,
+               speech_act
+             )
+    end
+
+    test "rejects inputs with only person entities and no knowledge-oriented speech act" do
+      entities = [%{value: "John", entity_type: "person", confidence: 0.9}]
+      speech_act = %{category: :expressive, sub_type: :general}
+
+      refute NoveltyDetector.is_researchable?(
+               "My name is John and I like coding",
+               entities,
+               speech_act
+             )
+    end
+
+    test "accepts inputs with knowledge-oriented speech act even without entities" do
+      entities = []
+      speech_act = %{category: :directive, sub_type: :query}
+
+      assert NoveltyDetector.is_researchable?(
+               "How does photosynthesis work in plants",
+               entities,
+               speech_act
+             )
+    end
+
+    test "rejects inputs with no entities and non-knowledge speech act" do
+      entities = []
+      speech_act = %{category: :expressive, sub_type: :general}
+
+      refute NoveltyDetector.is_researchable?(
+               "I am feeling pretty good today actually",
+               entities,
+               speech_act
+             )
+    end
+
+    test "rejects inputs with only low-confidence entities" do
+      entities = [%{value: "thing", entity_type: "object", confidence: 0.1}]
+      speech_act = %{category: :assertive, sub_type: nil}
+
+      refute NoveltyDetector.is_researchable?(
+               "That thing over there is pretty cool",
+               entities,
+               speech_act
+             )
+    end
+
+    test "accepts directive questions about organizations" do
+      entities = [%{value: "NASA", entity_type: "organization", confidence: 0.95}]
+      speech_act = %{category: :directive, sub_type: :query}
+
+      assert NoveltyDetector.is_researchable?(
+               "What missions has NASA planned for next year",
+               entities,
+               speech_act
+             )
+    end
+  end
 end

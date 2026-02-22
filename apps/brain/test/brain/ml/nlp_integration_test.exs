@@ -52,7 +52,8 @@ defmodule Brain.ML.NLPIntegrationTest do
       beatles = Enum.find(entities, fn e -> String.downcase(e.value) == "the beatles" end)
 
       if beatles do
-        assert beatles.entity_type =~ "music"
+        # After type normalization, "music-artist" maps to canonical "artist"
+        assert beatles.entity_type in ["artist", "music-artist", "music_artist"]
       end
     end
   end

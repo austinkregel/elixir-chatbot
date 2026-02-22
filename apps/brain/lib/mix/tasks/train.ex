@@ -257,9 +257,6 @@ defmodule Mix.Tasks.Train do
 
   defp run_training_pipeline(opts, skip_list) do
     world_id = opts[:world]
-    epochs = opts[:epochs] || 20
-    batch_size = opts[:batch_size] || 32
-    hidden_size = opts[:hidden_size] || 128
     models_path = get_models_path(world_id)
 
     results = []
@@ -285,7 +282,7 @@ defmodule Mix.Tasks.Train do
         [{:unified, :skipped, 0} | results]
       else
         start = System.monotonic_time(:second)
-        result = train_unified_lstm(epochs, batch_size, hidden_size, models_path)
+        result = train_unified_lstm(models_path)
         duration = System.monotonic_time(:second) - start
         [{:unified, result, duration} | results]
       end
@@ -295,7 +292,7 @@ defmodule Mix.Tasks.Train do
         [{:response, :skipped, 0} | results]
       else
         start = System.monotonic_time(:second)
-        result = train_response_scorer(epochs, batch_size, hidden_size, models_path)
+        result = train_response_scorer(models_path)
         duration = System.monotonic_time(:second) - start
         [{:response, result, duration} | results]
       end
@@ -362,7 +359,7 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  defp train_unified_lstm(epochs, batch_size, hidden_size, models_path) do
+  defp train_unified_lstm(models_path) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
     Mix.shell().info("  Stage 3/4: Unified LSTM Model (GPU Accelerated)")
@@ -376,11 +373,7 @@ defmodule Mix.Tasks.Train do
     Mix.shell().info("")
 
     config = [
-      epochs: epochs,
-      batch_size: batch_size,
-      hidden_size: hidden_size,
-      embedding_size: hidden_size,
-      learning_rate: 0.001,
+      label_smoothing: 0.01,
       models_path: models_path
     ]
 
@@ -397,7 +390,7 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  defp train_response_scorer(epochs, batch_size, hidden_size, models_path) do
+  defp train_response_scorer(models_path) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
     Mix.shell().info("  Stage 4/4: Response Scorer (GPU Accelerated)")
@@ -407,9 +400,11 @@ defmodule Mix.Tasks.Train do
     Mix.shell().info("")
 
     config = [
-      epochs: min(epochs, 15),
-      batch_size: batch_size,
-      hidden_size: hidden_size,
+      epochs: 15,
+      batch_size: 32,
+      hidden_size: 128,
+      embedding_size: 128,
+      learning_rate: 0.001,
       models_path: models_path
     ]
 

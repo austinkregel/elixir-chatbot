@@ -4,14 +4,13 @@ defmodule Brain.ML.LSTM.Integration do
 
   This module is called from the main analysis pipeline as an **ensemble
   fallback**.  When `Brain.Analysis.SpeechActClassifier` obtains a low-confidence
-  result from the LSTM `MultiTaskModel` (below the ensemble threshold), it
+  result from the LSTM `UnifiedModel` (below the ensemble threshold), it
   delegates to `Integration.classify_intent/1` which combines TF-IDF and LSTM
   predictions via ensemble voting to produce a more robust classification.
 
   The pipeline still invokes LSTM models directly via
-  `Brain.ML.LSTM.MultiTaskModel` and `Brain.ML.LSTM.UnifiedModel` for
-  high-confidence predictions; this module is only consulted when the primary
-  LSTM confidence is insufficient.
+  `Brain.ML.LSTM.UnifiedModel` for high-confidence predictions; this module
+  is only consulted when the primary LSTM confidence is insufficient.
 
   ## Provides
 
@@ -60,6 +59,7 @@ defmodule Brain.ML.LSTM.Integration do
 
   alias Brain.ML.EntityExtractor
   alias Brain.ML.LSTM
+  alias Brain.Graph.Training, as: GraphTraining
   require Logger
 
   alias Brain.ML.IntentClassifierSimple
@@ -76,12 +76,13 @@ defmodule Brain.ML.LSTM.Integration do
   """
   def classify_intent(text, opts \\ []) do
     use_ensemble = Keyword.get(opts, :ensemble, true)
+    previous_intent = Keyword.get(opts, :previous_intent)
     tfidf_result = get_tfidf_prediction(text)
     lstm_result = get_lstm_prediction(text)
 
     case {tfidf_result, lstm_result, use_ensemble} do
       {{:ok, tfidf}, {:ok, lstm}, true} ->
-        {:ok, ensemble_intent(tfidf, lstm)}
+        {:ok, ensemble_intent(tfidf, lstm, previous_intent)}
 
       {_, {:ok, {intent, conf}}, _} when conf > 0.7 ->
         {:ok, {intent, conf, :lstm}}
@@ -113,8 +114,17 @@ defmodule Brain.ML.LSTM.Integration do
   When both LSTM and TF-IDF are available, uses confidence-weighted voting.
   When only one is available, uses that model directly.
   When neither is available, returns `{:error, :no_sentiment_classifier}`.
+
+  ## Options
+
+  - `:atlas_context` - Optional map with Atlas-derived context for disambiguation.
+    Keys: `:topic` (current conversation topic), `:entity_sentiments` (list of
+    `%{entity: String.t(), sentiment: atom}` from prior conversation).
+    Used when LSTM and TF-IDF disagree.
   """
-  def classify_sentiment(text) do
+  def classify_sentiment(text, opts \\ []) do
+    atlas_context = Keyword.get(opts, :atlas_context)
+
     lstm_result =
       if UnifiedModel.ready?() do
         case UnifiedModel.classify_sentiment(text) do
@@ -137,7 +147,7 @@ defmodule Brain.ML.LSTM.Integration do
 
     case {lstm_result, tfidf_result} do
       {{:ok, lstm}, {:ok, tfidf}} ->
-        {:ok, ensemble_sentiment(lstm, tfidf)}
+        {:ok, ensemble_sentiment(lstm, tfidf, atlas_context)}
 
       {{:ok, lstm}, :unavailable} ->
         {:ok, lstm}
@@ -150,20 +160,53 @@ defmodule Brain.ML.LSTM.Integration do
     end
   end
 
-  defp ensemble_sentiment(lstm, tfidf) do
+  defp ensemble_sentiment(lstm, tfidf, atlas_context) do
     if lstm.label == tfidf.label do
-      # Both agree -- boost confidence
       combined = 1.0 - (1.0 - lstm.confidence) * (1.0 - tfidf.confidence)
       %{label: lstm.label, confidence: combined}
     else
-      # Disagree -- pick the higher confidence prediction
-      if lstm.confidence >= tfidf.confidence do
-        lstm
+      atlas_bias = atlas_sentiment_bias(atlas_context)
+
+      {lstm_adj, tfidf_adj} =
+        case atlas_bias do
+          nil ->
+            {lstm.confidence, tfidf.confidence}
+
+          bias_label ->
+            lstm_boost = if lstm.label == bias_label, do: 0.1, else: 0.0
+            tfidf_boost = if tfidf.label == bias_label, do: 0.1, else: 0.0
+            {lstm.confidence + lstm_boost, tfidf.confidence + tfidf_boost}
+        end
+
+      if lstm_adj >= tfidf_adj do
+        %{label: lstm.label, confidence: lstm.confidence}
       else
-        tfidf
+        %{label: tfidf.label, confidence: tfidf.confidence}
       end
     end
   end
+
+  defp atlas_sentiment_bias(nil), do: nil
+
+  defp atlas_sentiment_bias(context) when is_map(context) do
+    entity_sentiments = Map.get(context, :entity_sentiments, [])
+
+    if entity_sentiments == [] do
+      nil
+    else
+      frequencies =
+        Enum.frequencies_by(entity_sentiments, fn es ->
+          Map.get(es, :sentiment) || Map.get(es, "sentiment")
+        end)
+
+      case Enum.max_by(frequencies, fn {_label, count} -> count end, fn -> nil end) do
+        {label, count} when count >= 2 -> label
+        _ -> nil
+      end
+    end
+  end
+
+  defp atlas_sentiment_bias(_), do: nil
 
   @doc """
   Get speech act using LSTM if available, otherwise SpeechActClassifier pipeline.
@@ -250,7 +293,10 @@ defmodule Brain.ML.LSTM.Integration do
     File.exists?(path)
   end
 
-  defp ensemble_intent({tfidf_intent, tfidf_conf}, {lstm_intent, lstm_conf}) do
+  defp ensemble_intent({tfidf_intent, tfidf_conf}, {lstm_intent, lstm_conf}, previous_intent) do
+    {tfidf_conf, lstm_conf} =
+      apply_graph_prior_boost({tfidf_intent, tfidf_conf}, {lstm_intent, lstm_conf}, previous_intent)
+
     cond do
       tfidf_intent == lstm_intent ->
         combined_conf = 1.0 - (1.0 - tfidf_conf) * (1.0 - lstm_conf)
@@ -268,6 +314,23 @@ defmodule Brain.ML.LSTM.Integration do
       true ->
         {tfidf_intent, tfidf_conf, :tfidf}
     end
+  end
+
+  defp apply_graph_prior_boost({_ti, tfidf_conf}, {_li, lstm_conf}, nil), do: {tfidf_conf, lstm_conf}
+
+  defp apply_graph_prior_boost({tfidf_intent, tfidf_conf}, {lstm_intent, lstm_conf}, previous_intent)
+       when is_binary(previous_intent) do
+    priors = GraphTraining.extract_intent_priors()
+
+    scores = [{tfidf_intent, tfidf_conf}, {lstm_intent, lstm_conf}]
+    boosted = GraphTraining.apply_intent_priors(scores, previous_intent, priors)
+
+    boosted_map = Map.new(boosted)
+    {Map.get(boosted_map, tfidf_intent, tfidf_conf), Map.get(boosted_map, lstm_intent, lstm_conf)}
+  end
+
+  defp apply_graph_prior_boost({_tfidf_intent, tfidf_conf}, {_lstm_intent, lstm_conf}, _) do
+    {tfidf_conf, lstm_conf}
   end
 
   defp fallback_analysis(text, _opts) do

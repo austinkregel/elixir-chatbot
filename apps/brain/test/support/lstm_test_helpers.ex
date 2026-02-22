@@ -54,7 +54,6 @@ defmodule Brain.LSTMTestHelpers do
   require Logger
 
   alias Brain.ML.LSTM.UnifiedModel
-  alias Brain.ML.LSTM.MultiTaskModel
   alias Brain.Response.LSTMResponse
 
   # ============================================================================
@@ -200,40 +199,86 @@ defmodule Brain.LSTMTestHelpers do
   end
 
   defp build_minimal_model_data(:unified, vocab_size, embedding_size, hidden_size) do
-    # Build minimal vocabulary
     token_vocab = for i <- 0..(vocab_size - 1), into: %{}, do: {"token_#{i}", i}
 
-    # Intent labels
-    intent_labels = ["greeting", "farewell", "weather.query", "unknown"]
-    intent_vocab = for {label, i} <- Enum.with_index(intent_labels), into: %{}, do: {label, i}
+    intent_labels = ["smalltalk.greetings.hello", "smalltalk.greetings.bye", "weather.query", "unknown"]
+    intent_to_idx = for {label, i} <- Enum.with_index(intent_labels), into: %{}, do: {label, i}
     idx_to_intent = for {label, i} <- Enum.with_index(intent_labels), into: %{}, do: {i, label}
 
-    # NER labels
-    ner_labels = ["O", "B-PER", "I-PER", "B-LOC", "I-LOC"]
-    ner_vocab = for {label, i} <- Enum.with_index(ner_labels), into: %{}, do: {label, i}
-    idx_to_ner = for {label, i} <- Enum.with_index(ner_labels), into: %{}, do: {i, label}
+    bio_labels = ["O", "B-PER", "I-PER", "B-LOC", "I-LOC"]
+    bio_to_idx = for {label, i} <- Enum.with_index(bio_labels), into: %{}, do: {label, i}
+    idx_to_bio = for {label, i} <- Enum.with_index(bio_labels), into: %{}, do: {i, label}
+
+    max_seq_length = 50
+    num_intents = length(intent_labels)
+    num_bio = length(bio_labels)
+    num_sentiments = 3
+    num_speech_acts = 5
+
+    config = %{
+      embedding_size: embedding_size,
+      hidden_size: hidden_size,
+      max_seq_length: max_seq_length
+    }
+
+    vocabularies = %{
+      token_vocab: token_vocab,
+      intent_to_idx: intent_to_idx,
+      idx_to_intent: idx_to_intent,
+      bio_to_idx: bio_to_idx,
+      idx_to_bio: idx_to_bio
+    }
+
+    # Build real Axon models matching UnifiedModel architecture and init params
+    encoder =
+      Axon.input("input", shape: {nil, max_seq_length})
+      |> Axon.embedding(vocab_size, embedding_size)
+      |> Axon.lstm(hidden_size, name: "encoder_lstm")
+      |> then(fn {seq, _state} -> seq end)
+
+    intent_hidden = min(256, num_intents * 2)
+    intent_head =
+      Axon.input("intent_input", shape: {nil, hidden_size})
+      |> Axon.dense(intent_hidden, activation: :relu, name: "intent_dense")
+      |> Axon.dropout(rate: 0.3)
+      |> Axon.dense(num_intents, activation: :softmax, name: "intent_output")
+
+    sentiment_hidden = min(256, num_sentiments * 2)
+    sentiment_head =
+      Axon.input("sentiment_input", shape: {nil, hidden_size})
+      |> Axon.dense(sentiment_hidden, activation: :relu, name: "sentiment_dense")
+      |> Axon.dropout(rate: 0.3)
+      |> Axon.dense(num_sentiments, activation: :softmax, name: "sentiment_output")
+
+    speech_act_hidden = min(256, num_speech_acts * 2)
+    speech_act_head =
+      Axon.input("speech_act_input", shape: {nil, hidden_size})
+      |> Axon.dense(speech_act_hidden, activation: :relu, name: "speech_act_dense")
+      |> Axon.dropout(rate: 0.3)
+      |> Axon.dense(num_speech_acts, activation: :softmax, name: "speech_act_output")
+
+    ner_head =
+      Axon.input("ner_input", shape: {nil, nil, hidden_size})
+      |> Axon.dense(num_bio, activation: :softmax, name: "ner_output")
+
+    encoder_params = init_model_params(encoder, %{"input" => Nx.template({1, max_seq_length}, :s64)})
+    intent_params = init_model_params(intent_head, %{"intent_input" => Nx.template({1, hidden_size}, :f32)})
+    sentiment_params = init_model_params(sentiment_head, %{"sentiment_input" => Nx.template({1, hidden_size}, :f32)})
+    speech_act_params = init_model_params(speech_act_head, %{"speech_act_input" => Nx.template({1, hidden_size}, :f32)})
+    ner_params = init_model_params(ner_head, %{"ner_input" => Nx.template({1, max_seq_length, hidden_size}, :f32)})
+
+    params = %{
+      encoder: transfer_to_binary(encoder_params),
+      intent: transfer_to_binary(intent_params),
+      ner: transfer_to_binary(ner_params),
+      sentiment: transfer_to_binary(sentiment_params),
+      speech_act: transfer_to_binary(speech_act_params)
+    }
 
     %{
-      params: %{
-        encoder: generate_random_params(embedding_size, hidden_size),
-        intent: generate_random_params(hidden_size, length(intent_labels)),
-        ner: generate_random_params(hidden_size, length(ner_labels)),
-        sentiment: generate_random_params(hidden_size, 3),
-        speech_act: generate_random_params(hidden_size, 5)
-      },
-      vocabularies: %{
-        token_vocab: token_vocab,
-        intent_vocab: intent_vocab,
-        idx_to_intent: idx_to_intent,
-        ner_vocab: ner_vocab,
-        idx_to_ner: idx_to_ner
-      },
-      config: %{
-        embedding_size: embedding_size,
-        hidden_size: hidden_size,
-        max_seq_length: 50
-      },
-      # Version metadata for compatibility checking
+      params: params,
+      vocabularies: vocabularies,
+      config: config,
       metadata: %{
         created_at: DateTime.utc_now() |> DateTime.to_iso8601(),
         versions: current_ml_versions()
@@ -242,7 +287,6 @@ defmodule Brain.LSTMTestHelpers do
   end
 
   defp build_minimal_model_data(_model_type, vocab_size, embedding_size, hidden_size) do
-    # Generic minimal model
     %{
       vocab_size: vocab_size,
       embedding_size: embedding_size,
@@ -254,13 +298,16 @@ defmodule Brain.LSTMTestHelpers do
     }
   end
 
-  defp generate_random_params(input_size, output_size) do
-    # Just a placeholder map - actual Nx tensors would be generated differently
-    %{
-      weights: "placeholder_#{input_size}x#{output_size}",
-      bias: "placeholder_#{output_size}"
-    }
+  defp init_model_params(model, template) do
+    {init_fn, _} = Axon.build(model)
+    params = init_fn.(template, %{})
+    if is_struct(params, Axon.ModelState), do: params.data, else: params
   end
+
+  defp transfer_to_binary(%Nx.Tensor{} = t), do: Nx.backend_copy(t, Nx.BinaryBackend)
+  defp transfer_to_binary(%Axon.ModelState{} = s), do: Axon.ModelState.new(transfer_to_binary(s.data))
+  defp transfer_to_binary(map) when is_map(map), do: Map.new(map, fn {k, v} -> {k, transfer_to_binary(v)} end)
+  defp transfer_to_binary(other), do: other
 
   # ============================================================================
   # Log Capture and Assertions
@@ -345,17 +392,6 @@ defmodule Brain.LSTMTestHelpers do
   end
 
   @doc """
-  Checks if the MultiTaskModel GenServer is ready.
-  """
-  def multi_task_model_ready? do
-    try do
-      {:ok, MultiTaskModel.ready?()}
-    catch
-      :exit, _ -> {:error, :not_running}
-    end
-  end
-
-  @doc """
   Checks if the LSTMResponse GenServer is ready.
   """
   def lstm_response_ready? do
@@ -375,7 +411,6 @@ defmodule Brain.LSTMTestHelpers do
   def wait_for_lstm_ready(model \\ :unified, max_attempts \\ 20, delay_ms \\ 100) do
     check_fn = case model do
       :unified -> &unified_model_ready?/0
-      :multi_task -> &multi_task_model_ready?/0
       :response -> &lstm_response_ready?/0
     end
 

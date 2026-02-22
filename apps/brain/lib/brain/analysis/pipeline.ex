@@ -16,13 +16,17 @@ defmodule Brain.Analysis.Pipeline do
     IntentRegistry,
     NoveltyDetector,
     IntentReviewQueue,
-    EventExtractor
+    EventExtractor,
+    TypeHierarchy
   }
 
   alias Brain.Analysis.Types.IntentReviewCandidate
 
   alias Brain.ML.EntityExtractor
-  alias Brain.ML.LSTM.MultiTaskModel
+  alias Brain.ML.POSTagger
+  alias Brain.ML.Tokenizer
+
+  alias Brain.Memory.Embedder
 
   alias Brain.FactDatabase.Integration, as: FactIntegration
   alias Brain.Epistemic.BeliefStore
@@ -167,7 +171,10 @@ defmodule Brain.Analysis.Pipeline do
 
     sentiment_task =
       Task.async(fn ->
-        case Brain.ML.LSTM.Integration.classify_sentiment(chunk.text) do
+        atlas_context = fetch_atlas_sentiment_context(chunk.text)
+        opts = if atlas_context, do: [atlas_context: atlas_context], else: []
+
+        case Brain.ML.LSTM.Integration.classify_sentiment(chunk.text, opts) do
           {:ok, result} ->
             result
 
@@ -252,7 +259,7 @@ defmodule Brain.Analysis.Pipeline do
     })
 
     {intent, intent_method, intent_confidence, intent_details} =
-      determine_intent(speech_act_result, entities, chunk.text)
+      determine_intent(speech_act_result, entities, chunk.text, opts)
 
     Progress.report(opts, :intent_determined, %{
       chunk_index: chunk.index,
@@ -261,6 +268,12 @@ defmodule Brain.Analysis.Pipeline do
       intent_confidence: intent_confidence,
       margin: Map.get(intent_details, :margin, 0.0)
     })
+
+    {entities, intent, intent_details} =
+      Brain.Analysis.ContextualEntityInferrer.infer(
+        chunk.text, entities, intent, intent_details,
+        world_id: Keyword.get(opts, :world_id, "default")
+      )
 
     relevant_entities = filter_entities_by_intent(entities, intent)
 
@@ -424,21 +437,15 @@ defmodule Brain.Analysis.Pipeline do
   end
 
   defp get_pos_tags(text) do
-    if MultiTaskModel.ready?() do
-      case MultiTaskModel.analyze(text) do
-        {:ok, %{pos_tags: pos_tags, tokens: tokens}} ->
-          {:ok, pos_tags, tokens}
+    tokens = Tokenizer.tokenize_words(text)
 
-        {:ok, result} when is_map(result) ->
-          pos_tags = Map.get(result, :pos_tags, [])
-          tokens = Map.get(result, :tokens, [])
-          {:ok, pos_tags, tokens}
+    case POSTagger.get_model() do
+      {:ok, model} ->
+        pos_tags = POSTagger.predict(tokens, model)
+        {:ok, pos_tags, tokens}
 
-        {:error, reason} ->
-          {:error, reason}
-      end
-    else
-      {:error, :model_not_ready}
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -467,7 +474,9 @@ defmodule Brain.Analysis.Pipeline do
     %{value: inspect(other)}
   end
 
-  defp determine_intent(speech_act, _entities, text) do
+  @disambiguation_threshold 0.5
+
+  defp determine_intent(speech_act, entities, text, opts) do
     classifier_intent = extract_classifier_intent(speech_act)
     best_score = speech_act.confidence
     second_score = Map.get(speech_act, :second_score, 0.0)
@@ -475,9 +484,22 @@ defmodule Brain.Analysis.Pipeline do
     top_k = Map.get(speech_act, :top_k, [])
 
     cond do
-      classifier_intent != nil ->
+      classifier_intent != nil and best_score >= @disambiguation_threshold ->
         {classifier_intent, :classifier, best_score,
          %{second_score: second_score, margin: margin, top_k: top_k}}
+
+      classifier_intent != nil ->
+        # Low confidence -- consult Atlas graph for disambiguation
+        case disambiguate_with_atlas(classifier_intent, top_k, entities, text, opts) do
+          {:ok, refined_intent, refined_score, method} ->
+            {refined_intent, method, refined_score,
+             %{second_score: second_score, margin: margin, top_k: top_k,
+               original_intent: classifier_intent, original_score: best_score}}
+
+          :no_opinion ->
+            {classifier_intent, :classifier, best_score,
+             %{second_score: second_score, margin: margin, top_k: top_k}}
+        end
 
       speech_act.category == :expressive ->
         inferred = infer_intent_from_speech_act(speech_act, text)
@@ -487,6 +509,148 @@ defmodule Brain.Analysis.Pipeline do
         inferred = infer_intent_from_speech_act(speech_act, text)
         {inferred, :speech_act, nil, %{second_score: 0.0, margin: 0.0, top_k: []}}
     end
+  end
+
+  defp disambiguate_with_atlas(classifier_intent, top_k, entities, _text, opts) do
+    conversation_id = Keyword.get(opts, :conversation_id)
+
+    # Query the conversation graph for recent topics to provide context
+    recent_topics = graph_recent_topics(conversation_id)
+
+    # Query the knowledge graph for entity neighborhoods to understand context
+    entity_neighborhoods = graph_entity_neighborhoods(entities)
+
+    # Use the graph-derived entity types to score each candidate intent
+    # via the IntentRegistry's expected_entity_types (data-driven mapping)
+    candidates = normalize_top_k(top_k)
+
+    scored =
+      Enum.map(candidates, fn {intent, score} ->
+        atlas_score = score_intent_with_graph_context(
+          intent, entity_neighborhoods, recent_topics
+        )
+        {intent, score + atlas_score}
+      end)
+      |> Enum.sort_by(fn {_, s} -> -s end)
+
+    case scored do
+      [{best_intent, best_score} | _] when best_intent != classifier_intent ->
+        {:ok, best_intent, best_score, :atlas_disambiguation}
+
+      _ ->
+        :no_opinion
+    end
+  rescue
+    _ -> :no_opinion
+  end
+
+  defp graph_recent_topics(nil), do: []
+
+  defp graph_recent_topics(conversation_id) do
+    Brain.Graph.Reader.conversation_topics(conversation_id)
+  rescue
+    _ -> []
+  end
+
+  defp graph_entity_neighborhoods(entities) when is_list(entities) do
+    Brain.Graph.Reader.entity_context(entities, depth: 1)
+  rescue
+    _ -> []
+  end
+
+  defp graph_entity_neighborhoods(_), do: []
+
+  defp normalize_top_k(top_k) when is_list(top_k) do
+    Enum.flat_map(top_k, fn
+      %{intent: intent, score: score} -> [{intent, score}]
+      {intent, score} when is_binary(intent) -> [{intent, score}]
+      _ -> []
+    end)
+  end
+
+  defp normalize_top_k(_), do: []
+
+  @doc false
+  defp score_intent_with_graph_context(intent, entity_neighborhoods, recent_topics) do
+    # Use the IntentRegistry's entity_mappings and expected_entity_types
+    # to match graph-discovered entity types against what the intent expects.
+    # This is fully data-driven: the registry JSON defines which entity types
+    # each intent expects, and the graph tells us what types the entities are.
+    expected_types = IntentRegistry.expected_entity_types(intent)
+
+    graph_entity_types =
+      entity_neighborhoods
+      |> Enum.flat_map(fn
+        %{node: %{properties: props}} ->
+          type = Map.get(props, "type", "")
+          if type != "", do: [type], else: []
+
+        %{neighbors: neighbors} when is_list(neighbors) ->
+          Enum.flat_map(neighbors, fn v ->
+            label = Map.get(v, :label, "")
+            if label != "", do: [label], else: []
+          end)
+
+        _ ->
+          []
+      end)
+      |> Enum.uniq()
+
+    # Score: how many of the graph-discovered entity types match what the
+    # intent expects? More matches = higher boost.
+    entity_type_overlap =
+      if expected_types != [] and graph_entity_types != [] do
+        matches =
+          Enum.count(graph_entity_types, fn graph_type ->
+            Enum.any?(expected_types, fn expected ->
+              Tokenizer.tokens_overlap?(graph_type, expected)
+            end)
+          end)
+
+        matches * 0.1
+      else
+        0.0
+      end
+
+    # Score: does the intent's domain appear in recent conversation topics?
+    # Use the embedder for semantic similarity rather than string matching.
+    topic_overlap =
+      if recent_topics != [] do
+        intent_meta = IntentRegistry.get(intent)
+        intent_domain = if intent_meta, do: Map.get(intent_meta, "domain", ""), else: ""
+
+        if intent_domain != "" do
+          topic_similarity = compute_topic_similarity(intent_domain, recent_topics)
+          topic_similarity * 0.15
+        else
+          0.0
+        end
+      else
+        0.0
+      end
+
+    min(entity_type_overlap + topic_overlap, 0.3)
+  end
+
+  defp compute_topic_similarity(domain, topics) do
+    if Embedder.ready?() do
+      domain_vec = Embedder.embed(domain)
+
+      similarities =
+        Enum.map(topics, fn topic ->
+          topic_vec = Embedder.embed(topic)
+          FourthWall.Math.cosine_similarity(domain_vec, topic_vec)
+        end)
+
+      case similarities do
+        [] -> 0.0
+        sims -> Enum.max(sims)
+      end
+    else
+      0.0
+    end
+  rescue
+    _ -> 0.0
   end
 
   defp extract_classifier_intent(speech_act) do
@@ -604,6 +768,43 @@ defmodule Brain.Analysis.Pipeline do
     %{analysis | confidence: confidence}
   end
 
+  defp fetch_atlas_sentiment_context(text) do
+    entities = Brain.ML.EntityExtractor.extract_entities(text)
+    entity_maps = Enum.map(entities, fn e ->
+      %{entity_type: Map.get(e, :entity_type, "Entity"), value: Map.get(e, :value, "")}
+    end)
+
+    case Brain.Graph.Reader.entity_context(entity_maps) do
+      contexts when is_list(contexts) and contexts != [] ->
+        entity_sentiments =
+          Enum.flat_map(contexts, fn %{neighbors: neighbors} ->
+            Enum.flat_map(neighbors, fn neighbor ->
+              props = Map.get(neighbor, :properties, %{})
+              sentiment = Map.get(props, "sentiment")
+
+              if sentiment do
+                [%{entity: Map.get(props, "name", ""), sentiment: sentiment}]
+              else
+                []
+              end
+            end)
+          end)
+
+        if entity_sentiments != [] do
+          %{entity_sentiments: entity_sentiments}
+        else
+          nil
+        end
+
+      _ ->
+        nil
+    end
+  rescue
+    _ -> nil
+  catch
+    :exit, _ -> nil
+  end
+
   defp record_pipeline_result(%InternalModel{} = model) do
     feedback_type =
       case model.overall_strategy do
@@ -697,7 +898,9 @@ defmodule Brain.Analysis.Pipeline do
       else
         Enum.filter(entities, fn entity ->
           entity_type = entity[:entity_type]
-          MapSet.member?(valid_types, entity_type)
+
+          MapSet.member?(valid_types, entity_type) or
+            Enum.any?(valid_types, &Brain.Analysis.TypeHierarchy.compatible?(entity_type, &1))
         end)
       end
     end
@@ -718,8 +921,9 @@ defmodule Brain.Analysis.Pipeline do
          opts
        ) do
     enabled = Application.get_env(:brain, :intent_promotion_enabled, false)
+    side_effects = Keyword.get(opts, :side_effects, true)
 
-    if enabled and IntentReviewQueue.ready?() do
+    if enabled and side_effects and IntentReviewQueue.ready?() do
       best_score = confidence || 0.0
       margin = Map.get(details, :margin, 0.0)
 
@@ -738,14 +942,15 @@ defmodule Brain.Analysis.Pipeline do
               opts
             )
 
-            # Publish novel input for LearningTriggers
-            inferred_domain =
-              case IntentRegistry.domain(intent) do
-                nil -> :unknown
-                d -> d
-              end
+            if NoveltyDetector.is_researchable?(text, entities, speech_act) do
+              inferred_domain =
+                case IntentRegistry.domain(intent) do
+                  nil -> :unknown
+                  d -> d
+                end
 
-            broadcast_novel_input(text, novelty_score, inferred_domain)
+              broadcast_novel_input(text, novelty_score, inferred_domain, entities)
+            end
           end
 
         :not_novel ->
@@ -756,12 +961,12 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
-  defp broadcast_novel_input(text, novelty_score, domain) do
+  defp broadcast_novel_input(text, novelty_score, domain, entities) do
     if Process.whereis(Brain.PubSub) do
       Phoenix.PubSub.broadcast(
         Brain.PubSub,
         "learning:novel_input",
-        {:novel_input, text, novelty_score, domain}
+        {:novel_input, text, novelty_score, domain, entities}
       )
     end
   rescue
@@ -863,12 +1068,12 @@ defmodule Brain.Analysis.Pipeline do
   end
 
   defp extract_subject_from_entities(entities, text) do
-    # Try to find a subject entity (e.g., "sky", "grass", "car")
+    subject_types = TypeHierarchy.config("subject_capable_types", [])
+
     subject_entity =
       Enum.find(entities, fn entity ->
         entity_type = Map.get(entity, :entity_type) || Map.get(entity, "entity_type")
-        # Look for common subject types
-        entity_type in ["object", "thing", "location", "person", "noun"]
+        entity_type in subject_types
       end)
 
     case subject_entity do

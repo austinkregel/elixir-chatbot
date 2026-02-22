@@ -1,7 +1,7 @@
-defmodule Brain.ML.LSTM.TrainerTest do
+defmodule Brain.ML.LSTM.AxonTrainerTest do
   use ExUnit.Case, async: false
 
-  alias Brain.ML.LSTM.Trainer
+  alias Brain.ML.LSTM.AxonTrainer
   alias Brain.ML.DataLoaders
 
   @moduletag :lstm
@@ -11,26 +11,23 @@ defmodule Brain.ML.LSTM.TrainerTest do
     @tag :slow
     test "trains a model successfully with minimal config" do
       result =
-        Trainer.train_intent_classifier(
+        AxonTrainer.train_intent_classifier(
           epochs: 2,
           batch_size: 16,
           max_seq_length: 30,
-          validation_split: 0.2
+          max_intents: 30
         )
 
       assert {:ok, model} = result
 
-      assert Map.has_key?(model, :encoder)
-      assert Map.has_key?(model, :intent_head)
-      assert Map.has_key?(model, :encoder_params)
-      assert Map.has_key?(model, :intent_params)
+      assert Map.has_key?(model, :model)
+      assert Map.has_key?(model, :params)
       assert Map.has_key?(model, :vocabularies)
+      assert Map.has_key?(model, :config)
       assert Map.has_key?(model, :metrics)
-      assert model.metrics != []
-      first_epoch = hd(model.metrics)
-      assert Map.has_key?(first_epoch, :epoch)
-      assert Map.has_key?(first_epoch, :train_loss)
-      assert Map.has_key?(first_epoch, :val_loss)
+
+      assert model.metrics.final_train_accuracy > 0.05,
+        "Training accuracy #{model.metrics.final_train_accuracy} should show learning progress (> 5%)"
     end
   end
 
@@ -38,13 +35,14 @@ defmodule Brain.ML.LSTM.TrainerTest do
     @tag :slow
     test "classifies text using trained model" do
       {:ok, model} =
-        Trainer.train_intent_classifier(
+        AxonTrainer.train_intent_classifier(
           epochs: 2,
           batch_size: 16,
-          max_seq_length: 30
+          max_seq_length: 30,
+          max_intents: 30
         )
 
-      {intent, confidence, _scores} = Trainer.classify("what is the weather today", model)
+      {intent, confidence} = AxonTrainer.classify("what is the weather today", model)
 
       assert is_binary(intent)
       assert confidence >= 0.0 and confidence <= 1.0

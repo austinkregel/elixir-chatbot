@@ -140,54 +140,102 @@ defmodule Brain.Graph.Training do
   # ============================================================================
 
   @doc """
-  Sync knowledge_graph entities into the Gazetteer ETS table.
+  Collects gazetteer entries from the knowledge_graph without writing them.
 
-  Queries entity nodes by known labels and adds them to the Gazetteer.
-  Idempotent -- running multiple times doesn't create duplicates.
+  Returns `{:ok, entries}` where entries is a list of `{name, entity_type, metadata}` tuples,
+  or `{:error, reason}`. The caller (Gazetteer) is responsible for inserting into ETS,
+  avoiding the self-call deadlock that occurs when a GenServer calls its own public API.
   """
-  def sync_gazetteer do
-    labels = ["Location", "Person", "Device", "Language", "Framework", "Runtime", "Organization"]
+  def collect_gazetteer_entries do
+    labels = discover_entity_labels()
 
-    results =
-      Enum.map(labels, fn label ->
-        entity_type = label_to_entity_type(label)
+    if labels == [] do
+      Logger.debug("No entity labels found in knowledge_graph, skipping Gazetteer sync")
+      {:ok, []}
+    else
+      entries =
+        Enum.flat_map(labels, fn label ->
+          entity_type = label_to_entity_type(label)
+          collect_label_entries(label, entity_type)
+        end)
 
-        query = "MATCH (n:#{label}) RETURN n"
-
-        case Graph.cypher("knowledge_graph", query) do
-          {:ok, rows} ->
-            count =
-              Enum.count(rows, fn
-                [%Atlas.Graph.Types.Vertex{properties: props}] ->
-                  name = Map.get(props, "name", "")
-
-                  if name != "" do
-                    case Brain.ML.Gazetteer.add_entry(name, entity_type) do
-                      {:ok, _} -> true
-                      _ -> false
-                    end
-                  else
-                    false
-                  end
-
-                _ ->
-                  false
-              end)
-
-            {label, count}
-
-          _ ->
-            {label, 0}
-        end
-      end)
-
-    total = Enum.sum(Enum.map(results, fn {_, c} -> c end))
-    Logger.info("Gazetteer sync from knowledge_graph", synced: total, by_label: results)
-    :ok
+      Logger.info("Collected #{length(entries)} gazetteer entries from knowledge_graph")
+      {:ok, entries}
+    end
   rescue
     e ->
-      Logger.warning("Gazetteer sync failed", reason: inspect(e))
+      Logger.warning("Gazetteer entry collection failed", reason: inspect(e))
       {:error, e}
+  end
+
+  @doc """
+  Sync knowledge_graph entities into the Gazetteer ETS table.
+
+  Safe to call from outside the Gazetteer process. Do NOT call from within
+  the Gazetteer GenServer -- use `collect_gazetteer_entries/0` instead.
+  """
+  def sync_gazetteer do
+    case collect_gazetteer_entries() do
+      {:ok, entries} ->
+        Enum.each(entries, fn {name, entity_type, metadata} ->
+          Brain.ML.Gazetteer.add_entry(name, entity_type, metadata)
+        end)
+
+        :ok
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Discovers all distinct node labels present in the knowledge_graph.
+
+  Returns a list of label strings (e.g., ["Location", "Person", "Device"]).
+  """
+  def discover_entity_labels do
+    query = "MATCH (n) RETURN DISTINCT labels(n) AS lbls"
+
+    case Graph.cypher("knowledge_graph", query) do
+      {:ok, rows} ->
+        rows
+        |> Enum.flat_map(fn
+          [labels] when is_list(labels) -> labels
+          _ -> []
+        end)
+        |> Enum.uniq()
+        |> Enum.reject(&(&1 in ["_internal", ""]))
+
+      _ ->
+        []
+    end
+  rescue
+    _ -> []
+  end
+
+  defp collect_label_entries(label, entity_type) do
+    query = "MATCH (n:#{label}) RETURN n"
+
+    case Graph.cypher("knowledge_graph", query) do
+      {:ok, rows} ->
+        Enum.flat_map(rows, fn
+          [%Atlas.Graph.Types.Vertex{properties: props}] ->
+            name = Map.get(props, "name", "")
+
+            if name != "" do
+              metadata = Map.drop(props, ["name"])
+              [{name, entity_type, metadata}]
+            else
+              []
+            end
+
+          _ ->
+            []
+        end)
+
+      _ ->
+        []
+    end
   end
 
   defp label_to_entity_type(label) do

@@ -8,8 +8,10 @@ defmodule Brain.ML.EntityExtractor do
 
   alias ML.{Gazetteer, Tokenizer, EntityTrainer, POSTagger}
   alias Brain.ML.LSTM.UnifiedModel
-  alias Analysis.{EntityDisambiguator, IntentRegistry}
+  alias Analysis.{EntityDisambiguator, IntentRegistry, TypeHierarchy}
   alias Brain.Telemetry
+
+  @type_mappings_path "evaluation/ner/type_mappings.json"
 
   @type entity_match :: %{
           entity: String.t(),
@@ -23,12 +25,14 @@ defmodule Brain.ML.EntityExtractor do
   @type entity_map :: %{String.t() => %{entity_type: String.t(), value: String.t()}}
 
   defp is_location_preposition?(text) do
+    prep_tag = TypeHierarchy.config(["pos_tag_roles", "preposition_tag"], "ADP")
+
     case POSTagger.load_model() do
       {:ok, model} ->
         predictions = POSTagger.predict([text], model)
 
         case predictions do
-          [{_word, "ADP"}] -> true
+          [{_word, tag}] -> tag == prep_tag
           _ -> false
         end
 
@@ -39,13 +43,14 @@ defmodule Brain.ML.EntityExtractor do
 
   defp common_word?(text) do
     lower = String.downcase(text)
+    function_tags = TypeHierarchy.config(["pos_tag_roles", "function_word_tags"], [])
 
     case POSTagger.load_model() do
       {:ok, model} ->
         predictions = POSTagger.predict([lower], model)
 
         case predictions do
-          [{_word, tag}] when tag in ["DET", "ADP", "CONJ", "PART", "PUNCT"] -> true
+          [{_word, tag}] -> tag in function_tags
           _ -> false
         end
 
@@ -295,7 +300,10 @@ defmodule Brain.ML.EntityExtractor do
     all_entities =
       gazetteer_entities ++ system_entities ++ location_entities ++ proper_noun_entities
 
-    resolved_entities = resolve_entity_conflicts(all_entities)
+    resolved_entities =
+      all_entities
+      |> resolve_entity_conflicts()
+      |> merge_adjacent_entities(tokens)
 
     disambiguated_entities =
       if skip_disambiguation or (is_nil(discourse) and is_nil(speech_act)) do
@@ -305,7 +313,72 @@ defmodule Brain.ML.EntityExtractor do
       end
 
     min_confidence = Keyword.get(opts, :min_confidence) || get_min_confidence_threshold()
-    filter_by_confidence(disambiguated_entities, min_confidence)
+
+    disambiguated_entities
+    |> filter_by_confidence(min_confidence)
+    |> normalize_entity_types()
+  end
+
+  @doc """
+  Loads the entity type normalization mappings from the data file.
+
+  Returns a map of system type -> canonical type. Cached in persistent_term
+  after first load.
+  """
+  def load_type_mappings do
+    case :persistent_term.get({__MODULE__, :type_mappings}, nil) do
+      nil ->
+        mappings = do_load_type_mappings()
+        :persistent_term.put({__MODULE__, :type_mappings}, mappings)
+        mappings
+
+      mappings ->
+        mappings
+    end
+  end
+
+  defp do_load_type_mappings do
+    path = Brain.priv_path(@type_mappings_path)
+
+    case File.read(path) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, %{"system_to_canonical" => mappings}} when is_map(mappings) ->
+            mappings
+
+          _ ->
+            Logger.warning("Invalid type_mappings.json format, using empty mappings")
+            %{}
+        end
+
+      {:error, _} ->
+        Logger.debug("No type_mappings.json found at #{path}, using empty mappings")
+        %{}
+    end
+  end
+
+  @doc """
+  Normalizes entity types using the data-driven type mappings.
+
+  Converts system-specific types (e.g., "heating", "music-artist") to
+  canonical gold-standard types (e.g., "device", "artist").
+  """
+  def normalize_entity_types(entities) when is_list(entities) do
+    mappings = load_type_mappings()
+
+    if map_size(mappings) == 0 do
+      entities
+    else
+      Enum.map(entities, fn entity ->
+        entity_type = Map.get(entity, :entity_type) || Map.get(entity, "entity_type", "")
+        canonical = Map.get(mappings, entity_type, entity_type)
+        Map.put(entity, :entity_type, canonical)
+      end)
+    end
+  end
+
+  def normalize_entity_types(entity) when is_map(entity) do
+    [entity] |> normalize_entity_types() |> hd()
   end
 
   defp get_min_confidence_threshold do
@@ -561,14 +634,13 @@ defmodule Brain.ML.EntityExtractor do
               result
             end
 
+          temporal_types = TypeHierarchy.config("temporal_types", [])
+          month_types = TypeHierarchy.config("month_types", [])
+
           temporal_match =
             Enum.find(matches, fn match ->
               entity_type = match[:entity_type] || match["entity_type"] || ""
-
-              entity_type in ~w(
-                sys-date date relative_date day weekday month
-                day_name month_name time sys-time
-              )
+              entity_type in temporal_types
             end)
 
           case temporal_match do
@@ -578,7 +650,7 @@ defmodule Brain.ML.EntityExtractor do
             match ->
               entity_type = match[:entity_type] || match["entity_type"]
 
-              if entity_type in ["month", "month_name"] do
+              if entity_type in month_types do
                 maybe_date = check_for_date_pattern(tokens, idx)
 
                 case maybe_date do
@@ -683,10 +755,11 @@ defmodule Brain.ML.EntityExtractor do
       unless Map.has_key?(entity_maps, normalized) do
         first_token = List.first(location_tokens)
         last_token = List.last(location_tokens)
+        loc_type = TypeHierarchy.parent_of("city") || "location"
 
         [
           %{
-            entity_type: "location",
+            entity_type: loc_type,
             value: location_text,
             match: location_text,
             start_pos: first_token.start_pos,
@@ -740,8 +813,10 @@ defmodule Brain.ML.EntityExtractor do
             |> Enum.map(fn e ->
               value = Map.get(e, :value) || Map.get(e, "value", "")
 
+              default_ner_type = TypeHierarchy.config("default_propn_type", "person")
+
               entity_type =
-                Map.get(e, :type) || Map.get(e, :entity_type) || Map.get(e, "type", "person")
+                Map.get(e, :type) || Map.get(e, :entity_type) || Map.get(e, "type", default_ner_type)
 
               confidence = Map.get(e, :confidence) || Map.get(e, "confidence", 0.7)
               {start_pos, end_pos} = find_entity_positions(tokens, value)
@@ -768,18 +843,8 @@ defmodule Brain.ML.EntityExtractor do
   end
 
   defp normalize_lstm_entity_type(type) when is_binary(type) do
-    case String.downcase(type) do
-      "per" -> "person"
-      "person" -> "person"
-      "loc" -> "location"
-      "location" -> "location"
-      "org" -> "organization"
-      "organization" -> "organization"
-      "gpe" -> "location"
-      "date" -> "date"
-      "time" -> "time"
-      _ -> type
-    end
+    label_map = TypeHierarchy.config("ner_label_map", %{})
+    Map.get(label_map, String.downcase(type), type)
   end
 
   defp normalize_lstm_entity_type(type) do
@@ -805,6 +870,9 @@ defmodule Brain.ML.EntityExtractor do
   end
 
   defp extract_with_pos_tagger(tokens, entity_maps) do
+    propn_tag = TypeHierarchy.config(["pos_tag_roles", "proper_noun"], "PROPN")
+    default_type = TypeHierarchy.config("default_propn_type", "person")
+
     case POSTagger.load_model() do
       {:ok, model} ->
         token_texts = Enum.map(tokens, & &1.text)
@@ -812,29 +880,41 @@ defmodule Brain.ML.EntityExtractor do
 
         predictions
         |> Enum.with_index()
-        |> Enum.flat_map(fn {{word, tag}, idx} ->
-          if tag == "PROPN" and not in_gazetteer?(word, entity_maps) do
+        |> Enum.reduce([], fn {{word, tag}, idx}, acc ->
+          if tag == propn_tag and capitalized?(word) and not in_gazetteer?(word, entity_maps) do
             token = Enum.at(tokens, idx)
 
-            if capitalized?(word) do
-              [
-                %{
-                  entity_type: "person",
+            case acc do
+              [%{source: :pos_tagger_propn, _merge_end_idx: prev_idx} = prev | rest]
+                when prev_idx == idx - 1 ->
+                merged = %{prev |
+                  value: prev.value <> " " <> word,
+                  match: prev.match <> " " <> word,
+                  end_pos: token.end_pos,
+                  confidence: min(0.8, prev.confidence + 0.05),
+                  _merge_end_idx: idx
+                }
+                [merged | rest]
+
+              _ ->
+                entity = %{
+                  entity_type: default_type,
                   value: word,
                   match: word,
                   start_pos: token.start_pos,
                   end_pos: token.end_pos,
                   confidence: 0.65,
-                  source: :pos_tagger_propn
+                  source: :pos_tagger_propn,
+                  _merge_end_idx: idx
                 }
-              ]
-            else
-              []
+                [entity | acc]
             end
           else
-            []
+            acc
           end
         end)
+        |> Enum.map(&Map.delete(&1, :_merge_end_idx))
+        |> Enum.reverse()
 
       {:error, _} ->
         []
@@ -848,17 +928,9 @@ defmodule Brain.ML.EntityExtractor do
 
   defp calculate_confidence(match_text, entity_type, entity_value) do
     base = min(0.9, 0.5 + String.length(match_text) * 0.03)
+    adjustments = TypeHierarchy.config("confidence_adjustments", %{})
 
-    type_bonus =
-      case entity_type do
-        "device" -> 0.1
-        "room" -> 0.1
-        "person" -> 0.1
-        "location" -> 0.05
-        "music-artist" -> 0.05
-        "music_artist" -> 0.05
-        _ -> 0.0
-      end
+    type_bonus = Map.get(adjustments, entity_type, 0.0)
 
     casing_penalty =
       if entity_value && match_text != entity_value do
@@ -895,6 +967,86 @@ defmodule Brain.ML.EntityExtractor do
   defp resolve_entity_conflicts(matches) do
     sorted = Enum.sort_by(matches, fn m -> {m.start_pos, -String.length(m.match)} end)
     resolve_overlaps(sorted, [])
+  end
+
+  defp merge_adjacent_entities(entities, tokens) do
+    sorted = Enum.sort_by(entities, & &1.start_pos)
+
+    {merged, _} =
+      Enum.reduce(sorted, {[], nil}, fn entity, {acc, prev} ->
+        if prev != nil and
+             types_compatible_for_merge?(prev, entity) and
+             adjacent_in_text?(prev, entity, tokens) do
+          merged_type = common_compatible_type(prev, entity)
+          combined = %{prev |
+            value: prev.value <> " " <> entity.value,
+            match: prev.match <> " " <> entity.match,
+            end_pos: entity.end_pos,
+            entity_type: merged_type,
+            confidence: min(0.85, max(prev.confidence, entity.confidence) + 0.05)
+          }
+          |> Map.delete(:types)
+          {List.replace_at(acc, -1, combined), combined}
+        else
+          {acc ++ [entity], entity}
+        end
+      end)
+
+    merged
+  end
+
+  defp types_compatible_for_merge?(prev, next) do
+    prev_types = all_entity_types(prev) |> MapSet.to_list()
+    next_types = all_entity_types(next) |> MapSet.to_list()
+
+    Enum.any?(prev_types, fn pt ->
+      Enum.any?(next_types, fn nt ->
+        TypeHierarchy.compatible?(pt, nt)
+      end)
+    end)
+  end
+
+  defp common_compatible_type(prev, next) do
+    prev_types = all_entity_types(prev)
+    next_types = all_entity_types(next)
+    common = MapSet.intersection(prev_types, next_types)
+
+    cond do
+      MapSet.size(common) > 0 ->
+        Enum.at(MapSet.to_list(common), 0)
+
+      TypeHierarchy.compatible?(prev.entity_type, next.entity_type) ->
+        narrower_type(prev.entity_type, next.entity_type)
+
+      true ->
+        prev.entity_type
+    end
+  end
+
+  defp narrower_type(a, b) do
+    cond do
+      TypeHierarchy.is_a?(a, b) -> a
+      TypeHierarchy.is_a?(b, a) -> b
+      true -> a
+    end
+  end
+
+  defp all_entity_types(entity) do
+    primary = [entity.entity_type]
+    from_types = entity
+      |> Map.get(:types, [])
+      |> Enum.map(&(&1[:entity_type] || &1["entity_type"]))
+      |> Enum.filter(&is_binary/1)
+
+    MapSet.new(primary ++ from_types)
+  end
+
+  defp adjacent_in_text?(prev, next, tokens) do
+    between = Enum.filter(tokens, fn t ->
+      t.start_pos > prev.end_pos and t.end_pos < next.start_pos
+    end)
+
+    Enum.empty?(between) or Enum.all?(between, &(&1.type == :punctuation))
   end
 
   defp resolve_overlaps([], resolved) do

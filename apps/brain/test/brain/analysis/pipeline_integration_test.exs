@@ -10,13 +10,13 @@ defmodule Brain.Analysis.PipelineIntegrationTest do
   - Graceful degradation when LSTM is unavailable
   - Edge cases (empty, whitespace, long input)
   """
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
 
   import Brain.TestHelpers
 
   alias Brain.Analysis.Pipeline
 
-  setup do
+  setup _context do
     start_test_services()
     :ok
   end

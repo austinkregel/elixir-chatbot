@@ -2,12 +2,12 @@ defmodule Brain.FactDatabaseDataTest do
   @moduledoc """
   Data-driven tests for FactDatabase covering fact storage, retrieval, and querying.
   """
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
   import Brain.TestHelpers
 
   alias Brain.FactDatabase
 
-  setup do
+  setup _context do
     ensure_pubsub_started()
     ensure_started(FactDatabase)
     :ok

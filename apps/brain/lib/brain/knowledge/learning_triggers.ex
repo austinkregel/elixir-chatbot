@@ -9,6 +9,9 @@ defmodule Brain.Knowledge.LearningTriggers do
 
   Subscribes to PubSub "learning:novel_input" for novelty events.
   Rate-limited to max 2 auto-triggered sessions per day.
+
+  Only inputs that pass the researchability filter in `NoveltyDetector`
+  reach this module — social/phatic inputs are excluded upstream.
   """
 
   use GenServer
@@ -40,19 +43,16 @@ defmodule Brain.Knowledge.LearningTriggers do
 
   @impl true
   def init(_opts) do
-    # Subscribe to novel input events
     if Process.whereis(Brain.PubSub) do
       Phoenix.PubSub.subscribe(Brain.PubSub, "learning:novel_input")
     end
 
-    # Schedule periodic cleanup
     Process.send_after(self(), :cleanup, @cleanup_interval_ms)
 
     Logger.info("LearningTriggers started")
 
     {:ok,
      %{
-       # %{domain => [%{text: text, score: score, timestamp: ms}]}
        novel_inputs: %{},
        sessions_today: 0,
        last_reset_date: Date.utc_today(),
@@ -79,27 +79,16 @@ defmodule Brain.Knowledge.LearningTriggers do
     {:reply, true, state}
   end
 
+  # Handle the enriched message format (with entities)
+  @impl true
+  def handle_info({:novel_input, text, score, domain, entities}, state) do
+    accumulate_input(state, text, score, domain, entities)
+  end
+
+  # Backward-compatible handler for the old 4-element tuple format
   @impl true
   def handle_info({:novel_input, text, score, domain}, state) do
-    state = maybe_reset_daily_counter(state)
-
-    # Accumulate novel input for this domain
-    entry = %{
-      text: text,
-      score: score,
-      timestamp: System.system_time(:millisecond)
-    }
-
-    domain_inputs = Map.get(state.novel_inputs, domain, [])
-    updated_inputs = [entry | domain_inputs]
-    new_novel_inputs = Map.put(state.novel_inputs, domain, updated_inputs)
-
-    state = %{state | novel_inputs: new_novel_inputs}
-
-    # Check if we should trigger a research session
-    state = maybe_trigger_session(state, domain)
-
-    {:noreply, state}
+    accumulate_input(state, text, score, domain, [])
   end
 
   @impl true
@@ -113,6 +102,26 @@ defmodule Brain.Knowledge.LearningTriggers do
   def handle_info(_msg, state), do: {:noreply, state}
 
   # --- Private ---
+
+  defp accumulate_input(state, text, score, domain, entities) do
+    state = maybe_reset_daily_counter(state)
+
+    entry = %{
+      text: text,
+      score: score,
+      entities: entities || [],
+      timestamp: System.system_time(:millisecond)
+    }
+
+    domain_inputs = Map.get(state.novel_inputs, domain, [])
+    updated_inputs = [entry | domain_inputs]
+    new_novel_inputs = Map.put(state.novel_inputs, domain, updated_inputs)
+
+    state = %{state | novel_inputs: new_novel_inputs}
+    state = maybe_trigger_session(state, domain)
+
+    {:noreply, state}
+  end
 
   defp maybe_trigger_session(state, domain) do
     if state.sessions_today >= @max_sessions_per_day do
@@ -134,7 +143,6 @@ defmodule Brain.Knowledge.LearningTriggers do
               novel_input_count: length(recent)
             )
 
-            # Clear this domain's accumulated inputs
             new_novel_inputs = Map.delete(state.novel_inputs, domain)
 
             %{
@@ -171,24 +179,54 @@ defmodule Brain.Knowledge.LearningTriggers do
   end
 
   defp build_topic_from_inputs(domain, inputs) do
-    # Take the most recent inputs' text to form a research topic
-    sample_texts =
-      inputs
-      |> Enum.sort_by(& &1.timestamp, :desc)
-      |> Enum.take(3)
-      |> Enum.map(& &1.text)
-
-    # Build a topic string from domain and sample queries
+    entity_names = extract_entity_concepts(inputs)
     domain_str = to_string(domain)
 
-    case sample_texts do
-      [] ->
-        domain_str
+    if entity_names != [] do
+      Enum.join(entity_names, ", ")
+    else
+      best = Enum.max_by(inputs, & &1.score)
+      extract_content_words(best.text, domain_str)
+    end
+  end
 
-      _texts ->
-        # Use the most representative (highest score) input as the base topic
-        best = Enum.max_by(inputs, & &1.score)
-        "#{domain_str}: #{best.text}"
+  defp extract_entity_concepts(inputs) do
+    inputs
+    |> Enum.flat_map(fn input -> Map.get(input, :entities, []) end)
+    |> Enum.filter(fn entity ->
+      confidence = Map.get(entity, :confidence, 0)
+      confidence > 0.3
+    end)
+    |> Enum.map(fn entity ->
+      Map.get(entity, :value) || Map.get(entity, "value") || ""
+    end)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.uniq()
+    |> Enum.take(3)
+  end
+
+  defp extract_content_words(text, domain_str) do
+    alias Brain.ML.{Tokenizer, POSTagger}
+
+    tokens = Tokenizer.tokenize_words(text)
+
+    case POSTagger.load_model() do
+      {:ok, model} ->
+        tags = POSTagger.predict_tags(tokens, model)
+
+        nouns =
+          Enum.zip(tokens, tags)
+          |> Enum.filter(fn {_token, tag} -> tag in ["NOUN", "PROPN"] end)
+          |> Enum.map(fn {token, _tag} -> token end)
+
+        if nouns != [] do
+          Enum.join(nouns, " ")
+        else
+          "#{domain_str}: #{text}"
+        end
+
+      {:error, _} ->
+        "#{domain_str}: #{text}"
     end
   end
 

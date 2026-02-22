@@ -1,5 +1,5 @@
 defmodule Brain.Services.CredentialVaultTest do
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
 
   alias Brain.Services.CredentialVault
 

@@ -44,6 +44,51 @@
         <div class="text-xs text-base-content/60">Knowledge Categories</div>
       </div>
     </section>
+
+    <!-- Model Evaluation Summary -->
+    <section :if={@evaluation_summary != %{}} class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+      <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-xl bg-gradient-to-br from-violet-500/20 to-violet-500/5">
+              <.icon name="hero-chart-bar" class="size-5 text-violet-500" />
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-base-content">Model Evaluation</h2>
+              <p class="text-xs text-base-content/60">
+                Latest evaluation results across all tasks
+              </p>
+            </div>
+          </div>
+          <.link navigate="/accuracy" class="text-xs text-primary hover:underline">
+            View Details &rarr;
+          </.link>
+        </div>
+      </div>
+      <div class="p-4">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <%= for {task, label} <- [{"intent", "Intent"}, {"ner", "NER"}, {"sentiment", "Sentiment"}, {"speech_act", "Speech Act"}] do %>
+            <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+              <div class="text-xs font-semibold text-base-content/70 mb-1"><%= label %></div>
+              <%= if data = @evaluation_summary[task] do %>
+                <div class="text-lg font-bold">
+                  <span class={accuracy_color(data.accuracy)}><%= Float.round(data.accuracy * 100, 1) %>%</span>
+                </div>
+                <div class="text-[10px] text-base-content/50 mt-0.5">
+                  F1: <%= Float.round((data.macro_f1 || 0.0) * 100, 1) %>%
+                  · <%= data.total_examples || 0 %> examples
+                </div>
+                <div class="text-[10px] text-base-content/40">
+                  <%= if data.duration_ms, do: "#{data.duration_ms}ms", else: "" %>
+                </div>
+              <% else %>
+                <div class="text-sm text-base-content/40 italic">Not evaluated</div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </section>
     
 <!-- Atlas Database Status -->
     <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">

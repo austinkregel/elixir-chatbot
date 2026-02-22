@@ -20,6 +20,10 @@ defmodule ChatWeb.AccuracyLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Brain.PubSub, "evaluation:complete")
+    end
+
     {:ok, socket}
   end
 
@@ -190,6 +194,21 @@ defmodule ChatWeb.AccuracyLive do
   end
 
   def handle_event("refresh_worlds", _params, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:evaluation_complete, %{task: task}}, socket) do
+    Logger.debug("AccuracyLive: Received evaluation complete for #{task}")
+    socket = load_all_data(socket)
+
+    socket =
+      if socket.assigns.active_tab == task do
+        put_flash(socket, :info, "#{@task_labels[task] || task} evaluation updated")
+      else
+        socket
+      end
+
     {:noreply, socket}
   end
 

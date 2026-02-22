@@ -2,6 +2,8 @@ defmodule Brain.ML.POSTagger do
   @moduledoc "Part-of-Speech tagging using trained sequence model.\n\nTags tokens with grammatical roles (PRON, VERB, NOUN, ADJ, etc.)\nusing the same HMM-like architecture as EntityTrainer:\n- Feature extraction (prefix, suffix, capitalization, context)\n- Transition probabilities (P(tag|prev_tag))\n- Emission probabilities (P(features|tag))\n- Viterbi decoding for optimal tag sequence\n\n## Training\n\nTraining data should be in the format:\n    %{\n      tokens: [\"I\", \"am\", \"Austin\"],\n      tags: [\"PRON\", \"VERB\", \"PROPN\"],\n      source: \"intent_name\"  # optional\n    }\n\n## Usage\n\n    # Train from data\n    {:ok, model} = POSTagger.train(training_sequences)\n\n    # Or load pre-trained model\n    {:ok, model} = POSTagger.load_model()\n\n    # Predict POS tags\n    predictions = POSTagger.predict([\"I\", \"am\", \"Austin\"], model)\n    # => [{\"I\", \"PRON\"}, {\"am\", \"VERB\"}, {\"Austin\", \"PROPN\"}]\n\n"
 
   require Logger
+  alias Brain.Analysis.TypeHierarchy
+
   @pos_tags ~w(
     NOUN PROPN VERB AUX ADJ ADV PRON DET ADP
     CONJ PART NUM INTJ PUNCT SYM X
@@ -264,7 +266,7 @@ defmodule Brain.ML.POSTagger do
     if tokens == [] do
       []
     else
-      predictions = viterbi_decode(tokens, model)
+      predictions = viterbi_decode(tokens, model) |> correct_propn(tokens, model)
       Enum.zip(tokens, predictions)
     end
   end
@@ -274,7 +276,42 @@ defmodule Brain.ML.POSTagger do
     if tokens == [] do
       []
     else
-      viterbi_decode(tokens, model)
+      viterbi_decode(tokens, model) |> correct_propn(tokens, model)
+    end
+  end
+
+  @doc false
+  defp correct_propn(tags, tokens, model) do
+    propn_tag = TypeHierarchy.config(["pos_tag_roles", "proper_noun"], "PROPN")
+    cap_weights = Map.get(model.feature_weights, "cap_non_initial", %{})
+    cap_propn = Map.get(cap_weights, propn_tag, 0)
+
+    if cap_propn < 0.3 do
+      tags
+    else
+      tokens
+      |> Enum.with_index()
+      |> Enum.zip(tags)
+      |> Enum.map(fn {{token, idx}, tag} ->
+        if idx > 0 and tag != propn_tag and capitalized?(token) do
+          token_weights = Map.get(model.feature_weights, "token:#{String.downcase(token)}", %{})
+          token_propn = Map.get(token_weights, propn_tag, 0)
+          token_current = Map.get(token_weights, tag, 0)
+
+          cond do
+            map_size(token_weights) == 0 ->
+              propn_tag
+
+            token_propn > token_current ->
+              propn_tag
+
+            true ->
+              tag
+          end
+        else
+          tag
+        end
+      end)
     end
   end
 
@@ -417,6 +454,7 @@ defmodule Brain.ML.POSTagger do
 
   defp extract_token_features(token, all_tokens, idx) do
     lower_token = String.downcase(token)
+    is_cap = capitalized?(token)
 
     features = [
       "token:#{lower_token}",
@@ -424,53 +462,26 @@ defmodule Brain.ML.POSTagger do
       "prefix3:#{String.slice(lower_token, 0, 3)}",
       "suffix2:#{String.slice(lower_token, -2, 2) || ""}",
       "suffix3:#{String.slice(lower_token, -3, 3) || ""}",
-      if(capitalized?(token)) do
-        "is_capitalized"
-      else
-        "not_capitalized"
-      end,
-      if(all_caps?(token)) do
-        "is_all_caps"
-      else
-        "not_all_caps"
-      end,
-      if(all_lower?(token)) do
-        "is_all_lower"
-      else
-        "not_all_lower"
-      end,
-      if(has_digit?(token)) do
-        "has_digit"
-      else
-        "no_digit"
-      end,
-      if(all_digits?(token)) do
-        "is_number"
-      else
-        "not_number"
-      end,
-      if(is_punctuation?(token)) do
-        "is_punct"
-      else
-        "not_punct"
-      end,
-      if(idx == 0) do
-        "is_first"
-      else
-        "not_first"
-      end,
-      if(idx == length(all_tokens) - 1) do
-        "is_last"
-      else
-        "not_last"
-      end,
+      if(is_cap, do: "is_capitalized", else: "not_capitalized"),
+      if(is_cap and idx > 0, do: "cap_non_initial", else: "not_cap_non_initial"),
+      if(all_caps?(token), do: "is_all_caps", else: "not_all_caps"),
+      if(all_lower?(token), do: "is_all_lower", else: "not_all_lower"),
+      if(has_digit?(token), do: "has_digit", else: "no_digit"),
+      if(all_digits?(token), do: "is_number", else: "not_number"),
+      if(is_punctuation?(token), do: "is_punct", else: "not_punct"),
+      if(idx == 0, do: "is_first", else: "not_first"),
+      if(idx == length(all_tokens) - 1, do: "is_last", else: "not_last"),
       "length:#{min(String.length(token), 10)}"
     ]
 
     prev_features =
       if idx > 0 do
         prev_token = Enum.at(all_tokens, idx - 1)
-        ["prev_token:#{String.downcase(prev_token)}"]
+        prev_lower = String.downcase(prev_token)
+        [
+          "prev_token:#{prev_lower}",
+          if(is_cap and capitalized?(prev_token), do: "prev_also_cap", else: nil)
+        ]
       else
         ["prev_token:<START>"]
       end
@@ -478,7 +489,11 @@ defmodule Brain.ML.POSTagger do
     next_features =
       if idx < length(all_tokens) - 1 do
         next_token = Enum.at(all_tokens, idx + 1)
-        ["next_token:#{String.downcase(next_token)}"]
+        next_lower = String.downcase(next_token)
+        [
+          "next_token:#{next_lower}",
+          if(is_cap and capitalized?(next_token), do: "next_also_cap", else: nil)
+        ]
       else
         ["next_token:<END>"]
       end
@@ -584,15 +599,17 @@ defmodule Brain.ML.POSTagger do
   end
 
   defp get_emission_prob(features, tag, model) do
-    probs =
-      Enum.map(features, fn feature ->
-        model.feature_weights
-        |> Map.get(feature, %{})
-        |> Map.get(tag, 0.001)
+    known_probs =
+      features
+      |> Enum.flat_map(fn feature ->
+        case Map.get(model.feature_weights, feature) do
+          nil -> []
+          weights -> [Map.get(weights, tag, 0.001)]
+        end
       end)
 
-    if probs != [] do
-      Enum.sum(probs) / length(probs)
+    if known_probs != [] do
+      Enum.sum(known_probs) / length(known_probs)
     else
       Map.get(model.tag_priors, tag, 0.001)
     end

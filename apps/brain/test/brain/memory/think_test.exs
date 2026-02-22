@@ -1,11 +1,11 @@
 defmodule Brain.Memory.ThinkTest do
   alias Brain.Memory
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
   import Brain.TestHelpers
 
   alias Memory.{Think, Store, Embedder}
 
-  setup do
+  setup _context do
     ensure_pubsub_started()
     ensure_started(Embedder)
 
@@ -30,13 +30,13 @@ defmodule Brain.Memory.ThinkTest do
       {:ok, {:episode_added, id}} =
         Think.think(:add_episode, %{
           state: "hello world",
-          action: "greeting",
+          action: "smalltalk.greetings.hello",
           outcome: "hi there",
-          tags: ["greeting"]
+          tags: ["smalltalk.greetings.hello"]
         })
 
       assert is_binary(id)
-      assert String.length(id) == 32
+      assert String.length(id) == 36
     end
 
     test "works with minimal params" do
@@ -48,8 +48,8 @@ defmodule Brain.Memory.ThinkTest do
 
   describe "think(:query_chat)" do
     test "queries for similar episodes" do
-      Think.think(:add_episode, %{state: "hello world", action: "greeting", tags: ["greeting"]})
-      Think.think(:add_episode, %{state: "goodbye world", action: "farewell", tags: ["farewell"]})
+      Think.think(:add_episode, %{state: "hello world", action: "smalltalk.greetings.hello", tags: ["smalltalk.greetings.hello"]})
+      Think.think(:add_episode, %{state: "goodbye world", action: "smalltalk.greetings.bye", tags: ["smalltalk.greetings.bye"]})
 
       {:ok, {:chat_results, results}} = Think.think(:query_chat, %{input: "hello friend", k: 5})
 
@@ -80,9 +80,9 @@ defmodule Brain.Memory.ThinkTest do
 
   describe "think(:consolidate)" do
     test "consolidates episodes into semantic facts" do
-      Think.think(:add_episode, %{state: "hello world", action: "greeting", tags: ["greeting"]})
-      Think.think(:add_episode, %{state: "hello there", action: "greeting", tags: ["greeting"]})
-      Think.think(:add_episode, %{state: "hi friend", action: "greeting", tags: ["greeting"]})
+      Think.think(:add_episode, %{state: "hello world", action: "smalltalk.greetings.hello", tags: ["smalltalk.greetings.hello"]})
+      Think.think(:add_episode, %{state: "hello there", action: "smalltalk.greetings.hello", tags: ["smalltalk.greetings.hello"]})
+      Think.think(:add_episode, %{state: "hi friend", action: "smalltalk.greetings.hello", tags: ["smalltalk.greetings.hello"]})
 
       {:ok, {:consolidated, count}} =
         Think.think(:consolidate, %{threshold: 0.3, min_size: 2})
@@ -94,8 +94,8 @@ defmodule Brain.Memory.ThinkTest do
 
   describe "think(:stats)" do
     test "returns store statistics" do
-      Think.think(:add_episode, %{state: "hello", action: "greeting"})
-      Think.think(:add_episode, %{state: "goodbye", action: "farewell"})
+      Think.think(:add_episode, %{state: "hello", action: "smalltalk.greetings.hello"})
+      Think.think(:add_episode, %{state: "goodbye", action: "smalltalk.greetings.bye"})
 
       {:ok, {:stats, stats}} = Think.think(:stats)
 
@@ -106,7 +106,7 @@ defmodule Brain.Memory.ThinkTest do
 
   describe "think(:clear)" do
     test "clears all memory" do
-      Think.think(:add_episode, %{state: "hello", action: "greeting"})
+      Think.think(:add_episode, %{state: "hello", action: "smalltalk.greetings.hello"})
 
       {:ok, :cleared} = Think.think(:clear)
 
@@ -117,7 +117,7 @@ defmodule Brain.Memory.ThinkTest do
 
   describe "think(:persist)" do
     test "persists memory to disk" do
-      Think.think(:add_episode, %{state: "hello", action: "greeting"})
+      Think.think(:add_episode, %{state: "hello", action: "smalltalk.greetings.hello"})
 
       result = Think.think(:persist)
 

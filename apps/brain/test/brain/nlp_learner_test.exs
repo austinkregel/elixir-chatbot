@@ -1,10 +1,10 @@
 defmodule Brain.NLPLearnerTest do
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
   alias Brain.Learner
   alias Brain.KnowledgeStore
   import Brain.TestHelpers
 
-  setup do
+  setup _context do
     start_test_services()
 
     persona_name = "TestPersona"

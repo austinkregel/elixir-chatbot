@@ -1,12 +1,12 @@
 defmodule Brain.Knowledge.LearningCenterTest do
   alias Brain.Knowledge
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
   import Brain.TestHelpers
 
   alias Knowledge.{LearningCenter, ReviewQueue, SourceReliability}
   alias Brain.Knowledge.Types.ResearchGoal
 
-  setup do
+  setup _context do
     ensure_pubsub_started()
 
     case Task.Supervisor.start_link(name: Brain.Knowledge.AgentSupervisor) do

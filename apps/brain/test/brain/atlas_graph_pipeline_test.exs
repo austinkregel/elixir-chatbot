@@ -185,14 +185,14 @@ defmodule Brain.AtlasGraphPipelineTest do
       :ok = Writer.write_conversation(%{id: "roundtrip_conv", world_id: "default"})
       Process.sleep(200)
 
-      :ok = Writer.write_message("roundtrip_conv", %{id: "rt_msg_1", role: "user", content: "Hello"}, %{intent: "greeting"})
+      :ok = Writer.write_message("roundtrip_conv", %{id: "rt_msg_1", role: "user", content: "Hello"}, %{intent: "smalltalk.greetings.hello"})
       Process.sleep(200)
 
       :ok = Writer.write_message("roundtrip_conv", %{id: "rt_msg_2", role: "assistant", content: "Hi!"}, nil)
       Process.sleep(200)
 
       topics = Reader.conversation_topics("roundtrip_conv")
-      assert "greeting" in topics
+      assert "smalltalk.greetings.hello" in topics
 
       context = Reader.recent_context("roundtrip_conv", 5)
       assert length(context) >= 2

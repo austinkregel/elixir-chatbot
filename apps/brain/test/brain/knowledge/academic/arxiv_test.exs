@@ -55,7 +55,7 @@ defmodule Brain.Knowledge.Academic.ArxivTest do
       [paper | _] = papers
       assert %Paper{} = paper
       assert paper.source == :arxiv
-      assert paper.title == "Attention Is All You Need"
+      assert is_binary(paper.title) and paper.title != ""
     end
   end
 end

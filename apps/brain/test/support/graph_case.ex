@@ -22,19 +22,43 @@ defmodule Brain.Test.GraphCase do
   using do
     quote do
       alias Atlas.Graph
-      alias Atlas.Graph.Types.{Vertex, Edge, Path}
+      alias Atlas.Graph.Types.Vertex
+      alias Atlas.Graph.Types.Edge
+      # Note: Do NOT alias Atlas.Graph.Types.Path here - it shadows Elixir's Path module
       import Brain.Test.GraphCase.Assertions
       import Brain.Test.GraphSeeds
     end
   end
 
   setup tags do
-    Brain.TestHelpers.start_test_services()
+    # Checkout sandbox FIRST so GenServers can access Atlas during setup.
+    # Reset to manual mode first to clear any stale shared connections from
+    # previous tests whose on_exit callbacks may have failed.
+    # If mode reset itself fails (e.g. repo not started), we still proceed
+    # as start_owner! will surface the real error.
+    try do
+      Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :manual)
+    rescue
+      _ -> :ok
+    catch
+      :exit, _ -> :ok
+    end
 
-    pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Atlas.Repo, shared: not tags[:async])
+    # Retry start_owner! once if it fails due to stale shared state
+    pid =
+      try do
+        Ecto.Adapters.SQL.Sandbox.start_owner!(Atlas.Repo, shared: not tags[:async])
+      rescue
+        MatchError ->
+          # Force back to manual and retry
+          Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :manual)
+          Process.sleep(50)
+          Ecto.Adapters.SQL.Sandbox.start_owner!(Atlas.Repo, shared: not tags[:async])
+      end
     Ecto.Adapters.SQL.query!(Atlas.Repo, "LOAD 'age'", [])
     Ecto.Adapters.SQL.query!(Atlas.Repo, "SET search_path = ag_catalog, \"$user\", public", [])
 
+    # Allow all Atlas-backed GenServers to use this sandbox connection
     atlas_genservers = [
       Brain.Services.CredentialVault,
       Brain.Epistemic.SourceAuthority,
@@ -53,12 +77,22 @@ defmodule Brain.Test.GraphCase do
       end
     end
 
-    if task_sup = Process.whereis(Brain.AtlasIntegration.TaskSupervisor) do
+    if task_sup = Process.whereis(Brain.AtlasTaskSupervisor) do
       Ecto.Adapters.SQL.Sandbox.allow(Atlas.Repo, pid, task_sup)
     end
 
+    # Start test services AFTER sandbox is available
+    Brain.TestHelpers.start_test_services()
+
     on_exit(fn ->
-      Brain.AtlasIntegration.drain()
+      try do
+        Brain.AtlasIntegration.drain()
+      rescue
+        _ -> :ok
+      catch
+        :exit, _ -> :ok
+      end
+
       Ecto.Adapters.SQL.Sandbox.stop_owner(pid)
     end)
 

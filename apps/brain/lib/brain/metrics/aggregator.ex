@@ -50,6 +50,10 @@ defmodule Brain.Metrics.Aggregator do
           readiness = Map.get(acc, :readiness, %{})
           Map.put(acc, :readiness, Map.put(readiness, name, data))
 
+        {{:evaluation, task}, data}, acc ->
+          evaluation = Map.get(acc, :evaluation, %{})
+          Map.put(acc, :evaluation, Map.put(evaluation, task, data))
+
         _, acc ->
           acc
       end)
@@ -286,6 +290,18 @@ defmodule Brain.Metrics.Aggregator do
     end
   end
 
+  @doc "Gets latest evaluation results per task. Reads directly from ETS.\n"
+  def get_evaluation_metrics do
+    try do
+      @metrics_table
+      |> :ets.match({{:evaluation, :"$1"}, :"$2"})
+      |> Enum.map(fn [task, data] -> {task, data} end)
+      |> Map.new()
+    catch
+      :error, :badarg -> %{}
+    end
+  end
+
   @impl true
   def init(_opts) do
     :ets.new(@metrics_table, [:named_table, :public, :set, read_concurrency: true])
@@ -445,6 +461,27 @@ defmodule Brain.Metrics.Aggregator do
          loaded_at: DateTime.utc_now(),
          duration_ms: duration_ms,
          success: metadata[:success] != false,
+         last_updated: now
+       }}
+    )
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:record_evaluation_complete, task, measurements}, state) do
+    now = System.monotonic_time(:millisecond)
+
+    :ets.insert(
+      @metrics_table,
+      {{:evaluation, task},
+       %{
+         accuracy: measurements[:accuracy] || 0.0,
+         macro_f1: measurements[:macro_f1] || 0.0,
+         weighted_f1: measurements[:weighted_f1] || 0.0,
+         total_examples: measurements[:total_examples] || 0,
+         duration_ms: measurements[:duration_ms] || 0,
+         completed_at: DateTime.utc_now(),
          last_updated: now
        }}
     )

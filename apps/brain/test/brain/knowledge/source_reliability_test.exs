@@ -1,5 +1,5 @@
 defmodule Brain.Knowledge.SourceReliabilityTest do
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
   import Brain.TestHelpers
 
   alias Brain.Knowledge.SourceReliability
@@ -9,7 +9,7 @@ defmodule Brain.Knowledge.SourceReliabilityTest do
     :ok
   end
 
-  setup do
+  setup _context do
     ensure_pubsub_started()
     ensure_started(SourceReliability)
 

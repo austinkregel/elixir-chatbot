@@ -1,5 +1,4 @@
 defmodule ChatWeb.GettextTest do
-  alias ChatWeb.Gettext
   use ExUnit.Case, async: true
 
   describe "ChatWeb.Gettext" do
@@ -22,7 +21,7 @@ defmodule ChatWeb.GettextTest do
     end
 
     test "otp_app is :chat_web" do
-      assert Gettext.__gettext__(:otp_app) == :chat_web
+      assert ChatWeb.Gettext.__gettext__(:otp_app) == :chat_web
     end
   end
 end

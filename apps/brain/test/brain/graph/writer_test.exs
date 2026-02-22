@@ -156,7 +156,7 @@ defmodule Brain.Graph.WriterTest do
       Process.sleep(200)
 
       message = %{id: "msg_test_1", role: "user", content: "Hello there!"}
-      analysis = %{intent: "greeting"}
+      analysis = %{intent: "smalltalk.greetings.hello"}
       :ok = Writer.write_message("conv_msg_test", message, analysis)
       Process.sleep(300)
 
@@ -169,7 +169,7 @@ defmodule Brain.Graph.WriterTest do
       :ok = Writer.write_conversation(%{id: "conv_seq_test", world_id: "default"})
       Process.sleep(200)
 
-      :ok = Writer.write_message("conv_seq_test", %{id: "seq_1", role: "user", content: "Hi"}, %{intent: "greeting"})
+      :ok = Writer.write_message("conv_seq_test", %{id: "seq_1", role: "user", content: "Hi"}, %{intent: "smalltalk.greetings.hello"})
       Process.sleep(200)
       :ok = Writer.write_message("conv_seq_test", %{id: "seq_2", role: "assistant", content: "Hello!"}, nil)
       Process.sleep(300)

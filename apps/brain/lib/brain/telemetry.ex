@@ -41,6 +41,10 @@ defmodule Brain.Telemetry do
   - `[:chat_bot, :epistemic, :belief_operation, :start | :stop | :exception]` - BeliefStore operations
   - `[:chat_bot, :epistemic, :fact_verification, :stop]` - Fact verification during analysis
 
+  ## Evaluation Events
+
+  - `[:chat_bot, :evaluation, :complete]` - Evaluation task completed (accuracy, F1, per-task results)
+
   ## Analysis Events
 
   - `[:chat_bot, :analysis, :racing, :start | :stop | :exception]` - Racing analyzer parallel processing
@@ -119,6 +123,9 @@ defmodule Brain.Telemetry do
   @code_gazetteer_lookup [:chat_bot, :code, :gazetteer, :lookup]
   @code_gazetteer_add [:chat_bot, :code, :gazetteer, :add]
   @code_file_processed [:chat_bot, :code, :file_processed]
+
+  # Evaluation Events
+  @evaluation_complete [:chat_bot, :evaluation, :complete]
 
   # External Services Events
   @service_dispatch [:chat_bot, :services, :dispatch]
@@ -257,6 +264,10 @@ defmodule Brain.Telemetry do
       {"chatbot-code-file-processed", @code_file_processed,
        &__MODULE__.handle_code_file_processed/4, %{}},
 
+      # Evaluation handlers
+      {"chatbot-evaluation-complete", @evaluation_complete,
+       &__MODULE__.handle_evaluation_complete/4, %{}},
+
       # External Services handlers
       {"chatbot-service-dispatch-stop", @service_dispatch ++ [:stop],
        &__MODULE__.handle_service_dispatch/4, %{}},
@@ -339,6 +350,8 @@ defmodule Brain.Telemetry do
       "chatbot-code-gazetteer-lookup-stop",
       "chatbot-code-gazetteer-add-stop",
       "chatbot-code-file-processed",
+      # Evaluation events
+      "chatbot-evaluation-complete",
       # External services events
       "chatbot-service-dispatch-stop",
       "chatbot-service-dispatch-exception",
@@ -629,6 +642,30 @@ defmodule Brain.Telemetry do
   end
 
   @doc """
+  Emits an evaluation completion event with accuracy metrics.
+
+  ## Parameters
+  - `task` - The evaluation task (e.g., "intent", "ner", "sentiment", "speech_act")
+  - `metrics` - Map with :accuracy, :macro_f1, :weighted_f1, :total_examples, :duration_ms
+  """
+  def emit_evaluation_complete(task, metrics) when is_map(metrics) do
+    :telemetry.execute(
+      @evaluation_complete,
+      %{
+        accuracy: Map.get(metrics, :accuracy, 0.0),
+        macro_f1: Map.get(metrics, :macro_f1, 0.0),
+        weighted_f1: Map.get(metrics, :weighted_f1, 0.0),
+        total_examples: Map.get(metrics, :total_examples, 0),
+        duration_ms: Map.get(metrics, :duration_ms, 0)
+      },
+      %{
+        task: task,
+        timestamp: System.monotonic_time(:millisecond)
+      }
+    )
+  end
+
+  @doc """
   Emits a racing analyzer early exit event when a fast path is taken.
   """
   def emit_racing_early_exit(analyzer, confidence, duration_ms) do
@@ -814,6 +851,20 @@ defmodule Brain.Telemetry do
         Brain.Metrics.Aggregator,
         {:record_code_file_processed, metadata[:file_path], metadata[:language],
          measurements[:symbols_count], measurements[:relations_count], measurements[:duration_ms]}
+      )
+    end
+  end
+
+  # ============================================================================
+  # Evaluation Handlers
+  # ============================================================================
+
+  @doc false
+  def handle_evaluation_complete(_event, measurements, metadata, _config) do
+    if Process.whereis(Brain.Metrics.Aggregator) do
+      GenServer.cast(
+        Brain.Metrics.Aggregator,
+        {:record_evaluation_complete, metadata[:task], measurements}
       )
     end
   end

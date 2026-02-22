@@ -1,5 +1,5 @@
 defmodule Brain.Analysis.SpeechActClassifierTest do
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
 
   alias Brain.Analysis.SpeechActClassifier
   alias Brain.Analysis.SpeechActResult
@@ -10,8 +10,7 @@ defmodule Brain.Analysis.SpeechActClassifierTest do
     :ok
   end
 
-  setup do
-    # Start services needed for model-based classification
+  setup _context do
     start_test_services()
     :ok
   end
