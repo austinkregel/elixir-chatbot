@@ -1,0 +1,7 @@
+services:
+  app:
+    devices:
+      - /dev/kfd:/dev/kfd
+      - /dev/dri:/dev/dri
+    environment:
+      ROCR_VISIBLE_DEVICES: "${ROCR_VISIBLE_DEVICES:-0}"

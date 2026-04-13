@@ -1,0 +1,10 @@
+[
+  {"text": "New York city", "label": "location"},
+  {"text": "London England", "label": "location"},
+  {"text": "John Smith person", "label": "person"},
+  {"text": "Albert Einstein scientist", "label": "person"},
+  {"text": "The Beatles band", "label": "music-artist"},
+  {"text": "jazz music genre", "label": "music-genre"},
+  {"text": "living room lights device", "label": "device"},
+  {"text": "thermostat temperature device", "label": "device"}
+]

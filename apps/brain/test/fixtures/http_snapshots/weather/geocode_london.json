@@ -1,0 +1,23 @@
+{
+  "name": "weather/geocode_london",
+  "url": "https://api.openweathermap.org/geo/1.0/direct",
+  "params": {
+    "q": "London"
+  },
+  "response": {
+    "status": 200,
+    "headers": {"content-type": ["application/json"]},
+    "body": [
+      {
+        "name": "London",
+        "local_names": {"en": "London"},
+        "lat": 51.5085,
+        "lon": -0.1257,
+        "country": "GB",
+        "state": "England"
+      }
+    ]
+  },
+  "recorded_at": "2026-02-15T00:00:00Z",
+  "note": "Geocoding snapshot for London"
+}

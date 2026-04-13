@@ -1,0 +1,17 @@
+[
+  {"text": "I love this product", "sentiment": "positive"},
+  {"text": "This is amazing", "sentiment": "positive"},
+  {"text": "Great job well done", "sentiment": "positive"},
+  {"text": "I'm really happy about this", "sentiment": "positive"},
+  {"text": "Fantastic experience", "sentiment": "positive"},
+  {"text": "I hate this", "sentiment": "negative"},
+  {"text": "This is terrible", "sentiment": "negative"},
+  {"text": "Worst experience ever", "sentiment": "negative"},
+  {"text": "I'm really frustrated", "sentiment": "negative"},
+  {"text": "This is awful and broken", "sentiment": "negative"},
+  {"text": "The weather is cloudy", "sentiment": "neutral"},
+  {"text": "I went to the store", "sentiment": "neutral"},
+  {"text": "The meeting is at three", "sentiment": "neutral"},
+  {"text": "Please pass the salt", "sentiment": "neutral"},
+  {"text": "The document has five pages", "sentiment": "neutral"}
+]

@@ -1,0 +1,1987 @@
+<div class="flex h-screen bg-base-200">
+  <!-- Mobile: Drawer toggles -->
+  <div class="lg:hidden fixed top-0 left-0 right-0 z-20 flex items-center justify-between p-2 bg-base-100 border-b border-base-300">
+    <.icon_btn phx-click={JS.toggle(to: "#left-drawer")} title="Conversations">
+      <.icon name="hero-bars-3" class="size-5" />
+    </.icon_btn>
+    <span class="text-sm font-semibold text-base-content">Chat Bot</span>
+    <.icon_btn phx-click={JS.toggle(to: "#right-drawer")} title="Inspector">
+      <.icon name="hero-adjustments-horizontal" class="size-5" />
+    </.icon_btn>
+  </div>
+  
+<!-- Left Pane: Conversations (desktop: always visible, mobile: drawer) -->
+  <aside
+    id="left-drawer"
+    class="hidden lg:flex flex-col w-80 shrink-0 bg-base-100 border-r border-base-300
+           fixed lg:relative inset-y-0 left-0 z-30 lg:z-auto"
+  >
+    <!-- Brand & Status Header -->
+    <div class="p-4 border-b border-base-300">
+      <div class="flex items-center justify-between">
+        <h1 class="text-xl font-bold text-base-content">Chat Bot</h1>
+        <.icon_btn class="lg:hidden" phx-click={JS.toggle(to: "#left-drawer")} title="Close">
+          <.icon name="hero-x-mark" class="size-5" />
+        </.icon_btn>
+      </div>
+      
+<!-- Status Summary -->
+      <div class="mt-3 text-sm text-base-content/70 space-y-1">
+        <div class="flex items-center justify-between">
+          <span>Status:</span>
+          <.badge variant={if @status.is_shutting_down, do: :error, else: :success}>
+            {if @status.is_shutting_down, do: "Shutting Down", else: "Active"}
+          </.badge>
+        </div>
+        <div class="flex items-center justify-between">
+          <span>Conversations:</span>
+          <span class="font-medium">{@status.active_conversations}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span>Memory:</span>
+          <span class="font-medium">{@status.global_memory_size} entries</span>
+        </div>
+      </div>
+    </div>
+    
+<!-- System Status Section -->
+    <div class="p-4 border-b border-base-300">
+      <.section_header icon="hero-cpu-chip">
+        System Status
+      </.section_header>
+
+      <div class="mt-3 space-y-2">
+        <%= if Brain.SystemStatus.all_ready?() do %>
+          <div class="flex items-center gap-2 text-xs text-success">
+            <.status_dot status={:ready} />
+            <span>All systems ready</span>
+          </div>
+        <% else %>
+          <div class="flex items-center gap-2 text-xs text-warning">
+            <.status_dot status={:initializing} pulse />
+            <span>Initializing...</span>
+          </div>
+        <% end %>
+
+        <div class="ml-4 space-y-1.5 text-xs">
+          <div class="flex items-center gap-2">
+            <.status_dot
+              status={if @system_status.embedder.ready, do: :ready, else: :initializing}
+              pulse={not @system_status.embedder.ready}
+              size={:sm}
+            />
+            <span class={[
+              "text-base-content/70",
+              not @system_status.embedder.ready && "italic"
+            ]}>
+              Embedder: {@system_status.embedder.label}
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <.status_dot
+              status={if @system_status.nlp_pipeline.ready, do: :ready, else: :initializing}
+              pulse={not @system_status.nlp_pipeline.ready}
+              size={:sm}
+            />
+            <span class={[
+              "text-base-content/70",
+              not @system_status.nlp_pipeline.ready && "italic"
+            ]}>
+              NLP: {@system_status.nlp_pipeline.label}
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <.status_dot
+              status={if @system_status.brain.ready, do: :ready, else: :not_started}
+              size={:sm}
+            />
+            <span class="text-base-content/70">
+              Brain: {@system_status.brain.label}
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <.status_dot
+              status={
+                case @system_status.lstm.status do
+                  :ready -> :ready
+                  :partial -> :initializing
+                  _ -> :not_started
+                end
+              }
+              pulse={@system_status.lstm.status == :partial}
+              size={:sm}
+            />
+            <span class={[
+              "text-base-content/70",
+              @system_status.lstm.status == :not_loaded && "italic text-warning"
+            ]}>
+              LSTM: {@system_status.lstm.label}
+            </span>
+          </div>
+        </div>
+      </div>
+      
+<!-- Cognitive Memory Stats -->
+      <div class="mt-4 pt-3 border-t border-base-300">
+        <div class="text-xs font-semibold text-base-content/60 mb-2">
+          Cognitive Memory
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div class="flex justify-between">
+            <span class="text-base-content/60">Episodes:</span>
+            <span class="font-medium">{@memory_stats.episode_count}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-base-content/60">Semantic:</span>
+            <span class="font-medium">{@memory_stats.semantic_count}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+<!-- World Selector -->
+    <div class="p-4 border-b border-base-300">
+      <.section_header icon="hero-globe-alt">
+        Training World
+      </.section_header>
+
+      <div class="mt-3 flex gap-2">
+        <select
+          class="select select-sm select-bordered flex-1"
+          phx-change="switch_world"
+          name="world_id"
+        >
+          <%= for world <- @available_worlds do %>
+            <option value={world.id} selected={world.id == @current_world_id}>
+              {world.name}
+            </option>
+          <% end %>
+        </select>
+        <button
+          class="btn btn-sm btn-ghost btn-square"
+          phx-click="refresh_worlds"
+          title="Refresh worlds"
+        >
+          <.icon name="hero-arrow-path" class="size-4" />
+        </button>
+      </div>
+
+      <div class="mt-2 text-xs text-base-content/60">
+        Current: <span class="font-medium text-primary">{@current_world_id}</span>
+      </div>
+    </div>
+    
+<!-- Actions -->
+    <div class="p-4 space-y-2">
+      <.btn variant={:primary} class="w-full" phx-click="new_conversation">
+        <.icon name="hero-plus" class="size-4" /> New Conversation
+      </.btn>
+
+      <div class="flex gap-2">
+        <.btn
+          variant={if @show_processing, do: :secondary, else: :outline}
+          size={:sm}
+          class="flex-1"
+          phx-click="toggle_processing"
+        >
+          <.icon name="hero-cpu-chip" class="size-4" /> Processing
+        </.btn>
+        <.btn
+          variant={if @show_knowledge, do: :secondary, else: :outline}
+          size={:sm}
+          class="flex-1"
+          phx-click="toggle_knowledge"
+        >
+          <.icon name="hero-light-bulb" class="size-4" /> Knowledge
+        </.btn>
+      </div>
+
+      <.link navigate={~p"/admin"} class="block">
+        <.btn variant={:outline} size={:sm} class="w-full">
+          <.icon name="hero-cog-6-tooth" class="size-4" /> Entity Management
+        </.btn>
+      </.link>
+    </div>
+    
+<!-- Conversations List -->
+    <div class="flex-1 overflow-y-auto p-4 pt-0">
+      <.section_header icon="hero-chat-bubble-left-right" class="mb-3">
+        Conversations
+      </.section_header>
+
+      <div class="space-y-1">
+        <%= for conversation <- @conversations do %>
+          <button
+            type="button"
+            class={[
+              "w-full text-left p-3 rounded-lg transition-colors",
+              if(@current_conversation_id == conversation.id,
+                do: "bg-primary/10 border-l-4 border-primary",
+                else: "hover:bg-base-200"
+              )
+            ]}
+            phx-click="select_conversation"
+            phx-value-conversation_id={conversation.id}
+          >
+            <div class="text-sm font-medium text-base-content">
+              Conversation {String.slice(conversation.id, 0, 8)}
+            </div>
+            <div class="text-xs text-base-content/50 mt-0.5">
+              {conversation.message_count} messages
+            </div>
+          </button>
+        <% end %>
+
+        <%= if length(@conversations) == 0 do %>
+          <div class="text-sm text-base-content/50 italic text-center py-4">
+            No conversations yet
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </aside>
+  
+<!-- Center Pane: Chat -->
+  <main class="flex-1 flex flex-col min-w-0 pt-12 lg:pt-0">
+    <!-- Chat Header -->
+    <header class="shrink-0 bg-base-100 border-b border-base-300 px-4 py-3 lg:px-6">
+      <div class="flex items-center justify-between max-w-4xl mx-auto">
+        <div>
+          <h2 class="text-lg font-semibold text-base-content">
+            <%= if @current_conversation_id do %>
+              Conversation {String.slice(@current_conversation_id, 0, 8)}
+            <% else %>
+              Start a new conversation
+            <% end %>
+          </h2>
+          <p class="text-sm text-base-content/60">
+            {@status.name} - {Enum.join(@status.traits, ", ")}
+          </p>
+        </div>
+
+        <%= if @current_conversation_id do %>
+          <.btn variant={:danger} size={:sm} phx-click="end_conversation">
+            End Conversation
+          </.btn>
+        <% end %>
+      </div>
+    </header>
+    
+<!-- Messages Area -->
+    <div class="flex-1 overflow-y-auto">
+      <div class="max-w-4xl mx-auto p-4 lg:p-6 space-y-4">
+        <!-- System Initialization Banner -->
+        <%= if not Brain.SystemStatus.all_ready?() do %>
+          <.alert variant={:warning}>
+            <div class="flex items-center gap-2">
+              <span class="inline-block size-4 border-2 border-current border-t-transparent rounded-full animate-spin">
+              </span>
+              <span>
+                <span class="font-semibold">System initializing...</span>
+                <span class="hidden sm:inline">
+                  You can chat, but some features may be limited.
+                </span>
+              </span>
+            </div>
+          </.alert>
+        <% end %>
+        
+<!-- World Models Loading/Warning Banner -->
+        <%= if @world_models_loading do %>
+          <.alert variant={:info}>
+            <div class="flex items-center gap-2">
+              <span class="inline-block size-4 border-2 border-current border-t-transparent rounded-full animate-spin">
+              </span>
+              <span>
+                <span class="font-semibold">Loading world models...</span>
+              </span>
+            </div>
+          </.alert>
+        <% end %>
+
+        <%= if @world_models_status && not @world_models_status.has_classifier && not @world_models_loading do %>
+          <.alert variant={:warning}>
+            <div class="flex items-center gap-2">
+              <.icon name="hero-exclamation-triangle" class="size-4" />
+              <span>
+                <span class="font-semibold">No trained models for "{@current_world_id}"</span>
+                <span class="hidden sm:inline">
+                  Using default models. Train world-specific models with:
+                  <code class="px-1 bg-warning/20 rounded text-xs">
+                    mix train_models --world {@current_world_id}
+                  </code>
+                </span>
+              </span>
+            </div>
+          </.alert>
+        <% end %>
+
+        <%= if @error_message do %>
+          <.alert variant={:error}>
+            {@error_message}
+          </.alert>
+        <% end %>
+
+        <%= if length(@messages) == 0 do %>
+          <div class="text-center text-base-content/50 py-12">
+            <.icon name="hero-chat-bubble-left-right" class="size-12 mx-auto mb-3 opacity-50" />
+            <p class="text-lg">No messages yet</p>
+            <p class="text-sm mt-1">Start a conversation!</p>
+          </div>
+        <% else %>
+          <%= for message <- @messages do %>
+            <% analysis_steps = @analysis_logs[message.id] || [] %>
+            <% dev = @analysis_details[message.id] || %{} %>
+            <% is_selected = @selected_message_id == message.id %>
+
+            <div class={[
+              "flex flex-col gap-2",
+              if(message.role == "user", do: "items-end", else: "items-start")
+            ]}>
+              <!-- Message Bubble -->
+              <%= if message.role == "user" && @show_processing do %>
+                <button
+                  type="button"
+                  phx-click="select_message"
+                  phx-value-message_id={message.id}
+                  class={[
+                    "max-w-[85%] lg:max-w-xl px-4 py-3 rounded-2xl text-left transition-all",
+                    "bg-primary text-primary-content rounded-br-md",
+                    "hover:ring-2 hover:ring-primary-content/30",
+                    if(is_selected, do: "ring-2 ring-primary-content/50", else: "")
+                  ]}
+                >
+                  <div class="text-sm whitespace-pre-wrap">{message.content}</div>
+                  <div class="text-xs mt-2 opacity-70">
+                    {Calendar.strftime(DateTime.from_unix!(div(message.timestamp, 1000)), "%H:%M")}
+                  </div>
+                </button>
+              <% else %>
+                <div class={[
+                  "max-w-[85%] lg:max-w-xl px-4 py-3 rounded-2xl",
+                  if(message.role == "user",
+                    do: "bg-primary text-primary-content rounded-br-md",
+                    else: "bg-base-100 border border-base-300 text-base-content rounded-bl-md"
+                  )
+                ]}>
+                  <div class="text-sm whitespace-pre-wrap">{message.content}</div>
+                  <div class={[
+                    "text-xs mt-2",
+                    if(message.role == "user",
+                      do: "opacity-70",
+                      else: "text-base-content/50"
+                    )
+                  ]}>
+                    {Calendar.strftime(DateTime.from_unix!(div(message.timestamp, 1000)), "%H:%M")}
+                  </div>
+                </div>
+              <% end %>
+              
+<!-- Processing Summary Pill (for user messages) -->
+              <%= if message.role == "user" && @show_processing && length(analysis_steps) > 0 do %>
+                <button
+                  type="button"
+                  phx-click="select_message"
+                  phx-value-message_id={message.id}
+                  class={[
+                    "flex items-center gap-2 text-xs px-3 py-1.5 rounded-full transition-all cursor-pointer",
+                    if(is_selected,
+                      do: "bg-primary/20 border-2 border-primary text-primary",
+                      else:
+                        "bg-base-200 border border-base-300 text-base-content/70 hover:border-primary/50"
+                    )
+                  ]}
+                  title="Click to inspect processing details"
+                >
+                  <.icon name="hero-cpu-chip" class="size-3" />
+                  <span class="font-medium">
+                    {(dev[:overall_strategy] && step_label(dev.overall_strategy)) || "Processing"}
+                  </span>
+                  <%= if dev[:elapsed_ms] do %>
+                    <span class="text-base-content/50">{dev.elapsed_ms}ms</span>
+                  <% end %>
+                  <%= if is_selected do %>
+                    <.icon name="hero-arrow-right" class="size-3" />
+                  <% end %>
+                </button>
+              <% end %>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+    
+<!-- Input Area -->
+    <div class="shrink-0 bg-base-100 border-t border-base-300 p-4">
+      <form
+        id="message-form"
+        phx-submit="send_message"
+        phx-change="input_change"
+        class="max-w-4xl mx-auto flex gap-3"
+      >
+        <.text_input
+          name="input"
+          value={@input_text}
+          placeholder="Type your message..."
+          class="flex-1"
+          autocomplete="off"
+        />
+        <.btn type="submit" variant={:primary} disabled={@input_text == ""}>
+          <.icon name="hero-paper-airplane" class="size-4" />
+          <span class="hidden sm:inline">Send</span>
+        </.btn>
+      </form>
+    </div>
+  </main>
+  
+<!-- Right Pane: Inspector (desktop: always visible when content, mobile: drawer) -->
+  <aside
+    id="right-drawer"
+    class="hidden lg:flex flex-col w-96 shrink-0 bg-base-100 border-l border-base-300
+           fixed lg:relative inset-y-0 right-0 z-30 lg:z-auto overflow-hidden"
+  >
+    <!-- Inspector Header -->
+    <div class="shrink-0 p-4 border-b border-base-300 flex items-center justify-between">
+      <.section_header icon="hero-magnifying-glass-circle">
+        Inspector
+      </.section_header>
+      <.icon_btn class="lg:hidden" phx-click={JS.toggle(to: "#right-drawer")} title="Close">
+        <.icon name="hero-x-mark" class="size-5" />
+      </.icon_btn>
+    </div>
+    
+<!-- Inspector Content -->
+    <div class="flex-1 overflow-y-auto">
+      <%= if @selected_message_id do %>
+        <% dev = @analysis_details[@selected_message_id] || %{} %>
+        <% analysis_steps = @analysis_logs[@selected_message_id] || [] %>
+        <% active_tab = @dev_panel_tabs[@selected_message_id] || "stages" %>
+        
+<!-- Tabs - Compact scrollable design -->
+        <div class="border-b border-base-300">
+          <!-- Tab Groups -->
+          <div class="px-2 pt-2 pb-1">
+            <div class="text-[10px] uppercase tracking-wider text-base-content/40 mb-1 px-1">
+              Analysis
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <button
+                phx-click="set_dev_tab"
+                phx-value-message_id={@selected_message_id}
+                phx-value-tab="stages"
+                class={[
+                  "px-2 py-1 text-xs rounded transition-colors",
+                  if(active_tab == "stages",
+                    do: "bg-primary text-primary-content",
+                    else: "bg-base-200 hover:bg-base-300 text-base-content/70"
+                  )
+                ]}
+                title="Processing stages timeline"
+              >
+                <.icon name="hero-queue-list" class="size-3 inline mr-1" />Stages
+              </button>
+              <button
+                phx-click="set_dev_tab"
+                phx-value-message_id={@selected_message_id}
+                phx-value-tab="chunks"
+                class={[
+                  "px-2 py-1 text-xs rounded transition-colors",
+                  if(active_tab == "chunks",
+                    do: "bg-primary text-primary-content",
+                    else: "bg-base-200 hover:bg-base-300 text-base-content/70"
+                  )
+                ]}
+                title="Semantic chunks breakdown"
+              >
+                <.icon name="hero-squares-2x2" class="size-3 inline mr-1" />Chunks
+              </button>
+              <button
+                phx-click="set_dev_tab"
+                phx-value-message_id={@selected_message_id}
+                phx-value-tab="entities"
+                class={[
+                  "px-2 py-1 text-xs rounded transition-colors",
+                  if(active_tab == "entities",
+                    do: "bg-primary text-primary-content",
+                    else: "bg-base-200 hover:bg-base-300 text-base-content/70"
+                  )
+                ]}
+                title="Extracted entities"
+              >
+                <.icon name="hero-tag" class="size-3 inline mr-1" />Entities
+              </button>
+              <button
+                phx-click="set_dev_tab"
+                phx-value-message_id={@selected_message_id}
+                phx-value-tab="context"
+                class={[
+                  "px-2 py-1 text-xs rounded transition-colors",
+                  if(active_tab == "context",
+                    do: "bg-primary text-primary-content",
+                    else: "bg-base-200 hover:bg-base-300 text-base-content/70"
+                  )
+                ]}
+                title="Slot and context resolution"
+              >
+                <.icon name="hero-link" class="size-3 inline mr-1" />Context
+              </button>
+            </div>
+          </div>
+
+          <div class="px-2 pb-2">
+            <div class="text-[10px] uppercase tracking-wider text-base-content/40 mb-1 px-1">
+              Decision
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <button
+                phx-click="set_dev_tab"
+                phx-value-message_id={@selected_message_id}
+                phx-value-tab="strategy"
+                class={[
+                  "px-2 py-1 text-xs rounded transition-colors",
+                  if(active_tab == "strategy",
+                    do: "bg-primary text-primary-content",
+                    else: "bg-base-200 hover:bg-base-300 text-base-content/70"
+                  )
+                ]}
+                title="Response strategy reasoning"
+              >
+                <.icon name="hero-map" class="size-3 inline mr-1" />Strategy
+              </button>
+              <button
+                phx-click="set_dev_tab"
+                phx-value-message_id={@selected_message_id}
+                phx-value-tab="racing"
+                class={[
+                  "px-2 py-1 text-xs rounded transition-colors",
+                  if(active_tab == "racing",
+                    do: "bg-primary text-primary-content",
+                    else: "bg-base-200 hover:bg-base-300 text-base-content/70"
+                  )
+                ]}
+                title="Racing analyzer results"
+              >
+                <.icon name="hero-bolt" class="size-3 inline mr-1" />Racing
+              </button>
+              <button
+                phx-click="set_dev_tab"
+                phx-value-message_id={@selected_message_id}
+                phx-value-tab="memory"
+                class={[
+                  "px-2 py-1 text-xs rounded transition-colors",
+                  if(active_tab == "memory",
+                    do: "bg-primary text-primary-content",
+                    else: "bg-base-200 hover:bg-base-300 text-base-content/70"
+                  )
+                ]}
+                title="Memory similarity matches"
+              >
+                <.icon name="hero-circle-stack" class="size-3 inline mr-1" />Memory
+              </button>
+              <button
+                phx-click="set_dev_tab"
+                phx-value-message_id={@selected_message_id}
+                phx-value-tab="response"
+                class={[
+                  "px-2 py-1 text-xs rounded transition-colors",
+                  if(active_tab == "response",
+                    do: "bg-primary text-primary-content",
+                    else: "bg-base-200 hover:bg-base-300 text-base-content/70"
+                  )
+                ]}
+                title="Response generation path"
+              >
+                <.icon name="hero-chat-bubble-left-right" class="size-3 inline mr-1" />Response
+              </button>
+              <button
+                phx-click="set_dev_tab"
+                phx-value-message_id={@selected_message_id}
+                phx-value-tab="raw"
+                class={[
+                  "px-2 py-1 text-xs rounded transition-colors",
+                  if(active_tab == "raw",
+                    do: "bg-primary text-primary-content",
+                    else: "bg-base-200 hover:bg-base-300 text-base-content/70"
+                  )
+                ]}
+                title="Raw debug data"
+              >
+                <.icon name="hero-code-bracket" class="size-3 inline mr-1" />Raw
+              </button>
+            </div>
+          </div>
+
+          <div class="px-2 pb-2">
+            <div class="text-[10px] uppercase tracking-wider text-base-content/40 mb-1 px-1">
+              Epistemic
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <button
+                phx-click="set_dev_tab"
+                phx-value-message_id={@selected_message_id}
+                phx-value-tab="beliefs"
+                class={[
+                  "px-2 py-1 text-xs rounded transition-colors",
+                  if(active_tab == "beliefs",
+                    do: "bg-primary text-primary-content",
+                    else: "bg-base-200 hover:bg-base-300 text-base-content/70"
+                  )
+                ]}
+                title="Beliefs checked during fact verification"
+              >
+                <.icon name="hero-eye" class="size-3 inline mr-1" />Beliefs
+              </button>
+            </div>
+          </div>
+        </div>
+        
+<!-- Tab Content -->
+        <div class="p-4">
+          <%= if active_tab == "stages" do %>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-xs text-base-content/60 mb-3">
+                <span>Processing stages ({length(analysis_steps)} steps)</span>
+                <%= if dev[:elapsed_ms] do %>
+                  <.badge variant={:info}>{dev.elapsed_ms}ms</.badge>
+                <% end %>
+              </div>
+
+              <div class="space-y-1 max-h-[600px] overflow-y-auto">
+                <%= for step <- analysis_steps do %>
+                  <% step_name = step[:step] || step["step"]
+                  step_icon = stage_icon(step_name)
+                  step_color = stage_color(step_name)
+                  step_detail = stage_detail(step) %>
+                  <div class={["flex items-start gap-2 py-1.5 px-2 rounded text-xs", step_color]}>
+                    <span class="shrink-0 mt-0.5">{step_icon}</span>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center justify-between gap-2">
+                        <span class="text-base-content/80 font-medium capitalize truncate">
+                          {step_label(step_name)}
+                        </span>
+                        <div class="flex items-center gap-2 text-base-content/50 shrink-0">
+                          <%= if step[:chunk_index] != nil do %>
+                            <span class="px-1 py-0.5 bg-base-300/50 rounded text-[10px]">
+                              C{step.chunk_index + 1}
+                            </span>
+                          <% end %>
+                          <%= if dev[:started_at] && step[:timestamp] do %>
+                            <span class="text-[10px] font-mono">
+                              +{step.timestamp - dev.started_at}ms
+                            </span>
+                          <% end %>
+                        </div>
+                      </div>
+                      <%= if step_detail != "" do %>
+                        <div class="text-[10px] text-base-content/50 mt-0.5 truncate">
+                          {step_detail}
+                        </div>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <%= if active_tab == "chunks" do %>
+            <div class="space-y-3 max-h-[600px] overflow-y-auto">
+              <%= for {idx, chunk} <- Enum.sort_by(Map.get(dev, :chunks, %{}), fn {i, _} -> i end) do %>
+                <.card>
+                  <.card_body class="p-3">
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="text-xs font-semibold text-base-content">
+                        Chunk {idx + 1}
+                      </span>
+                      <%= if chunk[:response_strategy] do %>
+                        <.badge variant={:info} size={:xs}>
+                          {step_label(chunk.response_strategy)}
+                        </.badge>
+                      <% end %>
+                    </div>
+                    
+<!-- Chunk Text -->
+                    <%= if chunk[:chunk_text] do %>
+                      <div class="mb-3 p-2 bg-base-200 rounded text-xs text-base-content font-mono border-l-2 border-primary">
+                        "{chunk.chunk_text}"
+                      </div>
+                    <% end %>
+
+                    <div class="space-y-2 text-xs text-base-content/70">
+                      <!-- Intent with method -->
+                      <div class="p-2 bg-base-200/50 rounded">
+                        <div class="font-medium text-base-content mb-1">
+                          Intent Classification
+                        </div>
+                        <div class="grid grid-cols-2 gap-1">
+                          <span class="text-base-content/60">Intent:</span>
+                          <span class="font-mono text-primary">{chunk[:intent] || "-"}</span>
+                          <span class="text-base-content/60">Method:</span>
+                          <span class="font-mono">{chunk[:intent_method] || "-"}</span>
+                          <%= if chunk[:intent_confidence] do %>
+                            <span class="text-base-content/60">Confidence:</span>
+                            <span class="font-mono">{chunk.intent_confidence}</span>
+                          <% end %>
+                        </div>
+                      </div>
+                      
+<!-- Discourse -->
+                      <div class="p-2 bg-base-200/50 rounded">
+                        <div class="font-medium text-base-content mb-1">Discourse Analysis</div>
+                        <div class="grid grid-cols-2 gap-1">
+                          <span class="text-base-content/60">Addressee:</span>
+                          <span>{get_in(chunk, [:discourse, :addressee]) || "-"}</span>
+                          <span class="text-base-content/60">Confidence:</span>
+                          <span>{get_in(chunk, [:discourse, :confidence]) || "-"}</span>
+                        </div>
+                      </div>
+                      
+<!-- Speech Act -->
+                      <div class="p-2 bg-base-200/50 rounded">
+                        <div class="font-medium text-base-content mb-1">Speech Act</div>
+                        <div class="grid grid-cols-2 gap-1">
+                          <span class="text-base-content/60">Category:</span>
+                          <span>{get_in(chunk, [:speech_act, :category]) || "-"}</span>
+                          <span class="text-base-content/60">Sub-type:</span>
+                          <span>{get_in(chunk, [:speech_act, :sub_type]) || "-"}</span>
+                          <span class="text-base-content/60">Is question:</span>
+                          <span>{get_in(chunk, [:speech_act, :is_question]) || "false"}</span>
+                          <span class="text-base-content/60">Confidence:</span>
+                          <span>{get_in(chunk, [:speech_act, :confidence]) || "-"}</span>
+                        </div>
+                      </div>
+
+<!-- Sentiment Analysis -->
+                      <div class="p-2 bg-base-200/50 rounded">
+                        <div class="font-medium text-base-content mb-1">Sentiment</div>
+                        <div class="grid grid-cols-2 gap-1">
+                          <span class="text-base-content/60">Label:</span>
+                          <span class={sentiment_label_class(get_in(chunk, [:sentiment, :label]))}>
+                            {get_in(chunk, [:sentiment, :label]) || "-"}
+                          </span>
+                          <span class="text-base-content/60">Confidence:</span>
+                          <span>{get_in(chunk, [:sentiment, :confidence]) || "-"}</span>
+                        </div>
+                      </div>
+
+<!-- Events -->
+                      <% events_data = chunk[:events] || %{} %>
+                      <div class="p-2 bg-base-200/50 rounded">
+                        <div class="font-medium text-base-content mb-1 flex items-center justify-between">
+                          <span>Events</span>
+                          <span class="text-base-content/50 font-normal">
+                            {events_data[:event_count] || 0} found
+                          </span>
+                        </div>
+                        <%= if length(events_data[:events] || []) > 0 do %>
+                          <div class="space-y-1 mt-1">
+                            <%= for event <- (events_data[:events] || []) do %>
+                              <div class="p-1.5 bg-base-300/50 rounded text-[11px]">
+                                <div class="flex items-center justify-between">
+                                  <span class="font-mono text-primary">
+                                    {event[:type] || event["type"] || "unknown"}
+                                  </span>
+                                  <%= if event[:confidence] || event["confidence"] do %>
+                                    <span class="text-base-content/50">
+                                      {Float.round(
+                                        (event[:confidence] || event["confidence"]) * 100,
+                                        1
+                                      )}%
+                                    </span>
+                                  <% end %>
+                                </div>
+                                <%= if event[:action] || event["action"] do %>
+                                  <div class="text-base-content/60 mt-0.5">
+                                    {event[:action] || event["action"]}
+                                  </div>
+                                <% end %>
+                              </div>
+                            <% end %>
+                          </div>
+                        <% else %>
+                          <div class="text-base-content/40 italic text-[11px]">
+                            No events detected
+                          </div>
+                        <% end %>
+                      </div>
+                      
+<!-- Epistemic Context -->
+                      <div class="p-2 bg-violet-500/10 rounded border border-violet-500/20">
+                        <div class="font-medium text-base-content mb-1 flex items-center gap-1">
+                          <span class="text-violet-500">●</span> Epistemic Context
+                        </div>
+                        <div class="grid grid-cols-2 gap-1">
+                          <span class="text-base-content/60">Status:</span>
+                          <span class={epistemic_status_class(chunk[:epistemic_status])}>
+                            {chunk[:epistemic_status] || "unchecked"}
+                          </span>
+                          <span class="text-base-content/60">Verification:</span>
+                          <span class="text-xs">{format_verification(chunk[:fact_verification])}</span>
+                          <span class="text-base-content/60">Related beliefs:</span>
+                          <span>{length(chunk[:related_beliefs] || [])} beliefs</span>
+                        </div>
+                      </div>
+                      
+<!-- Overall Confidence -->
+                      <%= if chunk[:confidence] do %>
+                        <div class="flex justify-between items-center pt-2 border-t border-base-300">
+                          <span class="font-medium">Overall Confidence:</span>
+                          <.badge
+                            variant={if chunk.confidence > 0.7, do: :success, else: :warning}
+                            size={:xs}
+                          >
+                            {Float.round(chunk.confidence * 100, 1)}%
+                          </.badge>
+                        </div>
+                      <% end %>
+                    </div>
+                  </.card_body>
+                </.card>
+              <% end %>
+            </div>
+          <% end %>
+
+          <%= if active_tab == "entities" do %>
+            <div class="space-y-3 max-h-[600px] overflow-y-auto">
+              <%= for {idx, chunk} <- Enum.sort_by(Map.get(dev, :chunks, %{}), fn {i, _} -> i end) do %>
+                <.card>
+                  <.card_body class="p-3">
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="font-semibold text-xs text-base-content">
+                        Chunk {idx + 1}
+                      </span>
+                      <.badge variant={:default} size={:xs}>
+                        {length(chunk[:entities] || [])} entities
+                      </.badge>
+                    </div>
+                    
+<!-- Chunk text context -->
+                    <%= if chunk[:chunk_text] do %>
+                      <div class="mb-3 p-2 bg-base-200 rounded text-xs text-base-content/70 font-mono border-l-2 border-info">
+                        "{chunk.chunk_text}"
+                      </div>
+                    <% end %>
+                    
+<!-- Extracted Entities -->
+                    <div class="mb-3">
+                      <div class="text-xs font-medium text-base-content mb-2">
+                        Extracted Entities
+                      </div>
+                      <%= if length(chunk[:entities] || []) > 0 do %>
+                        <div class="space-y-1">
+                          <%= for e <- chunk.entities do %>
+                            <% entity_type = e[:type] || e["type"] || "unknown"
+                            entity_value = e[:value] || e["value"] || ""
+                            confidence = e[:confidence] || e["confidence"]
+                            source = e[:source] || e["source"]
+
+                            confidence_percent =
+                              if confidence, do: Float.round(confidence * 100, 1), else: nil
+
+                            confidence_variant =
+                              cond do
+                                confidence && confidence >= 0.8 -> :success
+                                confidence && confidence >= 0.6 -> :warning
+                                confidence -> :error
+                                true -> :default
+                              end
+                              
+                            source_label = case source do
+                              :lstm_ner -> "LSTM"
+                              :gazetteer -> "Gaz"
+                              :pos_tagger -> "POS"
+                              :system -> "Sys"
+                              nil -> nil
+                              other -> to_string(other) |> String.slice(0..3)
+                            end %>
+                            <div class="flex items-center justify-between p-2 bg-base-200/50 rounded text-xs gap-2">
+                              <div class="flex items-center gap-2 flex-1 min-w-0">
+                                <span class="font-mono text-primary">
+                                  {entity_type}
+                                </span>
+                                <%= if source_label do %>
+                                  <.badge variant={:info} size={:xs} class="opacity-70">
+                                    {source_label}
+                                  </.badge>
+                                <% end %>
+                                <%= if confidence_percent do %>
+                                  <.badge variant={confidence_variant} size={:xs}>
+                                    {confidence_percent}%
+                                  </.badge>
+                                <% end %>
+                              </div>
+                              <div class="font-medium text-base-content truncate">
+                                "{entity_value}"
+                              </div>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% else %>
+                        <div class="text-xs text-base-content/40 italic p-2 bg-base-200/30 rounded">
+                          No entities extracted from this chunk
+                        </div>
+                      <% end %>
+                    </div>
+                    
+<!-- Slot Filling -->
+                    <% slots = chunk[:slots_detected] || %{} %>
+                    <div class="pt-3 border-t border-base-300">
+                      <div class="text-xs font-medium text-base-content mb-2">
+                        Slot Filling
+                      </div>
+                      <div class="grid grid-cols-2 gap-2 text-xs mb-2">
+                        <div class="flex justify-between">
+                          <span class="text-base-content/60">Filled:</span>
+                          <span class="text-success font-medium">
+                            {slots[:filled_count] || 0}
+                          </span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-base-content/60">Missing:</span>
+                          <span class={
+                            if length(slots[:missing_required] || []) > 0,
+                              do: "text-warning font-medium",
+                              else: "text-base-content/60"
+                          }>
+                            {length(slots[:missing_required] || [])}
+                          </span>
+                        </div>
+                      </div>
+
+                      <%= if map_size(slots[:filled_slots] || %{}) > 0 do %>
+                        <div class="space-y-1 text-xs">
+                          <%= for {k, v} <- slots.filled_slots do %>
+                            <div class="flex items-center gap-2 p-1.5 bg-success/10 rounded text-success">
+                              <.icon name="hero-check-circle" class="size-3" />
+                              <span class="font-mono">{k}:</span>
+                              <span class="font-medium">{inspect(v)}</span>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
+
+                      <%= if length(slots[:missing_required] || []) > 0 do %>
+                        <div class="mt-2 space-y-1 text-xs">
+                          <%= for slot <- slots.missing_required do %>
+                            <div class="flex items-center gap-2 p-1.5 bg-warning/10 rounded text-warning">
+                              <.icon name="hero-exclamation-triangle" class="size-3" />
+                              <span class="font-mono">{slot}</span>
+                              <span class="text-base-content/50">- required but missing</span>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </div>
+                  </.card_body>
+                </.card>
+              <% end %>
+            </div>
+          <% end %>
+
+          <%= if active_tab == "context" do %>
+            <div class="space-y-3 max-h-96 overflow-y-auto">
+              <%= for {idx, chunk} <- Enum.sort_by(Map.get(dev, :chunks, %{}), fn {i, _} -> i end) do %>
+                <% ctx = chunk[:context_resolved] || %{} %>
+                <.card>
+                  <.card_body class="p-3">
+                    <div class="font-semibold text-xs text-base-content mb-2">
+                      Chunk {idx + 1}
+                    </div>
+                    <div class="text-xs text-base-content/70 space-y-1">
+                      <div>
+                        <span class="font-medium">All required filled:</span>
+                        <%= if ctx[:all_required_filled] do %>
+                          <.badge variant={:success} size={:xs}>Yes</.badge>
+                        <% else %>
+                          <.badge variant={:warning} size={:xs}>No</.badge>
+                        <% end %>
+                      </div>
+                      <%= if map_size(ctx[:filled_slots] || %{}) > 0 do %>
+                        <div class="mt-2 space-y-0.5">
+                          <%= for {k, v} <- ctx.filled_slots do %>
+                            <div class="text-success">
+                              <.icon name="hero-check" class="size-3 inline" /> {k}: {inspect(v)}
+                            </div>
+                          <% end %>
+                        </div>
+                      <% else %>
+                        <div class="text-base-content/40 italic mt-1">
+                          No slots filled from context
+                        </div>
+                      <% end %>
+                      <%= if length(ctx[:missing_required] || []) > 0 do %>
+                        <div class="mt-2 text-warning">
+                          Still missing: {Enum.join(ctx.missing_required, ", ")}
+                        </div>
+                      <% end %>
+                    </div>
+                  </.card_body>
+                </.card>
+              <% end %>
+            </div>
+          <% end %>
+
+          <%= if active_tab == "strategy" do %>
+            <% reasoning = dev[:strategy_reasoning] || %{} %>
+            <div class="space-y-3 max-h-[600px] overflow-y-auto">
+              <.card>
+                <.card_body class="p-3">
+                  <div class="text-xs text-base-content/70 space-y-2">
+                    <div class="flex justify-between">
+                      <span class="font-medium">Overall strategy:</span>
+                      <.badge variant={strategy_badge_variant(dev[:overall_strategy])}>
+                        {(dev[:overall_strategy] && step_label(dev.overall_strategy)) || "-"}
+                      </.badge>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="font-medium">Elapsed:</span>
+                      <span>{dev[:elapsed_ms] || "-"}ms</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="font-medium">Chunk count:</span>
+                      <span>{dev[:chunk_count] || "-"}</span>
+                    </div>
+                  </div>
+
+                  <.divider class="my-3" />
+                  
+<!-- Strategy Reasoning Section -->
+                  <div class="text-xs font-semibold text-base-content mb-2">
+                    Decision Reasoning
+                  </div>
+                  <div class="p-2 bg-base-200/50 rounded text-xs mb-3">
+                    <div class="text-base-content font-medium mb-2">
+                      {reasoning[:decision_reason] || "No reasoning available"}
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-base-content/60">
+                      <div class="flex items-center gap-1">
+                        <%= if reasoning[:has_expressives] do %>
+                          <.icon name="hero-check-circle" class="size-3 text-success" />
+                        <% else %>
+                          <.icon name="hero-x-circle" class="size-3 text-base-content/40" />
+                        <% end %>
+                        <span>Expressives</span>
+                      </div>
+                      <div class="flex items-center gap-1">
+                        <%= if reasoning[:has_substantive] do %>
+                          <.icon name="hero-check-circle" class="size-3 text-success" />
+                        <% else %>
+                          <.icon name="hero-x-circle" class="size-3 text-base-content/40" />
+                        <% end %>
+                        <span>Substantive</span>
+                      </div>
+                    </div>
+                    <%= if (reasoning[:missing_slots_count] || 0) > 0 do %>
+                      <div class="mt-2 text-warning">
+                        <.icon name="hero-exclamation-triangle" class="size-3 inline" />
+                        Missing {reasoning.missing_slots_count} slot(s): {Enum.join(
+                          reasoning[:missing_slots] || [],
+                          ", "
+                        )}
+                      </div>
+                    <% end %>
+                  </div>
+
+                  <%= if length(reasoning[:suggested_prompts] || []) > 0 do %>
+                    <div class="text-xs font-semibold text-base-content mb-2">
+                      Suggested Clarifications
+                    </div>
+                    <div class="space-y-1 mb-3">
+                      <%= for prompt <- reasoning.suggested_prompts do %>
+                        <div class="p-2 bg-info/10 rounded text-xs text-info border-l-2 border-info">
+                          {prompt}
+                        </div>
+                      <% end %>
+                    </div>
+                  <% end %>
+
+                  <.divider class="my-3" />
+
+                  <div class="text-xs font-semibold text-base-content mb-2">
+                    Per-chunk Decision Summary
+                  </div>
+                  <div class="space-y-2">
+                    <%= for {idx, chunk} <- Enum.sort_by(Map.get(dev, :chunks, %{}), fn {i, _} -> i end) do %>
+                      <div class="p-2 bg-base-200/50 rounded text-xs">
+                        <div class="flex items-center justify-between mb-1">
+                          <span class="font-medium text-base-content">Chunk {idx + 1}</span>
+                          <.badge
+                            variant={strategy_badge_variant(chunk[:response_strategy])}
+                            size={:xs}
+                          >
+                            {(chunk[:response_strategy] && step_label(chunk.response_strategy)) ||
+                              "-"}
+                          </.badge>
+                        </div>
+                        <div class="grid grid-cols-2 gap-1 text-base-content/60">
+                          <span>Intent:</span>
+                          <span class="font-mono text-primary">{chunk[:intent] || "-"}</span>
+                          <span>Method:</span>
+                          <span class="font-mono">{chunk[:intent_method] || "-"}</span>
+                          <span>Confidence:</span>
+                          <span>
+                            {chunk[:confidence] && Float.round(chunk.confidence * 100, 1)}%
+                          </span>
+                        </div>
+                      </div>
+                    <% end %>
+                  </div>
+                </.card_body>
+              </.card>
+            </div>
+          <% end %>
+
+          <%= if active_tab == "racing" do %>
+            <% racing = dev[:racing] || %{} %>
+            <div class="space-y-3 max-h-[600px] overflow-y-auto">
+              <.card>
+                <.card_body class="p-3">
+                  <div class="text-xs font-semibold text-base-content mb-2">
+                    Racing Analyzers
+                  </div>
+                  <div class="text-xs text-base-content/70 space-y-2">
+                    <div class="flex justify-between">
+                      <span class="font-medium">Fast Path:</span>
+                      <%= if racing[:fast_path] do %>
+                        <.badge variant={:success} size={:xs}>
+                          {racing[:fast_path_source] || "hit"}
+                        </.badge>
+                      <% else %>
+                        <.badge variant={:default} size={:xs}>No</.badge>
+                      <% end %>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="font-medium">Early Exit:</span>
+                      <%= if racing[:early_exit] do %>
+                        <.badge variant={:info} size={:xs}>Yes</.badge>
+                      <% else %>
+                        <.badge variant={:default} size={:xs}>No</.badge>
+                      <% end %>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="font-medium">Racing Time:</span>
+                      <span>{racing[:elapsed_ms] || "-"}ms</span>
+                    </div>
+                  </div>
+                </.card_body>
+              </.card>
+
+              <%= if length(racing[:results] || []) > 0 do %>
+                <.card>
+                  <.card_body class="p-3">
+                    <div class="text-xs font-semibold text-base-content mb-2">
+                      Analyzer Results
+                    </div>
+                    <div class="space-y-2">
+                      <%= for result <- racing.results do %>
+                        <div class="p-2 bg-base-200/50 rounded text-xs">
+                          <div class="flex items-center justify-between mb-1">
+                            <span class="font-medium text-base-content capitalize">
+                              {result[:analyzer] || result["analyzer"]}
+                            </span>
+                            <.badge
+                              variant={
+                                if (result[:calibrated] || result["calibrated"] || 0) > 0.7,
+                                  do: :success,
+                                  else: :default
+                              }
+                              size={:xs}
+                            >
+                              {Float.round(
+                                (result[:calibrated] || result["calibrated"] || 0) * 100,
+                                1
+                              )}%
+                            </.badge>
+                          </div>
+                          <div class="grid grid-cols-2 gap-1 text-base-content/60">
+                            <span>Intent:</span>
+                            <span class="font-mono text-primary">
+                              {result[:intent] || result["intent"] || "-"}
+                            </span>
+                            <span>Raw Score:</span>
+                            <span class="font-mono">
+                              {result[:raw_score] || result["raw_score"] || "-"}
+                            </span>
+                          </div>
+                          <%= if length(result[:indicators] || result["indicators"] || []) > 0 do %>
+                            <div class="mt-1 flex flex-wrap gap-1">
+                              <%= for indicator <- (result[:indicators] || result["indicators"] || []) do %>
+                                <span class="px-1.5 py-0.5 bg-base-300 rounded text-[10px]">
+                                  {indicator}
+                                </span>
+                              <% end %>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </div>
+                  </.card_body>
+                </.card>
+              <% end %>
+
+              <%= if length(racing[:alternatives] || []) > 0 do %>
+                <.card>
+                  <.card_body class="p-3">
+                    <div class="text-xs font-semibold text-base-content mb-2">
+                      Alternative Interpretations
+                    </div>
+                    <div class="space-y-1">
+                      <%= for alt <- racing.alternatives do %>
+                        <div class="flex items-center justify-between p-2 bg-base-200/50 rounded text-xs">
+                          <span class="font-mono text-primary">
+                            {alt[:intent] || alt["intent"]}
+                          </span>
+                          <div class="flex items-center gap-2">
+                            <span class="text-base-content/50">
+                              {alt[:source] || alt["source"]}
+                            </span>
+                            <.badge variant={:default} size={:xs}>
+                              {Float.round((alt[:activation] || alt["activation"] || 0) * 100, 1)}%
+                            </.badge>
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
+                  </.card_body>
+                </.card>
+              <% end %>
+            </div>
+          <% end %>
+
+          <%= if active_tab == "memory" do %>
+            <% memory = dev[:memory] || %{} %>
+            <div class="space-y-3 max-h-[600px] overflow-y-auto">
+              <.card>
+                <.card_body class="p-3">
+                  <div class="text-xs font-semibold text-base-content mb-2">
+                    Memory Query Results
+                  </div>
+                  <div class="text-xs text-base-content/70 space-y-2">
+                    <div class="flex justify-between">
+                      <span class="font-medium">Matches Found:</span>
+                      <.badge
+                        variant={if (memory[:match_count] || 0) > 0, do: :success, else: :default}
+                        size={:xs}
+                      >
+                        {memory[:match_count] || 0}
+                      </.badge>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="font-medium">Top Similarity:</span>
+                      <span>
+                        {Float.round((memory[:top_similarity] || 0.0) * 100, 1)}%
+                      </span>
+                    </div>
+                  </div>
+                </.card_body>
+              </.card>
+
+              <%= if length(memory[:matches] || []) > 0 do %>
+                <.card>
+                  <.card_body class="p-3">
+                    <div class="text-xs font-semibold text-base-content mb-2">
+                      Similar Episodes
+                    </div>
+                    <div class="space-y-2">
+                      <%= for match <- memory.matches do %>
+                        <div class="p-2 bg-base-200/50 rounded text-xs">
+                          <div class="flex items-center justify-between mb-1">
+                            <span class="font-mono text-base-content/60 text-[10px]">
+                              {String.slice(
+                                match[:episode_id] || match["episode_id"] || "",
+                                0,
+                                12
+                              )}...
+                            </span>
+                            <.badge
+                              variant={
+                                if (match[:similarity] || match["similarity"] || 0) > 0.7,
+                                  do: :success,
+                                  else: :default
+                              }
+                              size={:xs}
+                            >
+                              {Float.round(
+                                (match[:similarity] || match["similarity"] || 0) * 100,
+                                1
+                              )}%
+                            </.badge>
+                          </div>
+                          <%= if match[:state_preview] || match["state_preview"] do %>
+                            <div class="p-1.5 bg-base-300/50 rounded text-[10px] text-base-content/70 font-mono mb-1">
+                              "{match[:state_preview] || match["state_preview"]}"
+                            </div>
+                          <% end %>
+                          <%= if length(match[:tags] || match["tags"] || []) > 0 do %>
+                            <div class="flex flex-wrap gap-1">
+                              <%= for tag <- (match[:tags] || match["tags"] || []) do %>
+                                <span class="px-1.5 py-0.5 bg-base-300 rounded text-[10px]">
+                                  {tag}
+                                </span>
+                              <% end %>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </div>
+                  </.card_body>
+                </.card>
+              <% else %>
+                <div class="text-center text-base-content/50 py-4">
+                  <.icon name="hero-circle-stack" class="size-8 mx-auto mb-2 opacity-50" />
+                  <p class="text-xs">No similar episodes found in memory</p>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <%= if active_tab == "response" do %>
+            <% resp = dev[:response] || %{} %>
+            <% path = resp[:response_path] || %{} %>
+            <% path_steps = path[:steps] || [] %>
+            <div class="space-y-3 max-h-[600px] overflow-y-auto">
+              <.card>
+                <.card_body class="p-3">
+                  <div class="text-xs font-semibold text-base-content mb-2">
+                    Response Generation Summary
+                  </div>
+                  <div class="text-xs text-base-content/70 space-y-2">
+                    <div class="flex justify-between">
+                      <span class="font-medium">Response Type:</span>
+                      <.badge
+                        variant={
+                          case resp[:response_type] do
+                            :domain -> :success
+                            :smalltalk -> :info
+                            :expressive -> :secondary
+                            :conditional_template -> :success
+                            :blended -> :info
+                            :template -> :default
+                            :memory_augmented -> :info
+                            :epistemic -> :warning
+                            :clarification -> :warning
+                            :fallback -> :error
+                            _ -> :default
+                          end
+                        }
+                        size={:xs}
+                      >
+                        {resp[:response_type] || "-"}
+                      </.badge>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="font-medium">Strategy:</span>
+                      <.badge variant={strategy_badge_variant(resp[:strategy])} size={:xs}>
+                        {(resp[:strategy] && step_label(resp.strategy)) || "-"}
+                      </.badge>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="font-medium">Method:</span>
+                      <span class="font-mono">
+                        {(resp[:method] && step_label(resp.method)) || "-"}
+                      </span>
+                    </div>
+                    <%= if resp[:intent] do %>
+                      <div class="flex justify-between">
+                        <span class="font-medium">Intent:</span>
+                        <span class="font-mono text-primary">{resp.intent}</span>
+                      </div>
+                    <% end %>
+                    <%= if resp[:entities_count] && resp.entities_count > 0 do %>
+                      <div class="flex justify-between">
+                        <span class="font-medium">Entities Used:</span>
+                        <span>{resp.entities_count}</span>
+                      </div>
+                    <% end %>
+                    <%= if resp[:reason] do %>
+                      <div class="flex justify-between">
+                        <span class="font-medium">Reason:</span>
+                        <span class="text-base-content/60">{resp.reason}</span>
+                      </div>
+                    <% end %>
+                  </div>
+                </.card_body>
+              </.card>
+              
+<!-- Response Path Visualization - Detailed -->
+              <.card>
+                <.card_body class="p-3">
+                  <div class="text-xs font-semibold text-base-content mb-3">
+                    Response Generation Path
+                  </div>
+                  
+                  <%= if length(path_steps) > 0 do %>
+                    <div class="space-y-2">
+                      <%= for step <- path_steps do %>
+                        <div class="relative pl-6 pb-2">
+                          <!-- Vertical line connector -->
+                          <div class="absolute left-2 top-3 bottom-0 w-0.5 bg-base-300"></div>
+                          
+                          <!-- Step indicator -->
+                          <div class={[
+                            "absolute left-0 top-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold",
+                            case step[:status] do
+                              :completed -> "bg-success text-success-content"
+                              :skipped -> "bg-base-300 text-base-content/50"
+                              _ -> "bg-primary text-primary-content"
+                            end
+                          ]}>
+                            {step[:step]}
+                          </div>
+                          
+                          <!-- Step content -->
+                          <div class="bg-base-200/50 rounded p-2">
+                            <div class="flex items-center justify-between mb-1">
+                              <span class="font-medium text-xs text-base-content">
+                                {step[:name]}
+                              </span>
+                              <.badge 
+                                variant={if step[:status] == :completed, do: :success, else: :default} 
+                                size={:xs}
+                              >
+                                {step[:status]}
+                              </.badge>
+                            </div>
+                            <div class="text-[11px] text-base-content/70">
+                              {step[:detail]}
+                            </div>
+                            
+                            <!-- Handler details if present -->
+                            <%= if step[:handlers_tried] do %>
+                              <div class="mt-2 space-y-1">
+                                <%= for handler <- step.handlers_tried do %>
+                                  <div class={[
+                                    "flex items-center gap-2 text-[10px] p-1.5 rounded",
+                                    if handler[:selected] do
+                                      "bg-success/20 border border-success/30"
+                                    else
+                                      "bg-base-300/50"
+                                    end
+                                  ]}>
+                                    <%= if handler[:selected] do %>
+                                      <.icon name="hero-check-circle" class="size-3 text-success" />
+                                    <% else %>
+                                      <%= if handler[:tried] do %>
+                                        <.icon name="hero-x-circle" class="size-3 text-base-content/40" />
+                                      <% else %>
+                                        <.icon name="hero-minus-circle" class="size-3 text-base-content/30" />
+                                      <% end %>
+                                    <% end %>
+                                    <span class={[
+                                      "font-mono",
+                                      if(handler[:selected], do: "text-success font-medium", else: "text-base-content/60")
+                                    ]}>
+                                      {handler[:handler]}
+                                    </span>
+                                    <span class="text-base-content/50 flex-1 truncate">
+                                      {handler[:reason]}
+                                    </span>
+                                  </div>
+                                <% end %>
+                              </div>
+                            <% end %>
+                            
+                            <!-- Entities if present -->
+                            <%= if step[:entities] && length(step.entities) > 0 do %>
+                              <div class="mt-2 flex flex-wrap gap-1">
+                                <%= for entity <- step.entities do %>
+                                  <span class="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px]">
+                                    {entity[:type]}: {entity[:value]}
+                                  </span>
+                                <% end %>
+                              </div>
+                            <% end %>
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
+                  <% else %>
+                    <!-- Simple path visualization when detailed path not available -->
+                    <div class="flex items-center gap-2 text-xs flex-wrap">
+                      <span class="px-2 py-1 bg-base-200 rounded">Input</span>
+                      <.icon name="hero-arrow-right" class="size-3 text-base-content/40" />
+                      <span class="px-2 py-1 bg-base-200 rounded">Analysis</span>
+                      <.icon name="hero-arrow-right" class="size-3 text-base-content/40" />
+                      <span class={[
+                        "px-2 py-1 rounded",
+                        case resp[:response_type] do
+                          :domain -> "bg-success/20 text-success"
+                          :conditional_template -> "bg-success/20 text-success"
+                          :template -> "bg-info/20 text-info"
+                          :memory_augmented -> "bg-info/20 text-info"
+                          :blended -> "bg-info/20 text-info"
+                          :smalltalk -> "bg-info/20 text-info"
+                          :expressive -> "bg-secondary/20 text-secondary"
+                          :clarification -> "bg-warning/20 text-warning"
+                          :fallback -> "bg-error/20 text-error"
+                          _ -> "bg-base-200"
+                        end
+                      ]}>
+                        {resp[:response_type] || "Response"}
+                      </span>
+                    </div>
+                  <% end %>
+                </.card_body>
+              </.card>
+
+              <!-- Data Stores Accessed -->
+              <.card>
+                <.card_body class="p-3">
+                  <div class="text-xs font-semibold text-base-content mb-2">
+                    Data Stores Accessed
+                  </div>
+                  <div class="space-y-1 text-xs">
+                    <% stores_accessed = get_stores_accessed(resp[:response_type]) %>
+                    <%= for store <- stores_accessed do %>
+                      <div class="flex items-center gap-2 p-1.5 bg-base-200/50 rounded">
+                        <.icon name="hero-circle-stack" class="size-3 text-primary" />
+                        <span class="font-mono text-primary">{store.name}</span>
+                        <span class="text-base-content/50">{store.purpose}</span>
+                      </div>
+                    <% end %>
+                    <%= if length(stores_accessed) == 0 do %>
+                      <div class="text-base-content/40 italic p-2">
+                        No data stores accessed
+                      </div>
+                    <% end %>
+                  </div>
+                </.card_body>
+              </.card>
+            </div>
+          <% end %>
+
+          <%= if active_tab == "raw" do %>
+            <div class="space-y-3 max-h-[600px] overflow-y-auto">
+              <.card>
+                <.card_body class="p-3">
+                  <div class="text-xs font-semibold text-base-content mb-2">
+                    Raw Analysis Data
+                  </div>
+                  <p class="text-xs text-base-content/50 mb-3">
+                    Full debug dump of all captured analysis data for this message.
+                  </p>
+                  <pre class="text-[10px] font-mono bg-base-200 p-3 rounded overflow-x-auto whitespace-pre-wrap break-all text-base-content/80">{inspect(dev, pretty: true, limit: :infinity, width: 60)}</pre>
+                </.card_body>
+              </.card>
+
+              <.card>
+                <.card_body class="p-3">
+                  <div class="text-xs font-semibold text-base-content mb-2">
+                    Raw Processing Steps
+                  </div>
+                  <p class="text-xs text-base-content/50 mb-3">
+                    All progress events received during processing.
+                  </p>
+                  <pre class="text-[10px] font-mono bg-base-200 p-3 rounded overflow-x-auto whitespace-pre-wrap break-all text-base-content/80">{inspect(analysis_steps, pretty: true, limit: :infinity, width: 60)}</pre>
+                </.card_body>
+              </.card>
+            </div>
+          <% end %>
+
+          <%= if active_tab == "beliefs" do %>
+            <% all_beliefs = collect_all_beliefs(dev)
+            all_statuses = collect_epistemic_statuses(dev)
+            worst_status = worst_epistemic_status(all_statuses)
+            contradiction_count = Enum.count(all_statuses, & &1 == :contradicted)
+            verified_count = Enum.count(all_statuses, & &1 == :verified)
+            uncertain_count = Enum.count(all_statuses, & &1 == :uncertain) %>
+            <div class="space-y-3 max-h-[600px] overflow-y-auto">
+              <!-- Epistemic Summary -->
+              <.card>
+                <.card_body class="p-3">
+                  <div class="text-xs font-semibold text-base-content mb-2">
+                    Epistemic Summary
+                  </div>
+                  <div class="text-xs text-base-content/70 space-y-2">
+                    <div class="flex justify-between items-center">
+                      <span class="font-medium">Overall Status:</span>
+                      <span class={epistemic_status_class(worst_status)}>
+                        {worst_status || "unchecked"}
+                      </span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="font-medium">Beliefs Checked:</span>
+                      <span>{length(all_beliefs)}</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 pt-1">
+                      <div class="text-center p-1.5 bg-success/10 rounded">
+                        <div class="text-success font-bold">{verified_count}</div>
+                        <div class="text-[10px] text-base-content/50">Verified</div>
+                      </div>
+                      <div class="text-center p-1.5 bg-error/10 rounded">
+                        <div class="text-error font-bold">{contradiction_count}</div>
+                        <div class="text-[10px] text-base-content/50">Contradicted</div>
+                      </div>
+                      <div class="text-center p-1.5 bg-warning/10 rounded">
+                        <div class="text-warning font-bold">{uncertain_count}</div>
+                        <div class="text-[10px] text-base-content/50">Uncertain</div>
+                      </div>
+                    </div>
+                  </div>
+                </.card_body>
+              </.card>
+
+              <!-- Related Beliefs -->
+              <%= if length(all_beliefs) > 0 do %>
+                <.card>
+                  <.card_body class="p-3">
+                    <div class="text-xs font-semibold text-base-content mb-2">
+                      Related Beliefs
+                    </div>
+                    <div class="space-y-2">
+                      <%= for belief <- all_beliefs do %>
+                        <% b_conf = belief[:confidence] || 0.0
+                        b_source = belief[:source]
+                        b_status = belief[:_chunk_status] %>
+                        <div class={[
+                          "p-2.5 rounded border text-xs",
+                          case b_status do
+                            :contradicted -> "bg-error/5 border-error/20"
+                            :verified -> "bg-success/5 border-success/20"
+                            :uncertain -> "bg-warning/5 border-warning/20"
+                            _ -> "bg-base-200/50 border-base-300"
+                          end
+                        ]}>
+                          <!-- Subject / Predicate / Object -->
+                          <div class="flex items-center gap-1.5 mb-1.5">
+                            <span class="font-mono text-primary font-medium">
+                              {belief[:subject]}
+                            </span>
+                            <span class="text-base-content/40">/</span>
+                            <span class="font-mono text-base-content/70">
+                              {belief[:predicate]}
+                            </span>
+                            <span class="text-base-content/40">/</span>
+                            <span class="font-mono font-medium">
+                              {belief[:object]}
+                            </span>
+                          </div>
+
+                          <!-- Confidence bar -->
+                          <div class="flex items-center gap-2 mb-1.5">
+                            <span class="text-base-content/50 w-16 shrink-0">Confidence:</span>
+                            <div class="flex-1 bg-base-300 rounded-full h-1.5">
+                              <div
+                                class={[
+                                  "h-1.5 rounded-full",
+                                  cond do
+                                    b_conf >= 0.8 -> "bg-success"
+                                    b_conf >= 0.5 -> "bg-warning"
+                                    true -> "bg-error"
+                                  end
+                                ]}
+                                style={"width: #{Float.round(b_conf * 100, 1)}%"}
+                              >
+                              </div>
+                            </div>
+                            <span class="font-mono text-[10px] w-10 text-right">
+                              {Float.round(b_conf * 100, 1)}%
+                            </span>
+                          </div>
+
+                          <!-- Source + Authority + JTMS badges + Actions -->
+                          <div class="flex items-center gap-2">
+                            <%= if belief[:source_authority] do %>
+                              <span class={["badge badge-sm", authority_badge_class(authority_category(belief[:source_authority]))]}>
+                                {belief[:source_authority]}
+                              </span>
+                            <% end %>
+                            <%= if b_source do %>
+                              <span class={[
+                                "px-1.5 py-0.5 rounded text-[10px] font-medium",
+                                case b_source do
+                                  :explicit -> "bg-primary/20 text-primary"
+                                  :learned -> "bg-info/20 text-info"
+                                  :inferred -> "bg-warning/20 text-warning"
+                                  :assumed -> "bg-base-300 text-base-content/60"
+                                  _ -> "bg-base-300 text-base-content/60"
+                                end
+                              ]}>
+                                {b_source}
+                              </span>
+                            <% end %>
+                            <%= if belief[:node_id] do %>
+                              <span class="px-1.5 py-0.5 rounded text-[10px] bg-violet-500/20 text-violet-400">
+                                JTMS
+                              </span>
+                            <% end %>
+                            <%= if b_status == :contradicted do %>
+                              <span class="text-[10px] text-error font-medium">
+                                CONTRADICTED
+                              </span>
+                            <% end %>
+
+                            <!-- Inline action buttons -->
+                            <%= if belief[:id] do %>
+                              <div class="flex items-center gap-1 ml-auto">
+                                <button
+                                  phx-click="inspector_confirm_belief"
+                                  phx-value-belief_id={belief[:id]}
+                                  class="btn btn-xs btn-ghost btn-square text-success"
+                                  title="Confirm belief (+10% confidence)"
+                                >
+                                  <.icon name="hero-check-circle" class="size-3.5" />
+                                </button>
+                                <button
+                                  phx-click="inspector_retract_belief"
+                                  phx-value-belief_id={belief[:id]}
+                                  data-confirm="Retract this belief?"
+                                  class="btn btn-xs btn-ghost btn-square text-error"
+                                  title="Retract belief"
+                                >
+                                  <.icon name="hero-x-circle" class="size-3.5" />
+                                </button>
+                              </div>
+                            <% end %>
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
+
+                    <!-- "Add guided belief" mini-form -->
+                    <div class="mt-3 pt-3 border-t border-base-300/50">
+                      <%= if @inspector_correction_form do %>
+                        <form phx-submit="submit_correction_belief" class="space-y-2">
+                          <div class="flex items-center gap-2 mb-1">
+                            <.icon name="hero-light-bulb" class="size-4 text-primary" />
+                            <span class="text-[10px] font-semibold">Add Guided Belief</span>
+                          </div>
+                          <div class="grid grid-cols-3 gap-2">
+                            <select name="subject" class="select select-bordered select-xs w-full">
+                              <option value="self" selected={@inspector_correction_form["subject"] == "self"}>self</option>
+                              <option value="user" selected={@inspector_correction_form["subject"] == "user"}>user</option>
+                              <option value="world" selected={@inspector_correction_form["subject"] == "world"}>world</option>
+                            </select>
+                            <input
+                              type="text"
+                              name="predicate"
+                              value={@inspector_correction_form["predicate"]}
+                              placeholder="predicate"
+                              class="input input-bordered input-xs w-full"
+                              required
+                            />
+                            <input
+                              type="text"
+                              name="object"
+                              value={@inspector_correction_form["object"]}
+                              placeholder="value"
+                              class="input input-bordered input-xs w-full"
+                              required
+                            />
+                          </div>
+                          <div class="flex items-center gap-2">
+                            <select name="authority" class="select select-bordered select-xs flex-1">
+                              <%= if @authority_profiles != [] do %>
+                                <%= for {category, profiles} <- group_authority_profiles(@authority_profiles) do %>
+                                  <optgroup label={String.capitalize(category)}>
+                                    <%= for p <- profiles do %>
+                                      <option value={p.key} selected={to_string(p.key) == @inspector_correction_form["authority"]}>
+                                        {p.profile.label} ({Float.round(p.profile.initial_confidence * 100, 0)}%)
+                                      </option>
+                                    <% end %>
+                                  </optgroup>
+                                <% end %>
+                              <% else %>
+                                <option value="mentor" selected>Mentor</option>
+                                <option value="stranger">Stranger</option>
+                              <% end %>
+                            </select>
+                            <div class="flex gap-1">
+                              <button type="button" phx-click="cancel_correction_form" class="btn btn-ghost btn-xs">Cancel</button>
+                              <button type="submit" class="btn btn-primary btn-xs">Add</button>
+                            </div>
+                          </div>
+                        </form>
+                      <% else %>
+                        <button phx-click="show_correction_form" class="btn btn-ghost btn-xs gap-1 w-full">
+                          <.icon name="hero-plus" class="size-3" />
+                          <span class="text-[10px]">Add guided belief</span>
+                        </button>
+                      <% end %>
+                    </div>
+                  </.card_body>
+                </.card>
+              <% else %>
+                <div class="text-center text-base-content/50 py-6">
+                  <.icon name="hero-eye-slash" class="size-8 mx-auto mb-2 opacity-50" />
+                  <p class="text-xs">No beliefs were checked for this message</p>
+                  <p class="text-[10px] text-base-content/40 mt-1">
+                    Beliefs are checked for assertive statements about verifiable facts
+                  </p>
+                </div>
+              <% end %>
+
+              <!-- Per-Chunk Breakdown -->
+              <% chunks_with_beliefs = Enum.filter(
+                Enum.sort_by(Map.get(dev, :chunks, %{}), fn {i, _} -> i end),
+                fn {_, chunk} -> length(chunk[:related_beliefs] || []) > 0 end
+              ) %>
+              <%= if length(chunks_with_beliefs) > 0 do %>
+                <.card>
+                  <.card_body class="p-3">
+                    <div class="text-xs font-semibold text-base-content mb-2">
+                      Per-Chunk Verification
+                    </div>
+                    <div class="space-y-2">
+                      <%= for {idx, chunk} <- chunks_with_beliefs do %>
+                        <div class="p-2 bg-base-200/50 rounded">
+                          <div class="flex items-center justify-between mb-1">
+                            <span class="font-medium text-xs">Chunk {idx + 1}</span>
+                            <span class={epistemic_status_class(chunk[:epistemic_status])}>
+                              {chunk[:epistemic_status] || "unchecked"}
+                            </span>
+                          </div>
+                          <%= if chunk[:chunk_text] do %>
+                            <div class="text-[10px] text-base-content/50 mb-1.5 truncate">
+                              "{chunk.chunk_text}"
+                            </div>
+                          <% end %>
+                          <div class="text-[10px] text-base-content/60">
+                            {length(chunk[:related_beliefs] || [])} belief(s) checked
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
+                  </.card_body>
+                </.card>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <!-- No message selected -->
+        <div class="p-8 text-center text-base-content/50">
+          <.icon name="hero-cursor-arrow-rays" class="size-10 mx-auto mb-3 opacity-50" />
+          <p class="text-sm">Select a processing pill to inspect details</p>
+        </div>
+      <% end %>
+      
+<!-- Knowledge Panel (when toggled) -->
+      <%= if @show_knowledge do %>
+        <div class="border-t border-base-300">
+          <div class="p-4">
+            <.section_header icon="hero-light-bulb" class="mb-3">
+              Learned Knowledge
+            </.section_header>
+
+            <div class="space-y-3 max-h-64 overflow-y-auto text-xs">
+              <%= if map_size(@knowledge) == 0 do %>
+                <div class="text-base-content/50 italic">
+                  No knowledge learned yet
+                </div>
+              <% else %>
+                <!-- People -->
+                <%= if Map.has_key?(@knowledge, "people") && map_size(@knowledge["people"]) > 0 do %>
+                  <div>
+                    <div class="font-semibold text-base-content/60 mb-1">
+                      People
+                    </div>
+                    <%= for {name, person} <- @knowledge["people"] do %>
+                      <div class="text-base-content/70 ml-2 mb-1">
+                        <strong>{name}</strong>
+                        <%= if person["age"] do %>
+                          ({person["age"]} years old)
+                        <% end %>
+                        <%= if person["occupation"] do %>
+                          - {person["occupation"]}
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+                
+<!-- Pets -->
+                <%= if Map.has_key?(@knowledge, "pets") && map_size(@knowledge["pets"]) > 0 do %>
+                  <div>
+                    <div class="font-semibold text-base-content/60 mb-1">Pets</div>
+                    <%= for {name, pet} <- @knowledge["pets"] do %>
+                      <div class="text-base-content/70 ml-2 mb-1">
+                        <strong>{name}</strong>
+                        <%= if pet["species"] do %>
+                          - {pet["species"]}
+                        <% end %>
+                        <%= if pet["breed"] do %>
+                          ({pet["breed"]})
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+                
+<!-- Devices -->
+                <%= if Map.has_key?(@knowledge, "devices") && map_size(@knowledge["devices"]) > 0 do %>
+                  <div>
+                    <div class="font-semibold text-base-content/60 mb-1">
+                      Devices
+                    </div>
+                    <%= for {name, device} <- @knowledge["devices"] do %>
+                      <div class="text-base-content/70 ml-2 mb-1">
+                        <strong>{name}</strong>
+                        <%= if device["type"] do %>
+                          - {device["type"]}
+                        <% end %>
+                        <%= if device["location"] do %>
+                          in {device["location"]}
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+                
+<!-- Relationships -->
+                <%= if Map.has_key?(@knowledge, "relationships") && length(@knowledge["relationships"]) > 0 do %>
+                  <div>
+                    <div class="font-semibold text-base-content/60 mb-1">
+                      Relationships
+                    </div>
+                    <%= for rel <- @knowledge["relationships"] do %>
+                      <div class="text-base-content/70 ml-2 mb-1">
+                        <strong>{rel["subject"]}</strong> {rel["relation"]}
+                        <strong>{rel["object"]}</strong>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+                
+<!-- User Facts -->
+                <%= if Map.has_key?(@knowledge, "user_facts") && length(@knowledge["user_facts"]) > 0 do %>
+                  <div>
+                    <div class="font-semibold text-base-content/60 mb-1">
+                      User Memory
+                    </div>
+                    <%= for user <- @knowledge["user_facts"] do %>
+                      <div class="ml-2 mb-2 p-2 bg-base-200 rounded">
+                        <div class="font-medium text-primary mb-1">
+                          User: {String.slice(user["user_id"] || "unknown", 0, 12)}...
+                        </div>
+                        <%= if user["facts"] && length(user["facts"]) > 0 do %>
+                          <%= for fact <- user["facts"] do %>
+                            <div class="text-base-content/70 ml-2">
+                              <strong>{fact["key"]}</strong>: {fact["value"]}
+                            </div>
+                          <% end %>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </aside>
+  
+<!-- Mobile drawer backdrop -->
+  <div
+    id="drawer-backdrop"
+    class="hidden fixed inset-0 bg-black/50 z-20 lg:hidden"
+    phx-click={
+      JS.hide(to: "#left-drawer")
+      |> JS.hide(to: "#right-drawer")
+      |> JS.hide(to: "#drawer-backdrop")
+    }
+  >
+  </div>
+</div>

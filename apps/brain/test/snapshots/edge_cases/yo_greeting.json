@@ -1,0 +1,20 @@
+{
+  "analyses": [
+    {
+      "index": 0,
+      "text": "yo",
+      "entities": [],
+      "response_strategy": "can_respond",
+      "slots_filled": [],
+      "slots_missing": [],
+      "detected_intent": "smarthome.lights.brightness.up.context_device-brightness.comment_not.bright.enough",
+      "speech_act_category": "assertive",
+      "speech_act_type": "statement",
+      "speech_act_confidence": 0.4,
+      "discourse_addressee": "bot",
+      "discourse_self_referential": "false"
+    }
+  ],
+  "overall_strategy": "can_respond",
+  "chunk_count": 1
+}

@@ -1,0 +1,28 @@
+{
+  "analyses": [
+    {
+      "index": 0,
+      "text": "Hello, I'm Austin",
+      "entities": [
+        {
+          "type": "person",
+          "value": "Austin",
+          "confidence": 0.73
+        }
+      ],
+      "response_strategy": "can_respond",
+      "slots_filled": [
+        "person"
+      ],
+      "slots_missing": [],
+      "detected_intent": "smalltalk.user.introduction",
+      "speech_act_category": "assertive",
+      "speech_act_type": "statement",
+      "speech_act_confidence": 0.63,
+      "discourse_addressee": "bot",
+      "discourse_self_referential": "false"
+    }
+  ],
+  "overall_strategy": "can_respond",
+  "chunk_count": 1
+}

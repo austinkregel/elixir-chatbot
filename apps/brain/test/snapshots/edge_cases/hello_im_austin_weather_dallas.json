@@ -1,0 +1,29 @@
+{
+  "analyses": [
+    {
+      "index": 0,
+      "text": "Hello, I'm Austin. What's the weather in Dallas?",
+      "entities": [
+        {
+          "type": "location",
+          "value": "Dallas",
+          "confidence": 0.79
+        }
+      ],
+      "response_strategy": "can_respond",
+      "slots_filled": [
+        "date",
+        "location"
+      ],
+      "slots_missing": [],
+      "detected_intent": "weather",
+      "speech_act_category": "directive",
+      "speech_act_type": "request_information",
+      "speech_act_confidence": 0.79,
+      "discourse_addressee": "bot",
+      "discourse_self_referential": "false"
+    }
+  ],
+  "overall_strategy": "can_respond",
+  "chunk_count": 1
+}

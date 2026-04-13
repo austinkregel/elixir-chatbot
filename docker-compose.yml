@@ -1,0 +1,59 @@
+# app.environment pins XLA_TARGET/XLA_BUILD so a GPU-flavored .env does not override CPU EXLA.
+# GPU_DOCKERFILE selects the image (default Dockerfile). For NVIDIA Linux + GPU tests, use e.g.
+# Dockerfile.test.cuda and add a compose override with deploy.resources (see README).
+services:
+  db:
+    image: apache/age
+    restart: unless-stopped
+    command: ["postgres", "-c", "max_connections=200"]
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-chat_bot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-chat_bot_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-chat_bot_dev}
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-chat_bot} -d ${POSTGRES_DB:-chat_bot_dev}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - prod
+
+  app:
+    build:
+      context: .
+      dockerfile: ${GPU_DOCKERFILE:-Dockerfile}
+    ports:
+      - "4000:4000"
+    volumes:
+      - .:/app
+      - app_deps:/app/deps
+      - app_build:/app/_build
+      - ${XLA_CACHE_PATH:-.xla_cache}:/root/.cache
+    env_file: .env
+    environment:
+      MIX_ENV: ${MIX_ENV:-dev}
+      PHX_SERVER: "true"
+      PHX_HOST: ${PHX_HOST:-localhost}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      DATABASE_URL: ecto://${POSTGRES_USER:-chat_bot}:${POSTGRES_PASSWORD:-chat_bot_dev}@db:5432/${POSTGRES_DB:-chat_bot_dev}
+      XLA_BUILD: "false"
+      XLA_TARGET: "cpu"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: no
+    networks:
+      - prod  
+
+networks:
+  prod:
+    driver: bridge
+volumes:
+  pgdata:
+  app_deps:
+  app_build:

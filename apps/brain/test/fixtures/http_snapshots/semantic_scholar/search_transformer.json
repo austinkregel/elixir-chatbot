@@ -1,0 +1,215 @@
+{
+  "name": "semantic_scholar/search_transformer",
+  "params": {
+    "fields": "paperId,title,abstract,authors,venue,year,citationCount,url,externalIds,fieldsOfStudy",
+    "limit": 3,
+    "query": "transformer attention"
+  },
+  "recorded_at": "2026-02-28T00:12:04.953892Z",
+  "response": {
+    "body": {
+      "data": [
+        {
+          "abstract": "Image segmentation groups pixels with different semantics, e.g., category or instance membership. Each choice of semantics defines a task. While only the semantics of each task differ, current research focuses on designing spe-cialized architectures for each task. We present Masked- attention Mask Transformer (Mask2Former), a new archi-tecture capable of addressing any image segmentation task (panoptic, instance or semantic). Its key components in-clude masked attention, which extracts localized features by constraining cross-attention within predicted mask regions. In addition to reducing the research effort by at least three times, it outperforms the best specialized architectures by a significant margin on four popular datasets. Most no-tably, Mask2Former sets a new state-of-the-art for panoptic segmentation (57.8 PQ on COCO), instance segmentation (50.1 AP on COCO) and semantic segmentation (57.7 mIoU onADE20K).",
+          "authors": [
+            {
+              "authorId": "50563570",
+              "name": "Bowen Cheng"
+            },
+            {
+              "authorId": "1806773",
+              "name": "Ishan Misra"
+            },
+            {
+              "authorId": "2068227",
+              "name": "A. Schwing"
+            },
+            {
+              "authorId": "144843400",
+              "name": "Alexander Kirillov"
+            },
+            {
+              "authorId": "3102850",
+              "name": "Rohit Girdhar"
+            }
+          ],
+          "citationCount": 3484,
+          "externalIds": {
+            "ArXiv": "2112.01527",
+            "CorpusId": 244799297,
+            "DBLP": "conf/cvpr/ChengMSKG22",
+            "DOI": "10.1109/CVPR52688.2022.00135"
+          },
+          "fieldsOfStudy": [
+            "Computer Science"
+          ],
+          "openAccessPdf": {
+            "disclaimer": "Notice: Paper or abstract available at https://arxiv.org/abs/2112.01527, which is subject to the license by the author or copyright owner provided with this content. Please go to the source to verify the license and copyright information for your use.",
+            "license": null,
+            "status": "GREEN",
+            "url": "http://arxiv.org/pdf/2112.01527"
+          },
+          "paperId": "658a017302d29e4acf4ca789cb5d9f27983717ff",
+          "title": "Masked-attention Mask Transformer for Universal Image Segmentation",
+          "url": "https://www.semanticscholar.org/paper/658a017302d29e4acf4ca789cb5d9f27983717ff",
+          "venue": "Computer Vision and Pattern Recognition",
+          "year": 2021
+        },
+        {
+          "abstract": "Low-light image enhancement (LLIE) techniques improve the performance of image sensors by enhancing visibility and details in poorly lit environments and have significantly benefited from recent research into Transformer models. This work presents a novel Transformer attention mechanism inspired by the Kolmogorov–Arnold representation theorem, incorporating learnable non-linearity and multivariate function decomposition. This innovative mechanism is the foundation of KAN-T, our proposed Transformer network. By enhancing feature flexibility and enabling the model to capture broader contextual information, KAN-T achieves superior performance. Our comprehensive experiments, both quantitative and qualitative, demonstrate that the proposed method achieves state-of-the-art performance in low-light image enhancement, highlighting its effectiveness and wide-ranging applicability. The code will be released upon publication.",
+          "authors": [
+            {
+              "authorId": "2281742235",
+              "name": "Alexandru Brateanu"
+            },
+            {
+              "authorId": "2281742182",
+              "name": "Raul Balmez"
+            },
+            {
+              "authorId": "2281742230",
+              "name": "Ciprian Orhei"
+            },
+            {
+              "authorId": "1701934",
+              "name": "Cosmin Ancuți"
+            },
+            {
+              "authorId": "40124146",
+              "name": "C. Ancuti"
+            }
+          ],
+          "citationCount": 14,
+          "externalIds": {
+            "CorpusId": 275421055,
+            "DOI": "10.3390/s25020327",
+            "PubMed": "39860697",
+            "PubMedCentral": "11768327"
+          },
+          "fieldsOfStudy": [
+            "Medicine"
+          ],
+          "openAccessPdf": {
+            "disclaimer": "Notice: Paper or abstract available at https://pmc.ncbi.nlm.nih.gov/articles/PMC11768327, which is subject to the license by the author or copyright owner provided with this content. Please go to the source to verify the license and copyright information for your use.",
+            "license": "CCBY",
+            "status": "GOLD",
+            "url": "https://doi.org/10.3390/s25020327"
+          },
+          "paperId": "82e7c2addd8ff675cee6582360862a32ef317d50",
+          "title": "Enhancing Low-Light Images with Kolmogorov–Arnold Networks in Transformer Attention",
+          "url": "https://www.semanticscholar.org/paper/82e7c2addd8ff675cee6582360862a32ef317d50",
+          "venue": "Italian National Conference on Sensors",
+          "year": 2025
+        },
+        {
+          "abstract": "This paper presents a new vision Transformer, called Swin Transformer, that capably serves as a general-purpose backbone for computer vision. Challenges in adapting Transformer from language to vision arise from differences between the two domains, such as large variations in the scale of visual entities and the high resolution of pixels in images compared to words in text. To address these differences, we propose a hierarchical Transformer whose representation is computed with Shifted windows. The shifted windowing scheme brings greater efficiency by limiting self-attention computation to non-overlapping local windows while also allowing for cross-window connection. This hierarchical architecture has the flexibility to model at various scales and has linear computational complexity with respect to image size. These qualities of Swin Transformer make it compatible with a broad range of vision tasks, including image classification (87.3 top-1 accuracy on ImageNet-1K) and dense prediction tasks such as object detection (58.7 box AP and 51.1 mask AP on COCO test-dev) and semantic segmentation (53.5 mIoU on ADE20K val). Its performance surpasses the previous state-of-the-art by a large margin of +2.7 box AP and +2.6 mask AP on COCO, and +3.2 mIoU on ADE20K, demonstrating the potential of Transformer-based models as vision backbones. The hierarchical design and the shifted window approach also prove beneficial for all-MLP architectures. The code and models are publicly available at https://github.com/microsoft/Swin-Transformer.",
+          "authors": [
+            {
+              "authorId": "2109371439",
+              "name": "Ze Liu"
+            },
+            {
+              "authorId": "51091819",
+              "name": "Yutong Lin"
+            },
+            {
+              "authorId": "2112823372",
+              "name": "Yue Cao"
+            },
+            {
+              "authorId": "1823518756",
+              "name": "Han Hu"
+            },
+            {
+              "authorId": "2107995927",
+              "name": "Yixuan Wei"
+            },
+            {
+              "authorId": "2148904543",
+              "name": "Zheng Zhang"
+            },
+            {
+              "authorId": "145676588",
+              "name": "Stephen Lin"
+            },
+            {
+              "authorId": "2261753424",
+              "name": "B. Guo"
+            }
+          ],
+          "citationCount": 29779,
+          "externalIds": {
+            "ArXiv": "2103.14030",
+            "CorpusId": 232352874,
+            "DBLP": "conf/iccv/LiuL00W0LG21",
+            "DOI": "10.1109/ICCV48922.2021.00986"
+          },
+          "fieldsOfStudy": [
+            "Computer Science"
+          ],
+          "openAccessPdf": {
+            "disclaimer": "Notice: Paper or abstract available at https://arxiv.org/abs/2103.14030, which is subject to the license by the author or copyright owner provided with this content. Please go to the source to verify the license and copyright information for your use.",
+            "license": null,
+            "status": "GREEN",
+            "url": "http://arxiv.org/pdf/2103.14030"
+          },
+          "paperId": "c8b25fab5608c3e033d34b4483ec47e68ba109b7",
+          "title": "Swin Transformer: Hierarchical Vision Transformer using Shifted Windows",
+          "url": "https://www.semanticscholar.org/paper/c8b25fab5608c3e033d34b4483ec47e68ba109b7",
+          "venue": "IEEE International Conference on Computer Vision",
+          "year": 2021
+        }
+      ],
+      "next": 3,
+      "offset": 0,
+      "total": 3773936
+    },
+    "headers": {
+      "access-control-allow-origin": [
+        "*"
+      ],
+      "connection": [
+        "keep-alive"
+      ],
+      "content-type": [
+        "application/json"
+      ],
+      "date": [
+        "Sat, 28 Feb 2026 00:12:26 GMT"
+      ],
+      "via": [
+        "1.1 1d9da3d1cdbb64d4da2ec00448f4aeee.cloudfront.net (CloudFront)"
+      ],
+      "x-amz-apigw-id": [
+        "ZdzkgHRoPHcEs2A="
+      ],
+      "x-amz-cf-id": [
+        "IOt_iVt7vHtvdlP_i4VjUyN2koIbVMVbno0N7jjPr9R9Bm_R_YOBNA=="
+      ],
+      "x-amz-cf-pop": [
+        "ORD56-P11"
+      ],
+      "x-amzn-remapped-connection": [
+        "keep-alive"
+      ],
+      "x-amzn-remapped-content-length": [
+        "7042"
+      ],
+      "x-amzn-remapped-date": [
+        "Sat, 28 Feb 2026 00:12:26 GMT"
+      ],
+      "x-amzn-remapped-server": [
+        "gunicorn"
+      ],
+      "x-amzn-requestid": [
+        "609bb047-c326-4246-90dc-3808f631a0a3"
+      ],
+      "x-cache": [
+        "Miss from cloudfront"
+      ]
+    },
+    "status": 200
+  },
+  "update_command": "MIX_ENV=test mix snapshot.record --name semantic_scholar/search_transformer --force",
+  "url": "https://api.semanticscholar.org/graph/v1/paper/search"
+}

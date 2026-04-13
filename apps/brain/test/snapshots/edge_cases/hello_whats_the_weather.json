@@ -1,0 +1,46 @@
+{
+  "analyses": [
+    {
+      "index": 0,
+      "text": "Hello!",
+      "entities": [
+        {
+          "type": "song",
+          "value": "Hello",
+          "confidence": 0.71
+        }
+      ],
+      "response_strategy": "can_respond",
+      "slots_filled": [
+        "song"
+      ],
+      "slots_missing": [],
+      "detected_intent": "smalltalk.greetings.hello",
+      "speech_act_category": "expressive",
+      "speech_act_type": "greeting",
+      "speech_act_confidence": 0.75,
+      "discourse_addressee": "bot",
+      "discourse_self_referential": "false"
+    },
+    {
+      "index": 1,
+      "text": "What's the weather?",
+      "entities": [],
+      "response_strategy": "needs_clarification",
+      "slots_filled": [
+        "date"
+      ],
+      "slots_missing": [
+        "location"
+      ],
+      "detected_intent": "weather",
+      "speech_act_category": "directive",
+      "speech_act_type": "request_information",
+      "speech_act_confidence": 1.0,
+      "discourse_addressee": "bot",
+      "discourse_self_referential": "false"
+    }
+  ],
+  "overall_strategy": "partial_response_with_clarification",
+  "chunk_count": 2
+}

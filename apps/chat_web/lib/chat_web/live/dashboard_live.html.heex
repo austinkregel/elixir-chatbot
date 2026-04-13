@@ -1,0 +1,1836 @@
+<.app_shell
+  current_world_id={@current_world_id}
+  available_worlds={@available_worlds}
+  current_path={@current_path}
+  system_ready={@system_ready}
+  flash={@flash}
+>
+  <:page_header>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h1 class="text-xl font-bold">Operations Dashboard</h1>
+        <p class="text-sm text-base-content/60">
+          World: <span class="font-medium text-primary">{@current_world_id}</span>
+          · Updated: {format_datetime(@last_updated)}
+        </p>
+      </div>
+      <div class="flex items-center gap-4">
+        <.toggle
+          checked={@auto_refresh}
+          label="Auto-refresh"
+          size={:sm}
+          phx-click="toggle_auto_refresh"
+        />
+        <.btn variant={:outline} size={:sm} phx-click="manual_refresh">
+          <.icon name="hero-arrow-path" class="size-4" /> Refresh
+        </.btn>
+      </div>
+    </div>
+  </:page_header>
+
+  <div class="p-4 sm:p-6 lg:p-8 space-y-6">
+    <!-- World Memory Stats -->
+    <section class="grid grid-cols-3 gap-4">
+      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
+        <div class="text-2xl font-bold">{@world_memory_stats.episodes}</div>
+        <div class="text-xs text-base-content/60">Episodes in World</div>
+      </div>
+      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
+        <div class="text-2xl font-bold">{@world_memory_stats.semantics}</div>
+        <div class="text-xs text-base-content/60">Semantic Facts</div>
+      </div>
+      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
+        <div class="text-2xl font-bold">{@world_memory_stats.knowledge_categories}</div>
+        <div class="text-xs text-base-content/60">Knowledge Categories</div>
+      </div>
+    </section>
+
+    <!-- Model Evaluation Summary -->
+    <section :if={@evaluation_summary != %{}} class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+      <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-xl bg-gradient-to-br from-violet-500/20 to-violet-500/5">
+              <.icon name="hero-chart-bar" class="size-5 text-violet-500" />
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-base-content">Model Evaluation</h2>
+              <p class="text-xs text-base-content/60">
+                Latest evaluation results across all tasks
+              </p>
+            </div>
+          </div>
+          <.link navigate="/accuracy" class="text-xs text-primary hover:underline">
+            View Details &rarr;
+          </.link>
+        </div>
+      </div>
+      <div class="p-4">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <%= for {task, label} <- [{"intent", "Intent"}, {"ner", "NER"}, {"sentiment", "Sentiment"}, {"speech_act", "Speech Act"}] do %>
+            <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+              <div class="text-xs font-semibold text-base-content/70 mb-1"><%= label %></div>
+              <%= if data = @evaluation_summary[task] do %>
+                <div class="text-lg font-bold">
+                  <span class={accuracy_color(data.accuracy)}><%= Float.round(data.accuracy * 100, 1) %>%</span>
+                </div>
+                <div class="text-[10px] text-base-content/50 mt-0.5">
+                  F1: <%= Float.round((data.macro_f1 || 0.0) * 100, 1) %>%
+                  · <%= data.total_examples || 0 %> examples
+                </div>
+                <div class="text-[10px] text-base-content/40">
+                  <%= if data.duration_ms, do: "#{data.duration_ms}ms", else: "" %>
+                </div>
+              <% else %>
+                <div class="text-sm text-base-content/40 italic">Not evaluated</div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </section>
+    
+<!-- Atlas Database Status -->
+    <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+      <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-xl bg-gradient-to-br from-teal-500/20 to-teal-500/5">
+              <.icon name="hero-map" class="size-5 text-teal-500" />
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-base-content">Atlas Database</h2>
+              <p class="text-xs text-base-content/60">
+                PostgreSQL + Apache AGE persistence layer
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class={"inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full #{if @atlas_stats.connected, do: "bg-success/10 text-success", else: "bg-error/10 text-error"}"}>
+              <%= if @atlas_stats.connected do %>
+                <.icon name="hero-check-circle" class="size-3" /> Connected
+              <% else %>
+                <.icon name="hero-x-circle" class="size-3" /> Disconnected
+              <% end %>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 space-y-4">
+        <!-- Connection Pool -->
+        <div class="grid grid-cols-3 gap-3">
+          <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 text-center">
+            <div class="text-2xl font-bold text-base-content">
+              {@atlas_stats.connection_pool.pool_size}
+            </div>
+            <div class="text-xs text-base-content/60">Pool Size</div>
+          </div>
+          <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 text-center">
+            <div class="text-2xl font-bold text-teal-500">
+              {length(@atlas_stats.migrations)}
+            </div>
+            <div class="text-xs text-base-content/60">Migrations Applied</div>
+          </div>
+          <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 text-center">
+            <div class="text-2xl font-bold text-base-content">
+              {@atlas_stats.query_metrics[:total_queries] || 0}
+            </div>
+            <div class="text-xs text-base-content/60">Total Queries</div>
+          </div>
+        </div>
+
+        <!-- Relational Table Row Counts -->
+        <div>
+          <h3 class="text-[10px] font-semibold text-base-content/70 uppercase tracking-wider mb-2">
+            Relational Tables
+          </h3>
+          <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">
+            <%= for {table, count} <- @atlas_stats.repo do %>
+              <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="font-semibold text-xs text-base-content truncate">
+                    {table |> to_string() |> String.replace("_", " ") |> String.capitalize()}
+                  </span>
+                </div>
+                <div class="text-lg font-bold text-base-content">{count}</div>
+                <div class="text-[10px] text-base-content/50">rows</div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Graph Stats -->
+        <div>
+          <h3 class="text-[10px] font-semibold text-base-content/70 uppercase tracking-wider mb-2">
+            Graph Schemas (Apache AGE)
+          </h3>
+          <div class="grid grid-cols-3 gap-2">
+            <%= for {graph_name, stats} <- @atlas_stats.graphs do %>
+              <div class="rounded-lg bg-gradient-to-br from-teal-500/5 to-base-200/40 border border-teal-500/20 p-3">
+                <div class="flex items-center gap-2 mb-2">
+                  <.icon name="hero-share" class="size-4 text-teal-500" />
+                  <span class="font-semibold text-xs text-base-content">
+                    {graph_name |> String.replace("_", " ") |> String.capitalize()}
+                  </span>
+                </div>
+                <div class="text-[10px] text-base-content/60 space-y-1">
+                  <div class="flex justify-between">
+                    <span>Nodes</span>
+                    <span class="font-mono font-bold text-base-content">{stats.nodes}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Edges</span>
+                    <span class="font-mono font-bold text-base-content">{stats.edges}</span>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Query Performance from Telemetry -->
+        <%= if map_size(@atlas_stats.query_metrics[:query_metrics] || %{}) > 0 do %>
+          <div>
+            <h3 class="text-[10px] font-semibold text-base-content/70 uppercase tracking-wider mb-2">
+              Query Performance
+            </h3>
+            <div class="grid grid-cols-2 lg:grid-cols-3 gap-2">
+              <%= for {source, metrics} <- @atlas_stats.query_metrics[:query_metrics] || %{} do %>
+                <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+                  <div class="text-[10px] font-semibold text-base-content/50 uppercase tracking-wider mb-1">
+                    {source |> to_string() |> String.replace("_", " ")}
+                  </div>
+                  <div class="space-y-1 text-[10px]">
+                    <div class="flex justify-between items-center">
+                      <span class="text-base-content/60">Avg</span>
+                      <span class="font-mono font-bold text-sm text-base-content">
+                        {format_ms(metrics.avg_ms)}
+                      </span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-base-content/60">Min/Max</span>
+                      <span class="font-mono text-base-content/60">
+                        {format_ms(metrics.min_ms)} / {format_ms(metrics.max_ms)}
+                      </span>
+                    </div>
+                    <div class="flex justify-between items-center text-base-content/40">
+                      <span>{metrics.count} calls</span>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </section>
+
+    <!-- World Models Status -->
+    <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+      <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5">
+              <.icon name="hero-cube" class="size-5 text-primary" />
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-base-content">World Models</h2>
+              <p class="text-xs text-base-content/60">
+                Per-world ML models for
+                <span class="font-medium text-primary">{@current_world_id}</span>
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <%= if @world_models_status.is_loading do %>
+              <.badge variant={:warning} size={:sm}>
+                <.icon name="hero-arrow-path" class="size-3 mr-1 animate-spin" /> Loading
+              </.badge>
+            <% else %>
+              <.badge
+                variant={if @world_models_status.is_loaded, do: :success, else: :default}
+                size={:sm}
+              >
+                {if @world_models_status.is_loaded, do: "Loaded", else: "Not Loaded"}
+              </.badge>
+            <% end %>
+          </div>
+        </div>
+      </div>
+      <div class="p-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <!-- Classifier -->
+          <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-semibold text-xs text-base-content">Intent Classifier</span>
+              <.status_dot status={
+                if @world_models_status.has_classifier, do: :ready, else: :not_started
+              } />
+            </div>
+            <div class="text-[10px] text-base-content/60">
+              Vocab: {@world_models_status.classifier_vocab_size} terms
+            </div>
+          </div>
+          <!-- Embedder -->
+          <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-semibold text-xs text-base-content">Embedder</span>
+              <.status_dot status={
+                if @world_models_status.has_embedder, do: :ready, else: :not_started
+              } />
+            </div>
+            <div class="text-[10px] text-base-content/60">
+              Vocab: {@world_models_status.embedder_vocab_size} terms
+            </div>
+          </div>
+          <!-- POS Model -->
+          <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-semibold text-xs text-base-content">POS Tagger</span>
+              <.status_dot status={
+                if @world_models_status.has_pos_model, do: :ready, else: :not_started
+              } />
+            </div>
+            <div class="text-[10px] text-base-content/60">
+              {if @world_models_status.has_pos_model, do: "Trained", else: "Not trained"}
+            </div>
+          </div>
+          <!-- Entity Model -->
+          <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-semibold text-xs text-base-content">Entity Model</span>
+              <.status_dot status={
+                if @world_models_status.has_entity_model, do: :ready, else: :not_started
+              } />
+            </div>
+            <div class="text-[10px] text-base-content/60">
+              {if @world_models_status.has_entity_model, do: "Trained", else: "Not trained"}
+            </div>
+          </div>
+        </div>
+        <div class="mt-3 text-[10px] text-base-content/50">
+          Train world-specific models with:
+          <code class="px-1 bg-base-200 rounded">
+            mix train_models --world {@current_world_id}
+          </code>
+        </div>
+      </div>
+    </section>
+    
+<!-- Top Row: Health Cards + Subprocess (1/3) | System Readiness & Performance (2/3 stacked) -->
+    <div class="flex flex-col 2xl:flex-row gap-6">
+      <!-- Left Column - 1/3 width on ultra-wide -->
+      <div class="2xl:w-1/3 flex flex-col gap-4">
+        <!-- Health Overview Cards -->
+        <section class="grid grid-cols-2 gap-4">
+          <!-- Health Score Card -->
+          <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-base-100 to-base-100/80 border border-base-300/50 shadow-xl shadow-base-300/20 p-5">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2">
+            </div>
+            <div class="relative">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-xs font-medium text-base-content/60 uppercase tracking-wider">
+                    Health Score
+                  </p>
+                  <p class={[
+                    "text-3xl font-bold mt-1 tracking-tight",
+                    health_status_color(@health_indicators.health_status)
+                  ]}>
+                    {@health_indicators.health_score}%
+                  </p>
+                </div>
+                <.circular_progress
+                  value={@health_indicators.health_score}
+                  variant={health_variant(@health_indicators.health_status)}
+                  size={:md}
+                >
+                  <.icon name="hero-heart-solid" class="size-4" />
+                </.circular_progress>
+              </div>
+              <div class="mt-3 pt-3 border-t border-base-300/50">
+                <.badge variant={health_variant(@health_indicators.health_status)} size={:xs}>
+                  <.icon name="hero-check-circle" class="size-3 mr-1" />
+                  {@health_indicators.health_status |> to_string() |> String.capitalize()}
+                </.badge>
+              </div>
+            </div>
+          </div>
+          
+<!-- GenServers Card -->
+          <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-base-100 to-base-100/80 border border-base-300/50 shadow-xl shadow-base-300/20 p-5">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-success/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2">
+            </div>
+            <div class="relative">
+              <p class="text-xs font-medium text-base-content/60 uppercase tracking-wider">
+                GenServers
+              </p>
+              <div class="flex items-end gap-2 mt-1">
+                <span class="text-3xl font-bold text-base-content tracking-tight">
+                  {@health_indicators.genservers_running}
+                </span>
+                <span class="text-lg text-base-content/40 mb-0.5">
+                  / {@health_indicators.genservers_total}
+                </span>
+              </div>
+              <div class="mt-3 pt-3 border-t border-base-300/50 flex items-center justify-between">
+                <span class="text-xs text-base-content/60">Running</span>
+                <div class="p-1.5 rounded-lg bg-success/10">
+                  <.icon name="hero-server-stack" class="size-4 text-success" />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+<!-- Uptime Card -->
+          <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-base-100 to-base-100/80 border border-base-300/50 shadow-xl shadow-base-300/20 p-5">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-info/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2">
+            </div>
+            <div class="relative">
+              <p class="text-xs font-medium text-base-content/60 uppercase tracking-wider">
+                Uptime
+              </p>
+              <p class="text-3xl font-bold text-base-content mt-1 tracking-tight">
+                {format_uptime(@health_indicators.uptime_seconds)}
+              </p>
+              <div class="mt-3 pt-3 border-t border-base-300/50 flex items-center justify-between">
+                <span class="text-xs text-base-content/60">System time</span>
+                <div class="p-1.5 rounded-lg bg-info/10">
+                  <.icon name="hero-clock" class="size-4 text-info" />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+<!-- Supervisor Card -->
+          <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-base-100 to-base-100/80 border border-base-300/50 shadow-xl shadow-base-300/20 p-5">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2">
+            </div>
+            <div class="relative">
+              <p class="text-xs font-medium text-base-content/60 uppercase tracking-wider">
+                Supervisor
+              </p>
+              <p class="text-3xl font-bold text-base-content mt-1 tracking-tight">
+                {@health_indicators.supervisor.active}
+              </p>
+              <div class="mt-3 pt-3 border-t border-base-300/50 flex items-center justify-between">
+                <span class="text-xs text-base-content/60">
+                  {@health_indicators.supervisor.workers} workers
+                </span>
+                <div class="p-1.5 rounded-lg bg-primary/10">
+                  <.icon name="hero-cube-transparent" class="size-4 text-primary" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+<!-- Subprocess Supervisor -->
+        <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+          <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="p-2 rounded-xl bg-gradient-to-br from-accent/20 to-accent/5">
+                  <.icon name="hero-rectangle-group" class="size-5 text-accent" />
+                </div>
+                <div>
+                  <h2 class="text-base font-bold text-base-content">Subprocess Supervisor</h2>
+                  <p class="text-xs text-base-content/60">Child process overview</p>
+                </div>
+              </div>
+              <.badge
+                variant={
+                  if @genserver_status.subprocess_supervisor.running, do: :success, else: :error
+                }
+                size={:sm}
+              >
+                <%= if @genserver_status.subprocess_supervisor.running do %>
+                  <.icon name="hero-check-circle" class="size-3 mr-1" /> Running
+                <% else %>
+                  <.icon name="hero-x-circle" class="size-3 mr-1" /> Not Running
+                <% end %>
+              </.badge>
+            </div>
+          </div>
+
+          <div class="p-4">
+            <div class="flex items-center justify-between gap-2">
+              <div class="text-center flex-1">
+                <div class="text-lg font-bold text-base-content">
+                  {@genserver_status.subprocess_supervisor.active_children}
+                </div>
+                <div class="text-[10px] text-base-content/60">Active</div>
+              </div>
+              <div class="text-center flex-1">
+                <div class="text-lg font-bold text-base-content">
+                  {@genserver_status.subprocess_supervisor.workers}
+                </div>
+                <div class="text-[10px] text-base-content/60">Workers</div>
+              </div>
+              <div class="text-center flex-1">
+                <div class="text-lg font-bold text-base-content">
+                  {@genserver_status.subprocess_supervisor.supervisors}
+                </div>
+                <div class="text-[10px] text-base-content/60">Supervisors</div>
+              </div>
+              <div class="text-center flex-1">
+                <div class="text-lg font-bold text-base-content">
+                  {@genserver_status.subprocess_supervisor.specs}
+                </div>
+                <div class="text-[10px] text-base-content/60">Specs</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      
+<!-- System Readiness + Performance Metrics stacked - 2/3 width on ultra-wide -->
+      <div class="2xl:w-2/3 space-y-6">
+        <!-- System Readiness -->
+        <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+          <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="p-2 rounded-xl bg-gradient-to-br from-info/20 to-info/5">
+                  <.icon name="hero-shield-check" class="size-5 text-info" />
+                </div>
+                <div>
+                  <h2 class="text-base font-bold text-base-content">System Readiness</h2>
+                  <p class="text-xs text-base-content/60">
+                    Components affecting chat availability
+                  </p>
+                </div>
+              </div>
+              <.badge
+                variant={if @readiness_details.all_ready, do: :success, else: :warning}
+                size={:sm}
+              >
+                <%= if @readiness_details.all_ready do %>
+                  <.icon name="hero-check-circle" class="size-3 mr-1" /> All Ready
+                <% else %>
+                  <.icon name="hero-clock" class="size-3 mr-1" /> Initializing
+                <% end %>
+              </.badge>
+            </div>
+          </div>
+
+          <div class="p-4">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <!-- Core Systems -->
+              <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+                <div class="flex items-center gap-2 mb-2">
+                  <.icon name="hero-cpu-chip" class="size-4 text-primary" />
+                  <span class="font-semibold text-xs text-base-content">Core Systems</span>
+                </div>
+                <div class="space-y-1.5 text-xs">
+                  <!-- World-specific Embedder -->
+                  <div class="space-y-1">
+                    <div class="flex justify-between items-center">
+                      <span class="text-base-content/60">World Embedder</span>
+                      <.status_dot
+                        status={world_embedder_status_for_dot(@readiness_details.world_embedder)}
+                        pulse={world_embedder_is_building?(@readiness_details.world_embedder)}
+                      />
+                    </div>
+                    <!-- Show details when building vocabulary -->
+                    <%= if world_embedder_is_building?(@readiness_details.world_embedder) do %>
+                      <div class="pl-2 border-l-2 border-primary/30 space-y-1">
+                        <div class="text-[10px] text-primary/80 font-medium">
+                          {@readiness_details.world_embedder.phase_label}
+                        </div>
+                      </div>
+                    <% end %>
+                    <!-- Show not initialized state -->
+                    <%= if @readiness_details.world_embedder.phase == :not_initialized do %>
+                      <div class="text-[10px] text-info/70 pl-2">
+                        Builds on first memory query
+                      </div>
+                    <% end %>
+                    <!-- Show table not ready state -->
+                    <%= if @readiness_details.world_embedder.phase == :table_not_ready do %>
+                      <div class="text-[10px] text-warning/70 pl-2">
+                        ETS table initializing...
+                      </div>
+                    <% end %>
+                    <!-- Show no data state -->
+                    <%= if @readiness_details.world_embedder.phase == :no_data do %>
+                      <div class="text-[10px] text-warning/70 pl-2">
+                        No episodes in world yet
+                      </div>
+                    <% end %>
+                    <!-- Show ready state with vocab size -->
+                    <%= if @readiness_details.world_embedder.ready do %>
+                      <div class="text-[10px] text-success/70 pl-2">
+                        {@readiness_details.world_embedder.vocabulary_size} terms from {@readiness_details.world_embedder.episode_count} episodes
+                      </div>
+                    <% end %>
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">Memory Store</span>
+                    <.status_dot status={
+                      if @readiness_details.core.memory_store, do: :ready, else: :initializing
+                    } />
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">Brain</span>
+                    <.status_dot status={
+                      if @readiness_details.core.brain, do: :ready, else: :initializing
+                    } />
+                  </div>
+                </div>
+              </div>
+              
+<!-- NLP Pipeline -->
+              <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+                <div class="flex items-center gap-2 mb-2">
+                  <.icon name="hero-language" class="size-4 text-secondary" />
+                  <span class="font-semibold text-xs text-base-content">NLP Pipeline</span>
+                </div>
+                <div class="space-y-1.5 text-xs">
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">Ready</span>
+                    <.status_dot status={
+                      if @readiness_details.nlp_pipeline.ready, do: :ready, else: :loading
+                    } />
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">Intent Classifier</span>
+                    <.status_dot status={
+                      if @readiness_details.nlp_pipeline.components.intent_classifier,
+                        do: :ready,
+                        else: :loading
+                    } />
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">Gazetteer</span>
+                    <.status_dot status={
+                      if @readiness_details.nlp_pipeline.components.gazetteer,
+                        do: :ready,
+                        else: :loading
+                    } />
+                  </div>
+                </div>
+              </div>
+              
+<!-- ML Models -->
+              <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+                <div class="flex items-center gap-2 mb-2">
+                  <.icon name="hero-sparkles" class="size-4 text-warning" />
+                  <span class="font-semibold text-xs text-base-content">ML Models</span>
+                </div>
+                <div class="space-y-1.5 text-xs">
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">Intent Classifier</span>
+                    <.status_dot status={
+                      if @readiness_details.ml_models.intent_classifier,
+                        do: :ready,
+                        else: :not_started
+                    } />
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">Entity Extractor</span>
+                    <.status_dot status={
+                      if @readiness_details.ml_models.entity_extractor,
+                        do: :ready,
+                        else: :not_started
+                    } />
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">POS Model</span>
+                    <.status_dot status={
+                      if @readiness_details.ml_models.pos_model_exists,
+                        do: :ready,
+                        else: :not_started
+                    } />
+                  </div>
+                </div>
+              </div>
+              
+<!-- Response System -->
+              <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+                <div class="flex items-center gap-2 mb-2">
+                  <.icon name="hero-document-text" class="size-4 text-accent" />
+                  <span class="font-semibold text-xs text-base-content">Response System</span>
+                </div>
+                <div class="space-y-1.5 text-xs">
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">Template Store</span>
+                    <.status_dot status={
+                      if @readiness_details.template_store, do: :ready, else: :initializing
+                    } />
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">Classifier</span>
+                    <.status_dot status={
+                      if @readiness_details.ml_models.classifier_exists,
+                        do: :ready,
+                        else: :not_started
+                    } />
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">Entity Model</span>
+                    <.status_dot status={
+                      if @readiness_details.ml_models.entity_model_exists,
+                        do: :ready,
+                        else: :not_started
+                    } />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+<!-- Performance Metrics -->
+        <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+          <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+            <div class="flex items-center gap-3">
+              <div class="p-2 rounded-xl bg-gradient-to-br from-warning/20 to-warning/5">
+                <.icon name="hero-chart-bar" class="size-5 text-warning" />
+              </div>
+              <div>
+                <h2 class="text-base font-bold text-base-content">Performance Metrics</h2>
+                <p class="text-xs text-base-content/60">Response times and throughput</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-4">
+            <%= if map_size(@performance_metrics) == 0 or not Enum.any?(@performance_metrics, fn {_, v} -> is_map(v) and Map.has_key?(v, :avg_ms) end) do %>
+              <div class="text-center py-8">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-base-200 mb-3">
+                  <.icon name="hero-chart-bar" class="size-6 text-base-content/30" />
+                </div>
+                <p class="text-base-content/60 font-medium text-sm">No performance data yet</p>
+                <p class="text-xs text-base-content/40 mt-1">Metrics appear after requests</p>
+              </div>
+            <% else %>
+              <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+                <%= for {metric_name, data} <- @performance_metrics do %>
+                  <%= if is_map(data) and Map.has_key?(data, :avg_ms) do %>
+                    <div class="group rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 hover:border-primary/30 transition-all duration-200">
+                      <div class="text-[10px] font-semibold text-base-content/50 uppercase tracking-wider mb-2">
+                        {metric_name |> to_string() |> String.replace("_", " ")}
+                      </div>
+                      <div class="space-y-1">
+                        <div class="flex justify-between items-center">
+                          <span class="text-[10px] text-base-content/60">Avg</span>
+                          <span class="font-mono font-bold text-sm text-base-content">
+                            {format_ms(data.avg_ms)}
+                          </span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                          <span class="text-[10px] text-base-content/60">P95</span>
+                          <span class="font-mono text-xs text-base-content/80">
+                            {format_ms(data[:p95_ms] || data.avg_ms)}
+                          </span>
+                        </div>
+                        <div class="h-px bg-base-300/50"></div>
+                        <div class="flex justify-between items-center text-[10px]">
+                          <span class="text-base-content/50">Min/Max</span>
+                          <span class="font-mono text-base-content/60">
+                            {format_ms(data.min_ms)} / {format_ms(data.max_ms)}
+                          </span>
+                        </div>
+                      </div>
+                      <div class="mt-2 pt-2 border-t border-base-300/30 flex justify-between text-[10px]">
+                        <span class="text-base-content/40">{data.count} calls</span>
+                        <span class="text-primary/80">{format_rate(data[:rate_per_minute])}</span>
+                      </div>
+                    </div>
+                  <% end %>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </section>
+      </div>
+    </div>
+    
+<!-- ML Models Status -->
+    <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+      <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+        <div class="flex items-center gap-3">
+          <div class="p-2 rounded-xl bg-gradient-to-br from-warning/20 to-warning/5">
+            <.icon name="hero-sparkles" class="size-5 text-warning" />
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-base-content">ML Models</h2>
+            <p class="text-xs text-base-content/60">Trained model files and runtime agents</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4">
+        <div class="flex flex-col lg:flex-row gap-4">
+          <!-- File-based Models - 2/3 width -->
+          <div class="lg:w-2/3">
+            <h3 class="text-[10px] font-semibold text-base-content/70 uppercase tracking-wider mb-2">
+              Trained Model Files
+            </h3>
+            <div class="grid grid-cols-2 xl:grid-cols-4 gap-2">
+              <%= for {model_key, model_data} <- file_based_models(@ml_models_status) do %>
+                <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="font-semibold text-xs text-base-content">
+                      {model_name(model_key)}
+                    </span>
+                    <.badge variant={model_status_variant(model_data)} size={:xs}>
+                      {model_status_label(model_data)}
+                    </.badge>
+                  </div>
+                  <div class="space-y-1 text-[10px]">
+                    <div class="flex justify-between items-center">
+                      <span class="text-base-content/60">Size</span>
+                      <span class="font-mono text-base-content/70">
+                        {format_bytes(model_data.size_bytes)}
+                      </span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-base-content/60">Modified</span>
+                      <span class="font-mono text-base-content/70 truncate max-w-[80px]">
+                        {format_model_datetime(model_data.modified_at)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+          
+<!-- Agent-based Models - 1/3 width -->
+          <div class="lg:w-1/3">
+            <h3 class="text-[10px] font-semibold text-base-content/70 uppercase tracking-wider mb-2">
+              Runtime Model Agents
+            </h3>
+            <div class="grid grid-cols-2 gap-2">
+              <%= for {model_key, model_data} <- agent_based_models(@ml_models_status) do %>
+                <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                      <.status_dot status={if model_data.loaded, do: :ready, else: :not_started} />
+                      <span class="font-semibold text-xs text-base-content">
+                        {model_name(model_key)}
+                      </span>
+                    </div>
+                    <.badge variant={model_status_variant(model_data)} size={:xs}>
+                      {model_status_label(model_data)}
+                    </.badge>
+                  </div>
+                  <%= if model_data.loaded do %>
+                    <div class="flex items-center gap-4 text-[10px]">
+                      <div class="flex items-center gap-1 text-base-content/60">
+                        <.icon name="hero-cpu-chip" class="size-3" />
+                        <span>{format_bytes(model_data.memory_bytes)}</span>
+                      </div>
+                      <div class="flex items-center gap-1 text-base-content/60">
+                        <.icon name="hero-queue-list" class="size-3" />
+                        <span>Queue: {model_data.message_queue_len || 0}</span>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+        
+<!-- LSTM Models -->
+          <div>
+            <h3 class="text-[10px] font-semibold text-base-content/70 uppercase tracking-wider mb-2">
+              LSTM Models
+            </h3>
+            <div class="grid grid-cols-3 gap-2">
+              <%= for {model_key, model_data} <- lstm_models(@ml_models_status) do %>
+                <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                      <.status_dot status={if Map.get(model_data, :ready, false), do: :ready, else: :not_started} />
+                      <span class="font-semibold text-xs text-base-content">
+                        {model_name(model_key)}
+                      </span>
+                    </div>
+                    <span class={[
+                      "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium",
+                      if(Map.get(model_data, :ready, false), do: "bg-success/20 text-success", else: "bg-base-300/50 text-base-content/50")
+                    ]}>
+                      {if Map.get(model_data, :ready, false), do: "Ready", else: "Not Loaded"}
+                    </span>
+                  </div>
+                  <%= if Map.get(model_data, :exists, false) do %>
+                    <div class="flex items-center gap-4 text-[10px] text-base-content/60">
+                      <div class="flex items-center gap-1">
+                        <.icon name="hero-document" class="size-3" />
+                        <span>{format_bytes(Map.get(model_data, :size_bytes, 0))}</span>
+                      </div>
+                    </div>
+                  <% else %>
+                    <div class="text-[10px] text-base-content/40">No model file</div>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+
+<!-- Corpus Status -->
+          <% corpus = corpus_info() %>
+          <div>
+            <h3 class="text-[10px] font-semibold text-base-content/70 uppercase tracking-wider mb-2">
+              Corpus Status
+            </h3>
+            <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-semibold text-xs text-base-content">Total Size</span>
+                <span class="font-mono text-xs text-base-content/70">{corpus.total} / 50 GB</span>
+              </div>
+              <div class="w-full bg-base-300/50 rounded-full h-1.5 mb-2">
+                <div class={[
+                  "h-1.5 rounded-full",
+                  if(corpus.utilization < 80, do: "bg-success", else: "bg-warning")
+                ]} style={"width: #{min(corpus.utilization, 100)}%"}></div>
+              </div>
+              <div class="grid grid-cols-3 gap-2 text-[10px]">
+                <%= for {label, size} <- [{"Training", corpus.categories[:training]}, {"Models", corpus.categories[:models]}, {"Evaluation", corpus.categories[:evaluation]}] do %>
+                  <div class="flex justify-between items-center">
+                    <span class="text-base-content/60">{label}</span>
+                    <span class="font-mono text-base-content/70">{size || "N/A"}</span>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+<!-- Training Stats -->
+        <%= if map_size(get_training_stats(@performance_metrics)) > 0 do %>
+          <div>
+            <h3 class="text-[10px] font-semibold text-base-content/70 uppercase tracking-wider mb-2">
+              Training History
+            </h3>
+            <div class="grid grid-cols-2 lg:grid-cols-3 gap-2">
+              <%= for {model_key, stats} <- get_training_stats(@performance_metrics) do %>
+                <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="font-semibold text-xs text-base-content">
+                      {model_name(model_key)}
+                    </span>
+                    <.badge variant={training_status_variant(stats.status)} size={:xs}>
+                      {training_status_label(stats.status)}
+                    </.badge>
+                  </div>
+                  <div class="space-y-1 text-[10px]">
+                    <%= if stats[:duration_ms] do %>
+                      <div class="flex justify-between items-center">
+                        <span class="text-base-content/60">Duration</span>
+                        <span class="font-mono text-base-content/70">
+                          {format_ms(stats.duration_ms)}
+                        </span>
+                      </div>
+                    <% end %>
+                    <%= if stats[:sequence_count] do %>
+                      <div class="flex justify-between items-center">
+                        <span class="text-base-content/60">Sequences</span>
+                        <span class="font-mono text-base-content/70">{stats.sequence_count}</span>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </section>
+    
+<!-- Training Worlds Status -->
+    <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+      <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-xl bg-gradient-to-br from-error/20 to-error/5">
+              <.icon name="hero-academic-cap" class="size-5 text-error" />
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-base-content">Training Worlds</h2>
+              <p class="text-xs text-base-content/60">
+                Self-learning entity discovery environments
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <.btn
+              variant={:ghost}
+              size={:xs}
+              phx-click="reload_training_worlds"
+              title="Reload persisted worlds from disk"
+            >
+              <.icon name="hero-arrow-path" class="size-3" />
+            </.btn>
+            <.badge
+              variant={if @training_worlds_status.manager_ready, do: :success, else: :warning}
+              size={:sm}
+            >
+              <%= if @training_worlds_status.manager_ready do %>
+                <.icon name="hero-check-circle" class="size-3 mr-1" /> Ready
+              <% else %>
+                <.icon name="hero-clock" class="size-3 mr-1" /> Initializing
+              <% end %>
+            </.badge>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4">
+        <!-- Summary Stats -->
+        <div class="grid grid-cols-3 gap-4 mb-4">
+          <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 text-center">
+            <div class="text-2xl font-bold text-base-content">
+              {@training_worlds_status.active_worlds}
+            </div>
+            <div class="text-xs text-base-content/60">Active Worlds</div>
+          </div>
+          <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 text-center">
+            <div class="text-2xl font-bold text-base-content">
+              {@training_worlds_status.persisted_worlds}
+            </div>
+            <div class="text-xs text-base-content/60">Persisted</div>
+          </div>
+          <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 text-center">
+            <div class="text-2xl font-bold text-base-content">
+              {Enum.sum(Enum.map(@training_worlds_status.worlds, & &1.candidates_count))}
+            </div>
+            <div class="text-xs text-base-content/60">Total Candidates</div>
+          </div>
+        </div>
+        
+<!-- Active Worlds List -->
+        <%= if length(@training_worlds_status.worlds) > 0 do %>
+          <h3 class="text-[10px] font-semibold text-base-content/70 uppercase tracking-wider mb-2">
+            Active Worlds
+          </h3>
+          <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+            <%= for world <- @training_worlds_status.worlds do %>
+              <.link
+                navigate={~p"/worlds/#{world.id}/entities"}
+                class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 hover:border-error/30 transition-all duration-200 block group"
+              >
+                <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center gap-2">
+                    <.status_dot status={:ready} />
+                    <span
+                      class="font-semibold text-sm text-base-content truncate max-w-[120px] group-hover:text-error transition-colors"
+                      title={world.name}
+                    >
+                      {world.name}
+                    </span>
+                  </div>
+                  <.badge
+                    variant={if world.mode == :persistent, do: :info, else: :default}
+                    size={:xs}
+                  >
+                    {world.mode}
+                  </.badge>
+                </div>
+
+                <div class="space-y-1 text-[10px]">
+                  <%= if world.metrics do %>
+                    <div class="flex justify-between items-center">
+                      <span class="text-base-content/60">Documents</span>
+                      <span class="font-mono text-base-content/70">
+                        {world.metrics.documents}
+                      </span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-base-content/60">Entities Discovered</span>
+                      <span class="font-mono text-base-content/70">
+                        {world.metrics.entities_discovered}
+                      </span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-base-content/60">Candidates</span>
+                      <span class="font-mono text-base-content/70">{world.candidates_count}</span>
+                    </div>
+                  <% else %>
+                    <div class="text-base-content/50 italic">No metrics yet</div>
+                  <% end %>
+                </div>
+
+                <div class="mt-2 pt-2 border-t border-base-300/30 flex justify-between text-[10px]">
+                  <span
+                    class="text-base-content/40 font-mono truncate max-w-[100px]"
+                    title={world.id}
+                  >
+                    {String.slice(world.id, 0, 8)}...
+                  </span>
+                  <span class="text-primary/70 opacity-0 group-hover:opacity-100 transition-opacity">
+                    View entities →
+                  </span>
+                </div>
+              </.link>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="text-center py-6">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-base-200 mb-3">
+              <.icon name="hero-academic-cap" class="size-6 text-base-content/30" />
+            </div>
+            <p class="text-base-content/60 font-medium text-sm">No active training worlds</p>
+            <p class="text-xs text-base-content/40 mt-1">
+              Create one with: mix training_world.create "name"
+            </p>
+          </div>
+        <% end %>
+      </div>
+    </section>
+    
+<!-- Code Analysis Status -->
+    <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+      <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-xl bg-gradient-to-br from-violet-500/20 to-violet-500/5">
+              <.icon name="hero-code-bracket" class="size-5 text-violet-500" />
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-base-content">Code Analysis</h2>
+              <p class="text-xs text-base-content/60">
+                Programming language understanding system
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <.link navigate={~p"/code"} class="btn btn-xs btn-ghost">
+              <.icon name="hero-arrow-right" class="size-3" /> Open
+            </.link>
+            <.badge
+              variant={if @code_analysis_status.ready, do: :success, else: :warning}
+              size={:sm}
+            >
+              <%= if @code_analysis_status.ready do %>
+                <.icon name="hero-check-circle" class="size-3 mr-1" /> Ready
+              <% else %>
+                <.icon name="hero-clock" class="size-3 mr-1" /> Initializing
+              <% end %>
+            </.badge>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <!-- Code Gazetteer -->
+          <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-semibold text-xs text-base-content">Code Gazetteer</span>
+              <.status_dot status={
+                if @code_analysis_status.code_gazetteer.ready, do: :ready, else: :not_started
+              } />
+            </div>
+            <div class="text-[10px] text-base-content/60 space-y-1">
+              <div class="flex justify-between">
+                <span>Symbols</span>
+                <span class="font-mono">{@code_analysis_status.code_gazetteer.stats.total_symbols}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Relations</span>
+                <span class="font-mono">{@code_analysis_status.code_gazetteer.stats.total_relations}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Files</span>
+                <span class="font-mono">{@code_analysis_status.code_gazetteer.stats.total_files}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Language Grammar -->
+          <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-semibold text-xs text-base-content">Language Grammar</span>
+              <.status_dot status={
+                if @code_analysis_status.language_grammar.ready, do: :ready, else: :not_started
+              } />
+            </div>
+            <div class="text-[10px] text-base-content/60 space-y-1">
+              <div class="flex justify-between">
+                <span>Grammars</span>
+                <span class="font-mono">{@code_analysis_status.language_grammar.stats.available_grammars}/{@code_analysis_status.language_grammar.stats.total_grammars}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Supported Languages -->
+          <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 col-span-2">
+            <div class="flex items-center gap-2 mb-2">
+              <.icon name="hero-language" class="size-4 text-violet-500" />
+              <span class="font-semibold text-xs text-base-content">Supported Languages</span>
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <%= for lang <- @code_analysis_status.language_grammar.stats.languages do %>
+                <.badge variant={:default} size={:xs}>
+                  {lang |> to_string() |> String.capitalize()}
+                </.badge>
+              <% end %>
+              <%= if @code_analysis_status.language_grammar.stats.languages == [] do %>
+                <span class="text-[10px] text-base-content/40 italic">No languages loaded</span>
+              <% end %>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-3 text-[10px] text-base-content/50">
+          Analyze code with:
+          <code class="px-1 bg-base-200 rounded">
+            World.DocumentIngestor.ingest_codebase("world_id", "/path/to/project")
+          </code>
+        </div>
+      </div>
+    </section>
+    
+<!-- External Services Status -->
+    <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+      <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-xl bg-gradient-to-br from-sky-500/20 to-sky-500/5">
+              <.icon name="hero-cloud" class="size-5 text-sky-500" />
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-base-content">External Services</h2>
+              <p class="text-xs text-base-content/60">
+                API integrations for response enrichment
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <.link navigate={~p"/settings?section=services"} class="btn btn-xs btn-ghost">
+              <.icon name="hero-cog-6-tooth" class="size-3" /> Configure
+            </.link>
+            <.badge
+              variant={if @services_status.ready, do: :success, else: :warning}
+              size={:sm}
+            >
+              <%= if @services_status.ready do %>
+                <.icon name="hero-check-circle" class="size-3 mr-1" /> Ready
+              <% else %>
+                <.icon name="hero-clock" class="size-3 mr-1" /> Initializing
+              <% end %>
+            </.badge>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4">
+        <!-- Summary Stats -->
+        <div class="grid grid-cols-4 gap-4 mb-4">
+          <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 text-center">
+            <div class="text-2xl font-bold text-base-content">
+              {length(@services_status.services)}
+            </div>
+            <div class="text-xs text-base-content/60">Services</div>
+          </div>
+          <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 text-center">
+            <div class="text-2xl font-bold text-base-content">
+              {@services_status.dispatch_metrics.total_count}
+            </div>
+            <div class="text-xs text-base-content/60">Dispatches</div>
+          </div>
+          <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 text-center">
+            <div class="text-2xl font-bold text-base-content">
+              {format_ms(@services_status.dispatch_metrics.avg_ms)}
+            </div>
+            <div class="text-xs text-base-content/60">Avg Latency</div>
+          </div>
+          <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 text-center">
+            <div class="text-2xl font-bold text-success">
+              {@services_status.cache_metrics.hit_rate}%
+            </div>
+            <div class="text-xs text-base-content/60">Cache Hit Rate</div>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <!-- Credential Vault -->
+          <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-semibold text-xs text-base-content">Credential Vault</span>
+              <.status_dot status={
+                if @services_status.genservers.credential_vault.ready, do: :ready, else: :not_started
+              } />
+            </div>
+            <div class="text-[10px] text-base-content/60">
+              Encrypted API key storage
+            </div>
+          </div>
+          
+          <!-- Service Cache -->
+          <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-semibold text-xs text-base-content">Service Cache</span>
+              <.status_dot status={
+                if @services_status.genservers.cache.ready, do: :ready, else: :not_started
+              } />
+            </div>
+            <div class="text-[10px] text-base-content/60 space-y-1">
+              <div class="flex justify-between">
+                <span>Hits</span>
+                <span class="font-mono text-success">{@services_status.cache_metrics.hits}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Misses</span>
+                <span class="font-mono">{@services_status.cache_metrics.misses}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Registered Services -->
+          <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 col-span-2">
+            <div class="flex items-center gap-2 mb-2">
+              <.icon name="hero-globe-alt" class="size-4 text-sky-500" />
+              <span class="font-semibold text-xs text-base-content">Registered Services</span>
+            </div>
+            <%= if length(@services_status.services) > 0 do %>
+              <div class="flex flex-wrap gap-2">
+                <%= for service <- @services_status.services do %>
+                  <div class={[
+                    "inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium",
+                    if(service.configured, do: "bg-success/20 text-success", else: "bg-warning/20 text-warning")
+                  ]}>
+                    <%= if service.configured do %>
+                      <.icon name="hero-check-circle" class="size-3" />
+                    <% else %>
+                      <.icon name="hero-exclamation-triangle" class="size-3" />
+                    <% end %>
+                    {service.display_name}
+                    <%= if service.total_dispatches > 0 do %>
+                      <span class="text-base-content/50">({service.total_dispatches})</span>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% else %>
+              <span class="text-[10px] text-base-content/40 italic">No services registered</span>
+            <% end %>
+          </div>
+        </div>
+        
+        <div class="mt-3 text-[10px] text-base-content/50">
+          Configure API keys in the
+          <.link navigate={~p"/settings?section=services"} class="text-sky-500 hover:underline">
+            Services Settings
+          </.link>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Knowledge Health -->
+    <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+      <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-500/5">
+              <.icon name="hero-heart" class="size-5 text-emerald-500" />
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-base-content">Knowledge Health</h2>
+              <p class="text-xs text-base-content/60">
+                Seed data, epistemic readiness, and response enrichment
+              </p>
+            </div>
+          </div>
+          <%= if @knowledge_health.total_facts > 0 and @knowledge_health.beliefs > 0 do %>
+            <.badge variant={:success} size={:sm}>
+              <.icon name="hero-check-circle" class="size-3 mr-1" /> Healthy
+            </.badge>
+          <% else %>
+            <.badge variant={:warning} size={:sm}>
+              <.icon name="hero-exclamation-triangle" class="size-3 mr-1" /> Needs Seeds
+            </.badge>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="p-4">
+        <div class="grid grid-cols-3 gap-3 mb-4">
+          <div class={[
+            "rounded-xl border p-3 text-center",
+            if(@knowledge_health.total_facts > 0, do: "bg-gradient-to-br from-success/10 to-success/5 border-success/20", else: "bg-gradient-to-br from-error/10 to-error/5 border-error/20")
+          ]}>
+            <div class="text-2xl font-bold">
+              {@knowledge_health.total_facts}
+            </div>
+            <div class="text-[10px] text-base-content/60">Facts</div>
+            <div class="text-[9px] text-base-content/40 mt-0.5">
+              {@knowledge_health.curated_facts} curated / {@knowledge_health.learned_facts} learned
+            </div>
+          </div>
+          <div class={[
+            "rounded-xl border p-3 text-center",
+            if(@knowledge_health.beliefs > 0, do: "bg-gradient-to-br from-success/10 to-success/5 border-success/20", else: "bg-gradient-to-br from-error/10 to-error/5 border-error/20")
+          ]}>
+            <div class="text-2xl font-bold">
+              {@knowledge_health.beliefs}
+            </div>
+            <div class="text-[10px] text-base-content/60">Beliefs</div>
+          </div>
+          <div class={[
+            "rounded-xl border p-3 text-center",
+            if(@knowledge_health.jtms_nodes > 0, do: "bg-gradient-to-br from-success/10 to-success/5 border-success/20", else: "bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20")
+          ]}>
+            <div class="text-2xl font-bold">
+              {@knowledge_health.jtms_nodes}
+            </div>
+            <div class="text-[10px] text-base-content/60">JTMS Nodes</div>
+            <div class="text-[9px] text-base-content/40 mt-0.5">
+              {@knowledge_health.jtms_justifications} justifications
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div class={[
+            "rounded-xl border p-3",
+            if(@knowledge_health.gazetteer_loaded, do: "bg-gradient-to-br from-success/10 to-success/5 border-success/20", else: "bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20")
+          ]}>
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-lg font-bold">{@knowledge_health.gazetteer_entities}</div>
+                <div class="text-[10px] text-base-content/60">Gazetteer Entities</div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-medium">{@knowledge_health.gazetteer_types}</div>
+                <div class="text-[10px] text-base-content/60">types</div>
+              </div>
+            </div>
+          </div>
+          <div class={[
+            "rounded-xl border p-3",
+            cond do
+              @knowledge_health.verification_coverage >= 50.0 -> "bg-gradient-to-br from-success/10 to-success/5 border-success/20"
+              @knowledge_health.verification_coverage > 0 -> "bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20"
+              true -> "bg-gradient-to-br from-base-200/80 to-base-200/40 border-base-300/30"
+            end
+          ]}>
+            <div class="text-lg font-bold">{@knowledge_health.verification_coverage}%</div>
+            <div class="text-[10px] text-base-content/60">Verification Coverage</div>
+            <div class="text-[9px] text-base-content/40 mt-0.5">verified / total checked</div>
+          </div>
+        </div>
+
+        <!-- Response Enrichment -->
+        <div class="rounded-xl border border-base-300/30 bg-base-200/20 p-3">
+          <div class="text-xs font-medium text-base-content/80 mb-2">Response Enrichment</div>
+          <div class="grid grid-cols-3 gap-3">
+            <div class="text-center">
+              <div class="text-sm font-bold">{@knowledge_health.fact_hit_rate}%</div>
+              <div class="text-[9px] text-base-content/50">Fact Hit Rate</div>
+            </div>
+            <div class="text-center">
+              <div class="text-sm font-bold">{@knowledge_health.semantic_hit_rate}%</div>
+              <div class="text-[9px] text-base-content/50">Semantic Hit Rate</div>
+            </div>
+            <div class="text-center">
+              <div class="text-sm font-bold">{@knowledge_health.avg_facts_per_response}</div>
+              <div class="text-[9px] text-base-content/50">Avg Facts/Response</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Epistemic System Metrics -->
+    <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+      <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-xl bg-gradient-to-br from-violet-500/20 to-violet-500/5">
+              <.icon name="hero-light-bulb" class="size-5 text-violet-500" />
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-base-content">Epistemic System</h2>
+              <p class="text-xs text-base-content/60">
+                Fact verification and belief tracking
+              </p>
+            </div>
+          </div>
+          <.badge variant={:info} size={:sm}>
+            <.icon name="hero-check-circle" class="size-3 mr-1" /> Active
+          </.badge>
+        </div>
+      </div>
+
+      <div class="p-4">
+        <!-- Summary Stats -->
+        <div class="grid grid-cols-4 gap-4 mb-4">
+          <div class="rounded-xl bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3 text-center">
+            <div class="text-2xl font-bold text-base-content">
+              {@epistemic_metrics.total_verifications}
+            </div>
+            <div class="text-[10px] text-base-content/60">Verifications</div>
+          </div>
+          <div class="rounded-xl bg-gradient-to-br from-success/10 to-success/5 border border-success/20 p-3 text-center">
+            <div class="text-2xl font-bold text-success">
+              {Map.get(@epistemic_metrics.by_status, :verified, 0)}
+            </div>
+            <div class="text-[10px] text-base-content/60">Verified</div>
+          </div>
+          <div class="rounded-xl bg-gradient-to-br from-error/10 to-error/5 border border-error/20 p-3 text-center">
+            <div class="text-2xl font-bold text-error">
+              {@epistemic_metrics.contradiction_count}
+            </div>
+            <div class="text-[10px] text-base-content/60">Contradictions</div>
+          </div>
+          <div class="rounded-xl bg-gradient-to-br from-warning/10 to-warning/5 border border-warning/20 p-3 text-center">
+            <div class="text-2xl font-bold text-warning">
+              {Map.get(@epistemic_metrics.by_status, :uncertain, 0)}
+            </div>
+            <div class="text-[10px] text-base-content/60">Uncertain</div>
+          </div>
+        </div>
+
+        <!-- Status Breakdown -->
+        <div class="rounded-xl border border-base-300/30 bg-base-200/20 p-3">
+          <div class="text-xs font-medium text-base-content/80 mb-2">Status Distribution</div>
+          <div class="flex flex-wrap gap-2">
+            <%= for {status, count} <- @epistemic_metrics.by_status do %>
+              <div class={[
+                "px-2 py-1 rounded-lg text-xs font-medium flex items-center gap-1",
+                status_badge_class(status)
+              ]}>
+                <.icon name={status_icon(status)} class="size-3" />
+                <span class="capitalize">{status}</span>
+                <span class="opacity-60">({count})</span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Verification Miss Reasons -->
+        <%= if @epistemic_metrics.miss_reasons.total > 0 do %>
+          <div class="rounded-xl border border-base-300/30 bg-base-200/20 p-3 mt-3">
+            <div class="text-xs font-medium text-base-content/80 mb-2">Why Verifications Miss</div>
+            <div class="grid grid-cols-4 gap-2">
+              <%= for {reason, pct} <- @epistemic_metrics.miss_reasons.percentages do %>
+                <div class="text-center">
+                  <div class="text-sm font-bold">{pct}%</div>
+                  <div class="text-[9px] text-base-content/50">{reason_label(reason)}</div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <%= if map_size(@epistemic_metrics.last_verifications) > 0 do %>
+          <div class="mt-3 text-[10px] text-base-content/50">
+            Recent verifications recorded - epistemic context flows to response synthesis
+          </div>
+        <% end %>
+      </div>
+    </section>
+    
+    <!-- Memory Explorer Quick Access -->
+    <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+      <div class="p-4 bg-gradient-to-r from-base-100 to-base-200/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-xl bg-gradient-to-br from-secondary/20 to-secondary/5">
+              <.icon name="hero-circle-stack" class="size-5 text-secondary" />
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-base-content">Memory Explorer</h2>
+              <p class="text-xs text-base-content/60">
+                Browse episodes, semantic facts, and learned knowledge
+              </p>
+            </div>
+          </div>
+          <.link navigate={~p"/memories"} class="btn btn-sm btn-primary">
+            <.icon name="hero-arrow-right" class="size-4" /> Open Explorer
+          </.link>
+        </div>
+      </div>
+    </section>
+    
+<!-- GenServer Status - 6 column grid for categories -->
+    <section class="space-y-4">
+      <div class="flex items-center gap-3 px-2">
+        <div class="p-2 rounded-xl bg-gradient-to-br from-secondary/20 to-secondary/5">
+          <.icon name="hero-server-stack" class="size-5 text-secondary" />
+        </div>
+        <div>
+          <h2 class="text-base font-bold text-base-content">GenServer Status</h2>
+          <p class="text-xs text-base-content/60">Process health by category</p>
+        </div>
+      </div>
+      
+<!-- Categories in a 6 column responsive grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
+        <%= for category <- available_categories(@genserver_status) do %>
+          <div class="rounded-2xl bg-base-100 border border-base-300/50 shadow-lg shadow-base-300/10 overflow-hidden">
+            <button
+              type="button"
+              class="w-full p-4 text-left hover:bg-base-200/30 transition-colors duration-200"
+              phx-click="toggle_category"
+              phx-value-category={category}
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class={[
+                    "p-2 rounded-xl",
+                    category_bg_class(category)
+                  ]}>
+                    <.icon
+                      name={category_icon(category)}
+                      class={["size-4", category_text_class(category)]}
+                    />
+                  </div>
+                  <div>
+                    <h3 class="font-semibold text-base-content text-sm">
+                      {category_label(category)}
+                    </h3>
+                    <p class="text-xs text-base-content/50">
+                      {Integer.to_string(count_running_in_category(@genserver_status.categories, category))} / {Integer.to_string(count_total_in_category(
+                        @genserver_status.categories,
+                        category
+                      ))} running
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="hidden sm:flex items-center gap-1">
+                    <% running = count_running_in_category(@genserver_status.categories, category) %>
+                    <% total = count_total_in_category(@genserver_status.categories, category) %>
+                    <%= for i <- 1..min(total, 6) do %>
+                      <div class={[
+                        "w-1.5 h-1.5 rounded-full",
+                        if(i <= running, do: "bg-success", else: "bg-base-300")
+                      ]}>
+                      </div>
+                    <% end %>
+                    <%= if total > 6 do %>
+                      <span class="text-[10px] text-base-content/40">+{Integer.to_string(total - 6)}</span>
+                    <% end %>
+                  </div>
+                  <.icon
+                    name={
+                      if MapSet.member?(@expanded_categories, category),
+                        do: "hero-chevron-up",
+                        else: "hero-chevron-down"
+                    }
+                    class="size-4 text-base-content/40"
+                  />
+                </div>
+              </div>
+            </button>
+
+            <%= if MapSet.member?(@expanded_categories, category) do %>
+              <div class="px-4 pb-4 border-t border-base-300/30 pt-3">
+                <div class="space-y-2">
+                  <%= for {_module, status} <- category_servers(@genserver_status.categories, category) do %>
+                    <div class="rounded-lg bg-gradient-to-br from-base-200/60 to-base-200/30 border border-base-300/30 p-3 hover:border-base-300 transition-colors">
+                      <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                          <.status_dot
+                            status={status.status}
+                            pulse={
+                              status.status in [:initializing, :building_vocabulary, :loading]
+                            }
+                          />
+                          <span class="font-semibold text-xs text-base-content truncate">
+                            {status.name}
+                          </span>
+                        </div>
+                        <.badge variant={status_badge_variant(status.status)} size={:xs}>
+                          {status.label}
+                        </.badge>
+                      </div>
+
+                      <div class="flex items-center gap-3 text-[10px]">
+                        <div class="flex items-center gap-1 text-base-content/60">
+                          <.icon name="hero-cpu-chip" class="size-3" />
+                          <span>{format_bytes(status.memory_bytes)}</span>
+                        </div>
+                        <div class="flex items-center gap-1 text-base-content/60">
+                          <.icon name="hero-queue-list" class="size-3" />
+                          <span>Q: {status.message_queue_len || 0}</span>
+                        </div>
+                        <!-- Utilization indicator -->
+                        <%= case Map.get(status, :utilization_status, :normal) do %>
+                          <% :idle -> %>
+                            <.badge variant={:warning} size={:xs}>
+                              <.icon name="hero-pause" class="size-2.5 mr-0.5" />
+                              Idle
+                            </.badge>
+                          <% :never_used -> %>
+                            <.badge variant={:info} size={:xs}>
+                              <.icon name="hero-question-mark-circle" class="size-2.5 mr-0.5" />
+                              Never Used
+                            </.badge>
+                          <% :high_cost -> %>
+                            <.badge variant={:error} size={:xs}>
+                              <.icon name="hero-exclamation-triangle" class="size-2.5 mr-0.5" />
+                              High Cost
+                            </.badge>
+                          <% :low_usage -> %>
+                            <span class="text-base-content/40 flex items-center gap-0.5">
+                              <.icon name="hero-arrow-trending-down" class="size-2.5" />
+                              {format_rate(Map.get(status, :rate_per_minute, 0))}
+                            </span>
+                          <% _ -> %>
+                            <%= if Map.get(status, :rate_per_minute, 0) > 0 do %>
+                              <span class="text-success/70 font-mono">
+                                {format_rate(Map.get(status, :rate_per_minute, 0))}
+                              </span>
+                            <% end %>
+                        <% end %>
+                      </div>
+
+                      <%= if status.stats && is_map(status.stats) && map_size(status.stats) > 0 do %>
+                        <div class="mt-2 pt-2 border-t border-base-300/30 flex flex-wrap gap-x-3 gap-y-1 text-[10px]">
+                          <%= for {key, value} <- Enum.take(status.stats, 3) do %>
+                            <span class="text-base-content/50">
+                              {key |> to_string() |> String.split("_") |> List.first()}:
+                              <span class="font-mono text-base-content/70">
+                                {format_stat_value(value)}
+                              </span>
+                            </span>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </section>
+    
+<!-- Readiness Matrix -->
+    <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+      <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+        <div class="flex items-center gap-3">
+          <div class="p-2 rounded-xl bg-gradient-to-br from-success/20 to-success/5">
+            <.icon name="hero-check-badge" class="size-5 text-success" />
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-base-content">Readiness Matrix</h2>
+            <p class="text-xs text-base-content/60">System component readiness overview</p>
+          </div>
+        </div>
+      </div>
+      <div class="p-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div class="flex items-center gap-2 p-2 rounded-lg bg-base-200/30">
+            <div class={"size-2.5 rounded-full " <> if(@readiness_details.core.brain, do: "bg-success", else: "bg-error")}></div>
+            <span class="text-xs">Brain Core</span>
+          </div>
+          <div class="flex items-center gap-2 p-2 rounded-lg bg-base-200/30">
+            <div class={"size-2.5 rounded-full " <> if(@readiness_details.core.embedder, do: "bg-success", else: "bg-error")}></div>
+            <span class="text-xs">Embedder</span>
+          </div>
+          <div class="flex items-center gap-2 p-2 rounded-lg bg-base-200/30">
+            <div class={"size-2.5 rounded-full " <> if(@readiness_details.core.memory_store, do: "bg-success", else: "bg-error")}></div>
+            <span class="text-xs">Memory Store</span>
+          </div>
+          <div class="flex items-center gap-2 p-2 rounded-lg bg-base-200/30">
+            <div class={"size-2.5 rounded-full " <> if(@readiness_details.nlp_pipeline.ready, do: "bg-success", else: "bg-error")}></div>
+            <span class="text-xs">NLP Pipeline</span>
+          </div>
+          <div class="flex items-center gap-2 p-2 rounded-lg bg-base-200/30">
+            <div class={"size-2.5 rounded-full " <> if(@readiness_details.ml_models.intent_classifier, do: "bg-success", else: "bg-error")}></div>
+            <span class="text-xs">Intent Classifier</span>
+          </div>
+          <div class="flex items-center gap-2 p-2 rounded-lg bg-base-200/30">
+            <div class={"size-2.5 rounded-full " <> if(@readiness_details.ml_models.entity_extractor, do: "bg-success", else: "bg-error")}></div>
+            <span class="text-xs">Entity Extractor</span>
+          </div>
+          <div class="flex items-center gap-2 p-2 rounded-lg bg-base-200/30">
+            <div class={"size-2.5 rounded-full " <> if(@readiness_details.template_store, do: "bg-success", else: "bg-error")}></div>
+            <span class="text-xs">Template Store</span>
+          </div>
+          <div class="flex items-center gap-2 p-2 rounded-lg bg-base-200/30">
+            <div class={"size-2.5 rounded-full " <> if(@micro_classifiers_status.ready, do: "bg-success", else: "bg-error")}></div>
+            <span class="text-xs">Micro Classifiers</span>
+          </div>
+        </div>
+        <div class="mt-3 flex items-center gap-2">
+          <%= if @readiness_details.all_ready do %>
+            <.badge variant={:success} size={:sm}>All Systems Ready</.badge>
+          <% else %>
+            <.badge variant={:warning} size={:sm}>Some Systems Initializing</.badge>
+          <% end %>
+        </div>
+      </div>
+    </section>
+
+    <!-- Response Timing & Resource Consumption -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Response Timing -->
+      <div class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+        <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-xl bg-gradient-to-br from-info/20 to-info/5">
+              <.icon name="hero-clock" class="size-5 text-info" />
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-base-content">Response Timing</h2>
+              <p class="text-xs text-base-content/60">Average processing times</p>
+            </div>
+          </div>
+        </div>
+        <div class="p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-base-content/70">Brain Evaluate</span>
+            <div class="text-right">
+              <span class="font-mono text-sm font-bold">{format_ms(@response_timing.brain_avg_ms)}</span>
+              <span class="text-xs text-base-content/40 ml-1">({@response_timing.brain_count} calls)</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-base-content/70">Analysis Pipeline</span>
+            <div class="text-right">
+              <span class="font-mono text-sm font-bold">{format_ms(@response_timing.pipeline_avg_ms)}</span>
+              <span class="text-xs text-base-content/40 ml-1">({@response_timing.pipeline_count} calls)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Micro Classifiers Status -->
+      <div class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+        <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-xl bg-gradient-to-br from-warning/20 to-warning/5">
+              <.icon name="hero-sparkles" class="size-5 text-warning" />
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-base-content">Micro Classifiers</h2>
+              <p class="text-xs text-base-content/60">Lightweight TF-IDF classifiers</p>
+            </div>
+          </div>
+        </div>
+        <div class="p-4">
+          <%= if @micro_classifiers_status.ready do %>
+            <div class="grid grid-cols-2 gap-2">
+              <%= for {name, info} <- @micro_classifiers_status.classifiers do %>
+                <div class="flex items-center gap-2 p-2 rounded-lg bg-base-200/30">
+                  <div class={"size-2 rounded-full " <> if(info.loaded, do: "bg-success", else: "bg-error")}></div>
+                  <span class="text-xs truncate">{name |> to_string() |> String.replace("_", " ")}</span>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <p class="text-sm text-base-content/50">Not loaded</p>
+          <% end %>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="text-center py-4">
+      <p class="text-xs text-base-content/30">
+        Check duration: {@genserver_status.check_duration_ms}ms
+      </p>
+    </footer>
+  </div>
+</.app_shell>

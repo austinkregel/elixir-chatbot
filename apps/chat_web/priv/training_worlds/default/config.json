@@ -1,0 +1,17 @@
+{
+  "id": "default",
+  "name": "default",
+  "mode": "persistent",
+  "config": {
+    "confidence_threshold": 0.7,
+    "batch_size": 100,
+    "emit_telemetry": true,
+    "max_candidates": 10000,
+    "promotion_threshold": 3
+  },
+  "metadata": {
+    "description": "Default training world containing base data"
+  },
+  "base_world": null,
+  "created_at": "2026-02-02T01:03:57.793120Z"
+}

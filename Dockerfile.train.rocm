@@ -1,0 +1,83 @@
+# =============================================================================
+# ROCm GPU Training Container (AMD GPUs)
+# =============================================================================
+# Builds XLA from source for ROCm using official AMD ROCm .deb packages
+# from repo.radeon.com. Includes all development headers and stub archives
+# required by XLA's Bazel build.
+#
+# The ROCM_VERSION build arg selects which ROCm release to install
+# (default: 6.3.3). GPU architecture is set via TF_ROCM_AMDGPU_TARGETS
+# in the ENV block (default: gfx1102 for RDNA3).
+#
+# Build:
+#   docker build -f Dockerfile.train.rocm -t chatbot-train:rocm .
+#   docker build -f Dockerfile.train.rocm --build-arg ROCM_VERSION=6.4.0 -t chatbot-train:rocm .
+#
+# Run:
+#   docker run --device=/dev/kfd --device=/dev/dri \
+#     -e MODEL_STORE_ENABLED=true -e S3_HOST=minio \
+#     chatbot-train:rocm
+# =============================================================================
+
+# --- Stage 1: Get Erlang + Elixir from official image ---
+FROM hexpm/elixir:1.18.3-erlang-27.2.4-ubuntu-noble-20250127 AS elixir-base
+
+# --- Stage 2: Runner ---
+FROM ubuntu:24.04
+
+COPY --from=elixir-base /usr/local /usr/local
+
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    MIX_ENV=prod \
+    XLA_TARGET=rocm \
+    XLA_BUILD=true \
+    TF_ROCM_AMDGPU_TARGETS="gfx1102" \
+    DEBIAN_FRONTEND=noninteractive
+
+# System tools needed for XLA source compilation
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git curl wget ca-certificates build-essential \
+    clang-18 lld-18 \
+    python3 python3-pip python3-numpy python3-venv \
+    unzip zip xxd \
+    && ln -sf /usr/bin/clang-18 /usr/bin/clang \
+    && ln -sf /usr/bin/clang++-18 /usr/bin/clang++ \
+    && ln -sf /usr/bin/ld.lld-18 /usr/bin/ld.lld \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install ROCm from official AMD .deb repository.
+# Provides all development headers, stub archives, and libraries needed
+# for XLA source compilation via Bazel.
+ARG ROCM_VERSION=6.3.3
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl gnupg && \
+  curl -sL https://repo.radeon.com/rocm/rocm.gpg.key | apt-key add - && \
+  echo "deb [arch=amd64] https://repo.radeon.com/rocm/apt/${ROCM_VERSION}/ noble main" \
+    | tee /etc/apt/sources.list.d/rocm.list && \
+  printf 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600\n' \
+    | tee /etc/apt/preferences.d/rocm-pin-600 && \
+  apt-get update && \
+  apt-get install -y rocm-dev rocm-libs && \
+  apt-get clean -y && rm -rf /var/lib/apt/lists/*
+
+ENV ROCM_PATH="/opt/rocm"
+
+# Bazel 7.7.0 required for XLA source builds
+RUN wget -q https://github.com/bazelbuild/bazel/releases/download/7.7.0/bazel-7.7.0-linux-x86_64 \
+      -O /usr/local/bin/bazel \
+    && chmod +x /usr/local/bin/bazel
+
+WORKDIR /app
+
+RUN mix local.hex --force && mix local.rebar --force
+
+# Copy source code (deps fetched at runtime via volume)
+COPY . .
+
+COPY scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["entrypoint.sh"]
+CMD ["mix", "train", "--publish"]

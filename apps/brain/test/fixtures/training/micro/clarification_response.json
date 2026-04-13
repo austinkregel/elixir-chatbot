@@ -1,0 +1,10 @@
+[
+  {"text": "Which one do you mean?", "label": "clarification"},
+  {"text": "Could you clarify which city?", "label": "clarification"},
+  {"text": "Can you be more specific?", "label": "clarification"},
+  {"text": "Which device did you want?", "label": "clarification"},
+  {"text": "The weather is sunny today.", "label": "not_clarification"},
+  {"text": "Playing your favorite song.", "label": "not_clarification"},
+  {"text": "Hello how are you.", "label": "not_clarification"},
+  {"text": "The lights are now on.", "label": "not_clarification"}
+]

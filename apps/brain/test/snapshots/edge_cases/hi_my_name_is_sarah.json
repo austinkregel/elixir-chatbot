@@ -1,0 +1,34 @@
+{
+  "analyses": [
+    {
+      "index": 0,
+      "text": "Hi, my name is Sarah",
+      "entities": [
+        {
+          "type": "person",
+          "value": "Sarah",
+          "confidence": 0.7
+        },
+        {
+          "type": "slot_mappings",
+          "value": "name",
+          "confidence": 0.62
+        }
+      ],
+      "response_strategy": "defer_to_user",
+      "slots_filled": [
+        "person",
+        "slot_mappings"
+      ],
+      "slots_missing": [],
+      "detected_intent": "smalltalk.greetings.hello",
+      "speech_act_category": "directive",
+      "speech_act_type": "command",
+      "speech_act_confidence": 0.71,
+      "discourse_addressee": "ambiguous",
+      "discourse_self_referential": "false"
+    }
+  ],
+  "overall_strategy": "defer_to_user",
+  "chunk_count": 1
+}

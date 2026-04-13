@@ -1,0 +1,10 @@
+[
+  {"text": "why does the sun rise in the east", "label": "reasoning"},
+  {"text": "how does gravity work", "label": "reasoning"},
+  {"text": "how do you feel about that", "label": "sentiment"},
+  {"text": "what is the mood of this text", "label": "sentiment"},
+  {"text": "what year was the Eiffel Tower built", "label": "factual"},
+  {"text": "who invented the telephone", "label": "factual"},
+  {"text": "tell me about dogs", "label": "general"},
+  {"text": "what is machine learning", "label": "general"}
+]

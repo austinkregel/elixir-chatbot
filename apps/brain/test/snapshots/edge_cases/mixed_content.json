@@ -1,0 +1,54 @@
+{
+  "analyses": [
+    {
+      "index": 0,
+      "text": "Hello, I'm Austin. What's the weather?",
+      "entities": [],
+      "response_strategy": "needs_clarification",
+      "slots_filled": [
+        "date"
+      ],
+      "slots_missing": [
+        "location"
+      ],
+      "detected_intent": "weather",
+      "speech_act_category": "directive",
+      "speech_act_type": "request_information",
+      "speech_act_confidence": 0.81,
+      "discourse_addressee": "bot",
+      "discourse_self_referential": "false"
+    },
+    {
+      "index": 1,
+      "text": "Play some music.",
+      "entities": [],
+      "response_strategy": "can_respond",
+      "slots_filled": [],
+      "slots_missing": [],
+      "detected_intent": "music.play",
+      "speech_act_category": "directive",
+      "speech_act_type": "command",
+      "speech_act_confidence": 0.8,
+      "discourse_addressee": "bot",
+      "discourse_self_referential": "false"
+    },
+    {
+      "index": 2,
+      "text": "Turn on the lights.",
+      "entities": [],
+      "response_strategy": "needs_clarification",
+      "slots_filled": [],
+      "slots_missing": [
+        "action"
+      ],
+      "detected_intent": "smarthome.lights.switch.on",
+      "speech_act_category": "directive",
+      "speech_act_type": "command",
+      "speech_act_confidence": 1.0,
+      "discourse_addressee": "bot",
+      "discourse_self_referential": "false"
+    }
+  ],
+  "overall_strategy": "partial_response_with_clarification",
+  "chunk_count": 3
+}

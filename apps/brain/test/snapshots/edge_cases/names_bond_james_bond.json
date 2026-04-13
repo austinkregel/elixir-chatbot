@@ -1,0 +1,38 @@
+{
+  "analyses": [
+    {
+      "index": 0,
+      "text": "The name's Bond, James Bond",
+      "entities": [
+        {
+          "type": "person",
+          "value": "Bond",
+          "confidence": 0.73
+        },
+        {
+          "type": "person",
+          "value": "Bond",
+          "confidence": 0.67
+        },
+        {
+          "type": "person",
+          "value": "James",
+          "confidence": 0.75
+        }
+      ],
+      "response_strategy": "can_respond",
+      "slots_filled": [
+        "person"
+      ],
+      "slots_missing": [],
+      "detected_intent": "smalltalk.user.introduction",
+      "speech_act_category": "assertive",
+      "speech_act_type": "statement",
+      "speech_act_confidence": 0.41,
+      "discourse_addressee": "bot",
+      "discourse_self_referential": "false"
+    }
+  ],
+  "overall_strategy": "can_respond",
+  "chunk_count": 1
+}

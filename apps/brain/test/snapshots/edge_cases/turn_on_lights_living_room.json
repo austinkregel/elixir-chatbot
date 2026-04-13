@@ -1,0 +1,28 @@
+{
+  "analyses": [
+    {
+      "index": 0,
+      "text": "Turn on the lights in the living room",
+      "entities": [
+        {
+          "type": "room",
+          "value": "living room",
+          "confidence": 0.93
+        }
+      ],
+      "response_strategy": "can_respond",
+      "slots_filled": [
+        "room"
+      ],
+      "slots_missing": [],
+      "detected_intent": "smarthome.context_room.comment_specify.or.change.room",
+      "speech_act_category": "directive",
+      "speech_act_type": "command",
+      "speech_act_confidence": 0.88,
+      "discourse_addressee": "bot",
+      "discourse_self_referential": "false"
+    }
+  ],
+  "overall_strategy": "can_respond",
+  "chunk_count": 1
+}

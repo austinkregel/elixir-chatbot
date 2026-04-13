@@ -1,0 +1,5 @@
+# Dependencies for benchmark_ouro_mps.py
+# Install in a venv: python3 -m venv .venv && source .venv/bin/activate && pip install -r scripts/requirements-ouro-bench.txt
+torch>=2.4.0
+transformers>=4.54.0,<4.56.0
+accelerate>=0.30.0

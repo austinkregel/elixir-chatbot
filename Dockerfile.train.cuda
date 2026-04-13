@@ -1,0 +1,61 @@
+# =============================================================================
+# CUDA GPU Training Container (NVIDIA GPUs)
+# =============================================================================
+# Builds XLA from source for CUDA. Includes all required hermetic build
+# dependencies (clang, Bazel, NCCL, NVSHMEM).
+#
+# Build:
+#   docker build -f Dockerfile.train.cuda -t chatbot-train:cuda .
+#
+# Run:
+#   docker run --gpus all \
+#     -e MODEL_STORE_ENABLED=true -e S3_HOST=minio \
+#     chatbot-train:cuda
+# =============================================================================
+
+# --- Stage 1: Get Erlang + Elixir from official image ---
+FROM hexpm/elixir:1.18.3-erlang-27.2.4-ubuntu-noble-20250127 AS elixir-base
+
+# --- Stage 2: Runner (CUDA 12.9 devel with build tools for XLA source compilation) ---
+FROM nvidia/cuda:12.9.1-devel-ubuntu24.04
+
+COPY --from=elixir-base /usr/local /usr/local
+
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    MIX_ENV=prod \
+    XLA_TARGET=cuda \
+    XLA_BUILD=true \
+    TF_CUDA_COMPUTE_CAPABILITIES="7.0,7.5,8.0,8.6,8.9,9.0,10.0" \
+    DEBIAN_FRONTEND=noninteractive
+
+# Build tools needed for XLA source compilation
+RUN apt-get update && apt-get install -y --no-install-recommends --allow-change-held-packages \
+    git curl wget ca-certificates \
+    clang-18 lld-18 \
+    python3 python3-numpy \
+    unzip zip xxd \
+    libnccl2 libnccl-dev \
+    libnvshmem3-cuda-12 \
+    && ln -sf /usr/bin/clang-18 /usr/bin/clang \
+    && ln -sf /usr/bin/clang++-18 /usr/bin/clang++ \
+    && ln -sf /usr/bin/ld.lld-18 /usr/bin/ld.lld \
+    && rm -rf /var/lib/apt/lists/*
+
+# Bazel 7.7.0 required for XLA source builds
+RUN wget -q https://github.com/bazelbuild/bazel/releases/download/7.7.0/bazel-7.7.0-linux-x86_64 \
+      -O /usr/local/bin/bazel \
+    && chmod +x /usr/local/bin/bazel
+
+WORKDIR /app
+
+RUN mix local.hex --force && mix local.rebar --force
+
+# Copy source code (deps fetched at runtime via volume)
+COPY . .
+
+COPY scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["entrypoint.sh"]
+CMD ["mix", "train.lstm", "--publish"]

@@ -1,0 +1,24 @@
+{
+  "analyses": [
+    {
+      "index": 0,
+      "text": "What's the weather?",
+      "entities": [],
+      "response_strategy": "needs_clarification",
+      "slots_filled": [
+        "date"
+      ],
+      "slots_missing": [
+        "location"
+      ],
+      "detected_intent": "weather",
+      "speech_act_category": "directive",
+      "speech_act_type": "request_information",
+      "speech_act_confidence": 1.0,
+      "discourse_addressee": "bot",
+      "discourse_self_referential": "false"
+    }
+  ],
+  "overall_strategy": "needs_clarification",
+  "chunk_count": 1
+}

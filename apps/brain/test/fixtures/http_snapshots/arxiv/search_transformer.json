@@ -1,0 +1,55 @@
+{
+  "name": "arxiv/search_transformer",
+  "params": {
+    "max_results": 3,
+    "search_query": "all:transformer attention"
+  },
+  "recorded_at": "2026-02-28T00:12:07.746659Z",
+  "response": {
+    "body": "<?xml version='1.0' encoding='UTF-8'?>\n<feed xmlns:opensearch=\"http://a9.com/-/spec/opensearch/1.1/\" xmlns:arxiv=\"http://arxiv.org/schemas/atom\" xmlns=\"http://www.w3.org/2005/Atom\">\n  <id>https://arxiv.org/api/G33lQ0K7SuTJ2XQ7K4aXcfQOfyo</id>\n  <title>arXiv Query: search_query=all:transformer OR all:attention&amp;id_list=&amp;start=0&amp;max_results=3</title>\n  <updated>2026-02-28T00:12:29Z</updated>\n  <link href=\"https://arxiv.org/api/query?search_query=all:transformer+OR+all:attention&amp;start=0&amp;max_results=3&amp;id_list=\" type=\"application/atom+xml\"/>\n  <opensearch:itemsPerPage>3</opensearch:itemsPerPage>\n  <opensearch:totalResults>235362</opensearch:totalResults>\n  <opensearch:startIndex>0</opensearch:startIndex>\n  <entry>\n    <id>http://arxiv.org/abs/2209.15001v3</id>\n    <title>Dilated Neighborhood Attention Transformer</title>\n    <updated>2023-01-16T18:58:58Z</updated>\n    <link href=\"https://arxiv.org/abs/2209.15001v3\" rel=\"alternate\" type=\"text/html\"/>\n    <link href=\"https://arxiv.org/pdf/2209.15001v3\" rel=\"related\" type=\"application/pdf\" title=\"pdf\"/>\n    <summary>Transformers are quickly becoming one of the most heavily applied deep learning architectures across modalities, domains, and tasks. In vision, on top of ongoing efforts into plain transformers, hierarchical transformers have also gained significant attention, thanks to their performance and easy integration into existing frameworks. These models typically employ localized attention mechanisms, such as the sliding-window Neighborhood Attention (NA) or Swin Transformer's Shifted Window Self Attention. While effective at reducing self attention's quadratic complexity, local attention weakens two of the most desirable properties of self attention: long range inter-dependency modeling, and global receptive field. In this paper, we introduce Dilated Neighborhood Attention (DiNA), a natural, flexible and efficient extension to NA that can capture more global context and expand receptive fields exponentially at no additional cost. NA's local attention and DiNA's sparse global attention complement each other, and therefore we introduce Dilated Neighborhood Attention Transformer (DiNAT), a new hierarchical vision transformer built upon both. DiNAT variants enjoy significant improvements over strong baselines such as NAT, Swin, and ConvNeXt. Our large model is faster and ahead of its Swin counterpart by 1.6% box AP in COCO object detection, 1.4% mask AP in COCO instance segmentation, and 1.4% mIoU in ADE20K semantic segmentation. Paired with new frameworks, our large variant is the new state of the art panoptic segmentation model on COCO (58.5 PQ) and ADE20K (49.4 PQ), and instance segmentation model on Cityscapes (45.1 AP) and ADE20K (35.4 AP) (no extra data). It also matches the state of the art specialized semantic segmentation models on ADE20K (58.1 mIoU), and ranks second on Cityscapes (84.5 mIoU) (no extra data).</summary>\n    <category term=\"cs.CV\" scheme=\"http://arxiv.org/schemas/atom\"/>\n    <category term=\"cs.AI\" scheme=\"http://arxiv.org/schemas/atom\"/>\n    <category term=\"cs.LG\" scheme=\"http://arxiv.org/schemas/atom\"/>\n    <published>2022-09-29T17:57:08Z</published>\n    <arxiv:comment>Large results were updated according to the new checkpoint. We open-source our project at https://github.com/SHI-Labs/Neighborhood-Attention-Transformer</arxiv:comment>\n    <arxiv:primary_category term=\"cs.CV\"/>\n    <author>\n      <name>Ali Hassani</name>\n    </author>\n    <author>\n      <name>Humphrey Shi</name>\n    </author>\n  </entry>\n  <entry>\n    <id>http://arxiv.org/abs/2309.01692v1</id>\n    <title>Mask-Attention-Free Transformer for 3D Instance Segmentation</title>\n    <updated>2023-09-04T16:09:28Z</updated>\n    <link href=\"https://arxiv.org/abs/2309.01692v1\" rel=\"alternate\" type=\"text/html\"/>\n    <link href=\"https://arxiv.org/pdf/2309.01692v1\" rel=\"related\" type=\"application/pdf\" title=\"pdf\"/>\n    <summary>Recently, transformer-based methods have dominated 3D instance segmentation, where mask attention is commonly involved. Specifically, object queries are guided by the initial instance masks in the first cross-attention, and then iteratively refine themselves in a similar manner. However, we observe that the mask-attention pipeline usually leads to slow convergence due to low-recall initial instance masks. Therefore, we abandon the mask attention design and resort to an auxiliary center regression task instead. Through center regression, we effectively overcome the low-recall issue and perform cross-attention by imposing positional prior. To reach this goal, we develop a series of position-aware designs. First, we learn a spatial distribution of 3D locations as the initial position queries. They spread over the 3D space densely, and thus can easily capture the objects in a scene with a high recall. Moreover, we present relative position encoding for the cross-attention and iterative refinement for more accurate position queries. Experiments show that our approach converges 4x faster than existing work, sets a new state of the art on ScanNetv2 3D instance segmentation benchmark, and also demonstrates superior performance across various datasets. Code and models are available at https://github.com/dvlab-research/Mask-Attention-Free-Transformer.</summary>\n    <category term=\"cs.CV\" scheme=\"http://arxiv.org/schemas/atom\"/>\n    <published>2023-09-04T16:09:28Z</published>\n    <arxiv:comment>Accepted to ICCV 2023. Code and models are available at https://github.com/dvlab-research/Mask-Attention-Free-Transformer</arxiv:comment>\n    <arxiv:primary_category term=\"cs.CV\"/>\n    <author>\n      <name>Xin Lai</name>\n    </author>\n    <author>\n      <name>Yuhui Yuan</name>\n    </author>\n    <author>\n      <name>Ruihang Chu</name>\n    </author>\n    <author>\n      <name>Yukang Chen</name>\n    </author>\n    <author>\n      <name>Han Hu</name>\n    </author>\n    <author>\n      <name>Jiaya Jia</name>\n    </author>\n  </entry>\n  <entry>\n    <id>http://arxiv.org/abs/2402.04563v1</id>\n    <title>Attention Guided CAM: Visual Explanations of Vision Transformer Guided by Self-Attention</title>\n    <updated>2024-02-07T03:43:56Z</updated>\n    <link href=\"https://arxiv.org/abs/2402.04563v1\" rel=\"alternate\" type=\"text/html\"/>\n    <link href=\"https://arxiv.org/pdf/2402.04563v1\" rel=\"related\" type=\"application/pdf\" title=\"pdf\"/>\n    <summary>Vision Transformer(ViT) is one of the most widely used models in the computer vision field with its great performance on various tasks. In order to fully utilize the ViT-based architecture in various applications, proper visualization methods with a decent localization performance are necessary, but these methods employed in CNN-based models are still not available in ViT due to its unique structure. In this work, we propose an attention-guided visualization method applied to ViT that provides a high-level semantic explanation for its decision. Our method selectively aggregates the gradients directly propagated from the classification output to each self-attention, collecting the contribution of image features extracted from each location of the input image. These gradients are additionally guided by the normalized self-attention scores, which are the pairwise patch correlation scores. They are used to supplement the gradients on the patch-level context information efficiently detected by the self-attention mechanism. This approach of our method provides elaborate high-level semantic explanations with great localization performance only with the class labels. As a result, our method outperforms the previous leading explainability methods of ViT in the weakly-supervised localization task and presents great capability in capturing the full instances of the target class object. Meanwhile, our method provides a visualization that faithfully explains the model, which is demonstrated in the perturbation comparison test.</summary>\n    <category term=\"cs.CV\" scheme=\"http://arxiv.org/schemas/atom\"/>\n    <category term=\"cs.AI\" scheme=\"http://arxiv.org/schemas/atom\"/>\n    <published>2024-02-07T03:43:56Z</published>\n    <arxiv:comment>AAAI2024. Code available at https://github.com/LeemSaebom/Attention-Guided-CAM-Visual-Explanations-of-Vision-Transformer-Guided-by-Self-Attention.git</arxiv:comment>\n    <arxiv:primary_category term=\"cs.CV\"/>\n    <author>\n      <name>Saebom Leem</name>\n    </author>\n    <author>\n      <name>Hyunseok Seo</name>\n    </author>\n  </entry>\n</feed>\n",
+    "headers": {
+      "accept-ranges": [
+        "bytes"
+      ],
+      "age": [
+        "0"
+      ],
+      "connection": [
+        "keep-alive"
+      ],
+      "content-type": [
+        "application/atom+xml; charset=utf-8"
+      ],
+      "date": [
+        "Sat, 28 Feb 2026 00:12:29 GMT"
+      ],
+      "server": [
+        "Google Frontend"
+      ],
+      "strict-transport-security": [
+        "max-age=300"
+      ],
+      "via": [
+        "1.1 varnish, 1.1 varnish, 1.1 varnish"
+      ],
+      "x-cache": [
+        "MISS, MISS, MISS"
+      ],
+      "x-cache-hits": [
+        "0, 0, 0"
+      ],
+      "x-cloud-trace-context": [
+        "4347cea35961e53b37c11817b0f534be"
+      ],
+      "x-served-by": [
+        "cache-lga21957-LGA, cache-lga21959-LGA, cache-dtw8034-DTW"
+      ],
+      "x-timer": [
+        "S1772237549.834623,VS0,VE237"
+      ]
+    },
+    "status": 200
+  },
+  "update_command": "MIX_ENV=test mix snapshot.record --name arxiv/search_transformer --force",
+  "url": "http://export.arxiv.org/api/query"
+}

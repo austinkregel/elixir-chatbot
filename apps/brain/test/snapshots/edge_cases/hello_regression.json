@@ -1,0 +1,28 @@
+{
+  "analyses": [
+    {
+      "index": 0,
+      "text": "Hello",
+      "entities": [
+        {
+          "type": "song",
+          "value": "Hello",
+          "confidence": 0.65
+        }
+      ],
+      "response_strategy": "can_respond",
+      "slots_filled": [
+        "song"
+      ],
+      "slots_missing": [],
+      "detected_intent": "smalltalk.greetings.hello",
+      "speech_act_category": "expressive",
+      "speech_act_type": "greeting",
+      "speech_act_confidence": 0.72,
+      "discourse_addressee": "bot",
+      "discourse_self_referential": "false"
+    }
+  ],
+  "overall_strategy": "can_respond",
+  "chunk_count": 1
+}
