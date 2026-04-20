@@ -45,9 +45,14 @@ config :brain,
   # Isolated learned data paths to prevent test pollution
   learning_params_path: "test/data/learned_params.json",
   # Isolated ML models path so test training never overwrites dev/prod models
+  # Auto-start the Ouro Python sidecar and poll health aggressively
   ml: [
-    models_path: Path.expand("../apps/brain/test/ml_models", __DIR__)
+    models_path: Path.expand("../apps/brain/test/ml_models", __DIR__),
+    ouro_auto_start: true,
+    ouro_health_check_interval: 2_000,
+    ouro_server_script: Path.expand("../scripts/ouro_server.py", __DIR__)
   ],
+  atlas_sync_mode: true,
   # Test fixture paths - use absolute paths relative to brain app
   facts_dir: Path.expand("../apps/brain/test/fixtures/facts", __DIR__),
   pattern_triggers_file: Path.expand("../apps/brain/test/fixtures/pattern_triggers.json", __DIR__),

@@ -123,9 +123,14 @@ defmodule Brain.ML.NLPIntegrationTest do
     test "trains and classifies correctly" do
       training_data = [
         {"play music", "music.play"},
+        {"play some songs", "music.play"},
+        {"play my playlist", "music.play"},
         {"stop the music", "music.stop"},
+        {"pause the music", "music.stop"},
         {"turn on lights", "lights.on"},
-        {"turn off lights", "lights.off"}
+        {"switch on the light", "lights.on"},
+        {"turn off lights", "lights.off"},
+        {"switch off the light", "lights.off"}
       ]
 
       model = SimpleClassifier.train(training_data)

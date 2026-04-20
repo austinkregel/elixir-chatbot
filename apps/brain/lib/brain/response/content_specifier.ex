@@ -108,6 +108,28 @@ defmodule Brain.Response.ContentSpecifier do
     })
   end
 
+  defp specify_primitive(%Primitive{type: :content, variant: :enriched} = p, analysis, opts) do
+    unified_context = Keyword.get(opts, :unified_context, %{})
+    enrichment = if is_map(unified_context), do: Map.get(unified_context, :enrichment, %{}), else: %{}
+    enriched_data = if is_map(enrichment), do: Map.get(enrichment, :enriched_data, %{}), else: %{}
+
+    available_fields = enriched_data
+    |> Map.keys()
+    |> Enum.reject(&(&1 == :raw))
+    |> Enum.map(&to_string/1)
+
+    p
+    |> Primitive.merge_content(%{
+      enriched_data: enriched_data,
+      available_placeholders: available_fields,
+      intent: analysis.intent,
+      entities: analysis.entities,
+      topic: extract_topic(analysis),
+      confidence: if(enriched_data != %{}, do: 0.9, else: 0.3)
+    })
+    |> Map.put(:confidence, if(enriched_data != %{}, do: 0.9, else: 0.3))
+  end
+
   defp specify_primitive(%Primitive{type: :framing, variant: :affirmative} = p, analysis, opts) do
     facts = retrieve_facts(analysis, opts)
     confirmed = List.first(facts)

@@ -559,21 +559,71 @@ defmodule Brain.Response.Generator do
   ContentSpecifier, SurfaceRealizer, and RefinementLoop to produce a response
   grounded in the analysis context.
 
-  Raises if the pipeline fails (e.g. Ouro model not loaded).
+  Returns `{response, method}` on success or `{:error, reason}` on failure.
   """
   def generate_via_synthesis(analysis_model, _intent, _entities, _query_text, opts \\ %{}) do
     loop_opts = Keyword.new(opts)
 
     case RefinementLoop.generate(analysis_model, loop_opts) do
+      {:ok, {:ouro_dry_run, _messages} = response, %{method: :ouro_dry_run}} ->
+        {response, :ouro_dry_run}
+
       {:ok, response, metadata} when is_binary(response) and response != "" ->
         method = Map.get(metadata, :method, :synthesis_pipeline)
-        {response, method}
+        enriched_response = maybe_enrich_synthesis_response(response, opts)
+        {enriched_response, method}
 
       {:ok, nil, %{method: :silence_preferred} = _metadata} ->
         {nil, :silence_preferred}
 
       {:error, reason} ->
-        raise "Synthesis pipeline failed: #{inspect(reason)}"
+        Logger.error("Synthesis pipeline failed: #{inspect(reason)}")
+        {:error, {:generation_failed, reason}}
+    end
+  end
+
+  defp maybe_enrich_synthesis_response(response, opts) do
+    unified_context = Map.get(opts, :unified_context, %{})
+    enrichment = if is_map(unified_context), do: Map.get(unified_context, :enrichment, %{}), else: %{}
+    enriched_data = if is_map(enrichment), do: Map.get(enrichment, :enriched_data, %{}), else: %{}
+
+    enriched =
+      if enriched_data != %{} do
+        case Enricher.enrich_response(response, %{enriched_data: enriched_data}) do
+          {:ok, result} -> result
+          _ -> response
+        end
+      else
+        response
+      end
+
+    validate_and_strip_placeholders(enriched, enriched_data)
+  end
+
+  @placeholder_pattern ~r/\$([a-z][a-z0-9_]*)/
+  defp validate_and_strip_placeholders(text, enriched_data) do
+    remaining = Regex.scan(@placeholder_pattern, text)
+
+    if remaining == [] do
+      text
+    else
+      valid_keys =
+        enriched_data
+        |> Map.keys()
+        |> Enum.map(&to_string/1)
+        |> MapSet.new()
+
+      Enum.reduce(remaining, text, fn [full_match, key], acc ->
+        if MapSet.member?(valid_keys, key) do
+          Logger.warning("Placeholder $#{key} was not substituted despite being in enriched_data")
+          acc
+        else
+          Logger.warning("Stripping unknown placeholder $#{key} from response")
+          String.replace(acc, full_match, "")
+        end
+      end)
+      |> String.replace(~r/\s{2,}/, " ")
+      |> String.trim()
     end
   end
 

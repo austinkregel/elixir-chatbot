@@ -41,19 +41,23 @@ defmodule Brain.Response.DiscoursePlanner do
   Returns an ordered list of `%Primitive{}` structs with `type` and `variant`
   set, and `content` partially seeded from analysis signals.
   """
-  def plan(%InternalModel{} = model) do
+  def plan(model, opts \\ [])
+
+  def plan(%InternalModel{} = model, opts) do
     model.analyses
-    |> Enum.flat_map(&plan_chunk(&1, model))
+    |> Enum.flat_map(&plan_chunk(&1, model, opts))
     |> insert_transitions(model.analyses)
   end
 
-  def plan(_), do: [Primitive.new(:acknowledgment, :general), Primitive.new(:follow_up, :continuation)]
+  def plan(_, _opts), do: [Primitive.new(:acknowledgment, :general), Primitive.new(:follow_up, :continuation)]
 
   @doc """
   Plans primitives for a single chunk analysis.
   """
-  def plan_chunk(%ChunkAnalysis{} = analysis, %InternalModel{} = _model) do
-    signals = extract_signals(analysis)
+  def plan_chunk(analysis, model, opts \\ [])
+
+  def plan_chunk(%ChunkAnalysis{} = analysis, %InternalModel{} = _model, opts) do
+    signals = extract_signals(analysis, opts)
 
     signals
     |> select_backbone()
@@ -62,12 +66,17 @@ defmodule Brain.Response.DiscoursePlanner do
     |> seed_content(analysis)
   end
 
-  def plan_chunk(_, _), do: [Primitive.new(:acknowledgment, :general)]
+  def plan_chunk(_, _, _opts), do: [Primitive.new(:acknowledgment, :general)]
 
-  defp extract_signals(%ChunkAnalysis{} = a) do
+  defp extract_signals(%ChunkAnalysis{} = a, opts) do
     speech_act = a.speech_act || %{}
     sentiment = a.sentiment || %{}
     slots = a.slots
+    unified_context = Keyword.get(opts, :unified_context, %{})
+
+    enrichment = if is_map(unified_context), do: Map.get(unified_context, :enrichment, %{}), else: %{}
+    enrichment_status = if is_map(enrichment), do: Map.get(enrichment, :enrichment_status), else: nil
+    enriched_data = if is_map(enrichment), do: Map.get(enrichment, :enriched_data, %{}), else: %{}
 
     %{
       speech_act_category: safe_to_string(Map.get(speech_act, :category)),
@@ -86,7 +95,9 @@ defmodule Brain.Response.DiscoursePlanner do
       missing_slots: get_missing_slots(slots),
       low_confidence: (a.confidence || 0.0) < 0.4,
       related_beliefs: a.related_beliefs || [],
-      accumulated_context: a.accumulated_context
+      accumulated_context: a.accumulated_context,
+      has_enrichment: enrichment_status == :success and enriched_data != %{},
+      has_facts: (a.related_beliefs || []) != []
     }
   end
 

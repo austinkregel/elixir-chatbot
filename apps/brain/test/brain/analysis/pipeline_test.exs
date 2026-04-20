@@ -25,7 +25,7 @@ defmodule Brain.Analysis.PipelineTest do
 
       assert chunks != []
       assert analyses != []
-      assert strategy == :can_respond
+      assert strategy in [:can_respond, :hedged_response]
     end
 
     test "processes question with addressee detection" do

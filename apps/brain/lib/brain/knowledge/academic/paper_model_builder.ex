@@ -245,14 +245,7 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
   end
 
   defp claims_contradict?(claim1, claim2) do
-    c1 = String.downcase(claim1)
-    c2 = String.downcase(claim2)
-
-    negation_words = LinguisticData.negation_words()
-
-    c1_has_negation = Enum.any?(negation_words, &String.contains?(c1, &1))
-    c2_has_negation = Enum.any?(negation_words, &String.contains?(c2, &1))
-    c1_has_negation != c2_has_negation
+    LinguisticData.has_negation?(claim1) != LinguisticData.has_negation?(claim2)
   end
 
   defp register_contradiction(new_node_id, existing_belief, new_paper) do

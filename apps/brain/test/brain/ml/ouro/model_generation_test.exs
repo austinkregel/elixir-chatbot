@@ -2,18 +2,15 @@ defmodule Brain.ML.Ouro.ModelGenerationTest do
   use ExUnit.Case, async: false
 
   alias Brain.ML.Ouro.Model, as: OuroModel
+  alias Brain.ML.Ouro.SidecarLauncher
 
   describe "generate/3" do
-    @tag timeout: 300_000
+    @tag timeout: 120_000
     test "generates text from a ChatML plan realization prompt" do
-      OuroModel.reload()
-
-      unless OuroModel.ready?() do
-        wait_for_ready(280)
-      end
+      SidecarLauncher.ensure_ready!(timeout: 90_000)
 
       assert OuroModel.ready?(),
-        "Ouro model not ready — model weights may not be available"
+        "Ouro model not ready — sidecar is healthy but Model GenServer has not detected it yet"
 
       messages = [
         %{
@@ -58,12 +55,4 @@ defmodule Brain.ML.Ouro.ModelGenerationTest do
     end
   end
 
-  defp wait_for_ready(0), do: :ok
-
-  defp wait_for_ready(retries) do
-    unless OuroModel.ready?() do
-      Process.sleep(1_000)
-      wait_for_ready(retries - 1)
-    end
-  end
 end

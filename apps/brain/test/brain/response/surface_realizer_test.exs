@@ -4,19 +4,16 @@ defmodule Brain.Response.SurfaceRealizerTest do
   alias Brain.Response.{Primitive, SurfaceRealizer}
 
   describe "realize/2 with empty list" do
-    test "raises with :empty_primitive_list reason" do
-      error = assert_raise RuntimeError, fn -> SurfaceRealizer.realize([]) end
-
-      assert error.message =~ "empty_primitive_list",
-        "Expected :empty_primitive_list in error, got: #{error.message}"
+    test "returns error with :empty_primitive_list reason" do
+      assert {:error, :empty_primitive_list} = SurfaceRealizer.realize([])
     end
   end
 
   describe "realize/2 success path" do
-    test "single primitive returns {rendered_list, response_text}" do
+    test "single primitive returns {:ok, rendered_list, response_text}" do
       p = Primitive.new(:acknowledgment, :social, %{speech_act_sub_type: :greeting})
 
-      {rendered, response} = SurfaceRealizer.realize([p])
+      {:ok, rendered, response} = SurfaceRealizer.realize([p])
 
       assert is_binary(response), "Expected response to be a string, got: #{inspect(response)}"
       assert response != "", "Response should not be empty"
@@ -37,7 +34,7 @@ defmodule Brain.Response.SurfaceRealizerTest do
         Primitive.new(:follow_up, :elaboration, %{topic: "feelings"})
       ]
 
-      {rendered, response} = SurfaceRealizer.realize(primitives)
+      {:ok, rendered, response} = SurfaceRealizer.realize(primitives)
 
       assert is_binary(response)
       assert response != ""
@@ -54,7 +51,7 @@ defmodule Brain.Response.SurfaceRealizerTest do
     test "preserves primitive type and variant through realization" do
       p = Primitive.new(:hedging, :epistemic, %{confidence_level: 0.3})
 
-      {[rendered], _response} = SurfaceRealizer.realize([p])
+      {:ok, [rendered], _response} = SurfaceRealizer.realize([p])
 
       assert rendered.type == :hedging, "Type should be preserved, got: #{inspect(rendered.type)}"
       assert rendered.variant == :epistemic, "Variant should be preserved, got: #{inspect(rendered.variant)}"
@@ -74,7 +71,7 @@ defmodule Brain.Response.SurfaceRealizerTest do
         intent: "weather.query"
       }
 
-      {rendered, response} = SurfaceRealizer.realize([p], analysis: analysis)
+      {:ok, rendered, response} = SurfaceRealizer.realize([p], analysis: analysis)
 
       assert is_binary(response)
       assert response != ""
@@ -85,7 +82,7 @@ defmodule Brain.Response.SurfaceRealizerTest do
     test "works with empty opts" do
       p = Primitive.new(:content, :reflective, %{understood_meaning: "testing"})
 
-      {rendered, response} = SurfaceRealizer.realize([p], [])
+      {:ok, rendered, response} = SurfaceRealizer.realize([p], [])
 
       assert is_binary(response)
       assert response != ""

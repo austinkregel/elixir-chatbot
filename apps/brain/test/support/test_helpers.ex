@@ -65,6 +65,11 @@ which starts the full supervision tree.
   def start_test_services do
     Application.ensure_all_started(:brain)
 
+    unless Process.whereis(Brain.ML.Gazetteer) do
+      Application.stop(:brain)
+      Application.ensure_all_started(:brain)
+    end
+
     if Gazetteer.is_loaded?() == false do
       Gazetteer.load_all()
     end

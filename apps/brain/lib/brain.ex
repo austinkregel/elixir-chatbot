@@ -272,113 +272,7 @@ defmodule Brain do
         {:reply, {:error, "Conversation not found"}, state}
 
       conversation ->
-        now = System.system_time(:millisecond)
-        world_id = Map.get(conversation, :world_id, "default")
-        opts_with_world = Keyword.put(opts, :world_id, world_id)
-        ml_config = Application.get_env(:brain, :ml) || Application.get_env(:chat_bot, :ml) || []
-
-        {response, processing_method, context} =
-          if ml_config[:enabled] do
-            try_classical_nlp_first(state.persona, input, conversation.memory, opts_with_world)
-          else
-            {simple_fallback_response(state.persona, input), :simple, %{}}
-          end
-
-        context_snapshot = build_context_snapshot(context)
-
-        user_message_id =
-          get_in(opts, [:progress, :message_id]) ||
-            get_in(opts, [:progress, "message_id"]) ||
-            generate_message_id()
-
-        user_message = %{
-          id: user_message_id,
-          role: "user",
-          content: input,
-          timestamp: now,
-          context: context_snapshot
-        }
-
-        {new_messages, learning_response} =
-          if response == nil do
-            {[user_message], nil}
-          else
-            assistant_message = %{
-              id: generate_message_id(),
-              role: "assistant",
-              content: response,
-              timestamp: System.system_time(:millisecond),
-              processing_method: processing_method
-            }
-
-            {[user_message, assistant_message], response}
-          end
-
-        Enum.each(new_messages, fn msg ->
-          analysis_for_msg =
-            if msg.role == "user", do: Map.get(context, :analysis_model), else: nil
-
-          Brain.Graph.Writer.write_message(conversation_id, msg, analysis_for_msg)
-        end)
-
-        updated_conversation =
-          conversation
-          |> Map.put(:memory, conversation.memory ++ new_messages)
-          |> Map.put(:active_context, context_snapshot)
-          |> Map.put(:last_activity, System.system_time(:millisecond))
-
-        updated_learning_queue =
-          if learning_response != nil do
-            learning_entry = %{
-              conversation_id: conversation_id,
-              world_id: world_id,
-              timestamp: System.system_time(:millisecond),
-              input: input,
-              response: learning_response
-            }
-
-            state.learning_queue ++ [learning_entry]
-          else
-            state.learning_queue
-          end
-
-        user_id = Keyword.get(opts, :user_id)
-        entities = Map.get(context, :entities, [])
-        extract_and_store_beliefs(input, entities, user_id, conversation_id)
-        feed_entities_to_world(entities, world_id)
-
-        if learning_response != nil and processing_method != :response_deferred do
-          Task.start(fn ->
-            interpretation = build_interpretation_from_context(input, context)
-
-            OutcomeLearner.learn_from_outcome(interpretation, learning_response,
-              world_id: world_id,
-              user_id: user_id,
-              cohort_id: nil
-            )
-          end)
-        end
-
-        updated_state = %{
-          state
-          | active_conversations:
-              Map.put(state.active_conversations, conversation_id, updated_conversation),
-            learning_queue: updated_learning_queue
-        }
-
-        if length(updated_learning_queue) > length(state.learning_queue) do
-          send(self(), :process_learning_queue)
-        end
-
-        enriched_result =
-          %{
-            response: response || "",
-            context: context_snapshot,
-            processing_method: processing_method
-          }
-          |> maybe_include_analysis(context, opts)
-
-        {:reply, {:ok, enriched_result}, updated_state}
+        do_evaluate(conversation_id, conversation, input, opts, state)
     end
   end
 
@@ -717,6 +611,9 @@ defmodule Brain do
     }
   end
 
+  defp maybe_put_ouro_messages(result, nil), do: result
+  defp maybe_put_ouro_messages(result, messages), do: Map.put(result, :ouro_messages, messages)
+
   defp maybe_include_analysis(result, context, opts) do
     if Keyword.get(opts, :include_analysis, false) do
       Map.put(result, :analysis_model, Map.get(context, :analysis_model))
@@ -774,6 +671,131 @@ defmodule Brain do
       traits: artifact["traits"] || ["cheerful"],
       system_prompt: artifact["system_prompt"] || "You are a helpful AI assistant."
     }
+  end
+
+  defp do_evaluate(conversation_id, conversation, input, opts, state) do
+    now = System.system_time(:millisecond)
+    world_id = Map.get(conversation, :world_id, "default")
+    opts_with_world = Keyword.put(opts, :world_id, world_id)
+    ml_config = Application.get_env(:brain, :ml) || Application.get_env(:chat_bot, :ml) || []
+
+    {response, processing_method, context} =
+      if ml_config[:enabled] do
+        try_classical_nlp_first(state.persona, input, conversation.memory, opts_with_world)
+      else
+        {simple_fallback_response(state.persona, input), :simple, %{}}
+      end
+
+    {ouro_messages, response} =
+      case response do
+        {:ouro_dry_run, messages} -> {messages, nil}
+        other -> {nil, other}
+      end
+
+    context_snapshot = build_context_snapshot(context)
+
+    user_message_id =
+      get_in(opts, [:progress, :message_id]) ||
+        get_in(opts, [:progress, "message_id"]) ||
+        generate_message_id()
+
+    user_message = %{
+      id: user_message_id,
+      role: "user",
+      content: input,
+      timestamp: now,
+      context: context_snapshot
+    }
+
+    {new_messages, learning_response} =
+      if response == nil do
+        {[user_message], nil}
+      else
+        assistant_message = %{
+          id: generate_message_id(),
+          role: "assistant",
+          content: response,
+          timestamp: System.system_time(:millisecond),
+          processing_method: processing_method
+        }
+
+        {[user_message, assistant_message], response}
+      end
+
+    Enum.each(new_messages, fn msg ->
+      analysis_for_msg =
+        if msg.role == "user", do: Map.get(context, :analysis_model), else: nil
+
+      Brain.Graph.Writer.write_message(conversation_id, msg, analysis_for_msg)
+    end)
+
+    updated_conversation =
+      conversation
+      |> Map.put(:memory, conversation.memory ++ new_messages)
+      |> Map.put(:active_context, context_snapshot)
+      |> Map.put(:last_activity, System.system_time(:millisecond))
+
+    updated_learning_queue =
+      if learning_response != nil do
+        learning_entry = %{
+          conversation_id: conversation_id,
+          world_id: world_id,
+          timestamp: System.system_time(:millisecond),
+          input: input,
+          response: learning_response
+        }
+
+        state.learning_queue ++ [learning_entry]
+      else
+        state.learning_queue
+      end
+
+    user_id = Keyword.get(opts, :user_id)
+    entities = Map.get(context, :entities, [])
+    extract_and_store_beliefs(input, entities, user_id, conversation_id)
+    feed_entities_to_world(entities, world_id)
+
+    if ml_config[:enabled] and entities != [] and Config.auto_extraction_enabled?() do
+      Learner.learn_from_classical_extraction(state.persona.name, entities, input)
+    end
+
+    if learning_response != nil and processing_method != :response_deferred do
+      Task.start(fn ->
+        interpretation = build_interpretation_from_context(input, context)
+
+        OutcomeLearner.learn_from_outcome(interpretation, learning_response,
+          world_id: world_id,
+          user_id: user_id,
+          cohort_id: nil
+        )
+      end)
+    end
+
+    updated_state = %{
+      state
+      | active_conversations:
+          Map.put(state.active_conversations, conversation_id, updated_conversation),
+        learning_queue: updated_learning_queue
+    }
+
+    if length(updated_learning_queue) > length(state.learning_queue) do
+      send(self(), :process_learning_queue)
+    end
+
+    enriched_result =
+      %{
+        response: response || "",
+        context: context_snapshot,
+        processing_method: processing_method
+      }
+      |> maybe_put_ouro_messages(ouro_messages)
+      |> maybe_include_analysis(context, opts)
+
+    {:reply, {:ok, enriched_result}, updated_state}
+  rescue
+    e ->
+      Logger.error("Evaluation failed for conversation #{conversation_id}: #{Exception.message(e)}")
+      {:reply, {:error, {:generation_failed, Exception.message(e)}}, state}
   end
 
   defp try_classical_nlp_first(persona, input, memory, opts) do
@@ -1606,10 +1628,24 @@ defmodule Brain do
     gen_opts = %{
       user_id: Keyword.get(opts, :user_id),
       conversation_id: Keyword.get(opts, :conversation_id),
-      unified_context: unified_context
+      unified_context: unified_context,
+      dry_run_ouro: Keyword.get(opts, :dry_run_ouro, false)
     }
 
-    Generator.generate_via_synthesis(analysis_model, intent, entities, query_text, gen_opts)
+    case Generator.generate_via_synthesis(analysis_model, intent, entities, query_text, gen_opts) do
+      {{:ouro_dry_run, _messages} = response, :ouro_dry_run} ->
+        {response, :ouro_dry_run}
+
+      {response, method} when is_binary(response) ->
+        {response, method}
+
+      {nil, :silence_preferred} ->
+        {nil, :silence_preferred}
+
+      {:error, reason} ->
+        Logger.warning("Synthesis failed, falling back: #{inspect(reason)}")
+        {Brain.Response.Synthesizer.get_cannot_respond_response(), :synthesis_fallback}
+    end
   end
 
   defp simple_fallback_response(_persona, _input) do

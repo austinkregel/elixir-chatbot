@@ -45,11 +45,20 @@ defmodule Brain.Response.RefinementLoop do
       {:error, :empty_analysis}
     else
       primary_analysis = select_primary_analysis(analyses)
-      initial_plan = DiscoursePlanner.plan(model)
+      initial_plan = DiscoursePlanner.plan(model, opts)
 
       result = iterate(initial_plan, primary_analysis, opts, 1, max_iter, nil)
 
       case result do
+        {:ok, {:ouro_dry_run, _messages} = response, primitives, _score, iterations} ->
+          Logger.info("RefinementLoop: dry_run_ouro=true, returning ChatML messages without evaluation")
+          {:ok, response, %{
+            score: nil,
+            iterations: iterations,
+            primitives: primitives,
+            method: :ouro_dry_run
+          }}
+
         {:ok, response, primitives, score, iterations} ->
           if score != nil and score.silence_preferred do
             Logger.info("RefinementLoop: silence preferred (score=#{Float.round(score.overall, 2)})")
@@ -82,32 +91,50 @@ defmodule Brain.Response.RefinementLoop do
   def single_pass(%InternalModel{} = model, opts \\ []) do
     analyses = model.analyses || []
     primary = select_primary_analysis(analyses)
-    primitives = DiscoursePlanner.plan(model)
+    primitives = DiscoursePlanner.plan(model, opts)
     specified = ContentSpecifier.specify(primitives, primary, opts)
     realize_opts = Keyword.merge(opts, [analysis: primary])
-    {rendered, response} = SurfaceRealizer.realize(specified, realize_opts)
-    score = ResponseEvaluator.evaluate(rendered, response, primary)
 
-    {:ok, response, %{score: score, primitives: rendered, iterations: 1}}
+    case SurfaceRealizer.realize(specified, realize_opts) do
+      {:ok, rendered, response} ->
+        score = ResponseEvaluator.evaluate(rendered, response, primary)
+        {:ok, response, %{score: score, primitives: rendered, iterations: 1}}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   defp iterate(plan, analysis, opts, iteration, max_iter, best_so_far) do
     specified = ContentSpecifier.specify(plan, analysis, opts)
     realize_opts = Keyword.merge(opts, [analysis: analysis])
-    {rendered, response} = SurfaceRealizer.realize(specified, realize_opts)
-    score = ResponseEvaluator.evaluate(rendered, response, analysis)
 
-    current = %{response: response, primitives: rendered, score: score, iteration: iteration}
+    case SurfaceRealizer.realize(specified, realize_opts) do
+      {:ok, rendered, {:ouro_dry_run, _messages} = response} ->
+        {:ok, response, rendered, nil, iteration}
 
-    best = pick_best(best_so_far, current)
+      {:ok, rendered, response} ->
+        score = ResponseEvaluator.evaluate(rendered, response, analysis)
 
-    if score.converged or iteration >= max_iter do
-      {:ok, best.response, best.primitives, best.score, iteration}
-    else
-      Logger.debug("RefinementLoop iteration #{iteration}: overall=#{Float.round(score.overall, 2)}, weakest=#{score.weakest_dimension}")
+        current = %{response: response, primitives: rendered, score: score, iteration: iteration}
+        best = pick_best(best_so_far, current)
 
-      refined_plan = refine(plan, score, analysis, opts)
-      iterate(refined_plan, analysis, opts, iteration + 1, max_iter, best)
+        if score.converged or iteration >= max_iter do
+          {:ok, best.response, best.primitives, best.score, iteration}
+        else
+          Logger.debug("RefinementLoop iteration #{iteration}: overall=#{Float.round(score.overall, 2)}, weakest=#{score.weakest_dimension}")
+
+          refined_plan = refine(plan, score, analysis, opts)
+          iterate(refined_plan, analysis, opts, iteration + 1, max_iter, best)
+        end
+
+      {:error, reason} ->
+        if best_so_far do
+          Logger.warning("RefinementLoop: realization failed at iteration #{iteration}, using best so far")
+          {:ok, best_so_far.response, best_so_far.primitives, best_so_far.score, iteration}
+        else
+          {:error, reason}
+        end
     end
   end
 

@@ -20,9 +20,10 @@ defmodule Brain.ML.Ouro.Client do
   (same format that `RealizationPacket.build/3` produces).
 
   Options:
-    - `:max_tokens`  – max tokens to generate (default 256)
-    - `:temperature` – sampling temperature (default 0.7)
-    - `:top_p`       – nucleus sampling (default 0.9)
+    - `:max_tokens`        – max tokens to generate (default 256)
+    - `:temperature`       – sampling temperature (default 1.0, per paper Table 17)
+    - `:top_p`             – nucleus sampling (default 0.7, per paper Table 17)
+    - `:repetition_penalty` – repetition penalty (default 1.2)
   """
   @spec chat_completion(list(map()), keyword()) :: {:ok, String.t()} | {:error, term()}
   def chat_completion(messages, opts \\ []) when is_list(messages) do
@@ -32,8 +33,9 @@ defmodule Brain.ML.Ouro.Client do
       model: model_id(),
       messages: Enum.map(messages, &Map.take(&1, [:role, :content])),
       max_tokens: Keyword.get(opts, :max_tokens, 256),
-      temperature: Keyword.get(opts, :temperature, 0.7),
-      top_p: Keyword.get(opts, :top_p, 0.9)
+      temperature: Keyword.get(opts, :temperature, 1.0),
+      top_p: Keyword.get(opts, :top_p, 0.7),
+      repetition_penalty: Keyword.get(opts, :repetition_penalty, 1.2)
     }
 
     start = System.monotonic_time(:millisecond)
@@ -117,6 +119,9 @@ defmodule Brain.ML.Ouro.Client do
 
   defp request_timeout do
     ml_config = Application.get_env(:brain, :ml, [])
-    ml_config[:ouro_generation_timeout] || @default_timeout
+    gen_timeout = ml_config[:ouro_generation_timeout] || @default_timeout
+    # HTTP must fail before the GenServer call timeout so the GenServer
+    # receives a clean {:error, _} instead of a :timeout crash.
+    max(gen_timeout - 5_000, 5_000)
   end
 end

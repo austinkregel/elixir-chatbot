@@ -35,11 +35,27 @@ defmodule Brain.Response.OuroRealizer do
   def realize(primitives, analysis, opts) when is_list(primitives) do
     messages = RealizationPacket.build(primitives, analysis, opts)
 
-    gen_opts = [
-      max_new_tokens: Keyword.get(opts, :max_new_tokens, 200),
-      temperature: Keyword.get(opts, :temperature, 0.7)
-    ]
+    if Keyword.get(opts, :dry_run_ouro, false) do
+      Logger.info("OuroRealizer: dry_run_ouro=true, returning ChatML messages without calling Ouro")
 
+      {:ok, :ouro_dry_run,
+       %{
+         messages: messages,
+         source: :dry_run,
+         primitive_count: length(primitives)
+       }}
+    else
+      gen_opts = [
+        max_new_tokens: Keyword.get(opts, :max_new_tokens, 200),
+        temperature: Keyword.get(opts, :temperature, 1.0),
+        repetition_penalty: Keyword.get(opts, :repetition_penalty, 1.2)
+      ]
+
+      do_generate(messages, gen_opts, primitives, opts)
+    end
+  end
+
+  defp do_generate(messages, gen_opts, primitives, opts) do
     case OuroModel.generate(messages, gen_opts) do
       {:ok, text} ->
         Logger.info("OuroRealizer: generated #{String.length(text)} chars, validating")

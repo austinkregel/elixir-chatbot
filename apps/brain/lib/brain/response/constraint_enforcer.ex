@@ -19,6 +19,7 @@ defmodule Brain.Response.ConstraintEnforcer do
   """
 
   alias Brain.ML.Tokenizer
+  alias Brain.FactDatabase.Integration
 
   require Logger
 
@@ -40,9 +41,11 @@ defmodule Brain.Response.ConstraintEnforcer do
     checks = [
       &check_length/3,
       &check_not_empty/3,
+      &check_degenerate_output/3,
       &check_slot_coverage/3,
       &check_entity_preservation/3,
       &check_fact_fidelity/3,
+      &check_no_contradicted_assertions/3,
       &check_overclaim/3,
       &check_uncertainty_preservation/3
     ]
@@ -88,6 +91,25 @@ defmodule Brain.Response.ConstraintEnforcer do
       {:rejected, "Empty response"}
     else
       :ok
+    end
+  end
+
+  defp check_degenerate_output(text, _primitives, _ctx) do
+    words = String.split(text)
+    word_count = length(words)
+
+    if word_count < 6 do
+      :ok
+    else
+      freqs = Enum.frequencies(words)
+      most_common_count = freqs |> Map.values() |> Enum.max(fn -> 0 end)
+      repetition_ratio = most_common_count / word_count
+
+      if repetition_ratio > 0.4 do
+        {:rejected, "Degenerate repetitive output detected (#{Float.round(repetition_ratio * 100, 1)}% repetition)"}
+      else
+        :ok
+      end
     end
   end
 
@@ -194,6 +216,71 @@ defmodule Brain.Response.ConstraintEnforcer do
         end
       end
     end
+  end
+
+  defp check_no_contradicted_assertions(_text, primitives, _ctx) do
+    factual_primitives =
+      Enum.filter(primitives, fn p ->
+        p.type == :content and p.variant in [:factual, :explanatory]
+      end)
+
+    case factual_primitives do
+      [] ->
+        :ok
+
+      _ ->
+        contradiction =
+          Enum.find_value(factual_primitives, fn p ->
+            entity = primary_entity_value(p) || "general"
+
+            facts = Map.get(p.content, :facts, [])
+
+            Enum.find_value(facts, fn fact ->
+              fact_text =
+                cond do
+                  is_map(fact) -> Map.get(fact, :fact) || Map.get(fact, "fact")
+                  is_binary(fact) -> fact
+                  true -> nil
+                end
+
+              if is_binary(fact_text) and fact_text != "" do
+                case safe_verify_fact(entity, fact_text) do
+                  {:contradicted, _conflicts} -> {entity, fact_text}
+                  _ -> nil
+                end
+              end
+            end)
+          end)
+
+        case contradiction do
+          {entity, fact_text} ->
+            preview = String.slice(fact_text, 0, 80)
+            {:rejected, "Asserted fact contradicts existing beliefs (#{entity}: #{preview})"}
+
+          _ ->
+            :ok
+        end
+    end
+  end
+
+  defp primary_entity_value(%{content: content}) when is_map(content) do
+    entities = Map.get(content, :entity_context, []) ++ Map.get(content, :entities, [])
+
+    Enum.find_value(entities, fn e ->
+      val = Map.get(e, :value) || Map.get(e, "value") || Map.get(e, :text) || Map.get(e, "text")
+      if is_binary(val) and val != "", do: val, else: nil
+    end)
+  end
+
+  defp primary_entity_value(_), do: nil
+
+  defp safe_verify_fact(entity, fact_text) do
+    Integration.verify_fact(entity, fact_text)
+  rescue
+    _ -> :uncertain
+  catch
+    :exit, _ -> :uncertain
+    _, _ -> :uncertain
   end
 
   defp check_overclaim(text, primitives, ctx) do

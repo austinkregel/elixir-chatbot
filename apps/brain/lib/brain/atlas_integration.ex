@@ -22,20 +22,37 @@ defmodule Brain.AtlasIntegration do
     _, _ -> false
   end
 
-  @doc "Execute an Atlas operation asynchronously via the AtlasTaskSupervisor."
+  @doc "Execute an Atlas operation asynchronously via the AtlasTaskSupervisor.
+
+  In test mode (`config :brain, atlas_sync_mode: true`), runs the function
+  synchronously in the calling process so Ecto sandbox connections are
+  inherited without needing per-task `Sandbox.allow` calls.
+  "
   def async(fun) when is_function(fun, 0) do
     if available?() do
-      Task.Supervisor.start_child(Brain.AtlasTaskSupervisor, fn ->
+      if Application.get_env(:brain, :atlas_sync_mode, false) do
         try do
           fun.()
         rescue
           e ->
-            Logger.debug("Atlas async operation failed: #{Exception.message(e)}")
+            Logger.debug("Atlas sync task failed: #{Exception.message(e)}")
         catch
           kind, reason ->
-            Logger.debug("Atlas async operation failed: #{inspect(kind)} #{inspect(reason)}")
+            Logger.debug("Atlas sync task failed: #{inspect(kind)} #{inspect(reason)}")
         end
-      end)
+      else
+        Task.Supervisor.start_child(Brain.AtlasTaskSupervisor, fn ->
+          try do
+            fun.()
+          rescue
+            e ->
+              Logger.debug("Atlas async operation failed: #{Exception.message(e)}")
+          catch
+            kind, reason ->
+              Logger.debug("Atlas async operation failed: #{inspect(kind)} #{inspect(reason)}")
+          end
+        end)
+      end
     end
 
     :ok

@@ -9,6 +9,7 @@ defmodule Brain.Learner do
   alias Brain.KnowledgeStore
   alias Brain.MemoryStore
   alias Brain.FactDatabase.Integration
+  alias Brain.Knowledge.ReviewQueue
 
   @doc "Learn from user input using classical NLP entity extraction.\nExtracts entities and stores them in the knowledge store.\n\nOptions:\n- `:discourse` - Discourse analysis result for entity disambiguation\n- `:speech_act` - Speech act classification result for entity disambiguation\n- `:world_id` - World ID for world-scoped type inference (required for disambiguation)\n"
   def learn_from_input(persona_name, input, opts \\ []) do
@@ -534,6 +535,18 @@ defmodule Brain.Learner do
                 fact: fact_text,
                 conflicts: length(conflicting_beliefs)
               })
+
+              new_fact = %{
+                entity: entity,
+                entity_type: Map.get(normalized, "entity_type"),
+                fact: fact_text,
+                confidence: confidence,
+                source: "conversation_learning"
+              }
+
+              Enum.each(conflicting_beliefs, fn belief ->
+                ReviewQueue.add_contradiction(new_fact, belief)
+              end)
 
             {:uncertain, reason} ->
               Logger.debug("Cannot verify learned fact", %{

@@ -24,7 +24,7 @@ defmodule Brain.Response.PrimitiveTypes do
 
   @acknowledgment_variants [:social, :action, :learning, :repair, :general]
   @framing_variants [:affirmative, :negative, :informative, :boundary, :reframe]
-  @content_variants [:factual, :explanatory, :reflective, :narrative, :creative, :action_result]
+  @content_variants [:factual, :explanatory, :reflective, :narrative, :creative, :action_result, :enriched]
   @attunement_variants [:empathy, :validation, :interest, :concern]
   @follow_up_variants [:clarification, :elaboration, :correction_invite, :continuation, :context_probe]
 
@@ -60,6 +60,7 @@ defmodule Brain.Response.PrimitiveTypes do
   def required_content(:content, :narrative), do: [:beliefs]
   def required_content(:content, :creative), do: [:prompt_type]
   def required_content(:content, :action_result), do: [:action, :result]
+  def required_content(:content, :enriched), do: [:available_placeholders]
 
   def required_content(:attunement, :empathy), do: [:sentiment_label]
   def required_content(:attunement, :validation), do: [:experience_summary]

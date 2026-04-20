@@ -82,4 +82,27 @@ defmodule Brain.LinguisticData do
   def negation?(word) when is_binary(word) do
     String.downcase(word) in negation_words()
   end
+
+  @doc """
+  Returns true if the given text contains at least one negation token.
+
+  Token-level matching (case-insensitive) — avoids substring false positives
+  like `"knot"` matching `"not"`.
+
+  ## Examples
+
+      iex> Brain.LinguisticData.has_negation?("I do not like rain")
+      true
+
+      iex> Brain.LinguisticData.has_negation?("I like rain")
+      false
+  """
+  def has_negation?(text) when is_binary(text) do
+    text
+    |> String.downcase()
+    |> String.split(~r/\W+/, trim: true)
+    |> Enum.any?(&(&1 in negation_words()))
+  end
+
+  def has_negation?(_), do: false
 end

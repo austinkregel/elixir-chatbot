@@ -11,6 +11,12 @@ end
 # has a dimension/config mismatch (e.g. needs retraining).
 Brain.ML.ModelPreflight.validate_all!()
 
+# Wait for the Ouro Python sidecar to become healthy.
+# The SidecarLauncher auto-starts the server in test config.
+if Application.get_env(:brain, :ml, [])[:ouro_auto_start] do
+  Brain.ML.Ouro.SidecarLauncher.ensure_ready!(timeout: 120_000)
+end
+
 # Start HTTP snapshot server for external API mocking
 {:ok, _} = Brain.Test.HTTPSnapshot.start_link()
 

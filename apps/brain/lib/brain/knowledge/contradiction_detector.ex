@@ -11,9 +11,7 @@ defmodule Brain.Knowledge.ContradictionDetector do
   """
 
   alias Brain.ML.Tokenizer
-
-  # Negation words that appear after contraction expansion and tokenization
-  @negation_words ~w(not never no neither nor hardly barely scarcely cannot)
+  alias Brain.LinguisticData
 
   @doc """
   Detects whether two text strings differ by a negation.
@@ -32,13 +30,8 @@ defmodule Brain.Knowledge.ContradictionDetector do
   @spec has_negation_difference?(String.t(), String.t()) :: boolean()
   def has_negation_difference?(text1, text2)
       when is_binary(text1) and is_binary(text2) do
-    tokens1 = text1 |> Tokenizer.expand_contractions() |> Tokenizer.tokenize_normalized(expand_contractions: false) |> MapSet.new()
-    tokens2 = text2 |> Tokenizer.expand_contractions() |> Tokenizer.tokenize_normalized(expand_contractions: false) |> MapSet.new()
-
-    negation_set = MapSet.new(@negation_words)
-
-    c1_has_negation = not MapSet.disjoint?(tokens1, negation_set)
-    c2_has_negation = not MapSet.disjoint?(tokens2, negation_set)
+    c1_has_negation = tokens_contain_negation?(text1)
+    c2_has_negation = tokens_contain_negation?(text2)
 
     c1_has_negation != c2_has_negation
   end
@@ -95,6 +88,13 @@ defmodule Brain.Knowledge.ContradictionDetector do
   def contradicts?(_, _), do: false
 
   # --- Private ---
+
+  defp tokens_contain_negation?(text) do
+    text
+    |> Tokenizer.expand_contractions()
+    |> Tokenizer.tokenize_normalized(expand_contractions: false)
+    |> Enum.any?(&LinguisticData.negation?/1)
+  end
 
   defp extract_numbers(text) do
     text

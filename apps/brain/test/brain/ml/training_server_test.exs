@@ -3,6 +3,14 @@ defmodule Brain.ML.TrainingServerTest do
 
   alias Brain.ML.TrainingServer
 
+  setup_all do
+    unless Process.whereis(Brain.PubSub) do
+      start_supervised!({Phoenix.PubSub, name: Brain.PubSub})
+    end
+
+    :ok
+  end
+
   setup do
     name = :"training_server_test_#{:rand.uniform(100_000)}"
     {:ok, pid} = TrainingServer.start_link(name: name)

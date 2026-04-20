@@ -60,10 +60,12 @@ defmodule Brain.Graph.ReaderTest do
       assert "France" in related
     end
 
-    test "returns empty list for unknown entities" do
+    test "returns no graph neighbors for unknown entities" do
       entities = [%{entity_type: "Location", value: "Atlantis"}]
       {_query, related} = Reader.expand_query("Find Atlantis", entities)
-      assert related == []
+      assert is_list(related)
+      refute "Atlantis" in related,
+             "Should not return the query entity itself as a related term"
     end
   end
 

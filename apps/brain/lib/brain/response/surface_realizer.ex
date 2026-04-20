@@ -27,6 +27,10 @@ defmodule Brain.Response.SurfaceRealizer do
     analysis = Keyword.get(opts, :analysis)
 
     case try_ouro_realization(primitives, analysis, opts) do
+      {:ok, :ouro_dry_run, %{messages: messages}} ->
+        Logger.info("SurfaceRealizer: dry_run_ouro=true, returning ChatML messages without rendering")
+        {:ok, primitives, {:ouro_dry_run, messages}}
+
       {:ok, text, _metadata} ->
         Logger.info("SurfaceRealizer: Ouro realized #{length(primitives)} primitives")
 
@@ -37,15 +41,54 @@ defmodule Brain.Response.SurfaceRealizer do
 
         collect_plan(primitives, text, opts)
         collect_pairs(primitives, text)
-        {rendered, text}
+        {:ok, rendered, text}
 
       {:error, reason} ->
-        raise "Ouro realization failed: #{inspect(reason)}"
+        Logger.warning("SurfaceRealizer: Ouro realization failed: #{inspect(reason)}, trying enriched fallback")
+        try_enriched_fallback(primitives, reason, opts)
     end
   end
 
   defp try_ouro_realization(primitives, analysis, opts) do
     OuroRealizer.realize(primitives, analysis || %Brain.Analysis.ChunkAnalysis{}, opts)
+  end
+
+  defp try_enriched_fallback(primitives, original_reason, _opts) do
+    enriched_primitive = Enum.find(primitives, &(&1.type == :content and &1.variant == :enriched))
+
+    if enriched_primitive do
+      text = build_enriched_placeholder_text(enriched_primitive)
+
+      rendered =
+        Enum.map(primitives, fn p ->
+          p |> Primitive.render(text) |> Map.put(:source, :enriched_fallback)
+        end)
+
+      {:ok, rendered, text}
+    else
+      {:error, original_reason}
+    end
+  end
+
+  defp build_enriched_placeholder_text(%Primitive{content: content}) do
+    available = Map.get(content, :available_placeholders, [])
+    topic = Map.get(content, :topic)
+
+    placeholder_parts =
+      available
+      |> Enum.reject(&(&1 in ["raw", "daily_forecasts"]))
+      |> Enum.map(fn field -> "$#{field}" end)
+
+    cond do
+      topic && placeholder_parts != [] ->
+        "Here's what I found for #{topic}: #{Enum.join(placeholder_parts, ", ")}."
+
+      placeholder_parts != [] ->
+        "Here's what I found: #{Enum.join(placeholder_parts, ", ")}."
+
+      true ->
+        "I found some information but couldn't format it properly."
+    end
   end
 
   defp collect_pairs(primitives, _text) do

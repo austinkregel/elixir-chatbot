@@ -3,7 +3,7 @@ defmodule Brain.Graph.WriterTier3Test do
   Tests for the Tier 3 graph writing functions: write_srl_triples and write_event_frames.
   """
 
-  use ExUnit.Case, async: false
+  use Brain.Test.GraphCase, async: false
 
   alias Brain.Graph.Writer
 

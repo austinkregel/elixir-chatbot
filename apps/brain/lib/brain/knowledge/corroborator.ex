@@ -54,8 +54,10 @@ defmodule Brain.Knowledge.Corroborator do
     if Embedder.ready?() do
       with {:ok, emb1} <- Embedder.embed(claim1),
            {:ok, emb2} <- Embedder.embed(claim2) do
-        similarity = cosine_similarity(emb1, emb2)
+        similarity = compute_similarity(emb1, emb2)
         {:ok, similarity}
+      else
+        _ -> {:ok, token_overlap_similarity(claim1, claim2)}
       end
     else
       {:ok, token_overlap_similarity(claim1, claim2)}

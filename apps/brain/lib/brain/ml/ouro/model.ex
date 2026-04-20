@@ -112,7 +112,20 @@ defmodule Brain.ML.Ouro.Model do
       elapsed = System.monotonic_time(:millisecond) - start_time
       Logger.info("Ouro inference complete in #{elapsed}ms (backend=#{state.backend})")
       :erlang.garbage_collect()
-      {:reply, result, state}
+
+      case result do
+        {:error, {:http_error, _, %{"error" => %{"message" => msg}}}} ->
+          if String.contains?(msg, "Memory pressure") do
+            Logger.warning("Ouro sidecar under memory pressure, marking unavailable temporarily")
+            Process.send_after(self(), :health_check, 5_000)
+            {:reply, :fallback, %{state | ready: false}}
+          else
+            {:reply, result, state}
+          end
+
+        _ ->
+          {:reply, result, state}
+      end
     else
       {:reply, :fallback, state}
     end
@@ -170,7 +183,13 @@ defmodule Brain.ML.Ouro.Model do
   end
 
   defp schedule_health_check do
-    Process.send_after(self(), :health_check, @health_check_interval)
+    interval = health_check_interval()
+    Process.send_after(self(), :health_check, interval)
+  end
+
+  defp health_check_interval do
+    ml_config = Application.get_env(:brain, :ml, [])
+    ml_config[:ouro_health_check_interval] || @health_check_interval
   end
 
   # --- Bumblebee backend (legacy) ---
@@ -257,7 +276,8 @@ defmodule Brain.ML.Ouro.Model do
 
     Client.chat_completion(messages,
       max_tokens: Keyword.get(opts, :max_new_tokens, 256),
-      temperature: Keyword.get(opts, :temperature, @default_temperature)
+      temperature: Keyword.get(opts, :temperature, @default_temperature),
+      repetition_penalty: Keyword.get(opts, :repetition_penalty, 1.2)
     )
   end
 

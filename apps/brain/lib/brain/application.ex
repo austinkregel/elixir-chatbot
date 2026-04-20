@@ -61,6 +61,7 @@ defmodule Brain.Application do
       Brain.Response.LSTMResponse,
       Brain.Response.DecompressorCollector,
       Brain.ML.Ouro.Model,
+      Brain.ML.Ouro.SidecarLauncher,
       Brain.ML.IntentArbitrator,
       Brain.ML.TrainingServer,
       Brain.ML.TrainingExampleBuffer,

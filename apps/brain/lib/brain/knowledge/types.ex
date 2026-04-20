@@ -550,14 +550,7 @@ defmodule Brain.Knowledge.Types do
     end
 
     defp evidence_contradicts?(claim, finding_claim) do
-      c1 = String.downcase(claim)
-      c2 = String.downcase(finding_claim)
-
-      negation_words = LinguisticData.negation_words()
-
-      c1_negated = Enum.any?(negation_words, &String.contains?(c1, &1))
-      c2_negated = Enum.any?(negation_words, &String.contains?(c2, &1))
-      c1_negated != c2_negated
+      LinguisticData.has_negation?(claim) != LinguisticData.has_negation?(finding_claim)
     end
 
     defp determine_conclusion(hypotheses) do
