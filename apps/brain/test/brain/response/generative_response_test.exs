@@ -200,8 +200,7 @@ defmodule Brain.Response.GenerativeResponseTest do
                :memory_adapted,
                :template,
                :special_handler,
-               :fallback,
-               :lstm_selected
+               :fallback
              ]
     end
 
@@ -216,8 +215,7 @@ defmodule Brain.Response.GenerativeResponseTest do
                :synthesized,
                :quality_improved,
                :memory_adapted,
-               :special_handler,
-               :lstm_selected
+               :special_handler
              ]
     end
 

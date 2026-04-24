@@ -4,7 +4,6 @@ defmodule World.Context do
   alias World.Manager, as: WorldManager
   alias Brain.ML.Gazetteer
 
-  alias Brain.ML.IntentClassifierSimple
   alias Brain.Memory.Store
   alias Brain.KnowledgeStore
   require Logger
@@ -210,8 +209,25 @@ defmodule World.Context do
     Store.query_similar(text, k, world_id: world_id)
   end
 
-  defp classify_with_world_model(world_id, text) do
-    IntentClassifierSimple.classify(text, world_id: world_id)
+  defp classify_with_world_model(_world_id, text) do
+    if Code.ensure_loaded?(Brain.ML.MicroClassifiers) and Brain.ML.MicroClassifiers.ready?() do
+      try do
+        analysis = Brain.Analysis.Pipeline.analyze_chunk(text)
+        {feature_vector, _word_feats} = Brain.Analysis.FeatureExtractor.extract(analysis)
+
+        case Brain.ML.MicroClassifiers.classify_vector(:intent_full, feature_vector) do
+          {:ok, intent, confidence} ->
+            {:ok, %{intent: intent, confidence: confidence}}
+
+          _ ->
+            {:ok, %{intent: "unknown", confidence: 0.0}}
+        end
+      rescue
+        _ -> {:ok, %{intent: "unknown", confidence: 0.0}}
+      end
+    else
+      {:ok, %{intent: "unknown", confidence: 0.0}}
+    end
   end
 
   defp deep_merge(left, right) when is_map(left) and is_map(right) do

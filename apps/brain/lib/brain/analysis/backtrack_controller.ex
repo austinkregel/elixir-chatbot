@@ -1,7 +1,7 @@
 defmodule Brain.Analysis.BacktrackController do
   @moduledoc "Controls backtracking with depth limits and thrash protection.\n\nPrevents oscillation between interpretations by:\n- Limiting maximum backtracks per input (budget)\n- Applying activation cost per backtrack\n- Detecting oscillation patterns\n- Forcing clarification when budget exhausted\n\nThis addresses the \"backtracking loops (thrash risk)\" problem.\n"
 
-  alias Brain.Analysis.{Interpretation, IntentRegistry, SlotDetector}
+  alias Brain.Analysis.{Interpretation, ChunkProfile, SlotDetector}
   require Logger
 
   @max_backtracks 2
@@ -179,6 +179,7 @@ defmodule Brain.Analysis.BacktrackController do
   end
 
   defp build_clarification_from_ambiguity(state, interp) do
+    profile = Map.get(interp, :profile)
     candidates =
       [interp.intent | Enum.map(state.demoted_interpretations, & &1.intent)]
       |> Enum.uniq()
@@ -189,7 +190,7 @@ defmodule Brain.Analysis.BacktrackController do
         %{
           type: :disambiguation,
           prompt:
-            "I'm not sure if you're asking about #{IntentRegistry.humanize(a)} or #{IntentRegistry.humanize(b)}. Could you clarify?",
+            "I'm not sure if you're asking about #{humanize_intent(a, profile)} or #{humanize_intent(b)}. Could you clarify?",
           options: [a, b]
         }
 
@@ -197,7 +198,7 @@ defmodule Brain.Analysis.BacktrackController do
         %{
           type: :disambiguation,
           prompt:
-            "I'm having trouble understanding. Are you asking about #{IntentRegistry.humanize(a)}, #{IntentRegistry.humanize(b)}, or #{IntentRegistry.humanize(c)}?",
+            "I'm having trouble understanding. Are you asking about #{humanize_intent(a, profile)}, #{humanize_intent(b)}, or #{humanize_intent(c)}?",
           options: [a, b, c]
         }
 
@@ -214,6 +215,7 @@ defmodule Brain.Analysis.BacktrackController do
   end
 
   defp build_oscillation_clarification(state, interp) do
+    profile = Map.get(interp, :profile)
     oscillating =
       [interp.intent | state.interpretation_history]
       |> Enum.uniq()
@@ -224,7 +226,7 @@ defmodule Brain.Analysis.BacktrackController do
         %{
           type: :oscillation,
           prompt:
-            "I keep going back and forth between understanding this as #{IntentRegistry.humanize(a)} and #{IntentRegistry.humanize(b)}. Which did you mean?",
+            "I keep going back and forth between understanding this as #{humanize_intent(a, profile)} and #{humanize_intent(b)}. Which did you mean?",
           options: [a, b]
         }
 
@@ -234,6 +236,18 @@ defmodule Brain.Analysis.BacktrackController do
           prompt: "I'm having trouble pinning down what you mean. Could you rephrase?",
           options: []
         }
+    end
+  end
+
+  defp humanize_intent(intent, profile \\ nil) do
+    case profile do
+      %ChunkProfile{derived_label: label} when is_binary(label) and label != "" ->
+        label
+        |> String.replace(".", " ")
+        |> String.replace("_", " ")
+
+      _ ->
+        intent |> String.replace(".", " ") |> String.replace("_", " ")
     end
   end
 

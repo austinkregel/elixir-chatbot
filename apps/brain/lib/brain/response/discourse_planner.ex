@@ -16,7 +16,7 @@ defmodule Brain.Response.DiscoursePlanner do
   """
 
   alias Brain.Response.Primitive
-  alias Brain.Analysis.{InternalModel, ChunkAnalysis}
+  alias Brain.Analysis.{InternalModel, ChunkAnalysis, ChunkProfile}
 
   require Logger
 
@@ -72,11 +72,16 @@ defmodule Brain.Response.DiscoursePlanner do
     speech_act = a.speech_act || %{}
     sentiment = a.sentiment || %{}
     slots = a.slots
+    profile = a.profile
     unified_context = Keyword.get(opts, :unified_context, %{})
 
     enrichment = if is_map(unified_context), do: Map.get(unified_context, :enrichment, %{}), else: %{}
     enrichment_status = if is_map(enrichment), do: Map.get(enrichment, :enrichment_status), else: nil
     enriched_data = if is_map(enrichment), do: Map.get(enrichment, :enriched_data, %{}), else: %{}
+
+    intent_domain = if match?(%ChunkProfile{domain: d} when d not in [:unknown, nil], profile),
+      do: safe_to_string(profile.domain),
+      else: extract_domain(a.intent)
 
     %{
       speech_act_category: safe_to_string(Map.get(speech_act, :category)),
@@ -84,7 +89,7 @@ defmodule Brain.Response.DiscoursePlanner do
       is_question: Map.get(speech_act, :is_question, false),
       is_imperative: Map.get(speech_act, :is_imperative, false),
       intent: a.intent,
-      intent_domain: extract_domain(a.intent),
+      intent_domain: intent_domain,
       confidence: a.confidence || 0.0,
       sentiment: safe_to_string(Map.get(sentiment, :label, :neutral)),
       sentiment_confidence: Map.get(sentiment, :confidence, 0.0),

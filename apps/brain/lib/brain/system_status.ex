@@ -9,8 +9,8 @@ defmodule Brain.SystemStatus do
   alias Brain.Metrics.Aggregator
   alias Brain.ML.EntityExtractor
   alias Brain.ML.EntityTrainer
+  alias Brain.ML.MicroClassifiers
   alias Brain.ML.POSTagger
-  alias Brain.ML.IntentClassifierSimple
   alias Brain.ML.Gazetteer
   alias World.ModelRegistry
   alias World.Embedder
@@ -43,7 +43,6 @@ defmodule Brain.SystemStatus do
       {Brain.ML.Gazetteer, "Gazetteer", :has_stats},
       {Brain.ML.InformalExpansions, "Informal Expansions", :has_ready},
       {Brain.ML.MicroClassifiers, "Micro Classifiers", :has_ready},
-      {Brain.ML.IntentArbitrator, "Intent Arbitrator", :has_ready},
       {Brain.Response.TemplateStore, "Template Store", :has_ready}
     ],
     knowledge: [
@@ -96,9 +95,7 @@ defmodule Brain.SystemStatus do
       memory_store: get_memory_store_status(),
       brain: get_brain_status(),
       nlp_pipeline: get_nlp_pipeline_status(),
-      micro_classifiers: get_micro_classifiers_status(),
-      lstm: get_lstm_status(),
-      arbitrator: get_arbitrator_status()
+      micro_classifiers: get_micro_classifiers_status()
     }
   end
 
@@ -306,17 +303,6 @@ defmodule Brain.SystemStatus do
 
   @doc "Returns the NLP pipeline status.\n"
   def get_nlp_pipeline_status do
-    classifier_ready =
-      if Code.ensure_loaded?(Brain.ML.IntentClassifierSimple) do
-        try do
-          IntentClassifierSimple.is_loaded?()
-        catch
-          :exit, _ -> false
-        end
-      else
-        false
-      end
-
     gazetteer_ready =
       if Code.ensure_loaded?(Brain.ML.Gazetteer) do
         try do
@@ -328,104 +314,38 @@ defmodule Brain.SystemStatus do
         false
       end
 
-    all_ready = classifier_ready and gazetteer_ready
+    intent_ready = micro_intent_ready?()
 
     %{
       running: true,
-      ready: all_ready,
+      ready: gazetteer_ready and intent_ready,
       status:
-        if(all_ready) do
+        if(gazetteer_ready) do
           :ready
         else
           :loading
         end,
       label:
-        if(all_ready) do
+        if(gazetteer_ready and intent_ready) do
           "Ready"
         else
           "Loading models..."
         end,
       components: %{
-        intent_classifier: classifier_ready,
-        gazetteer: gazetteer_ready
+        gazetteer: gazetteer_ready,
+        intent_classifier: intent_ready
       }
     }
   end
 
+  @doc "Returns LSTM status (deprecated — LSTM modules have been removed).\n"
   def get_lstm_status do
-    unified_ready = Brain.ML.LSTM.UnifiedModel.ready?()
-    response_ready = Brain.Response.LSTMResponse.ready?()
-    gcn_ready = Brain.ML.GCN.Model.ready?()
-
-    all_ready = unified_ready and response_ready
-    any_ready = unified_ready or response_ready or gcn_ready
-
-    components = %{
-      unified_model: unified_ready,
-      response_scorer: response_ready,
-      gcn: gcn_ready
-    }
-
-    ready_count = Enum.count(components, fn {_, v} -> v end)
-
-    label =
-      cond do
-        all_ready and gcn_ready -> "All models loaded"
-        all_ready -> "Core models loaded (GCN unavailable)"
-        any_ready -> "#{ready_count}/3 models loaded"
-        true -> "No LSTM models loaded"
-      end
-
     %{
-      running: any_ready,
-      ready: all_ready,
-      status: if(all_ready, do: :ready, else: if(any_ready, do: :partial, else: :not_loaded)),
-      label: label,
-      components: components
-    }
-  end
-
-  @doc "Returns the status of the IntentArbitrator meta-learner."
-  def get_arbitrator_status do
-    ready =
-      try do
-        Brain.ML.IntentArbitrator.ready?()
-      rescue
-        _ -> false
-      catch
-        :exit, _ -> false
-      end
-
-    stats =
-      if ready do
-        try do
-          Brain.ML.IntentArbitrator.stats()
-        rescue
-          _ -> %{}
-        catch
-          :exit, _ -> %{}
-        end
-      else
-        %{}
-      end
-
-    metrics =
-      try do
-        Brain.Metrics.Aggregator.get_arbitrator_metrics()
-      rescue
-        _ -> %{}
-      catch
-        :exit, _ -> %{}
-      end
-
-    %{
-      running: Process.whereis(Brain.ML.IntentArbitrator) != nil,
-      ready: ready,
-      status: if(ready, do: :ready, else: :not_loaded),
-      label: if(ready, do: "Model loaded", else: "Not trained"),
-      model_loaded: ready,
-      stats: stats,
-      metrics: metrics
+      running: false,
+      ready: false,
+      status: :removed,
+      label: "LSTM models removed",
+      components: %{}
     }
   end
 
@@ -443,9 +363,7 @@ defmodule Brain.SystemStatus do
 
     nlp_ready = status.nlp_pipeline.ready
 
-    models_ready =
-      models.intent_classifier.loaded and
-        models.entity_extractor.loaded
+    models_ready = models.entity_extractor.loaded
 
     template_ready = safe_call_ready(Brain.Response.TemplateStore)
 
@@ -459,37 +377,32 @@ defmodule Brain.SystemStatus do
     %{
       pos_model: get_model_file_status(models_path, "pos_model.term"),
       entity_model: get_model_file_status(models_path, "entity_model.term"),
-      classifier: get_model_file_status(models_path, "classifier.term"),
       gazetteer: get_model_file_status(models_path, "gazetteer.term"),
-      intent_classifier: get_agent_status(Brain.ML.IntentClassifierSimple),
+      intent_classifier: get_intent_classifier_status(models_path),
       entity_extractor: get_agent_status(Brain.ML.EntityExtractor),
-      unified_model:
-        get_lstm_status(Brain.ML.LSTM.UnifiedModel, models_path, "lstm/unified_model.term"),
-      response_scorer:
-        get_lstm_status(Brain.Response.LSTMResponse, models_path, "lstm/response_scorer.term"),
-      intent_arbitrator: %{
-        ready: (try do Brain.ML.IntentArbitrator.ready?() catch :exit, _ -> false end),
-        file_exists: File.exists?(Path.join(models_path, "intent_arbitrator.term")),
-        file_size: (case File.stat(Path.join(models_path, "intent_arbitrator.term")) do
-          {:ok, stat} -> stat.size
-          _ -> 0
-        end)
-      },
       last_evaluation: get_last_evaluation(),
       checked_at: DateTime.utc_now()
     }
   end
 
-  defp get_lstm_status(module, models_path, file) do
-    ready =
+  defp micro_intent_ready? do
+    if Code.ensure_loaded?(MicroClassifiers) and Process.whereis(MicroClassifiers) do
       try do
-        module.ready?()
+        MicroClassifiers.ready?()
       catch
         :exit, _ -> false
       end
+    else
+      false
+    end
+  end
 
-    file_status = get_model_file_status(models_path, file)
-    Map.merge(file_status, %{ready: ready})
+  defp get_intent_classifier_status(models_path) do
+    rel = Path.join(["micro", "intent_full.term"])
+    file_st = get_model_file_status(models_path, rel)
+    loaded = file_st.exists and micro_intent_ready?()
+
+    Map.merge(file_st, %{loaded: loaded, label: "intent_full (MicroClassifiers)"})
   end
 
   defp get_last_evaluation do
@@ -777,11 +690,9 @@ defmodule Brain.SystemStatus do
         components: get_in(status, [:nlp_pipeline, :components]) || %{}
       },
       ml_models: %{
-        intent_classifier: get_in(models, [:intent_classifier, :loaded]) || false,
         entity_extractor: get_in(models, [:entity_extractor, :loaded]) || false,
         pos_model_exists: get_in(models, [:pos_model, :exists]) || false,
-        entity_model_exists: get_in(models, [:entity_model, :exists]) || false,
-        classifier_exists: get_in(models, [:classifier, :exists]) || false
+        entity_model_exists: get_in(models, [:entity_model, :exists]) || false
       },
       template_store: safe_call_ready(Brain.Response.TemplateStore),
       all_ready: all_ready?()
@@ -866,14 +777,14 @@ defmodule Brain.SystemStatus do
             nil
           end
 
-        classifier = models[:classifier]
         embedder = models[:embedder]
         entity_model = models[:entity_model]
         pos_model = models[:pos_model]
-        classifier_vocab_size = extract_vocab_size(classifier, :vocabulary)
+        classifier = models[:classifier] || models[:intent_full]
         embedder_vocab_size = extract_vocab_size(embedder, :vocabulary)
         pos_model_tags = extract_vocab_size(pos_model, :tag_vocabulary)
         entity_model_tags = extract_vocab_size(entity_model, :tag_vocabulary)
+        classifier_vocab_size = extract_vocab_size(classifier, :vocabulary)
 
         %{
           world_id: world_id,
@@ -887,7 +798,7 @@ defmodule Brain.SystemStatus do
             end,
           is_loading: false,
           is_loaded: has_models,
-          has_classifier: classifier != nil and map_size(classifier) > 0,
+          has_classifier: classifier != nil and is_map(classifier) and map_size(classifier) > 0,
           has_embedder: embedder != nil and is_map(embedder) and map_size(embedder) > 0,
           has_entity_model: entity_model != nil and map_size(entity_model) > 0,
           has_pos_model: pos_model != nil and map_size(pos_model) > 0,
@@ -1039,19 +950,6 @@ defmodule Brain.SystemStatus do
     is_loaded =
       try do
         Gazetteer.loaded?()
-      catch
-        :exit, _ -> false
-      end
-
-    build_model_file_status(path, is_loaded)
-  end
-
-  defp get_model_file_status(models_path, "classifier.term" = filename) do
-    path = Path.join(models_path, filename)
-
-    is_loaded =
-      try do
-        IntentClassifierSimple.is_loaded?()
       catch
         :exit, _ -> false
       end

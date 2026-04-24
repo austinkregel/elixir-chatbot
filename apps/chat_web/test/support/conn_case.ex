@@ -48,7 +48,6 @@ defmodule ChatWeb.ConnCase do
         Brain.Knowledge.ReviewQueue,
         Brain.Epistemic.UserModel,
         Brain.Knowledge.SourceReliability,
-        Brain.Analysis.IntentReviewQueue,
         Brain.FactDatabase
       ]
 

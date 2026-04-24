@@ -16,6 +16,7 @@ defmodule Mix.Tasks.MigrateGoldStandard do
     append? = "--append" in args
     destructive? = "--destructive" in args
     merge_contexts? = "--merge-contexts" in args
+    exclude_context_variants? = "--exclude-context-variants" in args
     extract_metadata? = "--extract-metadata" in args
     extract_templates? = "--extract-templates" in args
     cleanup? = "--cleanup-sources" in args
@@ -37,10 +38,10 @@ defmodule Mix.Tasks.MigrateGoldStandard do
         cleanup_source_directories(preview?)
 
       preview? ->
-        preview_migration(select_filter, limit, merge_contexts?)
+        preview_migration(select_filter, limit, merge_contexts?, exclude_context_variants?)
 
       true ->
-        run_migration(select_filter, limit, !no_ner?, append?, destructive?, merge_contexts?)
+        run_migration(select_filter, limit, !no_ner?, append?, destructive?, merge_contexts?, exclude_context_variants?)
     end
   end
 
@@ -81,7 +82,7 @@ defmodule Mix.Tasks.MigrateGoldStandard do
     IO.puts("")
   end
 
-  defp preview_migration(select_filter, limit, merge_contexts?) do
+  defp preview_migration(select_filter, limit, merge_contexts?, exclude_context_variants?) do
     intent_names = resolve_intent_names(select_filter)
 
     IO.puts("
@@ -91,7 +92,11 @@ Previewing migration for #{length(intent_names)} intent(s)...")
       IO.puts("NOTE: Context variants will be merged into base intents")
     end
 
-    opts = [merge_context_variants: merge_contexts?]
+    if exclude_context_variants? do
+      IO.puts("NOTE: Context-variant usersays files will be excluded")
+    end
+
+    opts = [merge_context_variants: merge_contexts?, exclude_context_variants: exclude_context_variants?]
 
     opts =
       if limit do
@@ -304,7 +309,7 @@ Deleted #{length(deleted)} items:")
     end
   end
 
-  defp run_migration(select_filter, limit, include_ner?, append?, destructive?, merge_contexts?) do
+  defp run_migration(select_filter, limit, include_ner?, append?, destructive?, merge_contexts?, exclude_context_variants?) do
     intent_names = resolve_intent_names(select_filter)
 
     mode =
@@ -314,11 +319,21 @@ Deleted #{length(deleted)} items:")
         "non-destructive"
       end
 
+    intent_label =
+      case intent_names do
+        :all -> "all"
+        names -> "#{length(names)}"
+      end
+
     IO.puts("
-Migrating #{length(intent_names)} intent(s) [#{mode} mode]...")
+Migrating #{intent_label} intent(s) [#{mode} mode]...")
 
     if merge_contexts? do
       IO.puts("NOTE: Context variants will be merged into base intents")
+    end
+
+    if exclude_context_variants? do
+      IO.puts("NOTE: Context-variant usersays files will be excluded")
     end
 
     if destructive? do
@@ -330,7 +345,8 @@ Migrating #{length(intent_names)} intent(s) [#{mode} mode]...")
       include_ner: include_ner?,
       append: append?,
       destructive: destructive?,
-      merge_context_variants: merge_contexts?
+      merge_context_variants: merge_contexts?,
+      exclude_context_variants: exclude_context_variants?
     ]
 
     opts =

@@ -10,8 +10,8 @@ This is a Phoenix LiveView chatbot application built around **classical NLP tech
 ### What you get
 
 - **Web UI**: LiveView chat at `/chat` with a processing inspector, plus dashboards for system monitoring (`/dashboard`), ML accuracy metrics (`/accuracy`), training world exploration (`/explorer`), settings management (`/settings`), and admin review panels for intents and knowledge.
-- **Classical NLP pipeline**: semantic chunking → discourse analysis → speech act classification → entity extraction → intent determination → slot detection → context resolution → comprehension assessment.
-- **LSTM deep learning**: Multi-task LSTM models (Axon/Nx/EXLA) for intent classification, NER, sentiment analysis, speech act classification, and POS tagging. Ensemble voting combines TF-IDF and LSTM predictions.
+- **Classical NLP pipeline**: semantic chunking → discourse analysis → speech act classification → entity extraction → **`ChunkProfile`** (features + micro-classifiers + derived label) → slot detection → context resolution → comprehension assessment.
+- **LSTM deep learning**: Multi-task LSTM (Axon/Nx/EXLA) for legacy intent logits, NER, sentiment, speech act, POS. Runtime routing favors **`ChunkProfile`** and axis micro-classifiers over the old registry stack.
 - **Cognitive memory**: TF-IDF embeddings, vector similarity search, episodic/semantic memory with consolidation.
 - **Epistemic user model**: JTMS-backed belief store, user facts/beliefs extraction, contradiction handling.
 - **Knowledge expansion**: Academic research integration (arXiv, Semantic Scholar, OpenAlex), source reliability tracking, multi-source corroboration, and human review workflows.
@@ -143,7 +143,6 @@ iex -S mix phx.server
    - NoveltyDetector publishes gaps to LearningTriggers, which auto-starts research sessions
    - ResearchAgent gates findings through ComprehensionAssessor (8-dimension scoring)
    - High-confidence corroborated findings auto-approve into FactDatabase + BeliefStore
-   - IntentAutoPromoter auto-approves variations of existing intents; new intents require human review
    - EntityPromoter auto-promotes discovered entities to the Gazetteer after sufficient occurrences
    - TrainingExampleBuffer collects high-activation outcomes and triggers incremental TF-IDF updates
 
@@ -153,7 +152,7 @@ This is an umbrella project with five apps:
 
 | App | Location | Purpose |
 |-----|----------|---------|
-| **brain** | `apps/brain/` | Core NLP, ML (classical + LSTM), Memory, Epistemic, Response, Knowledge, Code Analysis, Telemetry |
+| **brain** | `apps/brain/` | Core NLP, ML (TF-IDF + feature-vector classifiers), Memory, Epistemic, Response, Knowledge, Code Analysis, Telemetry |
 | **world** | `apps/world/` | Training worlds, entity discovery, type inference, per-world model registry |
 | **tasks** | `apps/tasks/` | NLP benchmark task data curation and transformation |
 | **chat_web** | `apps/chat_web/` | Phoenix 1.8 web layer, LiveView dashboards, WebSocket channels |
@@ -161,11 +160,11 @@ This is an umbrella project with five apps:
 
 ### Notable subsystems
 
-- **ML/NLP** (`apps/brain/lib/brain/ml/`): TF-IDF intent classifier (with incremental `update_model/3`), LSTM multi-task models (unified + multi-task), gazetteer (ETS-backed), tokenizer, entity extractor (BIO tagging), POS tagger, training server, experiment tracker, corpus manager, training example buffer.
-- **Analysis** (`apps/brain/lib/brain/analysis/`): multi-stage pipeline orchestration, slot schemas, context/anaphora resolution, racing analyzer (fast path), novelty detection (with PubSub gap publishing), intent registry (runtime-updatable GenServer+ETS) + review queue, comprehension assessment (8-dimension evaluators with EMA weight evolution), intent auto-promoter, outcome learning.
+- **ML/NLP** (`apps/brain/lib/brain/ml/`): TF-IDF classifiers, feature-vector classifiers (FeatureVectorClassifier + WeightOptimizer), MicroClassifiers GenServer, gazetteer (ETS-backed), tokenizer, entity extractor (BIO tagging), POS tagger, training server, corpus manager, training example buffer.
+- **Analysis** (`apps/brain/lib/brain/analysis/`): multi-stage pipeline orchestration, ChunkProfile (326-dim feature vectors), FeatureExtractor, slot schemas, context/anaphora resolution, racing analyzer (fast path), novelty detection (with PubSub gap publishing), comprehension assessment (8-dimension evaluators with EMA weight evolution), outcome learning.
 - **Memory** (`apps/brain/lib/brain/memory/`): TF-IDF embedder, vector index, episodic/semantic store, consolidation (with ConsolidationBridge to beliefs), high-level API (`Think`).
 - **Epistemic** (`apps/brain/lib/brain/epistemic/`): JTMS (Justification Truth Maintenance System), belief store (with confidence decay + event-driven extraction), user model, contradiction handler, disclosure policy, consolidation bridge.
-- **Response** (`apps/brain/lib/brain/response/`): generator orchestrator, synthesizer (domain frames), LSTM response scoring, template store + blender, memory-augmented responses, response quality assessment, enricher, multi-part composer.
+- **Response** (`apps/brain/lib/brain/response/`): generator orchestrator, synthesizer (domain frames), template store + blender, memory-augmented responses, response quality assessment, enricher.
 - **Knowledge** (`apps/brain/lib/brain/knowledge/`): learning center, review queue (with auto-approval rules), source reliability, corroboration, research agent (with comprehension gate), learning triggers (conversation-driven auto-research), academic APIs (arXiv, Semantic Scholar, OpenAlex).
 - **Code** (`apps/brain/lib/brain/code/`): code analysis pipeline, AST parsing, symbol extraction, code gazetteer, relationship mapping, multi-language grammar support.
 - **Services** (`apps/brain/lib/brain/services/`): external service dispatch, credential vault, caching layer, weather service.
@@ -215,7 +214,6 @@ For detailed documentation, see the `docs/` folder:
 | `/explorer` | ExplorerLive | Training world data browser (entities, episodes, knowledge) |
 | `/settings` | SettingsLive | World/entity management, ML training controls, templates, services |
 | `/code` | CodeAnalysisLive | Code symbol browser, parsing, relationship visualization |
-| `/intent-review` | Admin.IntentReviewLive | Novel intent candidate review and promotion |
 | `/knowledge-review` | Admin.KnowledgeReviewLive | Knowledge expansion review with source reliability |
 
 ---
@@ -235,9 +233,9 @@ For detailed documentation, see the `docs/` folder:
 
 ### Outputs (generated / trained)
 
-- **Classical models**: `apps/brain/priv/ml_models/*.term` (intent classifier, entity model, gazetteer, embedder, POS tagger)
-- **LSTM models**: `apps/brain/priv/ml_models/lstm/*.term` (unified model, response scorer)
-- **Experiment tracking**: `apps/brain/priv/ml_models/lstm/experiments.json`
+- **Classical models**: `apps/brain/priv/ml_models/*.term` (intent classifier, entity model, gazetteer, embedder, POS tagger, sentiment classifier)
+- **Feature-vector micro-classifiers**: `apps/brain/priv/ml_models/micro/*.term` (intent_full, intent_domain, framing_class, tense_class, aspect_class, urgency, certainty_level, framing_neutral_centroid, ...)
+- **Knowledge-graph triple scorer**: `apps/brain/priv/ml_models/kg_lstm/<world_id>/*.term` (BiLSTM, trained per world via `mix train.kg_lstm`)
 - **Comprehension weights**: `apps/brain/priv/analysis/comprehension_weights.json` (EMA-evolved dimension weights)
 - **Persisted conversation memory** (runtime): `apps/brain/priv/memory/`
 - **Persisted knowledge** (runtime): `apps/brain/priv/knowledge/`
@@ -385,6 +383,21 @@ Models are loaded on app boot; train them when you change intent/entity data.
 - **`mix train_unified`**: train unified LSTM (intent + NER + sentiment + speech act)
 - **`mix train_response`**: train response scorer LSTM
 - **`mix train_lstm`**: train standalone LSTM intent classifier
+
+#### Micro-classifiers (TF-IDF) — pragmatic + ChunkProfile axes
+
+Small `SimpleClassifier` models used for lightweight decisions and for projecting
+**domain, tense, aspect, urgency, certainty,** and **coarse semantic class**. Training
+data lives under `data/classifiers/*.json`; axis JSON is generated from the intent
+gold standard.
+
+- **`mix gen_micro_data`**: (re)build the six axis JSON files from `apps/brain/priv/evaluation/intent/gold_standard.json`
+- **`mix train_micro`**: train every micro-classifier listed in `Mix.Tasks.TrainMicro` → `priv/ml_models/micro/<name>.term`
+- **`mix train_micro --only intent_domain`**: train a single model
+- **`mix train_micro --list`**: show which JSON/model files exist
+
+Stage **9** of **`mix train`** runs `mix train_micro` unless you pass **`--skip-micro`**.
+Run **`mix gen_micro_data`** when you change gold data or axis heuristics **before** retraining micros.
 
 ### Evaluate models
 
@@ -609,13 +622,11 @@ The system can learn autonomously from conversations, research sessions, and its
 
 3. **Knowledge auto-approval**: Findings that meet all criteria (confidence >= 0.85, 3+ independent sources, all sources reliability >= 0.6, hypothesis `:supported`, no conflicts, comprehension verdict `:comprehended`) are auto-approved. Capped at 10/day.
 
-4. **Intent learning**: IntentRegistry is runtime-updatable (GenServer+ETS with JSON persistence). IntentAutoPromoter auto-approves **variations** of existing intents (new utterances for known intents). Genuinely new intents always require human review. Capped at 5/day.
+4. **Entity promotion**: EntityPromoter scans entity candidates every 10 minutes, promoting those with >= 3 occurrences and confidence >= 0.6 to the Gazetteer.
 
-5. **Entity promotion**: EntityPromoter scans entity candidates every 10 minutes, promoting those with >= 3 occurrences and confidence >= 0.6 to the Gazetteer.
+5. **Incremental model updates**: TrainingExampleBuffer collects high-activation outcomes (>= 0.8) and flushes at 50+ examples to incrementally update the TF-IDF classifier. Full retrain triggers after 200 incremental updates.
 
-6. **Incremental model updates**: TrainingExampleBuffer collects high-activation outcomes (>= 0.8) and flushes at 50+ examples to incrementally update the TF-IDF classifier. Full retrain triggers after 200 incremental updates.
-
-7. **Belief pipeline**: Conversation events flow to BeliefStore and create JTMS nodes (premises for explicit, retractable assumptions for inferred). Memory consolidation bridges semantic facts into beliefs. Inferred beliefs decay 5%/tick if unconfirmed for 24+ hours, auto-retracting below 0.1.
+6. **Belief pipeline**: Conversation events flow to BeliefStore and create JTMS nodes (premises for explicit, retractable assumptions for inferred). Memory consolidation bridges semantic facts into beliefs. Inferred beliefs decay 5%/tick if unconfirmed for 24+ hours, auto-retracting below 0.1.
 
 ### Safety mechanisms
 
@@ -625,15 +636,13 @@ The system can learn autonomously from conversations, research sessions, and its
 | Partial verdict penalty | Findings from `:partial` comprehension get `confidence * composite_score` |
 | Cold-start protection | Dimension weights don't evolve until 10+ outcomes recorded |
 | Weight rollback | Last 5 weight snapshots persisted; `reset_weights/0` reverts to equal weights |
-| Auto-approval cap | 10/day (ReviewQueue), 5/day (IntentAutoPromoter) |
+| Auto-approval cap | 10/day (ReviewQueue) |
 | Auto-trigger cap | 2 LearningCenter sessions per day |
 | Config kill switches | `auto_extraction_enabled`, `auto_approval_enabled` |
 | Confidence decay | Inferred beliefs decay; auto-retracted below 0.1 |
 | Incremental drift guard | Full retrain after 200 incremental TF-IDF updates |
-| Human-in-the-loop | Genuinely new intents always require human approval |
 | World isolation | Entity promotions use world-scoped `Gazetteer.add_to_world/4` |
 | Backpressure | Belief extraction via `Task.Supervisor` with max_children limits |
-| IntentRegistry fallback | Compile-time `@fallback_registry` prevents breakage if GenServer unavailable |
 
 ### Quick reference
 
@@ -642,9 +651,6 @@ The system can learn autonomously from conversations, research sessions, and its
 Brain.Analysis.ComprehensionAssessor.assess(chunk_analyses)
 Brain.Analysis.ComprehensionAssessor.stats()
 Brain.Analysis.ComprehensionAssessor.reset_weights()
-
-# Register a new intent at runtime
-Brain.Analysis.IntentRegistry.register_intent("my_intent", %{...})
 
 # Check autonomous learning status
 Brain.Knowledge.ReviewQueue.auto_approval_enabled?()
@@ -656,16 +662,11 @@ Brain.Knowledge.ReviewQueue.auto_approval_enabled?()
 
 ### Models not found / low quality responses
 
-- Run `mix train_models` (classical) or `mix train` (all) and restart the app.
+- Run `mix train` (all 6 stages) and restart the app.
+- Run `mix setup` for a full setup including corpus downloads and data generation.
 - Confirm `ML_TRAINING_DATA_PATH` points at the folder containing `intents/` + `entities/`.
 - Confirm `ML_MODELS_PATH` is where you expect `*.term` files to be written/read.
-
-### LSTM models not loading
-
-- Check `Brain.ML.LSTM.UnifiedModel.ready?()` in an IEx session.
-- Run `mix regenerate_test_models --check` to verify Nx/Axon compatibility.
-- Run `mix train_unified` to retrain if models are incompatible.
-- The system gracefully degrades to TF-IDF when LSTM is unavailable.
+- Check `Brain.ML.MicroClassifiers.ready?()` in an IEx session.
 
 ### Large data generation tasks timing out
 

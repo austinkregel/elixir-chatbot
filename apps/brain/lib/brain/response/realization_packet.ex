@@ -13,7 +13,7 @@ defmodule Brain.Response.RealizationPacket do
   """
 
   alias Brain.Response.Primitive
-  alias Brain.Analysis.ChunkAnalysis
+  alias Brain.Analysis.{ChunkAnalysis, ChunkProfile}
 
   require Logger
 
@@ -40,7 +40,7 @@ defmodule Brain.Response.RealizationPacket do
 
     user_message =
       [
-        render_analysis(analysis),
+        render_analysis(analysis, unified_context),
         render_context(unified_context),
         render_plan(primitives),
         render_instructions(tone, opts)
@@ -64,22 +64,87 @@ defmodule Brain.Response.RealizationPacket do
 
   # --- Analysis rendering ---
 
-  defp render_analysis(analysis) do
+  defp render_analysis(analysis, unified_context) do
+    case multi_chunk_analyses(unified_context) do
+      nil -> render_single_analysis(analysis)
+      all_analyses -> render_multi_chunk_analysis(all_analyses, analysis)
+    end
+  end
+
+  defp multi_chunk_analyses(unified_context) when is_map(unified_context) do
+    case Map.get(unified_context, :all_analyses) do
+      list when is_list(list) and length(list) > 1 -> list
+      _ -> nil
+    end
+  end
+
+  defp multi_chunk_analyses(_), do: nil
+
+  defp render_multi_chunk_analysis(all_analyses, primary) do
+    raw_intro = "The user said #{length(all_analyses)} things:"
+
+    chunk_lines =
+      all_analyses
+      |> Enum.with_index(1)
+      |> Enum.flat_map(fn {chunk, idx} -> render_chunk_line(chunk, idx, primary) end)
+
+    primary_lines = render_primary_pointer(primary, all_analyses)
+
+    [raw_intro | chunk_lines] ++ primary_lines
+  end
+
+  defp render_chunk_line(chunk, idx, primary) do
+    text = chunk_field(chunk, :text)
+    profile = chunk_field(chunk, :profile)
+    intent = chunk_field(chunk, :intent)
+    speech_act = chunk_field(chunk, :speech_act)
+    entities = chunk_field(chunk, :entities) || []
+
+    intent_label = if match?(%ChunkProfile{derived_label: l} when l != "", profile),
+      do: profile.derived_label, else: intent
+
+    base = "#{idx}. \"#{text}\""
+
+    annotations =
+      [
+        format_chunk_intent(intent_label),
+        format_chunk_speech_act(speech_act),
+        format_chunk_entities(entities),
+        if(primary?(chunk, primary), do: "primary chunk for response", else: nil)
+      ]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.reject(&(&1 == ""))
+
+    line =
+      case annotations do
+        [] -> base
+        anns -> "#{base} -- #{Enum.join(anns, "; ")}"
+      end
+
+    [line]
+  end
+
+  defp render_primary_pointer(primary, all_analyses) do
+    primary_idx =
+      Enum.find_index(all_analyses, fn chunk -> primary?(chunk, primary) end)
+
+    case primary_idx do
+      nil -> []
+      idx -> ["Focus the response on chunk #{idx + 1}."]
+    end
+  end
+
+  defp render_single_analysis(analysis) do
     lines = []
 
     text = safe_get(analysis, :text)
     lines = if text, do: lines ++ ["The user said: \"#{text}\""], else: lines
 
+    profile = safe_get(analysis, :profile)
     intent = safe_get(analysis, :intent)
     confidence = safe_get(analysis, :confidence)
 
-    lines =
-      if intent do
-        conf_str = if is_number(confidence), do: " (confidence #{Float.round(confidence * 1.0, 2)})", else: ""
-        lines ++ ["Intent: #{intent}#{conf_str}."]
-      else
-        lines
-      end
+    lines = lines ++ render_intent_with_profile(profile, intent, confidence)
 
     lines = lines ++ render_entities(analysis)
     lines = lines ++ render_speech_act(analysis)
@@ -92,6 +157,93 @@ defmodule Brain.Response.RealizationPacket do
     lines = lines ++ render_slots(analysis)
 
     lines
+  end
+
+  defp render_intent_with_profile(%ChunkProfile{} = profile, _intent, _confidence) do
+    label = profile.derived_label
+    conf_str = if is_number(profile.confidence) and profile.confidence > 0.0,
+      do: " (confidence #{Float.round(profile.confidence * 1.0, 2)})", else: ""
+
+    axes_parts =
+      [
+        if(profile.domain not in [:unknown, nil], do: "domain: #{profile.domain}"),
+        if(profile.modality not in [:declarative, nil], do: "modality: #{profile.modality}"),
+        if(profile.response_posture not in [:direct, nil], do: "posture: #{profile.response_posture}"),
+        if(profile.urgency not in [:low, nil], do: "urgency: #{profile.urgency}")
+      ]
+      |> Enum.reject(&is_nil/1)
+
+    base = "Intent: #{label}#{conf_str}."
+    if axes_parts != [], do: [base, Enum.join(axes_parts, "; ") <> "."], else: [base]
+  end
+
+  defp render_intent_with_profile(_, intent, confidence) do
+    if intent do
+      conf_str = if is_number(confidence), do: " (confidence #{Float.round(confidence * 1.0, 2)})", else: ""
+      ["Intent: #{intent}#{conf_str}."]
+    else
+      []
+    end
+  end
+
+  defp chunk_field(chunk, key) do
+    Map.get(chunk, key) || Map.get(chunk, to_string(key))
+  end
+
+  defp format_chunk_intent(nil), do: nil
+  defp format_chunk_intent(""), do: nil
+  defp format_chunk_intent(intent), do: "intent: #{intent}"
+
+  defp format_chunk_speech_act(nil), do: nil
+
+  defp format_chunk_speech_act(speech_act) when is_map(speech_act) do
+    category = Map.get(speech_act, :category) || Map.get(speech_act, "category")
+    sub_type = Map.get(speech_act, :sub_type) || Map.get(speech_act, "sub_type")
+
+    is_question =
+      Map.get(speech_act, :is_question) || Map.get(speech_act, "is_question") || false
+
+    parts = [stringify_atom(category), stringify_atom(sub_type)] |> Enum.reject(&is_nil/1)
+    base = if parts == [], do: nil, else: "speech act: #{Enum.join(parts, "/")}"
+
+    cond do
+      is_question and base != nil -> "#{base} (question)"
+      is_question -> "speech act: question"
+      true -> base
+    end
+  end
+
+  defp format_chunk_speech_act(_), do: nil
+
+  defp format_chunk_entities([]), do: nil
+
+  defp format_chunk_entities(entities) do
+    parts =
+      entities
+      |> Enum.map(fn e ->
+        value = Map.get(e, :value) || Map.get(e, "value") || "?"
+        type = Map.get(e, :entity_type) || Map.get(e, "entity_type") || ""
+        if type == "", do: value, else: "#{value} (#{type})"
+      end)
+      |> Enum.reject(&(&1 == "" or &1 == "?"))
+
+    case parts do
+      [] -> nil
+      parts -> "entities: #{Enum.join(parts, ", ")}"
+    end
+  end
+
+  defp primary?(chunk, primary) do
+    chunk_idx = chunk_field(chunk, :chunk_index)
+    primary_idx = safe_get(primary, :chunk_index)
+    primary_text = safe_get(primary, :text)
+    chunk_text = chunk_field(chunk, :text)
+
+    cond do
+      chunk_idx != nil and primary_idx != nil -> chunk_idx == primary_idx
+      chunk_text != nil and primary_text != nil -> chunk_text == primary_text
+      true -> false
+    end
   end
 
   defp render_entities(analysis) do
@@ -204,11 +356,90 @@ defmodule Brain.Response.RealizationPacket do
     lines = []
 
     lines = lines ++ render_enriched_data(unified_context)
+    lines = lines ++ render_per_chunk_facts(unified_context)
     lines = lines ++ render_accumulator(unified_context)
     lines = lines ++ render_episodes(unified_context)
 
     lines
   end
+
+  defp render_per_chunk_facts(ctx) do
+    facts_map = Map.get(ctx, :per_chunk_facts)
+    all_analyses = Map.get(ctx, :all_analyses)
+
+    cond do
+      not is_map(facts_map) or facts_map == %{} ->
+        []
+
+      true ->
+        index_to_position = build_chunk_position_map(all_analyses)
+
+        facts_map
+        |> Enum.sort_by(fn {chunk_index, _} -> chunk_index || 0 end)
+        |> Enum.flat_map(fn {chunk_index, facts} -> render_chunk_facts(chunk_index, facts, index_to_position) end)
+    end
+  end
+
+  defp build_chunk_position_map(nil), do: %{}
+
+  defp build_chunk_position_map(all_analyses) when is_list(all_analyses) do
+    all_analyses
+    |> Enum.with_index(1)
+    |> Enum.reduce(%{}, fn {chunk, position}, acc ->
+      idx = chunk_field(chunk, :chunk_index)
+      if idx != nil, do: Map.put(acc, idx, position), else: acc
+    end)
+  end
+
+  defp build_chunk_position_map(_), do: %{}
+
+  defp render_chunk_facts(_chunk_index, [], _positions), do: []
+
+  defp render_chunk_facts(chunk_index, facts, positions) when is_list(facts) do
+    fact_texts = facts_to_texts(facts)
+
+    case fact_texts do
+      [] ->
+        []
+
+      texts ->
+        position = Map.get(positions, chunk_index)
+
+        prefix =
+          case position do
+            nil -> "Known facts about chunk #{chunk_index}"
+            pos -> "Known facts for chunk #{pos}"
+          end
+
+        ["#{prefix}: #{Enum.join(texts, "; ")}."]
+    end
+  end
+
+  defp render_chunk_facts(_chunk_index, _facts, _positions), do: []
+
+  defp facts_to_texts(facts) do
+    facts
+    |> Enum.map(&fact_to_text/1)
+    |> Enum.reject(&(&1 == nil or &1 == ""))
+    |> Enum.uniq()
+  end
+
+  defp fact_to_text(%{fact: fact}) when is_binary(fact), do: fact
+  defp fact_to_text(%{"fact" => fact}) when is_binary(fact), do: fact
+
+  defp fact_to_text(%{subject: s, predicate: p, object: o}),
+    do: [s, p, o] |> Enum.map(&to_string/1) |> Enum.join(" ") |> String.trim()
+
+  defp fact_to_text(%{"subject" => s, "predicate" => p, "object" => o}),
+    do: [s, p, o] |> Enum.map(&to_string/1) |> Enum.join(" ") |> String.trim()
+
+  defp fact_to_text(text) when is_binary(text), do: text
+
+  defp fact_to_text(map) when is_map(map) do
+    Map.get(map, :text) || Map.get(map, "text") || nil
+  end
+
+  defp fact_to_text(_), do: nil
 
   defp render_enriched_data(ctx) do
     enrichment = Map.get(ctx, :enrichment, %{})
@@ -439,7 +670,9 @@ defmodule Brain.Response.RealizationPacket do
   end
 
   defp serialize_analysis_for_debug(analysis) do
-    %{
+    profile = safe_get(analysis, :profile)
+
+    base = %{
       "text" => safe_get(analysis, :text),
       "intent" => safe_get(analysis, :intent),
       "confidence" => safe_get(analysis, :confidence, 0.5),
@@ -448,6 +681,19 @@ defmodule Brain.Response.RealizationPacket do
       "sentiment" => serialize_value(safe_get(analysis, :sentiment)),
       "speech_act" => serialize_value(safe_get(analysis, :speech_act))
     }
+
+    if match?(%ChunkProfile{}, profile) do
+      Map.put(base, "profile", %{
+        "derived_label" => profile.derived_label,
+        "domain" => stringify_atom(profile.domain),
+        "modality" => stringify_atom(profile.modality),
+        "response_posture" => stringify_atom(profile.response_posture),
+        "engagement_level" => stringify_atom(profile.engagement_level),
+        "confidence" => profile.confidence
+      })
+    else
+      base
+    end
   end
 
   defp serialize_context_for_debug(ctx) when ctx in [nil, %{}], do: nil

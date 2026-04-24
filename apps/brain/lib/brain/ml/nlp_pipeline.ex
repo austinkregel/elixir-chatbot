@@ -4,7 +4,7 @@ defmodule Brain.ML.NLPPipeline do
   alias Brain.ML
   require Logger
 
-  alias ML.{EntityExtractor, IntentClassifierSimple, Gazetteer, Tokenizer}
+  alias ML.{EntityExtractor, Gazetteer, Tokenizer}
 
   @type pipeline_result :: %{
           intent: String.t(),
@@ -45,30 +45,49 @@ defmodule Brain.ML.NLPPipeline do
         Logger.warning("Entity maps loading failed", %{reason: reason})
     end
 
-    case IntentClassifierSimple.load_models() do
-      {:ok, _model} ->
-        Logger.info("Intent classifier loaded")
-
-      {:error, reason} ->
-        Logger.warning("Intent classifier loading failed", %{reason: reason})
-    end
-
     Logger.info("NLP pipeline initialization complete")
     :ok
   end
 
-  @doc "Main entry point for text processing using classical NLP.\nReturns {:ok, result} or {:error, reason}.\n\n## Options\n\n- `:discourse` - Discourse analysis result for entity disambiguation\n- `:speech_act` - Speech act classification for entity disambiguation\n"
+  @doc """
+  Main entry point for text processing using classical NLP.
+
+  Returns `{:ok, result}` or `{:error, reason}`.
+
+  ## Options
+
+  - `:discourse` - Discourse analysis result for entity disambiguation
+  - `:speech_act` - Speech act classification for entity disambiguation
+  - `:reuse_intent` - `{intent_string, confidence}` tuple. When provided,
+    skip the internal `classify_intent/1` call (which would re-run the full
+    `Pipeline.analyze_chunk` and `MicroClassifiers.classify_vector`) and
+    use the supplied intent. This is how `Brain.try_nlp_with_analysis` avoids
+    a duplicate analysis pass after `Brain.Analysis.Pipeline` has already
+    produced a full-features intent in pass 2.
+  - `:reuse_entities` - list of pre-extracted entities. When provided, skip
+    `EntityExtractor.extract_entities/2`.
+  """
   def process(text, opts \\ []) do
     Logger.debug("Processing text with classical NLP", %{text: text})
 
     try do
       tokens = Tokenizer.tokenize(text)
       Logger.debug("Tokenized input", %{token_count: length(tokens)})
-      entities = EntityExtractor.extract_entities(text, opts)
-      Logger.debug("Extracted entities", %{count: length(entities)})
 
-      case IntentClassifierSimple.classify(text) do
-        {:ok, %{intent: intent, confidence: confidence}} ->
+      entities =
+        case Keyword.get(opts, :reuse_entities) do
+          ents when is_list(ents) ->
+            Logger.debug("Reusing pre-extracted entities", %{count: length(ents)})
+            ents
+
+          _ ->
+            extracted = EntityExtractor.extract_entities(text, opts)
+            Logger.debug("Extracted entities", %{count: length(extracted)})
+            extracted
+        end
+
+      case resolve_intent(text, opts) do
+        {:ok, intent, confidence} ->
           Logger.debug("Classified intent", %{intent: intent, confidence: confidence})
 
           if should_use_classical_result?(confidence) do
@@ -90,9 +109,7 @@ defmodule Brain.ML.NLPPipeline do
              }}
           end
 
-        {:error, reason} ->
-          Logger.warning("Intent classification failed", %{reason: reason})
-
+        {:error, _reason} ->
           {:ok,
            %{
              confidence: 0.0,
@@ -111,6 +128,17 @@ defmodule Brain.ML.NLPPipeline do
     end
   end
 
+  defp resolve_intent(text, opts) do
+    case Keyword.get(opts, :reuse_intent) do
+      {intent, confidence} when is_binary(intent) and is_number(confidence) and intent != "" ->
+        Logger.debug("Reusing pre-classified intent", %{intent: intent, confidence: confidence})
+        {:ok, intent, confidence / 1}
+
+      _ ->
+        classify_intent(text)
+    end
+  end
+
   @doc "Process text with enhanced entity extraction using the BIO model.\nUse this for more thorough entity detection at the cost of speed.\n"
   def process_enhanced(text) do
     Logger.debug("Processing text with enhanced NLP", %{text: text})
@@ -120,8 +148,8 @@ defmodule Brain.ML.NLPPipeline do
       entities = EntityExtractor.extract_entities_with_model(text)
       Logger.debug("Enhanced entity extraction", %{count: length(entities)})
 
-      case IntentClassifierSimple.classify(text) do
-        {:ok, %{intent: intent, confidence: confidence}} ->
+      case classify_intent(text) do
+        {:ok, intent, confidence} ->
           result = build_result(text, intent, confidence, entities, tokens)
           {:ok, result}
 
@@ -146,8 +174,8 @@ defmodule Brain.ML.NLPPipeline do
     tokens = Tokenizer.tokenize(text)
     entities = EntityExtractor.extract_entities(text, opts)
 
-    case IntentClassifierSimple.classify(text) do
-      {:ok, %{intent: intent, confidence: confidence}} ->
+    case classify_intent(text) do
+      {:ok, intent, confidence} ->
         %{
           intent: intent,
           confidence: confidence,
@@ -186,6 +214,30 @@ defmodule Brain.ML.NLPPipeline do
   @doc "Check if the pipeline is ready (models loaded).\n"
   def ready? do
     Gazetteer.loaded?() or EntityExtractor.get_entity_maps() != %{}
+  end
+
+  defp classify_intent(text) do
+    alias Brain.Analysis.{FeatureExtractor, Pipeline}
+    alias Brain.ML.MicroClassifiers
+
+    if MicroClassifiers.ready?() do
+      try do
+        analysis = Pipeline.analyze_chunk(text)
+        {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
+
+        case MicroClassifiers.classify_vector(:intent_full, feature_vector) do
+          {:ok, intent, confidence} ->
+            {:ok, intent, confidence}
+
+          _ ->
+            {:error, :classification_failed}
+        end
+      rescue
+        _ -> {:error, :classification_failed}
+      end
+    else
+      {:error, :no_classifier_available}
+    end
   end
 
   defp get_confidence_threshold do

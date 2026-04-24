@@ -5,6 +5,9 @@ defmodule Brain.Analysis.Pipeline do
     InternalModel,
     Chunk,
     ChunkAnalysis,
+    ChunkPriority,
+    ChunkProfile,
+    FeatureExtractor,
     SemanticChunker,
     DiscourseAnalyzer,
     SpeechActClassifier,
@@ -13,9 +16,7 @@ defmodule Brain.Analysis.Pipeline do
     AnaphoraResolver,
     LearningStore,
     Progress,
-    IntentRegistry,
     NoveltyDetector,
-    IntentReviewQueue,
     EventExtractor,
     EventLinker,
     SemanticRoleLabeler,
@@ -24,11 +25,7 @@ defmodule Brain.Analysis.Pipeline do
     EntityGraphEnricher
   }
 
-  alias Brain.Analysis.Types.IntentReviewCandidate
-
-  alias Brain.ML.EntityExtractor
-  alias Brain.ML.POSTagger
-  alias Brain.ML.Tokenizer
+  alias Brain.ML.{EntityExtractor, MicroClassifiers, POSTagger, Tokenizer}
 
   alias Brain.Memory.Embedder
 
@@ -119,10 +116,11 @@ defmodule Brain.Analysis.Pipeline do
     model
   end
 
-  @doc "Processes a single chunk through the analysis pipeline.\n\nUseful for testing or when you already have chunks.\n"
+  @doc "Processes a single chunk through the analysis pipeline.\n\nUseful for testing or when you already have chunks. Internally runs the\nfull two-pass analysis (pass 1 + cross-chunk aggregation + pass 2) on a\nlist of one chunk so the public contract is identical to the multi-chunk\npath.\n"
   def analyze_chunk(chunk_text, opts \\ []) when is_binary(chunk_text) do
     chunk = Chunk.new(chunk_text, 0, 0, String.length(chunk_text) - 1)
-    analyze_single_chunk(chunk, opts)
+    [analysis] = analyze_chunks([chunk], opts)
+    analysis
   end
 
   @doc "Returns a summary of the analysis for debugging/logging.\n"
@@ -145,17 +143,44 @@ defmodule Brain.Analysis.Pipeline do
     }
   end
 
+  # Two-pass per-chunk analysis with cross-chunk enrichment between passes.
+  #
+  # Pass 1 (`analyze_chunk_pass1/2`): cheap per-chunk analyses (discourse,
+  # entities, speech act, sentiment, POS, events, SRL, preliminary intent).
+  # No `:intent_full` classification, no slot detection, no fact verification.
+  #
+  # Cross-chunk aggregation (`build_cross_chunk_context/2`): selects the
+  # primary / question chunk via `ChunkPriority`, builds the entity union,
+  # and runs `ContextAccumulator` over the per-chunk signals so pass 2 has
+  # turn-level context that no individual chunk could see on its own.
+  #
+  # Pass 2 (`refine_chunk_pass2/3`): only runs for "substantive" chunks
+  # (primary, question, or assertive/directive with at least one entity).
+  # It builds the full feature vector with cross-chunk context fused into
+  # `:accumulated_context`, classifies `:intent_full`, refines speech act,
+  # then runs entity inference + slot detection + fact verification +
+  # novelty detection. Non-substantive chunks (filler like "thanks") keep
+  # their pass-1 analysis and skip the expensive pass 2 work entirely.
   defp analyze_chunks(chunks, opts) do
-    Enum.map(chunks, fn chunk ->
-      analyze_single_chunk(chunk, opts)
+    pass1_analyses = Enum.map(chunks, &analyze_chunk_pass1(&1, opts))
+
+    cross_context = build_cross_chunk_context(chunks, pass1_analyses, opts)
+
+    pass1_analyses
+    |> Enum.map(fn pass1 ->
+      if substantive?(pass1, cross_context) do
+        refine_chunk_pass2(pass1, cross_context, opts)
+      else
+        finalize_pass1(pass1, opts)
+      end
     end)
+    |> Enum.sort_by(& &1.chunk_index)
   end
 
-  defp analyze_single_chunk(chunk, opts) do
+  defp analyze_chunk_pass1(chunk, opts) do
     participants = Keyword.get(opts, :participants, [:user, :bot])
     bot_names = Keyword.get(opts, :bot_names, [])
     history = Keyword.get(opts, :conversation_history, [])
-    profile = Keyword.get(opts, :user_profile, %{})
 
     Progress.report(opts, :chunk_start, %{
       chunk_index: chunk.index,
@@ -184,16 +209,11 @@ defmodule Brain.Analysis.Pipeline do
 
     sentiment_task =
       Task.async(fn ->
-        atlas_context = fetch_atlas_sentiment_context(chunk.text)
-        opts = if atlas_context, do: [atlas_context: atlas_context], else: []
-
-        case Brain.ML.LSTM.Integration.classify_sentiment(chunk.text, opts) do
+        case Brain.ML.SentimentClassifierSimple.classify(chunk.text) do
           {:ok, result} ->
             result
 
-          {:error, reason} ->
-            Logger.warning("Sentiment classification failed: #{inspect(reason)}. " <>
-              "Using neutral fallback.")
+          _ ->
             %{label: :neutral, score: 0.5}
         end
       end)
@@ -295,39 +315,190 @@ defmodule Brain.Analysis.Pipeline do
       srl_frame_count: length(srl_frames)
     })
 
-    {intent, intent_method, intent_confidence, intent_details} =
+    {prelim_intent, intent_method, prelim_intent_conf, prelim_intent_details} =
       determine_intent(speech_act_result, entities, chunk.text, opts)
 
     Progress.report(opts, :intent_determined, %{
       chunk_index: chunk.index,
+      intent: prelim_intent,
+      intent_method: intent_method,
+      intent_confidence: prelim_intent_conf,
+      margin: Map.get(prelim_intent_details, :margin, 0.0),
+      pass: 1
+    })
+
+    ChunkAnalysis.new(chunk.index, chunk.text)
+    |> Map.put(:discourse, discourse_result)
+    |> Map.put(:speech_act, speech_act_result)
+    |> Map.put(:sentiment, sentiment_result)
+    |> Map.put(:intent, prelim_intent)
+    |> Map.put(:entities, entities)
+    |> ChunkAnalysis.with_events(events)
+    |> Map.put(:event_frames, event_frames)
+    |> Map.put(:srl_frames, srl_frames)
+    |> Map.put(:pos_tags, pos_result_to_tags(pos_result))
+    |> Map.put(:pass, 1)
+    |> Map.put(
+      :_prelim_intent,
+      %{
+        intent: prelim_intent,
+        method: intent_method,
+        confidence: prelim_intent_conf,
+        details: prelim_intent_details
+      }
+    )
+  end
+
+  # Builds the cross-chunk context that pass 2 uses to enrich each
+  # substantive chunk. Cheap signals only — no ML calls here.
+  defp build_cross_chunk_context(chunks, pass1_analyses, opts) do
+    raw_text = chunks |> Enum.map(& &1.text) |> Enum.join(" ")
+
+    primary = ChunkPriority.select_primary(pass1_analyses)
+    question = ChunkPriority.question_chunk(pass1_analyses)
+
+    entity_union = union_chunk_entities(pass1_analyses)
+    familiarity = entity_familiarity_signal(entity_union)
+
+    accumulator =
+      ContextAccumulator.new(raw_text, opts)
+      |> ContextAccumulator.add_signal(
+        :speech_act,
+        Map.get(primary.speech_act || %{}, :category, :unknown),
+        Map.get(primary.speech_act || %{}, :confidence, 0.0)
+      )
+      |> ContextAccumulator.add_signal(
+        :discourse,
+        Map.get(primary.discourse || %{}, :addressee, :unknown),
+        Map.get(primary.discourse || %{}, :confidence, 0.0)
+      )
+      |> ContextAccumulator.add_signal(:entity_familiarity, length(entity_union) > 0, familiarity)
+      |> ContextAccumulator.accumulate()
+
+    %{
+      pass1_analyses: pass1_analyses,
+      primary_chunk_index: primary.chunk_index,
+      question_chunk_index: question && question.chunk_index,
+      entity_union: entity_union,
+      accumulator: accumulator,
+      raw_text: raw_text
+    }
+  end
+
+  defp union_chunk_entities(pass1_analyses) do
+    pass1_analyses
+    |> Enum.flat_map(fn analysis -> analysis.entities || [] end)
+    |> Enum.uniq_by(fn entity ->
+      {Map.get(entity, :entity_type) || Map.get(entity, "entity_type"),
+       Map.get(entity, :value) || Map.get(entity, "value")}
+    end)
+  end
+
+  defp entity_familiarity_signal([]), do: 0.5
+  defp entity_familiarity_signal(entities) do
+    EntityGraphEnricher.familiarity_score(entities)
+  rescue
+    _ -> 0.5
+  end
+
+  # A chunk needs pass 2 if it is the primary or question chunk for the
+  # turn, OR if it carries substantive content on its own (an assertive or
+  # directive with at least one extracted entity), OR if it is the only
+  # chunk in the turn (degenerate case — there's no other chunk to defer
+  # to).
+  defp substantive?(%ChunkAnalysis{} = analysis, %{
+         pass1_analyses: pass1_analyses,
+         primary_chunk_index: primary_index,
+         question_chunk_index: question_index
+       }) do
+    cond do
+      length(pass1_analyses) == 1 -> true
+      analysis.chunk_index == primary_index -> true
+      analysis.chunk_index == question_index -> true
+      true -> assertive_or_directive_with_entity?(analysis)
+    end
+  end
+
+  defp assertive_or_directive_with_entity?(%ChunkAnalysis{speech_act: nil}), do: false
+
+  defp assertive_or_directive_with_entity?(%ChunkAnalysis{speech_act: speech_act, entities: ents}) do
+    cat = Map.get(speech_act, :category)
+    cat in [:directive, :assertive] and length(ents || []) > 0
+  end
+
+  # For non-substantive chunks: don't run pass 2, but do compute confidence
+  # + response_strategy from the pass-1 data so downstream components see a
+  # complete `ChunkAnalysis` regardless of pass.
+  defp finalize_pass1(%ChunkAnalysis{} = pass1, opts) do
+    Progress.report(opts, :chunk_pass2_skipped, %{
+      chunk_index: pass1.chunk_index,
+      reason: :non_substantive,
+      speech_act: Map.get(pass1.speech_act || %{}, :category)
+    })
+
+    pass1
+    |> Map.delete(:_prelim_intent)
+    |> Map.put(:slots, default_empty_slots())
+    |> calculate_confidence()
+    |> ChunkAnalysis.determine_response_strategy()
+  end
+
+  defp default_empty_slots do
+    %Brain.Analysis.SlotResult{
+      schema_name: nil,
+      filled_slots: %{},
+      missing_required: [],
+      missing_optional: [],
+      all_required_filled: true
+    }
+  end
+
+  defp refine_chunk_pass2(%ChunkAnalysis{} = pass1, cross_context, opts) do
+    history = Keyword.get(opts, :conversation_history, [])
+    profile = Keyword.get(opts, :user_profile, %{})
+
+    pass1_with_context = Map.put(pass1, :accumulated_context, cross_context.accumulator)
+
+    {refined_speech_act, intent, intent_method, intent_confidence, intent_details} =
+      classify_intent_full_and_refine(pass1_with_context, opts)
+
+    Progress.report(opts, :intent_refined, %{
+      chunk_index: pass1.chunk_index,
       intent: intent,
       intent_method: intent_method,
       intent_confidence: intent_confidence,
-      margin: Map.get(intent_details, :margin, 0.0)
+      margin: Map.get(intent_details, :margin, 0.0),
+      pass: 2
     })
 
-    {entities, intent, intent_details} =
+    {entities_after_inference, intent, intent_details} =
       Brain.Analysis.ContextualEntityInferrer.infer(
-        chunk.text, entities, intent, intent_details,
+        pass1.text,
+        pass1.entities,
+        intent,
+        intent_details,
         world_id: Keyword.get(opts, :world_id, "default")
       )
 
-    relevant_entities = filter_entities_by_intent(entities, intent)
+    relevant_entities =
+      entities_after_inference
+      |> filter_entities_by_intent(intent)
+      |> maybe_retype_pos_music_artists(pass1.text)
 
     Progress.report(opts, :entities_filtered, %{
-      chunk_index: chunk.index,
-      original_count: length(entities),
+      chunk_index: pass1.chunk_index,
+      original_count: length(entities_after_inference),
       filtered_count: length(relevant_entities),
       excluded_types:
-        (Enum.map(entities, & &1[:entity_type]) -- Enum.map(relevant_entities, & &1[:entity_type]))
+        (Enum.map(entities_after_inference, & &1[:entity_type]) --
+           Enum.map(relevant_entities, & &1[:entity_type]))
         |> Enum.uniq()
     })
 
-    # Epistemic fact verification - check claims against existing beliefs
-    fact_result = verify_facts_in_chunk(chunk.text, relevant_entities, speech_act_result, opts)
+    fact_result = verify_facts_in_chunk(pass1.text, relevant_entities, refined_speech_act, opts)
 
     Progress.report(opts, :fact_verification, %{
-      chunk_index: chunk.index,
+      chunk_index: pass1.chunk_index,
       epistemic_status: fact_result.status,
       fact_verification: fact_result.verification,
       related_beliefs_count: length(fact_result.beliefs),
@@ -348,7 +519,7 @@ defmodule Brain.Analysis.Pipeline do
     slot_result = SlotDetector.detect(intent, relevant_entities)
 
     Progress.report(opts, :slots_detected, %{
-      chunk_index: chunk.index,
+      chunk_index: pass1.chunk_index,
       missing_required: Map.get(slot_result, :missing_required, []),
       filled_count: map_size(Map.get(slot_result, :filled_slots, %{})),
       filled_slots: Map.get(slot_result, :filled_slots, %{})
@@ -364,7 +535,7 @@ defmodule Brain.Analysis.Pipeline do
       )
 
     Progress.report(opts, :context_resolved, %{
-      chunk_index: chunk.index,
+      chunk_index: pass1.chunk_index,
       all_required_filled: Map.get(resolved_slots, :all_required_filled),
       missing_required: Map.get(resolved_slots, :missing_required, []),
       filled_slots: Map.get(resolved_slots, :filled_slots, %{})
@@ -372,22 +543,21 @@ defmodule Brain.Analysis.Pipeline do
 
     if intent_confidence != nil do
       maybe_record_novel_candidate(
-        chunk.text,
+        pass1.text,
         intent,
         intent_confidence,
         intent_details,
-        speech_act_result,
-        entities,
+        refined_speech_act,
+        entities_after_inference,
         resolved_slots,
         opts
       )
     end
 
     analysis =
-      ChunkAnalysis.new(chunk.index, chunk.text)
-      |> Map.put(:discourse, discourse_result)
-      |> Map.put(:speech_act, speech_act_result)
-      |> Map.put(:sentiment, sentiment_result)
+      pass1
+      |> Map.delete(:_prelim_intent)
+      |> Map.put(:speech_act, refined_speech_act)
       |> Map.put(:intent, intent)
       |> Map.put(:entities, relevant_entities)
       |> Map.put(:slots, resolved_slots)
@@ -395,23 +565,60 @@ defmodule Brain.Analysis.Pipeline do
       |> Map.put(:fact_verification, fact_result.verification)
       |> Map.put(:related_beliefs, fact_result.beliefs)
       |> Map.put(:epistemic_status, fact_result.status)
-      |> ChunkAnalysis.with_events(events)
-      |> Map.put(:event_frames, event_frames)
-      |> Map.put(:srl_frames, srl_frames)
-      |> Map.put(:pos_tags, pos_result_to_tags(pos_result))
+      |> Map.put(:accumulated_context, cross_context.accumulator)
+      |> Map.put(:pass, 2)
       |> calculate_confidence()
       |> ChunkAnalysis.determine_response_strategy()
 
-    # Async belief extraction from events (non-blocking)
-    maybe_extract_beliefs_from_events(events, opts)
+    maybe_extract_beliefs_from_events(pass1.events, opts)
 
     Progress.report(opts, :chunk_complete, %{
-      chunk_index: chunk.index,
+      chunk_index: pass1.chunk_index,
       response_strategy: analysis.response_strategy,
-      confidence: analysis.confidence
+      confidence: analysis.confidence,
+      pass: 2
     })
 
     analysis
+  end
+
+  # Runs the full-features `:intent_full` classification on the pass-1
+  # analysis (with cross-chunk context fused into `:accumulated_context`),
+  # then splices that intent into the speech-act voter via
+  # `SpeechActClassifier.refine_with_intent/3` and re-runs `determine_intent`
+  # on the refined speech act.
+  defp classify_intent_full_and_refine(pass1_with_context, opts) do
+    {fv_intent, fv_conf} = classify_intent_full(pass1_with_context)
+
+    refined_speech_act =
+      SpeechActClassifier.refine_with_intent(pass1_with_context.speech_act, fv_intent, fv_conf)
+
+    {intent, intent_method, intent_confidence, intent_details} =
+      determine_intent(refined_speech_act, pass1_with_context.entities, pass1_with_context.text, opts)
+
+    {refined_speech_act, intent, intent_method, intent_confidence, intent_details}
+  end
+
+  defp classify_intent_full(pass1_with_context) do
+    if MicroClassifiers.ready?() do
+      try do
+        {feature_vector, _word_feats} = FeatureExtractor.extract(pass1_with_context)
+
+        case MicroClassifiers.classify_vector(:intent_full, feature_vector) do
+          {:ok, intent, confidence} when intent != "unknown" and intent != "" ->
+            {intent, confidence}
+
+          _ ->
+            {nil, 0.0}
+        end
+      rescue
+        e ->
+          Logger.debug("Pipeline pass 2 intent_full classification failed: #{Exception.message(e)}")
+          {nil, 0.0}
+      end
+    else
+      {nil, 0.0}
+    end
   end
 
   defp extract_entities(text, opts) do
@@ -692,7 +899,6 @@ defmodule Brain.Analysis.Pipeline do
     entity_neighborhoods = graph_entity_neighborhoods(entities)
 
     # Use the graph-derived entity types to score each candidate intent
-    # via the IntentRegistry's expected_entity_types (data-driven mapping)
     candidates = normalize_top_k(top_k)
 
     scored =
@@ -742,12 +948,15 @@ defmodule Brain.Analysis.Pipeline do
   defp normalize_top_k(_), do: []
 
   @doc false
-  defp score_intent_with_graph_context(intent, entity_neighborhoods, recent_topics) do
-    # Use the IntentRegistry's entity_mappings and expected_entity_types
-    # to match graph-discovered entity types against what the intent expects.
-    # This is fully data-driven: the registry JSON defines which entity types
-    # each intent expects, and the graph tells us what types the entities are.
-    expected_types = IntentRegistry.expected_entity_types(intent)
+  defp score_intent_with_graph_context(intent, entity_neighborhoods, recent_topics, profile \\ nil) do
+    expected_types =
+      case profile do
+        %ChunkProfile{domain: domain} when domain != :unknown ->
+          expected_entity_types_from_domain(domain)
+
+        _ ->
+          expected_entity_types_from_domain(extract_domain_from_intent(intent))
+      end
 
     graph_entity_types =
       entity_neighborhoods
@@ -767,8 +976,6 @@ defmodule Brain.Analysis.Pipeline do
       end)
       |> Enum.uniq()
 
-    # Score: how many of the graph-discovered entity types match what the
-    # intent expects? More matches = higher boost.
     entity_type_overlap =
       if expected_types != [] and graph_entity_types != [] do
         matches =
@@ -783,12 +990,16 @@ defmodule Brain.Analysis.Pipeline do
         0.0
       end
 
-    # Score: does the intent's domain appear in recent conversation topics?
-    # Use the embedder for semantic similarity rather than string matching.
     topic_overlap =
       if recent_topics != [] do
-        intent_meta = IntentRegistry.get(intent)
-        intent_domain = if intent_meta, do: Map.get(intent_meta, "domain", ""), else: ""
+        intent_domain =
+          case profile do
+            %ChunkProfile{domain: domain} when domain != :unknown ->
+              to_string(domain)
+
+            _ ->
+              extract_domain_from_intent(intent)
+          end
 
         if intent_domain != "" do
           topic_similarity = compute_topic_similarity(intent_domain, recent_topics)
@@ -839,28 +1050,38 @@ defmodule Brain.Analysis.Pipeline do
                          |> File.read!()
                          |> Jason.decode!()
 
-  defp infer_intent_from_speech_act(speech_act, _text) do
-    case IntentRegistry.intent_for_speech_act(speech_act.sub_type) do
-      canonical_intent when is_binary(canonical_intent) ->
-        canonical_intent
+  defp infer_intent_from_speech_act(speech_act, _text, profile \\ nil) do
+    profile_label =
+      case profile do
+        %ChunkProfile{derived_label: label} when is_binary(label) and label != "" -> label
+        _ -> nil
+      end
 
-      nil ->
-        sub_type_str = to_string(speech_act.sub_type)
-        category_str = to_string(speech_act.category)
+    if profile_label do
+      profile_label
+    else
+      case Map.get(@speech_act_intent_map, to_string(speech_act.sub_type)) do
+        canonical_intent when is_binary(canonical_intent) ->
+          canonical_intent
 
-        cond do
-          speech_act.is_question ->
-            Map.get(@speech_act_intent_map, "question", "question.factual")
+        nil ->
+          sub_type_str = to_string(speech_act.sub_type)
+          category_str = to_string(speech_act.category)
 
-          Map.has_key?(@speech_act_intent_map, sub_type_str) ->
-            Map.get(@speech_act_intent_map, sub_type_str)
+          cond do
+            speech_act.is_question ->
+              Map.get(@speech_act_intent_map, "question", "question.factual")
 
-          Map.has_key?(@speech_act_intent_map, category_str) ->
-            Map.get(@speech_act_intent_map, category_str)
+            Map.has_key?(@speech_act_intent_map, sub_type_str) ->
+              Map.get(@speech_act_intent_map, sub_type_str)
 
-          true ->
-            Map.get(@speech_act_intent_map, "default", "unknown")
-        end
+            Map.has_key?(@speech_act_intent_map, category_str) ->
+              Map.get(@speech_act_intent_map, category_str)
+
+            true ->
+              Map.get(@speech_act_intent_map, "default", "unknown")
+          end
+      end
     end
   end
 
@@ -949,43 +1170,6 @@ defmodule Brain.Analysis.Pipeline do
     analysis
     |> Map.put(:confidence, confidence)
     |> Map.put(:accumulated_context, acc)
-  end
-
-  defp fetch_atlas_sentiment_context(text) do
-    entities = Brain.ML.EntityExtractor.extract_entities(text)
-    entity_maps = Enum.map(entities, fn e ->
-      %{entity_type: Map.get(e, :entity_type, "Entity"), value: Map.get(e, :value, "")}
-    end)
-
-    case Brain.Graph.Reader.entity_context(entity_maps) do
-      contexts when is_list(contexts) and contexts != [] ->
-        entity_sentiments =
-          Enum.flat_map(contexts, fn %{neighbors: neighbors} ->
-            Enum.flat_map(neighbors, fn neighbor ->
-              props = Map.get(neighbor, :properties, %{})
-              sentiment = Map.get(props, "sentiment")
-
-              if sentiment do
-                [%{entity: Map.get(props, "name", ""), sentiment: sentiment}]
-              else
-                []
-              end
-            end)
-          end)
-
-        if entity_sentiments != [] do
-          %{entity_sentiments: entity_sentiments}
-        else
-          nil
-        end
-
-      _ ->
-        nil
-    end
-  rescue
-    _ -> nil
-  catch
-    :exit, _ -> nil
   end
 
   defp record_pipeline_result(%InternalModel{} = model) do
@@ -1077,12 +1261,17 @@ defmodule Brain.Analysis.Pipeline do
         |> MapSet.new()
 
       if MapSet.size(valid_types) == 0 do
-        []
+        # Schema exists but defines no entity type filter — keep extracted entities
+        # instead of dropping them (empty mappings used to wipe PROPN hints, etc.).
+        entities
       else
         Enum.filter(entities, fn entity ->
           entity_type = entity[:entity_type]
 
-          MapSet.member?(valid_types, entity_type) or
+          # Keep POS-derived proper-noun spans even when typed `unknown`/`person`
+          # so music (and similar) intents can still slot OOV artist/title names.
+          Map.get(entity, :source) == :pos_tagger_propn or
+            MapSet.member?(valid_types, entity_type) or
             Enum.any?(valid_types, &Brain.Analysis.TypeHierarchy.compatible?(entity_type, &1))
         end)
       end
@@ -1091,6 +1280,38 @@ defmodule Brain.Analysis.Pipeline do
 
   defp filter_entities_by_intent(entities, _) do
     entities
+  end
+
+  # OOV proper nouns from the POS tagger are often typed `unknown` while the
+  # utterance is clearly a music command ("Play some …"). Downstream slot and
+  # feature tests expect `artist` (or `person`) for those spans.
+  defp maybe_retype_pos_music_artists(entities, text)
+       when is_list(entities) and is_binary(text) do
+    t = text |> String.trim() |> String.downcase()
+
+    musicish? =
+      String.match?(t, ~r/^play\b/) or
+        String.match?(t, ~r/^find me\b.*\b(music|jazz|songs?|tracks?)\b/)
+
+    if musicish? do
+      Enum.map(entities, fn e ->
+        if Map.get(e, :source) == :pos_tagger_propn and retypeable_music_unknown?(e) do
+          Map.put(e, :entity_type, "artist")
+        else
+          e
+        end
+      end)
+    else
+      entities
+    end
+  end
+
+  defp maybe_retype_pos_music_artists(entities, _), do: entities
+
+  defp retypeable_music_unknown?(e) do
+    t = e[:entity_type]
+
+    t in [nil, :unknown, "unknown", "thing"]
   end
 
   defp maybe_record_novel_candidate(
@@ -1106,7 +1327,7 @@ defmodule Brain.Analysis.Pipeline do
     enabled = Application.get_env(:brain, :intent_promotion_enabled, false)
     side_effects = Keyword.get(opts, :side_effects, true)
 
-    if enabled and side_effects and IntentReviewQueue.ready?() do
+    if enabled and side_effects do
       best_score = confidence || 0.0
       margin = Map.get(details, :margin, 0.0)
 
@@ -1126,10 +1347,16 @@ defmodule Brain.Analysis.Pipeline do
             )
 
             if NoveltyDetector.is_researchable?(text, entities, speech_act) do
+              profile = Keyword.get(opts, :profile)
+
               inferred_domain =
-                case IntentRegistry.domain(intent) do
-                  nil -> :unknown
-                  d -> d
+                case profile do
+                  %ChunkProfile{domain: domain} when domain != :unknown -> domain
+                  _ ->
+                    case extract_domain_from_intent(intent) do
+                      "" -> :unknown
+                      d -> String.to_atom(d)
+                    end
                 end
 
               broadcast_novel_input(text, novelty_score, inferred_domain, entities)
@@ -1157,48 +1384,22 @@ defmodule Brain.Analysis.Pipeline do
   end
 
   defp record_novel_candidate(
-         text,
+         _text,
          intent,
          best_score,
          details,
          _speech_act,
-         entities,
-         slot_result,
+         _entities,
+         _slot_result,
          novelty_score,
-         opts
+         _opts
        ) do
-    conversation_id = Keyword.get(opts, :conversation_id)
-    world_id = Keyword.get(opts, :world_id)
-
-    slot_fill_summary = %{
-      filled_slots: Map.get(slot_result, :filled_slots, %{}),
-      missing_required: Map.get(slot_result, :missing_required, []),
-      missing_optional: Map.get(slot_result, :missing_optional, [])
-    }
-
-    candidate =
-      IntentReviewCandidate.new(text, intent, best_score,
-        conversation_id: conversation_id,
-        world_id: world_id,
-        second_score: Map.get(details, :second_score, 0.0),
-        margin: Map.get(details, :margin, 0.0),
-        top_k: Map.get(details, :top_k, []),
-        extracted_entities: entities,
-        slot_fill_summary: slot_fill_summary
-      )
-
-    case IntentReviewQueue.add(candidate) do
-      {:ok, _id} ->
-        Logger.debug("Recorded novel intent candidate",
-          intent: intent,
-          score: best_score,
-          margin: Map.get(details, :margin, 0.0),
-          novelty_score: novelty_score
-        )
-
-      {:error, reason} ->
-        Logger.warning("Failed to record novel intent candidate", reason: inspect(reason))
-    end
+    Logger.debug("Novel intent candidate detected (review queue removed)",
+      intent: intent,
+      score: best_score,
+      margin: Map.get(details, :margin, 0.0),
+      novelty_score: novelty_score
+    )
   end
 
   # ============================================================================
@@ -1328,5 +1529,29 @@ defmodule Brain.Analysis.Pipeline do
     error ->
       Logger.warning("Fact verification failed", error: inspect(error))
       {:uncertain, :verification_error}
+  end
+
+  defp extract_domain_from_intent(nil), do: ""
+  defp extract_domain_from_intent(intent) when is_binary(intent) do
+    case String.split(intent, ".", parts: 2) do
+      [domain, _] -> domain
+      _ -> intent
+    end
+  end
+  defp extract_domain_from_intent(_), do: ""
+
+  @doc false
+  def expected_entity_types_from_domain(domain) do
+    case domain do
+      :weather -> ["location", "date", "time"]
+      :music -> ["artist", "song", "genre", "album"]
+      :smarthome -> ["device", "room", "setting"]
+      :reminder -> ["date", "time", "description"]
+      :navigation -> ["location", "address"]
+      :search -> ["query", "topic"]
+      :meta -> []
+      :smalltalk -> ["person", "name"]
+      _ -> []
+    end
   end
 end

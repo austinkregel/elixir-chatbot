@@ -1,6 +1,6 @@
 defmodule Brain.Analysis.EventExtractor do
   @moduledoc """
-  Extracts structured events from LSTM analysis outputs.
+  Extracts structured events from POS-tagged analysis outputs.
 
   Uses POS tags to identify verbs (actions) and entities for actors/objects.
   All extraction is done via tensor operations - no string matching or regex.

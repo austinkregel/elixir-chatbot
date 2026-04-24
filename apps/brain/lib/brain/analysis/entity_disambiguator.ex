@@ -1,5 +1,5 @@
 defmodule Brain.Analysis.EntityDisambiguator do
-  @moduledoc "Disambiguates entities when multiple types are possible,\nusing speech act, discourse, and POS-tagged syntactic context.\n\nWhen the gazetteer returns multiple possible entity types for the same\ntext (e.g., \"Austin\" could be a person or a location), this module\nuses contextual features to determine the most likely interpretation.\n\nAlso handles cases where a single-type entity (e.g., \"Nice\" as location)\nis being used as a proper noun/name in context (e.g., \"I'm Nice\"),\nrecognizing proper noun usage and mapping it to the appropriate entity type.\n\n## Features Used\n\n- **POS tags**: What part of speech precedes/follows the entity\n- **Discourse indicators**: Is this a self-referential statement?\n- **Speech act context**: Is this a greeting, question, command?\n- **Intent hints**: What domain does the intent belong to?\n\nUses IntentRegistry for intent domain lookups instead of keyword matching.\n\n## Usage\n\n    # With POS-tagged tokens\n    pos_tagged = [{\"I\", \"PRON\"}, {\"am\", \"VERB\"}, {\"Austin\", \"PROPN\"}]\n    entities = [%{value: \"Austin\", types: [person_info, location_info], ...}]\n    context = %{discourse: discourse_result, speech_act: speech_act_result}\n\n    disambiguated = EntityDisambiguator.disambiguate(entities, pos_tagged, context)\n\n"
+  @moduledoc "Disambiguates entities when multiple types are possible,\nusing speech act, discourse, and POS-tagged syntactic context.\n\nWhen the gazetteer returns multiple possible entity types for the same\ntext (e.g., \"Austin\" could be a person or a location), this module\nuses contextual features to determine the most likely interpretation.\n\nAlso handles cases where a single-type entity (e.g., \"Nice\" as location)\nis being used as a proper noun/name in context (e.g., \"I'm Nice\"),\nrecognizing proper noun usage and mapping it to the appropriate entity type.\n\n## Features Used\n\n- **POS tags**: What part of speech precedes/follows the entity\n- **Discourse indicators**: Is this a self-referential statement?\n- **Speech act context**: Is this a greeting, question, command?\n- **Intent hints**: What domain does the intent belong to?\n- **ChunkProfile**: Domain from feature-vector classification for entity type expectations\n\n## Usage\n\n    # With POS-tagged tokens\n    pos_tagged = [{\"I\", \"PRON\"}, {\"am\", \"VERB\"}, {\"Austin\", \"PROPN\"}]\n    entities = [%{value: \"Austin\", types: [person_info, location_info], ...}]\n    context = %{discourse: discourse_result, speech_act: speech_act_result}\n\n    disambiguated = EntityDisambiguator.disambiguate(entities, pos_tagged, context)\n\n"
 
   # World.TypeInferrer is in a sibling umbrella app that depends on :brain.
   # It's available at runtime but not at compile time.
@@ -9,7 +9,8 @@ defmodule Brain.Analysis.EntityDisambiguator do
   alias Brain.Graph.Reader
   require Logger
 
-  alias Analysis.{IntentRegistry, TypeHierarchy}
+  alias Analysis.{ChunkProfile, TypeHierarchy}
+  alias Brain.Analysis.Pipeline
   alias World.TypeInferrer
 
   @external_resource Path.join(:code.priv_dir(:brain), "analysis/entity_types.json")
@@ -151,13 +152,22 @@ defmodule Brain.Analysis.EntityDisambiguator do
     false
   end
 
-  @doc "Infer the entity type using intent context and TypeInferrer.\n\nPrimary: Uses IntentRegistry expected_entity_types to match the current\nintent's requirements.\n\nFallback: TypeInferrer's learned patterns when no intent context or\nwhen TypeInferrer returns a type that matches expected types.\n\nRequires world_id in context for proper data isolation.\n"
+  @doc "Infer the entity type using intent context and TypeInferrer.\n\nPrimary: Uses ChunkProfile domain to derive expected entity types for\nthe current intent's requirements.\n\nFallback: TypeInferrer's learned patterns when no intent context or\nwhen TypeInferrer returns a type that matches expected types.\n\nRequires world_id in context for proper data isolation.\n"
   def infer_type_with_type_inferrer(entity, pos_tagged, context) do
     entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
     original_type = Map.get(entity, :entity_type) || ""
     intent = Map.get(context, :intent, "")
     world_id = Map.get(context, :world_id) || "default"
-    expected_types = IntentRegistry.expected_entity_types(intent)
+    profile = Map.get(context, :profile)
+
+    expected_types =
+      case profile do
+        %ChunkProfile{domain: domain} when domain != :unknown ->
+          Pipeline.expected_entity_types_from_domain(domain)
+
+        _ ->
+          Pipeline.expected_entity_types_from_domain(domain_from_intent(intent))
+      end
 
     {context_tokens, context_tags} =
       case pos_tagged do
@@ -214,13 +224,16 @@ defmodule Brain.Analysis.EntityDisambiguator do
   """
   def introduction_confidence(pos_tagged, entity_position, context) do
     intent = Map.get(context, :intent, "")
+    profile = Map.get(context, :profile)
 
-    # Signal 1: Intent classifier says this is an introduction (strongest signal)
     intent_score =
-      if IntentRegistry.introduction_intent?(intent) do
-        0.7
-      else
-        0.0
+      case profile do
+        %ChunkProfile{domain: :smalltalk, speech_act_subtype: sub}
+        when sub in [:statement, :greeting] ->
+          0.7
+
+        _ ->
+          if String.starts_with?(to_string(intent || ""), "greeting"), do: 0.7, else: 0.0
       end
 
     # Signal 2: Trained POS tagger output shows PRON+VERB before the entity
@@ -254,10 +267,20 @@ defmodule Brain.Analysis.EntityDisambiguator do
 
   defp extract_features(_entity, _pos_tagged, context) do
     intent = Map.get(context, :intent, "")
-    domain = IntentRegistry.domain(intent)
+    profile = Map.get(context, :profile)
+
+    {domain, expected_types} =
+      case profile do
+        %ChunkProfile{domain: d} when d != :unknown ->
+          {d, Pipeline.expected_entity_types_from_domain(d)}
+
+        _ ->
+          d = domain_from_intent(intent)
+          {d, Pipeline.expected_entity_types_from_domain(d)}
+      end
 
     %{
-      expected_entity_types: IntentRegistry.expected_entity_types(intent),
+      expected_entity_types: expected_types,
       intent: intent,
       domain: domain
     }
@@ -426,7 +449,16 @@ defmodule Brain.Analysis.EntityDisambiguator do
       case Reader.entity_context([entity]) do
         [%{node: node, neighbors: neighbors}] when node != nil ->
           intent = Map.get(context, :intent, "")
-          expected_types = IntentRegistry.expected_entity_types(intent)
+          profile = Map.get(context, :profile)
+
+          expected_types =
+            case profile do
+              %ChunkProfile{domain: domain} when domain != :unknown ->
+                Pipeline.expected_entity_types_from_domain(domain)
+
+              _ ->
+                Pipeline.expected_entity_types_from_domain(domain_from_intent(intent))
+            end
           neighbor_count = length(neighbors)
 
           # Check if neighbor labels/types align with what the intent expects.
@@ -518,4 +550,13 @@ defmodule Brain.Analysis.EntityDisambiguator do
   defp select_type(entity, _) do
     entity
   end
+
+  defp domain_from_intent(nil), do: nil
+  defp domain_from_intent(intent) when is_binary(intent) do
+    case String.split(intent, ".", parts: 2) do
+      [d, _] -> String.to_atom(d)
+      _ -> nil
+    end
+  end
+  defp domain_from_intent(_), do: nil
 end

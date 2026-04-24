@@ -3,7 +3,9 @@ import Config
 # Test-specific Repo options (connection config loaded from .env via runtime.exs)
 config :atlas, Atlas.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: min(System.schedulers_online() * 2, 32)
+  pool_size: min(System.schedulers_online() * 2, 32),
+  migration_default_prefix: "atlas_test",
+  after_connect: {Atlas.Repo, :load_age_test, []}
 
 # Explicitly disable auto-migration and auto-import in test env.
 # Migrations are handled by the atlas test_helper or the Docker entrypoint.

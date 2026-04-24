@@ -1,3 +1,7 @@
+# Gazetteer must exist on disk before Brain starts — EntityExtractor loads it
+# at boot and no longer falls back to raw JSON.
+Brain.Test.ModelFactory.ensure_gazetteer_on_disk!()
+
 # Start Brain application to get PubSub and core services
 {:ok, _} = Application.ensure_all_started(:brain)
 
@@ -6,9 +10,21 @@ if Process.whereis(Atlas.Repo) do
   Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :manual)
 end
 
-# Validate stored models match current code expectations.
-# Halts the suite immediately with an actionable message if any model
-# has a dimension/config mismatch (e.g. needs retraining).
+# Train and persist all test models, then reload MicroClassifiers from disk.
+Brain.Test.ModelFactory.train_and_load_test_models()
+
+# Eager gazetteer load (not only the async Application init task) so
+# `Gazetteer.loaded?/0` and feature tests see a ready gazetteer.
+case Brain.ML.Gazetteer.load_all() do
+  {:ok, _} ->
+    :ok
+
+  other ->
+    IO.puts(:stderr, "test_helper: Gazetteer.load_all/0 returned #{inspect(other)}")
+    raise "test_helper: Gazetteer failed to load"
+end
+
+# Validate stored models: every required file must exist and deserialize.
 Brain.ML.ModelPreflight.validate_all!()
 
 # Wait for the Ouro Python sidecar to become healthy.
@@ -28,9 +44,9 @@ end
 # All other tags (:slow, :training, :benchmark, :gpu, :integration) run by default.
 # Any skipped behavior is untested behavior.
 #
-# Optional exclusions (add via command line if needed):
-# - :requires_lstm - Tests requiring compatible LSTM .term files
-#   mix test --exclude requires_lstm
+# (Historical note: a `:requires_lstm` tag used to gate tests against the
+# in-tree intent-LSTM stack. Both the modules and the tests are gone, so
+# the tag no longer exists anywhere in the suite.)
 #
 # ============================================================================
 # HTTP Snapshot Testing (no external API calls)

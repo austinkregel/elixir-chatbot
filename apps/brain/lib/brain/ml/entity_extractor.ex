@@ -7,8 +7,7 @@ defmodule Brain.ML.EntityExtractor do
   require Logger
 
   alias ML.{Gazetteer, Tokenizer, EntityTrainer, POSTagger}
-  alias Brain.ML.LSTM.UnifiedModel
-  alias Analysis.{EntityDisambiguator, IntentRegistry, TypeHierarchy}
+  alias Analysis.{EntityDisambiguator, TypeHierarchy}
   alias Brain.Telemetry
 
   @type_mappings_path "evaluation/ner/type_mappings.json"
@@ -160,94 +159,30 @@ defmodule Brain.ML.EntityExtractor do
     gazetteer_path = Path.join(models_path || Brain.priv_path("ml_models"), "gazetteer.term")
     Brain.ML.ModelStore.ensure_local("gazetteer.term", gazetteer_path)
 
+    unless File.exists?(gazetteer_path) do
+      raise """
+      EntityExtractor: missing gazetteer at #{gazetteer_path}.
+      Run `mix train` (gazetteer stage) or, in test, `Brain.Test.ModelFactory.ensure_gazetteer_on_disk!/0`
+      before starting the Brain application.
+      """
+    end
+
     case File.read(gazetteer_path) do
       {:ok, binary} ->
         try do
           :erlang.binary_to_term(binary)
         rescue
           e ->
-            Logger.warning("Failed to load gazetteer, falling back to legacy", %{
-              error: inspect(e)
-            })
-
-            do_load_entity_maps_legacy()
+            reraise """
+            EntityExtractor: corrupt gazetteer at #{gazetteer_path}: #{Exception.message(e)}
+            Retrain with `mix train` or delete the file and regenerate.
+            """,
+                    __STACKTRACE__
         end
 
-      {:error, _} ->
-        do_load_entity_maps_legacy()
+      {:error, reason} ->
+        raise "EntityExtractor: cannot read gazetteer at #{gazetteer_path}: #{inspect(reason)}"
     end
-  end
-
-  @doc "Legacy entity loading (for backward compatibility).\n"
-  def load_entity_maps_legacy do
-    {:ok, do_load_entity_maps_legacy()}
-  end
-
-  defp do_load_entity_maps_legacy do
-    base_path = Application.get_env(:brain, :ml)[:training_data_path]
-    entities_dir = Path.join(base_path || "data", "entities")
-
-    case File.ls(entities_dir) do
-      {:ok, files} ->
-        Enum.reduce(files, %{}, fn file, acc ->
-          if String.ends_with?(file, ".json") do
-            file_path = Path.join(entities_dir, file)
-
-            case File.read(file_path) do
-              {:ok, content} ->
-                case Jason.decode(content) do
-                  {:ok, %{"entries" => entries}} when is_list(entries) ->
-                    merge_entries_map(acc, base_name(file), entries)
-
-                  {:ok, list} when is_list(list) ->
-                    merge_entries_map(acc, base_name(file), list)
-
-                  _ ->
-                    acc
-                end
-
-              _ ->
-                acc
-            end
-          else
-            acc
-          end
-        end)
-
-      _ ->
-        %{}
-    end
-  end
-
-  defp merge_entries_map(acc, entity_name, entries) do
-    Enum.reduce(entries, acc, fn entry, acc2 ->
-      value = Map.get(entry, "value") || Map.get(entry, "name")
-      synonyms = Map.get(entry, "synonyms", [])
-      all_terms = [value | synonyms] |> Enum.reject(&is_nil/1)
-
-      Enum.reduce(all_terms, acc2, fn term, acc3 ->
-        normalized = String.downcase(String.trim(term))
-
-        if String.length(normalized) >= 2 do
-          Map.put(acc3, normalized, %{
-            entity_type: normalize_entity_name(entity_name),
-            value: value
-          })
-        else
-          acc3
-        end
-      end)
-    end)
-  end
-
-  defp normalize_entity_name(name) do
-    name
-    |> String.replace("_entries_en", "")
-    |> String.replace("_", "-")
-  end
-
-  defp base_name(file) do
-    file |> String.replace_suffix(".json", "")
   end
 
   @doc "Get entity maps from GenServer.\n"
@@ -776,109 +711,8 @@ defmodule Brain.ML.EntityExtractor do
     end
   end
 
-  # Extract proper nouns that aren't in the gazetteer using the LSTM NER model.
-  #
-  # This handles novel names like "Ephbaum" that the gazetteer doesn't know about.
-  # The LSTM NER model is trained to recognize named entities based on context,
-  # falling back to POS tagger if LSTM is not available.
   defp extract_proper_noun_hints(tokens, entity_maps) do
-    case extract_with_lstm_ner(tokens, entity_maps) do
-      {:ok, entities} when entities != [] ->
-        entities
-
-      _ ->
-        extract_with_pos_tagger(tokens, entity_maps)
-    end
-  end
-
-  defp extract_with_lstm_ner(tokens, entity_maps) do
-    if UnifiedModel.ready?() do
-      text = Enum.map_join(tokens, " ", & &1.text)
-
-      result =
-        try do
-          UnifiedModel.extract_entities(text)
-        catch
-          :exit, _ -> {:error, :lstm_call_failed}
-          _, _ -> {:error, :lstm_exception}
-        end
-
-      case result do
-        {:ok, lstm_entities} when is_list(lstm_entities) ->
-          filtered =
-            lstm_entities
-            |> Enum.filter(fn e ->
-              value = extract_entity_value(e)
-              not in_gazetteer?(value, entity_maps)
-            end)
-            |> Enum.map(fn e ->
-              value = extract_entity_value(e)
-
-              default_ner_type = TypeHierarchy.config("default_propn_type", "person")
-
-              entity_type =
-                Map.get(e, :type) || Map.get(e, :entity_type) || Map.get(e, "type", default_ner_type)
-
-              confidence = Map.get(e, :confidence) || Map.get(e, "confidence", 0.7)
-              {start_pos, end_pos} = find_entity_positions(tokens, value)
-
-              %{
-                entity_type: normalize_lstm_entity_type(entity_type),
-                value: value,
-                match: value,
-                start_pos: start_pos,
-                end_pos: end_pos,
-                confidence: confidence,
-                source: :lstm_ner
-              }
-            end)
-
-          {:ok, filtered}
-
-        _ ->
-          {:error, :no_entities}
-      end
-    else
-      {:error, :lstm_not_ready}
-    end
-  end
-
-  defp normalize_lstm_entity_type(type) when is_binary(type) do
-    label_map = TypeHierarchy.config("ner_label_map", %{})
-    Map.get(label_map, String.downcase(type), type)
-  end
-
-  defp normalize_lstm_entity_type(type) do
-    to_string(type)
-  end
-
-  defp extract_entity_value(entity) do
-    raw = Map.get(entity, :value) || Map.get(entity, "value", "")
-
-    case raw do
-      s when is_binary(s) -> s
-      %{text: text} when is_binary(text) -> text
-      %{"text" => text} when is_binary(text) -> text
-      _ -> to_string(raw)
-    end
-  end
-
-  defp find_entity_positions(tokens, value) do
-    # value_lower was unused - comparing individual tokens instead
-    value_tokens = String.split(value)
-
-    case Enum.find_index(tokens, fn t ->
-           String.downcase(t.text) == String.downcase(List.first(value_tokens) || "")
-         end) do
-      nil ->
-        {0, String.length(value)}
-
-      idx ->
-        start_token = Enum.at(tokens, idx)
-        end_idx = idx + length(value_tokens) - 1
-        end_token = Enum.at(tokens, end_idx) || start_token
-        {start_token.start_pos, end_token.end_pos}
-    end
+    extract_with_pos_tagger(tokens, entity_maps)
   end
 
   defp extract_with_pos_tagger(tokens, entity_maps) do
@@ -1254,13 +1088,18 @@ defmodule Brain.ML.EntityExtractor do
   end
 
   defp context_type(context) do
+    profile = context[:profile]
     intent = context[:intent] || extract_intent_from_speech_act(context[:speech_act])
 
     cond do
-      IntentRegistry.introduction_intent?(intent) -> :introduction
-      IntentRegistry.weather_intent?(intent) -> :weather
-      IntentRegistry.music_intent?(intent) -> :music
-      IntentRegistry.device_intent?(intent) -> :device
+      profile != nil and is_map(profile) and Map.get(profile, :domain) == :introduction -> :introduction
+      profile != nil and is_map(profile) and Map.get(profile, :domain) == :weather -> :weather
+      profile != nil and is_map(profile) and Map.get(profile, :domain) == :music -> :music
+      profile != nil and is_map(profile) and Map.get(profile, :domain) == :smarthome -> :device
+      String.starts_with?(to_string(intent || ""), "greeting") -> :introduction
+      String.starts_with?(to_string(intent || ""), "weather") -> :weather
+      String.starts_with?(to_string(intent || ""), "music") -> :music
+      String.starts_with?(to_string(intent || ""), "smarthome") -> :device
       true -> :default
     end
   end

@@ -17,6 +17,16 @@ defmodule Brain.ML.MicroClassifiers do
   - `:entity_type` - Infers entity type from entity name + category
   - `:user_fact_type` - Classifies whether entity/fact is user-specific or general knowledge
   - `:directed_at_bot` - Detects whether text is addressed to the bot
+  - `:intent_full` - Fine-grained intent classification (e.g. `weather.query`, `code.explain`)
+  - `:intent_domain` - Consolidated topical domain for `ChunkProfile.domain`
+  - `:tense_class` - Temporal tense (`past`, `present`, `future`, `atemporal`)
+  - `:aspect_class` - Grammatical aspect (`simple`, `progressive`, `perfect`, `perfect_progressive`)
+  - `:urgency` - Urgency (`low`, `normal`, `high`, `critical`)
+  - `:certainty_level` - Epistemic stance (`committed`, `tentative`, `hedged`, `speculative`)
+  - `:coarse_semantic_class` - OOV Tier-1 coarse class (`person`, `place`, `thing`, …)
+
+  Axis training JSON is produced by `mix gen_micro_data`; models are trained with
+  `mix train_micro` (also stage 9 of `mix train`).
 
   ## Usage
 
@@ -37,6 +47,7 @@ defmodule Brain.ML.MicroClassifiers do
   use GenServer
   require Logger
 
+  alias Brain.ML.FeatureVectorClassifier
   alias Brain.ML.SimpleClassifier
 
   @classifier_names [
@@ -48,7 +59,15 @@ defmodule Brain.ML.MicroClassifiers do
     :entity_type,
     :user_fact_type,
     :directed_at_bot,
-    :event_argument_role
+    :event_argument_role,
+    :intent_full,
+    :intent_domain,
+    :tense_class,
+    :aspect_class,
+    :urgency,
+    :certainty_level,
+    :coarse_semantic_class,
+    :framing_class
   ]
 
   # --- Client API ---
@@ -62,6 +81,59 @@ defmodule Brain.ML.MicroClassifiers do
   def classify(name, text) do
     if ready?() do
       GenServer.call(__MODULE__, {:classify, name, text}, 5_000)
+    else
+      {:error, :not_loaded}
+    end
+  end
+
+  @doc """
+  Classify a dense feature vector using the named micro-classifier.
+
+  Only valid for classifiers whose loaded model is of `kind: :feature_vector`
+  (see `Brain.ML.FeatureVectorClassifier`). Returns `{:error, :wrong_kind}`
+  if the named classifier is text-based, and `{:error, :not_loaded}` if the
+  GenServer or the named model isn't available.
+  """
+  @spec classify_vector(atom(), list(float())) ::
+          {:ok, String.t(), float()}
+          | {:error, :not_loaded | :wrong_kind | :classification_failed}
+  def classify_vector(name, feature_vector) when is_atom(name) and is_list(feature_vector) do
+    if ready?() do
+      GenServer.call(__MODULE__, {:classify_vector, name, feature_vector}, 5_000)
+    else
+      {:error, :not_loaded}
+    end
+  end
+
+  @doc """
+  Return the declared input dimensionality of the named feature-vector
+  classifier.
+
+  Returns `{:ok, integer}` for loaded feature-vector models, or an error
+  tuple otherwise. Used to assert at boot / test time that the feature
+  extractor and the trained model agree on vector shape.
+  """
+  @spec input_dim(atom()) ::
+          {:ok, non_neg_integer()} | {:error, :not_loaded | :not_trained | :wrong_kind}
+  def input_dim(name) when is_atom(name) do
+    if ready?() do
+      GenServer.call(__MODULE__, {:input_dim, name}, 1_000)
+    else
+      {:error, :not_loaded}
+    end
+  end
+
+  @doc """
+  Return the kind of the named classifier's loaded model.
+
+  Returns `{:ok, :feature_vector}` or `{:ok, :text}` for loaded models,
+  or `{:error, :not_loaded | :not_trained}` otherwise.
+  """
+  @spec kind(atom()) ::
+          {:ok, :feature_vector | :text} | {:error, :not_loaded | :not_trained}
+  def kind(name) when is_atom(name) do
+    if ready?() do
+      GenServer.call(__MODULE__, {:kind, name}, 1_000)
     else
       {:error, :not_loaded}
     end
@@ -112,7 +184,7 @@ defmodule Brain.ML.MicroClassifiers do
 
   @impl true
   def handle_call(:ready?, _from, state) do
-    {:reply, true, state}
+    {:reply, all_models_loaded?(state.models), state}
   end
 
   @impl true
@@ -120,6 +192,9 @@ defmodule Brain.ML.MicroClassifiers do
     case Map.get(state.models, name) do
       nil ->
         {:reply, {:error, :not_loaded}, state}
+
+      %{kind: :feature_vector} ->
+        {:reply, {:error, :wrong_kind}, state}
 
       model ->
         case SimpleClassifier.classify(text, model) do
@@ -133,10 +208,63 @@ defmodule Brain.ML.MicroClassifiers do
   end
 
   @impl true
+  def handle_call({:classify_vector, name, feature_vector}, _from, state) do
+    case Map.get(state.models, name) do
+      nil ->
+        {:reply, {:error, :not_loaded}, state}
+
+      %{kind: :feature_vector} = model ->
+        case FeatureVectorClassifier.classify(feature_vector, model) do
+          {:ok, label, score, _details} ->
+            {:reply, {:ok, label, score}, state}
+
+          _ ->
+            {:reply, {:error, :classification_failed}, state}
+        end
+
+      _other ->
+        {:reply, {:error, :wrong_kind}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:input_dim, name}, _from, state) do
+    case Map.get(state.models, name) do
+      nil ->
+        {:reply, {:error, :not_trained}, state}
+
+      %{kind: :feature_vector} = model ->
+        {:reply, {:ok, FeatureVectorClassifier.input_dim(model)}, state}
+
+      _other ->
+        {:reply, {:error, :wrong_kind}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:kind, name}, _from, state) do
+    case Map.get(state.models, name) do
+      nil ->
+        {:reply, {:error, :not_trained}, state}
+
+      %{kind: :feature_vector} ->
+        {:reply, {:ok, :feature_vector}, state}
+
+      _other ->
+        {:reply, {:ok, :text}, state}
+    end
+  end
+
+  @impl true
   def handle_call({:incremental_update, name, examples}, _from, state) do
     case Map.get(state.models, name) do
       nil ->
         {:reply, {:error, :not_loaded}, state}
+
+      %{kind: :feature_vector} ->
+        # Feature-vector classifiers are retrained via `mix train_micro`;
+        # they don't currently support incremental updates.
+        {:reply, {:error, :incremental_not_supported}, state}
 
       model ->
         incremental_count = Map.get(model, :incremental_update_count, 0)
@@ -170,6 +298,8 @@ defmodule Brain.ML.MicroClassifiers do
 
   @impl true
   def handle_call(:status, _from, state) do
+    ready = all_models_loaded?(state.models)
+
     status =
       Enum.into(@classifier_names, %{}, fn name ->
         case Map.get(state.models, name) do
@@ -182,7 +312,7 @@ defmodule Brain.ML.MicroClassifiers do
         end
       end)
 
-    {:reply, %{ready: true, classifiers: status}, state}
+    {:reply, %{ready: ready, classifiers: status}, state}
   end
 
   @impl true
@@ -191,6 +321,10 @@ defmodule Brain.ML.MicroClassifiers do
   end
 
   # --- Private ---
+
+  defp all_models_loaded?(models) do
+    Enum.all?(@classifier_names, &Map.has_key?(models, &1))
+  end
 
   defp load_all_models do
     Enum.reduce(@classifier_names, %{}, fn name, acc ->

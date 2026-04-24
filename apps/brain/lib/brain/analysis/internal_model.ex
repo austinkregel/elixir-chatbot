@@ -136,7 +136,7 @@ end
 defmodule Brain.Analysis.ChunkAnalysis do
   @moduledoc "Complete analysis for a single chunk, combining results from all analyzers.\n"
 
-  alias Brain.Analysis.{DiscourseResult, SpeechActResult, SlotResult, SlotDetector}
+  alias Brain.Analysis.{DiscourseResult, SpeechActResult, SlotResult, SlotDetector, ChunkProfile}
   alias Brain.Analysis.Types.Event
   alias Brain.Analysis.InternalModel
 
@@ -150,12 +150,16 @@ defmodule Brain.Analysis.ChunkAnalysis do
 
   @type epistemic_status :: :unchecked | :verified | :contradicted | :uncertain
 
+  @type pass :: 1 | 2
+
   @type t :: %__MODULE__{
           chunk_index: non_neg_integer(),
           text: String.t(),
           discourse: DiscourseResult.t(),
           speech_act: SpeechActResult.t(),
           intent: String.t() | nil,
+          profile: ChunkProfile.t() | nil,
+          feature_vector: list(float()),
           entities: list(map()),
           slots: SlotResult.t(),
           missing_context: list(atom()),
@@ -166,7 +170,8 @@ defmodule Brain.Analysis.ChunkAnalysis do
           sentiment: sentiment(),
           fact_verification: fact_verification(),
           related_beliefs: list(map()),
-          epistemic_status: epistemic_status()
+          epistemic_status: epistemic_status(),
+          pass: pass()
         }
 
   defstruct [
@@ -175,6 +180,8 @@ defmodule Brain.Analysis.ChunkAnalysis do
     :discourse,
     :speech_act,
     intent: nil,
+    profile: nil,
+    feature_vector: [],
     entities: [],
     slots: nil,
     missing_context: [],
@@ -189,7 +196,8 @@ defmodule Brain.Analysis.ChunkAnalysis do
     event_frames: [],
     srl_frames: [],
     pos_tags: [],
-    accumulated_context: nil
+    accumulated_context: nil,
+    pass: 1
   ]
 
   @doc "Creates a new chunk analysis.\n"
@@ -334,7 +342,8 @@ defmodule Brain.Analysis.SpeechActResult do
           indicators: list(String.t()),
           is_question: boolean(),
           is_imperative: boolean(),
-          intent_confidence: float() | nil
+          intent_confidence: float() | nil,
+          raw_analyses: map() | nil
         }
 
   defstruct category: :unknown,
@@ -343,9 +352,10 @@ defmodule Brain.Analysis.SpeechActResult do
             indicators: [],
             is_question: false,
             is_imperative: false,
-            intent_confidence: nil
+            intent_confidence: nil,
+            raw_analyses: nil
 
-  @doc "Creates a new speech act result.\n"
+  @doc "Creates a new speech act result.\n\nThe `:raw_analyses` option carries the per-voter analysis maps so that\n`Brain.Analysis.SpeechActClassifier.refine_with_intent/3` can splice in a\nfreshly-classified intent voter without re-running the cheap voters.\n"
   def new(category, sub_type, confidence, opts \\ []) do
     %__MODULE__{
       category: category,
@@ -354,7 +364,8 @@ defmodule Brain.Analysis.SpeechActResult do
       indicators: Keyword.get(opts, :indicators, []),
       is_question: Keyword.get(opts, :is_question, false),
       is_imperative: Keyword.get(opts, :is_imperative, false),
-      intent_confidence: Keyword.get(opts, :intent_confidence)
+      intent_confidence: Keyword.get(opts, :intent_confidence),
+      raw_analyses: Keyword.get(opts, :raw_analyses)
     }
   end
 

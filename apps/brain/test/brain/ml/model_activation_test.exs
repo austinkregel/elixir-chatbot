@@ -9,18 +9,6 @@ defmodule Brain.ML.ModelActivationTest do
   use ExUnit.Case, async: false
   @moduletag :integration
 
-  describe "GCN Model wiring" do
-    test "GCN is included in LSTMIntegration ensemble" do
-      status = Brain.ML.LSTM.Integration.model_status()
-      assert Map.has_key?(status, :gcn),
-        "LSTMIntegration.model_status should report GCN availability"
-    end
-
-    test "GCN Model module exposes ready?/0" do
-      assert is_boolean(Brain.ML.GCN.Model.ready?())
-    end
-  end
-
   describe "Poincare Embeddings wiring" do
     test "Poincare module exposes ready?/0" do
       assert is_boolean(Brain.ML.Poincare.Embeddings.ready?())
@@ -79,23 +67,6 @@ defmodule Brain.ML.ModelActivationTest do
       fns = Brain.Epistemic.StanceTracker.__info__(:functions)
       assert {:record_stance, 4} in fns or {:record_stance, 5} in fns
       assert {:check_drift, 2} in fns or {:check_drift, 3} in fns
-    end
-  end
-
-  describe "IterativeEncoder wiring" do
-    test "IterativeEncoder components are accessible" do
-      assert Code.ensure_loaded?(Brain.ML.LSTM.IterativeEncoder)
-
-      fns = Brain.ML.LSTM.IterativeEncoder.__info__(:functions)
-      assert {:build_gate, 1} in fns or {:build_gate, 2} in fns
-      assert {:iterate, 6} in fns
-
-      # defn functions: apply_gate, entropy, should_exit?
-      current = Nx.tensor([[1.0, 2.0]])
-      previous = Nx.tensor([[3.0, 4.0]])
-      gate = Nx.tensor([[0.5, 0.5]])
-      result = Brain.ML.LSTM.IterativeEncoder.apply_gate(current, previous, gate)
-      assert is_struct(result, Nx.Tensor)
     end
   end
 

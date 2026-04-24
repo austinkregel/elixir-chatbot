@@ -3,7 +3,6 @@ defmodule Brain.DataDrivenTestSetup do
 
   alias Brain.ML.Gazetteer
   alias Brain.ML.EntityExtractor
-  alias Brain.ML.IntentClassifierSimple
   import Brain.TestHelpers
 
   @doc "Sets up all required services for ML-dependent tests.\nCall this in your test's setup block.\n"
@@ -18,7 +17,6 @@ defmodule Brain.DataDrivenTestSetup do
     )
 
     ensure_started(Brain.ML.Gazetteer)
-    ensure_started(Brain.ML.IntentClassifierSimple)
     ensure_started(Brain.KnowledgeStore)
     ensure_started(Brain.MemoryStore)
     ensure_started(Brain.FactDatabase)
@@ -30,22 +28,19 @@ defmodule Brain.DataDrivenTestSetup do
     :ok
   end
 
-  @doc "Loads ML models via ModelFactory. Returns :ok even if some models fail to load.\n"
+  @doc """
+  Loads ML models via `Brain.Test.ModelFactory` and warms the
+  `EntityExtractor` and `Gazetteer` caches.
+
+  Raises if any step fails. We intentionally do not rescue or `catch`
+  here -- swallowing setup errors causes the rest of the test suite to
+  run against a half-initialized world and produces flaky failures
+  whose root cause has already scrolled off the screen.
+  """
   def load_ml_models do
     Brain.Test.ModelFactory.train_and_load_test_models()
-
-    try do
-      EntityExtractor.load_entity_maps()
-    catch
-      _, _ -> :ok
-    end
-
-    try do
-      Gazetteer.load_all()
-    catch
-      _, _ -> :ok
-    end
-
+    EntityExtractor.load_entity_maps()
+    Gazetteer.load_all()
     :ok
   end
 
@@ -77,12 +72,7 @@ defmodule Brain.DataDrivenTestSetup do
     ensure_started(Brain.ML.Gazetteer)
     ensure_started(World.Manager)
 
-    try do
-      Gazetteer.load_all()
-    catch
-      _, _ -> :ok
-    end
-
+    Gazetteer.load_all()
     :ok
   end
 
@@ -94,9 +84,15 @@ defmodule Brain.DataDrivenTestSetup do
     :ok
   end
 
-  @doc "Checks if ML models are loaded and ready.\n"
+  @doc """
+  Checks if ML models have been loaded into the persistent-term cache by
+  `Brain.Test.ModelFactory.train_and_load_test_models/0`.
+
+  Previously this always returned `true`, which silently masked broken
+  setups. Tests that gate on this should now see an honest answer.
+  """
   def ml_models_available? do
-    IntentClassifierSimple.ready?()
+    :persistent_term.get({Brain.Test.ModelFactory, :trained}, false)
   end
 
   @doc "Checks if POS model is available.\n"

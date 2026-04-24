@@ -74,7 +74,7 @@ defmodule Brain.ML.TrainingServerTest do
 
   describe "cancel_schedule/2" do
     test "cancels an existing schedule", %{name: name} do
-      {:ok, schedule_id} = TrainingServer.schedule(:unified, [], 12, name)
+      {:ok, schedule_id} = TrainingServer.schedule(:tfidf, [], 12, name)
       assert :ok = TrainingServer.cancel_schedule(schedule_id, name)
       assert [] = TrainingServer.list_schedules(name)
     end

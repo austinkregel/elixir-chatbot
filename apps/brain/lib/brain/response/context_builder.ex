@@ -8,9 +8,16 @@ defmodule Brain.Response.ContextBuilder do
   SurfaceRealizer -> OuroRealizer -> RealizationPacket -> ConstraintEnforcer).
   """
 
-  alias Brain.Analysis.{InternalModel, ChunkAnalysis, ContextAccumulator, EntityGraphEnricher}
+  alias Brain.Analysis.{
+    InternalModel,
+    ChunkAnalysis,
+    ChunkPriority,
+    ContextAccumulator,
+    EntityGraphEnricher
+  }
+
   alias Brain.Graph.Reader
-  alias Brain.Response.Enricher
+  alias Brain.Response.{Enricher, FactRetriever}
 
   require Logger
 
@@ -29,6 +36,7 @@ defmodule Brain.Response.ContextBuilder do
   def build(%InternalModel{} = model, opts \\ []) do
     analyses = model.analyses || []
     primary = select_primary_analysis(analyses)
+    question_chunk = ChunkPriority.question_chunk(analyses)
     user_id = Keyword.get(opts, :user_id)
     conversation_id = Keyword.get(opts, :conversation_id)
 
@@ -37,6 +45,8 @@ defmodule Brain.Response.ContextBuilder do
     enrichment_context = extract_enrichment_context(primary, opts)
     memory_context = extract_memory_context(primary, analyses)
     accumulator_context = extract_accumulator_context(primary)
+    all_analyses_summary = build_all_analyses(analyses)
+    per_chunk_facts = build_per_chunk_facts(analyses, question_chunk, opts)
 
     %{
       analysis: analysis_context,
@@ -48,7 +58,10 @@ defmodule Brain.Response.ContextBuilder do
       overall_strategy: model.overall_strategy,
       user_id: user_id,
       conversation_id: conversation_id,
-      primary_analysis: primary
+      primary_analysis: primary,
+      question_chunk: question_chunk,
+      all_analyses: all_analyses_summary,
+      per_chunk_facts: per_chunk_facts
     }
   end
 
@@ -61,9 +74,83 @@ defmodule Brain.Response.ContextBuilder do
       end)
 
     case respondable do
-      [primary | _] -> primary
-      [] -> List.first(analyses) || %ChunkAnalysis{}
+      [] -> ChunkPriority.select_primary(analyses)
+      list -> ChunkPriority.select_primary(list)
     end
+  end
+
+  defp build_all_analyses(analyses) do
+    Enum.map(analyses, fn analysis ->
+      %{
+        chunk_index: Map.get(analysis, :chunk_index),
+        text: Map.get(analysis, :text),
+        intent: Map.get(analysis, :intent),
+        confidence: Map.get(analysis, :confidence),
+        response_strategy: Map.get(analysis, :response_strategy),
+        speech_act: serialize_speech_act(Map.get(analysis, :speech_act)),
+        entities: normalize_entities_for_summary(Map.get(analysis, :entities, []))
+      }
+    end)
+  end
+
+  defp normalize_entities_for_summary(entities) when is_list(entities) do
+    Enum.map(entities, fn e ->
+      %{
+        entity_type: e[:entity_type] || e["entity_type"] || e["type"],
+        value: e[:value] || e["value"] || e["name"],
+        confidence: e[:confidence] || e["confidence"] || 0.8
+      }
+    end)
+  end
+
+  defp normalize_entities_for_summary(_), do: []
+
+  defp build_per_chunk_facts(analyses, question_chunk, opts) do
+    if Keyword.get(opts, :skip_per_chunk_facts, false) do
+      %{}
+    else
+      analyses
+      |> Enum.filter(&should_lookup_facts?(&1, question_chunk))
+      |> Enum.reduce(%{}, fn analysis, acc ->
+        facts = lookup_facts_for_chunk(analysis)
+
+        if facts == [] do
+          acc
+        else
+          Map.put(acc, Map.get(analysis, :chunk_index), facts)
+        end
+      end)
+    end
+  end
+
+  defp should_lookup_facts?(analysis, question_chunk) do
+    is_question = is_question?(analysis)
+    is_target = question_chunk != nil and analysis == question_chunk
+
+    is_question or is_target
+  end
+
+  defp is_question?(analysis) do
+    case Map.get(analysis, :speech_act) do
+      sa when is_map(sa) ->
+        Map.get(sa, :is_question, false) == true and Map.get(sa, :category) == :directive
+
+      _ ->
+        false
+    end
+  end
+
+  defp lookup_facts_for_chunk(analysis) do
+    text = Map.get(analysis, :text) || ""
+    entities = Map.get(analysis, :entities, [])
+
+    if text == "" and entities == [] do
+      []
+    else
+      safe_call(fn -> FactRetriever.get_facts_for_query(text, entities) end)
+    end
+  rescue
+    _ -> []
   end
 
   defp extract_analysis_context(primary, analyses, model) do

@@ -14,6 +14,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-chat_bot_dev}
     volumes:
       - pgdata:/var/lib/postgresql
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-chat_bot} -d ${POSTGRES_DB:-chat_bot_dev}"]
       interval: 5s

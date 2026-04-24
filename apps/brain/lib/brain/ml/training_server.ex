@@ -1,16 +1,12 @@
 defmodule Brain.ML.TrainingServer do
-  @moduledoc "GenServer for managing async ML training jobs with scheduling.\n\nProvides a centralized interface for starting, monitoring, and scheduling\ntraining runs for the various ML models (TF-IDF classifier, unified LSTM,\nresponse scorer).\n\n## Model Types\n\n- `:tfidf` - Classical TF-IDF + centroid intent classifier\n- `:unified` - Unified LSTM model (intent, NER, sentiment, speech act)\n- `:response` - LSTM response scorer\n\n## Usage\n\n    # Start training\n    TrainingServer.start_training(:unified, epochs: 20, name: \"experiment_1\")\n\n    # Check status\n    TrainingServer.get_status()\n    # => :idle | {:training, :unified, ~U[2024-01-15 12:00:00Z]}\n\n    # Schedule recurring training\n    TrainingServer.schedule(:tfidf, [], 24)  # every 24 hours\n\n    # List and cancel schedules\n    TrainingServer.list_schedules()\n    TrainingServer.cancel_schedule(\"schedule_abc123\")\n"
+  @moduledoc "GenServer for managing async ML training jobs with scheduling.\n\nProvides a centralized interface for starting, monitoring, and scheduling\ntraining runs for ML models.\n\n## Model Types\n\n- `:tfidf` - Classical TF-IDF + centroid intent classifier\n\n## Usage\n\n    # Start training\n    TrainingServer.start_training(:tfidf)\n\n    # Check status\n    TrainingServer.get_status()\n    # => :idle | {:training, :tfidf, ~U[2024-01-15 12:00:00Z]}\n\n    # Schedule recurring training\n    TrainingServer.schedule(:tfidf, [], 24)  # every 24 hours\n\n    # List and cancel schedules\n    TrainingServer.list_schedules()\n    TrainingServer.cancel_schedule(\"schedule_abc123\")\n"
 
   alias Phoenix.PubSub
-  alias Brain.Response.LSTMResponse
-  alias Brain.ML.LSTM.UnifiedModel
   alias Brain.ML.Trainer
   use GenServer
   require Logger
 
-  alias Brain.ML.LSTM.ExperimentTracker
-
-  @type model_type :: :tfidf | :unified | :response | :arbitrator
+  @type model_type :: :tfidf
   @type status :: :idle | {:training, model_type(), DateTime.t()}
   @type schedule :: %{
           id: String.t(),
@@ -79,7 +75,7 @@ defmodule Brain.ML.TrainingServer do
 
   @impl true
   def handle_call({:start_training, model_type, config}, _from, %{status: :idle} = state) do
-    unless model_type in [:tfidf, :unified, :response, :arbitrator] do
+    unless model_type in [:tfidf] do
       {:reply, {:error, :invalid_model_type}, state}
     else
       started_at = DateTime.utc_now()
@@ -204,7 +200,6 @@ defmodule Brain.ML.TrainingServer do
       {:ok, training_result} ->
         Logger.info("TrainingServer: Training #{model_type} completed in #{elapsed}s")
 
-        record_experiment(model_type, training_result, elapsed)
         broadcast_progress({:training_complete, model_type, {:ok, training_result}})
         maybe_reload_model(model_type)
 
@@ -291,97 +286,33 @@ defmodule Brain.ML.TrainingServer do
     Trainer.train_and_save()
   end
 
-  defp run_training(:unified, config) do
-    UnifiedModel.train(config)
-  end
-
-  defp run_training(:response, config) do
-    LSTMResponse.train(config)
-  end
-
-  defp run_training(:arbitrator, _config) do
-    gold = Brain.ML.EvaluationStore.load_gold_standard("intent")
-    training_data = Brain.ML.IntentArbitrator.generate_training_data_cv(gold)
-
-    case Brain.ML.IntentArbitrator.train(training_data) do
-      {:ok, _model, params} ->
-        Brain.ML.IntentArbitrator.save_model(params)
-        {:ok, %{arbitrator_trained: true, examples: length(training_data)}}
-
-      error ->
-        error
-    end
-  end
-
-  defp record_experiment(model_type, training_result, elapsed_seconds) do
-    try do
-      ExperimentTracker.record(%{
-        name: "auto_#{model_type}_#{System.os_time(:second)}",
-        config: extract_config(training_result),
-        training_time_seconds: elapsed_seconds,
-        notes: "Trained via TrainingServer"
-      })
-    rescue
-      e ->
-        Logger.warning("TrainingServer: Failed to record experiment: #{Exception.message(e)}")
-    end
-  end
-
-  defp extract_config(training_result) when is_map(training_result) do
-    Map.get(training_result, :config) || Map.get(training_result, :vocabularies, %{})
-  end
-
-  defp extract_config(_) do
-    %{}
-  end
-
-  defp maybe_reload_model(:unified) do
-    if model_ready?(Brain.ML.LSTM.UnifiedModel) do
+  defp maybe_reload_model(:tfidf = model_type) do
+    result =
       try do
-        UnifiedModel.reload()
+        Brain.ML.MicroClassifiers.reload()
       rescue
-        _ -> :ok
+        e ->
+          Logger.warning(
+            "TrainingServer: MicroClassifiers.reload/0 raised after #{model_type} training: #{Exception.message(e)}"
+          )
+
+          {:error, {:exception, Exception.message(e)}}
       catch
-        :exit, _ -> :ok
+        :exit, reason ->
+          Logger.warning(
+            "TrainingServer: MicroClassifiers.reload/0 exited after #{model_type} training: #{inspect(reason)}"
+          )
+
+          {:error, {:exit, reason}}
       end
-    end
+
+    broadcast_progress({:model_reloaded, model_type, result})
+    result
   end
 
-  defp maybe_reload_model(:response) do
-    if model_ready?(Brain.Response.LSTMResponse) do
-      try do
-        LSTMResponse.reload()
-      rescue
-        _ -> :ok
-      catch
-        :exit, _ -> :ok
-      end
-    end
-  end
-
-  defp maybe_reload_model(:arbitrator) do
-    try do
-      Brain.ML.IntentArbitrator.reload()
-    rescue
-      _ -> :ok
-    catch
-      :exit, _ -> :ok
-    end
-  end
-
-  defp maybe_reload_model(_) do
+  defp maybe_reload_model(other) do
+    Logger.debug("TrainingServer: no reload handler for model_type=#{inspect(other)}")
     :ok
-  end
-
-  defp model_ready?(module) do
-    try do
-      module.ready?()
-      true
-    rescue
-      _ -> false
-    catch
-      :exit, _ -> false
-    end
   end
 
   defp broadcast_progress(message) do

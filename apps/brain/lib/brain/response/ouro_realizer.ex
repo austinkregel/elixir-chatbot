@@ -47,8 +47,8 @@ defmodule Brain.Response.OuroRealizer do
     else
       gen_opts = [
         max_new_tokens: Keyword.get(opts, :max_new_tokens, 200),
-        temperature: Keyword.get(opts, :temperature, 1.0),
-        repetition_penalty: Keyword.get(opts, :repetition_penalty, 1.2)
+        temperature: Keyword.get(opts, :temperature, 0.6),
+        repetition_penalty: Keyword.get(opts, :repetition_penalty, 1.3)
       ]
 
       do_generate(messages, gen_opts, primitives, opts)

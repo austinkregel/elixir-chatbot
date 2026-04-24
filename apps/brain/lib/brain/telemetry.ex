@@ -127,11 +127,6 @@ defmodule Brain.Telemetry do
   # Evaluation Events
   @evaluation_complete [:chat_bot, :evaluation, :complete]
 
-  # Arbitrator Events
-  @arbitrator_decide [:chat_bot, :arbitrator, :decide]
-  @arbitrator_decision [:chat_bot, :arbitrator, :decision]
-  @arbitrator_override [:chat_bot, :arbitrator, :override]
-
   # Consistency Events
   @consistency_disagreement [:chat_bot, :analysis, :consistency, :disagreement]
 
@@ -276,13 +271,6 @@ defmodule Brain.Telemetry do
       {"chatbot-evaluation-complete", @evaluation_complete,
        &__MODULE__.handle_evaluation_complete/4, %{}},
 
-      # Arbitrator handlers
-      {"chatbot-arbitrator-decide-stop", @arbitrator_decide ++ [:stop],
-       &__MODULE__.handle_span_stop/4, %{metric: :arbitrator_decide}},
-      {"chatbot-arbitrator-decision", @arbitrator_decision,
-       &__MODULE__.handle_arbitrator_decision/4, %{}},
-      {"chatbot-arbitrator-override", @arbitrator_override,
-       &__MODULE__.handle_arbitrator_decision/4, %{}},
       # Consistency handlers
       {"chatbot-consistency-disagreement", @consistency_disagreement,
        &__MODULE__.handle_consistency_disagreement/4, %{}},
@@ -371,10 +359,6 @@ defmodule Brain.Telemetry do
       "chatbot-code-file-processed",
       # Evaluation events
       "chatbot-evaluation-complete",
-      # Arbitrator events
-      "chatbot-arbitrator-decide-stop",
-      "chatbot-arbitrator-decision",
-      "chatbot-arbitrator-override",
       # Consistency events
       "chatbot-consistency-disagreement",
       # External services events
@@ -578,37 +562,6 @@ defmodule Brain.Telemetry do
       result = fun.()
       {result, %{}}
     end)
-  end
-
-  # Arbitrator spans
-
-  def span(:arbitrator_decide, metadata, fun) do
-    :telemetry.span(@arbitrator_decide, metadata, fn ->
-      result = fun.()
-      {result, %{}}
-    end)
-  end
-
-  @doc """
-  Emits an arbitrator decision event.
-  """
-  def emit_arbitrator_decision(metadata) when is_map(metadata) do
-    :telemetry.execute(
-      @arbitrator_decision,
-      %{count: 1},
-      Map.put(metadata, :timestamp, System.monotonic_time(:millisecond))
-    )
-  end
-
-  @doc """
-  Emits an arbitrator override event (when LSTM was overridden by TF-IDF).
-  """
-  def emit_arbitrator_override(metadata) when is_map(metadata) do
-    :telemetry.execute(
-      @arbitrator_override,
-      %{count: 1},
-      Map.put(metadata, :timestamp, System.monotonic_time(:millisecond))
-    )
   end
 
   @doc """
@@ -973,20 +926,6 @@ defmodule Brain.Telemetry do
         Brain.Metrics.Aggregator,
         {:record_service_credential, metadata[:operation], metadata[:service],
          measurements[:count]}
-      )
-    end
-  end
-
-  # ============================================================================
-  # Arbitrator Handlers
-  # ============================================================================
-
-  @doc false
-  def handle_arbitrator_decision(_event, _measurements, metadata, _config) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(
-        Brain.Metrics.Aggregator,
-        {:record_arbitration, metadata}
       )
     end
   end

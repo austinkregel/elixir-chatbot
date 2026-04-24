@@ -27,7 +27,7 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
   - **Atlas context**: Entity neighborhood in knowledge_graph
   """
 
-  alias Brain.Analysis.{TypeHierarchy, IntentRegistry, SlotDetector}
+  alias Brain.Analysis.{TypeHierarchy, ChunkProfile, SlotDetector, Pipeline}
   alias Brain.ML.{POSTagger, Tokenizer}
   require Logger
 
@@ -89,12 +89,23 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
     end)
   end
 
-  defp collect_all_expected_types(top_k) do
-    top_k
-    |> Enum.flat_map(fn {intent, _score} ->
-      IntentRegistry.expected_entity_types(intent)
-    end)
-    |> Enum.uniq()
+  defp collect_all_expected_types(top_k, profile \\ nil) do
+    profile_types =
+      case profile do
+        %ChunkProfile{domain: domain} when domain != :unknown ->
+          Pipeline.expected_entity_types_from_domain(domain)
+
+        _ ->
+          []
+      end
+
+    registry_types =
+      top_k
+      |> Enum.flat_map(fn {intent, _score} ->
+        Pipeline.expected_entity_types_from_domain(domain_from_intent(intent))
+      end)
+
+    (profile_types ++ registry_types) |> Enum.uniq()
   end
 
   # ============================================================================
@@ -102,7 +113,21 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
   # ============================================================================
 
   defp evaluate_hypothesis(candidate_intent, candidate_score, entities, narrowable, text, pos_tags, opts) do
-    entity_mappings = IntentRegistry.entity_mappings(candidate_intent)
+    profile = Keyword.get(opts, :profile)
+
+    entity_mappings =
+      case profile do
+        %ChunkProfile{domain: domain} when domain != :unknown ->
+          domain_mappings = entity_mappings_from_domain(domain)
+          if domain_mappings == %{} do
+            entity_mappings_from_domain(domain_from_intent(candidate_intent))
+          else
+            domain_mappings
+          end
+
+        _ ->
+          entity_mappings_from_domain(domain_from_intent(candidate_intent))
+      end
 
     if entity_mappings == %{} do
       nil
@@ -538,4 +563,24 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
       end)
     end)
   end
+
+  defp entity_mappings_from_domain(domain) do
+    case domain do
+      :weather -> %{"location" => ["location"], "date" => ["date"], "time" => ["time"]}
+      :music -> %{"song" => ["song"], "artist" => ["artist", "person"], "genre" => ["genre"]}
+      :smarthome -> %{"device" => ["device"], "room" => ["room"], "setting" => ["setting"]}
+      :reminder -> %{"date" => ["date"], "time" => ["time"], "description" => ["description"]}
+      :navigation -> %{"destination" => ["location"], "origin" => ["location"]}
+      _ -> %{}
+    end
+  end
+
+  defp domain_from_intent(nil), do: nil
+  defp domain_from_intent(intent) when is_binary(intent) do
+    case String.split(intent, ".", parts: 2) do
+      [d, _] -> String.to_atom(d)
+      _ -> nil
+    end
+  end
+  defp domain_from_intent(_), do: nil
 end

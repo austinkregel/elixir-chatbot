@@ -6,7 +6,7 @@ defmodule Brain.Analysis.OutcomeLearner do
     HeuristicStore,
     AnalyzerCalibration,
     ActivationPool,
-    IntentRegistry
+    ChunkProfile
   }
 
   alias Brain.ML.Tokenizer
@@ -358,8 +358,11 @@ defmodule Brain.Analysis.OutcomeLearner do
     Enum.filter(domain_words, &MapSet.member?(text_words, &1))
   end
 
-  defp specific_intent?(intent) do
-    IntentRegistry.specific?(intent)
+  defp specific_intent?(intent, profile \\ nil) do
+    case profile do
+      %ChunkProfile{confidence: confidence} -> confidence > 0.6
+      _ -> intent != nil and intent != "" and intent != "unknown" and String.contains?(to_string(intent), ".")
+    end
   end
 
   defp calculate_appropriate_boost(%Interpretation{} = interp) do

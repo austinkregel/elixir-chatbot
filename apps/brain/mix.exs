@@ -52,7 +52,8 @@ defmodule Brain.MixProject do
       {:ex_aws, "~> 2.5"},
       {:ex_aws_s3, "~> 2.5"},
       {:hackney, "~> 1.20"},
-      {:sweet_xml, "~> 0.7"}
+      {:sweet_xml, "~> 0.7"},
+      {:nimble_csv, "~> 1.2"}
       # Tree-sitter for code parsing - required for full AST-based code analysis.
       # Without this, Brain.Code.LanguageGrammar operates in fallback mode with
       # basic line-based parsing instead of real ASTs. See LanguageGrammar @moduledoc.

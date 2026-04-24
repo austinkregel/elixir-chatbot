@@ -3,13 +3,13 @@ defmodule Brain.Analysis.ProcessingTrace do
 
   alias Brain.Analysis.{
     Interpretation,
+    ChunkProfile,
     RacingAnalyzer,
     BacktrackController,
     HeuristicStore,
     SemanticChunker,
     DiscourseAnalyzer,
     SpeechActClassifier,
-    IntentRegistry,
     SlotDetector
   }
   alias Brain.ML.EntityExtractor
@@ -332,7 +332,18 @@ defmodule Brain.Analysis.ProcessingTrace do
 
     Enum.find(chunk_traces, List.first(chunk_traces), fn trace ->
       intent = trace.primary_intent
-      domain = IntentRegistry.domain(intent)
+      profile = Map.get(trace, :profile)
+
+      domain =
+        case profile do
+          %ChunkProfile{domain: d} when d != :unknown -> d
+          _ ->
+            case String.split(to_string(intent || ""), ".", parts: 2) do
+              [d, _] -> String.to_atom(d)
+              _ -> nil
+            end
+        end
+
       domain in priority_domains
     end)
   end

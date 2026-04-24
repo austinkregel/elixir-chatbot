@@ -3,7 +3,6 @@ defmodule Brain.Response.Synthesizer do
 
   alias Brain.Epistemic.Types.SelfKnowledgeAssessment
   alias Brain.Epistemic.DisclosurePolicy
-  alias Brain.Analysis.IntentRegistry
 
   require Logger
 
@@ -89,7 +88,8 @@ defmodule Brain.Response.Synthesizer do
 
   @doc "Synthesizes a response for any intent using domain knowledge and primitives.\n\nThis is the primary entry point for generative response creation.\n\n## Parameters\n- `intent` - The classified intent (e.g., \"weather.query\")\n- `entities` - List of extracted entities\n- `opts` - Options including:\n  - `:confidence` - Classification confidence (0.0-1.0)\n  - `:speech_act` - Speech act analysis result\n  - `:similar_episodes` - Similar past interactions from memory\n  - `:semantic_facts` - Retrieved semantic facts\n\n## Returns\n`{:ok, response}` or `:not_synthesized`\n"
   def synthesize(intent, entities, opts \\ []) do
-    domain = IntentRegistry.domain(intent) || infer_domain(intent)
+    profile = Keyword.get(opts, :profile)
+    domain = if profile, do: profile.domain, else: infer_domain(intent)
     confidence = Keyword.get(opts, :confidence, 0.7)
     similar_episodes = Keyword.get(opts, :similar_episodes, [])
     context = Keyword.get(opts, :context, %{})
@@ -309,7 +309,8 @@ defmodule Brain.Response.Synthesizer do
 
   @doc "Synthesizes a clarification request when required slots are missing.\n"
   def synthesize_clarification(intent, entities, missing_slots, opts \\ []) do
-    domain = IntentRegistry.domain(intent) || infer_domain(intent)
+    profile = Keyword.get(opts, :profile)
+    domain = if profile, do: profile.domain, else: infer_domain(intent)
     domain_str = to_string(domain)
     domain_config = Map.get(@domain_knowledge, domain_str, %{})
 
@@ -513,8 +514,7 @@ defmodule Brain.Response.Synthesizer do
   end
 
   defp get_slot_clarification(intent, missing_slots, _domain_config) do
-    meta = IntentRegistry.get(intent)
-    templates = if meta, do: Map.get(meta, "clarification_templates", %{}), else: %{}
+    templates = load_clarification_templates(intent)
 
     case missing_slots do
       [slot] ->
@@ -524,6 +524,26 @@ defmodule Brain.Response.Synthesizer do
         get_generic_clarification()
     end
   end
+
+  @slot_schemas_path Path.join(:code.priv_dir(:brain), "analysis/slot_schemas.json")
+  @external_resource @slot_schemas_path
+  @slot_schemas (case File.read(@slot_schemas_path) do
+                   {:ok, content} ->
+                     case Jason.decode(content) do
+                       {:ok, data} -> data
+                       _ -> %{}
+                     end
+                   _ -> %{}
+                 end)
+
+  defp load_clarification_templates(intent) when is_binary(intent) do
+    case Map.get(@slot_schemas, intent) do
+      %{"clarification_templates" => templates} when is_map(templates) -> templates
+      _ -> %{}
+    end
+  end
+
+  defp load_clarification_templates(_), do: %{}
 
   defp build_partial_acknowledgment(entities, _domain_config, _opts) do
     filled_values =
@@ -551,7 +571,13 @@ defmodule Brain.Response.Synthesizer do
   end
 
   defp infer_domain(intent) when is_binary(intent) do
-    Brain.Analysis.IntentRegistry.domain(intent)
+    case String.split(intent, ".", parts: 2) do
+      [domain | _] when domain != "" ->
+        String.to_existing_atom(domain)
+      _ -> nil
+    end
+  rescue
+    ArgumentError -> String.to_atom(intent |> String.split(".", parts: 2) |> List.first())
   end
 
   defp infer_domain(_) do

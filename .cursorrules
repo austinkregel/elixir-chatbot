@@ -1,7 +1,7 @@
 # ChatBot Project Rules
 
 This is an Elixir/Phoenix umbrella application using classical NLP techniques (no LLMs).
-The system uses TF-IDF vectorization, LSTM multi-task models (Axon/Nx), intent classification,
+The system uses TF-IDF vectorization, feature-vector micro-classifiers (Nx/EXLA),
 entity extraction, sentiment analysis, and a cognitive memory system.
 
 ## Strict Rules
@@ -15,11 +15,13 @@ These rules MUST be followed in all code contributions:
    - Key normalization for atom construction (e.g., `normalize_predicate` in learning_center/review_queue)
    - Content sanitization regex in `review_queue.ex` (`is_invalid_content?`) for detecting HTML/code fragments
    - Code analysis pipeline (`apps/brain/lib/brain/code/`) for source code parsing (not natural language)
-2. **No String Matching for Classification**: Intent classification, entity extraction, speech act classification, and sentiment analysis must be data-driven (TF-IDF, LSTM, trained models, or MicroClassifiers). Never hardcode string-matching rules for NLP decisions. Use `Brain.ML.MicroClassifiers` for lightweight classification tasks; add training data to `data/classifiers/*.json` and run `mix train_micro`.
-3. **Non-blocking Operations**: Always check `ready?()` before calling GenServers that may be initializing. Use short timeouts (100ms) with graceful fallbacks.
-4. **Graceful Degradation**: The system must work even when LSTM models are unavailable. All LSTM-powered features fall back to classical ML (TF-IDF) or neutral defaults.
-5. **World-Scoping**: Use `World.Context` for isolated training environments. Models and data are scoped per-world.
-6. **No hardcoded intents, entities, or any other data**: If we need a "new" system, we need to train a new LSTM model for it. Sentiment analysis, POS tagging, etc. should all be done with trained models. This enables us to easily add new systems and models to the system.
+2. **No String Matching for Classification**: Intent classification, entity extraction, speech act classification, and sentiment analysis must be data-driven (TF-IDF, feature-vector classifiers, trained models, or MicroClassifiers). Never hardcode string-matching rules for NLP decisions. Use `Brain.ML.MicroClassifiers` for lightweight classification tasks; add training data to `data/classifiers/*.json` and run `mix train_micro`.
+3. **Non-blocking Operations**: Always check `ready?()` before calling GenServers that may be initializing. Use short timeouts (100ms) for readiness checks.
+4. **Hard Failure on Missing Models**: If a required model or corpus is missing, the system must fail immediately with a clear error message and remediation instructions. Do not silently degrade. This applies in **all** environments including test.
+5. **No Silent Fallbacks**: Never introduce a "graceful fallback" that masks a missing dependency, model, service, or configuration. Fallbacks create feature-failure creep — problems accumulate invisibly until the system is broken in ways that are hard to diagnose. If something is required, it must be present; if it's absent, fail loudly. This applies especially in tests: a test that silently degrades to a heuristic fallback is not testing the real system.
+6. **Tests Must Fail, Not Degrade**: Tests must exercise the actual system, not a degraded version of it. Never skip, exclude, or disable tests to work around failures — fix the root cause. Never add `try/rescue` wrappers, `:ok` fallbacks, or conditional skips that hide missing infrastructure (databases, models, services). If a test needs a model, that model must be trained and present. If a test needs a database, that database must be created and migrated. A passing test suite with silent fallbacks is worse than a failing test suite with loud errors.
+7. **World-Scoping**: Use `World.Context` for isolated training environments. Models and data are scoped per-world.
+8. **No hardcoded intents, entities, or any other data**: If we need a "new" system, we need to train a new model for it. Sentiment analysis, POS tagging, etc. should all be done with trained models. This enables us to easily add new systems and models to the system.
 
 ## Project Overview
 
@@ -27,7 +29,7 @@ These rules MUST be followed in all code contributions:
 
 | App | Purpose |
 |-----|---------|
-| `brain` | Core NLP, ML (classical + LSTM), Memory, Epistemic, Response, Knowledge, Code Analysis, Telemetry, Autonomous Learning |
+| `brain` | Core NLP, ML (TF-IDF + feature-vector classifiers), Memory, Epistemic, Response, Knowledge, Code Analysis, Telemetry, Autonomous Learning |
 | `world` | Training worlds, entity discovery, type inference, entity auto-promotion |
 | `tasks` | NLP benchmark task data curation |
 | `chat_web` | Phoenix 1.8 web layer with LiveView |
@@ -44,16 +46,15 @@ apps/
 │   │   ├── pipeline.ex        # Multi-stage analysis orchestrator
 │   │   ├── semantic_chunker.ex
 │   │   ├── discourse_analyzer.ex
-│   │   ├── speech_act_classifier.ex  # Multi-pass voting + LSTM ensemble
-│   │   ├── slot_detector.ex
-│   │   ├── event_extractor.ex
-│   │   ├── racing_analyzer.ex       # Fast-path heuristic matching
-│   │   ├── response_gate.ex         # Response optionality
-│   │   ├── outcome_learner.ex       # Outcome learning + training example generation
-│   │   ├── intent_registry.ex       # Runtime-updatable GenServer+ETS (compile-time fallback)
-│   │   ├── intent_review_queue.ex   # Novel intent candidate review queue
-│   │   ├── intent_auto_promoter.ex  # Auto-approves variations of existing intents
-│   │   ├── novelty_detector.ex      # Novelty detection + PubSub gap publishing
+│   │   ├── speech_act_classifier.ex  # Multi-pass voting ensemble
+    │   │   ├── slot_detector.ex
+    │   │   ├── event_extractor.ex
+    │   │   ├── racing_analyzer.ex       # Fast-path heuristic matching
+    │   │   ├── response_gate.ex         # Response optionality
+    │   │   ├── outcome_learner.ex       # Outcome learning + training example generation
+    │   │   ├── chunk_profile.ex         # Feature-vector chunk profile struct
+    │   │   ├── feature_extractor.ex     # 326-dim feature vector extraction
+    │   │   ├── novelty_detector.ex      # Novelty detection + PubSub gap publishing
 │   │   └── comprehension_assessor.ex # 8-dimension comprehension gate GenServer
 │   │       ├── comprehension_profile.ex  # Comprehension profile struct
 │   │       └── dimension_evaluators.ex   # 8 dimension evaluator functions
@@ -63,31 +64,28 @@ apps/
 │   │   ├── consolidation.ex   # Episode clustering → SemanticFacts (+ ConsolidationBridge)
 │   │   └── think.ex           # High-level memory API
 │   ├── ml/                    # Machine learning
-│   │   ├── tokenizer.ex       # Text tokenization (use this, not regex)
-│   │   ├── simple_classifier.ex      # Stateless TF-IDF classifier (with incremental update_model/3)
-│   │   ├── intent_classifier_simple.ex  # GenServer wrapping SimpleClassifier (+ incremental_update/2)
-│   │   ├── entity_extractor.ex
-│   │   ├── gazetteer.ex       # ETS-backed entity lookup
-│   │   ├── pos_tagger.ex
-│   │   ├── data_loaders.ex    # Training data loading
-│   │   ├── trainer.ex         # Classical model training
-│   │   ├── evaluation.ex      # Precision/recall/F1/confusion matrix
-│   │   ├── evaluation_store.ex # Historical evaluation results
-│   │   ├── corpus_manager.ex  # Corpus size monitoring (<50 GB)
-│   │   ├── training_server.ex # Async training jobs + scheduling
-│   │   ├── training_example_buffer.ex  # ETS buffer → incremental TF-IDF updates
-│   │   └── lstm/              # Deep learning models (Axon/Nx)
-│   │       ├── unified_model.ex       # Multi-task: intent + NER + sentiment + speech act
-│   │       ├── axon_trainer.ex        # Standalone LSTM intent training (Axon Loop)
-│   │       ├── lstm_integration.ex    # Ensemble voting (TF-IDF + LSTM)
-│   │       └── experiment_tracker.ex  # A/B testing experiments
+    │   │   ├── tokenizer.ex       # Text tokenization (use this, not regex)
+    │   │   ├── simple_classifier.ex      # Stateless TF-IDF classifier (with incremental update_model/3)
+    │   │   ├── micro_classifiers.ex      # GenServer hosting all micro-classifiers (TF-IDF + feature-vector)
+    │   │   ├── feature_vector_classifier.ex  # Dense centroid-based classifier (Nx/EXLA)
+    │   │   ├── weight_optimizer.ex       # Genetic algorithm for feature-vector weight optimization
+    │   │   ├── entity_extractor.ex
+    │   │   ├── gazetteer.ex       # ETS-backed entity lookup
+    │   │   ├── pos_tagger.ex
+    │   │   ├── data_loaders.ex    # Training data loading
+    │   │   ├── trainer.ex         # Classical model training
+    │   │   ├── evaluation.ex      # Precision/recall/F1/confusion matrix
+    │   │   ├── evaluation_store.ex # Historical evaluation results
+    │   │   ├── corpus_manager.ex  # Corpus size monitoring (<50 GB)
+    │   │   ├── training_server.ex # Async training jobs + scheduling
+    │   │   ├── training_example_buffer.ex  # ETS buffer → incremental TF-IDF updates
+    │   │   └── lstm/
+    │   │       └── lstm_integration.ex    # Ensemble voting (TF-IDF + feature-vector)
 │   ├── response/              # Response generation
-│   │   ├── generator.ex       # Orchestrator (synthesizer → memory → template → fallback)
-│   │   ├── synthesizer.ex     # Domain knowledge response frames
-│   │   ├── composer.ex        # Multi-part response weaving
-│   │   ├── lstm_response.ex   # LSTM response scoring/ranking
-│   │   ├── template_store.ex, template_blender.ex
-│   │   └── response_quality.ex
+    │   │   ├── generator.ex       # Orchestrator (synthesizer → memory → template → fallback)
+    │   │   ├── synthesizer.ex     # Domain knowledge response frames
+    │   │   ├── template_store.ex, template_blender.ex
+    │   │   └── response_quality.ex
 │   ├── knowledge/             # Knowledge expansion
 │   │   ├── learning_center.ex       # Research session orchestrator
 │   │   ├── review_queue.ex          # Candidate review (with auto-approval rules)
@@ -118,13 +116,12 @@ apps/
     ├── channels/brain_channel.ex    # WebSocket communication
     └── live/
         ├── chat_live.ex             # Main chat + processing inspector
-        ├── dashboard_live.ex        # System monitoring + LSTM status
+        ├── dashboard_live.ex        # System monitoring + model status
         ├── accuracy_live.ex         # Model accuracy metrics + trends
         ├── explorer_live.ex         # Training world data browser
         ├── settings_live.ex         # World/entity/training management
         ├── code_analysis_live.ex    # Code symbol browser
         └── admin/
-            ├── intent_review_live.ex     # Novel intent review
             └── knowledge_review_live.ex  # Knowledge expansion review
 ```
 
@@ -137,50 +134,55 @@ Tokenizer → Token Sequence
     ↓
 ┌──────────────────────────────────┐
 │ Classical ML (TF-IDF)            │
-│ • IntentClassifierSimple         │
 │ • EntityExtractor (BIO tagging)  │
 │ • POSTagger (HMM-based)          │
 │ • Gazetteer (ETS lookup)         │
+│ • SentimentClassifierSimple      │
 └──────────────────────────────────┘
     ↓
 ┌──────────────────────────────────┐
-│ LSTM Models (Axon/Nx/EXLA)       │
-│ Shared BiLSTM Encoder            │
-│ ├── Intent Head (UnifiedModel)   │
-│ ├── NER Head (UnifiedModel)      │
-│ ├── Sentiment Head (UnifiedModel)│
-│ └── Speech Act Head (Unified)    │
+│ Feature Vector Pipeline          │
+│ FeatureExtractor → 326-dim vec   │
+│ ChunkProfile.materialize/2       │
 └──────────────────────────────────┘
     ↓
-LSTMIntegration (Ensemble: TF-IDF + LSTM when confidence < 0.6)
+┌──────────────────────────────────────────┐
+│ MicroClassifiers (TF-IDF + FeatureVec)  │
+│ TF-IDF:                                 │
+│ • :personal_question                    │
+│ • :clarification_response               │
+│ • :modal_directive                      │
+│ • :fallback_response                    │
+│ • :goal_type                            │
+│ • :entity_type                          │
+│ • :user_fact_type                       │
+│ • :directed_at_bot                      │
+│ • :event_argument_role                  │
+│ Feature-Vector (FeatureVectorClassifier):│
+│ • :intent_full (fine-grained intent)    │
+│ • :intent_domain                        │
+│ • :framing_class                        │
+└──────────────────────────────────────────┘
     ↓
-┌──────────────────────────────────┐
-│ MicroClassifiers (TF-IDF)       │
-│ • :personal_question            │
-│ • :clarification_response       │
-│ • :modal_directive              │
-│ • :fallback_response            │
-│ • :goal_type                    │
-│ • :entity_type                  │
-│ • :user_fact_type               │
-│ • :directed_at_bot              │
-│ Supports incremental_update/2   │
-└──────────────────────────────────┘
-    ↓
-Response Generation → LSTMResponse (response scoring)
+Response Generation (template + synthesis)
     ↓
 Best Response Selected
 ```
 
 ### MicroClassifiers
 
-Small TF-IDF classifiers for lightweight decisions. Trained from `data/classifiers/*.json`, loaded from `priv/ml_models/micro/`. Support incremental learning via `MicroClassifiers.incremental_update(name, [{text, label}])`.
+Two kinds of micro-classifiers, all managed by `Brain.ML.MicroClassifiers`:
+
+- **TF-IDF classifiers** — lightweight text classifiers trained from `data/classifiers/*.json`
+- **Feature-vector classifiers** — dense centroid-based classifiers (Nx/EXLA) trained from feature-vector JSON. Use `FeatureVectorClassifier` + `WeightOptimizer` (genetic algorithm).
+
+Both loaded from `priv/ml_models/micro/`.
 
 When adding a new classification need:
-1. Create `data/classifiers/<name>.json` with `{"text": "...", "label": "..."}` entries
+1. Create `data/classifiers/<name>.json` with training entries
 2. Add the atom to `@classifier_names` in `micro_classifiers.ex` and `train_micro.ex`
 3. Run `mix train_micro` to train
-4. Call `MicroClassifiers.classify(:name, text)` with graceful fallback when not loaded
+4. Call `MicroClassifiers.classify(:name, text)` for TF-IDF or `MicroClassifiers.classify_vector(:name, feature_vector)` for feature-vector
 5. Prefer cross-validating MicroClassifier output with other signals (intent, structural checks) rather than using as sole decider
 
 ## Common Patterns
@@ -197,20 +199,11 @@ def ready?(name \\ __MODULE__) do
 end
 
 # Before using the GenServer
-if UnifiedModel.ready?() do
-  UnifiedModel.classify_sentiment(text)
+if MicroClassifiers.ready?() do
+  MicroClassifiers.classify(:intent_full, text)
 else
-  %{label: :neutral, confidence: 0.5}
+  {:error, :not_loaded}
 end
-```
-
-### Model Reload Pattern
-
-LSTM GenServers support hot-reloading after retraining:
-
-```elixir
-Brain.ML.LSTM.UnifiedModel.reload()
-Brain.Response.LSTMResponse.reload()
 ```
 
 ### Slot Detection for Missing Context
@@ -240,26 +233,27 @@ Brain.Response.LSTMResponse.reload()
 ### Configuration
 
 - `priv/analysis/slot_schemas.json` - Required/optional slots per intent
-- `priv/analysis/intent_registry.json` - Intent metadata (runtime-updatable via GenServer)
+- `priv/analysis/intent_registry.json` - Intent metadata (slot schemas, domain/category lookup)
 - `priv/analysis/comprehension_weights.json` - EMA-evolved comprehension dimension weights
 - `data/intents/*.json` - Training data for intent classification
+- `data/classifiers/*.json` - Training data for micro-classifiers
 - `data/entities/*.json` - Entity definitions for gazetteer
 - `priv/ml_models/` - Trained classical model files (`.term`)
-- `priv/ml_models/lstm/` - LSTM model files + `experiments.json`
+- `priv/ml_models/micro/` - Micro-classifier model files (`.term`)
 - `priv/evaluation/` - Gold standard data + evaluation results
 
 ### Training
 
 ```bash
-mix train                          # Master pipeline (all models)
+mix train                          # Master pipeline (all 6 stages)
 mix train --quick                  # Skip slow models
-mix train --name "experiment_v1"   # Track experiment
-mix train --compare                # Show experiment comparison
+mix train --list                   # List all training stages
 
-mix train_unified                  # Unified LSTM (intent + NER + sentiment + speech act)
-mix train_response                 # Response scorer LSTM
-mix train_lstm                     # Standalone LSTM intent classifier
-mix train_models                   # TF-IDF + optional LSTM
+mix train_models                   # TF-IDF models only
+mix train_micro                    # Micro-classifiers (TF-IDF + feature-vector)
+mix train_framing                  # Framing classifier (GVFC corpus)
+mix gen_micro_data                 # Regenerate micro-classifier JSON from gold standard
+mix gen_framing_data --corpus gvfc # Generate framing training data
 ```
 
 ### Evaluation
@@ -274,11 +268,12 @@ mix evaluate.ner                   # Named entity recognition
 mix test --only benchmark          # Run accuracy threshold tests
 ```
 
-### Model Regeneration
+### Setup
 
 ```bash
-mix regenerate_test_models --check    # Check Nx/Axon compatibility
-mix regenerate_test_models --all      # Regenerate all test models
+mix setup                             # Full setup: deps, DB, corpora, data gen, train
+mix ingest_framing_corpus             # Extract GVFC.zip into data/framing/
+scripts/setup.sh                      # Shell-based setup with artifact scanning
 ```
 
 ## Routes
@@ -291,7 +286,6 @@ mix regenerate_test_models --all      # Regenerate all test models
 | `/explorer` | ExplorerLive | Training world data (entities, episodes, knowledge) |
 | `/settings` | SettingsLive | World/entity management, ML training controls |
 | `/code` | CodeAnalysisLive | Code symbol browser |
-| `/intent-review` | IntentReviewLive | Novel intent candidate review |
 | `/knowledge-review` | KnowledgeReviewLive | Knowledge expansion review |
 
 ## Testing
@@ -304,16 +298,14 @@ See `test/support/http_snapshot.ex` for more information.
 ### Running Tests
 
 ```bash
-mix test                           # All tests (excludes slow, benchmark, gpu)
+mix test                           # All tests (excludes slow, benchmark)
 mix test --only benchmark          # Accuracy threshold tests
 mix test --only integration        # Integration tests
-mix test --exclude requires_lstm   # Skip LSTM-dependent tests
 ```
 
 ### Test Helpers
 
-- `test/support/lstm_test_helpers.ex` - Model compatibility checking, test model generation
-- Tests use real models with graceful degradation when models are incompatible
+- `test/support/model_factory.ex` - Training helpers for test model setup
 - `@moduletag :benchmark` for accuracy threshold tests (excluded by default)
 
 ## Code Style
@@ -338,9 +330,9 @@ mix test --exclude requires_lstm   # Skip LSTM-dependent tests
 
 ### ML Framework Stack
 
-- `Nx` ~0.10 - Numerical computing
-- `Axon` ~0.8 - Neural network framework
-- `EXLA` ~0.10 - XLA compiler backend (GPU acceleration)
+- `Nx` ~0.10 - Numerical computing (tensors, `defn` JIT compilation)
+- `Axon` ~0.7 - Neural network framework (KG triple scorer)
+- `EXLA` ~0.10 - XLA compiler backend (CPU JIT; no Metal/GPU on Apple Silicon)
 - `Scholar` ~0.3 - Statistical/ML functions
 - Erlang `:erlang.binary_to_term` / `term_to_binary` for model serialization
 
@@ -356,8 +348,6 @@ All autonomous features are opt-in and gated by safety mechanisms.
 | `ComprehensionAssessor` | 8-dimension self-interrogation gate for knowledge acquisition |
 | `ComprehensionProfile` | Assessment result struct (verdict, gaps, learnable flag) |
 | `DimensionEvaluators` | 8 evaluator functions reading from ChunkAnalysis fields |
-| `IntentRegistry` (GenServer) | Runtime-updatable intent metadata (ETS + JSON persistence, compile-time fallback) |
-| `IntentAutoPromoter` | Auto-approves intent variations (5/day cap) |
 | `LearningTriggers` | Conversation novelty → auto-triggered research sessions (2/day cap) |
 | `ReviewQueue` (auto-approval) | Auto-approves high-confidence corroborated findings (10/day cap) |
 | `TrainingExampleBuffer` | Collects high-activation outcomes → incremental TF-IDF updates |
@@ -377,7 +367,6 @@ All autonomous features are opt-in and gated by safety mechanisms.
 
 - `auto_extraction_enabled` (epistemic config) — gates event→belief extraction
 - `auto_approval_enabled` (application env) — gates ReviewQueue auto-approval
-- `intent_promotion_enabled` (application env) — gates novelty detection → review queue
 
 ## Quick Reference
 
@@ -385,11 +374,11 @@ All autonomous features are opt-in and gated by safety mechanisms.
 mix phx.server                     # Start dev server
 iex -S mix phx.server              # Start with IEx
 
-mix train --name "v1" --compare    # Train + track experiment
-mix evaluate --save --compare      # Evaluate + save + compare
+mix train                          # Train all models (6 stages)
+mix evaluate --save                # Evaluate + save
 
 Brain.SystemStatus.get_all()       # Check all statuses
-Brain.ML.LSTM.UnifiedModel.ready?()
+Brain.ML.MicroClassifiers.ready?()
 Brain.ML.CorpusManager.corpus_size()
 ```
 
@@ -397,11 +386,11 @@ Brain.ML.CorpusManager.corpus_size()
 # Test analysis pipeline
 Brain.Analysis.Pipeline.process("Hello! What's the weather in NYC?")
 
-# Test intent classification
-Brain.ML.IntentClassifierSimple.classify("What's the weather?")
+# Test intent classification (via MicroClassifiers)
+Brain.ML.MicroClassifiers.classify(:intent_full, "What's the weather?")
 
-# Test LSTM sentiment
-Brain.ML.LSTM.UnifiedModel.classify_sentiment("I love this!")
+# Test sentiment
+Brain.ML.SentimentClassifierSimple.classify("I love this!")
 
 # Test slot detection
 Brain.Analysis.SlotDetector.detect("weather.query", [])
@@ -413,9 +402,6 @@ Brain.ML.Evaluation.accuracy(predictions, actuals)
 Brain.Analysis.ComprehensionAssessor.assess(chunk_analyses)
 Brain.Analysis.ComprehensionAssessor.stats()
 Brain.Analysis.ComprehensionAssessor.reset_weights()
-
-# Runtime intent registration
-Brain.Analysis.IntentRegistry.register_intent("my.new_intent", %{"domain" => "custom", "category" => "directive"})
 
 # Learning triggers status
 Brain.Knowledge.LearningTriggers.stats()

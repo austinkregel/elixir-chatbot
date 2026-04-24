@@ -176,11 +176,15 @@ defmodule Mix.Tasks.GenerateGoldStandard do
     end
   end
 
-  # Infer speech act from intent name using IntentRegistry metadata
   defp infer_speech_act(intent) when is_binary(intent) do
-    case Brain.Analysis.IntentRegistry.category(intent) do
-      nil -> "directive"
-      category -> to_string(category)
+    intent_tokens = Brain.ML.Tokenizer.tokenize_normalized(intent)
+    intent_token_set = MapSet.new(intent_tokens)
+
+    cond do
+      not MapSet.disjoint?(intent_token_set, MapSet.new(~w(query search check get find))) -> "question"
+      not MapSet.disjoint?(intent_token_set, MapSet.new(~w(set create add play turn))) -> "directive"
+      not MapSet.disjoint?(intent_token_set, MapSet.new(~w(greet goodbye thanks))) -> "expressive"
+      true -> "directive"
     end
   end
 
@@ -190,29 +194,16 @@ defmodule Mix.Tasks.GenerateGoldStandard do
   @positive_domains MapSet.new(~w(likes appraisal.positive love appreciation gratitude))
   @negative_domains MapSet.new(~w(hate appraisal.negative frustration complaint))
 
-  # Infer sentiment from intent using IntentRegistry domain metadata
   defp infer_sentiment(intent) when is_binary(intent) do
-    domain =
-      case Brain.Analysis.IntentRegistry.domain(intent) do
-        nil -> nil
-        d -> to_string(d)
-      end
-
-    category =
-      case Brain.Analysis.IntentRegistry.category(intent) do
-        nil -> nil
-        c -> to_string(c)
-      end
-
     intent_tokens = Brain.ML.Tokenizer.tokenize_normalized(intent)
     intent_token_set = MapSet.new(intent_tokens)
 
     cond do
-      domain != nil and MapSet.member?(@positive_domains, domain) -> "positive"
-      domain != nil and MapSet.member?(@negative_domains, domain) -> "negative"
+      not MapSet.disjoint?(intent_token_set, @positive_domains) -> "positive"
+      not MapSet.disjoint?(intent_token_set, @negative_domains) -> "negative"
       not MapSet.disjoint?(intent_token_set, MapSet.new(~w(likes good beautiful thanks love great nice awesome happy))) -> "positive"
       not MapSet.disjoint?(intent_token_set, MapSet.new(~w(bad annoying hate sorry sad angry frustrated disappointed))) -> "negative"
-      category == "expressive" -> "neutral"
+      not MapSet.disjoint?(intent_token_set, MapSet.new(~w(greet goodbye thanks))) -> "neutral"
       true -> "neutral"
     end
   end

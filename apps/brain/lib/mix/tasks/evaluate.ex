@@ -1,6 +1,5 @@
 defmodule Mix.Tasks.Evaluate do
   alias Brain.Analysis.SpeechActClassifier
-  alias Brain.ML.LSTM.UnifiedModel
   alias Brain.ML
   @shortdoc "Run all ML model evaluations"
   @moduledoc "Run evaluation against gold standard data for all ML tasks.\n\n## Usage\n\n    mix evaluate              # Run all evaluations\n    mix evaluate --save       # Save results for historical tracking\n    mix evaluate --compare    # Compare with previous run\n    mix evaluate --verbose    # Show per-class details\n"
@@ -142,13 +141,10 @@ defmodule Mix.Tasks.Evaluate do
   end
 
   defp classify_sentiment(text) do
-    if UnifiedModel.ready?() do
-      case UnifiedModel.classify_sentiment(text) do
-        {:ok, %{label: label}} -> to_string(label)
-        _ -> "neutral"
-      end
-    else
-      "neutral"
+    case ML.SentimentClassifierSimple.classify(text) do
+      {:ok, %{label: label}} -> to_string(label)
+      {:ok, result} when is_map(result) -> to_string(Map.get(result, :label, "neutral"))
+      _ -> "neutral"
     end
   end
 

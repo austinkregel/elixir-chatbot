@@ -1,11 +1,11 @@
 defmodule Brain.Response.ResponseQuality do
-  @moduledoc "Response quality analysis and improvement using heuristics and LSTM scoring.\n\nThis module catches common response quality issues:\n\n1. **Irrelevant responses** - Response doesn't match query topic\n2. **Incomplete responses** - Missing expected information\n3. **Awkward transitions** - Poor flow between parts\n4. **Tone mismatch** - Formal response to casual query or vice versa\n5. **Repetition** - Redundant phrases\n\n## Usage\n\n    # Check response quality\n    ResponseQuality.analyze(\"What's the weather?\", \"The weather is nice.\")\n    # => %{\n    #   score: 0.85,\n    #   issues: [],\n    #   suggestions: []\n    # }\n\n    # Improve a response\n    ResponseQuality.improve(\"What's the weather?\", \"I don't understand that.\")\n    # => {:ok, \"I can help with weather! What location are you interested in?\"}\n"
+  @moduledoc "Response quality analysis and improvement using heuristics.\n\nThis module catches common response quality issues:\n\n1. **Irrelevant responses** - Response doesn't match query topic\n2. **Incomplete responses** - Missing expected information\n3. **Awkward transitions** - Poor flow between parts\n4. **Tone mismatch** - Formal response to casual query or vice versa\n5. **Repetition** - Redundant phrases\n\n## Usage\n\n    # Check response quality\n    ResponseQuality.analyze(\"What's the weather?\", \"The weather is nice.\")\n    # => %{\n    #   score: 0.85,\n    #   issues: [],\n    #   suggestions: []\n    # }\n\n    # Improve a response\n    ResponseQuality.improve(\"What's the weather?\", \"I don't understand that.\")\n    # => {:ok, \"I can help with weather! What location are you interested in?\"}\n"
 
   alias Brain.Response
   require Logger
 
   alias Brain.ML.Tokenizer
-  alias Response.{LSTMResponse, TemplateStore}
+  alias Response.TemplateStore
 
   @quality_thresholds %{
     excellent: 0.85,
@@ -53,23 +53,14 @@ defmodule Brain.Response.ResponseQuality do
       end)
 
     final_score = max(0.0, base_score - penalty)
-    lstm_score = get_lstm_score(query, response)
 
-    blended_score =
-      if lstm_score do
-        final_score * 0.4 + lstm_score * 0.6
-      else
-        final_score
-      end
-
-    quality_level = score_to_level(blended_score)
+    quality_level = score_to_level(final_score)
 
     %{
-      score: Float.round(blended_score, 3),
+      score: Float.round(final_score, 3),
       level: quality_level,
       issues: Enum.map(issues, fn {type, issue} -> Map.put(issue, :type, type) end),
       suggestions: generate_suggestions(issues, context),
-      lstm_score: lstm_score,
       heuristic_score: Float.round(final_score, 3)
     }
   end
@@ -308,17 +299,6 @@ defmodule Brain.Response.ResponseQuality do
     base_penalty * severity_multiplier
   end
 
-  defp get_lstm_score(query, response) do
-    if LSTMResponse.ready?() do
-      case LSTMResponse.score_response(query, response) do
-        {:ok, score} -> score
-        _ -> nil
-      end
-    else
-      nil
-    end
-  end
-
   defp score_to_level(score) do
     cond do
       score >= @quality_thresholds.excellent -> :excellent
@@ -360,7 +340,7 @@ defmodule Brain.Response.ResponseQuality do
         get_detailed_response(query, intent, entities)
 
       true ->
-        select_lstm_best(query, intent, entities)
+        get_template_response(intent, entities)
     end
   end
 
@@ -382,18 +362,7 @@ defmodule Brain.Response.ResponseQuality do
     get_template_response(intent, entities)
   end
 
-  defp select_lstm_best(query, intent, entities) do
-    if LSTMResponse.ready?() do
-      case LSTMResponse.generate(query, intent, entities) do
-        {:ok, response, _score} -> response
-        _ -> get_template_response(intent, entities)
-      end
-    else
-      get_template_response(intent, entities)
-    end
-  end
-
-  defp generate_diverse_candidates(_query, intent, entities, num_candidates) do
+  defp generate_diverse_candidates(_query, intent, _entities, num_candidates) do
     candidates = []
 
     template_candidates =
@@ -414,17 +383,7 @@ defmodule Brain.Response.ResponseQuality do
           []
       end
 
-    lstm_candidate =
-      if LSTMResponse.ready?() do
-        case LSTMResponse.generate(nil, intent, entities) do
-          {:ok, response, _score} -> [response]
-          _ -> []
-        end
-      else
-        []
-      end
-
-    (template_candidates ++ lstm_candidate ++ candidates)
+    (template_candidates ++ candidates)
     |> Enum.uniq()
     |> Enum.filter(&is_binary/1)
     |> Enum.filter(&(String.length(&1) > 0))

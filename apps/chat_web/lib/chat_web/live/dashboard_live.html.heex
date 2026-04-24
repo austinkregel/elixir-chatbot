@@ -836,43 +836,6 @@
           </div>
         </div>
         
-<!-- LSTM Models -->
-          <div>
-            <h3 class="text-[10px] font-semibold text-base-content/70 uppercase tracking-wider mb-2">
-              LSTM Models
-            </h3>
-            <div class="grid grid-cols-3 gap-2">
-              <%= for {model_key, model_data} <- lstm_models(@ml_models_status) do %>
-                <div class="rounded-lg bg-gradient-to-br from-base-200/80 to-base-200/40 border border-base-300/30 p-3">
-                  <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center gap-2">
-                      <.status_dot status={if Map.get(model_data, :ready, false), do: :ready, else: :not_started} />
-                      <span class="font-semibold text-xs text-base-content">
-                        {model_name(model_key)}
-                      </span>
-                    </div>
-                    <span class={[
-                      "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium",
-                      if(Map.get(model_data, :ready, false), do: "bg-success/20 text-success", else: "bg-base-300/50 text-base-content/50")
-                    ]}>
-                      {if Map.get(model_data, :ready, false), do: "Ready", else: "Not Loaded"}
-                    </span>
-                  </div>
-                  <%= if Map.get(model_data, :exists, false) do %>
-                    <div class="flex items-center gap-4 text-[10px] text-base-content/60">
-                      <div class="flex items-center gap-1">
-                        <.icon name="hero-document" class="size-3" />
-                        <span>{format_bytes(Map.get(model_data, :size_bytes, 0))}</span>
-                      </div>
-                    </div>
-                  <% else %>
-                    <div class="text-[10px] text-base-content/40">No model file</div>
-                  <% end %>
-                </div>
-              <% end %>
-            </div>
-          </div>
-
 <!-- Corpus Status -->
           <% corpus = corpus_info() %>
           <div>

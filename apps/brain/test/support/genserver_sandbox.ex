@@ -24,14 +24,6 @@ defmodule Brain.GenServerSandbox do
       end
     end
 
-    if Process.whereis(Brain.ML.IntentClassifierSimple) do
-      try do
-        Brain.Test.ModelFactory.train_and_load_test_models()
-      catch
-        _, _ -> :ok
-      end
-    end
-
     if Process.whereis(Brain.ML.Gazetteer) do
       try do
         Gazetteer.load_all()
@@ -115,8 +107,7 @@ defmodule Brain.GenServerSandbox do
       {Brain.KnowledgeStore, Brain.KnowledgeStore},
       {Brain.MemoryStore, Brain.MemoryStore},
       {Brain.Memory.Embedder, Brain.Memory.Embedder},
-      {Brain.Memory.Store, Brain.Memory.Store},
-      {Brain.ML.IntentClassifierSimple, Brain.ML.IntentClassifierSimple}
+      {Brain.Memory.Store, Brain.Memory.Store}
     ]
 
     started =
@@ -130,14 +121,6 @@ defmodule Brain.GenServerSandbox do
             acc
         end
       end)
-
-    if classifier = Map.get(started, Brain.ML.IntentClassifierSimple) do
-      try do
-        GenServer.call(classifier, {:load_model, "default"}, 10_000)
-      catch
-        _, _ -> :ok
-      end
-    end
 
     if gazetteer = Map.get(started, Brain.ML.Gazetteer) do
       try do

@@ -9,8 +9,7 @@ defmodule Brain.ML.Trainer do
   alias ML.{DataLoaders, Tokenizer, EntityTrainer}
 
   defp configure_nx_backend do
-    Nx.default_backend(Nx.BinaryBackend)
-    Logger.info("Using optimized CPU backend for training")
+    Logger.info("Nx backend: #{inspect(Nx.default_backend())}")
   end
 
   @type training_sample :: {String.t(), String.t()}
@@ -80,15 +79,11 @@ defmodule Brain.ML.Trainer do
     else
       model = SimpleClassifier.train(training_data)
 
-      Logger.info("Trained classifier", %{
-        vocab_size: map_size(model.vocabulary),
-        num_labels: map_size(model.label_centroids)
+      Logger.info("Trained classifier (for embedder vocabulary)", %{
+        vocab_size: map_size(model.vocabulary)
       })
 
       File.mkdir_p!(models_path)
-      model_path = Path.join(models_path, "classifier.term")
-      File.write!(model_path, :erlang.term_to_binary(model))
-      Logger.info("Intent classifier saved", %{path: model_path})
 
       embedder_model = %{
         vocabulary: model.vocabulary,
@@ -463,28 +458,8 @@ defmodule Brain.ML.Trainer do
   end
 
   @doc "Save trained models to disk.\n"
-  def save_models(vectorizer, svm_model) do
-    models_path = Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")
-    File.mkdir_p!(models_path)
-    vectorizer_path = Path.join(models_path, "vectorizer.term")
-
-    vectorizer_data = %{
-      vocabulary: vectorizer.vocabulary,
-      idf_weights: Nx.to_binary(vectorizer.idf_weights),
-      max_features: vectorizer.max_features
-    }
-
-    File.write!(vectorizer_path, :erlang.term_to_binary(vectorizer_data))
-    svm_path = Path.join(models_path, "svm_model.term")
-
-    svm_data = %{
-      model: svm_model.model,
-      label_encoder: svm_model.label_encoder
-    }
-
-    File.write!(svm_path, :erlang.term_to_binary(svm_data))
-
-    Logger.info("Models saved", %{vectorizer_path: vectorizer_path, svm_path: svm_path})
+  def save_models(_vectorizer, _svm_model) do
+    Logger.warning("save_models/2 is deprecated — the TF-IDF pipeline now saves via train_and_save/1")
   end
 
   defp extract_intent_name(filename) do

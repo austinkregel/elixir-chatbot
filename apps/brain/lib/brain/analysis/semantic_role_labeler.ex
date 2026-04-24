@@ -2,7 +2,7 @@ defmodule Brain.Analysis.SemanticRoleLabeler do
   @moduledoc """
   Semantic Role Labeling post-processor.
 
-  Converts BIO tag sequences from the UnifiedModel SRL head into
+  Converts BIO tag sequences from the analysis pipeline into
   predicate-argument structures (`PredicateFrame`). These structures
   capture who did what to whom, where, and when.
 

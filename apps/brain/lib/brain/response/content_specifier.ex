@@ -15,7 +15,7 @@ defmodule Brain.Response.ContentSpecifier do
   """
 
   alias Brain.Response.{Primitive, PrimitiveTypes}
-  alias Brain.Analysis.ChunkAnalysis
+  alias Brain.Analysis.{ChunkAnalysis, ChunkProfile}
 
   require Logger
 
@@ -88,7 +88,7 @@ defmodule Brain.Response.ContentSpecifier do
   end
 
   defp specify_primitive(%Primitive{type: :content, variant: :action_result} = p, analysis, opts) do
-    action = analysis.intent
+    action = profile_label_or_intent(analysis)
     capability = check_action_capability(action, opts)
 
     p
@@ -156,7 +156,7 @@ defmodule Brain.Response.ContentSpecifier do
   end
 
   defp specify_primitive(%Primitive{type: :framing, variant: :boundary} = p, analysis, _opts) do
-    capability = check_action_capability(analysis.intent, [])
+    capability = check_action_capability(profile_label_or_intent(analysis), [])
 
     Primitive.merge_content(p, %{
       capability: capability,
@@ -269,7 +269,7 @@ defmodule Brain.Response.ContentSpecifier do
   end
 
   defp specify_primitive(%Primitive{type: :acknowledgment, variant: :action} = p, analysis, _opts) do
-    action = analysis.intent
+    action = profile_label_or_intent(analysis)
     capability = check_action_capability(action, [])
 
     Primitive.merge_content(p, %{
@@ -306,6 +306,11 @@ defmodule Brain.Response.ContentSpecifier do
 
   defp specify_primitive(p, _analysis, _opts), do: p
 
+  defp profile_label_or_intent(%ChunkAnalysis{profile: %ChunkProfile{derived_label: label}})
+       when is_binary(label) and label != "", do: label
+
+  defp profile_label_or_intent(%ChunkAnalysis{intent: intent}), do: intent
+
   defp validate_content(%Primitive{} = p) do
     if PrimitiveTypes.valid?(p) do
       Primitive.merge_content(p, %{content_complete: true})
@@ -321,28 +326,75 @@ defmodule Brain.Response.ContentSpecifier do
   # --- Knowledge retrieval helpers ---
 
   defp retrieve_facts(analysis, opts) do
-    query = analysis.text || ""
-    entities = analysis.entities || []
-
     enriched_facts = Keyword.get(opts, :enriched_facts, [])
-    if enriched_facts != [] do
-      enriched_facts
-    else
-      try do
-        if fact_retriever_available?() do
-          case Brain.Response.FactRetriever.get_facts_for_query(query, entities) do
-            facts when is_list(facts) and facts != [] -> facts
-            _ -> []
-          end
-        else
-          []
+    unified_context = Keyword.get(opts, :unified_context, %{})
+
+    cond do
+      enriched_facts != [] ->
+        enriched_facts
+
+      true ->
+        case prefetched_facts_for(analysis, unified_context) do
+          facts when is_list(facts) and facts != [] ->
+            facts
+
+          _ ->
+            lookup_chunk = pick_lookup_chunk(analysis, unified_context)
+            query = (lookup_chunk && Map.get(lookup_chunk, :text)) || analysis.text || ""
+            entities = (lookup_chunk && Map.get(lookup_chunk, :entities)) || analysis.entities || []
+            do_fact_lookup(query, entities)
         end
-      rescue
-        _ -> []
-      catch
-        :exit, _ -> []
-      end
     end
+  end
+
+  defp prefetched_facts_for(analysis, unified_context) when is_map(unified_context) do
+    facts_map = Map.get(unified_context, :per_chunk_facts, %{})
+
+    if is_map(facts_map) do
+      lookup_chunk = pick_lookup_chunk(analysis, unified_context)
+      lookup_idx = lookup_chunk && Map.get(lookup_chunk, :chunk_index)
+      analysis_idx = Map.get(analysis, :chunk_index)
+
+      Map.get(facts_map, lookup_idx) || Map.get(facts_map, analysis_idx) || []
+    else
+      []
+    end
+  end
+
+  defp prefetched_facts_for(_analysis, _unified_context), do: []
+
+  defp pick_lookup_chunk(analysis, unified_context) when is_map(unified_context) do
+    case Map.get(unified_context, :question_chunk) do
+      nil -> nil
+      question_chunk -> if same_chunk?(question_chunk, analysis), do: nil, else: question_chunk
+    end
+  end
+
+  defp pick_lookup_chunk(_analysis, _unified_context), do: nil
+
+  defp same_chunk?(a, b) do
+    a_idx = Map.get(a, :chunk_index)
+    b_idx = Map.get(b, :chunk_index)
+
+    cond do
+      a_idx != nil and b_idx != nil -> a_idx == b_idx
+      true -> Map.get(a, :text) == Map.get(b, :text)
+    end
+  end
+
+  defp do_fact_lookup(query, entities) do
+    if fact_retriever_available?() do
+      case Brain.Response.FactRetriever.get_facts_for_query(query, entities) do
+        facts when is_list(facts) and facts != [] -> facts
+        _ -> []
+      end
+    else
+      []
+    end
+  rescue
+    _ -> []
+  catch
+    :exit, _ -> []
   end
 
   defp retrieve_beliefs(analysis) do
@@ -410,15 +462,24 @@ defmodule Brain.Response.ContentSpecifier do
   @generic_labels ~w(unknown query define factual general default greeting
     farewell thanks apology good bad hello hi hey)
 
+  defp extract_topic(%ChunkAnalysis{profile: %ChunkProfile{} = profile, entities: entities}) do
+    entity_topics = extract_entity_topics(entities)
+
+    cond do
+      entity_topics != [] ->
+        Enum.join(entity_topics, ", ")
+
+      profile.domain not in [:unknown, nil] ->
+        label = to_string(profile.domain)
+        if generic_label?(label), do: nil, else: label
+
+      true ->
+        nil
+    end
+  end
+
   defp extract_topic(%ChunkAnalysis{intent: intent, entities: entities}) do
-    entity_topics = (entities || [])
-    |> Enum.take(4)
-    |> Enum.map(&(Map.get(&1, :value) || Map.get(&1, :text) || ""))
-    |> Enum.reject(&(&1 == ""))
-    |> Enum.reject(&stopword?/1)
-    |> Enum.reject(&generic_label?/1)
-    |> Enum.reject(&(String.length(&1) < 3))
-    |> Enum.take(2)
+    entity_topics = extract_entity_topics(entities)
 
     cond do
       entity_topics != [] ->
@@ -431,6 +492,17 @@ defmodule Brain.Response.ContentSpecifier do
       true ->
         nil
     end
+  end
+
+  defp extract_entity_topics(entities) do
+    (entities || [])
+    |> Enum.take(4)
+    |> Enum.map(&(Map.get(&1, :value) || Map.get(&1, :text) || ""))
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.reject(&stopword?/1)
+    |> Enum.reject(&generic_label?/1)
+    |> Enum.reject(&(String.length(&1) < 3))
+    |> Enum.take(2)
   end
 
   defp generic_label?(word) when is_binary(word) do
@@ -455,19 +527,28 @@ defmodule Brain.Response.ContentSpecifier do
 
     sentiment = analysis.sentiment || %{}
     sentiment_label = Map.get(sentiment, :label)
-    intent = analysis.intent
+    profile = analysis.profile
+
+    domain_label =
+      cond do
+        match?(%ChunkProfile{domain: d} when d not in [:unknown, nil], profile) ->
+          label = to_string(profile.domain)
+          if generic_label?(label), do: nil, else: label
+
+        is_binary(analysis.intent) and analysis.intent != "" ->
+          label = analysis.intent |> String.split(".") |> List.last() |> String.replace("_", " ")
+          if generic_label?(label), do: nil, else: label
+
+        true ->
+          nil
+      end
 
     cond do
       entity_names != [] ->
         "you're talking about #{Enum.join(entity_names, " and ")}"
 
-      is_binary(intent) and intent != "" ->
-        domain = intent |> String.split(".") |> List.last() |> String.replace("_", " ")
-        if generic_label?(domain) do
-          summarize_from_sentiment_or_shift(analysis)
-        else
-          "you're asking about #{domain}"
-        end
+      domain_label != nil ->
+        "you're asking about #{domain_label}"
 
       sentiment_label in [:negative, :positive] ->
         descriptor = sentiment_to_descriptor(sentiment_label)
@@ -511,18 +592,6 @@ defmodule Brain.Response.ContentSpecifier do
     String.downcase(word) in @stopwords
   end
 
-  defp summarize_from_sentiment_or_shift(%ChunkAnalysis{sentiment: %{label: label}})
-       when label in [:negative, :positive] do
-    "you're feeling #{sentiment_to_descriptor(label)}"
-  end
-
-  defp summarize_from_sentiment_or_shift(%ChunkAnalysis{text: text})
-       when is_binary(text) and text != "" do
-    shift_perspective(text)
-  end
-
-  defp summarize_from_sentiment_or_shift(_), do: "that"
-
   defp sentiment_to_descriptor(:negative), do: "frustrated"
   defp sentiment_to_descriptor(:positive), do: "good about something"
   defp sentiment_to_descriptor(_), do: "something"
@@ -552,6 +621,11 @@ defmodule Brain.Response.ContentSpecifier do
     end
   end
 
+  defp suggest_alternative(%ChunkAnalysis{profile: %ChunkProfile{domain: domain}})
+       when domain not in [:unknown, nil] do
+    "ask about #{domain}"
+  end
+
   defp suggest_alternative(%ChunkAnalysis{intent: intent}) do
     if is_binary(intent) do
       domain = intent |> String.split(".") |> List.first()
@@ -565,6 +639,15 @@ defmodule Brain.Response.ContentSpecifier do
     case entities do
       [first | _] -> Map.get(first, :value) || Map.get(first, :text)
       _ -> nil
+    end
+  end
+
+  defp infer_creative_type(%ChunkAnalysis{profile: %ChunkProfile{derived_label: label}})
+       when is_binary(label) and label != "" do
+    cond do
+      String.contains?(label, "joke") -> :joke
+      String.contains?(label, "story") -> :story
+      true -> :hypothetical
     end
   end
 

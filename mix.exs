@@ -46,6 +46,10 @@ defmodule ChatBot.Umbrella.MixProject do
         "atlas.seed",
         "download_speech_act_corpus",
         "download_sentiment_corpus",
+        "setup_lexicon",
+        "ingest_framing_corpus",
+        "gen_micro_data",
+        "gen_framing_data --corpus gvfc",
         "train",
       ],
 
@@ -67,7 +71,11 @@ defmodule ChatBot.Umbrella.MixProject do
       ],
 
       # Atlas database shortcuts
-      "atlas.setup": ["do --app atlas ecto.create", "do --app atlas ecto.migrate"],
+      "atlas.setup": [
+        "do --app atlas ecto.create",
+        "do --app atlas atlas.bootstrap_age",
+        "do --app atlas ecto.migrate"
+      ],
       "atlas.reset": ["do --app atlas ecto.drop", "atlas.setup"],
       "atlas.migrate": ["do --app atlas ecto.migrate"],
 
@@ -77,11 +85,7 @@ defmodule ChatBot.Umbrella.MixProject do
       # Quick training - skip slow optional models
       "train.quick": ["do --app brain train --quick"],
       # Fast TF-IDF only (legacy)
-      "train.tfidf": ["do --app brain train_models --skip-lstm"],
-      # Individual model training
-      "train.unified": ["do --app brain train_unified"],
-      "train.response": ["do --app brain train_response"],
-      "train.lstm": ["do --app brain train_lstm"],
+      "train.tfidf": ["do --app brain train_models"],
 
       # S3 model store
       "models.upload": ["do --app brain models.upload"],

@@ -1038,24 +1038,12 @@ defmodule ChatWeb.DashboardLive do
     "Entity Trainer"
   end
 
-  def model_name(:unified_model) do
-    "Unified LSTM"
-  end
-
-  def model_name(:response_scorer) do
-    "Response Scorer"
-  end
-
-  def model_name(:intent_arbitrator) do
-    "Intent Arbitrator"
-  end
-
   def model_name(other) do
     other |> to_string() |> String.replace("_", " ") |> String.capitalize()
   end
 
   def file_based_models(ml_models_status) do
-    [:pos_model, :entity_model, :classifier, :gazetteer]
+    [:pos_model, :entity_model, :gazetteer]
     |> Enum.map(fn key -> {key, Map.get(ml_models_status, key)} end)
     |> Enum.filter(fn {_k, v} -> v != nil end)
   end
@@ -1066,10 +1054,8 @@ defmodule ChatWeb.DashboardLive do
     |> Enum.filter(fn {_k, v} -> v != nil end)
   end
 
-  def lstm_models(ml_models_status) do
-    [:unified_model, :response_scorer, :intent_arbitrator]
-    |> Enum.map(fn key -> {key, Map.get(ml_models_status, key)} end)
-    |> Enum.filter(fn {_k, v} -> v != nil end)
+  def lstm_models(_ml_models_status) do
+    []
   end
 
   def corpus_info do

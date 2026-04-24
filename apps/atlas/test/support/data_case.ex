@@ -35,9 +35,16 @@ defmodule Atlas.DataCase do
   def setup_sandbox(tags) do
     pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Atlas.Repo, shared: not tags[:async])
 
-    # AGE requires LOAD and search_path to be set per-connection
+    # AGE requires LOAD and search_path to be set per-connection.
+    # In test, atlas_test must come first so all Atlas tables resolve there;
+    # ag_catalog follows so cypher() and AGE graphs remain accessible.
     Ecto.Adapters.SQL.query!(Atlas.Repo, "LOAD 'age'", [])
-    Ecto.Adapters.SQL.query!(Atlas.Repo, "SET search_path = ag_catalog, \"$user\", public", [])
+
+    Ecto.Adapters.SQL.query!(
+      Atlas.Repo,
+      ~s(SET search_path = atlas_test, ag_catalog, "$user", public),
+      []
+    )
 
     on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
   end

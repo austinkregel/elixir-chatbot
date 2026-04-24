@@ -1,5 +1,4 @@
 defmodule Mix.Tasks.Evaluate.Sentiment do
-  alias Brain.ML.LSTM.Integration
   alias Brain.ML
   @shortdoc "Evaluate sentiment analysis accuracy"
   @moduledoc "Evaluate sentiment classification against gold standard data.\n\nUses the full production pipeline for evaluation to measure real-world accuracy.\n\n## Usage\n\n    mix evaluate.sentiment              # Run evaluation\n    mix evaluate.sentiment --save       # Save results\n    mix evaluate.sentiment --verbose    # Show per-class details\n\n## Gold Standard Format\n\n    [{\"text\": \"I love this!\", \"sentiment\": \"positive\"}, ...]\n"
@@ -29,8 +28,7 @@ defmodule Mix.Tasks.Evaluate.Sentiment do
     IO.puts("(Using production pipeline)")
     IO.puts(String.duplicate("=", 60) <> "\n")
 
-    status = Integration.model_status()
-    IO.puts("Model status: LSTM=#{status.lstm_unified}, TF-IDF=#{status.tfidf}\n")
+    IO.puts("Model: TF-IDF SentimentClassifierSimple\n")
 
     start_time = System.monotonic_time(:millisecond)
     {predictions, actuals} = evaluate_all(gold)
@@ -80,8 +78,9 @@ defmodule Mix.Tasks.Evaluate.Sentiment do
 
       predicted =
         try do
-          case Integration.classify_sentiment(text) do
+          case ML.SentimentClassifierSimple.classify(text) do
             {:ok, %{label: label}} -> to_string(label)
+            {:ok, result} when is_map(result) -> to_string(Map.get(result, :label, "neutral"))
             _ -> "neutral"
           end
         rescue

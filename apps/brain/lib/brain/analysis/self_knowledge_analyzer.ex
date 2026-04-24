@@ -1,10 +1,9 @@
 defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
   @moduledoc "Analyzes meta-cognitive queries about what the system knows.\n\nThis analyzer uses the trained intent classifier to detect queries like:\n- \"What do you know about me?\" (meta.self_knowledge)\n- \"Do you remember me?\" (meta.memory_check)\n- \"Are you tracking me?\" (meta.privacy_probe)\n\nTraining data for these intents lives in:\n- data/intents/meta.self_knowledge_usersays_en.json\n- data/intents/meta.memory_check_usersays_en.json\n- data/intents/meta.privacy_probe_usersays_en.json\n\nFor such queries, it builds a SelfKnowledgeAssessment that categorizes\nthe system's knowledge into:\n- Discloseable (safe to share confidently)\n- Inferred but uncertain (share with hedging)\n- Should avoid (too personal, uncertain, or inappropriate)\n"
 
-  alias Brain.Analysis.{AnalyzerResult, IntentRegistry}
+  alias Brain.Analysis.{AnalyzerResult, ChunkProfile}
   alias Brain.Epistemic.Types.{SelfKnowledgeAssessment, Config}
   alias Brain.Epistemic.UserModelStore
-  alias Brain.ML.IntentClassifierSimple
 
   alias Brain.ML.Tokenizer
   require Logger
@@ -75,7 +74,7 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
 
   @doc "Detects if the text matches a meta-cognitive intent.\n\nUses the intent classifier and filters for meta.* intents.\nFalls back to keyword-based detection when classifier is unavailable.\nReturns {:ok, intent, confidence} or :no_match\n"
   def detect_meta_intent(text) do
-    case IntentClassifierSimple.classify(text) do
+    case classify_meta(text) do
       {:ok, %{intent: intent, confidence: confidence}} when is_binary(intent) ->
         if is_meta_intent?(intent) do
           {:ok, intent, confidence}
@@ -148,17 +147,61 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
     end
   end
 
-  @doc "Returns the list of meta-cognitive intents from IntentRegistry.\n"
+  @doc "Returns the list of meta-cognitive intents.\n\nWith profiles, returns an empty list as graceful degradation since\nthe registry is no longer the source of truth.\n"
   def meta_intents do
-    IntentRegistry.list_by_domain(:meta)
+    []
   end
 
-  defp is_meta_intent?(intent) do
-    IntentRegistry.meta_intent?(intent)
+  defp classify_meta(text) do
+    alias Brain.Analysis.{FeatureExtractor, Pipeline}
+    alias Brain.ML.MicroClassifiers
+
+    if MicroClassifiers.ready?() do
+      analysis = Pipeline.analyze_chunk(text)
+      {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
+
+      case MicroClassifiers.classify_vector(:intent_full, feature_vector) do
+        {:ok, intent, confidence} ->
+          {:ok, %{intent: intent, confidence: confidence}}
+
+        _ ->
+          {:error, :classification_failed}
+      end
+    else
+      {:error, :no_classifier}
+    end
+  rescue
+    _ -> {:error, :classification_failed}
   end
 
-  defp intent_to_query_type(intent) do
-    IntentRegistry.query_type(intent) || :self_query
+  defp is_meta_intent?(intent, profile \\ nil) do
+    case profile do
+      %ChunkProfile{domain: :meta} -> true
+      _ -> String.starts_with?(to_string(intent || ""), "meta.")
+    end
+  end
+
+  defp intent_to_query_type(intent, profile \\ nil) do
+    case profile do
+      %ChunkProfile{target: target, speech_act_category: cat, modality: modality} when target != :ambiguous ->
+        derive_query_type_from_profile(target, cat, modality)
+
+      _ ->
+        cond do
+            String.contains?(to_string(intent), "privacy") -> :privacy_probe
+            String.contains?(to_string(intent), "memory") -> :memory_check
+            true -> :self_query
+          end
+    end
+  end
+
+  defp derive_query_type_from_profile(target, category, modality) do
+    cond do
+      target == :self and category == :directive -> :self_query
+      target == :agent and modality == :interrogative -> :capability_query
+      category == :directive and modality == :interrogative -> :self_query
+      true -> :self_query
+    end
   end
 
   defp sensitive_keys do

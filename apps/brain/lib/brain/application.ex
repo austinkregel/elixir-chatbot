@@ -7,7 +7,6 @@ defmodule Brain.Application do
 
   require Logger
 
-  alias Brain.ML.IntentClassifierSimple
   alias World.Embedder
   alias Brain.ML.EntityExtractor
   alias World.ModelRegistry
@@ -25,6 +24,7 @@ defmodule Brain.Application do
       Brain.Services.CredentialVault,
       Brain.Services.Cache,
       Brain.ML.Lexicon,
+      Brain.Lexicon.Loader,
       Brain.ML.InformalExpansions,
       Brain.ML.Gazetteer,
       Brain.Analysis.LearningStore,
@@ -43,26 +43,22 @@ defmodule Brain.Application do
       Brain.Epistemic.UserModelStore,
       Brain.Epistemic.ContradictionHandler,
       Brain.Epistemic.StanceTracker,
-      Brain.ML.GCN.Model,
       Brain.ML.Poincare.Embeddings,
       Brain.ML.KnowledgeGraph.TripleScorer,
       Brain.ML.MicroClassifiers,
-      Brain.ML.IntentClassifierSimple,
+      Brain.Analysis.FramingDetector,
       Brain.ML.SentimentClassifierSimple,
       Brain.ML.SpeechActClassifierSimple,
       Brain.ML.EntityExtractor,
       Brain.Code.LanguageGrammar,
       Brain.Code.CodeGazetteer,
-      Brain.ML.LSTM.UnifiedModel,
       Brain.Response.TemplateStore,
       Brain.Response.ChunkCompatibility,
       Brain.Response.TemplateBlender,
       Brain.Response.SemanticFactRetriever,
-      Brain.Response.LSTMResponse,
       Brain.Response.DecompressorCollector,
       Brain.ML.Ouro.Model,
       Brain.ML.Ouro.SidecarLauncher,
-      Brain.ML.IntentArbitrator,
       Brain.ML.TrainingServer,
       Brain.ML.TrainingExampleBuffer,
       Brain.Subprocesses.Supervisor,
@@ -72,9 +68,6 @@ defmodule Brain.Application do
       Brain.Knowledge.LearningCenter,
       Brain.Knowledge.LearningTriggers,
       Brain.Analysis.TypeHierarchy,
-      Brain.Analysis.IntentRegistry,
-      Brain.Analysis.IntentReviewQueue,
-      Brain.Analysis.IntentAutoPromoter,
       {Brain, Application.get_env(:brain, :artifact_path, "priv/static/demo.echo.json")}
     ]
 
@@ -143,15 +136,6 @@ defmodule Brain.Application do
   end
 
   defp load_classifier_fallback do
-    case IntentClassifierSimple.load_models() do
-      {:ok, _models} ->
-        Logger.info("Intent classifier loaded via fallback")
-
-      {:error, _} ->
-        :ok
-    end
-
-    # Also load the embedder model if available
     load_embedder_fallback()
   end
 

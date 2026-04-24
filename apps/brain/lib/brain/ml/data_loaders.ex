@@ -1,7 +1,6 @@
 defmodule Brain.ML.DataLoaders do
   @moduledoc "Data loading utilities for training data from various sources.\n\nSupports:\n- CSV files (cities, artists, emojis)\n- JSON files (entities, intents in Dialogflow format)\n- Entity normalization and standardization\n"
 
-  alias Brain.ML.Tokenizer
   require Logger
 
   @type entity_entry :: %{
@@ -471,42 +470,6 @@ defmodule Brain.ML.DataLoaders do
     end)
   end
 
-  @doc "Load intent training data formatted for LSTM training.\n\nReturns a list of training examples with tokenized text, intent labels,\nand entity annotations in BIO format.\n\n## Options\n- `:include_negative` - Include negative examples (default: true)\n- `:tokenizer` - Tokenizer function (default: Brain.ML.Tokenizer.tokenize/1)\n\n## Returns\n`{:ok, examples}` where each example is:\n```\n%{\n  tokens: [\"what\", \"is\", \"the\", \"weather\"],\n  intent: \"weather.query\",\n  entities: [%{text: \"London\", type: \"location\", start: 5, end: 5}],\n  bio_tags: [\"O\", \"O\", \"O\", \"O\", \"B-LOC\"],  # For NER training\n  negative_for: nil | \"meta.self_knowledge\"  # If this is a negative example\n}\n```\n"
-  def load_intent_training_data_for_lstm(opts \\ []) do
-    include_negative = Keyword.get(opts, :include_negative, true)
-    tokenizer = Keyword.get(opts, :tokenizer, &Tokenizer.tokenize/1)
-
-    with {:ok, positive_examples} <- load_all_intents(),
-         {:ok, negative_examples} <- load_negative_examples() do
-      processed_positives =
-        positive_examples
-        |> Enum.map(fn example ->
-          process_example_for_lstm(example, tokenizer, nil)
-        end)
-        |> Enum.filter(&(&1 != nil))
-
-      processed_negatives =
-        if include_negative do
-          negative_examples
-          |> Enum.map(fn example ->
-            process_example_for_lstm(example, tokenizer, example[:negative_for])
-          end)
-          |> Enum.filter(&(&1 != nil))
-        else
-          []
-        end
-
-      all_examples = processed_positives ++ processed_negatives
-
-      Logger.info("Loaded LSTM training data", %{
-        positive_examples: length(processed_positives),
-        negative_examples: length(processed_negatives),
-        total: length(all_examples)
-      })
-
-      {:ok, all_examples}
-    end
-  end
 
   @doc "Load negative training examples from *_negative_en.json files.\n\nNegative examples are phrases that should NOT be classified as a particular intent.\nThey help the model learn to distinguish between similar-sounding but semantically\ndifferent inputs (e.g., \"tell me about the weather\" should NOT be meta.self_knowledge).\n\n## Format\nEach negative example file contains:\n```json\n[\n  {\"text\": \"tell me about the weather\", \"correct_intent\": \"weather.query\"},\n  {\"text\": \"what can you tell me about music\", \"correct_intent\": \"music.search\"}\n]\n```\n\nThe filename indicates what intent these are negative for (e.g., meta.self_knowledge_negative_en.json).\n"
   def load_negative_examples(path \\ nil) do
@@ -568,38 +531,6 @@ defmodule Brain.ML.DataLoaders do
     end
   end
 
-  @doc "Build vocabulary from LSTM training examples.\n\nReturns a map of token -> index.\nSpecial tokens:\n- 0: <PAD>\n- 1: <UNK>\n- 2: <BOS> (beginning of sequence)\n- 3: <EOS> (end of sequence)\n"
-  def build_lstm_vocabulary(examples, opts \\ []) do
-    min_freq = Keyword.get(opts, :min_freq, 2)
-    max_vocab = Keyword.get(opts, :max_vocab, 10_000)
-
-    token_freqs =
-      examples
-      |> Enum.flat_map(fn ex -> ex.tokens end)
-      |> Enum.frequencies()
-
-    tokens =
-      token_freqs
-      |> Enum.filter(fn {_token, freq} -> freq >= min_freq end)
-      |> Enum.sort_by(fn {_token, freq} -> -freq end)
-      |> Enum.take(max_vocab - 4)
-      |> Enum.map(fn {token, _freq} -> token end)
-
-    special_tokens = ["<PAD>", "<UNK>", "<BOS>", "<EOS>"]
-    all_tokens = special_tokens ++ tokens
-
-    vocab =
-      all_tokens
-      |> Enum.with_index()
-      |> Enum.into(%{})
-
-    Logger.info("Built LSTM vocabulary", %{
-      size: map_size(vocab),
-      unique_tokens: length(tokens)
-    })
-
-    vocab
-  end
 
   @doc "Build intent label vocabulary from training examples.\n\nReturns `{label_to_idx, idx_to_label}` maps.\n"
   def build_intent_vocabulary(examples) do
@@ -674,127 +605,6 @@ defmodule Brain.ML.DataLoaders do
       current_length == target_length -> indices
       current_length > target_length -> Enum.take(indices, target_length)
       true -> indices ++ List.duplicate(pad_idx, target_length - current_length)
-    end
-  end
-
-  defp process_example_for_lstm(example, tokenizer, negative_for) do
-    text = example[:text] || example["text"] || ""
-    intent = example[:intent] || example["intent"] || "unknown"
-    entities = example[:entities] || example["entities"] || []
-
-    if text == "" do
-      nil
-    else
-      raw_tokens = tokenizer.(text)
-
-      tokens =
-        Enum.map(raw_tokens, fn token ->
-          cond do
-            is_binary(token) -> token
-            is_map(token) -> token[:text] || token["text"] || to_string(token)
-            true -> to_string(token)
-          end
-        end)
-
-      bio_tags = generate_bio_tags(tokens, text, entities)
-
-      %{
-        tokens: tokens,
-        intent: intent,
-        entities: entities,
-        bio_tags: bio_tags,
-        negative_for: negative_for
-      }
-    end
-  end
-
-  defp generate_bio_tags(tokens, text, entities) when is_binary(text) do
-    valid_tokens = Enum.filter(tokens, &is_binary/1)
-    char_entities = build_char_entity_map(text, entities)
-
-    {bio_tags, _pos} =
-      Enum.map_reduce(valid_tokens, 0, fn token, pos ->
-        token_start = find_token_position(text, token, pos)
-        token_len = String.length(token)
-        token_end = token_start + max(token_len - 1, 0)
-        tag = get_bio_tag_for_range(char_entities, token_start, token_end)
-
-        {tag, token_end + 1}
-      end)
-
-    if length(bio_tags) < length(tokens) do
-      bio_tags ++ List.duplicate("O", length(tokens) - length(bio_tags))
-    else
-      bio_tags
-    end
-  end
-
-  defp generate_bio_tags(tokens, _text, _entities) do
-    List.duplicate("O", length(tokens))
-  end
-
-  defp build_char_entity_map(text, entities) do
-    text_length = String.length(text)
-    initial_map = for i <- 0..(text_length - 1), into: %{}, do: {i, {"O", nil}}
-
-    Enum.reduce(entities, initial_map, fn entity, acc ->
-      start_pos = entity[:start_pos] || entity["start_pos"] || -1
-      end_pos = entity[:end_pos] || entity["end_pos"] || -1
-      entity_type = entity[:type] || entity["type"] || "unknown"
-
-      if start_pos >= 0 and end_pos >= 0 do
-        Enum.reduce(start_pos..end_pos, acc, fn pos, inner_acc ->
-          tag =
-            if pos == start_pos do
-              "B"
-            else
-              "I"
-            end
-
-          Map.put(inner_acc, pos, {tag, entity_type})
-        end)
-      else
-        acc
-      end
-    end)
-  end
-
-  defp find_token_position(text, token, start_from) when is_binary(text) and is_binary(token) do
-    text_lower = String.downcase(text)
-    token_lower = String.downcase(token)
-    text_byte_size = byte_size(text_lower)
-
-    if start_from >= text_byte_size or token_lower == "" do
-      start_from
-    else
-      remaining_size = text_byte_size - start_from
-
-      case :binary.match(text_lower, token_lower, scope: {start_from, remaining_size}) do
-        {pos, _len} -> pos
-        :nomatch -> start_from
-      end
-    end
-  end
-
-  defp find_token_position(_text, _token, start_from) do
-    start_from
-  end
-
-  defp get_bio_tag_for_range(char_entities, start_pos, _end_pos) do
-    case Map.get(char_entities, start_pos, {"O", nil}) do
-      {"O", _} ->
-        "O"
-
-      {"B", type} ->
-        "B-#{type}"
-
-      {"I", type} ->
-        prev_pos = max(0, start_pos - 1)
-
-        case Map.get(char_entities, prev_pos, {"O", nil}) do
-          {_, ^type} -> "I-#{type}"
-          _ -> "B-#{type}"
-        end
     end
   end
 

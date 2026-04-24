@@ -14,9 +14,9 @@
 # =============================================================================
 
 MISSING_MODELS=()
-MISSING_LSTM_MODELS=()
 MISSING_MICRO_MODELS=()
 MISSING_CORPORA=()
+MISSING_FRAMING_CORPUS=()
 MISSING_OURO=()
 MISSING_GRAMMARS=()
 MISSING_PYTHON_DATA=()
@@ -26,7 +26,6 @@ check_term_models() {
   local root="${1:-$ROOT_DIR}"
   local ml_dir="$root/apps/brain/priv/ml_models"
   MISSING_MODELS=()
-  MISSING_LSTM_MODELS=()
   MISSING_MICRO_MODELS=()
 
   local core_models=(
@@ -45,18 +44,6 @@ check_term_models() {
     fi
   done
 
-  local lstm_models=(
-    "lstm/unified_model.term"
-    "lstm/response_scorer.term"
-    "lstm/axon_intent.term"
-  )
-
-  for model in "${lstm_models[@]}"; do
-    if [ ! -f "$ml_dir/$model" ]; then
-      MISSING_LSTM_MODELS+=("$model")
-    fi
-  done
-
   local micro_models=(
     "micro/personal_question.term"
     "micro/clarification_response.term"
@@ -67,6 +54,9 @@ check_term_models() {
     "micro/user_fact_type.term"
     "micro/directed_at_bot.term"
     "micro/event_argument_role.term"
+    "micro/intent_full.term"
+    "micro/intent_domain.term"
+    "micro/framing_class.term"
   )
 
   for model in "${micro_models[@]}"; do
@@ -75,8 +65,19 @@ check_term_models() {
     fi
   done
 
-  local total_missing=$(( ${#MISSING_MODELS[@]} + ${#MISSING_LSTM_MODELS[@]} + ${#MISSING_MICRO_MODELS[@]} ))
+  local total_missing=$(( ${#MISSING_MODELS[@]} + ${#MISSING_MICRO_MODELS[@]} ))
   return $(( total_missing > 0 ? 1 : 0 ))
+}
+
+check_framing_corpus() {
+  local root="${1:-$ROOT_DIR}"
+  MISSING_FRAMING_CORPUS=()
+
+  if [ ! -f "$root/data/framing/GVFC_extension_multimodal.csv" ]; then
+    MISSING_FRAMING_CORPUS+=("data/framing/GVFC_extension_multimodal.csv")
+  fi
+
+  return $(( ${#MISSING_FRAMING_CORPUS[@]} > 0 ? 1 : 0 ))
 }
 
 check_corpora() {
@@ -188,6 +189,7 @@ print_artifact_report() {
 
   check_term_models "$root"
   check_corpora "$root"
+  check_framing_corpus "$root"
   check_wordnet "$root"
   check_ouro "$root"
   check_grammars "$root"
@@ -197,9 +199,9 @@ print_artifact_report() {
   echo -e "  ${BOLD}Artifact Status${NC}"
   echo -e "  ─────────────────────────────────────────"
   _report_section "Core TF-IDF models (${#MISSING_MODELS[@]} missing)" "${MISSING_MODELS[@]}"
-  _report_section "LSTM models (${#MISSING_LSTM_MODELS[@]} missing)" "${MISSING_LSTM_MODELS[@]}"
   _report_section "Micro classifiers (${#MISSING_MICRO_MODELS[@]} missing)" "${MISSING_MICRO_MODELS[@]}"
   _report_section "Training corpora (${#MISSING_CORPORA[@]} missing)" "${MISSING_CORPORA[@]}"
+  _report_section "Framing corpus (${#MISSING_FRAMING_CORPUS[@]} missing)" "${MISSING_FRAMING_CORPUS[@]}"
   _report_section "WordNet data (${#MISSING_WORDNET[@]} missing)" "${MISSING_WORDNET[@]}"
   _report_section "Ouro model files (${#MISSING_OURO[@]} missing)" "${MISSING_OURO[@]}"
   _report_section "Tree-sitter grammars (${#MISSING_GRAMMARS[@]} missing)" "${MISSING_GRAMMARS[@]}"

@@ -1,18 +1,44 @@
 defmodule Brain.Analysis.SpeechActClassifier do
-  @moduledoc "Classifies the pragmatic function (speech act) of text chunks.\n\nBased on Searle's taxonomy:\n- Assertives: statements, claims, reports\n- Directives: requests, commands, questions\n- Commissives: promises, offers\n- Expressives: thanks, apologies, greetings\n- Declaratives: performatives\n\nUses multiple analysis passes to build a robust understanding:\n1. Intent Classification - trained model prediction\n2. Structural Analysis - sentence structure (questions, imperatives)\n3. Keyword Analysis - domain-specific keywords\n4. Entity Context - what entities suggest about intent\n5. Pragmatic Markers - politeness, urgency, etc.\n\nResults are combined using confidence-weighted voting.\n"
+  @moduledoc """
+  Classifies the pragmatic function (speech act) of text chunks.
 
-  alias Brain.Analysis.{SpeechActResult, IntentRegistry}
-  alias Brain.ML.{IntentClassifierSimple, IntentArbitrator, POSTagger, Tokenizer}
-  alias Brain.ML.LSTM.UnifiedModel
+  Based on Searle's taxonomy:
+  - Assertives: statements, claims, reports
+  - Directives: requests, commands, questions
+  - Commissives: promises, offers
+  - Expressives: thanks, apologies, greetings
+  - Declaratives: performatives
+
+  Uses four cheap analysis voters in pass 1 (this module's `classify/2`):
+
+  1. Structural Analysis - sentence structure (questions, imperatives)
+  2. Keyword Analysis - domain-specific keywords
+  3. Pragmatic Markers - politeness, urgency, etc.
+  4. Memory Analysis - similar prior episodes
+
+  The `:intent_full` model is **not** invoked here. The pipeline runs full
+  feature extraction and `MicroClassifiers.classify_vector(:intent_full, ...)`
+  in pass 2, then calls `refine_with_intent/3` to splice that intent vote
+  back into the speech-act combiner. This keeps the model's runtime feature
+  distribution identical to its training distribution.
+
+  Results are combined using confidence-weighted voting.
+  """
+
+  alias Brain.Analysis.SpeechActResult
+  alias Brain.ML.{POSTagger, Tokenizer}
 
   alias Brain.Memory.Store
   alias Brain.Memory.Embedder
   require Logger
 
   @doc """
-  Classifies the speech act of the given text using multiple analysis passes.
+  Classifies the speech act of the given text using the four cheap voters
+  (structural, keyword, pragmatic, memory).
 
-  Returns a SpeechActResult struct.
+  Returns a `SpeechActResult` whose `:raw_analyses` field carries the per-voter
+  analyses so a later call to `refine_with_intent/3` can splice in a
+  full-features intent vote without re-running the cheap voters.
 
   ## Options
     - `:entities` - Pre-extracted entities to use for arbitration (default: [])
@@ -39,11 +65,64 @@ defmodule Brain.Analysis.SpeechActClassifier do
     }
   end
 
-  defp run_all_analyses(text, entities) do
+  @doc """
+  Refines a pass-1 `SpeechActResult` with an intent prediction obtained by
+  running `Brain.ML.MicroClassifiers.classify_vector(:intent_full, ...)` on a
+  full feature vector built from the complete chunk analysis (pass 2).
+
+  Splices the intent vote into the original analyses map (carried on
+  `:raw_analyses`) and re-runs `combine_analyses/2`. Returns a new
+  `SpeechActResult`.
+
+  No-ops (returns the original result unchanged) when:
+  - `intent` is nil or an empty string,
+  - `confidence` is non-positive, or
+  - the result has no `:raw_analyses` (e.g. it was constructed manually for
+    testing rather than via `classify/2`).
+  """
+  @spec refine_with_intent(SpeechActResult.t(), String.t() | nil, number()) :: SpeechActResult.t()
+  def refine_with_intent(%SpeechActResult{} = result, nil, _conf), do: result
+  def refine_with_intent(%SpeechActResult{} = result, "", _conf), do: result
+  def refine_with_intent(%SpeechActResult{raw_analyses: nil} = result, _intent, _conf), do: result
+
+  def refine_with_intent(%SpeechActResult{raw_analyses: analyses} = result, intent, confidence)
+      when is_binary(intent) and is_number(confidence) do
+    if confidence <= 0 do
+      result
+    else
+      norm = normalize_text(Map.get(analyses, :original_text, ""))
+
+      if feature_intent_conflicts_strong_lexicon?(norm, intent) do
+        result
+      else
+        conf = confidence / 1
+        {category, sub_type} = intent_to_speech_act(intent)
+
+        intent_analysis = %{
+          intent: intent,
+          category: category,
+          sub_type: sub_type,
+          confidence: conf,
+          second_score: 0.0,
+          margin: conf,
+          top_k: [%{intent: intent, score: conf}],
+          source: :feature_vector
+        }
+
+        updated_analyses = Map.put(analyses, :intent, intent_analysis)
+        combine_analyses(updated_analyses, Map.get(analyses, :original_text, ""))
+      end
+    end
+  end
+
+  def refine_with_intent(%SpeechActResult{} = result, _intent, _conf), do: result
+
+  defp run_all_analyses(text, _entities) do
     normalized = normalize_text(text)
 
     %{
-      intent: analyze_with_intent_model(text, entities),
+      original_text: text,
+      intent: empty_intent_result(),
       structural: analyze_structure(text, normalized),
       keyword: analyze_keywords(normalized),
       pragmatic: analyze_pragmatics(text, normalized),
@@ -51,215 +130,17 @@ defmodule Brain.Analysis.SpeechActClassifier do
     }
   end
 
-  defp analyze_with_intent_model(text, entities) do
-    case classify_with_lstm(text, entities) do
-      {:ok, result} -> result
-      {:error, _} -> classify_with_tfidf(text)
-    end
-  end
-
-  defp classify_with_lstm(text, entities) do
-    if lstm_available?() do
-      case UnifiedModel.classify_intent(text) do
-        {:ok, %{label: lstm_intent, confidence: lstm_conf, scores: lstm_scores}} ->
-          if registered_intent?(lstm_intent) do
-            tfidf_result = safe_tfidf_classify(text)
-            arbitrate_intent(text, lstm_intent, lstm_conf, lstm_scores, tfidf_result, entities)
-          else
-            {:error, :unregistered_lstm_intent}
-          end
-
-        {:ok, {intent, confidence}} ->
-          if registered_intent?(intent) do
-            tfidf_result = safe_tfidf_classify(text)
-            arbitrate_intent(text, intent, confidence, [], tfidf_result, entities)
-          else
-            {:error, :unregistered_lstm_intent}
-          end
-
-        {:error, _} = error ->
-          error
-      end
-    else
-      {:error, :lstm_not_available}
-    end
-  end
-
-  defp arbitrate_intent(text, lstm_intent, lstm_conf, lstm_scores, tfidf_result, entities) do
-    features =
-      IntentArbitrator.extract_features(%{
-        lstm: %{intent: lstm_intent, confidence: lstm_conf, scores: lstm_scores},
-        tfidf: tfidf_result,
-        text: text,
-        entities: entities
-      })
-
-    tfidf_conf = if is_map(tfidf_result), do: tfidf_result[:confidence] || 0.0, else: 0.0
-
-    case IntentArbitrator.arbitrate(features) do
-      {:tfidf, arb_conf} ->
-        use_tfidf_result(tfidf_result, arb_conf, lstm_intent, lstm_conf, lstm_scores)
-
-      {:lstm, _arb_conf} ->
-        {:ok, build_lstm_result(lstm_intent, lstm_conf, lstm_scores)}
-
-      {:error, reason} ->
-        Logger.warning("IntentArbitrator unavailable (#{reason}), falling back to confidence comparison")
-        if lstm_conf >= tfidf_conf do
-          {:ok, build_lstm_result(lstm_intent, lstm_conf, lstm_scores)}
-        else
-          use_tfidf_result(tfidf_result, tfidf_conf, lstm_intent, lstm_conf, lstm_scores)
-        end
-    end
-  end
-
-  defp use_tfidf_result(tfidf_result, arb_conf, lstm_intent, lstm_conf, lstm_scores) do
-    tfidf_intent = if is_map(tfidf_result), do: tfidf_result[:intent]
-    tfidf_conf = if is_map(tfidf_result), do: tfidf_result[:confidence] || 0.0, else: 0.0
-    tfidf_str = if tfidf_intent, do: to_string(tfidf_intent), else: ""
-
-    if tfidf_str != "" and registered_intent?(tfidf_str) do
-      {category, sub_type} = intent_to_speech_act(tfidf_str)
-
-      {:ok,
-       %{
-         intent: tfidf_str,
-         category: category,
-         sub_type: sub_type,
-         confidence: tfidf_conf,
-         second_score: lstm_conf,
-         margin: abs(tfidf_conf - lstm_conf),
-         top_k: [],
-         source: :arbitrator_tfidf,
-         arbitrator_confidence: arb_conf
-       }}
-    else
-      {:ok, build_lstm_result(lstm_intent, lstm_conf, lstm_scores)}
-    end
-  end
-
-  defp safe_tfidf_classify(text) do
-    try do
-      case IntentClassifierSimple.classify(text, with_details: true, top_k: 5) do
-        {:ok, %{intent: intent, confidence: conf} = result} ->
-          top_k = Map.get(result, :top_k, [])
-          scores = Enum.map(top_k, fn %{intent: i, score: s} -> {i, s} end)
-          margin = Map.get(result, :margin, 0.0)
-          %{intent: intent, confidence: conf, scores: scores, margin: margin}
-
-        {:ok, {intent, conf}} ->
-          %{intent: intent, confidence: conf, scores: []}
-
-        _ ->
-          nil
-      end
-    rescue
-      _ -> nil
-    catch
-      _, _ -> nil
-    end
-  end
-
-  defp registered_intent?(intent) when is_binary(intent) do
-    if intent == "unknown" do
-      false
-    else
-    case IntentRegistry.get(intent) do
-      nil ->
-        IntentRegistry.list_intents()
-        |> Enum.any?(fn registered ->
-          String.starts_with?(intent, registered <> ".") or
-            String.starts_with?(registered, intent <> ".")
-        end)
-
-      _ ->
-        true
-    end
-    end
-  end
-
-  defp registered_intent?(_), do: false
-
-  defp build_lstm_result(intent, confidence, scores) do
-    {category, sub_type} = intent_to_speech_act(intent)
-
-    top_k =
-      scores
-      |> Enum.sort_by(fn {_label, score} -> -score end)
-      |> Enum.take(5)
-      |> Enum.map(fn {label, score} -> %{intent: label, score: score} end)
-
-    second_score =
-      case top_k do
-        [_, %{score: s} | _] -> s
-        _ -> 0.0
-      end
-
+  defp empty_intent_result do
     %{
-      intent: intent,
-      category: category,
-      sub_type: sub_type,
-      confidence: confidence,
-      second_score: second_score,
-      margin: confidence - second_score,
-      top_k: top_k,
-      source: :lstm
+      intent: nil,
+      category: nil,
+      sub_type: nil,
+      confidence: 0.0,
+      second_score: 0.0,
+      margin: 0.0,
+      top_k: [],
+      source: :feature_vector
     }
-  end
-
-  defp classify_with_tfidf(text) do
-    case IntentClassifierSimple.classify(text, with_details: true, top_k: 5) do
-      {:ok, %{intent: intent, confidence: confidence} = result} ->
-        {category, sub_type} = intent_to_speech_act(intent)
-
-        %{
-          intent: intent,
-          category: category,
-          sub_type: sub_type,
-          confidence: confidence,
-          second_score: Map.get(result, :second_score, 0.0),
-          margin: Map.get(result, :margin, 0.0),
-          top_k: Map.get(result, :top_k, []),
-          source: :tfidf
-        }
-
-      {:error, _} ->
-        %{
-          intent: nil,
-          category: nil,
-          sub_type: nil,
-          confidence: 0.0,
-          second_score: 0.0,
-          margin: 0.0,
-          top_k: [],
-          source: :tfidf
-        }
-    end
-  end
-
-  defp lstm_available? do
-    case Process.get(:lstm_available_check) do
-      nil ->
-        available =
-          try do
-            Code.ensure_loaded?(UnifiedModel) and UnifiedModel.ready?()
-          rescue
-            _ -> false
-          catch
-            _, _ -> false
-          end
-
-        Process.put(:lstm_available_check, {available, System.monotonic_time(:second)})
-        available
-
-      {cached_result, checked_at} ->
-        if System.monotonic_time(:second) - checked_at > 10 do
-          Process.delete(:lstm_available_check)
-          lstm_available?()
-        else
-          cached_result
-        end
-    end
   end
 
   defp analyze_structure(text, normalized) do
@@ -428,16 +309,8 @@ defmodule Brain.Analysis.SpeechActClassifier do
     end
   end
 
-  defp tag_to_speech_act(tag) do
-    case IntentRegistry.get(tag) do
-      nil ->
-        {:assertive, :statement}
-
-      _meta ->
-        category = IntentRegistry.category(tag) || :assertive
-        speech_act = IntentRegistry.speech_act(tag) || :statement
-        {category, speech_act}
-    end
+  defp tag_to_speech_act(_tag) do
+    {:assertive, :statement}
   end
 
   defp combine_analyses(analyses, _text) do
@@ -455,12 +328,22 @@ defmodule Brain.Analysis.SpeechActClassifier do
       indicators: indicators,
       is_question: analyses.structural.is_question,
       is_imperative: is_imperative,
-      intent_confidence: analyses.intent[:confidence]
+      intent_confidence: analyses.intent[:confidence],
+      raw_analyses: analyses
     )
   end
 
   defp collect_votes(analyses) do
-    votes = []
+    normalized =
+      analyses
+      |> Map.get(:original_text, "")
+      |> normalize_text()
+
+    votes =
+      case lexicon_vote(normalized) do
+        nil -> []
+        vote -> [vote]
+      end
 
     votes =
       if analyses.intent.confidence > 0.2 and analyses.intent.category != nil do
@@ -517,11 +400,89 @@ defmodule Brain.Analysis.SpeechActClassifier do
     votes
   end
 
+  # High-precision surface cues that must not be overridden by a coarse TF-IDF
+  # centroid (trained on dialogue acts as strings) when that model misfires on
+  # short imperatives, greetings, or farewells.
+  # Do not let pass-2 `intent_full` overwrite clear greeting/farewell surface cues
+  # (short utterances where the centroid model often misfires).
+  defp feature_intent_conflicts_strong_lexicon?(norm, intent) when is_binary(norm) and is_binary(intent) do
+    domain =
+      case String.split(intent, ".", parts: 2) do
+        [d, _] -> d
+        _ -> intent
+      end
+
+    expressive_domains = ~w(smalltalk greeting)
+
+    (lexicon_surface_greeting?(norm) or lexicon_surface_farewell?(norm)) and
+      domain not in expressive_domains
+  end
+
+  defp feature_intent_conflicts_strong_lexicon?(_, _), do: false
+
+  defp lexicon_first_clause(norm) when is_binary(norm) do
+    norm
+    |> String.split("?", parts: 2)
+    |> hd()
+    |> String.trim()
+  end
+
+  defp lexicon_surface_greeting?(norm) when is_binary(norm) do
+    fc = lexicon_first_clause(norm)
+    String.length(fc) < 80 and Regex.match?(~r/^(hello|hi|hey)\b/, fc)
+  end
+
+  defp lexicon_surface_farewell?(norm) when is_binary(norm) do
+    String.length(norm) < 120 and
+      Regex.match?(
+        ~r/\b(bye|goodbye|see you|see ya|farewell|cya)\b/,
+        norm
+      )
+  end
+
+  defp lexicon_vote(norm) when is_binary(norm) do
+    t = String.trim(norm)
+    if t == "", do: nil, else: lexicon_vote_clauses(t)
+  end
+
+  defp lexicon_vote_clauses(t) do
+    first_clause =
+      t
+      |> String.split("?", parts: 2)
+      |> hd()
+      |> String.trim()
+
+    cond do
+      Regex.match?(~r/^play\b/, t) ->
+        {:directive, :command, 0.9, :lexicon}
+
+      Regex.match?(~r/^turn on\b|^set (a )?reminder\b|^remind me\b|^schedule\b/, t) ->
+        {:directive, :command, 0.88, :lexicon}
+
+      Regex.match?(~r/^find me\b.+\b(music|jazz|songs?|tracks?)\b/, t) ->
+        {:directive, :request_action, 0.85, :lexicon}
+
+      String.length(first_clause) < 80 and Regex.match?(~r/^(hello|hi|hey)\b/, first_clause) ->
+        {:expressive, :greeting, 0.86, :lexicon}
+
+      String.length(t) < 120 and
+          Regex.match?(
+            ~r/\b(bye|goodbye|see you|see ya|farewell|cya)\b/,
+            t
+          ) ->
+        {:expressive, :farewell, 0.87, :lexicon}
+
+      true ->
+        nil
+    end
+  end
+
   defp apply_weights(votes) do
     source_weights = %{
+      lexicon: 1.45,
       model: 1.5,
       memory: 1.4,
-      keyword: 1.2,
+      keyword: 1.05,
       structural: 1.0,
       pragmatic: 0.8
     }
@@ -624,7 +585,8 @@ defmodule Brain.Analysis.SpeechActClassifier do
 
     indicators =
       if analyses.keyword.confidence > 0.3 do
-        ["keyword:#{analyses.keyword.sub_type}" | indicators]
+        kw_st = Map.get(analyses.keyword, :sub_type, :none)
+        ["keyword:#{kw_st}" | indicators]
       else
         indicators
       end
@@ -716,51 +678,22 @@ defmodule Brain.Analysis.SpeechActClassifier do
     no_terminal and (ends_with_comma or trailing_ellipsis)
   end
 
-  defp intent_to_speech_act(intent) do
-    # Look up speech act from the IntentRegistry (exact match first)
-    case IntentRegistry.get(intent) do
-      nil ->
-        # Try prefix match in both directions:
-        # 1. Intent is more specific than registry key (e.g. "weather.query.today" matches "weather.query")
-        # 2. Intent is broader than registry key (e.g. "weather" matches "weather.query")
-        find_registry_prefix_match(intent)
+  defp intent_to_speech_act(intent) when is_binary(intent) do
+    domain =
+      case String.split(intent, ".", parts: 2) do
+        [d, _] -> d
+        _ -> intent
+      end
 
-      _meta ->
-        category = IntentRegistry.category(intent) || :assertive
-        sub_type = IntentRegistry.speech_act(intent) || :statement
-        {category, sub_type}
+    cond do
+      domain in ~w(greeting farewell thanks apology compliment) -> {:expressive, String.to_atom(domain)}
+      domain in ~w(question request query search) -> {:directive, :request_information}
+      domain in ~w(command action set turn) -> {:directive, :command}
+      domain in ~w(promise offer) -> {:commissive, :offer}
+      true -> {:assertive, :statement}
     end
   end
 
-  defp find_registry_prefix_match(intent) do
-    all_intents = IntentRegistry.list_intents()
-
-    # First try: intent is more specific than a registry key
-    # e.g. classified "smalltalk.greetings.hello" matches registered "smalltalk.greetings"
-    specific_matches =
-      all_intents
-      |> Enum.filter(fn registered -> String.starts_with?(intent, registered <> ".") end)
-      |> Enum.sort_by(&(-String.length(&1)))
-
-    # Second try: intent is broader than registry keys
-    # e.g. classified "weather" matches registered "weather.query", "weather.condition"
-    # Sort by shortest (most general child) first
-    broad_matches =
-      all_intents
-      |> Enum.filter(fn registered -> String.starts_with?(registered, intent <> ".") end)
-      |> Enum.sort_by(&String.length/1)
-
-    best = List.first(specific_matches) || List.first(broad_matches)
-
-    case best do
-      nil ->
-        {:assertive, :statement}
-
-      matched ->
-        category = IntentRegistry.category(matched) || :assertive
-        sub_type = IntentRegistry.speech_act(matched) || :statement
-        {category, sub_type}
-    end
-  end
+  defp intent_to_speech_act(_), do: {:assertive, :statement}
 
 end

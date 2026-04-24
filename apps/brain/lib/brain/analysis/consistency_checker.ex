@@ -5,8 +5,9 @@ defmodule Brain.Analysis.ConsistencyChecker do
 
   Compares up to four independent signals:
   - Fast path intent (heuristic pattern matching via RacingAnalyzer)
-  - Analysis intent (LSTM/arbitrated via SpeechActClassifier)
-  - NLP intent (TF-IDF via IntentClassifierSimple)
+  - Analysis intent (SpeechActClassifier; previously also blended LSTM /
+    intent-arbitrator output, both removed)
+  - NLP intent (TF-IDF via NLPPipeline)
   - Event domain (inferred from event extraction frames)
 
   When multiple independent signals disagree with the final chosen intent,

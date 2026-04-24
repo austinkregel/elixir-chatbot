@@ -317,10 +317,10 @@ if [ ${#MISSING_CORPORA[@]} -gt 0 ]; then
   for corpus in "${MISSING_CORPORA[@]}"; do
     case "$corpus" in
       speech_act/*)
-        mix download_speech_act_corpus 2>&1 && ok "Speech act corpus downloaded" || warn "Speech act corpus download failed (non-fatal)"
+        mix download_speech_act_corpus 2>&1 && ok "Speech act corpus downloaded" || fail "Speech act corpus download failed"
         ;;
       sentiment/*)
-        mix download_sentiment_corpus 2>&1 && ok "Sentiment corpus downloaded" || warn "Sentiment corpus download failed (non-fatal)"
+        mix download_sentiment_corpus 2>&1 && ok "Sentiment corpus downloaded" || fail "Sentiment corpus download failed"
         ;;
     esac
   done
@@ -328,6 +328,33 @@ else
   step "Training corpora"
   ok "All corpora already present"
 fi
+
+# ---------------------------------------------------------------------------
+# Framing corpus (GVFC)
+# ---------------------------------------------------------------------------
+step "Framing corpus (GVFC)"
+if [ ! -f "$ROOT_DIR/data/framing/GVFC_extension_multimodal.csv" ]; then
+  if [ -f "$ROOT_DIR/GVFC.zip" ]; then
+    mix ingest_framing_corpus && ok "GVFC corpus extracted" || fail "GVFC corpus extraction failed"
+  else
+    fail "GVFC corpus missing. Download GVFC.zip from https://github.com/ganggit/GVFC-raw-corpus (Google Drive link) and place it in the project root, then rerun setup."
+  fi
+else
+  ok "GVFC corpus already present"
+fi
+
+# ---------------------------------------------------------------------------
+# Lexicon setup
+# ---------------------------------------------------------------------------
+step "Lexicon ingestion"
+mix setup_lexicon && ok "Lexicon ingested" || fail "Lexicon ingestion failed"
+
+# ---------------------------------------------------------------------------
+# Data generation (micro-classifiers + framing)
+# ---------------------------------------------------------------------------
+step "Generating classifier training data"
+mix gen_micro_data && ok "Micro-classifier data generated" || fail "Micro-classifier data generation failed"
+mix gen_framing_data --corpus gvfc && ok "Framing data generated" || fail "Framing data generation failed"
 
 # ---------------------------------------------------------------------------
 # WordNet
@@ -388,10 +415,10 @@ fi
 # ---------------------------------------------------------------------------
 if [ "$SKIP_TRAINING" = false ]; then
   check_term_models "$ROOT_DIR"
-  total_missing=$(( ${#MISSING_MODELS[@]} + ${#MISSING_LSTM_MODELS[@]} ))
+  total_missing=$(( ${#MISSING_MODELS[@]} + ${#MISSING_MICRO_MODELS[@]} ))
 
   if [ "$total_missing" -gt 0 ] || [ "$FULL_TRAINING" = true ]; then
-    step "Training models"
+    step "Training models (all 6 stages)"
 
     if [ "$FULL_TRAINING" = true ]; then
       info "Full training pipeline (this may take a while)..."
@@ -402,13 +429,7 @@ if [ "$SKIP_TRAINING" = false ]; then
     fi
   else
     step "Model training"
-    ok "Core and LSTM models already present (skipping training)"
-  fi
-
-  check_term_models "$ROOT_DIR"
-  if [ ${#MISSING_MICRO_MODELS[@]} -gt 0 ]; then
-    step "Training micro classifiers"
-    mix train_micro && ok "Micro classifiers trained" || warn "Micro classifier training failed (non-fatal)"
+    ok "All models already present (skipping training)"
   fi
 else
   step "Model training (skipped)"

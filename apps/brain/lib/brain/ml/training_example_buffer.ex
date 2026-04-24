@@ -2,21 +2,37 @@ defmodule Brain.ML.TrainingExampleBuffer do
   @moduledoc """
   ETS-backed buffer for training examples generated from conversation outcomes.
 
-  Accumulates {text, intent} examples and flushes them as incremental updates
-  to the IntentClassifierSimple when the buffer reaches a threshold.
+  Accumulates `{text, intent}` examples and flushes them periodically. On flush
+  the batch is:
 
-  - Flushes at 50+ examples
-  - Minimum 1 hour between flushes
-  - Uses IntentClassifierSimple.incremental_update/2 for the actual model update
+  1. Persisted to a JSONL file under `data/classifiers/buffered/<unix_ts_ms>.jsonl`
+     so the next `mix train_micro` run can pick it up. This is the safety net
+     for feature-vector classifiers (e.g. `:intent_full`) that don't support
+     incremental updates today.
+  2. Forwarded to `Brain.ML.MicroClassifiers.incremental_update/2` so any
+     TF-IDF heads keyed on the same labels (e.g. `:intent_domain` after we
+     start emitting domain-tagged examples) can absorb them immediately.
+  3. Reported via a structured log summary (per-intent counts and per-classifier
+     update results) before the ETS table is cleared.
+
+  Flush triggers:
+
+  - Buffer reaches `@flush_threshold` examples AND the minimum interval since
+    the last flush has elapsed.
+  - `flush/1` is called explicitly (bypasses both thresholds).
   """
 
   use GenServer
   require Logger
 
+  alias Brain.ML.MicroClassifiers
+
   @ets_table :training_example_buffer
   @flush_threshold 50
   @min_flush_interval_ms 60 * 60 * 1000
   @check_interval_ms 5 * 60 * 1000
+  @buffered_dir "data/classifiers/buffered"
+  @incremental_targets [:intent_full, :intent_domain]
 
   def start_link(opts \\ []) do
     name = Keyword.get(opts, :name, __MODULE__)
@@ -125,18 +141,18 @@ defmodule Brain.ML.TrainingExampleBuffer do
       if examples == [] do
         {0, state}
       else
+        persisted_path = persist_jsonl(examples, now)
+        per_intent_counts = examples |> Enum.frequencies_by(fn {_t, i} -> i end)
+        update_results = run_incremental_updates(examples)
+
         :ets.delete_all_objects(@ets_table)
 
-        # Send to IntentClassifierSimple for incremental update
-        case Brain.ML.IntentClassifierSimple.incremental_update(examples) do
-          {:ok, count} ->
-            Logger.info("TrainingExampleBuffer: flushed #{length(examples)} examples",
-              incremental_count: count
-            )
-
-          {:error, reason} ->
-            Logger.warning("TrainingExampleBuffer: flush failed: #{inspect(reason)}")
-        end
+        Logger.info(
+          "TrainingExampleBuffer: flushed #{length(examples)} examples",
+          persisted: persisted_path,
+          per_intent_counts: per_intent_counts,
+          incremental_updates: update_results
+        )
 
         new_state = %{
           state
@@ -152,6 +168,49 @@ defmodule Brain.ML.TrainingExampleBuffer do
     e ->
       Logger.warning("TrainingExampleBuffer flush error: #{Exception.message(e)}")
       {0, state}
+  end
+
+  defp persist_jsonl(examples, now_ms) do
+    dir = buffered_dir()
+    File.mkdir_p!(dir)
+    path = Path.join(dir, "#{now_ms}.jsonl")
+
+    body =
+      examples
+      |> Enum.map(fn {text, intent} ->
+        Jason.encode!(%{text: text, intent: intent})
+      end)
+      |> Enum.intersperse("\n")
+
+    File.write!(path, [body, "\n"])
+    path
+  rescue
+    e ->
+      Logger.warning("TrainingExampleBuffer persist error: #{Exception.message(e)}")
+      nil
+  end
+
+  defp run_incremental_updates(examples) do
+    Enum.reduce(@incremental_targets, %{}, fn classifier_name, acc ->
+      Map.put(acc, classifier_name, safe_incremental_update(classifier_name, examples))
+    end)
+  end
+
+  defp safe_incremental_update(classifier_name, examples) do
+    MicroClassifiers.incremental_update(classifier_name, examples)
+  rescue
+    e ->
+      {:error, {:exception, Exception.message(e)}}
+  catch
+    :exit, reason ->
+      {:error, {:exit, reason}}
+  end
+
+  defp buffered_dir do
+    case Application.get_env(:brain, :training_buffer, [])[:dir] do
+      nil -> @buffered_dir
+      override when is_binary(override) -> override
+    end
   end
 
   defp flush_interval_elapsed?(nil, _now), do: true

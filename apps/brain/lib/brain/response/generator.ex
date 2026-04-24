@@ -1,19 +1,18 @@
 defmodule Brain.Response.Generator do
-  @moduledoc "Generative response synthesis entry point.\n\nThis module orchestrates response generation using a generative pipeline:\n\n1. **Retrieve Context** - Query memory for similar episodes, get semantic facts\n2. **Synthesize** - Compose response from primitives and domain knowledge\n3. **Compose** - Weave parts together using speech act analysis\n4. **Refine** - Score/improve using LSTM if available\n\nThe system generates novel responses by combining:\n- Domain knowledge (from priv/knowledge/domains/*.json)\n- Similar past episodes (memory-augmented)\n- Response primitives (hedges, acknowledgments, connectors)\n- Entity slot filling\n\nBrain should use this module instead of implementing response logic directly.\n"
+  @moduledoc "Generative response synthesis entry point.\n\nThis module orchestrates response generation using a generative pipeline:\n\n1. **Retrieve Context** - Query memory for similar episodes, get semantic facts\n2. **Synthesize** - Compose response from primitives and domain knowledge\n3. **Compose** - Weave parts together using speech act analysis\n4. **Refine / improve** - Quality-check and optionally rewrite via the\n   feature-vector / template pipeline (the historical LSTM rescorer has\n   been removed; the hook is preserved as a no-op pass-through).\n\nThe system generates novel responses by combining:\n- Domain knowledge (from priv/knowledge/domains/*.json)\n- Similar past episodes (memory-augmented)\n- Response primitives (hedges, acknowledgments, connectors)\n- Entity slot filling\n\nBrain should use this module instead of implementing response logic directly.\n"
 
   alias Brain.Analysis.SpeechActClassifier
   alias Brain.Memory
   alias Brain.Response
   require Logger
 
-  alias Response.{TemplateStore, MemoryAugmented, FactRetriever, Composer, TemplateBlender}
-  alias Response.{LSTMResponse, ResponseQuality, Synthesizer, Enricher}
+  alias Response.{TemplateStore, MemoryAugmented, FactRetriever, TemplateBlender}
+  alias Response.{ResponseQuality, Synthesizer, Enricher}
   alias Response.RefinementLoop
-  alias Brain.Analysis.IntentRegistry
   alias Memory.Store
   alias Brain.Code.QueryHandler
 
-  @doc "Generate a response for the given intent and entities.\n\nUses a generative pipeline:\n1. Retrieve similar episodes from memory\n2. Synthesize response from domain knowledge and primitives\n3. Fall back to templates if synthesis doesn't produce a result\n4. Apply LSTM scoring if available\n\nReturns:\n- {:ok, response, :synthesized} for generated responses\n- {:ok, response, :memory_adapted} for memory-adapted responses\n- {:ok, response, :template} for template-based responses\n- {:ok, response, :lstm_selected} for LSTM-scored best response\n- {:ok, response, :fallback} for fallback responses\n"
+  @doc "Generate a response for the given intent and entities.\n\nUses a generative pipeline:\n1. Retrieve similar episodes from memory\n2. Synthesize response from domain knowledge and primitives\n3. Fall back to templates if synthesis doesn't produce a result\n4. Run the (now no-op) refinement hook and the quality improver\n\nReturns:\n- {:ok, response, :synthesized} for generated responses\n- {:ok, response, :memory_adapted} for memory-adapted responses\n- {:ok, response, :template} for template-based responses\n- {:ok, response, :fallback} for fallback responses\n"
   def generate(intent, entities, query_text \\ nil) do
     generate_with_events(intent, entities, query_text, [])
   end
@@ -33,7 +32,6 @@ defmodule Brain.Response.Generator do
 
       result = run_generative_pipeline(intent, entities, query_text, context)
       result = maybe_enrich_response(result, context)
-      result = maybe_refine_with_lstm(result, query_text, intent, entities)
       maybe_improve_response(result, query_text, intent, entities)
     end)
   end
@@ -297,22 +295,8 @@ defmodule Brain.Response.Generator do
     end
   end
 
-  defp maybe_refine_with_lstm({:ok, response, type}, query_text, intent, entities) do
-    if query_text && LSTMResponse.ready?() && type not in [:lstm_selected, :special_handler] do
-      case LSTMResponse.generate(query_text, intent, entities) do
-        {:ok, lstm_response, score} when score > 0.7 ->
-          {:ok, lstm_response, :lstm_selected}
-
-        _ ->
-          {:ok, response, type}
-      end
-    else
-      {:ok, response, type}
-    end
-  end
-
   defp maybe_improve_response({:ok, response, type}, query_text, intent, entities) do
-    if type in [:synthesized, :special_handler, :lstm_selected] or is_nil(query_text) do
+    if type in [:synthesized, :special_handler] or is_nil(query_text) do
       {:ok, response, type}
     else
       case ResponseQuality.quick_check(query_text, response) do
@@ -341,8 +325,9 @@ defmodule Brain.Response.Generator do
     other
   end
 
-  defp try_special_handlers(intent, entities, query_text) do
-    domain = IntentRegistry.domain(intent)
+  defp try_special_handlers(intent, entities, query_text, opts \\ []) do
+    profile = Keyword.get(opts, :profile)
+    domain = if profile, do: profile.domain, else: infer_domain_from_label(intent)
 
     cond do
       domain == :code ->
@@ -354,6 +339,18 @@ defmodule Brain.Response.Generator do
       true ->
         :not_handled
     end
+  end
+
+  defp infer_domain_from_label(nil), do: nil
+  defp infer_domain_from_label(intent) when is_binary(intent) do
+    intent |> String.split(".", parts: 2) |> List.first() |> safe_to_domain_atom()
+  end
+  defp infer_domain_from_label(_), do: nil
+
+  defp safe_to_domain_atom(str) when is_binary(str) do
+    String.to_existing_atom(str)
+  rescue
+    ArgumentError -> String.to_atom(str)
   end
 
   defp handle_code_intent(intent, entities, query_text) do
@@ -542,16 +539,6 @@ defmodule Brain.Response.Generator do
     }
   end
 
-  @doc "Generate a response for an expressive speech act.\nUsed for greetings, farewells, thanks, apologies, etc.\n"
-  def generate_expressive(speech_act) when is_map(speech_act) do
-    sub_type = Map.get(speech_act, :sub_type)
-    TemplateStore.get_expressive_response(sub_type)
-  end
-
-  def generate_expressive(_) do
-    nil
-  end
-
   @doc """
   Generates a response using the synthesis pipeline (progressive refinement).
 
@@ -625,189 +612,6 @@ defmodule Brain.Response.Generator do
       |> String.replace(~r/\s{2,}/, " ")
       |> String.trim()
     end
-  end
-
-  @doc "Generate a combined response for an analysis model with multiple speech acts.\n\nThis handles multi-chunk inputs where we may have expressives (greetings)\ncombined with directives (questions/commands).\n\nLegacy path -- prefer `generate_via_synthesis/5` for new code.\n"
-  def generate_from_analysis(analysis_model, intent, entities, query_text, opts \\ %{}) do
-    speech_acts =
-      analysis_model.analyses
-      |> Enum.map(& &1.speech_act)
-
-    overall_sentiment = aggregate_sentiment(analysis_model.analyses)
-
-    epistemic_context = extract_epistemic_context(analysis_model.analyses)
-
-    event_frames = analysis_model.analyses |> Enum.flat_map(&Map.get(&1, :event_frames, []))
-    srl_frames = analysis_model.analyses |> Enum.flat_map(&Map.get(&1, :srl_frames, []))
-
-    {analysis_confidence, should_hedge} =
-      extract_analysis_uncertainty(analysis_model.analyses)
-
-    gen_opts =
-      opts
-      |> Map.put(:epistemic_context, epistemic_context)
-      |> Map.put(:event_frames, event_frames)
-      |> Map.put(:srl_frames, srl_frames)
-      |> Map.put(:analysis_confidence, analysis_confidence)
-      |> Map.put(:should_hedge, should_hedge)
-
-    expressives =
-      speech_acts
-      |> Enum.filter(&(&1.category == :expressive))
-      |> Enum.uniq_by(& &1.sub_type)
-
-    directives = Enum.filter(speech_acts, &(&1.category == :directive))
-
-    has_substantive_content =
-      directives != [] or
-        (intent != nil and intent != "" and
-           not IntentRegistry.greeting?(intent))
-
-    has_contradiction = Map.get(epistemic_context, :status) == :contradicted
-
-    response_parts = []
-    response_types = []
-
-    {response_parts, response_types} =
-      if expressives != [] do
-        expressive = List.first(expressives)
-        expressive_response = generate_expressive(expressive)
-
-        if expressive_response do
-          {[expressive_response | response_parts], [:expressive | response_types]}
-        else
-          {response_parts, response_types}
-        end
-      else
-        {response_parts, response_types}
-      end
-
-    {response_parts, response_types} =
-      if has_substantive_content or has_contradiction do
-        {:ok, substantive_response, response_type} =
-          generate_with_epistemic_context(intent, entities, query_text, epistemic_context, gen_opts)
-
-        {[substantive_response | response_parts], [response_type | response_types]}
-      else
-        {response_parts, response_types}
-      end
-
-    valid_parts =
-      response_parts
-      |> Enum.reverse()
-      |> Enum.filter(&(&1 != nil and &1 != ""))
-
-    primary_type =
-      response_types
-      |> Enum.reject(&(&1 == :expressive))
-      |> List.first(:fallback)
-
-    response =
-      case valid_parts do
-        [] ->
-          {:ok, resp, _} = generate(intent, entities, query_text)
-          resp
-
-        [single] ->
-          single
-
-        parts ->
-          weave_response_parts(parts, Enum.reverse(response_types))
-      end
-
-    response = maybe_add_sentiment_prefix(response, overall_sentiment)
-
-    response =
-      if should_hedge and primary_type not in [:expressive, :fallback] do
-        Composer.apply_hedging(response, analysis_confidence || 0.5)
-      else
-        response
-      end
-
-    {response, primary_type}
-  end
-
-  # Extracts epistemic context from analysis chunks for response generation.
-  # Aggregates across ALL chunks — if any chunk is :contradicted, the overall
-  # status is :contradicted. This prevents multi-chunk inputs from hiding
-  # contradictions that appear in non-first chunks.
-  defp extract_epistemic_context([]) do
-    %{}
-  end
-
-  defp extract_epistemic_context(analyses) do
-    # Find the most "severe" epistemic status across all chunks
-    # Priority: :contradicted > :uncertain > :verified > :unchecked
-    status_priority = %{contradicted: 3, uncertain: 2, verified: 1, unchecked: 0}
-
-    {best_status, best_verification, all_beliefs} =
-      Enum.reduce(analyses, {:unchecked, nil, []}, fn analysis, {acc_status, acc_verification, acc_beliefs} ->
-        chunk_status = Map.get(analysis, :epistemic_status, :unchecked)
-        chunk_verification = Map.get(analysis, :fact_verification)
-        chunk_beliefs = Map.get(analysis, :related_beliefs, [])
-
-        if Map.get(status_priority, chunk_status, 0) > Map.get(status_priority, acc_status, 0) do
-          {chunk_status, chunk_verification, acc_beliefs ++ chunk_beliefs}
-        else
-          {acc_status, acc_verification, acc_beliefs ++ chunk_beliefs}
-        end
-      end)
-
-    unique_beliefs = Enum.uniq(all_beliefs)
-
-    justification_chains =
-      unique_beliefs
-      |> Enum.flat_map(fn belief ->
-        node_id = Map.get(belief, :node_id) || Map.get(belief, "node_id")
-
-        if node_id do
-          Brain.Graph.Reader.belief_justification_chain(to_string(node_id))
-        else
-          []
-        end
-      end)
-
-    evidence_chains =
-      unique_beliefs
-      |> Enum.flat_map(fn belief ->
-        subject = Map.get(belief, :subject) || Map.get(belief, "subject")
-        if subject, do: Brain.Graph.Reader.evidence_chain(to_string(subject)), else: []
-      end)
-
-    assumption_consequences =
-      if best_status == :contradicted do
-        unique_beliefs
-        |> Enum.flat_map(fn belief ->
-          node_id = Map.get(belief, :node_id) || Map.get(belief, "node_id")
-          if node_id, do: Brain.Graph.Reader.assumption_consequences(to_string(node_id)), else: []
-        end)
-      else
-        []
-      end
-
-    %{
-      status: best_status,
-      verification: best_verification,
-      beliefs: unique_beliefs,
-      justification_chains: justification_chains,
-      evidence_chains: evidence_chains,
-      assumption_consequences: assumption_consequences
-    }
-  end
-
-  # Generate response with epistemic context awareness
-  defp generate_with_epistemic_context(intent, entities, query_text, epistemic_context, gen_opts) do
-    events = []
-    merged_opts = Map.merge(gen_opts, %{epistemic_context: epistemic_context})
-    context = build_generation_context_with_events(intent, entities, query_text, events, merged_opts)
-
-    slots = build_slot_map_for_enrichment(entities)
-    filled_slots = slots |> Map.keys() |> Enum.map(&to_string/1)
-    context = context |> Map.put(:filled_slots, filled_slots)
-    context = Enricher.prepare_context(intent, slots, context)
-
-    result = run_generative_pipeline(intent, entities, query_text, context)
-    maybe_enrich_response(result, context)
   end
 
   @doc "Formats a code snippet for display in a response.\n\n## Options\n  - `:language` - The programming language for syntax highlighting\n  - `:start_line` - Starting line number\n  - `:max_lines` - Maximum lines to show (default: 20)\n"
@@ -1102,116 +906,4 @@ defmodule Brain.Response.Generator do
     []
   end
 
-  defp weave_response_parts(parts, types) do
-    valid_parts = Enum.filter(parts, &(&1 != nil and &1 != ""))
-
-    if length(valid_parts) <= 1 do
-      Enum.join(valid_parts, " ")
-    else
-      analyses = build_analyses_for_composer(valid_parts, types)
-      Composer.weave_multi_chunk_response(valid_parts, analyses)
-    end
-  end
-
-  defp build_analyses_for_composer(parts, types) do
-    padded_types =
-      if length(types) < length(parts) do
-        types ++ List.duplicate(:assertive, length(parts) - length(types))
-      else
-        types
-      end
-
-    Enum.zip(parts, padded_types)
-    |> Enum.map(fn {_part, type} ->
-      %{
-        speech_act: %{
-          category: type_to_category(type),
-          is_question: false,
-          sub_type: nil
-        }
-      }
-    end)
-  end
-
-  defp type_to_category(:expressive) do
-    :expressive
-  end
-
-  defp type_to_category(:domain) do
-    :directive
-  end
-
-  defp type_to_category(:template) do
-    :assertive
-  end
-
-  defp type_to_category(:memory_augmented) do
-    :assertive
-  end
-
-  defp type_to_category(_) do
-    :assertive
-  end
-
-  defp extract_analysis_uncertainty(analyses) do
-    confidences =
-      analyses
-      |> Enum.map(& &1.confidence)
-      |> Enum.filter(&is_number/1)
-
-    accumulated_contexts =
-      analyses
-      |> Enum.map(&Map.get(&1, :accumulated_context))
-      |> Enum.filter(&(not is_nil(&1)))
-
-    analysis_confidence =
-      case confidences do
-        [] -> nil
-        confs -> Enum.min(confs)
-      end
-
-    should_hedge =
-      case accumulated_contexts do
-        [] -> false
-        ctxs -> Enum.any?(ctxs, &Brain.Analysis.ContextAccumulator.should_hedge?/1)
-      end
-
-    {analysis_confidence, should_hedge}
-  end
-
-  defp aggregate_sentiment(analyses) do
-    sentiments =
-      analyses
-      |> Enum.map(&Map.get(&1, :sentiment))
-      |> Enum.reject(&is_nil/1)
-
-    case sentiments do
-      [] ->
-        %{label: :neutral, confidence: 0.5}
-
-      sentiments ->
-        non_neutral =
-          Enum.filter(sentiments, fn s ->
-            label = Map.get(s, :label, :neutral)
-            label != :neutral and label != "neutral"
-          end)
-
-        case non_neutral do
-          [] -> List.first(sentiments)
-          found -> Enum.max_by(found, &Map.get(&1, :confidence, 0.0))
-        end
-    end
-  end
-
-  defp maybe_add_sentiment_prefix(response, %{label: label, confidence: confidence})
-       when label in [:negative, "negative"] and confidence >= 0.7 do
-    prefix =
-      Enum.random(["I understand.", "I hear you.", "I can see that's frustrating."])
-
-    "#{prefix} #{response}"
-  end
-
-  defp maybe_add_sentiment_prefix(response, _sentiment) do
-    response
-  end
 end

@@ -2,7 +2,7 @@ defmodule Brain.ML.SentimentClassifierSimple do
   @moduledoc """
   Sentiment classifier using TF-IDF and nearest centroid classification.
 
-  Mirrors the pattern of `IntentClassifierSimple` but for sentiment labels
+  Mirrors the GenServer+SimpleClassifier pattern but for sentiment labels
   (positive, negative, neutral). Trained from the sentiment gold standard
   via `Brain.ML.Trainer.train_sentiment_classifier/2`.
 

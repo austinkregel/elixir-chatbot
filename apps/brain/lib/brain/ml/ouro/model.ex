@@ -28,7 +28,7 @@ defmodule Brain.ML.Ouro.Model do
   ]
 
   @default_max_new_tokens 1024
-  @default_temperature 0.7
+  @default_temperature 0.6
   @health_check_interval 10_000
 
   # --- Public API ---
@@ -276,8 +276,8 @@ defmodule Brain.ML.Ouro.Model do
 
     Client.chat_completion(messages,
       max_tokens: Keyword.get(opts, :max_new_tokens, 256),
-      temperature: Keyword.get(opts, :temperature, @default_temperature),
-      repetition_penalty: Keyword.get(opts, :repetition_penalty, 1.2)
+      temperature: Keyword.get(opts, :temperature, 0.6),
+      repetition_penalty: Keyword.get(opts, :repetition_penalty, 1.3)
     )
   end
 

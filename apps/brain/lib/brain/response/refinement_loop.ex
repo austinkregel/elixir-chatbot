@@ -21,7 +21,7 @@ defmodule Brain.Response.RefinementLoop do
 
   alias Brain.Response.{DiscoursePlanner, ContentSpecifier, SurfaceRealizer, ResponseEvaluator}
   alias Brain.Response.ResponseEvaluator.Score
-  alias Brain.Analysis.{InternalModel, ChunkAnalysis}
+  alias Brain.Analysis.{InternalModel, ChunkPriority}
 
   require Logger
 
@@ -270,13 +270,14 @@ defmodule Brain.Response.RefinementLoop do
   defp adjust_content(plan, _, _, _), do: plan
 
   defp select_primary_analysis(analyses) do
-    respondable = Enum.filter(analyses, fn a ->
-      a.response_strategy in [:can_respond, :hedged_response]
-    end)
+    respondable =
+      Enum.filter(analyses, fn a ->
+        a.response_strategy in [:can_respond, :hedged_response]
+      end)
 
     case respondable do
-      [primary | _] -> primary
-      [] -> List.first(analyses) || %ChunkAnalysis{}
+      [] -> ChunkPriority.select_primary(analyses)
+      respondable -> ChunkPriority.select_primary(respondable)
     end
   end
 

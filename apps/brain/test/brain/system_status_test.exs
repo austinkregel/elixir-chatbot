@@ -13,8 +13,6 @@ defmodule Brain.SystemStatusTest do
       assert Map.has_key?(result, :brain)
       assert Map.has_key?(result, :nlp_pipeline)
       assert Map.has_key?(result, :micro_classifiers)
-      assert Map.has_key?(result, :lstm)
-      assert Map.has_key?(result, :arbitrator)
     end
   end
 
@@ -70,35 +68,6 @@ defmodule Brain.SystemStatusTest do
       assert is_map(result.components)
       assert Map.has_key?(result.components, :intent_classifier)
       assert Map.has_key?(result.components, :gazetteer)
-    end
-  end
-
-  describe "get_lstm_status/0" do
-    test "returns LSTM status with components" do
-      result = SystemStatus.get_lstm_status()
-
-      assert is_map(result)
-      assert Map.has_key?(result, :running)
-      assert Map.has_key?(result, :ready)
-      assert Map.has_key?(result, :label)
-      assert Map.has_key?(result, :components)
-      assert is_map(result.components)
-      assert Map.has_key?(result.components, :unified_model)
-      assert Map.has_key?(result.components, :response_scorer)
-      assert Map.has_key?(result.components, :gcn)
-    end
-  end
-
-  describe "get_arbitrator_status/0" do
-    test "returns arbitrator status map" do
-      result = SystemStatus.get_arbitrator_status()
-
-      assert is_map(result)
-      assert Map.has_key?(result, :running)
-      assert Map.has_key?(result, :ready)
-      assert Map.has_key?(result, :model_loaded)
-      assert Map.has_key?(result, :stats)
-      assert Map.has_key?(result, :metrics)
     end
   end
 
@@ -170,12 +139,9 @@ defmodule Brain.SystemStatusTest do
       assert is_map(result)
       assert Map.has_key?(result, :pos_model)
       assert Map.has_key?(result, :entity_model)
-      assert Map.has_key?(result, :classifier)
       assert Map.has_key?(result, :gazetteer)
       assert Map.has_key?(result, :intent_classifier)
       assert Map.has_key?(result, :entity_extractor)
-      assert Map.has_key?(result, :unified_model)
-      assert Map.has_key?(result, :response_scorer)
       assert Map.has_key?(result, :checked_at)
     end
   end

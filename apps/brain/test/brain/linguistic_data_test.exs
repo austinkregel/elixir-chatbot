@@ -10,7 +10,7 @@ defmodule Brain.LinguisticDataTest do
   predicates must agree with the legacy approach on representative inputs
   that don't trigger known substring false positives.
   """
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Brain.LinguisticData
 

@@ -142,30 +142,25 @@ defmodule Brain.Analysis.PipelineIntegrationTest do
     end
   end
 
-  describe "graceful degradation" do
-    test "pipeline works without LSTM models" do
-      # LSTM models may not be loaded in test environment
-      # Pipeline should gracefully fall back to TF-IDF
+  describe "core analysis signals are populated" do
+    test "intent is produced for an information-seeking question" do
       model = Pipeline.process("What is machine learning?")
       first = List.first(model.analyses || [])
       assert first != nil
       assert first.intent != nil
     end
 
-    test "sentiment analysis falls back when LSTM unavailable" do
+    test "sentiment or intent is populated for a positive utterance" do
       model = Pipeline.process("I absolutely love this!")
       first = List.first(model.analyses || [])
       assert first != nil
-      # Sentiment should be available (either LSTM or fallback)
-      sentiment = first.sentiment
-      assert sentiment != nil or first.intent != nil
+      assert first.sentiment != nil or first.intent != nil
     end
 
-    test "speech act classification works without LSTM" do
+    test "speech act is classified for a polite request" do
       model = Pipeline.process("Could you please help me?")
       first = List.first(model.analyses || [])
       assert first != nil
-      # Speech act should be classified
       assert first.speech_act != nil
     end
   end

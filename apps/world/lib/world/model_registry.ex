@@ -11,7 +11,7 @@ defmodule World.ModelRegistry do
 
   @pubsub Brain.PubSub
   @default_world_id "default"
-  @model_types [:classifier, :embedder, :pos_model, :entity_model]
+  @model_types [:embedder, :pos_model, :entity_model]
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -82,7 +82,6 @@ defmodule World.ModelRegistry do
   def model_path(world_id, model_type) when model_type in @model_types do
     filename =
       case model_type do
-        :classifier -> "classifier.term"
         :embedder -> "embedder.term"
         :pos_model -> "pos_model.term"
         :entity_model -> "entity_model.term"
@@ -97,7 +96,6 @@ defmodule World.ModelRegistry do
 
     filename =
       case model_type do
-        :classifier -> "classifier.term"
         :embedder -> "embedder.term"
         :pos_model -> "pos_model.term"
         :entity_model -> "entity_model.term"
@@ -108,8 +106,8 @@ defmodule World.ModelRegistry do
 
   @doc "Checks if a world has trained models.\n"
   def world_has_models?(world_id) do
-    File.exists?(model_path(world_id, :classifier)) or
-      (world_id == @default_world_id and File.exists?(default_model_path(:classifier)))
+    File.exists?(model_path(world_id, :embedder)) or
+      (world_id == @default_world_id and File.exists?(default_model_path(:embedder)))
   end
 
   @impl true
@@ -347,7 +345,6 @@ defmodule World.ModelRegistry do
     Logger.debug("Loading models for world: #{world_id}")
 
     models = %{
-      classifier: load_model_file(world_id, :classifier),
       embedder: load_embedder_model(world_id),
       pos_model: load_model_file(world_id, :pos_model),
       entity_model: load_model_file(world_id, :entity_model)
@@ -476,25 +473,11 @@ defmodule World.ModelRegistry do
       is_active: state.active_world_id == world_id,
       is_loaded: Map.has_key?(state.models, world_id),
       is_loading: MapSet.member?(state.loading, world_id),
-      has_classifier: models[:classifier] != nil,
       has_embedder: models[:embedder] != nil,
       has_pos_model: models[:pos_model] != nil,
       has_entity_model: models[:entity_model] != nil,
-      classifier_vocab_size: get_vocab_size(models[:classifier]),
       embedder_vocab_size: get_embedder_vocab_size(models[:embedder])
     }
-  end
-
-  defp get_vocab_size(nil) do
-    0
-  end
-
-  defp get_vocab_size(model) when is_map(model) do
-    Map.get(model, :vocabulary, %{}) |> map_size()
-  end
-
-  defp get_vocab_size(_) do
-    0
   end
 
   defp get_embedder_vocab_size(nil) do
@@ -515,7 +498,6 @@ defmodule World.ModelRegistry do
 
   defp broadcast_models_loaded(world_id, models) do
     status = %{
-      classifier: models[:classifier] != nil,
       embedder: models[:embedder] != nil,
       pos_model: models[:pos_model] != nil,
       entity_model: models[:entity_model] != nil

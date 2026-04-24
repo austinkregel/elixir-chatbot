@@ -1,7 +1,7 @@
 defmodule Brain.Analysis.SlotDetector do
   @moduledoc "Detects required and optional slots for a given intent and fills them from entities.\n\nThis module:\n- Loads slot schemas from JSON configuration\n- Maps extracted entities to slots\n- Identifies missing required slots\n- Applies default values where configured\n- Provides clarification prompts for missing slots\n"
 
-  alias Brain.Analysis.{SlotResult, IntentRegistry}
+  alias Brain.Analysis.SlotResult
 
   require Logger
 
@@ -82,9 +82,7 @@ defmodule Brain.Analysis.SlotDetector do
             1.0
           end
 
-        # Domain priority: how many of this intent's expected types appear in the entities.
-        # Derived from the intent's entity_mappings -- no hardcoded domain-type rules.
-        expected = IntentRegistry.expected_entity_types(intent)
+        expected = expected_entity_types_from_schema(intent, schema)
 
         domain_priority =
           if expected != [] do
@@ -108,7 +106,9 @@ defmodule Brain.Analysis.SlotDetector do
 
   @doc "Gets clarification prompt for a missing slot from intent_registry.json.\nFalls back to a generic prompt if not defined.\n\n## Examples\n\n    iex> SlotDetector.get_clarification_prompt(\"location\", \"weather.query\")\n    \"What location would you like the weather for?\"\n\n    iex> SlotDetector.get_clarification_prompt(\"unknown_slot\", \"some.intent\")\n    \"Could you please specify the unknown slot?\"\n"
   def get_clarification_prompt(slot_name, intent) when is_binary(slot_name) do
-    templates = IntentRegistry.clarification_templates(intent)
+    schemas = load_schemas()
+    schema = Map.get(schemas, intent) || Map.get(schemas, get_parent_intent(intent), %{})
+    templates = Map.get(schema, "clarification_templates", %{})
 
     case Map.get(templates, slot_name) do
       nil -> generate_generic_prompt(slot_name)
@@ -176,6 +176,13 @@ defmodule Brain.Analysis.SlotDetector do
         "clarification_templates" => %{}
       }
     }
+  end
+
+  defp expected_entity_types_from_schema(_intent, schema) do
+    mappings = Map.get(schema, "entity_mappings", %{})
+    mappings |> Map.values() |> List.flatten() |> Enum.uniq()
+  rescue
+    _ -> []
   end
 
   defp get_parent_intent(intent) do

@@ -2,32 +2,42 @@ defmodule Brain.Test.ModelFactory do
   @moduledoc """
   Trains and loads ML models for test use.
 
-  Instead of relying on pre-committed .term files, this module trains
-  classifiers from gold standard data at test startup. Intent classification
-  uses the full gold standard (5000+ examples, 230+ intents) to ensure
-  tests reflect production-level accuracy. Sentiment and micro-classifiers
-  use smaller fixture datasets.
+  Trains classifiers from gold standard / fixture data at test startup and
+  persists required `.term` files under `config :brain, :ml, models_path:` so
+  `Brain.ML.ModelPreflight` and boot-time loaders see a consistent tree.
+
+  Intent fine-grained classification is the `:intent_full` feature-vector
+  micro-classifier (trained here from `data/classifiers/intent_full.json`).
+
+  Failure policy: every step is required. If any model fails to train
+  or load, `train_and_load_test_models/0` raises. There is no
+  soft-failure / retry-next-time behavior, because that hides real
+  setup bugs and produces flaky tests.
 
   ## Usage
 
       # In test setup or test_helper.exs
       Brain.Test.ModelFactory.train_and_load_test_models()
 
-      # To swap a model for a specific test
+      # To swap the sentiment model for a specific test
       setup do
-        custom_data = [{"hello", "greeting"}, {"bye", "farewell"}]
-        Brain.Test.ModelFactory.train_intent_classifier(custom_data)
+        custom_data = [{"great", "positive"}, {"awful", "negative"}]
+        Brain.Test.ModelFactory.train_sentiment_classifier(custom_data)
         :ok
       end
   """
 
   require Logger
 
+  alias Brain.ML.FeatureVectorClassifier
   alias Brain.ML.SimpleClassifier
 
   @fixtures_dir "test/fixtures/training"
 
-  @micro_classifier_names ~w(
+  # Text-based micro-classifiers trained from `apps/brain/test/fixtures/training/micro/<name>.json`.
+  # These predate the feature-vector migration and continue to use raw text +
+  # `Brain.ML.SimpleClassifier` (TF-IDF).
+  @text_micro_classifier_names ~w(
     personal_question
     clarification_response
     modal_directive
@@ -36,60 +46,133 @@ defmodule Brain.Test.ModelFactory do
     entity_type
     user_fact_type
     directed_at_bot
+    event_argument_role
+    coarse_semantic_class
   )a
+
+  # Feature-vector micro-classifiers trained from `data/classifiers/<name>.json`
+  # (umbrella-root data dir, produced by `mix gen_micro_data`). Each record
+  # is `%{"feature_vector" => [float], "label" => string}` and the model is
+  # built via `Brain.ML.FeatureVectorClassifier.train/1`.
+  #
+  # `framing_class` is feature-vector but is handled separately because it
+  # also produces the companion `framing_neutral_centroid.term` artifact
+  # consumed by `Brain.Analysis.FramingDetector`.
+  @feature_vector_micro_classifier_names ~w(
+    intent_full
+    intent_domain
+    tense_class
+    aspect_class
+    urgency
+    certainty_level
+  )a
+
+  @doc """
+  Writes `gazetteer.term` via `Brain.ML.Trainer.build_gazetteer_data/2` if it is
+  missing at the configured `models_path`. Call **before**
+  `Application.ensure_all_started(:brain)` so `EntityExtractor` can load maps
+  without the removed legacy JSON fallback.
+  """
+  def ensure_gazetteer_on_disk! do
+    models_path = Application.get_env(:brain, :ml, [])[:models_path]
+
+    if is_nil(models_path) do
+      raise "ModelFactory.ensure_gazetteer_on_disk!: :models_path must be set in test config"
+    end
+
+    path = Path.join(models_path, "gazetteer.term")
+
+    if not File.exists?(path) do
+      File.mkdir_p!(models_path)
+      _stats = Brain.ML.Trainer.build_gazetteer_data(%{}, models_path: models_path)
+      Logger.info("[ModelFactory] Wrote gazetteer.term to #{path}")
+    end
+
+    ensure_gazetteer_non_empty!(path)
+    :ok
+  end
+
+  defp ensure_gazetteer_non_empty!(path) do
+    term =
+      case File.read(path) do
+        {:ok, bin} -> :erlang.binary_to_term(bin)
+        {:error, reason} -> raise "ModelFactory: cannot read gazetteer at #{path}: #{inspect(reason)}"
+      end
+
+    if is_map(term) and map_size(term) == 0 do
+      seed = %{"model_factory_seed" => %{entity_type: "thing", value: "seed"}}
+      File.write!(path, :erlang.term_to_binary(seed))
+
+      Logger.warning(
+        "[ModelFactory] Gazetteer was empty after Trainer.build_gazetteer_data/2; wrote minimal seed map"
+      )
+    end
+  end
 
   @doc """
   Trains and loads all test models into their respective GenServers.
 
-  Trains intent classifier, sentiment classifier, and all micro-classifiers
-  from small test fixture datasets.
+  Trains sentiment, speech act, micro-classifiers, POS, Poincare, triple
+  scorer, embedder, and persists artifacts under `models_path` where applicable.
   """
   def train_and_load_test_models do
-    unless already_trained?() do
+    if already_trained?() do
+      :ok
+    else
       Logger.info("[ModelFactory] Starting test model training pipeline...")
 
-      Logger.info("[ModelFactory] Training intent classifier...")
-      intent_result = train_intent_classifier()
-      Logger.info("[ModelFactory] Intent classifier done.")
+      results = %{
+        sentiment: run_step!("sentiment classifier", &train_sentiment_classifier/0),
+        speech_act: run_step!("speech act classifier", &train_speech_act_classifier/0),
+        micro: run_step!("text micro classifiers", &train_micro_classifiers/0),
+        feature_vector_micro:
+          run_step!("feature-vector micro classifiers", &train_feature_vector_micro_classifiers/0),
+        framing: run_step!("framing classifier", &train_framing_classifier/0),
+        pos: run_step!("POS tagger", &train_pos_tagger/0),
+        poincare: run_step!("Poincare embeddings", &train_poincare_embeddings/0),
+        triple_scorer: run_step!("KG triple scorer", &train_triple_scorer/0),
+        embedder: run_step!("embedder", &train_embedder/0)
+      }
 
-      Logger.info("[ModelFactory] Training sentiment classifier...")
-      sentiment_result = train_sentiment_classifier()
-      Logger.info("[ModelFactory] Sentiment classifier done.")
+      :ok = Brain.ML.MicroClassifiers.reload()
 
-      Logger.info("[ModelFactory] Training micro classifiers...")
-      micro_result = train_micro_classifiers()
-      Logger.info("[ModelFactory] Micro classifiers done.")
-
-      Logger.info("[ModelFactory] Training POS tagger...")
-      pos_result = train_pos_tagger()
-      Logger.info("[ModelFactory] POS tagger done.")
-
-      Logger.info("[ModelFactory] Training embedder...")
-      embedder_result = train_embedder()
-      Logger.info("[ModelFactory] Embedder done: #{inspect(embedder_result)}")
-
-      Logger.info("[ModelFactory] Initializing intent arbitrator...")
-      arb_result = init_intent_arbitrator()
-      Logger.info("[ModelFactory] Intent arbitrator done: #{inspect(arb_result)}")
-
-      Logger.info("[ModelFactory] Initializing response scorer...")
-      resp_result = init_response_scorer()
-      Logger.info("[ModelFactory] Response scorer done: #{inspect(resp_result)}")
-
-      case {intent_result, sentiment_result, pos_result} do
-        {{:ok, _}, {:ok, _}, {:ok, _}} ->
-          Logger.info("[ModelFactory] All test models trained successfully.")
-          :persistent_term.put({__MODULE__, :trained}, true)
-
-        _ ->
-          # Micro classifiers are optional in many tests; include status for debugging.
-          Logger.warning("[ModelFactory] Model training incomplete, will retry on next setup", %{
-            intent_result: inspect(intent_result),
-            sentiment_result: inspect(sentiment_result),
-            micro_result: inspect(micro_result),
-            pos_result: inspect(pos_result)
-          })
+      case Brain.ML.Poincare.Embeddings.reload() do
+        :ok -> :ok
+        {:error, r} -> raise "ModelFactory: Poincare.Embeddings.reload/0 failed: #{inspect(r)}"
       end
+
+      case Brain.ML.KnowledgeGraph.TripleScorer.reload() do
+        :ok -> :ok
+        {:error, r} -> raise "ModelFactory: TripleScorer.reload/0 failed: #{inspect(r)}"
+      end
+
+      Logger.info("[ModelFactory] All test models trained successfully: #{inspect(results)}")
+      :persistent_term.put({__MODULE__, :trained}, true)
+      :ok
+    end
+  end
+
+  # Runs one training step, requires it to return {:ok, _}, and raises with
+  # the actual error tuple otherwise. We intentionally do NOT rescue here;
+  # if a trainer crashes, we want the original exception + stacktrace to
+  # propagate so the failing test setup is debuggable.
+  defp run_step!(label, fun) do
+    Logger.info("[ModelFactory] Training #{label}...")
+
+    case fun.() do
+      {:ok, value} ->
+        Logger.info("[ModelFactory] #{label} done (#{inspect(value)}).")
+        value
+
+      other ->
+        raise """
+        [ModelFactory] Training step #{inspect(label)} did not succeed.
+        Got: #{inspect(other)}
+
+        This is treated as a hard failure on purpose. If a model is genuinely
+        optional for a given test, gate it at the call site rather than
+        reintroducing soft-failure here.
+        """
     end
   end
 
@@ -98,67 +181,84 @@ defmodule Brain.Test.ModelFactory do
   end
 
   @doc """
-  Trains an intent classifier from test fixture data (or custom data)
-  and loads it into the IntentClassifierSimple GenServer.
-  """
-  def train_intent_classifier(custom_data \\ nil) do
-    data = custom_data || load_intent_fixture()
-
-    cond do
-      data == [] ->
-        {:error, :no_intent_training_data}
-
-      Process.whereis(Brain.ML.IntentClassifierSimple) == nil ->
-        {:error, :intent_classifier_not_started}
-
-      true ->
-        model = SimpleClassifier.train(data)
-        :ok = GenServer.call(Brain.ML.IntentClassifierSimple, {:load_trained_model, model}, 120_000)
-        {:ok, length(data)}
-    end
-  rescue
-    e ->
-      Logger.warning("ModelFactory: failed to train intent classifier: #{inspect(e)}")
-      {:error, :intent_training_failed}
-  end
-
-  @doc """
   Trains a sentiment classifier from test fixture data (or custom data)
   and loads it into the SentimentClassifierSimple GenServer.
+
+  Raises if the GenServer is not running, the fixture data is missing,
+  or the load call returns an unexpected result. No exceptions are
+  rescued here — see the moduledoc for the failure policy.
   """
   def train_sentiment_classifier(custom_data \\ nil) do
     data = custom_data || load_sentiment_fixture()
 
-    cond do
-      data == [] ->
-        {:error, :no_sentiment_training_data}
-
-      Process.whereis(Brain.ML.SentimentClassifierSimple) == nil ->
-        {:error, :sentiment_classifier_not_started}
-
-      true ->
-        model = SimpleClassifier.train(data)
-
-        case GenServer.call(Brain.ML.SentimentClassifierSimple, {:load_trained_model, model}, 5_000) do
-          {:ok, :loaded} -> {:ok, length(data)}
-          :ok -> {:ok, length(data)}
-          other -> {:error, {:unexpected_load_result, other}}
-        end
+    if data == [] do
+      raise "ModelFactory: no sentiment training data available (gold standard + fallback both empty)"
     end
-  rescue
-    e ->
-      Logger.warning("ModelFactory: failed to train sentiment classifier: #{inspect(e)}")
-      {:error, :sentiment_training_failed}
+
+    if Process.whereis(Brain.ML.SentimentClassifierSimple) == nil do
+      raise "ModelFactory: Brain.ML.SentimentClassifierSimple is not started; the supervision tree is not up"
+    end
+
+    model = SimpleClassifier.train(data)
+
+    case GenServer.call(Brain.ML.SentimentClassifierSimple, {:load_trained_model, model}, 5_000) do
+      {:ok, :loaded} ->
+        persist_root_model!("sentiment_classifier.term", model)
+        {:ok, length(data)}
+
+      :ok ->
+        persist_root_model!("sentiment_classifier.term", model)
+        {:ok, length(data)}
+
+      other ->
+        raise "ModelFactory: SentimentClassifierSimple rejected trained model: #{inspect(other)}"
+    end
+  end
+
+  @doc """
+  Trains the speech-act TF-IDF classifier from the speech act gold standard,
+  persists `speech_act_classifier.term`, and loads it into
+  `Brain.ML.SpeechActClassifierSimple`.
+  """
+  def train_speech_act_classifier do
+    gold = Brain.ML.EvaluationStore.load_gold_standard("speech_act")
+
+    data =
+      gold
+      |> Enum.filter(fn ex -> is_binary(ex["text"]) and is_binary(ex["speech_act"]) end)
+      |> Enum.map(fn ex -> {ex["text"], ex["speech_act"]} end)
+
+    if data == [] do
+      raise """
+      ModelFactory: no speech act training data. Expected examples in
+      #{Brain.ML.EvaluationStore.gold_standard_path("speech_act")} with "text" and "speech_act".
+      Run `mix generate_gold_standard --speech-act` (or the full pipeline) to create it.
+      """
+    end
+
+    if Process.whereis(Brain.ML.SpeechActClassifierSimple) == nil do
+      raise "ModelFactory: Brain.ML.SpeechActClassifierSimple is not started; the supervision tree is not up"
+    end
+
+    model = SimpleClassifier.train(data)
+    persist_root_model!("speech_act_classifier.term", model)
+
+    case GenServer.call(Brain.ML.SpeechActClassifierSimple, {:load_trained_model, model}, 5_000) do
+      {:ok, :loaded} -> {:ok, length(data)}
+      other -> raise "ModelFactory: SpeechActClassifierSimple rejected trained model: #{inspect(other)}"
+    end
   end
 
   @doc """
   Trains all micro-classifiers from test fixture data and loads them
   into the MicroClassifiers GenServer.
+
+  Raises on missing fixtures, a downed GenServer, or a load failure.
   """
   def train_micro_classifiers do
     models =
-      Enum.reduce(@micro_classifier_names, %{}, fn name, acc ->
-        case load_micro_fixture(name) do
+      Enum.reduce(@text_micro_classifier_names, %{}, fn name, acc ->
+        case load_text_micro_data(name) do
           [] ->
             acc
 
@@ -168,90 +268,179 @@ defmodule Brain.Test.ModelFactory do
         end
       end)
 
-    cond do
-      models == %{} ->
-        {:error, :no_micro_training_data}
-
-      Process.whereis(Brain.ML.MicroClassifiers) == nil ->
-        {:error, :micro_classifiers_not_started}
-
-      true ->
-        :ok = GenServer.call(Brain.ML.MicroClassifiers, {:load_trained_models, models}, 5_000)
-        {:ok, map_size(models)}
+    if models == %{} do
+      raise """
+      ModelFactory: no text micro-classifier training data found.
+      Looked under #{fixtures_path("micro")} (legacy fixtures) and
+      #{data_classifiers_path("")} (umbrella data/classifiers/).
+      """
     end
-  rescue
-    e ->
-      Logger.warning("ModelFactory: failed to train micro classifiers: #{inspect(e)}")
-      {:error, :micro_training_failed}
+
+    if Process.whereis(Brain.ML.MicroClassifiers) == nil do
+      raise "ModelFactory: Brain.ML.MicroClassifiers is not started; the supervision tree is not up"
+    end
+
+    persist_micro_models!(models)
+
+    :ok = GenServer.call(Brain.ML.MicroClassifiers, {:load_trained_models, models}, 5_000)
+    {:ok, map_size(models)}
+  end
+
+  @doc """
+  Trains all feature-vector axis micro-classifiers (intent_full,
+  intent_domain, tense_class, aspect_class, urgency, certainty_level)
+  from `data/classifiers/<name>.json` and loads them into the
+  MicroClassifiers GenServer.
+
+  Each record in those files must have shape
+  `%{"feature_vector" => [float], "label" => string}` (produced by
+  `mix gen_micro_data`). Records missing either field are silently
+  dropped, but every classifier in the list MUST yield at least one
+  valid pair, otherwise this step raises.
+  """
+  def train_feature_vector_micro_classifiers do
+    {models, missing} =
+      Enum.reduce(@feature_vector_micro_classifier_names, {%{}, []}, fn name, {acc, miss} ->
+        case load_feature_vector_data(name) do
+          [] ->
+            {acc, [name | miss]}
+
+          pairs ->
+            model = FeatureVectorClassifier.train(pairs, balance: true)
+            {Map.put(acc, name, model), miss}
+        end
+      end)
+
+    if missing != [] do
+      raise """
+      ModelFactory: no feature-vector training data for #{inspect(Enum.reverse(missing))}.
+      Expected files at #{data_classifiers_path("<name>.json")} with records of shape
+      %{"feature_vector" => [float], "label" => string}.
+
+      Run `mix gen_micro_data` to (re)generate them from gold_standard.json.
+      """
+    end
+
+    if Process.whereis(Brain.ML.MicroClassifiers) == nil do
+      raise "ModelFactory: Brain.ML.MicroClassifiers is not started; the supervision tree is not up"
+    end
+
+    persist_micro_models!(models)
+
+    :ok = GenServer.call(Brain.ML.MicroClassifiers, {:load_trained_models, models}, 5_000)
+    {:ok, map_size(models)}
+  end
+
+  @doc """
+  Trains the `:framing_class` feature-vector classifier and writes the
+  companion `framing_neutral_centroid.term` artifact that
+  `Brain.Analysis.FramingDetector` loads at boot. Skips with `{:ok, 0}`
+  if `data/classifiers/framing_class.json` is absent (the framing corpus
+  is optional in CI).
+  """
+  def train_framing_classifier do
+    pairs =
+      case load_feature_vector_data(:framing_class) do
+        [] ->
+          Logger.info(
+            "[ModelFactory] framing_class corpus not found; training minimal placeholder model"
+          )
+
+          minimal_framing_training_pairs()
+
+        p ->
+          p
+      end
+
+    model = FeatureVectorClassifier.train(pairs, balance: true)
+    persist_micro_models!(%{framing_class: model})
+
+    neutral = compute_neutral_centroid(model, pairs)
+    persist_neutral_centroid!(neutral)
+
+    :ok =
+      GenServer.call(
+        Brain.ML.MicroClassifiers,
+        {:load_trained_models, %{framing_class: model}},
+        5_000
+      )
+
+    {:ok, length(pairs)}
+  end
+
+  # Tiny synthetic corpus so `micro/framing_class.term` and
+  # `framing_neutral_centroid.term` always exist in test (FramingDetector +
+  # ModelPreflight expect them). Vector length matches the live chunk feature
+  # extractor so `MicroClassifiers.classify_vector(:framing_class, ...)` agrees
+  # with production models.
+  defp minimal_framing_training_pairs do
+    dim = Brain.Analysis.FeatureExtractor.ChunkFeatures.vector_dimension()
+    z = List.duplicate(0.0, dim)
+
+    v_neutral =
+      z
+      |> List.replace_at(0, 0.12)
+      |> List.replace_at(1, 0.05)
+
+    v_control =
+      z
+      |> List.replace_at(0, 0.88)
+      |> List.replace_at(1, 0.42)
+
+    [
+      {v_neutral, "neutral"},
+      {v_control, "control"},
+      {List.replace_at(v_neutral, 2, 0.03), "neutral"},
+      {List.replace_at(v_control, 2, 0.11), "control"}
+    ]
   end
 
   @doc """
   Trains a POS tagger from gold standard POS-annotated data and saves
   the model to the test models path so POSTagger.load_model() works.
+
+  Raises on missing data or a training failure.
   """
   def train_pos_tagger do
     alias Brain.ML.POSTagger
 
-    sequences = load_pos_sequences_from_gold_standard()
+    {sequences, source_path} = load_pos_sequences_from_gold_standard()
+    sequences = sequences ++ pos_music_propn_bootstrap_sequences()
 
-    cond do
-      sequences == [] ->
-        {:error, :no_pos_training_data}
+    if sequences == [] do
+      raise """
+      ModelFactory: no POS training data (tokens + pos_tags) found in any gold-standard
+      file under #{gold_standard_path("intent/")}.
 
-      true ->
-        case POSTagger.train(sequences) do
-          {:ok, model} ->
-            models_path = Application.get_env(:brain, :ml)[:models_path]
+      Tried, in order:
+        - intent/gold_standard.json (current; post-migration this file no longer
+          carries `tokens`/`pos_tags`)
+        - intent/gold_standard.pre-rebuild.json (legacy snapshot retained for
+          POS bootstrap)
 
-            if models_path do
-              save_path = Path.join(models_path, "pos_model.term")
-              File.mkdir_p!(Path.dirname(save_path))
-              POSTagger.save_model(model, save_path)
-            end
-
-            {:ok, length(sequences)}
-
-          {:error, reason} ->
-            Logger.warning("ModelFactory: failed to train POS tagger: #{inspect(reason)}")
-            {:error, :pos_training_failed}
-        end
+      Add POS-labeled sequences to one of those files, or extend
+      Brain.Test.ModelFactory.@pos_corpus_candidates to point at a new
+      POS corpus file under priv/evaluation/.
+      """
     end
-  rescue
-    e ->
-      Logger.warning("ModelFactory: failed to train POS tagger: #{inspect(e)}")
-      {:error, :pos_training_failed}
-  end
 
-  @doc """
-  Trains a small GCN model from a subset of gold standard data
-  and saves it so the GCN.Model GenServer can load it.
-  """
-  def train_gcn_model do
-    alias Brain.ML.GCN.{TextGraph, Model}
+    Logger.info("[ModelFactory] POS training using #{length(sequences)} sequences from #{source_path}")
 
-    data = load_intent_fixture() |> Enum.take(200)
-
-    cond do
-      length(data) < 10 ->
-        {:error, :insufficient_gcn_data}
-
-      true ->
-        text_graph = TextGraph.build(data, vocab_size: 500)
-        {:ok, _model, params, _adj_norm, config} = Model.train(text_graph,
-          epochs: 5, hidden_dim: 64, dropout: 0.3)
-
+    case POSTagger.train(sequences) do
+      {:ok, model} ->
         models_path = Application.get_env(:brain, :ml)[:models_path]
+
         if models_path do
-          path = Path.join([models_path, "default", "gcn", "model.term"])
-          Model.save_model(params, text_graph, config, path)
+          save_path = Path.join(models_path, "pos_model.term")
+          File.mkdir_p!(Path.dirname(save_path))
+          POSTagger.save_model(model, save_path)
         end
 
-        {:ok, length(data)}
+        {:ok, length(sequences)}
+
+      {:error, reason} ->
+        raise "ModelFactory: POSTagger.train/1 failed: #{inspect(reason)}"
     end
-  rescue
-    e ->
-      Logger.warning("ModelFactory: failed to train GCN model: #{inspect(e)}")
-      {:error, :gcn_training_failed}
   end
 
   @doc """
@@ -263,26 +452,21 @@ defmodule Brain.Test.ModelFactory do
 
     pairs = load_hierarchy_pairs()
 
-    cond do
-      pairs == [] ->
-        {:error, :no_hierarchy_data}
-
-      true ->
-        {:ok, embeddings, entity_to_idx, idx_to_entity} = Embeddings.train(pairs,
-          dim: 5, epochs: 20, learning_rate: 0.01)
-
-        models_path = Application.get_env(:brain, :ml)[:models_path]
-        if models_path do
-          path = Path.join([models_path, "default", "poincare", "embeddings.term"])
-          Embeddings.save(embeddings, entity_to_idx, idx_to_entity, 5, path)
-        end
-
-        {:ok, length(pairs)}
+    if pairs == [] do
+      raise "ModelFactory: no Poincare hierarchy data found at #{entity_types_path()}"
     end
-  rescue
-    e ->
-      Logger.warning("ModelFactory: failed to train Poincare embeddings: #{inspect(e)}")
-      {:error, :poincare_training_failed}
+
+    {:ok, embeddings, entity_to_idx, idx_to_entity} =
+      Embeddings.train(pairs, dim: 5, epochs: 20, learning_rate: 0.01)
+
+    models_path = Application.get_env(:brain, :ml)[:models_path]
+
+    if models_path do
+      path = Path.join([models_path, "default", "poincare", "embeddings.term"])
+      Embeddings.save(embeddings, entity_to_idx, idx_to_entity, 5, path)
+    end
+
+    {:ok, length(pairs)}
   end
 
   @doc """
@@ -294,26 +478,21 @@ defmodule Brain.Test.ModelFactory do
 
     triples = load_hierarchy_triples()
 
-    cond do
-      length(triples) < 3 ->
-        {:error, :insufficient_triple_data}
-
-      true ->
-        {:ok, _model, params, vocab, config} = TripleScorer.train(triples,
-          epochs: 10, neg_ratio: 3)
-
-        models_path = Application.get_env(:brain, :ml)[:models_path]
-        if models_path do
-          path = Path.join([models_path, "default", "kg_lstm", "triple_scorer.term"])
-          TripleScorer.save_model(params, vocab, config, path)
-        end
-
-        {:ok, length(triples)}
+    if length(triples) < 3 do
+      raise "ModelFactory: insufficient triple data (#{length(triples)}) at #{entity_types_path()}; need at least 3"
     end
-  rescue
-    e ->
-      Logger.warning("ModelFactory: failed to train triple scorer: #{inspect(e)}")
-      {:error, :triple_scorer_training_failed}
+
+    {:ok, _model, params, vocab, config} =
+      TripleScorer.train(triples, epochs: 10, neg_ratio: 3)
+
+    models_path = Application.get_env(:brain, :ml)[:models_path]
+
+    if models_path do
+      path = Path.join([models_path, "default", "kg_lstm", "triple_scorer.term"])
+      TripleScorer.save_model(params, vocab, config, path)
+    end
+
+    {:ok, length(triples)}
   end
 
   @doc """
@@ -323,168 +502,71 @@ defmodule Brain.Test.ModelFactory do
   def train_embedder do
     data = load_intent_fixture()
 
-    cond do
-      data == [] ->
-        {:error, :no_training_data}
-
-      Process.whereis(Brain.Memory.Embedder) == nil ->
-        {:error, :embedder_not_started}
-
-      true ->
-        texts = Enum.map(data, fn {text, _label} -> text end)
-        {:ok, vocab_size} = Brain.Memory.Embedder.build_vocabulary(texts)
-
-        models_path = Application.get_env(:brain, :ml, [])[:models_path]
-
-        if models_path do
-          {:ok, model} = Brain.Memory.Embedder.export_model()
-          save_path = Path.join(models_path, "embedder.term")
-          File.mkdir_p!(Path.dirname(save_path))
-          File.write!(save_path, :erlang.term_to_binary(model))
-        end
-
-        {:ok, vocab_size}
-    end
-  rescue
-    e ->
-      Logger.warning("ModelFactory: failed to train embedder: #{inspect(e)}")
-      {:error, :embedder_training_failed}
-  end
-
-  @doc """
-  Initializes the IntentArbitrator with a randomly-initialized model so it
-  loads successfully and the ensemble voting path gets exercised in tests.
-  """
-  def init_intent_arbitrator do
-    alias Brain.ML.IntentArbitrator
-
-    model = IntentArbitrator.build_model()
-    template = %{"features" => Nx.template({1, IntentArbitrator.feature_count()}, :f32)}
-    {init_fn, _} = Axon.build(model)
-    params = init_fn.(template, Axon.ModelState.empty())
-
-    IntentArbitrator.save_model(params)
-
-    if Process.whereis(Brain.ML.IntentArbitrator) do
-      try do
-        IntentArbitrator.reload()
-      catch
-        :exit, _ -> :ok
-      end
+    if data == [] do
+      raise "ModelFactory: no embedder training data (intent fixture is empty); checked gold standard and fallback fixture"
     end
 
-    {:ok, :arbitrator_initialized}
-  rescue
-    e ->
-      Logger.warning("ModelFactory: failed to initialize intent arbitrator: #{inspect(e)}")
-      {:error, :arbitrator_init_failed}
-  end
+    if Process.whereis(Brain.Memory.Embedder) == nil do
+      raise "ModelFactory: Brain.Memory.Embedder is not started; the supervision tree is not up"
+    end
 
-  @doc """
-  Initializes the LSTMResponse scorer with a randomly-initialized model so it
-  loads successfully and LSTM response scoring gets exercised in tests.
-  """
-  def init_response_scorer do
-    vocab_size = 50
+    texts = Enum.map(data, fn {text, _label} -> text end)
+    {:ok, vocab_size} = Brain.Memory.Embedder.build_vocabulary(texts)
 
-    config = %{
-      embedding_size: 32,
-      hidden_size: 32,
-      dropout: 0.1,
-      max_query_length: 20,
-      max_response_length: 20,
-      num_candidates: 3,
-      max_vocab: vocab_size,
-      learning_rate: 0.001,
-      batch_size: 16,
-      epochs: 1
-    }
-
-    token_vocab = for i <- 0..(vocab_size - 1), into: %{}, do: {"token_#{i}", i}
-    vocabularies = %{token_vocab: token_vocab}
-
-    query_input = Axon.input("query", shape: {nil, config.max_query_length})
-
-    query_encoded =
-      query_input
-      |> Axon.embedding(vocab_size, config.embedding_size, name: "query_embedding")
-      |> Axon.lstm(config.hidden_size, name: "query_lstm")
-      |> then(fn {seq, _} -> seq end)
-      |> Axon.nx(fn x -> Nx.mean(x, axes: [1]) end)
-
-    response_input = Axon.input("response", shape: {nil, config.max_response_length})
-
-    response_encoded =
-      response_input
-      |> Axon.embedding(vocab_size, config.embedding_size, name: "response_embedding")
-      |> Axon.lstm(config.hidden_size, name: "response_lstm")
-      |> then(fn {seq, _} -> seq end)
-      |> Axon.nx(fn x -> Nx.mean(x, axes: [1]) end)
-
-    model =
-      Axon.concatenate([query_encoded, response_encoded], axis: 1)
-      |> Axon.dense(64, activation: :relu, name: "scorer_hidden")
-      |> Axon.dropout(rate: config.dropout)
-      |> Axon.dense(1, activation: :sigmoid, name: "scorer_output")
-
-    template = %{
-      "query" => Nx.template({1, config.max_query_length}, :s64),
-      "response" => Nx.template({1, config.max_response_length}, :s64)
-    }
-
-    {init_fn, _} = Axon.build(model)
-    params = init_fn.(template, Axon.ModelState.empty())
-    params = if is_struct(params, Axon.ModelState), do: params.data, else: params
-    portable_params = transfer_to_binary(params)
-
-    models_path = Application.get_env(:brain, :ml)[:models_path]
+    models_path = Application.get_env(:brain, :ml, [])[:models_path]
 
     if models_path do
-      lstm_path = Path.join(models_path, "lstm")
-      File.mkdir_p!(lstm_path)
-      save_path = Path.join(lstm_path, "response_scorer.term")
-
-      data = %{
-        scorer_params: portable_params,
-        vocabularies: vocabularies,
-        config: config
-      }
-
-      binary = :erlang.term_to_binary(data)
-      File.write!(save_path, binary)
+      {:ok, model} = Brain.Memory.Embedder.export_model()
+      save_path = Path.join(models_path, "embedder.term")
+      File.mkdir_p!(Path.dirname(save_path))
+      File.write!(save_path, :erlang.term_to_binary(model))
     end
 
-    if Process.whereis(Brain.Response.LSTMResponse) do
-      try do
-        Brain.Response.LSTMResponse.reload()
-      catch
-        :exit, _ -> :ok
-      end
-    end
-
-    {:ok, :response_scorer_initialized}
-  rescue
-    e ->
-      Logger.warning("ModelFactory: failed to initialize response scorer: #{inspect(e)}")
-      {:error, :response_scorer_failed}
+    {:ok, vocab_size}
   end
 
   # -- Private --
 
-  defp transfer_to_binary(%Nx.Tensor{} = t), do: Nx.backend_copy(t, Nx.BinaryBackend)
+  # POS training is bootstrapped from any gold-standard file that still
+  # carries `tokens` + `pos_tags`. After the feature-vector migration the
+  # primary `intent/gold_standard.json` only ships `intent` + `text`, so
+  # we fall through to the retained `pre-rebuild` snapshot which still
+  # has the legacy POS columns. List is ordered preferred-first.
+  @pos_corpus_candidates [
+    "intent/gold_standard.json",
+    "intent/gold_standard.pre-rebuild.json"
+  ]
 
-  defp transfer_to_binary(%Axon.ModelState{} = s),
-    do: Axon.ModelState.new(transfer_to_binary(s.data))
-
-  defp transfer_to_binary(map) when is_map(map),
-    do: Map.new(map, fn {k, v} -> {k, transfer_to_binary(v)} end)
-
-  defp transfer_to_binary(other), do: other
+  # Keeps FeatureTest-style music commands extracting OOV artist/title spans
+  # via `EntityExtractor` PROPN hints when the legacy gold snapshot is thin.
+  defp pos_music_propn_bootstrap_sequences do
+    [
+      %{
+        tokens: ["Play", "some", "Korvo", "Mitski"],
+        tags: ["VERB", "DET", "PROPN", "PROPN"],
+        source: "bootstrap_music_propn"
+      },
+      %{
+        tokens: ["Play", "Bohemian", "Rhapsody"],
+        tags: ["VERB", "PROPN", "PROPN"],
+        source: "bootstrap_music_propn"
+      }
+    ]
+  end
 
   defp load_pos_sequences_from_gold_standard do
-    gold_standard_path = gold_standard_path("intent/gold_standard.json")
+    Enum.reduce_while(@pos_corpus_candidates, {[], nil}, fn relative, _acc ->
+      path = gold_standard_path(relative)
 
-    case File.read(gold_standard_path) do
+      case load_pos_sequences_from_path(path) do
+        [] -> {:cont, {[], path}}
+        sequences -> {:halt, {sequences, path}}
+      end
+    end)
+  end
+
+  defp load_pos_sequences_from_path(path) do
+    case File.read(path) do
       {:ok, json} ->
         case Jason.decode(json) do
           {:ok, entries} when is_list(entries) ->
@@ -495,30 +577,31 @@ defmodule Brain.Test.ModelFactory do
               tokens != [] and length(tokens) == length(tags)
             end)
             |> Enum.map(fn ex ->
-              %{
-                tokens: ex["tokens"],
-                tags: ex["pos_tags"],
-                source: ex["intent"]
-              }
+              %{tokens: ex["tokens"], tags: ex["pos_tags"], source: ex["intent"]}
             end)
 
-          _ ->
-            Logger.warning("ModelFactory: failed to decode gold standard POS data")
-            []
+          {:ok, other} ->
+            raise "ModelFactory: gold standard at #{path} decoded to a non-list: #{inspect(other) |> String.slice(0, 200)}"
+
+          {:error, reason} ->
+            raise "ModelFactory: failed to decode gold standard JSON at #{path}: #{inspect(reason)}"
         end
 
-      {:error, _} ->
-        Logger.warning("ModelFactory: gold standard not found for POS training")
+      {:error, :enoent} ->
+        Logger.debug("[ModelFactory] POS corpus candidate not found: #{path}")
         []
+
+      {:error, reason} ->
+        raise "ModelFactory: cannot read gold standard at #{path}: #{inspect(reason)}"
     end
   end
 
   defp load_intent_fixture do
     # Use gold standard data for realistic classification accuracy.
     # This ensures test models reflect the same reality as production models.
-    gold_standard_path = gold_standard_path("intent/gold_standard.json")
+    path = gold_standard_path("intent/gold_standard.json")
 
-    case File.read(gold_standard_path) do
+    case File.read(path) do
       {:ok, json} ->
         case Jason.decode(json) do
           {:ok, entries} when is_list(entries) ->
@@ -526,14 +609,19 @@ defmodule Brain.Test.ModelFactory do
               {Map.get(entry, "text", ""), Map.get(entry, "intent", "unknown")}
             end)
 
-          _ ->
-            Logger.warning("ModelFactory: failed to decode gold standard intent data")
-            load_intent_fallback()
+          {:ok, other} ->
+            raise "ModelFactory: intent gold standard at #{path} decoded to a non-list: #{inspect(other) |> String.slice(0, 200)}"
+
+          {:error, reason} ->
+            raise "ModelFactory: failed to decode intent gold standard JSON at #{path}: #{inspect(reason)}"
         end
 
-      {:error, _} ->
-        Logger.warning("ModelFactory: gold standard not found at #{gold_standard_path}, using fallback")
+      {:error, :enoent} ->
+        Logger.info("[ModelFactory] gold standard not found at #{path}, using small fallback fixture")
         load_intent_fallback()
+
+      {:error, reason} ->
+        raise "ModelFactory: cannot read intent gold standard at #{path}: #{inspect(reason)}"
     end
   end
 
@@ -558,9 +646,9 @@ defmodule Brain.Test.ModelFactory do
   end
 
   defp load_sentiment_fixture do
-    gold_standard_path = gold_standard_path("sentiment/gold_standard.json")
+    path = gold_standard_path("sentiment/gold_standard.json")
 
-    case File.read(gold_standard_path) do
+    case File.read(path) do
       {:ok, json} ->
         case Jason.decode(json) do
           {:ok, entries} when is_list(entries) ->
@@ -568,14 +656,19 @@ defmodule Brain.Test.ModelFactory do
               {Map.get(entry, "text", ""), Map.get(entry, "sentiment", "neutral")}
             end)
 
-          _ ->
-            Logger.warning("ModelFactory: failed to decode gold standard sentiment data")
-            load_sentiment_fallback()
+          {:ok, other} ->
+            raise "ModelFactory: sentiment gold standard at #{path} decoded to a non-list: #{inspect(other) |> String.slice(0, 200)}"
+
+          {:error, reason} ->
+            raise "ModelFactory: failed to decode sentiment gold standard JSON at #{path}: #{inspect(reason)}"
         end
 
-      {:error, _} ->
-        Logger.warning("ModelFactory: gold standard sentiment not found, using fallback")
+      {:error, :enoent} ->
+        Logger.info("[ModelFactory] sentiment gold standard not found at #{path}, using fallback")
         load_sentiment_fallback()
+
+      {:error, reason} ->
+        raise "ModelFactory: cannot read sentiment gold standard at #{path}: #{inspect(reason)}"
     end
   end
 
@@ -599,15 +692,29 @@ defmodule Brain.Test.ModelFactory do
     end
   end
 
-  defp load_micro_fixture(name) do
-    path = fixtures_path("micro/#{name}.json")
+  # Resolve text-classifier training data, preferring the umbrella-root
+  # `data/classifiers/<name>.json` (the post-migration single source of
+  # truth) and falling back to the legacy `apps/brain/test/fixtures/training/micro/`
+  # fixtures for classifiers that were never moved.
+  defp load_text_micro_data(name) do
+    case load_text_records(data_classifiers_path("#{name}.json")) do
+      [] -> load_text_records(fixtures_path("micro/#{name}.json"))
+      records -> records
+    end
+  end
 
+  defp load_text_records(path) do
     case File.read(path) do
       {:ok, json} ->
         case Jason.decode(json) do
-          {:ok, entries} ->
-            Enum.map(entries, fn entry ->
-              {Map.get(entry, "text", ""), Map.get(entry, "label", "unknown")}
+          {:ok, entries} when is_list(entries) ->
+            entries
+            |> Enum.flat_map(fn
+              %{"text" => text, "label" => label} when is_binary(text) and is_binary(label) ->
+                [{text, label}]
+
+              _ ->
+                []
             end)
 
           _ ->
@@ -617,6 +724,115 @@ defmodule Brain.Test.ModelFactory do
       _ ->
         []
     end
+  end
+
+  defp load_feature_vector_data(name) do
+    path = data_classifiers_path("#{name}.json")
+
+    case File.read(path) do
+      {:ok, json} ->
+        case Jason.decode(json) do
+          {:ok, entries} when is_list(entries) ->
+            Enum.flat_map(entries, fn
+              %{"feature_vector" => vec, "label" => label}
+              when is_list(vec) and is_binary(label) and length(vec) > 0 ->
+                [{vec, label}]
+
+              _ ->
+                []
+            end)
+
+          _ ->
+            []
+        end
+
+      _ ->
+        []
+    end
+  end
+
+  defp data_classifiers_path(relative) do
+    # `data/classifiers/` lives at the umbrella root, not inside the brain
+    # priv tree. Resolve it from the current working directory (Mix tests
+    # always run from the umbrella root) and fall back to walking up from
+    # priv if for some reason cwd is the brain app.
+    candidates = [
+      Path.join([File.cwd!(), "data", "classifiers", relative]),
+      Path.join([File.cwd!(), "..", "..", "data", "classifiers", relative]) |> Path.expand()
+    ]
+
+    Enum.find(candidates, hd(candidates), &File.exists?/1)
+  end
+
+  defp persist_micro_models!(models) when is_map(models) do
+    case Application.get_env(:brain, :ml, [])[:models_path] do
+      nil ->
+        :ok
+
+      base ->
+        dir = Path.join(base, "micro")
+        File.mkdir_p!(dir)
+
+        Enum.each(models, fn {name, model} ->
+          path = Path.join(dir, "#{name}.term")
+          File.write!(path, :erlang.term_to_binary(model))
+        end)
+    end
+  end
+
+  defp persist_neutral_centroid!(centroid) do
+    case Application.get_env(:brain, :ml, [])[:models_path] do
+      nil ->
+        :ok
+
+      base ->
+        dir = Path.join(base, "micro")
+        File.mkdir_p!(dir)
+        path = Path.join(dir, "framing_neutral_centroid.term")
+        File.write!(path, :erlang.term_to_binary(centroid))
+    end
+  end
+
+  defp persist_root_model!(filename, model) do
+    case Application.get_env(:brain, :ml, [])[:models_path] do
+      nil ->
+        :ok
+
+      base ->
+        File.mkdir_p!(base)
+        path = Path.join(base, filename)
+        File.write!(path, :erlang.term_to_binary(model))
+    end
+  end
+
+  # Pick the centroid of the class whose name is most "neutral" (matches
+  # the heuristic in mix train_framing) or fall back to the grand mean
+  # of all class centroids.
+  defp compute_neutral_centroid(%{label_centroids: centroids}, _pairs)
+       when map_size(centroids) == 0 do
+    []
+  end
+
+  defp compute_neutral_centroid(%{label_centroids: centroids}, _pairs) do
+    case Map.get(centroids, "neutral") || Map.get(centroids, "other") do
+      nil -> mean_vectors(Map.values(centroids))
+      vec -> vec
+    end
+  end
+
+  defp mean_vectors([]), do: []
+  defp mean_vectors([single]), do: single
+
+  defp mean_vectors(vecs) do
+    dim = length(hd(vecs))
+    n = length(vecs)
+    zero = List.duplicate(0.0, dim)
+
+    vecs
+    |> Enum.reduce(zero, fn vec, acc ->
+      Enum.zip_with(acc, vec, &(&1 + &2))
+    end)
+    |> Enum.map(&(&1 / n))
   end
 
   defp fixtures_path(relative) do

@@ -1,5 +1,5 @@
 defmodule ChatWeb.AccuracyLive do
-  @moduledoc "ML model accuracy dashboard for viewing evaluation results and experiment comparisons.\n\nProvides visibility into:\n- Per-task evaluation metrics (intent, NER, sentiment, speech act)\n- Per-class precision, recall, F1, and support\n- Accuracy trends over evaluation runs (inline SVG charts)\n- Experiment comparisons from ExperimentTracker\n"
+  @moduledoc "ML model accuracy dashboard for viewing evaluation results.\n\nProvides visibility into:\n- Per-task evaluation metrics (intent, NER, sentiment, speech act)\n- Per-class precision, recall, F1, and support\n- Accuracy trends over evaluation runs (inline SVG charts)\n"
 
   use ChatWeb, :live_view
   require Logger
@@ -8,15 +8,13 @@ defmodule ChatWeb.AccuracyLive do
 
   alias Brain.ML.EvaluationStore
   alias Brain.ML.GoldStandardMigrator
-  alias Brain.ML.LSTM.ExperimentTracker
 
-  @tasks ~w(intent ner sentiment speech_act arbitrator)
+  @tasks ~w(intent ner sentiment speech_act)
   @task_labels %{
     "intent" => "Intent",
     "ner" => "NER",
     "sentiment" => "Sentiment",
-    "speech_act" => "Speech Act",
-    "arbitrator" => "Arbitrator"
+    "speech_act" => "Speech Act"
   }
 
   @impl true
@@ -532,7 +530,7 @@ defmodule ChatWeb.AccuracyLive do
           Train models with different configurations to compare results.
         </p>
         <code class="text-xs bg-base-200 px-3 py-1.5 rounded-lg text-base-content/70">
-          mix train_lstm --epochs 10 --name "my_experiment"
+          mix train --epochs 10 --name "my_experiment"
         </code>
       </div>
     <% end %>
@@ -885,11 +883,7 @@ defmodule ChatWeb.AccuracyLive do
   end
 
   defp load_experiments do
-    try do
-      ExperimentTracker.compare_all()
-    rescue
-      _ -> []
-    end
+    []
   end
 
   defp format_percent(nil) do

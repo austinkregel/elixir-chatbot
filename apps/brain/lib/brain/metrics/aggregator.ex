@@ -335,38 +335,6 @@ defmodule Brain.Metrics.Aggregator do
     GenServer.call(__MODULE__, :reset, 5_000)
   end
 
-  @doc "Gets arbitrator metrics. Reads directly from ETS - non-blocking."
-  def get_arbitrator_metrics do
-    try do
-      total = get_counter_value(:arbitrator, :total)
-      lstm_wins = get_counter_value(:arbitrator, :lstm_wins)
-      tfidf_wins = get_counter_value(:arbitrator, :tfidf_wins)
-      agreement_count = get_counter_value(:arbitrator, :agreement_count)
-      override_count = get_counter_value(:arbitrator, :override_count)
-
-      last_decision =
-        case :ets.lookup(@metrics_table, {:arbitrator, :last_decision}) do
-          [{{:arbitrator, :last_decision}, data}] -> data
-          _ -> nil
-        end
-
-      %{
-        total: total,
-        lstm_wins: lstm_wins,
-        tfidf_wins: tfidf_wins,
-        agreement_count: agreement_count,
-        override_count: override_count,
-        agreement_rate: if(total > 0, do: agreement_count / total, else: 0.0),
-        lstm_win_rate: if(total > 0, do: lstm_wins / total, else: 0.0),
-        tfidf_win_rate: if(total > 0, do: tfidf_wins / total, else: 0.0),
-        last_decision: last_decision
-      }
-    rescue
-      _ -> %{total: 0, lstm_wins: 0, tfidf_wins: 0, agreement_count: 0, override_count: 0}
-    catch
-      _, _ -> %{total: 0, lstm_wins: 0, tfidf_wins: 0, agreement_count: 0, override_count: 0}
-    end
-  end
 
   @doc "Gets training metrics. Reads directly from ETS - non-blocking.\nReturns a map of model name to training stats.\n"
   def get_training_stats do
@@ -591,37 +559,6 @@ defmodule Brain.Metrics.Aggregator do
     {:noreply, state}
   end
 
-  @impl true
-  def handle_cast({:record_arbitration, metadata}, state) do
-    now = System.monotonic_time(:millisecond)
-    winner = Map.get(metadata, :winner, :unknown)
-
-    increment_counter(:arbitrator, :total)
-    increment_counter(:arbitrator, :"#{winner}_wins")
-
-    if Map.get(metadata, :agreed, false) do
-      increment_counter(:arbitrator, :agreement_count)
-    end
-
-    if winner == :tfidf and Map.get(metadata, :method, :model) == :model do
-      increment_counter(:arbitrator, :override_count)
-    end
-
-    :ets.insert(
-      @metrics_table,
-      {{:arbitrator, :last_decision},
-       %{
-         winner: winner,
-         lstm_intent: Map.get(metadata, :lstm_intent),
-         tfidf_intent: Map.get(metadata, :tfidf_intent),
-         arbitrator_confidence: Map.get(metadata, :arbitrator_confidence, 0.0),
-         method: Map.get(metadata, :method, :model),
-         timestamp: now
-       }}
-    )
-
-    {:noreply, state}
-  end
 
   @impl true
   def handle_cast({:record_consistency_disagreement, metadata}, state) do

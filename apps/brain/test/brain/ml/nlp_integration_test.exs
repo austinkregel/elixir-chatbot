@@ -3,7 +3,6 @@ defmodule Brain.ML.NLPIntegrationTest do
   use ExUnit.Case, async: false
   import Brain.TestHelpers
 
-  alias Brain.ML.IntentClassifierSimple
   alias Brain.ML.EntityExtractor
   alias Brain.ML.NLPPipeline
 
@@ -17,26 +16,9 @@ defmodule Brain.ML.NLPIntegrationTest do
       training_data_path: "data"
     )
 
-    ensure_started(IntentClassifierSimple)
-    IntentClassifierSimple.load_models()
     EntityExtractor.load_entity_maps()
 
     :ok
-  end
-
-  describe "Intent Classification" do
-    test "classifies music intent correctly" do
-      result = IntentClassifierSimple.classify("play some music")
-      assert {:ok, %{intent: intent, confidence: confidence}} = result
-      assert is_binary(intent)
-      assert is_float(confidence)
-      assert confidence > 0.0
-    end
-
-    test "classifies with high confidence for trained intents" do
-      {:ok, %{confidence: confidence}} = IntentClassifierSimple.classify("play jazz music")
-      assert confidence > 0.3
-    end
   end
 
   describe "Entity Extraction" do

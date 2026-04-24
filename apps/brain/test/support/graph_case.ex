@@ -56,7 +56,12 @@ defmodule Brain.Test.GraphCase do
           Ecto.Adapters.SQL.Sandbox.start_owner!(Atlas.Repo, shared: not tags[:async])
       end
     Ecto.Adapters.SQL.query!(Atlas.Repo, "LOAD 'age'", [])
-    Ecto.Adapters.SQL.query!(Atlas.Repo, "SET search_path = ag_catalog, \"$user\", public", [])
+
+    Ecto.Adapters.SQL.query!(
+      Atlas.Repo,
+      ~s(SET search_path = atlas_test, ag_catalog, "$user", public),
+      []
+    )
 
     # Allow all Atlas-backed GenServers to use this sandbox connection
     atlas_genservers = [
@@ -67,7 +72,6 @@ defmodule Brain.Test.GraphCase do
       Brain.Knowledge.ReviewQueue,
       Brain.Epistemic.UserModel,
       Brain.Knowledge.SourceReliability,
-      Brain.Analysis.IntentReviewQueue,
       Brain.FactDatabase,
       Brain.ML.Gazetteer
     ]

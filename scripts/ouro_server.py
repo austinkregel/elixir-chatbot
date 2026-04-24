@@ -20,8 +20,8 @@ Usage:
     python scripts/ouro_server.py [--port 8100] [--model ByteDance/Ouro-2.6B]
 
 Environment variables:
-    OURO_MAX_RSS_GB    - RSS limit before rejecting requests (default: 12)
-    OURO_MAX_SEQ_LEN   - Max sequence length for pre-allocated buffers (default: 16384)
+    OURO_MAX_RSS_GB    - RSS limit before rejecting requests (default: 24)
+    OURO_MAX_SEQ_LEN   - Max sequence length for pre-allocated buffers (default: 10240)
     OURO_UT_STEPS      - Override recurrent UT steps at inference (default: model config)
 
 Requires transformers==4.54.1 (recommended by ByteDance for Ouro).
@@ -410,7 +410,7 @@ _model_id = None
 _device = None
 _request_lock = threading.Lock()
 
-MAX_RSS_GB = float(os.environ.get("OURO_MAX_RSS_GB", "12"))
+MAX_RSS_GB = float(os.environ.get("OURO_MAX_RSS_GB", "24"))
 
 
 def _rss_gb() -> float:
@@ -418,7 +418,14 @@ def _rss_gb() -> float:
 
 
 def _force_memory_cleanup():
-    """Reclaim GPU and CPU memory."""
+    """Reclaim dead Python objects and free the Metal/CUDA page cache.
+
+    Called after generate() completes, when intermediate KV cache
+    tensors have already been deleted. With the pre-allocated KV pool
+    disabled, there are no persistent tensor references into the Metal
+    page cache, so empty_cache() is safe and prevents the MPS driver
+    memory from growing without bound across requests.
+    """
     gc.collect()
     if _device == "mps":
         torch.mps.synchronize()
@@ -436,9 +443,9 @@ class ChatCompletionRequest(BaseModel):
     model: str = ""
     messages: list[ChatMessage]
     max_tokens: int = Field(default=256, ge=1, le=4096)
-    temperature: float = Field(default=1.0, ge=0.0, le=2.0)
-    top_p: float = Field(default=0.7, ge=0.0, le=1.0)
-    repetition_penalty: float = Field(default=1.2, ge=1.0, le=2.0)
+    temperature: float = Field(default=0.6, ge=0.0, le=2.0)
+    top_p: float = Field(default=0.9, ge=0.0, le=1.0)
+    repetition_penalty: float = Field(default=1.3, ge=1.0, le=2.0)
     no_repeat_ngram_size: int = Field(default=3, ge=0, le=10)
     stop: list[str] | None = None
 
@@ -599,7 +606,7 @@ def load_model(model_path: str):
     _model = AutoModelForCausalLM.from_pretrained(
         model_path,
         trust_remote_code=True,
-        torch_dtype=torch.bfloat16,
+        torch_dtype=torch.float16,
         low_cpu_mem_usage=True,
     ).to(_device)
     _model.eval()
@@ -617,35 +624,14 @@ def load_model(model_path: str):
             _model.model.total_ut_steps = ut_steps
         logger.info(f"UT steps overridden: {old_steps} -> {ut_steps}")
 
-    # --- Patch UniversalTransformerCache ---
-    _apply_ut_cache_patches()
-
-    # --- Initialize KV buffer pool ---
-    num_layers = _model.config.num_hidden_layers
-    total_ut_steps = _model.config.total_ut_steps
-    num_kv_heads = _model.config.num_key_value_heads
-    head_dim = getattr(
-        _model.config, "head_dim",
-        _model.config.hidden_size // _model.config.num_attention_heads,
-    )
-    max_slots = num_layers * total_ut_steps
-    max_seq_len = int(os.environ.get("OURO_MAX_SEQ_LEN", "16384"))
-
-    logger.info(
-        f"Initializing KV pool: {num_layers} layers x {total_ut_steps} UT "
-        f"steps = {max_slots} slots, max_seq={max_seq_len}"
-    )
-
-    _kv_pool = _KVBufferPool(
-        max_slots=max_slots,
-        num_kv_heads=num_kv_heads,
-        head_dim=head_dim,
-        max_seq_len=max_seq_len,
-        dtype=torch.bfloat16,
-        device=_device,
-        num_layers=num_layers,
-        total_ut_steps=total_ut_steps,
-    )
+    # The pre-allocated KV buffer pool and UT cache monkey-patches are
+    # disabled. They produced garbled output because the in-place slice
+    # writes and last-step sharing logic corrupt the cache state on MPS.
+    # Without the pool, PyTorch's default dynamic cache (torch.cat) is
+    # used, which produces correct output. MPS driver memory will grow
+    # with usage but gc.collect() in _force_memory_cleanup() reclaims
+    # dead intermediate tensors between requests.
+    logger.info("KV buffer pool DISABLED (using dynamic cache for MPS correctness)")
 
     logger.info(
         f"MPS memory after init: "

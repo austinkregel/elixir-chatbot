@@ -151,12 +151,6 @@ defmodule ChatWeb.AppShell do
                 label="Knowledge Review"
                 active={String.starts_with?(@current_path, "/knowledge-review")}
               />
-              <.nav_item
-                href={~p"/intent-review"}
-                icon="hero-light-bulb"
-                label="Intent Review"
-                active={String.starts_with?(@current_path, "/intent-review")}
-              />
             </ul>
           </div>
         </nav>

@@ -11,7 +11,7 @@ defmodule Brain.Analysis.RacingAnalyzer do
     Progress
   }
 
-  alias Brain.ML.{IntentClassifierSimple, Tokenizer}
+  alias Brain.ML.Tokenizer
   alias Brain.Memory.Store, as: MemoryStore
   alias Brain.Telemetry
   require Logger
@@ -272,15 +272,25 @@ defmodule Brain.Analysis.RacingAnalyzer do
   end
 
   defp analyze_with_model(text) do
-    case IntentClassifierSimple.classify(text) do
-      {:ok, %{intent: intent, confidence: confidence}} ->
-        AnalyzerResult.new(:model, intent, confidence,
-          confidence_estimate: confidence,
-          indicators: ["ml_model"]
-        )
+    alias Brain.Analysis.{FeatureExtractor, Pipeline}
+    alias Brain.ML.MicroClassifiers
 
-      {:error, _} ->
-        AnalyzerResult.new(:model, nil, 0.0)
+    if MicroClassifiers.ready?() do
+      analysis = Pipeline.analyze_chunk(text)
+      {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
+
+      case MicroClassifiers.classify_vector(:intent_full, feature_vector) do
+        {:ok, intent, confidence} ->
+          AnalyzerResult.new(:model, intent, confidence,
+            confidence_estimate: confidence,
+            indicators: ["ml_model"]
+          )
+
+        _ ->
+          AnalyzerResult.new(:model, nil, 0.0)
+      end
+    else
+      AnalyzerResult.new(:model, nil, 0.0)
     end
   rescue
     _ -> AnalyzerResult.new(:model, nil, 0.0)

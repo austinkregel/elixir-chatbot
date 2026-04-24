@@ -12,9 +12,8 @@ _data/
 _models/
 _configs/
 
-priv
+
 deps/
-data/
 .xla_cache/
 .vscode/
 .git/

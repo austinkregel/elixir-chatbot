@@ -85,20 +85,20 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasTest do
 
     test "handles app-prefixed paths" do
       output = """
-          warning: unused alias LSTM
+          warning: unused alias Tokenizer
            │
-        10 │   alias Brain.ML.LSTM
+        10 │   alias Brain.ML.Tokenizer
            │   ~
            │
-           └─ (brain 0.1.0) lib/brain/ml/lstm/unified_model.ex:153:7
+           └─ (brain 0.1.0) lib/brain/ml/micro_classifiers.ex:153:7
       """
 
       result = UnusedAlias.parse_unused_alias_warnings(output, ["lib/"])
 
       assert length(result) == 1
       [entry] = result
-      assert entry.alias_name == "LSTM"
-      assert String.contains?(entry.file, "unified_model.ex")
+      assert entry.alias_name == "Tokenizer"
+      assert String.contains?(entry.file, "micro_classifiers.ex")
     end
 
     test "excludes paths containing apps/fourth_wall/test/" do

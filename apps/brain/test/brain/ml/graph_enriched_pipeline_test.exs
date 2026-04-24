@@ -1,7 +1,7 @@
 defmodule Brain.ML.GraphEnrichedPipelineTest do
   @moduledoc """
-  Cross-capability integration test that exercises all five Tier 3 model
-  capabilities together: GCN, Poincare, EventLinker, KG-LSTM, and SRL.
+  Cross-capability integration test that exercises Tier 3 model
+  capabilities together: Poincare, EventLinker, KG TripleScorer, and SRL.
 
   Verifies that each phase's output can be consumed by subsequent phases
   and that no phase produces errors that block downstream processing.
@@ -10,12 +10,10 @@ defmodule Brain.ML.GraphEnrichedPipelineTest do
   use ExUnit.Case, async: false
   @moduletag :integration
 
-  alias Brain.ML.GCN
   alias Brain.ML.Poincare
   alias Brain.ML.KnowledgeGraph.TripleScorer
   alias Brain.Analysis.{EventLinker, SemanticRoleLabeler}
   alias Brain.Epistemic.StanceTracker
-  alias Brain.ML.LSTM.IterativeEncoder
 
   @test_sentences [
     "The president visited Berlin yesterday",
@@ -31,20 +29,7 @@ defmodule Brain.ML.GraphEnrichedPipelineTest do
   ]
 
   describe "cross-capability pipeline" do
-    test "Phase 1: GCN text graph construction produces valid structure" do
-      documents = Enum.map(@test_sentences, fn sent -> {sent, "test_class"} end)
-      graph = GCN.TextGraph.build(documents, vocab_size: 100)
-
-      assert graph.num_docs == length(@test_sentences)
-      assert graph.num_words > 0
-      assert graph.num_classes >= 1
-
-      total = graph.num_docs + graph.num_words
-      assert Nx.shape(graph.adjacency) == {total, total}
-      assert Nx.shape(graph.features) == {total, graph.num_words}
-    end
-
-    test "Phase 2: Poincare distance functions are consistent" do
+    test "Phase 1: Poincare distance functions are consistent" do
       pairs = [
         {"dog", "animal"},
         {"cat", "animal"},
@@ -74,7 +59,7 @@ defmodule Brain.ML.GraphEnrichedPipelineTest do
       assert dist > 0.0
     end
 
-    test "Phase 3: EventLinker processes events without errors" do
+    test "Phase 2: EventLinker processes events without errors" do
       events = [
         %{action: %{verb: "visited"}, source_tokens: [0, 2, 3]},
         %{action: %{verb: "discovered"}, source_tokens: [0, 1, 2]}
@@ -99,7 +84,7 @@ defmodule Brain.ML.GraphEnrichedPipelineTest do
       end
     end
 
-    test "Phase 4: Triple scoring produces valid scores" do
+    test "Phase 3: Triple scoring produces valid scores" do
       triples = [
         {"dog", "IS_A", "animal"},
         {"cat", "IS_A", "animal"},
@@ -127,7 +112,7 @@ defmodule Brain.ML.GraphEnrichedPipelineTest do
       end
     end
 
-    test "Phase 5: SRL produces frames from BIO tags" do
+    test "Phase 4: SRL produces frames from BIO tags" do
       for sentence <- @test_sentences do
         tokens = String.split(sentence)
         bio_tags = generate_simple_bio_tags(tokens)
@@ -142,7 +127,7 @@ defmodule Brain.ML.GraphEnrichedPipelineTest do
       end
     end
 
-    test "Phase 5: SRL frames convert to triples without errors" do
+    test "Phase 4b: SRL frames convert to triples without errors" do
       tokens = ["John", "visited", "Berlin", "yesterday"]
       bio_tags = ["B-ARG0", "B-V", "B-ARG1", "B-ARGM-TMP"]
 
@@ -157,7 +142,7 @@ defmodule Brain.ML.GraphEnrichedPipelineTest do
       end
     end
 
-    test "Phase 6A: Stance tracker records and detects drift" do
+    test "Phase 5A: Stance tracker records and detects drift" do
       {:ok, tracker} = StanceTracker.start_link(name: :"integration_tracker_#{:rand.uniform(100000)}")
 
       StanceTracker.record_stance("test_conv", "climate", 0.3, :system, tracker)
@@ -168,19 +153,6 @@ defmodule Brain.ML.GraphEnrichedPipelineTest do
       {:ok, drift_info} = StanceTracker.check_drift("test_conv", "climate", tracker)
       assert is_map(drift_info)
       assert drift_info.absolute_drift > 0.3
-    end
-
-    test "Phase 6B: Iterative encoder gating blends correctly" do
-      current = Nx.tensor([[1.0, 0.0, 0.0]])
-      previous = Nx.tensor([[0.0, 0.0, 1.0]])
-      gate = Nx.tensor([[0.7, 0.5, 0.3]])
-
-      result = IterativeEncoder.apply_gate(current, previous, gate)
-
-      vals = Nx.squeeze(result) |> Nx.to_flat_list()
-      assert_in_delta Enum.at(vals, 0), 0.7, 0.01
-      assert_in_delta Enum.at(vals, 1), 0.0, 0.01
-      assert_in_delta Enum.at(vals, 2), 0.7, 0.01
     end
 
     test "All phases produce compatible output formats for graph writing" do

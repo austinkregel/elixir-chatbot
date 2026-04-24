@@ -7,13 +7,11 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
   setup do
     ensure_pubsub_started()
     ensure_started(TypeHierarchy)
-    ensure_started(Brain.ML.IntentClassifierSimple)
     ensure_started(Brain.ML.SpeechActClassifierSimple)
     ensure_started(Brain.ML.SentimentClassifierSimple)
     ensure_started(Brain.ML.MicroClassifiers)
     ensure_started(Brain.ML.EntityExtractor)
     ensure_started(Brain.Memory.Embedder)
-    ensure_started(Brain.Analysis.IntentRegistry)
     :ok
   end
 

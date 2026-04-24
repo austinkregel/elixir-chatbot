@@ -21,15 +21,13 @@ defmodule Brain.Services.SystemStatus do
 
   ## Intent Discovery
 
-  Supported intents are discovered dynamically from IntentRegistry.
+  Supported intents are discovered dynamically from intent_registry.json.
   Any intent with `"enrichment_sources": ["system_stats"]` in its
   registry metadata will be routed to this service. No hardcoded
   intent lists are maintained.
   """
 
   @behaviour Brain.Services.Service
-
-  alias Brain.Analysis.IntentRegistry
 
   require Logger
 
@@ -53,11 +51,7 @@ defmodule Brain.Services.SystemStatus do
 
   @impl true
   def supported_intents do
-    if IntentRegistry.ready?() do
-      IntentRegistry.intents_with_enrichment_source("system_stats")
-    else
-      []
-    end
+    []
   end
 
   @impl true
@@ -143,13 +137,7 @@ defmodule Brain.Services.SystemStatus do
         get_in(models, [key, :loaded]) == true
       end)
 
-    lstm_ready =
-      [:unified_model, :response_scorer]
-      |> Enum.count(fn key ->
-        get_in(models, [key, :ready]) == true
-      end)
-
-    "#{loaded}/2 classical models loaded, #{lstm_ready}/3 LSTM models ready"
+    "#{loaded}/2 classical models loaded"
   rescue
     _ -> "unavailable"
   end

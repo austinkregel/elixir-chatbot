@@ -3,8 +3,6 @@ defmodule Brain.TestHelpers do
 
   alias Brain.Analysis.Pipeline
   alias Brain.TestWorldSandbox
-  alias Brain.ML.IntentClassifierSimple
-  alias Brain.ML.SentimentClassifierSimple
   alias Brain.ML.EntityExtractor
   alias Brain.ML.Gazetteer
   import ExUnit.Callbacks
@@ -402,7 +400,7 @@ this is typically a no-op, but some tests call it directly as a safety check.
   ## Usage
 
       # Explicit module list
-      require_services!([Brain.ML.IntentClassifierSimple, Brain.ML.Gazetteer])
+      require_services!([Brain.ML.Gazetteer])
 
       # Service profiles (convenience)
       require_services!(:ml_inference)
@@ -415,7 +413,6 @@ this is typically a no-op, but some tests call it directly as a safety check.
       [
         Brain.ML.InformalExpansions,
         Brain.ML.Gazetteer,
-        Brain.ML.IntentClassifierSimple,
         Brain.ML.SentimentClassifierSimple,
         Brain.ML.EntityExtractor,
         Brain.Response.TemplateStore,
@@ -428,7 +425,6 @@ this is typically a no-op, but some tests call it directly as a safety check.
 
   def require_services!(:full_pipeline, opts) do
     require_services!(:ml_inference, opts)
-    # LSTM services are optional (graceful degradation expected)
   end
 
   def require_services!(:brain, opts) do

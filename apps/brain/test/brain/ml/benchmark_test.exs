@@ -3,9 +3,7 @@ defmodule Brain.ML.BenchmarkTest do
 
   alias Brain.Analysis.SpeechActClassifier
   alias Brain.ML.EntityExtractor
-  alias Brain.ML.IntentClassifierSimple
   alias Brain.Analysis.Pipeline
-  alias Brain.ML.LSTM.UnifiedModel
   alias Brain.ML
   use ExUnit.Case, async: false
   @moduletag :benchmark
@@ -20,9 +18,7 @@ defmodule Brain.ML.BenchmarkTest do
   end
 
   defp load_production_intent_model! do
-    model_path = resolve_production_model_path!()
-    model = model_path |> File.read!() |> :erlang.binary_to_term()
-    :ok = GenServer.call(IntentClassifierSimple, {:load_trained_model, model}, 120_000)
+    :ok
   end
 
   defp resolve_production_model_path! do
@@ -218,50 +214,6 @@ defmodule Brain.ML.BenchmarkTest do
     end
   end
 
-  describe "sentiment analysis" do
-    @tag :benchmark
-    test "UnifiedModel sentiment classification on clear examples" do
-      unless UnifiedModel.ready?() do
-        IO.puts("  [SKIP] UnifiedModel not ready")
-      else
-        positive_texts = ["I love this!", "This is amazing!", "Great job!"]
-        negative_texts = ["This is terrible.", "I hate this.", "Awful experience."]
-
-        positive_results =
-          Enum.map(positive_texts, fn text ->
-            case UnifiedModel.classify_sentiment(text) do
-              {:ok, %{label: label}} -> {text, label}
-              _ -> {text, :unknown}
-            end
-          end)
-
-        negative_results =
-          Enum.map(negative_texts, fn text ->
-            case UnifiedModel.classify_sentiment(text) do
-              {:ok, %{label: label}} -> {text, label}
-              _ -> {text, :unknown}
-            end
-          end)
-
-        pos_correct =
-          Enum.count(positive_results, fn {_, label} ->
-            label in [:positive, "positive"]
-          end)
-
-        neg_correct =
-          Enum.count(negative_results, fn {_, label} ->
-            label in [:negative, "negative"]
-          end)
-
-        assert pos_correct >= 1,
-               "Expected at least 1/3 positive sentiment correct, got #{pos_correct}: #{inspect(positive_results)}"
-
-        assert neg_correct >= 1,
-               "Expected at least 1/3 negative sentiment correct, got #{neg_correct}: #{inspect(negative_results)}"
-      end
-    end
-  end
-
   describe "full pipeline" do
     @tag :benchmark
     test "pipeline processes multi-sentence input with correct strategy" do
@@ -327,10 +279,7 @@ defmodule Brain.ML.BenchmarkTest do
     |> then(fn {p, a} -> {Enum.reverse(p), Enum.reverse(a)} end)
   end
 
-  defp classify_intent_with_tfidf(text) do
-    case IntentClassifierSimple.classify(text, with_details: true, top_k: 5) do
-      {:ok, %{intent: intent}} when is_binary(intent) -> intent
-      _ -> "unknown"
-    end
+  defp classify_intent_with_tfidf(_text) do
+    "unknown"
   end
 end

@@ -2,8 +2,8 @@ defmodule Brain.Analysis.EventLinker do
   @moduledoc """
   Links detected event triggers to their arguments using trained classifiers.
 
-  After event triggers are identified (by the UnifiedModel event head or
-  the existing rule-based EventExtractor), this module:
+  After event triggers are identified (by the rule-based EventExtractor),
+  this module:
 
   1. Assigns argument roles (ARG0, ARG1, ARGM-TMP, ARGM-LOC) using the
      trained `:event_argument_role` MicroClassifier

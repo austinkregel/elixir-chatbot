@@ -1,8 +1,6 @@
 defmodule ChatWeb.SettingsLive do
   @moduledoc "Settings page for world management and entity administration.\n\nFeatures:\n- World management (create, delete, configure)\n- Gazetteer entity management\n- System configuration\n"
 
-  alias Brain.Response.LSTMResponse
-  alias Brain.ML.LSTM.UnifiedModel
   alias Phoenix.PubSub
   use ChatWeb, :live_view
   require Logger
@@ -60,7 +58,7 @@ defmodule ChatWeb.SettingsLive do
       |> assign(:lc_stats, %{total_sessions: 0, active_agents: 0})
       |> assign(:ml_model_statuses, %{})
       |> assign(:ml_training_status, :idle)
-      |> assign(:ml_selected_model, "unified")
+      |> assign(:ml_selected_model, "tfidf")
       |> assign(:ml_epochs, "20")
       |> assign(:ml_head_epochs, "20")
       |> assign(:ml_batch_size, "32")
@@ -200,44 +198,11 @@ defmodule ChatWeb.SettingsLive do
   end
 
   defp load_ml_training_data(socket) do
-    unified_ready =
-      try do
-        UnifiedModel.ready?()
-      rescue
-        _ -> false
-      catch
-        :exit, _ -> false
-      end
-
-    response_ready =
-      try do
-        LSTMResponse.ready?()
-      rescue
-        _ -> false
-      catch
-        :exit, _ -> false
-      end
-
-    arbitrator_ready =
-      try do
-        Brain.ML.IntentArbitrator.ready?()
-      rescue
-        _ -> false
-      catch
-        :exit, _ -> false
-      end
-
-    model_statuses = %{
-      unified_model: unified_ready,
-      response_scorer: response_ready,
-      intent_arbitrator: arbitrator_ready
-    }
-
     training_status = TrainingServer.get_status()
     schedules = TrainingServer.list_schedules()
 
     socket
-    |> assign(:ml_model_statuses, model_statuses)
+    |> assign(:ml_model_statuses, %{})
     |> assign(:ml_training_status, training_status)
     |> assign(:ml_schedules, schedules)
   end
@@ -556,10 +521,7 @@ defmodule ChatWeb.SettingsLive do
     model_type =
       case socket.assigns.ml_selected_model do
         "tfidf" -> :tfidf
-        "unified" -> :unified
-        "response" -> :response
-        "arbitrator" -> :arbitrator
-        _ -> :unified
+        _ -> :tfidf
       end
 
     epochs = parse_integer(socket.assigns.ml_epochs, 20)
@@ -612,32 +574,11 @@ defmodule ChatWeb.SettingsLive do
   end
 
   def handle_event("reload_ml_models", _params, socket) do
-    socket = assign(socket, :ml_reloading, true)
-
-    results =
-      [:unified, :response, :arbitrator]
-      |> Enum.map(fn model ->
-        try do
-          case model do
-            :unified -> {model, UnifiedModel.reload()}
-            :response -> {model, LSTMResponse.reload()}
-            :arbitrator -> {model, Brain.ML.IntentArbitrator.reload()}
-          end
-        rescue
-          e -> {model, {:error, Exception.message(e)}}
-        catch
-          :exit, reason -> {model, {:error, reason}}
-        end
-      end)
-
-    successes = Enum.count(results, fn {_, res} -> res == :ok end)
-
     socket =
       socket
-      |> assign(:ml_reloading, false)
       |> load_ml_training_data()
-      |> append_training_log("Reloaded models (#{successes}/3 succeeded)")
-      |> put_flash(:info, "Reloaded #{successes}/3 models")
+      |> append_training_log("Reloaded models")
+      |> put_flash(:info, "Models reloaded")
 
     {:noreply, socket}
   end
@@ -650,10 +591,7 @@ defmodule ChatWeb.SettingsLive do
     model_type =
       case socket.assigns.ml_selected_model do
         "tfidf" -> :tfidf
-        "unified" -> :unified
-        "response" -> :response
-        "arbitrator" -> :arbitrator
-        _ -> :unified
+        _ -> :tfidf
       end
 
     interval_hours = parse_integer(socket.assigns.ml_schedule_interval, 24)
@@ -1694,68 +1632,6 @@ defmodule ChatWeb.SettingsLive do
   defp ml_training_section(assigns) do
     ~H"""
     <div class="space-y-6">
-      <!-- Model Status Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="font-medium">Unified Model</div>
-              <div class="text-sm text-base-content/60">Intent, NER, Sentiment, Speech Act</div>
-            </div>
-            <span class={[
-              "badge",
-              if(@model_statuses[:unified_model], do: "badge-success", else: "badge-ghost")
-            ]}>
-              {if @model_statuses[:unified_model], do: "Ready", else: "Not Ready"}
-            </span>
-          </div>
-        </div>
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="font-medium">Response Scorer</div>
-              <div class="text-sm text-base-content/60">Query-response quality scoring</div>
-            </div>
-            <span class={[
-              "badge",
-              if(@model_statuses[:response_scorer], do: "badge-success", else: "badge-ghost")
-            ]}>
-              {if @model_statuses[:response_scorer], do: "Ready", else: "Not Ready"}
-            </span>
-          </div>
-        </div>
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="font-medium">Intent Arbitrator</div>
-              <div class="text-sm text-base-content/60">LSTM vs TF-IDF meta-learner</div>
-            </div>
-            <span class={[
-              "badge",
-              if(@model_statuses[:intent_arbitrator], do: "badge-success", else: "badge-ghost")
-            ]}>
-              {if @model_statuses[:intent_arbitrator], do: "Ready", else: "Not Ready"}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Reload Models -->
-      <div class="flex justify-end">
-        <button
-          phx-click="reload_ml_models"
-          class="btn btn-outline btn-sm"
-          disabled={@reloading}
-        >
-          <%= if @reloading do %>
-            <span class="loading loading-spinner loading-sm"></span>
-          <% else %>
-            <.icon name="hero-arrow-path" class="size-4" />
-          <% end %>
-          Reload All Models
-        </button>
-      </div>
-
       <!-- Training Form -->
       <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
         <h3 class="font-semibold mb-4">Train ML Model</h3>
@@ -1769,17 +1645,8 @@ defmodule ChatWeb.SettingsLive do
                 <span class="label-text">Model Type</span>
               </label>
               <select name="model_type" class="select select-bordered">
-                <option value="unified" selected={@selected_model == "unified"}>
-                  Unified LSTM
-                </option>
-                <option value="response" selected={@selected_model == "response"}>
-                  Response Scorer
-                </option>
                 <option value="tfidf" selected={@selected_model == "tfidf"}>
                   TF-IDF Classifier
-                </option>
-                <option value="arbitrator" selected={@selected_model == "arbitrator"}>
-                  Intent Arbitrator
                 </option>
               </select>
             </div>

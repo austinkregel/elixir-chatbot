@@ -1,24 +1,36 @@
 defmodule Brain.ML.ModelPreflight do
   @moduledoc """
-  Validates stored ML models match the current code's expected dimensions.
+  Validates stored ML models: every required file must exist, deserialize, and
+  satisfy basic structural checks.
 
-  Reads .term files directly (no GenServer calls) and compares stored metadata
-  against what the code expects. Missing files are fine (graceful degradation
-  handles absent models), but dimension/config mismatches are hard failures
-  because they mean the model exists but is incompatible.
-
-  ## Usage
-
-  Call `validate_all!/0` at test suite startup to halt early on mismatches:
-
-      Brain.ML.ModelPreflight.validate_all!()
-
-  Call `validate_all/0` for a list of results without raising.
+  Missing files are **failures** (no silent skips). Call `validate_all!/0` at
+  test suite startup after models have been trained to disk.
   """
 
   require Logger
 
-  @doc "Validate all models and raise if any are incompatible."
+  # Keep in sync with `Brain.ML.MicroClassifiers` `@classifier_names`.
+  @micro_classifier_names [
+    :personal_question,
+    :clarification_response,
+    :modal_directive,
+    :fallback_response,
+    :goal_type,
+    :entity_type,
+    :user_fact_type,
+    :directed_at_bot,
+    :event_argument_role,
+    :intent_full,
+    :intent_domain,
+    :tense_class,
+    :aspect_class,
+    :urgency,
+    :certainty_level,
+    :coarse_semantic_class,
+    :framing_class
+  ]
+
+  @doc "Validate all models and raise if any are incompatible or missing."
   def validate_all! do
     results = validate_all()
     failures = Enum.filter(results, &match?({_, {:error, _}}, &1))
@@ -26,7 +38,7 @@ defmodule Brain.ML.ModelPreflight do
     if failures != [] do
       msg = format_failures(failures)
       IO.puts(:stderr, "\n" <> msg)
-      raise "Model preflight failed. #{length(failures)} model(s) incompatible. Run `mix train` to retrain."
+      raise "Model preflight failed. #{length(failures)} model(s) missing or incompatible. Run `mix train` or test `ModelFactory` setup."
     end
 
     :ok
@@ -34,55 +46,87 @@ defmodule Brain.ML.ModelPreflight do
 
   @doc "Validate all models. Returns a keyword list of `{name, :ok | {:error, reason}}`."
   def validate_all do
-    [
-      {:intent_arbitrator, validate_intent_arbitrator()},
-      {:unified_model, validate_unified_model()},
-      {:response_scorer, validate_response_scorer()},
-      {:gcn, validate_gcn()},
-      {:poincare, validate_poincare()},
-      {:triple_scorer, validate_triple_scorer()}
-    ]
+    core =
+      [
+        {:embedder, validate_embedder()},
+        {:gazetteer, validate_gazetteer()},
+        {:pos_model, validate_pos_model()},
+        {:sentiment_classifier, validate_simple_classifier_root("sentiment_classifier.term")},
+        {:speech_act_classifier, validate_simple_classifier_root("speech_act_classifier.term")},
+        {:framing_neutral_centroid, validate_framing_neutral_centroid()}
+      ]
+
+    micro =
+      Enum.map(@micro_classifier_names, fn name ->
+        {:"micro_#{name}", validate_micro_classifier(name)}
+      end)
+
+    graph =
+      [
+        {:poincare, validate_poincare()},
+        {:triple_scorer, validate_triple_scorer()}
+      ]
+
+    core ++ micro ++ graph
   end
 
-  # -- IntentArbitrator --
-
-  defp validate_intent_arbitrator do
-    path = model_file("intent_arbitrator.term")
+  defp validate_embedder do
+    path = model_file("embedder.term")
 
     with_term_file(path, fn data ->
-      stored_fc = Map.get(data, :feature_count, 0)
-      expected = Brain.ML.IntentArbitrator.feature_count()
+      cond do
+        not is_map(data) ->
+          {:error, "Embedder: expected a map"}
 
-      if stored_fc != expected do
-        {:error,
-         "IntentArbitrator feature count mismatch: stored=#{stored_fc}, expected=#{expected}"}
-      else
+        not is_map_key(data, :vocabulary) or not is_map_key(data, :idf_weights) ->
+          {:error, "Embedder: missing :vocabulary or :idf_weights"}
+
+        map_size(data.vocabulary) == 0 ->
+          {:error, "Embedder: empty vocabulary"}
+
+        true ->
+          :ok
+      end
+    end)
+  end
+
+  defp validate_gazetteer do
+    path = model_file("gazetteer.term")
+
+    with_term_file(path, fn data ->
+      if is_map(data) and map_size(data) > 0 do
         :ok
+      else
+        {:error, "Gazetteer: expected non-empty map"}
       end
     end)
   end
 
-  # -- UnifiedModel --
+  defp validate_pos_model do
+    path = model_file("pos_model.term")
 
-  defp validate_unified_model do
-    path = model_file("lstm/unified_model.term")
+    with_term_file(path, fn data ->
+      if is_map(data) and map_size(data) > 0 do
+        :ok
+      else
+        {:error, "POS model: expected non-empty map"}
+      end
+    end)
+  end
+
+  defp validate_simple_classifier_root(filename) do
+    path = model_file(filename)
 
     with_term_file(path, fn data ->
       cond do
-        not is_map_key(data, :config) ->
-          {:error, "UnifiedModel: missing :config key"}
+        not is_map(data) ->
+          {:error, "#{filename}: expected map"}
 
-        not is_map_key(data, :vocabularies) ->
-          {:error, "UnifiedModel: missing :vocabularies key"}
+        not Map.has_key?(data, :vocabulary) or not Map.has_key?(data, :label_centroids) ->
+          {:error, "#{filename}: not a SimpleClassifier-style map"}
 
-        not is_map_key(data, :params) ->
-          {:error, "UnifiedModel: missing :params key"}
-
-        not is_map(data.vocabularies) or not is_map_key(data.vocabularies, :token_vocab) ->
-          {:error, "UnifiedModel: missing :token_vocab in vocabularies"}
-
-        map_size(data.vocabularies.token_vocab) == 0 ->
-          {:error, "UnifiedModel: empty token vocabulary"}
+        map_size(data.vocabulary) == 0 ->
+          {:error, "#{filename}: empty vocabulary"}
 
         true ->
           :ok
@@ -90,63 +134,46 @@ defmodule Brain.ML.ModelPreflight do
     end)
   end
 
-  # -- LSTMResponse (Response Scorer) --
-
-  defp validate_response_scorer do
-    path = model_file("lstm/response_scorer.term")
+  defp validate_micro_classifier(name) do
+    path = model_file("micro/#{name}.term")
 
     with_term_file(path, fn data ->
       cond do
-        not is_map_key(data, :config) ->
-          {:error, "ResponseScorer: missing :config key"}
+        not is_map(data) ->
+          {:error, "micro/#{name}.term: expected map"}
 
-        not is_map_key(data, :vocabularies) ->
-          {:error, "ResponseScorer: missing :vocabularies key"}
+        Map.has_key?(data, :vocabulary) and Map.has_key?(data, :label_centroids) ->
+          if map_size(data.vocabulary) == 0 do
+            {:error, "micro/#{name}.term: empty vocabulary"}
+          else
+            :ok
+          end
 
-        not is_map_key(data, :scorer_params) ->
-          {:error, "ResponseScorer: missing :scorer_params key"}
-
-        not is_map(data.vocabularies) or not is_map_key(data.vocabularies, :token_vocab) ->
-          {:error, "ResponseScorer: missing :token_vocab in vocabularies"}
-
-        map_size(data.vocabularies.token_vocab) == 0 ->
-          {:error, "ResponseScorer: empty token vocabulary"}
+        Map.has_key?(data, :label_centroids) ->
+          # Feature-vector centroid model
+          if map_size(data.label_centroids) == 0 do
+            {:error, "micro/#{name}.term: empty label_centroids"}
+          else
+            :ok
+          end
 
         true ->
-          :ok
+          {:error, "micro/#{name}.term: unrecognized model shape"}
       end
     end)
   end
 
-  # -- GCN Model --
-
-  defp validate_gcn do
-    path = model_file("default/gcn/model.term")
+  defp validate_framing_neutral_centroid do
+    path = model_file("micro/framing_neutral_centroid.term")
 
     with_term_file(path, fn data ->
-      config = Map.get(data, :config, %{})
-      features = Map.get(data, :features)
-
-      cond do
-        not is_map_key(config, :num_features) ->
-          {:error, "GCN: missing :num_features in config"}
-
-        not is_map_key(config, :num_classes) ->
-          {:error, "GCN: missing :num_classes in config"}
-
-        is_struct(features, Nx.Tensor) and
-            Nx.axis_size(features, 1) != config.num_features ->
-          {:error,
-           "GCN: features shape mismatch: tensor has #{Nx.axis_size(features, 1)} features, " <>
-             "config says #{config.num_features}"}
-
-        true ->
-          :ok
+      if is_list(data) and data != [] and Enum.all?(data, &is_float/1) do
+        :ok
+      else
+        {:error, "framing_neutral_centroid: expected non-empty list of floats"}
       end
     end)
   end
-
-  # -- Poincare Embeddings --
 
   defp validate_poincare do
     path = model_file("default/poincare/embeddings.term")
@@ -169,8 +196,6 @@ defmodule Brain.ML.ModelPreflight do
       end
     end)
   end
-
-  # -- TripleScorer --
 
   defp validate_triple_scorer do
     path = model_file("default/kg_lstm/triple_scorer.term")
@@ -197,8 +222,6 @@ defmodule Brain.ML.ModelPreflight do
     end)
   end
 
-  # -- Helpers --
-
   defp models_path do
     Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")
   end
@@ -218,7 +241,7 @@ defmodule Brain.ML.ModelPreflight do
         end
 
       {:error, :enoent} ->
-        :ok
+        {:error, "Missing model file: #{path}"}
 
       {:error, reason} ->
         {:error, "Failed to read #{Path.basename(path)}: #{inspect(reason)}"}
@@ -229,8 +252,8 @@ defmodule Brain.ML.ModelPreflight do
     header = """
     ╔══════════════════════════════════════════════════════════════╗
     ║  MODEL PREFLIGHT CHECK FAILED                              ║
-    ║  Stored models are incompatible with current code.         ║
-    ║  Run `mix train` to retrain all models.                    ║
+    ║  Stored models are missing or incompatible with code.      ║
+    ║  Run `mix train` (prod) or `ModelFactory` (test).          ║
     ╚══════════════════════════════════════════════════════════════╝
     """
 

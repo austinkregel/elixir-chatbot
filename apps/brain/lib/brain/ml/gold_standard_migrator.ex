@@ -73,6 +73,7 @@ defmodule Brain.ML.GoldStandardMigrator do
   def preview(intent_names, opts \\ []) do
     limit = Keyword.get(opts, :limit, :all)
     merge_contexts? = Keyword.get(opts, :merge_context_variants, false)
+    exclude_context_variants? = Keyword.get(opts, :exclude_context_variants, false)
 
     intents = list_available_intents()
 
@@ -80,6 +81,20 @@ defmodule Brain.ML.GoldStandardMigrator do
       case intent_names do
         :all -> intents
         names when is_list(names) -> Enum.filter(intents, fn i -> i.name in names end)
+      end
+
+    selected =
+      if exclude_context_variants? do
+        selected
+        |> Enum.map(fn intent ->
+          filtered_paths =
+            Enum.reject(intent.paths, &context_variant_path?/1)
+
+          %{intent | paths: filtered_paths}
+        end)
+        |> Enum.reject(fn intent -> intent.paths == [] end)
+      else
+        selected
       end
 
     {intent_examples, entity_examples, source_files} =
@@ -108,7 +123,7 @@ defmodule Brain.ML.GoldStandardMigrator do
     destructive? = Keyword.get(opts, :destructive, false)
     append? = Keyword.get(opts, :append, not destructive?)
     include_ner? = Keyword.get(opts, :include_ner, true)
-    preview_opts = Keyword.take(opts, [:limit, :merge_context_variants])
+    preview_opts = Keyword.take(opts, [:limit, :merge_context_variants, :exclude_context_variants])
     {intent_examples, entity_examples, source_files} = preview(intent_names, preview_opts)
 
     intent_count = save_to_gold_standard("intent", intent_examples, append?)
@@ -567,6 +582,11 @@ defmodule Brain.ML.GoldStandardMigrator do
     path
     |> Path.basename()
     |> String.replace_suffix("_usersays_en.json", "")
+  end
+
+  defp context_variant_path?(path) do
+    basename = Path.basename(path)
+    String.match?(basename, ~r/context_.*_usersays_en\.json$/)
   end
 
   defp count_examples(path) do

@@ -145,7 +145,6 @@ defmodule Brain.ML.TrainerTest do
       assert result == :ok
       assert updated_stats.intent_samples > 0
       assert updated_stats.vocab_size > 0
-      assert File.exists?(Path.join(models_path, "classifier.term"))
       assert File.exists?(Path.join(models_path, "embedder.term"))
     end
   end
@@ -189,7 +188,6 @@ defmodule Brain.ML.TrainerTest do
       assert is_map(stats)
       assert stats.intent_samples > 0
       assert stats.vocab_size > 0
-      assert File.exists?(Path.join(models_path, "classifier.term"))
       assert File.exists?(Path.join(models_path, "embedder.term"))
       assert File.exists?(Path.join(models_path, "gazetteer.term"))
     end

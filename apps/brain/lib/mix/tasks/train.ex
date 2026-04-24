@@ -1,54 +1,68 @@
 defmodule Mix.Tasks.Train do
   @moduledoc """
-  Master training task that trains ALL models in the correct order.
+  Master training task that trains models in dependency order.
 
-  Each model has its own tuned hyperparameters (epochs, batch size, learning rate)
-  set in the training functions below. Use `--list` to see all stages.
+  Primary runtime “understanding” for utterances uses `ChunkProfile` (engineered
+  features + micro-classifiers), not the old registry/TF-IDF intent GenServer.
+  This pipeline trains entity model, gazetteer, embedder vocabulary, speech-act
+  TF-IDF, and **all** micro-classifiers including axis models
+  (`intent_domain`, `tense_class`, …).
+
+  Use `--list` to print stages. Hyperparameters live in the per-stage trainers below.
 
   ## Usage
 
       mix train [options]
 
+  ## Micro-classifier data (axis models)
+
+  The six axis micro-classifiers read training JSON from `data/classifiers/*.json`.
+  To **regenerate** those JSON files from `priv/evaluation/intent/gold_standard.json`
+  (after you change gold data or heuristics), run **before** `mix train` or
+  `mix train_micro`:
+
+      mix gen_micro_data
+
+  Then train micro models (or let stage 5 of `mix train` run `mix train_micro`).
+
   ## Options
 
-    --quick            Skip slow/optional models (seq2seq, response scorer)
-    --skip-tfidf       Skip TF-IDF models (intent classifier, entity model, gazetteer)
-    --skip-lstm        Skip all LSTM models (also skips arbitrator)
+    --quick            Skip slow/optional models
+    --skip-tfidf       Skip TF-IDF bundle (entity model, gazetteer, embedder, speech-act TF-IDF)
     --skip-pos         Skip POS tagger training
-    --skip-unified     Skip unified multi-task LSTM model
-    --skip-response    Skip response scorer model
     --skip-seq2seq     Skip seq2seq generation model
-    --skip-gcn         Skip GCN text classifier
     --skip-poincare    Skip Poincare embeddings
     --skip-kg-lstm     Skip KG triple scorer
-    --skip-arbitrator  Skip intent arbitrator meta-learner
-    --skip-micro       Skip micro-classifiers
+    --skip-micro       Skip TF-IDF micro-classifiers (including ChunkProfile axis models)
+    --skip-framing     Skip framing classifier (GVFC corpus)
     --include-graph    Run graph-to-training integration after training
     --world ID         Train world-specific models
-    --name NAME        Experiment name for tracking (default: train_YYYYMMDD_HHMMSS)
-    --compare          Print experiment comparison table after training
     --publish          Publish trained models to S3/MinIO
     --list             List all available training tasks
 
-  ## Training Order (9 stages)
+  ## Training order (6 stages)
 
-  1. TF-IDF Models + Speech Act TF-IDF (~1 minute)
-  2. POS Tagger (~1 second)
-  3. Unified LSTM - intent, sentiment, speech act (~17 min GPU)
-  4. Response Scorer (~1-2 min GPU)
-  5. GCN Text Classifier (~5 min GPU)
-  6. Poincare Embeddings (~1 min)
-  7. KG Triple Scorer (~1 min GPU)
-  8. Intent Arbitrator (~30 sec)
-  9. MicroClassifiers (~10 sec)
+  1. **TF-IDF bundle** — `Trainer.train_and_save/1`: entity model, gazetteer,
+     embedder vocabulary, plus speech-act TF-IDF (~1 minute).
+  2. **POS tagger** — `pos_model.term` (~1 second).
+  3. **Poincare embeddings** — `poincare/embeddings.term` (~1 min).
+  4. **KG triple scorer** — `kg_lstm/triple_scorer.term` (~1 min GPU).
+  5. **MicroClassifiers** — runs `mix train_micro`: trains every name in
+     `Mix.Tasks.TrainMicro` (pragmatic classifiers + six axis models). Writes
+     `priv/ml_models/micro/*.term`. Regenerate JSON with `mix gen_micro_data` when needed.
+  6. **Framing Classifier** — runs `mix gen_framing_data` (if JSON missing) then
+     `mix train_framing`. Requires GVFC corpus at `data/framing/`. Run
+     `mix ingest_framing_corpus` if the CSV is not yet extracted.
 
   ## Examples
 
-      mix train                    # Train everything
+      mix train                    # Full pipeline
+      mix gen_micro_data && mix train   # Refresh axis micro data, then full train
       mix train --quick            # Skip slow models
-      mix train --skip-tfidf       # Skip TF-IDF stage
+      mix train --skip-tfidf       # Skip TF-IDF bundle stage
+      mix train --skip-micro       # Skip micro-classifiers only
       mix train --world star_trek  # Train for a specific world
-      mix train --list             # List all training tasks
+      mix train --list             # List stages
   """
 
   # World.Persistence is in a sibling umbrella app that depends on :brain.
@@ -56,29 +70,24 @@ defmodule Mix.Tasks.Train do
   @compile {:no_warn_undefined, World.Persistence}
 
   alias World.Persistence
-  alias Brain.Response.LSTMResponse
-  alias Brain.ML.LSTM.UnifiedModel
   alias Brain.ML.POSTagger
   alias Brain.ML.Trainer
   alias Brain.ML.ModelStore
   use Mix.Task
   require Logger
 
-  alias Brain.ML.LSTM.ExperimentTracker
-
   @shortdoc "Train ALL ML models (master training pipeline)"
 
   @training_tasks [
     %{
-      name: "TF-IDF Models",
-      description: "Intent classifier, entity recognition, gazetteer, embedder, speech act",
+      name: "TF-IDF bundle",
+      description:
+        "Entity model, gazetteer, embedder vocabulary, speech-act TF-IDF",
       task: :tfidf,
       duration: "~1 minute",
       outputs: [
-        "classifier.term",
         "entity_model.term",
         "gazetteer.term",
-        "vectorizer.term",
         "embedder.term",
         "speech_act_classifier.term"
       ]
@@ -89,27 +98,6 @@ defmodule Mix.Tasks.Train do
       task: :pos,
       duration: "~1 second",
       outputs: ["pos_model.term"]
-    },
-    %{
-      name: "Unified LSTM",
-      description: "Multi-task model: intent, NER, sentiment, speech acts",
-      task: :unified,
-      duration: "~17 minutes (GPU, includes JIT compilation)",
-      outputs: ["lstm/unified_model.term"]
-    },
-    %{
-      name: "Response Scorer",
-      description: "Query-response quality scoring model",
-      task: :response,
-      duration: "~1 minute (GPU)",
-      outputs: ["lstm/response_scorer.term"]
-    },
-    %{
-      name: "GCN Text Classifier",
-      description: "Graph convolutional network for intent classification",
-      task: :gcn,
-      duration: "~5 minutes (GPU, includes JIT compilation)",
-      outputs: ["gcn/model.term"]
     },
     %{
       name: "Poincare Embeddings",
@@ -126,18 +114,20 @@ defmodule Mix.Tasks.Train do
       outputs: ["kg_lstm/triple_scorer.term"]
     },
     %{
-      name: "Intent Arbitrator",
-      description: "Stacked meta-learner for LSTM vs TF-IDF intent arbitration",
-      task: :arbitrator,
-      duration: "~30 seconds",
-      outputs: ["intent_arbitrator.term"]
+      name: "MicroClassifiers",
+      description:
+        "Micro-classifiers (pragmatic + ChunkProfile axes: intent_domain, tense_class, etc.); run `mix gen_micro_data` to refresh JSON",
+      task: :micro,
+      duration: "~30-90 seconds (depends on JSON size)",
+      outputs: ["micro/*.term"]
     },
     %{
-      name: "MicroClassifiers",
-      description: "TF-IDF micro-classifiers for lightweight decisions",
-      task: :micro,
-      duration: "~10 seconds",
-      outputs: ["micro/*.term"]
+      name: "Framing Classifier",
+      description:
+        "Document-level framing classifier (GVFC corpus); run `mix ingest_framing_corpus` then `mix gen_framing_data` to prepare data",
+      task: :framing,
+      duration: "~2-5 minutes",
+      outputs: ["micro/framing_class.term", "micro/framing_neutral_centroid.term"]
     }
   ]
 
@@ -147,21 +137,15 @@ defmodule Mix.Tasks.Train do
         strict: [
           quick: :boolean,
           skip_tfidf: :boolean,
-          skip_lstm: :boolean,
           skip_pos: :boolean,
-          skip_unified: :boolean,
-          skip_response: :boolean,
           skip_seq2seq: :boolean,
-          skip_gcn: :boolean,
           skip_poincare: :boolean,
           skip_kg_lstm: :boolean,
-          skip_arbitrator: :boolean,
           skip_micro: :boolean,
+          skip_framing: :boolean,
           include_graph: :boolean,
           world: :string,
           list: :boolean,
-          name: :string,
-          compare: :boolean,
           publish: :boolean
         ]
       )
@@ -220,26 +204,6 @@ defmodule Mix.Tasks.Train do
     end
 
     display_summary(results, total_duration)
-    experiment_name = opts[:name] || generate_experiment_name("train")
-
-    ExperimentTracker.record(%{
-      name: experiment_name,
-      config: %{
-        unified: %{epochs: 80, batch_size: 32, lr: 3.0e-4, label_smoothing: 0.1},
-        response: %{epochs: 30, batch_size: 64, lr: 0.001},
-        hidden_size: 128
-      },
-      epochs_completed: 80,
-      training_time_seconds: total_duration,
-      notes: "Master pipeline. Tasks: #{summarize_results(results)}"
-    })
-
-    Mix.shell().info("  Experiment recorded: #{experiment_name}")
-
-    if opts[:compare] do
-      Mix.shell().info("")
-      ExperimentTracker.print_comparison()
-    end
   end
 
   defp build_skip_list(opts) do
@@ -260,20 +224,6 @@ defmodule Mix.Tasks.Train do
       end
 
     skip_list =
-      if opts[:skip_unified] do
-        [:unified | skip_list]
-      else
-        skip_list
-      end
-
-    skip_list =
-      if opts[:skip_response] do
-        [:response | skip_list]
-      else
-        skip_list
-      end
-
-    skip_list =
       if opts[:skip_seq2seq] do
         [:seq2seq | skip_list]
       else
@@ -283,31 +233,8 @@ defmodule Mix.Tasks.Train do
     skip_list =
       if opts[:quick] do
         skip_list
-        |> Kernel.++([:response, :seq2seq])
+        |> Kernel.++([:seq2seq])
         |> Enum.uniq()
-      else
-        skip_list
-      end
-
-    skip_list =
-      if opts[:skip_lstm] do
-        skip_list
-        |> Kernel.++([:unified, :response, :seq2seq, :arbitrator])
-        |> Enum.uniq()
-      else
-        skip_list
-      end
-
-    skip_list =
-      if opts[:skip_arbitrator] do
-        [:arbitrator | skip_list] |> Enum.uniq()
-      else
-        skip_list
-      end
-
-    skip_list =
-      if opts[:skip_gcn] do
-        [:gcn | skip_list]
       else
         skip_list
       end
@@ -333,6 +260,13 @@ defmodule Mix.Tasks.Train do
         skip_list
       end
 
+    skip_list =
+      if opts[:skip_framing] do
+        [:framing | skip_list]
+      else
+        skip_list
+      end
+
     skip_list
   end
 
@@ -352,15 +286,11 @@ defmodule Mix.Tasks.Train do
     end
 
     Mix.shell().info("Individual training tasks:")
-    Mix.shell().info("  mix train_models    - TF-IDF + optional LSTM")
-    Mix.shell().info("  mix train_unified   - Unified multi-task LSTM")
-    Mix.shell().info("  mix train_response  - Response quality scorer")
-    Mix.shell().info("  mix train_lstm      - Standalone LSTM intent classifier")
-    Mix.shell().info("  mix train_micro     - TF-IDF micro-classifiers")
-    Mix.shell().info("  mix train_gcn       - GCN text classifier")
+    Mix.shell().info("  mix train_models    - TF-IDF models")
+    Mix.shell().info("  mix train_micro     - Micro-classifiers (feature vector + text)")
     Mix.shell().info("  mix train_poincare  - Poincare embeddings")
     Mix.shell().info("  mix train_kg_lstm   - KG triple scorer")
-    Mix.shell().info("  mix train_arbitrator - Intent arbitrator")
+    Mix.shell().info("  mix train_framing   - Framing classifier (GVFC)")
     Mix.shell().info("")
   end
 
@@ -394,9 +324,6 @@ defmodule Mix.Tasks.Train do
   end
 
   defp run_training_pipeline(opts, skip_list) do
-    world_id = opts[:world]
-    models_path = get_models_path(world_id)
-
     results = []
 
     results =
@@ -419,42 +346,6 @@ defmodule Mix.Tasks.Train do
         result = train_pos_model(opts)
         duration = System.monotonic_time(:second) - start
         [{:pos, result, duration} | results]
-      end
-
-    cleanup_exla_callback_servers()
-
-    results =
-      if :unified in skip_list do
-        [{:unified, :skipped, 0} | results]
-      else
-        start = System.monotonic_time(:second)
-        result = train_unified_lstm(models_path)
-        duration = System.monotonic_time(:second) - start
-        [{:unified, result, duration} | results]
-      end
-
-    cleanup_exla_callback_servers()
-
-    results =
-      if :response in skip_list do
-        [{:response, :skipped, 0} | results]
-      else
-        start = System.monotonic_time(:second)
-        result = train_response_scorer(models_path)
-        duration = System.monotonic_time(:second) - start
-        [{:response, result, duration} | results]
-      end
-
-    cleanup_exla_callback_servers()
-
-    results =
-      if :gcn in skip_list do
-        [{:gcn, :skipped, 0} | results]
-      else
-        start = System.monotonic_time(:second)
-        result = train_gcn_model(opts)
-        duration = System.monotonic_time(:second) - start
-        [{:gcn, result, duration} | results]
       end
 
     cleanup_exla_callback_servers()
@@ -484,16 +375,6 @@ defmodule Mix.Tasks.Train do
     cleanup_exla_callback_servers()
 
     results =
-      if :arbitrator in skip_list do
-        [{:arbitrator, :skipped, 0} | results]
-      else
-        start = System.monotonic_time(:second)
-        result = train_arbitrator()
-        duration = System.monotonic_time(:second) - start
-        [{:arbitrator, result, duration} | results]
-      end
-
-    results =
       if :micro in skip_list do
         [{:micro, :skipped, 0} | results]
       else
@@ -501,6 +382,18 @@ defmodule Mix.Tasks.Train do
         result = train_micro_classifiers()
         duration = System.monotonic_time(:second) - start
         [{:micro, result, duration} | results]
+      end
+
+    cleanup_exla_callback_servers()
+
+    results =
+      if :framing in skip_list do
+        [{:framing, :skipped, 0} | results]
+      else
+        start = System.monotonic_time(:second)
+        result = train_framing_classifier()
+        duration = System.monotonic_time(:second) - start
+        [{:framing, result, duration} | results]
       end
 
     Enum.reverse(results)
@@ -511,7 +404,7 @@ defmodule Mix.Tasks.Train do
   defp train_tfidf_models(opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 1/9: TF-IDF Models  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 1/6: TF-IDF Models  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
     models_path = get_models_path(opts[:world])
@@ -556,7 +449,7 @@ defmodule Mix.Tasks.Train do
   defp train_pos_model(opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 2/9: POS Tagger  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 2/6: POS Tagger  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
     models_path = get_models_path(opts[:world])
@@ -564,8 +457,17 @@ defmodule Mix.Tasks.Train do
 
     sequences = load_pos_from_gold_standard(gold_standard_path)
 
+    sequences =
+      if sequences != [] do
+        Mix.shell().info("  Found #{length(sequences)} pre-annotated POS sequences")
+        sequences
+      else
+        Mix.shell().info("  No POS-annotated data in gold standard. Auto-enriching with WordNet + rules...")
+        auto_enrich_pos(gold_standard_path)
+      end
+
     if sequences != [] do
-      Mix.shell().info("  Found #{length(sequences)} POS-annotated sequences from gold standard")
+      Mix.shell().info("  Training POS model on #{length(sequences)} sequences...")
 
       case POSTagger.train(sequences) do
         {:ok, model} ->
@@ -585,106 +487,15 @@ defmodule Mix.Tasks.Train do
           {:error, reason}
       end
     else
-      Mix.shell().info("  No POS-annotated data in gold standard. Skipping POS training.")
-      Mix.shell().info("  Run: python scripts/enrich_gold_standard_pos.py")
+      Mix.shell().info("  No training data available for POS model.")
       {:ok, %{pos_trained: false}}
-    end
-  end
-
-  defp train_unified_lstm(models_path) do
-    Mix.shell().info("")
-    Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 3/9: Unified LSTM Model (GPU Accelerated)  [#{stage_timestamp()}]")
-    Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("")
-    Mix.shell().info("  Training multi-task model for:")
-    Mix.shell().info("    - Intent Classification")
-    Mix.shell().info("    - Named Entity Recognition")
-    Mix.shell().info("    - Sentiment Analysis")
-    Mix.shell().info("    - Speech Act Classification")
-    Mix.shell().info("")
-
-    config = [
-      epochs: 80,
-      batch_size: 32,
-      hidden_size: 128,
-      embedding_size: 128,
-      learning_rate: 3.0e-4,
-      sentiment_epochs: 60,
-      speech_act_epochs: 120,
-      speech_act_batch_size: 16,
-      label_smoothing: 0.1,
-      dropout: 0.2,
-      models_path: models_path
-    ]
-
-    case UnifiedModel.train(config) do
-      {:ok, result} ->
-        Mix.shell().info("  Unified LSTM training complete!")
-        Mix.shell().info("    Vocabulary size: #{map_size(result.vocabularies.token_vocab)}")
-        Mix.shell().info("    Intent classes: #{map_size(result.vocabularies.intent_to_idx)}")
-        {:ok, result}
-
-      {:error, reason} ->
-        Mix.shell().error("  Unified LSTM training failed: #{inspect(reason)}")
-        {:error, reason}
-    end
-  end
-
-  defp train_response_scorer(models_path) do
-    Mix.shell().info("")
-    Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 4/9: Response Scorer (GPU Accelerated)  [#{stage_timestamp()}]")
-    Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("")
-    Mix.shell().info("  Training query-response scoring model...")
-    Mix.shell().info("")
-
-    config = [
-      epochs: 30,
-      batch_size: 64,
-      hidden_size: 128,
-      embedding_size: 128,
-      learning_rate: 0.001,
-      models_path: models_path
-    ]
-
-    case LSTMResponse.train(config) do
-      {:ok, result} ->
-        Mix.shell().info("  Response scorer training complete!")
-        {:ok, result}
-
-      {:error, reason} ->
-        Mix.shell().error("  Response scorer training failed: #{inspect(reason)}")
-        {:error, reason}
-    end
-  end
-
-  defp train_gcn_model(opts) do
-    Mix.shell().info("")
-    Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 5/9: GCN Text Classifier  [#{stage_timestamp()}]")
-    Mix.shell().info("=" |> String.duplicate(70))
-
-    world = if opts[:world], do: ["--world", opts[:world]], else: []
-    args = world ++ ["--verbose"]
-
-    try do
-      Mix.Tasks.TrainGcn.run(args)
-      {:ok, %{gcn_trained: true}}
-    rescue
-      e ->
-        Mix.shell().error("  GCN training failed: #{Exception.message(e)}")
-        {:error, Exception.message(e)}
-    catch
-      :exit, {:shutdown, 1} -> {:error, "no training data"}
     end
   end
 
   defp train_poincare_embeddings(opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 6/9: Poincare Embeddings  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 3/6: Poincare Embeddings  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
     world = if opts[:world], do: ["--world", opts[:world]], else: []
@@ -703,7 +514,7 @@ defmodule Mix.Tasks.Train do
   defp train_kg_triple_scorer(opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 7/9: KG Triple Scorer  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 4/6: KG Triple Scorer  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
     world = if opts[:world], do: ["--world", opts[:world]], else: []
@@ -719,26 +530,10 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  defp train_arbitrator do
-    Mix.shell().info("")
-    Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 8/9: Intent Arbitrator  [#{stage_timestamp()}]")
-    Mix.shell().info("=" |> String.duplicate(70))
-
-    try do
-      Mix.Tasks.TrainArbitrator.run([])
-      {:ok, %{arbitrator_trained: true}}
-    rescue
-      e -> {:error, Exception.message(e)}
-    catch
-      :exit, {:shutdown, 1} -> {:error, "insufficient training data"}
-    end
-  end
-
   defp train_micro_classifiers do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 9/9: MicroClassifiers  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 5/6: MicroClassifiers  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
     try do
@@ -748,6 +543,44 @@ defmodule Mix.Tasks.Train do
       e -> {:error, Exception.message(e)}
     catch
       :exit, {:shutdown, 1} -> {:error, "no classifier data"}
+    end
+  end
+
+  defp train_framing_classifier do
+    Mix.shell().info("")
+    Mix.shell().info("=" |> String.duplicate(70))
+    Mix.shell().info("  Stage 6/6: Framing Classifier  [#{stage_timestamp()}]")
+    Mix.shell().info("=" |> String.duplicate(70))
+
+    data_path = "data/classifiers/framing_class.json"
+
+    gen_result =
+      if File.exists?(data_path) do
+        :ok
+      else
+        Mix.shell().info("  Generating framing training data from GVFC corpus...")
+
+        try do
+          Mix.Tasks.GenFramingData.run(["--corpus", "gvfc"])
+          :ok
+        rescue
+          e -> {:error, Exception.message(e)}
+        end
+      end
+
+    case gen_result do
+      :ok ->
+        try do
+          Mix.Tasks.TrainFraming.run([])
+          {:ok, %{framing_trained: true}}
+        rescue
+          e -> {:error, Exception.message(e)}
+        catch
+          :exit, {:shutdown, 1} -> {:error, "framing training failed"}
+        end
+
+      {:error, _} = err ->
+        err
     end
   end
 
@@ -761,13 +594,10 @@ defmodule Mix.Tasks.Train do
     task_names = %{
       tfidf: "TF-IDF Models",
       pos: "POS Tagger",
-      unified: "Unified LSTM",
-      response: "Response Scorer",
-      gcn: "GCN Text Classifier",
       poincare: "Poincare Embeddings",
       kg_lstm: "KG Triple Scorer",
-      arbitrator: "Intent Arbitrator",
-      micro: "MicroClassifiers"
+      micro: "MicroClassifiers",
+      framing: "Framing Classifier"
     }
 
     for {task, result, duration} <- results do
@@ -893,30 +723,101 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  defp generate_experiment_name(prefix) do
-    now = NaiveDateTime.utc_now()
+  # Auto-enriches gold standard examples with tokens + POS tags using the
+  # Elixir tokenizer and a WordNet-backed rule-based tagger. Replaces the
+  # old Python/NLTK dependency (scripts/enrich_gold_standard_pos.py).
+  defp auto_enrich_pos(gold_standard_path) do
+    case File.read(gold_standard_path) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, examples} when is_list(examples) ->
+            sequences =
+              examples
+              |> Enum.filter(fn ex -> is_binary(ex["text"]) and ex["text"] != "" end)
+              |> Enum.map(fn ex ->
+                tokens = Brain.ML.Tokenizer.tokenize_words(ex["text"])
+                tags = Enum.map(tokens, &rule_based_pos/1)
+                %{tokens: tokens, tags: tags, source: ex["intent"]}
+              end)
+              |> Enum.filter(fn seq -> seq.tokens != [] end)
 
-    ts =
-      now
-      |> NaiveDateTime.to_iso8601()
-      |> String.slice(0, 19)
-      |> String.replace("-", "")
-      |> String.replace("T", "_")
-      |> String.replace(":", "")
+            Mix.shell().info("  Auto-enriched #{length(sequences)} examples with rule-based POS tags")
+            sequences
 
-    "#{prefix}_#{ts}"
+          _ ->
+            []
+        end
+
+      {:error, _} ->
+        []
+    end
   end
 
-  defp summarize_results(results) do
-    results
-    |> Enum.map_join(
-      ", ",
-      fn
-        {task, :skipped, _} -> "#{task}:skipped"
-        {task, {:ok, _}, _} -> "#{task}:ok"
-        {task, {:error, _}, _} -> "#{task}:failed"
-      end
-    )
+  @determiners ~w(a an the this that these those my your his her its our their some any no every each all both few many much several)
+  @prepositions ~w(in on at to for from by with of into onto upon about above below between through during before after since until)
+  @conjunctions ~w(and or but nor yet so for because although though while if when unless)
+  @pronouns ~w(i me my mine myself you your yours yourself he him his himself she her hers herself it its itself we us our ours ourselves they them their theirs themselves who whom whose which what)
+  @auxiliaries ~w(am is are was were be been being have has had do does did will would shall should can could may might must)
+  @particles ~w(not to up down out off away back)
+  @interjections ~w(oh hey wow oops ah uh um hmm hello hi bye yes no ok okay please thanks)
+
+  defp rule_based_pos(token) do
+    lower = String.downcase(token)
+
+    cond do
+      String.match?(token, ~r/^\d+(\.\d+)?$/) -> "NUM"
+      String.match?(token, ~r/^[[:punct:]]+$/) -> "PUNCT"
+      lower in @determiners -> "DET"
+      lower in @prepositions -> "ADP"
+      lower in @conjunctions -> "CONJ"
+      lower in @pronouns -> "PRON"
+      lower in @auxiliaries -> "AUX"
+      lower in @particles -> "PART"
+      lower in @interjections -> "INTJ"
+      true -> wordnet_pos_lookup(lower, token)
+    end
+  end
+
+  defp wordnet_pos_lookup(lower, original) do
+    alias Brain.ML.Lexicon, as: WordNet
+
+    case WordNet.senses(lower) do
+      [_ | _] = senses ->
+        best =
+          senses
+          |> Enum.group_by(& &1.pos)
+          |> Enum.max_by(fn {_pos, group} -> Enum.sum(Enum.map(group, & &1.tag_count)) end)
+          |> elem(0)
+
+        wordnet_to_universal(best)
+
+      [] ->
+        guess_pos_from_shape(lower, original)
+    end
+  rescue
+    _ -> guess_pos_from_shape(lower, original)
+  end
+
+  defp wordnet_to_universal(:n), do: "NOUN"
+  defp wordnet_to_universal(:v), do: "VERB"
+  defp wordnet_to_universal(:a), do: "ADJ"
+  defp wordnet_to_universal(:s), do: "ADJ"
+  defp wordnet_to_universal(:r), do: "ADV"
+  defp wordnet_to_universal(_), do: "NOUN"
+
+  defp guess_pos_from_shape(lower, original) do
+    cond do
+      original == String.upcase(original) and String.length(original) > 1 -> "PROPN"
+      String.match?(original, ~r/^[A-Z]/) -> "PROPN"
+      String.ends_with?(lower, "ly") -> "ADV"
+      String.ends_with?(lower, "ing") -> "VERB"
+      String.ends_with?(lower, "ed") -> "VERB"
+      String.ends_with?(lower, "tion") or String.ends_with?(lower, "ness") -> "NOUN"
+      String.ends_with?(lower, "able") or String.ends_with?(lower, "ible") -> "ADJ"
+      String.ends_with?(lower, "ous") or String.ends_with?(lower, "ful") -> "ADJ"
+      String.ends_with?(lower, "er") or String.ends_with?(lower, "est") -> "ADJ"
+      true -> "NOUN"
+    end
   end
 
   defp format_duration(seconds) when seconds < 60 do

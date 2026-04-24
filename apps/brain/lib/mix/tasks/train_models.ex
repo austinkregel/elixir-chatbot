@@ -1,5 +1,5 @@
 defmodule Mix.Tasks.TrainModels do
-  @moduledoc "Mix task to train ML models from training data.\n\n## Usage\n\n    mix train_models [options]\n\n## Options\n\n  --world <id>     Train models for a specific world (default: saves to priv/ml_models/)\n  --intent-only    Train only the intent classifier\n  --entity-only    Train only the entity recognition model\n  --pos-only       Train only the POS tagger model\n  --gazetteer-only Build only the gazetteer lookup tables\n  --skip-gazetteer Skip gazetteer building (faster training)\n  --skip-pos       Skip POS tagger training\n  --lstm-only      Train ONLY the LSTM multi-task model\n  --lstm-intent    Train LSTM intent classifier only\n  --lstm-joint     Train LSTM joint model (intent + NER)\n  --lstm-epochs N  Number of epochs for LSTM training (default: 10)\n  --hidden-size N  LSTM hidden dimension (default: 128)\n  --embedding-size N  LSTM embedding dimension (default: 128)\n  --batch-size N   Training batch size (default: 32)\n  --skip-lstm      Skip LSTM training (train only TF-IDF models)\n\n## World-Specific Training\n\nWhen --world is specified, models are saved to:\n  priv/training_worlds/{world_id}/models/\n\nThis allows each world to have its own isolated ML models. When no world is\nspecified, models are saved to the default location (priv/ml_models/).\n\n## Examples\n\n    # Train all models for the default location\n    mix train_models\n\n    # Train all models for the \"star_trek\" world\n    mix train_models --world star_trek\n\n    # Train only intent classifier for a world\n    mix train_models --world my_world --intent-only\n\n    # Train all models (TF-IDF + LSTM, default behavior)\n    mix train_models\n\n    # Train with more LSTM epochs\n    mix train_models --lstm-epochs 20\n\n    # Skip LSTM training (faster, TF-IDF only)\n    mix train_models --skip-lstm\n\n    # Train ONLY the LSTM model (skip TF-IDF)\n    mix train_models --lstm-only\n\nThis task will:\n- Load intent training data from data/intents/ (or data/training/intents/)\n- Load entity definitions from data/entities/\n- Load supplementary data (cities, artists, emojis) from CSVs\n- Build TF-IDF vectorizer and train intent classifier\n- Train BIO-tagged entity recognition model\n- Train POS tagger from annotated data (if available)\n- Build gazetteer lookup tables for fast entity extraction\n- Save all models to priv/ml_models/ (or world-specific path)\n- Report training statistics and model sizes\n"
+  @moduledoc "Mix task to train ML models from training data.\n\n## Usage\n\n    mix train_models [options]\n\n## Options\n\n  --world <id>     Train models for a specific world (default: saves to priv/ml_models/)\n  --intent-only    Train only the intent classifier\n  --entity-only    Train only the entity recognition model\n  --pos-only       Train only the POS tagger model\n  --gazetteer-only Build only the gazetteer lookup tables\n  --skip-gazetteer Skip gazetteer building (faster training)\n  --skip-pos       Skip POS tagger training\n\n## World-Specific Training\n\nWhen --world is specified, models are saved to:\n  priv/training_worlds/{world_id}/models/\n\nThis allows each world to have its own isolated ML models. When no world is\nspecified, models are saved to the default location (priv/ml_models/).\n\n## Examples\n\n    # Train all models for the default location\n    mix train_models\n\n    # Train all models for the \"star_trek\" world\n    mix train_models --world star_trek\n\n    # Train only intent classifier for a world\n    mix train_models --world my_world --intent-only\n\nThis task will:\n- Load intent training data from data/intents/ (or data/training/intents/)\n- Load entity definitions from data/entities/\n- Load supplementary data (cities, artists, emojis) from CSVs\n- Build TF-IDF vectorizer and train intent classifier\n- Train BIO-tagged entity recognition model\n- Train POS tagger from annotated data (if available)\n- Build gazetteer lookup tables for fast entity extraction\n- Save all models to priv/ml_models/ (or world-specific path)\n- Report training statistics and model sizes\n"
 
   # World.Persistence is in a sibling umbrella app that depends on :brain.
   # It's available at runtime but not at compile time.
@@ -10,7 +10,6 @@ defmodule Mix.Tasks.TrainModels do
   require Logger
   alias Brain.ML.Trainer
   alias Brain.ML.POSTagger
-  alias Brain.ML.LSTM.UnifiedModel
 
   @shortdoc "Train ML models from training data"
 
@@ -24,15 +23,7 @@ defmodule Mix.Tasks.TrainModels do
           pos_only: :boolean,
           gazetteer_only: :boolean,
           skip_gazetteer: :boolean,
-          skip_pos: :boolean,
-          lstm_only: :boolean,
-          lstm_intent: :boolean,
-          lstm_joint: :boolean,
-          lstm_epochs: :integer,
-          hidden_size: :integer,
-          embedding_size: :integer,
-          batch_size: :integer,
-          skip_lstm: :boolean
+          skip_pos: :boolean
         ]
       )
 
@@ -61,26 +52,8 @@ defmodule Mix.Tasks.TrainModels do
     display_data_sources(training_data_path)
     start_time = System.monotonic_time(:millisecond)
 
-    lstm_opts = %{
-      epochs: Keyword.get(opts, :lstm_epochs, 60),
-      hidden_size: Keyword.get(opts, :hidden_size, 128),
-      embedding_size: Keyword.get(opts, :embedding_size, 128),
-      batch_size: Keyword.get(opts, :batch_size, 32)
-    }
-
-    skip_lstm = Keyword.get(opts, :skip_lstm, false)
-
     result =
       cond do
-        Keyword.get(opts, :lstm_only, false) ->
-          run_lstm_multitask_training(lstm_opts)
-
-        Keyword.get(opts, :lstm_intent, false) ->
-          run_lstm_intent_training(lstm_opts)
-
-        Keyword.get(opts, :lstm_joint, false) ->
-          run_lstm_joint_training(lstm_opts)
-
         Keyword.get(opts, :intent_only, false) ->
           run_intent_training(models_path)
 
@@ -98,7 +71,7 @@ defmodule Mix.Tasks.TrainModels do
 
         true ->
           skip_pos = Keyword.get(opts, :skip_pos, false)
-          run_full_training(skip_pos, skip_lstm, lstm_opts, models_path)
+          run_full_training(skip_pos, models_path)
       end
 
     end_time = System.monotonic_time(:millisecond)
@@ -166,7 +139,7 @@ defmodule Mix.Tasks.TrainModels do
     end
   end
 
-  defp run_full_training(skip_pos, skip_lstm, lstm_opts, models_path) do
+  defp run_full_training(skip_pos, models_path) do
     case Trainer.train_and_save(models_path: models_path) do
       {:ok, stats} ->
         stats =
@@ -179,20 +152,7 @@ defmodule Mix.Tasks.TrainModels do
             end
           end
 
-        if skip_lstm do
-          {:ok, stats}
-        else
-          Mix.shell().info("")
-          Mix.shell().info("Now training LSTM models (GPU accelerated)...")
-
-          case run_lstm_multitask_training(lstm_opts) do
-            {:ok, lstm_stats} ->
-              {:ok, Map.merge(stats, lstm_stats)}
-
-            {:error, reason} ->
-              {:error, {:lstm_training_failed, reason}}
-          end
-        end
+        {:ok, stats}
 
       error ->
         error
@@ -202,95 +162,6 @@ defmodule Mix.Tasks.TrainModels do
   defp run_pos_training(models_path) do
     Mix.shell().info("Training POS tagger model only...")
     run_pos_training_internal(models_path)
-  end
-
-  defp run_lstm_multitask_training(lstm_opts) do
-    run_lstm_unified_training(lstm_opts, :multitask)
-  end
-
-  defp run_lstm_intent_training(lstm_opts) do
-    run_lstm_unified_training(lstm_opts, :intent)
-  end
-
-  defp run_lstm_joint_training(lstm_opts) do
-    run_lstm_unified_training(lstm_opts, :joint)
-  end
-
-  defp run_lstm_unified_training(lstm_opts, type) do
-    epochs = Map.get(lstm_opts, :epochs, 10)
-    hidden_size = Map.get(lstm_opts, :hidden_size, 128)
-    embedding_size = Map.get(lstm_opts, :embedding_size, 128)
-    batch_size = Map.get(lstm_opts, :batch_size, 32)
-
-    Mix.shell().info("")
-    Mix.shell().info("=" |> String.duplicate(60))
-    Mix.shell().info("Training LSTM Model (EXLA GPU Accelerated)")
-    Mix.shell().info("=" |> String.duplicate(60))
-    Mix.shell().info("")
-    Mix.shell().info("This model powers:")
-    Mix.shell().info("  - Intent Classification")
-    Mix.shell().info("  - Named Entity Recognition")
-    Mix.shell().info("  - Sentiment Analysis")
-    Mix.shell().info("  - Speech Act Classification")
-    Mix.shell().info("")
-    Mix.shell().info("Configuration:")
-    Mix.shell().info("  Epochs: #{epochs}")
-    Mix.shell().info("  Hidden size: #{hidden_size}")
-    Mix.shell().info("  Embedding size: #{embedding_size}")
-    Mix.shell().info("  Batch size: #{batch_size}")
-    Mix.shell().info("  Model type: #{type}")
-    Mix.shell().info("  Backend: EXLA (GPU accelerated)")
-    Mix.shell().info("")
-
-    config = [
-      epochs: epochs,
-      hidden_size: hidden_size,
-      embedding_size: embedding_size,
-      batch_size: batch_size,
-      learning_rate: 0.001
-    ]
-
-    case UnifiedModel.train(config) do
-      {:ok, model} ->
-        stats = build_lstm_stats(model, type)
-        {:ok, stats}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
-  defp build_lstm_stats(result, type) do
-    vocabularies = result.vocabularies
-
-    base_stats = %{
-      lstm_model_type: type,
-      lstm_vocab_size: map_size(vocabularies.token_vocab),
-      lstm_num_intents: map_size(vocabularies.intent_to_idx),
-      lstm_num_bio_tags: map_size(vocabularies.bio_to_idx)
-    }
-
-    metrics = Map.get(result, :metrics, [])
-
-    final_metrics =
-      if is_list(metrics) and metrics != [] do
-        List.last(metrics)
-      else
-        %{}
-      end
-
-    Map.merge(base_stats, %{
-      lstm_epochs_trained:
-        if(is_list(metrics)) do
-          length(metrics)
-        else
-          0
-        end,
-      lstm_final_train_loss: Map.get(final_metrics, :train_loss, 0),
-      lstm_final_val_loss: Map.get(final_metrics, :val_loss, 0),
-      lstm_final_train_acc: Map.get(final_metrics, :train_acc, 0),
-      lstm_final_val_acc: Map.get(final_metrics, :val_acc, 0)
-    })
   end
 
   defp run_pos_training_internal(models_path) do
@@ -500,25 +371,6 @@ defmodule Mix.Tasks.TrainModels do
       Mix.shell().info("    - Feature count:    #{Map.get(stats, :pos_feature_count, 0)}")
     end
 
-    if Map.has_key?(stats, :lstm_model_type) do
-      Mix.shell().info("  LSTM Multi-Task Model:")
-      Mix.shell().info("    - Model type:       #{stats.lstm_model_type}")
-      Mix.shell().info("    - Vocabulary size:  #{Map.get(stats, :lstm_vocab_size, 0)}")
-      Mix.shell().info("    - Intent classes:   #{Map.get(stats, :lstm_num_intents, 0)}")
-      Mix.shell().info("    - BIO tag classes:  #{Map.get(stats, :lstm_num_bio_tags, 0)}")
-      Mix.shell().info("    - Epochs trained:   #{Map.get(stats, :lstm_epochs_trained, 0)}")
-
-      final_val_acc = Map.get(stats, :lstm_final_val_acc, 0)
-
-      if final_val_acc > 0 do
-        Mix.shell().info(
-          "    - Final train acc:  #{Float.round(Map.get(stats, :lstm_final_train_acc, 0) * 100, 1)}%"
-        )
-
-        Mix.shell().info("    - Final val acc:    #{Float.round(final_val_acc * 100, 1)}%")
-      end
-    end
-
     if Map.has_key?(stats, :gazetteer_entries) and stats.gazetteer_entries > 0 do
       Mix.shell().info("  Gazetteer:")
       Mix.shell().info("    - Total entries:    #{stats.gazetteer_entries}")
@@ -537,10 +389,6 @@ defmodule Mix.Tasks.TrainModels do
     display_model_file(models_path, "gazetteer.term", "Gazetteer")
     display_model_file(models_path, "vectorizer.term", "TF-IDF Vectorizer")
     display_model_file(models_path, "embedder.term", "Embedder Vocabulary")
-    lstm_path = Path.join(models_path, "lstm")
-    display_model_file(lstm_path, "lstm_intent.term", "LSTM Intent Classifier")
-    display_model_file(lstm_path, "lstm_joint.term", "LSTM Joint Model")
-    display_model_file(lstm_path, "lstm_multitask.term", "LSTM Multi-Task Model")
 
     Mix.shell().info("")
     Mix.shell().info("Models saved to: #{models_path}")

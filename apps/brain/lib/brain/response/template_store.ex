@@ -5,7 +5,6 @@ defmodule Brain.Response.TemplateStore do
   require Logger
 
   alias Brain.Memory.Embedder
-  alias Brain.Analysis.IntentRegistry
   alias Brain.Response.ConditionEvaluator
 
   @intents_path "data/intents"
@@ -146,9 +145,20 @@ defmodule Brain.Response.TemplateStore do
     GenServer.call(__MODULE__, :stats, 5_000)
   end
 
-  @doc "Get the intent name for a speech act sub_type.\nDelegates to IntentRegistry for the canonical mapping.\n"
+  @speech_act_fallback %{
+    greeting: "smalltalk.greetings.hello",
+    farewell: "smalltalk.greetings.bye",
+    thanks: "smalltalk.appraisal.thank_you",
+    apology: "smalltalk.dialog.sorry",
+    how_are_you: "smalltalk.greetings.how_are_you",
+    compliment: "smalltalk.appraisal.good",
+    backchannel: "smalltalk.confirmation.ok",
+    continuation: "smalltalk.dialog.continue"
+  }
+
+  @doc "Get the intent name for a speech act sub_type from static fallback map."
   def intent_for_speech_act(sub_type) when is_atom(sub_type) do
-    IntentRegistry.intent_for_speech_act(sub_type)
+    Map.get(@speech_act_fallback, sub_type)
   end
 
   def intent_for_speech_act(_) do

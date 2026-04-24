@@ -7,7 +7,6 @@ defmodule Brain do
   @compile {:no_warn_undefined, World.Manager}
 
   alias Brain.ML.Tokenizer
-  alias Brain.ML.IntentClassifierSimple
   alias Brain.Learner
   alias Brain.ML.NLPPipeline
   alias Phoenix.PubSub
@@ -31,11 +30,12 @@ defmodule Brain do
     Progress,
     ResponseGate,
     SlotDetector,
-    IntentRegistry
+    ChunkPriority,
+    ChunkProfile,
+    FeatureExtractor
   }
 
   alias Brain.Analysis.OutcomeLearner
-  alias Brain.ML.IntentArbitrator
 
   alias Epistemic.{UserModelStore, BeliefStore}
   alias Types.{Belief, Config}
@@ -835,7 +835,9 @@ defmodule Brain do
   end
 
   defp process_standard_message(persona, input, memory, opts) do
-    analysis_model = run_analysis_pipeline(input, memory, opts)
+    analysis_model =
+      run_analysis_pipeline(input, memory, opts)
+      |> materialize_profiles()
 
     Logger.debug("Analysis pipeline complete", %{
       strategy: analysis_model.overall_strategy,
@@ -978,7 +980,7 @@ defmodule Brain do
   end
 
   defp handle_followup_message(persona, input, previous_context) do
-    analysis_model = run_analysis_pipeline(input, [], [])
+    analysis_model = run_analysis_pipeline(input, [], []) |> materialize_profiles()
 
     best_analysis =
       analysis_model.analyses
@@ -1048,16 +1050,77 @@ defmodule Brain do
     if best_analysis do
       %{
         intent: best_analysis.intent,
-        entities: best_analysis.entities || [],
+        entities: union_chunk_entities(analysis_model.analyses),
         slots: (best_analysis.slots || %{}) |> extract_filled_slots(),
         missing_slots: best_analysis.missing_context || [],
         speech_act: extract_speech_act_info(best_analysis.speech_act),
+        chunks: build_chunk_summaries(analysis_model.analyses),
         analysis_model: analysis_model
       }
     else
       %{}
     end
   end
+
+  defp normalize_chunk_entity(e) do
+    %{
+      entity_type: e[:entity_type] || e["entity_type"] || e["type"],
+      value: e[:value] || e["value"] || e["name"],
+      confidence: e[:confidence] || e["confidence"] || 0.8
+    }
+  end
+
+  defp normalize_chunk_entities(entities) when is_list(entities) do
+    Enum.map(entities, &normalize_chunk_entity/1)
+  end
+
+  defp normalize_chunk_entities(_), do: []
+
+  defp union_chunk_entities(analyses) when is_list(analyses) do
+    analyses
+    |> Enum.flat_map(fn analysis -> normalize_chunk_entities(analysis.entities || []) end)
+    |> dedup_entities()
+  end
+
+  defp union_chunk_entities(_), do: []
+
+  defp dedup_entities(entities) when is_list(entities) do
+    entities
+    |> Enum.reduce({[], MapSet.new()}, fn entity, {acc, seen} ->
+      key = entity_dedup_key(entity)
+
+      if MapSet.member?(seen, key) do
+        {acc, seen}
+      else
+        {[entity | acc], MapSet.put(seen, key)}
+      end
+    end)
+    |> elem(0)
+    |> Enum.reverse()
+  end
+
+  defp entity_dedup_key(%{entity_type: type, value: value}) do
+    {normalize_dedup_term(type), normalize_dedup_term(value)}
+  end
+
+  defp normalize_dedup_term(nil), do: nil
+  defp normalize_dedup_term(term) when is_binary(term), do: String.downcase(String.trim(term))
+  defp normalize_dedup_term(term), do: term |> to_string() |> String.downcase() |> String.trim()
+
+  defp build_chunk_summaries(analyses) when is_list(analyses) do
+    Enum.map(analyses, fn analysis ->
+      %{
+        chunk_index: Map.get(analysis, :chunk_index),
+        text: Map.get(analysis, :text),
+        intent: Map.get(analysis, :intent),
+        entities: normalize_chunk_entities(Map.get(analysis, :entities, [])),
+        speech_act: extract_speech_act_info(Map.get(analysis, :speech_act)),
+        response_strategy: Map.get(analysis, :response_strategy)
+      }
+    end)
+  end
+
+  defp build_chunk_summaries(_), do: []
 
   defp extract_speech_act_info(nil) do
     nil
@@ -1190,46 +1253,44 @@ defmodule Brain do
   end
 
   defp try_nlp_with_analysis(persona, input, _memory, analysis_model, opts) do
-    all_intents_with_analysis =
-      analysis_model.analyses
-      |> Enum.map(fn analysis ->
-        {analysis.intent, analysis.speech_act, analysis.confidence, analysis}
-      end)
-      |> Enum.filter(fn {intent, _, _, _} -> intent != nil and intent != "" end)
-
-    substantive_intents =
-      all_intents_with_analysis
-      |> Enum.filter(fn {intent, speech_act, _, _} ->
-        not IntentRegistry.greeting?(intent) and
-          not IntentRegistry.farewell?(intent) and
-          speech_act != nil and speech_act.category in [:directive, :assertive]
+    intent_bearing =
+      Enum.filter(analysis_model.analyses, fn analysis ->
+        analysis.intent != nil and analysis.intent != ""
       end)
 
-    {analysis_intent, _, _, intent_analysis} =
-      case substantive_intents do
-        [] -> List.first(all_intents_with_analysis) || {nil, nil, 0, nil}
-        intents -> Enum.max_by(intents, fn {_, _, confidence, _} -> confidence || 0 end)
+    substantive_analyses =
+      Enum.filter(intent_bearing, fn analysis ->
+        not greeting_or_farewell?(analysis) and
+          analysis.speech_act != nil and
+          analysis.speech_act.category in [:directive, :assertive]
+      end)
+
+    intent_analysis =
+      case substantive_analyses do
+        [] -> List.first(intent_bearing)
+        analyses -> ChunkPriority.select_primary(analyses)
       end
+
+    analysis_intent = intent_analysis && intent_analysis.intent
 
     best_analysis =
       if intent_analysis do
         intent_analysis
       else
-        analysis_model.analyses
-        |> Enum.filter(&(&1.response_strategy in [:can_respond, :hedged_response]))
-        |> Enum.max_by(& &1.confidence, fn -> List.first(analysis_model.analyses) end)
+        respondable =
+          Enum.filter(analysis_model.analyses, fn a ->
+            a.response_strategy in [:can_respond, :hedged_response]
+          end)
+
+        case respondable do
+          [] -> ChunkPriority.select_primary(analysis_model.analyses)
+          list -> ChunkPriority.select_primary(list)
+        end
       end
 
     analysis_entities =
       if best_analysis do
-        (best_analysis.entities || [])
-        |> Enum.map(fn e ->
-          %{
-            entity_type: e["type"] || e[:entity_type] || e["entity_type"],
-            value: e["name"] || e[:value] || e["value"],
-            confidence: e["confidence"] || e[:confidence] || 0.8
-          }
-        end)
+        normalize_chunk_entities(best_analysis.entities || [])
       else
         []
       end
@@ -1256,29 +1317,27 @@ defmodule Brain do
 
     world_id = Keyword.get(opts, :world_id, "default")
 
+    analysis_intent_confidence = get_analysis_intent_confidence(intent_analysis)
+
     disambiguation_opts =
       if best_analysis do
-        [
+        base = [
           discourse: Map.get(best_analysis, :discourse),
           speech_act: Map.get(best_analysis, :speech_act),
-          world_id: world_id
+          world_id: world_id,
+          reuse_entities: analysis_entities
         ]
+
+        if analysis_intent && analysis_intent != "" do
+          base ++ [reuse_intent: {analysis_intent, analysis_intent_confidence}]
+        else
+          base
+        end
       else
         [world_id: world_id]
       end
 
-    all_analysis_entities =
-      analysis_model.analyses
-      |> Enum.flat_map(fn analysis ->
-        (analysis.entities || [])
-        |> Enum.map(fn e ->
-          %{
-            entity_type: e["type"] || e[:entity_type] || e["entity_type"],
-            value: e["name"] || e[:value] || e["value"],
-            confidence: e["confidence"] || e[:confidence] || 0.8
-          }
-        end)
-      end)
+    all_analysis_entities = union_chunk_entities(analysis_model.analyses)
 
     num_chunks = length(analysis_model.analyses)
 
@@ -1290,9 +1349,10 @@ defmodule Brain do
 
     {intent, entities, method, nlp_info} =
       if num_chunks > 1 do
-        Logger.debug("Multi-chunk input: skipping NLPPipeline, using only per-chunk analysis", %{
+        Logger.debug("Multi-chunk input: skipping NLPPipeline, unioning per-chunk entities", %{
           num_chunks: num_chunks,
-          analysis_entity_count: length(analysis_entities),
+          primary_entity_count: length(analysis_entities),
+          union_entity_count: length(all_analysis_entities),
           selected_intent: analysis_intent
         })
 
@@ -1300,18 +1360,16 @@ defmodule Brain do
           method: :analysis_only,
           reason: :multi_chunk,
           intent: analysis_intent,
-          entities_count: length(analysis_entities)
+          entities_count: length(all_analysis_entities)
         })
 
-        {analysis_intent, analysis_entities, :analysis_only, %{intent: nil, confidence: nil}}
+        {analysis_intent, all_analysis_entities, :analysis_only, %{intent: nil, confidence: nil}}
       else
         case NLPPipeline.process(input, disambiguation_opts) do
           {:ok, %{confidence: conf, intent: nlp_intent, entities: nlp_entities}} ->
-            analysis_conf = get_analysis_intent_confidence(intent_analysis)
-
             {intent, method} =
               reconcile_intents(
-                analysis_intent, analysis_conf,
+                analysis_intent, analysis_intent_confidence,
                 nlp_intent, conf,
                 input, analysis_entities
               )
@@ -1324,9 +1382,10 @@ defmodule Brain do
               nlp_confidence: conf,
               nlp_intent: nlp_intent,
               analysis_intent: analysis_intent,
-              analysis_confidence: analysis_conf,
+              analysis_confidence: analysis_intent_confidence,
               final_intent: intent,
-              entities_count: length(entities)
+              entities_count: length(entities),
+              reused_analysis: analysis_intent != nil and analysis_intent != ""
             })
 
             {intent, entities, method, %{intent: nlp_intent, confidence: conf}}
@@ -1385,6 +1444,7 @@ defmodule Brain do
       slots: extract_filled_slots(slots_info),
       missing_slots: missing_slots,
       speech_act: speech_act_info,
+      chunks: build_chunk_summaries(analysis_model.analyses),
       tier3_models: tier3_context,
       analysis_model: analysis_model
     }
@@ -1443,28 +1503,8 @@ defmodule Brain do
     {analysis_intent, :analysis_enhanced}
   end
 
-  defp reconcile_intents(analysis_intent, analysis_conf, nlp_intent, nlp_conf, text, entities) do
-    if IntentArbitrator.ready?() do
-      features = IntentArbitrator.extract_features(%{
-        lstm: %{intent: analysis_intent, confidence: analysis_conf, scores: []},
-        tfidf: %{intent: nlp_intent, confidence: nlp_conf, scores: []},
-        text: text,
-        entities: entities
-      })
-
-      case IntentArbitrator.arbitrate(features) do
-        {:lstm, _arb_conf} ->
-          {analysis_intent, :arbitrator_lstm}
-
-        {:tfidf, _arb_conf} ->
-          {nlp_intent, :arbitrator_tfidf}
-
-        {:error, _reason} ->
-          confidence_based_fallback(analysis_intent, analysis_conf, nlp_intent, nlp_conf)
-      end
-    else
-      confidence_based_fallback(analysis_intent, analysis_conf, nlp_intent, nlp_conf)
-    end
+  defp reconcile_intents(analysis_intent, analysis_conf, nlp_intent, nlp_conf, _text, _entities) do
+    confidence_based_fallback(analysis_intent, analysis_conf, nlp_intent, nlp_conf)
   end
 
   defp confidence_based_fallback(analysis_intent, analysis_conf, nlp_intent, nlp_conf) do
@@ -1523,7 +1563,6 @@ defmodule Brain do
     %{
       event_frames: Enum.flat_map(analyses, &Map.get(&1, :event_frames, [])),
       srl_frames: Enum.flat_map(analyses, &Map.get(&1, :srl_frames, [])),
-      gcn_available: Brain.ML.GCN.Model.ready?(),
       poincare_available: Brain.ML.Poincare.Embeddings.ready?(),
       kg_lstm_available: Brain.ML.KnowledgeGraph.TripleScorer.ready?(),
       stance_tracker_available: Brain.Epistemic.StanceTracker.ready?()
@@ -1793,22 +1832,6 @@ defmodule Brain do
              }
            ], "Special handler response (code/factual)"}
 
-        :lstm_selected ->
-          {[
-             %{
-               handler: :lstm_scorer,
-               tried: true,
-               selected: true,
-               reason: "LSTM model selected best response"
-             },
-             %{
-               handler: :refinement,
-               tried: true,
-               selected: true,
-               reason: "Response refined by neural scoring"
-             }
-           ], "LSTM-scored best response"}
-
         :quality_improved ->
           {[
              %{
@@ -2033,8 +2056,8 @@ defmodule Brain do
   end
 
   defp extract_tags_for_memory(input) do
-    case IntentClassifierSimple.classify(input) do
-      {:ok, %{intent: intent}} when is_binary(intent) ->
+    case Brain.ML.NLPPipeline.process(input) do
+      {:ok, %{intent: intent}} when is_binary(intent) and intent != "unknown" ->
         [intent]
 
       _ ->
@@ -2325,6 +2348,44 @@ defmodule Brain do
         predicate: predicate,
         value: clean_value
       })
+    end
+  end
+
+  defp materialize_profiles(analysis_model) do
+    updated_analyses =
+      Enum.map(analysis_model.analyses, fn analysis ->
+        if analysis.profile != nil do
+          analysis
+        else
+          {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
+          profile = ChunkProfile.materialize(analysis, feature_vector)
+
+          intent =
+            case analysis.intent do
+              nil -> profile.derived_label
+              "" -> profile.derived_label
+              existing -> existing
+            end
+
+          %{analysis | profile: profile, feature_vector: feature_vector, intent: intent}
+        end
+      end)
+
+    %{analysis_model | analyses: updated_analyses}
+  rescue
+    e ->
+      Logger.warning("Profile materialization failed: #{Exception.message(e)}")
+      analysis_model
+  end
+
+  defp greeting_or_farewell?(analysis) do
+    cond do
+      analysis.profile != nil ->
+        analysis.profile.speech_act_subtype in [:greeting, :farewell]
+
+      true ->
+        intent = to_string(analysis.intent || "")
+        String.starts_with?(intent, "greeting") or String.starts_with?(intent, "farewell")
     end
   end
 

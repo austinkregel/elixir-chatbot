@@ -101,21 +101,11 @@
           </div>
           <div class="flex items-center gap-2">
             <.status_dot
-              status={
-                case @system_status.lstm.status do
-                  :ready -> :ready
-                  :partial -> :initializing
-                  _ -> :not_started
-                end
-              }
-              pulse={@system_status.lstm.status == :partial}
+              status={if Brain.ML.MicroClassifiers.ready?(), do: :ready, else: :not_started}
               size={:sm}
             />
-            <span class={[
-              "text-base-content/70",
-              @system_status.lstm.status == :not_loaded && "italic text-warning"
-            ]}>
-              LSTM: {@system_status.lstm.label}
+            <span class="text-base-content/70">
+              Classifiers: {if Brain.ML.MicroClassifiers.ready?(), do: "ready", else: "loading"}
             </span>
           </div>
         </div>
@@ -887,7 +877,7 @@
                               end
                               
                             source_label = case source do
-                              :lstm_ner -> "LSTM"
+                              :lstm_ner -> "NER"
                               :gazetteer -> "Gaz"
                               :pos_tagger -> "POS"
                               :system -> "Sys"
