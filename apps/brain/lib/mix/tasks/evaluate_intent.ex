@@ -16,6 +16,10 @@ defmodule Mix.Tasks.Evaluate.Intent do
     compare? = "--compare" in args
     verbose? = "--verbose" in args
 
+    IO.puts("\nAwaiting MicroClassifiers readiness...")
+    ML.MicroClassifiers.await_ready(:infinity)
+    IO.puts("MicroClassifiers ready.")
+
     gold = EvaluationStore.load_gold_standard("intent")
 
     if gold == [] do
@@ -96,24 +100,46 @@ defmodule Mix.Tasks.Evaluate.Intent do
   end
 
   defp evaluate_all(gold) do
-    Enum.reduce(gold, {[], []}, fn example, {preds, acts} ->
-      text = example["text"]
-      expected = example["intent"]
+    {results, counts} =
+      Enum.reduce(gold, {[], %{ok: 0, unknown: 0, errored: 0}}, fn example, {acc, counts} ->
+        text = example["text"]
+        expected = example["intent"]
 
-      predicted =
-        try do
-          analysis = Pipeline.analyze_chunk(text, side_effects: false)
-          analysis.intent || "unknown"
-        rescue
-          _ -> "unknown"
-        catch
-          :exit, _ -> "unknown"
-        end
+        {status, predicted} =
+          try do
+            analysis = Pipeline.analyze_chunk(text, side_effects: false)
+            p = to_string(analysis.intent || "unknown")
+            if p == "unknown", do: {:unknown, p}, else: {:ok, p}
+          rescue
+            _ -> {:error, "unknown"}
+          catch
+            :exit, _ -> {:error, "unknown"}
+          end
 
-      {[predicted | preds], [expected | acts]}
-    end)
-    |> then(fn {p, a} -> {Enum.reverse(p), Enum.reverse(a)} end)
+        counts = Map.update!(counts, status_key(status), &(&1 + 1))
+        {[{predicted, expected} | acc], counts}
+      end)
+
+    error_rate = (counts.errored + counts.unknown) / max(length(gold), 1)
+
+    if error_rate > 0.10 do
+      Mix.raise("""
+      Evaluation aborted: intent error rate #{Float.round(error_rate * 100, 1)}% exceeds 10% threshold.
+        ok: #{counts.ok}, unknown: #{counts.unknown}, errored: #{counts.errored}
+      """)
+    end
+
+    if counts.unknown > 0 or counts.errored > 0 do
+      IO.puts("Diagnostics: ok=#{counts.ok} unknown=#{counts.unknown} errored=#{counts.errored}\n")
+    end
+
+    results = Enum.reverse(results)
+    {Enum.map(results, &elem(&1, 0)), Enum.map(results, &elem(&1, 1))}
   end
+
+  defp status_key(:ok), do: :ok
+  defp status_key(:unknown), do: :unknown
+  defp status_key(:error), do: :errored
 
   defp broadcast_result(result, duration_ms) do
     Phoenix.PubSub.broadcast(Brain.PubSub, "evaluation:complete",

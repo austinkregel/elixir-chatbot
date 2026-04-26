@@ -85,6 +85,16 @@ defmodule Mix.Tasks.Snapshot.Record do
         "units" => "metric"
       },
       requires_api_key: {:env, "OPENWEATHERMAP_API_KEY", "appid"}
+    },
+    %{
+      name: "weather/london_lat_lon",
+      url: "https://api.openweathermap.org/data/2.5/weather",
+      params: %{
+        "lat" => "51.5085",
+        "lon" => "-0.1257",
+        "units" => "imperial"
+      },
+      requires_api_key: {:env, "OPENWEATHERMAP_API_KEY", "appid"}
     }
   ]
 

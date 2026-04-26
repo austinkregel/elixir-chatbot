@@ -6,11 +6,17 @@ defmodule Mix.Tasks.Evaluate.Ner do
 
   use Mix.Task
 
+  require Logger
+
   alias ML.{Evaluation, EvaluationStore}
 
   @impl Mix.Task
   def run(args) do
     Mix.Task.run("app.start")
+
+    IO.puts("\nAwaiting MicroClassifiers readiness...")
+    ML.MicroClassifiers.await_ready(:infinity)
+    IO.puts("MicroClassifiers ready.")
 
     save? = "--save" in args
     verbose? = "--verbose" in args
@@ -30,14 +36,30 @@ defmodule Mix.Tasks.Evaluate.Ner do
     IO.puts(String.duplicate("=", 60) <> "\n")
 
     start_time = System.monotonic_time(:millisecond)
-    {predictions, actuals} = evaluate_all(gold)
+    {predictions, actuals, counts} = evaluate_all(gold)
     duration_ms = System.monotonic_time(:millisecond) - start_time
 
+    total_entities = counts.ok + counts.errored
+    error_rate = counts.errored / max(total_entities, 1)
+
+    if error_rate > 0.10 do
+      Mix.raise("""
+      Evaluation aborted: NER error rate #{Float.round(error_rate * 100, 1)}% exceeds 10% threshold.
+        ok: #{counts.ok}, errored: #{counts.errored}
+      """)
+    end
+
     result = Evaluation.build_result("ner", predictions, actuals)
+    result = Map.put(result, :diagnostics, counts)
 
     IO.puts("Entity-level Accuracy: #{Float.round(result.accuracy * 100, 1)}%")
     IO.puts("Macro F1:              #{Float.round(result.macro_f1 * 100, 1)}%")
     IO.puts("Duration:              #{duration_ms}ms")
+
+    if counts.errored > 0 do
+      IO.puts("Pipeline errors:       #{counts.errored}/#{total_entities} examples failed")
+    end
+
     IO.puts("")
 
     broadcast_result(result, duration_ms)
@@ -65,18 +87,24 @@ defmodule Mix.Tasks.Evaluate.Ner do
   end
 
   defp evaluate_all(gold) do
-    Enum.reduce(gold, {[], []}, fn example, {preds, acts} ->
+    initial_counts = %{ok: 0, errored: 0}
+
+    Enum.reduce(gold, {[], [], initial_counts}, fn example, {preds, acts, counts} ->
       text = example["text"]
       expected_entities = example["entities"] || example["expected"] || []
 
-      extracted =
+      {extracted, counts} =
         try do
           analysis = Pipeline.analyze_chunk(text, side_effects: false)
-          analysis.entities || []
+          {analysis.entities || [], %{counts | ok: counts.ok + 1}}
         rescue
-          _ -> []
+          e ->
+            Logger.warning("NER pipeline crashed on #{inspect(text)}: #{Exception.message(e)}")
+            {[], %{counts | errored: counts.errored + 1}}
         catch
-          :exit, _ -> []
+          :exit, reason ->
+            Logger.warning("NER pipeline exited on #{inspect(text)}: #{inspect(reason)}")
+            {[], %{counts | errored: counts.errored + 1}}
         end
 
       {matched_preds, matched_acts} =
@@ -100,9 +128,9 @@ defmodule Mix.Tasks.Evaluate.Ner do
           {[to_string(predicted_type) | p_acc], [to_string(expected_type) | a_acc]}
         end)
 
-      {Enum.reverse(matched_preds) ++ preds, Enum.reverse(matched_acts) ++ acts}
+      {Enum.reverse(matched_preds) ++ preds, Enum.reverse(matched_acts) ++ acts, counts}
     end)
-    |> then(fn {p, a} -> {Enum.reverse(p), Enum.reverse(a)} end)
+    |> then(fn {p, a, counts} -> {Enum.reverse(p), Enum.reverse(a), counts} end)
   end
 
   defp normalize_entity_value(nil), do: ""

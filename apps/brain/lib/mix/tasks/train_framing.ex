@@ -174,7 +174,7 @@ defmodule Mix.Tasks.TrainFraming do
               end
           end
 
-        result = WeightOptimizer.optimize(training_data, ga_opts)
+        result = WeightOptimizer.optimize(training_data, Keyword.put(ga_opts, :classifier, "framing_class"))
 
         Mix.shell().info(
           "GA complete: #{Float.round(result.fitness * 100, 1)}% composite fitness " <>
@@ -213,8 +213,11 @@ defmodule Mix.Tasks.TrainFraming do
           compute_mean(neutral_vecs)
         end
 
-      centroid ->
-        centroid
+      protos when is_list(protos) ->
+        # `label_centroids` values are k-means prototype lists, so collapse
+        # the chosen class's protos to a single flat reference vector before
+        # we persist it. Anything else would fail ModelPreflight.
+        compute_mean(protos)
     end
   end
 
@@ -225,24 +228,32 @@ defmodule Mix.Tasks.TrainFraming do
 
     {label, _} =
       centroids
-      |> Enum.map(fn {label, centroid} ->
-        {label, cosine_similarity(centroid, grand_mean)}
+      |> Enum.map(fn {label, protos} ->
+        {label, cosine_similarity(compute_mean(protos), grand_mean)}
       end)
       |> Enum.max_by(fn {_label, sim} -> sim end)
 
     label
   end
 
+  # Collapse `%{label => list(list(float))}.values()` (i.e. a list of
+  # per-label proto-lists) down to a single flat float vector by first
+  # taking the mean within each class, then the mean across classes. This
+  # matches the operator's intuition of "the grand mean of class centroids"
+  # and ensures every class contributes equally regardless of its k value.
   defp mean_all_centroids([]), do: []
 
-  defp mean_all_centroids(vecs) do
-    compute_mean(vecs)
+  defp mean_all_centroids(per_class_protos) do
+    per_class_protos
+    |> Enum.map(&compute_mean/1)
+    |> compute_mean()
   end
 
-  defp compute_mean([single]), do: single
+  defp compute_mean([]), do: []
+  defp compute_mean([single]) when is_list(single), do: single
 
-  defp compute_mean(vecs) do
-    dim = length(hd(vecs))
+  defp compute_mean([first | _] = vecs) when is_list(first) do
+    dim = length(first)
     n = length(vecs)
     zero = List.duplicate(0.0, dim)
 

@@ -203,6 +203,7 @@ defmodule Mix.Tasks.Train do
       publish_models(get_models_path(opts[:world]))
     end
 
+    write_model_manifest(opts[:world])
     display_summary(results, total_duration)
   end
 
@@ -582,6 +583,70 @@ defmodule Mix.Tasks.Train do
       {:error, _} = err ->
         err
     end
+  end
+
+  defp write_model_manifest(world_id) do
+    models_path = get_models_path(world_id)
+    data_path = Path.join(File.cwd!(), "data/classifiers")
+
+    gold_path =
+      case :code.priv_dir(:brain) do
+        {:error, _} -> "apps/brain/priv/evaluation/intent/gold_standard.json"
+        priv -> Path.join(priv, "evaluation/intent/gold_standard.json")
+      end
+
+    model_hashes =
+      Path.wildcard(Path.join(models_path, "**/*.term"))
+      |> Enum.sort()
+      |> Enum.map(fn path ->
+        hash = sha256_file(path)
+        rel = Path.relative_to(path, models_path)
+        {rel, hash}
+      end)
+      |> Map.new()
+
+    data_hashes =
+      if File.dir?(data_path) do
+        Path.wildcard(Path.join(data_path, "*.json"))
+        |> Enum.sort()
+        |> Enum.map(fn path ->
+          hash = sha256_file(path)
+          {Path.basename(path), hash}
+        end)
+        |> Map.new()
+      else
+        %{}
+      end
+
+    gold_hash = if File.exists?(gold_path), do: sha256_file(gold_path), else: nil
+
+    git_sha =
+      case System.cmd("git", ["rev-parse", "--short", "HEAD"], stderr_to_stdout: true) do
+        {sha, 0} -> String.trim(sha)
+        _ -> nil
+      end
+
+    manifest = %{
+      timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
+      git_sha: git_sha,
+      gold_standard_sha256: gold_hash,
+      models: model_hashes,
+      training_data: data_hashes
+    }
+
+    manifest_path = Path.join(models_path, "manifest.json")
+    File.write!(manifest_path, Jason.encode!(manifest, pretty: true) <> "\n")
+    Mix.shell().info("\nModel manifest written to: #{manifest_path}")
+  rescue
+    e ->
+      Mix.shell().error("Failed to write manifest: #{Exception.message(e)}")
+  end
+
+  defp sha256_file(path) do
+    File.stream!(path, 65_536)
+    |> Enum.reduce(:crypto.hash_init(:sha256), &:crypto.hash_update(&2, &1))
+    |> :crypto.hash_final()
+    |> Base.encode16(case: :lower)
   end
 
   defp display_summary(results, total_duration) do
