@@ -5,7 +5,7 @@ defmodule Brain.ML.MicroClassifiers do
 
   Each classifier is trained from a JSON data file in `data/classifiers/`
   and loaded at startup from `priv/ml_models/micro/`. If a trained model
-  file doesn't exist, the classifier falls back to training from raw data.
+  file doesn't exist, the classifier logs an error and remains unavailable.
 
   ## Available Classifiers
 
@@ -47,6 +47,7 @@ defmodule Brain.ML.MicroClassifiers do
   use GenServer
   require Logger
 
+  alias Brain.Lattice
   alias Brain.ML.FeatureVectorClassifier
   alias Brain.ML.SimpleClassifier
 
@@ -106,6 +107,37 @@ defmodule Brain.ML.MicroClassifiers do
   end
 
   @doc """
+  Classify text and return a `Brain.Lattice` with full `top_k` / margin semantics
+  (TF-IDF path via `SimpleClassifier.classify_with_details/3`).
+  """
+  @spec classify_detailed(atom(), String.t()) ::
+          {:ok, Lattice.t()}
+          | {:error, :not_loaded | :wrong_kind | :classification_failed}
+  def classify_detailed(name, text) when is_atom(name) and is_binary(text) do
+    if ready?() do
+      GenServer.call(__MODULE__, {:classify_detailed, name, text}, 5_000)
+    else
+      {:error, :not_loaded}
+    end
+  end
+
+  @doc """
+  Classify a feature vector and return a `Brain.Lattice` with full `top_k`
+  from `FeatureVectorClassifier` details.
+  """
+  @spec classify_vector_detailed(atom(), list(float())) ::
+          {:ok, Lattice.t()}
+          | {:error, :not_loaded | :wrong_kind | :classification_failed}
+  def classify_vector_detailed(name, feature_vector)
+      when is_atom(name) and is_list(feature_vector) do
+    if ready?() do
+      GenServer.call(__MODULE__, {:classify_vector_detailed, name, feature_vector}, 5_000)
+    else
+      {:error, :not_loaded}
+    end
+  end
+
+  @doc """
   Return the declared input dimensionality of the named feature-vector
   classifier.
 
@@ -145,6 +177,40 @@ defmodule Brain.ML.MicroClassifiers do
       GenServer.call(__MODULE__, :ready?, 100)
     catch
       :exit, _ -> false
+    end
+  end
+
+  @doc """
+  Block until MicroClassifiers is ready, polling every 250ms.
+
+  Use `:infinity` for batch/CLI contexts (evaluation tasks, mix commands)
+  where there is no caller to time out for. Use a finite timeout at
+  runtime where degradation matters.
+
+  Returns `:ok` or raises after `timeout_ms` milliseconds.
+  """
+  @spec await_ready(non_neg_integer() | :infinity) :: :ok
+  def await_ready(timeout_ms \\ :infinity) do
+    deadline =
+      case timeout_ms do
+        :infinity -> :infinity
+        ms when is_integer(ms) and ms > 0 -> System.monotonic_time(:millisecond) + ms
+      end
+
+    do_await_ready(deadline)
+  end
+
+  defp do_await_ready(deadline) do
+    if ready?() do
+      :ok
+    else
+      if deadline != :infinity and System.monotonic_time(:millisecond) >= deadline do
+        raise "MicroClassifiers failed to become ready within timeout. " <>
+              "Ensure models are trained: mix train_micro"
+      end
+
+      Process.sleep(250)
+      do_await_ready(deadline)
     end
   end
 
@@ -217,6 +283,58 @@ defmodule Brain.ML.MicroClassifiers do
         case FeatureVectorClassifier.classify(feature_vector, model) do
           {:ok, label, score, _details} ->
             {:reply, {:ok, label, score}, state}
+
+          _ ->
+            {:reply, {:error, :classification_failed}, state}
+        end
+
+      _other ->
+        {:reply, {:error, :wrong_kind}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:classify_detailed, name, text}, _from, state) do
+    case Map.get(state.models, name) do
+      nil ->
+        {:reply, {:error, :not_loaded}, state}
+
+      %{kind: :feature_vector} ->
+        {:reply, {:error, :wrong_kind}, state}
+
+      model ->
+        case SimpleClassifier.classify_with_details(text, model, top_k: 5) do
+          {:ok, label, score, details} ->
+            lattice =
+              Lattice.from_classifier({:ok, label, score, details},
+                stage: name,
+                source: :tf_idf
+              )
+
+            {:reply, {:ok, lattice}, state}
+
+          _ ->
+            {:reply, {:error, :classification_failed}, state}
+        end
+    end
+  end
+
+  @impl true
+  def handle_call({:classify_vector_detailed, name, feature_vector}, _from, state) do
+    case Map.get(state.models, name) do
+      nil ->
+        {:reply, {:error, :not_loaded}, state}
+
+      %{kind: :feature_vector} = model ->
+        case FeatureVectorClassifier.classify(feature_vector, model) do
+          {:ok, label, score, details} ->
+            lattice =
+              Lattice.from_classifier({:ok, label, score, details},
+                stage: name,
+                source: :feature_vector
+              )
+
+            {:reply, {:ok, lattice}, state}
 
           _ ->
             {:reply, {:error, :classification_failed}, state}

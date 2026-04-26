@@ -1,5 +1,17 @@
 defmodule Brain.ML.BenchmarkTest do
-  @moduledoc "Benchmark tests for ML model accuracy.\n\nThese tests verify that ML models meet minimum accuracy thresholds\non known inputs. They focus on positive assertions - testing what\nthe system SHOULD do correctly.\n\nSystemic regression guard: intent benchmark assertions run against the\nproduction TF-IDF model artifact from `priv/ml_models/classifier.term`\n(read-only) so failures indicate model drift/regression, not test-only\nmodel fixtures.\n\nRun with: mix test --only benchmark\n"
+  @moduledoc """
+  Benchmark tests for ML model accuracy.
+
+  These tests verify that ML models meet minimum accuracy thresholds
+  on known inputs. They focus on positive assertions - testing what
+  the system SHOULD do correctly.
+
+  Intent benchmarks run against the production feature-vector pipeline
+  (MicroClassifiers :intent_full + analysis refinement) so failures
+  indicate model drift/regression.
+
+  Run with: mix test --only benchmark
+  """
 
   alias Brain.Analysis.SpeechActClassifier
   alias Brain.ML.EntityExtractor
@@ -13,27 +25,12 @@ defmodule Brain.ML.BenchmarkTest do
 
   setup_all do
     Brain.TestHelpers.require_services!(:ml_inference)
-    load_production_intent_model!()
-    :ok
-  end
 
-  defp load_production_intent_model! do
-    :ok
-  end
-
-  defp resolve_production_model_path! do
-    candidates = [
-      Path.join(File.cwd!(), "_build/dev/lib/brain/priv/ml_models/classifier.term"),
-      Path.expand("../../../priv/ml_models/classifier.term", __DIR__)
-    ]
-
-    case Enum.find(candidates, &File.exists?/1) do
-      nil ->
-        raise "Production classifier model not found in expected paths: #{inspect(candidates)}"
-
-      path ->
-        path
+    unless ML.MicroClassifiers.ready?() do
+      raise "MicroClassifiers not ready -- run `mix train_micro` first"
     end
+
+    :ok
   end
 
   describe "intent classification" do
@@ -249,7 +246,16 @@ defmodule Brain.ML.BenchmarkTest do
 
   defp classify_intents(texts) do
     Enum.map(texts, fn text ->
-      intent = classify_intent_with_tfidf(text)
+      intent =
+        try do
+          analysis = Pipeline.analyze_chunk(text, side_effects: false)
+          to_string(analysis.intent || "unknown")
+        rescue
+          _ -> "unknown"
+        catch
+          :exit, _ -> "unknown"
+        end
+
       {text, intent}
     end)
   end
@@ -272,14 +278,19 @@ defmodule Brain.ML.BenchmarkTest do
     Enum.reduce(gold, {[], []}, fn example, {preds, acts} ->
       text = example["text"]
       expected = example["intent"]
-      predicted = classify_intent_with_tfidf(text)
+
+      predicted =
+        try do
+          analysis = Pipeline.analyze_chunk(text, side_effects: false)
+          to_string(analysis.intent || "unknown")
+        rescue
+          _ -> "unknown"
+        catch
+          :exit, _ -> "unknown"
+        end
 
       {[predicted | preds], [expected | acts]}
     end)
     |> then(fn {p, a} -> {Enum.reverse(p), Enum.reverse(a)} end)
-  end
-
-  defp classify_intent_with_tfidf(_text) do
-    "unknown"
   end
 end

@@ -77,12 +77,15 @@ defmodule Brain.ML.FeatureVectorClassifierTest do
       {:ok, model: FeatureVectorClassifier.train(training)}
     end
 
-    test "returns the nearest centroid's label", %{model: model} do
-      assert {:ok, "weather", confidence, _details} =
+    test "returns the nearest centroid's label and top_k in details", %{model: model} do
+      assert {:ok, "weather", confidence, details} =
                FeatureVectorClassifier.classify([0.95, 0.05, 0.0], model)
 
       assert is_float(confidence)
       assert confidence > 0.5
+      assert is_list(details[:top_k])
+      assert length(details[:top_k]) == 3
+      assert hd(details[:top_k]) == {"weather", details[:top_score]}
     end
 
     test "returns calendar for calendar-leaning vector", %{model: model} do

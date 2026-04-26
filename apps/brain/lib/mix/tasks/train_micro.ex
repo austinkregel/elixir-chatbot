@@ -124,6 +124,47 @@ defmodule Mix.Tasks.TrainMicro do
         {:error, name, reason} ->
           Mix.shell().error("  [FAIL]  #{name}: #{inspect(reason)}")
       end)
+
+      validate_intent_map_sync(output_dir)
+    end
+  end
+
+  defp validate_intent_map_sync(output_dir) do
+    intent_model_path = Path.join(output_dir, "intent_full.term")
+
+    intent_map_path =
+      case :code.priv_dir(:brain) do
+        {:error, _} -> "apps/brain/priv/analysis/speech_act_intent_map.json"
+        priv -> Path.join(priv, "analysis/speech_act_intent_map.json")
+      end
+
+    with {:ok, model_bin} <- File.read(intent_model_path),
+         model <- :erlang.binary_to_term(model_bin),
+         {:ok, map_json} <- File.read(intent_map_path),
+         {:ok, intent_map} <- Jason.decode(map_json) do
+      model_labels =
+        case model do
+          %{label_centroids: lc} when is_map(lc) ->
+            lc |> Map.keys() |> Enum.map(&to_string/1) |> MapSet.new()
+
+          _ ->
+            MapSet.new()
+        end
+
+      if MapSet.size(model_labels) > 0 do
+        map_values = intent_map |> Map.values() |> Enum.reject(&(&1 == "unknown")) |> MapSet.new()
+        missing = MapSet.difference(map_values, model_labels)
+
+        if MapSet.size(missing) > 0 do
+          Mix.shell().error(
+            "\n[WARN] speech_act_intent_map.json references intents not in intent_full model: #{inspect(MapSet.to_list(missing))}"
+          )
+        else
+          Mix.shell().info("\n[OK] speech_act_intent_map.json labels validated against intent_full model")
+        end
+      end
+    else
+      _ -> :ok
     end
   end
 
@@ -241,7 +282,7 @@ defmodule Mix.Tasks.TrainMicro do
       true ->
         Mix.shell().info("  [#{name}] Running GA weight optimization (#{n_classes} classes, balanced fitness)...")
 
-        result = WeightOptimizer.optimize(training_data, verbose: true)
+        result = WeightOptimizer.optimize(training_data, verbose: true, classifier: name)
 
         Mix.shell().info(
           "  [#{name}] GA complete: #{Float.round(result.fitness * 100, 1)}% " <>

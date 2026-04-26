@@ -190,21 +190,51 @@ defmodule Mix.Tasks.GenMicroData do
     try do
       analysis = Pipeline.analyze_chunk(text)
       {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
-      Map.put(entry, "feature_vector", feature_vector)
+
+      tokens = extract_tokens(analysis)
+      pos_tags = Map.get(analysis, :pos_tags, [])
+
+      entry
+      |> Map.put("feature_vector", feature_vector)
+      |> Map.put("tokens", tokens)
+      |> Map.put("pos_tags", pos_tags)
     rescue
       e ->
         entry
         |> Map.put("feature_vector", nil)
+        |> Map.put("tokens", nil)
+        |> Map.put("pos_tags", nil)
         |> Map.put("__pipeline_error", Exception.message(e))
     catch
       kind, reason ->
         entry
         |> Map.put("feature_vector", nil)
+        |> Map.put("tokens", nil)
+        |> Map.put("pos_tags", nil)
         |> Map.put("__pipeline_error", "#{kind}: #{inspect(reason)}")
     end
   end
 
-  defp enrich_entry(entry), do: Map.put(entry, "feature_vector", nil)
+  defp enrich_entry(entry) do
+    entry
+    |> Map.put("feature_vector", nil)
+    |> Map.put("tokens", nil)
+    |> Map.put("pos_tags", nil)
+  end
+
+  defp extract_tokens(analysis) do
+    case Map.get(analysis, :pos_tags, []) do
+      tags when is_list(tags) ->
+        Enum.map(tags, fn
+          {token, _tag} -> token
+          token when is_binary(token) -> token
+          _ -> ""
+        end)
+
+      _ ->
+        []
+    end
+  end
 
   defp has_feature_vector?(%{"feature_vector" => v}) when is_list(v) and length(v) > 0, do: true
   defp has_feature_vector?(_), do: false
