@@ -47,6 +47,8 @@ defmodule Brain.Telemetry do
 
   ## Analysis Events
 
+  - `[:chat_bot, :brain, :lattice, :resolved]` - Multi-hypothesis lattice built (intent / scientific ranking)
+
   - `[:chat_bot, :analysis, :racing, :start | :stop | :exception]` - Racing analyzer parallel processing
   - `[:chat_bot, :analysis, :racing, :early_exit]` - Racing analyzer early exit (fast path)
   - `[:chat_bot, :analysis, :event_extraction]` - Event extraction with GPU/tensor verification

@@ -87,6 +87,13 @@ defmodule Brain.Epistemic.Types do
       false
     end
 
+    @doc "Renders a belief as `predicate object` for contradiction checks and logging."
+    def to_text(%__MODULE__{} = b) do
+      pred = to_string(b.predicate)
+      obj = to_string(b.object)
+      "#{pred} #{obj}"
+    end
+
     defp maybe_confirm(belief, true) do
       confirm(belief)
     end

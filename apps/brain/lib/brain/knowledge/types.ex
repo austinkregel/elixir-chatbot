@@ -132,12 +132,21 @@ defmodule Brain.Knowledge.Types do
     @type status :: :untested | :testing | :supported | :falsified | :inconclusive
     @type confidence_level :: :none | :low | :moderate | :high | :very_high
 
+    @type predicate_type :: :belief_query | :corroboration_count | :unstructured
+
+    @type predicate_map :: %{
+            type: predicate_type(),
+            params: map(),
+            expected: term(),
+            tolerance: float()
+          }
+
     @type t :: %__MODULE__{
             id: String.t(),
             claim: String.t(),
             entity: String.t() | nil,
             derived_from: String.t() | nil,
-            prediction: String.t() | nil,
+            prediction: String.t() | predicate_map() | nil,
             status: status(),
             supporting_evidence: [Finding.t()],
             contradicting_evidence: [Finding.t()],
@@ -169,7 +178,7 @@ defmodule Brain.Knowledge.Types do
 
     @doc "Creates a new hypothesis from a claim.\n\n## Options\n  - :entity - The entity this hypothesis is about\n  - :derived_from - The question that generated this hypothesis\n  - :prediction - The expected outcome if hypothesis is true (If/Then)\n"
     def new(claim, opts \\ []) when is_binary(claim) do
-      prediction = Keyword.get(opts, :prediction) || generate_prediction(claim)
+      prediction = normalize_prediction(Keyword.get(opts, :prediction), claim)
 
       %__MODULE__{
         id: generate_id(),
@@ -181,6 +190,21 @@ defmodule Brain.Knowledge.Types do
         created_at: DateTime.utc_now()
       }
     end
+
+    defp normalize_prediction(nil, claim), do: generate_prediction(claim)
+
+    defp normalize_prediction(text, _claim) when is_binary(text), do: text
+
+    defp normalize_prediction(
+           %{type: type, params: params, expected: expected, tolerance: tol} = m,
+           _claim
+         )
+         when type in [:belief_query, :corroboration_count, :unstructured] and is_map(params) and
+                is_number(tol) do
+      %{m | tolerance: max(0.0, min(1.0, tol * 1.0)), expected: expected}
+    end
+
+    defp normalize_prediction(_, claim), do: generate_prediction(claim)
 
     defp generate_prediction(claim) do
       "If #{claim} is true, then independent sources will confirm this claim."
@@ -328,6 +352,8 @@ defmodule Brain.Knowledge.Types do
     @moduledoc "Represents a scientific investigation testing one or more hypotheses.\n\nAn investigation follows the scientific method:\n1. Formulate hypotheses from questions\n2. Gather evidence from independent sources\n3. Evaluate hypotheses against evidence\n4. Report conclusions (supported, falsified, or inconclusive)\n\n## Experimental Variables\n\nFrom the scientific method, experiments involve three types of variables:\n\n- **Independent Variable**: What we vary (the sources we query)\n- **Dependent Variable**: What we measure (the findings/claims extracted)\n- **Constants**: What we hold fixed (NLP pipeline, corroboration rules)\n\n## Control Treatment\n\nA control treatment provides a baseline for comparison. In our context,\nthis could be:\n- Existing facts in the database (do new findings agree?)\n- Known reliable sources (Wikipedia, encyclopedias)\n\n## Replication\n\nWe require multiple independent sources (replication) to increase\nconfidence. Variation between sources is normal - replication helps\nus see this variation and obtain a consensus.\n\n## Key Principles\n\n- **Falsifiability**: Hypotheses can be disproven by contradicting evidence\n- **Cannot Prove True**: Only support with evidence, never absolute proof\n- **Accumulation**: Knowledge builds through many investigations\n"
 
     alias Types.{Hypothesis, Finding}
+    alias Brain.Lattice
+    alias Brain.Lattice.Candidate, as: LatticeCandidate
 
     @type status :: :planning | :gathering_evidence | :evaluating | :concluded
     @type conclusion :: :hypotheses_supported | :hypotheses_falsified | :inconclusive | :mixed
@@ -444,6 +470,61 @@ defmodule Brain.Knowledge.Types do
     def promotable_hypotheses(%__MODULE__{} = investigation) do
       investigation.hypotheses
       |> Enum.filter(&Hypothesis.promotable?/1)
+    end
+
+    @doc "Ranks evaluated hypotheses as a `Brain.Lattice` of `%LatticeCandidate{label: %Hypothesis{}}`.\n"
+    def rank_hypotheses(%__MODULE__{hypotheses: hs}) when is_list(hs) do
+      evaluated = Enum.map(hs, &Hypothesis.evaluate/1)
+
+      cands =
+        Enum.map(evaluated, fn h ->
+          conf = max(0.0, min(1.0, h.confidence))
+
+          %LatticeCandidate{
+            label: h,
+            score: conf,
+            confidence: conf,
+            source: :evidence,
+            metadata: %{
+              supporting_count: length(h.supporting_evidence),
+              contradicting_count: length(h.contradicting_evidence),
+              status: h.status
+            }
+          }
+        end)
+
+      Lattice.normalize(%Lattice{
+        candidates: cands,
+        stage: :scientific,
+        source: :evidence,
+        error: nil
+      })
+    end
+
+    @doc "Best hypothesis struct after ranking, or nil."
+    def best_hypothesis(%__MODULE__{} = inv) do
+      case Lattice.best(rank_hypotheses(inv)) do
+        %LatticeCandidate{label: %Hypothesis{} = h} -> h
+        _ -> nil
+      end
+    end
+
+    @doc "Margin between top two hypothesis confidences after ranking."
+    def falsification_margin(%__MODULE__{} = inv) do
+      Lattice.margin(rank_hypotheses(inv))
+    end
+
+    @doc "Returns the best hypothesis only if margin clears `min_margin` and it is promotable."
+    def promotable_winner(%__MODULE__{} = inv, min_margin \\ 0.15) do
+      lat = rank_hypotheses(inv)
+
+      case Lattice.best(lat) do
+        %LatticeCandidate{label: %Hypothesis{} = h} ->
+          if Lattice.margin(lat) >= min_margin and Hypothesis.promotable?(h), do: h, else: nil
+
+        _ ->
+          nil
+      end
     end
 
     @doc "Returns a summary of the investigation results.\n"
@@ -585,9 +666,15 @@ defmodule Brain.Knowledge.Types do
     @moduledoc "A research objective for the Learning Center to pursue.\n\n## Scientific Method Integration\n\nResearch goals now support the scientific method by:\n- Generating hypotheses from questions\n- Creating investigations to test those hypotheses\n- Tracking the scientific outcome (supported/falsified)\n"
 
     alias Types.{Hypothesis, Investigation}
+    alias Brain.Epistemic.BeliefStore
+    alias Brain.Epistemic.Types.Belief
+    alias Brain.Knowledge.ContradictionDetector
+    alias Brain.Lattice
 
     @type priority :: :low | :normal | :high
     @type status :: :pending | :in_progress | :completed | :failed
+
+    @type source_gap :: %{dimension: atom(), score: float()}
 
     @type t :: %__MODULE__{
             id: String.t(),
@@ -596,7 +683,8 @@ defmodule Brain.Knowledge.Types do
             constraints: map(),
             priority: priority(),
             created_at: DateTime.t(),
-            status: status()
+            status: status(),
+            source_gaps: [source_gap()]
           }
 
     @enforce_keys [:id, :topic]
@@ -607,10 +695,11 @@ defmodule Brain.Knowledge.Types do
       questions: [],
       constraints: %{},
       priority: :normal,
-      status: :pending
+      status: :pending,
+      source_gaps: []
     ]
 
-    @doc "Creates a new ResearchGoal.\n\n## Options\n  - :questions - List of specific questions to answer\n  - :constraints - Map of constraints (e.g., %{min_sources: 2, max_age_days: 30})\n  - :priority - :low | :normal | :high\n"
+    @doc "Creates a new ResearchGoal.\n\n## Options\n  - :questions - List of specific questions to answer\n  - :constraints - Map of constraints (e.g., %{min_sources: 2, max_age_days: 30})\n  - :priority - :low | :normal | :high\n  - :source_gaps - Dimensions flagged when spawned from uncertainty follow-up\n"
     def new(topic, opts \\ []) when is_binary(topic) do
       %__MODULE__{
         id: generate_id(),
@@ -619,7 +708,8 @@ defmodule Brain.Knowledge.Types do
         constraints: Keyword.get(opts, :constraints, %{}),
         priority: Keyword.get(opts, :priority, :normal),
         created_at: DateTime.utc_now(),
-        status: :pending
+        status: :pending,
+        source_gaps: Keyword.get(opts, :source_gaps, [])
       }
     end
 
@@ -627,6 +717,81 @@ defmodule Brain.Knowledge.Types do
     def update_status(%__MODULE__{} = goal, new_status)
         when new_status in [:pending, :in_progress, :completed, :failed] do
       %{goal | status: new_status}
+    end
+
+    @doc """
+    Builds a `Brain.Lattice` over competing hypotheses: a null triple (supported /
+    not supported / insufficient) plus non-contradicting priors from `BeliefStore`
+    for `subject: entity_value`.
+    """
+    def formulate_competing_hypotheses(%__MODULE__{} = goal, entity_value)
+        when is_binary(entity_value) do
+      topic = goal.topic
+
+      h_true =
+        Hypothesis.new(
+          "Primary scientific claim about #{entity_value} is supported by evidence",
+          entity: entity_value,
+          derived_from: topic,
+          prediction:
+            "If true, corroborating sources will align on factual claims about #{entity_value}."
+        )
+
+      h_false =
+        Hypothesis.new(
+          "Primary scientific claim about #{entity_value} is not supported",
+          entity: entity_value,
+          derived_from: topic,
+          prediction:
+            "If false, authoritative sources will disagree or lack support for the claim."
+        )
+
+      h_insufficient =
+        Hypothesis.new(
+          "There is insufficient evidence to decide about #{entity_value}",
+          entity: entity_value,
+          derived_from: topic,
+          prediction:
+            "If insufficient, independent sources will be silent, conflicting, or too sparse."
+        )
+
+      priors =
+        case BeliefStore.query_beliefs(subject: entity_value, min_confidence: 0.5) do
+          {:ok, beliefs} -> filter_non_contradicting_beliefs(beliefs)
+          _ -> []
+        end
+
+      prior_pairs =
+        Enum.map(priors, fn b ->
+          t = Belief.to_text(b)
+
+          h =
+            Hypothesis.new(t,
+              entity: entity_value,
+              derived_from: topic,
+              prediction: t
+            )
+
+          {h, max(0.001, b.confidence * 1.0)}
+        end)
+
+      Lattice.from_top_k(
+        [{h_true, 0.34}, {h_false, 0.33}, {h_insufficient, 0.33}] ++ prior_pairs,
+        stage: :scientific,
+        source: :composite
+      )
+    end
+
+    defp filter_non_contradicting_beliefs(beliefs) when is_list(beliefs) do
+      Enum.reduce(beliefs, [], fn b, acc ->
+        t = Belief.to_text(b)
+
+        if Enum.any?(acc, fn a -> ContradictionDetector.contradicts?(Belief.to_text(a), t) end) do
+          acc
+        else
+          acc ++ [b]
+        end
+      end)
     end
 
     @doc "Generates hypotheses from the goal's questions.\n\nEach question is transformed into a testable hypothesis.\nIf no questions exist, a hypothesis is generated from the topic.\nReturns empty list for system IDs (containing ':') with no questions.\n"
