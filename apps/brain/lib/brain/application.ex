@@ -61,6 +61,7 @@ defmodule Brain.Application do
       Brain.ML.Ouro.SidecarLauncher,
       Brain.ML.TrainingServer,
       Brain.ML.TrainingExampleBuffer,
+      Brain.ML.WeightOptimizer.Tracker,
       Brain.Subprocesses.Supervisor,
       {Task.Supervisor, [name: Brain.Knowledge.AgentSupervisor]},
       Brain.Knowledge.SourceReliability,

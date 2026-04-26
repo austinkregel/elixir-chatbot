@@ -1049,7 +1049,7 @@ defmodule ChatWeb.DashboardLive do
   end
 
   def agent_based_models(ml_models_status) do
-    [:intent_classifier, :entity_extractor]
+    [:entity_extractor]
     |> Enum.map(fn key -> {key, Map.get(ml_models_status, key)} end)
     |> Enum.filter(fn {_k, v} -> v != nil end)
   end

@@ -22,6 +22,25 @@ defmodule Brain.ML.WeightOptimizer do
   - **Crossover**: Uniform crossover
   - **Mutation**: Adaptive Gaussian — aggressive when stale, conservative when improving
   - **Termination**: Max generations or early-stop on plateau
+
+  ## Telemetry
+
+  Each call to `optimize/2` emits the following events (under the
+  `[:brain, :weight_optimizer, _]` namespace):
+
+  | Event          | Measurements                                                                               | Metadata                                                              |
+  | -------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+  | `:start`       | `system_time`                                                                              | `run_id`, `classifier`, `dim`, `n_train`, `n_val`, `n_classes`, `opts`|
+  | `:generation`  | `generation`, `best_fitness`, `gen_best_fitness`, `raw_acc`, `balanced_acc`, `avg_fitness`,| `run_id`, `classifier`, `improved?`                                   |
+  |                | `stale_count`, `mutation_rate`, `mutation_sigma`                                           |                                                                       |
+  | `:stop`        | `duration_ms`, `best_fitness`, `best_generation`, `generations_run`, `alive_dims`,         | `run_id`, `classifier`, `status` (`:complete` / `:early_stop`),       |
+  |                | `total_dims`                                                                               | `history`, `weights`                                                  |
+  | `:exception`   | `duration_ms`                                                                              | `run_id`, `classifier`, `kind`, `reason`, `stacktrace`                |
+
+  The optional `:classifier` opt tags every event with the model name.
+  When omitted, metadata uses `:unknown`. The `:run_id` is auto-generated
+  when not supplied; it round-trips on the result map so callers can
+  correlate the result with the broadcast events.
   """
 
   import Nx.Defn
@@ -44,22 +63,38 @@ defmodule Brain.ML.WeightOptimizer do
   @type training_example :: {list(float()), String.t()}
 
   @type result :: %{
+          run_id: String.t(),
+          classifier: String.t() | atom(),
           weights: list(float()),
           fitness: float(),
           generation: non_neg_integer(),
+          generations_run: non_neg_integer(),
+          status: :complete | :early_stop,
           history: list({non_neg_integer(), float()})
         }
 
   @doc """
   Find optimal per-dimension weights for the given training data.
 
-  Returns a map with `:weights`, `:fitness`, `:generation`, and `:history`.
+  Accepts a keyword list of GA hyperparameters (see `@default_opts`).
+  Two metadata-only options are also recognized:
+
+  - `:classifier` — name to tag in telemetry metadata (e.g. `"intent_full"`).
+  - `:run_id` — caller-provided identifier; auto-generated if absent.
+
+  Returns a map containing `:run_id`, `:classifier`, `:weights`,
+  `:fitness`, `:generation` (best gen), `:generations_run`, `:status`,
+  and `:history`.
   """
   @spec optimize([training_example()], keyword()) :: result()
   def optimize(training_data, opts \\ []) do
     opts = Keyword.merge(@default_opts, opts)
     {seed_a, seed_b, seed_c} = opts[:seed]
     :rand.seed(:exsplus, {seed_a, seed_b, seed_c})
+
+    run_id = Keyword.get_lazy(opts, :run_id, &generate_run_id/0)
+    classifier = Keyword.get(opts, :classifier, :unknown)
+    started_at = System.monotonic_time()
 
     previous_backend = Nx.default_backend()
 
@@ -68,13 +103,23 @@ defmodule Brain.ML.WeightOptimizer do
     end
 
     try do
-      do_optimize(training_data, opts)
+      do_optimize(training_data, opts, run_id, classifier, started_at)
+    catch
+      kind, reason ->
+        emit_exception(run_id, classifier, started_at, kind, reason, __STACKTRACE__)
+        :erlang.raise(kind, reason, __STACKTRACE__)
     after
       Nx.default_backend(previous_backend)
     end
   end
 
-  defp do_optimize(training_data, opts) do
+  defp generate_run_id do
+    ts = System.os_time(:millisecond)
+    rand = :crypto.strong_rand_bytes(4) |> Base.url_encode64(padding: false)
+    "ga-#{ts}-#{rand}"
+  end
+
+  defp do_optimize(training_data, opts, run_id, classifier, started_at) do
     dim = training_data |> List.first() |> elem(0) |> length()
     {train_set, val_set} = stratified_split(training_data, opts[:validation_split])
 
@@ -88,6 +133,8 @@ defmodule Brain.ML.WeightOptimizer do
     if opts[:verbose] do
       Logger.info("WeightOptimizer: #{dim} dims, #{length(train_set)} train, #{length(val_set)} val, #{n_classes} classes")
     end
+
+    emit_start(run_id, classifier, dim, length(train_set), length(val_set), n_classes, opts)
 
     train_t = Nx.tensor(train_vecs, type: :f32)
     val_t = Nx.tensor(val_vecs, type: :f32)
@@ -115,10 +162,20 @@ defmodule Brain.ML.WeightOptimizer do
       val_counts_t: val_counts_t,
       n_classes: n_classes,
       label_set: label_set,
-      dim: dim
+      dim: dim,
+      run_id: run_id,
+      classifier: classifier
     }
 
-    evolve(population, ctx, opts)
+    result = evolve(population, ctx, opts)
+
+    enriched =
+      result
+      |> Map.put(:run_id, run_id)
+      |> Map.put(:classifier, classifier)
+
+    emit_stop(enriched, started_at)
+    enriched
   end
 
   @doc """
@@ -322,7 +379,9 @@ defmodule Brain.ML.WeightOptimizer do
       best_fitness: 0.0,
       best_gen: 0,
       stale_count: 0,
-      history: []
+      history: [],
+      generations_run: 0,
+      status: :complete
     }
 
     result =
@@ -341,16 +400,18 @@ defmodule Brain.ML.WeightOptimizer do
         {_best_composite, best_raw, best_bal} = Enum.at(metrics, gen_best_idx)
 
         gen_avg = Enum.sum(fitnesses) / max(length(fitnesses), 1)
+        improved? = gen_best_fitness > state.best_fitness
 
         {new_best_weights, new_best_fitness, new_best_gen, new_stale} =
-          if gen_best_fitness > state.best_fitness do
+          if improved? do
             {gen_best_weights, gen_best_fitness, gen, 0}
           else
             {state.best_weights, state.best_fitness, state.best_gen, state.stale_count + 1}
           end
 
-        if opts[:verbose] and (rem(gen, 10) == 0 or gen_best_fitness > state.best_fitness) do
-          {m_rate, m_sigma} = adaptive_mutation_params(new_stale, opts)
+        {m_rate, m_sigma} = adaptive_mutation_params(new_stale, opts)
+
+        if opts[:verbose] and (rem(gen, 10) == 0 or improved?) do
           Logger.info(
             "WeightOptimizer gen #{String.pad_leading(Integer.to_string(gen), 3)}: " <>
               "fitness=#{pct(new_best_fitness)} " <>
@@ -359,6 +420,18 @@ defmodule Brain.ML.WeightOptimizer do
               "mut=#{Float.round(m_rate, 3)}/#{Float.round(m_sigma, 3)}"
           )
         end
+
+        emit_generation(ctx.run_id, ctx.classifier, gen, %{
+          best_fitness: new_best_fitness,
+          gen_best_fitness: gen_best_fitness,
+          raw_acc: best_raw,
+          balanced_acc: best_bal,
+          avg_fitness: gen_avg,
+          stale_count: new_stale,
+          mutation_rate: m_rate,
+          mutation_sigma: m_sigma,
+          improved?: improved?
+        })
 
         new_history = state.history ++ [{gen, gen_best_fitness}]
 
@@ -373,11 +446,11 @@ defmodule Brain.ML.WeightOptimizer do
              | best_weights: new_best_weights,
                best_fitness: new_best_fitness,
                best_gen: new_best_gen,
-               history: new_history
+               history: new_history,
+               generations_run: gen + 1,
+               status: :early_stop
            }}
         else
-          {mutation_rate, mutation_sigma} = adaptive_mutation_params(new_stale, opts)
-
           ranked = Enum.zip(state.population, fitnesses) |> Enum.sort_by(&elem(&1, 1), :desc)
 
           elite_count = max(div(opts[:population_size], 10), 2)
@@ -401,7 +474,7 @@ defmodule Brain.ML.WeightOptimizer do
               parent_a = tournament_select(base_pop, fitnesses, opts[:tournament_size])
               parent_b = tournament_select(base_pop, fitnesses, opts[:tournament_size])
               child = uniform_crossover(parent_a, parent_b)
-              mutate(child, mutation_rate, mutation_sigma, opts[:weight_min], opts[:weight_max])
+              mutate(child, m_rate, m_sigma, opts[:weight_min], opts[:weight_max])
             end)
 
           new_population = elites ++ children
@@ -413,7 +486,9 @@ defmodule Brain.ML.WeightOptimizer do
              best_fitness: new_best_fitness,
              best_gen: new_best_gen,
              stale_count: new_stale,
-             history: new_history
+             history: new_history,
+             generations_run: gen + 1,
+             status: :complete
            }}
         end
       end)
@@ -432,6 +507,8 @@ defmodule Brain.ML.WeightOptimizer do
       weights: result.best_weights,
       fitness: result.best_fitness,
       generation: result.best_gen,
+      generations_run: result.generations_run,
+      status: result.status,
       history: result.history
     }
   end
@@ -557,5 +634,94 @@ defmodule Brain.ML.WeightOptimizer do
 
   defp clamp(value, min_val, max_val) do
     value |> max(min_val) |> min(max_val)
+  end
+
+  # ── Telemetry ───────────────────────────────────────────────────────
+
+  defp emit_start(run_id, classifier, dim, n_train, n_val, n_classes, opts) do
+    :telemetry.execute(
+      [:brain, :weight_optimizer, :start],
+      %{system_time: System.system_time()},
+      %{
+        run_id: run_id,
+        classifier: classifier,
+        dim: dim,
+        n_train: n_train,
+        n_val: n_val,
+        n_classes: n_classes,
+        opts: telemetry_safe_opts(opts)
+      }
+    )
+  end
+
+  defp emit_generation(run_id, classifier, gen, m) do
+    :telemetry.execute(
+      [:brain, :weight_optimizer, :generation],
+      %{
+        generation: gen,
+        best_fitness: m.best_fitness,
+        gen_best_fitness: m.gen_best_fitness,
+        raw_acc: m.raw_acc,
+        balanced_acc: m.balanced_acc,
+        avg_fitness: m.avg_fitness,
+        stale_count: m.stale_count,
+        mutation_rate: m.mutation_rate,
+        mutation_sigma: m.mutation_sigma
+      },
+      %{run_id: run_id, classifier: classifier, improved?: m.improved?}
+    )
+  end
+
+  defp emit_stop(result, started_at) do
+    duration_ms =
+      System.convert_time_unit(System.monotonic_time() - started_at, :native, :millisecond)
+
+    weights = result.weights
+    alive = Enum.count(weights, &(&1 > 0.01))
+
+    :telemetry.execute(
+      [:brain, :weight_optimizer, :stop],
+      %{
+        duration_ms: duration_ms,
+        best_fitness: result.fitness,
+        best_generation: result.generation,
+        generations_run: result.generations_run,
+        alive_dims: alive,
+        total_dims: length(weights)
+      },
+      %{
+        run_id: result.run_id,
+        classifier: result.classifier,
+        status: result.status,
+        history: result.history,
+        weights: weights
+      }
+    )
+  end
+
+  defp emit_exception(run_id, classifier, started_at, kind, reason, stacktrace) do
+    duration_ms =
+      System.convert_time_unit(System.monotonic_time() - started_at, :native, :millisecond)
+
+    :telemetry.execute(
+      [:brain, :weight_optimizer, :exception],
+      %{duration_ms: duration_ms},
+      %{
+        run_id: run_id,
+        classifier: classifier,
+        kind: kind,
+        reason: reason,
+        stacktrace: stacktrace
+      }
+    )
+  end
+
+  # Drop the `:seed` tuple — `:telemetry` metadata is freely shared
+  # across process boundaries and PubSub, and tuples don't survive
+  # `Jason.encode/1` serialization. Keep the safe scalar opts.
+  defp telemetry_safe_opts(opts) do
+    opts
+    |> Keyword.drop([:seed, :run_id, :classifier])
+    |> Map.new()
   end
 end

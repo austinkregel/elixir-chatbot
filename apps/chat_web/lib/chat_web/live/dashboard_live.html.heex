@@ -623,7 +623,7 @@
                   <div class="flex justify-between items-center">
                     <span class="text-base-content/60">Intent Classifier</span>
                     <.status_dot status={
-                      if @readiness_details.ml_models.intent_classifier,
+                      if @readiness_details.nlp_pipeline.components.intent_classifier,
                         do: :ready,
                         else: :not_started
                     } />
@@ -663,7 +663,7 @@
                   <div class="flex justify-between items-center">
                     <span class="text-base-content/60">Classifier</span>
                     <.status_dot status={
-                      if @readiness_details.ml_models.classifier_exists,
+                      if @readiness_details.nlp_pipeline.components.intent_classifier,
                         do: :ready,
                         else: :not_started
                     } />
@@ -820,14 +820,21 @@
                   </div>
                   <%= if model_data.loaded do %>
                     <div class="flex items-center gap-4 text-[10px]">
-                      <div class="flex items-center gap-1 text-base-content/60">
-                        <.icon name="hero-cpu-chip" class="size-3" />
-                        <span>{format_bytes(model_data.memory_bytes)}</span>
-                      </div>
-                      <div class="flex items-center gap-1 text-base-content/60">
-                        <.icon name="hero-queue-list" class="size-3" />
-                        <span>Queue: {model_data.message_queue_len || 0}</span>
-                      </div>
+                      <%= if Map.has_key?(model_data, :memory_bytes) do %>
+                        <div class="flex items-center gap-1 text-base-content/60">
+                          <.icon name="hero-cpu-chip" class="size-3" />
+                          <span>{format_bytes(model_data.memory_bytes)}</span>
+                        </div>
+                        <div class="flex items-center gap-1 text-base-content/60">
+                          <.icon name="hero-queue-list" class="size-3" />
+                          <span>Queue: {model_data.message_queue_len || 0}</span>
+                        </div>
+                      <% else %>
+                        <div class="flex items-center gap-1 text-base-content/60">
+                          <.icon name="hero-document" class="size-3" />
+                          <span>{format_bytes(Map.get(model_data, :size_bytes, 0))}</span>
+                        </div>
+                      <% end %>
                     </div>
                   <% end %>
                 </div>
@@ -1700,7 +1707,7 @@
             <span class="text-xs">NLP Pipeline</span>
           </div>
           <div class="flex items-center gap-2 p-2 rounded-lg bg-base-200/30">
-            <div class={"size-2.5 rounded-full " <> if(@readiness_details.ml_models.intent_classifier, do: "bg-success", else: "bg-error")}></div>
+            <div class={"size-2.5 rounded-full " <> if(@readiness_details.nlp_pipeline.components.intent_classifier, do: "bg-success", else: "bg-error")}></div>
             <span class="text-xs">Intent Classifier</span>
           </div>
           <div class="flex items-center gap-2 p-2 rounded-lg bg-base-200/30">
