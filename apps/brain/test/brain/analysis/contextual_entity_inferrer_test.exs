@@ -3,6 +3,7 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
   import Brain.TestHelpers
 
   alias Brain.Analysis.{ContextualEntityInferrer, TypeHierarchy, Pipeline}
+  alias Brain.Lattice
 
   setup do
     ensure_pubsub_started()
@@ -16,6 +17,39 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
   end
 
   describe "infer/5 type narrowing" do
+    test "consumes intent_details lattice with multiple intent hypotheses" do
+      entities = [
+        %{
+          entity_type: "person",
+          value: "Taylor Swift",
+          match: "Taylor Swift",
+          start_pos: 10,
+          end_pos: 22,
+          confidence: 0.65,
+          source: :pos_tagger_propn
+        }
+      ]
+
+      intent = "music.play"
+
+      lattice =
+        Lattice.from_top_k(
+          [{"music.play", 0.85}, {"music.search", 0.2}],
+          stage: :intent_full,
+          source: :test
+        )
+
+      intent_details = %{lattice: lattice, top_k: []}
+
+      {updated_entities, updated_intent, _details} =
+        ContextualEntityInferrer.infer("Play some Taylor Swift", entities, intent, intent_details)
+
+      assert updated_intent == "music.play"
+      narrowed = Enum.find(updated_entities, &(&1[:value] == "Taylor Swift"))
+      assert narrowed != nil
+      assert narrowed[:entity_type] in ["artist", "music-artist", "person"]
+    end
+
     test "narrows person to artist in music context" do
       entities = [
         %{

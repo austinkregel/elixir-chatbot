@@ -4,7 +4,7 @@ defmodule Brain.Analysis.PipelineTier3Test do
   Covers event linking, SRL, BIO tag generation, entity span detection, and tag extraction.
   """
 
-  use ExUnit.Case, async: false
+  use Brain.Test.BrainCase, async: false
 
   alias Brain.Analysis.Pipeline
 

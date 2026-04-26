@@ -64,8 +64,11 @@ defmodule Brain.Analysis.OutcomeLearner do
 
     track_pattern(interp, outcome, user_id, cohort_id)
 
-    # Generate training example from high-confidence confirmed outcomes
-    if outcome in [:success, :likely_success] and interp.activation >= 0.8 and
+    # Only buffer training examples when we have external corroboration
+    # (explicit user feedback), not just high activation from the model's
+    # own prediction. Without this gate, the model trains on its own output,
+    # entrenching biases in a self-confirmation loop.
+    if outcome == :success and user_feedback == :positive and
          interp.intent != nil and interp.text != nil do
       maybe_buffer_training_example(interp.text, interp.intent)
     end

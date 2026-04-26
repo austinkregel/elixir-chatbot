@@ -26,6 +26,8 @@ defmodule Brain.Analysis.SpeechActClassifier do
   """
 
   alias Brain.Analysis.SpeechActResult
+  alias Brain.Lattice
+  alias Brain.Lattice.Candidate, as: LatticeCandidate
   alias Brain.ML.{POSTagger, Tokenizer}
 
   alias Brain.Memory.Store
@@ -80,6 +82,25 @@ defmodule Brain.Analysis.SpeechActClassifier do
   - the result has no `:raw_analyses` (e.g. it was constructed manually for
     testing rather than via `classify/2`).
   """
+  @spec refine_with_intent(SpeechActResult.t(), Lattice.t()) :: SpeechActResult.t()
+  def refine_with_intent(%SpeechActResult{} = result, %Lattice{} = lattice) do
+    if Lattice.empty?(lattice), do: result, else: lattice_best_refinement(result, lattice)
+  end
+
+  defp lattice_best_refinement(%SpeechActResult{} = result, %Lattice{} = lattice) do
+    case Lattice.best(lattice) do
+      nil ->
+        result
+
+      %LatticeCandidate{confidence: c} when c <= 0 ->
+        result
+
+      %LatticeCandidate{label: intent, confidence: conf} ->
+        intent_str = if is_binary(intent), do: intent, else: to_string(intent)
+        refine_with_intent_from_lattice(result, intent_str, conf * 1.0, lattice)
+    end
+  end
+
   @spec refine_with_intent(SpeechActResult.t(), String.t() | nil, number()) :: SpeechActResult.t()
   def refine_with_intent(%SpeechActResult{} = result, nil, _conf), do: result
   def refine_with_intent(%SpeechActResult{} = result, "", _conf), do: result
@@ -116,6 +137,51 @@ defmodule Brain.Analysis.SpeechActClassifier do
   end
 
   def refine_with_intent(%SpeechActResult{} = result, _intent, _conf), do: result
+
+  defp refine_with_intent_from_lattice(
+         %SpeechActResult{raw_analyses: analyses} = result,
+         intent,
+         confidence,
+         %Lattice{} = lattice
+       )
+       when is_binary(intent) and is_number(confidence) do
+    if confidence <= 0 do
+      result
+    else
+      norm = normalize_text(Map.get(analyses, :original_text, ""))
+
+      if feature_intent_conflicts_strong_lexicon?(norm, intent) do
+        result
+      else
+        conf = confidence / 1
+        {category, sub_type} = intent_to_speech_act(intent)
+        second = Lattice.second(lattice)
+
+        second_score =
+          if second, do: second.confidence * 1.0, else: 0.0
+
+        margin = Lattice.margin(lattice)
+
+        top_k =
+          Lattice.to_top_k(lattice)
+          |> Enum.map(fn %{intent: i, score: s} -> %{intent: i, score: s} end)
+
+        intent_analysis = %{
+          intent: intent,
+          category: category,
+          sub_type: sub_type,
+          confidence: conf,
+          second_score: second_score,
+          margin: margin,
+          top_k: top_k,
+          source: :feature_vector
+        }
+
+        updated_analyses = Map.put(analyses, :intent, intent_analysis)
+        combine_analyses(updated_analyses, Map.get(analyses, :original_text, ""))
+      end
+    end
+  end
 
   defp run_all_analyses(text, _entities) do
     normalized = normalize_text(text)
@@ -212,24 +278,94 @@ defmodule Brain.Analysis.SpeechActClassifier do
     end
   end
 
+  @please_tokens MapSet.new(~w(please pls plz kindly))
+  @thanks_tokens MapSet.new(~w(thanks thank thankyou thx))
+  @urgency_tokens MapSet.new(~w(urgent asap immediately emergency now quickly hurry))
+  @hedge_tokens MapSet.new(~w(maybe perhaps possibly might could probably somewhat))
+  @backchannel_tokens MapSet.new(~w(ok okay sure yeah yes no nah right hmm mhm uh huh yep nope))
+  @compliment_tokens MapSet.new(~w(great awesome amazing wonderful excellent nice good brilliant fantastic))
+  @ack_tokens MapSet.new(~w(ok okay got understood acknowledged roger noted))
+  @commissive_tokens MapSet.new(~w(will shall promise guarantee commit pledge vow ensure))
+  @offer_tokens MapSet.new(~w(offer help assist volunteer provide lend))
+  @future_aux MapSet.new(~w(will shall gonna going))
+  @conditional_tokens MapSet.new(~w(if would could should might))
+
   defp analyze_pragmatics(_text, normalized) do
-    words = String.split(normalized)
-    word_count = length(words)
+    tokens = Tokenizer.tokenize(normalized)
+    word_count = length(tokens)
     is_short = word_count <= 3
     is_very_short = word_count <= 2
+    token_set = MapSet.new(tokens)
+
+    has_please = not MapSet.disjoint?(token_set, @please_tokens)
+    has_thanks = not MapSet.disjoint?(token_set, @thanks_tokens)
+    has_urgency = not MapSet.disjoint?(token_set, @urgency_tokens)
+    has_hedging = not MapSet.disjoint?(token_set, @hedge_tokens)
+    is_backchannel = is_very_short and not MapSet.disjoint?(token_set, @backchannel_tokens)
+    is_compliment = not MapSet.disjoint?(token_set, @compliment_tokens)
+    has_acknowledgment = is_short and not MapSet.disjoint?(token_set, @ack_tokens)
+
+    has_commissive = not MapSet.disjoint?(token_set, @commissive_tokens)
+    has_offer = not MapSet.disjoint?(token_set, @offer_tokens)
+    has_future = not MapSet.disjoint?(token_set, @future_aux)
+    has_conditional = not MapSet.disjoint?(token_set, @conditional_tokens)
+
+    first_person_subject =
+      case tokens do
+        ["i" | _] -> true
+        ["we" | _] -> true
+        ["i'll" | _] -> true
+        ["we'll" | _] -> true
+        ["i'm" | _] -> true
+        _ -> false
+      end
+
+    {pragmatic_sub_type, expressive_score} =
+      cond do
+        has_commissive and first_person_subject ->
+          {:promise, 0.0}
+
+        has_offer and first_person_subject ->
+          {:offer, 0.0}
+
+        has_future and first_person_subject and not has_hedging ->
+          {:commitment, 0.0}
+
+        has_thanks ->
+          {:thanks, 0.7}
+
+        is_compliment ->
+          {:compliment, 0.6}
+
+        is_backchannel ->
+          {:backchannel, 0.3}
+
+        has_acknowledgment ->
+          {:acknowledgment, 0.2}
+
+        has_hedging and has_conditional ->
+          {:hedged_intent, 0.0}
+
+        true ->
+          {nil, 0.0}
+      end
 
     %{
-      has_please: false,
-      has_thanks: false,
-      has_urgency: false,
-      has_hedging: false,
+      has_please: has_please,
+      has_thanks: has_thanks,
+      has_urgency: has_urgency,
+      has_hedging: has_hedging,
       is_short_utterance: is_short,
       is_very_short: is_very_short,
-      is_backchannel: false,
-      is_compliment: false,
-      has_acknowledgment: false,
-      pragmatic_sub_type: nil,
-      expressive_score: 0.0,
+      is_backchannel: is_backchannel,
+      is_compliment: is_compliment,
+      has_acknowledgment: has_acknowledgment,
+      has_commissive: has_commissive,
+      has_offer: has_offer,
+      has_future: has_future,
+      first_person_subject: first_person_subject,
+      pragmatic_sub_type: pragmatic_sub_type,
+      expressive_score: expressive_score,
       source: :pragmatic
     }
   end
@@ -309,8 +445,38 @@ defmodule Brain.Analysis.SpeechActClassifier do
     end
   end
 
-  defp tag_to_speech_act(_tag) do
-    {:assertive, :statement}
+  @tag_speech_act_map %{
+    "question" => {:directive, :question},
+    "request" => {:directive, :request},
+    "command" => {:directive, :command},
+    "instruction" => {:directive, :instruction},
+    "greeting" => {:expressive, :greeting},
+    "farewell" => {:expressive, :farewell},
+    "thanks" => {:expressive, :thanks},
+    "apology" => {:expressive, :apology},
+    "compliment" => {:expressive, :compliment},
+    "congratulation" => {:expressive, :congratulation},
+    "promise" => {:commissive, :promise},
+    "offer" => {:commissive, :offer},
+    "commitment" => {:commissive, :commitment},
+    "threat" => {:commissive, :threat},
+    "agreement" => {:commissive, :agreement},
+    "declaration" => {:declarative, :declaration},
+    "announcement" => {:declarative, :announcement},
+    "naming" => {:declarative, :naming},
+    "statement" => {:assertive, :statement},
+    "claim" => {:assertive, :claim},
+    "report" => {:assertive, :report},
+    "opinion" => {:assertive, :opinion},
+    "acknowledgment" => {:expressive, :acknowledgment}
+  }
+
+  defp tag_to_speech_act(tag) when is_atom(tag) do
+    tag_to_speech_act(to_string(tag))
+  end
+
+  defp tag_to_speech_act(tag) when is_binary(tag) do
+    Map.get(@tag_speech_act_map, tag, {:assertive, :statement})
   end
 
   defp combine_analyses(analyses, _text) do
@@ -384,6 +550,30 @@ defmodule Brain.Analysis.SpeechActClassifier do
         [vote | votes]
       else
         votes
+      end
+
+    votes =
+      cond do
+        Map.get(analyses.pragmatic, :has_commissive, false) and
+            Map.get(analyses.pragmatic, :first_person_subject, false) ->
+          sub_type = analyses.pragmatic.pragmatic_sub_type || :promise
+          vote = {:commissive, sub_type, 0.65, :pragmatic}
+          [vote | votes]
+
+        Map.get(analyses.pragmatic, :has_offer, false) and
+            Map.get(analyses.pragmatic, :first_person_subject, false) ->
+          sub_type = analyses.pragmatic.pragmatic_sub_type || :offer
+          vote = {:commissive, sub_type, 0.55, :pragmatic}
+          [vote | votes]
+
+        Map.get(analyses.pragmatic, :has_future, false) and
+            Map.get(analyses.pragmatic, :first_person_subject, false) and
+            not Map.get(analyses.pragmatic, :has_hedging, false) ->
+          vote = {:commissive, :commitment, 0.45, :pragmatic}
+          [vote | votes]
+
+        true ->
+          votes
       end
 
     votes =

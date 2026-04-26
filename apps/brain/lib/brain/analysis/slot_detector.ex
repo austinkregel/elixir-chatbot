@@ -1,7 +1,7 @@
 defmodule Brain.Analysis.SlotDetector do
   @moduledoc "Detects required and optional slots for a given intent and fills them from entities.\n\nThis module:\n- Loads slot schemas from JSON configuration\n- Maps extracted entities to slots\n- Identifies missing required slots\n- Applies default values where configured\n- Provides clarification prompts for missing slots\n"
 
-  alias Brain.Analysis.SlotResult
+  alias Brain.Analysis.{SlotResult, TypeHierarchy}
 
   require Logger
 
@@ -16,8 +16,14 @@ defmodule Brain.Analysis.SlotDetector do
         parent_intent = get_parent_intent(intent)
 
         case Map.get(schemas, parent_intent) do
-          nil -> build_unknown_result(entities)
-          schema -> process_schema(schema, intent, entities)
+          nil ->
+            case find_domain_prefix_schema(intent, entities, schemas) do
+              nil -> build_unknown_result(entities)
+              {schema, matched_intent} -> process_schema(schema, matched_intent, entities)
+            end
+
+          schema ->
+            process_schema(schema, intent, entities)
         end
 
       schema ->
@@ -148,22 +154,79 @@ defmodule Brain.Analysis.SlotDetector do
   end
 
   defp load_schemas do
-    case Application.get_env(:brain, :analysis_schemas_path, @schemas_path) do
-      path when is_binary(path) ->
-        case File.read(path) do
-          {:ok, content} ->
-            case Jason.decode(content) do
-              {:ok, schemas} -> schemas
-              {:error, _} -> default_schemas()
-            end
+    base =
+      case Application.get_env(:brain, :analysis_schemas_path, @schemas_path) do
+        path when is_binary(path) ->
+          case File.read(path) do
+            {:ok, content} ->
+              case Jason.decode(content) do
+                {:ok, schemas} -> schemas
+                {:error, _} -> default_schemas()
+              end
 
-          {:error, _} ->
-            default_schemas()
-        end
+            {:error, _} ->
+              default_schemas()
+          end
 
-      _ ->
-        default_schemas()
-    end
+        _ ->
+          default_schemas()
+      end
+
+    merge_service_schemas(base)
+  end
+
+  defp merge_service_schemas(base) do
+    service_schemas =
+      try do
+        Brain.Services.Dispatcher.service_schemas()
+      rescue
+        _ -> %{}
+      end
+
+    Map.merge(base, service_schemas, fn _intent, json_schema, service_schema ->
+      deep_merge_schemas(json_schema, service_schema)
+    end)
+  end
+
+  defp deep_merge_schemas(json, service) when is_map(json) and is_map(service) do
+    json
+    |> merge_list_field(service, "required")
+    |> merge_list_field(service, "optional")
+    |> merge_mappings(service)
+    |> merge_templates(service)
+    |> merge_defaults(service)
+  end
+
+  defp deep_merge_schemas(_json, service), do: service
+
+  defp merge_list_field(base, overlay, key) do
+    base_list = Map.get(base, key, [])
+    overlay_list = Map.get(overlay, key, [])
+    Map.put(base, key, Enum.uniq(base_list ++ overlay_list))
+  end
+
+  defp merge_mappings(base, overlay) do
+    base_mappings = Map.get(base, "entity_mappings", %{})
+    overlay_mappings = Map.get(overlay, "entity_mappings", %{})
+
+    merged =
+      Map.merge(base_mappings, overlay_mappings, fn _slot, base_types, overlay_types ->
+        Enum.uniq(base_types ++ overlay_types)
+      end)
+
+    Map.put(base, "entity_mappings", merged)
+  end
+
+  defp merge_templates(base, overlay) do
+    base_templates = Map.get(base, "clarification_templates", %{})
+    overlay_templates = Map.get(overlay, "clarification_templates", %{})
+    Map.put(base, "clarification_templates", Map.merge(base_templates, overlay_templates))
+  end
+
+  defp merge_defaults(base, overlay) do
+    base_defaults = Map.get(base, "defaults", %{})
+    overlay_defaults = Map.get(overlay, "defaults", %{})
+    Map.put(base, "defaults", Map.merge(base_defaults, overlay_defaults))
   end
 
   defp default_schemas do
@@ -216,22 +279,63 @@ defmodule Brain.Analysis.SlotDetector do
     Enum.reduce(slots, result, fn slot_name, acc ->
       mapped_entity_types = Map.get(mappings, slot_name, [slot_name])
 
-      matching_entity =
+      exact_match =
         Enum.find(entities, fn entity ->
           entity_type = entity[:entity_type]
           entity_type in mapped_entity_types
         end)
+
+      {matching_entity, via_compatibility} =
+        case exact_match do
+          nil ->
+            compat = find_compatible_entity(entities, mapped_entity_types)
+            {compat, compat != nil}
+
+          entity ->
+            {entity, false}
+        end
 
       case matching_entity do
         nil ->
           acc
 
         entity ->
+          if via_compatibility do
+            record_learned_type_preference(entity, slot_name, result.schema_name)
+          end
+
           value = entity[:value] || entity["value"]
           confidence = entity[:confidence] || entity["confidence"] || 1.0
           SlotResult.fill_slot(acc, slot_name, value, :explicit, confidence)
       end
     end)
+  end
+
+  defp find_compatible_entity(entities, mapped_entity_types) do
+    Enum.find(entities, fn entity ->
+      entity_type = entity[:entity_type] || ""
+
+      Enum.any?(mapped_entity_types, fn mapped ->
+        TypeHierarchy.compatible?(entity_type, mapped)
+      end)
+    end)
+  end
+
+  defp record_learned_type_preference(entity, slot_name, schema_name) do
+    entity_value = entity[:value] || entity[:match] || ""
+    domain =
+      case String.split(to_string(schema_name), ".", parts: 2) do
+        [d, _] -> String.to_atom(d)
+        _ -> nil
+      end
+
+    if entity_value != "" and domain != nil do
+      try do
+        Brain.ML.Gazetteer.record_type_preference(entity_value, slot_name, domain)
+      rescue
+        _ -> :ok
+      end
+    end
   end
 
   defp apply_defaults(result, defaults) do
@@ -242,6 +346,47 @@ defmodule Brain.Analysis.SlotDetector do
         SlotResult.fill_slot(acc, slot_name, default_value, :default, 1.0)
       end
     end)
+  end
+
+  defp find_domain_prefix_schema(intent, entities, schemas) do
+    domain =
+      case String.split(intent, ".", parts: 2) do
+        [d, _] -> d
+        _ -> nil
+      end
+
+    if domain do
+      entity_types = Enum.map(entities, fn e -> e[:entity_type] end) |> Enum.uniq()
+
+      candidates =
+        schemas
+        |> Enum.filter(fn {schema_intent, _schema} ->
+          String.starts_with?(schema_intent, domain <> ".")
+        end)
+        |> Enum.map(fn {schema_intent, schema} ->
+          mappings = Map.get(schema, "entity_mappings", %{})
+
+          match_count =
+            Enum.count(entity_types, fn etype ->
+              Enum.any?(mappings, fn {_slot, mapped_types} ->
+                is_list(mapped_types) and
+                  (etype in mapped_types or
+                     Enum.any?(mapped_types, &TypeHierarchy.compatible?(etype, &1)))
+              end)
+            end)
+
+          {schema_intent, schema, match_count}
+        end)
+        |> Enum.filter(fn {_, _, count} -> count > 0 end)
+        |> Enum.sort_by(fn {_, _, count} -> -count end)
+
+      case candidates do
+        [{matched_intent, schema, _} | _] -> {schema, matched_intent}
+        [] -> nil
+      end
+    else
+      nil
+    end
   end
 
   defp build_unknown_result(entities) do

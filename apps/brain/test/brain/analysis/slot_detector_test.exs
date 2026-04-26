@@ -66,6 +66,65 @@ defmodule Brain.Analysis.SlotDetectorTest do
     end
   end
 
+  describe "service schema merge" do
+    test "GPE entity fills location slot for weather.query via service schema" do
+      entities = [
+        %{entity_type: "gpe", value: "Owosso", confidence: 0.9}
+      ]
+
+      result = SlotDetector.detect("weather.query", entities)
+
+      assert result.schema_name == "weather.query"
+      assert result.all_required_filled == true
+      assert SlotResult.get_slot_value(result, "location") == "Owosso"
+    end
+
+    test "city entity fills location slot for weather.query" do
+      entities = [
+        %{entity_type: "city", value: "Portland", confidence: 0.85}
+      ]
+
+      result = SlotDetector.detect("weather.query", entities)
+
+      assert result.all_required_filled == true
+      assert SlotResult.get_slot_value(result, "location") == "Portland"
+    end
+
+    test "service schema merges with intent_registry defaults" do
+      result = SlotDetector.detect("weather.query", [])
+
+      assert result.all_required_filled == false
+      assert "location" in result.missing_required
+      assert SlotResult.get_slot_value(result, "date") == "today"
+    end
+
+    test "service schema adds gpe to entity_mappings for weather.query" do
+      schema = SlotDetector.get_schema("weather.query")
+      mappings = schema["entity_mappings"]["location"]
+
+      assert "gpe" in mappings
+      assert "location" in mappings
+      assert "city" in mappings
+    end
+
+    test "weather.forecast uses same service schema" do
+      entities = [
+        %{entity_type: "gpe", value: "Chicago", confidence: 0.9}
+      ]
+
+      result = SlotDetector.detect("weather.forecast", entities)
+
+      assert result.all_required_filled == true
+      assert SlotResult.get_slot_value(result, "location") == "Chicago"
+    end
+
+    test "clarification prompt from service schema" do
+      prompt = SlotDetector.get_clarification_prompt("location", "weather.forecast")
+
+      assert prompt == "What location would you like the weather for?"
+    end
+  end
+
   describe "get_schema/1" do
     test "returns schema for known intent" do
       schema = SlotDetector.get_schema("weather.query")
@@ -209,6 +268,90 @@ defmodule Brain.Analysis.SlotDetectorTest do
 
       assert length(prompts) == 2
       assert "What location would you like the weather for?" in prompts
+    end
+  end
+
+  describe "domain-prefix fallback" do
+    test "weather.request_information fills location slot via domain prefix schema" do
+      entities = [
+        %{entity_type: "gpe", value: "Owosso", confidence: 0.9}
+      ]
+
+      result = SlotDetector.detect("weather.request_information", entities)
+
+      assert SlotResult.get_slot_value(result, "location") == "Owosso"
+    end
+
+    test "weather.request_information fills location from city entity type" do
+      entities = [
+        %{entity_type: "city", value: "Detroit", confidence: 0.85}
+      ]
+
+      result = SlotDetector.detect("weather.request_information", entities)
+
+      assert SlotResult.get_slot_value(result, "location") == "Detroit"
+    end
+
+    test "weather.request_information fills location from location entity type" do
+      entities = [
+        %{entity_type: "location", value: "Chicago", confidence: 0.9}
+      ]
+
+      result = SlotDetector.detect("weather.request_information", entities)
+
+      assert SlotResult.get_slot_value(result, "location") == "Chicago"
+    end
+
+    test "completely unknown domain falls through to build_unknown_result" do
+      entities = [
+        %{entity_type: "widget", value: "Foo", confidence: 0.5}
+      ]
+
+      result = SlotDetector.detect("banking.transfer", entities)
+
+      assert result.schema_name == "unknown"
+    end
+  end
+
+  describe "hierarchy-aware slot filling" do
+    test "setting entity fills location slot via TypeHierarchy compatibility" do
+      entities = [
+        %{entity_type: "setting", value: "Owosso", confidence: 0.8}
+      ]
+
+      result = SlotDetector.detect("weather.query", entities)
+
+      assert SlotResult.get_slot_value(result, "location") == "Owosso"
+    end
+
+    test "place-name entity fills location slot via TypeHierarchy compatibility" do
+      entities = [
+        %{entity_type: "place-name", value: "Grand Rapids", confidence: 0.9}
+      ]
+
+      result = SlotDetector.detect("weather.query", entities)
+
+      assert SlotResult.get_slot_value(result, "location") == "Grand Rapids"
+    end
+
+    test "exact match is still preferred over hierarchy fallback" do
+      entities = [
+        %{entity_type: "city", value: "Detroit", confidence: 0.85}
+      ]
+
+      result = SlotDetector.detect("weather.query", entities)
+
+      assert SlotResult.get_slot_value(result, "location") == "Detroit"
+    end
+
+    test "unrelated entity type does not fill location slot" do
+      entities = [
+        %{entity_type: "person", value: "John", confidence: 0.9}
+      ]
+
+      result = SlotDetector.detect("weather.query", entities)
+
+      assert SlotResult.get_slot_value(result, "location") == nil
     end
   end
 end

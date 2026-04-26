@@ -48,14 +48,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
         [:chat_bot, :analysis, :disambiguation, :complete],
         [:chat_bot, :ml, :train, :stop]
       ],
-      fn event, measurements, metadata, _config ->
-        TelemetryCollector.add_event(%{
-          event: event,
-          measurements: measurements,
-          metadata: metadata,
-          timestamp: System.monotonic_time(:millisecond)
-        })
-      end,
+      &__MODULE__.__collect_event__/4,
       nil
     )
 
@@ -64,6 +57,20 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
     end)
 
     Gazetteer.load_all()
+
+    :ok
+  end
+
+  @doc false
+  # Module-function capture (vs anonymous fn) avoids the
+  # ":telemetry handler is a local function" performance warning.
+  def __collect_event__(event, measurements, metadata, _config) do
+    TelemetryCollector.add_event(%{
+      event: event,
+      measurements: measurements,
+      metadata: metadata,
+      timestamp: System.monotonic_time(:millisecond)
+    })
 
     :ok
   end

@@ -28,6 +28,7 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
   """
 
   alias Brain.Analysis.{TypeHierarchy, ChunkProfile, SlotDetector, Pipeline}
+  alias Brain.Lattice
   alias Brain.ML.{POSTagger, Tokenizer}
   require Logger
 
@@ -45,13 +46,20 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
   - `:world_id` -- World scope for TypeInferrer (default: "default")
   """
   def infer(text, entities, intent, intent_details, opts \\ []) do
+    opts =
+      case Map.get(intent_details, :profile) do
+        nil -> opts
+        %ChunkProfile{} = p -> Keyword.put(opts, :profile, p)
+        _ -> opts
+      end
+
     narrowable = find_narrowable_entities(entities, intent, intent_details)
 
     if narrowable == [] do
       {entities, intent, intent_details}
     else
       pos_tags = get_pos_tags(text)
-      top_k = extract_intent_candidates(intent, intent_details)
+      top_k = intent_candidates(intent, intent_details)
 
       hypotheses =
         Enum.map(top_k, fn {candidate_intent, candidate_score} ->
@@ -77,8 +85,9 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
   # ============================================================================
 
   defp find_narrowable_entities(entities, intent, intent_details) do
-    top_k = extract_intent_candidates(intent, intent_details)
-    all_expected = collect_all_expected_types(top_k)
+    top_k = intent_candidates(intent, intent_details)
+    profile = Map.get(intent_details, :profile)
+    all_expected = collect_all_expected_types(top_k, profile)
 
     Enum.filter(entities, fn entity ->
       entity_type = entity[:entity_type]
@@ -89,7 +98,7 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
     end)
   end
 
-  defp collect_all_expected_types(top_k, profile \\ nil) do
+  defp collect_all_expected_types(top_k, profile) do
     profile_types =
       case profile do
         %ChunkProfile{domain: domain} when domain != :unknown ->
@@ -482,6 +491,41 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
   # ============================================================================
   # Intent Candidate Extraction
   # ============================================================================
+
+  defp intent_candidates(intent, intent_details) when is_map(intent_details) do
+    case Map.get(intent_details, :lattice) do
+      %Lattice{} = lat ->
+        if Lattice.empty?(lat) do
+          extract_intent_candidates(intent, intent_details)
+        else
+          lattice_to_candidate_pairs(lat, intent, intent_details)
+        end
+
+      _ ->
+        extract_intent_candidates(intent, intent_details)
+    end
+  end
+
+  defp intent_candidates(intent, other), do: extract_intent_candidates(intent, other)
+
+  defp lattice_to_candidate_pairs(%Lattice{} = lat, intent, intent_details) do
+    normalized =
+      Lattice.to_top_k(lat)
+      |> Enum.map(fn %{intent: i, score: s} -> {i, s} end)
+
+    intent_score =
+      case normalized do
+        [{^intent, s} | _] -> s
+        _ -> Map.get(intent_details, :intent_confidence) || 0.5
+      end
+
+    if Enum.any?(normalized, fn {i, _} -> i == intent end) do
+      normalized
+    else
+      [{intent, intent_score} | normalized]
+    end
+    |> Enum.take(5)
+  end
 
   defp extract_intent_candidates(intent, intent_details) when is_map(intent_details) do
     top_k = Map.get(intent_details, :top_k, [])

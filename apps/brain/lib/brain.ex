@@ -2355,19 +2355,12 @@ defmodule Brain do
     updated_analyses =
       Enum.map(analysis_model.analyses, fn analysis ->
         if analysis.profile != nil do
-          analysis
+          reconcile_intent_with_profile(analysis)
         else
           {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
           profile = ChunkProfile.materialize(analysis, feature_vector)
-
-          intent =
-            case analysis.intent do
-              nil -> profile.derived_label
-              "" -> profile.derived_label
-              existing -> existing
-            end
-
-          %{analysis | profile: profile, feature_vector: feature_vector, intent: intent}
+          analysis = %{analysis | profile: profile, feature_vector: feature_vector}
+          reconcile_intent_with_profile(analysis)
         end
       end)
 
@@ -2377,6 +2370,54 @@ defmodule Brain do
       Logger.warning("Profile materialization failed: #{Exception.message(e)}")
       analysis_model
   end
+
+  defp reconcile_intent_with_profile(analysis) do
+    profile = analysis.profile
+    derived = if profile, do: profile.derived_label, else: nil
+    domain = if profile, do: profile.domain, else: :unknown
+
+    case {analysis.intent, derived, domain} do
+      {nil, d, _} when is_binary(d) and d != "" ->
+        %{analysis | intent: d}
+
+      {"", d, _} when is_binary(d) and d != "" ->
+        %{analysis | intent: d}
+
+      {existing, d, dom} when is_binary(existing) and is_binary(d) and d != "" and dom != :unknown ->
+        intent_domain = extract_intent_domain(existing)
+        profile_domain = to_string(dom)
+        intent_conf = get_speech_act_intent_confidence(analysis)
+
+        if domains_disagree?(intent_domain, profile_domain) or intent_conf <= 0.5 do
+          Logger.debug("Intent override: #{existing} -> #{d}",
+            reason: if(domains_disagree?(intent_domain, profile_domain), do: :domain_mismatch, else: :low_confidence),
+            intent_confidence: intent_conf,
+            profile_domain: profile_domain,
+            intent_domain: intent_domain
+          )
+          %{analysis | intent: d}
+        else
+          analysis
+        end
+
+      _ ->
+        analysis
+    end
+  end
+
+  defp extract_intent_domain(intent) when is_binary(intent) do
+    case String.split(intent, ".", parts: 2) do
+      [domain, _] -> domain
+      _ -> intent
+    end
+  end
+
+  defp domains_disagree?(intent_domain, profile_domain) do
+    intent_domain != profile_domain and profile_domain != "unknown"
+  end
+
+  defp get_speech_act_intent_confidence(%{speech_act: %{intent_confidence: c}}) when is_number(c), do: c
+  defp get_speech_act_intent_confidence(_), do: 0.0
 
   defp greeting_or_farewell?(analysis) do
     cond do

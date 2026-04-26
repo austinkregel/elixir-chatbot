@@ -2,7 +2,7 @@ defmodule Brain.Analysis.FeatureExtractor do
   @moduledoc """
   Orchestrates per-word and per-chunk feature extraction.
 
-  Converts a ChunkAnalysis into a ~140-dimension feature vector by:
+  Converts a ChunkAnalysis into a 326-dimension feature vector by:
   1. Running per-word feature extraction (POS + lexicon lookup + WSD)
   2. Aggregating word features into chunk-level groups
   3. Combining with existing analysis signals (speech act, discourse, etc.)
@@ -16,7 +16,7 @@ defmodule Brain.Analysis.FeatureExtractor do
   Extracts the full feature vector for a ChunkAnalysis.
 
   Returns `{feature_vector, word_features}` where:
-  - `feature_vector` is a flat list of floats (~140 dims)
+  - `feature_vector` is a flat list of floats (326 dims, see ChunkFeatures.vector_dimension/0)
   - `word_features` is the list of per-word feature maps
   """
   def extract(%{pos_tags: pos_tags} = analysis) do

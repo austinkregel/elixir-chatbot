@@ -25,6 +25,8 @@ defmodule Brain.Analysis.Pipeline do
     EntityGraphEnricher
   }
 
+  alias Brain.Lattice
+  alias Brain.Lattice.Candidate, as: LatticeCandidate
   alias Brain.ML.{EntityExtractor, MicroClassifiers, POSTagger, Tokenizer}
 
   alias Brain.Memory.Embedder
@@ -270,9 +272,17 @@ defmodule Brain.Analysis.Pipeline do
     {resolved_text, anaphora_entities} =
       resolve_anaphora(chunk.text, history, chunk.index, opts)
 
+    speech_act_intent = extract_intent_from_speech_act(speech_act_result)
+    speech_act_domain = extract_domain_from_intent(speech_act_intent)
+
     entity_opts =
       opts ++
-        [discourse: discourse_result, speech_act: speech_act_result]
+        [
+          discourse: discourse_result,
+          speech_act: speech_act_result,
+          domain: if(speech_act_domain != "", do: String.to_atom(speech_act_domain)),
+          intent: speech_act_intent
+        ]
 
     entities = extract_entities(resolved_text, entity_opts)
     entities = merge_anaphora_entities(entities, anaphora_entities)
@@ -315,8 +325,28 @@ defmodule Brain.Analysis.Pipeline do
       srl_frame_count: length(srl_frames)
     })
 
+    pass1_analysis =
+      ChunkAnalysis.new(chunk.index, chunk.text)
+      |> Map.put(:discourse, discourse_result)
+      |> Map.put(:speech_act, speech_act_result)
+      |> Map.put(:sentiment, sentiment_result)
+      |> Map.put(:entities, entities)
+      |> ChunkAnalysis.with_events(events)
+      |> Map.put(:event_frames, event_frames)
+      |> Map.put(:srl_frames, srl_frames)
+      |> Map.put(:pos_tags, pos_result_to_tags(pos_result))
+
+    pass1_domain = classify_intent_domain_lightweight(pass1_analysis)
+
     {prelim_intent, intent_method, prelim_intent_conf, prelim_intent_details} =
-      determine_intent(speech_act_result, entities, chunk.text, opts)
+      determine_intent(
+        speech_act_result,
+        Lattice.empty(:intent_pass1),
+        entities,
+        chunk.text,
+        opts,
+        nil
+      )
 
     Progress.report(opts, :intent_determined, %{
       chunk_index: chunk.index,
@@ -324,19 +354,13 @@ defmodule Brain.Analysis.Pipeline do
       intent_method: intent_method,
       intent_confidence: prelim_intent_conf,
       margin: Map.get(prelim_intent_details, :margin, 0.0),
-      pass: 1
+      pass: 1,
+      domain: pass1_domain
     })
 
-    ChunkAnalysis.new(chunk.index, chunk.text)
-    |> Map.put(:discourse, discourse_result)
-    |> Map.put(:speech_act, speech_act_result)
-    |> Map.put(:sentiment, sentiment_result)
+    pass1_analysis
     |> Map.put(:intent, prelim_intent)
-    |> Map.put(:entities, entities)
-    |> ChunkAnalysis.with_events(events)
-    |> Map.put(:event_frames, event_frames)
-    |> Map.put(:srl_frames, srl_frames)
-    |> Map.put(:pos_tags, pos_result_to_tags(pos_result))
+    |> Map.put(:intent_domain, pass1_domain)
     |> Map.put(:pass, 1)
     |> Map.put(
       :_prelim_intent,
@@ -347,6 +371,23 @@ defmodule Brain.Analysis.Pipeline do
         details: prelim_intent_details
       }
     )
+  end
+
+  defp classify_intent_domain_lightweight(analysis) do
+    if MicroClassifiers.ready?() do
+      try do
+        {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
+
+        case MicroClassifiers.classify_vector(:intent_domain, feature_vector) do
+          {:ok, domain, _confidence} -> to_string(domain)
+          _ -> nil
+        end
+      rescue
+        _ -> nil
+      end
+    else
+      nil
+    end
   end
 
   # Builds the cross-chunk context that pass 2 uses to enrich each
@@ -459,8 +500,13 @@ defmodule Brain.Analysis.Pipeline do
 
     pass1_with_context = Map.put(pass1, :accumulated_context, cross_context.accumulator)
 
-    {refined_speech_act, intent, intent_method, intent_confidence, intent_details} =
+    {refined_speech_act, intent, intent_method, intent_confidence, intent_details, chunk_profile} =
       classify_intent_full_and_refine(pass1_with_context, opts)
+
+    intent_details =
+      if chunk_profile,
+        do: Map.put(intent_details, :profile, chunk_profile),
+        else: intent_details
 
     Progress.report(opts, :intent_refined, %{
       chunk_index: pass1.chunk_index,
@@ -468,6 +514,8 @@ defmodule Brain.Analysis.Pipeline do
       intent_method: intent_method,
       intent_confidence: intent_confidence,
       margin: Map.get(intent_details, :margin, 0.0),
+      top_k: Map.get(intent_details, :top_k, []),
+      lattice: Map.get(intent_details, :lattice) && Brain.Lattice.to_map(Map.get(intent_details, :lattice)),
       pass: 2
     })
 
@@ -484,6 +532,7 @@ defmodule Brain.Analysis.Pipeline do
       entities_after_inference
       |> filter_entities_by_intent(intent)
       |> maybe_retype_pos_music_artists(pass1.text)
+      |> Brain.ML.EntityExtractor.refine_entity_types(to_string(intent))
 
     Progress.report(opts, :entities_filtered, %{
       chunk_index: pass1.chunk_index,
@@ -586,38 +635,78 @@ defmodule Brain.Analysis.Pipeline do
   # analysis (with cross-chunk context fused into `:accumulated_context`),
   # then splices that intent into the speech-act voter via
   # `SpeechActClassifier.refine_with_intent/3` and re-runs `determine_intent`
-  # on the refined speech act.
+  # on the refined speech act. A lightweight ChunkProfile is materialized so
+  # determine_intent can prefer `derived_label` when intent_full is uncertain.
   defp classify_intent_full_and_refine(pass1_with_context, opts) do
-    {fv_intent, fv_conf} = classify_intent_full(pass1_with_context)
+    lattice = classify_intent_full(pass1_with_context)
 
     refined_speech_act =
-      SpeechActClassifier.refine_with_intent(pass1_with_context.speech_act, fv_intent, fv_conf)
+      SpeechActClassifier.refine_with_intent(pass1_with_context.speech_act, lattice)
+
+    profile = materialize_early_profile(pass1_with_context)
+    lattice = apply_profile_rerank(lattice, profile)
 
     {intent, intent_method, intent_confidence, intent_details} =
-      determine_intent(refined_speech_act, pass1_with_context.entities, pass1_with_context.text, opts)
+      determine_intent(
+        refined_speech_act,
+        lattice,
+        pass1_with_context.entities,
+        pass1_with_context.text,
+        opts,
+        profile
+      )
 
-    {refined_speech_act, intent, intent_method, intent_confidence, intent_details}
+    {refined_speech_act, intent, intent_method, intent_confidence, intent_details, profile}
+  end
+
+  @profile_rerank_boost 0.15
+
+  defp apply_profile_rerank(lattice, nil), do: lattice
+
+  defp apply_profile_rerank(lattice, %ChunkProfile{derived_label: ""}), do: lattice
+
+  defp apply_profile_rerank(lattice, %ChunkProfile{domain: :unknown}), do: lattice
+
+  defp apply_profile_rerank(%Lattice{} = lattice, %ChunkProfile{} = profile) do
+    derived = profile.derived_label
+    if derived == "" or derived == nil, do: lattice, else: do_profile_rerank(lattice, derived)
+  end
+
+  defp apply_profile_rerank(lattice, _), do: lattice
+
+  defp do_profile_rerank(%Lattice{} = lattice, derived) do
+    Lattice.rerank(lattice, fn %LatticeCandidate{label: lab} ->
+      if to_string(lab) == to_string(derived), do: @profile_rerank_boost, else: 0.0
+    end)
+  end
+
+  defp materialize_early_profile(analysis) do
+    {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
+    ChunkProfile.materialize(analysis, feature_vector)
+  rescue
+    _ -> nil
   end
 
   defp classify_intent_full(pass1_with_context) do
     if MicroClassifiers.ready?() do
-      try do
-        {feature_vector, _word_feats} = FeatureExtractor.extract(pass1_with_context)
+      {feature_vector, _word_feats} = FeatureExtractor.extract(pass1_with_context)
 
-        case MicroClassifiers.classify_vector(:intent_full, feature_vector) do
-          {:ok, intent, confidence} when intent != "unknown" and intent != "" ->
-            {intent, confidence}
+      case MicroClassifiers.classify_vector_detailed(:intent_full, feature_vector) do
+        {:ok, %Lattice{} = lattice} ->
+          case Lattice.best_label(lattice) do
+            l when l in [nil, "", "unknown"] ->
+              Lattice.empty(:intent_full, error: :unknown_intent)
 
-          _ ->
-            {nil, 0.0}
-        end
-      rescue
-        e ->
-          Logger.debug("Pipeline pass 2 intent_full classification failed: #{Exception.message(e)}")
-          {nil, 0.0}
+            _ ->
+              lattice
+          end
+
+        {:error, reason} ->
+          Lattice.empty(:intent_full, error: reason)
       end
     else
-      {nil, 0.0}
+      Logger.warning("MicroClassifiers not ready — intent_full classification skipped (not_loaded)")
+      Lattice.empty(:intent_full, error: :not_loaded)
     end
   end
 
@@ -849,76 +938,93 @@ defmodule Brain.Analysis.Pipeline do
   @disambiguation_threshold 0.5
   @low_confidence_floor 0.3
 
-  defp determine_intent(speech_act, entities, text, opts) do
+  defp determine_intent(speech_act, %Lattice{} = lattice, entities, text, opts, profile) do
     classifier_intent = extract_classifier_intent(speech_act)
     best_score = speech_act.intent_confidence || speech_act.confidence
-    second_score = Map.get(speech_act, :second_score, 0.0)
-    margin = Map.get(speech_act, :margin, 0.0)
-    top_k = Map.get(speech_act, :top_k, [])
+    base = intent_details_base_from_lattice(lattice)
 
     cond do
       classifier_intent != nil and best_score >= @disambiguation_threshold ->
-        {classifier_intent, :classifier, best_score,
-         %{second_score: second_score, margin: margin, top_k: top_k}}
+        {classifier_intent, :classifier, best_score, base}
 
       classifier_intent != nil ->
-        case disambiguate_with_atlas(classifier_intent, top_k, entities, text, opts) do
+        case disambiguate_with_atlas(classifier_intent, lattice, entities, text, opts, profile) do
           {:ok, refined_intent, refined_score, method} ->
             {refined_intent, method, refined_score,
-             %{second_score: second_score, margin: margin, top_k: top_k,
-               original_intent: classifier_intent, original_score: best_score}}
+             Map.merge(base, %{
+               original_intent: classifier_intent,
+               original_score: best_score
+             })}
 
           :no_opinion when best_score < @low_confidence_floor ->
-            inferred = infer_intent_from_speech_act(speech_act, text)
+            inferred = infer_intent_from_speech_act(speech_act, text, profile)
+
             {inferred, :speech_act_fallback, nil,
-             %{second_score: second_score, margin: margin, top_k: top_k,
-               original_intent: classifier_intent, original_score: best_score}}
+             Map.merge(base, %{
+               original_intent: classifier_intent,
+               original_score: best_score
+             })}
 
           :no_opinion ->
-            {classifier_intent, :classifier, best_score,
-             %{second_score: second_score, margin: margin, top_k: top_k}}
+            {classifier_intent, :classifier, best_score, base}
         end
 
       speech_act.category == :expressive ->
-        inferred = infer_intent_from_speech_act(speech_act, text)
-        {inferred, :speech_act, nil, %{second_score: 0.0, margin: 0.0, top_k: []}}
+        inferred = infer_intent_from_speech_act(speech_act, text, profile)
+        {inferred, :speech_act, nil, base}
 
       true ->
-        inferred = infer_intent_from_speech_act(speech_act, text)
-        {inferred, :speech_act, nil, %{second_score: 0.0, margin: 0.0, top_k: []}}
+        inferred = infer_intent_from_speech_act(speech_act, text, profile)
+        {inferred, :speech_act, nil, base}
     end
   end
 
-  defp disambiguate_with_atlas(classifier_intent, top_k, entities, _text, opts) do
+  defp intent_details_base_from_lattice(%Lattice{} = lattice) do
+    if Lattice.empty?(lattice) do
+      %{second_score: 0.0, margin: 0.0, top_k: [], lattice: lattice}
+    else
+      top_k =
+        Lattice.to_top_k(lattice)
+        |> Enum.map(fn %{intent: i, score: s} -> %{intent: i, score: s} end)
+
+      second = Lattice.second(lattice)
+
+      second_score =
+        if second, do: second.confidence * 1.0, else: 0.0
+
+      %{
+        second_score: second_score,
+        margin: Lattice.margin(lattice),
+        top_k: top_k,
+        lattice: lattice
+      }
+    end
+  end
+
+  defp disambiguate_with_atlas(classifier_intent, %Lattice{} = lattice, entities, _text, opts, profile) do
     conversation_id = Keyword.get(opts, :conversation_id)
 
-    # Query the conversation graph for recent topics to provide context
     recent_topics = graph_recent_topics(conversation_id)
-
-    # Query the knowledge graph for entity neighborhoods to understand context
     entity_neighborhoods = graph_entity_neighborhoods(entities)
 
-    # Use the graph-derived entity types to score each candidate intent
-    candidates = normalize_top_k(top_k)
-
-    scored =
-      Enum.map(candidates, fn {intent, score} ->
-        atlas_score = score_intent_with_graph_context(
-          intent, entity_neighborhoods, recent_topics
-        )
-        {intent, score + atlas_score}
+    reranked =
+      Lattice.rerank(lattice, fn %LatticeCandidate{label: intent} ->
+        score_intent_with_graph_context(intent, entity_neighborhoods, recent_topics, profile)
       end)
-      |> Enum.sort_by(fn {_, s} -> -s end)
 
-    case scored do
-      [{best_intent, best_score} | _] when best_intent != classifier_intent ->
-        {:ok, best_intent, best_score, :atlas_disambiguation}
-
-      _ ->
+    case Lattice.best(reranked) do
+      nil ->
         :no_opinion
+
+      %LatticeCandidate{label: best_intent, confidence: best_score} ->
+        best_str = if is_binary(best_intent), do: best_intent, else: to_string(best_intent)
+
+        if best_str != classifier_intent do
+          {:ok, best_str, best_score, :atlas_disambiguation}
+        else
+          :no_opinion
+        end
     end
-  rescue
-    _ -> :no_opinion
   end
 
   defp graph_recent_topics(nil), do: []
@@ -937,18 +1043,8 @@ defmodule Brain.Analysis.Pipeline do
 
   defp graph_entity_neighborhoods(_), do: []
 
-  defp normalize_top_k(top_k) when is_list(top_k) do
-    Enum.flat_map(top_k, fn
-      %{intent: intent, score: score} -> [{intent, score}]
-      {intent, score} when is_binary(intent) -> [{intent, score}]
-      _ -> []
-    end)
-  end
-
-  defp normalize_top_k(_), do: []
-
   @doc false
-  defp score_intent_with_graph_context(intent, entity_neighborhoods, recent_topics, profile \\ nil) do
+  defp score_intent_with_graph_context(intent, entity_neighborhoods, recent_topics, profile) do
     expected_types =
       case profile do
         %ChunkProfile{domain: domain} when domain != :unknown ->
@@ -1050,7 +1146,7 @@ defmodule Brain.Analysis.Pipeline do
                          |> File.read!()
                          |> Jason.decode!()
 
-  defp infer_intent_from_speech_act(speech_act, _text, profile \\ nil) do
+  defp infer_intent_from_speech_act(speech_act, _text, profile) do
     profile_label =
       case profile do
         %ChunkProfile{derived_label: label} when is_binary(label) and label != "" -> label
@@ -1091,18 +1187,28 @@ defmodule Brain.Analysis.Pipeline do
     user_id = Keyword.get(opts, :user_id) || "anonymous"
 
     if Brain.Epistemic.Types.Config.auto_extraction_enabled?() do
-      Task.Supervisor.start_child(
-        Brain.Knowledge.AgentSupervisor,
-        fn ->
-          try do
-            Brain.Epistemic.BeliefStore.extract_beliefs_from_events(events, user_id)
-          rescue
-            e ->
-              require Logger
-              Logger.debug("Belief extraction from events failed: #{Exception.message(e)}")
-          end
+      if Application.get_env(:brain, :pipeline_belief_extraction_sync, false) do
+        try do
+          Brain.Epistemic.BeliefStore.extract_beliefs_from_events(events, user_id)
+        rescue
+          e ->
+            require Logger
+            Logger.debug("Belief extraction from events failed: #{Exception.message(e)}")
         end
-      )
+      else
+        Task.Supervisor.start_child(
+          Brain.Knowledge.AgentSupervisor,
+          fn ->
+            try do
+              Brain.Epistemic.BeliefStore.extract_beliefs_from_events(events, user_id)
+            rescue
+              e ->
+                require Logger
+                Logger.debug("Belief extraction from events failed: #{Exception.message(e)}")
+            end
+          end
+        )
+      end
     end
 
     :ok
@@ -1384,22 +1490,52 @@ defmodule Brain.Analysis.Pipeline do
   end
 
   defp record_novel_candidate(
-         _text,
+         text,
          intent,
          best_score,
          details,
          _speech_act,
-         _entities,
-         _slot_result,
+         entities,
+         slot_result,
          novelty_score,
-         _opts
+         opts
        ) do
-    Logger.debug("Novel intent candidate detected (review queue removed)",
+    alias Brain.Analysis.Types.IntentReviewCandidate
+
+    candidate =
+      IntentReviewCandidate.new(text, to_string(intent), best_score,
+        second_score: Map.get(details, :second_score, 0.0),
+        margin: Map.get(details, :margin, 0.0),
+        top_k: Map.get(details, :top_k, []),
+        extracted_entities: entities,
+        slot_fill_summary: slot_result || %{},
+        world_id: Keyword.get(opts, :world_id),
+        conversation_id: Keyword.get(opts, :conversation_id),
+        annotation: %{
+          tags: [:novel_input],
+          notes: "Novelty score: #{novelty_score}",
+          domain_guess: nil,
+          spans: []
+        }
+      )
+
+    if Process.whereis(Brain.PubSub) do
+      Phoenix.PubSub.broadcast(
+        Brain.PubSub,
+        "training:novel_candidate",
+        {:novel_intent_candidate, candidate}
+      )
+    end
+
+    Logger.debug("Novel intent candidate recorded for review",
       intent: intent,
       score: best_score,
       margin: Map.get(details, :margin, 0.0),
-      novelty_score: novelty_score
+      novelty_score: novelty_score,
+      candidate_id: candidate.id
     )
+  rescue
+    _ -> :ok
   end
 
   # ============================================================================
@@ -1539,6 +1675,23 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
   defp extract_domain_from_intent(_), do: ""
+
+  defp extract_intent_from_speech_act(nil), do: nil
+  defp extract_intent_from_speech_act(speech_act) do
+    indicators =
+      cond do
+        is_map(speech_act) and is_map_key(speech_act, :indicators) -> speech_act.indicators
+        is_map(speech_act) and is_map_key(speech_act, "indicators") -> speech_act["indicators"]
+        true -> []
+      end
+
+    Enum.find_value(indicators || [], fn indicator ->
+      case String.split(to_string(indicator), ":", parts: 2) do
+        ["intent", intent] -> intent
+        _ -> nil
+      end
+    end)
+  end
 
   @doc false
   def expected_entity_types_from_domain(domain) do

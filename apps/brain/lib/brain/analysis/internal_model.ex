@@ -196,6 +196,7 @@ defmodule Brain.Analysis.ChunkAnalysis do
     event_frames: [],
     srl_frames: [],
     pos_tags: [],
+    intent_domain: nil,
     accumulated_context: nil,
     pass: 1
   ]

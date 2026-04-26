@@ -8,13 +8,13 @@ defmodule Brain.TelemetryCompletionTest do
 
       handler_id = "test-response-generate-#{System.unique_integer([:positive])}"
 
+      # Module-function capture so :telemetry doesn't warn about a
+      # local/anonymous handler (which would log once per test run).
       :telemetry.attach(
         handler_id,
         [:chat_bot, :response, :generate, :stop],
-        fn _event, measurements, _metadata, _config ->
-          send(this, {:telemetry, measurements})
-        end,
-        %{}
+        &__MODULE__.__forward_measurements__/4,
+        %{target: this}
       )
 
       try do
@@ -24,6 +24,13 @@ defmodule Brain.TelemetryCompletionTest do
         :telemetry.detach(handler_id)
       end
     end
+  end
+
+  @doc false
+  def __forward_measurements__(_event, measurements, _metadata, %{target: target})
+      when is_pid(target) do
+    send(target, {:telemetry, measurements})
+    :ok
   end
 
   describe "record_readiness" do

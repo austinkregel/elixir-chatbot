@@ -217,17 +217,19 @@ defmodule Brain.Analysis.EventIntegrationTest do
     test "extraction emits telemetry events" do
       ref = make_ref()
       test_pid = self()
+      handler_id = "test-event-extraction-#{inspect(ref)}"
 
-      handler = fn event, measurements, metadata, _config ->
-        send(test_pid, {:telemetry, ref, event, measurements, metadata})
-      end
-
+      # Module-function capture instead of an anonymous fn so :telemetry
+      # doesn't warn about a local-function handler. The dest pid + ref
+      # ride along in the per-handler config map.
       :telemetry.attach(
-        "test-event-extraction-#{inspect(ref)}",
+        handler_id,
         [:chat_bot, :analysis, :event_extraction],
-        handler,
-        nil
+        &__MODULE__.__forward_event__/4,
+        %{target: test_pid, ref: ref}
       )
+
+      on_exit(fn -> :telemetry.detach(handler_id) end)
 
       analysis = %{
         pos_tags: [{"I", "PRON"}, {"want", "VERB"}, {"coffee", "NOUN"}],
@@ -245,8 +247,14 @@ defmodule Brain.Analysis.EventIntegrationTest do
       assert Map.has_key?(measurements, :event_count)
       assert metadata.tensor_ops == true
       assert metadata.string_ops == false
-      :telemetry.detach("test-event-extraction-#{inspect(ref)}")
     end
+  end
+
+  @doc false
+  def __forward_event__(event, measurements, metadata, %{target: target, ref: ref})
+      when is_pid(target) do
+    send(target, {:telemetry, ref, event, measurements, metadata})
+    :ok
   end
 
   describe "No string matching verification" do

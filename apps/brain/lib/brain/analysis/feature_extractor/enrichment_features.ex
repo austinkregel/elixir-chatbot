@@ -554,6 +554,8 @@ defmodule Brain.Analysis.FeatureExtractor.EnrichmentFeatures do
   substitution.
   """
   @spec subcategorization_frame([{String.t(), atom()}]) :: [float()]
+  def subcategorization_frame([]), do: List.duplicate(0.0, @subcat_dim)
+
   def subcategorization_frame(tokens_pos) when is_list(tokens_pos) do
     pos_seq =
       Enum.map(tokens_pos, fn
