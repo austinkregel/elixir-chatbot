@@ -22,7 +22,7 @@ These rules MUST be followed in all code contributions:
 6. **Tests Must Fail, Not Degrade**: Tests must exercise the actual system, not a degraded version of it. Never skip, exclude, or disable tests to work around failures — fix the root cause. Never add `try/rescue` wrappers, `:ok` fallbacks, or conditional skips that hide missing infrastructure (databases, models, services). If a test needs a model, that model must be trained and present. If a test needs a database, that database must be created and migrated. A passing test suite with silent fallbacks is worse than a failing test suite with loud errors.
 7. **World-Scoping**: Use `World.Context` for isolated training environments. Models and data are scoped per-world.
 8. **No hardcoded intents, entities, or any other data**: If we need a "new" system, we need to train a new model for it. Sentiment analysis, POS tagging, etc. should all be done with trained models. This enables us to easily add new systems and models to the system.
-
+9. **No using tail, head, sed, grep, or any other command to limit output of the commands you run.** If you need the output anywhere, tee it to a file and wait for it to complete then you can review the file without needing to rerun the tests.
 ## Project Overview
 
 ### Umbrella Structure
