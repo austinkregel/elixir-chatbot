@@ -141,19 +141,103 @@ defmodule Brain.ML.Gazetteer do
   Look up multiple potential entity spans from a list of tokens.
   Returns a list of {start_index, end_index, entity_info} tuples.
   Prioritizes longer matches (multi-word entities).
+
+  ## Options
+    - `:domain` - Domain atom (e.g. `:weather`, `:music`) to rank multi-type results
+    - `:intent` - Intent string (e.g. `"weather.query"`) for Poincare/domain scoring
+    - `:world_id` - World ID for overlay lookups
   """
-  def lookup_spans(tokens) when is_list(tokens) do
+  def lookup_spans(tokens, opts \\ [])
+
+  def lookup_spans(tokens, opts) when is_list(tokens) do
     Telemetry.span(:gazetteer_lookup, %{token_count: length(tokens)}, fn ->
-      do_lookup_spans(tokens)
+      do_lookup_spans(tokens, opts)
     end)
   end
 
-  defp do_lookup_spans(tokens) do
-    token_count = length(tokens)
+  @doc """
+  Look up all span hypotheses including overlapping candidates with scores.
+  Returns a list of {start_index, end_index, entity_infos, score} tuples.
+  Overlapping spans are retained for the caller to resolve.
 
-    # Try to find matches starting from each position
-    # Prioritize longer matches
-    find_all_spans(tokens, 0, token_count, [])
+  ## Options
+    Same as `lookup_spans/2`.
+  """
+  def lookup_spans_lattice(tokens, opts \\ []) when is_list(tokens) do
+      Telemetry.span(:gazetteer_lookup, %{token_count: length(tokens)}, fn ->
+      token_count = length(tokens)
+      domain = Keyword.get(opts, :domain)
+      intent = Keyword.get(opts, :intent)
+
+      find_all_spans_raw(tokens, 0, token_count, [])
+      |> Enum.map(fn {start_idx, end_idx, entity_infos} ->
+        span_len = end_idx - start_idx + 1
+        ranked = rank_types_with_context(entity_infos, domain: domain, intent: intent)
+        score = compute_span_score(ranked, span_len, domain, intent)
+        {start_idx, end_idx, ranked, score}
+      end)
+      |> Enum.sort_by(fn {start, _end, _infos, score} -> {-score, start} end)
+    end)
+  rescue
+    ArgumentError -> []
+  end
+
+  @doc """
+  Record that a type was successfully used for a surface form in a domain context.
+  Adjusts future rankings for this key+domain combination.
+  """
+  def record_type_preference(surface_form, preferred_type, domain)
+      when is_binary(surface_form) and is_binary(preferred_type) do
+    normalized = normalize(surface_form)
+
+    case :ets.lookup(@table_name, normalized) do
+      [{^normalized, infos}] when is_list(infos) ->
+        {preferred, rest} =
+          Enum.split_with(infos, fn info ->
+            (Map.get(info, :entity_type) || Map.get(info, :type)) == preferred_type
+          end)
+
+        if preferred != [] do
+          boosted =
+            Enum.map(preferred, fn info ->
+              domain_prefs = Map.get(info, :domain_preferences, %{})
+              updated_prefs = Map.update(domain_prefs, domain, 1, &(&1 + 1))
+              Map.put(info, :domain_preferences, updated_prefs)
+            end)
+
+          :ets.insert(@table_name, {normalized, boosted ++ rest})
+          :ok
+        else
+          :not_found
+        end
+
+      _ ->
+        :not_found
+    end
+  rescue
+    _ -> :error
+  end
+
+  defp do_lookup_spans(tokens, opts) do
+    token_count = length(tokens)
+    domain = Keyword.get(opts, :domain)
+    intent = Keyword.get(opts, :intent)
+
+    spans = find_all_spans_raw(tokens, 0, token_count, [])
+
+    ranked_spans =
+      if domain != nil or intent != nil do
+        Enum.map(spans, fn {start_idx, end_idx, entity_infos} ->
+          ranked = rank_types_with_context(entity_infos, domain: domain, intent: intent)
+          {start_idx, end_idx, ranked}
+        end)
+      else
+        spans
+      end
+
+    ranked_spans
+    |> Enum.sort_by(fn {start, end_idx, _info} -> {-(end_idx - start), start} end)
+    |> remove_overlapping_spans([])
   rescue
     ArgumentError -> []
   end
@@ -877,20 +961,36 @@ defmodule Brain.ML.Gazetteer do
   defp insert_entry_direct(name, entity_type, metadata) when is_binary(name) and name != "" do
     normalized_key = normalize(name)
 
+    entity_info =
+      metadata
+      |> Map.put(:entity_type, entity_type)
+      |> Map.put(:type, entity_type)
+      |> Map.put(:value, name)
+      |> Map.put(:original_name, name)
+      |> Map.put(:source, :atlas)
+      |> Map.put(:added_at, System.system_time(:second))
+
     case :ets.lookup(@table_name, normalized_key) do
-      [{^normalized_key, _existing}] ->
-        false
+      [{^normalized_key, existing}] ->
+        existing_list =
+          case existing do
+            l when is_list(l) -> l
+            m when is_map(m) -> [m]
+          end
+
+        already_has_type =
+          Enum.any?(existing_list, fn entry ->
+            Map.get(entry, :entity_type) == entity_type
+          end)
+
+        if already_has_type do
+          false
+        else
+          :ets.insert(@table_name, {normalized_key, [entity_info | existing_list]})
+          true
+        end
 
       [] ->
-        entity_info =
-          metadata
-          |> Map.put(:entity_type, entity_type)
-          |> Map.put(:type, entity_type)
-          |> Map.put(:value, name)
-          |> Map.put(:original_name, name)
-          |> Map.put(:source, :atlas)
-          |> Map.put(:added_at, System.system_time(:second))
-
         :ets.insert(@table_name, {normalized_key, entity_info})
 
         words = String.split(normalized_key)
@@ -1013,56 +1113,38 @@ defmodule Brain.ML.Gazetteer do
     length(prefixes)
   end
 
-  defp find_all_spans(_tokens, start_idx, token_count, acc) when start_idx >= token_count do
-    # Sort by span length (longest first) and then by start position
+  defp find_all_spans_raw(_tokens, start_idx, token_count, acc) when start_idx >= token_count do
     acc
-    |> Enum.sort_by(fn {start, end_idx, _info} -> {-(end_idx - start), start} end)
-    |> remove_overlapping_spans([])
   end
 
-  defp find_all_spans(tokens, start_idx, token_count, acc) do
-    # Try to find the longest match starting at start_idx
-    # Max 5 words per entity
+  defp find_all_spans_raw(tokens, start_idx, token_count, acc) do
     max_span = min(5, token_count - start_idx)
 
-    match = find_longest_match(tokens, start_idx, max_span)
-
-    case match do
-      {:ok, end_idx, entity_info} ->
-        # Found a match, continue from after this match
-        new_acc = [{start_idx, end_idx, entity_info} | acc]
-        find_all_spans(tokens, start_idx + 1, token_count, new_acc)
-
-      :not_found ->
-        # No match at this position, try next
-        find_all_spans(tokens, start_idx + 1, token_count, acc)
-    end
+    new_acc = find_all_matches_at(tokens, start_idx, max_span, acc)
+    find_all_spans_raw(tokens, start_idx + 1, token_count, new_acc)
   end
 
-  defp find_longest_match(tokens, start_idx, max_span) do
-    # Try longest spans first
+  defp find_all_matches_at(tokens, start_idx, max_span, acc) do
     if max_span < 1 do
-      :not_found
+      acc
     else
       max_span..1//-1
-      |> Enum.reduce_while(:not_found, fn span_len, _acc ->
+      |> Enum.reduce(acc, fn span_len, inner_acc ->
         span_tokens = Enum.slice(tokens, start_idx, span_len)
         phrase = Enum.join(span_tokens, " ")
         normalized = normalize(phrase)
 
         case :ets.lookup(@table_name, normalized) do
           [{^normalized, entity_infos}] when is_list(entity_infos) ->
-            # Multiple entity types - return all of them
             end_idx = start_idx + span_len - 1
-            {:halt, {:ok, end_idx, entity_infos}}
+            [{start_idx, end_idx, entity_infos} | inner_acc]
 
           [{^normalized, entity_info}] when is_map(entity_info) ->
-            # Single entity (legacy format)
             end_idx = start_idx + span_len - 1
-            {:halt, {:ok, end_idx, [entity_info]}}
+            [{start_idx, end_idx, [entity_info]} | inner_acc]
 
           [] ->
-            {:cont, :not_found}
+            inner_acc
         end
       end)
     end
@@ -1087,6 +1169,144 @@ defmodule Brain.ML.Gazetteer do
       # Add this span
       remove_overlapping_spans(rest, [span | resolved])
     end
+  end
+
+  @doc """
+  Rank a list of entity type infos using contextual signals.
+  Returns the same list reordered so the best match for the context is first.
+  """
+  def rank_types_with_context(infos, opts \\ [])
+
+  def rank_types_with_context(infos, _opts) when length(infos) <= 1, do: infos
+
+  def rank_types_with_context(infos, opts) when is_list(infos) do
+    domain = Keyword.get(opts, :domain)
+    intent = Keyword.get(opts, :intent)
+
+    if domain == nil and intent == nil do
+      infos
+    else
+      adjustments = Brain.Analysis.TypeHierarchy.config("confidence_adjustments", %{})
+      source_priority = Brain.Analysis.TypeHierarchy.config("source_priority", %{})
+
+      Enum.sort_by(infos, fn info ->
+        entity_type = Map.get(info, :entity_type) || Map.get(info, :type) || "unknown"
+        source = Map.get(info, :source, :unknown) |> to_string()
+
+        domain_score = domain_alignment_score(entity_type, domain)
+        poincare_score = poincare_proximity_score(entity_type, intent)
+        conceptnet_score = conceptnet_isa_score(entity_type, domain)
+        learned_score = learned_preference_score(info, domain)
+
+        type_score = Map.get(adjustments, entity_type, 0.0)
+        source_score = Map.get(source_priority, source, 0)
+
+        total = domain_score * 3.0 + poincare_score * 2.0 +
+                conceptnet_score * 1.5 + learned_score * 2.0 +
+                source_score * 0.5 + type_score * 0.3
+
+        -total
+      end)
+    end
+  end
+
+  defp domain_alignment_score(_entity_type, nil), do: 0.0
+
+  defp domain_alignment_score(entity_type, domain) do
+    groups = load_disambiguation_groups()
+    domain_str = to_string(domain)
+
+    matching_group =
+      Enum.find(groups, fn {group_name, types} ->
+        String.contains?(to_string(group_name), domain_str) and entity_type in types
+      end)
+
+    if matching_group, do: 1.0, else: 0.0
+  end
+
+  defp poincare_proximity_score(_entity_type, nil), do: 0.0
+
+  defp poincare_proximity_score(entity_type, intent) do
+    if Code.ensure_loaded?(Brain.ML.Poincare.Embeddings) and
+         function_exported?(Brain.ML.Poincare.Embeddings, :entity_distance, 2) do
+      try do
+        case Brain.ML.Poincare.Embeddings.entity_distance(entity_type, intent) do
+          {:ok, distance} when is_number(distance) ->
+            1.0 / (1.0 + distance)
+
+          _ ->
+            0.0
+        end
+      catch
+        _, _ -> 0.0
+      end
+    else
+      0.0
+    end
+  end
+
+  defp conceptnet_isa_score(_entity_type, nil), do: 0.0
+
+  defp conceptnet_isa_score(entity_type, domain) do
+    if Code.ensure_loaded?(Brain.Lexicon.ConceptNet) do
+      try do
+        isa_relations = Brain.Lexicon.ConceptNet.related(entity_type, "IsA")
+        domain_str = to_string(domain)
+
+        if Enum.any?(isa_relations, fn related ->
+             String.contains?(String.downcase(related), domain_str) or
+               related == domain_str
+           end) do
+          1.0
+        else
+          0.0
+        end
+      catch
+        _, _ -> 0.0
+      end
+    else
+      0.0
+    end
+  end
+
+  defp learned_preference_score(_info, nil), do: 0.0
+
+  defp learned_preference_score(info, domain) do
+    domain_prefs = Map.get(info, :domain_preferences, %{})
+    count = Map.get(domain_prefs, domain, 0)
+    min(count * 0.5, 2.0)
+  end
+
+  defp compute_span_score(ranked_infos, span_len, domain, intent) do
+    length_bonus = span_len * 0.5
+
+    type_score =
+      case ranked_infos do
+        [best | _] ->
+          entity_type = Map.get(best, :entity_type) || Map.get(best, :type) || "unknown"
+          domain_alignment_score(entity_type, domain) +
+            poincare_proximity_score(entity_type, intent) * 0.5
+        [] -> 0.0
+      end
+
+    length_bonus + type_score
+  end
+
+  defp load_disambiguation_groups do
+    path = Path.join(:code.priv_dir(:brain), "analysis/entity_types.json")
+
+    case File.read(path) do
+      {:ok, json} ->
+        case Jason.decode(json) do
+          {:ok, data} -> Map.get(data, "disambiguation_groups", %{})
+          _ -> %{}
+        end
+
+      _ ->
+        %{}
+    end
+  rescue
+    _ -> %{}
   end
 
   defp normalize(text) when is_binary(text) do

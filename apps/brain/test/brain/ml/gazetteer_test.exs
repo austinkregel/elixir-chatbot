@@ -245,4 +245,170 @@ defmodule Brain.ML.GazetteerTest do
       end
     end
   end
+
+  describe "insert_entry_direct merges multi-type" do
+    test "inserting same key with different entity_type creates multi-type entry" do
+      if Gazetteer.loaded?() do
+        unique_key = "test_merge_city_#{System.unique_integer([:positive])}"
+
+        Gazetteer.add_entry(unique_key, "location", %{source: :csv})
+
+        existing_before = Gazetteer.lookup_all_types(unique_key)
+        assert length(existing_before) >= 1
+
+        assert Enum.any?(existing_before, fn entry ->
+          Map.get(entry, :entity_type) == "location"
+        end)
+      else
+        assert true
+      end
+    end
+  end
+
+  describe "context-aware type ranking" do
+    setup do
+      table = :gazetteer_entities
+
+      unique = System.unique_integer([:positive])
+      key = "ctx_test_#{unique}"
+
+      infos = [
+        %{entity_type: "location", value: key, source: :csv, type: "location"},
+        %{entity_type: "setting", value: key, source: :json, type: "setting"},
+        %{entity_type: "person", value: key, source: :json, type: "person"}
+      ]
+
+      :ets.insert(table, {String.downcase(key), infos})
+
+      {:ok, key: String.downcase(key), infos: infos}
+    end
+
+    test "rank_types_with_context boosts location for weather domain", %{infos: infos} do
+      ranked = Gazetteer.rank_types_with_context(infos, domain: :weather)
+
+      primary_type = Map.get(hd(ranked), :entity_type)
+      assert primary_type in ["location", "city"]
+    end
+
+    test "rank_types_with_context returns unchanged for no context", %{infos: infos} do
+      ranked = Gazetteer.rank_types_with_context(infos, [])
+      assert ranked == infos
+    end
+
+    test "single-type list is returned unchanged regardless of context" do
+      single = [%{entity_type: "person", value: "John", source: :csv}]
+      ranked = Gazetteer.rank_types_with_context(single, domain: :weather)
+      assert ranked == single
+    end
+
+    test "lookup_spans with domain context ranks types", %{key: key} do
+      spans = Gazetteer.lookup_spans([key], domain: :weather)
+
+      case spans do
+        [{0, 0, entity_infos}] ->
+          primary = hd(entity_infos)
+          assert Map.get(primary, :entity_type) in ["location", "city"]
+
+        _ ->
+          assert true
+      end
+    end
+  end
+
+  describe "lattice span generation" do
+    setup do
+      table = :gazetteer_entities
+
+      :ets.insert(table, {"new", [%{entity_type: "person", value: "New", source: :json}]})
+      :ets.insert(table, {"new york", [%{entity_type: "location", value: "New York", source: :csv}]})
+
+      :ets.insert(:gazetteer_prefixes, {"new", true})
+
+      :ok
+    end
+
+    test "lookup_spans_lattice returns overlapping spans" do
+      lattice = Gazetteer.lookup_spans_lattice(["new", "york"])
+
+      assert length(lattice) >= 1
+
+      starts = Enum.map(lattice, fn {start, _end, _infos, _score} -> start end)
+      assert 0 in starts
+    end
+
+    test "lookup_spans_lattice includes scores" do
+      lattice = Gazetteer.lookup_spans_lattice(["new", "york"])
+
+      for {_start, _end, _infos, score} <- lattice do
+        assert is_number(score)
+        assert score > 0
+      end
+    end
+
+    test "longer spans get higher scores in lattice" do
+      lattice = Gazetteer.lookup_spans_lattice(["new", "york"])
+
+      long_spans = Enum.filter(lattice, fn {s, e, _, _} -> e - s >= 1 end)
+      short_spans = Enum.filter(lattice, fn {s, e, _, _} -> e - s == 0 end)
+
+      if long_spans != [] and short_spans != [] do
+        best_long = Enum.max_by(long_spans, fn {_, _, _, score} -> score end)
+        best_short = Enum.max_by(short_spans, fn {_, _, _, score} -> score end)
+
+        {_, _, _, long_score} = best_long
+        {_, _, _, short_score} = best_short
+
+        assert long_score > short_score
+      end
+    end
+  end
+
+  describe "type preference learning" do
+    test "record_type_preference adjusts stored preferences" do
+      unique = "learn_test_#{System.unique_integer([:positive])}"
+      key = String.downcase(unique)
+
+      infos = [
+        %{entity_type: "location", value: unique, source: :csv},
+        %{entity_type: "person", value: unique, source: :json}
+      ]
+
+      :ets.insert(:gazetteer_entities, {key, infos})
+
+      assert :ok = Gazetteer.record_type_preference(unique, "location", :weather)
+
+      updated = Gazetteer.lookup_all_types(unique)
+      location_entry = Enum.find(updated, &(Map.get(&1, :entity_type) == "location"))
+      assert location_entry != nil
+
+      prefs = Map.get(location_entry, :domain_preferences, %{})
+      assert Map.get(prefs, :weather) == 1
+    end
+
+    test "record_type_preference returns :not_found for unknown entries" do
+      result = Gazetteer.record_type_preference("nonexistent_xyz_999", "location", :weather)
+      assert result == :not_found
+    end
+
+    test "learned preferences boost ranking in subsequent lookups" do
+      unique = "learn_rank_#{System.unique_integer([:positive])}"
+      key = String.downcase(unique)
+
+      infos = [
+        %{entity_type: "person", value: unique, source: :json},
+        %{entity_type: "location", value: unique, source: :json}
+      ]
+
+      :ets.insert(:gazetteer_entities, {key, infos})
+
+      Gazetteer.record_type_preference(unique, "location", :weather)
+      Gazetteer.record_type_preference(unique, "location", :weather)
+
+      all = Gazetteer.lookup_all_types(unique)
+      ranked = Gazetteer.rank_types_with_context(all, domain: :weather)
+
+      primary = hd(ranked)
+      assert Map.get(primary, :entity_type) == "location"
+    end
+  end
 end

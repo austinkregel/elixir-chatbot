@@ -74,7 +74,13 @@ defmodule Brain.Analysis.EntityDisambiguator do
             create_person_type_from_intro(entity, intro_confidence)
           end
         else
-          infer_type_with_type_inferrer(entity, pos_tagged, context)
+          expanded = expand_with_domain_candidates(entity, entity_type, context)
+
+          if length(expanded) > 1 do
+            score_and_select(entity, expanded, pos_tagged, context)
+          else
+            infer_type_with_type_inferrer(entity, pos_tagged, context)
+          end
         end
 
       types == [] ->
@@ -108,17 +114,7 @@ defmodule Brain.Analysis.EntityDisambiguator do
             create_person_type_from_intro(entity, intro_confidence)
           end
         else
-          features = extract_features(entity, pos_tagged, context)
-
-          scored_types =
-            Enum.map(types, fn type_info ->
-              score = score_type(type_info, features, context)
-              {type_info, score}
-            end)
-
-          {best_type, _score} = Enum.max_by(scored_types, fn {_, score} -> score end)
-
-          select_type(entity, best_type)
+          score_and_select(entity, types, pos_tagged, context)
         end
     end
   end
@@ -135,6 +131,61 @@ defmodule Brain.Analysis.EntityDisambiguator do
     }
 
     select_type(entity, name_type)
+  end
+
+  defp expand_with_domain_candidates(entity, current_type, context) do
+    profile = Map.get(context, :profile)
+
+    expected_types =
+      case profile do
+        %ChunkProfile{domain: domain} when domain != :unknown ->
+          Pipeline.expected_entity_types_from_domain(domain)
+
+        _ ->
+          intent = Map.get(context, :intent, "")
+          Pipeline.expected_entity_types_from_domain(domain_from_intent(intent))
+      end
+
+    if expected_types != [] and current_type not in expected_types do
+      entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
+
+      original = %{
+        entity_type: current_type,
+        value: entity_value,
+        confidence: Map.get(entity, :confidence, 0.5),
+        source: :original
+      }
+
+      alternatives =
+        expected_types
+        |> Enum.reject(&(&1 == current_type))
+        |> Enum.map(fn expected ->
+          %{
+            entity_type: expected,
+            value: entity_value,
+            confidence: 0.3,
+            source: :domain_expansion
+          }
+        end)
+
+      [original | alternatives]
+    else
+      get_entity_types(entity)
+    end
+  end
+
+  defp score_and_select(entity, types, pos_tagged, context) do
+    features = extract_features(entity, pos_tagged, context)
+
+    scored_types =
+      Enum.map(types, fn type_info ->
+        score = score_type(type_info, features, context)
+        {type_info, score}
+      end)
+
+    {best_type, _score} = Enum.max_by(scored_types, fn {_, score} -> score end)
+
+    select_type(entity, best_type)
   end
 
   @doc """
@@ -198,6 +249,9 @@ defmodule Brain.Analysis.EntityDisambiguator do
           end)
 
           compatible || hd(expected_types)
+
+        inferred_type in ["unknown", ""] or inferred_type == nil ->
+          if original_type != "" and original_type != "unknown", do: original_type, else: inferred_type
 
         true ->
           inferred_type

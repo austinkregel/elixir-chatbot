@@ -338,4 +338,71 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
       assert confidence < 0.3
     end
   end
+
+  describe "domain-aware disambiguation" do
+    test "picks location over room when profile.domain is :weather", %{world_id: world_id} do
+      entity = %{
+        entity_type: "room",
+        value: "Owosso",
+        confidence: 0.79,
+        source: :gazetteer
+      }
+
+      pos_tagged = [
+        {"What", "PRON"}, {"'s", "PUNCT"}, {"the", "DET"},
+        {"weather", "NOUN"}, {"in", "ADP"}, {"Owosso", "PROPN"}, {"?", "PUNCT"}
+      ]
+
+      profile = %Brain.Analysis.ChunkProfile{
+        domain: :weather,
+        speech_act_category: :directive,
+        speech_act_subtype: :request_information,
+        derived_label: "weather.request_information"
+      }
+
+      context = %{
+        discourse: %{indicators: []},
+        speech_act: %{category: :directive, sub_type: :request_information},
+        intent: "weather.request_information",
+        world_id: world_id,
+        profile: profile
+      }
+
+      result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
+
+      assert result[:entity_type] == "location",
+             "Expected location but got #{result[:entity_type]}"
+    end
+
+    test "keeps room type when domain is :smarthome", %{world_id: world_id} do
+      entity = %{
+        entity_type: "room",
+        value: "Kitchen",
+        confidence: 0.85,
+        source: :gazetteer
+      }
+
+      pos_tagged = [{"Turn", "VERB"}, {"on", "ADP"}, {"Kitchen", "PROPN"}, {"light", "NOUN"}]
+
+      profile = %Brain.Analysis.ChunkProfile{
+        domain: :smarthome,
+        speech_act_category: :directive,
+        speech_act_subtype: :command,
+        derived_label: "smarthome.command"
+      }
+
+      context = %{
+        discourse: %{indicators: []},
+        speech_act: %{category: :directive, sub_type: :command},
+        intent: "smarthome.command",
+        world_id: world_id,
+        profile: profile
+      }
+
+      result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
+
+      assert result[:entity_type] in ["room", "device", "setting"],
+             "Expected smarthome type but got #{result[:entity_type]}"
+    end
+  end
 end

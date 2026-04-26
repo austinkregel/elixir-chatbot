@@ -228,7 +228,8 @@ defmodule Brain.ML.EntityExtractor do
     skip_disambiguation = Keyword.get(opts, :skip_disambiguation, false)
     world_id = Keyword.get(opts, :world_id)
     tokens = Tokenizer.tokenize(text)
-    gazetteer_entities = extract_gazetteer_entities(tokens, entity_maps)
+    gaz_context = Keyword.take(opts, [:domain, :intent, :world_id])
+    gazetteer_entities = extract_gazetteer_entities(tokens, entity_maps, gaz_context)
     system_entities = extract_system_entities(tokens, text)
     location_entities = extract_location_hints(tokens, entity_maps)
     proper_noun_entities = extract_proper_noun_hints(tokens, entity_maps)
@@ -290,6 +291,124 @@ defmodule Brain.ML.EntityExtractor do
       {:error, _} ->
         Logger.debug("No type_mappings.json found at #{path}, using empty mappings")
         %{}
+    end
+  end
+
+  @doc """
+  Refines entity types based on intent context and slot schemas.
+
+  After intent classification, numeric entities can be refined to specific
+  slot types (final-value, change-value, etc.) based on what the intent's
+  slot schema expects. Person entities can be split into given-name/last-name.
+
+  ## Options
+    - `:intent` - The classified intent string (e.g., "smarthome.heating.set")
+  """
+  def refine_entity_types(entities, intent, _opts \\ []) when is_list(entities) and is_binary(intent) do
+    schema = Analysis.SlotDetector.get_schema(intent)
+
+    entities
+    |> refine_numeric_types(schema)
+    |> refine_person_subtypes()
+    |> refine_temporal_subtypes()
+  end
+
+  defp refine_numeric_types(entities, nil), do: entities
+
+  defp refine_numeric_types(entities, schema) do
+    mappings = Map.get(schema, "entity_mappings", %{})
+
+    numeric_slots =
+      mappings
+      |> Enum.filter(fn {_slot, types} ->
+        Enum.any?(types, fn t -> t in ["sys.number", "number"] end)
+      end)
+      |> Enum.map(fn {slot, _types} -> slot end)
+
+    number_entities = Enum.filter(entities, fn e -> e[:entity_type] == "number" end)
+    non_number_entities = Enum.reject(entities, fn e -> e[:entity_type] == "number" end)
+
+    refined_numbers =
+      case {numeric_slots, number_entities} do
+        {[], _} -> number_entities
+        {_, []} -> []
+        {[single_slot], _} ->
+          Enum.map(number_entities, fn e -> Map.put(e, :entity_type, single_slot) end)
+        {slots, nums} ->
+          assign_numbers_to_slots(nums, slots)
+      end
+
+    non_number_entities ++ refined_numbers
+  end
+
+  defp assign_numbers_to_slots(numbers, slots) do
+    sorted_numbers = Enum.sort_by(numbers, & &1.start_pos)
+
+    sorted_numbers
+    |> Enum.with_index()
+    |> Enum.map(fn {entity, idx} ->
+      slot = Enum.at(slots, idx) || List.last(slots)
+      Map.put(entity, :entity_type, slot)
+    end)
+  end
+
+  defp refine_person_subtypes(entities) do
+    Enum.flat_map(entities, fn entity ->
+      if entity[:entity_type] == "person" and entity[:source] == :pos_tagger_propn do
+        value = entity[:value] || ""
+        tokens = String.split(value, " ", trim: true)
+
+        case tokens do
+          [single] ->
+            [Map.put(entity, :entity_type, "given-name") |> Map.put(:value, single)]
+
+          [first | rest] ->
+            last = List.last(rest)
+            given = %{entity | entity_type: "given-name", value: first,
+                       match: first, confidence: entity[:confidence]}
+            family = %{entity | entity_type: "last-name", value: last,
+                        match: last, confidence: entity[:confidence] * 0.95}
+            [given, family]
+
+          _ ->
+            [entity]
+        end
+      else
+        [entity]
+      end
+    end)
+  end
+
+  defp refine_temporal_subtypes(entities) do
+    Enum.map(entities, fn entity ->
+      entity_type = entity[:entity_type] || ""
+      value = to_string(entity[:value] || "")
+
+      cond do
+        entity_type == "number" and is_year_value?(value) ->
+          Map.put(entity, :entity_type, "year")
+
+        entity_type in ["date-time", "date", "sys-date", "relative_date"] and is_year_only?(value) ->
+          Map.put(entity, :entity_type, "year")
+
+        true ->
+          entity
+      end
+    end)
+  end
+
+  defp is_year_value?(value) do
+    case Integer.parse(value) do
+      {n, ""} -> n >= 1900 and n <= 2100
+      _ -> false
+    end
+  end
+
+  defp is_year_only?(value) do
+    trimmed = String.trim(value)
+    case Integer.parse(trimmed) do
+      {n, ""} -> n >= 1900 and n <= 2100
+      _ -> false
     end
   end
 
@@ -368,15 +487,15 @@ defmodule Brain.ML.EntityExtractor do
     |> resolve_entity_conflicts()
   end
 
-  defp extract_gazetteer_entities(tokens, entity_maps) do
+  defp extract_gazetteer_entities(tokens, entity_maps, gaz_context) do
     if Gazetteer.loaded?() do
-      extract_with_gazetteer_server(tokens)
+      extract_with_gazetteer_server(tokens, gaz_context)
     else
       extract_with_local_maps(tokens, entity_maps)
     end
   end
 
-  defp extract_with_gazetteer_server(tokens) do
+  defp extract_with_gazetteer_server(tokens, gaz_context) do
     token_texts =
       Enum.map(tokens, fn t ->
         t.text
@@ -385,7 +504,7 @@ defmodule Brain.ML.EntityExtractor do
         |> String.trim()
       end)
 
-    Gazetteer.lookup_spans(token_texts)
+    Gazetteer.lookup_spans(token_texts, gaz_context)
     |> Enum.map(fn {start_idx, end_idx, entity_info} ->
       start_token = Enum.at(tokens, start_idx)
       end_token = Enum.at(tokens, end_idx)
@@ -395,7 +514,7 @@ defmodule Brain.ML.EntityExtractor do
 
       case entity_info do
         infos when is_list(infos) and length(infos) > 1 ->
-          primary_info = hd(infos)
+          primary_info = score_and_pick_primary(infos)
           primary_type = Map.get(primary_info, :entity_type, "unknown")
           entity_value = Map.get(primary_info, :value, match_text)
 
@@ -532,8 +651,32 @@ defmodule Brain.ML.EntityExtractor do
   defp extract_system_entities(tokens, _text) do
     number_entities = extract_numbers_from_tokens(tokens)
     date_entities = extract_dates_from_tokens(tokens)
+    age_refined = refine_age_entities(number_entities, tokens)
 
-    number_entities ++ date_entities
+    age_refined ++ date_entities
+  end
+
+  defp refine_age_entities(number_entities, tokens) do
+    age_indicators = ["years", "year", "old", "aged", "age"]
+    token_texts = Enum.map(tokens, fn t -> String.downcase(t.text) end)
+
+    Enum.map(number_entities, fn entity ->
+      entity_idx = Enum.find_index(tokens, fn t -> t.start_pos == entity.start_pos end)
+
+      has_age_context =
+        if entity_idx do
+          next_tokens = Enum.slice(token_texts, (entity_idx + 1)..min(entity_idx + 3, length(token_texts) - 1))
+          Enum.any?(next_tokens, fn t -> t in age_indicators end)
+        else
+          false
+        end
+
+      if has_age_context do
+        Map.put(entity, :entity_type, "age")
+      else
+        entity
+      end
+    end)
   end
 
   defp extract_numbers_from_tokens(tokens) do
@@ -691,7 +834,7 @@ defmodule Brain.ML.EntityExtractor do
       unless Map.has_key?(entity_maps, normalized) do
         first_token = List.first(location_tokens)
         last_token = List.last(location_tokens)
-        loc_type = TypeHierarchy.parent_of("city") || "location"
+        loc_type = classify_location_type(location_text, remaining)
 
         [
           %{
@@ -708,6 +851,32 @@ defmodule Brain.ML.EntityExtractor do
       end
     else
       []
+    end
+  end
+
+  @street_indicators ["street", "st", "avenue", "ave", "boulevard", "blvd",
+                       "road", "rd", "drive", "dr", "lane", "ln", "way",
+                       "court", "ct", "place", "pl", "circle", "cir",
+                       "highway", "hwy", "parkway", "pkwy", "terrace"]
+
+  defp classify_location_type(location_text, surrounding_tokens) do
+    lower = String.downcase(location_text)
+    words = String.split(lower, " ", trim: true)
+
+    has_number = Enum.any?(surrounding_tokens, fn t -> t.type == :number end) or
+                 Enum.any?(words, fn w ->
+                   case Integer.parse(w) do
+                     {_, ""} -> true
+                     _ -> false
+                   end
+                 end)
+
+    has_street_word = Enum.any?(words, fn w -> w in @street_indicators end)
+
+    if has_number and has_street_word do
+      "address"
+    else
+      TypeHierarchy.parent_of("city") || "location"
     end
   end
 
@@ -779,6 +948,23 @@ defmodule Brain.ML.EntityExtractor do
     do: in_gazetteer?(text, entity_maps)
 
   defp in_gazetteer?(_, _), do: false
+
+  defp score_and_pick_primary(infos) when is_list(infos) do
+    adjustments = TypeHierarchy.config("confidence_adjustments", %{})
+    source_priority = TypeHierarchy.config("source_priority", %{})
+
+    infos
+    |> Enum.sort_by(fn info ->
+      entity_type = Map.get(info, :entity_type, "unknown")
+      source = Map.get(info, :source, :unknown) |> to_string()
+
+      type_score = Map.get(adjustments, entity_type, 0.0)
+      source_score = Map.get(source_priority, source, 0)
+
+      {-source_score, -type_score}
+    end)
+    |> hd()
+  end
 
   defp calculate_confidence(match_text, entity_type, entity_value) do
     base = min(0.9, 0.5 + String.length(match_text) * 0.03)
