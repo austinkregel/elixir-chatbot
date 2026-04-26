@@ -7,7 +7,9 @@ defmodule Brain.Response.OuroRealizer do
   coherent, natural prose.
 
   Returns `{:ok, text, metadata}` on success, or `{:error, reason}` on any
-  failure. There is no `:fallback` -- Ouro is the sole realization path.
+  failure. Structural validation (empty, degenerate, length) is applied here;
+  semantic evaluation is deferred to `ResponseEvaluator` so the
+  `RefinementLoop` can iterate.
   """
 
   alias Brain.ML.Ouro.Model, as: OuroModel
@@ -51,16 +53,15 @@ defmodule Brain.Response.OuroRealizer do
         repetition_penalty: Keyword.get(opts, :repetition_penalty, 1.3)
       ]
 
-      do_generate(messages, gen_opts, primitives, opts)
+      do_generate(messages, gen_opts, primitives)
     end
   end
 
-  defp do_generate(messages, gen_opts, primitives, opts) do
+  defp do_generate(messages, gen_opts, primitives) do
     case OuroModel.generate(messages, gen_opts) do
       {:ok, text} ->
-        Logger.info("OuroRealizer: generated #{String.length(text)} chars, validating")
-        unified_context = Keyword.get(opts, :unified_context, %{})
-        validate_and_return(text, primitives, unified_context)
+        Logger.info("OuroRealizer: generated #{String.length(text)} chars, validating structural constraints")
+        validate_and_return(text, primitives)
 
       :fallback ->
         Logger.error("OuroRealizer: Ouro model not loaded")
@@ -72,8 +73,8 @@ defmodule Brain.Response.OuroRealizer do
     end
   end
 
-  defp validate_and_return(text, primitives, unified_context) do
-    case ConstraintEnforcer.validate(text, primitives, unified_context: unified_context) do
+  defp validate_and_return(text, primitives) do
+    case ConstraintEnforcer.validate(text, primitives) do
       {:ok, validated_text} ->
         metadata = %{
           source: :ouro,
@@ -84,8 +85,8 @@ defmodule Brain.Response.OuroRealizer do
         {:ok, validated_text, metadata}
 
       {:rejected, reason} ->
-        Logger.error("OuroRealizer: output rejected -- #{reason} #{inspect(text)}")
-        {:error, {:constraint_rejected, reason}}
+        Logger.error("OuroRealizer: structurally degenerate output -- #{reason}")
+        {:error, {:structural_rejection, reason}}
     end
   end
 end

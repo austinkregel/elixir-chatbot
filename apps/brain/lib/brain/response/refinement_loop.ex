@@ -220,6 +220,19 @@ defmodule Brain.Response.RefinementLoop do
     end
   end
 
+  defp adjust_plan(plan, :epistemic_consistency, _analysis) do
+    has_contradiction_response = Enum.any?(plan, &(&1.type == :contradiction_response))
+
+    if not has_contradiction_response do
+      plan ++ [Brain.Response.Primitive.new(:hedging, nil, %{
+        confidence_level: 0.3,
+        reason: :epistemic_contradiction
+      })]
+    else
+      plan
+    end
+  end
+
   defp adjust_plan(plan, _, _analysis), do: plan
 
   defp adjust_content(plan, :confidence_alignment, analysis, _opts) do
@@ -250,6 +263,18 @@ defmodule Brain.Response.RefinementLoop do
     else
       plan
     end
+  end
+
+  defp adjust_content(plan, :belief_grounding, _analysis, _opts) do
+    Enum.map(plan, fn primitive ->
+      if primitive.type == :content do
+        existing_constraints = Map.get(primitive.content, :constraints, [])
+        tightened = [:verify_against_beliefs | existing_constraints] |> Enum.uniq()
+        %{primitive | content: Map.put(primitive.content, :constraints, tightened)}
+      else
+        primitive
+      end
+    end)
   end
 
   defp adjust_content(plan, :slot_coverage, analysis, _opts) do

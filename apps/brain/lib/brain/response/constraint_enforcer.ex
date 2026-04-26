@@ -1,25 +1,13 @@
 defmodule Brain.Response.ConstraintEnforcer do
   @moduledoc """
-  Post-generation validation for Ouro-generated responses.
+  Structural gate for Ouro-generated responses.
 
-  Ensures the model's output stays within the bounds defined by the
-  realization packet and unified context. Checks for:
-
-  1. Length bounds -- response is within reasonable length for the plan
-  2. Non-empty -- response has actual content
-  3. Slot coverage -- if clarification was required, the response asks about it
-  4. Entity preservation -- entity values from primitives appear in the output
-  5. Fact fidelity -- facts from content primitives are reflected in output
-  6. Tone alignment -- response matches the specified tone
-  7. Overclaim detection -- response doesn't assert facts not in the payload
-  8. Uncertainty preservation -- uncertain claims aren't stated definitively
-
-  If validation fails, the response is rejected and the system falls
-  back to template-based rendering.
+  Only rejects output that is structurally unusable -- empty, too
+  long/short, or degenerate repetition. All semantic validation
+  (speech act alignment, belief grounding, entity coverage) is
+  handled by `ResponseEvaluator` scoring dimensions that the
+  `RefinementLoop` can iterate on.
   """
-
-  alias Brain.ML.Tokenizer
-  alias Brain.FactDatabase.Integration
 
   require Logger
 
@@ -27,49 +15,38 @@ defmodule Brain.Response.ConstraintEnforcer do
   @min_response_length 2
 
   @doc """
-  Validates a generated response against the primitive plan and context.
+  Validates a generated response against structural constraints only.
 
   Returns `{:ok, text}` if the response passes all checks,
   or `{:rejected, reason}` if it fails validation.
 
   Options:
-    - `:unified_context` - rich context map from ContextBuilder
+    - `:unified_context` - rich context map (unused by structural checks,
+      kept for API compatibility)
   """
-  def validate(response_text, primitives, opts \\ []) when is_binary(response_text) do
-    unified_context = extract_unified_context(opts)
-
+  def validate(response_text, _primitives, _opts \\ []) when is_binary(response_text) do
     checks = [
-      &check_length/3,
-      &check_not_empty/3,
-      &check_degenerate_output/3,
-      &check_slot_coverage/3,
-      &check_entity_preservation/3,
-      &check_fact_fidelity/3,
-      &check_no_contradicted_assertions/3,
-      &check_overclaim/3,
-      &check_uncertainty_preservation/3
+      &check_length/1,
+      &check_not_empty/1,
+      &check_degenerate_output/1
     ]
 
-    case run_checks(checks, response_text, primitives, unified_context) do
+    case run_checks(checks, response_text) do
       :ok -> {:ok, response_text}
       {:rejected, reason} -> {:rejected, reason}
     end
   end
 
-  defp extract_unified_context(opts) when is_list(opts), do: Keyword.get(opts, :unified_context, %{})
-  defp extract_unified_context(opts) when is_map(opts), do: Map.get(opts, :unified_context, %{})
-  defp extract_unified_context(_), do: %{}
+  defp run_checks([], _text), do: :ok
 
-  defp run_checks([], _text, _primitives, _ctx), do: :ok
-
-  defp run_checks([check | rest], text, primitives, ctx) do
-    case check.(text, primitives, ctx) do
-      :ok -> run_checks(rest, text, primitives, ctx)
+  defp run_checks([check | rest], text) do
+    case check.(text) do
+      :ok -> run_checks(rest, text)
       {:rejected, _} = rejection -> rejection
     end
   end
 
-  defp check_length(text, _primitives, _ctx) do
+  defp check_length(text) do
     word_count = text |> String.split() |> length()
 
     cond do
@@ -84,7 +61,7 @@ defmodule Brain.Response.ConstraintEnforcer do
     end
   end
 
-  defp check_not_empty(text, _primitives, _ctx) do
+  defp check_not_empty(text) do
     trimmed = String.trim(text)
 
     if trimmed == "" do
@@ -94,7 +71,7 @@ defmodule Brain.Response.ConstraintEnforcer do
     end
   end
 
-  defp check_degenerate_output(text, _primitives, _ctx) do
+  defp check_degenerate_output(text) do
     words = String.split(text)
     word_count = length(words)
 
@@ -112,257 +89,4 @@ defmodule Brain.Response.ConstraintEnforcer do
       end
     end
   end
-
-  defp check_slot_coverage(text, primitives, _ctx) do
-    clarification_primitives =
-      Enum.filter(primitives, fn p ->
-        p.type == :follow_up and p.variant == :clarification
-      end)
-
-    case clarification_primitives do
-      [] ->
-        :ok
-
-      clarifications ->
-        missing_slots =
-          clarifications
-          |> Enum.flat_map(fn p -> Map.get(p.content, :missing_slots, []) end)
-          |> Enum.map(&to_string/1)
-
-        has_question = String.contains?(text, "?")
-
-        if missing_slots != [] and not has_question do
-          {:rejected, "Clarification required but response has no question"}
-        else
-          :ok
-        end
-    end
-  end
-
-  defp check_entity_preservation(text, primitives, _ctx) do
-    entity_values =
-      primitives
-      |> Enum.flat_map(fn p ->
-        entities = Map.get(p.content, :entity_context, []) ++ Map.get(p.content, :entities, [])
-
-        Enum.flat_map(entities, fn e ->
-          value = Map.get(e, :value) || Map.get(e, "value") || Map.get(e, :text) || ""
-          if value != "" and String.length(value) > 1, do: [value], else: []
-        end)
-      end)
-      |> Enum.uniq()
-
-    if entity_values == [] do
-      :ok
-    else
-      text_lower = String.downcase(text)
-
-      present_count =
-        Enum.count(entity_values, fn val ->
-          String.contains?(text_lower, String.downcase(val))
-        end)
-
-      coverage = present_count / max(length(entity_values), 1)
-
-      if coverage < 0.5 and length(entity_values) > 0 do
-        missing = Enum.reject(entity_values, fn val -> String.contains?(text_lower, String.downcase(val)) end)
-        {:rejected, "Missing entities: #{Enum.join(Enum.take(missing, 3), ", ")}"}
-      else
-        :ok
-      end
-    end
-  end
-
-  defp check_fact_fidelity(text, primitives, _ctx) do
-    factual_primitives =
-      Enum.filter(primitives, fn p ->
-        p.type == :content and p.variant == :factual
-      end)
-
-    if factual_primitives == [] do
-      :ok
-    else
-      facts =
-        factual_primitives
-        |> Enum.flat_map(fn p -> Map.get(p.content, :facts, []) end)
-        |> Enum.flat_map(fn
-          %{fact: fact_text} when is_binary(fact_text) -> [fact_text]
-          %{"fact" => fact_text} when is_binary(fact_text) -> [fact_text]
-          fact when is_binary(fact) -> [fact]
-          _ -> []
-        end)
-
-      if facts == [] do
-        :ok
-      else
-        text_tokens =
-          Tokenizer.tokenize_normalized(text)
-          |> MapSet.new()
-
-        any_match =
-          Enum.any?(facts, fn fact ->
-            fact_tokens =
-              Tokenizer.tokenize_normalized(fact)
-              |> MapSet.new()
-
-            overlap = MapSet.intersection(text_tokens, fact_tokens) |> MapSet.size()
-            overlap >= max(div(MapSet.size(fact_tokens), 3), 1)
-          end)
-
-        if any_match do
-          :ok
-        else
-          {:rejected, "No facts from content primitives reflected in output"}
-        end
-      end
-    end
-  end
-
-  defp check_no_contradicted_assertions(_text, primitives, _ctx) do
-    factual_primitives =
-      Enum.filter(primitives, fn p ->
-        p.type == :content and p.variant in [:factual, :explanatory]
-      end)
-
-    case factual_primitives do
-      [] ->
-        :ok
-
-      _ ->
-        contradiction =
-          Enum.find_value(factual_primitives, fn p ->
-            entity = primary_entity_value(p) || "general"
-
-            facts = Map.get(p.content, :facts, [])
-
-            Enum.find_value(facts, fn fact ->
-              fact_text =
-                cond do
-                  is_map(fact) -> Map.get(fact, :fact) || Map.get(fact, "fact")
-                  is_binary(fact) -> fact
-                  true -> nil
-                end
-
-              if is_binary(fact_text) and fact_text != "" do
-                case safe_verify_fact(entity, fact_text) do
-                  {:contradicted, _conflicts} -> {entity, fact_text}
-                  _ -> nil
-                end
-              end
-            end)
-          end)
-
-        case contradiction do
-          {entity, fact_text} ->
-            preview = String.slice(fact_text, 0, 80)
-            {:rejected, "Asserted fact contradicts existing beliefs (#{entity}: #{preview})"}
-
-          _ ->
-            :ok
-        end
-    end
-  end
-
-  defp primary_entity_value(%{content: content}) when is_map(content) do
-    entities = Map.get(content, :entity_context, []) ++ Map.get(content, :entities, [])
-
-    Enum.find_value(entities, fn e ->
-      val = Map.get(e, :value) || Map.get(e, "value") || Map.get(e, :text) || Map.get(e, "text")
-      if is_binary(val) and val != "", do: val, else: nil
-    end)
-  end
-
-  defp primary_entity_value(_), do: nil
-
-  defp safe_verify_fact(entity, fact_text) do
-    Integration.verify_fact(entity, fact_text)
-  rescue
-    _ -> :uncertain
-  catch
-    :exit, _ -> :uncertain
-    _, _ -> :uncertain
-  end
-
-  defp check_overclaim(text, primitives, ctx) do
-    analysis = get_in_map(ctx, [:analysis]) || get_in_map(ctx, [:primary_analysis])
-
-    confidence =
-      case analysis do
-        %{confidence: c} when is_number(c) -> c
-        _ -> 0.5
-      end
-
-    if confidence >= 0.6 do
-      :ok
-    else
-      all_content_tokens =
-        primitives
-        |> Enum.flat_map(fn p ->
-          content_text =
-            p.content
-            |> Map.values()
-            |> Enum.flat_map(fn
-              v when is_binary(v) -> [v]
-              v when is_list(v) -> Enum.flat_map(v, &extract_text_values/1)
-              v when is_map(v) -> extract_text_values(v)
-              _ -> []
-            end)
-
-          Enum.flat_map(content_text, &Tokenizer.tokenize_normalized/1)
-        end)
-        |> MapSet.new()
-
-      response_tokens =
-        Tokenizer.tokenize_normalized(text)
-        |> MapSet.new()
-
-      novel_tokens = MapSet.difference(response_tokens, all_content_tokens)
-      stop_words = MapSet.new(~w(i the a an is are was were be been being have has had do does did will would shall should may might must can could))
-      novel_content = MapSet.difference(novel_tokens, stop_words)
-
-      novel_ratio = MapSet.size(novel_content) / max(MapSet.size(response_tokens), 1)
-
-      if novel_ratio > 0.7 do
-        {:rejected, "Response introduces too much novel content (#{Float.round(novel_ratio * 100, 1)}% novel)"}
-      else
-        :ok
-      end
-    end
-  end
-
-  defp check_uncertainty_preservation(text, _primitives, ctx) do
-    accumulator = get_in_map(ctx, [:accumulator]) || %{}
-    should_hedge = Map.get(accumulator, :should_hedge, false)
-
-    if not should_hedge do
-      :ok
-    else
-      definitive_markers = ~w(definitely certainly absolutely always never)
-
-      text_lower = String.downcase(text)
-      has_definitive = Enum.any?(definitive_markers, &String.contains?(text_lower, &1))
-
-      if has_definitive do
-        {:rejected, "Response uses definitive language but system should hedge"}
-      else
-        :ok
-      end
-    end
-  end
-
-  defp extract_text_values(v) when is_binary(v), do: [v]
-  defp extract_text_values(v) when is_map(v) do
-    v |> Map.values() |> Enum.flat_map(&extract_text_values/1)
-  end
-  defp extract_text_values(v) when is_list(v), do: Enum.flat_map(v, &extract_text_values/1)
-  defp extract_text_values(_), do: []
-
-  defp get_in_map(map, []), do: map
-  defp get_in_map(map, [key | rest]) when is_map(map) do
-    case Map.get(map, key) do
-      nil -> nil
-      val -> get_in_map(val, rest)
-    end
-  end
-  defp get_in_map(_, _), do: nil
 end

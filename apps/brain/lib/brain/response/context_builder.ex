@@ -13,7 +13,8 @@ defmodule Brain.Response.ContextBuilder do
     ChunkAnalysis,
     ChunkPriority,
     ContextAccumulator,
-    EntityGraphEnricher
+    EntityGraphEnricher,
+    SlotResult
   }
 
   alias Brain.Graph.Reader
@@ -283,7 +284,7 @@ defmodule Brain.Response.ContextBuilder do
   defp extract_enrichment_context(primary, _opts) do
     entities = primary.entities || []
     intent = primary.intent
-    slots = build_slot_map(entities)
+    slots = extract_slot_values(primary.slots)
 
     base_context = %{
       entities: entities,
@@ -301,27 +302,30 @@ defmodule Brain.Response.ContextBuilder do
     }
   end
 
-  defp build_slot_map(entities) when is_list(entities) do
-    Enum.reduce(entities, %{}, fn entity, acc ->
-      type = Map.get(entity, :entity_type) || Map.get(entity, "entity_type")
-      value = Map.get(entity, :value) || Map.get(entity, "value") || Map.get(entity, :text)
+  defp extract_slot_values(%SlotResult{filled_slots: filled}) when is_map(filled) do
+    Map.new(filled, fn {slot_name, slot_data} ->
+      value =
+        case slot_data do
+          %{value: v} -> v
+          v -> v
+        end
 
-      if type && value do
-        slot_name =
+      key =
+        if is_binary(slot_name) do
           try do
-            type |> to_string() |> String.downcase() |> String.to_existing_atom()
+            String.to_existing_atom(slot_name)
           rescue
-            ArgumentError -> :entity
+            ArgumentError -> String.to_atom(slot_name)
           end
+        else
+          slot_name
+        end
 
-        Map.put(acc, slot_name, value)
-      else
-        acc
-      end
+      {key, value}
     end)
   end
 
-  defp build_slot_map(_), do: %{}
+  defp extract_slot_values(_), do: %{}
 
   defp extract_memory_context(primary, analyses) do
     accumulated_contexts =

@@ -54,7 +54,7 @@ defmodule Brain.Response.Enricher do
   ## Returns
     Updated context map with enrichment information.
   """
-  @spec prepare_context(String.t(), map(), map()) :: map()
+  @spec prepare_context(String.t() | nil, map(), map()) :: map()
   def prepare_context(intent, slots, context) do
     # Check which services are available for this intent
     available_services = get_available_services(intent, context)
@@ -209,14 +209,35 @@ defmodule Brain.Response.Enricher do
   # Private Functions
   # ============================================================================
 
+  defp get_available_services(nil, _context), do: []
+
   defp get_available_services(intent, context) do
     world = Map.get(context, :world_id) || Map.get(context, :world, "default")
 
-    Dispatcher.list_services(world: world)
-    |> Enum.filter(fn service ->
-      service.configured and intent in service.supported_intents
-    end)
-    |> Enum.map(& &1.name)
+    exact_matches =
+      Dispatcher.list_services(world: world)
+      |> Enum.filter(fn service ->
+        service.configured and intent in service.supported_intents
+      end)
+      |> Enum.map(& &1.name)
+
+    if exact_matches != [] do
+      exact_matches
+    else
+      case Dispatcher.find_service(intent) do
+        nil ->
+          []
+
+        service_module ->
+          all_services = Dispatcher.list_services(world: world)
+
+          all_services
+          |> Enum.filter(fn service ->
+            service.configured and service.module == service_module
+          end)
+          |> Enum.map(& &1.name)
+      end
+    end
   end
 
   defp get_enrichment_service(intent) do
