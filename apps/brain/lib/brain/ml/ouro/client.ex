@@ -40,10 +40,15 @@ defmodule Brain.ML.Ouro.Client do
 
     start = System.monotonic_time(:millisecond)
 
-    case Req.post(url, json: body, receive_timeout: request_timeout()) do
+    req_opts =
+      [json: body, receive_timeout: request_timeout()] ++
+        Brain.HTTP.Retry.options("Ouro sidecar", url)
+
+    case Req.post(url, req_opts) do
       {:ok, %Req.Response{status: 200, body: resp}} ->
         elapsed = System.monotonic_time(:millisecond) - start
-        text = get_in(resp, ["choices", Access.at(0), "message", "content"]) || ""
+        raw = get_in(resp, ["choices", Access.at(0), "message", "content"]) || ""
+        text = normalize_sidecar_message_content(raw)
         usage = resp["usage"] || %{}
 
         Logger.info(
@@ -51,7 +56,7 @@ defmodule Brain.ML.Ouro.Client do
             "(prompt=#{usage["prompt_tokens"] || "?"}, total=#{usage["total_tokens"] || "?"})"
         )
 
-        {:ok, String.trim(text)}
+        {:ok, text}
 
       {:ok, %Req.Response{status: status, body: body}} ->
         Logger.error("Ouro sidecar HTTP #{status}: #{inspect(body)}")
@@ -74,7 +79,17 @@ defmodule Brain.ML.Ouro.Client do
   def health_check do
     url = api_url() <> "/health"
 
-    case Req.get(url, receive_timeout: 5_000) do
+    # Health checks are inherently driven by an outer periodic poller
+    # (SidecarLauncher's `:health_poll` loop), so Req-level retries are
+    # redundant *and* spammy: each retry produces another `connection
+    # refused` log line during the 5–10s window Python takes to load.
+    # Use `max_retries: 0` so a single call is a single network attempt
+    # with at most one failure log; the outer poller decides cadence.
+    req_opts =
+      [receive_timeout: 5_000] ++
+        Brain.HTTP.Retry.options("Ouro sidecar (health)", url, max_retries: 0)
+
+    case Req.get(url, req_opts) do
       {:ok, %Req.Response{status: 200, body: %{"status" => "ok"}}} ->
         :ok
 
@@ -96,12 +111,44 @@ defmodule Brain.ML.Ouro.Client do
   def list_models do
     url = api_url() <> "/v1/models"
 
-    case Req.get(url, receive_timeout: 5_000) do
+    req_opts =
+      [receive_timeout: 5_000] ++
+        Brain.HTTP.Retry.options("Ouro sidecar (models)", url, max_retries: 1)
+
+    case Req.get(url, req_opts) do
       {:ok, %Req.Response{status: 200, body: %{"data" => models}}} ->
         {:ok, models}
 
       {:error, reason} ->
         {:error, reason}
+    end
+  end
+
+  # --- Sidecar content normalization ---
+
+  # Models occasionally emit JSON-encoded strings or a trailing `}`; unwrap so
+  # callers receive plain assistant text.
+  defp normalize_sidecar_message_content(raw) when is_binary(raw) do
+    raw
+    |> String.trim()
+    |> unwrap_json_string_layers()
+  end
+
+  defp normalize_sidecar_message_content(_), do: ""
+
+  defp unwrap_json_string_layers(text) do
+    case Jason.decode(text) do
+      {:ok, inner} when is_binary(inner) ->
+        inner |> String.trim() |> unwrap_json_string_layers()
+
+      _ ->
+        trimmed = text |> String.trim_trailing("}") |> String.trim()
+
+        if trimmed != text do
+          unwrap_json_string_layers(trimmed)
+        else
+          text
+        end
     end
   end
 

@@ -139,7 +139,11 @@ defmodule Brain.ML.Ouro.ModelDownloader do
     url = "#{@hf_base_url}/#{repo}/resolve/main/#{filename}"
     Logger.info("Downloading #{filename} from #{url}")
 
-    case Req.get(url, into: File.stream!(dest), receive_timeout: 600_000) do
+    req_opts =
+      [into: File.stream!(dest), receive_timeout: 600_000] ++
+        Brain.HTTP.Retry.options("Hugging Face download (#{filename})", url)
+
+    case Req.get(url, req_opts) do
       {:ok, %{status: 200}} ->
         size = File.stat!(dest).size
         Logger.info("Downloaded #{filename} (#{format_size(size)})")

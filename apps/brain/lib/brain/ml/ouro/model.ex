@@ -19,12 +19,14 @@ defmodule Brain.ML.Ouro.Model do
   require Logger
 
   alias Brain.ML.Ouro.Client
+  alias Brain.ML.Ouro.SidecarLauncher
 
   defstruct [
     :serving,
     :tokenizer,
     :backend,
-    ready: false
+    ready: false,
+    waiting_logged: false
   ]
 
   @default_max_new_tokens 1024
@@ -161,6 +163,24 @@ defmodule Brain.ML.Ouro.Model do
   # --- Sidecar backend ---
 
   defp check_sidecar_health(state) do
+    # Gate the actual HTTP probe on whether the launcher has spawned Python.
+    # When the launcher is :disabled / :stopped / :not_running / {:crashed, _}
+    # there is literally nothing listening on the configured port; probing
+    # produces nothing but `connection refused` warnings every interval.
+    # We still reschedule so the poller resumes the moment `ensure_ready!/1`
+    # transitions the launcher into `:starting`.
+    case sidecar_launch_state() do
+      :probe_ok ->
+        do_probe_sidecar(state)
+
+      {:skip, reason} ->
+        state = maybe_log_waiting(state, reason)
+        schedule_health_check()
+        %{state | ready: false}
+    end
+  end
+
+  defp do_probe_sidecar(state) do
     case Client.health_check() do
       :ok ->
         unless state.ready do
@@ -168,7 +188,7 @@ defmodule Brain.ML.Ouro.Model do
         end
 
         schedule_health_check()
-        %{state | ready: true}
+        %{state | ready: true, waiting_logged: false}
 
       {:error, reason} ->
         if state.ready do
@@ -180,6 +200,45 @@ defmodule Brain.ML.Ouro.Model do
         schedule_health_check()
         %{state | ready: false}
     end
+  end
+
+  # Returns either `:probe_ok` (go ahead and hit `/health`) or
+  # `{:skip, reason}` (no Python yet, don't bother). Uses a short timeout
+  # so this polling loop can't get blocked by an in-flight launch in the
+  # launcher GenServer.
+  #
+  # We defer probes during `:starting` as well as `:disabled`/`:stopped`
+  # because the launcher itself runs a `/health` poll while booting; this
+  # `Ouro.Model` poller only adds value once Python is reachable, where
+  # its job is to *detect regression* (sidecar going down mid-session)
+  # rather than wait for initial readiness.
+  defp sidecar_launch_state do
+    case GenServer.call(SidecarLauncher, :status, 250) do
+      :healthy -> :probe_ok
+      :starting -> {:skip, :launcher_starting}
+      :disabled -> {:skip, :launcher_disabled}
+      :stopped -> {:skip, :launcher_stopped}
+      :not_running -> {:skip, :launcher_not_running}
+      {:crashed, reason} -> {:skip, {:launcher_crashed, reason}}
+      other -> {:skip, {:launcher_unknown, other}}
+    end
+  catch
+    :exit, _ -> {:skip, :launcher_not_running}
+  end
+
+  # Emit a single info-level breadcrumb the first time we skip a probe,
+  # so the operator can see in the log "Ouro: waiting for SidecarLauncher
+  # (launcher_disabled)". Subsequent skips are silent — we don't want to
+  # flood the log every 2s while the test_helper is still training models.
+  defp maybe_log_waiting(%{waiting_logged: true} = state, _reason), do: state
+
+  defp maybe_log_waiting(state, reason) do
+    Logger.info(
+      "Ouro: deferring sidecar health probes until SidecarLauncher launches Python " <>
+        "(reason=#{inspect(reason)})"
+    )
+
+    %{state | waiting_logged: true}
   end
 
   defp schedule_health_check do
