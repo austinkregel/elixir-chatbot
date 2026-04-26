@@ -132,11 +132,79 @@ defmodule Brain.Services.Dispatcher do
   end
 
   @doc """
-  Get the service module for an intent.
+  Collects slot schemas from all registered services that implement `slot_schema/0`.
+
+  Returns a map of intent name to schema, suitable for merging into
+  SlotDetector's runtime schema map. Each service's schema is registered
+  for every intent in its `supported_intents/0`. Additionally, each
+  service's domain prefix is registered so that derived intents like
+  `"weather.request_information"` can find the schema.
   """
-  @spec find_service(String.t()) :: module() | nil
+  @spec service_schemas() :: %{String.t() => map()}
+  def service_schemas do
+    entries =
+      for service <- @registered_services,
+          Code.ensure_loaded?(service),
+          function_exported?(service, :slot_schema, 0),
+          function_exported?(service, :supported_intents, 0),
+          intent <- service.supported_intents() do
+        {intent, service.slot_schema()}
+      end
+
+    domain_entries =
+      for service <- @registered_services,
+          Code.ensure_loaded?(service),
+          function_exported?(service, :slot_schema, 0),
+          function_exported?(service, :supported_intents, 0) do
+        domains =
+          service.supported_intents()
+          |> Enum.map(fn intent ->
+            case String.split(intent, ".", parts: 2) do
+              [domain, _] -> domain
+              _ -> nil
+            end
+          end)
+          |> Enum.uniq()
+          |> Enum.reject(&is_nil/1)
+
+        Enum.map(domains, fn domain ->
+          {domain, service.slot_schema()}
+        end)
+      end
+      |> List.flatten()
+
+    Map.new(entries ++ domain_entries)
+  end
+
+  @doc """
+  Get the service module for an intent.
+
+  First tries an exact match, then falls back to domain-prefix matching
+  (e.g. `"weather.request_information"` matches a service that declares
+  `"weather.query"` because they share the `"weather"` domain prefix).
+  """
+  @spec find_service(String.t() | nil) :: module() | nil
+  def find_service(nil), do: nil
+
   def find_service(intent) when is_binary(intent) do
-    Map.get(intent_to_service_map(), intent)
+    service_map = intent_to_service_map()
+
+    case Map.get(service_map, intent) do
+      nil -> find_service_by_domain_prefix(intent, service_map)
+      service -> service
+    end
+  end
+
+  defp find_service_by_domain_prefix(intent, service_map) do
+    case String.split(intent, ".", parts: 2) do
+      [domain, _] ->
+        Enum.find_value(service_map, fn {registered_intent, service} ->
+          if String.starts_with?(registered_intent, domain <> "."), do: service
+        end)
+
+      _ ->
+        nil
+    end
   end
 
   @doc """

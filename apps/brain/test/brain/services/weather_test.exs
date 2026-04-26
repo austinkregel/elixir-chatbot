@@ -183,9 +183,10 @@ defmodule Brain.Services.WeatherTest do
     # To update the snapshot, run: MIX_ENV=test mix snapshot.record --name weather/london --force
 
     setup do
-      # Load both geocoding and weather snapshots (server is started globally in test_helper.exs)
+      # Geocode + current weather by lat/lon (OpenWeather uses imperial in fetch_current/2)
       {:ok, _} = Brain.Test.HTTPSnapshot.use_snapshot("weather/geocode_london")
       {:ok, _} = Brain.Test.HTTPSnapshot.use_snapshot("weather/london")
+      {:ok, _} = Brain.Test.HTTPSnapshot.use_snapshot("weather/london_lat_lon")
       :ok
     end
 

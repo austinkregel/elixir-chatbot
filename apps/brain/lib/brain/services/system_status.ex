@@ -71,6 +71,19 @@ defmodule Brain.Services.SystemStatus do
   end
 
   @impl true
+  def slot_schema do
+    %{
+      "required" => [],
+      "optional" => ["component", "category"],
+      "entity_mappings" => %{
+        "component" => ["system_component", "service_name"],
+        "category" => ["system_category"]
+      },
+      "clarification_templates" => %{}
+    }
+  end
+
+  @impl true
   def enrich(_intent, _slots, _credentials) do
     health = safe_get_health_indicators()
     memory = safe_get_memory_status()

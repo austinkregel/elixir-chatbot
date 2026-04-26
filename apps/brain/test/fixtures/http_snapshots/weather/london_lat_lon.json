@@ -1,0 +1,41 @@
+{
+  "name": "weather/london_lat_lon",
+  "url": "https://api.openweathermap.org/data/2.5/weather",
+  "params": {
+    "lat": "51.5085",
+    "lon": "-0.1257",
+    "units": "imperial"
+  },
+  "recorded_at": "2026-04-25T00:00:00.000000Z",
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": ["application/json; charset=utf-8"]
+    },
+    "body": {
+      "base": "stations",
+      "clouds": {"all": 40},
+      "cod": 200,
+      "coord": {"lat": 51.5085, "lon": -0.1257},
+      "dt": 1772236893,
+      "id": 2643743,
+      "main": {
+        "feels_like": 47.0,
+        "humidity": 89,
+        "pressure": 1009,
+        "temp": 49.9,
+        "temp_max": 51.1,
+        "temp_min": 47.9
+      },
+      "name": "London",
+      "sys": {"country": "GB", "type": 2},
+      "timezone": 0,
+      "visibility": 10000,
+      "weather": [
+        {"description": "scattered clouds", "icon": "03n", "id": 802, "main": "Clouds"}
+      ],
+      "wind": {"deg": 190, "speed": 6.9}
+    }
+  },
+  "note": "Current weather by lat/lon (imperial) after geocode — pairs with weather/geocode_london"
+}

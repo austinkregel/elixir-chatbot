@@ -46,6 +46,28 @@ defmodule Brain.Services.Service do
 
   Services declare which fields they provide via `provides_fields/0`.
   These are used by templates with `enriched:field_name` conditions.
+
+  ## Self-Describing Slot Schemas
+
+  Services can declare their slot requirements and entity-type mappings
+  via `slot_schema/0`. This allows the analysis pipeline to automatically
+  detect required slots, map NER entity types to the correct slot names,
+  and generate clarification prompts -- without hardcoded entries in
+  `intent_registry.json`.
+
+  ## Naming Conventions
+
+  ### Slot names (`slot_schema/0` keys)
+  - Use singular, lowercase, underscore-separated names: `location`, `time_range`, `device_name`
+  - Prefer generic names over service-specific: `location` not `weather_location`
+  - Standard slot names across services: `location`, `time_range`, `query`, `device`, `action`, `target`
+
+  ### Enrichment fields (`provides_fields/0`)
+  - Prefix with the domain when there could be ambiguity: `temperature` is
+    fine (unambiguous), but `status` should be `device_status` or `system_status`
+  - Use the same names that appear as `$placeholder` tokens in Ouro output
+  - Use snake_case atoms: `:temperature`, `:wind_speed`, `:feels_like`
+  - Never duplicate an existing field name with a different meaning
   """
 
   @typedoc "Slot values extracted from user query"
@@ -140,7 +162,38 @@ defmodule Brain.Services.Service do
   """
   @callback enabled?() :: boolean()
 
-  @optional_callbacks enabled?: 0
+  @typedoc "Slot schema declaring required/optional slots and how NER entity types map to them."
+  @type slot_schema :: %{
+          String.t() => [String.t()] | %{String.t() => [String.t()]} | map()
+        }
+
+  @doc """
+  Slot schema for this service's intents.
+
+  Declares which slots the service needs, which NER entity types can fill
+  each slot, and clarification prompts for missing required slots. This
+  schema is automatically merged into SlotDetector at runtime so the
+  analysis pipeline can resolve entities to the correct slot names.
+
+  Return a map with string keys matching the `intent_registry.json` format:
+
+      %{
+        "required" => ["location"],
+        "optional" => ["time_range"],
+        "entity_mappings" => %{
+          "location" => ["gpe", "city", "location", "geo"],
+          "time_range" => ["date", "time", "temporal"]
+        },
+        "clarification_templates" => %{
+          "location" => "What location would you like the weather for?"
+        }
+      }
+
+  Services that don't need slots can omit this callback.
+  """
+  @callback slot_schema() :: map()
+
+  @optional_callbacks enabled?: 0, slot_schema: 0
 
   # ============================================================================
   # Helper Functions

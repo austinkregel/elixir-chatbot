@@ -933,7 +933,7 @@ defmodule Brain.AtlasIntegration do
   end
 
   defp enrich_with_lexicon(properties, name) when is_binary(name) do
-    if Process.whereis(Brain.ML.Lexicon) and Brain.ML.Lexicon.known_word?(name) do
+    if Process.whereis(Brain.ML.Lexicon) != nil && Brain.ML.Lexicon.known_word?(name) do
       definition =
         case Brain.ML.Lexicon.definition(name) do
           {:ok, defn} -> defn

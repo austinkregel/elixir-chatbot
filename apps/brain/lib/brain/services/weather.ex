@@ -64,6 +64,21 @@ defmodule Brain.Services.Weather do
   end
 
   @impl true
+  def slot_schema do
+    %{
+      "required" => ["location"],
+      "optional" => ["time_range"],
+      "entity_mappings" => %{
+        "location" => ["gpe", "city", "location", "geo"],
+        "time_range" => ["date", "time", "temporal"]
+      },
+      "clarification_templates" => %{
+        "location" => "What location would you like the weather for?"
+      }
+    }
+  end
+
+  @impl true
   def enrich(intent, slots, credentials) do
     location = Map.get(slots, :location) || Map.get(slots, "location")
 
