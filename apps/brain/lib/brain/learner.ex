@@ -347,7 +347,7 @@ defmodule Brain.Learner do
     properties = Map.get(entity, "properties", %{})
     confidence = Map.get(entity, "confidence", 0.5)
 
-    if confidence >= 0.7 do
+    if confidence >= 0.9 and not gazetteer_conflicts_with_type?(name, "room") do
       room_info =
         %{
           "name" => name,
@@ -363,7 +363,47 @@ defmodule Brain.Learner do
 
       KnowledgeStore.add_room(persona_name, name, room_info)
       Logger.info("Learned room entity", %{name: name, confidence: confidence})
+    else
+      if confidence >= 0.7 and confidence < 0.9 do
+        Logger.debug("Room entity below auto-store threshold",
+          name: name, confidence: confidence
+        )
+      end
+
+      if gazetteer_conflicts_with_type?(name, "room") do
+        Logger.debug("Room entity conflicts with existing gazetteer entry",
+          name: name
+        )
+      end
     end
+  end
+
+  @location_types ~w(location city gpe geo place address country state)
+
+  defp gazetteer_conflicts_with_type?(name, proposed_type) when is_binary(name) do
+    conflicting_types =
+      case proposed_type do
+        "room" -> @location_types
+        "device" -> @location_types
+        _ -> []
+      end
+
+    if conflicting_types == [] do
+      false
+    else
+      case Brain.ML.Gazetteer.lookup_all_types(name) do
+        types when is_list(types) and types != [] ->
+          Enum.any?(types, fn entry ->
+            existing_type = Map.get(entry, :entity_type, "")
+            existing_type in conflicting_types
+          end)
+
+        _ ->
+          false
+      end
+    end
+  rescue
+    _ -> false
   end
 
   defp process_device_entity(persona_name, entity) do

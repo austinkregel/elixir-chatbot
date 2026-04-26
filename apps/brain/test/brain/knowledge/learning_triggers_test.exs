@@ -25,8 +25,9 @@ defmodule Brain.Knowledge.LearningTriggersTest do
       stats = LearningTriggers.stats(name)
 
       assert is_map(stats)
-      assert stats.sessions_today == 0
-      assert stats.max_sessions_per_day == 2
+      assert stats.sessions_total_today == 0
+      assert stats.max_sessions_per_day_per_domain == 2
+      assert stats.max_sessions_per_day_total == 5
       assert stats.triggered_sessions == 0
       assert stats.novel_input_domains == []
       assert stats.novel_input_counts == %{}

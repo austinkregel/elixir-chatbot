@@ -10,8 +10,9 @@ defmodule Brain.Knowledge.LearningCenter do
   require Logger
 
   alias Knowledge.{ResearchAgent, Corroborator, ReviewQueue}
-  alias Types.{ResearchGoal, LearningSession, Investigation}
+  alias Types.{ResearchGoal, LearningSession, Investigation, Hypothesis}
   alias Brain.Epistemic.BeliefStore
+  alias Brain.Lattice
 
   @max_concurrent_agents 5
   @session_timeout_ms 300_000
@@ -73,6 +74,22 @@ defmodule Brain.Knowledge.LearningCenter do
       :exit, {:timeout, _} -> false
       :exit, {:noproc, _} -> false
     end
+  end
+
+  @doc "Alias for `add_goal/2` — enqueue a follow-up goal on an active session."
+  def spawn_followup_goal(session_id, %ResearchGoal{} = goal) when is_binary(session_id) do
+    add_goal(session_id, goal)
+  end
+
+  @doc """
+  Evaluates structured predictions on hypotheses using `BeliefStore` (when ready).
+
+  Returns `{:error, :not_ready}` if `BeliefStore.ready?/0` is false.
+  """
+  @spec test_predictions(Investigation.t()) ::
+          {:ok, Investigation.t()} | {:error, :not_ready}
+  def test_predictions(%Investigation{} = investigation) do
+    GenServer.call(__MODULE__, {:test_predictions, investigation}, 60_000)
   end
 
   @impl true
@@ -142,6 +159,15 @@ defmodule Brain.Knowledge.LearningCenter do
     Process.send_after(self(), {:session_timeout, session.id}, @session_timeout_ms)
 
     {:reply, {:ok, session}, new_state}
+  end
+
+  @impl true
+  def handle_call({:test_predictions, %Investigation{} = inv}, _from, state) do
+    if BeliefStore.ready?() do
+      {:reply, {:ok, do_test_predictions(inv)}, state}
+    else
+      {:reply, {:error, :not_ready}, state}
+    end
   end
 
   @impl true
@@ -397,6 +423,18 @@ defmodule Brain.Knowledge.LearningCenter do
       updated_session = LearningSession.record_findings(updated_session, length(findings))
       new_sessions = Map.put(state.sessions, session_id, updated_session)
       new_stats = %{state.stats | total_findings: state.stats.total_findings + length(findings)}
+
+      lattice = Investigation.rank_hypotheses(concluded)
+      margin = Lattice.margin(lattice)
+      dominant_gap = %{dimension: :hypothesis_margin, score: margin}
+
+      if Process.whereis(Brain.PubSub) do
+        Phoenix.PubSub.broadcast(
+          Brain.PubSub,
+          "learning:investigation",
+          {:investigation_concluded, session_id, concluded.id, lattice, dominant_gap, goal.topic}
+        )
+      end
 
       # Persist investigation + goal status + session update to Atlas
       persist_investigation_to_atlas(concluded, session_id)
@@ -921,7 +959,7 @@ defmodule Brain.Knowledge.LearningCenter do
             claim: hyp.claim,
             entity: hyp.entity,
             derived_from: hyp.derived_from,
-            prediction: hyp.prediction,
+            prediction: encode_hypothesis_prediction_for_atlas(hyp.prediction),
             status: to_string(hyp.status),
             confidence: hyp.confidence,
             confidence_level: to_string(hyp.confidence_level),
@@ -968,6 +1006,63 @@ defmodule Brain.Knowledge.LearningCenter do
           hypotheses_falsified: session.hypotheses_falsified
         })
       end)
+    end
+  end
+
+  defp encode_hypothesis_prediction_for_atlas(pred) when is_map(pred) do
+    Jason.encode!(pred)
+  end
+
+  defp encode_hypothesis_prediction_for_atlas(pred) when is_binary(pred), do: pred
+  defp encode_hypothesis_prediction_for_atlas(nil), do: nil
+
+  defp do_test_predictions(%Investigation{hypotheses: hs} = inv) when is_list(hs) do
+    evaluated =
+      hs
+      |> Task.async_stream(
+        &apply_prediction_evaluation/1,
+        max_concurrency: 4,
+        timeout: 5_000,
+        on_timeout: :kill_task
+      )
+      |> Enum.zip(hs)
+      |> Enum.map(fn
+        {{:ok, h2}, _} -> h2
+        {_other, h1} -> h1
+      end)
+
+    %{inv | hypotheses: evaluated}
+  end
+
+  defp apply_prediction_evaluation(%Hypothesis{} = h) do
+    case h.prediction do
+      %{type: :unstructured} ->
+        h
+
+      pred when is_binary(pred) ->
+        h
+
+      %{type: :belief_query, params: params} when is_map(params) ->
+        opts = Map.to_list(params)
+
+        case BeliefStore.query_beliefs(opts) do
+          {:ok, beliefs} when beliefs == [] -> Hypothesis.evaluate(h)
+          {:ok, _} -> Hypothesis.evaluate(h)
+          _ -> h
+        end
+
+      %{type: :corroboration_count, params: params, expected: expected}
+      when is_map(params) and is_integer(expected) ->
+        min_sources = Map.get(params, :min_sources, expected)
+
+        if h.source_count >= min_sources do
+          Hypothesis.evaluate(h)
+        else
+          Hypothesis.evaluate(h)
+        end
+
+      _ ->
+        h
     end
   end
 end

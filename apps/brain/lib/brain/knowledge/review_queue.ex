@@ -774,15 +774,17 @@ defmodule Brain.Knowledge.ReviewQueue do
     auto_enabled = Application.get_env(:brain, :auto_approval_enabled, false)
 
     if auto_enabled and auto_approval_eligible?(candidate, state) do
-      case do_approve(candidate.id, "auto-approved: high confidence corroborated finding", state) do
-        {:ok, _updated, new_state} ->
-          Logger.info("ReviewQueue: auto-approved candidate",
-            id: candidate.id,
-            confidence: candidate.aggregate_confidence,
-            sources: length(candidate.corroborating_sources)
-          )
+        case do_approve(candidate.id, "auto-approved: high confidence corroborated finding", state) do
+          {:ok, _updated, new_state} ->
+            maybe_warn_first_auto_approval_after_reliability_fix()
 
-          new_state
+            Logger.info("ReviewQueue: auto-approved candidate",
+              id: candidate.id,
+              confidence: candidate.aggregate_confidence,
+              sources: length(candidate.corroborating_sources)
+            )
+
+            new_state
 
         _ ->
           state
@@ -809,9 +811,21 @@ defmodule Brain.Knowledge.ReviewQueue do
 
   defp all_sources_reliable?(sources) do
     Enum.all?(sources, fn source ->
-      reliability = Map.get(source, :reliability, 0.0)
+      reliability = Map.get(source, :reliability_score, Map.get(source, :reliability, 0.0))
       reliability >= 0.6
     end)
+  end
+
+  defp maybe_warn_first_auto_approval_after_reliability_fix do
+    key = {__MODULE__, :auto_approval_reliability_fix_warned}
+
+    if :persistent_term.get(key, false) == false do
+      Logger.warning(
+        "ReviewQueue: auto-approval is active; `:reliability_score` is now honored for source checks (dev may approve more often)."
+      )
+
+      :persistent_term.put(key, true)
+    end
   end
 
   defp comprehension_was_full?(candidate) do
@@ -822,20 +836,15 @@ defmodule Brain.Knowledge.ReviewQueue do
       end
 
     if profile_id do
-      # Look up the profile from the ComprehensionAssessor
-      case Brain.Analysis.ComprehensionAssessor.ready?() do
-        true ->
-          # Check profile via stats — if we can't look it up, allow it
-          # (conservative: don't block auto-approval on assessor availability)
-          true
+      case :ets.lookup(:comprehension_profiles, profile_id) do
+        [{^profile_id, profile, _ts}] ->
+          Map.get(profile, :verdict) == :comprehended
 
-        false ->
-          # Assessor not available, allow auto-approval
-          true
+        _ ->
+          false
       end
     else
-      # No comprehension profile — finding predates comprehension system, allow
-      true
+      false
     end
   end
 

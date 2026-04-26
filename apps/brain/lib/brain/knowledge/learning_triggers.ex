@@ -5,22 +5,27 @@ defmodule Brain.Knowledge.LearningTriggers do
 
   Triggers:
   - **Novelty trigger:** When 3+ novel inputs on the same domain arrive within 24h
-  - **Uncertainty trigger:** When AnalyzerCalibration shows a domain underperforming
+  - **Uncertainty trigger:** When a concluded investigation has low lattice margin
+    or high entropy (subscribes to `learning:investigation`)
 
-  Subscribes to PubSub "learning:novel_input" for novelty events.
-  Rate-limited to max 2 auto-triggered sessions per day.
-
-  Only inputs that pass the researchability filter in `NoveltyDetector`
-  reach this module — social/phatic inputs are excluded upstream.
+  Subscribes to PubSub `learning:novel_input` and `learning:investigation`.
+  Rate-limited with per-domain and global daily caps.
   """
 
   use GenServer
   require Logger
 
-  @max_sessions_per_day 2
+  alias Brain.Lattice
+  alias Brain.Knowledge.LearningCenter
+  alias Brain.Knowledge.Types.ResearchGoal
+
+  @max_sessions_per_day_per_domain 2
+  @max_sessions_per_day_total 5
   @novelty_cluster_threshold 3
   @novelty_window_ms 24 * 60 * 60 * 1000
   @cleanup_interval_ms 60 * 60 * 1000
+  @uncertainty_margin_threshold 0.12
+  @uncertainty_entropy_threshold 0.92
 
   def start_link(opts \\ []) do
     name = Keyword.get(opts, :name, __MODULE__)
@@ -45,6 +50,7 @@ defmodule Brain.Knowledge.LearningTriggers do
   def init(_opts) do
     if Process.whereis(Brain.PubSub) do
       Phoenix.PubSub.subscribe(Brain.PubSub, "learning:novel_input")
+      Phoenix.PubSub.subscribe(Brain.PubSub, "learning:investigation")
     end
 
     Process.send_after(self(), :cleanup, @cleanup_interval_ms)
@@ -54,7 +60,8 @@ defmodule Brain.Knowledge.LearningTriggers do
     {:ok,
      %{
        novel_inputs: %{},
-       sessions_today: 0,
+       sessions_per_domain: %{},
+       sessions_total_today: 0,
        last_reset_date: Date.utc_today(),
        triggered_sessions: []
      }}
@@ -66,8 +73,10 @@ defmodule Brain.Knowledge.LearningTriggers do
       novel_input_domains: Map.keys(state.novel_inputs),
       novel_input_counts:
         Map.new(state.novel_inputs, fn {domain, inputs} -> {domain, length(inputs)} end),
-      sessions_today: state.sessions_today,
-      max_sessions_per_day: @max_sessions_per_day,
+      sessions_per_domain: state.sessions_per_domain,
+      sessions_total_today: state.sessions_total_today,
+      max_sessions_per_day_per_domain: @max_sessions_per_day_per_domain,
+      max_sessions_per_day_total: @max_sessions_per_day_total,
       triggered_sessions: length(state.triggered_sessions)
     }
 
@@ -79,16 +88,59 @@ defmodule Brain.Knowledge.LearningTriggers do
     {:reply, true, state}
   end
 
-  # Handle the enriched message format (with entities)
   @impl true
   def handle_info({:novel_input, text, score, domain, entities}, state) do
     accumulate_input(state, text, score, domain, entities)
   end
 
-  # Backward-compatible handler for the old 4-element tuple format
   @impl true
   def handle_info({:novel_input, text, score, domain}, state) do
     accumulate_input(state, text, score, domain, [])
+  end
+
+  @impl true
+  def handle_info(
+        {:investigation_concluded, session_id, _inv_id, %Lattice{} = lat, dominant_gap,
+         domain},
+        state
+      ) do
+    state = maybe_reset_daily_counter(state)
+    dkey = domain_key(domain)
+
+    if session_cap_ok?(state, dkey) and uncertain?(lat) do
+      topic = "Follow-up: resolve hypothesis uncertainty (#{dkey})"
+
+      goal =
+        ResearchGoal.new(topic,
+          questions: ["What additional evidence would reduce uncertainty?"],
+          source_gaps: [dominant_gap],
+          priority: :high
+        )
+
+      case LearningCenter.spawn_followup_goal(session_id, goal) do
+        :ok ->
+          Logger.info("LearningTriggers: uncertainty follow-up goal queued",
+            session_id: session_id,
+            margin: Lattice.margin(lat),
+            entropy: Lattice.entropy(lat)
+          )
+
+          if Process.whereis(Brain.PubSub) do
+            Phoenix.PubSub.broadcast(
+              Brain.PubSub,
+              "learning:uncertainty",
+              {:uncertainty_followup, session_id, dominant_gap}
+            )
+          end
+
+          {:noreply, consume_session_slot(state, dkey)}
+
+        _ ->
+          {:noreply, state}
+      end
+    else
+      {:noreply, state}
+    end
   end
 
   @impl true
@@ -101,7 +153,10 @@ defmodule Brain.Knowledge.LearningTriggers do
   @impl true
   def handle_info(_msg, state), do: {:noreply, state}
 
-  # --- Private ---
+  defp uncertain?(%Lattice{} = lat) do
+    Lattice.margin(lat) < @uncertainty_margin_threshold or
+      Lattice.entropy(lat) > @uncertainty_entropy_threshold
+  end
 
   defp accumulate_input(state, text, score, domain, entities) do
     state = maybe_reset_daily_counter(state)
@@ -124,7 +179,9 @@ defmodule Brain.Knowledge.LearningTriggers do
   end
 
   defp maybe_trigger_session(state, domain) do
-    if state.sessions_today >= @max_sessions_per_day do
+    dkey = domain_key(domain)
+
+    if not session_cap_ok?(state, dkey) do
       state
     else
       domain_inputs = Map.get(state.novel_inputs, domain, [])
@@ -138,7 +195,7 @@ defmodule Brain.Knowledge.LearningTriggers do
 
         case trigger_learning_session(topic) do
           :ok ->
-            Logger.info("LearningTriggers: auto-triggered session for domain #{domain}",
+            Logger.info("LearningTriggers: auto-triggered session for domain #{inspect(domain)}",
               topic: topic,
               novel_input_count: length(recent)
             )
@@ -147,13 +204,13 @@ defmodule Brain.Knowledge.LearningTriggers do
 
             %{
               state
-              | sessions_today: state.sessions_today + 1,
-                novel_inputs: new_novel_inputs,
+              | novel_inputs: new_novel_inputs,
                 triggered_sessions: [
                   %{domain: domain, topic: topic, timestamp: now}
                   | state.triggered_sessions
                 ]
             }
+            |> consume_session_slot(dkey)
 
           :error ->
             state
@@ -164,10 +221,27 @@ defmodule Brain.Knowledge.LearningTriggers do
     end
   end
 
+  defp session_cap_ok?(state, domain_key) do
+    total = Map.get(state, :sessions_total_today, 0)
+    domain_count = Map.get(state.sessions_per_domain, domain_key, 0)
+    total < @max_sessions_per_day_total and domain_count < @max_sessions_per_day_per_domain
+  end
+
+  defp consume_session_slot(state, domain_key) do
+    total = Map.get(state, :sessions_total_today, 0)
+
+    %{
+      state
+      | sessions_total_today: total + 1,
+        sessions_per_domain:
+          Map.update(state.sessions_per_domain, domain_key, 1, &(&1 + 1))
+    }
+  end
+
   defp trigger_learning_session(topic) do
-    if Code.ensure_loaded?(Brain.Knowledge.LearningCenter) and
-         function_exported?(Brain.Knowledge.LearningCenter, :start_session, 2) do
-      case Brain.Knowledge.LearningCenter.start_session(topic, source: :auto_trigger) do
+    if Code.ensure_loaded?(LearningCenter) and
+         function_exported?(LearningCenter, :start_session, 2) do
+      case LearningCenter.start_session(topic, source: :auto_trigger) do
         {:ok, _} -> :ok
         _ -> :error
       end
@@ -249,9 +323,18 @@ defmodule Brain.Knowledge.LearningTriggers do
     today = Date.utc_today()
 
     if Date.compare(today, state.last_reset_date) != :eq do
-      %{state | sessions_today: 0, last_reset_date: today}
+      %{
+        state
+        | sessions_per_domain: %{},
+          sessions_total_today: 0,
+          last_reset_date: today
+      }
     else
       state
     end
   end
+
+  defp domain_key(domain) when is_binary(domain), do: domain
+  defp domain_key(domain) when is_atom(domain), do: to_string(domain)
+  defp domain_key(_), do: "unknown"
 end
