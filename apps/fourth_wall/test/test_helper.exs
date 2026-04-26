@@ -1,11 +1,25 @@
 # FourthWall test helper
 # This app is standalone - no dependencies on Brain or other apps
 
-# Configure ExUnit - only exclude explicitly incomplete/disabled tests
-# Any skipped behavior is untested behavior.
+# Serial by default (`max_cases: 1`); override with `EXUNIT_MAX_CASES=N`.
+# Kept in sync with the rest of the umbrella so a developer running
+# `mix test` from one app sees the same parallelism behavior as another.
+exunit_max_cases =
+  case System.get_env("EXUNIT_MAX_CASES") do
+    nil ->
+      1
+
+    value ->
+      case Integer.parse(value) do
+        {n, _} when n > 0 -> n
+        _ -> 1
+      end
+  end
+
 ExUnit.configure(
   exclude: [:wip, :skip],
-  timeout: 60_000
+  timeout: 60_000,
+  max_cases: exunit_max_cases
 )
 
 # Ensure custom mix task modules are available in umbrella runs where

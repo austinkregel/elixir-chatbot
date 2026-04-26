@@ -814,17 +814,30 @@ defmodule Brain.Test.ModelFactory do
   end
 
   defp compute_neutral_centroid(%{label_centroids: centroids}, _pairs) do
+    # `label_centroids` is `%{label => list(list(float))}` — each value is the
+    # set of k-means prototypes for that class, *not* a single centroid. We
+    # always reduce to a single flat float vector here so the persisted
+    # `framing_neutral_centroid.term` passes `ModelPreflight` (which requires
+    # `Enum.all?(data, &is_float/1)`).
     case Map.get(centroids, "neutral") || Map.get(centroids, "other") do
-      nil -> mean_vectors(Map.values(centroids))
-      vec -> vec
+      nil ->
+        # Grand mean: collapse each class's protos to one centroid, then
+        # mean those so every class contributes equally regardless of k.
+        centroids
+        |> Map.values()
+        |> Enum.map(&mean_vectors/1)
+        |> mean_vectors()
+
+      protos when is_list(protos) ->
+        mean_vectors(protos)
     end
   end
 
   defp mean_vectors([]), do: []
-  defp mean_vectors([single]), do: single
+  defp mean_vectors([single]) when is_list(single), do: single
 
-  defp mean_vectors(vecs) do
-    dim = length(hd(vecs))
+  defp mean_vectors([first | _] = vecs) when is_list(first) do
+    dim = length(first)
     n = length(vecs)
     zero = List.duplicate(0.0, dim)
 

@@ -21,57 +21,9 @@ defmodule ChatWeb.ConnCase do
   setup tags do
     # Checkout sandbox so Brain GenServers can access Atlas during tests
     if Process.whereis(Atlas.Repo) do
-      # Reset to manual mode first to clear stale shared connections
-      try do
-        Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :manual)
-      rescue
-        _ -> :ok
-      catch
-        :exit, _ -> :ok
-      end
+      pid = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
 
-      pid =
-        try do
-          Ecto.Adapters.SQL.Sandbox.start_owner!(Atlas.Repo, shared: not tags[:async])
-        rescue
-          MatchError ->
-            Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :manual)
-            Process.sleep(50)
-            Ecto.Adapters.SQL.Sandbox.start_owner!(Atlas.Repo, shared: not tags[:async])
-        end
-
-      atlas_genservers = [
-        Brain.Services.CredentialVault,
-        Brain.Epistemic.SourceAuthority,
-        Brain.Epistemic.BeliefStore,
-        Brain.Memory.Store,
-        Brain.Knowledge.ReviewQueue,
-        Brain.Epistemic.UserModel,
-        Brain.Knowledge.SourceReliability,
-        Brain.FactDatabase
-      ]
-
-      for name <- atlas_genservers do
-        if genserver_pid = Process.whereis(name) do
-          Ecto.Adapters.SQL.Sandbox.allow(Atlas.Repo, pid, genserver_pid)
-        end
-      end
-
-      if task_sup = Process.whereis(Brain.AtlasTaskSupervisor) do
-        Ecto.Adapters.SQL.Sandbox.allow(Atlas.Repo, pid, task_sup)
-      end
-
-      on_exit(fn ->
-        try do
-          Brain.AtlasIntegration.drain()
-        rescue
-          _ -> :ok
-        catch
-          _, _ -> :ok
-        end
-
-        Ecto.Adapters.SQL.Sandbox.stop_owner(pid)
-      end)
+      on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(pid) end)
     end
 
     unless tags[:skip_endpoint] do

@@ -36,6 +36,13 @@ db_name =
     db_name
   end
 
+atlas_repo_after_connect =
+  if config_env() == :test do
+    {Atlas.Repo, :load_age_test, []}
+  else
+    {Atlas.Repo, :load_age, []}
+  end
+
 config :atlas, Atlas.Repo,
   username: env!("POSTGRES_USER", :string),
   password: env!("POSTGRES_PASSWORD", :string),
@@ -43,7 +50,7 @@ config :atlas, Atlas.Repo,
   port: env!("POSTGRES_PORT", :integer),
   database: db_name,
   types: Atlas.PostgrexTypes,
-  after_connect: {Atlas.Repo, :load_age, []}
+  after_connect: atlas_repo_after_connect
 
 phx_port = env!("PHX_PORT", :integer, 4000)
 
