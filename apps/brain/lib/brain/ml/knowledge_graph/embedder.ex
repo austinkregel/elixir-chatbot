@@ -107,6 +107,29 @@ defmodule Brain.ML.KnowledgeGraph.Embedder do
     Nx.squeeze(output)
   end
 
+  @doc """
+  Encode an entity type concept using its parent type as tail.
+
+  Uses the IS_A relationship: `[HEAD] song [REL] IS_A [TAIL] media`.
+  For root types without a parent, falls back to WordNet hypernym,
+  then to the type name itself as a last resort.
+
+  These triples exist in the training set (after edge label standardization),
+  so the resulting vectors are well-conditioned.
+  """
+  def encode_entity_type(type_name, parent_type, model, params, vocab) do
+    tail = parent_type || type_name
+    text = "[HEAD] #{type_name} [REL] #{Atlas.Graph.EdgeLabels.is_a()} [TAIL] #{tail}"
+    {input, mask} = TripleScorer.encode_single_public(text, vocab)
+
+    output = Axon.predict(model, params, %{
+      "input" => input,
+      "mask" => mask
+    })
+
+    Nx.squeeze(output)
+  end
+
   defp ensure_model_state(%Axon.ModelState{} = state), do: state
   defp ensure_model_state(params) when is_map(params), do: Axon.ModelState.new(params)
 end

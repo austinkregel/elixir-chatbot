@@ -18,9 +18,12 @@ defmodule ChatWeb.DashboardLive do
     :epistemic,
     :analysis,
     :ml,
+    :response,
     :knowledge,
+    :lexicon,
     :learning,
     :storage,
+    :experimental,
     :metrics,
     :code_analysis,
     :services
@@ -58,6 +61,7 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:response_timing, load_response_timing())
       |> assign(:atlas_stats, load_atlas_stats())
       |> assign(:evaluation_summary, load_evaluation_summary())
+      |> assign(:kg_signals_status, load_kg_signals_status())
       |> assign(:last_updated, DateTime.utc_now())
       |> assign(:expanded_categories, MapSet.new(@default_expanded))
       |> assign(:auto_refresh, true)
@@ -114,6 +118,7 @@ defmodule ChatWeb.DashboardLive do
         |> assign(:response_timing, load_response_timing())
         |> assign(:atlas_stats, load_atlas_stats())
         |> assign(:evaluation_summary, load_evaluation_summary())
+        |> assign(:kg_signals_status, load_kg_signals_status())
         |> assign(:last_updated, DateTime.utc_now())
 
       {:noreply, socket}
@@ -369,6 +374,62 @@ defmodule ChatWeb.DashboardLive do
     end)
   rescue
     _ -> %{}
+  end
+
+  defp load_kg_signals_status do
+    config = Application.get_env(:brain, :kg_signals, [])
+
+    scorer_ready = Brain.ML.KnowledgeGraph.TripleScorer.ready?()
+
+    model_version =
+      case Brain.ML.KnowledgeGraph.TripleScorer.current_model_version() do
+        {:ok, v} -> v
+        _ -> "not loaded"
+      end
+
+    relation_count =
+      case Brain.ML.KnowledgeGraph.TripleScorer.relation_coverage() do
+        {:ok, coverage} when is_map(coverage) -> map_size(coverage)
+        _ -> 0
+      end
+
+    cache_stats =
+      try do
+        Brain.ML.KnowledgeGraph.EntityVectorCache.stats()
+      rescue
+        _ -> %{size: 0, hits: 0, misses: 0, ready: false}
+      end
+
+    predicate_count = length(Brain.ML.KnowledgeGraph.PredicateNormalizer.canonical_relations())
+
+    %{
+      enabled: Keyword.get(config, :enabled, true),
+      srl_gating: Keyword.get(config, :srl_gating, true),
+      consolidation_blend: Keyword.get(config, :consolidation_blend, 0.6),
+      memory_rerank: Keyword.get(config, :memory_rerank, true),
+      novelty_downweight: Keyword.get(config, :novelty_downweight, true),
+      contradiction_default_kg: Keyword.get(config, :contradiction_default_kg, true),
+      entity_promoter_kg_gate: Keyword.get(config, :entity_promoter_kg_gate, true),
+      scorer_ready: scorer_ready,
+      model_version: model_version,
+      relation_count: relation_count,
+      predicate_aliases: predicate_count,
+      cache_size: Map.get(cache_stats, :size, 0),
+      cache_hits: Map.get(cache_stats, :hits, 0),
+      cache_misses: Map.get(cache_stats, :misses, 0)
+    }
+  rescue
+    _ ->
+      %{
+        enabled: false,
+        scorer_ready: false,
+        model_version: "error",
+        relation_count: 0,
+        predicate_aliases: 0,
+        cache_size: 0,
+        cache_hits: 0,
+        cache_misses: 0
+      }
   end
 
   def category_label(:core) do
@@ -1038,12 +1099,20 @@ defmodule ChatWeb.DashboardLive do
     "Entity Trainer"
   end
 
+  def model_name(:sentiment_classifier) do
+    "Sentiment Classifier"
+  end
+
+  def model_name(:speech_act_classifier) do
+    "Speech Act Classifier"
+  end
+
   def model_name(other) do
     other |> to_string() |> String.replace("_", " ") |> String.capitalize()
   end
 
   def file_based_models(ml_models_status) do
-    [:pos_model, :entity_model, :gazetteer]
+    [:pos_model, :entity_model, :gazetteer, :sentiment_classifier, :speech_act_classifier]
     |> Enum.map(fn key -> {key, Map.get(ml_models_status, key)} end)
     |> Enum.filter(fn {_k, v} -> v != nil end)
   end

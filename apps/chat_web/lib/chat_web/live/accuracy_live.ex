@@ -7,7 +7,7 @@ defmodule ChatWeb.AccuracyLive do
   import ChatWeb.AppShell
 
   alias Brain.ML.EvaluationStore
-  alias Brain.ML.GoldStandardMigrator
+
   alias Brain.ML.WeightOptimizer
 
   @tasks ~w(intent ner sentiment speech_act)
@@ -60,22 +60,12 @@ defmodule ChatWeb.AccuracyLive do
   end
 
   @impl true
+  def handle_event("switch_tab", %{"tab" => "import"}, socket) do
+    {:noreply, push_navigate(socket, to: ~p"/training-studio?tab=browse&source=intent_gold")}
+  end
+
   def handle_event("switch_tab", %{"tab" => tab}, socket) do
     socket = assign(socket, :active_tab, tab)
-
-    socket =
-      if tab == "import" and socket.assigns.import_intents == [] do
-        intents = load_available_intents()
-        grouped = group_intents(intents)
-        stats = load_gold_stats()
-
-        socket
-        |> assign(:import_intents, intents)
-        |> assign(:import_grouped, grouped)
-        |> assign(:gold_stats, stats)
-      else
-        socket
-      end
 
     {:noreply, socket}
   end
@@ -92,14 +82,18 @@ defmodule ChatWeb.AccuracyLive do
   end
 
   def handle_event("run_evaluation", _params, socket) do
-    socket =
-      put_flash(
-        socket,
-        :info,
-        "Evaluation triggered. Run `mix evaluate.intent --save` from the terminal for full results."
-      )
+    task = socket.assigns.active_tab
 
-    {:noreply, socket}
+    case Brain.ML.TrainingServer.start_training(:evaluate, task: task) do
+      {:ok, _} ->
+        {:noreply, put_flash(socket, :info, "Evaluation started for #{task}. Results will appear when complete.")}
+
+      {:error, {:already_training, current}} ->
+        {:noreply, put_flash(socket, :error, "Already running: #{current}. Please wait.")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to start evaluation: #{inspect(reason)}")}
+    end
   end
 
   def handle_event("refresh_data", _params, socket) do
@@ -148,102 +142,6 @@ defmodule ChatWeb.AccuracyLive do
 
       {:error, :not_found} ->
         {:noreply, put_flash(socket, :error, "Run #{run_id} is no longer active")}
-    end
-  end
-
-  def handle_event("load_import_data", _params, socket) do
-    intents = load_available_intents()
-    grouped = group_intents(intents)
-    stats = load_gold_stats()
-
-    socket =
-      socket
-      |> assign(:import_intents, intents)
-      |> assign(:import_grouped, grouped)
-      |> assign(:gold_stats, stats)
-
-    {:noreply, socket}
-  end
-
-  def handle_event("toggle_intent", %{"name" => name}, socket) do
-    selected = socket.assigns.import_selected
-
-    updated =
-      if MapSet.member?(selected, name) do
-        MapSet.delete(selected, name)
-      else
-        MapSet.put(selected, name)
-      end
-
-    {:noreply, assign(socket, :import_selected, updated)}
-  end
-
-  def handle_event("select_group", %{"group" => group}, socket) do
-    grouped = socket.assigns.import_grouped
-    intents_in_group = Map.get(grouped, group, [])
-    names = Enum.map(intents_in_group, & &1.name)
-    updated = Enum.reduce(names, socket.assigns.import_selected, &MapSet.put(&2, &1))
-    {:noreply, assign(socket, :import_selected, updated)}
-  end
-
-  def handle_event("deselect_group", %{"group" => group}, socket) do
-    grouped = socket.assigns.import_grouped
-    intents_in_group = Map.get(grouped, group, [])
-    names = Enum.map(intents_in_group, & &1.name)
-    updated = Enum.reduce(names, socket.assigns.import_selected, &MapSet.delete(&2, &1))
-    {:noreply, assign(socket, :import_selected, updated)}
-  end
-
-  def handle_event("select_all_intents", _params, socket) do
-    all_names = Enum.map(socket.assigns.import_intents, & &1.name)
-    {:noreply, assign(socket, :import_selected, MapSet.new(all_names))}
-  end
-
-  def handle_event("deselect_all_intents", _params, socket) do
-    {:noreply, assign(socket, :import_selected, MapSet.new())}
-  end
-
-  def handle_event("update_import_limit", %{"limit" => limit_str}, socket) do
-    limit =
-      case Integer.parse(limit_str) do
-        {n, _} when n > 0 -> n
-        _ -> nil
-      end
-
-    {:noreply, assign(socket, :import_limit, limit)}
-  end
-
-  def handle_event("filter_import", %{"filter" => filter}, socket) do
-    {:noreply, assign(socket, :import_filter, filter)}
-  end
-
-  def handle_event("run_import", _params, socket) do
-    selected = MapSet.to_list(socket.assigns.import_selected)
-
-    if selected == [] do
-      {:noreply, put_flash(socket, :error, "No intents selected for import.")}
-    else
-      socket = assign(socket, :import_loading, true)
-
-      opts =
-        case socket.assigns.import_limit do
-          nil -> []
-          n -> [limit: n]
-        end
-
-      case GoldStandardMigrator.migrate_intents(selected, opts) do
-        {:ok, %{intent_count: ic, ner_count: nc}} ->
-          stats = load_gold_stats()
-
-          socket =
-            socket
-            |> assign(:import_loading, false)
-            |> assign(:gold_stats, stats)
-            |> assign(:import_selected, MapSet.new())
-            |> put_flash(:info, "Imported #{ic} intent examples and #{nc} NER examples.")
-
-          {:noreply, socket}
-      end
     end
   end
 
@@ -349,11 +247,12 @@ defmodule ChatWeb.AccuracyLive do
               label="Optimizer"
               active={@active_tab == "optimizer"}
             />
-            <.tab_button
-              tab="import"
-              label="Import Data"
-              active={@active_tab == "import"}
-            />
+            <.link
+              navigate={~p"/training-studio?tab=browse&source=intent_gold"}
+              class="px-3 py-1.5 text-sm font-medium rounded-lg text-base-content/70 hover:bg-base-200 transition-colors"
+            >
+              Training Studio &rarr;
+            </.link>
           </nav>
         </div>
 
@@ -366,16 +265,6 @@ defmodule ChatWeb.AccuracyLive do
               form={@optimizer_form}
               error={@optimizer_error}
               available_classifiers={@optimizer_classifiers}
-            />
-          <% @active_tab == "import" -> %>
-            <.import_panel
-              intents={@import_intents}
-              grouped={@import_grouped}
-              selected={@import_selected}
-              import_limit={@import_limit}
-              import_loading={@import_loading}
-              import_filter={@import_filter}
-              gold_stats={@gold_stats}
             />
           <% true -> %>
             <.task_panel
@@ -623,6 +512,10 @@ defmodule ChatWeb.AccuracyLive do
                   <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Best Gen</th>
                   <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Generations</th>
                   <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Alive Dims</th>
+                  <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Population</th>
+                  <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Mut Rate</th>
+                  <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Mut Sigma</th>
+                  <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Early Stop</th>
                   <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Started</th>
                   <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Duration</th>
                 </tr>
@@ -646,6 +539,18 @@ defmodule ChatWeb.AccuracyLive do
                   <td class="text-base-content/70">{Map.get(run, :generations_run, "-")}</td>
                   <td class="text-base-content/70">
                     {format_alive_dims(Map.get(run, :alive_dims), Map.get(run, :total_dims))}
+                  </td>
+                  <td class="text-base-content/70 text-xs">
+                    {run_opt(run, :population_size, "population_size")}
+                  </td>
+                  <td class="text-base-content/70 text-xs">
+                    {run_opt(run, :mutation_rate, "mutation_rate")}
+                  </td>
+                  <td class="text-base-content/70 text-xs">
+                    {run_opt(run, :mutation_sigma, "mutation_sigma")}
+                  </td>
+                  <td class="text-base-content/70 text-xs">
+                    {run_opt(run, :early_stop_generations, "early_stop_generations")}
                   </td>
                   <td class="text-xs text-base-content/60">
                     {format_time_ago(Map.get(run, :started_at))}
@@ -741,7 +646,7 @@ defmodule ChatWeb.AccuracyLive do
           <.optimizer_input form={@form} field="max_generations" label="Max generations" min="10" step="10" />
           <.optimizer_input form={@form} field="early_stop_generations" label="Early stop (gens)" min="1" step="1" />
           <.optimizer_input form={@form} field="mutation_rate" label="Mutation rate" min="0" max="1" step="0.01" />
-          <.optimizer_input form={@form} field="mutation_sigma" label="Mutation sigma" min="0" max="1" step="0.01" />
+          <.optimizer_input form={@form} field="mutation_sigma" label="Mutation sigma" min="0" max="3" step="0.05" />
         </div>
         <%= if @error do %>
           <div class="text-error text-xs mt-1">{@error}</div>
@@ -830,6 +735,13 @@ defmodule ChatWeb.AccuracyLive do
         <.kv_block label="Avg" value={format_percent(Map.get(@run, :avg_fitness))} />
         <.kv_block label="Stale" value={to_string(Map.get(@run, :stale_count, 0))} />
         <.kv_block label="Mut" value={format_mutation(Map.get(@run, :mutation_rate), Map.get(@run, :mutation_sigma))} />
+      </div>
+      <!-- Config grid -->
+      <div class="grid grid-cols-4 gap-2 text-xs">
+        <.kv_block label="Population" value={run_opt(@run, :population_size, "population_size")} />
+        <.kv_block label="Mut Rate" value={run_opt(@run, :mutation_rate, "mutation_rate")} />
+        <.kv_block label="Mut Sigma" value={run_opt(@run, :mutation_sigma, "mutation_sigma")} />
+        <.kv_block label="Early Stop" value={run_opt(@run, :early_stop_generations, "early_stop_generations")} />
       </div>
 
       <!-- Sparkline -->
@@ -928,188 +840,6 @@ defmodule ChatWeb.AccuracyLive do
         {format_percent(@min_f)} → {format_percent(@max_f)}
       </div>
     </div>
-    """
-  end
-
-  attr(:intents, :list, default: [])
-  attr(:grouped, :map, default: %{})
-  attr(:selected, :any, default: nil)
-  attr(:import_limit, :integer, default: nil)
-  attr(:import_loading, :boolean, default: false)
-  attr(:import_filter, :string, default: "")
-  attr(:gold_stats, :map, default: %{})
-
-  defp import_panel(assigns) do
-    selected_count = MapSet.size(assigns.selected)
-
-    selected_example_count =
-      assigns.intents
-      |> Enum.filter(&MapSet.member?(assigns.selected, &1.name))
-      |> Enum.map(& &1.example_count)
-      |> Enum.sum()
-
-    filter_lower = String.downcase(assigns.import_filter)
-
-    filtered_grouped =
-      if filter_lower == "" do
-        assigns.grouped
-      else
-        assigns.grouped
-        |> Enum.map(fn {group, intents} ->
-          filtered =
-            Enum.filter(intents, fn i ->
-              String.downcase(i.name) |> String.contains?(filter_lower)
-            end)
-
-          {group, filtered}
-        end)
-        |> Enum.reject(fn {_group, intents} -> intents == [] end)
-        |> Enum.into(%{})
-      end
-
-    assigns =
-      assigns
-      |> assign(:selected_count, selected_count)
-      |> assign(:selected_example_count, selected_example_count)
-      |> assign(:filtered_grouped, filtered_grouped)
-
-    ~H"""
-    <%= if @intents == [] do %>
-      <div class="bg-base-100 rounded-xl border border-base-300/50 p-12 text-center">
-        <div class="mx-auto w-12 h-12 rounded-full bg-base-200 flex items-center justify-center mb-4">
-          <.icon name="hero-arrow-down-tray" class="size-6 text-base-content/40" />
-        </div>
-        <h3 class="text-lg font-semibold text-base-content/70 mb-2">No intent data found</h3>
-        <p class="text-sm text-base-content/50 mb-4">
-          Place Dialogflow-format intent files in <code class="bg-base-200 px-1 rounded">data/intents/</code>
-        </p>
-      </div>
-    <% else %>
-      <!-- Gold Standard Status -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <.metric_card
-          label="Intent Examples"
-          value={to_string(@gold_stats["intent"] || 0)}
-          icon="hero-document-text"
-        />
-        <.metric_card
-          label="NER Examples"
-          value={to_string(@gold_stats["ner"] || 0)}
-          icon="hero-tag"
-        />
-        <.metric_card
-          label="Available Intents"
-          value={to_string(length(@intents))}
-          icon="hero-folder-open"
-        />
-        <.metric_card
-          label="Selected"
-          value={"#{@selected_count} (#{@selected_example_count} ex.)"}
-          icon="hero-check-circle"
-        />
-      </div>
-
-      <!-- Import Controls -->
-      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-        <div class="flex flex-wrap items-end gap-4">
-          <div class="form-control flex-1 min-w-[200px]">
-            <label class="label">
-              <span class="label-text">Filter intents</span>
-            </label>
-            <input
-              type="text"
-              name="filter"
-              value={@import_filter}
-              placeholder="e.g. lights, heating, locks..."
-              phx-keyup="filter_import"
-              phx-debounce="200"
-              class="input input-bordered input-sm"
-            />
-          </div>
-          <div class="form-control w-32">
-            <label class="label">
-              <span class="label-text">Limit per intent</span>
-            </label>
-            <input
-              type="number"
-              name="limit"
-              value={@import_limit || ""}
-              placeholder="All"
-              min="1"
-              max="1000"
-              phx-change="update_import_limit"
-              class="input input-bordered input-sm"
-            />
-          </div>
-          <div class="flex gap-2">
-            <button phx-click="select_all_intents" class="btn btn-ghost btn-sm">
-              Select All
-            </button>
-            <button phx-click="deselect_all_intents" class="btn btn-ghost btn-sm">
-              Clear
-            </button>
-          </div>
-          <button
-            phx-click="run_import"
-            class="btn btn-primary btn-sm"
-            disabled={@selected_count == 0 or @import_loading}
-          >
-            <%= if @import_loading do %>
-              <span class="loading loading-spinner loading-sm"></span>
-            <% else %>
-              <.icon name="hero-arrow-down-tray" class="size-4" />
-            <% end %>
-            Import {@selected_count} Intent(s)
-          </button>
-        </div>
-      </div>
-
-      <!-- Intent Groups -->
-      <div class="space-y-3">
-        <%= for {group, intents} <- Enum.sort(@filtered_grouped) do %>
-          <% group_names = Enum.map(intents, & &1.name) %>
-          <% all_selected = Enum.all?(group_names, &MapSet.member?(@selected, &1)) %>
-          <% group_examples = Enum.sum(Enum.map(intents, & &1.example_count)) %>
-          <div class="bg-base-100 rounded-xl border border-base-300/50 overflow-hidden">
-            <div class="p-3 border-b border-base-300/50 flex items-center justify-between bg-base-200/30">
-              <div class="flex items-center gap-3">
-                <span class="font-medium text-sm">{group}</span>
-                <span class="badge badge-sm badge-ghost">{length(intents)} intents</span>
-                <span class="text-xs text-base-content/50">{group_examples} examples</span>
-              </div>
-              <button
-                phx-click={if all_selected, do: "deselect_group", else: "select_group"}
-                phx-value-group={group}
-                class="btn btn-ghost btn-xs"
-              >
-                {if all_selected, do: "Deselect All", else: "Select All"}
-              </button>
-            </div>
-            <div class="divide-y divide-base-300/30 max-h-64 overflow-y-auto">
-              <%= for intent <- intents do %>
-                <label
-                  class={[
-                    "flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-base-200/30 transition-colors",
-                    if(MapSet.member?(@selected, intent.name), do: "bg-primary/5", else: "")
-                  ]}
-                  phx-click="toggle_intent"
-                  phx-value-name={intent.name}
-                >
-                  <input
-                    type="checkbox"
-                    checked={MapSet.member?(@selected, intent.name)}
-                    class="checkbox checkbox-sm checkbox-primary"
-                    tabindex="-1"
-                  />
-                  <span class="flex-1 font-mono text-xs">{intent.name}</span>
-                  <span class="badge badge-sm badge-ghost">{intent.example_count}</span>
-                </label>
-              <% end %>
-            </div>
-          </div>
-        <% end %>
-      </div>
-    <% end %>
     """
   end
 
@@ -1446,6 +1176,20 @@ defmodule ChatWeb.AccuracyLive do
     "-"
   end
 
+  defp run_opt(run, atom_key, string_key) do
+    val =
+      get_in(run, [:opts, atom_key]) ||
+        get_in(run, [:opts, string_key]) ||
+        Map.get(run, atom_key) ||
+        Map.get(run, string_key)
+
+    case val do
+      nil -> "-"
+      f when is_float(f) -> Float.round(f, 3) |> to_string()
+      other -> to_string(other)
+    end
+  end
+
   defp format_alive_dims(nil, _), do: "-"
   defp format_alive_dims(alive, nil), do: to_string(alive)
   defp format_alive_dims(alive, total), do: "#{alive}/#{total}"
@@ -1534,30 +1278,4 @@ defmodule ChatWeb.AccuracyLive do
     :asc
   end
 
-  defp load_available_intents do
-    try do
-      GoldStandardMigrator.list_available_intents()
-    rescue
-      _ -> []
-    end
-  end
-
-  defp group_intents(intents) do
-    intents
-    |> Enum.group_by(fn intent ->
-      intent.name
-      |> String.split(".")
-      |> Enum.take(2)
-      |> Enum.join(".")
-    end)
-    |> Enum.into(%{})
-  end
-
-  defp load_gold_stats do
-    try do
-      GoldStandardMigrator.gold_standard_stats()
-    rescue
-      _ -> %{}
-    end
-  end
 end

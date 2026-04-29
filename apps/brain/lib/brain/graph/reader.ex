@@ -19,6 +19,7 @@ defmodule Brain.Graph.Reader do
 
   alias Brain.AtlasIntegration
   alias Atlas.Graph
+  alias Atlas.Graph.EdgeLabels
   alias Atlas.Graph.Types.Vertex
 
   require Logger
@@ -161,7 +162,8 @@ defmodule Brain.Graph.Reader do
     escaped = String.replace(to_string(user_id), "'", "\\'")
     # AGE doesn't support type(r) or properties(r) as Cypher functions.
     # Query specific relationship types individually.
-    rel_types = ["LIKES", "WANTS", "INTERESTED_IN", "DISLIKES", "ASKED_ABOUT", "NEEDS"]
+    rel_types = [EdgeLabels.likes(), EdgeLabels.wants(), EdgeLabels.interested_in(),
+                  EdgeLabels.dislikes(), EdgeLabels.asked_about(), EdgeLabels.needs()]
 
     Enum.flat_map(rel_types, fn rel_type ->
       query = """
@@ -205,7 +207,7 @@ defmodule Brain.Graph.Reader do
   def evidence_chain(semantic_fact_name) do
     escaped = String.replace(to_string(semantic_fact_name), "'", "\\'")
     query = """
-    MATCH (e:Episode)-[:EVIDENCE_FOR]->(sf:SemanticFact)
+    MATCH (e:Episode)-[:#{EdgeLabels.evidence_for()}]->(sf:SemanticFact)
     WHERE sf.name = '#{escaped}'
     RETURN e
     """
@@ -230,7 +232,7 @@ defmodule Brain.Graph.Reader do
   def conversation_topics(conversation_id) do
     escaped = String.replace(to_string(conversation_id), "'", "\\'")
     query = """
-    MATCH (c:Conversation)-[:CONTAINS]->(m:Message)-[:HAS_TOPIC]->(t:Topic)
+    MATCH (c:Conversation)-[:#{EdgeLabels.contains()}]->(m:Message)-[:#{EdgeLabels.has_topic()}]->(t:Topic)
     WHERE c.name = '#{escaped}'
     RETURN DISTINCT t
     """
@@ -250,7 +252,7 @@ defmodule Brain.Graph.Reader do
   @doc "Get the most common topic-to-topic transitions."
   def topic_transitions(limit \\ 20) do
     query = """
-    MATCH (a:Topic)-[r:TOPIC_TRANSITION]->(b:Topic)
+    MATCH (a:Topic)-[r:#{EdgeLabels.topic_transition()}]->(b:Topic)
     RETURN a, b, r
     """
 
@@ -283,9 +285,9 @@ defmodule Brain.Graph.Reader do
   def recent_context(conversation_id, n \\ 5) do
     escaped = String.replace(to_string(conversation_id), "'", "\\'")
     query = """
-    MATCH (c:Conversation)-[:CONTAINS]->(m:Message)
+    MATCH (c:Conversation)-[:#{EdgeLabels.contains()}]->(m:Message)
     WHERE c.name = '#{escaped}'
-    OPTIONAL MATCH (m)-[:HAS_TOPIC]->(t:Topic)
+    OPTIONAL MATCH (m)-[:#{EdgeLabels.has_topic()}]->(t:Topic)
     RETURN m, t
     ORDER BY id(m) DESC
     LIMIT #{n}
@@ -325,9 +327,9 @@ defmodule Brain.Graph.Reader do
   def belief_justification_chain(node_name) do
     escaped = String.replace(to_string(node_name), "'", "\\'")
     query = """
-    MATCH (j:Justification)-[:SUPPORTS]->(n:JTMSNode)
+    MATCH (j:Justification)-[:#{EdgeLabels.supports()}]->(n:JTMSNode)
     WHERE n.name = '#{escaped}'
-    OPTIONAL MATCH (j)-[:REQUIRES_IN]->(req:JTMSNode)
+    OPTIONAL MATCH (j)-[:#{EdgeLabels.requires_in()}]->(req:JTMSNode)
     RETURN n, j, collect(req)
     """
 
@@ -358,9 +360,9 @@ defmodule Brain.Graph.Reader do
   def assumption_consequences(node_name) do
     escaped = String.replace(to_string(node_name), "'", "\\'")
     query = """
-    MATCH (j:Justification)-[:REQUIRES_IN]->(a:JTMSNode)
+    MATCH (j:Justification)-[:#{EdgeLabels.requires_in()}]->(a:JTMSNode)
     WHERE a.name = '#{escaped}'
-    MATCH (j)-[:SUPPORTS]->(derived:JTMSNode)
+    MATCH (j)-[:#{EdgeLabels.supports()}]->(derived:JTMSNode)
     RETURN DISTINCT derived
     """
 
@@ -384,7 +386,7 @@ defmodule Brain.Graph.Reader do
   def tag_transitions(from_tag) do
     escaped = String.replace(to_string(from_tag), "'", "\\'")
     query = """
-    MATCH (a:POSTag)-[r:FOLLOWED_BY]->(b:POSTag)
+    MATCH (a:POSTag)-[r:#{EdgeLabels.followed_by()}]->(b:POSTag)
     WHERE a.name = '#{escaped}'
     RETURN b, r
     """
@@ -412,7 +414,7 @@ defmodule Brain.Graph.Reader do
   @doc "Find tokens that have multiple POS tags (ambiguous words)."
   def ambiguous_tokens(min_tag_count \\ 2) do
     query = """
-    MATCH (t:Token)-[r:HAS_TAG]->(tag:POSTag)
+    MATCH (t:Token)-[r:#{EdgeLabels.has_tag()}]->(tag:POSTag)
     RETURN t, tag
     """
 

@@ -659,24 +659,46 @@ defmodule Brain.Analysis.Pipeline do
     {refined_speech_act, intent, intent_method, intent_confidence, intent_details, profile}
   end
 
+  # Exact-match boost is only applied to candidates whose label is a *registered*
+  # intent — otherwise we would be reinforcing string-concatenated phantom labels
+  # such as `"calendar.statement"` that no classifier was ever trained on.
   @profile_rerank_boost 0.15
+  # A smaller, data-driven domain-prefix boost. When the chunk profile's `domain`
+  # axis is confidently set (e.g. via the `:intent_domain` micro-classifier),
+  # ground the lattice toward candidates that share that domain. This lets a
+  # weak-but-correct intent climb when its sibling candidates disagree on the
+  # final action verb.
+  @profile_domain_boost 0.05
 
   defp apply_profile_rerank(lattice, nil), do: lattice
 
-  defp apply_profile_rerank(lattice, %ChunkProfile{derived_label: ""}), do: lattice
-
-  defp apply_profile_rerank(lattice, %ChunkProfile{domain: :unknown}), do: lattice
-
-  defp apply_profile_rerank(%Lattice{} = lattice, %ChunkProfile{} = profile) do
+  defp apply_profile_rerank(lattice, %ChunkProfile{} = profile) do
     derived = profile.derived_label
-    if derived == "" or derived == nil, do: lattice, else: do_profile_rerank(lattice, derived)
+    domain = profile_domain_string(profile)
+
+    label_match = if is_binary(derived) and registered_intent?(derived), do: derived, else: nil
+
+    cond do
+      label_match == nil and domain == nil -> lattice
+      true -> do_profile_rerank(lattice, label_match, domain)
+    end
   end
 
   defp apply_profile_rerank(lattice, _), do: lattice
 
-  defp do_profile_rerank(%Lattice{} = lattice, derived) do
+  defp do_profile_rerank(%Lattice{} = lattice, label_match, domain) do
     Lattice.rerank(lattice, fn %LatticeCandidate{label: lab} ->
-      if to_string(lab) == to_string(derived), do: @profile_rerank_boost, else: 0.0
+      lab_str = to_string(lab)
+
+      label_delta =
+        if label_match != nil and lab_str == label_match, do: @profile_rerank_boost, else: 0.0
+
+      domain_delta =
+        if domain != nil and intent_domain_prefix(lab_str) == domain and registered_intent?(lab_str),
+          do: @profile_domain_boost,
+          else: 0.0
+
+      label_delta + domain_delta
     end)
   end
 
@@ -938,16 +960,82 @@ defmodule Brain.Analysis.Pipeline do
   @disambiguation_threshold 0.5
   @low_confidence_floor 0.3
 
+  @external_resource Path.join(:code.priv_dir(:brain), "analysis/speech_act_intent_map.json")
+  @speech_act_intent_map Path.join(:code.priv_dir(:brain), "analysis/speech_act_intent_map.json")
+                         |> File.read!()
+                         |> Jason.decode!()
+
+  @external_resource Path.join(:code.priv_dir(:brain), "analysis/intent_registry.json")
+  @intent_metadata Path.join(:code.priv_dir(:brain), "analysis/intent_registry.json")
+                   |> File.read!()
+                   |> Jason.decode!()
+                   |> Map.new(fn {intent, schema} ->
+                     entity_types =
+                       schema
+                       |> Map.get("entity_mappings", %{})
+                       |> Map.values()
+                       |> List.flatten()
+                       |> Enum.reject(&is_nil/1)
+                       |> MapSet.new()
+
+                     {intent,
+                      %{
+                        domain: Map.get(schema, "domain") || "",
+                        category: Map.get(schema, "category") || "",
+                        speech_act: Map.get(schema, "speech_act") || "",
+                        required: Map.get(schema, "required", []),
+                        entity_types: entity_types
+                      }}
+                   end)
+  @registered_intent_set @intent_metadata |> Map.keys() |> MapSet.new()
+  @known_domain_set @intent_metadata
+                    |> Map.values()
+                    |> Enum.map(& &1.domain)
+                    |> Enum.reject(&(&1 == ""))
+                    |> MapSet.new()
+
+  @doc false
+  @spec registered_intent?(term()) :: boolean()
+  def registered_intent?(intent) when is_binary(intent), do: MapSet.member?(@registered_intent_set, intent)
+  def registered_intent?(intent) when is_atom(intent), do: registered_intent?(Atom.to_string(intent))
+  def registered_intent?(_), do: false
+
+  defp intent_domain_prefix(intent) when is_binary(intent) do
+    case String.split(intent, ".", parts: 2) do
+      [d, _] -> d
+      _ -> ""
+    end
+  end
+
+  defp intent_domain_prefix(intent) when is_atom(intent), do: intent_domain_prefix(Atom.to_string(intent))
+  defp intent_domain_prefix(_), do: ""
+
   defp determine_intent(speech_act, %Lattice{} = lattice, entities, text, opts, profile) do
     classifier_intent = extract_classifier_intent(speech_act)
     best_score = speech_act.intent_confidence || speech_act.confidence
     base = intent_details_base_from_lattice(lattice)
 
+    classifier_registered? = classifier_intent != nil and registered_intent?(classifier_intent)
+    domain_conflict? = classifier_domain_conflicts_with_profile?(classifier_intent, profile)
+
     cond do
-      classifier_intent != nil and best_score >= @disambiguation_threshold ->
+      # Two trained classifiers disagree: `:intent_full` says one thing, but the
+      # `:intent_domain` micro-classifier says the chunk is in a different
+      # domain. Route through the multi-signal scorer rather than blindly
+      # trusting whichever model happened to fire louder.
+      classifier_registered? and domain_conflict? ->
+        inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities)
+
+        {inferred, :speech_act_fallback, nil,
+         Map.merge(base, %{
+           original_intent: classifier_intent,
+           original_score: best_score
+         })}
+
+      classifier_registered? and best_score >= @disambiguation_threshold ->
         {classifier_intent, :classifier, best_score, base}
 
-      classifier_intent != nil ->
+      classifier_registered? ->
         case disambiguate_with_atlas(classifier_intent, lattice, entities, text, opts, profile) do
           {:ok, refined_intent, refined_score, method} ->
             {refined_intent, method, refined_score,
@@ -957,7 +1045,7 @@ defmodule Brain.Analysis.Pipeline do
              })}
 
           :no_opinion when best_score < @low_confidence_floor ->
-            inferred = infer_intent_from_speech_act(speech_act, text, profile)
+            inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities)
 
             {inferred, :speech_act_fallback, nil,
              Map.merge(base, %{
@@ -969,15 +1057,52 @@ defmodule Brain.Analysis.Pipeline do
             {classifier_intent, :classifier, best_score, base}
         end
 
+      # Classifier emitted a label that isn't in the registry (e.g. bare
+      # `"weather"` because the training set has unsplit examples). Treat the
+      # classifier output as just one more signal and let the registry-aware
+      # scorer pick a real intent that matches the full signal stack.
+      classifier_intent != nil ->
+        inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities)
+
+        {inferred, :speech_act_fallback, nil,
+         Map.merge(base, %{
+           original_intent: classifier_intent,
+           original_score: best_score
+         })}
+
       speech_act.category == :expressive ->
-        inferred = infer_intent_from_speech_act(speech_act, text, profile)
+        inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities)
         {inferred, :speech_act, nil, base}
 
       true ->
-        inferred = infer_intent_from_speech_act(speech_act, text, profile)
+        inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities)
         {inferred, :speech_act, nil, base}
     end
   end
+
+  # True when the trained `:intent_full` output and the trained `:intent_domain`
+  # micro-classifier output assign the chunk to different domains. This is a
+  # signal we should respect — the domain classifier is a small, focused model
+  # that's far more reliable than the 232-class intent_full centroid.
+  defp classifier_domain_conflicts_with_profile?(nil, _), do: false
+
+  defp classifier_domain_conflicts_with_profile?(classifier_intent, profile) when is_binary(classifier_intent) do
+    case profile_domain_string(profile) do
+      nil ->
+        false
+
+      profile_domain ->
+        classifier_domain =
+          case Map.get(@intent_metadata, classifier_intent) do
+            %{domain: d} when is_binary(d) and d != "" -> d
+            _ -> intent_domain_prefix(classifier_intent)
+          end
+
+        classifier_domain != "" and classifier_domain != profile_domain
+    end
+  end
+
+  defp classifier_domain_conflicts_with_profile?(_, _), do: false
 
   defp intent_details_base_from_lattice(%Lattice{} = lattice) do
     if Lattice.empty?(lattice) do
@@ -1141,43 +1266,361 @@ defmodule Brain.Analysis.Pipeline do
     end)
   end
 
-  @external_resource Path.join(:code.priv_dir(:brain), "analysis/speech_act_intent_map.json")
-  @speech_act_intent_map Path.join(:code.priv_dir(:brain), "analysis/speech_act_intent_map.json")
-                         |> File.read!()
-                         |> Jason.decode!()
+  # Resolves an intent label when the `:intent_full` classifier produced no
+  # registered top candidate. **Never** fabricates labels — every returned value
+  # is either a registered intent (validated against `intent_registry.json`) or
+  # a canonical entry from `speech_act_intent_map.json`.
+  #
+  # Strategy: run a multi-signal scorer over every registered intent, blending
+  # all the signals the pipeline has already produced from trained classifiers
+  # and structural analysis:
+  #
+  #   * `profile.domain`             — `:intent_domain` micro-classifier output
+  #   * `profile.modality` / target  — composed axes derived from speech-act
+  #                                    booleans + POS pronouns
+  #   * `speech_act.category` / sub_type — multi-voter speech-act classifier
+  #   * `lattice` candidates / scores    — `:intent_full` feature-vector model
+  #   * extracted entity types       — entity extractor / gazetteer
+  #
+  # The registry contributes structural metadata (domain/category/speech_act/
+  # entity_mappings) — not training signal — so each registered intent can be
+  # scored against the union of trained outputs without any text-string rules.
+  defp infer_intent_from_speech_act(speech_act, _text, profile, lattice, entities) do
+    profile_label = profile_derived_label(profile)
 
-  defp infer_intent_from_speech_act(speech_act, _text, profile) do
-    profile_label =
-      case profile do
-        %ChunkProfile{derived_label: label} when is_binary(label) and label != "" -> label
+    cond do
+      is_binary(profile_label) and registered_intent?(profile_label) ->
+        profile_label
+
+      true ->
+        case best_intent_by_signals(speech_act, profile, lattice, entities) do
+          {:ok, intent} -> intent
+          :no_match -> speech_act_map_fallback(speech_act)
+        end
+    end
+  end
+
+  defp profile_derived_label(%ChunkProfile{derived_label: label}) when is_binary(label) and label != "", do: label
+  defp profile_derived_label(_), do: nil
+
+  defp profile_domain_string(%ChunkProfile{domain: domain}) when is_atom(domain) and domain != :unknown,
+    do: Atom.to_string(domain)
+
+  defp profile_domain_string(_), do: nil
+
+  defp profile_axis(%ChunkProfile{} = p, key, default), do: Map.get(p, key, default)
+  defp profile_axis(_, _, default), do: default
+
+  # ----- Signal-based intent scoring -------------------------------------
+
+  # Weight tuned so that domain alignment alone is never enough to elect an
+  # intent — it must combine with at least one other corroborating signal.
+  @score_domain 0.40
+  @score_speech_act_subtype 0.25
+  @score_category 0.15
+  @score_bare_domain_lattice 0.30
+  @score_modality_alignment 0.05
+  @score_target_alignment 0.05
+  @score_entity_per_match 0.10
+  @score_entity_cap 0.30
+
+  @entity_scoring_weights_path Path.join(:code.priv_dir(:brain), "analysis/entity_scoring_weights.json")
+  @external_resource @entity_scoring_weights_path
+  @entity_scoring_weights (
+    case File.read(@entity_scoring_weights_path) do
+      {:ok, json} -> Jason.decode!(json)
+      _ -> %{}
+    end
+  )
+
+  defp best_intent_by_signals(speech_act, profile, lattice, entities) do
+    profile_domain = profile_domain_string(profile)
+    speech_act_subtype = to_string(Map.get(speech_act, :sub_type, ""))
+    speech_act_category = to_string(Map.get(speech_act, :category, ""))
+    modality = profile_axis(profile, :modality, :declarative)
+    target = profile_axis(profile, :target, :ambiguous)
+
+    lattice_scores = lattice_score_map(lattice)
+    bare_domain_signal = bare_domain_lattice_signal(lattice)
+    entity_types = entity_type_set(entities)
+
+    sig = %{
+      profile_domain: profile_domain,
+      speech_act_subtype: speech_act_subtype,
+      speech_act_category: speech_act_category,
+      modality: modality,
+      target: target,
+      lattice_scores: lattice_scores,
+      bare_domain: bare_domain_signal,
+      entity_types: entity_types
+    }
+
+    ranked =
+      @intent_metadata
+      |> Enum.map(fn {intent, meta} -> {intent, score_intent_against_signals(intent, meta, sig)} end)
+      |> Enum.filter(fn {_, score} -> score > 0.0 end)
+      |> Enum.sort(fn {a_intent, a_score}, {b_intent, b_score} ->
+        cond do
+          a_score > b_score -> true
+          a_score < b_score -> false
+          true -> a_intent <= b_intent
+        end
+      end)
+
+    case ranked do
+      [{intent, _} | _] -> {:ok, intent}
+      [] -> :no_match
+    end
+  end
+
+  defp score_intent_against_signals(intent, meta, sig) do
+    domain_score =
+      if sig.profile_domain != nil and meta.domain == sig.profile_domain,
+        do: @score_domain,
+        else: 0.0
+
+    speech_act_score =
+      if meta.speech_act != "" and meta.speech_act == sig.speech_act_subtype,
+        do: @score_speech_act_subtype,
+        else: 0.0
+
+    category_score =
+      if meta.category != "" and meta.category == sig.speech_act_category,
+        do: @score_category,
+        else: 0.0
+
+    bare_domain_score =
+      if sig.bare_domain != nil and meta.domain == sig.bare_domain,
+        do: @score_bare_domain_lattice,
+        else: 0.0
+
+    modality_score =
+      case {sig.modality, meta.category} do
+        {:interrogative, "directive"} -> @score_modality_alignment
+        {:imperative, "directive"} -> @score_modality_alignment
+        {:exclamatory, "expressive"} -> @score_modality_alignment
+        {:declarative, "assertive"} -> @score_modality_alignment
+        _ -> 0.0
+      end
+
+    target_score =
+      case {sig.target, meta.category} do
+        {:agent, "directive"} -> @score_target_alignment
+        {:self, "expressive"} -> @score_target_alignment
+        {:self, "assertive"} -> @score_target_alignment
+        _ -> 0.0
+      end
+
+    w = entity_scoring_weights()
+
+    entity_score =
+      if MapSet.size(sig.entity_types) > 0 and MapSet.size(meta.entity_types) > 0 do
+        per_etype_scores =
+          sig.entity_types
+          |> MapSet.to_list()
+          |> Enum.map(fn etype ->
+            best_entity_type_match(etype, meta.entity_types, intent, w)
+          end)
+
+        min(Enum.sum(per_etype_scores), Map.get(w, "entity_cap", @score_entity_cap))
+      else
+        0.0
+      end
+
+    concept_domain_score =
+      if meta.domain != "" and TypeHierarchy.ready?() do
+        domain_anchors =
+          TypeHierarchy.config("domain_lemmas", %{})
+          |> Map.get(meta.domain, [meta.domain])
+
+        parents =
+          sig.entity_types
+          |> MapSet.to_list()
+          |> Enum.map(&TypeHierarchy.parent_of/1)
+          |> Enum.reject(&is_nil/1)
+          |> Enum.uniq()
+
+        if parents != [] and Process.whereis(Brain.ML.Lexicon) != nil do
+          max_sim =
+            for p <- parents, anchor <- domain_anchors, reduce: 0.0 do
+              acc -> max(acc, Brain.Lexicon.word_similarity(p, anchor) || 0.0)
+            end
+
+          min(max_sim * Map.get(w, "concept_domain_similarity", 0.10),
+              Map.get(w, "concept_domain_cap", 0.10))
+        else
+          0.0
+        end
+      else
+        0.0
+      end
+
+    total_entity_signal =
+      min(entity_score + concept_domain_score,
+          Map.get(w, "total_entity_signal_cap", @score_entity_cap))
+
+    lattice_score =
+      cond do
+        sig.profile_domain != nil and meta.domain != "" and meta.domain != sig.profile_domain ->
+          0.0
+
+        true ->
+          Map.get(sig.lattice_scores, intent, 0.0)
+      end
+
+    domain_score + speech_act_score + category_score + bare_domain_score +
+      modality_score + target_score + total_entity_signal + lattice_score
+  end
+
+  defp best_entity_type_match(etype, expected_types, intent, w) do
+    cond do
+      MapSet.member?(expected_types, etype) ->
+        emit_entity_layer_telemetry(intent, etype, :exact, true)
+        Map.get(w, "entity_exact_match", @score_entity_per_match)
+
+      TypeHierarchy.ready?() and
+          Enum.any?(expected_types, &TypeHierarchy.is_a?(etype, &1)) ->
+        emit_entity_layer_telemetry(intent, etype, :hierarchy, true)
+        Map.get(w, "entity_hierarchy_match", 0.07)
+
+      poincare_close?(etype, intent, w) ->
+        emit_entity_layer_telemetry(intent, etype, :poincare, true)
+        Map.get(w, "entity_poincare_proximity", 0.05)
+
+      vector_similar?(etype, expected_types, w) ->
+        emit_entity_layer_telemetry(intent, etype, :vector, true)
+        Map.get(w, "entity_vector_similarity", 0.04)
+
+      true ->
+        emit_entity_layer_telemetry(intent, etype, :none, true)
+        0.0
+    end
+  end
+
+  defp poincare_close?(etype, intent, w) do
+    if Code.ensure_loaded?(Brain.ML.Poincare.Embeddings) and
+         function_exported?(Brain.ML.Poincare.Embeddings, :entity_distance, 2) do
+      case Brain.ML.Poincare.Embeddings.entity_distance(etype, intent) do
+        distance when is_number(distance) ->
+          distance < Map.get(w, "poincare_distance_threshold", 2.0)
+        _ -> false
+      end
+    else
+      false
+    end
+  rescue
+    _ -> false
+  end
+
+  defp vector_similar?(etype, expected_types, w) do
+    alias Brain.ML.KnowledgeGraph.EntityVectorCache
+
+    if Code.ensure_loaded?(EntityVectorCache) and
+         function_exported?(EntityVectorCache, :get_or_compute_type, 1) do
+      case EntityVectorCache.get_or_compute_type(etype) do
+        {:ok, etype_vec} ->
+          threshold = Map.get(w, "vector_similarity_threshold", 0.6)
+
+          Enum.any?(expected_types, fn expected ->
+            case EntityVectorCache.get_or_compute_type(expected) do
+              {:ok, exp_vec} ->
+                sim = FourthWall.Math.cosine_similarity(
+                  Nx.to_flat_list(etype_vec),
+                  Nx.to_flat_list(exp_vec)
+                )
+                sim > threshold
+              _ -> false
+            end
+          end)
+
+        _ -> false
+      end
+    else
+      false
+    end
+  rescue
+    _ -> false
+  end
+
+  defp emit_entity_layer_telemetry(intent, etype, layer, available) do
+    :telemetry.execute(
+      [:brain, :intent_scoring, :entity_layer],
+      %{score: 1},
+      %{intent: intent, entity_type: etype, layer: layer, layer_available: available}
+    )
+  end
+
+  defp entity_scoring_weights do
+    @entity_scoring_weights
+  end
+
+  defp lattice_score_map(%Lattice{} = lattice) do
+    lattice
+    |> Lattice.to_top_k()
+    |> Enum.reduce(%{}, fn %{intent: i, score: s}, acc ->
+      key = if is_binary(i), do: i, else: to_string(i)
+      Map.put(acc, key, s * 1.0)
+    end)
+  end
+
+  defp lattice_score_map(_), do: %{}
+
+  # When the `:intent_full` classifier's top candidate is a *bare* domain token
+  # (e.g. `"weather"`) — usually because the training set has unsplit examples
+  # under the bare label — treat it as a strong domain hint rather than as an
+  # intent. Returns the domain string when the bare label is a recognized
+  # domain, nil otherwise.
+  defp bare_domain_lattice_signal(%Lattice{} = lattice) do
+    case Lattice.best(lattice) do
+      %LatticeCandidate{label: lab, confidence: conf} when conf > 0.0 ->
+        lab_str = to_string(lab)
+
+        cond do
+          registered_intent?(lab_str) -> nil
+          MapSet.member?(@known_domain_set, lab_str) -> lab_str
+          true -> nil
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  defp bare_domain_lattice_signal(_), do: nil
+
+  defp entity_type_set(entities) when is_list(entities) do
+    entities
+    |> Enum.map(fn e ->
+      case Map.get(e, :entity_type) || Map.get(e, "entity_type") do
+        nil -> nil
+        t when is_atom(t) -> Atom.to_string(t)
+        t when is_binary(t) -> t
         _ -> nil
       end
+    end)
+    |> Enum.reject(&is_nil/1)
+    |> MapSet.new()
+  end
 
-    if profile_label do
-      profile_label
-    else
-      case Map.get(@speech_act_intent_map, to_string(speech_act.sub_type)) do
-        canonical_intent when is_binary(canonical_intent) ->
-          canonical_intent
+  defp entity_type_set(_), do: MapSet.new()
 
-        nil ->
-          sub_type_str = to_string(speech_act.sub_type)
-          category_str = to_string(speech_act.category)
+  defp speech_act_map_fallback(speech_act) do
+    sub_type_str = to_string(Map.get(speech_act, :sub_type, ""))
+    category_str = to_string(Map.get(speech_act, :category, ""))
+    is_question = Map.get(speech_act, :is_question, false)
 
-          cond do
-            speech_act.is_question ->
-              Map.get(@speech_act_intent_map, "question", "question.factual")
+    cond do
+      is_binary(canonical = Map.get(@speech_act_intent_map, sub_type_str)) ->
+        canonical
 
-            Map.has_key?(@speech_act_intent_map, sub_type_str) ->
-              Map.get(@speech_act_intent_map, sub_type_str)
+      is_question ->
+        Map.get(@speech_act_intent_map, "question", "question.factual")
 
-            Map.has_key?(@speech_act_intent_map, category_str) ->
-              Map.get(@speech_act_intent_map, category_str)
+      Map.has_key?(@speech_act_intent_map, category_str) ->
+        Map.get(@speech_act_intent_map, category_str)
 
-            true ->
-              Map.get(@speech_act_intent_map, "default", "unknown")
-          end
-      end
+      true ->
+        Map.get(@speech_act_intent_map, "default", "unknown")
     end
   end
 

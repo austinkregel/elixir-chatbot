@@ -37,7 +37,7 @@ defmodule Brain.Graph.WriterTest do
 
       assert_node_exists("knowledge_graph", "Location", "Madrid")
       assert_node_exists("knowledge_graph", "Person", "Carlos")
-      assert_edge_exists("knowledge_graph", "co_occurs_with")
+      assert_edge_exists("knowledge_graph", Atlas.Graph.EdgeLabels.co_occurs_with())
     end
 
     test "handles empty entity list" do

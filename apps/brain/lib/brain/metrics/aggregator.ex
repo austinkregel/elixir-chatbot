@@ -791,6 +791,28 @@ defmodule Brain.Metrics.Aggregator do
   end
 
   @impl true
+  def handle_cast({:record_kg_signal, event_type, measurements}, state) do
+    increment_counter({:kg_signal, event_type}, :count)
+
+    if is_map(measurements) do
+      case Map.get(measurements, :duration_ms) do
+        ms when is_number(ms) ->
+          now = System.monotonic_time(:millisecond)
+          add_raw_data_point({:kg_signal, event_type}, ms, now)
+        _ -> :ok
+      end
+
+      case Map.get(measurements, :count) do
+        n when is_integer(n) ->
+          increment_counter({:kg_signal, event_type}, :total, n)
+        _ -> :ok
+      end
+    end
+
+    {:noreply, state}
+  end
+
+  @impl true
   def handle_call(:ready?, _from, state) do
     {:reply, true, state}
   end

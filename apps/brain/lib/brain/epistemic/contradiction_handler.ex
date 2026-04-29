@@ -311,7 +311,7 @@ defmodule Brain.Epistemic.ContradictionHandler do
     assumption_with_confidence =
       assumptions
       |> Enum.map(fn id ->
-        conf = get_in(metadata, [id, :confidence]) || 0.5
+        conf = get_in(metadata, [id, :confidence]) || kg_default_confidence(id, metadata)
         {id, conf}
       end)
       |> Enum.min_by(fn {_id, conf} -> conf end, fn -> {nil, 0} end)
@@ -404,5 +404,34 @@ defmodule Brain.Epistemic.ContradictionHandler do
       {:ok, consequences} -> length(consequences)
       _ -> 0
     end
+  end
+
+  defp kg_default_confidence(id, metadata) do
+    config = Application.get_env(:brain, :kg_signals, [])
+
+    if Keyword.get(config, :enabled, true) and Keyword.get(config, :contradiction_default_kg, true) do
+      meta = Map.get(metadata, id, %{})
+      subject = Map.get(meta, :subject)
+      predicate = Map.get(meta, :predicate)
+      object = Map.get(meta, :object)
+
+      if subject != nil and predicate != nil and object != nil and
+           subject != :system and predicate != :consolidated_knowledge do
+        case Brain.ML.KnowledgeGraph.TripleScorer.score(
+               to_string(subject),
+               to_string(predicate),
+               to_string(object)
+             ) do
+          {:ok, score} when is_float(score) -> score
+          _ -> 0.5
+        end
+      else
+        0.5
+      end
+    else
+      0.5
+    end
+  rescue
+    _ -> 0.5
   end
 end

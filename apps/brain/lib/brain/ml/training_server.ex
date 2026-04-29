@@ -6,7 +6,7 @@ defmodule Brain.ML.TrainingServer do
   use GenServer
   require Logger
 
-  @type model_type :: :tfidf
+  @type model_type :: :tfidf | :gen_micro_data | :train_micro | :gen_framing_data | :train_framing | :evaluate
   @type status :: :idle | {:training, model_type(), DateTime.t()}
   @type schedule :: %{
           id: String.t(),
@@ -73,9 +73,11 @@ defmodule Brain.ML.TrainingServer do
     {:ok, %__MODULE__{}}
   end
 
+  @valid_types [:tfidf, :gen_micro_data, :train_micro, :gen_framing_data, :train_framing, :evaluate, :reload_models]
+
   @impl true
   def handle_call({:start_training, model_type, config}, _from, %{status: :idle} = state) do
-    unless model_type in [:tfidf] do
+    unless model_type in @valid_types do
       {:reply, {:error, :invalid_model_type}, state}
     else
       started_at = DateTime.utc_now()
@@ -286,6 +288,47 @@ defmodule Brain.ML.TrainingServer do
     Trainer.train_and_save()
   end
 
+  defp run_training(:gen_micro_data, config) do
+    args = case Keyword.get(config, :only) do
+      nil -> []
+      name -> ["--only", to_string(name)]
+    end
+
+    Mix.Task.rerun("gen_micro_data", args)
+    {:ok, :gen_micro_data_complete}
+  end
+
+  defp run_training(:train_micro, config) do
+    args = case Keyword.get(config, :only) do
+      nil -> []
+      name -> ["--only", to_string(name)]
+    end
+
+    Mix.Task.rerun("train_micro", args)
+    {:ok, :train_micro_complete}
+  end
+
+  defp run_training(:gen_framing_data, _config) do
+    Mix.Task.rerun("gen_framing_data", ["--corpus", "gvfc"])
+    {:ok, :gen_framing_data_complete}
+  end
+
+  defp run_training(:train_framing, _config) do
+    Mix.Task.rerun("train_framing", [])
+    {:ok, :train_framing_complete}
+  end
+
+  defp run_training(:evaluate, config) do
+    task = Keyword.get(config, :task, "intent")
+    Mix.Task.rerun("evaluate.#{task}", ["--save"])
+    {:ok, {:evaluate_complete, task}}
+  end
+
+  defp run_training(:reload_models, _config) do
+    Brain.ML.MicroClassifiers.reload()
+    {:ok, :reload_complete}
+  end
+
   defp maybe_reload_model(:tfidf = model_type) do
     result =
       try do
@@ -309,6 +352,10 @@ defmodule Brain.ML.TrainingServer do
     broadcast_progress({:model_reloaded, model_type, result})
     result
   end
+
+  defp maybe_reload_model(:train_micro), do: maybe_reload_model(:tfidf)
+  defp maybe_reload_model(:train_framing), do: maybe_reload_model(:tfidf)
+  defp maybe_reload_model(:reload_models), do: :ok
 
   defp maybe_reload_model(other) do
     Logger.debug("TrainingServer: no reload handler for model_type=#{inspect(other)}")

@@ -167,6 +167,7 @@ defmodule Brain.Epistemic.StanceTracker do
   @impl true
   def handle_cast({:record_stance, conversation_id, topic, position, source}, state) do
     clamped_position = clamp(position, -1.0, 1.0)
+    canonical_topic = canonicalize_topic(topic)
 
     observation = %{
       position: clamped_position,
@@ -175,8 +176,8 @@ defmodule Brain.Epistemic.StanceTracker do
     }
 
     conversations = state.conversations
-    |> Map.update(conversation_id, %{topic => [observation]}, fn conv ->
-      Map.update(conv, topic, [observation], &(&1 ++ [observation]))
+    |> Map.update(conversation_id, %{canonical_topic => [observation]}, fn conv ->
+      Map.update(conv, canonical_topic, [observation], &(&1 ++ [observation]))
     end)
 
     persist_stance_to_belief_store(conversation_id, topic, clamped_position, source)
@@ -250,5 +251,56 @@ defmodule Brain.Epistemic.StanceTracker do
     value
     |> max(min_val)
     |> min(max_val)
+  end
+
+  defp canonicalize_topic(topic) when is_binary(topic) do
+    config = Application.get_env(:brain, :kg_signals, [])
+
+    if Keyword.get(config, :enabled, true) do
+      normalized = String.downcase(String.trim(topic))
+
+      case entity_centroid_key(normalized) do
+        {:ok, key} -> key
+        _ -> normalized
+      end
+    else
+      String.downcase(String.trim(topic))
+    end
+  rescue
+    _ -> String.downcase(String.trim(topic))
+  end
+
+  defp canonicalize_topic(topic), do: to_string(topic)
+
+  defp entity_centroid_key(topic) do
+    alias Brain.ML.KnowledgeGraph.EntityVectorCache
+
+    tokens = Brain.ML.Tokenizer.tokenize_words(topic)
+
+    vecs =
+      Enum.flat_map(tokens, fn token ->
+        case EntityVectorCache.get_or_compute("default", token) do
+          {:ok, vec} -> [vec]
+          _ -> []
+        end
+      end)
+
+    if vecs == [] do
+      {:error, :no_vectors}
+    else
+      _centroid =
+        vecs
+        |> Enum.reduce(fn v, acc -> Nx.add(acc, v) end)
+        |> Nx.divide(length(vecs))
+
+      key_parts =
+        tokens
+        |> Enum.sort()
+        |> Enum.join("_")
+
+      {:ok, key_parts}
+    end
+  rescue
+    _ -> {:error, :computation_failed}
   end
 end

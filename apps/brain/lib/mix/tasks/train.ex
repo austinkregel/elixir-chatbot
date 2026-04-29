@@ -143,6 +143,8 @@ defmodule Mix.Tasks.Train do
           skip_kg_lstm: :boolean,
           skip_micro: :boolean,
           skip_framing: :boolean,
+          skip_entity_ingest: :boolean,
+          skip_type_vectors: :boolean,
           include_graph: :boolean,
           world: :string,
           list: :boolean,
@@ -264,6 +266,20 @@ defmodule Mix.Tasks.Train do
     skip_list =
       if opts[:skip_framing] do
         [:framing | skip_list]
+      else
+        skip_list
+      end
+
+    skip_list =
+      if opts[:skip_entity_ingest] || opts[:quick] do
+        [:entity_ingest | skip_list]
+      else
+        skip_list
+      end
+
+    skip_list =
+      if opts[:skip_type_vectors] || opts[:quick] do
+        [:type_vectors | skip_list]
       else
         skip_list
       end
@@ -395,6 +411,26 @@ defmodule Mix.Tasks.Train do
         result = train_framing_classifier()
         duration = System.monotonic_time(:second) - start
         [{:framing, result, duration} | results]
+      end
+
+    results =
+      if :entity_ingest in skip_list do
+        [{:entity_ingest, :skipped, 0} | results]
+      else
+        start = System.monotonic_time(:second)
+        result = run_entity_type_ingestion(opts)
+        duration = System.monotonic_time(:second) - start
+        [{:entity_ingest, result, duration} | results]
+      end
+
+    results =
+      if :type_vectors in skip_list do
+        [{:type_vectors, :skipped, 0} | results]
+      else
+        start = System.monotonic_time(:second)
+        result = warm_up_type_vectors()
+        duration = System.monotonic_time(:second) - start
+        [{:type_vectors, result, duration} | results]
       end
 
     Enum.reverse(results)
@@ -585,6 +621,46 @@ defmodule Mix.Tasks.Train do
     end
   end
 
+  defp run_entity_type_ingestion(opts) do
+    Mix.shell().info("")
+    Mix.shell().info("=" |> String.duplicate(70))
+    Mix.shell().info("  Stage 7/8: Entity Type Ingestion  [#{stage_timestamp()}]")
+    Mix.shell().info("=" |> String.duplicate(70))
+
+    if not Brain.AtlasIntegration.available?() do
+      Mix.shell().info("  Atlas.Repo not running. Skipping entity type ingestion.")
+      Mix.shell().info("  Start Atlas with docker compose up, or use --skip-entity-ingest.")
+      {:error, "Atlas not available"}
+    else
+      try do
+        args = if opts[:world], do: ["--world", opts[:world]], else: []
+        Mix.Tasks.IngestEntityTypes.run(args)
+        {:ok, %{entity_types_ingested: true}}
+      rescue
+        e -> {:error, Exception.message(e)}
+      end
+    end
+  end
+
+  defp warm_up_type_vectors do
+    Mix.shell().info("")
+    Mix.shell().info("=" |> String.duplicate(70))
+    Mix.shell().info("  Stage 8/8: Type Vector Warm-up  [#{stage_timestamp()}]")
+    Mix.shell().info("=" |> String.duplicate(70))
+
+    try do
+      if Brain.ML.KnowledgeGraph.TripleScorer.ready?() do
+        Brain.ML.KnowledgeGraph.EntityVectorCache.warm_up_entity_types()
+        {:ok, %{type_vectors_warmed: true}}
+      else
+        Mix.shell().info("  TripleScorer not loaded. Skipping type vector warm-up.")
+        {:error, "TripleScorer not ready"}
+      end
+    rescue
+      e -> {:error, Exception.message(e)}
+    end
+  end
+
   defp write_model_manifest(world_id) do
     models_path = get_models_path(world_id)
     data_path = Path.join(File.cwd!(), "data/classifiers")
@@ -662,7 +738,9 @@ defmodule Mix.Tasks.Train do
       poincare: "Poincare Embeddings",
       kg_lstm: "KG Triple Scorer",
       micro: "MicroClassifiers",
-      framing: "Framing Classifier"
+      framing: "Framing Classifier",
+      entity_ingest: "Entity Type Ingestion",
+      type_vectors: "Type Vector Warm-up"
     }
 
     for {task, result, duration} <- results do

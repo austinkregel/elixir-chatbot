@@ -702,6 +702,40 @@ defmodule Brain.Knowledge.ReviewQueue do
       e -> Logger.warning("Failed to add to BeliefStore", error: Exception.message(e))
     end
 
+    if finding.entity_type not in [nil, ""] do
+      try do
+        {:ok, type_node} =
+          Brain.AtlasIntegration.ensure_node("knowledge_graph", "EntityType", %{
+            name: finding.entity_type
+          })
+
+        {:ok, instance_node} =
+          Brain.AtlasIntegration.ensure_node("knowledge_graph", "EntityInstance", %{
+            name: finding.entity,
+            type: finding.entity_type,
+            world_id: "default",
+            source: "knowledge_expansion"
+          })
+
+        Brain.AtlasIntegration.find_or_create_edge(
+          "knowledge_graph",
+          instance_node.id,
+          type_node.id,
+          Atlas.Graph.EdgeLabels.instance_of(),
+          %{source: "knowledge_expansion"}
+        )
+      rescue
+        e ->
+          :telemetry.execute(
+            [:brain, :review_queue, :kg_write_failed],
+            %{count: 1},
+            %{entity: finding.entity, type: finding.entity_type, error: Exception.message(e)}
+          )
+
+          Logger.warning("ReviewQueue: KG write failed for #{finding.entity}: #{Exception.message(e)}")
+      end
+    end
+
     :ok
   end
 

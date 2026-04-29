@@ -293,7 +293,23 @@ defmodule Brain.Telemetry do
       {"chatbot-service-health-check-stop", @service_health_check ++ [:stop],
        &__MODULE__.handle_service_health_check/4, %{}},
       {"chatbot-service-credential", @service_credential_operation,
-       &__MODULE__.handle_service_credential/4, %{}}
+       &__MODULE__.handle_service_credential/4, %{}},
+
+      # KG Signal handlers
+      {"chatbot-kg-signal-scored", [:brain, :kg_signal, :scored],
+       &__MODULE__.handle_kg_signal/4, %{event: :scored}},
+      {"chatbot-kg-signal-cache-hit", [:brain, :kg_signal, :cache_hit],
+       &__MODULE__.handle_kg_signal/4, %{event: :cache_hit}},
+      {"chatbot-kg-signal-cache-miss", [:brain, :kg_signal, :cache_miss],
+       &__MODULE__.handle_kg_signal/4, %{event: :cache_miss}},
+      {"chatbot-kg-signal-cache-invalidated", [:brain, :kg_signal, :cache_invalidated],
+       &__MODULE__.handle_kg_signal/4, %{event: :cache_invalidated}},
+      {"chatbot-kg-signal-srl-batch", [:brain, :kg_signal, :srl_batch],
+       &__MODULE__.handle_kg_signal/4, %{event: :srl_batch}},
+      {"chatbot-novelty-downweighted", [:brain, :novelty, :downweighted],
+       &__MODULE__.handle_kg_signal/4, %{event: :novelty_downweighted}},
+      {"chatbot-novelty-state-change", [:brain, :novelty, :state_change_detected],
+       &__MODULE__.handle_kg_signal/4, %{event: :novelty_state_change}}
     ]
 
     Enum.each(handlers, fn {id, event, handler, config} ->
@@ -955,6 +971,20 @@ defmodule Brain.Telemetry do
         Brain.Metrics.Aggregator,
         {:record_fact_verification, metadata[:status], metadata[:subject],
          metadata[:beliefs_count] || 0, duration_ms}
+      )
+    end
+  end
+
+  # ============================================================================
+  # KG Signal Handlers
+  # ============================================================================
+
+  @doc false
+  def handle_kg_signal(_event, measurements, _metadata, %{event: event_type}) do
+    if Process.whereis(Brain.Metrics.Aggregator) do
+      GenServer.cast(
+        Brain.Metrics.Aggregator,
+        {:record_kg_signal, event_type, measurements}
       )
     end
   end

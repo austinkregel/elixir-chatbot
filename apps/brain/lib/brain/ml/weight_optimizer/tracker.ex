@@ -52,7 +52,8 @@ defmodule Brain.ML.WeightOptimizer.Tracker do
   defstruct active: %{},
             recent: [],
             recent_limit: @recent_limit,
-            monitors: %{}
+            monitors: %{},
+            pid_by_run: %{}
 
   ## Public API ─────────────────────────────────────────────────────
 
@@ -160,7 +161,12 @@ defmodule Brain.ML.WeightOptimizer.Tracker do
   def handle_call({:start_run, classifier, opts}, _from, state) do
     case launch_task(classifier, opts) do
       {:ok, run_id, pid, ref} ->
-        new_state = %{state | monitors: Map.put(state.monitors, ref, {run_id, pid})}
+        new_state = %{
+          state
+          | monitors: Map.put(state.monitors, ref, {run_id, pid}),
+            pid_by_run: Map.put(state.pid_by_run, run_id, pid)
+        }
+
         {:reply, {:ok, run_id}, new_state}
 
       {:error, reason} = err ->
@@ -178,12 +184,10 @@ defmodule Brain.ML.WeightOptimizer.Tracker do
         {:reply, {:error, :not_found}, state}
 
       run ->
-        case run.task_pid do
-          pid when is_pid(pid) ->
-            Process.exit(pid, :kill)
+        pid = run.task_pid || Map.get(state.pid_by_run, run_id)
 
-          _ ->
-            :ok
+        if is_pid(pid) and Process.alive?(pid) do
+          Process.exit(pid, :kill)
         end
 
         cancelled = run |> Map.put(:status, :cancelled) |> Map.put(:completed_at, now())
@@ -200,6 +204,8 @@ defmodule Brain.ML.WeightOptimizer.Tracker do
   @impl true
   def handle_info({:telemetry, :start, _measurements, metadata}, state) do
     run = build_active_run(metadata)
+    pid = Map.get(state.pid_by_run, run.run_id)
+    run = %{run | task_pid: pid}
     new_state = put_in(state.active[run.run_id], run)
 
     broadcast({:run_started, summary(run)})
@@ -365,24 +371,22 @@ defmodule Brain.ML.WeightOptimizer.Tracker do
 
             run_id = Keyword.fetch!(run_opts, :run_id)
 
-            # Errors inside `optimize/2` already emit a `:exception`
-            # telemetry event before re-raising, so the Tracker's
-            # bookkeeping is driven by telemetry rather than the
-            # spawn_monitor rescue. The rescue exists only to keep the
-            # error message on the logger when the GA crashes.
-            {pid, ref} =
-              spawn_monitor(fn ->
-                try do
-                  Brain.ML.WeightOptimizer.optimize(training_data, run_opts)
-                rescue
-                  e ->
-                    Logger.warning(
-                      "WeightOptimizer.Tracker: run #{run_id} crashed: #{Exception.message(e)}"
-                    )
+            %Task{pid: pid, ref: ref} =
+              Task.Supervisor.async_nolink(
+                Brain.ML.WeightOptimizer.TaskSupervisor,
+                fn ->
+                  try do
+                    Brain.ML.WeightOptimizer.optimize(training_data, run_opts)
+                  rescue
+                    e ->
+                      Logger.warning(
+                        "WeightOptimizer.Tracker: run #{run_id} crashed: #{Exception.message(e)}"
+                      )
 
-                    :ok
+                      :ok
+                  end
                 end
-              end)
+              )
 
             {:ok, run_id, pid, ref}
 
@@ -492,7 +496,7 @@ defmodule Brain.ML.WeightOptimizer.Tracker do
   end
 
   defp remove_active(state, run_id) do
-    %{state | active: Map.delete(state.active, run_id)}
+    %{state | active: Map.delete(state.active, run_id), pid_by_run: Map.delete(state.pid_by_run, run_id)}
   end
 
   defp push_recent(state, run) do

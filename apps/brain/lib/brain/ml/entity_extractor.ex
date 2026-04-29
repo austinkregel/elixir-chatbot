@@ -665,8 +665,15 @@ defmodule Brain.ML.EntityExtractor do
 
       has_age_context =
         if entity_idx do
-          next_tokens = Enum.slice(token_texts, (entity_idx + 1)..min(entity_idx + 3, length(token_texts) - 1))
-          Enum.any?(next_tokens, fn t -> t in age_indicators end)
+          start = entity_idx + 1
+          stop = min(entity_idx + 3, length(token_texts) - 1)
+
+          if start <= stop do
+            next_tokens = Enum.slice(token_texts, start..stop//1)
+            Enum.any?(next_tokens, fn t -> t in age_indicators end)
+          else
+            false
+          end
         else
           false
         end

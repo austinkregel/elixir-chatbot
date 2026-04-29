@@ -22,6 +22,7 @@ defmodule Brain.Graph.Training do
   """
 
   alias Atlas.Graph
+  alias Atlas.Graph.EdgeLabels
   require Logger
 
   # ============================================================================
@@ -55,7 +56,7 @@ defmodule Brain.Graph.Training do
   end
 
   defp fetch_pos_transitions do
-    query = "MATCH (a:POSTag)-[r:FOLLOWED_BY]->(b:POSTag) RETURN a, b, r"
+    query = "MATCH (a:POSTag)-[r:#{EdgeLabels.followed_by()}]->(b:POSTag) RETURN a, b, r"
 
     case Graph.cypher("pos_graph", query) do
       {:ok, rows} ->
@@ -79,7 +80,7 @@ defmodule Brain.Graph.Training do
   end
 
   defp fetch_tag_counts do
-    query = "MATCH (:Token)-[r:HAS_TAG]->(t:POSTag) RETURN t, r"
+    query = "MATCH (:Token)-[r:#{EdgeLabels.has_tag()}]->(t:POSTag) RETURN t, r"
 
     case Graph.cypher("pos_graph", query) do
       {:ok, rows} ->
@@ -258,7 +259,7 @@ defmodule Brain.Graph.Training do
   """
   def extract_intent_priors do
     query = """
-    MATCH (a:Topic)-[r:TOPIC_TRANSITION]->(b:Topic)
+    MATCH (a:Topic)-[r:#{EdgeLabels.topic_transition()}]->(b:Topic)
     RETURN a, b, r
     """
 

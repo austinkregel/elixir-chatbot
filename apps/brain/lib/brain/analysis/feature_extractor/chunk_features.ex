@@ -28,6 +28,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   21. **Discourse-marker semantic categories** *(Tier 2, closed-class lexical)*
   22. **Speech-act × wh-target interaction grid** *(Tier 2, materializes joint
       that the linear centroid cannot learn on its own)*
+  23. **Entity type semantics** *(parent concept histogram, coherence, KG coverage)*
 
   Groups 15-22 are produced by
   `Brain.Analysis.FeatureExtractor.EnrichmentFeatures` and are
@@ -106,12 +107,14 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
         tokens
       )
 
+    group23 = EnrichmentFeatures.entity_type_semantics(analysis)
+
     group1 ++ group2 ++ group3 ++ group4 ++ group5 ++ group6 ++
       group7 ++ group8 ++ group9 ++ group10 ++ group11 ++ group12 ++
       group13 ++ group14 ++
       group15 ++ group16 ++ group17_verb ++ group17_noun ++ group17_adj ++
       group18 ++ group19 ++
-      group20 ++ group21 ++ group22
+      group20 ++ group21 ++ group22 ++ group23
   end
 
   # Builds `[{token, pos}]` pairs for `subcategorization_frame/1`. The
@@ -217,7 +220,9 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
       # group 21 — discourse-marker semantic categories
       EnrichmentFeatures.discourse_markers_dimension() +
       # group 22 — speech-act × wh-target interaction grid
-      EnrichmentFeatures.speech_act_wh_interaction_dimension()
+      EnrichmentFeatures.speech_act_wh_interaction_dimension() +
+      # group 23 — entity type semantics (parent histogram + coherence + coverage)
+      EnrichmentFeatures.entity_type_semantics_dimension()
   end
 
   # -- Group 1: Surface/lexical (~12 dims) ------------------------------------

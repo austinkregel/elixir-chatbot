@@ -125,7 +125,8 @@ defmodule World.EntityPromoter do
         entity.occurrences >= @min_occurrences and
           entity.confidence >= @min_confidence and
           entity.inferred_type != "unknown" and
-          entity.inferred_type != nil
+          entity.inferred_type != nil and
+          passes_kg_gate?(entity, world_id)
       end)
 
     # Promote each eligible entity
@@ -152,9 +153,49 @@ defmodule World.EntityPromoter do
       }
     )
 
+    write_kg_instance(entity, world_id)
+
     :ok
   rescue
     _ -> :error
+  end
+
+  defp write_kg_instance(entity, world_id) do
+    {:ok, type_node} =
+      Brain.AtlasIntegration.ensure_node("knowledge_graph", "EntityType", %{
+        name: entity.inferred_type
+      })
+
+    Brain.AtlasIntegration.enrich_existing_node("knowledge_graph", type_node.id, entity.inferred_type)
+
+    {:ok, instance_node} =
+      Brain.AtlasIntegration.ensure_node("knowledge_graph", "EntityInstance", %{
+        name: entity.value,
+        type: entity.inferred_type,
+        world_id: world_id,
+        source: "auto_promoted"
+      })
+
+    Brain.AtlasIntegration.find_or_create_edge(
+      "knowledge_graph",
+      instance_node.id,
+      type_node.id,
+      Atlas.Graph.EdgeLabels.instance_of(),
+      %{source: "auto_promoted"}
+    )
+  rescue
+    e ->
+      :telemetry.execute(
+        [:brain, :entity_promoter, :kg_write_failed],
+        %{count: 1},
+        %{entity: entity.value, type: entity.inferred_type, error: Exception.message(e)}
+      )
+
+      Logger.warning(
+        "EntityPromoter: KG write failed for #{entity.value}: #{Exception.message(e)}"
+      )
+
+      reraise e, __STACKTRACE__
   end
 
   defp list_worlds do
@@ -184,5 +225,34 @@ defmodule World.EntityPromoter do
     Process.whereis(World.Manager) != nil
   rescue
     _ -> false
+  end
+
+  defp passes_kg_gate?(entity, _world_id) do
+    config = Application.get_env(:brain, :kg_signals, [])
+
+    if Keyword.get(config, :enabled, true) and Keyword.get(config, :entity_promoter_kg_gate, true) do
+      entity_has_quality_triple?(entity.value)
+    else
+      true
+    end
+  end
+
+  defp entity_has_quality_triple?(entity_name) do
+    unless Brain.ML.KnowledgeGraph.TripleScorer.ready?() do
+      true
+    else
+      canonical_relations =
+        Brain.ML.KnowledgeGraph.PredicateNormalizer.canonical_relations()
+        |> Enum.take(10)
+
+      Enum.any?(canonical_relations, fn relation ->
+        case Brain.ML.KnowledgeGraph.TripleScorer.score(entity_name, relation, "entity") do
+          {:ok, score} when score >= 0.4 -> true
+          _ -> false
+        end
+      end)
+    end
+  rescue
+    _ -> true
   end
 end

@@ -368,10 +368,11 @@ defmodule Brain.Memory.Store do
   def handle_call({:query_similar, text, k, world_id}, _from, state) do
     case get_embedding(world_id, text) do
       {:ok, query_embedding} ->
-        results =
-          VectorIndex.search_all(state.episode_index, query_embedding, k * 2)
+        pool_size = if memory_rerank_enabled?(), do: k * 4, else: k * 2
+
+        candidates =
+          VectorIndex.search_all(state.episode_index, query_embedding, pool_size)
           |> Enum.filter(fn {{wid, _id}, _score} -> wid == world_id end)
-          |> Enum.take(k)
           |> Enum.map(fn {{_wid, id}, similarity} ->
             case Brain.AtlasIntegration.get_episode(id, world_id) do
               {:ok, episode} -> {episode, similarity}
@@ -379,6 +380,13 @@ defmodule Brain.Memory.Store do
             end
           end)
           |> Enum.reject(&is_nil/1)
+
+        results =
+          if memory_rerank_enabled?() do
+            kg_rerank(text, candidates, k)
+          else
+            Enum.take(candidates, k)
+          end
 
         {:reply, {:ok, results}, state}
 
@@ -410,10 +418,11 @@ defmodule Brain.Memory.Store do
   def handle_call({:query_semantic, text, k, world_id}, _from, state) do
     case get_embedding(world_id, text) do
       {:ok, query_embedding} ->
-        results =
-          VectorIndex.search_all(state.semantic_index, query_embedding, k * 2)
+        pool_size = if memory_rerank_enabled?(), do: k * 4, else: k * 2
+
+        candidates =
+          VectorIndex.search_all(state.semantic_index, query_embedding, pool_size)
           |> Enum.filter(fn {{wid, _id}, _score} -> wid == world_id end)
-          |> Enum.take(k)
           |> Enum.map(fn {{_wid, id}, similarity} ->
             case Brain.AtlasIntegration.get_semantic(id, world_id) do
               {:ok, semantic} -> {semantic, similarity}
@@ -421,6 +430,13 @@ defmodule Brain.Memory.Store do
             end
           end)
           |> Enum.reject(&is_nil/1)
+
+        results =
+          if memory_rerank_enabled?() do
+            kg_rerank(text, candidates, k)
+          else
+            Enum.take(candidates, k)
+          end
 
         {:reply, {:ok, results}, state}
 
@@ -588,5 +604,108 @@ defmodule Brain.Memory.Store do
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  # ============================================================================
+  # KG Entity Re-rank (phase 4)
+  # ============================================================================
+
+  defp kg_rerank(query_text, candidates, k) do
+    alias Brain.ML.KnowledgeGraph.EntityVectorCache
+
+    query_entities = extract_entity_names(query_text)
+
+    if query_entities == [] do
+      Enum.take(candidates, k)
+    else
+      query_vecs = entity_vectors(query_entities)
+
+      if query_vecs == [] do
+        Enum.take(candidates, k)
+      else
+        reranked =
+          Enum.map(candidates, fn {item, tfidf_score} ->
+            item_text = item_text(item)
+            item_entities = extract_entity_names(item_text)
+            item_vecs = entity_vectors(item_entities)
+
+            kg_score =
+              if item_vecs == [] do
+                0.0
+              else
+                max_pairwise_cosine(query_vecs, item_vecs)
+              end
+
+            blended = tfidf_score * 0.7 + kg_score * 0.3
+            {item, blended}
+          end)
+          |> Enum.sort_by(fn {_item, score} -> -score end)
+          |> Enum.take(k)
+
+        reranked
+      end
+    end
+  rescue
+    _ -> Enum.take(candidates, k)
+  end
+
+  defp extract_entity_names(text) when is_binary(text) do
+    case Brain.ML.EntityExtractor.extract_entities(text) do
+      entities when is_list(entities) ->
+        Enum.map(entities, fn e ->
+          Map.get(e, :value) || Map.get(e, :text, "")
+        end)
+        |> Enum.reject(&(&1 == ""))
+
+      _ ->
+        []
+    end
+  rescue
+    _ -> []
+  end
+
+  defp extract_entity_names(_), do: []
+
+  defp entity_vectors(entity_names) do
+    alias Brain.ML.KnowledgeGraph.EntityVectorCache
+
+    Enum.flat_map(entity_names, fn name ->
+      case EntityVectorCache.get_or_compute("default", name) do
+        {:ok, vec} -> [vec]
+        _ -> []
+      end
+    end)
+  rescue
+    _ -> []
+  end
+
+  defp max_pairwise_cosine(vecs_a, vecs_b) do
+    scores =
+      for va <- vecs_a, vb <- vecs_b do
+        a_list = Nx.to_flat_list(va)
+        b_list = Nx.to_flat_list(vb)
+        FourthWall.Math.cosine_similarity(a_list, b_list)
+      end
+
+    case scores do
+      [] -> 0.0
+      _ -> Enum.max(scores) |> max(0.0)
+    end
+  rescue
+    _ -> 0.0
+  end
+
+  defp item_text(item) do
+    cond do
+      is_binary(Map.get(item, :state)) -> item.state
+      is_binary(Map.get(item, :representation)) -> item.representation
+      is_binary(Map.get(item, :action)) -> item.action
+      true -> ""
+    end
+  end
+
+  defp memory_rerank_enabled? do
+    config = Application.get_env(:brain, :kg_signals, [])
+    Keyword.get(config, :enabled, true) and Keyword.get(config, :memory_rerank, true)
   end
 end

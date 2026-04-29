@@ -574,11 +574,29 @@ defmodule ChatWeb.SettingsLive do
   end
 
   def handle_event("reload_ml_models", _params, socket) do
+    result =
+      try do
+        Brain.ML.MicroClassifiers.reload()
+      rescue
+        e -> {:error, Exception.message(e)}
+      catch
+        :exit, reason -> {:error, inspect(reason)}
+      end
+
     socket =
-      socket
-      |> load_ml_training_data()
-      |> append_training_log("Reloaded models")
-      |> put_flash(:info, "Models reloaded")
+      case result do
+        :ok ->
+          socket
+          |> load_ml_training_data()
+          |> append_training_log("Reloaded all micro-classifiers")
+          |> put_flash(:info, "Models reloaded successfully")
+
+        {:error, reason} ->
+          socket
+          |> load_ml_training_data()
+          |> append_training_log("Reload failed: #{inspect(reason)}")
+          |> put_flash(:error, "Reload failed: #{inspect(reason)}")
+      end
 
     {:noreply, socket}
   end

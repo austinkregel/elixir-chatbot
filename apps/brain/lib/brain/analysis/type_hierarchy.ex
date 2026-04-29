@@ -19,6 +19,7 @@ defmodule Brain.Analysis.TypeHierarchy do
   """
 
   use GenServer
+  alias Atlas.Graph.EdgeLabels
   require Logger
 
   @ets_table :type_hierarchy
@@ -130,6 +131,36 @@ defmodule Brain.Analysis.TypeHierarchy do
     case safe_ets_lookup(:_all_parents) do
       [{:_all_parents, parent_map}] -> Map.get(parent_map, child_type)
       _ -> nil
+    end
+  end
+
+  @doc """
+  Returns all known entity type names (both parent and child types).
+  """
+  def all_types do
+    case safe_ets_lookup(:_all_parents) do
+      [{:_all_parents, parent_map}] ->
+        children = Map.keys(parent_map)
+        parents = Map.values(parent_map) |> Enum.uniq()
+        Enum.uniq(children ++ parents) |> Enum.sort()
+
+      _ ->
+        []
+    end
+  end
+
+  @doc """
+  Returns just the parent type names from the hierarchy (sorted).
+
+  These are the types that have children in the type_hierarchy.
+  """
+  def parent_types do
+    case safe_ets_lookup(:_all_parents) do
+      [{:_all_parents, parent_map}] ->
+        Map.values(parent_map) |> Enum.uniq() |> Enum.sort()
+
+      _ ->
+        []
     end
   end
 
@@ -271,7 +302,7 @@ defmodule Brain.Analysis.TypeHierarchy do
     if Brain.AtlasIntegration.available?() do
       case Brain.AtlasIntegration.sync(fn ->
         Atlas.Graph.cypher("knowledge_graph",
-          "MATCH (child:EntityType)-[:IS_A]->(parent:EntityType) RETURN parent.name, child.name"
+          "MATCH (child:EntityType)-[:#{EdgeLabels.is_a()}]->(parent:EntityType) RETURN parent.name, child.name"
         )
       end) do
         {:ok, {:ok, rows}} ->
@@ -314,16 +345,20 @@ defmodule Brain.Analysis.TypeHierarchy do
           {:ok, parent_node} =
             Brain.AtlasIntegration.ensure_node("knowledge_graph", "EntityType", %{name: parent})
 
+          Brain.AtlasIntegration.enrich_existing_node("knowledge_graph", parent_node.id, parent)
+
           Enum.each(children, fn child ->
             {:ok, child_node} =
               Brain.AtlasIntegration.ensure_node("knowledge_graph", "EntityType", %{name: child})
+
+            Brain.AtlasIntegration.enrich_existing_node("knowledge_graph", child_node.id, child)
 
             parent_id = parent_node.id
             child_id = child_node.id
 
             Atlas.Graph.cypher("knowledge_graph",
               "MATCH (c:EntityType), (p:EntityType) WHERE id(c) = #{child_id} AND id(p) = #{parent_id} " <>
-              "MERGE (c)-[:IS_A]->(p) RETURN c, p"
+              "MERGE (c)-[:#{EdgeLabels.is_a()}]->(p) RETURN c, p"
             )
           end)
         end)

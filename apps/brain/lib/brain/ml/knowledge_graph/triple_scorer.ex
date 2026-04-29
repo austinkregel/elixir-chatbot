@@ -27,7 +27,7 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
   @default_learning_rate 0.001
   @special_tokens ["[HEAD]", "[REL]", "[TAIL]", "[PAD]"]
 
-  defstruct [:model, :params, :vocab, :config, :ready]
+  defstruct [:model, :params, :vocab, :config, :ready, :relation_coverage, :model_version]
 
   # --- Public API ---
 
@@ -73,6 +73,31 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
 
   def reload(name \\ __MODULE__) do
     GenServer.call(name, :reload, 30_000)
+  end
+
+  @doc """
+  Returns the trained relation coverage map: `%{relation => positive_count}`.
+
+  Used by `PredicateNormalizer` to decide whether a lemma-passthrough
+  predicate was part of the training vocabulary.
+  """
+  def relation_coverage(name \\ __MODULE__) do
+    try do
+      GenServer.call(name, :relation_coverage, 1_000)
+    catch
+      :exit, _ -> {:error, :not_ready}
+    end
+  end
+
+  @doc """
+  Returns the model version string from the loaded `.term` file.
+  """
+  def current_model_version(name \\ __MODULE__) do
+    try do
+      GenServer.call(name, :model_version, 1_000)
+    catch
+      :exit, _ -> {:error, :not_ready}
+    end
   end
 
   @doc """
@@ -178,13 +203,23 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
 
   @doc """
   Save a trained model to disk.
+
+  Accepts optional `relation_coverage` and `model_version` in opts.
   """
-  def save_model(params, vocab, config, path) do
+  def save_model(params, vocab, config, path, opts \\ []) do
     File.mkdir_p!(Path.dirname(path))
-    data = %{params: params, vocab: vocab, config: config}
+
+    data =
+      %{params: params, vocab: vocab, config: config}
+      |> maybe_put(:relation_coverage, Keyword.get(opts, :relation_coverage))
+      |> maybe_put(:model_version, Keyword.get(opts, :model_version))
+
     File.write!(path, :erlang.term_to_binary(data))
     :ok
   end
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 
   @doc """
   Load a trained model from disk.
@@ -242,10 +277,31 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
   end
 
   def handle_call(:reload, _from, state) do
+    old_version = state.model_version
+
     case try_load("default") do
-      {:ok, loaded} -> {:reply, :ok, loaded}
-      {:error, reason} -> {:reply, {:error, reason}, state}
+      {:ok, loaded} ->
+        new_version = loaded.model_version
+        if old_version != new_version do
+          Phoenix.PubSub.broadcast(
+            Brain.PubSub,
+            "world_models:status",
+            {:triple_scorer_reloaded, old_version, new_version}
+          )
+        end
+        {:reply, :ok, loaded}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
     end
+  end
+
+  def handle_call(:relation_coverage, _from, state) do
+    {:reply, {:ok, state.relation_coverage || %{}}, state}
+  end
+
+  def handle_call(:model_version, _from, state) do
+    {:reply, {:ok, state.model_version}, state}
   end
 
   # --- Private ---
@@ -266,7 +322,9 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
           params: ensure_model_state(data.params),
           vocab: data.vocab,
           config: data.config,
-          ready: true
+          ready: true,
+          relation_coverage: Map.get(data, :relation_coverage, %{}),
+          model_version: Map.get(data, :model_version)
         }
         {:ok, state}
 
@@ -371,19 +429,79 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
   end
 
   defp generate_negatives(positives, entities, positive_set, ratio) do
+    entity_types = build_entity_type_index(entities)
+
     Enum.flat_map(positives, fn {h, r, t} ->
-      Stream.repeatedly(fn ->
-        if :rand.uniform() > 0.5 do
-          corrupt_h = Enum.random(entities)
-          {corrupt_h, r, t}
-        else
-          corrupt_t = Enum.random(entities)
-          {h, r, corrupt_t}
-        end
-      end)
-      |> Stream.reject(&MapSet.member?(positive_set, &1))
-      |> Enum.take(ratio)
+      type_constrained_count = div(ratio * 4, 5)
+      uniform_count = ratio - type_constrained_count
+
+      type_constrained =
+        generate_type_constrained(h, r, t, entities, entity_types, positive_set, type_constrained_count)
+
+      uniform =
+        Stream.repeatedly(fn ->
+          if :rand.uniform() > 0.5 do
+            {Enum.random(entities), r, t}
+          else
+            {h, r, Enum.random(entities)}
+          end
+        end)
+        |> Stream.reject(&MapSet.member?(positive_set, &1))
+        |> Enum.take(uniform_count)
+
+      type_constrained ++ uniform
     end)
+  end
+
+  defp generate_type_constrained(h, r, t, entities, entity_types, positive_set, count) do
+    h_type = Map.get(entity_types, h)
+    t_type = Map.get(entity_types, t)
+
+    h_peers = if h_type, do: Map.get(entity_types, {:type_members, h_type}, entities), else: entities
+    t_peers = if t_type, do: Map.get(entity_types, {:type_members, t_type}, entities), else: entities
+
+    Stream.repeatedly(fn ->
+      if :rand.uniform() > 0.5 do
+        {Enum.random(h_peers), r, t}
+      else
+        {h, r, Enum.random(t_peers)}
+      end
+    end)
+    |> Stream.reject(&MapSet.member?(positive_set, &1))
+    |> Enum.take(count)
+  end
+
+  defp build_entity_type_index(entities) do
+    entity_to_type =
+      Enum.reduce(entities, %{}, fn entity, acc ->
+        type = infer_entity_type(entity)
+        if type, do: Map.put(acc, entity, type), else: acc
+      end)
+
+    type_to_members =
+      Enum.group_by(
+        Enum.filter(entities, &Map.has_key?(entity_to_type, &1)),
+        &Map.get(entity_to_type, &1)
+      )
+
+    type_members =
+      Enum.into(type_to_members, %{}, fn {type, members} ->
+        {{:type_members, type}, members}
+      end)
+
+    Map.merge(entity_to_type, type_members)
+  end
+
+  defp infer_entity_type(entity) do
+    cond do
+      function_exported?(Brain.Analysis.TypeHierarchy, :parent_of, 1) ->
+        Brain.Analysis.TypeHierarchy.parent_of(entity)
+
+      true ->
+        nil
+    end
+  rescue
+    _ -> nil
   end
 
   defp ensure_model_state(%Axon.ModelState{} = state), do: state

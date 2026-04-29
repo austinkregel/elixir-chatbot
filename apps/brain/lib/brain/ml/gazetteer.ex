@@ -486,7 +486,7 @@ defmodule Brain.ML.Gazetteer do
   """
   def restore_world_overlay(world_id, overlay_data)
       when is_binary(world_id) and is_list(overlay_data) do
-    GenServer.call(__MODULE__, {:restore_world_overlay, world_id, overlay_data})
+    GenServer.call(__MODULE__, {:restore_world_overlay, world_id, overlay_data}, 30_000)
   end
 
   @doc """

@@ -854,6 +854,85 @@ defmodule Brain.Analysis.FeatureExtractor.EnrichmentFeatures do
     end
   end
 
+  # ---------------------------------------------------------------------------
+  # Group 23: Entity type semantics
+  # ---------------------------------------------------------------------------
+  #
+  # Data-driven dimensions from entity_types.json type hierarchy.
+  # Dim count = length(parent_type_list) + 2 (coherence + coverage).
+  #
+  # - Parent concept histogram: for each parent type in the hierarchy,
+  #   a capped count of entities in the chunk that belong to that parent.
+  # - Coherence: 1.0 when all entities share one parent, 0.0 when they're diverse.
+  # - KG coverage: fraction of entities whose type is known in the hierarchy.
+
+  alias Brain.Analysis.TypeHierarchy
+
+  @doc """
+  Returns the entity type semantics vector for a chunk analysis.
+
+  Raises when TypeHierarchy is not ready (Rule #4 -- fail loud).
+  """
+  @spec entity_type_semantics(map()) :: [float()]
+  def entity_type_semantics(analysis) do
+    unless TypeHierarchy.ready?() do
+      raise "TypeHierarchy must be ready for entity type feature extraction"
+    end
+
+    parents_list = parent_type_list()
+    entities = get_entity_types(analysis)
+
+    parents =
+      entities
+      |> Enum.map(&TypeHierarchy.parent_of/1)
+      |> Enum.reject(&is_nil/1)
+
+    parent_histogram =
+      Enum.map(parents_list, fn pt ->
+        count = Enum.count(parents, &(&1 == pt))
+        min(count / 3.0, 1.0)
+      end)
+
+    total = max(length(parents), 1)
+    unique_parents = parents |> Enum.uniq() |> length()
+    coherence = if total > 0, do: 1.0 - (unique_parents - 1) / max(total, 1), else: 0.0
+
+    kg_total = length(entities)
+    kg_known = Enum.count(entities, fn etype -> TypeHierarchy.parent_of(etype) != nil end)
+    coverage = if kg_total > 0, do: kg_known / kg_total, else: 0.0
+
+    parent_histogram ++ [coherence, coverage]
+  end
+
+  @doc "Number of dimensions emitted by `entity_type_semantics/1`."
+  @spec entity_type_semantics_dimension() :: non_neg_integer()
+  def entity_type_semantics_dimension do
+    length(parent_type_list()) + 2
+  end
+
+  defp parent_type_list do
+    if TypeHierarchy.ready?() do
+      case TypeHierarchy.parent_types() do
+        types when types != [] -> types
+        _ -> raise "TypeHierarchy has no parent types loaded"
+      end
+    else
+      raise "TypeHierarchy must be ready for feature extraction (group 23)"
+    end
+  end
+
+  defp get_entity_types(analysis) do
+    entities = Map.get(analysis, :entities, [])
+
+    Enum.map(entities, fn
+      %{entity_type: type} when is_binary(type) -> type
+      %{"entity_type" => type} when is_binary(type) -> type
+      %{type: type} when is_binary(type) -> type
+      _ -> nil
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
   defp normalize_pos_tag(pos) when pos in [:NOUN, "NOUN", "noun"], do: :NOUN
   defp normalize_pos_tag(pos) when pos in [:PROPN, "PROPN", "propn"], do: :PROPN
   defp normalize_pos_tag(pos) when pos in [:VERB, "VERB", "verb"], do: :VERB

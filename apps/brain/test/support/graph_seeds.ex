@@ -8,6 +8,7 @@ defmodule Brain.Test.GraphSeeds do
   in test assertions.
   """
   alias Atlas.Graph
+  alias Atlas.Graph.EdgeLabels
 
   @doc "Seed all 6 graphs and return a combined map of created nodes."
   def seed_all do
@@ -45,8 +46,8 @@ defmodule Brain.Test.GraphSeeds do
     {:ok, user} = Graph.add_node("user_graph", "User", %{name: "TestUser", id: "test_user_1"})
     {:ok, jazz} = Graph.add_node("user_graph", "Topic", %{name: "jazz"})
     {:ok, weather} = Graph.add_node("user_graph", "Topic", %{name: "weather"})
-    {:ok, _} = Graph.add_edge("user_graph", user.id, jazz.id, "LIKES", %{confidence: 0.9})
-    {:ok, _} = Graph.add_edge("user_graph", user.id, weather.id, "ASKED_ABOUT", %{count: 3})
+    {:ok, _} = Graph.add_edge("user_graph", user.id, jazz.id, EdgeLabels.likes(), %{confidence: 0.9})
+    {:ok, _} = Graph.add_edge("user_graph", user.id, weather.id, EdgeLabels.asked_about(), %{count: 3})
 
     %{user: user, jazz: jazz, weather: weather}
   end
@@ -60,8 +61,8 @@ defmodule Brain.Test.GraphSeeds do
     })
     {:ok, ep1} = Graph.add_node("semantic_graph", "Episode", %{name: "ep_1", action: "weather.query"})
     {:ok, ep2} = Graph.add_node("semantic_graph", "Episode", %{name: "ep_2", action: "weather.query"})
-    {:ok, _} = Graph.add_edge("semantic_graph", ep1.id, fact.id, "EVIDENCE_FOR")
-    {:ok, _} = Graph.add_edge("semantic_graph", ep2.id, fact.id, "EVIDENCE_FOR")
+    {:ok, _} = Graph.add_edge("semantic_graph", ep1.id, fact.id, EdgeLabels.evidence_for())
+    {:ok, _} = Graph.add_edge("semantic_graph", ep2.id, fact.id, EdgeLabels.evidence_for())
 
     %{fact: fact, ep1: ep1, ep2: ep2}
   end
@@ -79,11 +80,11 @@ defmodule Brain.Test.GraphSeeds do
     })
     {:ok, topic_weather} = Graph.add_node("conversation_graph", "Topic", %{name: "weather.query"})
     {:ok, topic_greeting} = Graph.add_node("conversation_graph", "Topic", %{name: "smalltalk.greetings.hello"})
-    {:ok, _} = Graph.add_edge("conversation_graph", conv.id, msg1.id, "CONTAINS")
-    {:ok, _} = Graph.add_edge("conversation_graph", conv.id, msg2.id, "CONTAINS")
-    {:ok, _} = Graph.add_edge("conversation_graph", msg1.id, msg2.id, "FOLLOWS")
-    {:ok, _} = Graph.add_edge("conversation_graph", msg1.id, topic_weather.id, "HAS_TOPIC")
-    {:ok, _} = Graph.add_edge("conversation_graph", topic_greeting.id, topic_weather.id, "TOPIC_TRANSITION", %{count: 2})
+    {:ok, _} = Graph.add_edge("conversation_graph", conv.id, msg1.id, EdgeLabels.contains())
+    {:ok, _} = Graph.add_edge("conversation_graph", conv.id, msg2.id, EdgeLabels.contains())
+    {:ok, _} = Graph.add_edge("conversation_graph", msg1.id, msg2.id, EdgeLabels.follows())
+    {:ok, _} = Graph.add_edge("conversation_graph", msg1.id, topic_weather.id, EdgeLabels.has_topic())
+    {:ok, _} = Graph.add_edge("conversation_graph", topic_greeting.id, topic_weather.id, EdgeLabels.topic_transition(), %{count: 2})
 
     %{conversation: conv, msg1: msg1, msg2: msg2, topic_weather: topic_weather, topic_greeting: topic_greeting}
   end
@@ -105,8 +106,8 @@ defmodule Brain.Test.GraphSeeds do
     {:ok, justification} = Graph.add_node("epistemic_graph", "Justification", %{
       name: "j1", informant: "preference_rule"
     })
-    {:ok, _} = Graph.add_edge("epistemic_graph", justification.id, derived.id, "SUPPORTS")
-    {:ok, _} = Graph.add_edge("epistemic_graph", justification.id, assumption.id, "REQUIRES_IN")
+    {:ok, _} = Graph.add_edge("epistemic_graph", justification.id, derived.id, EdgeLabels.supports())
+    {:ok, _} = Graph.add_edge("epistemic_graph", justification.id, assumption.id, EdgeLabels.requires_in())
 
     %{premise: premise, assumption: assumption, derived: derived, justification: justification}
   end
@@ -133,15 +134,15 @@ defmodule Brain.Test.GraphSeeds do
     for {from, to, freq} <- transitions do
       from_node = tag_nodes[from]
       to_node = tag_nodes[to]
-      Graph.add_edge("pos_graph", from_node.id, to_node.id, "FOLLOWED_BY", %{frequency: freq})
+      Graph.add_edge("pos_graph", from_node.id, to_node.id, EdgeLabels.followed_by(), %{frequency: freq})
     end
 
     {:ok, the_token} = Graph.add_node("pos_graph", "Token", %{name: "the"})
-    {:ok, _} = Graph.add_edge("pos_graph", the_token.id, tag_nodes["DET"].id, "HAS_TAG", %{count: 100})
+    {:ok, _} = Graph.add_edge("pos_graph", the_token.id, tag_nodes["DET"].id, EdgeLabels.has_tag(), %{count: 100})
 
     {:ok, run_token} = Graph.add_node("pos_graph", "Token", %{name: "run"})
-    {:ok, _} = Graph.add_edge("pos_graph", run_token.id, tag_nodes["VERB"].id, "HAS_TAG", %{count: 80})
-    {:ok, _} = Graph.add_edge("pos_graph", run_token.id, tag_nodes["NOUN"].id, "HAS_TAG", %{count: 20})
+    {:ok, _} = Graph.add_edge("pos_graph", run_token.id, tag_nodes["VERB"].id, EdgeLabels.has_tag(), %{count: 80})
+    {:ok, _} = Graph.add_edge("pos_graph", run_token.id, tag_nodes["NOUN"].id, EdgeLabels.has_tag(), %{count: 20})
 
     %{tag_nodes: tag_nodes, tokens: %{the: the_token, run: run_token}}
   end

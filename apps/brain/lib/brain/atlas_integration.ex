@@ -12,7 +12,7 @@ defmodule Brain.AtlasIntegration do
 
   require Logger
 
-  @doc "Returns true if Atlas.Repo is available for operations."
+  @doc "Returns true if Atlas.Repo is available for operations (cheap process-presence check)."
   def available? do
     Code.ensure_loaded?(Atlas.Repo) and
       is_pid(Process.whereis(Atlas.Repo))
@@ -20,6 +20,24 @@ defmodule Brain.AtlasIntegration do
     _ -> false
   catch
     _, _ -> false
+  end
+
+  @doc """
+  Active probe that runs a lightweight Cypher query to verify Atlas connectivity.
+
+  Unlike `available?/0` (which only checks process presence), this detects
+  broken Postgres connections. Used by SystemStatus for definitive health
+  determination. Do NOT use in hot paths -- the query adds ~1ms latency.
+  """
+  def ping do
+    try do
+      case Atlas.Graph.cypher("knowledge_graph", "RETURN 1") do
+        {:ok, _} -> :ok
+        {:error, reason} -> {:error, reason}
+      end
+    catch
+      :exit, _ -> {:error, :timeout}
+    end
   end
 
   @doc "Execute an Atlas operation asynchronously via the AtlasTaskSupervisor.
@@ -932,27 +950,114 @@ defmodule Brain.AtlasIntegration do
     end
   end
 
+  @lexicon_property_whitelist ~w(
+    wordnet_definition wordnet_synonyms wordnet_hypernyms
+    wordnet_domain polysemy_count resolved_from
+  )
+
+  @doc """
+  Enrich an existing node with lexicon properties (whitelist-only).
+
+  Does NOT modify `ensure_node/3` -- other writers depend on its short-circuit.
+  Only writes properties from `@lexicon_property_whitelist` and creates
+  LexiconFacet nodes for ConceptNet relation data.
+  """
+  def enrich_existing_node(graph, node_id, name, allowed_keys \\ @lexicon_property_whitelist) do
+    enriched = enrich_with_lexicon(%{}, name)
+    to_write = Map.take(enriched, Enum.map(allowed_keys, &to_string/1))
+
+    if map_size(to_write) > 0 do
+      set_clauses =
+        Enum.map_join(to_write, ", ", fn {k, v} ->
+          "n.#{k} = #{Atlas.Graph.encode_value(v)}"
+        end)
+
+      Atlas.Graph.cypher(graph, "MATCH (n) WHERE id(n) = #{node_id} SET #{set_clauses} RETURN n")
+    end
+
+    write_lexicon_facets(graph, node_id, name)
+    :ok
+  end
+
   defp enrich_with_lexicon(properties, name) when is_binary(name) do
-    if Process.whereis(Brain.ML.Lexicon) != nil && Brain.ML.Lexicon.known_word?(name) do
+    lookup_name = resolve_lexicon_name(name)
+
+    if Process.whereis(Brain.ML.Lexicon) != nil && Brain.ML.Lexicon.known_word?(lookup_name) do
       definition =
-        case Brain.ML.Lexicon.definition(name) do
+        case Brain.ML.Lexicon.definition(lookup_name) do
           {:ok, defn} -> defn
           _ -> nil
         end
 
-      synonyms = Brain.ML.Lexicon.synonyms(name) |> Enum.take(5)
-      hypernyms = Brain.ML.Lexicon.hypernyms(name) |> Enum.take(3)
+      synonyms = Brain.ML.Lexicon.synonyms(lookup_name) |> Enum.take(5)
+      hypernyms = Brain.ML.Lexicon.hypernyms(lookup_name) |> Enum.take(3)
+      domain = Brain.Lexicon.primary_domain(lookup_name)
+      polysemy = Brain.Lexicon.polysemy_count(lookup_name)
 
-      properties
-      |> maybe_put("wordnet_definition", definition)
-      |> maybe_put("wordnet_synonyms", if(synonyms != [], do: Enum.join(synonyms, ", ")))
-      |> maybe_put("wordnet_hypernyms", if(hypernyms != [], do: Enum.join(hypernyms, ", ")))
+      result =
+        properties
+        |> maybe_put("wordnet_definition", definition)
+        |> maybe_put("wordnet_synonyms", if(synonyms != [], do: synonyms))
+        |> maybe_put("wordnet_hypernyms", if(hypernyms != [], do: hypernyms))
+        |> maybe_put("wordnet_domain", if(domain, do: Atom.to_string(domain)))
+        |> maybe_put("polysemy_count", polysemy)
+
+      if lookup_name != name do
+        Map.put(result, "resolved_from", name)
+      else
+        result
+      end
     else
       properties
     end
   end
 
   defp enrich_with_lexicon(properties, _), do: properties
+
+  defp write_lexicon_facets(graph, node_id, name) do
+    lookup_name = resolve_lexicon_name(name)
+
+    if Process.whereis(Brain.Lexicon) != nil do
+      counts = Brain.Lexicon.conceptnet_relation_counts(lookup_name)
+
+      if is_map(counts) and map_size(counts) > 0 do
+        facet_name = "lexicon_facet:#{name}"
+
+        case ensure_node(graph, "LexiconFacet", %{
+               name: facet_name,
+               source_entity: name,
+               relations: Jason.encode!(counts)
+             }) do
+          {:ok, %{id: facet_id}} ->
+            find_or_create_edge(
+              graph,
+              node_id,
+              facet_id,
+              Atlas.Graph.EdgeLabels.has_lexicon_facet(),
+              %{source: "lexicon_enrichment"}
+            )
+
+          _ ->
+            :ok
+        end
+      end
+    end
+  end
+
+  defp resolve_lexicon_name(name) when is_binary(name) do
+    if Process.whereis(Brain.ML.Lexicon) != nil and Brain.ML.Lexicon.known_word?(name) do
+      name
+    else
+      compounds = Brain.Analysis.TypeHierarchy.config("compound_entity_types", %{})
+
+      case Map.get(compounds, name) do
+        %{"head" => head} -> head
+        _ -> name
+      end
+    end
+  rescue
+    _ -> name
+  end
 
   defp maybe_put(map, _key, nil), do: map
   defp maybe_put(map, key, value), do: Map.put(map, key, value)

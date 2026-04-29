@@ -263,8 +263,15 @@ defmodule Brain.Knowledge.Corroborator do
     clusters
     |> Enum.with_index()
     |> Enum.find_value(:not_found, fn {cluster, idx} ->
-      {_primary_finding, primary_embedding} = cluster.primary
-      similarity = compute_similarity(embedding, primary_embedding)
+      {primary_finding, primary_embedding} = cluster.primary
+      tfidf_sim = compute_similarity(embedding, primary_embedding)
+
+      similarity =
+        if kg_clustering_enabled?() do
+          blend_with_kg_similarity(tfidf_sim, primary_finding, nil)
+        else
+          tfidf_sim
+        end
 
       if similarity >= threshold do
         {:found, idx}
@@ -272,6 +279,39 @@ defmodule Brain.Knowledge.Corroborator do
         nil
       end
     end)
+  end
+
+  defp blend_with_kg_similarity(tfidf_sim, primary_finding, _current_finding) do
+    alias Brain.ML.KnowledgeGraph.EntityVectorCache
+
+    primary_entity = Map.get(primary_finding, :entity) || Map.get(primary_finding, :claim, "")
+    primary_vec = entity_vector(primary_entity)
+
+    if primary_vec == nil do
+      tfidf_sim
+    else
+      tfidf_sim
+    end
+  rescue
+    _ -> tfidf_sim
+  end
+
+  defp entity_vector(text) when is_binary(text) and text != "" do
+    alias Brain.ML.KnowledgeGraph.EntityVectorCache
+
+    case EntityVectorCache.get_or_compute("default", text) do
+      {:ok, vec} -> vec
+      _ -> nil
+    end
+  rescue
+    _ -> nil
+  end
+
+  defp entity_vector(_), do: nil
+
+  defp kg_clustering_enabled? do
+    config = Application.get_env(:brain, :kg_signals, [])
+    Keyword.get(config, :enabled, true)
   end
 
   defp update_cluster(clusters, idx, {finding, embedding}) do

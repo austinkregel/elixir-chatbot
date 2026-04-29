@@ -191,11 +191,11 @@ defmodule Atlas.Graph do
   end
 
   @doc """
-  Export hierarchical is-a relations for Poincare embedding training.
+  Export hierarchical IS_A relations for Poincare embedding training.
   """
   def poincare_data(graph) do
     cypher(graph, """
-      MATCH (child)-[:is_a]->(parent)
+      MATCH (child)-[:#{Atlas.Graph.EdgeLabels.is_a()}]->(parent)
       RETURN properties(child).name, properties(parent).name
     """)
   end
@@ -223,9 +223,11 @@ defmodule Atlas.Graph do
     "{" <> Enum.join(pairs, ", ") <> "}"
   end
 
-  defp encode_value(v) when is_binary(v), do: "'#{String.replace(v, "'", "\\'")}'"
-  defp encode_value(v) when is_number(v), do: to_string(v)
-  defp encode_value(v) when is_boolean(v), do: to_string(v)
-  defp encode_value(v) when is_atom(v), do: "'#{v}'"
-  defp encode_value(v), do: "'#{inspect(v)}'"
+  @doc "Encode an Elixir value for use in a Cypher property literal."
+  def encode_value(v) when is_binary(v), do: "'#{String.replace(v, "'", "\\'")}'"
+  def encode_value(v) when is_number(v), do: to_string(v)
+  def encode_value(v) when is_boolean(v), do: to_string(v)
+  def encode_value(v) when is_atom(v), do: "'#{v}'"
+  def encode_value(v) when is_list(v), do: "[" <> Enum.map_join(v, ", ", &encode_value/1) <> "]"
+  def encode_value(v), do: "'#{inspect(v)}'"
 end

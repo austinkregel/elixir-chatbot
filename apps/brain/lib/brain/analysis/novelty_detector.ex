@@ -45,7 +45,13 @@ defmodule Brain.Analysis.NoveltyDetector do
       is_low_confidence or is_ambiguous or has_graph_unknown ->
         base_score = (1.0 - best_score) * 0.7 + (1.0 - margin) * 0.3
         graph_boost = if has_graph_unknown, do: 0.15, else: 0.0
-        {:novel, min(base_score + graph_boost, 1.0)}
+        raw_score = min(base_score + graph_boost, 1.0)
+
+        text = Keyword.get(opts, :text, "")
+        analysis_chunk = Keyword.get(opts, :analysis_chunk)
+        final_score = maybe_kg_downweight(raw_score, text, analysis_chunk)
+
+        {:novel, final_score}
 
       true ->
         :not_novel
@@ -169,4 +175,151 @@ defmodule Brain.Analysis.NoveltyDetector do
   end
 
   defp knowledge_oriented_act?(_), do: false
+
+  @doc """
+  KG-aware redundancy downweight. Reduces the novelty score when the input
+  closely matches an existing high-scoring belief, but does NOT suppress it
+  entirely. State changes (sentiment/tense/negation flip) are detected and
+  bypass the downweight.
+  """
+  def maybe_kg_downweight(novelty_score, text, analysis_chunk) do
+    config = Application.get_env(:brain, :kg_signals, [])
+
+    unless Keyword.get(config, :enabled, true) and Keyword.get(config, :novelty_downweight, true) do
+      novelty_score
+    else
+      do_kg_downweight(novelty_score, text, analysis_chunk)
+    end
+  end
+
+  defp do_kg_downweight(novelty_score, text, _analysis_chunk) when text == "" or is_nil(text) do
+    novelty_score
+  end
+
+  defp do_kg_downweight(novelty_score, text, analysis_chunk) do
+    unless Brain.Epistemic.BeliefStore.ready?() do
+      novelty_score
+    else
+      case find_matching_beliefs(text) do
+        [] ->
+          novelty_score
+
+        matching_beliefs ->
+          best_match = Enum.max_by(matching_beliefs, fn {_belief, sim} -> sim end)
+          {belief, similarity} = best_match
+
+          if is_state_change?(belief, analysis_chunk) do
+            :telemetry.execute([:brain, :novelty, :state_change_detected], %{similarity: similarity}, %{})
+            novelty_score
+          else
+            if belief_still_active?(belief) do
+              downweight = similarity * 0.5
+              downweighted = novelty_score * (1.0 - downweight)
+              :telemetry.execute([:brain, :novelty, :downweighted], %{
+                original: novelty_score,
+                downweighted: downweighted,
+                similarity: similarity
+              }, %{})
+              downweighted
+            else
+              novelty_score
+            end
+          end
+      end
+    end
+  rescue
+    _ -> novelty_score
+  end
+
+  defp find_matching_beliefs(text) do
+    case Brain.Memory.Embedder.embed(text) do
+      {:ok, query_embedding} ->
+        beliefs = Brain.Epistemic.BeliefStore.query_beliefs()
+
+        beliefs
+        |> Enum.filter(fn b ->
+          b.subject != :system and b.predicate != :consolidated_knowledge
+        end)
+        |> Enum.flat_map(fn belief ->
+          belief_text = "#{belief.subject} #{belief.predicate} #{belief.object}"
+
+          case Brain.Memory.Embedder.embed(belief_text) do
+            {:ok, belief_embedding} ->
+              sim = FourthWall.Math.cosine_similarity(query_embedding, belief_embedding)
+              if sim >= 0.85, do: [{belief, sim}], else: []
+
+            _ ->
+              []
+          end
+        end)
+        |> Enum.take(5)
+
+      _ ->
+        []
+    end
+  rescue
+    _ -> []
+  end
+
+  defp is_state_change?(belief, analysis_chunk) do
+    if is_nil(analysis_chunk) do
+      false
+    else
+      chunk_sentiment = Map.get(analysis_chunk, :sentiment)
+      chunk_tense = Map.get(analysis_chunk, :tense)
+
+      belief_metadata = Map.get(belief, :metadata, %{})
+      belief_sentiment = Map.get(belief_metadata, :sentiment)
+
+      sentiment_differs =
+        chunk_sentiment != nil and belief_sentiment != nil and
+          sentiment_polarity(chunk_sentiment) != sentiment_polarity(belief_sentiment)
+
+      tense_differs =
+        chunk_tense != nil and
+          Map.get(belief_metadata, :tense) != nil and
+          chunk_tense != Map.get(belief_metadata, :tense)
+
+      has_negation = Map.get(analysis_chunk, :has_negation, false)
+
+      sentiment_differs or tense_differs or has_negation
+    end
+  end
+
+  defp sentiment_polarity(sentiment) when is_map(sentiment) do
+    label = Map.get(sentiment, :label) || Map.get(sentiment, "label")
+
+    cond do
+      label in [:positive, "positive"] -> :positive
+      label in [:negative, "negative"] -> :negative
+      true -> :neutral
+    end
+  end
+
+  defp sentiment_polarity(_), do: :neutral
+
+  defp belief_still_active?(belief) do
+    config = Application.get_env(:brain, :kg_signals, [])
+    window_days = Keyword.get(config, :novelty_retraction_window, 7)
+
+    if belief.node_id do
+      case Brain.Epistemic.JTMS.get_node(belief.node_id) do
+        {:ok, node} ->
+          label = Map.get(node, :label, :in)
+          label == :in
+
+        _ ->
+          true
+      end
+    else
+      cutoff = DateTime.add(DateTime.utc_now(), -window_days * 86400, :second)
+
+      case belief.last_confirmed do
+        nil -> true
+        dt -> DateTime.compare(dt, cutoff) == :gt
+      end
+    end
+  rescue
+    _ -> true
+  end
 end

@@ -32,23 +32,49 @@ defmodule Brain.SystemStatus do
       {Brain.Epistemic.JTMS, "JTMS", :has_ready_and_stats},
       {Brain.Epistemic.BeliefStore, "Belief Store", :has_ready_and_stats},
       {Brain.Epistemic.UserModelStore, "User Model Store", :has_ready_and_stats},
-      {Brain.Epistemic.ContradictionHandler, "Contradiction Handler", :has_ready_and_stats}
+      {Brain.Epistemic.ContradictionHandler, "Contradiction Handler", :has_ready_and_stats},
+      {Brain.Epistemic.StanceTracker, "Stance Tracker", :has_ready_and_stats},
+      {Brain.Epistemic.SourceAuthority, "Source Authority", :has_ready}
     ],
     analysis: [
       {Brain.Analysis.LearningStore, "Learning Store", :has_ready},
       {Brain.Analysis.AnalyzerCalibration, "Analyzer Calibration", :has_ready_and_stats},
-      {Brain.Analysis.HeuristicStore, "Heuristic Store", :has_stats}
+      {Brain.Analysis.HeuristicStore, "Heuristic Store", :has_stats},
+      {Brain.Analysis.ComprehensionAssessor, "Comprehension Assessor", :has_ready_and_stats},
+      {Brain.Analysis.TypeHierarchy, "Type Hierarchy", :has_ready},
+      {Brain.Analysis.FramingDetector, "Framing Detector", :has_ready},
+      {Brain.Analysis.OutcomeLearner.Store, "Outcome Learner Store", :basic}
     ],
     ml: [
       {Brain.ML.Gazetteer, "Gazetteer", :has_stats},
       {Brain.ML.InformalExpansions, "Informal Expansions", :has_ready},
       {Brain.ML.MicroClassifiers, "Micro Classifiers", :has_ready},
-      {Brain.Response.TemplateStore, "Template Store", :has_ready}
+      {Brain.ML.SentimentClassifierSimple, "Sentiment Classifier", :has_ready},
+      {Brain.ML.SpeechActClassifierSimple, "Speech Act Classifier", :has_ready},
+      {Brain.ML.EntityExtractor, "Entity Extractor", :has_ready},
+      {Brain.ML.TrainingExampleBuffer, "Training Example Buffer", :has_ready_and_stats},
+      {Brain.ML.TrainingServer, "Training Server", :has_status},
+      {Brain.ML.KnowledgeGraph.TripleScorer, "Triple Scorer", :has_ready},
+      {Brain.ML.KnowledgeGraph.EntityVectorCache, "Entity Vector Cache", :has_stats},
+      {Brain.ML.Poincare.Embeddings, "Poincare Embeddings", :has_ready},
+      {Brain.ML.Lexicon, "Lexicon", :has_stats},
+      {Brain.ML.WeightOptimizer.Tracker, "Weight Optimizer Tracker", :basic}
+    ],
+    response: [
+      {Brain.Response.TemplateStore, "Template Store", :has_ready},
+      {Brain.Response.TemplateBlender, "Template Blender", :has_ready_and_stats},
+      {Brain.Response.DecompressorCollector, "Decompressor Collector", :has_ready_and_stats},
+      {Brain.Response.SemanticFactRetriever, "Semantic Fact Retriever", :has_ready_and_stats},
+      {Brain.Response.ChunkCompatibility, "Chunk Compatibility", :has_ready}
     ],
     knowledge: [
       {Brain.Knowledge.LearningCenter, "Learning Center", :has_ready_and_stats},
       {Brain.Knowledge.ReviewQueue, "Review Queue", :has_ready_and_stats},
-      {Brain.Knowledge.SourceReliability, "Source Reliability", :has_ready_and_stats}
+      {Brain.Knowledge.SourceReliability, "Source Reliability", :has_ready_and_stats},
+      {Brain.Knowledge.LearningTriggers, "Learning Triggers", :has_ready_and_stats}
+    ],
+    lexicon: [
+      {Brain.Lexicon.Loader, "Lexicon Loader", :has_ready_and_stats}
     ],
     learning: [
       {World.Manager, "World Manager", :has_ready},
@@ -67,20 +93,28 @@ defmodule Brain.SystemStatus do
       {Brain.MemoryStore, "Memory Store (Legacy)", :has_ready},
       {Brain.FactDatabase, "Fact Database", :has_ready_and_stats}
     ],
+    experimental: [
+      {Brain.ML.Ouro.Model, "Ouro Model", :has_ready},
+      {Brain.ML.Ouro.SidecarLauncher, "Ouro Sidecar Launcher", :basic}
+    ],
     metrics: [{Brain.Metrics.Aggregator, "Metrics Aggregator", :basic}]
   }
   @module_metric_map %{
     Brain => :brain_evaluate,
     Brain.Analysis.Pipeline => :pipeline_process,
+    Brain.Analysis.RacingAnalyzer => :racing_analysis,
     Brain.Memory.Embedder => :memory_embed,
     Brain.Memory.Store => :memory_query,
     Brain.ML.Gazetteer => :gazetteer_lookup,
     Brain.ML.EntityExtractor => :entity_extract,
+    Brain.Response.TemplateStore => :response_template_lookup,
+    Brain.Response.Generator => :response_generate,
+    Brain.FactDatabase => :fact_database_query,
     Brain.Knowledge.LearningCenter => :knowledge_research,
     Brain.Knowledge.ReviewQueue => :knowledge_review,
+    Brain.Knowledge.Corroborator => :knowledge_corroborate,
     Brain.Epistemic.JTMS => :jtms_justify,
     Brain.Epistemic.BeliefStore => :belief_operation,
-    Brain.Analysis.RacingAnalyzer => :racing_analysis,
     Brain.Code.CodeGazetteer => :code_gazetteer_lookup,
     Brain.Code.Pipeline => :code_pipeline,
     Brain.Code.Parser => :code_parse,
@@ -95,8 +129,39 @@ defmodule Brain.SystemStatus do
       memory_store: get_memory_store_status(),
       brain: get_brain_status(),
       nlp_pipeline: get_nlp_pipeline_status(),
-      micro_classifiers: get_micro_classifiers_status()
+      micro_classifiers: get_micro_classifiers_status(),
+      kg_aware_scoring: get_kg_scoring_status()
     }
+  end
+
+  defp get_kg_scoring_status do
+    type_hierarchy_ready =
+      Code.ensure_loaded?(Brain.Analysis.TypeHierarchy) and
+        function_exported?(Brain.Analysis.TypeHierarchy, :ready?, 0) and
+        Brain.Analysis.TypeHierarchy.ready?()
+
+    poincare_ready =
+      Code.ensure_loaded?(Brain.ML.Poincare.Embeddings) and
+        function_exported?(Brain.ML.Poincare.Embeddings, :ready?, 0) and
+        Brain.ML.Poincare.Embeddings.ready?()
+
+    triple_scorer_ready =
+      Code.ensure_loaded?(Brain.ML.KnowledgeGraph.TripleScorer) and
+        function_exported?(Brain.ML.KnowledgeGraph.TripleScorer, :ready?, 0) and
+        Brain.ML.KnowledgeGraph.TripleScorer.ready?()
+
+    atlas_reachable =
+      case Brain.AtlasIntegration.ping() do
+        :ok -> true
+        _ -> false
+      end
+
+    cond do
+      not type_hierarchy_ready -> :unavailable
+      not atlas_reachable -> :atlas_down
+      not poincare_ready or not triple_scorer_ready -> :degraded
+      true -> :healthy
+    end
   end
 
   @doc "Returns comprehensive status of all GenServers organized by category.\n"
@@ -203,19 +268,26 @@ defmodule Brain.SystemStatus do
       |> Enum.filter(&(&1.utilization_status == :normal))
       |> Enum.map(&summarize_system/1)
 
+    untracked_systems =
+      all_statuses
+      |> Enum.filter(&(&1.utilization_status == :untracked))
+      |> Enum.map(&summarize_system/1)
+
     %{
       idle: idle_systems,
       never_used: never_used_systems,
       low_usage: low_usage_systems,
       high_cost: high_cost_systems,
       normal: normal_systems,
+      untracked: untracked_systems,
       summary: %{
         total: length(all_statuses),
         idle_count: length(idle_systems),
         never_used_count: length(never_used_systems),
         low_usage_count: length(low_usage_systems),
         high_cost_count: length(high_cost_systems),
-        normal_count: length(normal_systems)
+        normal_count: length(normal_systems),
+        untracked_count: length(untracked_systems)
       },
       checked_at: DateTime.utc_now()
     }
@@ -365,9 +437,11 @@ defmodule Brain.SystemStatus do
 
     models_ready = models.entity_extractor.loaded
 
+    classifiers_ready = micro_intent_ready?()
+
     template_ready = safe_call_ready(Brain.Response.TemplateStore)
 
-    core_ready and nlp_ready and models_ready and template_ready
+    core_ready and nlp_ready and models_ready and classifiers_ready and template_ready
   end
 
   @doc "Returns the status of all ML models.\n"
@@ -378,6 +452,8 @@ defmodule Brain.SystemStatus do
       pos_model: get_model_file_status(models_path, "pos_model.term"),
       entity_model: get_model_file_status(models_path, "entity_model.term"),
       gazetteer: get_model_file_status(models_path, "gazetteer.term"),
+      sentiment_classifier: get_model_file_status(models_path, "sentiment_classifier.term"),
+      speech_act_classifier: get_model_file_status(models_path, "speech_act_classifier.term"),
       intent_classifier: get_intent_classifier_status(models_path),
       entity_extractor: get_agent_status(Brain.ML.EntityExtractor),
       last_evaluation: get_last_evaluation(),
@@ -780,11 +856,10 @@ defmodule Brain.SystemStatus do
         embedder = models[:embedder]
         entity_model = models[:entity_model]
         pos_model = models[:pos_model]
-        classifier = models[:classifier] || models[:intent_full]
         embedder_vocab_size = extract_vocab_size(embedder, :vocabulary)
         pos_model_tags = extract_vocab_size(pos_model, :tag_vocabulary)
         entity_model_tags = extract_vocab_size(entity_model, :tag_vocabulary)
-        classifier_vocab_size = extract_vocab_size(classifier, :vocabulary)
+        has_embedder = embedder != nil and is_map(embedder) and map_size(embedder) > 0
 
         %{
           world_id: world_id,
@@ -798,11 +873,11 @@ defmodule Brain.SystemStatus do
             end,
           is_loading: false,
           is_loaded: has_models,
-          has_classifier: classifier != nil and is_map(classifier) and map_size(classifier) > 0,
-          has_embedder: embedder != nil and is_map(embedder) and map_size(embedder) > 0,
+          has_classifier: has_embedder,
+          has_embedder: has_embedder,
           has_entity_model: entity_model != nil and map_size(entity_model) > 0,
           has_pos_model: pos_model != nil and map_size(pos_model) > 0,
-          classifier_vocab_size: classifier_vocab_size,
+          classifier_vocab_size: embedder_vocab_size,
           embedder_vocab_size: embedder_vocab_size,
           entity_model_size: entity_model_tags,
           pos_model_size: pos_model_tags,
@@ -1128,6 +1203,45 @@ defmodule Brain.SystemStatus do
     }
   end
 
+  defp enhance_status(status, Brain.ML.EntityExtractor, :has_ready) do
+    ready =
+      try do
+        EntityExtractor.is_loaded?()
+      catch
+        :exit, _ -> false
+      end
+
+    %{
+      status
+      | ready: ready,
+        status: if(ready, do: :ready, else: :initializing),
+        label: if(ready, do: "Ready", else: "Initializing...")
+    }
+  end
+
+  defp enhance_status(status, Brain.Epistemic.StanceTracker, :has_ready_and_stats) do
+    ready = safe_call_ready(Brain.Epistemic.StanceTracker)
+
+    stats =
+      if ready do
+        case safe_call_stats(Brain.Epistemic.StanceTracker) do
+          {:ok, s} when is_map(s) -> s
+          s when is_map(s) -> s
+          _ -> nil
+        end
+      else
+        nil
+      end
+
+    %{
+      status
+      | ready: ready,
+        status: if(ready, do: :ready, else: :initializing),
+        label: if(ready, do: "Ready", else: "Initializing..."),
+        stats: stats
+    }
+  end
+
   defp enhance_status(status, module, :has_ready) do
     ready = safe_call_ready(module)
 
@@ -1273,7 +1387,7 @@ defmodule Brain.SystemStatus do
         status
         | utilization_status:
             if(status.running) do
-              :normal
+              :untracked
             else
               :not_started
             end

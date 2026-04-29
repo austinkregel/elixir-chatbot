@@ -17,6 +17,7 @@ defmodule Brain.Graph.Writer do
   """
 
   alias Brain.AtlasIntegration
+  alias Atlas.Graph.EdgeLabels
   require Logger
 
   # ============================================================================
@@ -154,7 +155,7 @@ defmodule Brain.Graph.Writer do
         {:ok, fact_node} ->
           Enum.each(episode_ids, fn ep_id ->
             {:ok, ep_node} = AtlasIntegration.ensure_node("semantic_graph", "Episode", %{name: to_string(ep_id), id: to_string(ep_id)})
-            Atlas.Graph.add_edge("semantic_graph", ep_node.id, fact_node.id, "EVIDENCE_FOR")
+            Atlas.Graph.add_edge("semantic_graph", ep_node.id, fact_node.id, EdgeLabels.evidence_for())
           end)
 
         _ ->
@@ -248,8 +249,8 @@ defmodule Brain.Graph.Writer do
       case Atlas.Graph.add_node("epistemic_graph", "Justification", props) do
         {:ok, just_node} ->
           link_justification_to_conclusion(just_node, conclusion_id)
-          link_justification_requirements(just_node, in_list, "REQUIRES_IN")
-          link_justification_requirements(just_node, out_list, "REQUIRES_OUT")
+          link_justification_requirements(just_node, in_list, EdgeLabels.requires_in())
+          link_justification_requirements(just_node, out_list, EdgeLabels.requires_out())
 
         _ ->
           :ok
@@ -270,7 +271,7 @@ defmodule Brain.Graph.Writer do
         |> Enum.reject(&is_nil/1)
 
       for a <- graph_nodes, b <- graph_nodes, a.id != b.id do
-        AtlasIntegration.find_or_create_edge("epistemic_graph", a.id, b.id, "CONTRADICTS")
+        AtlasIntegration.find_or_create_edge("epistemic_graph", a.id, b.id, EdgeLabels.contradicts())
       end
     end)
   end
@@ -303,7 +304,7 @@ defmodule Brain.Graph.Writer do
         {token, tag} when is_binary(token) and is_binary(tag) ->
           {:ok, token_node} = AtlasIntegration.ensure_node("pos_graph", "Token", %{name: String.downcase(token)})
           {:ok, tag_node} = AtlasIntegration.ensure_node("pos_graph", "POSTag", %{name: tag})
-          increment_edge_count("pos_graph", token_node.id, tag_node.id, "HAS_TAG", "count")
+          increment_edge_count("pos_graph", token_node.id, tag_node.id, EdgeLabels.has_tag(), "count")
 
         _ ->
           :ok
@@ -328,7 +329,7 @@ defmodule Brain.Graph.Writer do
       |> Enum.each(fn [from_tag, to_tag] ->
         {:ok, from_node} = AtlasIntegration.ensure_node("pos_graph", "POSTag", %{name: from_tag})
         {:ok, to_node} = AtlasIntegration.ensure_node("pos_graph", "POSTag", %{name: to_tag})
-        increment_edge_count("pos_graph", from_node.id, to_node.id, "FOLLOWED_BY", "frequency")
+        increment_edge_count("pos_graph", from_node.id, to_node.id, EdgeLabels.followed_by(), "frequency")
       end)
     end)
   end
@@ -370,34 +371,174 @@ defmodule Brain.Graph.Writer do
     :ok
   end
 
-  @doc "Write SRL-derived triples to the semantic_graph."
+  @doc "Write SRL-derived triples to the semantic_graph with KG scoring metadata."
   def write_srl_triples(srl_frames) when is_list(srl_frames) do
     triples = Brain.Analysis.SemanticRoleLabeler.to_triples(srl_frames)
-
-    if triples != [] do
-      AtlasIntegration.async(fn ->
-        Enum.each(triples, fn {subject, predicate, object} ->
-          with {:ok, subj_node} <- AtlasIntegration.ensure_node(
-                 "semantic_graph", "SrlEntity", %{name: subject, type: "srl_entity"}),
-               {:ok, obj_node} <- AtlasIntegration.ensure_node(
-                 "semantic_graph", "SrlEntity", %{name: object, type: "srl_entity"}) do
-            AtlasIntegration.find_or_create_edge(
-              "semantic_graph",
-              subj_node.id,
-              obj_node.id,
-              predicate
-            )
-          end
-        end)
-      end)
-    end
-
-    :ok
+    if triples == [], do: :ok, else: do_write_srl_async(triples)
   rescue
     _ -> :ok
   end
 
   def write_srl_triples(_), do: :ok
+
+  defp do_write_srl_async(triples) do
+    AtlasIntegration.async(fn ->
+      start_time = System.monotonic_time(:millisecond)
+
+      normalized =
+        Enum.map(triples, fn {s, p, o} ->
+          if srl_gating_enabled?() do
+            case Brain.ML.KnowledgeGraph.PredicateNormalizer.normalize(p) do
+              {:ok, canon, kind} -> {:scorable, s, canon, o, kind, p}
+              {:error, :oov} -> {:unscorable, s, p, o, :oov_predicate, p}
+              {:error, _} -> {:unscorable, s, p, o, :oov_predicate, p}
+            end
+          else
+            {:unscorable, s, p, o, :oov_predicate, p}
+          end
+        end)
+
+      {scores, model_version} = score_normalized_triples(normalized)
+      write_scored_edges(normalized, scores, model_version)
+      record_predicate_frequency(normalized)
+
+      elapsed = System.monotonic_time(:millisecond) - start_time
+      :telemetry.execute([:brain, :kg_signal, :srl_batch], %{duration_ms: elapsed, count: length(triples)}, %{})
+    end)
+
+    :ok
+  end
+
+  defp score_normalized_triples(normalized) do
+    scorable =
+      Enum.filter(normalized, &match?({:scorable, _, _, _, _, _}, &1))
+
+    if scorable == [] or not srl_gating_enabled?() do
+      {%{}, nil}
+    else
+      model_version =
+        case Brain.ML.KnowledgeGraph.TripleScorer.current_model_version() do
+          {:ok, v} -> v
+          _ -> nil
+        end
+
+      if Brain.ML.KnowledgeGraph.TripleScorer.ready?() do
+        batch = Enum.map(scorable, fn {:scorable, s, canon, o, _kind, _raw} -> {s, canon, o} end)
+
+        case Brain.ML.KnowledgeGraph.TripleScorer.score_batch(batch) do
+          {:ok, score_list} ->
+            score_map =
+              Enum.zip(scorable, score_list)
+              |> Enum.into(%{}, fn {{:scorable, s, canon, o, _kind, _raw}, score} ->
+                {{s, canon, o}, score}
+              end)
+
+            :telemetry.execute([:brain, :kg_signal, :scored], %{count: length(score_list)}, %{})
+            {score_map, model_version}
+
+          _ ->
+            {%{}, model_version}
+        end
+      else
+        {%{}, model_version}
+      end
+    end
+  end
+
+  defp write_scored_edges(normalized, scores, model_version) do
+    Enum.each(normalized, fn entry ->
+      {s, edge_label, o, props} =
+        case entry do
+          {:scorable, s, canon, o, kind, raw} ->
+            score = Map.get(scores, {s, canon, o})
+
+            props = %{
+              kg_score: score,
+              kg_score_model: model_version,
+              predicate_kind: to_string(kind),
+              raw_predicate: raw
+            }
+
+            {s, canon, o, props}
+
+          {:unscorable, s, p, o, _kind, raw} ->
+            props = %{
+              kg_score: nil,
+              kg_score_model: nil,
+              predicate_kind: "oov_predicate",
+              raw_predicate: raw
+            }
+
+            {s, p, o, props}
+        end
+
+      with {:ok, subj_node} <-
+             AtlasIntegration.ensure_node(
+               "semantic_graph",
+               "SrlEntity",
+               %{name: s, type: "srl_entity"}
+             ),
+           {:ok, obj_node} <-
+             AtlasIntegration.ensure_node(
+               "semantic_graph",
+               "SrlEntity",
+               %{name: o, type: "srl_entity"}
+             ) do
+        AtlasIntegration.find_or_create_edge(
+          "semantic_graph",
+          subj_node.id,
+          obj_node.id,
+          edge_label,
+          props
+        )
+      end
+    end)
+  end
+
+  @predicate_freq_counter :srl_predicate_freq_counter
+
+  defp record_predicate_frequency(normalized) do
+    freq_path = srl_frequencies_path()
+
+    existing =
+      case :persistent_term.get(@predicate_freq_counter, nil) do
+        nil -> %{count: 0, freqs: %{}}
+        val -> val
+      end
+
+    updated_freqs =
+      Enum.reduce(normalized, existing.freqs, fn entry, acc ->
+        raw =
+          case entry do
+            {:scorable, _, _, _, _, raw} -> raw
+            {:unscorable, _, _, _, _, raw} -> raw
+          end
+
+        Map.update(acc, raw, 1, &(&1 + 1))
+      end)
+
+    new_count = existing.count + length(normalized)
+    :persistent_term.put(@predicate_freq_counter, %{count: new_count, freqs: updated_freqs})
+
+    if rem(new_count, 1_000) < length(normalized) do
+      tmp_path = freq_path <> ".tmp"
+      File.mkdir_p!(Path.dirname(freq_path))
+      File.write!(tmp_path, :erlang.term_to_binary(updated_freqs))
+      File.rename!(tmp_path, freq_path)
+    end
+  rescue
+    _ -> :ok
+  end
+
+  defp srl_gating_enabled? do
+    config = Application.get_env(:brain, :kg_signals, [])
+    Keyword.get(config, :enabled, true) and Keyword.get(config, :srl_gating, true)
+  end
+
+  defp srl_frequencies_path do
+    priv = :code.priv_dir(:brain) |> to_string()
+    Path.join([priv, "analysis", "srl_predicate_frequencies.term"])
+  end
 
   @doc "Write enriched event frames (from EventLinker) to the knowledge_graph."
   def write_event_frames(event_frames) when is_list(event_frames) do
@@ -466,7 +607,7 @@ defmodule Brain.Graph.Writer do
 
   defp write_co_occurrences(nodes) do
     for {_e1, v1} <- nodes, {_e2, v2} <- nodes, v1.id < v2.id do
-      AtlasIntegration.find_or_create_edge("knowledge_graph", v1.id, v2.id, "co_occurs_with")
+      AtlasIntegration.find_or_create_edge("knowledge_graph", v1.id, v2.id, EdgeLabels.co_occurs_with())
     end
   end
 
@@ -492,7 +633,7 @@ defmodule Brain.Graph.Writer do
 
           case AtlasIntegration.ensure_node("knowledge_graph", normalize_label(actor_type), %{name: actor_text}) do
             {:ok, actor_node} ->
-              Atlas.Graph.add_edge("knowledge_graph", actor_node.id, event_node.id, "ACTOR")
+              Atlas.Graph.add_edge("knowledge_graph", actor_node.id, event_node.id, EdgeLabels.actor())
 
             _ ->
               :ok
@@ -505,7 +646,7 @@ defmodule Brain.Graph.Writer do
 
           case AtlasIntegration.ensure_node("knowledge_graph", normalize_label(obj_type), %{name: obj_text}) do
             {:ok, obj_node} ->
-              Atlas.Graph.add_edge("knowledge_graph", event_node.id, obj_node.id, "ACTS_ON")
+              Atlas.Graph.add_edge("knowledge_graph", event_node.id, obj_node.id, EdgeLabels.acts_on())
 
             _ ->
               :ok
@@ -533,11 +674,11 @@ defmodule Brain.Graph.Writer do
 
   defp preference_rel_type(predicate) do
     case predicate do
-      :likes -> "LIKES"
-      :wants -> "WANTS"
-      :interested_in -> "INTERESTED_IN"
-      :needs -> "NEEDS"
-      :dislikes -> "DISLIKES"
+      :likes -> EdgeLabels.likes()
+      :wants -> EdgeLabels.wants()
+      :interested_in -> EdgeLabels.interested_in()
+      :needs -> EdgeLabels.needs()
+      :dislikes -> EdgeLabels.dislikes()
       other -> String.upcase(to_string(other))
     end
   end
@@ -545,7 +686,7 @@ defmodule Brain.Graph.Writer do
   defp link_message_to_conversation(conversation_id, msg_node) do
     case AtlasIntegration.find_node("conversation_graph", "Conversation", to_string(conversation_id)) do
       {:ok, conv_node} ->
-        Atlas.Graph.add_edge("conversation_graph", conv_node.id, msg_node.id, "CONTAINS")
+        Atlas.Graph.add_edge("conversation_graph", conv_node.id, msg_node.id, EdgeLabels.contains())
 
       _ ->
         :ok
@@ -555,14 +696,14 @@ defmodule Brain.Graph.Writer do
   defp link_message_to_previous(conversation_id, msg_node) do
     escaped_conv = String.replace(to_string(conversation_id), "'", "\\'")
     query = """
-    MATCH (c:Conversation)-[:CONTAINS]->(m:Message)
+    MATCH (c:Conversation)-[:#{EdgeLabels.contains()}]->(m:Message)
     WHERE c.name = '#{escaped_conv}' AND id(m) <> #{msg_node.id}
     RETURN m ORDER BY id(m) DESC LIMIT 1
     """
 
     case Atlas.Graph.cypher("conversation_graph", query) do
       {:ok, [[%Atlas.Graph.Types.Vertex{} = prev] | _]} ->
-        Atlas.Graph.add_edge("conversation_graph", prev.id, msg_node.id, "FOLLOWS")
+        Atlas.Graph.add_edge("conversation_graph", prev.id, msg_node.id, EdgeLabels.follows())
 
       _ ->
         :ok
@@ -584,7 +725,7 @@ defmodule Brain.Graph.Writer do
 
     if intent do
       {:ok, topic_node} = AtlasIntegration.ensure_node("conversation_graph", "Topic", %{name: to_string(intent)})
-      Atlas.Graph.add_edge("conversation_graph", msg_node.id, topic_node.id, "HAS_TOPIC")
+      Atlas.Graph.add_edge("conversation_graph", msg_node.id, topic_node.id, EdgeLabels.has_topic())
 
       create_topic_transition(msg_node, topic_node)
     end
@@ -594,9 +735,9 @@ defmodule Brain.Graph.Writer do
 
   defp create_topic_transition(msg_node, current_topic) do
     query = """
-    MATCH (prev:Message)-[:FOLLOWS]->(msg:Message)-[:HAS_TOPIC]->(current:Topic)
+    MATCH (prev:Message)-[:#{EdgeLabels.follows()}]->(msg:Message)-[:#{EdgeLabels.has_topic()}]->(current:Topic)
     WHERE id(msg) = #{msg_node.id}
-    MATCH (prev)-[:HAS_TOPIC]->(prev_topic:Topic)
+    MATCH (prev)-[:#{EdgeLabels.has_topic()}]->(prev_topic:Topic)
     WHERE id(prev_topic) <> id(current)
     RETURN prev_topic
     LIMIT 1
@@ -604,7 +745,7 @@ defmodule Brain.Graph.Writer do
 
     case Atlas.Graph.cypher("conversation_graph", query) do
       {:ok, [[%Atlas.Graph.Types.Vertex{} = prev_topic] | _]} ->
-        increment_edge_count("conversation_graph", prev_topic.id, current_topic.id, "TOPIC_TRANSITION", "count")
+        increment_edge_count("conversation_graph", prev_topic.id, current_topic.id, EdgeLabels.topic_transition(), "count")
 
       _ ->
         :ok
@@ -614,7 +755,7 @@ defmodule Brain.Graph.Writer do
   defp link_justification_to_conclusion(just_node, conclusion_id) do
     case AtlasIntegration.find_node("epistemic_graph", "JTMSNode", to_string(conclusion_id)) do
       {:ok, conclusion_node} ->
-        Atlas.Graph.add_edge("epistemic_graph", just_node.id, conclusion_node.id, "SUPPORTS")
+        Atlas.Graph.add_edge("epistemic_graph", just_node.id, conclusion_node.id, EdgeLabels.supports())
 
       _ ->
         :ok

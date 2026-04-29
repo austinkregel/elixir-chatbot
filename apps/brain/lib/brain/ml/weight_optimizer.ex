@@ -527,13 +527,15 @@ defmodule Brain.ML.WeightOptimizer do
   defp adaptive_mutation_params(stale_count, opts) do
     base_rate = opts[:mutation_rate]
     base_sigma = opts[:mutation_sigma]
+    w_range = opts[:weight_max] - opts[:weight_min]
+    sigma_ceiling = w_range * 0.5
 
     cond do
       stale_count >= 7 ->
-        {min(base_rate * 2.5, 0.40), min(base_sigma * 2.5, 0.75)}
+        {min(base_rate * 2.5, 0.40), min(base_sigma * 2.5, sigma_ceiling)}
 
       stale_count >= 3 ->
-        {min(base_rate * 1.8, 0.30), min(base_sigma * 1.8, 0.50)}
+        {min(base_rate * 1.8, 0.30), min(base_sigma * 1.8, sigma_ceiling * 0.67)}
 
       stale_count == 0 ->
         {base_rate * 0.8, base_sigma * 0.8}

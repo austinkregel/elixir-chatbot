@@ -72,13 +72,17 @@ defmodule Brain.Analysis.SlotDetector do
         matched_types =
           entity_types
           |> Enum.count(fn etype ->
-            Enum.any?(mappings, fn {_slot, mapped} -> etype in mapped end)
+            Enum.any?(mappings, fn {_slot, mapped} ->
+              etype in mapped or narrowing_match?(etype, mapped)
+            end)
           end)
 
         filled_required =
           Enum.count(required, fn slot ->
             mapped = Map.get(mappings, slot, [])
-            Enum.any?(entity_types, &(&1 in mapped))
+            Enum.any?(entity_types, fn etype ->
+              etype in mapped or narrowing_match?(etype, mapped)
+            end)
           end)
 
         fill_ratio =
@@ -92,7 +96,9 @@ defmodule Brain.Analysis.SlotDetector do
 
         domain_priority =
           if expected != [] do
-            Enum.count(entity_types, &(&1 in expected))
+            Enum.count(entity_types, fn etype ->
+              etype in expected or narrowing_match?(etype, expected)
+            end)
           else
             0
           end
@@ -387,6 +393,16 @@ defmodule Brain.Analysis.SlotDetector do
     else
       nil
     end
+  end
+
+  defp narrowing_match?(etype, mapped_types) when is_list(mapped_types) do
+    if TypeHierarchy.ready?() do
+      Enum.any?(mapped_types, &TypeHierarchy.is_a?(etype, &1))
+    else
+      false
+    end
+  rescue
+    _ -> false
   end
 
   defp build_unknown_result(entities) do

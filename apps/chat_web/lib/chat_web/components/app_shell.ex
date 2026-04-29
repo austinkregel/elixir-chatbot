@@ -125,6 +125,12 @@ defmodule ChatWeb.AppShell do
                 active={String.starts_with?(@current_path, "/accuracy")}
               />
               <.nav_item
+                href={~p"/training-studio"}
+                icon="hero-clipboard-document-list"
+                label="Training Studio"
+                active={String.starts_with?(@current_path, "/training-studio")}
+              />
+              <.nav_item
                 href={~p"/settings"}
                 icon="hero-cog-6-tooth"
                 label="Settings"
