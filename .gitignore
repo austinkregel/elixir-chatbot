@@ -124,3 +124,5 @@ apps/brain/priv/*
 data/
 .vscode/
 .idea/
+apps/chat_web/tmp/**/*.json
+apps/chat_web/tmp/*

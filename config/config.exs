@@ -45,7 +45,19 @@ config :brain,
   ],
 
   # Intent promotion (novel intent discovery)
-  intent_promotion_enabled: System.get_env("INTENT_PROMOTION_ENABLED", "false") == "true"
+  intent_promotion_enabled: System.get_env("INTENT_PROMOTION_ENABLED", "false") == "true",
+
+  # KG Signal Strengthening kill switches
+  kg_signals: [
+    enabled: System.get_env("KG_SIGNALS_ENABLED", "true") == "true",
+    srl_gating: System.get_env("KG_SIGNALS_SRL_GATING", "true") == "true",
+    consolidation_blend: System.get_env("KG_SIGNALS_CONSOLIDATION_BLEND", "0.6") |> String.to_float(),
+    memory_rerank: System.get_env("KG_SIGNALS_MEMORY_RERANK", "true") == "true",
+    novelty_downweight: System.get_env("KG_SIGNALS_NOVELTY_DOWNWEIGHT", "true") == "true",
+    contradiction_default_kg: System.get_env("KG_SIGNALS_CONTRADICTION_DEFAULT_KG", "true") == "true",
+    entity_promoter_kg_gate: System.get_env("KG_SIGNALS_ENTITY_PROMOTER_KG_GATE", "true") == "true",
+    novelty_retraction_window: 7
+  ]
 
 # ============================================================================
 # World App Configuration
