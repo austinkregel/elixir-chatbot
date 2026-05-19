@@ -698,7 +698,7 @@ defmodule Brain.ML.Tokenizer do
 
   defp is_sentence_boundary?([g | rest]) do
     if whitespace?(g) do
-      case rest do
+      case skip_leading_whitespace(rest) do
         [] ->
           true
 
@@ -711,6 +711,12 @@ defmodule Brain.ML.Tokenizer do
     else
       false
     end
+  end
+
+  defp skip_leading_whitespace([]), do: []
+
+  defp skip_leading_whitespace([g | rest] = graphemes) do
+    if whitespace?(g), do: skip_leading_whitespace(rest), else: graphemes
   end
 
   defp skip_whitespace([], pos) do

@@ -14,7 +14,7 @@ defmodule Brain.ML.LSTM.UnifiedModel do
     hidden_size: 128,
     dropout: 0.2,
     learning_rate: 3.0e-4,
-    batch_size: 16,
+    batch_size: 8,
     epochs: 50,
     head_epochs: 30,
     max_seq_length: 50,
@@ -22,7 +22,7 @@ defmodule Brain.ML.LSTM.UnifiedModel do
     sentiment_lr_scale: 0.5,
     sentiment_epochs: 50,
     speech_act_epochs: 100,
-    speech_act_batch_size: 32
+    speech_act_batch_size: 8
   }
   @sentiment_labels ["negative", "neutral", "positive"]
   @speech_act_labels ["assertive", "directive", "commissive", "expressive", "declarative"]
@@ -251,7 +251,7 @@ defmodule Brain.ML.LSTM.UnifiedModel do
 
     with {:ok, training_data} <- prepare_all_training_data(config) do
       model = build_unified_model(training_data.vocabularies, config)
-      trained_params = train_all_tasks(model, training_data, config)
+      {trained_params, intent_metrics} = train_all_tasks(model, training_data, config)
       save_unified_model(model, trained_params, training_data.vocabularies, config)
 
       if experiment_name do
@@ -260,11 +260,12 @@ defmodule Brain.ML.LSTM.UnifiedModel do
         ExperimentTracker.record(%{
           name: experiment_name,
           config: config,
+          intent_metrics: intent_metrics,
           notes: "Unified multi-task model"
         })
       end
 
-      {:ok, %{model: model, params: trained_params, vocabularies: training_data.vocabularies}}
+      {:ok, %{model: model, params: trained_params, vocabularies: training_data.vocabularies, intent_metrics: intent_metrics}}
     end
   end
 
@@ -480,6 +481,10 @@ defmodule Brain.ML.LSTM.UnifiedModel do
     Nx.divide(sum, count)
   end
 
+  defp safe_tensor_to_number(%Nx.Tensor{} = t), do: Nx.to_number(t)
+  defp safe_tensor_to_number(n) when is_number(n), do: n
+  defp safe_tensor_to_number(_), do: nil
+
   defp stable_log_softmax(logits) do
     max_logit = Nx.reduce_max(logits, axes: [-1], keep_axes: true)
     shifted = Nx.subtract(logits, max_logit)
@@ -641,7 +646,7 @@ defmodule Brain.ML.LSTM.UnifiedModel do
   defp train_all_tasks(model, training_data, config) do
     Logger.info("Training unified model...")
 
-    encoder_params =
+    {encoder_params, intent_metrics} =
       train_encoder_and_intent(
         model.encoder,
         model.intent_head,
@@ -699,7 +704,7 @@ defmodule Brain.ML.LSTM.UnifiedModel do
 
     params = if sentiment_params, do: Map.put(params, :sentiment, sentiment_params), else: params
     params = if speech_act_params, do: Map.put(params, :speech_act, speech_act_params), else: params
-    params
+    {params, intent_metrics}
   end
 
   # Multi-task training pattern: We build an end-to-end combined model for training
@@ -811,6 +816,9 @@ defmodule Brain.ML.LSTM.UnifiedModel do
         Nx.mean(Nx.sum(weighted, axes: [1]))
       end
 
+      metrics_ref = :ets.new(:encoder_train_metrics, [:set, :public])
+      :ets.insert(metrics_ref, {:metrics, %{}})
+
       loop =
         combined_model
         |> Loop.trainer(
@@ -820,16 +828,28 @@ defmodule Brain.ML.LSTM.UnifiedModel do
         |> Loop.metric(:accuracy)
         |> exla_validate(combined_model, val_data)
         |> Loop.early_stop("validation_loss", mode: :min, patience: 10)
+        |> Loop.handle_event(:epoch_completed, fn state ->
+          epoch_metrics = %{
+            epoch: state.epoch,
+            accuracy: safe_tensor_to_number(state.metrics["accuracy"]),
+            loss: safe_tensor_to_number(state.metrics["loss"]),
+            validation_accuracy: safe_tensor_to_number(state.metrics["validation_accuracy"]),
+            validation_loss: safe_tensor_to_number(state.metrics["validation_loss"])
+          }
+
+          :ets.insert(metrics_ref, {:metrics, epoch_metrics})
+          {:continue, state}
+        end)
 
       Logger.info("Training on #{length(train_data)} train / #{length(val_data)} val batches for up to #{config.epochs} epochs")
 
       trained_state =
         Loop.run(loop, train_data, %{}, epochs: config.epochs, compiler: EXLA, strict?: false)
 
-      %{
-        encoder: trained_state,
-        intent: trained_state
-      }
+      [{:metrics, final_metrics}] = :ets.lookup(metrics_ref, :metrics)
+      :ets.delete(metrics_ref)
+
+      {%{encoder: trained_state, intent: trained_state}, final_metrics}
     end)
   end
 

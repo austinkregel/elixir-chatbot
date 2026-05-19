@@ -2,6 +2,7 @@ defmodule Brain.Knowledge.Corroborator do
   @moduledoc "Analyzes findings for cross-source agreement and conflict detection.\n\nThe Corroborator implements the **evidence evaluation** phase of the\nscientific method:\n\n## Scientific Method Integration\n\n1. **Hypothesis Testing**: Evaluates hypotheses against gathered evidence\n2. **Falsifiability**: Contradicting evidence can falsify hypotheses\n3. **Support**: Agreeing evidence supports (but doesn't prove) hypotheses\n4. **Independent Verification**: Requires 2+ independent sources\n\nKey principle: \"We cannot prove a hypothesis true, only support it with\nevidence or falsify it with contradicting evidence.\"\n\n## Features\n\n- Groups findings by semantic similarity using TF-IDF embeddings\n- Requires 2+ independent sources for high-confidence facts\n- Detects conflicting claims between sources\n- Computes aggregate confidence scores based on corroboration\n- Evaluates hypotheses and determines if they are supported/falsified\n\n## Example\n\n    findings = [\n      %Finding{claim: \"Paris is the capital of France\", source: %{domain: \"source1.com\"}},\n      %Finding{claim: \"France's capital is Paris\", source: %{domain: \"source2.com\"}}\n    ]\n\n    {:ok, candidates} = Corroborator.corroborate(findings)\n    # => Single ReviewCandidate with 2 corroborating sources\n\n    # Or with hypothesis testing:\n    {:ok, investigation} = Corroborator.test_hypotheses(investigation, findings)\n"
 
   alias Brain.Knowledge.Types
+  alias Brain.ML.Tokenizer
   require Logger
 
   alias Brain.Memory.Embedder
@@ -345,9 +346,7 @@ defmodule Brain.Knowledge.Corroborator do
 
   defp tokenize(text) do
     text
-    |> String.downcase()
-    |> String.split(~r/[^\w]+/, trim: true)
-    |> Enum.filter(&(String.length(&1) > 2))
+    |> Tokenizer.tokenize_normalized(min_length: 3)
   end
 
   defp build_candidate_from_cluster({primary, supporting}) do

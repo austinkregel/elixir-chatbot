@@ -362,6 +362,18 @@ defmodule World.TrainingWorldTest do
       assert loaded_world.name == "persistence_test"
     end
 
+    @tag :requires_file_system
+    test "purge removes persisted world data from disk" do
+      {:ok, world} = create_test_world("persistence_purge_test", mode: :persistent)
+      :ok = WorldManager.checkpoint(world.id)
+      world_path = WorldPersistence.world_path(world.id)
+      assert File.exists?(world_path)
+
+      :ok = WorldManager.purge(world.id)
+      assert {:error, :not_found} = WorldManager.get(world.id)
+      refute File.exists?(world_path)
+    end
+
     test "lists persisted worlds" do
       worlds = WorldPersistence.list_persisted_worlds()
       assert is_list(worlds)

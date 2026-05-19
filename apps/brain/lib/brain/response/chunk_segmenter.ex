@@ -92,7 +92,8 @@ defmodule Brain.Response.ChunkSegmenter do
   @doc "Splits text into sentences using punctuation boundaries.\n"
   def split_into_sentences(text) when is_binary(text) do
     text
-    |> String.split(~r/(?<=[.!?])\s+/, trim: true)
+    |> Tokenizer.split_sentences()
+    |> Enum.map(& &1.text)
     |> Enum.map(&String.trim/1)
     |> Enum.filter(&(String.length(&1) > 0))
   end

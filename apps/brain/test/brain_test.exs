@@ -19,10 +19,13 @@ defmodule BrainTest do
     test "evaluates input in a conversation", %{brain: _brain} do
       {:ok, conversation_id} = Brain.create_conversation()
 
-      assert {:ok, response} = Brain.evaluate(conversation_id, "Hello, world!")
+      assert {:ok, %{response: response, context: context, processing_method: method}} =
+               Brain.evaluate(conversation_id, "Hello, world!")
+
       assert is_binary(response)
-      # Brain returns a response (may not echo input exactly)
       assert String.length(response) > 0
+      assert is_map(context)
+      assert is_atom(method)
     end
 
     test "returns error for non-existent conversation", %{brain: _brain} do

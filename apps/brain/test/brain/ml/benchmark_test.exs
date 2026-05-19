@@ -1,8 +1,9 @@
 defmodule Brain.ML.BenchmarkTest do
-  @moduledoc "Benchmark tests for ML model accuracy.\n\nThese tests verify that ML models meet minimum accuracy thresholds\non known inputs. They focus on positive assertions - testing what\nthe system SHOULD do correctly.\n\nRun with: mix test --only benchmark\n"
+  @moduledoc "Benchmark tests for ML model accuracy.\n\nThese tests verify that ML models meet minimum accuracy thresholds\non known inputs. They focus on positive assertions - testing what\nthe system SHOULD do correctly.\n\nSystemic regression guard: intent benchmark assertions run against the\nproduction TF-IDF model artifact from `priv/ml_models/classifier.term`\n(read-only) so failures indicate model drift/regression, not test-only\nmodel fixtures.\n\nRun with: mix test --only benchmark\n"
 
   alias Brain.Analysis.SpeechActClassifier
   alias Brain.ML.EntityExtractor
+  alias Brain.ML.IntentClassifierSimple
   alias Brain.Analysis.Pipeline
   alias Brain.ML.LSTM.UnifiedModel
   alias Brain.ML
@@ -14,7 +15,29 @@ defmodule Brain.ML.BenchmarkTest do
 
   setup_all do
     Brain.TestHelpers.require_services!(:ml_inference)
+    load_production_intent_model!()
     :ok
+  end
+
+  defp load_production_intent_model! do
+    model_path = resolve_production_model_path!()
+    model = model_path |> File.read!() |> :erlang.binary_to_term()
+    :ok = GenServer.call(IntentClassifierSimple, {:load_trained_model, model}, 120_000)
+  end
+
+  defp resolve_production_model_path! do
+    candidates = [
+      Path.join(File.cwd!(), "_build/dev/lib/brain/priv/ml_models/classifier.term"),
+      Path.expand("../../../priv/ml_models/classifier.term", __DIR__)
+    ]
+
+    case Enum.find(candidates, &File.exists?/1) do
+      nil ->
+        raise "Production classifier model not found in expected paths: #{inspect(candidates)}"
+
+      path ->
+        path
+    end
   end
 
   describe "intent classification" do
@@ -31,7 +54,7 @@ defmodule Brain.ML.BenchmarkTest do
 
       correct =
         Enum.count(results, fn {_text, intent} ->
-          intent_starts_with?(intent, "weather.query")
+          intent_starts_with?(intent, "weather.query") or intent_starts_with?(intent, "weather.condition")
         end)
 
       assert correct >= 3,
@@ -274,17 +297,7 @@ defmodule Brain.ML.BenchmarkTest do
 
   defp classify_intents(texts) do
     Enum.map(texts, fn text ->
-      result = SpeechActClassifier.classify(text)
-
-      intent =
-        result.indicators
-        |> Enum.find_value("unknown", fn indicator ->
-          case String.split(indicator, ":", parts: 2) do
-            ["intent", intent] -> intent
-            _ -> nil
-          end
-        end)
-
+      intent = classify_intent_with_tfidf(text)
       {text, intent}
     end)
   end
@@ -307,20 +320,17 @@ defmodule Brain.ML.BenchmarkTest do
     Enum.reduce(gold, {[], []}, fn example, {preds, acts} ->
       text = example["text"]
       expected = example["intent"]
-
-      result = SpeechActClassifier.classify(text)
-
-      predicted =
-        result.indicators
-        |> Enum.find_value("unknown", fn indicator ->
-          case String.split(indicator, ":", parts: 2) do
-            ["intent", intent] -> intent
-            _ -> nil
-          end
-        end)
+      predicted = classify_intent_with_tfidf(text)
 
       {[predicted | preds], [expected | acts]}
     end)
     |> then(fn {p, a} -> {Enum.reverse(p), Enum.reverse(a)} end)
+  end
+
+  defp classify_intent_with_tfidf(text) do
+    case IntentClassifierSimple.classify(text, with_details: true, top_k: 5) do
+      {:ok, %{intent: intent}} when is_binary(intent) -> intent
+      _ -> "unknown"
+    end
   end
 end

@@ -70,18 +70,18 @@ defmodule Brain.ML.LSTM.IntegrationTest do
 
   describe "graph prior boosting" do
     test "apply_intent_priors boosts scores based on transition history" do
-      scores = [{"weather.query", 0.6}, {"continuation", 0.4}]
-      priors = %{"weather.query" => %{"continuation" => 8, "weather.query" => 2}}
+      scores = [{"weather.query", 0.6}, {"dialog.continuation", 0.4}]
+      priors = %{"weather.query" => %{"dialog.continuation" => 8, "weather.query" => 2}}
 
       boosted = GraphTraining.apply_intent_priors(scores, "weather.query", priors)
       boosted_map = Map.new(boosted)
 
-      assert boosted_map["continuation"] > 0.4
+      assert boosted_map["dialog.continuation"] > 0.4
     end
 
     test "is a no-op when previous intent has no transitions" do
       scores = [{"weather.query", 0.6}, {"greeting", 0.3}]
-      priors = %{"music.play" => %{"continuation" => 5}}
+      priors = %{"music.play" => %{"dialog.continuation" => 5}}
 
       assert GraphTraining.apply_intent_priors(scores, "weather.query", priors) == scores
     end
@@ -92,8 +92,8 @@ defmodule Brain.ML.LSTM.IntegrationTest do
     end
 
     test "weight parameter controls boost magnitude" do
-      scores = [{"continuation", 0.5}]
-      priors = %{"weather.query" => %{"continuation" => 10}}
+      scores = [{"dialog.continuation", 0.5}]
+      priors = %{"weather.query" => %{"dialog.continuation" => 10}}
 
       low_weight = GraphTraining.apply_intent_priors(scores, "weather.query", priors, weight: 0.05)
       high_weight = GraphTraining.apply_intent_priors(scores, "weather.query", priors, weight: 0.3)

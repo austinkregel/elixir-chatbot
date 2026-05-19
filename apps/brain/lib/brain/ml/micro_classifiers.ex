@@ -15,6 +15,8 @@ defmodule Brain.ML.MicroClassifiers do
   - `:fallback_response` - Detects generic fallback/error responses
   - `:goal_type` - Classifies research goal type (reasoning/sentiment/factual/general)
   - `:entity_type` - Infers entity type from entity name + category
+  - `:user_fact_type` - Classifies whether entity/fact is user-specific or general knowledge
+  - `:directed_at_bot` - Detects whether text is addressed to the bot
 
   ## Usage
 
@@ -23,6 +25,13 @@ defmodule Brain.ML.MicroClassifiers do
 
       MicroClassifiers.classify(:fallback_response, "The weather is sunny.")
       # => {:ok, "not_fallback", 0.92}
+
+      # Incremental learning from usage
+      MicroClassifiers.incremental_update(:user_fact_type, [
+        {"my favorite color blue", "user_specific"},
+        {"photosynthesis plants energy", "general_knowledge"}
+      ])
+      # => {:ok, 1}
   """
 
   use GenServer
@@ -36,7 +45,9 @@ defmodule Brain.ML.MicroClassifiers do
     :modal_directive,
     :fallback_response,
     :goal_type,
-    :entity_type
+    :entity_type,
+    :user_fact_type,
+    :directed_at_bot
   ]
 
   # --- Client API ---
@@ -67,6 +78,17 @@ defmodule Brain.ML.MicroClassifiers do
   @doc "Hot-reload all models from disk or retrain from data files."
   def reload do
     GenServer.call(__MODULE__, :reload, 30_000)
+  end
+
+  @doc "Incrementally update a named micro-classifier with new examples.\n\nExamples should be a list of `{text, label}` tuples. Uses\n`SimpleClassifier.update_model/3` to blend new examples into\nthe existing model without a full retrain. After 200 incremental\nupdates, the model is persisted to disk.\n\nReturns `{:ok, incremental_count}` or `{:error, reason}`.\n"
+  @spec incremental_update(atom(), [{String.t(), String.t()}]) ::
+          {:ok, non_neg_integer()} | {:error, atom()}
+  def incremental_update(name, examples) when is_atom(name) and is_list(examples) do
+    if ready?() do
+      GenServer.call(__MODULE__, {:incremental_update, name, examples}, 10_000)
+    else
+      {:error, :not_loaded}
+    end
   end
 
   @doc "Get status of all loaded classifiers."
@@ -110,6 +132,30 @@ defmodule Brain.ML.MicroClassifiers do
   end
 
   @impl true
+  def handle_call({:incremental_update, name, examples}, _from, state) do
+    case Map.get(state.models, name) do
+      nil ->
+        {:reply, {:error, :not_loaded}, state}
+
+      model ->
+        incremental_count = Map.get(model, :incremental_update_count, 0)
+        {updated_model, new_count} = SimpleClassifier.update_model(model, examples, incremental_count)
+        updated_model = Map.put(updated_model, :incremental_update_count, new_count)
+
+        if rem(new_count, 200) == 0 and new_count > 0 do
+          persist_model(name, updated_model)
+        end
+
+        Logger.debug("MicroClassifiers: incremental update for #{name}",
+          examples: length(examples),
+          incremental_count: new_count
+        )
+
+        {:reply, {:ok, new_count}, %{state | models: Map.put(state.models, name, updated_model)}}
+    end
+  end
+
+  @impl true
   def handle_call(:reload, _from, _state) do
     models = load_all_models()
     {:reply, :ok, %{models: models}}
@@ -125,8 +171,14 @@ defmodule Brain.ML.MicroClassifiers do
   def handle_call(:status, _from, state) do
     status =
       Enum.into(@classifier_names, %{}, fn name ->
-        loaded = Map.has_key?(state.models, name)
-        {name, %{loaded: loaded}}
+        case Map.get(state.models, name) do
+          nil ->
+            {name, %{loaded: false, incremental_updates: 0}}
+
+          model ->
+            count = Map.get(model, :incremental_update_count, 0)
+            {name, %{loaded: true, incremental_updates: count}}
+        end
       end)
 
     {:reply, %{ready: true, classifiers: status}, state}
@@ -202,6 +254,15 @@ defmodule Brain.ML.MicroClassifiers do
       {:error, _} ->
         {:error, :no_data_file}
     end
+  end
+
+  defp persist_model(name, model) do
+    path = model_file_path(name)
+    File.mkdir_p!(Path.dirname(path))
+    File.write!(path, :erlang.term_to_binary(model))
+    Logger.info("MicroClassifiers: persisted #{name} to #{path}")
+  rescue
+    e -> Logger.warning("MicroClassifiers: failed to persist #{name}: #{inspect(e)}")
   end
 
   defp model_file_path(name) do

@@ -807,11 +807,11 @@ defmodule Brain.ML.EntityExtractor do
           filtered =
             lstm_entities
             |> Enum.filter(fn e ->
-              value = Map.get(e, :value) || Map.get(e, "value", "")
+              value = extract_entity_value(e)
               not in_gazetteer?(value, entity_maps)
             end)
             |> Enum.map(fn e ->
-              value = Map.get(e, :value) || Map.get(e, "value", "")
+              value = extract_entity_value(e)
 
               default_ner_type = TypeHierarchy.config("default_propn_type", "person")
 
@@ -849,6 +849,17 @@ defmodule Brain.ML.EntityExtractor do
 
   defp normalize_lstm_entity_type(type) do
     to_string(type)
+  end
+
+  defp extract_entity_value(entity) do
+    raw = Map.get(entity, :value) || Map.get(entity, "value", "")
+
+    case raw do
+      s when is_binary(s) -> s
+      %{text: text} when is_binary(text) -> text
+      %{"text" => text} when is_binary(text) -> text
+      _ -> to_string(raw)
+    end
   end
 
   defp find_entity_positions(tokens, value) do
@@ -921,10 +932,18 @@ defmodule Brain.ML.EntityExtractor do
     end
   end
 
-  defp in_gazetteer?(word, entity_maps) do
+  defp in_gazetteer?(word, entity_maps) when is_binary(word) do
     normalized = String.downcase(word)
     Map.has_key?(entity_maps, normalized) or Gazetteer.lookup(normalized) != :not_found
   end
+
+  defp in_gazetteer?(%{text: text}, entity_maps) when is_binary(text),
+    do: in_gazetteer?(text, entity_maps)
+
+  defp in_gazetteer?(%{"text" => text}, entity_maps) when is_binary(text),
+    do: in_gazetteer?(text, entity_maps)
+
+  defp in_gazetteer?(_, _), do: false
 
   defp calculate_confidence(match_text, entity_type, entity_value) do
     base = min(0.9, 0.5 + String.length(match_text) * 0.03)

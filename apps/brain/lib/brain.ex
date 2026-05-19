@@ -369,7 +369,13 @@ defmodule Brain do
           send(self(), :process_learning_queue)
         end
 
-        {:reply, {:ok, response}, updated_state}
+        enriched_result = %{
+          response: response,
+          context: context_snapshot,
+          processing_method: processing_method
+        }
+
+        {:reply, {:ok, enriched_result}, updated_state}
     end
   end
 
@@ -441,6 +447,7 @@ defmodule Brain do
       |> Enum.map(fn conv ->
         %{
           id: conv.id,
+          world_id: Map.get(conv, :world_id, "default"),
           message_count: length(conv.memory),
           created_at: conv.created_at,
           last_activity: conv.last_activity
@@ -2065,22 +2072,12 @@ defmodule Brain do
   defp feed_entities_to_world(_, _), do: :ok
 
   defp is_user_fact?(entity_type) do
-    user_fact_types = [
-      "location",
-      "city",
-      "country",
-      "timezone",
-      "name",
-      "person",
-      "occupation",
-      "company",
-      "preference",
-      "hobby",
-      "interest"
-    ]
-
     entity_type_str = to_string(entity_type) |> String.downcase()
-    Enum.any?(user_fact_types, &String.contains?(entity_type_str, &1))
+
+    case Brain.ML.MicroClassifiers.classify(:user_fact_type, entity_type_str) do
+      {:ok, "user_specific", score} when score > 0.3 -> true
+      _ -> false
+    end
   end
 
   defp normalize_predicate(predicate) when is_atom(predicate) do

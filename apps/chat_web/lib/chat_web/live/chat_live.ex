@@ -339,11 +339,19 @@ defmodule ChatWeb.ChatLive do
         socket
       ) do
     if socket.assigns.current_conversation_id == conversation_id do
+      {content, context} =
+        case response do
+          %{response: text, context: ctx} -> {text, ctx}
+          text when is_binary(text) -> {text, nil}
+          _ -> {inspect(response), nil}
+        end
+
       new_message = %{
         id: generate_message_id(),
         role: "assistant",
-        content: response,
-        timestamp: System.system_time(:millisecond)
+        content: content,
+        timestamp: System.system_time(:millisecond),
+        context: context
       }
 
       socket =
@@ -438,6 +446,46 @@ defmodule ChatWeb.ChatLive do
 
         {:noreply, socket}
 
+      {:ok, %{response: response} = enriched} when is_binary(response) and response != "" ->
+        context = Map.get(enriched, :context, %{})
+        processing_method = Map.get(enriched, :processing_method)
+
+        assistant_message = %{
+          id: generate_message_id(),
+          role: "assistant",
+          content: response,
+          timestamp: System.system_time(:millisecond),
+          trace: nil,
+          context: context,
+          processing_method: processing_method
+        }
+
+        socket =
+          if socket.assigns.current_conversation_id == conversation_id do
+            socket
+            |> assign(:messages, socket.assigns.messages ++ [assistant_message])
+            |> assign(:input_text, "")
+            |> assign(:error_message, nil)
+            |> merge_context_into_analysis_details(message_id, context)
+          else
+            socket
+          end
+
+        {:noreply, socket}
+
+      {:ok, %{response: response}} when is_nil(response) or response == "" ->
+        socket =
+          if socket.assigns.current_conversation_id == conversation_id do
+            socket
+            |> assign(:input_text, "")
+            |> assign(:error_message, nil)
+          else
+            socket
+          end
+
+        {:noreply, socket}
+
+      # Backwards compatibility: plain string response
       {:ok, response} when is_binary(response) and response != "" ->
         assistant_message = %{
           id: generate_message_id(),
@@ -599,6 +647,25 @@ defmodule ChatWeb.ChatLive do
 
     {:noreply, socket}
   end
+
+  defp merge_context_into_analysis_details(socket, message_id, context)
+       when is_binary(message_id) and is_map(context) do
+    details = socket.assigns.analysis_details || %{}
+
+    existing = Map.get(details, message_id, %{})
+
+    merged =
+      existing
+      |> Map.put_new(:intent, Map.get(context, :intent))
+      |> Map.put_new(:entities, Map.get(context, :entities, []))
+      |> Map.put_new(:speech_act, Map.get(context, :speech_act))
+      |> Map.put_new(:slots, Map.get(context, :slots, %{}))
+      |> Map.put_new(:missing_slots, Map.get(context, :missing_slots, []))
+
+    assign(socket, :analysis_details, Map.put(details, message_id, merged))
+  end
+
+  defp merge_context_into_analysis_details(socket, _message_id, _context), do: socket
 
   defp generate_message_id do
     :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)

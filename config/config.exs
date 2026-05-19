@@ -113,26 +113,26 @@ config :nx, default_backend: EXLA.Backend
 #   XLA_TARGET=rocm -> uses :rocm client (AMD GPU)
 #   Otherwise -> uses :host client (CPU)
 config :exla,
-  # Default client - determined at runtime based on available hardware
-  # Set via XLA_TARGET=cuda for GPU acceleration
-  default_client: (if System.get_env("XLA_TARGET") == "cuda", do: :cuda, else: :host),
-  # Client-specific configuration for memory management
-  # Constraints: 6GB VRAM max, 32GB RAM max
+  default_client:
+    (case System.get_env("XLA_TARGET") do
+       "cuda" -> :cuda
+       "rocm" -> :rocm
+       _ -> :host
+     end),
   clients: [
-    # CUDA client (NVIDIA GPU) - 75% of 6GB = ~4.5GB usable
     cuda: [
       memory_fraction: 0.75,
       preallocate: true
     ],
-    # Host client (CPU) - 50% of 32GB = ~16GB usable
+    rocm: [
+      memory_fraction: 0.75,
+      preallocate: true
+    ],
     host: [
       memory_fraction: 0.5,
       preallocate: false
     ]
-  ],
-  # Legacy fallback settings (used if client not specified)
-  memory_fraction: 0.75,
-  preallocate: true
+  ]
 
 # ============================================================================
 # Atlas App Configuration (PostgreSQL + Apache AGE)

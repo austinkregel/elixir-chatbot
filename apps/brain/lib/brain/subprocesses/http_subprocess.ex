@@ -351,8 +351,14 @@ defmodule Brain.Subprocesses.HttpSubprocess do
 
   defp process_http_input(input, conversation, user_id) do
     case Brain.evaluate(conversation.id, input, user_id: user_id) do
+      {:ok, %{response: response}} when is_binary(response) ->
+        response
+
       {:ok, response} when is_binary(response) ->
         response
+
+      {:ok, %{response: nil}} ->
+        ""
 
       {:ok, nil} ->
         ""

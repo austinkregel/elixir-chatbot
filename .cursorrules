@@ -8,8 +8,14 @@ entity extraction, sentiment analysis, and a cognitive memory system.
 
 These rules MUST be followed in all code contributions:
 
-1. **No Regex in NLP**: Never use `~r/`, `Regex.`, or `String.contains?` for NLP text processing in the `apps/` folder. Use `Brain.ML.Tokenizer` functions instead. Regex is acceptable only in Mix tasks for CLI argument parsing.
-2. **No String Matching for Classification**: Intent classification, entity extraction, speech act classification, and sentiment analysis must be data-driven (TF-IDF, LSTM, trained models). Never hardcode string-matching rules for NLP decisions.
+1. **No Regex in NLP**: Never use `~r/`, `Regex.`, or `String.contains?` for NLP text processing in the `apps/` folder. Use `Brain.ML.Tokenizer` functions instead. Regex is acceptable in:
+   - Mix tasks for CLI argument parsing
+   - Data-loading label normalization (e.g., `data_loaders.ex` `normalize_intent_name`)
+   - Corpus-building heuristics in Mix tasks (e.g., `download_speech_act_corpus.ex`)
+   - Key normalization for atom construction (e.g., `normalize_predicate` in learning_center/review_queue)
+   - Content sanitization regex in `review_queue.ex` (`is_invalid_content?`) for detecting HTML/code fragments
+   - Code analysis pipeline (`apps/brain/lib/brain/code/`) for source code parsing (not natural language)
+2. **No String Matching for Classification**: Intent classification, entity extraction, speech act classification, and sentiment analysis must be data-driven (TF-IDF, LSTM, trained models, or MicroClassifiers). Never hardcode string-matching rules for NLP decisions. Use `Brain.ML.MicroClassifiers` for lightweight classification tasks; add training data to `data/classifiers/*.json` and run `mix train_micro`.
 3. **Non-blocking Operations**: Always check `ready?()` before calling GenServers that may be initializing. Use short timeouts (100ms) with graceful fallbacks.
 4. **Graceful Degradation**: The system must work even when LSTM models are unavailable. All LSTM-powered features fall back to classical ML (TF-IDF) or neutral defaults.
 5. **World-Scoping**: Use `World.Context` for isolated training environments. Models and data are scoped per-world.
@@ -148,10 +154,34 @@ Tokenizer → Token Sequence
     ↓
 LSTMIntegration (Ensemble: TF-IDF + LSTM when confidence < 0.6)
     ↓
+┌──────────────────────────────────┐
+│ MicroClassifiers (TF-IDF)       │
+│ • :personal_question            │
+│ • :clarification_response       │
+│ • :modal_directive              │
+│ • :fallback_response            │
+│ • :goal_type                    │
+│ • :entity_type                  │
+│ • :user_fact_type               │
+│ • :directed_at_bot              │
+│ Supports incremental_update/2   │
+└──────────────────────────────────┘
+    ↓
 Response Generation → LSTMResponse (response scoring)
     ↓
 Best Response Selected
 ```
+
+### MicroClassifiers
+
+Small TF-IDF classifiers for lightweight decisions. Trained from `data/classifiers/*.json`, loaded from `priv/ml_models/micro/`. Support incremental learning via `MicroClassifiers.incremental_update(name, [{text, label}])`.
+
+When adding a new classification need:
+1. Create `data/classifiers/<name>.json` with `{"text": "...", "label": "..."}` entries
+2. Add the atom to `@classifier_names` in `micro_classifiers.ex` and `train_micro.ex`
+3. Run `mix train_micro` to train
+4. Call `MicroClassifiers.classify(:name, text)` with graceful fallback when not loaded
+5. Prefer cross-validating MicroClassifier output with other signals (intent, structural checks) rather than using as sole decider
 
 ## Common Patterns
 

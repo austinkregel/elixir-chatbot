@@ -10,7 +10,7 @@ defmodule Brain.Analysis.IntentRegistryDataTest do
   @known_intents [
     "weather.query",
     "smalltalk.greetings.hello",
-    "smarthome.device.switch.on",
+    "smarthome.lights.switch.on",
     "music.play",
     "identity.self",
     "smalltalk.thanks",
@@ -48,7 +48,7 @@ defmodule Brain.Analysis.IntentRegistryDataTest do
     # {intent, expected_domain, description}
     {"weather.query", :weather, "weather intent"},
     {"music.play", :music, "music intent"},
-    {"smarthome.device.switch.on", :smarthome, "smarthome device intent"},
+    {"smarthome.lights.switch.on", :smarthome, "smarthome device intent"},
     {"smalltalk.greetings.hello", :smalltalk, "greeting intent"},
     {"smalltalk.thanks", :smalltalk, "smalltalk intent"},
     {"unknown.intent", nil, "unknown intent returns nil"},
@@ -75,7 +75,7 @@ defmodule Brain.Analysis.IntentRegistryDataTest do
   # Test category classification
   @category_test_cases [
     {"smalltalk.greetings.hello", :expressive, "greeting is expressive"},
-    {"smarthome.device.switch.on", :directive, "smarthome device switch is directive"},
+    {"smarthome.lights.switch.on", :directive, "smarthome device switch is directive"},
     {"weather.query", :directive, "weather query is directive"},
     {"smalltalk.thanks", :expressive, "thanks is expressive"},
   ]
@@ -101,11 +101,11 @@ defmodule Brain.Analysis.IntentRegistryDataTest do
     {:weather_intent?, "music.play", "music.play weather check"},
     {:music_intent?, "music.play", "music.play music check"},
     {:music_intent?, "weather.query", "weather.query music check"},
-    {:device_intent?, "smarthome.device.switch.on", "smarthome.device.switch.on device check"},
+    {:device_intent?, "smarthome.lights.switch.on", "smarthome.device.switch.on device check"},
     {:smalltalk_intent?, "smalltalk.thanks", "thanks smalltalk check"},
     {:greeting?, "smalltalk.greetings.hello", "smalltalk.greetings.hello greeting check"},
     {:thanks?, "smalltalk.thanks", "smalltalk.thanks thanks check"},
-    {:command?, "smarthome.device.switch.on", "smarthome.device.switch.on command check"},
+    {:command?, "smarthome.lights.switch.on", "smarthome.device.switch.on command check"},
   ]
 
   describe "predicate functions - data driven" do
@@ -159,7 +159,7 @@ defmodule Brain.Analysis.IntentRegistryDataTest do
   @humanize_test_cases [
     {"weather.query", "weather", "humanizes weather.query"},
     {"smalltalk.greetings.hello", "hello", "humanizes greeting"},
-    {"smarthome.device.switch.on", "on", "humanizes smarthome device switch"},
+    {"smarthome.lights.switch.on", "on", "humanizes smarthome device switch"},
     {nil, "something", "nil returns something"},
     {"", "something", "empty returns something"},
   ]

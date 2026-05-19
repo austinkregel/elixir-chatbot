@@ -5,6 +5,7 @@ defmodule ChatWeb.BrainChannel do
   """
 
   use ChatWeb, :channel
+  alias Phoenix.PubSub
   require Logger
 
   @impl true
@@ -20,6 +21,7 @@ defmodule ChatWeb.BrainChannel do
 
   def join("brain:conversations", _payload, socket) do
     Logger.info("Client joined brain conversations channel", %{client_id: socket.id})
+    PubSub.subscribe(Brain.PubSub, "brain:analysis")
     {:ok, socket}
   end
 
@@ -40,17 +42,36 @@ defmodule ChatWeb.BrainChannel do
   @impl true
   def handle_in("evaluate", %{"conversation_id" => conversation_id, "input" => input} = payload, socket) do
     user_id = Map.get(payload, "user_id") || "ws_#{conversation_id}"
+    message_id = :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
 
     Logger.info("Received evaluation request", %{
       conversation_id: conversation_id,
       input: String.slice(input, 0, 100)
     })
 
-    case Brain.evaluate(conversation_id, input, user_id: user_id) do
-      {:ok, response} ->
+    eval_opts = [
+      user_id: user_id,
+      progress: %{conversation_id: conversation_id, message_id: message_id}
+    ]
+
+    case Brain.evaluate(conversation_id, input, eval_opts) do
+      {:ok, %{response: response, context: context, processing_method: method}} ->
         push(socket, "conversation_result", %{
           conversation_id: conversation_id,
           response: response,
+          context: context,
+          processing_method: method,
+          message_id: message_id,
+          timestamp: System.system_time(:millisecond)
+        })
+
+        {:noreply, socket}
+
+      {:ok, response} when is_binary(response) ->
+        push(socket, "conversation_result", %{
+          conversation_id: conversation_id,
+          response: response,
+          message_id: message_id,
           timestamp: System.system_time(:millisecond)
         })
 
@@ -60,6 +81,7 @@ defmodule ChatWeb.BrainChannel do
         push(socket, "conversation_error", %{
           conversation_id: conversation_id,
           error: reason,
+          message_id: message_id,
           timestamp: System.system_time(:millisecond)
         })
 
@@ -67,13 +89,19 @@ defmodule ChatWeb.BrainChannel do
     end
   end
 
-  def handle_in("create_conversation", _payload, socket) do
-    Logger.info("Received create conversation request", %{client_id: socket.id})
+  def handle_in("create_conversation", payload, socket) do
+    world_id = Map.get(payload || %{}, "world_id", "default")
 
-    case Brain.create_conversation() do
+    Logger.info("Received create conversation request", %{
+      client_id: socket.id,
+      world_id: world_id
+    })
+
+    case Brain.create_conversation(world_id: world_id) do
       {:ok, conversation_id} ->
         push(socket, "create_conversation_result", %{
           conversation_id: conversation_id,
+          world_id: world_id,
           success: true,
           timestamp: System.system_time(:millisecond)
         })
@@ -177,6 +205,21 @@ defmodule ChatWeb.BrainChannel do
 
   def handle_in(_event, _payload, socket) do
     Logger.warning("Unknown event received", %{client_id: socket.id})
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:analysis_progress, payload}, socket) do
+    push(socket, "analysis_progress", payload)
+    {:noreply, socket}
+  end
+
+  def handle_info(%Phoenix.Socket.Broadcast{event: "analysis_progress", payload: payload}, socket) do
+    push(socket, "analysis_progress", payload)
+    {:noreply, socket}
+  end
+
+  def handle_info(_msg, socket) do
     {:noreply, socket}
   end
 

@@ -1,0 +1,18 @@
+[
+  {"text": "hey bot", "label": "directed"},
+  {"text": "hello assistant", "label": "directed"},
+  {"text": "hi companion", "label": "directed"},
+  {"text": "can you help me", "label": "directed"},
+  {"text": "tell me about", "label": "directed"},
+  {"text": "what do you think", "label": "directed"},
+  {"text": "do you know", "label": "directed"},
+  {"text": "hey brain", "label": "directed"},
+  {"text": "the weather is nice today", "label": "not_directed"},
+  {"text": "Paris is the capital of France", "label": "not_directed"},
+  {"text": "she said hello to everyone", "label": "not_directed"},
+  {"text": "python is a programming language", "label": "not_directed"},
+  {"text": "the book is on the table", "label": "not_directed"},
+  {"text": "dogs are loyal animals", "label": "not_directed"},
+  {"text": "the train arrives at noon", "label": "not_directed"},
+  {"text": "it was a beautiful sunset", "label": "not_directed"}
+]

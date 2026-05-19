@@ -55,14 +55,22 @@ defmodule Brain.Analysis.SpeechActClassifier do
     if lstm_available?() do
       case UnifiedModel.classify_intent(text) do
         {:ok, %{label: intent, confidence: confidence, scores: scores}} ->
-          if confidence < @ensemble_threshold do
-            ensemble_fallback(text, intent, confidence, scores)
+          if registered_intent?(intent) do
+            if confidence < @ensemble_threshold do
+              ensemble_fallback(text, intent, confidence, scores)
+            else
+              {:ok, build_lstm_result(intent, confidence, scores)}
+            end
           else
-            {:ok, build_lstm_result(intent, confidence, scores)}
+            {:error, :unregistered_lstm_intent}
           end
 
         {:ok, {intent, confidence}} ->
-          {:ok, build_lstm_result(intent, confidence, [])}
+          if registered_intent?(intent) do
+            {:ok, build_lstm_result(intent, confidence, [])}
+          else
+            {:error, :unregistered_lstm_intent}
+          end
 
         {:error, _} = error ->
           error
@@ -77,7 +85,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
       case Integration.classify_intent(text) do
         {:ok, {ensemble_intent, ensemble_conf, source}}
         when source in [:ensemble, :lstm, :tfidf] ->
-          if ensemble_conf > lstm_confidence do
+          if ensemble_conf > lstm_confidence and registered_intent?(ensemble_intent) do
             {category, sub_type} = intent_to_speech_act(ensemble_intent)
 
             result = %{
@@ -105,6 +113,26 @@ defmodule Brain.Analysis.SpeechActClassifier do
       _, _ -> {:ok, build_lstm_result(lstm_intent, lstm_confidence, lstm_scores)}
     end
   end
+
+  defp registered_intent?(intent) when is_binary(intent) do
+    if intent == "unknown" do
+      false
+    else
+    case IntentRegistry.get(intent) do
+      nil ->
+        IntentRegistry.list_intents()
+        |> Enum.any?(fn registered ->
+          String.starts_with?(intent, registered <> ".") or
+            String.starts_with?(registered, intent <> ".")
+        end)
+
+      _ ->
+        true
+    end
+    end
+  end
+
+  defp registered_intent?(_), do: false
 
   defp build_lstm_result(intent, confidence, scores) do
     {category, sub_type} = intent_to_speech_act(intent)
@@ -193,6 +221,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
     is_exclamatory = Tokenizer.ends_with_exclamation?(text)
     is_declarative = Tokenizer.ends_with_period?(text)
     is_continuation = has_continuation_structure?(text, normalized)
+    is_imperative = has_imperative_start?(normalized)
 
     has_modal = has_modal_verb?(normalized)
 
@@ -207,6 +236,9 @@ defmodule Brain.Analysis.SpeechActClassifier do
         is_question ->
           {:directive, :request_information, 0.85}
 
+        is_imperative and not is_question ->
+          {:directive, :command, 0.75}
+
         is_declarative and not is_question ->
           {:assertive, :statement, 0.7}
 
@@ -219,7 +251,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
 
     %{
       is_question: is_question,
-      is_imperative: false,
+      is_imperative: is_imperative,
       is_exclamatory: is_exclamatory,
       is_declarative: is_declarative,
       is_continuation: is_continuation,
@@ -371,10 +403,12 @@ defmodule Brain.Analysis.SpeechActClassifier do
     is_imperative_from_intent =
       analyses.intent.sub_type == :command and analyses.intent.confidence > 0.3
 
+    is_imperative = is_imperative_from_intent or analyses.structural.is_imperative
+
     SpeechActResult.new(category, sub_type, confidence,
       indicators: indicators,
       is_question: analyses.structural.is_question,
-      is_imperative: is_imperative_from_intent
+      is_imperative: is_imperative
     )
   end
 
@@ -590,6 +624,27 @@ defmodule Brain.Analysis.SpeechActClassifier do
       {:error, _} ->
         false
     end
+  end
+
+  defp has_imperative_start?(normalized) do
+    imperative_verbs = MapSet.new(~w(
+      tell show give get find search look check
+      turn set make create open close start stop
+      play pause skip next list read send call
+      help explain describe calculate remember
+    ))
+
+    words = Tokenizer.split_words(normalized)
+    starter = List.first(words, "")
+
+    first_action_word =
+      case starter do
+        "please" -> Enum.at(words, 1, "")
+        "kindly" -> Enum.at(words, 1, "")
+        _ -> starter
+      end
+
+    MapSet.member?(imperative_verbs, first_action_word)
   end
 
   defp has_continuation_structure?(text, _normalized) do

@@ -8,16 +8,26 @@ defmodule Brain.ML.LSTM.AccuracyComparisonTest do
   sentiment context from the knowledge graph -- matching the ideal
   production scenario.
 
+  Systemic regression guard: this suite explicitly loads the production
+  TF-IDF model artifact from `priv/ml_models/classifier.term` in read-only
+  mode so failures represent production model regressions.
+
   Run with: mix test --only slow
   """
   use Brain.Test.GraphCase, async: false
 
   alias Brain.Analysis.Pipeline
+  alias Brain.ML.IntentClassifierSimple
 
   @moduletag :lstm
   @moduletag :slow
   @moduletag timeout: 300_000
   @tag seed_knowledge: true
+
+  setup_all do
+    load_production_intent_model!()
+    :ok
+  end
 
   # Test cases that historically caused misclassification.
   # Each tuple is {text, expected_domain_prefix}.
@@ -180,5 +190,26 @@ defmodule Brain.ML.LSTM.AccuracyComparisonTest do
     intent_lower = String.downcase(intent)
     domain_lower = String.downcase(domain)
     String.starts_with?(intent_lower, domain_lower)
+  end
+
+  defp load_production_intent_model! do
+    model_path = resolve_production_model_path!()
+    model = model_path |> File.read!() |> :erlang.binary_to_term()
+    :ok = GenServer.call(IntentClassifierSimple, {:load_trained_model, model}, 120_000)
+  end
+
+  defp resolve_production_model_path! do
+    candidates = [
+      Path.join(File.cwd!(), "_build/dev/lib/brain/priv/ml_models/classifier.term"),
+      Path.expand("../../../../priv/ml_models/classifier.term", __DIR__)
+    ]
+
+    case Enum.find(candidates, &File.exists?/1) do
+      nil ->
+        raise "Production classifier model not found in expected paths: #{inspect(candidates)}"
+
+      path ->
+        path
+    end
   end
 end

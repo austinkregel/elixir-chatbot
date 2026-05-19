@@ -228,8 +228,14 @@ defmodule Brain.Subprocesses.ConversationSubprocess do
     user_id = Map.get(state, :user_id, "conv_#{state.subprocess_id}")
 
     case Brain.evaluate(conv_id, input, user_id: user_id) do
+      {:ok, %{response: response}} when is_binary(response) ->
+        response
+
       {:ok, response} when is_binary(response) ->
         response
+
+      {:ok, %{response: nil}} ->
+        ""
 
       {:ok, nil} ->
         # ResponseGate deferred - no response needed

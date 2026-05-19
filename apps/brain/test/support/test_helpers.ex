@@ -125,7 +125,11 @@ defmodule Brain.TestHelpers do
   @doc "Evaluates input and returns both the response and the analysis context.\n\nThis allows tests to assert on semantic meaning (intent, speech_act, entities)\nrather than response text, making tests resilient to dynamic response variations.\n\n## Example\n\n    {:ok, response, context} = evaluate_with_context(conv_id, \"Hello!\")\n    assert context.speech_act.sub_type == :greeting\n\n## Returns\n\n- `{:ok, response, context}` where context contains intent, speech_act, entities, etc.\n- `{:error, reason}` if evaluation fails\n"
   def evaluate_with_context(conversation_id, input, opts \\ []) do
     case Brain.evaluate(conversation_id, input, opts) do
-      {:ok, response} ->
+      {:ok, %{response: response, context: context}} ->
+        {:ok, response, context || %{}}
+
+      {:ok, response} when is_binary(response) ->
+        # Fallback: extract context from conversation memory
         {:ok, conversation} = Brain.get_conversation(conversation_id)
 
         context =
@@ -143,6 +147,12 @@ defmodule Brain.TestHelpers do
         {:error, reason}
     end
   end
+
+  @doc "Extracts the response text from either an enriched result map or a plain string."
+  def extract_response_text(%{response: text}) when is_binary(text), do: text
+  def extract_response_text(text) when is_binary(text), do: text
+  def extract_response_text(nil), do: ""
+  def extract_response_text(other), do: inspect(other)
 
   @doc "Extracts speech_act from context, handling nil and missing keys safely.\n"
   def get_speech_act(context) when is_map(context) do
@@ -619,6 +629,7 @@ defmodule Brain.TestHelpers do
   def assert_response_intent(response_text, intent_prefix, opts \\ []) do
     import ExUnit.Assertions
     min_score = Keyword.get(opts, :min_score, 0.1)
+    response_text = extract_response_text(response_text)
 
     {best_intent, score} = classify_response(response_text)
 
@@ -654,6 +665,7 @@ defmodule Brain.TestHelpers do
   def refute_response_intent(response_text, intent_prefix, opts \\ []) do
     import ExUnit.Assertions
     max_ratio = Keyword.get(opts, :ratio, 0.8)
+    response_text = extract_response_text(response_text)
 
     all_matches = classify_response_all(response_text, min_score: 0.05)
 

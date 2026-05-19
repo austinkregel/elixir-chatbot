@@ -273,7 +273,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
       conversation_id: conv_id,
       user_id: user_id
     } do
-      {:ok, response1} =
+      {:ok, %{response: response1}} =
         Brain.evaluate(conv_id, "I'm from New York", user_id: user_id)
 
       assert String.length(response1) > 0
@@ -292,7 +292,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
         assert new_york_belief != nil
       end
 
-      {:ok, response2} =
+      {:ok, %{response: response2}} =
         Brain.evaluate(conv_id, "Actually, I'm from Chicago", user_id: user_id)
 
       assert String.length(response2) > 0
@@ -318,10 +318,10 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
       conversation_id: conv_id,
       user_id: user_id
     } do
-      {:ok, _response1} =
+      {:ok, %{response: _response1}} =
         Brain.evaluate(conv_id, "My favorite color is blue", user_id: user_id)
 
-      {:ok, response2} =
+      {:ok, %{response: response2}} =
         Brain.evaluate(conv_id, "Actually, my favorite color is red", user_id: user_id)
 
       assert String.length(response2) > 0

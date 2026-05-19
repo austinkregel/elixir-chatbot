@@ -22,7 +22,7 @@
       "confidence": 0.756,
       "entity": "Brooklyn",
       "fact": "Hi, I'm Brooklyn",
-      "timestamp": 1771518108615
+      "timestamp": 1772080155398
     },
     {
       "confidence": 0.7650000000000001,
@@ -106,7 +106,7 @@
       "confidence": 0.7110000000000001,
       "entity": "Savannah",
       "fact": "Hello, I'm Savannah",
-      "timestamp": 1771518119557
+      "timestamp": 1772080142468
     },
     {
       "confidence": 0.7110000000000001,
@@ -130,13 +130,19 @@
       "confidence": 0.7110000000000001,
       "entity": "Mercedes",
       "fact": "Hi, my name is Mercedes",
-      "timestamp": 1771518113263
+      "timestamp": 1772080145183
     },
     {
       "confidence": 0.7380000000000001,
       "entity": "Charlotte",
       "fact": "Hi, my name is Charlotte",
       "timestamp": 1771518100719
+    },
+    {
+      "confidence": 0.7110000000000001,
+      "entity": "New York",
+      "fact": "I'm from New York",
+      "timestamp": 1772079962621
     }
   ],
   "people": {

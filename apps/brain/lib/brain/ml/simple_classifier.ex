@@ -6,10 +6,10 @@ defmodule Brain.ML.SimpleClassifier do
   alias Brain.ML.Tokenizer
 
   def train(training_data) do
-    Logger.info("Training simple classifier on #{length(training_data)} samples")
+    sample_count = length(training_data)
+    Logger.info("[SimpleClassifier] Training on #{sample_count} samples...")
     {texts, labels} = Enum.unzip(training_data)
 
-    # Tokenize all documents once up front to avoid repeated tokenization
     doc_tokens = Enum.map(texts, &tokenize/1)
 
     all_words =
@@ -23,8 +23,8 @@ defmodule Brain.ML.SimpleClassifier do
 
     vocabulary = all_words |> Enum.with_index() |> Enum.into(%{})
     num_docs = length(texts)
+    Logger.info("[SimpleClassifier] Tokenized #{sample_count} samples, vocabulary size: #{map_size(vocabulary)}")
 
-    # Pre-compute token sets for IDF calculation (avoids re-tokenizing per vocab word)
     doc_token_sets = Enum.map(doc_tokens, &MapSet.new/1)
 
     idf_weights =
@@ -36,11 +36,15 @@ defmodule Brain.ML.SimpleClassifier do
       end)
       |> Enum.into(%{})
 
+    Logger.info("[SimpleClassifier] Computed IDF weights")
+
     vectors =
       texts
       |> Enum.map(fn text ->
         vectorize(text, vocabulary, idf_weights)
       end)
+
+    Logger.info("[SimpleClassifier] Vectorized #{sample_count} samples")
 
     label_vectors =
       Enum.zip([labels, vectors])
@@ -49,10 +53,14 @@ defmodule Brain.ML.SimpleClassifier do
     label_centroids =
       label_vectors
       |> Enum.map(fn {label, vecs} ->
+        Logger.info("[SimpleClassifier] Computing centroid for label '#{label}' (#{length(vecs)} vectors)")
         centroid = calculate_centroid(vecs)
         {label, centroid}
       end)
       |> Enum.into(%{})
+
+    label_count = map_size(label_centroids)
+    Logger.info("[SimpleClassifier] Training complete: #{label_count} labels, vocab size #{map_size(vocabulary)}")
 
     %{
       vocabulary: vocabulary,
@@ -218,21 +226,15 @@ defmodule Brain.ML.SimpleClassifier do
     end
   end
 
+  defp calculate_centroid([]), do: []
+  defp calculate_centroid([single]), do: single
+
   defp calculate_centroid(vectors) do
-    if vectors == [] do
-      []
-    else
-      vec_length = length(List.first(vectors))
+    count = length(vectors)
 
-      for i <- 0..(vec_length - 1) do
-        sum =
-          Enum.reduce(vectors, 0, fn vec, acc ->
-            acc + Enum.at(vec, i)
-          end)
-
-        sum / length(vectors)
-      end
-    end
+    vectors
+    |> Enum.reduce(fn vec, acc -> Enum.zip_with(acc, vec, &Kernel.+/2) end)
+    |> Enum.map(&(&1 / count))
   end
 
   defp cosine_similarity(vec1, vec2) do

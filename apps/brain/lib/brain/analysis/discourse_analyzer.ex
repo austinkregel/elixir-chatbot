@@ -245,18 +245,29 @@ defmodule Brain.Analysis.DiscourseAnalyzer do
   end
 
   defp has_direct_address?(normalized, bot_names) do
-    # Check for patterns like "hey bot", "hi companion", "bot,"
-    Enum.any?(bot_names, fn name ->
-      # "hey bot", "hi bot", etc.
-      # "bot," at start
-      # "@bot" pattern
-      Enum.any?(@address_prefixes, fn prefix ->
-        String.contains?(normalized, prefix <> " " <> name)
-      end) or
-        String.starts_with?(normalized, name <> ",") or
-        String.starts_with?(normalized, name <> " ") or
-        String.contains?(normalized, "@" <> name)
-    end)
+    words = Tokenizer.tokenize_words(normalized)
+    first_word = List.first(words) || ""
+
+    structural_match =
+      Enum.any?(bot_names, fn name ->
+        name_lower = String.downcase(name)
+
+        Enum.any?(@address_prefixes, fn prefix ->
+          prefix_lower = String.downcase(prefix)
+          idx = Enum.find_index(words, &(&1 == prefix_lower))
+          idx != nil and Enum.at(words, idx + 1) == name_lower
+        end) or
+          first_word == name_lower or
+          Enum.member?(words, "@" <> name_lower)
+      end)
+
+    classifier_match =
+      case Brain.ML.MicroClassifiers.classify(:directed_at_bot, normalized) do
+        {:ok, "directed", score} when score > 0.4 -> true
+        _ -> false
+      end
+
+    structural_match or classifier_match
   end
 
   defp has_second_person?(normalized) do

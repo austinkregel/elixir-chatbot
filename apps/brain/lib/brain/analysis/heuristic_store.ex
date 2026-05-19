@@ -25,8 +25,7 @@ defmodule Brain.Analysis.HeuristicStore do
   use GenServer
   require Logger
 
-  # Note: ActivationPool used externally for boost calculations
-  # Note: Tokenizer may be used for future pattern matching enhancements
+  alias Brain.ML.Tokenizer
 
   # ETS tables for fast lookups
   @global_table :heuristics_global
@@ -472,20 +471,29 @@ defmodule Brain.Analysis.HeuristicStore do
   end
 
   defp check_phrase_match(%{phrase: phrase}, text) when is_binary(phrase) do
-    if String.contains?(text, String.downcase(phrase)), do: 0.9, else: 0.0
+    phrase_tokens = phrase |> String.downcase() |> Tokenizer.tokenize_normalized(min_length: 1)
+    text_tokens = Tokenizer.tokenize_normalized(text, min_length: 1)
+
+    if phrase_tokens != [] and
+         Enum.all?(phrase_tokens, fn pt -> Enum.any?(text_tokens, &(&1 == pt)) end) do
+      0.9
+    else
+      0.0
+    end
   end
 
   defp check_phrase_match(_, _), do: 0.0
 
   defp check_first_word_match(%{first_word: words}, text) when is_list(words) do
-    first = text |> String.split() |> List.first() || ""
+    first = text |> Tokenizer.split_words() |> List.first() || ""
     if String.downcase(first) in words, do: 0.8, else: 0.0
   end
 
   defp check_first_word_match(_, _), do: 0.0
 
   defp check_keyword_match(%{keywords: keywords}, text) when is_list(keywords) do
-    matches = Enum.count(keywords, &String.contains?(text, &1))
+    text_words = text |> Tokenizer.tokenize_normalized(min_length: 1) |> MapSet.new()
+    matches = Enum.count(keywords, fn kw -> MapSet.member?(text_words, String.downcase(kw)) end)
 
     cond do
       matches >= 2 -> 0.8
@@ -497,7 +505,7 @@ defmodule Brain.Analysis.HeuristicStore do
   defp check_keyword_match(_, _), do: 0.0
 
   defp check_word_count_match(%{word_count: range}, text) when is_struct(range, Range) do
-    count = text |> String.split() |> length()
+    count = text |> Tokenizer.split_words() |> length()
     count in range
   end
 

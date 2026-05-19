@@ -24,9 +24,14 @@ defmodule World.Manager do
     GenServer.call(__MODULE__, {:create_world, name, opts}, 30_000)
   end
 
-  @doc "Destroys a training world and cleans up its data.\n"
+  @doc "Destroys a training world from memory while preserving persisted data.\n\nFor persistent worlds, this removes runtime ETS/Gazetteer state but leaves\ndisk checkpoints intact so the world can be loaded again via `load_world/1`.\n"
   def destroy(world_id) when is_binary(world_id) do
     GenServer.call(__MODULE__, {:destroy_world, world_id}, 30_000)
+  end
+
+  @doc "Permanently deletes a training world from memory and disk.\n\nFor persistent worlds, this removes both runtime state and persisted files.\n"
+  def purge(world_id) when is_binary(world_id) do
+    GenServer.call(__MODULE__, {:purge_world, world_id}, 30_000)
   end
 
   @doc "Gets a training world by ID.\n"
@@ -294,26 +299,35 @@ defmodule World.Manager do
   def handle_call({:destroy_world, world_id}, _from, state) do
     case :ets.lookup(@ets_worlds, world_id) do
       [{^world_id, world}] ->
-        :ets.delete(@ets_worlds, world_id)
-        :ets.delete(@ets_worlds, {:metrics, world_id})
-        :ets.delete(@ets_candidates, world_id)
-        :ets.delete(@ets_events, world_id)
-        Gazetteer.destroy_world_overlay(world_id)
+        drop_world_runtime_state(world_id)
+        Logger.info("Destroyed training world runtime state", %{id: world_id, name: world.name})
+        {:reply, :ok, state}
+
+      [] ->
+        {:reply, {:error, :not_found}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:purge_world, world_id}, _from, state) do
+    case :ets.lookup(@ets_worlds, world_id) do
+      [{^world_id, world}] ->
+        drop_world_runtime_state(world_id)
 
         if world.mode == :persistent do
           case WorldPersistence.delete(world_id) do
             :ok ->
-              Logger.info("Deleted persisted world data from disk", %{id: world_id})
+              Logger.info("Purged persisted world data from disk", %{id: world_id})
 
             {:error, reason} ->
-              Logger.warning("Failed to delete persisted world data", %{
+              Logger.warning("Failed to purge persisted world data", %{
                 id: world_id,
                 reason: reason
               })
           end
         end
 
-        Logger.info("Destroyed training world", %{id: world_id, name: world.name})
+        Logger.info("Purged training world", %{id: world_id, name: world.name})
         {:reply, :ok, state}
 
       [] ->
@@ -676,5 +690,13 @@ defmodule World.Manager do
     else
       {:ok, 0}
     end
+  end
+
+  defp drop_world_runtime_state(world_id) do
+    :ets.delete(@ets_worlds, world_id)
+    :ets.delete(@ets_worlds, {:metrics, world_id})
+    :ets.delete(@ets_candidates, world_id)
+    :ets.delete(@ets_events, world_id)
+    Gazetteer.destroy_world_overlay(world_id)
   end
 end

@@ -3,6 +3,7 @@ defmodule Tasks.Source do
 
   alias Tasks.Analyzer
   alias Brain.Knowledge.Types
+  alias Brain.ML.Tokenizer
   require Logger
 
   alias Types.{Finding, SourceInfo}
@@ -142,25 +143,24 @@ defmodule Tasks.Source do
   end
 
   defp score_task_relevance(task, goal) do
-    topic_words = goal.topic |> String.downcase() |> String.split(~r/\s+/)
+    topic_words = goal.topic |> Tokenizer.tokenize_normalized(min_length: 2)
 
     question_words =
       (goal.questions || [])
-      |> Enum.flat_map(&String.split(String.downcase(&1), ~r/\s+/))
+      |> Enum.flat_map(&Tokenizer.tokenize_normalized(&1, min_length: 2))
 
     all_words = MapSet.new(topic_words ++ question_words)
 
     domain_score =
       task.domains
       |> Enum.count(fn domain ->
-        domain_lower = String.downcase(domain)
-        Enum.any?(all_words, &String.contains?(domain_lower, &1))
+        domain_words = domain |> Tokenizer.tokenize_normalized(min_length: 2) |> MapSet.new()
+        not MapSet.disjoint?(domain_words, all_words)
       end)
 
     definition_words =
       task.definition
-      |> String.downcase()
-      |> String.split(~r/\s+/)
+      |> Tokenizer.tokenize_normalized(min_length: 2)
       |> MapSet.new()
 
     keyword_overlap = MapSet.intersection(all_words, definition_words) |> MapSet.size()
@@ -262,10 +262,10 @@ defmodule Tasks.Source do
 
   # Extract the primary entity/subject from input text
   defp extract_entity(input) when is_binary(input) do
-    # Use first significant words as entity
     input
-    |> String.split(~r/[\s\?\!\.]+/)
-    |> Enum.reject(&(&1 in ~w(what who where when why how is are was were the a an)))
+    |> Tokenizer.tokenize_words()
+    |> Enum.map(&String.downcase/1)
+    |> Enum.reject(&(&1 in ~w(what who where when why how is are was were the a an ? ! .)))
     |> Enum.take(3)
     |> Enum.join(" ")
     |> case do

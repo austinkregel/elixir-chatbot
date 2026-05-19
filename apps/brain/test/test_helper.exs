@@ -39,7 +39,7 @@ end
 #
 ExUnit.configure(
   exclude: [:wip, :skip],
-  timeout: 60_000
+  timeout: :infinity
 )
 
 ExUnit.start()

@@ -1,0 +1,18 @@
+[
+  {"text": "person name", "label": "user_specific"},
+  {"text": "pet animal dog cat", "label": "user_specific"},
+  {"text": "preference favorite like", "label": "user_specific"},
+  {"text": "hobby interest activity", "label": "user_specific"},
+  {"text": "occupation job career work", "label": "user_specific"},
+  {"text": "location home address", "label": "user_specific"},
+  {"text": "birthday age personal", "label": "user_specific"},
+  {"text": "family member relative", "label": "user_specific"},
+  {"text": "science physics chemistry biology", "label": "general_knowledge"},
+  {"text": "history war event century", "label": "general_knowledge"},
+  {"text": "geography mountain river ocean", "label": "general_knowledge"},
+  {"text": "capital country nation state", "label": "general_knowledge"},
+  {"text": "technology computer software", "label": "general_knowledge"},
+  {"text": "weather climate temperature", "label": "general_knowledge"},
+  {"text": "planet star galaxy universe", "label": "general_knowledge"},
+  {"text": "literature novel author book", "label": "general_knowledge"}
+]

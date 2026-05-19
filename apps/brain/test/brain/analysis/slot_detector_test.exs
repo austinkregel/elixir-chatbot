@@ -40,7 +40,7 @@ defmodule Brain.Analysis.SlotDetectorTest do
         %{entity_type: "room", value: "kitchen", confidence: 0.8}
       ]
 
-      result = SlotDetector.detect("smarthome.device.switch.off", entities)
+      result = SlotDetector.detect("smarthome.lights.switch.off", entities)
 
       assert SlotResult.get_slot_value(result, "device") == "lights"
       assert SlotResult.get_slot_value(result, "room") == "kitchen"
@@ -120,8 +120,7 @@ defmodule Brain.Analysis.SlotDetectorTest do
       {:ok, intent, score} = SlotDetector.suggest_intent_from_entities(entities)
 
       # A smarthome.device.* intent should be returned for device + room entities
-      assert String.starts_with?(intent, "smarthome.device.") or
-               String.starts_with?(intent, "smarthome.lights.")
+      assert String.starts_with?(intent, "smarthome.lights.")
       assert score >= 2
     end
 
@@ -170,8 +169,8 @@ defmodule Brain.Analysis.SlotDetectorTest do
     end
 
     test "returns template for smarthome device slots" do
-      device_prompt = SlotDetector.get_clarification_prompt("device", "smarthome.device.switch.on")
-      room_prompt = SlotDetector.get_clarification_prompt("room", "smarthome.device.switch.on")
+      device_prompt = SlotDetector.get_clarification_prompt("device", "smarthome.lights.switch.on")
+      room_prompt = SlotDetector.get_clarification_prompt("room", "smarthome.lights.switch.on")
 
       # Should return a prompt (either from registry or generic fallback)
       assert is_binary(device_prompt)
@@ -208,7 +207,7 @@ defmodule Brain.Analysis.SlotDetectorTest do
   describe "get_clarification_prompts/2" do
     test "returns list of prompts for multiple missing slots" do
       missing_slots = ["device", "room"]
-      prompts = SlotDetector.get_clarification_prompts(missing_slots, "smarthome.device.switch.on")
+      prompts = SlotDetector.get_clarification_prompts(missing_slots, "smarthome.lights.switch.on")
 
       assert length(prompts) == 2
       assert Enum.all?(prompts, &is_binary/1)

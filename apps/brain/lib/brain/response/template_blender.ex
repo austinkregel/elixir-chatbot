@@ -7,6 +7,7 @@ defmodule Brain.Response.TemplateBlender do
 
   alias Response.{ChunkSegmenter, ChunkCompatibility, TemplateStore}
   alias Brain.Memory.Embedder
+  alias Brain.ML.Tokenizer
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -259,11 +260,15 @@ defmodule Brain.Response.TemplateBlender do
         0.0
       end
 
+    chunk_words =
+      chunk.text |> Tokenizer.tokenize_normalized(min_length: 2) |> MapSet.new()
+
     entity_match =
       entities
       |> Enum.any?(fn entity ->
         entity_type = entity[:entity_type] || entity["entity_type"] || ""
-        String.contains?(String.downcase(chunk.text), String.downcase(entity_type))
+        et_words = entity_type |> Tokenizer.tokenize_normalized(min_length: 2)
+        et_words != [] and Enum.any?(et_words, &MapSet.member?(chunk_words, &1))
       end)
 
     entity_score =

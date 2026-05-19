@@ -30,6 +30,8 @@ defmodule Mix.Tasks.TrainMicro do
     fallback_response
     goal_type
     entity_type
+    user_fact_type
+    directed_at_bot
   )
 
   @impl Mix.Task

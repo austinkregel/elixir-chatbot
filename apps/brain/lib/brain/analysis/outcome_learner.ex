@@ -8,6 +8,8 @@ defmodule Brain.Analysis.OutcomeLearner do
     ActivationPool,
     IntentRegistry
   }
+
+  alias Brain.ML.Tokenizer
   require Logger
 
   @min_successes_for_heuristic %{
@@ -339,21 +341,21 @@ defmodule Brain.Analysis.OutcomeLearner do
   end
 
   defp extract_domain_keywords(text, intent) do
-    domain_keywords = %{
-      "weather" => ~w(weather forecast temperature rain sunny cloudy),
-      "music" => ~w(play song music album artist),
-      "device" => ~w(turn light switch on off dim),
-      "reminder" => ~w(remind reminder remember)
-    }
-
     domain =
       intent
       |> String.split(".")
       |> List.first()
 
-    keywords = Map.get(domain_keywords, domain, [])
+    text_words =
+      text
+      |> Tokenizer.tokenize_normalized(min_length: 2)
+      |> MapSet.new()
 
-    Enum.filter(keywords, &String.contains?(text, &1))
+    domain_words =
+      domain
+      |> Tokenizer.tokenize_normalized(min_length: 2)
+
+    Enum.filter(domain_words, &MapSet.member?(text_words, &1))
   end
 
   defp specific_intent?(intent) do

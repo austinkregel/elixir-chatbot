@@ -286,7 +286,7 @@ defmodule Brain.Analysis.ComprehensionAssessor.DimensionEvaluators do
     alpha_count =
       if total_graphemes > 0 do
         Enum.count(graphemes, fn g ->
-          byte_size(g) == 1 and g =~ ~r/^[a-zA-Z ]$/
+          byte_size(g) == 1 and is_alpha_or_space?(g)
         end)
       else
         0
@@ -356,4 +356,9 @@ defmodule Brain.Analysis.ComprehensionAssessor.DimensionEvaluators do
 
     {score, evidence}
   end
+
+  defp is_alpha_or_space?(<<c>>) when (c >= ?a and c <= ?z) or (c >= ?A and c <= ?Z) or c == ?\s,
+    do: true
+
+  defp is_alpha_or_space?(_), do: false
 end

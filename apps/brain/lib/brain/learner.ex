@@ -2,6 +2,7 @@ defmodule Brain.Learner do
   @moduledoc "NLP-based learner module for extracting facts from user inputs.\nUses classical NLP entity recognition and relationship extraction to build\ndynamic, adaptable knowledge about people, pets, rooms, devices, places, tasks, etc.\n"
 
   alias Brain.ML.EntityExtractor
+  alias Brain.ML.Tokenizer
   alias Brain.Analysis.SpeechActClassifier
   alias Brain.Analysis.DiscourseAnalyzer
   require Logger
@@ -153,7 +154,7 @@ defmodule Brain.Learner do
     sub_type = Map.get(speech_act, :sub_type)
     is_assertive = category == :assertive and sub_type == :statement
     is_self_referential = is_self_referential_statement?(input)
-    word_count = input |> String.split(~r/\s+/) |> length()
+    word_count = input |> Tokenizer.split_words() |> length()
     valid_length = word_count >= 3 and word_count <= 30
 
     if is_assertive and not is_self_referential and valid_length and entities != [] do
@@ -553,20 +554,20 @@ defmodule Brain.Learner do
   end
 
   defp is_general_knowledge_fact?(entity, fact_text) do
-    user_specific_patterns = ["my ", "i ", "me ", "mine ", "our ", "we "]
+    first_person_pronouns = MapSet.new(~w(my i me mine our we))
+    fact_words = fact_text |> Tokenizer.tokenize_normalized(min_length: 1) |> MapSet.new()
 
-    entity_lower = String.downcase(entity)
-    fact_lower = String.downcase(fact_text)
+    has_first_person = not MapSet.disjoint?(fact_words, first_person_pronouns)
 
-    is_user_specific =
-      Enum.any?(user_specific_patterns, &String.contains?(fact_lower, &1)) or
-        String.contains?(entity_lower, "person") or
-        String.contains?(entity_lower, "pet") or
-        String.contains?(entity_lower, "room") or
-        String.contains?(entity_lower, "device") or
-        String.contains?(entity_lower, "preference")
+    classifier_input = "#{String.downcase(entity)} #{String.downcase(fact_text)}"
 
-    not is_user_specific
+    classifier_says_user_specific =
+      case Brain.ML.MicroClassifiers.classify(:user_fact_type, classifier_input) do
+        {:ok, "user_specific", score} when score > 0.3 -> true
+        _ -> false
+      end
+
+    not (has_first_person or classifier_says_user_specific)
   end
 
   defp normalize_fact(fact) do

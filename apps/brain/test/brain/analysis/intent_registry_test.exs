@@ -42,7 +42,7 @@ defmodule Brain.Analysis.IntentRegistryTest do
     end
 
     test "returns templates for smarthome device intent" do
-      templates = IntentRegistry.clarification_templates("smarthome.device.switch.on")
+      templates = IntentRegistry.clarification_templates("smarthome.lights.switch.on")
 
       # Should return a map (possibly with clarification templates from registry)
       assert is_map(templates)

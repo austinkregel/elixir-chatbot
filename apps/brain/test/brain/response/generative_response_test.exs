@@ -60,7 +60,7 @@ defmodule Brain.Response.GenerativeResponseTest do
         %{entity_type: "action", value: "turn on"}
       ]
 
-      case Synthesizer.synthesize("smarthome.device.switch.on", entities, confidence: 0.9) do
+      case Synthesizer.synthesize("smarthome.lights.switch.on", entities, confidence: 0.9) do
         {:ok, response} ->
           assert is_binary(response)
 

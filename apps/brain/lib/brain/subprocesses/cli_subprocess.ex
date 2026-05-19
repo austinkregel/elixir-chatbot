@@ -245,8 +245,14 @@ defmodule Brain.Subprocesses.CliSubprocess do
           [conversation_id, message] ->
             # Route through Brain.evaluate for full NLP processing
             case Brain.evaluate(conversation_id, message, user_id: state.user_id) do
+              {:ok, %{response: response}} when is_binary(response) ->
+                response
+
               {:ok, response} when is_binary(response) ->
                 response
+
+              {:ok, %{response: nil}} ->
+                "(no response - deferred)"
 
               {:ok, nil} ->
                 "(no response - deferred)"
@@ -264,8 +270,14 @@ defmodule Brain.Subprocesses.CliSubprocess do
         conv_id = ensure_conversation_id(state)
 
         case Brain.evaluate(conv_id, message, user_id: state.user_id) do
+          {:ok, %{response: response}} when is_binary(response) ->
+            response
+
           {:ok, response} when is_binary(response) ->
             response
+
+          {:ok, %{response: nil}} ->
+            "(no response - deferred)"
 
           {:ok, nil} ->
             "(no response - deferred)"

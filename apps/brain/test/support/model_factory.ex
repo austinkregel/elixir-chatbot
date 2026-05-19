@@ -34,6 +34,8 @@ defmodule Brain.Test.ModelFactory do
     fallback_response
     goal_type
     entity_type
+    user_fact_type
+    directed_at_bot
   )a
 
   @doc """
@@ -43,13 +45,39 @@ defmodule Brain.Test.ModelFactory do
   from small test fixture datasets.
   """
   def train_and_load_test_models do
-    # Only train if models haven't been loaded yet (training is expensive with gold standard data)
     unless already_trained?() do
-      train_intent_classifier()
-      train_sentiment_classifier()
-      train_micro_classifiers()
-      train_pos_tagger()
-      :persistent_term.put({__MODULE__, :trained}, true)
+      Logger.info("[ModelFactory] Starting test model training pipeline...")
+
+      Logger.info("[ModelFactory] Training intent classifier...")
+      intent_result = train_intent_classifier()
+      Logger.info("[ModelFactory] Intent classifier done.")
+
+      Logger.info("[ModelFactory] Training sentiment classifier...")
+      sentiment_result = train_sentiment_classifier()
+      Logger.info("[ModelFactory] Sentiment classifier done.")
+
+      Logger.info("[ModelFactory] Training micro classifiers...")
+      micro_result = train_micro_classifiers()
+      Logger.info("[ModelFactory] Micro classifiers done.")
+
+      Logger.info("[ModelFactory] Training POS tagger...")
+      pos_result = train_pos_tagger()
+      Logger.info("[ModelFactory] POS tagger done.")
+
+      case {intent_result, sentiment_result, pos_result} do
+        {{:ok, _}, {:ok, _}, {:ok, _}} ->
+          Logger.info("[ModelFactory] All test models trained successfully.")
+          :persistent_term.put({__MODULE__, :trained}, true)
+
+        _ ->
+          # Micro classifiers are optional in many tests; include status for debugging.
+          Logger.warning("[ModelFactory] Model training incomplete, will retry on next setup", %{
+            intent_result: inspect(intent_result),
+            sentiment_result: inspect(sentiment_result),
+            micro_result: inspect(micro_result),
+            pos_result: inspect(pos_result)
+          })
+      end
     end
   end
 
@@ -64,19 +92,22 @@ defmodule Brain.Test.ModelFactory do
   def train_intent_classifier(custom_data \\ nil) do
     data = custom_data || load_intent_fixture()
 
-    if data != [] do
-      model = SimpleClassifier.train(data)
+    cond do
+      data == [] ->
+        {:error, :no_intent_training_data}
 
-      if Process.whereis(Brain.ML.IntentClassifierSimple) do
-        GenServer.call(Brain.ML.IntentClassifierSimple, {:load_trained_model, model}, 120_000)
-      end
+      Process.whereis(Brain.ML.IntentClassifierSimple) == nil ->
+        {:error, :intent_classifier_not_started}
+
+      true ->
+        model = SimpleClassifier.train(data)
+        :ok = GenServer.call(Brain.ML.IntentClassifierSimple, {:load_trained_model, model}, 120_000)
+        {:ok, length(data)}
     end
-
-    :ok
   rescue
     e ->
       Logger.warning("ModelFactory: failed to train intent classifier: #{inspect(e)}")
-      :ok
+      {:error, :intent_training_failed}
   end
 
   @doc """
@@ -86,19 +117,26 @@ defmodule Brain.Test.ModelFactory do
   def train_sentiment_classifier(custom_data \\ nil) do
     data = custom_data || load_sentiment_fixture()
 
-    if data != [] do
-      model = SimpleClassifier.train(data)
+    cond do
+      data == [] ->
+        {:error, :no_sentiment_training_data}
 
-      if Process.whereis(Brain.ML.SentimentClassifierSimple) do
-        GenServer.call(Brain.ML.SentimentClassifierSimple, {:load_trained_model, model}, 5_000)
-      end
+      Process.whereis(Brain.ML.SentimentClassifierSimple) == nil ->
+        {:error, :sentiment_classifier_not_started}
+
+      true ->
+        model = SimpleClassifier.train(data)
+
+        case GenServer.call(Brain.ML.SentimentClassifierSimple, {:load_trained_model, model}, 5_000) do
+          {:ok, :loaded} -> {:ok, length(data)}
+          :ok -> {:ok, length(data)}
+          other -> {:error, {:unexpected_load_result, other}}
+        end
     end
-
-    :ok
   rescue
     e ->
       Logger.warning("ModelFactory: failed to train sentiment classifier: #{inspect(e)}")
-      :ok
+      {:error, :sentiment_training_failed}
   end
 
   @doc """
@@ -118,15 +156,21 @@ defmodule Brain.Test.ModelFactory do
         end
       end)
 
-    if models != %{} and Process.whereis(Brain.ML.MicroClassifiers) do
-      GenServer.call(Brain.ML.MicroClassifiers, {:load_trained_models, models}, 5_000)
-    end
+    cond do
+      models == %{} ->
+        {:error, :no_micro_training_data}
 
-    :ok
+      Process.whereis(Brain.ML.MicroClassifiers) == nil ->
+        {:error, :micro_classifiers_not_started}
+
+      true ->
+        :ok = GenServer.call(Brain.ML.MicroClassifiers, {:load_trained_models, models}, 5_000)
+        {:ok, map_size(models)}
+    end
   rescue
     e ->
       Logger.warning("ModelFactory: failed to train micro classifiers: #{inspect(e)}")
-      :ok
+      {:error, :micro_training_failed}
   end
 
   @doc """
@@ -138,27 +182,32 @@ defmodule Brain.Test.ModelFactory do
 
     sequences = load_pos_sequences_from_gold_standard()
 
-    if sequences != [] do
-      case POSTagger.train(sequences) do
-        {:ok, model} ->
-          models_path = Application.get_env(:brain, :ml)[:models_path]
+    cond do
+      sequences == [] ->
+        {:error, :no_pos_training_data}
 
-          if models_path do
-            save_path = Path.join(models_path, "pos_model.term")
-            File.mkdir_p!(Path.dirname(save_path))
-            POSTagger.save_model(model, save_path)
-          end
+      true ->
+        case POSTagger.train(sequences) do
+          {:ok, model} ->
+            models_path = Application.get_env(:brain, :ml)[:models_path]
 
-        {:error, reason} ->
-          Logger.warning("ModelFactory: failed to train POS tagger: #{inspect(reason)}")
-      end
+            if models_path do
+              save_path = Path.join(models_path, "pos_model.term")
+              File.mkdir_p!(Path.dirname(save_path))
+              POSTagger.save_model(model, save_path)
+            end
+
+            {:ok, length(sequences)}
+
+          {:error, reason} ->
+            Logger.warning("ModelFactory: failed to train POS tagger: #{inspect(reason)}")
+            {:error, :pos_training_failed}
+        end
     end
-
-    :ok
   rescue
     e ->
       Logger.warning("ModelFactory: failed to train POS tagger: #{inspect(e)}")
-      :ok
+      {:error, :pos_training_failed}
   end
 
   # -- Private --
