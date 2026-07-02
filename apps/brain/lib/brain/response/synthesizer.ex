@@ -152,8 +152,9 @@ defmodule Brain.Response.Synthesizer do
               if frames == [] do
                 :not_synthesized
               else
+                slot_type_aliases = get_in(domain_config, ["slot_requirements", "slot_type_aliases"]) || %{}
                 frame = Enum.random(frames)
-                filled_response = fill_entity_slots(frame, entities)
+                filled_response = fill_entity_slots(frame, entities, slot_type_aliases)
                 final_response = maybe_add_acknowledgment(filled_response, confidence, domain_config)
                 final_response = maybe_add_graph_context(final_response, context)
 
@@ -442,10 +443,12 @@ defmodule Brain.Response.Synthesizer do
   defp determine_frame_key(domain_config, entities) do
     slot_requirements = Map.get(domain_config, "slot_requirements", %{})
     required_slots = Map.get(slot_requirements, "required", [])
+    slot_type_aliases = Map.get(slot_requirements, "slot_type_aliases", %{})
 
     filled_required =
       Enum.filter(required_slots, fn slot ->
-        find_entity_value(entities, slot) != nil
+        acceptable_types = Map.get(slot_type_aliases, slot, [slot])
+        find_entity_value_by_types(entities, acceptable_types) != nil
       end)
 
     missing_required = required_slots -- filled_required
@@ -486,16 +489,38 @@ defmodule Brain.Response.Synthesizer do
     end)
   end
 
-  defp fill_entity_slots(frame, entities) do
+  defp fill_entity_slots(frame, entities, slot_type_aliases \\ %{}) do
+    reverse_alias_map = build_reverse_alias_map(slot_type_aliases)
+
     Enum.reduce(entities, frame, fn entity, acc ->
-      entity_type = entity[:entity_type] || entity["entity_type"] || ""
+      entity_type = to_string(entity[:entity_type] || entity["entity_type"] || "")
       entity_value = entity[:value] || entity["value"] || ""
 
       if entity_type != "" and entity_value != "" do
-        String.replace(acc, "$#{entity_type}", entity_value)
+        acc = String.replace(acc, "$#{entity_type}", entity_value)
+
+        slot_names = Map.get(reverse_alias_map, entity_type, [])
+        Enum.reduce(slot_names, acc, fn slot_name, inner_acc ->
+          String.replace(inner_acc, "$#{slot_name}", entity_value)
+        end)
       else
         acc
       end
+    end)
+  end
+
+  defp build_reverse_alias_map(slot_type_aliases) do
+    Enum.reduce(slot_type_aliases, %{}, fn {slot_name, type_list}, acc ->
+      Enum.reduce(type_list, acc, fn type, inner_acc ->
+        type_str = to_string(type)
+        existing = Map.get(inner_acc, type_str, [])
+
+        if slot_name in existing do
+          inner_acc
+        else
+          Map.put(inner_acc, type_str, [slot_name | existing])
+        end
+      end)
     end)
   end
 
@@ -558,11 +583,13 @@ defmodule Brain.Response.Synthesizer do
     end
   end
 
-  defp find_entity_value(entities, entity_type) do
-    Enum.find_value(entities, fn entity ->
-      type = entity[:entity_type] || entity["entity_type"]
+  defp find_entity_value_by_types(entities, acceptable_types) do
+    type_strings = Enum.map(acceptable_types, &to_string/1)
 
-      if type == entity_type do
+    Enum.find_value(entities, fn entity ->
+      type = to_string(entity[:entity_type] || entity["entity_type"] || "")
+
+      if type in type_strings do
         entity[:value] || entity["value"]
       else
         nil

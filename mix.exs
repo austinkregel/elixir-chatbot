@@ -50,6 +50,7 @@ defmodule ChatBot.Umbrella.MixProject do
         "ingest_framing_corpus",
         "gen_micro_data",
         "gen_framing_data --corpus gvfc",
+        "gen_lattice_data",
         "train",
       ],
 
