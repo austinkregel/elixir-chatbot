@@ -193,7 +193,20 @@ defmodule Brain.Services.Service do
   """
   @callback slot_schema() :: map()
 
-  @optional_callbacks enabled?: 0, slot_schema: 0
+  @doc """
+  List of intent domain prefixes this service handles.
+
+  Services that declare domains will receive ALL intents matching those
+  prefixes (e.g., `["smarthome", "music"]` handles `smarthome.switch`,
+  `music.play`, etc.) without needing to enumerate every specific intent.
+
+  This is the preferred routing mechanism for services that handle
+  broad categories of intents. Services that only handle a few specific
+  intents can use `supported_intents/0` instead.
+  """
+  @callback supported_domains() :: [String.t()]
+
+  @optional_callbacks enabled?: 0, slot_schema: 0, supported_domains: 0
 
   # ============================================================================
   # Helper Functions
