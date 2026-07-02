@@ -51,12 +51,13 @@ defmodule Brain.Memory.Store do
     GenServer.call(__MODULE__, {:add_episode_direct, episode, world_id})
   end
 
-  @doc "Query for episodes similar to the given text.\nReturns top k episodes with similarity scores.\n\n## Options\n  - world_id: The world to query (default: \"default\")\n"
+  @doc "Query for episodes similar to the given text.\nReturns top k episodes with similarity scores.\n\n## Options\n  - world_id: The world to query (default: \"default\")\n  - rerank: Whether to apply KG entity reranking (default: :auto, respects config; false to skip)\n"
   def query_similar(text, k \\ 5, opts \\ []) do
     world_id = Keyword.get(opts, :world_id, @default_world_id)
+    rerank = Keyword.get(opts, :rerank, :auto)
 
     Telemetry.span(:memory_query, %{k: k, world_id: world_id}, fn ->
-      GenServer.call(__MODULE__, {:query_similar, text, k, world_id})
+      GenServer.call(__MODULE__, {:query_similar, text, k, world_id, rerank})
     end)
   end
 
@@ -170,10 +171,11 @@ defmodule Brain.Memory.Store do
     GenServer.call(__MODULE__, {:add_semantic, semantic, world_id})
   end
 
-  @doc "Query for semantic facts similar to the given text.\n\n## Options\n  - world_id: The world to query (default: \"default\")\n"
+  @doc "Query for semantic facts similar to the given text.\n\n## Options\n  - world_id: The world to query (default: \"default\")\n  - rerank: Whether to apply KG entity reranking (default: :auto, respects config; false to skip)\n"
   def query_semantic(text, k \\ 5, opts \\ []) do
     world_id = Keyword.get(opts, :world_id, @default_world_id)
-    GenServer.call(__MODULE__, {:query_semantic, text, k, world_id})
+    rerank = Keyword.get(opts, :rerank, :auto)
+    GenServer.call(__MODULE__, {:query_semantic, text, k, world_id, rerank})
   end
 
   @doc "Get a specific semantic fact by ID.\n\n## Options\n  - world_id: The world to query (default: \"default\")\n"
@@ -281,7 +283,9 @@ defmodule Brain.Memory.Store do
         {:error, _} -> []
       end
 
-    episode = Episode.new(text, action, outcome, tags, embedding)
+    episode =
+      Episode.new(text, action, outcome, tags, embedding)
+      |> Map.put(:entity_names, extract_entity_names_for_ingest(text))
 
     # Write to Atlas first (primary store)
     case Brain.AtlasIntegration.persist_episode_sync(episode, world_id) do
@@ -306,6 +310,8 @@ defmodule Brain.Memory.Store do
 
   @impl true
   def handle_call({:add_episode_direct, episode, world_id}, _from, state) do
+    episode = ensure_entity_names(episode)
+
     case Brain.AtlasIntegration.persist_episode_sync(episode, world_id) do
       {:ok, _id} ->
         if is_list(episode.embedding) and episode.embedding != [] do
@@ -365,10 +371,17 @@ defmodule Brain.Memory.Store do
   # ============================================================================
 
   @impl true
-  def handle_call({:query_similar, text, k, world_id}, _from, state) do
+  def handle_call({:query_similar, text, k, world_id}, from, state) do
+    handle_call({:query_similar, text, k, world_id, :auto}, from, state)
+  end
+
+  @impl true
+  def handle_call({:query_similar, text, k, world_id, rerank}, _from, state) do
+    do_rerank = rerank != false and memory_rerank_enabled?()
+
     case get_embedding(world_id, text) do
       {:ok, query_embedding} ->
-        pool_size = if memory_rerank_enabled?(), do: k * 4, else: k * 2
+        pool_size = if do_rerank, do: k * 4, else: k * 2
 
         candidates =
           VectorIndex.search_all(state.episode_index, query_embedding, pool_size)
@@ -382,7 +395,7 @@ defmodule Brain.Memory.Store do
           |> Enum.reject(&is_nil/1)
 
         results =
-          if memory_rerank_enabled?() do
+          if do_rerank do
             kg_rerank(text, candidates, k)
           else
             Enum.take(candidates, k)
@@ -415,10 +428,17 @@ defmodule Brain.Memory.Store do
   end
 
   @impl true
-  def handle_call({:query_semantic, text, k, world_id}, _from, state) do
+  def handle_call({:query_semantic, text, k, world_id}, from, state) do
+    handle_call({:query_semantic, text, k, world_id, :auto}, from, state)
+  end
+
+  @impl true
+  def handle_call({:query_semantic, text, k, world_id, rerank}, _from, state) do
+    do_rerank = rerank != false and memory_rerank_enabled?()
+
     case get_embedding(world_id, text) do
       {:ok, query_embedding} ->
-        pool_size = if memory_rerank_enabled?(), do: k * 4, else: k * 2
+        pool_size = if do_rerank, do: k * 4, else: k * 2
 
         candidates =
           VectorIndex.search_all(state.semantic_index, query_embedding, pool_size)
@@ -432,7 +452,7 @@ defmodule Brain.Memory.Store do
           |> Enum.reject(&is_nil/1)
 
         results =
-          if memory_rerank_enabled?() do
+          if do_rerank do
             kg_rerank(text, candidates, k)
           else
             Enum.take(candidates, k)
@@ -551,6 +571,8 @@ defmodule Brain.Memory.Store do
   defp warm_vector_index(state) do
     case Brain.AtlasIntegration.load_episodes(@default_world_id) do
       {:ok, episodes} when episodes != %{} ->
+        episodes = backfill_entity_names(episodes, @default_world_id)
+
         Enum.each(episodes, fn {id, ep} ->
           if is_list(ep.embedding) and ep.embedding != [] do
             VectorIndex.insert(state.episode_index, {@default_world_id, id}, ep.embedding)
@@ -586,6 +608,39 @@ defmodule Brain.Memory.Store do
       Logger.warning("Failed to warm VectorIndex from Atlas: #{inspect(e)}")
   end
 
+  defp backfill_entity_names(episodes, world_id) do
+    needs_backfill =
+      Enum.filter(episodes, fn {_id, ep} ->
+        ep.entity_names == nil or ep.entity_names == []
+      end)
+
+    if needs_backfill == [] do
+      episodes
+    else
+      Logger.info("Backfilling entity_names",
+        count: length(needs_backfill),
+        world_id: world_id
+      )
+
+      updated =
+        Enum.map(needs_backfill, fn {id, ep} ->
+          text = ep.state || ep.action || ""
+          names = extract_entity_names_for_ingest(text)
+          updated_ep = %{ep | entity_names: names}
+          Brain.AtlasIntegration.persist_episode_sync(updated_ep, world_id)
+          {id, updated_ep}
+        end)
+        |> Map.new()
+
+      Logger.info("Backfill complete",
+        backfilled: map_size(updated),
+        world_id: world_id
+      )
+
+      Map.merge(episodes, updated)
+    end
+  end
+
   defp get_embedding(world_id, text) do
     world_embed_result = WorldEmbedder.embed(world_id, text)
 
@@ -611,9 +666,7 @@ defmodule Brain.Memory.Store do
   # ============================================================================
 
   defp kg_rerank(query_text, candidates, k) do
-    alias Brain.ML.KnowledgeGraph.EntityVectorCache
-
-    query_entities = extract_entity_names(query_text)
+    query_entities = extract_entity_names_from_text(query_text)
 
     if query_entities == [] do
       Enum.take(candidates, k)
@@ -625,8 +678,7 @@ defmodule Brain.Memory.Store do
       else
         reranked =
           Enum.map(candidates, fn {item, tfidf_score} ->
-            item_text = item_text(item)
-            item_entities = extract_entity_names(item_text)
+            item_entities = read_item_entity_names(item)
             item_vecs = entity_vectors(item_entities)
 
             kg_score =
@@ -649,8 +701,15 @@ defmodule Brain.Memory.Store do
     _ -> Enum.take(candidates, k)
   end
 
-  defp extract_entity_names(text) when is_binary(text) do
-    case Brain.ML.EntityExtractor.extract_entities(text) do
+  defp read_item_entity_names(item) do
+    case Map.get(item, :entity_names) do
+      names when is_list(names) -> names
+      nil -> []
+    end
+  end
+
+  defp extract_entity_names_from_text(text) when is_binary(text) do
+    case Brain.ML.EntityExtractor.extract_entities(text, skip_disambiguation: true) do
       entities when is_list(entities) ->
         Enum.map(entities, fn e ->
           Map.get(e, :value) || Map.get(e, :text, "")
@@ -664,7 +723,34 @@ defmodule Brain.Memory.Store do
     _ -> []
   end
 
-  defp extract_entity_names(_), do: []
+  defp extract_entity_names_from_text(_), do: []
+
+  defp extract_entity_names_for_ingest(text) when is_binary(text) do
+    case Brain.ML.EntityExtractor.extract_entities(text, skip_disambiguation: true) do
+      entities when is_list(entities) ->
+        Enum.map(entities, fn e ->
+          Map.get(e, :value) || Map.get(e, :text, "")
+        end)
+        |> Enum.reject(&(&1 == ""))
+
+      _ ->
+        []
+    end
+  rescue
+    _ -> []
+  end
+
+  defp extract_entity_names_for_ingest(_), do: []
+
+  defp ensure_entity_names(%Episode{entity_names: names} = episode)
+       when is_list(names) and names != [] do
+    episode
+  end
+
+  defp ensure_entity_names(%Episode{} = episode) do
+    text = episode.state || episode.action || ""
+    Map.put(episode, :entity_names, extract_entity_names_for_ingest(text))
+  end
 
   defp entity_vectors(entity_names) do
     alias Brain.ML.KnowledgeGraph.EntityVectorCache
@@ -693,15 +779,6 @@ defmodule Brain.Memory.Store do
     end
   rescue
     _ -> 0.0
-  end
-
-  defp item_text(item) do
-    cond do
-      is_binary(Map.get(item, :state)) -> item.state
-      is_binary(Map.get(item, :representation)) -> item.representation
-      is_binary(Map.get(item, :action)) -> item.action
-      true -> ""
-    end
   end
 
   defp memory_rerank_enabled? do

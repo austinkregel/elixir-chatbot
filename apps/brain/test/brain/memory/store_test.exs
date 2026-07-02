@@ -185,4 +185,63 @@ defmodule Brain.Memory.StoreTest do
       assert episodes == []
     end
   end
+
+  describe "rerank option" do
+    test "query_similar with rerank: false returns results without entity extraction" do
+      {:ok, _} = Store.add_episode("hello world", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
+      {:ok, _} = Store.add_episode("hello there", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
+
+      {:ok, results} = Store.query_similar("hello friend", 3, rerank: false)
+
+      assert is_list(results)
+    end
+
+    test "query_similar with rerank: false skips rerank even when config enables it" do
+      {:ok, _} = Store.add_episode("hello world", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
+
+      original_config = Application.get_env(:brain, :kg_signals, [])
+      Application.put_env(:brain, :kg_signals, Keyword.put(original_config, :memory_rerank, true))
+
+      {:ok, results} = Store.query_similar("hello friend", 3, rerank: false)
+
+      Application.put_env(:brain, :kg_signals, original_config)
+
+      assert is_list(results)
+    end
+
+    test "query_semantic with rerank: false returns results" do
+      {:ok, embedding} = Embedder.embed("hello world")
+      fact = Brain.Memory.Types.SemanticFact.new("greeting", embedding, [], ["smalltalk.greetings.hello"])
+      {:ok, _} = Store.add_semantic(fact)
+
+      {:ok, results} = Store.query_semantic("hello there", 5, rerank: false)
+
+      assert is_list(results)
+    end
+  end
+
+  describe "entity_names on episodes" do
+    test "add_episode populates entity_names field" do
+      {:ok, id} = Store.add_episode("hello world", "smalltalk.greetings.hello", "hi there", ["smalltalk.greetings.hello"])
+      {:ok, episode} = Store.get_episode(id)
+
+      assert is_list(episode.entity_names)
+    end
+
+    test "add_episode_direct preserves pre-populated entity_names" do
+      episode = Brain.Memory.Types.Episode.new(
+        "hello world",
+        "smalltalk.greetings.hello",
+        "hi there",
+        ["smalltalk.greetings.hello"],
+        []
+      )
+      episode = %{episode | entity_names: ["world"]}
+
+      {:ok, id} = Store.add_episode_direct(episode)
+      {:ok, retrieved} = Store.get_episode(id)
+
+      assert retrieved.entity_names == ["world"]
+    end
+  end
 end
