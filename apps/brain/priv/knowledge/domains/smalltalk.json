@@ -1,0 +1,94 @@
+{
+  "domain": "smalltalk",
+  "description": "Casual conversation and expressives",
+  "response_frames": {
+    "greeting": [
+      "Hello!",
+      "Hi there!",
+      "Hey!",
+      "Hi! How can I help you?"
+    ],
+    "farewell": [
+      "Goodbye!",
+      "See you later!",
+      "Take care!",
+      "Bye!"
+    ],
+    "thanks": [
+      "You're welcome!",
+      "Happy to help!",
+      "No problem!",
+      "Glad I could help!"
+    ],
+    "how_are_you": [
+      "I'm doing well, thanks for asking!",
+      "Great, thank you! How about you?",
+      "All good here!"
+    ],
+    "apology": [
+      "No worries!",
+      "That's fine.",
+      "Don't worry about it!",
+      "It's all good!"
+    ],
+    "acknowledgment": [
+      "I see.",
+      "Got it.",
+      "Understood.",
+      "Okay."
+    ]
+  },
+  "entity_verbalizations": {},
+  "slot_requirements": {
+    "required": [],
+    "optional": []
+  },
+  "chunk_type_seeds": {
+    "greeting": [
+      "Hello!",
+      "Hi there!",
+      "Hey!",
+      "Good morning!",
+      "Nice to meet you!",
+      "Welcome!",
+      "Greetings!"
+    ],
+    "acknowledgment": [
+      "I understand.",
+      "Got it.",
+      "Okay.",
+      "I see.",
+      "Understood.",
+      "Right.",
+      "Sure thing."
+    ],
+    "body": [
+      "The weather is sunny.",
+      "Playing your music now.",
+      "Here's what I found.",
+      "The temperature is 72 degrees.",
+      "I'll set that reminder for you."
+    ],
+    "offer": [
+      "What can I help you with?",
+      "Anything else?",
+      "How can I assist you?",
+      "What would you like to do?",
+      "Is there something else you need?"
+    ],
+    "clarification": [
+      "Which location did you mean?",
+      "What time would you like?",
+      "I need to know the date.",
+      "Could you specify?",
+      "Which one?"
+    ],
+    "closing": [
+      "Have a great day!",
+      "Goodbye!",
+      "Talk to you later!",
+      "Take care!",
+      "See you soon!"
+    ]
+  }
+}

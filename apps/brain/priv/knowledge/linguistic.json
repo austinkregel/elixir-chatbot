@@ -1,0 +1,16 @@
+{
+  "description": "Linguistic utility data for NLP processing - negation, intensifiers, and hedges. NOT for classification - use trained models for that.",
+  "negation_words": [
+    "not", "no", "never", "none", "cannot", "can't", "won't", "don't", 
+    "doesn't", "didn't", "isn't", "aren't", "wasn't", "weren't", 
+    "neither", "nor", "nobody", "nothing", "nowhere"
+  ],
+  "intensifiers": [
+    "very", "really", "extremely", "quite", "absolutely", "totally",
+    "completely", "highly", "incredibly", "especially"
+  ],
+  "hedges": [
+    "maybe", "perhaps", "possibly", "probably", "might", "could",
+    "somewhat", "kind of", "sort of", "a bit"
+  ]
+}

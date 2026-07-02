@@ -1,0 +1,58 @@
+{
+  "domain": "alarm",
+  "description": "Alarm management",
+  "response_frames": {
+    "time": [
+      "Alarm set for $time.",
+      "I've set an alarm for $time."
+    ],
+    "general": [
+      "Alarm has been set.",
+      "Done, your alarm is ready."
+    ],
+    "cancel": [
+      "Alarm cancelled.",
+      "I've cancelled the alarm."
+    ],
+    "check": [
+      "Let me check your alarms."
+    ]
+  },
+  "enriched_response_frames": {
+    "with_alarm_status": {
+      "condition": "enriched:alarm_status",
+      "requires_enrichment": ["alarm_status", "alarm_time"],
+      "templates": [
+        "Your alarm is $alarm_status for $alarm_time.",
+        "You have an alarm $alarm_status at $alarm_time."
+      ]
+    },
+    "service_not_configured": {
+      "condition": "service_missing",
+      "requires_enrichment": [],
+      "templates": [
+        "I'd need a smart home connection to manage alarms."
+      ]
+    },
+    "service_error": {
+      "condition": "service_error",
+      "requires_enrichment": [],
+      "templates": [
+        "I had trouble setting that alarm. The system might be unavailable."
+      ]
+    }
+  },
+  "entity_verbalizations": {
+    "time": ["for $value", "at $value"]
+  },
+  "acknowledgment_prefixes": ["Sure,", "Done."],
+  "slot_requirements": {
+    "required": [],
+    "optional": ["time"]
+  },
+  "enrichment_service": "home_assistant",
+  "enrichment_fields": {
+    "alarm_status": {"description": "Alarm state (set/not set)", "source": "home_assistant"},
+    "alarm_time": {"description": "Next alarm time", "source": "home_assistant"}
+  }
+}

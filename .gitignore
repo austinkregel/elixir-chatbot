@@ -120,6 +120,13 @@ apps/brain/test/brain/ml/lexicon/
 apps/brain/test/brain/ml_models/
 apps/brain/data/
 apps/brain/priv/*
+# JSON configs are read at compile time (@external_resource) and must be tracked;
+# models, lexicons, runtime stores, and secrets above stay ignored.
+!apps/brain/priv/analysis/
+!apps/brain/priv/knowledge/
+!apps/brain/priv/response/
+!apps/brain/priv/services/
+apps/brain/priv/knowledge/Echo.json
 
 data/
 .vscode/

@@ -1,0 +1,90 @@
+{
+  "domain": "music",
+  "description": "Music playback and control",
+  "response_frames": {
+    "play_artist": [
+      "Playing music by $artist for you now.",
+      "Starting $artist's music.",
+      "Here's some $artist for you."
+    ],
+    "play_song": [
+      "Playing $song for you.",
+      "Now playing $song.",
+      "Here's $song."
+    ],
+    "play_artist_song": [
+      "Playing $song by $artist.",
+      "Here's $song by $artist for you."
+    ],
+    "missing_content": [
+      "What would you like me to play?",
+      "What music would you like to hear?",
+      "Which artist or song should I play?"
+    ]
+  },
+  "enriched_response_frames": {
+    "with_now_playing": {
+      "condition": "enriched:now_playing",
+      "requires_enrichment": ["now_playing", "artist"],
+      "templates": [
+        "Currently playing $now_playing by $artist.",
+        "Now playing: $now_playing by $artist."
+      ]
+    },
+    "with_now_playing_detailed": {
+      "condition": "enriched:now_playing AND enriched:album",
+      "requires_enrichment": ["now_playing", "artist", "album"],
+      "templates": [
+        "Currently playing $now_playing by $artist from the album $album.",
+        "Now playing: $now_playing by $artist ($album)."
+      ]
+    },
+    "with_volume": {
+      "condition": "enriched:volume",
+      "requires_enrichment": ["volume", "player_state"],
+      "templates": [
+        "The media player is $player_state at volume $volume.",
+        "Volume is at $volume and the player is $player_state."
+      ]
+    },
+    "service_not_configured": {
+      "condition": "service_missing",
+      "requires_enrichment": [],
+      "templates": [
+        "I'd need a media player connection to play music. You can set one up in settings.",
+        "Music playback isn't configured yet."
+      ]
+    },
+    "service_error": {
+      "condition": "service_error",
+      "requires_enrichment": [],
+      "templates": [
+        "I had trouble reaching the media player. It might be offline.",
+        "Couldn't connect to the media player right now."
+      ]
+    }
+  },
+  "entity_verbalizations": {
+    "music-artist": ["by $value", "from $value", "$value's"],
+    "song": ["$value", "the song $value"],
+    "genre": ["some $value", "$value music"]
+  },
+  "acknowledgment_prefixes": [
+    "Sure,",
+    "You got it,",
+    "Coming right up,"
+  ],
+  "slot_requirements": {
+    "required": [],
+    "optional": ["music-artist", "song", "genre"]
+  },
+  "enrichment_service": "home_assistant",
+  "enrichment_fields": {
+    "now_playing": {"description": "Currently playing track title", "source": "home_assistant"},
+    "artist": {"description": "Current track artist", "source": "home_assistant"},
+    "album": {"description": "Current track album", "source": "home_assistant"},
+    "volume": {"description": "Current volume level", "source": "home_assistant"},
+    "player_state": {"description": "Media player state (playing/paused/idle)", "source": "home_assistant"},
+    "media_player": {"description": "Active media player entity", "source": "home_assistant"}
+  }
+}
