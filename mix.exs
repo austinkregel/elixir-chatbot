@@ -51,7 +51,7 @@ defmodule ChatBot.Umbrella.MixProject do
         "gen_micro_data",
         "gen_framing_data --corpus gvfc",
         "gen_lattice_data",
-        "train",
+        "train"
       ],
 
       # Precommit runs format check, Credo, and tests

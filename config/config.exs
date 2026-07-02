@@ -29,17 +29,15 @@ config :brain,
     use_gpu: System.get_env("ML_USE_GPU", "true") == "true",
     batch_size: System.get_env("ML_BATCH_SIZE", "1000") |> String.to_integer(),
     max_features: System.get_env("ML_MAX_FEATURES", "5000") |> String.to_integer(),
-    ouro_sequence_length:
-      System.get_env("OURO_SEQUENCE_LENGTH", "4096") |> String.to_integer(),
-    ouro_max_new_tokens:
-      System.get_env("OURO_MAX_NEW_TOKENS", "256") |> String.to_integer(),
+    ouro_sequence_length: System.get_env("OURO_SEQUENCE_LENGTH", "4096") |> String.to_integer(),
+    ouro_max_new_tokens: System.get_env("OURO_MAX_NEW_TOKENS", "256") |> String.to_integer(),
     ouro_generation_timeout:
       System.get_env("OURO_GENERATION_TIMEOUT", "120000") |> String.to_integer(),
     ouro_backend:
-      (case System.get_env("OURO_BACKEND", "sidecar") do
-         "bumblebee" -> :bumblebee
-         _ -> :sidecar
-       end),
+      case System.get_env("OURO_BACKEND", "sidecar") do
+        "bumblebee" -> :bumblebee
+        _ -> :sidecar
+      end,
     ouro_api_url: System.get_env("OURO_API_URL", "http://localhost:8100"),
     ouro_model_id: System.get_env("OURO_MODEL_ID", "ByteDance/Ouro-2.6B")
   ],
@@ -51,11 +49,14 @@ config :brain,
   kg_signals: [
     enabled: System.get_env("KG_SIGNALS_ENABLED", "true") == "true",
     srl_gating: System.get_env("KG_SIGNALS_SRL_GATING", "true") == "true",
-    consolidation_blend: System.get_env("KG_SIGNALS_CONSOLIDATION_BLEND", "0.6") |> String.to_float(),
+    consolidation_blend:
+      System.get_env("KG_SIGNALS_CONSOLIDATION_BLEND", "0.6") |> String.to_float(),
     memory_rerank: System.get_env("KG_SIGNALS_MEMORY_RERANK", "true") == "true",
     novelty_downweight: System.get_env("KG_SIGNALS_NOVELTY_DOWNWEIGHT", "true") == "true",
-    contradiction_default_kg: System.get_env("KG_SIGNALS_CONTRADICTION_DEFAULT_KG", "true") == "true",
-    entity_promoter_kg_gate: System.get_env("KG_SIGNALS_ENTITY_PROMOTER_KG_GATE", "true") == "true",
+    contradiction_default_kg:
+      System.get_env("KG_SIGNALS_CONTRADICTION_DEFAULT_KG", "true") == "true",
+    entity_promoter_kg_gate:
+      System.get_env("KG_SIGNALS_ENTITY_PROMOTER_KG_GATE", "true") == "true",
     novelty_retraction_window: 7
   ]
 

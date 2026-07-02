@@ -135,22 +135,23 @@ acc =
     end
 
     samples = [
-      {"Hey there, how are you?",                       "smalltalk.greetings.how_are_you"},
-      {"What's the weather like in Denver?",             "weather.query"},
-      {"Play some jazz music",                           "music.play"},
-      {"Set a reminder for my meeting at 3pm tomorrow",  "reminder.create"},
-      {"What's the capital of France?",                  "knowledge.capital"},
-      {"Turn off the living room lights",                "smarthome.lights.switch.off"},
-      {"Goodbye, talk to you later",                     "smalltalk.greetings.bye"},
+      {"Hey there, how are you?", "smalltalk.greetings.how_are_you"},
+      {"What's the weather like in Denver?", "weather.query"},
+      {"Play some jazz music", "music.play"},
+      {"Set a reminder for my meeting at 3pm tomorrow", "reminder.create"},
+      {"What's the capital of France?", "knowledge.capital"},
+      {"Turn off the living room lights", "smarthome.lights.switch.off"},
+      {"Goodbye, talk to you later", "smalltalk.greetings.bye"}
     ]
 
     intents =
       Enum.map(samples, fn {text, expected} ->
         log_input.("classify :intent_full", %{text: text, expected: expected})
 
-        {result, _elapsed} = timed.("classify(#{String.slice(text, 0, 30)}...)", fn ->
-          MicroClassifiers.classify(:intent_full, text)
-        end)
+        {result, _elapsed} =
+          timed.("classify(#{String.slice(text, 0, 30)}...)", fn ->
+            MicroClassifiers.classify(:intent_full, text)
+          end)
 
         log_output.("result", result)
 
@@ -159,7 +160,12 @@ acc =
             %{text: text, intent: label, confidence: confidence, expected: expected}
 
           {:ok, other} ->
-            %{text: text, intent: Map.get(other, :label, :unknown), confidence: Map.get(other, :confidence, 0.0), expected: expected}
+            %{
+              text: text,
+              intent: Map.get(other, :label, :unknown),
+              confidence: Map.get(other, :confidence, 0.0),
+              expected: expected
+            }
 
           {:error, reason} ->
             IO.puts("  [WARN] Classification failed: #{inspect(reason)}")
@@ -178,10 +184,15 @@ acc =
     Enum.each(intents, fn i ->
       match = if to_string(i.intent) == i.expected, do: "MATCH", else: "MISMATCH"
       IO.puts("    [#{match}] \"#{String.slice(i.text, 0, 45)}\"")
-      IO.puts("      actual=#{i.intent} (#{Float.round(i.confidence * 100, 1)}%), expected=#{i.expected}")
+
+      IO.puts(
+        "      actual=#{i.intent} (#{Float.round(i.confidence * 100, 1)}%), expected=#{i.expected}"
+      )
     end)
 
-    IO.puts("\n  Intent accuracy: #{correct}/#{total} (#{Float.round(correct / max(total, 1) * 100, 1)}%)")
+    IO.puts(
+      "\n  Intent accuracy: #{correct}/#{total} (#{Float.round(correct / max(total, 1) * 100, 1)}%)"
+    )
 
     %{acc | intents: intents}
   end)
@@ -206,9 +217,10 @@ acc =
         opts = [world_id: acc.world_id]
         log_input.("extract_entities", %{text: text, opts: opts})
 
-        {result, _elapsed} = timed.("extract_entities(#{String.slice(text, 0, 30)}...)", fn ->
-          EntityExtractor.extract_entities(text, opts)
-        end)
+        {result, _elapsed} =
+          timed.("extract_entities(#{String.slice(text, 0, 30)}...)", fn ->
+            EntityExtractor.extract_entities(text, opts)
+          end)
 
         log_output.("entities", result)
 
@@ -223,10 +235,13 @@ acc =
       end)
 
     IO.puts("\n  Accumulated entities:")
+
     Enum.each(entities, fn e ->
-      names = Enum.map(e.entities, fn ent ->
-        "#{Map.get(ent, :value, Map.get(ent, :text, "?"))}(#{Map.get(ent, :type, "?")})"
-      end)
+      names =
+        Enum.map(e.entities, fn ent ->
+          "#{Map.get(ent, :value, Map.get(ent, :text, "?"))}(#{Map.get(ent, :type, "?")})"
+        end)
+
       IO.puts("    - \"#{String.slice(e.text, 0, 40)}\" => [#{Enum.join(names, ", ")}]")
     end)
 
@@ -240,30 +255,32 @@ acc =
 acc =
   section.("3. Sentiment Classification", acc, fn acc ->
     sentiment_samples = [
-      {"Hey there, how are you?",                                :neutral},
-      {"What's the weather like in Denver?",                     :neutral},
-      {"Play some jazz music",                                   :neutral},
-      {"Set a reminder for my meeting at 3pm tomorrow",          :neutral},
-      {"What's the capital of France?",                          :neutral},
-      {"Turn off the living room lights",                        :neutral},
-      {"Goodbye, talk to you later",                             :neutral},
-      {"I absolutely love this new feature, it's incredible!",   :positive},
-      {"This is really annoying and I'm fed up with it.",        :negative},
+      {"Hey there, how are you?", :neutral},
+      {"What's the weather like in Denver?", :neutral},
+      {"Play some jazz music", :neutral},
+      {"Set a reminder for my meeting at 3pm tomorrow", :neutral},
+      {"What's the capital of France?", :neutral},
+      {"Turn off the living room lights", :neutral},
+      {"Goodbye, talk to you later", :neutral},
+      {"I absolutely love this new feature, it's incredible!", :positive},
+      {"This is really annoying and I'm fed up with it.", :negative}
     ]
 
     sentiments =
       Enum.map(sentiment_samples, fn {text, expected} ->
         log_input.("classify_sentiment", text)
 
-        {result, _} = timed.("classify_sentiment(#{String.slice(text, 0, 25)}...)", fn ->
-          Brain.ML.SentimentClassifierSimple.classify(text)
-        end)
+        {result, _} =
+          timed.("classify_sentiment(#{String.slice(text, 0, 25)}...)", fn ->
+            Brain.ML.SentimentClassifierSimple.classify(text)
+          end)
 
         log_output.("sentiment", result)
 
         case result do
           {:ok, %{label: label, confidence: conf}} ->
             %{text: text, sentiment: label, confidence: conf, expected: expected}
+
           _ ->
             %{text: text, sentiment: :neutral, confidence: 0.5, expected: expected}
         end
@@ -276,10 +293,15 @@ acc =
     Enum.each(sentiments, fn s ->
       match = if s.sentiment == s.expected, do: "MATCH", else: "MISMATCH"
       IO.puts("    [#{match}] \"#{String.slice(s.text, 0, 45)}\"")
-      IO.puts("      actual=#{s.sentiment} (#{Float.round(s.confidence * 100, 1)}%), expected=#{s.expected}")
+
+      IO.puts(
+        "      actual=#{s.sentiment} (#{Float.round(s.confidence * 100, 1)}%), expected=#{s.expected}"
+      )
     end)
 
-    IO.puts("\n  Sentiment accuracy: #{correct}/#{total} (#{Float.round(correct / max(total, 1) * 100, 1)}%)")
+    IO.puts(
+      "\n  Sentiment accuracy: #{correct}/#{total} (#{Float.round(correct / max(total, 1) * 100, 1)}%)"
+    )
 
     %{acc | sentiments: sentiments}
   end)
@@ -290,21 +312,24 @@ acc =
 
 acc =
   section.("4. Analysis Pipeline", acc, fn acc ->
-    text = "Good morning! Can you check the weather in Denver for me? Also, I'd love to hear some jazz music. Oh and remind me to call Sarah at noon."
+    text =
+      "Good morning! Can you check the weather in Denver for me? Also, I'd love to hear some jazz music. Oh and remind me to call Sarah at noon."
+
     opts = [world_id: acc.world_id]
 
     expected_chunk_intents = [
-      {"Good morning",        "smalltalk.greetings.goodmorning"},
-      {"weather in Denver",   "weather.query"},
-      {"jazz music",          "music.play"},
-      {"remind me",           "reminder.create"},
+      {"Good morning", "smalltalk.greetings.goodmorning"},
+      {"weather in Denver", "weather.query"},
+      {"jazz music", "music.play"},
+      {"remind me", "reminder.create"}
     ]
 
     log_input.("Pipeline.process", %{text: text, opts: opts})
 
-    {result, _} = timed.("Pipeline.process", fn ->
-      Pipeline.process(text, opts)
-    end)
+    {result, _} =
+      timed.("Pipeline.process", fn ->
+        Pipeline.process(text, opts)
+      end)
 
     summary = Pipeline.summarize(result)
     log_output.("Pipeline.summarize", summary)
@@ -313,17 +338,25 @@ acc =
     IO.puts("    Chunks: #{summary.chunks}")
     IO.puts("    Strategy: #{inspect(summary.overall_strategy)}")
 
-    correct = Enum.with_index(summary.analyses)
-    |> Enum.reduce(0, fn {a, idx}, correct_count ->
-      {_hint, expected} = Enum.at(expected_chunk_intents, idx, {"?", "?"})
-      match = if to_string(a.intent) == expected, do: "MATCH", else: "MISMATCH"
-      IO.puts("    [#{match}] chunk \"#{a.text}\"")
-      IO.puts("      actual=#{inspect(a.intent)}, expected=#{inspect(expected)}, strategy=#{inspect(a.strategy)}")
-      if to_string(a.intent) == expected, do: correct_count + 1, else: correct_count
-    end)
+    correct =
+      Enum.with_index(summary.analyses)
+      |> Enum.reduce(0, fn {a, idx}, correct_count ->
+        {_hint, expected} = Enum.at(expected_chunk_intents, idx, {"?", "?"})
+        match = if to_string(a.intent) == expected, do: "MATCH", else: "MISMATCH"
+        IO.puts("    [#{match}] chunk \"#{a.text}\"")
+
+        IO.puts(
+          "      actual=#{inspect(a.intent)}, expected=#{inspect(expected)}, strategy=#{inspect(a.strategy)}"
+        )
+
+        if to_string(a.intent) == expected, do: correct_count + 1, else: correct_count
+      end)
 
     total = length(summary.analyses)
-    IO.puts("\n  Pipeline intent accuracy: #{correct}/#{total} (#{Float.round(correct / max(total, 1) * 100, 1)}%)")
+
+    IO.puts(
+      "\n  Pipeline intent accuracy: #{correct}/#{total} (#{Float.round(correct / max(total, 1) * 100, 1)}%)"
+    )
 
     %{acc | pipeline_result: result}
   end)
@@ -340,11 +373,12 @@ acc =
     stats = MemoryStore.stats(world_id: acc.world_id)
     log_output.("stats", stats)
 
-    pipeline_text = if acc.pipeline_result do
-      acc.pipeline_result.raw_input
-    else
-      "Good morning! Can you check the weather in Denver for me?"
-    end
+    pipeline_text =
+      if acc.pipeline_result do
+        acc.pipeline_result.raw_input
+      else
+        "Good morning! Can you check the weather in Denver for me?"
+      end
 
     intent_summary =
       acc.intents
@@ -369,19 +403,22 @@ acc =
 
     log_input.("add_episode", episode_fields)
 
-    {_add_result, _} = timed.("add_episode", fn ->
-      MemoryStore.add_episode(
-        episode_fields.state,
-        episode_fields.action,
-        episode_fields.outcome,
-        episode_fields.tags,
-        world_id: acc.world_id
-      )
-    end)
+    {_add_result, _} =
+      timed.("add_episode", fn ->
+        MemoryStore.add_episode(
+          episode_fields.state,
+          episode_fields.action,
+          episode_fields.outcome,
+          episode_fields.tags,
+          world_id: acc.world_id
+        )
+      end)
 
     query_text =
       case Enum.at(acc.intents, 3) do
-        %{text: t} -> t
+        %{text: t} ->
+          t
+
         _ ->
           case Enum.at(acc.intents, 1) do
             %{text: t} -> t
@@ -391,9 +428,10 @@ acc =
 
     log_input.("query_similar", %{text: query_text, k: 3, world_id: acc.world_id})
 
-    {similar, _} = timed.("query_similar", fn ->
-      MemoryStore.query_similar(query_text, 3, world_id: acc.world_id)
-    end)
+    {similar, _} =
+      timed.("query_similar", fn ->
+        MemoryStore.query_similar(query_text, 3, world_id: acc.world_id)
+      end)
 
     log_output.("similar episodes", similar)
 
@@ -417,32 +455,43 @@ acc =
   section.("6. Enrichment Pipeline", acc, fn acc ->
     IO.puts("  --- Registered services ---")
 
-    {services, _} = timed.("Dispatcher.list_services", fn ->
-      Dispatcher.list_services(world: acc.world_id)
-    end)
+    {services, _} =
+      timed.("Dispatcher.list_services", fn ->
+        Dispatcher.list_services(world: acc.world_id)
+      end)
 
     Enum.each(services, fn svc ->
-      IO.puts("    - #{svc.name} (#{svc.display_name}): configured=#{svc.configured}, enabled=#{svc.enabled}")
+      IO.puts(
+        "    - #{svc.name} (#{svc.display_name}): configured=#{svc.configured}, enabled=#{svc.enabled}"
+      )
+
       IO.puts("      intents: #{inspect(svc.supported_intents)}")
       IO.puts("      provides: #{inspect(svc.provides_fields)}")
     end)
 
     IO.puts("\n  --- Weather service availability ---")
 
-    {weather_available, _} = timed.("Dispatcher.service_available?(:weather)", fn ->
-      Dispatcher.service_available?(:weather, world: acc.world_id)
-    end)
+    {weather_available, _} =
+      timed.("Dispatcher.service_available?(:weather)", fn ->
+        Dispatcher.service_available?(:weather, world: acc.world_id)
+      end)
 
     IO.puts("  Weather service available? #{weather_available}")
 
     IO.puts("\n  --- Enricher.prepare_context (weather.query) ---")
     slots = %{location: "Denver"}
     context = %{world_id: acc.world_id}
-    log_input.("Enricher.prepare_context", %{intent: "weather.query", slots: slots, context: context})
 
-    {enriched_context, _} = timed.("Enricher.prepare_context", fn ->
-      Enricher.prepare_context("weather.query", slots, context)
-    end)
+    log_input.("Enricher.prepare_context", %{
+      intent: "weather.query",
+      slots: slots,
+      context: context
+    })
+
+    {enriched_context, _} =
+      timed.("Enricher.prepare_context", fn ->
+        Enricher.prepare_context("weather.query", slots, context)
+      end)
 
     enrichment_status = Map.get(enriched_context, :enrichment_status)
     enriched_data = Map.get(enriched_context, :enriched_data, %{})
@@ -453,9 +502,10 @@ acc =
     template = "The weather is $temperature and $conditions in $location_name"
     log_input.("Enricher.enrich_response", %{template: template})
 
-    {enrich_result, _} = timed.("Enricher.enrich_response", fn ->
-      Enricher.enrich_response(template, enriched_context)
-    end)
+    {enrich_result, _} =
+      timed.("Enricher.enrich_response", fn ->
+        Enricher.enrich_response(template, enriched_context)
+      end)
 
     log_output.("enrich_response", enrich_result)
 
@@ -465,29 +515,43 @@ acc =
 
     IO.puts("\n  --- Enricher.prepare_context (music.play -- no enrichment service) ---")
     music_slots = %{genre: "jazz"}
-    log_input.("Enricher.prepare_context", %{intent: "music.play", slots: music_slots, context: context})
 
-    {music_context, _} = timed.("Enricher.prepare_context (music.play)", fn ->
-      Enricher.prepare_context("music.play", music_slots, context)
-    end)
+    log_input.("Enricher.prepare_context", %{
+      intent: "music.play",
+      slots: music_slots,
+      context: context
+    })
+
+    {music_context, _} =
+      timed.("Enricher.prepare_context (music.play)", fn ->
+        Enricher.prepare_context("music.play", music_slots, context)
+      end)
 
     IO.puts("  Music enrichment status: #{inspect(Map.get(music_context, :enrichment_status))}")
 
     IO.puts("\n  --- Dispatcher.dispatch (reminder.create -- no handler) ---")
-    log_input.("Dispatcher.dispatch", %{intent: "reminder.create", slots: %{time: "3pm", task: "meeting"}})
 
-    {dispatch_result, _} = timed.("Dispatcher.dispatch (reminder.create)", fn ->
-      Dispatcher.dispatch("reminder.create", %{time: "3pm", task: "meeting"}, context)
-    end)
+    log_input.("Dispatcher.dispatch", %{
+      intent: "reminder.create",
+      slots: %{time: "3pm", task: "meeting"}
+    })
+
+    {dispatch_result, _} =
+      timed.("Dispatcher.dispatch (reminder.create)", fn ->
+        Dispatcher.dispatch("reminder.create", %{time: "3pm", task: "meeting"}, context)
+      end)
 
     log_output.("dispatch result", dispatch_result)
 
-    %{acc | enrichment: %{
-      status: enrichment_status,
-      data: enriched_data,
-      metadata: metadata,
-      context: enriched_context
-    }}
+    %{
+      acc
+      | enrichment: %{
+          status: enrichment_status,
+          data: enriched_data,
+          metadata: metadata,
+          context: enriched_context
+        }
+    }
   end)
 
 # ============================================================
@@ -501,6 +565,7 @@ acc =
       |> Enum.with_index()
       |> Enum.map(fn {intent_entry, idx} ->
         entity_entry = Enum.at(acc.entities, idx) || %{entities: []}
+
         %{
           intent: to_string(intent_entry.intent),
           entities: entity_entry.entities,
@@ -514,11 +579,16 @@ acc =
 
     gen_results =
       Enum.flat_map(gen_inputs, fn %{intent: intent, entities: entities, query_text: query_text} ->
-        log_input.("Generator.generate", %{intent: intent, entities: entities, query_text: query_text})
+        log_input.("Generator.generate", %{
+          intent: intent,
+          entities: entities,
+          query_text: query_text
+        })
 
-        {result, _} = timed.("Generator.generate(#{intent})", fn ->
-          Generator.generate(intent, entities, query_text)
-        end)
+        {result, _} =
+          timed.("Generator.generate(#{intent})", fn ->
+            Generator.generate(intent, entities, query_text)
+          end)
 
         log_output.("result", result)
         [result]
@@ -535,18 +605,21 @@ acc =
       events: []
     })
 
-    {events_result, _} = timed.("Generator.generate_with_events", fn ->
-      Generator.generate_with_events(first.intent, first.entities, first.query_text, [])
-    end)
+    {events_result, _} =
+      timed.("Generator.generate_with_events", fn ->
+        Generator.generate_with_events(first.intent, first.entities, first.query_text, [])
+      end)
 
     log_output.("generate_with_events result", events_result)
 
     gen_results = gen_results ++ [events_result]
 
     IO.puts("\n  Response source tags:")
+
     Enum.each(gen_results, fn
       {:ok, _response, source_tag} ->
         IO.puts("    - #{inspect(source_tag)}")
+
       other ->
         IO.puts("    - (non-standard result: #{inspect(other, limit: 3)})")
     end)
@@ -571,15 +644,17 @@ acc =
         Enum.with_index(turns, 1)
         |> Enum.map(fn {{turn_input, expected_intent}, turn_num} ->
           IO.puts("\n    -- #{label} Turn #{turn_num} --")
+
           log_input.("Brain.evaluate [#{label}/#{turn_num}]", %{
             conversation_id: conv_id,
             input: turn_input,
             expected_intent: expected_intent
           })
 
-          {result, elapsed} = timed.("Brain.evaluate [#{label}/#{turn_num}]", fn ->
-            Brain.evaluate(conv_id, turn_input)
-          end)
+          {result, elapsed} =
+            timed.("Brain.evaluate [#{label}/#{turn_num}]", fn ->
+              Brain.evaluate(conv_id, turn_input)
+            end)
 
           eval_data = log_eval_result.("#{label}/#{turn_num}", result)
 
@@ -588,17 +663,22 @@ acc =
               get_in(eval_data, [:context, :intent])
             end
 
-          match = cond do
-            expected_intent == nil -> :skip
-            to_string(actual_intent) == expected_intent -> :match
-            true -> :mismatch
-          end
+          match =
+            cond do
+              expected_intent == nil -> :skip
+              to_string(actual_intent) == expected_intent -> :match
+              true -> :mismatch
+            end
 
           case match do
             :match ->
               IO.puts("  [MATCH] intent=#{inspect(actual_intent)}")
+
             :mismatch ->
-              IO.puts("  [MISMATCH] actual=#{inspect(actual_intent)}, expected=#{inspect(expected_intent)}")
+              IO.puts(
+                "  [MISMATCH] actual=#{inspect(actual_intent)}, expected=#{inspect(expected_intent)}"
+              )
+
             :skip ->
               nil
           end
@@ -611,7 +691,8 @@ acc =
             intent_match: match,
             result: eval_data,
             elapsed_ms: elapsed,
-            processing_method: if(is_map(eval_data), do: Map.get(eval_data, :processing_method), else: nil)
+            processing_method:
+              if(is_map(eval_data), do: Map.get(eval_data, :processing_method), else: nil)
           }
         end)
 
@@ -634,50 +715,80 @@ acc =
     end
 
     # --- Conversation A: Weather + follow-ups (enrichment + slot carry-over) ---
-    conv_a = run_conversation.("A (weather + follow-up)", [
-      {"What's the weather like in Denver?",   "weather.query"},
-      {"What about tomorrow?",                 "weather.query"},
-      {"And in Tokyo?",                        "weather.query"},
-    ], acc)
+    conv_a =
+      run_conversation.(
+        "A (weather + follow-up)",
+        [
+          {"What's the weather like in Denver?", "weather.query"},
+          {"What about tomorrow?", "weather.query"},
+          {"And in Tokyo?", "weather.query"}
+        ],
+        acc
+      )
 
     # --- Conversation B: Music + device control (directives) ---
-    conv_b = run_conversation.("B (music + device)", [
-      {"Play some jazz music",                              "music.play"},
-      {"Turn it up a bit",                                  "smarthome.device.volume.up"},
-      {"Actually, skip to the next song",                   "music.player.skip_forward"},
-      {"Turn off the lights when the album is done",        "smarthome.lights.switch.schedule.off"},
-    ], acc)
+    conv_b =
+      run_conversation.(
+        "B (music + device)",
+        [
+          {"Play some jazz music", "music.play"},
+          {"Turn it up a bit", "smarthome.device.volume.up"},
+          {"Actually, skip to the next song", "music.player.skip_forward"},
+          {"Turn off the lights when the album is done", "smarthome.lights.switch.schedule.off"}
+        ],
+        acc
+      )
 
     # --- Conversation C: Multi-sentence + mixed domains ---
     pipeline_followup =
       if acc.pipeline_result do
         summary = Pipeline.summarize(acc.pipeline_result)
-        intents = summary.analyses |> Enum.map(fn a -> "#{a.text}: #{inspect(a.intent)}" end) |> Enum.join("; ")
+
+        intents =
+          summary.analyses
+          |> Enum.map(fn a -> "#{a.text}: #{inspect(a.intent)}" end)
+          |> Enum.join("; ")
+
         "You mentioned: #{intents}. Can you elaborate on each?"
       else
         "Can you tell me more about that?"
       end
 
-    conv_c = run_conversation.("C (multi-sentence)", [
-      {"Good morning! What's the news today? Also, set a reminder for my dentist appointment at 2pm.", "news.query"},
-      {pipeline_followup, nil},
-      {"Thanks for that. One more thing -- what's the capital of Japan?", "knowledge.capital"},
-    ], acc)
+    conv_c =
+      run_conversation.(
+        "C (multi-sentence)",
+        [
+          {"Good morning! What's the news today? Also, set a reminder for my dentist appointment at 2pm.",
+           "news.query"},
+          {pipeline_followup, nil},
+          {"Thanks for that. One more thing -- what's the capital of Japan?", "knowledge.capital"}
+        ],
+        acc
+      )
 
     # --- Conversation D: Sentiment arc (positive -> negative -> recovery) ---
-    conv_d = run_conversation.("D (sentiment arc)", [
-      {"I'm really excited to learn about machine learning!",                                  "smalltalk.user.excited"},
-      {"This is so frustrating, nothing is working right.",                                     "smalltalk.user.angry"},
-      {"Actually, I think I figured it out. Can you help me understand neural networks?",       "knowledge.define"},
-      {"You've been really helpful, thank you!",                                                "smalltalk.appraisal.thank_you"},
-    ], acc)
+    conv_d =
+      run_conversation.(
+        "D (sentiment arc)",
+        [
+          {"I'm really excited to learn about machine learning!", "smalltalk.user.excited"},
+          {"This is so frustrating, nothing is working right.", "smalltalk.user.angry"},
+          {"Actually, I think I figured it out. Can you help me understand neural networks?",
+           "knowledge.define"},
+          {"You've been really helpful, thank you!", "smalltalk.appraisal.thank_you"}
+        ],
+        acc
+      )
 
     # --- Conversation E: Knowledge + meta + memory ---
     memory_input =
       case Enum.at(acc.memories, 0) do
-        nil -> "What have you learned recently?"
+        nil ->
+          "What have you learned recently?"
+
         mem ->
           state = Map.get(mem, :state, Map.get(mem, "state", ""))
+
           if is_binary(state) and String.length(state) > 0 do
             String.slice(state, 0, 200)
           else
@@ -685,24 +796,36 @@ acc =
           end
       end
 
-    conv_e = run_conversation.("E (knowledge + meta)", [
-      {"What do you know about yourself?",              "meta.self_knowledge"},
-      {"What is the definition of polymorphism?",       "knowledge.define"},
-      {"What topics have we discussed?",                "meta.memory_check"},
-      {memory_input,                                    nil},
-    ], acc)
+    conv_e =
+      run_conversation.(
+        "E (knowledge + meta)",
+        [
+          {"What do you know about yourself?", "meta.self_knowledge"},
+          {"What is the definition of polymorphism?", "knowledge.define"},
+          {"What topics have we discussed?", "meta.memory_check"},
+          {memory_input, nil}
+        ],
+        acc
+      )
 
     # --- Conversation F: Practical tasks (calendar, reminders, navigation) ---
-    conv_f = run_conversation.("F (practical tasks)", [
-      {"Schedule a meeting with the team for Friday at 10am",   "calendar.schedule"},
-      {"Set a reminder to buy groceries this evening",          "reminder.create"},
-      {"How do I get to the nearest coffee shop?",              "navigation.directions"},
-      {"Cancel that meeting actually, something came up",       "calendar.cancel"},
-    ], acc)
+    conv_f =
+      run_conversation.(
+        "F (practical tasks)",
+        [
+          {"Schedule a meeting with the team for Friday at 10am", "calendar.schedule"},
+          {"Set a reminder to buy groceries this evening", "reminder.create"},
+          {"How do I get to the nearest coffee shop?", "navigation.directions"},
+          {"Cancel that meeting actually, something came up", "calendar.cancel"}
+        ],
+        acc
+      )
 
     all_turns =
       [conv_a, conv_b, conv_c, conv_d, conv_e, conv_f]
-      |> Enum.flat_map(fn conv -> Enum.map(conv.turns, &Map.put(&1, :conversation, conv.label)) end)
+      |> Enum.flat_map(fn conv ->
+        Enum.map(conv.turns, &Map.put(&1, :conversation, conv.label))
+      end)
 
     %{acc | eval_turns: all_turns}
   end)
@@ -716,19 +839,22 @@ acc =
     alias Brain.ML.KnowledgeGraph.PredicateNormalizer
 
     IO.puts("  Canonical relations: #{length(PredicateNormalizer.canonical_relations())}")
-    IO.puts("  Sample canonicals: #{inspect(Enum.take(PredicateNormalizer.canonical_relations(), 10))}")
+
+    IO.puts(
+      "  Sample canonicals: #{inspect(Enum.take(PredicateNormalizer.canonical_relations(), 10))}"
+    )
 
     test_predicates = [
-      {"is_a",         :mapped,           "IsA"},
-      {"IsA",          :exact,            "IsA"},
-      {"LOCATED_AT",   :mapped,           "AtLocation"},
-      {"located_in",   :mapped,           "AtLocation"},
-      {"likes",        :mapped,           "Likes"},
-      {"wants",        :mapped,           "Wants"},
-      {"made_by",      :mapped,           "MadeBy"},
-      {"CreatedBy",    :mapped,           "MadeBy"},
-      {"xyzzy_nonsense", :oov,            nil},
-      {"",             :empty,            nil},
+      {"is_a", :mapped, "IsA"},
+      {"IsA", :exact, "IsA"},
+      {"LOCATED_AT", :mapped, "AtLocation"},
+      {"located_in", :mapped, "AtLocation"},
+      {"likes", :mapped, "Likes"},
+      {"wants", :mapped, "Wants"},
+      {"made_by", :mapped, "MadeBy"},
+      {"CreatedBy", :mapped, "MadeBy"},
+      {"xyzzy_nonsense", :oov, nil},
+      {"", :empty, nil}
     ]
 
     results =
@@ -738,16 +864,16 @@ acc =
         {ok, actual_kind, actual_canon} =
           case result do
             {:ok, canon, kind} -> {true, kind, canon}
-            {:error, :oov}     -> {true, :oov, nil}
-            {:error, :empty}   -> {true, :empty, nil}
-            other              -> {false, :unexpected, inspect(other)}
+            {:error, :oov} -> {true, :oov, nil}
+            {:error, :empty} -> {true, :empty, nil}
+            other -> {false, :unexpected, inspect(other)}
           end
 
         pass =
           case expected_kind do
-            :oov   -> actual_kind == :oov
+            :oov -> actual_kind == :oov
             :empty -> actual_kind == :empty
-            _      -> actual_canon == expected_canon
+            _ -> actual_canon == expected_canon
           end
 
         status = if pass, do: "PASS", else: "FAIL"
@@ -783,6 +909,7 @@ acc =
         {:ok, v} ->
           IO.puts("  Model version: #{v}")
           v
+
         {:error, reason} ->
           IO.puts("  Model version: unavailable (#{inspect(reason)})")
           nil
@@ -793,10 +920,13 @@ acc =
         {:ok, coverage} when is_map(coverage) ->
           IO.puts("  Relation coverage: #{map_size(coverage)} relations")
           top_5 = coverage |> Enum.sort_by(fn {_, c} -> -c end) |> Enum.take(5)
+
           Enum.each(top_5, fn {rel, count} ->
             IO.puts("    - #{rel}: #{count} training examples")
           end)
+
           coverage
+
         {:error, reason} ->
           IO.puts("  Relation coverage: unavailable (#{inspect(reason)})")
           %{}
@@ -810,22 +940,27 @@ acc =
         {"paris", "AtLocation", "france"},
         {"tesla", "MadeBy", "elon_musk"},
         {"banana", "IsA", "vehicle"},
-        {"alice", "Visited", "berlin"},
+        {"alice", "Visited", "berlin"}
       ]
 
       Enum.each(sample_triples, fn {h, r, t} ->
-        {result, elapsed} = timed.("score(#{h}, #{r}, #{t})", fn ->
-          TripleScorer.score(h, r, t)
-        end)
+        {result, elapsed} =
+          timed.("score(#{h}, #{r}, #{t})", fn ->
+            TripleScorer.score(h, r, t)
+          end)
 
         case result do
           {:ok, score} ->
-            quality = cond do
-              score >= 0.7 -> "HIGH"
-              score >= 0.4 -> "MEDIUM"
-              true -> "LOW"
-            end
-            IO.puts("    (#{h}, #{r}, #{t}) => #{Float.round(score, 4)} [#{quality}] (#{elapsed}ms)")
+            quality =
+              cond do
+                score >= 0.7 -> "HIGH"
+                score >= 0.4 -> "MEDIUM"
+                true -> "LOW"
+              end
+
+            IO.puts(
+              "    (#{h}, #{r}, #{t}) => #{Float.round(score, 4)} [#{quality}] (#{elapsed}ms)"
+            )
 
           {:error, reason} ->
             IO.puts("    (#{h}, #{r}, #{t}) => ERROR: #{inspect(reason)} (#{elapsed}ms)")
@@ -835,13 +970,15 @@ acc =
       IO.puts("\n  --- Batch scoring ---")
       batch = Enum.map(sample_triples, fn {h, r, t} -> {h, r, t} end)
 
-      {batch_result, elapsed} = timed.("score_batch(#{length(batch)} triples)", fn ->
-        TripleScorer.score_batch(batch)
-      end)
+      {batch_result, elapsed} =
+        timed.("score_batch(#{length(batch)} triples)", fn ->
+          TripleScorer.score_batch(batch)
+        end)
 
       case batch_result do
         {:ok, scores} ->
           IO.puts("    Batch scored #{length(scores)} triples in #{elapsed}ms")
+
           Enum.zip(sample_triples, scores)
           |> Enum.each(fn {{h, r, t}, score} ->
             IO.puts("      (#{h}, #{r}, #{t}) => #{Float.round(score, 4)}")
@@ -876,11 +1013,13 @@ acc =
       IO.puts("\n  --- Computing entity embeddings ---")
 
       test_entities = ["dog", "cat", "paris", "python", "coffee"]
+
       vectors =
         Enum.map(test_entities, fn entity ->
-          {result, elapsed} = timed.("get_or_compute(#{entity})", fn ->
-            EntityVectorCache.get_or_compute(acc.world_id, entity)
-          end)
+          {result, elapsed} =
+            timed.("get_or_compute(#{entity})", fn ->
+              EntityVectorCache.get_or_compute(acc.world_id, entity)
+            end)
 
           case result do
             {:ok, tensor} ->
@@ -912,13 +1051,19 @@ acc =
 
       IO.puts("\n  --- Cache hit test (second lookup) ---")
       first_entity = hd(test_entities)
-      {_result2, elapsed2} = timed.("get_or_compute(#{first_entity}) [cached]", fn ->
-        EntityVectorCache.get_or_compute(acc.world_id, first_entity)
-      end)
+
+      {_result2, elapsed2} =
+        timed.("get_or_compute(#{first_entity}) [cached]", fn ->
+          EntityVectorCache.get_or_compute(acc.world_id, first_entity)
+        end)
+
       IO.puts("    Second lookup: #{elapsed2}ms (should be near-zero if cached)")
 
       stats_after = EntityVectorCache.stats()
-      IO.puts("\n  Cache after: size=#{stats_after.size}, hits=#{stats_after.hits}, misses=#{stats_after.misses}")
+
+      IO.puts(
+        "\n  Cache after: size=#{stats_after.size}, hits=#{stats_after.hits}, misses=#{stats_after.misses}"
+      )
     else
       IO.puts("\n  [SKIP] TripleScorer not ready — entity vectors unavailable")
     end
@@ -940,7 +1085,7 @@ acc =
       "Alice visited Berlin last summer",
       "Dogs are a type of animal",
       "Tesla was made by Elon Musk",
-      "The conference is at the convention center",
+      "The conference is at the convention center"
     ]
 
     Enum.each(test_sentences, fn text ->
@@ -961,10 +1106,13 @@ acc =
       else
         Enum.each(triples, fn {s, p, o} ->
           norm = Brain.ML.KnowledgeGraph.PredicateNormalizer.normalize(p)
-          norm_str = case norm do
-            {:ok, canon, kind} -> "#{canon} (#{kind})"
-            {:error, reason}   -> "OOV (#{reason})"
-          end
+
+          norm_str =
+            case norm do
+              {:ok, canon, kind} -> "#{canon} (#{kind})"
+              {:error, reason} -> "OOV (#{reason})"
+            end
+
           IO.puts("      => (#{s}, #{p}, #{o}) normalized: #{norm_str}")
         end)
       end
@@ -977,8 +1125,14 @@ acc =
     IO.puts("    consolidation_blend:    #{Keyword.get(kg_config, :consolidation_blend, 0.6)}")
     IO.puts("    memory_rerank:          #{Keyword.get(kg_config, :memory_rerank, true)}")
     IO.puts("    novelty_downweight:     #{Keyword.get(kg_config, :novelty_downweight, true)}")
-    IO.puts("    contradiction_default:  #{Keyword.get(kg_config, :contradiction_default_kg, true)}")
-    IO.puts("    entity_promoter_gate:   #{Keyword.get(kg_config, :entity_promoter_kg_gate, true)}")
+
+    IO.puts(
+      "    contradiction_default:  #{Keyword.get(kg_config, :contradiction_default_kg, true)}"
+    )
+
+    IO.puts(
+      "    entity_promoter_gate:   #{Keyword.get(kg_config, :entity_promoter_kg_gate, true)}"
+    )
 
     acc
   end)
@@ -994,19 +1148,32 @@ acc =
     IO.puts("  --- Novelty detection with KG awareness ---")
 
     test_cases = [
-      %{text: "Quantum computing uses qubits", best_score: 0.3, margin: 0.1,
-        label: "low confidence + small margin => novel"},
-      %{text: "Hello there", best_score: 0.9, margin: 0.5,
-        label: "high confidence + large margin => not novel"},
-      %{text: "The Eiffel Tower is located in Paris", best_score: 0.35, margin: 0.15,
-        label: "factual, low confidence => novel (maybe KG-downweighted)"},
+      %{
+        text: "Quantum computing uses qubits",
+        best_score: 0.3,
+        margin: 0.1,
+        label: "low confidence + small margin => novel"
+      },
+      %{
+        text: "Hello there",
+        best_score: 0.9,
+        margin: 0.5,
+        label: "high confidence + large margin => not novel"
+      },
+      %{
+        text: "The Eiffel Tower is located in Paris",
+        best_score: 0.35,
+        margin: 0.15,
+        label: "factual, low confidence => novel (maybe KG-downweighted)"
+      }
     ]
 
     Enum.each(test_cases, fn tc ->
-      result = NoveltyDetector.is_novel?(tc.best_score, tc.margin,
-        text: tc.text,
-        entities: []
-      )
+      result =
+        NoveltyDetector.is_novel?(tc.best_score, tc.margin,
+          text: tc.text,
+          entities: []
+        )
 
       case result do
         {:novel, score} ->
@@ -1027,7 +1194,9 @@ acc =
     IO.puts("    raw=#{raw_score}, after KG downweight=#{Float.round(downweighted, 4)}")
 
     if downweighted < raw_score do
-      IO.puts("    [OK] Downweight applied (reduction: #{Float.round((raw_score - downweighted) * 100, 1)}%)")
+      IO.puts(
+        "    [OK] Downweight applied (reduction: #{Float.round((raw_score - downweighted) * 100, 1)}%)"
+      )
     else
       IO.puts("    [INFO] No downweight applied (no matching beliefs or KG signals disabled)")
     end
@@ -1042,22 +1211,27 @@ acc =
 acc =
   section.("14. KG Signals — Memory Re-rank", acc, fn acc ->
     IO.puts("  --- Memory retrieval with KG re-rank ---")
-    IO.puts("  memory_rerank enabled? #{inspect(Application.get_env(:brain, :kg_signals, []) |> Keyword.get(:memory_rerank, true))}")
+
+    IO.puts(
+      "  memory_rerank enabled? #{inspect(Application.get_env(:brain, :kg_signals, []) |> Keyword.get(:memory_rerank, true))}"
+    )
 
     queries = [
       "What is the weather forecast?",
       "Tell me about machine learning",
-      "How do I get to the airport?",
+      "How do I get to the airport?"
     ]
 
     Enum.each(queries, fn query ->
-      {result, elapsed} = timed.("query_similar(#{String.slice(query, 0, 30)}...)", fn ->
-        MemoryStore.query_similar(query, 3, world_id: acc.world_id)
-      end)
+      {result, elapsed} =
+        timed.("query_similar(#{String.slice(query, 0, 30)}...)", fn ->
+          MemoryStore.query_similar(query, 3, world_id: acc.world_id)
+        end)
 
       case result do
         {:ok, episodes} when is_list(episodes) ->
           IO.puts("    \"#{query}\" => #{length(episodes)} results (#{elapsed}ms)")
+
           Enum.each(Enum.take(episodes, 2), fn {ep, sim} ->
             state = Map.get(ep, :state, "") |> String.slice(0, 60)
             IO.puts("      - sim=#{Float.round(sim, 4)}: \"#{state}...\"")
@@ -1096,7 +1270,7 @@ acc =
       topic_variants = [
         {"weather", 0.5},
         {"weather forecast", 0.6},
-        {"climate", -0.2},
+        {"climate", -0.2}
       ]
 
       Enum.each(topic_variants, fn {topic, position} ->
@@ -1106,6 +1280,7 @@ acc =
 
       {:ok, stances} = StanceTracker.conversation_stances(conv_id)
       IO.puts("\n  Stored topics (should be canonicalized):")
+
       Enum.each(stances, fn {topic, observations} ->
         IO.puts("    #{inspect(topic)}: #{length(observations)} observation(s)")
       end)
@@ -1138,13 +1313,16 @@ acc =
     IO.puts("  --- Coverage of known predicate sources ---")
 
     srl_predicates = ~w(LOCATED_AT OCCURRED_AT CAUSED_BY MANNER PURPOSE)
-    epistemic_predicates = ~w(likes wants needs interested_in consolidated_knowledge claims believes)
+
+    epistemic_predicates =
+      ~w(likes wants needs interested_in consolidated_knowledge claims believes)
+
     hierarchy_predicates = ~w(is_a has_subtype has_type made_by located_in)
 
     sources = [
       {"SRL roles", srl_predicates},
       {"Epistemic atoms", epistemic_predicates},
-      {"Hierarchy relations", hierarchy_predicates},
+      {"Hierarchy relations", hierarchy_predicates}
     ]
 
     total_mapped = 0
@@ -1157,9 +1335,12 @@ acc =
         mapped_count = Enum.count(results, fn {_, r} -> match?({:ok, _, _}, r) end)
         oov_count = Enum.count(results, fn {_, r} -> r == {:error, :oov} end)
 
-        IO.puts("    #{source_name}: #{mapped_count}/#{length(predicates)} mapped, #{oov_count} OOV")
+        IO.puts(
+          "    #{source_name}: #{mapped_count}/#{length(predicates)} mapped, #{oov_count} OOV"
+        )
 
-        oov_preds = results
+        oov_preds =
+          results
           |> Enum.filter(fn {_, r} -> r == {:error, :oov} end)
           |> Enum.map(fn {p, _} -> p end)
 
@@ -1198,11 +1379,17 @@ IO.puts("  Generator responses:   #{length(acc.gen_responses)}")
 intent_correct = Enum.count(acc.intents, fn i -> to_string(i.intent) == i[:expected] end)
 intent_total = length(acc.intents)
 IO.puts("\n  --- Classification Accuracy ---")
-IO.puts("  Standalone intent:     #{intent_correct}/#{intent_total} (#{Float.round(intent_correct / max(intent_total, 1) * 100, 1)}%)")
+
+IO.puts(
+  "  Standalone intent:     #{intent_correct}/#{intent_total} (#{Float.round(intent_correct / max(intent_total, 1) * 100, 1)}%)"
+)
 
 sentiment_correct = Enum.count(acc.sentiments, fn s -> s.sentiment == s[:expected] end)
 sentiment_total = length(acc.sentiments)
-IO.puts("  Sentiment:             #{sentiment_correct}/#{sentiment_total} (#{Float.round(sentiment_correct / max(sentiment_total, 1) * 100, 1)}%)")
+
+IO.puts(
+  "  Sentiment:             #{sentiment_correct}/#{sentiment_total} (#{Float.round(sentiment_correct / max(sentiment_total, 1) * 100, 1)}%)"
+)
 
 conversations =
   acc.eval_turns
@@ -1210,23 +1397,34 @@ conversations =
 
 conv_scorable = Enum.filter(acc.eval_turns, &(&1[:intent_match] in [:match, :mismatch]))
 conv_correct = Enum.count(conv_scorable, &(&1[:intent_match] == :match))
-IO.puts("  Conversation intent:   #{conv_correct}/#{length(conv_scorable)} (#{Float.round(conv_correct / max(length(conv_scorable), 1) * 100, 1)}%)")
+
+IO.puts(
+  "  Conversation intent:   #{conv_correct}/#{length(conv_scorable)} (#{Float.round(conv_correct / max(length(conv_scorable), 1) * 100, 1)}%)"
+)
 
 IO.puts("\n  Conversations:         #{map_size(conversations)}")
 IO.puts("  Total eval turns:      #{length(acc.eval_turns)}")
 
 IO.puts("\n  Per-conversation breakdown:")
+
 Enum.each(conversations, fn {label, turns} ->
   methods = turns |> Enum.map(& &1.processing_method) |> Enum.filter(& &1) |> Enum.map(&inspect/1)
   total_ms = Enum.reduce(turns, 0, fn t, sum -> sum + (t.elapsed_ms || 0) end)
   scorable = Enum.filter(turns, &(&1[:intent_match] in [:match, :mismatch]))
   correct = Enum.count(scorable, &(&1[:intent_match] == :match))
-  IO.puts("    #{label}: #{length(turns)} turns, #{total_ms}ms total, intent #{correct}/#{length(scorable)}")
+
+  IO.puts(
+    "    #{label}: #{length(turns)} turns, #{total_ms}ms total, intent #{correct}/#{length(scorable)}"
+  )
+
   IO.puts("      methods: #{Enum.join(methods, ", ")}")
 
   mismatches = Enum.filter(turns, &(&1[:intent_match] == :mismatch))
+
   Enum.each(mismatches, fn t ->
-    IO.puts("      MISMATCH turn #{t.turn}: actual=#{inspect(t[:actual_intent])}, expected=#{inspect(t[:expected_intent])}")
+    IO.puts(
+      "      MISMATCH turn #{t.turn}: actual=#{inspect(t[:actual_intent])}, expected=#{inspect(t[:expected_intent])}"
+    )
   end)
 end)
 
@@ -1237,6 +1435,7 @@ IO.puts("  Model version:         #{acc[:kg_model_version] || "not loaded"}")
 IO.puts("  Trained relations:     #{acc[:kg_relation_count] || 0}")
 
 normalizer_results = acc[:kg_normalizer_results] || []
+
 if normalizer_results != [] do
   pass = Enum.count(normalizer_results, & &1.pass)
   IO.puts("  Normalizer tests:      #{pass}/#{length(normalizer_results)} passed")
@@ -1244,7 +1443,10 @@ end
 
 kg_config = Application.get_env(:brain, :kg_signals, [])
 IO.puts("  KG signals enabled:    #{Keyword.get(kg_config, :enabled, true)}")
-IO.puts("  Active features:       #{Enum.count(kg_config, fn {_k, v} -> v == true end)}/#{length(kg_config)}")
+
+IO.puts(
+  "  Active features:       #{Enum.count(kg_config, fn {_k, v} -> v == true end)}/#{length(kg_config)}"
+)
 
 cache_stats =
   try do
@@ -1254,7 +1456,10 @@ cache_stats =
   end
 
 IO.puts("  Entity cache size:     #{Map.get(cache_stats, :size, 0)}")
-IO.puts("  Cache hit/miss:        #{Map.get(cache_stats, :hits, 0)}/#{Map.get(cache_stats, :misses, 0)}")
+
+IO.puts(
+  "  Cache hit/miss:        #{Map.get(cache_stats, :hits, 0)}/#{Map.get(cache_stats, :misses, 0)}"
+)
 
 if acc.failed == [] do
   IO.puts("\n  Failed sections:       none")

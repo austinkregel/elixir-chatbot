@@ -107,8 +107,10 @@ config :brain,
   pipeline_belief_extraction_sync: true,
   # Test fixture paths - use absolute paths relative to brain app
   facts_dir: Path.expand("../apps/brain/test/fixtures/facts", __DIR__),
-  pattern_triggers_file: Path.expand("../apps/brain/test/fixtures/pattern_triggers.json", __DIR__),
-  response_connectors_file: Path.expand("../apps/brain/test/fixtures/response_connectors.json", __DIR__)
+  pattern_triggers_file:
+    Path.expand("../apps/brain/test/fixtures/pattern_triggers.json", __DIR__),
+  response_connectors_file:
+    Path.expand("../apps/brain/test/fixtures/response_connectors.json", __DIR__)
 
 # World app test configuration
 config :world,
