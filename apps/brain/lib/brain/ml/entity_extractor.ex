@@ -222,17 +222,31 @@ defmodule Brain.ML.EntityExtractor do
   end
 
   defp do_extract_entities(text, opts) do
+    debug? = Application.get_env(:brain, :debug_pipeline_timing, false)
+    t0 = if debug?, do: System.monotonic_time(:millisecond)
+
     entity_maps = Keyword.get(opts, :entity_maps) || get_entity_maps()
     discourse = Keyword.get(opts, :discourse)
     speech_act = Keyword.get(opts, :speech_act)
     skip_disambiguation = Keyword.get(opts, :skip_disambiguation, false)
     world_id = Keyword.get(opts, :world_id)
     tokens = Tokenizer.tokenize(text)
+
+    if debug?, do: Logger.info("    extractor:tokenize=#{System.monotonic_time(:millisecond) - t0}ms")
+
     gaz_context = Keyword.take(opts, [:domain, :intent, :world_id])
     gazetteer_entities = extract_gazetteer_entities(tokens, entity_maps, gaz_context)
+
+    if debug?, do: Logger.info("    extractor:gazetteer=#{System.monotonic_time(:millisecond) - t0}ms (#{length(gazetteer_entities)} found)")
+
     system_entities = extract_system_entities(tokens, text)
+
+    if debug?, do: Logger.info("    extractor:system=#{System.monotonic_time(:millisecond) - t0}ms (#{length(system_entities)} found)")
+
     location_entities = extract_location_hints(tokens, entity_maps)
     proper_noun_entities = extract_proper_noun_hints(tokens, entity_maps)
+
+    if debug?, do: Logger.info("    extractor:location+proper=#{System.monotonic_time(:millisecond) - t0}ms")
 
     all_entities =
       gazetteer_entities ++ system_entities ++ location_entities ++ proper_noun_entities
@@ -242,12 +256,16 @@ defmodule Brain.ML.EntityExtractor do
       |> resolve_entity_conflicts()
       |> merge_adjacent_entities(tokens)
 
+    if debug?, do: Logger.info("    extractor:resolve+merge=#{System.monotonic_time(:millisecond) - t0}ms (#{length(resolved_entities)} resolved)")
+
     disambiguated_entities =
       if skip_disambiguation or (is_nil(discourse) and is_nil(speech_act)) do
         resolved_entities
       else
         disambiguate_entities(resolved_entities, tokens, discourse, speech_act, text, world_id)
       end
+
+    if debug?, do: Logger.info("    extractor:disambiguate=#{System.monotonic_time(:millisecond) - t0}ms")
 
     min_confidence = Keyword.get(opts, :min_confidence) || get_min_confidence_threshold()
 
@@ -533,7 +551,7 @@ defmodule Brain.ML.EntityExtractor do
           entity_type = Map.get(single_info, :entity_type, "unknown")
           entity_value = Map.get(single_info, :value, match_text)
 
-          %{
+          base = %{
             entity_type: entity_type,
             value: entity_value,
             match: match_text,
@@ -542,12 +560,14 @@ defmodule Brain.ML.EntityExtractor do
             confidence: calculate_confidence(match_text, entity_type, entity_value),
             source: :gazetteer
           }
+
+          extract_gazetteer_metadata(base, single_info)
 
         single_info when is_map(single_info) ->
           entity_type = Map.get(single_info, :entity_type, "unknown")
           entity_value = Map.get(single_info, :value, match_text)
 
-          %{
+          base = %{
             entity_type: entity_type,
             value: entity_value,
             match: match_text,
@@ -556,6 +576,8 @@ defmodule Brain.ML.EntityExtractor do
             confidence: calculate_confidence(match_text, entity_type, entity_value),
             source: :gazetteer
           }
+
+          extract_gazetteer_metadata(base, single_info)
 
         _ ->
           %{
@@ -973,6 +995,25 @@ defmodule Brain.ML.EntityExtractor do
     |> hd()
   end
 
+  defp extract_gazetteer_metadata(base, info) when is_map(info) do
+    metadata_keys = [:ha_entity_id, :ha_domain, :state_code, :state_name, :region, :country, :county]
+
+    metadata =
+      metadata_keys
+      |> Enum.reduce(%{}, fn key, acc ->
+        case Map.get(info, key) do
+          nil -> acc
+          val -> Map.put(acc, key, val)
+        end
+      end)
+
+    if map_size(metadata) > 0 do
+      Map.put(base, :metadata, metadata)
+    else
+      base
+    end
+  end
+
   defp calculate_confidence(match_text, entity_type, entity_value) do
     base = min(0.9, 0.5 + String.length(match_text) * 0.03)
     adjustments = TypeHierarchy.config("confidence_adjustments", %{})
@@ -1145,6 +1186,9 @@ defmodule Brain.ML.EntityExtractor do
   end
 
   defp disambiguate_entities(entities, tokens, discourse, speech_act, original_text, world_id) do
+    debug? = Application.get_env(:brain, :debug_pipeline_timing, false)
+    t0 = if debug?, do: System.monotonic_time(:millisecond)
+
     classified_intent = extract_intent_from_speech_act(speech_act)
 
     context = %{
@@ -1157,9 +1201,12 @@ defmodule Brain.ML.EntityExtractor do
 
     pos_tagged = get_pos_tags(tokens)
 
+    if debug?, do: Logger.info("      disambig:pos_tags=#{System.monotonic_time(:millisecond) - t0}ms (#{length(entities)} entities, intent=#{classified_intent})")
+
     disambiguated =
       entities
-      |> Enum.map(fn entity ->
+      |> Enum.with_index()
+      |> Enum.map(fn {entity, idx} ->
         types = get_entity_types(entity)
         entity_type = entity[:entity_type] || ""
 
@@ -1167,9 +1214,17 @@ defmodule Brain.ML.EntityExtractor do
           length(types) > 1 or EntityDisambiguator.requires_inference?(entity_type)
 
         if needs_disambiguation do
+          et0 = if debug?, do: System.monotonic_time(:millisecond)
+
           result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
 
+          if debug?, do: Logger.info("      disambig:entity[#{idx}] disambiguate_single=#{System.monotonic_time(:millisecond) - et0}ms val=#{entity[:value]} type=#{entity_type} types=#{length(types)}")
+
+          pt0 = if debug?, do: System.monotonic_time(:millisecond)
+
           result = refine_with_poincare(result, types, context)
+
+          if debug?, do: Logger.info("      disambig:entity[#{idx}] poincare=#{System.monotonic_time(:millisecond) - pt0}ms types=#{length(types)}")
 
           :telemetry.execute(
             [:chat_bot, :analysis, :disambiguation, :entity],
@@ -1187,9 +1242,12 @@ defmodule Brain.ML.EntityExtractor do
 
           result
         else
+          if debug?, do: Logger.info("      disambig:entity[#{idx}] skip (no ambiguity) val=#{entity[:value]} type=#{entity_type}")
           entity
         end
       end)
+
+    if debug?, do: Logger.info("      disambig:total=#{System.monotonic_time(:millisecond) - t0}ms")
 
     ambiguous_count =
       Enum.count(entities, fn e ->
@@ -1216,9 +1274,12 @@ defmodule Brain.ML.EntityExtractor do
   end
 
   defp refine_with_poincare(result, candidate_types, context) when length(candidate_types) > 1 do
+    debug? = Application.get_env(:brain, :debug_pipeline_timing, false)
+
     if Brain.ML.Poincare.Embeddings.ready?() do
       intent = context[:intent] || ""
       current_type = to_string(result[:entity_type] || "")
+      pt0 = if debug?, do: System.monotonic_time(:millisecond)
 
       scored =
         candidate_types
@@ -1229,6 +1290,8 @@ defmodule Brain.ML.EntityExtractor do
         end)
         |> Enum.filter(fn {_t, d, _c} -> d != nil end)
         |> Enum.sort_by(fn {_t, d, _c} -> d end)
+
+      if debug?, do: Logger.info("        poincare:scored #{length(candidate_types)} candidates in #{System.monotonic_time(:millisecond) - pt0}ms")
 
       case scored do
         [{best_type, best_dist, _best_candidate} | _] when best_type != current_type ->
@@ -1253,6 +1316,8 @@ defmodule Brain.ML.EntityExtractor do
           result
       end
     else
+      if debug?, do: Logger.info("        poincare:not_ready (skipping)")
+
       log_once(:poincare_not_ready, "Poincare embeddings not ready; skipping type refinement")
 
       :telemetry.execute(
