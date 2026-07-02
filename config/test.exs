@@ -20,7 +20,7 @@ config :chat_web, ChatWeb.Endpoint,
 
 # Only show warnings and errors during tests
 # Individual tests can use ExUnit.CaptureLog to capture and verify log messages
-config :logger, level: :debug
+config :logger, level: :warning
 
 # Respect XLA_TARGET for tests so GPU tests run on the configured backend.
 # Falls back to :host (CPU) when XLA_TARGET is unset or "cpu".

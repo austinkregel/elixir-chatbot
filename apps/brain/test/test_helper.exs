@@ -6,21 +6,24 @@ Brain.Test.ModelFactory.ensure_gazetteer_on_disk!()
 # CredentialVault) query `atlas_test.*` tables.
 {:ok, _} = Application.ensure_all_started(:atlas)
 
+# Migrations must run on the main process before Sandbox ownership — Ecto may
+# run them inside a Task, which cannot check out a sandbox connection.
+_ = Mix.Task.run("atlas.bootstrap_age")
+Atlas.Repo.query!(~s(CREATE SCHEMA IF NOT EXISTS atlas_test), [])
+migrations_path = Application.app_dir(:atlas, "priv/repo/migrations")
+Ecto.Migrator.run(Atlas.Repo, migrations_path, :up, all: true, prefix: "atlas_test")
+
 # Umbrella `mix test` runs atlas (and other apps) before brain. Their Sandboxes
 # leave `Atlas.Repo` in :manual with no owner, so unqualified `Repo.query!`
-# here raises DBConnection.OwnershipError. A shared owner covers bootstrap,
-# migrations, and Brain boot (CredentialVault, etc.) until we hand off to
-# per-test `GraphCase` / `BrainCase` owners.
+# here raises DBConnection.OwnershipError. A shared owner covers Brain boot
+# until we hand off to per-test `GraphCase` / `BrainCase` owners.
 bootstrap_owner = Ecto.Adapters.SQL.Sandbox.start_owner!(Atlas.Repo, shared: true)
 
 try do
-  _ = Mix.Task.run("atlas.bootstrap_age")
-  Atlas.Repo.query!(~s(CREATE SCHEMA IF NOT EXISTS atlas_test), [])
-  migrations_path = Application.app_dir(:atlas, "priv/repo/migrations")
-  Ecto.Migrator.run(Atlas.Repo, migrations_path, :up, all: true, prefix: "atlas_test")
-
   # Start Brain application to get PubSub and core services
   {:ok, _} = Application.ensure_all_started(:brain)
+
+  Brain.Test.AtlasSandbox.allow_for_test_owner!(bootstrap_owner)
 
   # Train and persist all test models, then reload MicroClassifiers from disk.
   Brain.Test.ModelFactory.train_and_load_test_models()
