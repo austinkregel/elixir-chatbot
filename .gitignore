@@ -126,3 +126,13 @@ data/
 .idea/
 apps/chat_web/tmp/**/*.json
 apps/chat_web/tmp/*
+
+__pycache__/
+scripts/__pycache__/
+
+.DS_Store
+.openclaw/
+GVFC.zip
+/memory/
+/priv/data_cache/
+apps/brain/tmp/
