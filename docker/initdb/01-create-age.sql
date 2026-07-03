@@ -21,7 +21,8 @@ BEGIN
     'semantic_graph',
     'conversation_graph',
     'epistemic_graph',
-    'pos_graph'
+    'pos_graph',
+    'command_graph'
   ] LOOP
     IF NOT EXISTS (SELECT 1 FROM ag_catalog.ag_graph WHERE name = graph_name) THEN
       PERFORM ag_catalog.create_graph(graph_name);

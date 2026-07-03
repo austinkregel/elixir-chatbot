@@ -52,6 +52,9 @@ defmodule Atlas.Graph.EdgeLabels do
   @dislikes "DISLIKES"
   @asked_about "ASKED_ABOUT"
 
+  # -- Command Graph --
+  @commands "COMMANDS"
+
   def is_a, do: @is_a
   def has_subtype, do: @has_subtype
   def instance_of, do: @instance_of
@@ -77,6 +80,7 @@ defmodule Atlas.Graph.EdgeLabels do
   def needs, do: @needs
   def dislikes, do: @dislikes
   def asked_about, do: @asked_about
+  def commands, do: @commands
 
   @doc "All statically-defined labels. Does NOT include dynamic SRL/event/epistemic labels."
   def all do
@@ -84,7 +88,7 @@ defmodule Atlas.Graph.EdgeLabels do
      @actor, @acts_on, @has_lexicon_facet, @evidence_for, @contains,
      @follows, @has_topic, @topic_transition, @supports, @requires_in,
      @requires_out, @contradicts, @has_tag, @followed_by, @likes,
-     @wants, @interested_in, @needs, @dislikes, @asked_about]
+     @wants, @interested_in, @needs, @dislikes, @asked_about, @commands]
   end
 
   @doc """

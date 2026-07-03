@@ -20,6 +20,7 @@ defmodule Mix.Tasks.Atlas.BootstrapAge do
     conversation_graph
     epistemic_graph
     pos_graph
+    command_graph
   )
 
   @impl Mix.Task

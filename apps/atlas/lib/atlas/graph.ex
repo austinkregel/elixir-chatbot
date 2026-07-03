@@ -28,7 +28,7 @@ defmodule Atlas.Graph do
 
   alias Atlas.Graph.Cypher
 
-  @graphs ~w(knowledge_graph user_graph semantic_graph conversation_graph epistemic_graph pos_graph)
+  @graphs ~w(knowledge_graph user_graph semantic_graph conversation_graph epistemic_graph pos_graph command_graph)
 
   @doc "List all configured graph schema names."
   def graphs, do: @graphs

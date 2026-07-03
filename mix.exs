@@ -101,6 +101,7 @@ defmodule ChatBot.Umbrella.MixProject do
           atlas: :permanent,
           brain: :permanent,
           world: :permanent,
+          fleet: :permanent,
           tasks: :permanent,
           chat_web: :permanent
         ]
