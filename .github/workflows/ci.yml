@@ -252,6 +252,18 @@ jobs:
       - name: Build test gazetteer
         run: mix ensure_gazetteer
 
+      # Feature-vector micro-classifiers train from data/classifiers/*.json
+      # (115MB, gitignored). Generating them runs the full analysis pipeline
+      # over the gold standard, so cache the result keyed on its content.
+      - name: Restore micro-classifier training data
+        uses: actions/cache@v4
+        with:
+          path: data/classifiers
+          key: micro-data-${{ hashFiles('apps/brain/priv/evaluation/intent/gold_standard.json') }}
+
+      - name: Generate micro-classifier training data
+        run: test -f data/classifiers/intent_full.json || mix gen_micro_data
+
       - name: Run LSTM compatibility tests first
         run: mix test apps/brain/test/brain/ml/lstm/model_compatibility_test.exs --trace
 
