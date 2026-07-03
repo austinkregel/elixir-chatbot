@@ -320,8 +320,12 @@ gravest escalation that reaches the Admiral is a *recommendation* of court marti
   sender authentication (Registry vouches), bounded topology, provenance, the CO
   relationship as data + persisted as `COMMANDS` edges in AGE `command_graph`, and
   a durable append-only audit (`atlas_command_records`). *(Built; see §7.)*
-- **Phase 3 — Accountable minds** 📋: per-agent Brain cognition (own beliefs /
-  memory), the accountable record persisted (Postgres + AGE), the audit trail.
+- **Phase 3 — Accountable minds** ✅: each agent thinks in a private **mind-world**
+  (keyed by soul_id) with its OWN memory, beliefs, and per-world **JTMS**; its own
+  soul drives cognition; a durable **service record** + **duty log** persist and the
+  ensign **rehydrates on restart** (survives a crash without forgetting who it is or
+  what it was doing); minds are private — another agent's info enters only via
+  **communication**, with the sender's provenance. *(Built; see §7.)*
 - **Phase 4 — The Fleet page** 📋: the Admiral's LiveView; reports surfaced;
   telemetry aggregated.
 - **Phase 5 — Enforcement** 📋: trust ledger; relief-of-duty; court martial
@@ -437,6 +441,40 @@ RELIEVE/REINSTATE — all with real `CommandRecord` rows), and the 8-scenario
 adversarial `command_security_test.exs` (privilege-escalation + cross-contamination).
 (In the test env Brain generation falls back — no trained Ouro models — which is
 orthogonal to the protocol.)
+
+### Phase 3 — accountable minds (apps/fleet, apps/brain, apps/atlas)
+
+Each agent now has its own mind and a durable, rehydratable self. Built in five stages:
+
+- **Mind-world + identity** — `Fleet.MindWorld` gives `mind:<soul_id>`; the ensign runs
+  cognition there (not the order's world) and passes its OWN soul into `Brain.evaluate`
+  (`ContextBuilder.resolve_acting_soul` prefers it over the roster — wart closed).
+  `agent_id == soul_id` (stable; idempotent re-commission).
+- **Beliefs per-world** — `Belief` gains `world_id` (struct + `atlas_beliefs` migration +
+  `BeliefStore` `by_world` index + world-filtered queries); the write path stamps the
+  acting mind-world (via the `:current_world_id` process key).
+- **JTMS per-world** — the global truth-maintenance singleton became one web PER mind-world
+  under `Brain.Epistemic.JTMS.Supervisor` + `JTMSRegistry` (lazy-started); every public fn
+  keeps a `"default"`-world compat arity so no existing caller broke.
+- **Durable self + rehydration** — `Atlas.Schemas.{ServiceRecord, ServiceSummary,
+  DutyLogEntry}` (+ migration); `Fleet.Service` (runtime-written, append-only, raises) writes
+  milestones (commission / order outcomes / relief / reinstate / rehydrated) and a per-soul
+  projection; `Fleet.DutyLog` is the agent's own journal. `Fleet.Ensign.init` →
+  `handle_continue(:rehydrate)` restores durable fields (duty, chain, standing grants, last
+  assignment — mid-flight downgraded to re-drive) and resets transient ones; a crashed ensign
+  is restarted by the supervisor and rehydrates from Postgres.
+- **Sharing via communication** — what an agent is TOLD (an order's directive it receives, a
+  report/sitrep delivered to it) is written into its OWN mind-world as a memory episode with
+  the runtime-attributed sender's provenance (`from:<principal>` tag) — the only cross-agent
+  path; it never reads another agent's world.
+
+**Run** (live stack): `mix atlas.bootstrap_age && mix ecto.migrate -r Atlas.Repo`, then
+`RELEASE_ROOT=$(pwd) mix cmd --app fleet mix test` — **35 tests, 0 failures** (verified
+2026-07-03): `mind_world_isolation_test` (two agents' memory/beliefs/JTMS never cross nor leak
+to "default"), `persisted_self_test` (survives `Process.exit(:kill)` and rehydrates identity +
+grants + assignment + counters + duty note), `sharing_test` (communicated content enters the
+recipient's mind with provenance; an uninvolved agent gets nothing), and the command-channel
++ security suites green under `agent_id == soul_id`.
 
 ---
 

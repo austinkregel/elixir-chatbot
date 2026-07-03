@@ -47,4 +47,28 @@ defmodule Fleet.Authority do
   @doc "The authorities an order confers (its grant scope)."
   def conferred_by(%Order{grant: grant}) when is_map(grant), do: Map.get(grant, :authorities, [])
   def conferred_by(_), do: []
+
+  # ── String encoding (for durable persistence of a grant set) ──────────────
+
+  @doc "Encode an authority to a stable string (for the service summary)."
+  def encode(:cognition), do: "cognition"
+  def encode(:issue_orders), do: "issue_orders"
+  def encode(:relieve), do: "relieve"
+  def encode({:world, world_id}), do: "world:" <> to_string(world_id)
+  def encode(other), do: inspect(other)
+
+  @doc "Decode a string back to an authority."
+  def decode("cognition"), do: :cognition
+  def decode("issue_orders"), do: :issue_orders
+  def decode("relieve"), do: :relieve
+  def decode("world:" <> world_id), do: {:world, world_id}
+  def decode(other), do: other
+
+  @doc "Encode a grant set (MapSet or list) to a list of strings."
+  def encode_set(%MapSet{} = set), do: set |> MapSet.to_list() |> Enum.map(&encode/1)
+  def encode_set(list) when is_list(list), do: Enum.map(list, &encode/1)
+
+  @doc "Decode a list of strings back to a grant MapSet."
+  def decode_set(list) when is_list(list), do: list |> Enum.map(&decode/1) |> MapSet.new()
+  def decode_set(_), do: MapSet.new()
 end

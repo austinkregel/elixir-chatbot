@@ -56,6 +56,10 @@ defmodule Fleet.Ensign do
   @doc "Have a report send a SITREP up to its CO."
   def sitrep(agent_id, body \\ %{}), do: GenServer.cast(via_tuple(agent_id), {:emit_sitrep, body})
 
+  @doc "Have the agent append a note to its own duty log (agent-written)."
+  def log_duty(agent_id, note, opts \\ []),
+    do: GenServer.cast(via_tuple(agent_id), {:log_duty, note, opts})
+
   @doc "True once the ensign has hydrated its soul (identity present)."
   def ready?(agent_id) do
     GenServer.call(via_tuple(agent_id), :ready?, 100)
@@ -109,7 +113,25 @@ defmodule Fleet.Ensign do
     }
 
     Telemetry.emit_event(agent_id, :spawned, %{}, %{soul_id: soul_id})
-    {:ok, state}
+    # Rehydrate the durable self (service record) after init returns.
+    {:ok, state, {:continue, :rehydrate}}
+  end
+
+  @impl true
+  def handle_continue(:rehydrate, state) do
+    case Fleet.Service.load(state.soul_id) do
+      {:ok, %{summary: nil}} ->
+        # First-ever commission — create the durable record.
+        Fleet.Service.commission(state.soul_id, commission_attrs(state))
+        Telemetry.emit_event(state.agent_id, :commissioned, %{}, %{soul_id: state.soul_id})
+        {:noreply, state}
+
+      {:ok, %{summary: %Atlas.Schemas.ServiceSummary{} = summary}} ->
+        # Restart — resume the durable self without forgetting who we are.
+        Fleet.Service.record_rehydrated(state.soul_id, %{"from" => "restart"})
+        Telemetry.emit_event(state.agent_id, :rehydrated, %{}, %{soul_id: state.soul_id})
+        {:noreply, apply_summary(state, summary)}
+    end
   end
 
   @impl true
@@ -241,6 +263,16 @@ defmodule Fleet.Ensign do
 
   # ── SITREP emission (report → its CO) ─────────────────────────────────────
 
+  def handle_cast({:log_duty, note, opts}, state) do
+    Fleet.DutyLog.note(
+      state.soul_id,
+      note,
+      Keyword.merge([order_id: assignment_id(state), world_id: state.mind_world_id], opts)
+    )
+
+    {:noreply, state}
+  end
+
   def handle_cast({:emit_sitrep, body}, state) do
     sig = Signal.new(:sitrep, order_id: assignment_id(state), payload: as_map(body), world_id: state.world_id)
     co = state.context_tags.co
@@ -361,6 +393,8 @@ defmodule Fleet.Ensign do
     Audit.record(:dissent, %{order_id: order && order.id, from_agent: state.agent_id,
                              to_agent: co_or_admiral(state), verdict: verdict[:basis],
                              reason: verdict[:reason]})
+    Fleet.Service.record_order_outcome(state.soul_id, order, :dissented,
+      %{reason: verdict[:reason], basis: verdict[:basis]})
     emit_dissent(state, order, verdict)
     {:noreply, %{state | task_ref: nil, task_pid: nil, order_grants: MapSet.new(),
                  assignment: order && Order.update_status(order, "dissented")}}
@@ -373,6 +407,7 @@ defmodule Fleet.Ensign do
 
     Audit.record(:report, %{order_id: order && order.id, from_agent: state.agent_id,
                             to_agent: co_or_admiral(state), payload: %{outcome: summarize(result)}})
+    Fleet.Service.record_order_outcome(state.soul_id, order, :completed, %{outcome: summarize(result)})
 
     sig = Signal.new(:report, order_id: order && order.id,
                      payload: %{outcome: summarize(result)}, world_id: state.world_id)
@@ -395,6 +430,7 @@ defmodule Fleet.Ensign do
     order = state.assignment
     Telemetry.emit_event(state.agent_id, :cognition_failed, %{}, %{
       order_id: order && order.id, reason: inspect(reason)})
+    Fleet.Service.record_order_outcome(state.soul_id, order, :failed, %{reason: inspect(reason)})
     {:noreply, %{state | task_ref: nil, task_pid: nil, order_grants: MapSet.new(),
                  assignment: order && Order.update_status(order, "failed")}}
   end
@@ -419,6 +455,9 @@ defmodule Fleet.Ensign do
                            payload: %{directive: to_string(order.directive)}})
     Audit.record(:ack, %{order_id: order.id, from_agent: state.agent_id,
                          to_agent: Comms.principal_string(sender)})
+    Fleet.Service.record_assignment(state.soul_id, order)
+    # What I was ordered enters my own mind, attributed to the issuer.
+    ingest_communication(state, :order, order.directive, sender)
 
     # The order's grant is scoped to THIS assignment — it replaces (does not
     # accumulate onto) any prior order's conferred authorities.
@@ -548,8 +587,11 @@ defmodule Fleet.Ensign do
     {:noreply, state}
   end
 
-  defp handle_upward(kind, %Signal{} = sig, {:ensign, report_id}, state) when kind in [:report, :sitrep, :dissent] do
+  defp handle_upward(kind, %Signal{} = sig, {:ensign, report_id} = sender, state)
+       when kind in [:report, :sitrep, :dissent] do
     Telemetry.emit_event(state.agent_id, kind, %{}, %{from: report_id, order_id: sig.order_id})
+    # What a report tells me enters MY mind, attributed to that report.
+    ingest_communication(state, kind, sig.payload, sender)
     {:noreply, %{state | last_signals: Enum.take([{kind, report_id, sig} | state.last_signals], 20)}}
   end
 
@@ -583,6 +625,7 @@ defmodule Fleet.Ensign do
     state = cancel_inflight(state)
     Telemetry.emit_event(state.agent_id, :relieved, %{}, %{by: Comms.principal_string(sender)})
     Audit.record(:relieve, %{from_agent: Comms.principal_string(sender), to_agent: state.agent_id})
+    Fleet.Service.record_relief(state.soul_id, Comms.principal_string(sender))
     assignment = state.assignment && Order.update_status(state.assignment, "failed")
     {:noreply, %{state | duty: :relieved, relieved_by: sender, task_ref: nil, task_pid: nil,
                  order_grants: MapSet.new(), assignment: assignment}}
@@ -591,6 +634,7 @@ defmodule Fleet.Ensign do
   defp handle_duty(:reinstate, %Signal{}, sender, state) do
     Telemetry.emit_event(state.agent_id, :reinstated, %{}, %{by: Comms.principal_string(sender)})
     Audit.record(:reinstate, %{from_agent: Comms.principal_string(sender), to_agent: state.agent_id})
+    Fleet.Service.record_reinstatement(state.soul_id, Comms.principal_string(sender))
     # A standing order (still "acknowledged"/"blocked") resumes on the next tick.
     assignment =
       case state.assignment do
@@ -702,6 +746,106 @@ defmodule Fleet.Ensign do
 
         world_id
     end
+  end
+
+  # ── Sharing via communication (Stage 5) ───────────────────────────────────
+
+  # Record something the agent was TOLD into its OWN mind-world, stamped with the
+  # runtime-attributed sender's provenance. This is the ONLY way another agent's
+  # information enters this mind — because it was communicated, never by reading
+  # another agent's world. Best-effort enrichment (the accountable record is the
+  # audit/service log); a memory hiccup must not take down the agent.
+  defp ingest_communication(%{mind_world_id: mind_world_id} = state, kind, content, sender)
+       when is_binary(mind_world_id) do
+    from = Comms.principal_string(sender)
+
+    if Process.whereis(Brain.Memory.Store) do
+      Brain.Memory.Store.add_episode(
+        "communication",
+        to_string(kind),
+        stringify_content(content),
+        ["communication", "from:" <> from, to_string(kind)],
+        world_id: mind_world_id
+      )
+    end
+
+    Telemetry.emit_event(state.agent_id, :ingested, %{}, %{kind: kind, from: from})
+  rescue
+    e -> Logger.warning("Fleet.Ensign: communication ingest failed", reason: inspect(e))
+  catch
+    _, _ -> :ok
+  end
+
+  defp ingest_communication(_state, _kind, _content, _sender), do: :ok
+
+  defp stringify_content(c) when is_binary(c), do: c
+  defp stringify_content(c), do: inspect(c)
+
+  # ── Durable-self helpers (Stage 4) ────────────────────────────────────────
+
+  defp commission_attrs(state) do
+    %{
+      agent_id: state.agent_id,
+      rank: state.context_tags.rank,
+      home_world_id: state.world_id,
+      mind_world_id: Fleet.MindWorld.id(state.soul_id),
+      co_id: state.context_tags.co,
+      reports: state.context_tags.reports,
+      standing_grants: state.context_tags.grants
+    }
+  end
+
+  # Restore the DURABLE fields from the service summary; reset the TRANSIENT ones
+  # (per-order grants, in-flight task) so least privilege holds across a restart.
+  defp apply_summary(state, s) do
+    ct = state.context_tags
+
+    %{
+      state
+      | duty: safe_atom(s.duty_status, :active),
+        world_id: s.home_world_id || state.world_id,
+        mind_world_id: s.mind_world_id || state.mind_world_id,
+        context_tags: %{
+          ct
+          | rank: safe_atom(s.rank, :ensign),
+            co: s.co_id,
+            reports: s.reports || [],
+            grants: Fleet.Authority.decode_set(s.standing_grants || [])
+        },
+        assignment: rebuild_assignment(s.current_assignment),
+        order_grants: MapSet.new(),
+        awaiting: nil,
+        task_ref: nil,
+        task_pid: nil
+    }
+  end
+
+  # Rebuild the standing order, downgrading a mid-flight status so the autonomous
+  # tick re-drives it — "without forgetting what it was doing."
+  defp rebuild_assignment(a) when is_map(a) and map_size(a) > 0 do
+    status = Map.get(a, "status", "acknowledged")
+    resume_status = if status in ["in_progress", "blocked"], do: "acknowledged", else: status
+    authorities = get_in(a, ["grant", "authorities"]) || []
+
+    %Order{
+      id: Map.get(a, "order_id"),
+      from: Map.get(a, "from", "admiral"),
+      directive: Map.get(a, "directive"),
+      grant: %{authorities: Enum.map(authorities, &Fleet.Authority.decode/1)},
+      world_id: Map.get(a, "world_id", "default"),
+      status: resume_status
+    }
+  end
+
+  defp rebuild_assignment(_), do: nil
+
+  defp safe_atom(nil, default), do: default
+  defp safe_atom(v, _default) when is_atom(v), do: v
+
+  defp safe_atom(v, default) when is_binary(v) do
+    String.to_existing_atom(v)
+  rescue
+    ArgumentError -> default
   end
 
   defp via_tuple(agent_id), do: {:via, Registry, {Fleet.Registry, {:ensign, agent_id}}}
