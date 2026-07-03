@@ -7,7 +7,12 @@ Brain.Test.ModelFactory.ensure_gazetteer_on_disk!()
 {:ok, _} = Application.ensure_all_started(:atlas)
 
 # Migrations must run on the main process before Sandbox ownership — Ecto may
-# run them inside a Task, which cannot check out a sandbox connection.
+# run them inside a Task, which cannot check out a sandbox connection. Atlas's
+# test run (umbrella `mix test` runs it before brain) leaves the Sandbox in
+# :manual with no owner, so flip to :auto for the bootstrap/migration block;
+# start_owner! below moves it to shared mode for Brain boot.
+Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :auto)
+
 _ = Mix.Task.run("atlas.bootstrap_age")
 Atlas.Repo.query!(~s(CREATE SCHEMA IF NOT EXISTS atlas_test), [])
 migrations_path = Application.app_dir(:atlas, "priv/repo/migrations")
