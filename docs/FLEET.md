@@ -590,6 +590,38 @@ verified live against Ollama (`llama3.1:8b`, `gemma4:e2b` return prose). Full
 integration suite re-run pending the fork's Postgres+AGE stack (the dev DB was down
 at commit time).
 
+### Tools/MCP — propose-not-dispatch (first slice) (apps/fleet, apps/atlas, apps/brain)
+
+Adding tool/MCP support **without** letting the model dictate what happens. An LCARS
+§5 double-blind survey (paired blinded investigators + identity-blind reviewer) set
+the architecture (see `docs/TOOLS.md`); the model **proposes**, the harness
+**disposes**. Two outcomes landed:
+
+- **Severed an ungated actuator (security).** The survey found Brain shipped a live,
+  unaudited physical actuator — `HomeAssistant.call_service → http_post`, a real
+  mutating POST selected by string-matching user text, with no authority/grant/audit.
+  Cut: `call_service` refuses loudly, `http_post` removed. HA is read-only until it
+  returns behind a `{:tool, …}` authority. (commit `cb7bbd7`)
+- **Built the first slice — one READ tool, `beliefs.read`, end-to-end.** A tool is an
+  **authority** (`Fleet.Authority.tool/1` → `{:tool, name}`); the model emits a typed
+  `Fleet.Proposal` naming the tool *and the response requirement it serves* (an
+  untethered proposal is rejected before the gate); `Fleet.Dispatcher.decide/2` is a
+  **pure** gate reading only the agent's order-conferred grant (never the payload —
+  a forged authority claim is inert); `Fleet.Dispatcher.dispatch/2` runs the
+  code-owned tool (`Fleet.Tool`, default-deny), frames the result as `<data>`
+  (`Fleet.DataFrame`, injection-flagged), and writes four ordered audit kinds
+  (thought · request · decision · effect) via `Fleet.Audit`. Wired to the Ensign as
+  `Fleet.propose/2` (grants from process state).
+
+**Verified 2026-07-03:** the security-critical gate is a pure function — 13 checks
+pass with no stack (untethered rejected, unknown default-denied, ungranted refused,
+granted allowed, forged-authority inert, injection flagged, framing, codec, closed
+registry). Full end-to-end audit-row assertions are in `Fleet.ToolDispatchTest`
+(integration, tagged) — unrun this session (dev Postgres+AGE down). The generation
+seam's harness-driven multi-turn loop (model actually emitting proposals) is the
+next increment; feasibility confirmed (Brain has conversation state; the loop lives
+in the harness over `Brain.ML.Generation`, not Brain's chat pipeline).
+
 ---
 
 ## 8. Open questions (living)

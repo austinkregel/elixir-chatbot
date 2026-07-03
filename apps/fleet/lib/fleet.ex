@@ -111,6 +111,15 @@ defmodule Fleet do
     end
   end
 
+  @doc """
+  Route a model turn through the tool gate for `agent_id`. The model PROPOSES a
+  capability (a `Fleet.Proposal`); the harness authorises it against the agent's
+  own order-conferred grant and, only if permitted, dispatches it — framing the
+  result as data and auditing every step. The model never holds the trigger.
+  """
+  def propose(agent_id, model_output) when is_binary(model_output),
+    do: Ensign.propose(agent_id, model_output)
+
   @doc "Retires an ensign by pid."
   def retire(pid) when is_pid(pid), do: CrewSupervisor.retire(pid)
 

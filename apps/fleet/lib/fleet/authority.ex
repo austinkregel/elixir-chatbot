@@ -28,6 +28,13 @@ defmodule Fleet.Authority do
 
   alias Fleet.Order
 
+  @doc """
+  The authority a capability (tool/MCP action) requires to fire. A tool is just an
+  authority: the model can only *propose* it, and the harness runs it only if this
+  term is in the caller's order-conferred grant. Least privilege, per-order.
+  """
+  def tool(name) when is_binary(name), do: {:tool, name}
+
   @doc "Normalise a list/MapSet of authorities into a MapSet."
   def to_set(%MapSet{} = set), do: set
   def to_set(list) when is_list(list), do: MapSet.new(list)
@@ -71,6 +78,7 @@ defmodule Fleet.Authority do
   def encode(:draft_court_martial), do: "draft_court_martial"
   def encode(:delegate), do: "delegate"
   def encode({:world, world_id}), do: "world:" <> to_string(world_id)
+  def encode({:tool, name}), do: "tool:" <> to_string(name)
   def encode(other), do: inspect(other)
 
   @doc "Decode a string back to an authority."
@@ -83,6 +91,7 @@ defmodule Fleet.Authority do
   def decode("draft_court_martial"), do: :draft_court_martial
   def decode("delegate"), do: :delegate
   def decode("world:" <> world_id), do: {:world, world_id}
+  def decode("tool:" <> name), do: {:tool, name}
   def decode(other), do: other
 
   @doc "Encode a grant set (MapSet or list) to a list of strings."

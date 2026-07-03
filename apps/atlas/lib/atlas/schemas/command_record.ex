@@ -34,7 +34,7 @@ defmodule Atlas.Schemas.CommandRecord do
     timestamps(type: :utc_datetime_usec)
   end
 
-  @valid_kinds ~w(order ack sitrep request grant deny dissent report relieve reinstate hail hail_reply provenance_anomaly)
+  @valid_kinds ~w(order ack sitrep request grant deny dissent report relieve reinstate hail hail_reply tool_thought tool_request tool_decision tool_effect grant_violation provenance_anomaly)
 
   @required_fields ~w(kind from_agent)a
   @optional_fields ~w(order_id to_agent world_id authority verdict reason payload issued_at)a

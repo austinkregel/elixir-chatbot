@@ -64,6 +64,17 @@ defmodule Fleet.Ensign do
   """
   def hail(agent_id, question) when is_binary(question), do: Comms.hail(agent_id, question)
 
+  @doc """
+  Route a model turn through the tool gate: parse a `Fleet.Proposal`, then (if the
+  agent's grant permits) let the harness dispatch it. The grant checked is the
+  agent's own order-conferred grant from process state — never anything the model
+  wrote. Returns the dispatcher's verdict (`{:ok, %{data:}}` | `{:refused, _}` |
+  `{:error, _}`), `:no_proposal`, or `{:refused, :untethered}` for an unparseable
+  or requirement-less proposal.
+  """
+  def propose(agent_id, model_output) when is_binary(model_output),
+    do: GenServer.call(via_tuple(agent_id), {:propose, model_output}, 30_000)
+
   @doc "Have the agent append a note to its own duty log (agent-written)."
   def log_duty(agent_id, note, opts \\ []),
     do: GenServer.cast(via_tuple(agent_id), {:log_duty, note, opts})
@@ -169,6 +180,35 @@ defmodule Fleet.Ensign do
     }
 
     {:reply, public, state}
+  end
+
+  # ── Tool proposal gate (the model proposes; the harness disposes) ──────────
+
+  def handle_call({:propose, model_output}, _from, state) do
+    reply =
+      case Fleet.Proposal.parse(model_output) do
+        :none ->
+          :no_proposal
+
+        {:error, reason} ->
+          # An untethered / malformed proposal never reaches the gate.
+          {:refused, reason}
+
+        {:ok, proposal} ->
+          # The grant is read from process state — the agent's own order-conferred
+          # authorities — NOT from anything the model wrote. This is what makes a
+          # forged authority claim in the model's text inert.
+          ctx = %{
+            agent_id: state.agent_id,
+            order_id: assignment_id(state),
+            world_id: state.mind_world_id,
+            grants: effective_grants(state)
+          }
+
+          Fleet.Dispatcher.dispatch(proposal, ctx)
+      end
+
+    {:reply, reply, state}
   end
 
   # ── Chain wiring ──────────────────────────────────────────────────────────
