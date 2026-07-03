@@ -103,31 +103,45 @@ defmodule Brain.ML.Poincare.Embeddings do
     batch_size = Keyword.get(opts, :batch_size, @default_batch_size)
     verbose = Keyword.get(opts, :verbose, false)
 
-    entities = pairs
-    |> Enum.flat_map(fn {child, parent} -> [child, parent] end)
-    |> Enum.uniq()
-    |> Enum.sort()
+    entities =
+      pairs
+      |> Enum.flat_map(fn {child, parent} -> [child, parent] end)
+      |> Enum.uniq()
+      |> Enum.sort()
 
     entity_to_idx = entities |> Enum.with_index() |> Map.new()
     idx_to_entity = entities |> Enum.with_index() |> Map.new(fn {e, i} -> {i, e} end)
     num_entities = length(entities)
 
-    pair_indices = pairs
-    |> Enum.map(fn {child, parent} ->
-      {Map.fetch!(entity_to_idx, child), Map.fetch!(entity_to_idx, parent)}
-    end)
+    pair_indices =
+      pairs
+      |> Enum.map(fn {child, parent} ->
+        {Map.fetch!(entity_to_idx, child), Map.fetch!(entity_to_idx, parent)}
+      end)
 
     key = Nx.Random.key(42)
     {embeddings, _key} = Nx.Random.uniform(key, -0.001, 0.001, shape: {num_entities, dim})
 
     positive_set = MapSet.new(pair_indices)
 
-    positive_counts = Enum.reduce(pair_indices, %{}, fn {c, _p}, acc ->
-      Map.update(acc, c, 1, &(&1 + 1))
-    end)
+    positive_counts =
+      Enum.reduce(pair_indices, %{}, fn {c, _p}, acc ->
+        Map.update(acc, c, 1, &(&1 + 1))
+      end)
 
-    embeddings = train_loop(embeddings, pair_indices, positive_set, positive_counts,
-      num_entities, epochs, lr, num_negatives, batch_size, verbose)
+    embeddings =
+      train_loop(
+        embeddings,
+        pair_indices,
+        positive_set,
+        positive_counts,
+        num_entities,
+        epochs,
+        lr,
+        num_negatives,
+        batch_size,
+        verbose
+      )
 
     embeddings = Nx.backend_transfer(embeddings, Nx.BinaryBackend)
 
@@ -139,12 +153,14 @@ defmodule Brain.ML.Poincare.Embeddings do
   """
   def save(embeddings, entity_to_idx, idx_to_entity, dim, path) do
     File.mkdir_p!(Path.dirname(path))
+
     data = %{
       embeddings: embeddings,
       entity_to_idx: entity_to_idx,
       idx_to_entity: idx_to_entity,
       dim: dim
     }
+
     File.write!(path, :erlang.term_to_binary(data))
     :ok
   end
@@ -212,9 +228,11 @@ defmodule Brain.ML.Poincare.Embeddings do
   end
 
   def handle_call(:all_embeddings, _from, state) do
-    result = Map.new(state.entity_to_idx, fn {name, idx} ->
-      {name, state.embeddings[idx]}
-    end)
+    result =
+      Map.new(state.entity_to_idx, fn {name, idx} ->
+        {name, state.embeddings[idx]}
+      end)
+
     {:reply, {:ok, result}, state}
   end
 
@@ -243,6 +261,7 @@ defmodule Brain.ML.Poincare.Embeddings do
           dim: data.dim,
           ready: true
         }
+
         {:ok, state}
 
       {:error, reason} ->
@@ -250,8 +269,18 @@ defmodule Brain.ML.Poincare.Embeddings do
     end
   end
 
-  defp train_loop(embeddings, pair_indices, positive_set, positive_counts,
-                   num_entities, epochs, lr, num_negatives, batch_size, verbose) do
+  defp train_loop(
+         embeddings,
+         pair_indices,
+         positive_set,
+         positive_counts,
+         num_entities,
+         epochs,
+         lr,
+         num_negatives,
+         batch_size,
+         verbose
+       ) do
     log_interval = max(div(epochs, 10), 1)
 
     Enum.reduce(1..epochs, embeddings, fn epoch, emb ->
@@ -262,7 +291,9 @@ defmodule Brain.ML.Poincare.Embeddings do
         |> Enum.reduce({emb, 0.0}, fn batch, {emb_acc, _prev_loss} ->
           pos_pairs = Nx.tensor(Enum.map(batch, fn {c, p} -> [c, p] end), type: :s32)
 
-          neg_indices = generate_negatives(batch, positive_set, positive_counts, num_entities, num_negatives)
+          neg_indices =
+            generate_negatives(batch, positive_set, positive_counts, num_entities, num_negatives)
+
           neg_tensor = Nx.tensor(neg_indices, type: :s32)
 
           {step_updated, loss} = Optimizer.train_step(emb_acc, pos_pairs, neg_tensor, lr)
@@ -270,7 +301,10 @@ defmodule Brain.ML.Poincare.Embeddings do
         end)
 
       if verbose and (epoch == 1 or rem(epoch, log_interval) == 0) do
-        IO.puts(:stderr, "  Poincare epoch #{epoch}/#{epochs}, loss: #{Float.round(last_loss, 6)}")
+        IO.puts(
+          :stderr,
+          "  Poincare epoch #{epoch}/#{epochs}, loss: #{Float.round(last_loss, 6)}"
+        )
       end
 
       updated
@@ -279,7 +313,13 @@ defmodule Brain.ML.Poincare.Embeddings do
 
   defp generate_negatives(batch, positive_set, positive_counts, num_entities, num_negatives) do
     Enum.map(batch, fn {child_idx, _parent_idx} ->
-      generate_entity_negatives(child_idx, positive_set, positive_counts, num_entities, num_negatives)
+      generate_entity_negatives(
+        child_idx,
+        positive_set,
+        positive_counts,
+        num_entities,
+        num_negatives
+      )
     end)
   end
 
@@ -302,15 +342,25 @@ defmodule Brain.ML.Poincare.Embeddings do
     pad_to_length(sampled, count, entity_idx)
   end
 
-  defp pad_to_length(list, target, _fallback) when length(list) >= target, do: Enum.take(list, target)
+  defp pad_to_length(list, target, _fallback) when length(list) >= target,
+    do: Enum.take(list, target)
+
   defp pad_to_length([], target, fallback), do: List.duplicate(fallback, target)
+
   defp pad_to_length(list, target, _fallback) do
     padding = List.duplicate(hd(list), target - length(list))
     list ++ padding
   end
 
+  # Configured :models_path first (test points it at test/ml_models, where
+  # ModelFactory saves); priv/ml_models when unset (dev/prod).
   defp model_path(world_id) do
-    priv = :code.priv_dir(:brain) |> to_string()
-    Path.join([priv, "ml_models", world_id, "poincare", "embeddings.term"])
+    base =
+      case Application.get_env(:brain, :ml, [])[:models_path] do
+        nil -> Path.join(:code.priv_dir(:brain) |> to_string(), "ml_models")
+        path -> path
+      end
+
+    Path.join([base, world_id, "poincare", "embeddings.term"])
   end
 end
