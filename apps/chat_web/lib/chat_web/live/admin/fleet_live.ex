@@ -37,6 +37,9 @@ defmodule ChatWeb.Admin.FleetLive do
      |> assign(:feed, backfill_feed())
      |> assign(:selected, nil)
      |> assign(:detail, nil)
+     # Controlled select values, so the 3s roster refresh never resets a form
+     # the Admiral is mid-way through filling out.
+     |> assign(:picks, %{})
      |> assign_roster()}
   end
 
@@ -82,9 +85,9 @@ defmodule ChatWeb.Admin.FleetLive do
             <div class="card-body p-4">
               <h2 class="card-title text-sm">Commission</h2>
               <form phx-submit="commission" class="space-y-2">
-                <select name="soul_id" class="select select-sm select-bordered w-full" required>
-                  <option value="" disabled selected>choose a soul…</option>
-                  <option :for={sid <- @souls} value={sid}>{sid}</option>
+                <select name="soul_id" phx-change="pick" class="select select-sm select-bordered w-full" required>
+                  <option value="" disabled selected={is_nil(@picks["soul_id"])}>choose a soul…</option>
+                  <option :for={sid <- @souls} value={sid} selected={sid == @picks["soul_id"]}>{sid}</option>
                 </select>
                 <div class="flex flex-wrap gap-2">
                   <label :for={{label, _} <- @grant_options} class="label cursor-pointer gap-1 text-xs">
@@ -101,9 +104,9 @@ defmodule ChatWeb.Admin.FleetLive do
             <div class="card-body p-4">
               <h2 class="card-title text-sm">Issue order</h2>
               <form phx-submit="issue_order" class="space-y-2">
-                <select name="agent_id" class="select select-sm select-bordered w-full" required>
-                  <option value="" disabled selected>target agent…</option>
-                  <option :for={a <- @roster} value={a.agent_id}>{a.soul_id}</option>
+                <select name="agent_id" phx-change="pick" class="select select-sm select-bordered w-full" required>
+                  <option value="" disabled selected={is_nil(@picks["agent_id"])}>target agent…</option>
+                  <option :for={a <- @roster} value={a.agent_id} selected={a.agent_id == @picks["agent_id"]}>{a.soul_id}</option>
                 </select>
                 <input name="directive" class="input input-sm input-bordered w-full"
                        placeholder="directive, e.g. Summarize sector 7 readiness." required />
@@ -116,13 +119,13 @@ defmodule ChatWeb.Admin.FleetLive do
             <div class="card-body p-4">
               <h2 class="card-title text-sm">Assign CO</h2>
               <form phx-submit="assign_co" class="space-y-2">
-                <select name="report_id" class="select select-sm select-bordered w-full" required>
-                  <option value="" disabled selected>report…</option>
-                  <option :for={a <- @roster} value={a.agent_id}>{a.soul_id}</option>
+                <select name="report_id" phx-change="pick" class="select select-sm select-bordered w-full" required>
+                  <option value="" disabled selected={is_nil(@picks["report_id"])}>report…</option>
+                  <option :for={a <- @roster} value={a.agent_id} selected={a.agent_id == @picks["report_id"]}>{a.soul_id}</option>
                 </select>
-                <select name="co_id" class="select select-sm select-bordered w-full" required>
-                  <option value="" disabled selected>commanding officer…</option>
-                  <option :for={a <- @roster} value={a.agent_id}>{a.soul_id}</option>
+                <select name="co_id" phx-change="pick" class="select select-sm select-bordered w-full" required>
+                  <option value="" disabled selected={is_nil(@picks["co_id"])}>commanding officer…</option>
+                  <option :for={a <- @roster} value={a.agent_id} selected={a.agent_id == @picks["co_id"]}>{a.soul_id}</option>
                 </select>
                 <button class="btn btn-sm btn-outline w-full">Wire chain</button>
               </form>
@@ -244,10 +247,15 @@ defmodule ChatWeb.Admin.FleetLive do
   # ── Events ────────────────────────────────────────────────────────────────
 
   @impl true
+  def handle_event("pick", params, socket) do
+    picks = Map.merge(socket.assigns.picks, Map.take(params, ~w(soul_id agent_id report_id co_id)))
+    {:noreply, assign(socket, :picks, picks)}
+  end
+
   def handle_event("commission", %{"soul_id" => sid} = params, socket) do
     grants = parse_grants(Map.get(params, "grants", []))
     safe(fn -> Fleet.commission(sid, grant: %{authorities: grants}) end)
-    {:noreply, socket |> put_flash(:info, "Commissioned #{sid}") |> assign_roster()}
+    {:noreply, socket |> put_flash(:info, "Commissioned #{sid}") |> drop_picks(["soul_id"]) |> assign_roster()}
   end
 
   def handle_event("issue_order", %{"agent_id" => id, "directive" => directive}, socket) do
@@ -257,7 +265,7 @@ defmodule ChatWeb.Admin.FleetLive do
       if a && a.co, do: Fleet.issue_order(a.co, id, directive), else: Fleet.order(id, directive)
     end)
 
-    {:noreply, put_flash(socket, :info, "Order issued to #{id}")}
+    {:noreply, socket |> put_flash(:info, "Order issued to #{id}") |> drop_picks(["agent_id"])}
   end
 
   def handle_event("assign_co", %{"report_id" => rid, "co_id" => cid}, socket) do
@@ -267,7 +275,7 @@ defmodule ChatWeb.Admin.FleetLive do
         _ -> "#{cid} now commands #{rid}"
       end
 
-    {:noreply, socket |> put_flash(:info, msg) |> assign_roster()}
+    {:noreply, socket |> put_flash(:info, msg) |> drop_picks(["report_id", "co_id"]) |> assign_roster()}
   end
 
   def handle_event("relieve", %{"agent" => id, "co" => co}, socket) do
@@ -386,6 +394,8 @@ defmodule ChatWeb.Admin.FleetLive do
   rescue
     ArgumentError -> :event
   end
+
+  defp drop_picks(socket, keys), do: assign(socket, :picks, Map.drop(socket.assigns.picks, keys))
 
   defp count(list, fun), do: Enum.count(list, fun)
   defp fmt_grant(g), do: Fleet.Authority.encode(g)
