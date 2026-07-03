@@ -244,6 +244,9 @@ jobs:
       - name: Download WordNet data
         run: mix download_wordnet
 
+      - name: Build test gazetteer
+        run: mix ensure_gazetteer
+
       - name: Run LSTM compatibility tests first
         run: mix test apps/brain/test/brain/ml/lstm/model_compatibility_test.exs --trace
 
