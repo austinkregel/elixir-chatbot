@@ -127,6 +127,13 @@ apps/brain/priv/*
 !apps/brain/priv/response/
 !apps/brain/priv/services/
 apps/brain/priv/knowledge/Echo.json
+# Evaluation gold standards train the test models at suite startup
+# (ModelFactory); results, backups, and the large sentiment corpus
+# (which has a small tracked fixture fallback) stay ignored.
+!apps/brain/priv/evaluation/
+apps/brain/priv/evaluation/results/
+apps/brain/priv/evaluation/sentiment/
+apps/brain/priv/evaluation/**/*.bak
 
 data/
 .vscode/
