@@ -11,7 +11,10 @@ config :atlas, auto_migrate: true, auto_import: true
 # Enable autonomous learning features for development
 config :brain,
   auto_approval_enabled: true,
-  intent_promotion_enabled: true
+  intent_promotion_enabled: true,
+  # Absolute path to the umbrella-root souls/ so souls are found regardless of
+  # the directory the server was launched from (the default is cwd-relative).
+  souls_dir: Path.expand("../souls", __DIR__)
 
 # Configure the endpoint
 config :chat_web, ChatWeb.Endpoint,

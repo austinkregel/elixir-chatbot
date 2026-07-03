@@ -33,6 +33,7 @@ defmodule ChatWeb.Admin.FleetLive do
      socket
      |> assign(:page_title, "Fleet")
      |> assign(:souls, load_souls())
+     |> assign(:souls_dir, safe(fn -> Brain.Soul.souls_dir() end))
      |> assign(:grant_options, @grant_options)
      |> assign(:feed, backfill_feed())
      |> assign(:selected, nil)
@@ -89,6 +90,9 @@ defmodule ChatWeb.Admin.FleetLive do
                   <option value="" disabled selected={is_nil(@picks["soul_id"])}>choose a soul…</option>
                   <option :for={sid <- @souls} value={sid} selected={sid == @picks["soul_id"]}>{sid}</option>
                 </select>
+                <p :if={@souls == []} class="text-xs text-warning">
+                  No souls found in <code>{@souls_dir}</code>. Add a soul file (e.g. <code>souls/ensign-jj7.json</code>) and refresh.
+                </p>
                 <div class="flex flex-wrap gap-2">
                   <label :for={{label, _} <- @grant_options} class="label cursor-pointer gap-1 text-xs">
                     <input type="checkbox" name="grants[]" value={label} checked class="checkbox checkbox-xs" />
