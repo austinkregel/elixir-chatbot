@@ -260,9 +260,23 @@ defmodule Brain.Services.HomeAssistant do
   defp maybe_add_entity_id(data, nil), do: data
   defp maybe_add_entity_id(data, entity_id), do: Map.put(data, "entity_id", entity_id)
 
-  defp call_service(url, token, domain, service, data) do
-    endpoint = "#{url}/api/services/#{domain}/#{service}"
-    http_post(endpoint, token, data)
+  # SEVERED (LCARS tool-authority remediation, 2026-07-03): this performed a
+  # real-world MUTATING HTTP POST to Home Assistant, selected by string-matching
+  # the user's text, with NO Authority / Order grant / Fleet.Audit — an ungated,
+  # prompt-injectable physical actuator wired into inline response generation
+  # (Generator → Enricher → Dispatcher → enrich → call_service). That is exactly
+  # the "rogue / above-station action" the command structure exists to prevent.
+  # Physical actuation is disabled until it is reintroduced behind a
+  # `{:tool, "homeassistant.call_service"}` authority (mutate/irreversible tier)
+  # with a grant + audit record. We refuse LOUDLY, never a silent no-op
+  # (no graceful degradation). The POST primitive (`http_post`) has been removed.
+  defp call_service(_url, _token, domain, service, data) do
+    Logger.error(
+      "HomeAssistant: BLOCKED ungated actuation — refusing #{domain}/#{service} " <>
+        "data=#{inspect(data)}. Physical actuation is disabled pending the tool-authority gate."
+    )
+
+    {:error, :actuation_disabled}
   end
 
   defp get_entity_state(url, token, entity_id) do
@@ -320,29 +334,9 @@ defmodule Brain.Services.HomeAssistant do
     end
   end
 
-  defp http_post(url, token, body) do
-    headers = build_headers(token)
-    body_json = Jason.encode!(body)
-
-    case :httpc.request(
-           :post,
-           {String.to_charlist(url), headers, ~c"application/json", body_json},
-           [{:timeout, 10_000}],
-           []
-         ) do
-      {:ok, {{_, status, _}, _resp_headers, resp_body}} when status in 200..299 ->
-        case Jason.decode(List.to_string(resp_body)) do
-          {:ok, decoded} -> {:ok, decoded}
-          {:error, _} -> {:ok, %{}}
-        end
-
-      {:ok, {{_, status, _}, _, body}} ->
-        {:error, {:http_error, status, List.to_string(body)}}
-
-      {:error, reason} ->
-        {:error, {:connection_error, reason}}
-    end
-  end
+  # `http_post/3` removed 2026-07-03 — the module's only mutating primitive. See
+  # `call_service/5` above. Home Assistant is read-only here until actuation is
+  # reintroduced behind an authority + audit gate. (`http_get/2` — reads — remains.)
 
   defp build_headers(token) do
     [
