@@ -94,7 +94,9 @@ ouro_ml =
 
 # Brain app test configuration
 config :brain,
-  ouro_enabled: true,
+  # OURO_ENABLED=false skips the Python sidecar (and, via test_helper, the
+  # :requires_ouro tests) on machines that can't run the model — e.g. CI.
+  ouro_enabled: System.get_env("OURO_ENABLED", "true") != "false",
   # Use mock HTTP client for snapshot-based testing (no external API calls)
   http_client: Brain.Test.MockHTTP,
   # Use test-specific directories

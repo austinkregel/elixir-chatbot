@@ -21,6 +21,9 @@ env:
   POSTGRES_DB: chat_bot_dev
   POSTGRES_HOST: localhost
   POSTGRES_PORT: "5432"
+  # The Ouro sidecar runs a 2.6B-parameter PyTorch model — far too heavy for
+  # hosted runners. Skips sidecar startup and :requires_ouro tests.
+  OURO_ENABLED: "false"
 
 jobs:
   # Compile and check for warnings

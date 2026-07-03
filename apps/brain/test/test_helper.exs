@@ -109,8 +109,17 @@ exunit_max_cases =
       end
   end
 
+# When the Ouro sidecar is disabled (OURO_ENABLED=false), also exclude the
+# tests that assert on real Ouro generation.
+exunit_exclude =
+  if Application.get_env(:brain, :ouro_enabled, true) do
+    [:wip, :skip]
+  else
+    [:wip, :skip, :requires_ouro]
+  end
+
 ExUnit.configure(
-  exclude: [:wip, :skip],
+  exclude: exunit_exclude,
   timeout: :infinity,
   max_cases: exunit_max_cases
 )
