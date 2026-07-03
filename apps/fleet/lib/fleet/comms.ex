@@ -26,6 +26,15 @@ defmodule Fleet.Comms do
   end
 
   @doc """
+  Open a conversational HAIL to an ensign — a question, not an order. Stamps the
+  real sender pid (for attribution) which is also where the reply is delivered.
+  Unlike an ORDER, a HAIL confers no authority and starts no assignment.
+  """
+  def hail(to_agent_id, question) when is_binary(question) do
+    GenServer.cast(via(to_agent_id), {:hail, question, self()})
+  end
+
+  @doc """
   Deliver a SIGNAL directly to a pid (used when the recipient is not a
   registered ensign — e.g. the Admiral/issuer process). Still stamps `self()`.
   """

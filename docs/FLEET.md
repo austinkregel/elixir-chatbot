@@ -538,6 +538,28 @@ needs a crew accumulating a record).
 integration — an XO's billet grant lets it command a report over the live channel);
 full fleet suite **46 tests, 0 failures**; `fleet_live_test` renders the billet selector.
 
+### HAIL — conversing with an agent without an order (apps/fleet, apps/atlas, apps/chat_web)
+
+The only channel that engaged an agent's soul was an ORDER (which creates an
+assignment + a service-record milestone). **HAIL** adds *conversation*: ask an agent
+a question and get its in-character answer, conferring no authority and leaving no
+assignment.
+
+- **`Fleet.Comms.hail/2`** stamps the caller as sender (attribution) and reply target.
+- **`Fleet.Ensign`** `handle_cast({:hail, …})` runs the same soul-in-mind-world
+  cognition an order uses, but in a **fully detached `Task`** (the ensign stays
+  responsive — you can hail Security mid-order; a hail crash never touches the
+  agent or its assignment), replying `{:hail_reply, %{answer | error}}` to the
+  caller. Bounded topology: the Admiral may hail any agent; an agent may hail only
+  its CO or a report. A **relieved** agent can still be hailed (talking isn't duty).
+- **`Fleet.hail/2`** (async) + **`Fleet.hail_sync/3`** (iex/tests). Audited as
+  `:hail` / `:hail_reply` (new `CommandRecord` kinds) — a conversation, not an order.
+- **Fleet page** — a "Hail" ask-box in the detail modal; the reply streams back async.
+
+**Verified 2026-07-03:** `Fleet.HailTest` (3, integration — reply returns, no
+assignment created, works when relieved, audited as a conversation); fleet suite
+**49 tests, 0 failures**.
+
 ---
 
 ## 8. Open questions (living)

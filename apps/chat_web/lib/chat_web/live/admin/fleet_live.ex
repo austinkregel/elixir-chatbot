@@ -32,6 +32,10 @@ defmodule ChatWeb.Admin.FleetLive do
      |> assign(:feed, backfill_feed())
      |> assign(:selected, nil)
      |> assign(:detail, nil)
+     # Conversation state: the agent currently being hailed (spinner) and the last
+     # hail Q&A, so the detail modal can show the exchange as it returns.
+     |> assign(:hail_pending, nil)
+     |> assign(:hail, nil)
      # Controlled select values, so the 3s roster refresh never resets a form
      # the Admiral is mid-way through filling out.
      |> assign(:picks, %{})
@@ -242,6 +246,34 @@ defmodule ChatWeb.Admin.FleetLive do
             </details>
           </div>
 
+          <!-- Hail: converse with the agent without giving an order -->
+          <div class="my-3">
+            <h4 class="font-semibold text-sm mb-1">Hail — talk to {@detail.soul_id}</h4>
+            <form phx-submit="hail" class="flex gap-2">
+              <input type="hidden" name="agent" value={@detail.agent_id} />
+              <input
+                name="question"
+                placeholder="Ask a question — not an order…"
+                required
+                autocomplete="off"
+                class="input input-sm input-bordered flex-1"
+                disabled={@hail_pending == @detail.agent_id}
+              />
+              <button class="btn btn-sm btn-secondary" disabled={@hail_pending == @detail.agent_id}>Hail</button>
+            </form>
+            <div :if={@hail_pending == @detail.agent_id} class="mt-2 text-xs text-base-content/60">
+              <span class="loading loading-dots loading-xs"></span> awaiting reply…
+            </div>
+            <div :if={@hail && @hail.agent_id == @detail.agent_id} class="mt-2 space-y-1">
+              <div class="text-xs text-base-content/50">Admiral: “{@hail.question}”</div>
+              <div
+                :if={@hail[:answer]}
+                class="bg-base-100 border border-base-300 rounded p-2 text-sm whitespace-pre-wrap break-words"
+              >{@hail.answer}</div>
+              <div :if={@hail[:error]} class="text-error text-sm">hail failed: {@hail.error}</div>
+            </div>
+          </div>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <h4 class="font-semibold text-sm mb-1">Service record</h4>
@@ -348,6 +380,24 @@ defmodule ChatWeb.Admin.FleetLive do
 
   def handle_event("close_detail", _params, socket), do: {:noreply, assign(socket, :detail, nil)}
 
+  def handle_event("hail", %{"agent" => id, "question" => q}, socket) do
+    q = String.trim(q)
+
+    if q == "" do
+      {:noreply, socket}
+    else
+      # Fleet.hail stamps THIS LiveView process as the sender, so the async
+      # {:hail_reply, ...} lands in our own handle_info below.
+      safe(fn -> Fleet.hail(id, q) end)
+      Process.send_after(self(), {:hail_timeout, id, q}, 180_000)
+
+      {:noreply,
+       socket
+       |> assign(:hail_pending, id)
+       |> assign(:hail, %{agent_id: id, question: q})}
+    end
+  end
+
   # ── Live updates ──────────────────────────────────────────────────────────
 
   @impl true
@@ -368,6 +418,25 @@ defmodule ChatWeb.Admin.FleetLive do
 
   def handle_info(:refresh, socket), do: {:noreply, assign_roster(socket)}
   def handle_info({:world_context_changed, _}, socket), do: {:noreply, socket}
+
+  def handle_info({:hail_reply, %{agent_id: id} = reply}, socket) do
+    pending = if socket.assigns.hail_pending == id, do: nil, else: socket.assigns.hail_pending
+    {:noreply, socket |> assign(:hail, reply) |> assign(:hail_pending, pending)}
+  end
+
+  def handle_info({:hail_timeout, id, q}, socket) do
+    h = socket.assigns.hail
+
+    # Only trip the timeout if this exact hail is still outstanding (no reply came).
+    if socket.assigns.hail_pending == id and h && h.question == q and is_nil(Map.get(h, :answer)) do
+      {:noreply,
+       socket
+       |> assign(:hail_pending, nil)
+       |> assign(:hail, Map.put(h, :error, "timed out waiting for reply"))}
+    else
+      {:noreply, socket}
+    end
+  end
   def handle_info(_msg, socket), do: {:noreply, socket}
 
   # ── Data loading ──────────────────────────────────────────────────────────
@@ -406,6 +475,7 @@ defmodule ChatWeb.Admin.FleetLive do
       end
 
     %{
+      agent_id: agent_id,
       soul_id: agent_id,
       duty: (summary && String.to_atom(summary.duty_status)) || status[:duty] || :active,
       completed: (summary && summary.orders_completed) || 0,
@@ -502,6 +572,8 @@ defmodule ChatWeb.Admin.FleetLive do
 
   defp event_class(e) when e in [:report, :ack, :cognition_complete, :granted, :grant, :commissioned, :reinstated],
     do: "badge-success"
+
+  defp event_class(e) when e in [:hail, :hail_reply], do: "badge-secondary"
 
   defp event_class(e) when e in [:dissent, :deny, :provenance_anomaly, :cognition_failed, :order_failed, :order_dissented],
     do: "badge-error"

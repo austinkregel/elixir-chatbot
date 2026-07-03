@@ -90,6 +90,27 @@ defmodule Fleet do
   @doc "Have an ensign send a SITREP up to its CO."
   def sitrep(agent_id, body \\ %{}), do: Ensign.sitrep(agent_id, body)
 
+  @doc """
+  Hail an ensign — converse with it without giving an order. The reply arrives
+  asynchronously as `{:hail_reply, %{agent_id:, question:, answer: | error:}}` in
+  the calling process's mailbox. Confers no authority and creates no assignment.
+  """
+  def hail(agent_id, question) when is_binary(question), do: Ensign.hail(agent_id, question)
+
+  @doc """
+  Synchronous convenience for iex/tests: hail and block for the reply (or time
+  out). Returns `{:ok, reply}` | `{:error, :timeout}`.
+  """
+  def hail_sync(agent_id, question, timeout \\ 120_000) when is_binary(question) do
+    hail(agent_id, question)
+
+    receive do
+      {:hail_reply, %{agent_id: ^agent_id} = reply} -> {:ok, reply}
+    after
+      timeout -> {:error, :timeout}
+    end
+  end
+
   @doc "Retires an ensign by pid."
   def retire(pid) when is_pid(pid), do: CrewSupervisor.retire(pid)
 

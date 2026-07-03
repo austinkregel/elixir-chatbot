@@ -56,6 +56,14 @@ defmodule Fleet.Ensign do
   @doc "Have a report send a SITREP up to its CO."
   def sitrep(agent_id, body \\ %{}), do: GenServer.cast(via_tuple(agent_id), {:emit_sitrep, body})
 
+  @doc """
+  Hail an ensign — ask it a question and get its in-character answer, without
+  giving an order. The reply arrives asynchronously as `{:hail_reply, map}` in the
+  calling process's mailbox (the caller is stamped as the sender). Conversation,
+  not command: no assignment, no service-record milestone, no conferred authority.
+  """
+  def hail(agent_id, question) when is_binary(question), do: Comms.hail(agent_id, question)
+
   @doc "Have the agent append a note to its own duty log (agent-written)."
   def log_duty(agent_id, note, opts \\ []),
     do: GenServer.cast(via_tuple(agent_id), {:log_duty, note, opts})
@@ -215,6 +223,91 @@ defmodule Fleet.Ensign do
         accept_order(state, order, sender)
     end
   end
+
+  # ── HAIL (conversation: reach the agent's soul without an order) ───────────
+
+  def handle_cast({:hail, question, sender_pid}, state) do
+    sender = Comms.attribute(sender_pid)
+
+    cond do
+      is_nil(state.soul) or is_nil(state.mind_world_id) ->
+        send(sender_pid, {:hail_reply, %{agent_id: state.agent_id, question: question,
+          error: "not ready — soul not yet hydrated"}})
+        {:noreply, state}
+
+      not may_hail?(sender, state) ->
+        Audit.record(:provenance_anomaly, %{from_agent: Comms.principal_string(sender),
+          to_agent: state.agent_id, reason: "hail from outside the chain"})
+        send(sender_pid, {:hail_reply, %{agent_id: state.agent_id, question: question,
+          error: "not permitted to hail this agent"}})
+        {:noreply, state}
+
+      true ->
+        principal = Comms.principal_string(sender)
+
+        Audit.record(:hail, %{from_agent: principal, to_agent: state.agent_id,
+          world_id: state.mind_world_id, payload: %{question: String.slice(question, 0, 2000)}})
+        Telemetry.emit_event(state.agent_id, :hail, %{}, %{from: principal})
+
+        # Conversation runs OFF the mailbox in a fully detached task, so the ensign
+        # stays responsive (you can hail Security mid-order) and a hail crash never
+        # touches the agent or its assignment. The task replies to the caller.
+        start_hail(state, question, principal, sender_pid)
+        {:noreply, state}
+    end
+  end
+
+  # A hail may come from the Admiral (who may converse with any crew member) or,
+  # for agent-to-agent conversation, only along this agent's chain — its CO or a
+  # direct report. Conversation respects bounded topology just like commands do.
+  defp may_hail?(:admiral, _state), do: true
+  defp may_hail?(sender, state), do: Comms.from_co?(sender, state) or Comms.from_report?(sender, state)
+
+  # Run the hail's cognition in the agent's own mind-world, with its soul — the
+  # same accountable path an order uses — but conferring nothing and recording a
+  # conversation, not an assignment. Errors are surfaced in the reply, not hidden.
+  defp start_hail(state, question, principal, reply_to) do
+    soul = state.soul
+    agent_id = state.agent_id
+    mind_world_id = state.mind_world_id
+
+    Task.Supervisor.start_child(Fleet.TaskSupervisor, fn ->
+      reply =
+        try do
+          {:ok, conversation_id} =
+            Brain.create_conversation(world_id: mind_world_id, soul: soul, agent_id: agent_id)
+
+          answer =
+            hail_answer(Brain.evaluate(conversation_id, question, soul: soul, agent_id: agent_id))
+
+          Audit.record(:hail_reply, %{from_agent: agent_id, to_agent: principal,
+            world_id: mind_world_id, payload: %{answer: String.slice(answer, 0, 2000)}})
+          Telemetry.emit_event(agent_id, :hail_reply, %{}, %{to: principal})
+
+          %{agent_id: agent_id, question: question, answer: answer}
+        rescue
+          e ->
+            Logger.error("Fleet.Ensign: hail cognition failed",
+              agent_id: agent_id, reason: inspect(e))
+
+            %{agent_id: agent_id, question: question, error: Exception.message(e)}
+        catch
+          kind, reason ->
+            Logger.error("Fleet.Ensign: hail cognition crashed",
+              agent_id: agent_id, reason: inspect({kind, reason}))
+
+            %{agent_id: agent_id, question: question, error: inspect({kind, reason})}
+        end
+
+      send(reply_to, {:hail_reply, reply})
+    end)
+  end
+
+  defp hail_answer({:ok, %{response: r}}) when is_binary(r), do: r
+  defp hail_answer(%{response: r}) when is_binary(r), do: r
+  defp hail_answer({:ok, r}) when is_binary(r), do: r
+  defp hail_answer(r) when is_binary(r), do: r
+  defp hail_answer(other), do: inspect(other)
 
   # ── CO-side directives (run in the CO's process; self() is the CO) ────────
 
