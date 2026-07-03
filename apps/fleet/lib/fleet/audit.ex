@@ -32,7 +32,24 @@ defmodule Fleet.Audit do
       |> Map.put_new(:issued_at, DateTime.utc_now())
       |> normalize()
 
-    # Live audit stream (runtime-emitted).
+    # Durable append-only record FIRST — then the live telemetry event, so an
+    # observer that sees the telemetry can rely on the record already existing.
+    record =
+      case AtlasIntegration.sync(fn ->
+             %CommandRecord{} |> CommandRecord.changeset(attrs) |> Atlas.Repo.insert!()
+           end) do
+        {:ok, record} ->
+          record
+
+        {:error, reason} ->
+          Logger.error("Fleet.Audit: command audit write failed",
+            kind: kind,
+            reason: inspect(reason)
+          )
+
+          raise "Fleet.Audit: command audit write failed (#{inspect(reason)})"
+      end
+
     Fleet.Telemetry.emit_event(attrs[:from_agent] || "system", kind, %{}, %{
       order_id: attrs[:order_id],
       to_agent: attrs[:to_agent],
@@ -40,21 +57,7 @@ defmodule Fleet.Audit do
       verdict: attrs[:verdict]
     })
 
-    # Durable append-only record.
-    case AtlasIntegration.sync(fn ->
-           %CommandRecord{} |> CommandRecord.changeset(attrs) |> Atlas.Repo.insert!()
-         end) do
-      {:ok, record} ->
-        {:ok, record}
-
-      {:error, reason} ->
-        Logger.error("Fleet.Audit: command audit write failed",
-          kind: kind,
-          reason: inspect(reason)
-        )
-
-        raise "Fleet.Audit: command audit write failed (#{inspect(reason)})"
-    end
+    {:ok, record}
   end
 
   # CommandRecord string fields must receive strings; normalize terms.

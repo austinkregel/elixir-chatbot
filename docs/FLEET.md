@@ -393,6 +393,15 @@ fleet modules:
 - `apps/fleet/lib/fleet/authority.ex` — the authority vocabulary (`:cognition`,
   `{:world, id}`, `:issue_orders`, `:relieve`) + `holds?`/`confer`/`grantable?`/
   `required_for`. The **grant is the action scope** — enforced at the tick gate.
+  Security properties (adversarially tested in `command_security_test.exs`):
+  order-conferred authorities are **order-scoped** (kept in `order_grants`,
+  cleared when the assignment ends — no cross-order privilege accumulation); a CO
+  may confer/grant only authorities it itself holds (capped at both ORDER-issue
+  and GRANT time); command capabilities (`:issue_orders`/`:relieve`) require a
+  **standing** grant, never a transient order grant; an agent can never be its own
+  CO. Authority derives solely from Registry attribution — a spoofed `Order.from`,
+  a non-CO GRANT, an off-chain order, and an upward signal from a non-report are
+  all refused as provenance anomalies.
 - `apps/fleet/lib/fleet/signal.ex` — the `%Fleet.Signal{}` envelope for the
   non-ORDER kinds (sitrep/request/grant/deny/dissent/report/relieve/reinstate).
 - `apps/fleet/lib/fleet/appraisal.ex` — value-grounded DISSENT: Tier 1 deterministic
@@ -420,11 +429,14 @@ on `:atlas`.
 set up `atlas_test` + AGE themselves, reusing `Brain.Test.AtlasSandbox`). One-time:
 `mix atlas.bootstrap_age` (creates `command_graph` in an already-initialized DB) and
 `mix ecto.migrate -r Atlas.Repo`. Then `RELEASE_ROOT=$(pwd) mix cmd --app fleet mix
-test` — 11 tests, 0 failures (verified 2026-07-02): the 7-scenario
-`command_protocol_test.exs` proves chain persistence, authorized ORDER→REPORT,
-REQUEST→GRANT→execute, REQUEST→DENY→DISSENT, value DISSENT, provenance anomaly, and
-RELIEVE/REINSTATE, all with real `CommandRecord` audit rows. (In the test env Brain
-generation falls back — no trained Ouro models — which is orthogonal to the protocol.)
+test` — **32 tests, 0 failures** (verified 2026-07-03): `authority_test`/`appraisal_test`
+(unit), `ensign_test` (mechanics + a real-cognition JJ-7 case), the 7-scenario
+`command_protocol_test.exs` (chain persistence, authorized ORDER→REPORT,
+REQUEST→GRANT→execute, REQUEST→DENY→DISSENT, value DISSENT, provenance anomaly,
+RELIEVE/REINSTATE — all with real `CommandRecord` rows), and the 8-scenario
+adversarial `command_security_test.exs` (privilege-escalation + cross-contamination).
+(In the test env Brain generation falls back — no trained Ouro models — which is
+orthogonal to the protocol.)
 
 ---
 

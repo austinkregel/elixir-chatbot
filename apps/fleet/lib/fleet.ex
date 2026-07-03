@@ -24,6 +24,8 @@ defmodule Fleet do
   chain (both ensigns) and persists the `COMMANDS` edge. Returns `:ok` or
   `{:error, reason}` — a persistence failure is surfaced, not swallowed.
   """
+  def assign_co(sub_id, sub_id) when is_binary(sub_id), do: {:error, :self_command}
+
   def assign_co(sub_id, co_id) when is_binary(sub_id) and is_binary(co_id) do
     Ensign.set_co(sub_id, co_id)
     Ensign.add_report(co_id, sub_id)

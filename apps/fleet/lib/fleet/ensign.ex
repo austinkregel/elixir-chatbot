@@ -91,6 +91,10 @@ defmodule Fleet.Ensign do
       },
       duty: :active,
       assignment: nil,
+      # Authorities conferred for the CURRENT assignment only (order grant +
+      # GRANTs received while working it). Kept separate from the standing grant
+      # so privilege never accumulates across orders (least privilege per order).
+      order_grants: MapSet.new(),
       awaiting: nil,
       relieved_by: nil,
       task_ref: nil,
@@ -121,6 +125,7 @@ defmodule Fleet.Ensign do
       co: ct.co,
       reports: ct.reports,
       grants: MapSet.to_list(ct.grants),
+      order_grants: MapSet.to_list(state.order_grants),
       assignment_status: state.assignment && state.assignment.status,
       awaiting: state.awaiting,
       working: not is_nil(state.task_ref),
@@ -134,12 +139,24 @@ defmodule Fleet.Ensign do
 
   @impl true
   def handle_cast({:set_co, co_id}, state) do
-    {:noreply, put_in(state.context_tags.co, co_id)}
+    # An agent may never be its own CO — that would let it authorize/grant to
+    # itself (self-command privilege loop).
+    if co_id == state.agent_id do
+      Telemetry.emit_event(state.agent_id, :self_command_rejected, %{}, %{role: :co})
+      {:noreply, state}
+    else
+      {:noreply, put_in(state.context_tags.co, co_id)}
+    end
   end
 
   def handle_cast({:add_report, report_id}, state) do
-    reports = Enum.uniq([report_id | state.context_tags.reports])
-    {:noreply, put_in(state.context_tags.reports, reports)}
+    if report_id == state.agent_id do
+      Telemetry.emit_event(state.agent_id, :self_command_rejected, %{}, %{role: :report})
+      {:noreply, state}
+    else
+      reports = Enum.uniq([report_id | state.context_tags.reports])
+      {:noreply, put_in(state.context_tags.reports, reports)}
+    end
   end
 
   # ── ORDER (downward: CO/Admiral → this ensign) ────────────────────────────
@@ -157,12 +174,12 @@ defmodule Fleet.Ensign do
         {:noreply, state}
 
       not Comms.authorized_issuer?(sender, state) ->
-        Telemetry.emit_event(state.agent_id, :provenance_anomaly, %{}, %{
-          order_id: order.id, sender: Comms.principal_string(sender)
-        })
         Audit.record(:provenance_anomaly, %{order_id: order.id,
           from_agent: Comms.principal_string(sender), to_agent: state.agent_id,
           reason: "order issuer is not my CO"})
+        Telemetry.emit_event(state.agent_id, :provenance_anomaly, %{}, %{
+          order_id: order.id, sender: Comms.principal_string(sender)
+        })
         emit_dissent(state, order, %{basis: :provenance, reason: "issuer not my CO"})
         {:noreply, state}
 
@@ -177,7 +194,12 @@ defmodule Fleet.Ensign do
     if Authority.holds?(state.context_tags.grants, :issue_orders) do
       world_id = Keyword.get(opts, :world_id, state.world_id)
       required = [:cognition, {:world, world_id}]
-      authorities = Keyword.get(opts, :authorities, required)
+      # A CO may only confer authorities it itself holds — no delegating what you
+      # lack. Anything the CO can't confer, the report must REQUEST (and be DENYd).
+      authorities =
+        opts
+        |> Keyword.get(:authorities, required)
+        |> Enum.filter(&Authority.holds?(state.context_tags.grants, &1))
 
       order = %Order{
         id: gen_id(),
@@ -319,7 +341,8 @@ defmodule Fleet.Ensign do
     Audit.record(:dissent, %{order_id: order && order.id, from_agent: state.agent_id,
                              to_agent: co_or_admiral(state), verdict: :authority_timeout,
                              reason: "request #{rid} timed out"})
-    {:noreply, %{state | awaiting: nil, assignment: order && Order.update_status(order, "dissented")}}
+    {:noreply, %{state | awaiting: nil, order_grants: MapSet.new(),
+                 assignment: order && Order.update_status(order, "dissented")}}
   end
 
   def handle_info({:request_timeout, _rid}, state), do: {:noreply, state}
@@ -333,7 +356,8 @@ defmodule Fleet.Ensign do
                              to_agent: co_or_admiral(state), verdict: verdict[:basis],
                              reason: verdict[:reason]})
     emit_dissent(state, order, verdict)
-    {:noreply, %{state | task_ref: nil, task_pid: nil, assignment: order && Order.update_status(order, "dissented")}}
+    {:noreply, %{state | task_ref: nil, task_pid: nil, order_grants: MapSet.new(),
+                 assignment: order && Order.update_status(order, "dissented")}}
   end
 
   def handle_info({ref, {:completed, result}}, %{task_ref: ref} = state) do
@@ -352,7 +376,8 @@ defmodule Fleet.Ensign do
       %{order_id: order && order.id})
     Telemetry.emit_event(state.agent_id, :report, %{}, %{order_id: order && order.id})
 
-    {:noreply, %{state | task_ref: nil, task_pid: nil, assignment: order && Order.update_status(order, "completed")}}
+    {:noreply, %{state | task_ref: nil, task_pid: nil, order_grants: MapSet.new(),
+                 assignment: order && Order.update_status(order, "completed")}}
   end
 
   # Any other Task return is treated as a completed result.
@@ -364,7 +389,8 @@ defmodule Fleet.Ensign do
     order = state.assignment
     Telemetry.emit_event(state.agent_id, :cognition_failed, %{}, %{
       order_id: order && order.id, reason: inspect(reason)})
-    {:noreply, %{state | task_ref: nil, task_pid: nil, assignment: order && Order.update_status(order, "failed")}}
+    {:noreply, %{state | task_ref: nil, task_pid: nil, order_grants: MapSet.new(),
+                 assignment: order && Order.update_status(order, "failed")}}
   end
 
   # ACK readback from a report (backward-compatible raw tuple).
@@ -388,7 +414,9 @@ defmodule Fleet.Ensign do
     Audit.record(:ack, %{order_id: order.id, from_agent: state.agent_id,
                          to_agent: Comms.principal_string(sender)})
 
-    grants = Authority.confer(state.context_tags.grants, Authority.conferred_by(order))
+    # The order's grant is scoped to THIS assignment — it replaces (does not
+    # accumulate onto) any prior order's conferred authorities.
+    order_grants = Authority.to_set(Authority.conferred_by(order))
 
     Telemetry.emit_event(state.agent_id, :order_received, %{}, %{order_id: order.id})
     send(self(), :tick)
@@ -396,7 +424,7 @@ defmodule Fleet.Ensign do
     {:noreply,
      %{state
        | assignment: Order.update_status(order, "acknowledged"),
-         context_tags: %{state.context_tags | grants: grants},
+         order_grants: order_grants,
          last_ack: ack}}
   end
 
@@ -410,7 +438,7 @@ defmodule Fleet.Ensign do
         start_dispatch(state, order)
 
       true ->
-        case Authority.missing(state.context_tags.grants, Authority.required_for(order)) do
+        case Authority.missing(effective_grants(state), Authority.required_for(order)) do
           [] ->
             start_dispatch(state, order)
 
@@ -419,6 +447,10 @@ defmodule Fleet.Ensign do
         end
     end
   end
+
+  # Standing grant (from commission) ∪ the current order's scoped grant.
+  defp effective_grants(state),
+    do: MapSet.union(state.context_tags.grants, state.order_grants)
 
   defp start_dispatch(state, order) do
     task = dispatch(state, order)
@@ -438,7 +470,7 @@ defmodule Fleet.Ensign do
         emit_dissent(state, order, verdict)
         Audit.record(:dissent, %{order_id: order.id, from_agent: state.agent_id,
                                  to_agent: "admiral", verdict: :authority, reason: inspect(missing)})
-        {:noreply, %{state | assignment: Order.update_status(order, "dissented")}}
+        {:noreply, %{state | order_grants: MapSet.new(), assignment: Order.update_status(order, "dissented")}}
 
       co ->
         rid = gen_id()
@@ -511,13 +543,14 @@ defmodule Fleet.Ensign do
   # ── GRANT / DENY (requester side) ─────────────────────────────────────────
 
   defp handle_grant_deny(:grant, %Signal{} = sig, state) do
-    grants = Authority.confer(state.context_tags.grants, sig.authority)
+    # A granted authority is scoped to the current order, not added to the
+    # standing grant — it does not survive into the next assignment.
+    order_grants = Authority.confer(state.order_grants, sig.authority)
     order = state.assignment && Order.update_status(state.assignment, "acknowledged")
     Telemetry.emit_event(state.agent_id, :granted, %{}, %{authority: sig.authority})
     send(self(), :tick)
 
-    {:noreply, %{state | context_tags: %{state.context_tags | grants: grants},
-                 awaiting: nil, assignment: order}}
+    {:noreply, %{state | order_grants: order_grants, awaiting: nil, assignment: order}}
   end
 
   defp handle_grant_deny(:deny, %Signal{} = sig, state) do
@@ -527,7 +560,8 @@ defmodule Fleet.Ensign do
     Audit.record(:dissent, %{order_id: order && order.id, from_agent: state.agent_id,
                              to_agent: co_or_admiral(state), verdict: :denied_authority,
                              reason: verdict.reason})
-    {:noreply, %{state | awaiting: nil, assignment: order && Order.update_status(order, "dissented")}}
+    {:noreply, %{state | awaiting: nil, order_grants: MapSet.new(),
+                 assignment: order && Order.update_status(order, "dissented")}}
   end
 
   # ── RELIEVE / REINSTATE ───────────────────────────────────────────────────
@@ -537,7 +571,8 @@ defmodule Fleet.Ensign do
     Telemetry.emit_event(state.agent_id, :relieved, %{}, %{by: Comms.principal_string(sender)})
     Audit.record(:relieve, %{from_agent: Comms.principal_string(sender), to_agent: state.agent_id})
     assignment = state.assignment && Order.update_status(state.assignment, "failed")
-    {:noreply, %{state | duty: :relieved, relieved_by: sender, task_ref: nil, assignment: assignment}}
+    {:noreply, %{state | duty: :relieved, relieved_by: sender, task_ref: nil, task_pid: nil,
+                 order_grants: MapSet.new(), assignment: assignment}}
   end
 
   defp handle_duty(:reinstate, %Signal{}, sender, state) do
@@ -557,11 +592,11 @@ defmodule Fleet.Ensign do
   # ── Anomalies & dissent delivery ──────────────────────────────────────────
 
   defp signal_anomaly(kind, %Signal{} = sig, sender, state) do
-    Telemetry.emit_event(state.agent_id, :provenance_anomaly, %{}, %{
-      kind: kind, sender: Comms.principal_string(sender)})
     Audit.record(:provenance_anomaly, %{order_id: sig.order_id,
       from_agent: Comms.principal_string(sender), to_agent: state.agent_id,
       reason: "unauthorized #{kind} signal"})
+    Telemetry.emit_event(state.agent_id, :provenance_anomaly, %{}, %{
+      kind: kind, sender: Comms.principal_string(sender)})
     {:noreply, state}
   end
 
