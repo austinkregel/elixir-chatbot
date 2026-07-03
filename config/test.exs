@@ -116,6 +116,11 @@ config :brain,
   response_connectors_file:
     Path.expand("../apps/brain/test/fixtures/response_connectors.json", __DIR__)
 
+# Tests exercise real generation via the self-hosted Ouro sidecar (lazily started
+# by test_helper's `ensure_ready!/1`, and now REUSED if one is already healthy on
+# the port rather than leaking a new process per run).
+config :brain, :generation, backend: :ouro_sidecar
+
 # World app test configuration
 config :world,
   # Enable test world sandbox for isolated test worlds

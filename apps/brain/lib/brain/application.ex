@@ -65,8 +65,11 @@ defmodule Brain.Application do
       Brain.Response.DecompressorCollector,
       Brain.Response.PhraseInventory,
       Brain.Services.HomeAssistant.CapabilityRegistry,
-      Brain.ML.Ouro.Model,
-      Brain.ML.Ouro.SidecarLauncher,
+      # Generation is a pluggable backend chosen by config. Only the selected
+      # backend contributes children — the default OpenAI-compatible/Ollama backend
+      # adds NONE (a shared HTTP endpoint), so a Fleet never spawns a model process
+      # per agent. Only `:ouro_sidecar` adds the (heavy) Ouro processes.
+      Brain.ML.Generation.children(),
       Brain.ML.TrainingServer,
       Brain.ML.TrainingExampleBuffer,
       {Task.Supervisor, [name: Brain.ML.WeightOptimizer.TaskSupervisor]},
@@ -82,7 +85,9 @@ defmodule Brain.Application do
     ]
 
     opts = [strategy: :one_for_one, name: Brain.Supervisor]
-    result = Supervisor.start_link(children, opts)
+    # Flatten so a backend's `children/0` sublist splices in (tuples like
+    # `{Task.Supervisor, opts}` are left intact — List.flatten only recurses lists).
+    result = Supervisor.start_link(List.flatten(children), opts)
     Telemetry.attach_handlers()
     ml_config = Application.get_env(:brain, :ml, [])
     skip_init = Application.get_env(:brain, :skip_ml_init, false)

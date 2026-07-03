@@ -560,6 +560,36 @@ assignment.
 assignment created, works when relieved, audited as a conversation); fleet suite
 **49 tests, 0 failures**.
 
+### De-godifying Brain — generation is a pluggable backend (apps/brain, config)
+
+Generation (turning a realization packet into prose) was a hard, heavy Brain
+dependency: a `SidecarLauncher` hardcoded to `auto_start = true` spawned a ~5 GB
+Ouro model process **per BEAM**. A Fleet of many agents, each with its own Brain,
+would OOM the machine. Now generation is a **pluggable, optional backend**
+(`Brain.ML.Generation`, behaviour `…Generation.Backend`):
+
+- **`OpenAICompatible`** (the Fleet default) — any `/v1/chat/completions` endpoint
+  (Ollama, vLLM, remote Ouro, OpenAI). **Stateless HTTP, zero processes launched**,
+  so every agent shares ONE server instead of N × a model. Default
+  `http://localhost:11434/v1`.
+- **`OuroSidecar`** — self-hosted Ouro, now **opt-in** and **reuse-if-healthy** (one
+  process per machine, not per BEAM). Wraps the existing Ouro Model/launcher.
+- **`Null`** — analysis-only, honest `{:error, :no_backend}`.
+
+Only the chosen backend contributes supervision children, so the default costs
+nothing. Config: `config :brain, :generation, backend: …`.
+
+**No-graceful-degradation, enforced:** a *configured* backend that is unavailable
+now surfaces **loudly** (`Brain.ML.Generation.BackendError`) instead of quietly
+falling through to the intent-template synthesizer and the `cannot_respond` pool —
+which had been dressing a generation outage up as a comprehension failure ("could
+you rephrase?"). `:null` (a *chosen* analysis-only mode) keeps the template path.
+
+**Verified 2026-07-03:** compiles clean; the default OpenAI-compatible path
+verified live against Ollama (`llama3.1:8b`, `gemma4:e2b` return prose). Full
+integration suite re-run pending the fork's Postgres+AGE stack (the dev DB was down
+at commit time).
+
 ---
 
 ## 8. Open questions (living)

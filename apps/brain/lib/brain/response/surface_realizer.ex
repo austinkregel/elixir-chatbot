@@ -133,6 +133,15 @@ defmodule Brain.Response.SurfaceRealizer do
         collect_pairs(primitives, text)
         {:ok, rendered, text}
 
+      # A configured generation backend being unavailable is a real outage — NOT a
+      # comprehension problem. Propagate it loudly instead of quietly rendering an
+      # enriched placeholder that would read like "I didn't understand you"
+      # (forbidden graceful degradation). `:null` is a chosen analysis-only mode and
+      # keeps the enriched/template path.
+      {:error, {:backend_unavailable, backend, _} = reason} when backend != :null ->
+        Logger.error("SurfaceRealizer: generation backend #{inspect(backend)} unavailable — surfacing, not degrading")
+        {:error, reason}
+
       {:error, reason} ->
         Logger.warning("SurfaceRealizer: Ouro realization failed: #{inspect(reason)}, trying enriched fallback")
         try_enriched_fallback(primitives, reason, opts)

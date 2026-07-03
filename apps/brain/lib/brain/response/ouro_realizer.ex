@@ -12,7 +12,7 @@ defmodule Brain.Response.OuroRealizer do
   `RefinementLoop` can iterate.
   """
 
-  alias Brain.ML.Ouro.Model, as: OuroModel
+  alias Brain.ML.Generation
   alias Brain.Response.{RealizationPacket, ConstraintEnforcer}
   alias Brain.Analysis.ChunkAnalysis
 
@@ -58,18 +58,19 @@ defmodule Brain.Response.OuroRealizer do
   end
 
   defp do_generate(messages, gen_opts, primitives) do
-    case OuroModel.generate(messages, gen_opts) do
-      {:ok, text} ->
-        Logger.info("OuroRealizer: generated #{String.length(text)} chars, validating structural constraints")
+    # Backend-agnostic: routes through the configured generation backend
+    # (OpenAI-compatible / Ouro sidecar / null), not a hard-wired Ouro dependency.
+    case Generation.generate(messages, gen_opts) do
+      {:ok, text} when is_binary(text) and text != "" ->
+        Logger.info("Realizer: generated #{String.length(text)} chars, validating structural constraints")
         validate_and_return(text, primitives)
 
-      :fallback ->
-        Logger.error("OuroRealizer: Ouro model not loaded")
-        {:error, :ouro_not_loaded}
+      {:ok, ""} ->
+        {:error, {:backend_unavailable, Generation.name(), :empty_output}}
 
       {:error, reason} ->
-        Logger.error("Ouro generation failed: #{inspect(reason)}")
-        {:error, reason}
+        Logger.error("Generation failed (backend=#{Generation.name()}): #{inspect(reason)}")
+        {:error, {:backend_unavailable, Generation.name(), reason}}
     end
   end
 

@@ -61,6 +61,33 @@ config :brain,
   ]
 
 # ============================================================================
+# Generation backend — Brain's pluggable, optional text generator
+# ============================================================================
+# Brain does analysis; turning a realization packet into prose is a backend
+# chosen here, NOT a hard dependency. The default is a shared OpenAI-compatible
+# endpoint (Ollama) — every agent in a Fleet points at ONE server over HTTP, so
+# nothing heavy is launched per Brain. Ouro is opt-in (`:ouro_sidecar`); `:null`
+# runs analysis-only. See Brain.ML.Generation.
+config :brain, :generation,
+  backend:
+    (case System.get_env("BRAIN_GENERATION_BACKEND", "openai_compatible") do
+       "ouro_sidecar" -> :ouro_sidecar
+       "null" -> :null
+       _ -> :openai_compatible
+     end),
+  openai_compatible: [
+    # Ollama's OpenAI-compatible API by default; point at any /v1 endpoint (a
+    # remote Ouro, vLLM, OpenAI). The local Ouro sidecar is itself OpenAI-compatible
+    # on :8100, so `OPENAI_BASE_URL=http://localhost:8100/v1` reuses it with no launch.
+    base_url: System.get_env("OPENAI_BASE_URL", "http://localhost:11434/v1"),
+    # A model the local Ollama actually serves. Override per instance; a Fleet can
+    # point every agent at one small shared model (e.g. gemma4:e2b) to stay light.
+    model: System.get_env("OPENAI_MODEL", "llama3.1:8b"),
+    api_key: System.get_env("OPENAI_API_KEY"),
+    timeout: System.get_env("GENERATION_TIMEOUT", "120000") |> String.to_integer()
+  ]
+
+# ============================================================================
 # World App Configuration
 # ============================================================================
 

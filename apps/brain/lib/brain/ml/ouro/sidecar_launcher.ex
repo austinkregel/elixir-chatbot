@@ -104,11 +104,21 @@ defmodule Brain.ML.Ouro.SidecarLauncher do
   @impl true
   def init(_opts) do
     ml_config = Application.get_env(:brain, :ml, [])
+    # Config-driven again (the hardcoded `true` made every BEAM spawn its own
+    # multi-GB sidecar — a Fleet would OOM). Only launch when the instance opts in.
     auto_start = ml_config[:ouro_auto_start] || false
     ouro_enabled = Application.get_env(:brain, :ouro_enabled, true)
 
     if auto_start and ouro_enabled do
       case launch_sidecar() do
+        {:ok, :reused} ->
+          # A healthy sidecar is already listening on the configured port — reuse
+          # it instead of spawning a redundant one. This is what lets many BEAMs
+          # (and many agents) share a single model process.
+          Logger.info("SidecarLauncher: reusing healthy sidecar already on the configured port")
+          schedule_health_poll()
+          {:ok, %__MODULE__{status: :running, output_buffer: "", launched_at: System.monotonic_time(:millisecond)}}
+
         {:ok, port, os_pid} ->
           schedule_health_poll()
           {:ok,
@@ -278,6 +288,17 @@ defmodule Brain.ML.Ouro.SidecarLauncher do
         _ -> 8100
       end
 
+    # Reuse-if-healthy: if a sidecar is already serving on the configured port,
+    # don't spawn another (each Ouro process is multi-GB). This is the fix for the
+    # per-BEAM leak — one machine, one model process, shared by every Brain.
+    if Client.health_check() == :ok do
+      {:ok, :reused}
+    else
+      spawn_sidecar(python_cmd, script, port_number, ml_config)
+    end
+  end
+
+  defp spawn_sidecar(python_cmd, script, port_number, ml_config) do
     unless File.exists?(script) do
       {:error, "Ouro server script not found at #{script}"}
     else

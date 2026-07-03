@@ -1697,6 +1697,14 @@ defmodule Brain do
       {nil, :silence_preferred} ->
         {nil, :silence_preferred}
 
+      # A configured generation backend being down is a real outage. Surface it
+      # LOUDLY — never emit a "could you rephrase?" placeholder that impersonates a
+      # comprehension failure (forbidden graceful degradation). `:null` is a chosen
+      # analysis-only mode and keeps the template fallback below.
+      {:error, {:generation_failed, {:backend_unavailable, backend, reason}}}
+      when backend != :null ->
+        raise Brain.ML.Generation.BackendError, backend: backend, reason: reason
+
       {:error, reason} ->
         Logger.warning("Synthesis failed, falling back: #{inspect(reason)}")
         {Brain.Response.Synthesizer.get_cannot_respond_response(), :synthesis_fallback}
