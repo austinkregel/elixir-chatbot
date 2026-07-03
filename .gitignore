@@ -135,7 +135,13 @@ apps/brain/priv/evaluation/results/
 apps/brain/priv/evaluation/sentiment/
 apps/brain/priv/evaluation/**/*.bak
 
-data/
+# Umbrella-root training data stays local, except the small hand-curated
+# informal-expansions map that InformalExpansions loads at runtime.
+/data/*
+!/data/informal_expansions.json
+# app-local and test-local data dirs (previously covered by unanchored data/)
+apps/*/data/
+test/data/
 .vscode/
 .idea/
 apps/chat_web/tmp/**/*.json
