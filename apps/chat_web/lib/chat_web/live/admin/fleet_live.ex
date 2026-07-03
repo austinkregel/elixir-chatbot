@@ -158,11 +158,12 @@ defmodule ChatWeb.Admin.FleetLive do
                         <span :if={not a.soul_loaded} class="badge badge-ghost badge-xs ml-1">no soul</span>
                       </td>
                       <td class="text-xs">{a.co || "—"}</td>
-                      <td>
+                      <td class="max-w-[18rem]">
                         <span :if={a.assignment_status} class={["badge badge-sm", status_class(a.assignment_status)]}>
                           {a.assignment_status}
                         </span>
                         <span :if={is_nil(a.assignment_status)} class="text-base-content/40">idle</span>
+                        <div :if={a[:directive]} class="text-xs text-base-content/50 truncate" title={a[:directive]}>“{a.directive}”</div>
                       </td>
                       <td>
                         <span :for={g <- a.grants} class="badge badge-ghost badge-xs mr-1">{fmt_grant(g)}</span>
@@ -213,6 +214,20 @@ defmodule ChatWeb.Admin.FleetLive do
             <div class="stat py-2"><div class="stat-title text-xs">dissented</div><div class="stat-value text-lg text-warning">{@detail.dissented}</div></div>
             <div class="stat py-2"><div class="stat-title text-xs">failed</div><div class="stat-value text-lg text-error">{@detail.failed}</div></div>
             <div class="stat py-2"><div class="stat-title text-xs">reliefs</div><div class="stat-value text-lg">{@detail.reliefs}</div></div>
+          </div>
+
+          <div :if={@detail.directive} class="my-3">
+            <h4 class="font-semibold text-sm mb-1">Current order</h4>
+            <div class="bg-base-200 rounded p-2 text-sm">
+              <span :if={@detail.assignment_status} class={["badge badge-xs mr-1", status_class(@detail.assignment_status)]}>{@detail.assignment_status}</span>
+              “{@detail.directive}”
+            </div>
+            <div :if={@detail.timeline != []} class="mt-2 space-y-1 text-xs max-h-40 overflow-y-auto">
+              <div :for={r <- @detail.timeline} class="flex gap-2 items-start">
+                <span class={["badge badge-xs shrink-0", event_class(safe_atom(r.kind))]}>{r.kind}</span>
+                <span class="text-base-content/60 break-words">{timeline_desc(r)}</span>
+              </div>
+            </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -342,6 +357,16 @@ defmodule ChatWeb.Admin.FleetLive do
 
     notes = safe(fn -> Fleet.DutyLog.for_soul(agent_id) end) || []
     status = safe(fn -> Fleet.status(agent_id) end) || %{}
+    current = (summary && summary.current_assignment) || %{}
+
+    order_id = status[:order_id] || current["order_id"]
+
+    timeline =
+      if order_id do
+        safe(fn -> Atlas.Repo.all(CommandRecord.for_order(order_id)) end) || []
+      else
+        []
+      end
 
     %{
       soul_id: agent_id,
@@ -350,6 +375,9 @@ defmodule ChatWeb.Admin.FleetLive do
       dissented: (summary && summary.orders_dissented) || 0,
       failed: (summary && summary.orders_failed) || 0,
       reliefs: (summary && summary.reliefs) || 0,
+      directive: status[:directive] || current["directive"],
+      assignment_status: status[:assignment_status] || current["status"],
+      timeline: timeline,
       history: Enum.reverse(history),
       notes: notes
     }
@@ -396,6 +424,18 @@ defmodule ChatWeb.Admin.FleetLive do
   end
 
   defp drop_picks(socket, keys), do: assign(socket, :picks, Map.drop(socket.assigns.picks, keys))
+
+  # One-line description of a command-channel event for the order timeline —
+  # for a REPORT, show what the agent actually produced.
+  defp timeline_desc(%{kind: "report"} = r), do: "→ " <> to_display(get_in(r.payload || %{}, ["outcome"]))
+  defp timeline_desc(%{reason: reason}) when is_binary(reason) and reason != "", do: reason
+  defp timeline_desc(%{verdict: v}) when is_binary(v) and v != "", do: "verdict: #{v}"
+  defp timeline_desc(%{authority: a}) when is_binary(a) and a != "", do: "authority: #{a}"
+  defp timeline_desc(r), do: "#{r.from_agent} → #{r.to_agent || "—"}"
+
+  defp to_display(nil), do: "(done)"
+  defp to_display(s) when is_binary(s), do: String.slice(s, 0, 300)
+  defp to_display(other), do: inspect(other) |> String.slice(0, 300)
 
   defp count(list, fun), do: Enum.count(list, fun)
   defp fmt_grant(g), do: Fleet.Authority.encode(g)

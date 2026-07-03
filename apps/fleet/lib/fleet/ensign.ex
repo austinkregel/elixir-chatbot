@@ -153,6 +153,8 @@ defmodule Fleet.Ensign do
       grants: MapSet.to_list(ct.grants),
       order_grants: MapSet.to_list(state.order_grants),
       assignment_status: state.assignment && state.assignment.status,
+      order_id: state.assignment && state.assignment.id,
+      directive: state.assignment && state.assignment.directive,
       awaiting: state.awaiting,
       working: not is_nil(state.task_ref),
       uptime_ms: System.monotonic_time(:millisecond) - state.started_at
