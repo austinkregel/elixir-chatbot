@@ -226,12 +226,19 @@ defmodule ChatWeb.Admin.FleetLive do
               <span :if={@detail.assignment_status} class={["badge badge-xs mr-1", status_class(@detail.assignment_status)]}>{@detail.assignment_status}</span>
               “{@detail.directive}”
             </div>
-            <div :if={@detail.timeline != []} class="mt-2 space-y-1 text-xs max-h-40 overflow-y-auto">
+            <div :if={@detail.report} class="mt-2">
+              <div class="text-xs font-semibold text-base-content/60 mb-1">Report — what the agent produced</div>
+              <div class="bg-base-100 border border-base-300 rounded p-2 text-sm whitespace-pre-wrap break-words">{report_text(@detail.report)}</div>
+            </div>
+            <details :if={@detail.timeline != []} class="mt-2">
+              <summary class="text-xs font-semibold text-base-content/60 cursor-pointer">Command timeline</summary>
+              <div class="mt-1 space-y-1 text-xs max-h-40 overflow-y-auto">
               <div :for={r <- @detail.timeline} class="flex gap-2 items-start">
                 <span class={["badge badge-xs shrink-0", event_class(safe_atom(r.kind))]}>{r.kind}</span>
                 <span class="text-base-content/60 break-words">{timeline_desc(r)}</span>
               </div>
-            </div>
+              </div>
+            </details>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -372,6 +379,15 @@ defmodule ChatWeb.Admin.FleetLive do
         []
       end
 
+    report =
+      timeline
+      |> Enum.filter(&(&1.kind == "report"))
+      |> List.last()
+      |> case do
+        nil -> nil
+        r -> get_in(r.payload || %{}, ["outcome"])
+      end
+
     %{
       soul_id: agent_id,
       duty: (summary && String.to_atom(summary.duty_status)) || status[:duty] || :active,
@@ -381,6 +397,7 @@ defmodule ChatWeb.Admin.FleetLive do
       reliefs: (summary && summary.reliefs) || 0,
       directive: status[:directive] || current["directive"],
       assignment_status: status[:assignment_status] || current["status"],
+      report: report,
       timeline: timeline,
       history: Enum.reverse(history),
       notes: notes
@@ -436,6 +453,11 @@ defmodule ChatWeb.Admin.FleetLive do
   defp timeline_desc(%{verdict: v}) when is_binary(v) and v != "", do: "verdict: #{v}"
   defp timeline_desc(%{authority: a}) when is_binary(a) and a != "", do: "authority: #{a}"
   defp timeline_desc(r), do: "#{r.from_agent} → #{r.to_agent || "—"}"
+
+  defp report_text(nil), do: ""
+  defp report_text(s) when is_binary(s), do: s
+  defp report_text(%{"raw" => raw}), do: to_string(raw)
+  defp report_text(other), do: inspect(other)
 
   defp to_display(nil), do: "(done)"
   defp to_display(s) when is_binary(s), do: String.slice(s, 0, 300)
