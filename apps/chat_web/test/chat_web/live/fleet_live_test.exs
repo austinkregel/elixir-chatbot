@@ -7,5 +7,10 @@ defmodule ChatWeb.Admin.FleetLiveTest do
     assert html =~ "Crew roster"
     assert html =~ "Commission"
     assert html =~ "phx-submit=\"commission\""
+    # The commission form confers a billet, and the billet selector lists the
+    # command postings (their standing authorities are derived, not hand-checked).
+    assert html =~ ~s(name="rank")
+    assert html =~ "First Officer (XO)"
+    assert html =~ "Security Officer"
   end
 end

@@ -506,6 +506,38 @@ route added in the `live_session :world_context` block; a "Fleet" nav item in th
 compiles clean, the fleet suite stays green (35 tests, 0 failures — additive changes only),
 and the page boots + renders (HTTP 200, all sections).
 
+### Phase 5 precursor — crew & ranks (apps/fleet, souls, apps/chat_web)
+
+A real crew with more than one billet, and **rank wired into real authority** (§3.5).
+This populates the fleet for Phase 5 (court martial needs an XO; the trust ledger
+needs a crew accumulating a record).
+
+- **`Fleet.Rank`** (new) — the **billet → standing-authority** map. A billet is the
+  posting Command commissions an agent into; it is the source of the agent's
+  *standing* authorities. Conferred at commission and derived here — **never**
+  declared by the soul (identity only, §3.3) nor self-asserted in a message (§4.5).
+  Workers (`:ensign`/`:lieutenant`) confer nothing (cognition stays order-conferred —
+  non-breaking); `:security` → `[:veto, :flag_anomaly]`; `:executive_officer` →
+  `[:issue_orders, :relieve, :review_plans, :draft_court_martial]`; `:captain` →
+  `[:issue_orders, :relieve, :delegate]`.
+- **`Fleet.Authority`** — vocabulary + string codec extended with `:veto`,
+  `:flag_anomaly`, `:review_plans`, `:draft_court_martial`, `:delegate` (so the new
+  standing grants persist/rehydrate and Phase 5 enforcement plugs straight in).
+- **`Fleet.Ensign`** — `seed_grants/1` unions `Fleet.Rank.standing_authorities(rank)`
+  into the standing grant at commission. No migration: `rank` + `standing_grants`
+  already persist and rehydrate, so an XO's authority survives a restart.
+- **Souls** (human-authored) — `commander-vale` (XO), `lieutenant-mara-sil` (Security),
+  `lieutenant-okonkwo` (analysis); each carries a `metadata.suggested_billet` *hint*
+  the commission form pre-fills (the Admiral still confers the actual billet).
+- **Fleet page** — the commission form's grant checkboxes are replaced by a **billet
+  selector** (its standing authorities shown, derived); the roster shows the billet
+  label. An XO commissioned here can immediately `issue_order`/`relieve` its reports
+  through the *existing* enforcement.
+
+**Verified 2026-07-03:** `Fleet.RankTest` (7, pure) + `Fleet.CrewBilletsTest` (4,
+integration — an XO's billet grant lets it command a report over the live channel);
+full fleet suite **46 tests, 0 failures**; `fleet_live_test` renders the billet selector.
+
 ---
 
 ## 8. Open questions (living)

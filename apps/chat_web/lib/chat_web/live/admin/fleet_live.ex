@@ -15,12 +15,6 @@ defmodule ChatWeb.Admin.FleetLive do
 
   @refresh_ms 3000
   @feed_cap 60
-  @grant_options [
-    {"cognition", :cognition},
-    {"world (default)", {:world, "default"}},
-    {"issue_orders", :issue_orders},
-    {"relieve", :relieve}
-  ]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -34,7 +28,7 @@ defmodule ChatWeb.Admin.FleetLive do
      |> assign(:page_title, "Fleet")
      |> assign(:souls, load_souls())
      |> assign(:souls_dir, safe(fn -> Brain.Soul.souls_dir() end))
-     |> assign(:grant_options, @grant_options)
+     |> assign(:billets, Fleet.Rank.all())
      |> assign(:feed, backfill_feed())
      |> assign(:selected, nil)
      |> assign(:detail, nil)
@@ -93,12 +87,19 @@ defmodule ChatWeb.Admin.FleetLive do
                 <p :if={@souls == []} class="text-xs text-warning">
                   No souls found in <code>{@souls_dir}</code>. Add a soul file (e.g. <code>souls/ensign-jj7.json</code>) and refresh.
                 </p>
-                <div class="flex flex-wrap gap-2">
-                  <label :for={{label, _} <- @grant_options} class="label cursor-pointer gap-1 text-xs">
-                    <input type="checkbox" name="grants[]" value={label} checked class="checkbox checkbox-xs" />
-                    <span>{label}</span>
-                  </label>
-                </div>
+                <select name="rank" phx-change="pick" class="select select-sm select-bordered w-full">
+                  <option :for={{key, meta} <- @billets} value={key} selected={to_string(key) == picked_rank(@picks)}>
+                    {meta.label}
+                  </option>
+                </select>
+                <p class="text-xs text-base-content/60">{Fleet.Rank.describe(picked_rank(@picks))}</p>
+                <p class="text-xs">
+                  <span class="text-base-content/50">Standing authorities:</span>
+                  <%= case Fleet.Rank.standing_authorities(picked_rank(@picks)) do %>
+                    <% [] -> %><span class="text-base-content/40">none (cognition is order-conferred)</span>
+                    <% auths -> %><span :for={a <- auths} class="badge badge-ghost badge-xs ml-1">{fmt_grant(a)}</span>
+                  <% end %>
+                </p>
                 <button class="btn btn-primary btn-sm w-full">Commission</button>
               </form>
             </div>
@@ -154,7 +155,7 @@ defmodule ChatWeb.Admin.FleetLive do
                     <tr :for={a <- @roster} class="hover">
                       <td>
                         <div class="font-medium">{a.soul_id}</div>
-                        <div class="text-xs text-base-content/50">{a.rank} · {length(a.reports)} reports · up {div(a.uptime_ms, 1000)}s</div>
+                        <div class="text-xs text-base-content/50">{Fleet.Rank.label(a.rank)} · {length(a.reports)} reports · up {div(a.uptime_ms, 1000)}s</div>
                       </td>
                       <td>
                         <span class={["badge badge-sm", duty_class(a.duty)]}>{a.duty}</span>
@@ -274,14 +275,30 @@ defmodule ChatWeb.Admin.FleetLive do
 
   @impl true
   def handle_event("pick", params, socket) do
-    picks = Map.merge(socket.assigns.picks, Map.take(params, ~w(soul_id agent_id report_id co_id)))
+    picks = Map.merge(socket.assigns.picks, Map.take(params, ~w(soul_id agent_id report_id co_id rank)))
+
+    # Choosing a soul pre-fills the billet from the soul's human-authored
+    # suggestion — but only when the soul select itself changed, so it never
+    # clobbers a rank the Admiral just picked. The Admiral still confirms/overrides
+    # it; authority is only ever conferred by this commission, never by the soul.
+    picks =
+      case params do
+        %{"_target" => ["soul_id"], "soul_id" => sid} -> Map.put(picks, "rank", suggested_billet(sid))
+        _ -> picks
+      end
+
     {:noreply, assign(socket, :picks, picks)}
   end
 
   def handle_event("commission", %{"soul_id" => sid} = params, socket) do
-    grants = parse_grants(Map.get(params, "grants", []))
-    safe(fn -> Fleet.commission(sid, grant: %{authorities: grants}) end)
-    {:noreply, socket |> put_flash(:info, "Commissioned #{sid}") |> drop_picks(["soul_id"]) |> assign_roster()}
+    rank = Fleet.Rank.to_key(params["rank"] || picked_rank(socket.assigns.picks))
+    safe(fn -> Fleet.commission(sid, rank: rank) end)
+
+    {:noreply,
+     socket
+     |> put_flash(:info, "Commissioned #{sid} as #{Fleet.Rank.label(rank)}")
+     |> drop_picks(["soul_id", "rank"])
+     |> assign_roster()}
   end
 
   def handle_event("issue_order", %{"agent_id" => id, "directive" => directive}, socket) do
@@ -421,14 +438,21 @@ defmodule ChatWeb.Admin.FleetLive do
 
   # ── Helpers ───────────────────────────────────────────────────────────────
 
-  defp parse_grants(list) do
-    Enum.flat_map(list, fn label ->
-      case Enum.find(@grant_options, fn {l, _} -> l == label end) do
-        {_, authority} -> [authority]
-        _ -> []
-      end
-    end)
+  # The currently-picked billet, as a string key (defaults to the default billet).
+  defp picked_rank(picks), do: picks["rank"] || to_string(Fleet.Rank.default())
+
+  # The billet a soul suggests for itself (human-authored `metadata.suggested_billet`),
+  # normalised to a known billet key string, or the default. A hint only — the
+  # commission is what actually confers the rank.
+  defp suggested_billet(soul_id) do
+    with {:ok, %Brain.Soul{metadata: %{"suggested_billet" => b}}} <- safe_soul(soul_id) do
+      to_string(Fleet.Rank.to_key(b))
+    else
+      _ -> to_string(Fleet.Rank.default())
+    end
   end
+
+  defp safe_soul(soul_id), do: safe(fn -> Brain.Soul.get(soul_id) end) || {:error, :unavailable}
 
   defp safe(fun) do
     fun.()

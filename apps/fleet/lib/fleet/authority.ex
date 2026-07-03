@@ -12,6 +12,17 @@ defmodule Fleet.Authority do
     * `:issue_orders`     — a CO may hand ORDERs to its reports.
     * `:relieve`          — may relieve a subordinate of duty.
 
+  Billet-conferred (standing) authorities — see `Fleet.Rank`. Enforcement of the
+  command ones already exists; the rest are the seams Phase 5 enforcement plugs
+  into:
+
+    * `:veto`             — Security may veto a tool call that risks the ship.
+    * `:flag_anomaly`     — may raise an anomaly up the chain.
+    * `:review_plans`     — the XO may review a plan before it acts.
+    * `:draft_court_martial` — the XO may draft the sterilized record for the
+      Admiral's approval (§4.3).
+    * `:delegate`         — a Captain may delegate authority down the chain.
+
   Grants are held as a `MapSet` in `state.context_tags.grants`.
   """
 
@@ -54,6 +65,11 @@ defmodule Fleet.Authority do
   def encode(:cognition), do: "cognition"
   def encode(:issue_orders), do: "issue_orders"
   def encode(:relieve), do: "relieve"
+  def encode(:veto), do: "veto"
+  def encode(:flag_anomaly), do: "flag_anomaly"
+  def encode(:review_plans), do: "review_plans"
+  def encode(:draft_court_martial), do: "draft_court_martial"
+  def encode(:delegate), do: "delegate"
   def encode({:world, world_id}), do: "world:" <> to_string(world_id)
   def encode(other), do: inspect(other)
 
@@ -61,6 +77,11 @@ defmodule Fleet.Authority do
   def decode("cognition"), do: :cognition
   def decode("issue_orders"), do: :issue_orders
   def decode("relieve"), do: :relieve
+  def decode("veto"), do: :veto
+  def decode("flag_anomaly"), do: :flag_anomaly
+  def decode("review_plans"), do: :review_plans
+  def decode("draft_court_martial"), do: :draft_court_martial
+  def decode("delegate"), do: :delegate
   def decode("world:" <> world_id), do: {:world, world_id}
   def decode(other), do: other
 

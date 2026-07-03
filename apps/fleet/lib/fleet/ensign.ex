@@ -702,6 +702,10 @@ defmodule Fleet.Ensign do
   defp assignment_id(%{assignment: %Order{id: id}}), do: id
   defp assignment_id(_), do: nil
 
+  # The standing grant an agent holds from the moment it is commissioned: the
+  # authorities its **billet** confers (Fleet.Rank), unioned with any explicit
+  # grants Command passed. Cognition/world stay order-conferred, so a worker
+  # billet (ensign/lieutenant) seeds nothing — identical to the pre-billet default.
   defp seed_grants(opts) do
     from_grant =
       case Keyword.get(opts, :grant) do
@@ -709,7 +713,9 @@ defmodule Fleet.Ensign do
         _ -> []
       end
 
-    (Keyword.get(opts, :grants, []) ++ from_grant) |> Authority.to_set()
+    billet = Fleet.Rank.standing_authorities(Keyword.get(opts, :rank, Fleet.Rank.default()))
+
+    (billet ++ Keyword.get(opts, :grants, []) ++ from_grant) |> Authority.to_set()
   end
 
   defp summarize({:ok, %{response: r}}) when is_binary(r), do: String.slice(r, 0, 500)
