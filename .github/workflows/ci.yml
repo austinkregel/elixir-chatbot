@@ -241,6 +241,11 @@ jobs:
       - name: Create database
         run: mix ecto.create
 
+      - name: Bootstrap AGE and migrate test schema
+        run: |
+          mix atlas.bootstrap_age
+          mix atlas.migrate_test
+
       - name: Download WordNet data
         run: mix download_wordnet
 

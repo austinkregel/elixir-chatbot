@@ -3,7 +3,11 @@ import Config
 # Test-specific Repo options (connection config loaded from .env via runtime.exs)
 config :atlas, Atlas.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: min(System.schedulers_online() * 2, 32),
+  # Floor of 12 so low-core CI runners survive the boot-time query burst;
+  # generous queueing since CI Postgres is slow under cold caches.
+  pool_size: System.schedulers_online() |> Kernel.*(2) |> max(12) |> min(32),
+  queue_target: 1_000,
+  queue_interval: 5_000,
   migration_default_prefix: "atlas_test",
   after_connect: {Atlas.Repo, :load_age_test, []}
 
