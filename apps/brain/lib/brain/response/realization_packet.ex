@@ -17,12 +17,19 @@ defmodule Brain.Response.RealizationPacket do
 
   require Logger
 
-  @system_prompt """
-  You are a conversational assistant. Generate a natural response based on the context below.
+  # The mechanical output instructions — how to respond, independent of *who* is
+  # responding. These stay constant across every soul.
+  @base_instructions """
+  Generate a natural response based on the context below.
   Be concise and helpful. Do not mention internal systems, plans, or analysis.
   Output only the final response text.
   If $placeholder tokens appear in the instructions, keep them exactly as shown in your output.
   """
+
+  # Default identity, used when no Soul resides in the acting world (preserves
+  # the original system prompt exactly).
+  @default_identity "You are a conversational assistant."
+  @system_prompt @default_identity <> "\n" <> @base_instructions
 
   @doc """
   Builds a realization packet from primitives, analysis, and unified context.
@@ -35,6 +42,7 @@ defmodule Brain.Response.RealizationPacket do
   def build(primitives, analysis, opts) when is_list(opts) do
     unified_context = Keyword.get(opts, :unified_context, %{})
     tone = extract_tone(analysis, opts)
+    system_prompt = system_prompt_for(unified_context)
 
     dump_debug_json(primitives, analysis, unified_context)
 
@@ -54,12 +62,29 @@ defmodule Brain.Response.RealizationPacket do
 
     dump_dir = Path.join([File.cwd!(), "tmp", "realization_packets"])
     ts = System.system_time(:millisecond)
-    File.write(Path.join(dump_dir, "#{ts}_prompt.txt"), "=== SYSTEM ===\n#{@system_prompt}\n=== USER ===\n#{user_message}")
+    File.write(Path.join(dump_dir, "#{ts}_prompt.txt"), "=== SYSTEM ===\n#{system_prompt}\n=== USER ===\n#{user_message}")
 
     [
-      %{role: "system", content: @system_prompt},
+      %{role: "system", content: system_prompt},
       %{role: "user", content: user_message}
     ]
+  end
+
+  # A World respects the Souls residing in it: if the acting resident's Soul was
+  # resolved into the unified context, its constitution becomes the identity the
+  # model generates under, followed by the constant mechanical instructions.
+  # No soul -> the generic default (unchanged behavior).
+  defp system_prompt_for(unified_context) do
+    case Map.get(unified_context, :soul) do
+      %Brain.Soul{} = soul ->
+        case Brain.Soul.system_prompt(soul) do
+          nil -> @system_prompt
+          constitution -> constitution <> "\n\n" <> @base_instructions
+        end
+
+      _ ->
+        @system_prompt
+    end
   end
 
   # --- Analysis rendering ---

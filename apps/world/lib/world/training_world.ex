@@ -12,6 +12,7 @@ defmodule World.TrainingWorld do
 
   @type mode :: :ephemeral | :persistent
   @type world_id :: String.t()
+  @type soul_ref :: String.t()
 
   @type t :: %__MODULE__{
           id: world_id(),
@@ -20,7 +21,8 @@ defmodule World.TrainingWorld do
           base_world: world_id() | nil,
           created_at: DateTime.t(),
           config: map(),
-          metadata: map()
+          metadata: map(),
+          residents: [soul_ref()]
         }
 
   @enforce_keys [:id, :name, :mode]
@@ -31,7 +33,11 @@ defmodule World.TrainingWorld do
     :base_world,
     :created_at,
     config: %{},
-    metadata: %{}
+    metadata: %{},
+    # Souls residing in this world (soul ids). A World respects the Souls that
+    # reside in it: the acting resident's constitution shapes generation.
+    # Souls are portable — the same id can reside in several worlds.
+    residents: []
   ]
 
   @doc """
@@ -51,6 +57,7 @@ defmodule World.TrainingWorld do
     base_world = Keyword.get(opts, :base_world, Keyword.get(opts, :base, nil))
     config = Keyword.get(opts, :config, default_config())
     metadata = Keyword.get(opts, :metadata, %{})
+    residents = Keyword.get(opts, :residents, [])
 
     %__MODULE__{
       id: id,
@@ -59,7 +66,8 @@ defmodule World.TrainingWorld do
       base_world: base_world,
       created_at: DateTime.utc_now(),
       config: Map.merge(default_config(), config),
-      metadata: metadata
+      metadata: metadata,
+      residents: residents
     }
   end
 

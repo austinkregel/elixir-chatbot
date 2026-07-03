@@ -62,8 +62,26 @@ defmodule Brain.Response.ContextBuilder do
       primary_analysis: primary,
       question_chunk: question_chunk,
       all_analyses: all_analyses_summary,
-      per_chunk_facts: per_chunk_facts
+      per_chunk_facts: per_chunk_facts,
+      # The Soul of the acting resident in this world, resolved from `world_id`
+      # (which already rides in `opts`). nil when the world has no residents —
+      # generation then falls back to the generic default system prompt.
+      soul: resolve_acting_soul(opts)
     }
+  end
+
+  # Resolve the acting Soul from the world's roster of residents (residency logic
+  # lives in `World.Roster`). nil when there is no world_id or no resident, which
+  # leaves generation persona-blind — exactly today's behavior.
+  # (The `World.Roster is undefined` compile warning is the umbrella's runtime
+  # cross-app reference; world depends on brain, so it resolves at run time. A
+  # later refinement can invert this by having the world/web layer pass the
+  # resolved soul in `opts`, removing the brain->world reference entirely.)
+  defp resolve_acting_soul(opts) do
+    case Keyword.get(opts, :world_id) do
+      world_id when is_binary(world_id) -> World.Roster.acting_soul(world_id)
+      _ -> nil
+    end
   end
 
   defp select_primary_analysis([]), do: %ChunkAnalysis{}
