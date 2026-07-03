@@ -53,10 +53,20 @@ defmodule Fleet.Telemetry do
   end
 
   @doc false
-  def handle_ensign_event(_event_name, _measurements, metadata, _config) do
-    # Fire-and-forget. Phase 1 keeps a light audit trail; richer aggregation
-    # (a fleet-scoped ETS store feeding the Fleet page) is deferred to Phase 4.
+  def handle_ensign_event(_event_name, measurements, metadata, _config) do
     Logger.debug("ensign event", metadata)
+
+    # Bridge to Phoenix.PubSub so the Fleet page (and any subscriber) gets a live
+    # activity feed. Best-effort: a missing bus or failed broadcast must never
+    # break telemetry emission on the hot path.
+    if Process.whereis(Brain.PubSub) do
+      Phoenix.PubSub.broadcast(
+        Brain.PubSub,
+        "fleet:events",
+        {:fleet_event, Map.put(metadata, :measurements, measurements)}
+      )
+    end
+
     :ok
   rescue
     _ -> :ok

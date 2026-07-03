@@ -34,6 +34,7 @@ defmodule ChatWeb.MixProject do
       {:atlas, in_umbrella: true},
       {:brain, in_umbrella: true},
       {:world, in_umbrella: true},
+      {:fleet, in_umbrella: true},
       {:fourth_wall, in_umbrella: true},
       {:tasks, in_umbrella: true},
       {:phoenix, "~> 1.8.1"},

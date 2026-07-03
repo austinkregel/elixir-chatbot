@@ -326,8 +326,11 @@ gravest escalation that reaches the Admiral is a *recommendation* of court marti
   ensign **rehydrates on restart** (survives a crash without forgetting who it is or
   what it was doing); minds are private — another agent's info enters only via
   **communication**, with the sender's provenance. *(Built; see §7.)*
-- **Phase 4 — The Fleet page** 📋: the Admiral's LiveView; reports surfaced;
-  telemetry aggregated.
+- **Phase 4 — The Fleet page** ✅ (`/fleet`): the Admiral's LiveView console —
+  live crew roster, stat bar, chain of command, a real-time activity feed (fed by
+  a `Fleet.Telemetry`→`Brain.PubSub` bridge), and per-agent accountability
+  drill-down (service record + duty log); interactive: commission from souls,
+  assign CO, issue orders, relieve/reinstate, retire. *(Built; see §7.)*
 - **Phase 5 — Enforcement** 📋: trust ledger; relief-of-duty; court martial
   (two-key: XO draft + Admiral approve; sterilization; advocacy & leniency).
 - **Phase 6+ — The crew grows** 📋/❓: survey protocol (paired blinded
@@ -475,6 +478,33 @@ to "default"), `persisted_self_test` (survives `Process.exit(:kill)` and rehydra
 grants + assignment + counters + duty note), `sharing_test` (communicated content enters the
 recipient's mind with provenance; an uninvolved agent gets nothing), and the command-channel
 + security suites green under `agent_id == soul_id`.
+
+### Phase 4 — the Fleet page (apps/chat_web, + small apps/fleet additions)
+
+The Admiral's console at **`/fleet`** (`ChatWeb.Admin.FleetLive`), in the house
+LiveView style (inline `~H`, `<.app_shell>`, Tailwind + daisyUI, no auth):
+
+- **Roster** — live crew from `Fleet.roster/0` (new: `Registry.select(Fleet.Registry, …)`
+  → each `Fleet.status/1` + pid), refreshed every 3s: soul, rank, duty badge, CO,
+  assignment status, standing grants, working spinner.
+- **Command panel** — commission (a `<select>` of `Brain.Soul.list_ids/0` + grant
+  checkboxes → `Fleet.commission/2`), issue order (`Fleet.order/3` for top-level,
+  `Fleet.issue_order/4` via CO for reports), assign CO (`Fleet.assign_co/2`).
+- **Activity feed** — live, newest-first, from `Brain.PubSub` topic `"fleet:events"`
+  (a new best-effort broadcast in `Fleet.Telemetry.handle_ensign_event/4`); backfilled
+  on mount from recent `Atlas.Schemas.CommandRecord` rows; `:tick` filtered out.
+- **Per-agent drill-down** (modal) — `Fleet.Service.load/1` (career + counters) +
+  `Fleet.DutyLog.for_soul/1` (the agent's own notes).
+- **Actions** — relieve/reinstate (`Fleet.relieve/2`|`reinstate/2` via CO, or the new
+  Admiral `Fleet.relieve/1`|`reinstate/1` for top-level agents) and retire.
+
+Fleet additions: `Fleet.roster/0`, `Fleet.relieve/1`, `Fleet.reinstate/1`, and the
+`Fleet.Telemetry` PubSub bridge. `apps/chat_web/mix.exs` gains `{:fleet, in_umbrella: true}`;
+route added in the `live_session :world_context` block; a "Fleet" nav item in the Admin group.
+
+**Run:** `iex -S mix phx.server`, open `http://localhost:4000/fleet`. Verified 2026-07-03:
+compiles clean, the fleet suite stays green (35 tests, 0 failures — additive changes only),
+and the page boots + renders (HTTP 200, all sections).
 
 ---
 

@@ -76,6 +76,17 @@ defmodule Fleet do
   @doc "Have `co_id` reinstate its report `report_id`."
   def reinstate(co_id, report_id), do: Ensign.reinstate_report(co_id, report_id)
 
+  @doc """
+  Admiral relieves a top-level agent (`co == nil`) of duty. Sends the RELIEVE
+  from the calling process, which the runtime attributes as `:admiral`.
+  """
+  def relieve(agent_id) when is_binary(agent_id),
+    do: Fleet.Comms.signal(agent_id, Fleet.Signal.new(:relieve, reason: "relieved by Admiral"))
+
+  @doc "Admiral reinstates a top-level agent (`co == nil`)."
+  def reinstate(agent_id) when is_binary(agent_id),
+    do: Fleet.Comms.signal(agent_id, Fleet.Signal.new(:reinstate, reason: "reinstated by Admiral"))
+
   @doc "Have an ensign send a SITREP up to its CO."
   def sitrep(agent_id, body \\ %{}), do: Ensign.sitrep(agent_id, body)
 
@@ -90,6 +101,23 @@ defmodule Fleet do
 
   @doc "A public snapshot of an ensign's state."
   def status(agent_id), do: Ensign.status(agent_id)
+
+  @doc """
+  The live crew roster: each running ensign's `status/1` map enriched with its
+  `:pid`, ordered by agent_id. Dying/unresponsive agents are skipped.
+  """
+  def roster do
+    Registry.select(Fleet.Registry, [{{{:ensign, :"$1"}, :"$2", :_}, [], [{{:"$1", :"$2"}}]}])
+    |> Enum.map(fn {agent_id, pid} ->
+      try do
+        Map.put(status(agent_id), :pid, pid)
+      catch
+        :exit, _ -> nil
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.sort_by(& &1.agent_id)
+  end
 
   defp gen_id, do: :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
 end
