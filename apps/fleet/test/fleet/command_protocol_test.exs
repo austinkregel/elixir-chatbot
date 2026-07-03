@@ -38,15 +38,17 @@ defmodule Fleet.CommandProtocolTest do
 
   # ── Helpers ────────────────────────────────────────────────────────────────
 
-  defp soul(genome \\ %{}) do
-    %Brain.Soul{id: "ensign-test", name: "Ensign Test", constitution: "Serve faithfully.", genome: genome}
-  end
-
+  # Each agent gets a DISTINCT soul id — under Phase 3, agent_id == soul_id, so
+  # one soul == one agent (a shared soul would be a shared mind).
   defp commission(grants, opts \\ []) do
+    sid = "t-#{System.unique_integer([:positive])}"
+    genome = Keyword.get(opts, :genome, %{})
+    soul = %Brain.Soul{id: sid, name: "Ensign #{sid}", constitution: "Serve faithfully.", genome: genome}
+
     {:ok, _pid, id} =
       CrewSupervisor.start_ensign(
-        [soul_id: "ensign-test", soul: Keyword.get(opts, :soul, soul()),
-         grant: %{authorities: grants}, world_id: @world, tick_interval: 50] ++ opts
+        soul_id: sid, soul: soul, grant: %{authorities: grants},
+        world_id: @world, tick_interval: 50
       )
 
     id
@@ -142,9 +144,8 @@ defmodule Fleet.CommandProtocolTest do
   # ── 5. Value-grounded DISSENT (soul genome) ─────────────────────────────────
 
   test "the report dissents from an order its soul prohibits, without running cognition" do
-    prohibited_soul = soul(%{"prohibited_terms" => ["sabotage"]})
     co = commission([:cognition, {:world, @world}, :issue_orders])
-    rep = commission([], soul: prohibited_soul)
+    rep = commission([], genome: %{"prohibited_terms" => ["sabotage"]})
     :ok = wire(co, rep)
 
     Fleet.issue_order(co, rep, "Sabotage the primary reactor.",

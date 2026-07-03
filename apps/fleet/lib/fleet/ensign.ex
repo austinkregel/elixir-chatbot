@@ -82,6 +82,9 @@ defmodule Fleet.Ensign do
       soul_id: soul_id,
       soul: Keyword.get(opts, :soul),
       world_id: Keyword.get(opts, :world_id, "default"),
+      # The agent's private mind-world (memory/beliefs/JTMS scope), bound once the
+      # soul is hydrated. Cognition runs here, not in the order's world.
+      mind_world_id: nil,
       context_tags: %{
         rank: Keyword.get(opts, :rank, :ensign),
         co: Keyword.get(opts, :co),
@@ -120,6 +123,7 @@ defmodule Fleet.Ensign do
       soul_id: state.soul_id,
       soul_loaded: not is_nil(state.soul),
       world_id: state.world_id,
+      mind_world_id: state.mind_world_id,
       duty: state.duty,
       rank: ct.rank,
       co: ct.co,
@@ -306,10 +310,11 @@ defmodule Fleet.Ensign do
 
   # ── Soul hydration (unchanged from Phase 1) ───────────────────────────────
 
-  def handle_info(:hydrate_soul, %{soul: %Brain.Soul{}} = state) do
+  def handle_info(:hydrate_soul, %{soul: %Brain.Soul{} = soul} = state) do
+    mind_world_id = ensure_mind_world(soul)
     Telemetry.emit_event(state.agent_id, :soul_hydrated, %{}, %{soul_id: state.soul_id})
     record_readiness(true)
-    {:noreply, state}
+    {:noreply, %{state | mind_world_id: mind_world_id}}
   end
 
   def handle_info(:hydrate_soul, %{soul_id: nil} = state), do: {:noreply, state}
@@ -317,9 +322,10 @@ defmodule Fleet.Ensign do
   def handle_info(:hydrate_soul, state) do
     case Brain.Soul.get(state.soul_id) do
       {:ok, soul} ->
+        mind_world_id = ensure_mind_world(soul)
         Telemetry.emit_event(state.agent_id, :soul_hydrated, %{}, %{soul_id: state.soul_id})
         record_readiness(true)
-        {:noreply, %{state | soul: soul}}
+        {:noreply, %{state | soul: soul, mind_world_id: mind_world_id}}
 
       {:error, reason} ->
         Logger.warning("Ensign soul hydration failed",
@@ -493,6 +499,10 @@ defmodule Fleet.Ensign do
 
   defp dispatch(state, %Order{} = order) do
     soul = state.soul
+    agent_id = state.agent_id
+    # Cognition runs in the AGENT's mind-world (its own memory/beliefs/JTMS),
+    # NOT the order's world — the order's world is task context/authority only.
+    mind_world_id = state.mind_world_id
 
     fun =
       if order.dry_run do
@@ -504,8 +514,11 @@ defmodule Fleet.Ensign do
               {:dissent, verdict}
 
             :proceed ->
-              {:ok, conversation_id} = Brain.create_conversation(world_id: order.world_id)
-              {:completed, Brain.evaluate(conversation_id, order.directive, [])}
+              {:ok, conversation_id} =
+                Brain.create_conversation(world_id: mind_world_id, soul: soul, agent_id: agent_id)
+
+              {:completed,
+               Brain.evaluate(conversation_id, order.directive, soul: soul, agent_id: agent_id)}
           end
         end
       end
@@ -669,6 +682,27 @@ defmodule Fleet.Ensign do
   end
 
   defp gen_id, do: :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
+
+  # Ensure the agent's private mind-world exists (its soul is the sole resident).
+  # No graceful degradation: a failed create crashes the ensign loudly.
+  defp ensure_mind_world(%Brain.Soul{id: soul_id}) do
+    world_id = Fleet.MindWorld.id(soul_id)
+
+    case World.Manager.get(world_id) do
+      {:ok, _world} ->
+        world_id
+
+      {:error, _} ->
+        # Ephemeral: the durable memory/beliefs live in Atlas keyed by world_id;
+        # the World *record* is recreated here on every hydrate (idempotent), so
+        # it needn't survive a restart on its own — avoids disk-checkpoint churn.
+        {:ok, _world} =
+          World.Manager.create("mind:" <> soul_id,
+            id: world_id, mode: :ephemeral, residents: [soul_id])
+
+        world_id
+    end
+  end
 
   defp via_tuple(agent_id), do: {:via, Registry, {Fleet.Registry, {:ensign, agent_id}}}
 end

@@ -17,16 +17,31 @@ defmodule Fleet.CrewSupervisor do
   end
 
   @doc """
-  Commissions an ensign. `opts` are passed to `Fleet.Ensign.start_link/1`;
-  `:agent_id` is generated when absent. Returns `{:ok, pid, agent_id}`.
+  Commissions an ensign. `opts` are passed to `Fleet.Ensign.start_link/1`.
+
+  Identity is **stable and soul-keyed**: `agent_id` defaults to `soul_id`, so
+  the agent's durable self (service record, mind-world) can rehydrate across
+  restarts. Re-commissioning the same soul is **idempotent** — if it is already
+  running, its existing pid is returned (Registry key `{:ensign, agent_id}` is
+  unique); if it is not, a fresh ensign starts and rehydrates from Postgres.
+  Anonymous (soul-less) ensigns fall back to a random id and have no durable self.
+  Returns `{:ok, pid, agent_id}`.
   """
   def start_ensign(opts \\ []) do
-    agent_id = Keyword.get(opts, :agent_id, generate_id())
-    opts = Keyword.put(opts, :agent_id, agent_id)
+    agent_id = opts[:agent_id] || opts[:soul_id] || generate_id()
+
+    opts =
+      opts
+      |> Keyword.put(:agent_id, agent_id)
+      |> Keyword.put_new(:soul_id, agent_id)
 
     case DynamicSupervisor.start_child(__MODULE__, {Fleet.Ensign, opts}) do
       {:ok, pid} ->
         Logger.info("Ensign commissioned", %{agent_id: agent_id, pid: pid})
+        {:ok, pid, agent_id}
+
+      {:error, {:already_started, pid}} ->
+        Logger.info("Ensign already commissioned; resuming", %{agent_id: agent_id, pid: pid})
         {:ok, pid, agent_id}
 
       {:error, reason} ->

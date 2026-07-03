@@ -31,13 +31,17 @@ defmodule Fleet.EnsignTest do
       end
     end)
 
-    soul = %Brain.Soul{id: "ensign-test", name: "Ensign Test", constitution: "Be careful."}
+    soul = %Brain.Soul{
+      id: "ensign-test-#{System.unique_integer([:positive])}",
+      name: "Ensign Test",
+      constitution: "Be careful."
+    }
     {:ok, soul: soul}
   end
 
   test "spawn → order → ack → tick → non-blocking dispatch", %{soul: soul} do
     {:ok, _pid, id} =
-      CrewSupervisor.start_ensign(soul_id: "ensign-test", soul: soul, tick_interval: 50)
+      CrewSupervisor.start_ensign(soul_id: soul.id, soul: soul, tick_interval: 50)
 
     assert_receive {:tele, :spawned, _, _}
     assert_receive {:tele, :soul_hydrated, _, _}
@@ -59,7 +63,7 @@ defmodule Fleet.EnsignTest do
 
   test "mailbox stays responsive while cognition is in flight", %{soul: soul} do
     {:ok, _pid, id} =
-      CrewSupervisor.start_ensign(soul_id: "ensign-test", soul: soul, tick_interval: 50)
+      CrewSupervisor.start_ensign(soul_id: soul.id, soul: soul, tick_interval: 50)
 
     assert_receive {:tele, :soul_hydrated, _, _}
 

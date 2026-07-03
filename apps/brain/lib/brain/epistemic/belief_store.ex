@@ -272,6 +272,10 @@ defmodule Brain.Epistemic.BeliefStore do
       by_user: %{},
       by_subject: %{},
       by_predicate: %{},
+      # Per-agent isolation: beliefs are indexed by their owning mind-world, and
+      # `query_beliefs(world_id: ...)` filters on it so one agent never reads
+      # another's beliefs. See `apply_filters/2`.
+      by_world: %{},
       retracted: MapSet.new()
     }
 
@@ -292,6 +296,7 @@ defmodule Brain.Epistemic.BeliefStore do
     new_by_user = add_to_index(state.by_user, belief.user_id, belief.id)
     new_by_subject = add_to_index(state.by_subject, belief.subject, belief.id)
     new_by_predicate = add_to_index(state.by_predicate, belief.predicate, belief.id)
+    new_by_world = add_to_index(state.by_world, belief.world_id, belief.id)
 
     # Create JTMS node for justification tracking
     belief = maybe_create_jtms_node(belief)
@@ -302,7 +307,8 @@ defmodule Brain.Epistemic.BeliefStore do
       | beliefs: new_beliefs,
         by_user: new_by_user,
         by_subject: new_by_subject,
-        by_predicate: new_by_predicate
+        by_predicate: new_by_predicate,
+        by_world: new_by_world
     }
 
     Logger.debug("Belief added",
@@ -476,6 +482,7 @@ defmodule Brain.Epistemic.BeliefStore do
         by_user: %{},
         by_subject: %{},
         by_predicate: %{},
+        by_world: %{},
         retracted: MapSet.new()
     }
 
@@ -576,15 +583,17 @@ defmodule Brain.Epistemic.BeliefStore do
     alias Brain.Epistemic.JTMS
 
     datum = "belief:#{belief.subject}:#{belief.predicate}:#{belief.object}"
+    # The belief's own mind-world owns its truth-maintenance node — no shared web.
+    world_id = belief.world_id || "default"
 
     result =
       case source do
         :explicit ->
-          JTMS.create_premise(datum)
+          JTMS.create_premise(datum, world_id: world_id)
 
         _ ->
           # :inferred, :learned, :consolidated — retractable assumptions
-          JTMS.create_assumption(datum, true)
+          JTMS.create_assumption(datum, true, world_id: world_id)
       end
 
     case result do
@@ -612,6 +621,7 @@ defmodule Brain.Epistemic.BeliefStore do
     |> filter_by(:subject, Keyword.get(opts, :subject))
     |> filter_by(:predicate, Keyword.get(opts, :predicate))
     |> filter_by(:user_id, Keyword.get(opts, :user_id))
+    |> filter_by(:world_id, Keyword.get(opts, :world_id))
     |> filter_by(:source, Keyword.get(opts, :source))
     |> filter_by_min_confidence(Keyword.get(opts, :min_confidence))
   end
@@ -642,13 +652,15 @@ defmodule Brain.Epistemic.BeliefStore do
           new_by_user = add_to_index(acc.by_user, belief.user_id, belief.id)
           new_by_subject = add_to_index(acc.by_subject, belief.subject, belief.id)
           new_by_predicate = add_to_index(acc.by_predicate, belief.predicate, belief.id)
+          new_by_world = add_to_index(acc.by_world, belief.world_id, belief.id)
 
           %{
             acc
             | beliefs: new_beliefs,
               by_user: new_by_user,
               by_subject: new_by_subject,
-              by_predicate: new_by_predicate
+              by_predicate: new_by_predicate,
+              by_world: new_by_world
           }
         end)
 

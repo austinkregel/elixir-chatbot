@@ -28,11 +28,14 @@ defmodule Fleet.CommandSecurityTest do
     :ok
   end
 
+  # Distinct soul per agent (agent_id == soul_id under Phase 3).
   defp commission(grants) do
+    sid = "t-#{System.unique_integer([:positive])}"
+
     {:ok, _pid, id} =
       CrewSupervisor.start_ensign(
-        soul_id: "ensign-test",
-        soul: %Brain.Soul{id: "ensign-test", name: "T", constitution: "Serve.", genome: %{}},
+        soul_id: sid,
+        soul: %Brain.Soul{id: sid, name: "T", constitution: "Serve.", genome: %{}},
         grant: %{authorities: grants}, world_id: @world, tick_interval: 50
       )
 
@@ -62,8 +65,13 @@ defmodule Fleet.CommandSecurityTest do
     # Order B: confer only world access, NOT cognition. If A's :cognition had
     # persisted, B would execute without asking — proving isolation, it must block.
     Fleet.issue_order(co, rep, "Task B.", authorities: [{:world, @world}], world_id: @world)
+    # The REQUEST for :cognition on order B is the proof of isolation — if A's
+    # grant had persisted, B would have executed without asking. (The CO holds
+    # :cognition and legitimately grants it, so B then proceeds; the post-request
+    # status may be blocked/acknowledged/in_progress/completed depending on timing.)
     assert_receive {:tele, :request, _, %{authority: :cognition}}, 10_000
-    assert Ensign.status(rep).assignment_status in ["blocked", "in_progress", "completed"]
+    assert Ensign.status(rep).assignment_status in
+             ["blocked", "acknowledged", "in_progress", "completed"]
   end
 
   test "a CO cannot confer an authority it does not itself hold" do

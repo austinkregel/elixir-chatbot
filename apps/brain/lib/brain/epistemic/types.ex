@@ -36,6 +36,9 @@ defmodule Brain.Epistemic.Types do
       :created_at,
       :user_id,
       :node_id,
+      # The mind-world that owns this belief (per-agent isolation). nil for
+      # legacy/global beliefs; scoped writers stamp the agent's mind-world.
+      :world_id,
       provenance: [],
       volatility: 0.5,
       metadata: %{}
@@ -55,6 +58,7 @@ defmodule Brain.Epistemic.Types do
         volatility: Keyword.get(opts, :volatility, 0.5),
         user_id: Keyword.get(opts, :user_id),
         node_id: Keyword.get(opts, :node_id),
+        world_id: Keyword.get(opts, :world_id),
         last_confirmed: Keyword.get(opts, :last_confirmed),
         created_at: DateTime.utc_now(),
         metadata: Keyword.get(opts, :metadata, %{})

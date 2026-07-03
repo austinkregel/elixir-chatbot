@@ -284,6 +284,10 @@ defmodule Brain do
     conversation = %{
       id: conversation_id,
       world_id: world_id,
+      # The acting agent's own soul + id, carried so cognition is steered by the
+      # agent's identity (not re-derived from the world's resident roster).
+      soul: Keyword.get(opts, :soul),
+      agent_id: Keyword.get(opts, :agent_id),
       memory: [],
       active_context: nil,
       created_at: System.system_time(:millisecond),
@@ -676,7 +680,19 @@ defmodule Brain do
   defp do_evaluate(conversation_id, conversation, input, opts, state) do
     now = System.system_time(:millisecond)
     world_id = Map.get(conversation, :world_id, "default")
-    opts_with_world = Keyword.put(opts, :world_id, world_id)
+    # Stamp the acting (mind-)world for this turn so deeply-nested belief writers
+    # attribute learned beliefs to the agent's own mind-world (per-agent isolation).
+    Process.put(:current_world_id, world_id)
+    # Carry the acting agent's soul/id (prefer explicit opts, else the
+    # conversation record) so the agent's OWN soul steers generation.
+    soul = Keyword.get(opts, :soul) || Map.get(conversation, :soul)
+    agent_id = Keyword.get(opts, :agent_id) || Map.get(conversation, :agent_id)
+
+    opts_with_world =
+      opts
+      |> Keyword.put(:world_id, world_id)
+      |> Keyword.put(:soul, soul)
+      |> Keyword.put(:agent_id, agent_id)
     ml_config = Application.get_env(:brain, :ml) || Application.get_env(:chat_bot, :ml) || []
 
     {response, processing_method, context} =
@@ -2123,6 +2139,7 @@ defmodule Brain do
                 source: :explicit,
                 confidence: 0.85,
                 user_id: user_id,
+                world_id: Process.get(:current_world_id, "default"),
                 provenance: [
                   "conversation:#{conversation_id}",
                   "input:#{String.slice(input, 0, 50)}"
@@ -2338,6 +2355,7 @@ defmodule Brain do
           source: :explicit,
           confidence: 0.9,
           user_id: user_id,
+          world_id: Process.get(:current_world_id, "default"),
           provenance: ["self_statement", "conversation:#{conversation_id}"]
         )
 

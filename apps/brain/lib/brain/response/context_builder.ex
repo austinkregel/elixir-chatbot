@@ -41,10 +41,12 @@ defmodule Brain.Response.ContextBuilder do
     user_id = Keyword.get(opts, :user_id)
     conversation_id = Keyword.get(opts, :conversation_id)
 
+    world_id = Keyword.get(opts, :world_id)
+
     analysis_context = extract_analysis_context(primary, analyses, model)
     graph_context = extract_graph_context(analyses, user_id, conversation_id)
     enrichment_context = extract_enrichment_context(primary, opts)
-    memory_context = extract_memory_context(primary, analyses)
+    memory_context = extract_memory_context(primary, analyses, world_id)
     accumulator_context = extract_accumulator_context(primary)
     all_analyses_summary = build_all_analyses(analyses)
     per_chunk_facts = build_per_chunk_facts(analyses, question_chunk, opts)
@@ -70,17 +72,21 @@ defmodule Brain.Response.ContextBuilder do
     }
   end
 
-  # Resolve the acting Soul from the world's roster of residents (residency logic
-  # lives in `World.Roster`). nil when there is no world_id or no resident, which
-  # leaves generation persona-blind — exactly today's behavior.
-  # (The `World.Roster is undefined` compile warning is the umbrella's runtime
-  # cross-app reference; world depends on brain, so it resolves at run time. A
-  # later refinement can invert this by having the world/web layer pass the
-  # resolved soul in `opts`, removing the brain->world reference entirely.)
+  # Resolve the acting Soul. The agent's OWN soul (passed explicitly in `opts`)
+  # takes precedence — this is what makes an agent's cognition its own. We fall
+  # back to the world's resident roster only when no soul was supplied (legacy /
+  # non-fleet callers). Once every caller passes `:soul`, the `World.Roster`
+  # branch is dead and the brain->world reference can be removed entirely.
   defp resolve_acting_soul(opts) do
-    case Keyword.get(opts, :world_id) do
-      world_id when is_binary(world_id) -> World.Roster.acting_soul(world_id)
-      _ -> nil
+    case Keyword.get(opts, :soul) do
+      %Brain.Soul{} = soul ->
+        soul
+
+      _ ->
+        case Keyword.get(opts, :world_id) do
+          world_id when is_binary(world_id) -> World.Roster.acting_soul(world_id)
+          _ -> nil
+        end
     end
   end
 
@@ -345,7 +351,7 @@ defmodule Brain.Response.ContextBuilder do
 
   defp extract_slot_values(_), do: %{}
 
-  defp extract_memory_context(primary, analyses) do
+  defp extract_memory_context(primary, analyses, world_id) do
     accumulated_contexts =
       analyses
       |> Enum.map(&Map.get(&1, :accumulated_context))
@@ -374,7 +380,9 @@ defmodule Brain.Response.ContextBuilder do
       if episodes == [] and query != "" do
         safe_call(fn ->
           if Process.whereis(Brain.Memory.Store) do
-            case Brain.Memory.Store.query_similar(query, 5) do
+            # Scope memory retrieval to the acting agent's (mind-)world so one
+            # agent never recalls another's episodes.
+            case Brain.Memory.Store.query_similar(query, 5, world_id: world_id || "default") do
               {:ok, results} -> results
               _ -> []
             end

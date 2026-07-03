@@ -22,6 +22,7 @@ defmodule Atlas.Schemas.Belief do
     field :source_authority, :string
     field :user_id, :string
     field :node_id, :string
+    field :world_id, :string
     field :retracted, :boolean, default: false
     field :last_confirmed, :utc_datetime_usec
     field :provenance, :map, default: %{}
@@ -31,7 +32,7 @@ defmodule Atlas.Schemas.Belief do
   end
 
   @required_fields ~w(subject predicate object confidence source)a
-  @optional_fields ~w(source_authority user_id node_id retracted last_confirmed provenance metadata)a
+  @optional_fields ~w(source_authority user_id node_id world_id retracted last_confirmed provenance metadata)a
 
   def changeset(belief, attrs) do
     belief
@@ -53,6 +54,11 @@ defmodule Atlas.Schemas.Belief do
   @doc "Query beliefs by user."
   def for_user(query \\ __MODULE__, user_id) do
     from(b in query, where: b.user_id == ^user_id)
+  end
+
+  @doc "Query beliefs by mind-world (per-agent isolation)."
+  def for_world(query \\ __MODULE__, world_id) do
+    from(b in query, where: b.world_id == ^world_id)
   end
 
   @doc "Query beliefs above a confidence threshold."

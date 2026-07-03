@@ -135,6 +135,7 @@ defmodule Brain.AtlasIntegration do
             source_authority: safe_to_atom(row.source_authority),
             user_id: row.user_id,
             node_id: row.node_id,
+            world_id: row.world_id,
             created_at: row.inserted_at,
             last_confirmed: row.last_confirmed,
             provenance: Map.get(row.provenance || %{}, "list", [])
@@ -158,6 +159,7 @@ defmodule Brain.AtlasIntegration do
         source_authority: if(belief.source_authority, do: to_string(belief.source_authority)),
         user_id: belief.user_id,
         node_id: belief.node_id,
+        world_id: belief.world_id,
         retracted: false,
         last_confirmed: belief.last_confirmed,
         provenance: %{"list" => belief.provenance || []},

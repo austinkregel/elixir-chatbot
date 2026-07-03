@@ -9,136 +9,148 @@ defmodule Brain.Epistemic.JTMS do
 
   require Logger
 
+  @default_world "default"
+
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    world_id = Keyword.get(opts, :world_id, @default_world)
+    GenServer.start_link(__MODULE__, opts, name: via(world_id))
   end
 
-  @doc "Creates a new node in the dependency network.\n\nOptions:\n- :node_type - :premise | :assumption | :derived | :contradiction\n- :assumption_enabled - For assumptions, whether initially enabled\n- :metadata - Additional metadata\n\nReturns {:ok, node_id}\n"
+  @doc false
+  def child_spec(opts) do
+    world_id = Keyword.get(opts, :world_id, @default_world)
+
+    %{
+      id: {__MODULE__, world_id},
+      start: {__MODULE__, :start_link, [opts]},
+      restart: :transient
+    }
+  end
+
+  # Per-world addressing. Each agent's mind-world has its OWN truth-maintenance
+  # web (isolated nodes/justifications/contradictions) — no shared belief soup.
+  defp via(world_id),
+    do: {:via, Registry, {Brain.Epistemic.JTMSRegistry, {:jtms, world_id}}}
+
+  @doc "Lazily start the JTMS web for a world; idempotent."
+  def ensure(world_id \\ @default_world) do
+    case Registry.lookup(Brain.Epistemic.JTMSRegistry, {:jtms, world_id}) do
+      [{pid, _}] ->
+        {:ok, pid}
+
+      [] ->
+        case DynamicSupervisor.start_child(Brain.Epistemic.JTMS.Supervisor, {__MODULE__, world_id: world_id}) do
+          {:ok, pid} -> {:ok, pid}
+          {:error, {:already_started, pid}} -> {:ok, pid}
+          other -> other
+        end
+    end
+  end
+
+  defp call(world_id, message, timeout \\ 5_000) do
+    ensure(world_id)
+    GenServer.call(via(world_id), message, timeout)
+  end
+
+  # ── Public API (each takes a leading world_id; a compat clause defaults to the
+  # global "default" web so existing callers keep working unchanged) ──────────
+
+  @doc "Creates a new node in the dependency network. `opts[:world_id]` scopes it."
   def create_node(datum, opts \\ []) do
+    world_id = Keyword.get(opts, :world_id, @default_world)
+
     if Config.enabled?() do
-      GenServer.call(__MODULE__, {:create_node, datum, opts}, 5_000)
+      call(world_id, {:create_node, datum, opts})
     else
       {:ok, generate_id()}
     end
   end
 
-  @doc "Creates a premise node (always IN).\n"
-  def create_premise(datum, opts \\ []) do
-    create_node(datum, Keyword.put(opts, :node_type, :premise))
-  end
+  def create_premise(datum, opts \\ []),
+    do: create_node(datum, Keyword.put(opts, :node_type, :premise))
 
-  @doc "Creates an assumption node.\n"
   def create_assumption(datum, enabled? \\ false, opts \\ []) do
-    opts =
-      opts |> Keyword.put(:node_type, :assumption) |> Keyword.put(:assumption_enabled, enabled?)
-
+    opts = opts |> Keyword.put(:node_type, :assumption) |> Keyword.put(:assumption_enabled, enabled?)
     create_node(datum, opts)
   end
 
-  @doc "Creates a contradiction node.\nWhen this node becomes IN, the contradiction handler is triggered.\n"
-  def create_contradiction(datum, opts \\ []) do
-    create_node(datum, Keyword.put(opts, :node_type, :contradiction))
-  end
+  def create_contradiction(datum, opts \\ []),
+    do: create_node(datum, Keyword.put(opts, :node_type, :contradiction))
 
-  @doc "Adds a justification linking premises to a conclusion.\n\n- in_list: Node IDs that must be IN\n- out_list: Node IDs that must be OUT\n- conclusion_id: The node this supports\n- informant: What created this justification\n\nReturns {:ok, justification_id}\n"
-  def justify_node(in_list, out_list, conclusion_id, informant) do
+  def justify_node(in_list, out_list, conclusion_id, informant),
+    do: justify_node(@default_world, in_list, out_list, conclusion_id, informant)
+
+  def justify_node(world_id, in_list, out_list, conclusion_id, informant)
+      when is_binary(world_id) and is_list(in_list) and is_list(out_list) do
     Telemetry.span(:jtms_justify, %{conclusion_id: conclusion_id, informant: informant}, fn ->
       if Config.enabled?() do
-        GenServer.call(__MODULE__, {:justify_node, in_list, out_list, conclusion_id, informant}, 5_000)
+        call(world_id, {:justify_node, in_list, out_list, conclusion_id, informant})
       else
         {:ok, generate_id()}
       end
     end)
   end
 
-  @doc "Adds a simple justification (no out_list).\n"
-  def justify_node(premise_ids, conclusion_id, informant) when is_list(premise_ids) do
-    justify_node(premise_ids, [], conclusion_id, informant)
-  end
+  def justify_node(premise_ids, conclusion_id, informant) when is_list(premise_ids),
+    do: justify_node(@default_world, premise_ids, [], conclusion_id, informant)
 
-  @doc "Enables an assumption node, making it IN.\nTriggers label propagation.\n"
-  def enable_assumption(node_id) do
-    GenServer.call(__MODULE__, {:enable_assumption, node_id}, 5_000)
-  end
+  def enable_assumption(node_id), do: enable_assumption(@default_world, node_id)
+  def enable_assumption(world_id, node_id), do: call(world_id, {:enable_assumption, node_id})
 
-  @doc "Retracts an assumption node, making it OUT.\nTriggers label propagation.\n"
-  def retract_assumption(node_id) do
-    GenServer.call(__MODULE__, {:retract_assumption, node_id}, 5_000)
-  end
+  def retract_assumption(node_id), do: retract_assumption(@default_world, node_id)
+  def retract_assumption(world_id, node_id), do: call(world_id, {:retract_assumption, node_id})
 
-  @doc "Checks if a node is currently IN.\n"
-  def is_in?(node_id) do
-    GenServer.call(__MODULE__, {:is_in?, node_id}, 5_000)
-  end
+  def is_in?(node_id), do: is_in?(@default_world, node_id)
+  def is_in?(world_id, node_id), do: call(world_id, {:is_in?, node_id})
 
-  @doc "Gets the current label of a node.\n"
-  def get_label(node_id) do
-    GenServer.call(__MODULE__, {:get_label, node_id}, 5_000)
-  end
+  def get_label(node_id), do: get_label(@default_world, node_id)
+  def get_label(world_id, node_id), do: call(world_id, {:get_label, node_id})
 
-  @doc "Gets a node by ID.\n"
-  def get_node(node_id) do
-    GenServer.call(__MODULE__, {:get_node, node_id}, 5_000)
-  end
+  def get_node(node_id), do: get_node(@default_world, node_id)
+  def get_node(world_id, node_id), do: call(world_id, {:get_node, node_id})
 
-  @doc "Gets the justification chain explaining why a node is IN.\nReturns the list of justifications supporting the node.\n"
-  def why_node(node_id) do
-    GenServer.call(__MODULE__, {:why_node, node_id}, 5_000)
-  end
+  def why_node(node_id), do: why_node(@default_world, node_id)
+  def why_node(world_id, node_id), do: call(world_id, {:why_node, node_id})
 
-  @doc "Gets all nodes that depend on the given node (forward chaining).\n"
-  def consequences_of(node_id) do
-    GenServer.call(__MODULE__, {:consequences_of, node_id}, 5_000)
-  end
+  def consequences_of(node_id), do: consequences_of(@default_world, node_id)
+  def consequences_of(world_id, node_id), do: call(world_id, {:consequences_of, node_id})
 
-  @doc "Gets all nodes that the given node depends on (backward chaining).\n"
-  def antecedents_of(node_id) do
-    GenServer.call(__MODULE__, {:antecedents_of, node_id}, 5_000)
-  end
+  def antecedents_of(node_id), do: antecedents_of(@default_world, node_id)
+  def antecedents_of(world_id, node_id), do: call(world_id, {:antecedents_of, node_id})
 
-  @doc "Registers a set of node IDs as mutually contradictory.\nWhen all are IN, triggers contradiction handling.\n"
-  def register_contradiction(node_ids, informant \\ "contradiction_rule") do
-    GenServer.call(__MODULE__, {:register_contradiction, node_ids, informant}, 5_000)
-  end
+  def register_contradiction(node_ids, informant \\ "contradiction_rule"),
+    do: register_contradiction(@default_world, node_ids, informant)
 
-  @doc "Checks consistency of the network.\nReturns {:ok, :consistent} or {:error, {:contradiction, node_id}}.\n"
-  def check_consistency do
-    GenServer.call(__MODULE__, :check_consistency, 5_000)
-  end
+  def register_contradiction(world_id, node_ids, informant) when is_binary(world_id),
+    do: call(world_id, {:register_contradiction, node_ids, informant})
 
-  @doc "Gets all current contradictions (contradiction nodes that are IN).\n"
-  def get_contradictions do
-    GenServer.call(__MODULE__, :get_contradictions, 5_000)
-  end
+  def check_consistency(world_id \\ @default_world), do: call(world_id, :check_consistency)
 
-  @doc "Sets the contradiction handler callback.\nThe callback receives {:contradiction, node_id, supporting_assumptions}.\n"
-  def set_contradiction_handler(handler_fn) when is_function(handler_fn, 1) do
-    GenServer.call(__MODULE__, {:set_handler, handler_fn}, 5_000)
-  end
+  def get_contradictions(world_id \\ @default_world), do: call(world_id, :get_contradictions)
 
-  @doc "Gets network statistics.\n"
-  def stats do
-    GenServer.call(__MODULE__, :stats, 5_000)
-  end
+  def set_contradiction_handler(handler_fn) when is_function(handler_fn, 1),
+    do: set_contradiction_handler(@default_world, handler_fn)
 
-  @doc "Clears the entire network (for testing).\n"
-  def clear do
-    GenServer.call(__MODULE__, :clear, 30_000)
-  end
+  def set_contradiction_handler(world_id, handler_fn) when is_function(handler_fn, 1),
+    do: call(world_id, {:set_handler, handler_fn})
 
-  @doc "Checks if JTMS is ready.\n"
-  def ready? do
-    try do
-      GenServer.call(__MODULE__, :ready?, 100)
-    catch
-      :exit, {:timeout, _} -> false
-      :exit, {:noproc, _} -> false
-    end
+  def stats(world_id \\ @default_world), do: call(world_id, :stats)
+
+  def clear(world_id \\ @default_world), do: call(world_id, :clear, 30_000)
+
+  @doc "Checks if the JTMS web for a world is ready."
+  def ready?(world_id \\ @default_world) do
+    {:ok, _} = ensure(world_id)
+    GenServer.call(via(world_id), :ready?, 100)
+  catch
+    :exit, {:timeout, _} -> false
+    :exit, {:noproc, _} -> false
   end
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     state = %{
+      world_id: Keyword.get(opts, :world_id, @default_world),
       nodes: %{},
       justifications: %{},
       node_to_justifications: %{},
@@ -147,7 +159,7 @@ defmodule Brain.Epistemic.JTMS do
       contradiction_handler: &default_contradiction_handler/1
     }
 
-    Logger.info("JTMS initialized")
+    Logger.info("JTMS initialized", world_id: state.world_id)
 
     {:ok, state}
   end

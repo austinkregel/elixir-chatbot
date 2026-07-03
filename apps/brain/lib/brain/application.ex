@@ -40,7 +40,10 @@ defmodule Brain.Application do
       Brain.Memory.Embedder,
       Brain.Memory.Store,
       Brain.Epistemic.SourceAuthority,
-      Brain.Epistemic.JTMS,
+      # Per-world JTMS: a registry + dynamic supervisor of one truth-maintenance
+      # web per mind-world (started lazily), replacing the former global singleton.
+      {Registry, [keys: :unique, name: Brain.Epistemic.JTMSRegistry]},
+      Brain.Epistemic.JTMS.Supervisor,
       Brain.Epistemic.BeliefStore,
       Brain.Epistemic.UserModelStore,
       Brain.Epistemic.ContradictionHandler,
