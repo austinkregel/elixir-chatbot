@@ -30,6 +30,9 @@ defmodule Fleet.Audit do
       attrs
       |> Map.put(:kind, Atom.to_string(kind))
       |> Map.put_new(:issued_at, DateTime.utc_now())
+      # Stamp THIS ship onto every record, so the black box is filterable by ship
+      # for the fleet-of-ships future (a caller may override by passing :ship_id).
+      |> Map.put_new(:ship_id, Fleet.Ship.id())
       |> normalize()
 
     # Durable append-only record FIRST — then the live telemetry event, so an

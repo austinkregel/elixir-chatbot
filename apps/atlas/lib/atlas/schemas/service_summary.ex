@@ -16,6 +16,7 @@ defmodule Atlas.Schemas.ServiceSummary do
 
   schema "atlas_service_summaries" do
     field :soul_id, :string
+    field :ship_id, :string
     field :duty_status, :string, default: "active"
     field :rank, :string, default: "ensign"
     field :home_world_id, :string
@@ -37,7 +38,7 @@ defmodule Atlas.Schemas.ServiceSummary do
   end
 
   @required_fields ~w(soul_id)a
-  @optional_fields ~w(duty_status rank home_world_id mind_world_id co_id reports
+  @optional_fields ~w(ship_id duty_status rank home_world_id mind_world_id co_id reports
                       standing_grants current_assignment served_since
                       last_commissioned_at orders_completed orders_dissented
                       orders_failed reliefs achievements metadata)a

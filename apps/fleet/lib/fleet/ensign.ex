@@ -126,7 +126,9 @@ defmodule Fleet.Ensign do
       context_tags: %{
         rank: Keyword.get(opts, :rank, :ensign),
         co: Keyword.get(opts, :co),
-        ship: Keyword.get(opts, :ship),
+        # The ship this agent is posted to — defaults to THIS instance; a cross-ship
+        # agent (future research/science ships) carries a different id.
+        ship: Keyword.get(opts, :ship) || Fleet.Ship.id(),
         reports: Keyword.get(opts, :reports, []),
         grants: seed_grants(opts)
       },
@@ -182,6 +184,7 @@ defmodule Fleet.Ensign do
       mind_world_id: state.mind_world_id,
       duty: state.duty,
       rank: ct.rank,
+      ship_id: ct.ship,
       co: ct.co,
       reports: ct.reports,
       grants: MapSet.to_list(ct.grants),
@@ -210,14 +213,27 @@ defmodule Fleet.Ensign do
           {:refused, reason}
 
         {:ok, proposal} ->
-          # The grant is read from process state — the agent's own order-conferred
-          # authorities — NOT from anything the model wrote. This is what makes a
-          # forged authority claim in the model's text inert.
+          # The grant AND the reader principal are read from process state — the
+          # agent's own order-conferred authorities, billet, live duty, and ship
+          # commission — NOT from anything the model wrote. This is what makes a
+          # forged authority/clearance claim in the model's text inert.
+          ct = state.context_tags
+
           ctx = %{
             agent_id: state.agent_id,
             order_id: assignment_id(state),
             world_id: state.mind_world_id,
-            grants: effective_grants(state)
+            ship_id: ct.ship,
+            grants: effective_grants(state),
+            principal:
+              Fleet.Principal.agent(%{
+                agent_id: state.agent_id,
+                rank: ct.rank,
+                duty: state.duty,
+                ship_id: ct.ship,
+                co: ct.co,
+                reports: ct.reports
+              })
           }
 
           Fleet.Dispatcher.dispatch(proposal, ctx)
@@ -1031,6 +1047,7 @@ defmodule Fleet.Ensign do
     %{
       agent_id: state.agent_id,
       rank: state.context_tags.rank,
+      ship_id: state.context_tags.ship,
       home_world_id: state.world_id,
       mind_world_id: Fleet.MindWorld.id(state.soul_id),
       co_id: state.context_tags.co,
@@ -1052,6 +1069,7 @@ defmodule Fleet.Ensign do
         context_tags: %{
           ct
           | rank: safe_atom(s.rank, :ensign),
+            ship: s.ship_id || Fleet.Ship.id(),
             co: s.co_id,
             reports: s.reports || [],
             grants: Fleet.Authority.decode_set(s.standing_grants || [])

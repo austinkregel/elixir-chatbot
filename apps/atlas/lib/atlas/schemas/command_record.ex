@@ -21,6 +21,7 @@ defmodule Atlas.Schemas.CommandRecord do
 
   schema "atlas_command_records" do
     field :kind, :string
+    field :ship_id, :string
     field :order_id, :string
     field :from_agent, :string
     field :to_agent, :string
@@ -34,10 +35,10 @@ defmodule Atlas.Schemas.CommandRecord do
     timestamps(type: :utc_datetime_usec)
   end
 
-  @valid_kinds ~w(order ack sitrep request grant deny dissent report relieve reinstate hail hail_reply tool_thought tool_request tool_decision tool_effect grant_violation provenance_anomaly)
+  @valid_kinds ~w(order ack sitrep request grant deny dissent report relieve reinstate hail hail_reply tool_thought tool_request tool_decision tool_effect grant_violation provenance_anomaly read query)
 
   @required_fields ~w(kind from_agent)a
-  @optional_fields ~w(order_id to_agent world_id authority verdict reason payload issued_at)a
+  @optional_fields ~w(ship_id order_id to_agent world_id authority verdict reason payload issued_at)a
 
   def valid_kinds, do: @valid_kinds
 
