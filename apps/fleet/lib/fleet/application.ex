@@ -21,7 +21,10 @@ defmodule Fleet.Application do
     children = [
       {Registry, keys: :unique, name: Fleet.Registry},
       {Task.Supervisor, name: Fleet.TaskSupervisor},
-      Fleet.CrewSupervisor
+      Fleet.CrewSupervisor,
+      # The ship's black box — periodically samples Fleet.Systems into a live ETS
+      # ring + durable rows + a "systems:status" broadcast.
+      Fleet.Systems.Sampler
     ]
 
     opts = [strategy: :one_for_one, name: Fleet.Supervisor]

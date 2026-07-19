@@ -96,6 +96,24 @@ defmodule Fleet.Systems do
   @doc "One system by id, or nil."
   def get(id), do: Enum.find(services() ++ processes() ++ subsystems(), &(&1.id == id))
 
+  @doc """
+  The last snapshot the black-box sampler took — cheap (a lock-free ETS read), so
+  UIs never probe ~51 GenServers on render. Falls back to a live `snapshot/0` when
+  the sampler hasn't produced one yet.
+  """
+  def cached_snapshot do
+    case Fleet.Systems.Sampler.latest() do
+      nil -> snapshot()
+      snap -> snap
+    end
+  end
+
+  @doc "The ship health-score ring (newest first) — for the trend sparkline."
+  def health_history, do: Fleet.Systems.Sampler.health_history()
+
+  @doc "A live system's recent status ring (newest first) — for a per-system sparkline."
+  def history(system_id), do: Fleet.Systems.Sampler.history(system_id)
+
   # ── Layer 0: external services ─────────────────────────────────────────────
 
   def services do
