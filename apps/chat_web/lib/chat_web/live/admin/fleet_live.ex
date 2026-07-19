@@ -240,10 +240,12 @@ defmodule ChatWeb.Admin.FleetLive do
 
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
           <!-- Roster -->
-          <div class="xl:col-span-2 card bg-base-100 shadow">
-            <div class="card-body p-4">
-              <div class="flex items-center justify-between gap-2 flex-wrap">
-                <h2 class="card-title text-sm">Chain of command</h2>
+          <div class="xl:col-span-2 rounded-xl border border-base-300 bg-base-100">
+            <div class="p-4">
+              <div class="flex items-center justify-between gap-2 flex-wrap mb-3">
+                <h2 class="text-sm font-semibold flex items-center gap-2">
+                  <.icon name="hero-users" class="size-4 text-base-content/50" /> Chain of command
+                </h2>
                 <label class="input input-sm input-bordered flex items-center gap-1 w-48" :if={@roster != []}>
                   <.icon name="hero-magnifying-glass" class="size-3.5 text-base-content/40" />
                   <input
@@ -258,11 +260,11 @@ defmodule ChatWeb.Admin.FleetLive do
                 </label>
               </div>
 
-              <div :if={@roster == []} class="text-base-content/60 text-sm py-8 text-center space-y-2">
-                <.icon name="hero-user-group" class="size-8 mx-auto text-base-content/30" />
-                <p>No crew commissioned right now.</p>
-                <p class="text-xs">
-                  {length(@feed)} events in recent service history — commission a soul above to stand the fleet back up.
+              <div :if={@roster == []} class="text-sm py-12 text-center space-y-3">
+                <.icon name="hero-user-group" class="size-10 mx-auto text-base-content/20" />
+                <p class="font-medium text-base-content/70">No officers aboard.</p>
+                <p class="text-xs text-base-content/50">
+                  Commission your first from the panel above to stand up the crew.
                 </p>
               </div>
 
@@ -346,11 +348,13 @@ defmodule ChatWeb.Admin.FleetLive do
             </div>
           </div>
 
-          <!-- Activity feed -->
-          <div class="card bg-base-100 shadow">
-            <div class="card-body p-4">
-              <div class="flex items-center justify-between gap-2">
-                <h2 class="card-title text-sm">Activity</h2>
+          <!-- Ship's log -->
+          <div class="rounded-xl border border-base-300 bg-base-100">
+            <div class="p-4">
+              <div class="flex items-center justify-between gap-2 mb-3">
+                <h2 class="text-sm font-semibold flex items-center gap-2">
+                  <.icon name="hero-signal" class="size-4 text-base-content/50" /> Ship's log
+                </h2>
                 <div class="join">
                   <button
                     class={["btn btn-xs join-item", @feed_filter == :all && "btn-active"]}
@@ -413,10 +417,11 @@ defmodule ChatWeb.Admin.FleetLive do
       <!-- Detail modal -->
       <div :if={@detail} class="modal modal-open">
         <div class="modal-box max-w-2xl">
-          <h3 class="font-bold text-lg flex items-center gap-2 flex-wrap">
+          <div class="text-[11px] uppercase tracking-[0.2em] text-primary/70 font-medium mb-1">Officer dossier</div>
+          <h3 class="font-semibold text-xl flex items-center gap-2 flex-wrap">
             {agent_label(@detail)}
-            <span class={["badge badge-sm", duty_class(@detail.duty)]}>{@detail.duty}</span>
             <span class={["badge badge-sm", rank_class(@detail.rank)]}>{Fleet.Rank.label(@detail.rank)}</span>
+            <span class={["badge badge-sm", duty_class(@detail.duty)]}>{@detail.duty}</span>
           </h3>
           <div class="stats stats-horizontal shadow my-3 w-full">
             <div class="stat py-2"><div class="stat-title text-xs">completed</div><div class="stat-value text-lg text-success">{@detail.completed}</div></div>
@@ -433,9 +438,8 @@ defmodule ChatWeb.Admin.FleetLive do
           <div class="my-3">
             <h4 class="font-semibold text-sm mb-1">Tools</h4>
             <p class="text-xs text-base-content/50 mb-1.5">
-              Standing access, granted directly by the Admiral — separate from whatever an order additionally
-              confers. The agent is told what it holds (see its own constitution context), so this is also what
-              it believes it may propose.
+              Standing access you grant this officer — what it may call on, over and above what any order confers.
+              Click a tool to grant or revoke it.
             </p>
             <div class="flex flex-wrap gap-1.5">
               <button
