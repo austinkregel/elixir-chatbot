@@ -71,10 +71,28 @@ defmodule Fleet.ClearanceTest do
     assert Clearance.can_read?(ensign(), :nonsense, @ship) == {:deny, :unknown_info_class}
   end
 
-  test "chain-scoped classes are deferred (Phase 3) — denied for non-admirals for now" do
-    # hard example A (Admiral<->Commander comms an ensign must not see) is satisfied
-    # today by the blanket chain deny; Phase 3 adds the participant/superior analog.
-    assert Clearance.can_read?(ensign(), :command_comms, @ship) == {:deny, :chain_read_unsupported}
+  test "hard example A: an ensign cannot read Admiral<->Commander comms (off chain)" do
+    # participants are the Admiral and a Commander; our ensign is neither a
+    # participant nor a superior of them → off chain.
+    parts = [participants: [:admiral, {:ensign, "cmdr-1"}]]
+    assert Clearance.can_read?(ensign(), :command_comms, @ship, parts) == {:deny, :off_chain}
+  end
+
+  test "chain analog: a participant, and a superior of every participant, may read" do
+    # a CO reading a comm it participates in
+    co = ensign(agent_id: "co-1", rank: :executive_officer, reports: ["rep-1"])
+    assert Clearance.can_read?(co, :command_comms, @ship, participants: [{:ensign, "co-1"}, {:ensign, "rep-1"}]) == :allow
+
+    # a CO reading a comm between two of its direct reports (superior of all)
+    co2 = ensign(agent_id: "co-2", rank: :executive_officer, reports: ["r1", "r2"])
+    assert Clearance.can_read?(co2, :command_comms, @ship, participants: [{:ensign, "r1"}, {:ensign, "r2"}]) == :allow
+
+    # but not a comm involving someone off its chain
+    assert Clearance.can_read?(co2, :command_comms, @ship, participants: [{:ensign, "r1"}, {:ensign, "stranger"}]) == {:deny, :off_chain}
+  end
+
+  test "a comm read with no named participants is denied (can't establish chain membership)" do
+    assert Clearance.can_read?(ensign(), :command_comms, @ship) == {:deny, :off_chain}
   end
 
   test "Fleet.Ship.id is configured" do

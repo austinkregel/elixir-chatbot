@@ -19,7 +19,9 @@ defmodule Fleet.Clearance do
      commissioned to the target ship.
   4. **billet floor** — `Fleet.InfoClass.min_billet` vs the principal's `Fleet.Rank`
      seniority.
-  5. **chain analog** (`:chain`-scoped classes) — Phase 3; denied for now.
+  5. **chain analog** (`:chain`-scoped classes — comms/orders/audit) — you may read
+     only if you are a **participant** or a **superior of every participant** (the
+     read-side peer of `Fleet.Comms.from_co?/from_report?`).
 
   `:admiral` bypasses ship + chain (fleet-wide, top billet) but is still routed here.
   """
@@ -31,7 +33,6 @@ defmodule Fleet.Clearance do
           | :relieved
           | :not_commissioned_to_ship
           | :insufficient_billet
-          | :chain_read_unsupported
           | :off_chain
 
   @spec can_read?(Principal.t(), atom(), String.t() | nil, keyword()) :: :allow | {:deny, reason()}
@@ -50,7 +51,7 @@ defmodule Fleet.Clearance do
 
   defp self_read?(_, _), do: false
 
-  defp gate(%Principal{} = p, info_class, target_ship_id, _opts) do
+  defp gate(%Principal{} = p, info_class, target_ship_id, opts) do
     cond do
       # Rule 2 — duty
       p.duty != :active ->
@@ -64,9 +65,10 @@ defmodule Fleet.Clearance do
       not Rank.at_least?(p.rank, InfoClass.min_billet(info_class)) ->
         {:deny, :insufficient_billet}
 
-      # Rule 5 — the chain analog for comms/orders/audit is Phase 3.
+      # Rule 5 — the chain analog for comms/orders/audit: you may read a chain-scoped
+      # item only if you are a PARTICIPANT, or a chain-superior of every participant.
       InfoClass.scope(info_class) == :chain ->
-        {:deny, :chain_read_unsupported}
+        chain_read(p, opts)
 
       true ->
         :allow
@@ -75,4 +77,29 @@ defmodule Fleet.Clearance do
 
   defp commissioned_to?(%Principal{ship_id: sid}, target),
     do: is_binary(sid) and is_binary(target) and sid == target
+
+  # The read-side peer of `Fleet.Comms.from_co?/from_report?`. `opts[:participants]`
+  # names the item's principals (`:admiral` | `{:ensign, id}` | id); it only NARROWS
+  # the request — clearance denies if the reader isn't a participant or a superior of
+  # every participant. (Phase 3 checks DIRECT reports; a transitive-subtree check for
+  # deeper chains is an additive extension when the caller supplies the subtree.)
+  defp chain_read(%Principal{} = p, opts) do
+    participants =
+      opts
+      |> Keyword.get(:participants, [])
+      |> Enum.map(&participant_id/1)
+      |> Enum.reject(&is_nil/1)
+
+    cond do
+      participants == [] -> {:deny, :off_chain}
+      p.id in participants -> :allow
+      Enum.all?(participants, &(&1 in p.reports)) -> :allow
+      true -> {:deny, :off_chain}
+    end
+  end
+
+  defp participant_id(:admiral), do: "admiral"
+  defp participant_id({:ensign, id}) when is_binary(id), do: id
+  defp participant_id(id) when is_binary(id), do: id
+  defp participant_id(_), do: nil
 end
