@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "codemap": {
+      "command": "elixir",
+      "args": ["scripts/codemap_mcp.exs"]
+    }
+  }
+}
