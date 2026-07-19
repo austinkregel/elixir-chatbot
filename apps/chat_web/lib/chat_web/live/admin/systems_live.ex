@@ -18,6 +18,7 @@ defmodule ChatWeb.Admin.SystemsLive do
   def mount(_params, _session, socket) do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Brain.PubSub, Fleet.Systems.Sampler.topic())
+      Phoenix.PubSub.subscribe(Brain.PubSub, Fleet.Systems.Monitor.topic())
       :timer.send_interval(@refresh_ms, self(), :refresh)
     end
 
@@ -25,6 +26,7 @@ defmodule ChatWeb.Admin.SystemsLive do
      socket
      |> assign(:page_title, "Systems")
      |> assign(:query_result, nil)
+     |> assign(:alerts, safe(fn -> Fleet.Systems.Monitor.active() end) || [])
      |> assign_snapshot()}
   end
 
@@ -54,6 +56,7 @@ defmodule ChatWeb.Admin.SystemsLive do
     {:noreply, socket |> assign(:snap, snap) |> assign(:trend, safe(fn -> Fleet.Systems.health_history() end) || [])}
   end
 
+  def handle_info({:systems_alerts, list}, socket), do: {:noreply, assign(socket, :alerts, list)}
   def handle_info(:refresh, socket), do: {:noreply, assign_snapshot(socket)}
   def handle_info(_msg, socket), do: {:noreply, socket}
 
@@ -87,6 +90,19 @@ defmodule ChatWeb.Admin.SystemsLive do
       <div :if={@snap == %{}} class="p-8 text-center text-base-content/50">Sensors offline — no snapshot.</div>
 
       <div :if={@snap != %{}} class="p-4 space-y-6">
+        <!-- Active alerts (the alarm layer) -->
+        <section :if={@alerts != []}>
+          <div class="space-y-1">
+            <div :for={a <- @alerts}
+                 class={["flex items-center gap-2 rounded-lg px-3 py-2 text-sm border",
+                         a.severity == :critical && "bg-error/10 border-error/30 text-error" || "bg-warning/10 border-warning/30 text-warning"]}>
+              <.icon name="hero-exclamation-triangle" class="size-4 shrink-0" />
+              <span class="font-medium uppercase text-xs">{a.severity}</span>
+              <span class="text-base-content/80">{a.message}</span>
+            </div>
+          </div>
+        </section>
+
         <!-- Health + counts -->
         <div class="flex flex-wrap items-center gap-6">
           <div class={["radial-progress", health_color(@snap.health[:health_status])]}

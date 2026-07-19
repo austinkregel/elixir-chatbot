@@ -24,7 +24,10 @@ defmodule Fleet.Application do
       Fleet.CrewSupervisor,
       # The ship's black box — periodically samples Fleet.Systems into a live ETS
       # ring + durable rows + a "systems:status" broadcast.
-      Fleet.Systems.Sampler
+      Fleet.Systems.Sampler,
+      # The alarm layer — raises/resolves alerts off the sampler's stream (the
+      # relief-of-duty / fleet-brake substrate).
+      Fleet.Systems.Monitor
     ]
 
     opts = [strategy: :one_for_one, name: Fleet.Supervisor]
