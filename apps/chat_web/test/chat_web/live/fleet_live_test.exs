@@ -4,7 +4,7 @@ defmodule ChatWeb.Admin.FleetLiveTest do
 
   test "the fleet console mounts (connected) and renders", %{conn: conn} do
     {:ok, _view, html} = live(conn, "/fleet")
-    assert html =~ "Crew roster"
+    assert html =~ "Chain of command"
     assert html =~ "Commission"
     assert html =~ "phx-submit=\"commission\""
     # The commission form confers a billet, and the billet selector lists the
