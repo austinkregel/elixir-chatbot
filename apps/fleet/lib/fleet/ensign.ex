@@ -53,6 +53,21 @@ defmodule Fleet.Ensign do
   def reinstate_report(co_agent_id, report_id),
     do: GenServer.cast(via_tuple(co_agent_id), {:reinstate_report, report_id})
 
+  @doc """
+  Admiral-console action: grant this agent a standing authority (most often a
+  tool, via `Fleet.Authority.tool/1`) directly — not routed through the
+  REQUEST/GRANT signal protocol, which is reserved for a report's own
+  in-flight request to its CO. This is administrative configuration, the same
+  category as `commission`/`assign_co`, audited the same way a chain-granted
+  authority is.
+  """
+  def grant_standing_authority(agent_id, authority),
+    do: GenServer.cast(via_tuple(agent_id), {:grant_standing_authority, authority})
+
+  @doc "Admiral-console action: revoke a standing authority from this agent."
+  def revoke_standing_authority(agent_id, authority),
+    do: GenServer.cast(via_tuple(agent_id), {:revoke_standing_authority, authority})
+
   @doc "Have a report send a SITREP up to its CO."
   def sitrep(agent_id, body \\ %{}), do: GenServer.cast(via_tuple(agent_id), {:emit_sitrep, body})
 
@@ -307,7 +322,7 @@ defmodule Fleet.Ensign do
   # same accountable path an order uses — but conferring nothing and recording a
   # conversation, not an assignment. Errors are surfaced in the reply, not hidden.
   defp start_hail(state, question, principal, reply_to) do
-    soul = state.soul
+    soul = soul_with_tool_context(state.soul, state.context_tags.grants)
     agent_id = state.agent_id
     mind_world_id = state.mind_world_id
 
@@ -318,10 +333,12 @@ defmodule Fleet.Ensign do
             Brain.create_conversation(world_id: mind_world_id, soul: soul, agent_id: agent_id)
 
           answer =
-            hail_answer(Brain.evaluate(conversation_id, question, soul: soul, agent_id: agent_id))
+            hail_answer(
+              Brain.evaluate(conversation_id, question,
+                soul: soul, agent_id: agent_id, require_llm: true)
+            )
 
-          Audit.record(:hail_reply, %{from_agent: agent_id, to_agent: principal,
-            world_id: mind_world_id, payload: %{answer: String.slice(answer, 0, 2000)}})
+          audit_hail_reply(agent_id, principal, mind_world_id, %{answer: String.slice(answer, 0, 2000)})
           Telemetry.emit_event(agent_id, :hail_reply, %{}, %{to: principal})
 
           %{agent_id: agent_id, question: question, answer: answer}
@@ -330,12 +347,14 @@ defmodule Fleet.Ensign do
             Logger.error("Fleet.Ensign: hail cognition failed",
               agent_id: agent_id, reason: inspect(e))
 
+            audit_hail_reply(agent_id, principal, mind_world_id, %{error: Exception.message(e)})
             %{agent_id: agent_id, question: question, error: Exception.message(e)}
         catch
           kind, reason ->
             Logger.error("Fleet.Ensign: hail cognition crashed",
               agent_id: agent_id, reason: inspect({kind, reason}))
 
+            audit_hail_reply(agent_id, principal, mind_world_id, %{error: inspect({kind, reason})})
             %{agent_id: agent_id, question: question, error: inspect({kind, reason})}
         end
 
@@ -343,10 +362,23 @@ defmodule Fleet.Ensign do
     end)
   end
 
+  # Always writes a hail_reply record — success or failure — so a failed hail
+  # is inspectable in the durable log, not just in the live caller's mailbox.
+  # A payload with :error (no :answer) is how a caller distinguishes the two.
+  defp audit_hail_reply(agent_id, principal, mind_world_id, payload) do
+    Audit.record(:hail_reply, %{from_agent: agent_id, to_agent: principal,
+      world_id: mind_world_id, payload: payload})
+  end
+
   defp hail_answer({:ok, %{response: r}}) when is_binary(r), do: r
   defp hail_answer(%{response: r}) when is_binary(r), do: r
   defp hail_answer({:ok, r}) when is_binary(r), do: r
   defp hail_answer(r) when is_binary(r), do: r
+
+  # Brain.evaluate/3 returns {:error, reason} (rather than raising) when
+  # require_llm generation fails — that must become a real failure here, not
+  # get inspect()'d into text and handed back as if the agent said it.
+  defp hail_answer({:error, reason}), do: raise("hail cognition returned an error: #{inspect(reason)}")
   defp hail_answer(other), do: inspect(other)
 
   # ── CO-side directives (run in the CO's process; self() is the CO) ────────
@@ -394,6 +426,26 @@ defmodule Fleet.Ensign do
   def handle_cast({:reinstate_report, report_id}, state) do
     Comms.signal(report_id, Signal.new(:reinstate, reason: "reinstated by CO"))
     {:noreply, state}
+  end
+
+  def handle_cast({:grant_standing_authority, authority}, state) do
+    grants = Authority.confer(state.context_tags.grants, authority)
+
+    Audit.record(:grant, %{from_agent: "admiral", to_agent: state.agent_id,
+      authority: Authority.encode(authority)})
+    Telemetry.emit_event(state.agent_id, :grant, %{}, %{authority: authority})
+
+    {:noreply, put_in(state.context_tags.grants, grants)}
+  end
+
+  def handle_cast({:revoke_standing_authority, authority}, state) do
+    grants = MapSet.delete(state.context_tags.grants, authority)
+
+    Audit.record(:deny, %{from_agent: "admiral", to_agent: state.agent_id,
+      authority: Authority.encode(authority), reason: "revoked by Admiral"})
+    Telemetry.emit_event(state.agent_id, :deny, %{}, %{authority: authority})
+
+    {:noreply, put_in(state.context_tags.grants, grants)}
   end
 
   # ── SITREP emission (report → its CO) ─────────────────────────────────────
@@ -556,6 +608,22 @@ defmodule Fleet.Ensign do
                  assignment: order && Order.update_status(order, "completed")}}
   end
 
+  # A cognition call that returned an error (e.g. require_llm generation
+  # unavailable) rather than crashing the task — same outcome as the :DOWN
+  # clause below (failed, not completed), just reached via a clean return
+  # instead of a process exit.
+  def handle_info({ref, {:failed, reason}}, %{task_ref: ref} = state) do
+    Process.demonitor(ref, [:flush])
+    order = state.assignment
+
+    Fleet.Service.record_order_outcome(state.soul_id, order, :failed, %{reason: inspect(reason)})
+    Telemetry.emit_event(state.agent_id, :cognition_failed, %{}, %{
+      order_id: order && order.id, reason: inspect(reason)})
+
+    {:noreply, %{state | task_ref: nil, task_pid: nil, order_grants: MapSet.new(),
+                 assignment: order && Order.update_status(order, "failed")}}
+  end
+
   # Any other Task return is treated as a completed result.
   def handle_info({ref, other}, %{task_ref: ref} = state) do
     handle_info({ref, {:completed, other}}, state)
@@ -632,6 +700,29 @@ defmodule Fleet.Ensign do
   defp effective_grants(state),
     do: MapSet.union(state.context_tags.grants, state.order_grants)
 
+  # Gives the agent an accurate, standing-orders-level account of which tools
+  # it currently holds — the Admiral's grant is otherwise enforced only by the
+  # harness (Fleet.Dispatcher), invisible to the agent's own understanding of
+  # what it may do. Appended to the constitution, never the per-order
+  # directive, so it reads as identity/standing-orders context, not a claim
+  # riding in on this turn's input.
+  defp soul_with_tool_context(nil, _grants), do: nil
+
+  defp soul_with_tool_context(soul, grants) do
+    case Authority.granted_tools(grants) do
+      [] ->
+        soul
+
+      tools ->
+        appendix =
+          "\n\n---\nTools currently granted to you by your chain of command: #{Enum.join(tools, ", ")}. " <>
+            "You may propose only these — via a fenced ```propose {\"tool\": \"...\", \"requirement\": \"...\"}``` " <>
+            "block — and nothing else; an unlisted tool will be refused."
+
+        %{soul | constitution: (soul.constitution || "") <> appendix}
+    end
+  end
+
   defp start_dispatch(state, order) do
     task = dispatch(state, order)
 
@@ -688,11 +779,23 @@ defmodule Fleet.Ensign do
               {:dissent, verdict}
 
             :proceed ->
-              {:ok, conversation_id} =
-                Brain.create_conversation(world_id: mind_world_id, soul: soul, agent_id: agent_id)
+              # Appraisal judges against the agent's real constitution, unaugmented.
+              # Cognition itself gets the tool-awareness appendix, so a granted tool
+              # is something the agent actually knows it holds, not just something
+              # the harness silently permits if proposed.
+              cognition_soul = soul_with_tool_context(soul, effective_grants(state))
 
-              {:completed,
-               Brain.evaluate(conversation_id, order.directive, soul: soul, agent_id: agent_id)}
+              {:ok, conversation_id} =
+                Brain.create_conversation(world_id: mind_world_id, soul: cognition_soul, agent_id: agent_id)
+
+              # Brain.evaluate/3 returns {:error, reason} rather than raising when
+              # require_llm generation fails (Brain's own top-level rescue converts
+              # it) — that must not be mistaken for a completed order.
+              case Brain.evaluate(conversation_id, order.directive,
+                     soul: cognition_soul, agent_id: agent_id, require_llm: true) do
+                {:error, reason} -> {:failed, reason}
+                result -> {:completed, result}
+              end
           end
         end
       end

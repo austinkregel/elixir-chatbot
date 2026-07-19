@@ -7,7 +7,7 @@ defmodule Fleet do
   and **surfaces** any persistence error (no graceful degradation).
   """
 
-  alias Fleet.{CrewSupervisor, Ensign, Order, Comms, CommandGraph}
+  alias Fleet.{CrewSupervisor, Ensign, Order, Comms, CommandGraph, Authority}
 
   @doc """
   Commissions an ensign for a soul. `opts` pass through to
@@ -27,14 +27,45 @@ defmodule Fleet do
   def assign_co(sub_id, sub_id) when is_binary(sub_id), do: {:error, :self_command}
 
   def assign_co(sub_id, co_id) when is_binary(sub_id) and is_binary(co_id) do
-    Ensign.set_co(sub_id, co_id)
-    Ensign.add_report(co_id, sub_id)
-    Fleet.Telemetry.emit_event(co_id, :co_assigned, %{}, %{report: sub_id})
+    if creates_cycle?(sub_id, co_id) do
+      {:error, :cycle}
+    else
+      Ensign.set_co(sub_id, co_id)
+      Ensign.add_report(co_id, sub_id)
+      Fleet.Telemetry.emit_event(co_id, :co_assigned, %{}, %{report: sub_id})
 
-    case CommandGraph.establish_command(co_id, sub_id) do
-      {:ok, _edge} -> :ok
-      {:error, reason} -> {:error, reason}
+      case CommandGraph.establish_command(co_id, sub_id) do
+        {:ok, _edge} -> :ok
+        {:error, reason} -> {:error, reason}
+      end
     end
+  end
+
+  # Would wiring co_id as sub_id's CO close a loop? True iff sub_id is already
+  # an ancestor of co_id — walk co_id's own chain of command upward and see if
+  # it ever reaches sub_id. A cyclic chain is meaningless (nobody can
+  # transitively command their own commander), so this is rejected at the
+  # source rather than left for a display layer to cope with. Bounded so a
+  # pre-existing bad chain (however it got that way) can never hang this
+  # check, not sized to crew count.
+  defp creates_cycle?(sub_id, co_id), do: walk_up_hits?(co_id, sub_id, 0)
+
+  defp walk_up_hits?(_current, _target, hops) when hops > 500, do: false
+  defp walk_up_hits?(current, target, _hops) when current == target, do: true
+
+  defp walk_up_hits?(current, target, hops) do
+    case safe_co(current) do
+      nil -> false
+      next -> walk_up_hits?(next, target, hops + 1)
+    end
+  end
+
+  defp safe_co(agent_id) do
+    Ensign.status(agent_id).co
+  rescue
+    _ -> nil
+  catch
+    :exit, _ -> nil
   end
 
   @doc """
@@ -86,6 +117,20 @@ defmodule Fleet do
   @doc "Admiral reinstates a top-level agent (`co == nil`)."
   def reinstate(agent_id) when is_binary(agent_id),
     do: Fleet.Comms.signal(agent_id, Fleet.Signal.new(:reinstate, reason: "reinstated by Admiral"))
+
+  @doc """
+  The code-owned tool catalog (name => spec) an Admiral can grant/revoke —
+  see `Fleet.Tool.registry/0` for what each tool actually does.
+  """
+  def available_tools, do: Fleet.Tool.registry()
+
+  @doc "Admiral grants `agent_id` standing access to a tool from `available_tools/0`."
+  def grant_tool(agent_id, tool_name) when is_binary(tool_name),
+    do: Ensign.grant_standing_authority(agent_id, Authority.tool(tool_name))
+
+  @doc "Admiral revokes `agent_id`'s standing access to a tool."
+  def revoke_tool(agent_id, tool_name) when is_binary(tool_name),
+    do: Ensign.revoke_standing_authority(agent_id, Authority.tool(tool_name))
 
   @doc "Have an ensign send a SITREP up to its CO."
   def sitrep(agent_id, body \\ %{}), do: Ensign.sitrep(agent_id, body)

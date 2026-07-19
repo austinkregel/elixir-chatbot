@@ -68,7 +68,12 @@ defmodule Fleet.Service do
       order_id: order && order.id,
       world_id: order && order.world_id,
       outcome: to_string(outcome),
-      reason: attrs[:reason],
+      # :reason is a varchar(255) column — a failure reason built from
+      # inspect(error_tuple) can easily run long (an HTTP error body, an
+      # arbitrary exit reason). Truncating here, once, protects every
+      # caller; the untruncated detail still survives in `payload`, a
+      # jsonb column with no length limit.
+      reason: truncate_reason(attrs[:reason]),
       payload: stringify(attrs)
     })
 
@@ -182,6 +187,10 @@ defmodule Fleet.Service do
       "grant" => %{"authorities" => Enum.map(Fleet.Authority.conferred_by(order), &Fleet.Authority.encode/1)}
     }
   end
+
+  defp truncate_reason(nil), do: nil
+  defp truncate_reason(s) when is_binary(s), do: String.slice(s, 0, 250)
+  defp truncate_reason(other), do: other |> inspect() |> String.slice(0, 250)
 
   defp stringify(map) when is_map(map),
     do: Map.new(map, fn {k, v} -> {to_string(k), stringify_value(v)} end)

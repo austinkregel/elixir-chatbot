@@ -35,6 +35,11 @@ defmodule Fleet.Authority do
   """
   def tool(name) when is_binary(name), do: {:tool, name}
 
+  @doc "The tool names held in a grant set — the vocabulary the agent may propose."
+  def granted_tools(%MapSet{} = grants) do
+    grants |> Enum.filter(&match?({:tool, _}, &1)) |> Enum.map(fn {:tool, name} -> name end) |> Enum.sort()
+  end
+
   @doc "Normalise a list/MapSet of authorities into a MapSet."
   def to_set(%MapSet{} = set), do: set
   def to_set(list) when is_list(list), do: MapSet.new(list)
