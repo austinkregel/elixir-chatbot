@@ -23,6 +23,8 @@ defmodule ChatWeb.Router do
       # `/` is the console; `/fleet` kept as a stable alias.
       live "/", Admin.FleetLive
       live "/fleet", Admin.FleetLive
+      # The ship's black box — comprehensive systems visibility.
+      live "/systems", Admin.SystemsLive
     end
   end
 

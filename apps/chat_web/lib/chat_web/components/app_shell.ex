@@ -23,10 +23,15 @@ defmodule ChatWeb.AppShell do
     <div class="flex flex-col h-screen bg-base-200">
       <!-- Fleet top bar -->
       <header class="flex items-center gap-3 px-4 py-2 bg-base-100 border-b border-base-300 shrink-0">
-        <div class="flex items-center gap-2 font-semibold shrink-0">
+        <div class="flex items-center gap-1.5 font-semibold shrink-0">
           <.icon name="hero-rocket-launch" class="size-5 text-primary" />
-          <span>Fleet</span>
         </div>
+
+    <!-- Nav: the two views of this Fleet workbench -->
+        <nav class="flex items-center gap-1 shrink-0 text-sm">
+          <.link navigate="/" class={nav_class(@current_path, ["/", "/fleet"])}>Fleet</.link>
+          <.link navigate="/systems" class={nav_class(@current_path, ["/systems"])}>Systems</.link>
+        </nav>
 
     <!-- Optional page header (title + actions), else a spacer -->
         <%= if @page_header != [] do %>
@@ -58,6 +63,14 @@ defmodule ChatWeb.AppShell do
       <.flash_group flash={@flash} />
     </div>
     """
+  end
+
+  defp nav_class(current, matches) do
+    base = "px-2 py-1 rounded transition-colors"
+
+    if current in matches,
+      do: base <> " bg-primary/10 text-primary font-medium",
+      else: base <> " text-base-content/60 hover:text-base-content hover:bg-base-200"
   end
 
   defp theme_toggle(assigns) do
