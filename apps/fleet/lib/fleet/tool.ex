@@ -23,7 +23,7 @@ defmodule Fleet.Tool do
   alias Brain.Epistemic.BeliefStore
 
   @enforce_keys [:name, :effect, :required_authority, :handler]
-  defstruct [:name, :effect, :required_authority, :handler, :description]
+  defstruct [:name, :effect, :required_authority, :handler, :description, :info_class]
 
   @type effect :: :read | :mutate | :irreversible
   @type ctx :: %{optional(any) => any}
@@ -32,19 +32,38 @@ defmodule Fleet.Tool do
           effect: effect(),
           required_authority: term(),
           handler: (map(), ctx() -> {:ok, term()} | {:error, term()}),
-          description: String.t() | nil
+          description: String.t() | nil,
+          info_class: atom() | nil
         }
 
-  @doc "The code-owned registry (name => spec). Human-registered; never model-registered."
+  @doc """
+  The code-owned registry (name => spec). Human-registered; never model-registered.
+
+  A `:read`-effect tool that declares an `:info_class` is gated by `Fleet.Clearance`
+  in the Dispatcher (in addition to the action-grant): `beliefs.read` reads the
+  caller's own mind (`:agent_mind`, self-read); `systems.read` reads ship health
+  (`:system_status`, ship-commissioned).
+  """
   @spec registry() :: %{optional(String.t()) => t()}
   def registry do
     %{
       "beliefs.read" => %__MODULE__{
         name: "beliefs.read",
         effect: :read,
+        info_class: :agent_mind,
         required_authority: Fleet.Authority.tool("beliefs.read"),
         description: "Read the calling agent's own beliefs (its mind-world belief store). Read-only.",
         handler: &beliefs_read/2
+      },
+      "systems.read" => %__MODULE__{
+        name: "systems.read",
+        effect: :read,
+        info_class: :system_status,
+        required_authority: Fleet.Authority.tool("systems.read"),
+        description:
+          "Read the ship's systems health — the layered inventory of services, " <>
+            "processes, and subsystems. Read-only; ground truth independent of any LLM.",
+        handler: &systems_read/2
       }
     }
   end
@@ -78,4 +97,24 @@ defmodule Fleet.Tool do
   end
 
   defp beliefs_read(_args, _ctx), do: {:error, :no_world}
+
+  # systems.read — the ship's health, as ground truth. Returns a compact summary
+  # (counts + rolled-up health + any non-nominal live systems) so the framed <data>
+  # stays legible; the full inventory is the human board's job.
+  defp systems_read(_args, _ctx) do
+    snap = Fleet.Systems.snapshot()
+
+    not_nominal =
+      (snap.services ++ snap.processes)
+      |> Enum.reject(&(&1.status == :up))
+      |> Enum.map(&%{system: &1.name, layer: &1.layer, deck: &1.deck, status: &1.status})
+
+    {:ok,
+     %{
+       ship_id: snap.ship_id,
+       health: Map.take(snap.health, [:health_score, :health_status, :services_up, :services_total, :genservers_running, :genservers_total]),
+       counts: snap.counts,
+       not_nominal: not_nominal
+     }}
+  end
 end

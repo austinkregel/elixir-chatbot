@@ -77,9 +77,45 @@ defmodule Fleet.Dispatcher do
 
       {:allow, %Tool{} = tool} ->
         audit(ctx, :tool_decision, %{tool: tool.name, verdict: "allow", effect: to_string(tool.effect)})
-        run(tool, proposal, ctx)
+        gate_read(tool, proposal, ctx)
     end
   end
+
+  # A `:read` tool that declares an `:info_class` is gated a SECOND time by
+  # `Fleet.Clearance` — the action-grant said the agent may propose this tool at all;
+  # clearance says whether THIS reader may see THIS target (its ship / its chain,
+  # while on duty). Reads only the runtime-built principal in `ctx`, never the
+  # payload — the model's target descriptors only narrow the request. A deny is a
+  # `grant_violation`, and the allow is recorded as a `read`. Non-read tools and
+  # tools with no info_class skip this (defense-in-depth is additive).
+  defp gate_read(%Tool{effect: :read, info_class: info_class} = tool, proposal, ctx)
+       when not is_nil(info_class) do
+    principal = ctx[:principal] || Fleet.Principal.admiral()
+    target_ship = Map.get(proposal.args, "ship_id") || ctx[:ship_id]
+    # Only an agent-mind read self-targets by default (reading your OWN mind); a
+    # ship-wide read (system_status) has no agent target, so it must NOT trip the
+    # self-read short-circuit (which would bypass the duty/ship gates).
+    target_agent = Map.get(proposal.args, "agent_id") || self_agent_for(info_class, ctx)
+    read_opts = [target_agent_id: target_agent]
+
+    case Fleet.Clearance.can_read?(principal, info_class, target_ship, read_opts) do
+      :allow ->
+        audit(ctx, :read, %{tool: tool.name, info_class: info_class, target_ship_id: target_ship})
+        run(tool, proposal, ctx)
+
+      {:deny, reason} ->
+        audit(ctx, :grant_violation, %{tool: tool.name, reason: "clearance: #{inspect(reason)}"})
+        Logger.warning("Fleet.Dispatcher: CLEARANCE DENIED #{tool.name} (#{info_class}) — #{inspect(reason)}")
+        {:refused, {:clearance, reason}}
+    end
+  end
+
+  defp gate_read(%Tool{} = tool, proposal, ctx), do: run(tool, proposal, ctx)
+
+  # An agent-mind read defaults to the caller's own mind (self-read); every other
+  # class has no implicit agent target.
+  defp self_agent_for(:agent_mind, ctx), do: ctx[:agent_id]
+  defp self_agent_for(_, _), do: nil
 
   defp run(%Tool{} = tool, %Proposal{} = proposal, ctx) do
     case tool.handler.(proposal.args, ctx) do
