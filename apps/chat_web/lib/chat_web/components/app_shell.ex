@@ -21,15 +21,24 @@ defmodule ChatWeb.AppShell do
   def app_shell(assigns) do
     ~H"""
     <div class="flex flex-col h-screen bg-base-200">
-      <!-- Fleet top bar -->
-      <header class="flex items-center gap-3 px-4 py-2 bg-base-100 border-b border-base-300 shrink-0">
-        <div class="flex items-center gap-1.5 font-semibold shrink-0">
-          <.icon name="hero-rocket-launch" class="size-5 text-primary" />
+      <!-- Command bar -->
+      <header class="flex items-center gap-4 h-12 px-5 bg-base-100/95 backdrop-blur border-b border-base-300 shrink-0">
+        <!-- Ship identity -->
+        <div class="flex items-center gap-2.5 shrink-0">
+          <div class="grid place-items-center size-7 rounded-md bg-primary/10 text-primary ring-1 ring-primary/20">
+            <.icon name="hero-rocket-launch" class="size-4" />
+          </div>
+          <div class="leading-none hidden sm:block">
+            <div class="text-sm font-semibold tracking-[0.18em] uppercase">{ship_name()}</div>
+            <div class="text-[10px] text-base-content/40 tracking-[0.2em] uppercase">Command Net</div>
+          </div>
         </div>
 
-    <!-- Nav: the two views of this Fleet workbench -->
-        <nav class="flex items-center gap-1 shrink-0 text-sm">
-          <.link navigate="/" class={nav_class(@current_path, ["/", "/fleet"])}>Fleet</.link>
+        <div class="h-6 w-px bg-base-300 shrink-0"></div>
+
+    <!-- Nav -->
+        <nav class="flex items-center gap-5 shrink-0 text-xs font-medium uppercase tracking-wider">
+          <.link navigate="/" class={nav_class(@current_path, ["/", "/fleet"])}>Bridge</.link>
           <.link navigate="/systems" class={nav_class(@current_path, ["/systems"])}>Systems</.link>
         </nav>
 
@@ -43,11 +52,14 @@ defmodule ChatWeb.AppShell do
     <!-- System status -->
         <div class="flex items-center gap-1.5 text-xs shrink-0">
           <%= if @system_ready do %>
-            <span class="flex h-2 w-2 rounded-full bg-success"></span>
-            <span class="text-base-content/60 hidden sm:inline">ready</span>
+            <span class="relative flex size-2">
+              <span class="absolute inline-flex h-full w-full rounded-full bg-success opacity-60 animate-ping"></span>
+              <span class="relative inline-flex size-2 rounded-full bg-success"></span>
+            </span>
+            <span class="text-base-content/50 hidden md:inline uppercase tracking-wider text-[11px]">Nominal</span>
           <% else %>
-            <span class="flex h-2 w-2 rounded-full bg-warning animate-pulse"></span>
-            <span class="text-base-content/60 hidden sm:inline">initializing…</span>
+            <span class="flex size-2 rounded-full bg-warning animate-pulse"></span>
+            <span class="text-base-content/50 hidden md:inline uppercase tracking-wider text-[11px]">Initializing</span>
           <% end %>
         </div>
 
@@ -65,12 +77,15 @@ defmodule ChatWeb.AppShell do
     """
   end
 
+  # Dehyphenated ship id for the wordmark, e.g. "USS-DREAMCOM" -> "USS DREAMCOM".
+  defp ship_name, do: Fleet.Ship.id() |> to_string() |> String.replace("-", " ")
+
   defp nav_class(current, matches) do
-    base = "px-2 py-1 rounded transition-colors"
+    base = "pb-0.5 border-b-2 -mb-px transition-colors"
 
     if current in matches,
-      do: base <> " bg-primary/10 text-primary font-medium",
-      else: base <> " text-base-content/60 hover:text-base-content hover:bg-base-200"
+      do: base <> " border-primary text-primary",
+      else: base <> " border-transparent text-base-content/50 hover:text-base-content"
   end
 
   defp theme_toggle(assigns) do

@@ -63,136 +63,125 @@ defmodule ChatWeb.Admin.FleetLive do
       flash={@flash}
     >
       <:page_header>
-        <div class="flex items-center gap-3 flex-wrap">
-          <.icon name="hero-rocket-launch" class="size-6 text-primary" />
-          <h1 class="text-xl font-bold">Fleet — Admiral's Console</h1>
-          <span class="badge badge-neutral">{length(@roster)} crew</span>
+        <div class="flex justify-end">
           <.generation_chip generation={@generation} />
         </div>
       </:page_header>
 
-      <div class="p-4 sm:p-6 space-y-6">
-        <!-- Stat bar -->
-        <div class="stats stats-horizontal shadow bg-base-100 w-full overflow-x-auto">
-          <div class="stat">
-            <div class="stat-figure text-primary"><.icon name="hero-users" class="size-6" /></div>
-            <div class="stat-title">Crew</div>
-            <div class="stat-value text-primary">{length(@roster)}</div>
+      <div class="p-5 sm:p-6 space-y-6 max-w-7xl mx-auto w-full">
+        <!-- Bridge header -->
+        <header class="flex flex-wrap items-end justify-between gap-4 border-b border-base-300 pb-5">
+          <div>
+            <div class="text-[11px] uppercase tracking-[0.2em] text-primary/70 font-medium mb-1.5">Admiral's Console</div>
+            <h1 class="text-2xl font-semibold tracking-tight">The Bridge</h1>
+            <p class="text-sm text-base-content/60 mt-2">{status_line(@roster, @systems)}</p>
           </div>
-          <div class="stat">
-            <div class="stat-figure text-success"><.icon name="hero-shield-check" class="size-6" /></div>
-            <div class="stat-title">Active / Relieved</div>
-            <div class="stat-value text-success">{count(@roster, &(&1.duty == :active))}</div>
-            <div class="stat-desc">{count(@roster, &(&1.duty == :relieved))} relieved</div>
+          <div class="flex items-center gap-2">
+            <span :if={recent_dissent_count(@feed) > 0}
+                  class="inline-flex items-center gap-1.5 rounded-full border border-warning/30 bg-warning/10 text-warning px-3 py-1.5 text-sm">
+              <.icon name="hero-hand-raised" class="size-4" />
+              {recent_dissent_count(@feed)} recent dissent{if recent_dissent_count(@feed) == 1, do: "", else: "s"}
+            </span>
+            <.link navigate="/systems"
+                   class={["inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors hover:bg-base-200/60", systems_pill_class(@systems)]}>
+              <.icon name="hero-cpu-chip" class="size-4" />
+              <span class="font-medium">Systems</span>
+              <span class="tabular-nums">{@systems[:health_score] || "—"}<span :if={@systems[:health_score]}>%</span></span>
+            </.link>
           </div>
-          <div class="stat">
-            <div class="stat-figure"><.icon name="hero-bolt" class="size-6 text-info" /></div>
-            <div class="stat-title">Working</div>
-            <div class="stat-value">{count(@roster, & &1.working)}</div>
-          </div>
-          <div class="stat">
-            <div class="stat-figure text-warning"><.icon name="hero-hand-raised" class="size-6" /></div>
-            <div class="stat-title">Dissents (recent)</div>
-            <div class="stat-value text-warning">{recent_dissent_count(@feed)}</div>
-            <div class="stat-desc">last {length(@feed)} events</div>
-          </div>
-          <.link navigate="/systems" class="stat hover:bg-base-200 transition-colors">
-            <div class="stat-figure"><.icon name="hero-cpu-chip" class="size-6 text-primary" /></div>
-            <div class="stat-title">Systems</div>
-            <div class={["stat-value", systems_color(@systems)]}>{@systems[:health_score] || "—"}<span :if={@systems[:health_score]} class="text-lg">%</span></div>
-            <div class="stat-desc">{@systems[:services_up]}/{@systems[:services_total]} services · black box →</div>
-          </.link>
-        </div>
+        </header>
 
         <!-- Command panel -->
         <div class="card bg-base-100 shadow">
           <div class="card-body p-4">
-            <div role="tablist" class="tabs tabs-boxed w-fit">
-              <a role="tab" phx-click="command_tab" phx-value-tab="commission"
-                 class={["tab gap-1", @command_tab == :commission && "tab-active"]}>
-                <.icon name="hero-user-plus" class="size-4" /> Commission
-              </a>
-              <a role="tab" phx-click="command_tab" phx-value-tab="order"
-                 class={["tab gap-1", @command_tab == :order && "tab-active"]}>
-                <.icon name="hero-document-text" class="size-4" /> Issue order
-              </a>
-              <a role="tab" phx-click="command_tab" phx-value-tab="assign_co"
-                 class={["tab gap-1", @command_tab == :assign_co && "tab-active"]}>
-                <.icon name="hero-share" class="size-4" /> Assign CO
-              </a>
-              <a role="tab" phx-click="command_tab" phx-value-tab="models"
-                 class={["tab gap-1", @command_tab == :models && "tab-active"]}>
-                <.icon name="hero-cpu-chip" class="size-4" /> Models
-              </a>
+            <div class="flex items-center gap-1 border-b border-base-300 -mx-4 px-4 mb-4">
+              <.cmd_tab tab="commission" active={@command_tab} icon="hero-user-plus" label="Commission" />
+              <.cmd_tab tab="order" active={@command_tab} icon="hero-flag" label="Orders" />
+              <.cmd_tab tab="assign_co" active={@command_tab} icon="hero-share" label="Chain" />
+              <.cmd_tab tab="models" active={@command_tab} icon="hero-cpu-chip" label="Minds" />
             </div>
 
-            <div :if={@command_tab == :commission} class="pt-3 max-w-md">
-              <form phx-submit="commission" class="space-y-2">
-                <select name="soul_id" phx-change="pick" class="select select-sm select-bordered w-full" required>
-                  <option value="" disabled selected={is_nil(@picks["soul_id"])}>choose a soul…</option>
+            <form :if={@command_tab == :commission} phx-submit="commission" class="max-w-lg space-y-4">
+              <p class="text-sm text-base-content/60">Bring a soul aboard as a commissioned officer.</p>
+              <div>
+                <.field_label>Officer</.field_label>
+                <select name="soul_id" phx-change="pick" class="select select-bordered w-full" required>
+                  <option value="" disabled selected={is_nil(@picks["soul_id"])}>Select a soul to commission…</option>
                   <option :for={sid <- @souls} value={sid} selected={sid == @picks["soul_id"]}>{sid}</option>
                 </select>
-                <p :if={@souls == []} class="text-xs text-warning">
-                  No souls found in <code>{@souls_dir}</code>. Add a soul file (e.g. <code>souls/ensign-jj7.json</code>) and refresh.
+                <p :if={@souls == []} class="text-xs text-warning mt-1.5">
+                  No souls found in <code class="text-[11px]">{@souls_dir}</code>. Add one (e.g. <code>souls/ensign-jj7.json</code>) and refresh.
                 </p>
-                <input
-                  name="commission_agent_id"
-                  value={@picks["commission_agent_id"]}
-                  phx-change="pick"
-                  class="input input-sm input-bordered w-full"
-                  placeholder={@picks["soul_id"] || "agent id (optional)"}
-                  autocomplete="off"
-                />
-                <p class="text-xs text-base-content/50">
-                  Optional. Leave blank to use the soul's own id
-                  (<code>{@picks["soul_id"] || "…"}</code>) — re-commissioning that same id resumes the
-                  existing crew member rather than creating a new one. Set a distinct id here to stand up a
-                  <em>second</em> instance of this soul (e.g. two ensigns both playing "{@picks["soul_id"] || "a soul"}").
-                </p>
-                <select name="rank" phx-change="pick" class="select select-sm select-bordered w-full">
-                  <option :for={{key, meta} <- @billets} value={key} selected={to_string(key) == picked_rank(@picks)}>
-                    {meta.label}
-                  </option>
+              </div>
+              <div>
+                <.field_label>Posting</.field_label>
+                <select name="rank" phx-change="pick" class="select select-bordered w-full">
+                  <option :for={{key, meta} <- @billets} value={key} selected={to_string(key) == picked_rank(@picks)}>{meta.label}</option>
                 </select>
-                <p class="text-xs text-base-content/60">{Fleet.Rank.describe(picked_rank(@picks))}</p>
-                <p class="text-xs">
-                  <span class="text-base-content/50">Standing authorities:</span>
+                <p class="text-xs text-base-content/60 mt-1.5">{Fleet.Rank.describe(picked_rank(@picks))}</p>
+                <div class="mt-2 flex flex-wrap items-center gap-1.5">
                   <%= case Fleet.Rank.standing_authorities(picked_rank(@picks)) do %>
-                    <% [] -> %><span class="text-base-content/40">none (cognition is order-conferred)</span>
-                    <% auths -> %><span :for={a <- auths} class="badge badge-ghost badge-xs ml-1">{fmt_grant(a)}</span>
+                    <% [] -> %>
+                      <span class="text-xs text-base-content/40">No standing authority — each order confers what its task needs.</span>
+                    <% auths -> %>
+                      <span class="text-[11px] uppercase tracking-wider text-base-content/40">Confers</span>
+                      <span :for={a <- auths} class="badge badge-ghost badge-sm">{fmt_grant(a)}</span>
                   <% end %>
-                </p>
-                <button class="btn btn-primary btn-sm">Commission</button>
-              </form>
-            </div>
+                </div>
+              </div>
+              <details class="group">
+                <summary class="inline-flex items-center gap-1 text-xs text-base-content/50 hover:text-base-content cursor-pointer select-none">
+                  <.icon name="hero-chevron-right" class="size-3 group-open:rotate-90 transition-transform" /> Callsign (optional)
+                </summary>
+                <div class="mt-2 pl-4 space-y-1.5">
+                  <input name="commission_agent_id" value={@picks["commission_agent_id"]} phx-change="pick"
+                         class="input input-sm input-bordered w-full"
+                         placeholder={"defaults to " <> (@picks["soul_id"] || "the soul's id")} autocomplete="off" />
+                  <p class="text-xs text-base-content/50">
+                    Blank resumes the officer under the soul's own id. A distinct id stands up a second, independent officer from the same soul.
+                  </p>
+                </div>
+              </details>
+              <button class="btn btn-primary"><.icon name="hero-user-plus" class="size-4" /> Commission officer</button>
+            </form>
 
-            <div :if={@command_tab == :order} class="pt-3 max-w-md">
-              <form phx-submit="issue_order" class="space-y-2">
-                <select name="agent_id" phx-change="pick" class="select select-sm select-bordered w-full" required>
-                  <option value="" disabled selected={is_nil(@picks["agent_id"])}>target agent…</option>
+            <form :if={@command_tab == :order} phx-submit="issue_order" class="max-w-lg space-y-4">
+              <p class="text-sm text-base-content/60">Give a standing officer their orders.</p>
+              <div>
+                <.field_label>Officer</.field_label>
+                <select name="agent_id" phx-change="pick" class="select select-bordered w-full" required>
+                  <option value="" disabled selected={is_nil(@picks["agent_id"])}>Who receives the order?</option>
                   <option :for={a <- @roster} value={a.agent_id} selected={a.agent_id == @picks["agent_id"]}>{agent_label(a)}</option>
                 </select>
-                <input name="directive" class="input input-sm input-bordered w-full"
-                       placeholder="directive, e.g. Summarize sector 7 readiness." required />
-                <button class="btn btn-sm btn-outline">Order</button>
-              </form>
-            </div>
+              </div>
+              <div>
+                <.field_label>Orders</.field_label>
+                <input name="directive" class="input input-bordered w-full"
+                       placeholder="e.g. Summarize sector 7 readiness and flag anomalies." required />
+              </div>
+              <button class="btn btn-primary"><.icon name="hero-flag" class="size-4" /> Issue order</button>
+            </form>
 
-            <div :if={@command_tab == :assign_co} class="pt-3 max-w-md">
-              <form phx-submit="assign_co" class="space-y-2">
-                <select name="report_id" phx-change="pick" class="select select-sm select-bordered w-full" required>
-                  <option value="" disabled selected={is_nil(@picks["report_id"])}>report…</option>
+            <form :if={@command_tab == :assign_co} phx-submit="assign_co" class="max-w-lg space-y-4">
+              <p class="text-sm text-base-content/60">Set who answers to whom.</p>
+              <div>
+                <.field_label>Officer</.field_label>
+                <select name="report_id" phx-change="pick" class="select select-bordered w-full" required>
+                  <option value="" disabled selected={is_nil(@picks["report_id"])}>Which officer reports…</option>
                   <option :for={a <- @roster} value={a.agent_id} selected={a.agent_id == @picks["report_id"]}>{agent_label(a)}</option>
                 </select>
-                <select name="co_id" phx-change="pick" class="select select-sm select-bordered w-full" required>
-                  <option value="" disabled selected={is_nil(@picks["co_id"])}>commanding officer…</option>
+              </div>
+              <div>
+                <.field_label>Reports to</.field_label>
+                <select name="co_id" phx-change="pick" class="select select-bordered w-full" required>
+                  <option value="" disabled selected={is_nil(@picks["co_id"])}>…their commanding officer</option>
                   <option :for={a <- @roster} value={a.agent_id} selected={a.agent_id == @picks["co_id"]}>{agent_label(a)}</option>
                 </select>
-                <button class="btn btn-sm btn-outline">Wire chain</button>
-              </form>
-            </div>
+              </div>
+              <button class="btn btn-primary"><.icon name="hero-share" class="size-4" /> Assign</button>
+            </form>
 
-            <div :if={@command_tab == :models} class="pt-3 max-w-xl space-y-3">
+            <div :if={@command_tab == :models} class="max-w-xl space-y-4">
               <div class="flex items-center justify-between">
                 <div class="text-xs text-base-content/60">
                   Generation backend: <span class="font-mono">{@generation.name}</span>
@@ -548,7 +537,41 @@ defmodule ChatWeb.Admin.FleetLive do
 
   # ── Small function components ───────────────────────────────────────────────
 
-  attr(:generation, :map, required: true)
+  attr :tab, :string, required: true
+  attr :active, :atom, required: true
+  attr :icon, :string, required: true
+  attr :label, :string, required: true
+
+  defp cmd_tab(assigns) do
+    assigns = assign(assigns, :is_active, assigns.active == String.to_existing_atom(assigns.tab))
+
+    ~H"""
+    <button
+      type="button"
+      phx-click="command_tab"
+      phx-value-tab={@tab}
+      class={[
+        "flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors",
+        (@is_active && "border-primary text-primary") ||
+          "border-transparent text-base-content/50 hover:text-base-content"
+      ]}
+    >
+      <.icon name={@icon} class="size-4" /> {@label}
+    </button>
+    """
+  end
+
+  slot :inner_block, required: true
+
+  defp field_label(assigns) do
+    ~H"""
+    <label class="block text-[11px] font-medium uppercase tracking-wider text-base-content/50 mb-1.5">
+      {render_slot(@inner_block)}
+    </label>
+    """
+  end
+
+  attr :generation, :map, required: true
 
   defp generation_chip(assigns) do
     ~H"""
@@ -830,6 +853,33 @@ defmodule ChatWeb.Admin.FleetLive do
   defp systems_color(%{health_status: s}) when s in [:degraded, :warning], do: "text-warning"
   defp systems_color(%{health_status: :critical}), do: "text-error"
   defp systems_color(_), do: "text-base-content/40"
+
+  defp systems_pill_class(%{health_status: :healthy}), do: "border-success/30 text-success"
+  defp systems_pill_class(%{health_status: s}) when s in [:degraded, :warning], do: "border-warning/30 text-warning"
+  defp systems_pill_class(%{health_status: :critical}), do: "border-error/30 text-error"
+  defp systems_pill_class(_), do: "border-base-300 text-base-content/60"
+
+  # A human, at-a-glance summary of the crew and the ship — the line under the title.
+  defp status_line(roster, systems) do
+    if roster == [] do
+      "No officers commissioned yet — commission your first below."
+    else
+      n = length(roster)
+      active = count(roster, &(&1.duty == :active))
+      working = count(roster, & &1.working)
+      officers = if n == 1, do: "1 officer", else: "#{n} officers"
+      work = if working > 0, do: " · #{working} at work", else: ""
+
+      sys =
+        case systems[:health_status] do
+          :healthy -> " · all systems nominal"
+          nil -> ""
+          s -> " · systems #{s}"
+        end
+
+      "#{officers} · #{active} on duty#{work}#{sys}"
+    end
+  end
 
   defp load_detail(agent_id) do
     status = safe(fn -> Fleet.status(agent_id) end) || %{}
