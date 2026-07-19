@@ -696,10 +696,22 @@ defmodule Brain do
     ml_config = Application.get_env(:brain, :ml) || Application.get_env(:chat_bot, :ml) || []
 
     {response, processing_method, context} =
-      if ml_config[:enabled] do
-        try_classical_nlp_first(state.persona, input, conversation.memory, opts_with_world)
-      else
-        {simple_fallback_response(state.persona, input), :simple, %{}}
+      cond do
+        ml_config[:enabled] ->
+          try_classical_nlp_first(state.persona, input, conversation.memory, opts_with_world)
+
+        Keyword.get(opts, :require_llm, false) ->
+          # require_llm demands real cognition, but real generation is grounded
+          # in the NLP pipeline's analysis (RealizationPacket needs it) — with
+          # the pipeline disabled there is nothing to generate from. A
+          # configuration conflict, not a transient failure; caught by this
+          # function's own rescue below like every other require_llm failure.
+          raise "Brain.evaluate: require_llm is set but the ML/NLP pipeline is disabled " <>
+                  "(config :brain, :ml, enabled: false) — no analysis exists to ground " <>
+                  "real generation in."
+
+        true ->
+          {simple_fallback_response(state.persona, input), :simple, %{}}
       end
 
     {ouro_messages, response} =
@@ -816,8 +828,16 @@ defmodule Brain do
 
   defp try_classical_nlp_first(persona, input, memory, opts) do
     previous_context = get_previous_context(memory)
+    require_llm = Keyword.get(opts, :require_llm, false)
 
-    if FollowupDetector.is_followup?(input, previous_context) do
+    # handle_followup_message/3 doesn't take opts at all — it has no way to
+    # honor require_llm — and it routes through Generator.generate/3, the
+    # legacy fully-classical pipeline that never touches real generation, plus
+    # raw Synthesizer/SlotDetector template lookups for clarification. Same
+    # rule as every other classical shortcut in this module: require_llm means
+    # every response is real cognition, so this one is skipped entirely and
+    # falls through to the real pipeline via process_new_message/4.
+    if not require_llm and FollowupDetector.is_followup?(input, previous_context) do
       Logger.info("Detected follow-up message", %{
         input: input,
         previous_intent: previous_context[:intent]
@@ -839,7 +859,13 @@ defmodule Brain do
     world_id = Keyword.get(opts, :world_id, "default")
     Process.put(:current_world_id, world_id)
 
-    if Config.enabled?() and SelfKnowledgeAnalyzer.is_self_knowledge_query?(input) do
+    require_llm = Keyword.get(opts, :require_llm, false)
+
+    # Same rule as proceed_with_standard_response/5: require_llm means every
+    # response is real cognition, full stop — the classical epistemic-response
+    # template (Synthesizer.synthesize_self_knowledge_response/2) never runs
+    # for a require_llm caller, even for a self-knowledge query.
+    if Config.enabled?() and not require_llm and SelfKnowledgeAnalyzer.is_self_knowledge_query?(input) do
       Progress.report(opts, :meta_cognitive_query, %{
         query_type: :self_knowledge
       })
@@ -921,6 +947,21 @@ defmodule Brain do
   end
 
   defp proceed_with_standard_response(persona, input, memory, analysis_model, opts) do
+    # require_llm callers (Fleet) get none of the classical-template shortcuts
+    # below — clarification/deferral/cannot-respond text generated without
+    # real cognition is exactly the kind of unaccountable "spoken but not
+    # reasoned" output require_llm exists to rule out. The real pipeline can
+    # produce a clarification-seeking response itself (DiscoursePlanner already
+    # has a clarification primitive) — the shortcut is convenience, not a
+    # capability gap.
+    if Keyword.get(opts, :require_llm, false) do
+      try_nlp_with_analysis(persona, input, memory, analysis_model, opts)
+    else
+      proceed_with_standard_response_classical(persona, input, memory, analysis_model, opts)
+    end
+  end
+
+  defp proceed_with_standard_response_classical(persona, input, memory, analysis_model, opts) do
     case analysis_model.overall_strategy do
       :needs_clarification ->
         prompts = analysis_model.suggested_prompts
@@ -1680,11 +1721,14 @@ defmodule Brain do
     unified_context =
       Brain.Response.ContextBuilder.build(analysis_model, opts)
 
+    require_llm = Keyword.get(opts, :require_llm, false)
+
     gen_opts = %{
       user_id: Keyword.get(opts, :user_id),
       conversation_id: Keyword.get(opts, :conversation_id),
       unified_context: unified_context,
-      dry_run_ouro: Keyword.get(opts, :dry_run_ouro, false)
+      dry_run_ouro: Keyword.get(opts, :dry_run_ouro, false),
+      require_llm: require_llm
     }
 
     case Generator.generate_via_synthesis(analysis_model, intent, entities, query_text, gen_opts) do
@@ -1704,6 +1748,13 @@ defmodule Brain do
       {:error, {:generation_failed, {:backend_unavailable, backend, reason}}}
       when backend != :null ->
         raise Brain.ML.Generation.BackendError, backend: backend, reason: reason
+
+      # require_llm callers (Fleet) get no canned fallback at all — a synthesis
+      # failure under require_llm already means SurfaceRealizer itself raised;
+      # if some other error still reaches here, raise rather than emit
+      # Synthesizer's canned text as if it were the agent's own answer.
+      {:error, reason} when require_llm ->
+        raise Brain.ML.Generation.BackendError, backend: Brain.ML.Generation.name(), reason: reason
 
       {:error, reason} ->
         Logger.warning("Synthesis failed, falling back: #{inspect(reason)}")

@@ -7,7 +7,20 @@ defmodule Brain.Response.SurfaceRealizer do
   iterative latent refinement (4 recurrence passes) fuses the primitives
   into coherent, natural prose.
 
-  If Ouro is not loaded, the system raises -- there is no template fallback.
+  By default, realization is routed per-domain by `ResponseSystemRouter`
+  (`:lattice`/`:ouro`/`:template`, each with a configured fallback) — this is
+  the ordinary chat_web path and legitimately may never touch Ouro for a
+  given domain.
+
+  Callers that require the response to be genuine LLM output — Fleet agents,
+  whose spoken output must be traceable to their own accountable cognition,
+  not silently substituted classical-NLP prose — must pass `require_llm:
+  true`. In that mode, domain routing is bypassed entirely, Ouro is the only
+  system attempted, and ANY non-success outcome (backend unavailable,
+  generation error, malformed output) raises
+  `Brain.ML.Generation.BackendError` instead of falling back to the lattice,
+  template, or synthesizer systems. This is deliberate: an agent must never
+  appear to have spoken when the words did not come from its own reasoning.
   """
 
   alias Brain.Response.{Primitive, DecompressorCollector, OuroRealizer,
@@ -21,33 +34,73 @@ defmodule Brain.Response.SurfaceRealizer do
   Options:
     - `:analysis` - ChunkAnalysis for Ouro realization packet context
     - `:unified_context` - rich context map from ContextBuilder
+    - `:require_llm` - when true, only Ouro/the configured generation backend
+      may produce the response; no lattice/template/synthesizer fallback is
+      attempted, and any failure raises `Brain.ML.Generation.BackendError`
+      rather than substituting non-LLM text. Default `false`.
   """
   def realize(primitives, opts \\ [])
 
   def realize(primitives, opts) when is_list(primitives) do
     analysis = Keyword.get(opts, :analysis)
-    domain = extract_domain(analysis)
 
-    {system, domain_config} = ResponseSystemRouter.route(domain)
+    if Keyword.get(opts, :require_llm, false) do
+      realize_llm_only(primitives, analysis, opts)
+    else
+      domain = extract_domain(analysis)
+      {system, domain_config} = ResponseSystemRouter.route(domain)
 
-    case system do
-      :lattice ->
-        case try_lattice_realization(primitives, analysis, domain_config, opts) do
-          {:ok, _, _} = result -> result
-          _ -> try_synthesizer_fallback(primitives, analysis, opts)
-        end
+      case system do
+        :lattice ->
+          case try_lattice_realization(primitives, analysis, domain_config, opts) do
+            {:ok, _, _} = result -> result
+            _ -> try_synthesizer_fallback(primitives, analysis, opts)
+          end
 
-      :ouro ->
-        try_ouro_or_fallback(primitives, analysis, opts)
+        :ouro ->
+          try_ouro_or_fallback(primitives, analysis, opts)
 
-      :synthesizer ->
-        try_synthesizer_fallback(primitives, analysis, opts)
+        :synthesizer ->
+          try_synthesizer_fallback(primitives, analysis, opts)
 
-      :template ->
-        case try_enriched_fallback(primitives, :template_configured, opts) do
-          {:ok, _, _} = result -> result
-          {:error, _} -> try_synthesizer_fallback(primitives, analysis, opts)
-        end
+        :template ->
+          case try_enriched_fallback(primitives, :template_configured, opts) do
+            {:ok, _, _} = result -> result
+            {:error, _} -> try_synthesizer_fallback(primitives, analysis, opts)
+          end
+      end
+    end
+  end
+
+  # require_llm: true — no domain routing, no fallback cascade. Ouro (or
+  # whatever backend Brain.ML.Generation resolves to) is the only path to a
+  # response; anything else is a loud failure, never a substituted one.
+  defp realize_llm_only(primitives, analysis, opts) do
+    case try_ouro_realization(primitives, analysis, opts) do
+      {:ok, :ouro_dry_run, %{messages: messages}} ->
+        Logger.info("SurfaceRealizer: require_llm dry_run_ouro=true, returning ChatML messages without rendering")
+        {:ok, primitives, {:ouro_dry_run, messages}}
+
+      {:ok, text, _metadata} ->
+        Logger.info("SurfaceRealizer: require_llm realized #{length(primitives)} primitives via Ouro")
+
+        rendered =
+          Enum.map(primitives, fn p ->
+            p |> Primitive.render(text) |> Map.put(:source, :ouro)
+          end)
+
+        collect_plan(primitives, text, opts)
+        collect_pairs(primitives, text)
+        {:ok, rendered, text}
+
+      {:error, {:backend_unavailable, backend, reason}} ->
+        Logger.error("SurfaceRealizer: require_llm set, backend #{inspect(backend)} unavailable — raising, not degrading")
+        raise Brain.ML.Generation.BackendError, backend: backend, reason: reason
+
+      {:error, reason} ->
+        backend = Brain.ML.Generation.name()
+        Logger.error("SurfaceRealizer: require_llm set, Ouro realization failed (#{inspect(reason)}) — raising, no fallback permitted")
+        raise Brain.ML.Generation.BackendError, backend: backend, reason: reason
     end
   end
 

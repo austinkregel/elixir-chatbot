@@ -99,7 +99,13 @@ defmodule Fleet.Appraisal do
     end
   end
 
-  defp run_eval(_order, conv, prompt), do: Brain.evaluate(conv, prompt, [])
+  # require_llm: true — the verdict token (PROCEED / DISSENT: <reason>) must
+  # come from the model actually reasoning against its constitution. The
+  # classical lattice/template/synthesizer systems have no way to produce that
+  # token at all, so without this flag a constrained appraisal could silently
+  # fall through to the ambiguous-verdict default below — indistinguishable
+  # from the model genuinely being asked and declining to answer clearly.
+  defp run_eval(_order, conv, prompt), do: Brain.evaluate(conv, prompt, require_llm: true)
 
   defp verdict_prompt(soul, %Order{} = order) do
     constitution = (soul && Brain.Soul.system_prompt(soul)) || ""
