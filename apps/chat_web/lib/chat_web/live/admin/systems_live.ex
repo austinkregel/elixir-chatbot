@@ -24,7 +24,28 @@ defmodule ChatWeb.Admin.SystemsLive do
     {:ok,
      socket
      |> assign(:page_title, "Systems")
+     |> assign(:query_result, nil)
      |> assign_snapshot()}
+  end
+
+  @impl true
+  # The Admiralty's ad-hoc query — this workbench has no auth, so the human on the
+  # console IS the Admiral (a real auth layer would mint a lower principal here).
+  # Every query is clearance-gated and audited via Fleet.Systems.query/2.
+  def handle_event("query", %{"q" => q}, socket) do
+    q = String.trim(q)
+
+    result =
+      if q == "" do
+        nil
+      else
+        case safe(fn -> Fleet.Systems.query(Fleet.Principal.admiral(), %{system_id: q}) end) do
+          {:ok, %{matches: matches}} -> %{q: q, matches: matches}
+          _ -> %{q: q, matches: []}
+        end
+      end
+
+    {:noreply, assign(socket, :query_result, result)}
   end
 
   @impl true
@@ -84,6 +105,27 @@ defmodule ChatWeb.Admin.SystemsLive do
             <.count_stat label="Subsystems" value={@snap.counts.subsystems} />
           </div>
         </div>
+
+        <!-- Ad-hoc query — ask any system for its current + recent state -->
+        <section class="rounded-lg border border-base-300 bg-base-100 p-3">
+          <form phx-submit="query" class="flex items-center gap-2">
+            <.icon name="hero-magnifying-glass" class="size-4 text-base-content/50" />
+            <input name="q" placeholder="Query a system by id or name (ground truth — clearance-gated, audited)…"
+                   autocomplete="off" class="input input-sm input-bordered flex-1" />
+            <button class="btn btn-sm btn-primary">Query</button>
+          </form>
+          <div :if={@query_result} class="mt-3">
+            <div :if={@query_result.matches == []} class="text-sm text-base-content/50">
+              No live system matches “{@query_result.q}”.
+            </div>
+            <div :for={m <- @query_result.matches} class="flex items-center gap-3 py-1 border-t border-base-200 first:border-0">
+              <span class={["h-2.5 w-2.5 rounded-full shrink-0", dot_class(m.system.status)]}></span>
+              <span class="text-sm font-medium">{m.system.name}</span>
+              <span class="text-xs text-base-content/50">{m.system.deck}/{m.system.section} · {m.system.status}</span>
+              <.sparkline :if={length(m.history) >= 2} points={status_points(m.history)} />
+            </div>
+          </div>
+        </section>
 
         <!-- Layer 0: services -->
         <section>
@@ -205,6 +247,24 @@ defmodule ChatWeb.Admin.SystemsLive do
       "#{Float.round(x, 1)},#{Float.round(y * 1.0, 1)}"
     end)
   end
+
+  # A per-system status ring (newest-first atoms) as a sparkline: up high, down low.
+  defp status_points(history) do
+    vals = history |> Enum.reverse() |> Enum.map(&status_val/1)
+    n = length(vals)
+
+    vals
+    |> Enum.with_index()
+    |> Enum.map_join(" ", fn {v, i} ->
+      x = if n > 1, do: i / (n - 1) * 100, else: 0
+      "#{Float.round(x, 1)},#{Float.round((30 - v * 30) * 1.0, 1)}"
+    end)
+  end
+
+  defp status_val(:up), do: 1.0
+  defp status_val(:degraded), do: 0.5
+  defp status_val(:down), do: 0.0
+  defp status_val(_), do: 0.75
 
   defp dot_class(:up), do: "bg-success"
   defp dot_class(:degraded), do: "bg-warning animate-pulse"

@@ -114,6 +114,59 @@ defmodule Fleet.Systems do
   @doc "A live system's recent status ring (newest first) — for a per-system sparkline."
   def history(system_id), do: Fleet.Systems.Sampler.history(system_id)
 
+  # ── Ad-hoc query (the Admiralty's black-box query façade) ──────────────────
+
+  @doc """
+  Answer a reader's ad-hoc query about the ship's systems — the ground-truth
+  interface the human Admiralty (and, later, cleared crew) use to ask *any* system
+  for its current + recent state. Every query is gated by `Fleet.Clearance` and
+  recorded as a `query` in the black box (allowed AND denied), so an over-reach is
+  itself on the record. The console never touches the data except through here.
+
+  `params`: `%{info_class: :system_status, system_id: id | nil, ship_id: id | nil}`.
+  Returns `{:ok, result}` or `{:deny, reason}`.
+  """
+  def query(%Fleet.Principal{} = principal, params) do
+    info_class = Map.get(params, :info_class, :system_status)
+    ship_id = Map.get(params, :ship_id) || Fleet.Ship.id()
+    system_id = Map.get(params, :system_id)
+
+    case Fleet.Clearance.can_read?(principal, info_class, ship_id, target_agent_id: nil) do
+      :allow ->
+        audit_query(principal, info_class, ship_id, system_id, "allow")
+        {:ok, query_result(info_class, system_id)}
+
+      {:deny, reason} ->
+        audit_query(principal, info_class, ship_id, system_id, "deny")
+        {:deny, reason}
+    end
+  end
+
+  defp query_result(:system_status, nil), do: %{scope: :ship, snapshot: cached_snapshot()}
+
+  defp query_result(:system_status, system_id) do
+    matches =
+      (services() ++ processes())
+      |> Enum.filter(&(&1.id == system_id or String.contains?(String.downcase(&1.name), String.downcase(system_id))))
+      |> Enum.map(fn s -> %{system: s, history: history(s.id)} end)
+
+    %{scope: :system, query: system_id, matches: matches}
+  end
+
+  defp query_result(info_class, _), do: %{scope: info_class, note: "no reader for this class yet"}
+
+  defp audit_query(principal, info_class, ship_id, system_id, verdict) do
+    Fleet.Audit.record(:query, %{
+      from_agent: principal_string(principal),
+      verdict: verdict,
+      payload: %{info_class: to_string(info_class), system_id: system_id, target_ship_id: ship_id}
+    })
+  end
+
+  defp principal_string(%Fleet.Principal{kind: :admiral}), do: "admiral"
+  defp principal_string(%Fleet.Principal{id: id}) when is_binary(id), do: id
+  defp principal_string(_), do: "unknown"
+
   # ── Layer 0: external services ─────────────────────────────────────────────
 
   def services do
