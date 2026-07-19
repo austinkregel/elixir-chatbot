@@ -11,11 +11,15 @@ defmodule ChatWeb.Admin.SystemsLive do
   use ChatWeb, :live_view
   import ChatWeb.AppShell
 
-  @refresh_ms 3000
+  # A slow fallback; the primary update path is the sampler's PubSub push.
+  @refresh_ms 10_000
 
   @impl true
   def mount(_params, _session, socket) do
-    if connected?(socket), do: :timer.send_interval(@refresh_ms, self(), :refresh)
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Brain.PubSub, Fleet.Systems.Sampler.topic())
+      :timer.send_interval(@refresh_ms, self(), :refresh)
+    end
 
     {:ok,
      socket
@@ -24,12 +28,21 @@ defmodule ChatWeb.Admin.SystemsLive do
   end
 
   @impl true
+  # Live push from the black-box sampler.
+  def handle_info({:systems_snapshot, snap}, socket) do
+    {:noreply, socket |> assign(:snap, snap) |> assign(:trend, safe(fn -> Fleet.Systems.health_history() end) || [])}
+  end
+
   def handle_info(:refresh, socket), do: {:noreply, assign_snapshot(socket)}
   def handle_info(_msg, socket), do: {:noreply, socket}
 
+  # Cheap: reads the sampler's last snapshot (a lock-free ETS read), not a live probe.
   defp assign_snapshot(socket) do
-    snap = safe(fn -> Fleet.Systems.snapshot() end) || %{}
-    assign(socket, :snap, snap)
+    snap = safe(fn -> Fleet.Systems.cached_snapshot() end) || %{}
+
+    socket
+    |> assign(:snap, snap)
+    |> assign(:trend, safe(fn -> Fleet.Systems.health_history() end) || [])
   end
 
   @impl true
@@ -58,6 +71,10 @@ defmodule ChatWeb.Admin.SystemsLive do
           <div class={["radial-progress", health_color(@snap.health[:health_status])]}
                style={"--value:#{@snap.health[:health_score] || 0}; --size:5rem;"} role="progressbar">
             {@snap.health[:health_score]}%
+          </div>
+          <div :if={length(@trend) >= 2} class="flex flex-col gap-0.5">
+            <span class="text-[10px] text-base-content/40 uppercase tracking-wide">health trend</span>
+            <.sparkline points={spark_points(@trend)} />
           </div>
           <div class="stats stats-horizontal shadow bg-base-100">
             <.count_stat label="Systems" value={@snap.counts.total} />
@@ -132,6 +149,16 @@ defmodule ChatWeb.Admin.SystemsLive do
     """
   end
 
+  attr :points, :string, required: true
+
+  defp sparkline(assigns) do
+    ~H"""
+    <svg viewBox="0 0 100 30" class="w-32 h-8 text-primary" preserveAspectRatio="none">
+      <polyline fill="none" stroke="currentColor" stroke-width="1.5" points={@points} />
+    </svg>
+    """
+  end
+
   attr :sys, :map, required: true
 
   defp cell(assigns) do
@@ -163,6 +190,20 @@ defmodule ChatWeb.Admin.SystemsLive do
       {deck, sections}
     end)
     |> Enum.sort_by(fn {_, secs} -> -Enum.reduce(secs, 0, fn {_, n}, a -> a + n end) end)
+  end
+
+  # `trend` is newest-first `[{ts, score}]`; render oldest→newest across x=0..100.
+  defp spark_points(trend) do
+    scores = trend |> Enum.map(fn {_ts, score} -> score end) |> Enum.reverse()
+    n = length(scores)
+
+    scores
+    |> Enum.with_index()
+    |> Enum.map_join(" ", fn {score, i} ->
+      x = if n > 1, do: i / (n - 1) * 100, else: 0
+      y = 30 - score / 100 * 30
+      "#{Float.round(x, 1)},#{Float.round(y * 1.0, 1)}"
+    end)
   end
 
   defp dot_class(:up), do: "bg-success"

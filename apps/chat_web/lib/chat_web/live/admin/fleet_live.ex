@@ -48,6 +48,7 @@ defmodule ChatWeb.Admin.FleetLive do
      |> assign(:generation, load_generation_status())
      |> assign(:models, load_models())
      |> assign(:model_pull_pending, nil)
+     |> assign(:systems, systems_health())
      |> assign_roster()}
   end
 
@@ -95,6 +96,12 @@ defmodule ChatWeb.Admin.FleetLive do
             <div class="stat-value text-warning">{recent_dissent_count(@feed)}</div>
             <div class="stat-desc">last {length(@feed)} events</div>
           </div>
+          <.link navigate="/systems" class="stat hover:bg-base-200 transition-colors">
+            <div class="stat-figure"><.icon name="hero-cpu-chip" class="size-6 text-primary" /></div>
+            <div class="stat-title">Systems</div>
+            <div class={["stat-value", systems_color(@systems)]}>{@systems[:health_score] || "—"}<span :if={@systems[:health_score]} class="text-lg">%</span></div>
+            <div class="stat-desc">{@systems[:services_up]}/{@systems[:services_total]} services · black box →</div>
+          </.link>
         </div>
 
         <!-- Command panel -->
@@ -741,6 +748,7 @@ defmodule ChatWeb.Admin.FleetLive do
      socket
      |> assign(:generation, load_generation_status())
      |> assign(:hail_log, load_hail_log())
+     |> assign(:systems, systems_health())
      |> assign_roster()}
   end
 
@@ -808,6 +816,20 @@ defmodule ChatWeb.Admin.FleetLive do
       ready: safe(fn -> Brain.ML.Generation.ready?() end) || false
     }
   end
+
+  # Cheap: the black-box sampler's last snapshot health (a lock-free ETS read), nil
+  # until the first sample — never probes ~51 GenServers from the console.
+  defp systems_health do
+    case safe(fn -> Fleet.Systems.Sampler.latest() end) do
+      %{health: h} when is_map(h) -> h
+      _ -> %{}
+    end
+  end
+
+  defp systems_color(%{health_status: :healthy}), do: "text-success"
+  defp systems_color(%{health_status: s}) when s in [:degraded, :warning], do: "text-warning"
+  defp systems_color(%{health_status: :critical}), do: "text-error"
+  defp systems_color(_), do: "text-base-content/40"
 
   defp load_detail(agent_id) do
     status = safe(fn -> Fleet.status(agent_id) end) || %{}
