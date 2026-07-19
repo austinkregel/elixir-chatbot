@@ -62,6 +62,23 @@ defmodule Fleet.Rank do
   @doc "All billets as an ordered `{key, meta}` keyword list (for a UI selector)."
   def all, do: @billets
 
+  # Seniority order (the @billets order), most-junior first. `:admiral` sits above
+  # every billet; an unknown billet sorts below every billet.
+  @order @billets |> Enum.map(fn {k, _} -> k end)
+
+  @doc """
+  Seniority index of a billet — higher is more senior. Used by `Fleet.Clearance` for
+  the billet-floor rule. `:admiral` is above all billets; an unknown billet is below.
+  """
+  @spec seniority(atom()) :: integer()
+  def seniority(:admiral), do: length(@order)
+  def seniority(billet) when is_atom(billet), do: Enum.find_index(@order, &(&1 == billet)) || -1
+  def seniority(_), do: -1
+
+  @doc "Is `billet` at least as senior as `floor`?"
+  @spec at_least?(atom(), atom()) :: boolean()
+  def at_least?(billet, floor), do: seniority(billet) >= seniority(floor)
+
   @doc "Is `rank` a known billet key?"
   def known?(rank) when is_atom(rank), do: Keyword.has_key?(@billets, rank)
   def known?(_), do: false

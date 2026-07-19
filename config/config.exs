@@ -208,6 +208,11 @@ config :exla,
 config :atlas,
   ecto_repos: [Atlas.Repo]
 
+# The identity of THIS ship — one instance of the umbrella. Every locally
+# commissioned agent is posted here by default, and every audit/black-box record is
+# stamped with it (see Fleet.Ship). Override per instance for a fleet-of-ships.
+config :fleet, ship_id: System.get_env("SHIP_ID", "USS-DREAMCOM")
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"
