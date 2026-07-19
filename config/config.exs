@@ -80,9 +80,11 @@ config :brain, :generation,
     # remote Ouro, vLLM, OpenAI). The local Ouro sidecar is itself OpenAI-compatible
     # on :8100, so `OPENAI_BASE_URL=http://localhost:8100/v1` reuses it with no launch.
     base_url: System.get_env("OPENAI_BASE_URL", "http://localhost:11434/v1"),
-    # A model the local Ollama actually serves. Override per instance; a Fleet can
-    # point every agent at one small shared model (e.g. gemma4:e2b) to stay light.
-    model: System.get_env("OPENAI_MODEL", "llama3.1:8b"),
+    # A model the local Ollama actually serves — and one that treats the soul as
+    # load-bearing (honors the constitution's hardcoded bounds, not as flavor). The
+    # llama3 family was rejected in testing for NOT doing this; qwen3.6:35b passed.
+    # Override per instance via OPENAI_MODEL or the console's model tab.
+    model: System.get_env("OPENAI_MODEL", "qwen3.6:35b"),
     api_key: System.get_env("OPENAI_API_KEY"),
     timeout: System.get_env("GENERATION_TIMEOUT", "120000") |> String.to_integer()
   ]
