@@ -248,28 +248,31 @@ like Tier 1 got before anyone writes code against them.
 
 A few stubs from the audit aren't really Rule 2/8 violations to solve with a
 trained model or an existing signal — they're either straightforward bugs or
-dead legacy code better deleted than fixed:
+dead legacy code better deleted than fixed.
 
-- **`Brain.ML.Gazetteer`'s broken `:table_prefix` isolation** — a direct,
-  already-correct template exists in the same codebase:
-  `Brain.ML.Lexicon` implements per-instance table isolation correctly. Copy
-  that pattern (use `state.tables` consistently) rather than inventing
-  anything.
-- **The `persist/0` no-op cluster** (`BeliefStore`, `UserModelStore`,
-  `SourceReliability`, `Memory.Store`) — `SourceAuthority.persist/0` is the
-  already-correct template (genuinely persists via
-  `persist_learned_data/1`). Recommend either deleting the four no-ops
-  (since write-through already happens on every mutation) or replacing their
-  bodies with the `SourceAuthority` pattern if an explicit flush is actually
-  wanted for some operational reason.
-- **`KnowledgeGraph.Embedder.build_embedding_model/1`** — dead and broken;
-  its only real consumer already bypasses it for the correctly-truncated
-  `build_extraction_model/2`. Recommend deleting the broken function rather
-  than fixing it.
-- **`Trainer.train_svm_classifier/2` and `Trainer.save_models/2`** — legacy
-  scaffolding that doesn't do what its name/doc claims and has no production
-  caller. Recommend deletion; the real training path already goes through
-  `SimpleClassifier.train/1` and `Trainer.train_and_save/1`.
+> **Deletions done 2026-07-20** (commits `69a9116`, `d505b55`, `df44331`).
+> Each was re-verified as caller-free before removal; only the `Gazetteer`
+> `:table_prefix` *fix* remains open (it's a repair, not a deletion).
+
+- **`Brain.ML.Gazetteer`'s broken `:table_prefix` isolation** — *(still open —
+  a fix, not a deletion.)* A direct, already-correct template exists in the same
+  codebase: `Brain.ML.Lexicon` implements per-instance table isolation
+  correctly. Copy that pattern (use `state.tables` consistently) rather than
+  inventing anything.
+- **DONE — the `persist/0` no-op cluster** (`df44331`): removed the no-op
+  `persist/0` + its `handle_call(:persist, …)` handler from `BeliefStore`,
+  `SourceReliability`, and `Memory.Store` (no callers; write-through already
+  happens on mutation). `SourceAuthority.persist/0` remains as the genuine
+  flush template. (The audit's `UserModelStore` entry was stale — no such
+  module exists.)
+- **DONE — `KnowledgeGraph.Embedder.build_embedding_model/1`** (`69a9116`):
+  deleted the broken function and its sole (also caller-free) consumer
+  `extract_embeddings/4` + the orphaned `ensure_model_state/1`. The real path
+  (`build_extraction_model/2` + `encode_entity/4`) is untouched.
+- **DONE — `Trainer.train_svm_classifier/2` and `Trainer.save_models/2`**
+  (`d505b55`): deleted both (no production caller), their orphaned private
+  helpers, and their tests. The real training path stays
+  `SimpleClassifier.train/1` + `Trainer.train_and_save/1`.
 
 ---
 
