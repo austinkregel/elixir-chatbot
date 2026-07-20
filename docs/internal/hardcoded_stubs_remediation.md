@@ -18,6 +18,12 @@ anyone starts implementing.
 
 ---
 
+> **Implemented 2026-07-19.** All eight Tier 1 items are done (commits
+> `f64afe8` items 1/2/5, `60fc430` items 4/6/7, `a1bed48` item 3, `99d1b28`
+> item 8). Each was re-verified against the current code before the change;
+> item 8 got the extra line-level pass the doc asked for. Tier 2, the Not-a-
+> data-driven-problem fixes, and the deletions remain open.
+
 ## Tier 1 — Verified: real signal already exists, this is plumbing, not new ML
 
 These four all have the same shape: the codebase already computes the real
