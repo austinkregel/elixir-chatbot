@@ -104,11 +104,10 @@ defmodule Brain.ML.Trainer do
     end
   end
 
-  defp build_idf_weights_from_model(model) do
-    model.vocabulary
-    |> Enum.map(fn {word, _idx} -> {word, 1.0} end)
-    |> Map.new()
-  end
+  # Use the real per-word IDF weights SimpleClassifier.train/1 already computed
+  # over the same training corpus (keyed by the same vocabulary), instead of
+  # substituting a constant 1.0 for every term and throwing the real signal away.
+  defp build_idf_weights_from_model(model), do: model.idf_weights
 
   @doc """
   Train the sentiment classifier from gold standard data.
