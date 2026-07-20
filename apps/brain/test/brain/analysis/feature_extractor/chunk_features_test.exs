@@ -54,6 +54,34 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
       EnrichmentFeatures.speech_act_wh_interaction_dimension()
   end
 
+  describe "group_offsets/0 — the feature-vector offset source of truth" do
+    test "offsets are contiguous and sum to vector_dimension/0" do
+      offs = ChunkFeatures.group_offsets()
+
+      # every group ends exactly where the next begins, starting at 0
+      sorted = offs |> Map.values() |> Enum.sort_by(fn {o, _l} -> o end)
+      assert {0, _} = hd(sorted)
+
+      Enum.reduce(sorted, 0, fn {offset, len}, expected_start ->
+        assert offset == expected_start
+        offset + len
+      end)
+
+      max_end = sorted |> Enum.map(fn {o, l} -> o + l end) |> Enum.max()
+      assert max_end == ChunkFeatures.vector_dimension()
+    end
+
+    test "sentiment and lexical/srl groups report the offsets consumers rely on" do
+      offs = ChunkFeatures.group_offsets()
+      # regression guard: FramingDetector previously hardcoded sentiment at 65
+      assert {73, 5} = offs[:sentiment]
+      assert {90, _} = offs[:lexical]
+      # :srl layout = [frame_count | role_flags(@srl_roles) | coverage]
+      assert {_, 10} = offs[:srl]
+      assert [:agent, :patient | _] = ChunkFeatures.srl_roles()
+    end
+  end
+
   describe "extract/2 with a real %ChunkAnalysis{} struct" do
     test "does not raise when reading struct fields (Bug 1: bracket access on struct)" do
       analysis = %ChunkAnalysis{

@@ -225,6 +225,59 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
       EnrichmentFeatures.entity_type_semantics_dimension()
   end
 
+  @doc """
+  Canonical offset map of the feature vector: `%{group => {offset, length}}`.
+
+  Computed from the SAME ordered group widths as `vector_dimension/0`, so any
+  consumer that needs to slice a specific group out of a (mean/aggregate) vector
+  reads its position from one source of truth instead of hardcoding a literal
+  offset that silently drifts when a group's width changes (e.g. group 10 grows
+  with `Lexicon.domain_atoms/0`).
+
+  Notable sub-layouts:
+    * `:lexical` (group 10) — one dim per `Lexicon.domain_atoms/0`, same order.
+    * `:srl` (group 12) — `[frame_count] ++ role_flags ++ [coverage]`, where the
+      role flags follow `@srl_roles` order (`:agent` at offset+1, `:patient` at
+      offset+2).
+  """
+  @spec group_offsets() :: %{atom() => {non_neg_integer(), non_neg_integer()}}
+  def group_offsets do
+    [
+      surface: 12,
+      pos: 16,
+      syntactic: 10,
+      pronoun: 8,
+      modality: 8,
+      speech_act: length(@speech_act_categories) + length(@question_subtypes) + 2,
+      discourse: length(@addressee_values) + 4,
+      sentiment: 5,
+      entity: 2 + length(@entity_types) + 2,
+      lexical: length(Lexicon.domain_atoms()),
+      word_meaning: 6,
+      srl: 1 + length(@srl_roles) + 1,
+      memory: 6,
+      slot: 6,
+      wh: EnrichmentFeatures.wh_dimension(),
+      time_typology: EnrichmentFeatures.time_typology_dimension(),
+      verb_supersense: EnrichmentFeatures.verb_supersense_dimension(),
+      noun_supersense: EnrichmentFeatures.noun_supersense_dimension(),
+      adj_supersense: EnrichmentFeatures.adj_adv_supersense_dimension(),
+      conceptnet: EnrichmentFeatures.conceptnet_edge_dimension(),
+      selectional: EnrichmentFeatures.selectional_preferences_dimension(),
+      subcat: EnrichmentFeatures.subcategorization_frame_dimension(),
+      discourse_markers: EnrichmentFeatures.discourse_markers_dimension(),
+      speech_act_wh: EnrichmentFeatures.speech_act_wh_interaction_dimension(),
+      entity_type_semantics: EnrichmentFeatures.entity_type_semantics_dimension()
+    ]
+    |> Enum.reduce({%{}, 0}, fn {key, len}, {acc, offset} ->
+      {Map.put(acc, key, {offset, len}), offset + len}
+    end)
+    |> elem(0)
+  end
+
+  @doc "The `@srl_roles` order (index within the `:srl` group's role-flag slice)."
+  def srl_roles, do: @srl_roles
+
   # -- Group 1: Surface/lexical (~12 dims) ------------------------------------
 
   defp surface_lexical(tokens, word_feats) do
