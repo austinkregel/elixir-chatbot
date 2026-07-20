@@ -411,4 +411,23 @@ defmodule Brain.ML.GazetteerTest do
       assert Map.get(primary, :entity_type) == "location"
     end
   end
+
+  describe "table_prefix isolation" do
+    test "an isolated instance reads and writes only its own tables" do
+      name = :"gaz_iso_#{System.unique_integer([:positive])}"
+      {:ok, pid} = Gazetteer.start_link(name: name, table_prefix: name)
+      on_exit(fn -> if Process.alive?(pid), do: GenServer.stop(pid) end)
+
+      # A unique entry the global instance won't have.
+      key = "Zzyzxville#{System.unique_integer([:positive])}"
+      GenServer.call(name, {:add_entry, key, "location", %{confidence: 0.9}})
+
+      # Read via the isolated server → found; global default → not found.
+      assert {:ok, _} = Gazetteer.lookup(key, name)
+      assert Gazetteer.lookup(key) == :not_found
+      assert {true, _} = Gazetteer.exists?(key, name)
+      assert [{0, 0, _}] = Gazetteer.lookup_spans([key], server: name)
+      assert Gazetteer.lookup_spans([key]) == []
+    end
+  end
 end

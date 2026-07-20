@@ -24,12 +24,6 @@ defmodule Brain.ML.Gazetteer do
   @default_stats_table :gazetteer_stats
   @default_world_overlay_table :gazetteer_world_overlays
 
-  # Module attribute aliases for backward compatibility with direct ETS access
-  @table_name @default_table_name
-  @prefix_table @default_prefix_table
-  @stats_table @default_stats_table
-  @world_overlay_table @default_world_overlay_table
-
   @type entity_match :: %{
           entity_type: String.t(),
           value: String.t(),
@@ -100,6 +94,12 @@ defmodule Brain.ML.Gazetteer do
   defp default_table_name(:stats), do: @default_stats_table
   defp default_table_name(:world_overlays), do: @default_world_overlay_table
 
+  # Resolves the ETS table for a client read. The global instance uses the
+  # compile-time attribute directly (fast, no GenServer round-trip); a named or
+  # :via-registered isolated instance resolves through get_table_name/2.
+  defp table_for(__MODULE__, table_type), do: default_table_name(table_type)
+  defp table_for(server, table_type), do: get_table_name(server, table_type)
+
   @doc """
   Look up an entity by exact match (case-insensitive).
   Returns {:ok, entity_info} or {:ok, [entity_info, ...]} or :not_found.
@@ -107,10 +107,12 @@ defmodule Brain.ML.Gazetteer do
   When multiple entity types exist for the same key (e.g., "Austin" as both
   a person name and a city), returns a list of all matching types.
   """
-  def lookup(text) when is_binary(text) do
+  def lookup(text, server \\ __MODULE__)
+
+  def lookup(text, server) when is_binary(text) and not is_binary(server) do
     normalized = normalize(text)
 
-    case :ets.lookup(@table_name, normalized) do
+    case :ets.lookup(table_for(server, :entities), normalized) do
       [{^normalized, entity_infos}] when is_list(entity_infos) ->
         {:ok, entity_infos}
 
@@ -126,15 +128,52 @@ defmodule Brain.ML.Gazetteer do
   end
 
   @doc """
+  Look up an entity, checking the world overlay first if provided.
+  Falls back to base gazetteer if not found in overlay.
+  """
+  def lookup(text, world_id) when is_binary(text) and is_binary(world_id) do
+    normalized = normalize(text)
+
+    # Check world overlay first
+    case lookup_world_overlay(normalized, world_id) do
+      {:ok, result} -> {:ok, result}
+      :not_found -> lookup(text)
+    end
+  end
+
+  @doc """
   Look up an entity and return all possible types.
   Always returns a list (empty if not found).
   """
-  def lookup_all_types(text) when is_binary(text) do
-    case lookup(text) do
+  def lookup_all_types(text, server \\ __MODULE__)
+
+  def lookup_all_types(text, server) when is_binary(text) and not is_binary(server) do
+    case lookup(text, server) do
       {:ok, infos} when is_list(infos) -> infos
       {:ok, info} when is_map(info) -> [info]
       :not_found -> []
     end
+  end
+
+  @doc """
+  Look up all types for an entity, including world overlay.
+  """
+  def lookup_all_types(text, world_id) when is_binary(text) and is_binary(world_id) do
+    normalized = normalize(text)
+
+    # Get from world overlay
+    overlay_types =
+      case lookup_world_overlay(normalized, world_id) do
+        {:ok, infos} when is_list(infos) -> infos
+        {:ok, info} when is_map(info) -> [info]
+        :not_found -> []
+      end
+
+    # Get from base gazetteer
+    base_types = lookup_all_types(text)
+
+    # Merge, preferring overlay (more recent/specific)
+    merge_entity_types(overlay_types, base_types)
   end
 
   @doc """
@@ -168,8 +207,9 @@ defmodule Brain.ML.Gazetteer do
       token_count = length(tokens)
       domain = Keyword.get(opts, :domain)
       intent = Keyword.get(opts, :intent)
+      server = Keyword.get(opts, :server, __MODULE__)
 
-      find_all_spans_raw(tokens, 0, token_count, [])
+      find_all_spans_raw(tokens, 0, token_count, [], server)
       |> Enum.map(fn {start_idx, end_idx, entity_infos} ->
         span_len = end_idx - start_idx + 1
         ranked = rank_types_with_context(entity_infos, domain: domain, intent: intent)
@@ -186,11 +226,11 @@ defmodule Brain.ML.Gazetteer do
   Record that a type was successfully used for a surface form in a domain context.
   Adjusts future rankings for this key+domain combination.
   """
-  def record_type_preference(surface_form, preferred_type, domain)
+  def record_type_preference(surface_form, preferred_type, domain, server \\ __MODULE__)
       when is_binary(surface_form) and is_binary(preferred_type) do
     normalized = normalize(surface_form)
 
-    case :ets.lookup(@table_name, normalized) do
+    case :ets.lookup(table_for(server, :entities), normalized) do
       [{^normalized, infos}] when is_list(infos) ->
         {preferred, rest} =
           Enum.split_with(infos, fn info ->
@@ -205,7 +245,7 @@ defmodule Brain.ML.Gazetteer do
               Map.put(info, :domain_preferences, updated_prefs)
             end)
 
-          :ets.insert(@table_name, {normalized, boosted ++ rest})
+          :ets.insert(table_for(server, :entities), {normalized, boosted ++ rest})
           :ok
         else
           :not_found
@@ -222,8 +262,9 @@ defmodule Brain.ML.Gazetteer do
     token_count = length(tokens)
     domain = Keyword.get(opts, :domain)
     intent = Keyword.get(opts, :intent)
+    server = Keyword.get(opts, :server, __MODULE__)
 
-    spans = find_all_spans_raw(tokens, 0, token_count, [])
+    spans = find_all_spans_raw(tokens, 0, token_count, [], server)
 
     ranked_spans =
       if domain != nil or intent != nil do
@@ -246,10 +287,10 @@ defmodule Brain.ML.Gazetteer do
   Check if a text is a known prefix of any entity.
   Useful for multi-word entity detection during streaming.
   """
-  def is_prefix?(text) when is_binary(text) do
+  def is_prefix?(text, server \\ __MODULE__) when is_binary(text) do
     normalized = normalize(text)
 
-    case :ets.lookup(@prefix_table, normalized) do
+    case :ets.lookup(table_for(server, :prefixes), normalized) do
       [{^normalized, true}] -> true
       [] -> false
     end
@@ -260,8 +301,8 @@ defmodule Brain.ML.Gazetteer do
   @doc """
   Get statistics about loaded gazetteers.
   """
-  def stats do
-    case :ets.lookup(@stats_table, :stats) do
+  def stats(server \\ __MODULE__) do
+    case :ets.lookup(table_for(server, :stats), :stats) do
       [{:stats, stats}] -> stats
       [] -> %{}
     end
@@ -331,11 +372,11 @@ defmodule Brain.ML.Gazetteer do
   Check if an entity already exists in the gazetteer.
   Returns {true, entity_infos} if it exists (list of all types), false otherwise.
   """
-  def exists?(name) when is_binary(name) do
+  def exists?(name, server \\ __MODULE__) when is_binary(name) do
     try do
       normalized_key = normalize(name)
 
-      case :ets.lookup(@table_name, normalized_key) do
+      case :ets.lookup(table_for(server, :entities), normalized_key) do
         [{^normalized_key, infos}] when is_list(infos) -> {true, infos}
         [{^normalized_key, info}] when is_map(info) -> {true, [info]}
         [] -> false
@@ -349,9 +390,9 @@ defmodule Brain.ML.Gazetteer do
   List all entities of a given type.
   Returns a list of {name, entity_info} tuples.
   """
-  def list_by_type(entity_type) when is_binary(entity_type) do
+  def list_by_type(entity_type, server \\ __MODULE__) when is_binary(entity_type) do
     try do
-      :ets.tab2list(@table_name)
+      :ets.tab2list(table_for(server, :entities))
       |> Enum.flat_map(fn {key, infos} ->
         # Handle both list and single entity formats
         info_list = if is_list(infos), do: infos, else: [infos]
@@ -372,9 +413,9 @@ defmodule Brain.ML.Gazetteer do
   @doc """
   List all entity types in the gazetteer.
   """
-  def list_types do
+  def list_types(server \\ __MODULE__) do
     try do
-      :ets.tab2list(@table_name)
+      :ets.tab2list(table_for(server, :entities))
       |> Enum.flat_map(fn {_key, infos} ->
         # Handle both list and single entity formats
         info_list = if is_list(infos), do: infos, else: [infos]
@@ -393,11 +434,11 @@ defmodule Brain.ML.Gazetteer do
   @doc """
   Search entities by partial name match.
   """
-  def search(query) when is_binary(query) do
+  def search(query, server \\ __MODULE__) when is_binary(query) do
     normalized_query = normalize(query)
 
     try do
-      :ets.tab2list(@table_name)
+      :ets.tab2list(table_for(server, :entities))
       |> Enum.filter(fn {key, _info} ->
         String.contains?(key, normalized_query)
       end)
@@ -411,41 +452,6 @@ defmodule Brain.ML.Gazetteer do
   # ============================================================================
   # World Overlay API - For Training Worlds
   # ============================================================================
-
-  @doc """
-  Look up an entity, checking the world overlay first if provided.
-  Falls back to base gazetteer if not found in overlay.
-  """
-  def lookup(text, world_id) when is_binary(text) and is_binary(world_id) do
-    normalized = normalize(text)
-
-    # Check world overlay first
-    case lookup_world_overlay(normalized, world_id) do
-      {:ok, result} -> {:ok, result}
-      :not_found -> lookup(text)
-    end
-  end
-
-  @doc """
-  Look up all types for an entity, including world overlay.
-  """
-  def lookup_all_types(text, world_id) when is_binary(text) and is_binary(world_id) do
-    normalized = normalize(text)
-
-    # Get from world overlay
-    overlay_types =
-      case lookup_world_overlay(normalized, world_id) do
-        {:ok, infos} when is_list(infos) -> infos
-        {:ok, info} when is_map(info) -> [info]
-        :not_found -> []
-      end
-
-    # Get from base gazetteer
-    base_types = lookup_all_types(text)
-
-    # Merge, preferring overlay (more recent/specific)
-    merge_entity_types(overlay_types, base_types)
-  end
 
   @doc """
   Creates an overlay namespace for a training world.
@@ -472,9 +478,9 @@ defmodule Brain.ML.Gazetteer do
   @doc """
   Gets all entities in a world's overlay.
   """
-  def get_world_overlay(world_id) when is_binary(world_id) do
+  def get_world_overlay(world_id, server \\ __MODULE__) when is_binary(world_id) do
     try do
-      :ets.match_object(@world_overlay_table, {{world_id, :_}, :_})
+      :ets.match_object(table_for(server, :world_overlays), {{world_id, :_}, :_})
       |> Enum.map(fn {{_world_id, key}, info} -> {key, info} end)
     rescue
       ArgumentError -> []
@@ -496,9 +502,9 @@ defmodule Brain.ML.Gazetteer do
     GenServer.call(__MODULE__, {:remove_from_world, world_id, text})
   end
 
-  defp lookup_world_overlay(normalized_key, world_id) do
+  defp lookup_world_overlay(normalized_key, world_id, server \\ __MODULE__) do
     try do
-      case :ets.lookup(@world_overlay_table, {world_id, normalized_key}) do
+      case :ets.lookup(table_for(server, :world_overlays), {world_id, normalized_key}) do
         [{{^world_id, ^normalized_key}, entity_infos}] when is_list(entity_infos) ->
           {:ok, entity_infos}
 
@@ -1113,18 +1119,19 @@ defmodule Brain.ML.Gazetteer do
     length(prefixes)
   end
 
-  defp find_all_spans_raw(_tokens, start_idx, token_count, acc) when start_idx >= token_count do
+  defp find_all_spans_raw(_tokens, start_idx, token_count, acc, _server)
+       when start_idx >= token_count do
     acc
   end
 
-  defp find_all_spans_raw(tokens, start_idx, token_count, acc) do
+  defp find_all_spans_raw(tokens, start_idx, token_count, acc, server) do
     max_span = min(5, token_count - start_idx)
 
-    new_acc = find_all_matches_at(tokens, start_idx, max_span, acc)
-    find_all_spans_raw(tokens, start_idx + 1, token_count, new_acc)
+    new_acc = find_all_matches_at(tokens, start_idx, max_span, acc, server)
+    find_all_spans_raw(tokens, start_idx + 1, token_count, new_acc, server)
   end
 
-  defp find_all_matches_at(tokens, start_idx, max_span, acc) do
+  defp find_all_matches_at(tokens, start_idx, max_span, acc, server) do
     if max_span < 1 do
       acc
     else
@@ -1134,7 +1141,7 @@ defmodule Brain.ML.Gazetteer do
         phrase = Enum.join(span_tokens, " ")
         normalized = normalize(phrase)
 
-        case :ets.lookup(@table_name, normalized) do
+        case :ets.lookup(table_for(server, :entities), normalized) do
           [{^normalized, entity_infos}] when is_list(entity_infos) ->
             end_idx = start_idx + span_len - 1
             [{start_idx, end_idx, entity_infos} | inner_acc]
