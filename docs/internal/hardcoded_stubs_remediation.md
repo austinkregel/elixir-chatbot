@@ -201,25 +201,32 @@ implementing, to confirm the exact variable that's being discarded.
 >   result (both `{:ok, …}` clauses were identical); the result now drives status.
 >   The sibling `:corroboration_count` branch has the same dead-`if` and is a
 >   not-yet-listed follow-up.
-> - **DEFERRED — `BacktrackController.check_entity_mismatch/1`** (BIG as written):
->   the "compare vs recent context/history" data is not in scope at the call site.
->   A self-consistency variant (interp entities vs the intent's expected types,
->   reusing `TypeHierarchy.compatible?/2`) is MODERATE but *activates a dormant
->   backtracking path* with false-positive risk on OOV proper nouns — needs a
->   product decision before enabling.
-> - **DEFERRED — `RacingAnalyzer.analyze_keywords/1`** (BIG): needs a new
->   taxonomy-wide labeled dataset; would duplicate the existing `:intent_full`
->   classifier. It is a dead voter slot — removal is a maintainer design call.
-> - **DEFERRED — `FollowupDetector`** (BIG): no `:followup` MicroClassifier or
->   dataset exists; the problem is relational (message vs prior context), a poor
->   fit for the single-utterance classifier interface.
-> - **DEFERRED — `FramingDetector`** (BIG): the SRL frames/tokens it needs are
->   reduced to a lossy binary vector before the seam; `domain_histogram/1` can't
->   run without new cross-struct plumbing, and nothing consumes the output today.
-> - **DEFERRED — `EventLinker` temporal ordering** (BIG): `Tokenizer.extract_dates/1`
->   yields raw category tags + unresolved strings (no durations, no comparable
->   dates), and token positions are stripped before EventLinker runs. Needs a new
->   temporal resolver + struct/plumbing changes.
+> The five deferred items were then **intentionally designed with exhaustive
+> reuse** (2026-07-19) after three wide reuse-discovery passes — all now built:
+>
+> - **DONE — `BacktrackController.check_entity_mismatch/1`** (`57e3afc`):
+>   self-consistency (entities vs intent-domain expected types, reusing
+>   `TypeHierarchy.compatible?/2` + `expected_entity_types_from_domain/1`) **plus**
+>   cross-turn (thread `conversation_history` in), guarded against OOV/PROPN/
+>   low-confidence false positives. Also fixed a latent `humanize_intent(nil)`
+>   crash the newly-active path exposed.
+> - **DONE — `RacingAnalyzer.analyze_keywords/1`** (`6fe85f4`): retired the dead
+>   voter (chosen over reviving the hand-authored keyword table, which would
+>   violate Rule 8). Intent stays covered by `:model`/`:intent_full` +
+>   `:pattern_recognition`.
+> - **DONE — `FollowupDetector`** (`6073c55`): word count is now only a gate;
+>   the decision reuses the trained SpeechActClassifier (reject new
+>   questions/commands) + `:clarification_response` on the prior bot prompt. No
+>   new model.
+> - **DONE — `FramingDetector`** (`71ed7e9`): reads real evidence from signals
+>   already in the mean vector — lexical domains (group 10) + agent/patient bias
+>   (group-12 SRL flags) — via the new `ChunkFeatures.group_offsets/0` source of
+>   truth (`247e667`), which also fixed a stale sentiment offset.
+> - **DONE — `EventLinker` temporal ordering** (`4ca1143`): new stdlib
+>   `TemporalResolver` (relative + absolute dates, granularity-aware containment)
+>   drives ordering (resolved dates → grammatical tense → position) and real
+>   `temporal_contains?/2`; fixed the atom/string bug that meant temporal args
+>   were never extracted from live data.
 
 Same "reuse before inventing" instinct, but these need a verification pass
 like Tier 1 got before anyone writes code against them.
