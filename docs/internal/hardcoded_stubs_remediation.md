@@ -251,14 +251,20 @@ trained model or an existing signal — they're either straightforward bugs or
 dead legacy code better deleted than fixed.
 
 > **Deletions done 2026-07-20** (commits `69a9116`, `d505b55`, `df44331`).
-> Each was re-verified as caller-free before removal; only the `Gazetteer`
-> `:table_prefix` *fix* remains open (it's a repair, not a deletion).
+> Each was re-verified as caller-free before removal.
+>
+> **Gazetteer `:table_prefix` fix done 2026-07-20** (commits `0442227` write
+> side, `ad983ee` read side) — this closes out the whole document.
 
-- **`Brain.ML.Gazetteer`'s broken `:table_prefix` isolation** — *(still open —
-  a fix, not a deletion.)* A direct, already-correct template exists in the same
-  codebase: `Brain.ML.Lexicon` implements per-instance table isolation
-  correctly. Copy that pattern (use `state.tables` consistently) rather than
-  inventing anything.
+- **DONE — `Brain.ML.Gazetteer`'s broken `:table_prefix` isolation**: init built
+  isolated tables but every handler/helper (write) and client lookup (read)
+  hardcoded the global `@table_*` attributes, so an isolated instance created its
+  own tables yet populated/read the global ones. Fixed both sides mirroring
+  `Brain.ML.Lexicon`: handlers thread `state.tables`; client reads take an
+  optional `server` and resolve via a new `table_for/2` (attribute fast-path for
+  the default instance, `get_table_name/2` for named/`:via` instances). Global
+  callers are unchanged. An isolated instance now reads/writes only its own
+  tables (regression test added).
 - **DONE — the `persist/0` no-op cluster** (`df44331`): removed the no-op
   `persist/0` + its `handle_call(:persist, …)` handler from `BeliefStore`,
   `SourceReliability`, and `Memory.Store` (no callers; write-through already
