@@ -2,6 +2,7 @@ defmodule Brain.Analysis.FramingDetectorTest do
   use ExUnit.Case, async: false
 
   alias Brain.Analysis.{FramingDetector, DocumentProfile, ChunkProfile}
+  alias Brain.Analysis.FeatureExtractor.ChunkFeatures
 
   defp profile(vector, modality \\ :declarative) do
     %ChunkProfile{
@@ -46,6 +47,38 @@ defmodule Brain.Analysis.FramingDetectorTest do
           # When classifier is not loaded, we still expect a structured error
           assert true
       end
+    end
+
+    test "evidence is read from real vector positions (lexical domains, agent bias, correct sentiment offset)" do
+      offs = ChunkFeatures.group_offsets()
+      dim = ChunkFeatures.vector_dimension()
+      {lex_off, _} = offs[:lexical]
+      {srl_off, _} = offs[:srl]
+      {sent_off, _} = offs[:sentiment]
+
+      # A full-width vector with exactly one lexical domain, the SRL agent flag,
+      # and positive sentiment set — everything else zero.
+      vec =
+        for i <- 0..(dim - 1) do
+          cond do
+            i == lex_off -> 0.9
+            # role flags start after the frame_count dim; :agent is first role
+            i == srl_off + 1 -> 0.7
+            i == sent_off -> 0.8
+            true -> 0.0
+          end
+        end
+
+      assert {:ok, assessment} = FramingDetector.assess_document([profile(vec)])
+      ev = assessment.evidence
+
+      # was hardcoded [] — now populated from group 10
+      assert ev.dominant_lexical_domains != []
+      # was hardcoded %{agent_bias: 0.0, patient_bias: 0.0} — only agent set → all agent
+      assert ev.causal_attribution.agent_bias > 0.0
+      assert ev.causal_attribution.patient_bias == 0.0
+      # sentiment read from the CORRECT offset (group 8 at 73, not the old 65)
+      assert ev.sentiment_skew > 0.0
     end
 
     test "returns error for empty profile list" do

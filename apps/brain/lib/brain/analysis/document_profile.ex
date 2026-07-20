@@ -118,11 +118,39 @@ defmodule Brain.Analysis.DocumentProfile do
         skew_vector: skew,
         entity_slices: entity_slices,
         dominant_pos_distribution: [],
-        dominant_lexical_domains: [],
+        dominant_lexical_domains: derive_dominant_domains(mean),
         rhetorical_mode: rhetorical
       }
     end
   end
+
+  @max_dominant_domains 5
+
+  # The lexical-semantic fingerprint (group 10) is already averaged into the
+  # mean vector as a per-domain distribution over `Lexicon.domain_atoms/0`.
+  # Read it back through the canonical offset map (no new computation) and
+  # surface the top domains as `{domain, share}` — the declared-but-empty field.
+  defp derive_dominant_domains(mean) when is_list(mean) and mean != [] do
+    {offset, len} =
+      Brain.Analysis.FeatureExtractor.ChunkFeatures.group_offsets()
+      |> Map.get(:lexical, {0, 0})
+
+    domains = Brain.Lexicon.domain_atoms()
+
+    if len > 0 and length(mean) >= offset + len do
+      mean
+      |> Enum.slice(offset, len)
+      |> Enum.zip(domains)
+      |> Enum.reject(fn {share, _domain} -> share <= 0.0 end)
+      |> Enum.sort_by(fn {share, _domain} -> -share end)
+      |> Enum.map(fn {share, domain} -> {domain, share} end)
+      |> Enum.take(@max_dominant_domains)
+    else
+      []
+    end
+  end
+
+  defp derive_dominant_domains(_), do: []
 
   @doc """
   Computes cosine similarity between two document profiles' mean vectors.

@@ -27,6 +27,7 @@ defmodule Brain.Analysis.FramingDetector do
   require Logger
 
   alias Brain.Analysis.{ChunkProfile, DocumentProfile}
+  alias Brain.Analysis.FeatureExtractor.ChunkFeatures
   alias Brain.ML.MicroClassifiers
 
   @type framing_assessment :: %{
@@ -236,18 +237,18 @@ defmodule Brain.Analysis.FramingDetector do
 
   defp dominant_rhetorical_mode(_), do: :mixed
 
-  # Feature vector group offsets (from ChunkFeatures):
-  # Group 5 (modality/certainty) starts at dim 46 (12+16+10+8=46), 8 dims
-  # Group 8 (sentiment) starts at dim 65, 5 dims
-  # Group 12 (SRL frames) starts ~dim 106, 10 dims
-  # Group 10 (lexical-semantic fingerprint) starts ~dim 82, variable dims
-  #
-  # These are approximate; the exact offsets depend on runtime Lexicon.domain_atoms().
-  # We extract evidence from the raw vector positions defensively.
+  # Evidence is read out of the aggregated mean vector at positions resolved
+  # from `ChunkFeatures.group_offsets/0` — the single source of truth — rather
+  # than hardcoded literals that silently drift (the old comment placed sentiment
+  # at dim 65, but group 8 actually starts at 73).
+  defp extract_evidence(mean_vec, doc_profile) do
+    offsets = ChunkFeatures.group_offsets()
 
-  defp extract_evidence(mean_vec, _doc_profile) do
-    modality_dims = safe_slice(mean_vec, 46, 8)
-    sentiment_dims = safe_slice(mean_vec, 65, 5)
+    {mod_off, mod_len} = Map.get(offsets, :modality, {46, 8})
+    {sent_off, sent_len} = Map.get(offsets, :sentiment, {73, 5})
+
+    modality_dims = safe_slice(mean_vec, mod_off, mod_len)
+    sentiment_dims = safe_slice(mean_vec, sent_off, sent_len)
 
     sentiment_skew =
       case sentiment_dims do
@@ -257,7 +258,7 @@ defmodule Brain.Analysis.FramingDetector do
 
     modality_skew =
       case modality_dims do
-        dims when length(dims) >= 4 ->
+        dims when length(dims) >= 8 ->
           hedge = Enum.at(dims, 6, 0.0)
           certainty = Enum.at(dims, 7, 0.0)
           certainty - hedge
@@ -269,10 +270,43 @@ defmodule Brain.Analysis.FramingDetector do
     %{
       sentiment_skew: sentiment_skew,
       modality_skew: modality_skew,
-      causal_attribution: %{agent_bias: 0.0, patient_bias: 0.0},
-      dominant_lexical_domains: []
+      causal_attribution: causal_attribution(mean_vec, offsets),
+      dominant_lexical_domains: dominant_lexical_domains(doc_profile)
     }
   end
+
+  # Agent/patient bias from the SRL role flags (group 12: [frame_count |
+  # role_flags(@srl_roles) | coverage]). In the mean vector each flag is the
+  # share of chunks in which that role appeared — a coarse but real bias signal
+  # (vs the old hardcoded 0.0/0.0). True ARG0/ARG1 counts would need the raw
+  # srl_frames, which are dropped at ChunkProfile materialization.
+  defp causal_attribution(mean_vec, offsets) do
+    {srl_off, srl_len} = Map.get(offsets, :srl, {0, 0})
+    roles = ChunkFeatures.srl_roles()
+    agent_idx = Enum.find_index(roles, &(&1 == :agent))
+    patient_idx = Enum.find_index(roles, &(&1 == :patient))
+
+    if srl_len > 0 and agent_idx != nil and patient_idx != nil and
+         length(mean_vec) >= srl_off + srl_len do
+      # role flags begin at srl_off + 1 (after the frame_count dim)
+      agent = Enum.at(mean_vec, srl_off + 1 + agent_idx, 0.0)
+      patient = Enum.at(mean_vec, srl_off + 1 + patient_idx, 0.0)
+      total = agent + patient
+
+      if total > 0.0 do
+        %{agent_bias: agent / total, patient_bias: patient / total}
+      else
+        %{agent_bias: 0.0, patient_bias: 0.0}
+      end
+    else
+      %{agent_bias: 0.0, patient_bias: 0.0}
+    end
+  end
+
+  # The profile already carries the top domains (populated in
+  # DocumentProfile.aggregate/2 from the group-10 lexical fingerprint).
+  defp dominant_lexical_domains(%DocumentProfile{dominant_lexical_domains: d}) when is_list(d), do: d
+  defp dominant_lexical_domains(_), do: []
 
   # -- Drift detection ---------------------------------------------------
 
