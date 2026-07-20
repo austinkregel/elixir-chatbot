@@ -245,11 +245,6 @@ defmodule Brain.Epistemic.BeliefStore do
     GenServer.call(__MODULE__, :stats, 5_000)
   end
 
-  @doc "Persists the store to disk.\n"
-  def persist do
-    GenServer.call(__MODULE__, :persist, 30_000)
-  end
-
   @doc "Clears all beliefs (useful for testing).\n"
   def clear do
     GenServer.call(__MODULE__, :clear, 30_000)
@@ -467,11 +462,6 @@ defmodule Brain.Epistemic.BeliefStore do
     }
 
     {:reply, stats, state}
-  end
-
-  @impl true
-  def handle_call(:persist, _from, state) do
-    {:reply, :ok, state}
   end
 
   @impl true

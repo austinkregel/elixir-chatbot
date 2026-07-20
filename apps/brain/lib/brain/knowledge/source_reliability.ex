@@ -53,12 +53,6 @@ defmodule Brain.Knowledge.SourceReliability do
     GenServer.call(__MODULE__, :reload_bootstrap)
   end
 
-  @doc "Persists learned adjustments to disk.\n"
-  @spec persist() :: :ok | {:error, term()}
-  def persist do
-    GenServer.call(__MODULE__, :persist)
-  end
-
   @doc "Checks if a domain is blocked.\n"
   @spec blocked?(String.t()) :: boolean()
   def blocked?(domain) when is_binary(domain) do
@@ -138,11 +132,6 @@ defmodule Brain.Knowledge.SourceReliability do
   def handle_call(:reload_bootstrap, _from, state) do
     new_state = load_bootstrap_data(state)
     {:reply, :ok, new_state}
-  end
-
-  @impl true
-  def handle_call(:persist, _from, state) do
-    {:reply, :ok, state}
   end
 
   @impl true

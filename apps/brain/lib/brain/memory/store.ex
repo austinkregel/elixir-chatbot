@@ -208,11 +208,6 @@ defmodule Brain.Memory.Store do
     GenServer.call(__MODULE__, {:stats, world_id})
   end
 
-  @doc "Persist the store to disk.\n"
-  def persist do
-    GenServer.call(__MODULE__, :persist, 30_000)
-  end
-
   @doc "Clear all data from the store.\n\n## Options\n  - world_id: The world to clear (default: nil for all worlds)\n"
   def clear(opts \\ []) do
     world_id = Keyword.get(opts, :world_id, nil)
@@ -532,11 +527,6 @@ defmodule Brain.Memory.Store do
   @impl true
   def handle_call(:ready?, _from, state) do
     {:reply, true, state}
-  end
-
-  @impl true
-  def handle_call(:persist, _from, state) do
-    {:reply, :ok, state}
   end
 
   @impl true
