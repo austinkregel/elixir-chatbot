@@ -1509,7 +1509,11 @@ defmodule Brain do
     analysis_for_learning = %{
       entities: entities,
       speech_act: speech_act_info,
-      intent: intent
+      intent: intent,
+      # Carry the SRL frames the pipeline already produced so the Learner can
+      # derive real subject/predicate/object relationships (same frames the
+      # graph writer already turns into triples), instead of a hardcoded [].
+      srl_frames: Enum.flat_map(analysis_model.analyses, &Map.get(&1, :srl_frames, []))
     }
 
     Learner.learn_from_conversation(persona.name, input, analysis_for_learning)

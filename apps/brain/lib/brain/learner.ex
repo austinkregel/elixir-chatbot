@@ -132,10 +132,11 @@ defmodule Brain.Learner do
       end)
 
     extracted_facts = extract_facts_from_statement(input, entities, speech_act, opts)
+    relationships = relationships_from_srl(Map.get(analysis, :srl_frames, []))
 
     extracted_data = %{
       "entities" => extracted_entities,
-      "relationships" => [],
+      "relationships" => relationships,
       "facts" => extracted_facts,
       "context" => input
     }
@@ -515,6 +516,28 @@ defmodule Brain.Learner do
       Logger.info("Learned preference entity", %{name: name, confidence: confidence})
     end
   end
+
+  # Convert the pipeline's SRL frames into the relationship-map shape
+  # process_relationships/2 expects. Reuses the exact same conversion the graph
+  # writer uses (SemanticRoleLabeler.to_triples/1), so learned relationships and
+  # written triples stay consistent. Confidence 1.0 — these are directly observed
+  # in the user's own statement, not inferred.
+  defp relationships_from_srl(frames) when is_list(frames) and frames != [] do
+    frames
+    |> Brain.Analysis.SemanticRoleLabeler.to_triples()
+    |> Enum.map(fn {subject, predicate, object} ->
+      %{
+        "subject" => to_string(subject),
+        "relation" => to_string(predicate),
+        "object" => to_string(object),
+        "confidence" => 1.0
+      }
+    end)
+  rescue
+    _ -> []
+  end
+
+  defp relationships_from_srl(_), do: []
 
   defp process_relationships(persona_name, relationships) do
     Enum.each(relationships, fn rel ->
