@@ -69,6 +69,22 @@ defmodule Brain.Analysis.FollowupDetectorDataTest do
     end
   end
 
+  describe "is_followup?/2 - word count is not sufficient (speech-act fusion)" do
+    test "a new question is not a follow-up even when short" do
+      refute FollowupDetector.is_followup?("What is the weather?", recent_context())
+    end
+
+    test "a new command is not a follow-up even when short" do
+      refute FollowupDetector.is_followup?("play some music", recent_context())
+      refute FollowupDetector.is_followup?("turn off the lights", recent_context())
+    end
+
+    test "a short assertive fragment answering an open slot is a follow-up" do
+      assert FollowupDetector.is_followup?("the blue one", recent_context())
+      assert FollowupDetector.is_followup?("downtown", recent_context())
+    end
+  end
+
   # Test definite false cases
   describe "is_followup?/2 definite false cases" do
     test "nil context is not followup" do

@@ -2,7 +2,8 @@ defmodule Brain.Analysis.FollowupDetector do
   @moduledoc "Detects when a user message is providing follow-up context\nfor a previous intent rather than starting a new conversation.\n\nThis module helps handle multi-turn conversations where users provide\nadditional information (like location) in response to clarifying questions.\n\nUses POS tagging for grammatical detection rather than keyword lists.\n"
 
   alias Brain.ML.POSTagger
-  alias Brain.Analysis.ChunkProfile
+  alias Brain.ML.MicroClassifiers
+  alias Brain.Analysis.{ChunkProfile, SpeechActClassifier}
   @max_followup_words 5
   @context_timeout_ms 5 * 60 * 1000
 
@@ -133,19 +134,64 @@ defmodule Brain.Analysis.FollowupDetector do
     intent != nil and intent != "" and intent != "unknown"
   end
 
+  # A short message is NOT a slot-filler on word count alone (the old fallback
+  # returned true for any <=5-word message, so "What is the weather?" and "play
+  # some music" were miscounted as follow-ups). Word count is a gate; the
+  # DECISION uses trained signals: reject new questions/commands via the
+  # SpeechActClassifier, and accept short assertive fragments, continuations, or
+  # replies to a prior clarification question. (The POS tagger is not used as a
+  # discriminator here — it is degraded to all-NOUN in this build.)
   defp looks_like_slot_filler?(text, context) do
     missing = context[:missing_slots] || context.missing_slots || []
+    short? = length(String.split(String.trim(text))) <= @max_followup_words
+    sa = classify_speech_act(text)
 
     cond do
       "location" in missing and (is_bare_location?(text) or is_short_prepositional_phrase?(text)) ->
         true
 
-      length(String.split(String.trim(text))) <= @max_followup_words ->
+      short? and prior_turn_was_clarification?(context) ->
+        true
+
+      short? and continuation?(sa) ->
+        true
+
+      # A short reply that is not itself a new question or command is a plausible
+      # slot-filler for the open slots.
+      short? and not new_request?(sa) ->
         true
 
       true ->
         false
     end
+  end
+
+  defp classify_speech_act(text) do
+    SpeechActClassifier.classify(text)
+  rescue
+    _ -> %{}
+  end
+
+  defp continuation?(sa), do: Map.get(sa, :sub_type) == :continuation
+
+  defp new_request?(sa) do
+    Map.get(sa, :is_question) == true or Map.get(sa, :category) == :directive
+  end
+
+  # Reuse the already-trained :clarification_response classifier on the prior
+  # bot prompt (carried in as :previous_prompt): if the last thing the bot said
+  # was a clarification question, a short reply is very likely filling its slot.
+  # Absent the prompt (no plumbing), this simply contributes nothing.
+  defp prior_turn_was_clarification?(context) do
+    prompt = context[:previous_prompt] || context[:last_bot_prompt]
+
+    is_binary(prompt) and prompt != "" and
+      case MicroClassifiers.classify(:clarification_response, prompt) do
+        {:ok, "clarification", score} when score > 0.4 -> true
+        _ -> false
+      end
+  rescue
+    _ -> false
   end
 
   defp context_expired?(context) do

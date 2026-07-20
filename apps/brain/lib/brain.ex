@@ -827,7 +827,7 @@ defmodule Brain do
   end
 
   defp try_classical_nlp_first(persona, input, memory, opts) do
-    previous_context = get_previous_context(memory)
+    previous_context = get_previous_context(memory) |> add_previous_prompt(memory)
     require_llm = Keyword.get(opts, :require_llm, false)
 
     # handle_followup_message/3 doesn't take opts at all — it has no way to
@@ -1034,6 +1034,28 @@ defmodule Brain do
       nil -> nil
       msg -> msg[:context]
     end
+  end
+
+  # Carry the last bot prompt into the context so FollowupDetector can reuse the
+  # :clarification_response classifier ("was the last thing the bot said a
+  # clarification question?"). Nil-safe: no prior prompt → context unchanged.
+  defp add_previous_prompt(nil, _memory), do: nil
+
+  defp add_previous_prompt(context, memory) when is_map(context) do
+    case last_assistant_content(memory) do
+      nil -> context
+      prompt -> Map.put(context, :previous_prompt, prompt)
+    end
+  end
+
+  defp last_assistant_content(memory) do
+    memory
+    |> Enum.reverse()
+    |> Enum.find_value(fn m ->
+      if m[:role] == "assistant" and is_binary(m[:content]) and m[:content] != "" do
+        m[:content]
+      end
+    end)
   end
 
   defp handle_followup_message(persona, input, previous_context) do
