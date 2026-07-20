@@ -59,56 +59,6 @@ defmodule Brain.ML.TrainerTest do
     end
   end
 
-  describe "train_svm_classifier/2" do
-    @tag :slow
-    test "produces model with training_vectors and label_encoder" do
-      training_data = Trainer.load_training_data() |> Enum.take(200)
-
-      vectorizer = Trainer.build_tfidf_vectorizer(training_data)
-
-      if map_size(vectorizer.vocabulary) > 0 do
-        try do
-          classifier = Trainer.train_svm_classifier(training_data, vectorizer)
-
-          assert is_map(classifier)
-          assert Map.has_key?(classifier, :model)
-          assert Map.has_key?(classifier, :label_encoder)
-          model = classifier.model
-          assert Map.has_key?(model, :training_vectors)
-          assert Map.has_key?(model, :training_labels)
-        rescue
-          MatchError ->
-            :ok
-        end
-      end
-    end
-
-    @tag :slow
-    test "label encoder maps intents bidirectionally" do
-      training_data = Trainer.load_training_data() |> Enum.take(200)
-
-      vectorizer = Trainer.build_tfidf_vectorizer(training_data)
-
-      if map_size(vectorizer.vocabulary) > 0 do
-        try do
-          classifier = Trainer.train_svm_classifier(training_data, vectorizer)
-
-          label_encoder = classifier.label_encoder
-
-          assert Map.has_key?(label_encoder, :label_to_index)
-          assert Map.has_key?(label_encoder, :index_to_label)
-
-          Enum.each(label_encoder.label_to_index, fn {label, index} ->
-            assert label_encoder.index_to_label[index] == label
-          end)
-        rescue
-          MatchError ->
-            :ok
-        end
-      end
-    end
-  end
-
   describe "build_gazetteer_data/1" do
     test "returns stats with entry counts" do
       stats = %{

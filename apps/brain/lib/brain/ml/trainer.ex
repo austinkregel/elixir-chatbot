@@ -429,37 +429,6 @@ defmodule Brain.ML.Trainer do
     }
   end
 
-  @doc "Train simple classifier using TF-IDF features.\nFor now, we'll use a simple nearest neighbor approach.\n"
-  def train_svm_classifier(training_data, vectorizer) do
-    {texts, labels} = Enum.unzip(training_data)
-    Logger.debug("Starting vectorization", %{num_texts: length(texts)})
-    Logger.debug("First few texts: #{inspect(Enum.take(texts, 3))}")
-
-    Logger.debug(
-      "Vectorizer info: vocab_size=#{map_size(vectorizer.vocabulary)}, max_features=#{vectorizer.max_features}"
-    )
-
-    X = vectorize_texts(texts, vectorizer)
-    Logger.debug("Vectorized texts", %{shape: Nx.shape(X), type: Nx.type(X)})
-    {y, label_encoder} = encode_labels(labels)
-    Logger.debug("Encoded labels", %{shape: Nx.shape(y)})
-
-    classifier = %{
-      training_vectors: X,
-      training_labels: y,
-      label_encoder: label_encoder
-    }
-
-    %{
-      model: classifier,
-      label_encoder: label_encoder
-    }
-  end
-
-  @doc "Save trained models to disk.\n"
-  def save_models(_vectorizer, _svm_model) do
-    Logger.warning("save_models/2 is deprecated — the TF-IDF pipeline now saves via train_and_save/1")
-  end
 
   defp extract_intent_name(filename) do
     filename
@@ -618,63 +587,4 @@ defmodule Brain.ML.Trainer do
     Nx.tensor(idf_list, type: :f32)
   end
 
-  defp vectorize_texts(texts, vectorizer) do
-    vectors =
-      texts
-      |> Enum.map(&vectorize_single_text(&1, vectorizer))
-
-    case vectors do
-      [] ->
-        Nx.broadcast(0.0, {0, vectorizer.max_features})
-
-      [_first | _] ->
-        Nx.stack(vectors)
-    end
-  end
-
-  defp vectorize_single_text(text, vectorizer) do
-    tokens = tokenize_text(text)
-    vocab_size = vectorizer.max_features
-    tf_counts = Enum.frequencies(tokens)
-
-    tf_list =
-      for i <- 0..(vocab_size - 1) do
-        term = Enum.find(vectorizer.vocabulary, fn {_term, idx} -> idx == i end)
-
-        case term do
-          {term_name, _} -> Map.get(tf_counts, term_name, 0)
-          nil -> 0
-        end
-      end
-
-    tf_vector = Nx.tensor(tf_list, type: :f32)
-    tfidf_vector = Nx.multiply(tf_vector, vectorizer.idf_weights)
-    norm = Nx.reduce_max(tfidf_vector)
-
-    if Nx.to_number(norm) > 0 do
-      Nx.divide(tfidf_vector, norm)
-    else
-      tfidf_vector
-    end
-  end
-
-  defp encode_labels(labels) do
-    unique_labels = labels |> Enum.uniq() |> Enum.sort()
-    label_to_index = Enum.with_index(unique_labels) |> Enum.into(%{})
-
-    index_to_label =
-      Enum.with_index(unique_labels) |> Enum.into(%{}, fn {label, index} -> {index, label} end)
-
-    encoded_labels =
-      labels
-      |> Enum.map(&Map.get(label_to_index, &1))
-      |> Nx.tensor()
-
-    label_encoder = %{
-      label_to_index: label_to_index,
-      index_to_label: index_to_label
-    }
-
-    {encoded_labels, label_encoder}
-  end
 end
