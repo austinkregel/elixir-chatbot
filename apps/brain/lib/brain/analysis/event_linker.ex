@@ -16,11 +16,16 @@ defmodule Brain.Analysis.EventLinker do
   """
 
   alias Brain.ML.MicroClassifiers
+  alias Brain.Analysis.TemporalResolver
   require Logger
+
+  # Entity types (strings, as EntityExtractor emits them) that denote a time.
+  @temporal_types ~w(sys-date date datetime relative_date day weekday month day_name month_name time sys-time year temporal)
 
   @type event_frame :: %{
     trigger: String.t(),
     trigger_index: non_neg_integer(),
+    tense: atom(),
     arguments: [argument()],
     temporal_relations: [temporal_relation()],
     sub_events: [non_neg_integer()]
@@ -50,23 +55,32 @@ defmodule Brain.Analysis.EventLinker do
   ## Returns
     List of enriched event frames with argument roles and temporal relations.
   """
-  def link(events, entities, tokens, pos_tags) do
+  def link(events, entities, tokens, pos_tags, opts \\ []) do
+    ref_date = Keyword.get(opts, :reference_date)
+
+    # Associate temporal entities to events by document-order rank: both events
+    # and temporal entities occur left-to-right, so the k-th date belongs to the
+    # k-th event. This avoids the old all-to-all assignment (which gave every
+    # event every date) without mixing char offsets and token indices.
+    temporal_sorted = Enum.sort_by(Enum.filter(entities, &temporal_entity?/1), &entity_position/1)
+
     events
     |> Enum.with_index()
     |> Enum.map(fn {event, idx} ->
       arguments = assign_argument_roles(event, entities, tokens, pos_tags)
-      temporal_args = extract_temporal_arguments(entities)
+      temporal_args = temporal_arg_for_index(temporal_sorted, idx)
 
       %{
         trigger: get_trigger_text(event),
         trigger_index: idx,
+        tense: get_tense(event),
         arguments: arguments ++ temporal_args,
         temporal_relations: [],
         sub_events: []
       }
     end)
-    |> detect_temporal_relations()
-    |> detect_sub_events()
+    |> detect_temporal_relations(ref_date)
+    |> detect_sub_events(ref_date)
   end
 
   @doc """
@@ -80,9 +94,7 @@ defmodule Brain.Analysis.EventLinker do
     trigger_idx = get_trigger_index(event)
 
     entities
-    |> Enum.reject(fn entity ->
-      entity_type(entity) == :temporal
-    end)
+    |> Enum.reject(&temporal_entity?/1)
     |> Enum.map(fn entity ->
       role = classify_argument_role(entity, trigger_text, trigger_idx, tokens, pos_tags)
       %{
@@ -141,75 +153,123 @@ defmodule Brain.Analysis.EventLinker do
     end
   end
 
-  defp extract_temporal_arguments(entities) do
-    entities
-    |> Enum.filter(fn entity -> entity_type(entity) == :temporal end)
-    |> Enum.map(fn entity ->
-      %{
-        text: entity_text(entity),
-        role: :argm_tmp,
-        entity_type: :temporal,
-        confidence: 0.8
-      }
-    end)
+  # The temporal entity for this event's document-order rank (or none). Real
+  # entities carry string types ("date", "time", …); the old code matched the
+  # atom :temporal, which never matched, so temporal args were never extracted.
+  defp temporal_arg_for_index(temporal_sorted, idx) do
+    case Enum.at(temporal_sorted, idx) do
+      nil ->
+        []
+
+      entity ->
+        [%{text: entity_text(entity), role: :argm_tmp, entity_type: :temporal, confidence: 0.8}]
+    end
   end
 
-  defp detect_temporal_relations(event_frames) do
-    temporal_events = event_frames
-    |> Enum.with_index()
-    |> Enum.map(fn {frame, idx} ->
-      temporal_args = Enum.filter(frame.arguments, &(&1.role == :argm_tmp))
-      {idx, frame, temporal_args}
-    end)
+  defp temporal_entity?(entity) do
+    type = entity |> entity_type() |> to_string() |> String.downcase()
+    type in @temporal_types
+  end
 
+  # Only frames that carry a temporal argument get relations. Ordering prefers
+  # real resolved dates (TemporalResolver), then grammatical tense, then trigger
+  # position — never bare array index as the primary signal.
+  defp detect_temporal_relations(event_frames, ref_date) do
     Enum.map(event_frames, fn frame ->
-      relations = temporal_events
-      |> Enum.reject(fn {idx, _, _} -> idx == frame.trigger_index end)
-      |> Enum.flat_map(fn {other_idx, _other_frame, _other_temps} ->
-        case infer_temporal_order(frame, other_idx, temporal_events) do
-          nil -> []
-          rel -> [rel]
-        end
-      end)
+      relations =
+        event_frames
+        |> Enum.reject(&(&1.trigger_index == frame.trigger_index))
+        |> Enum.flat_map(fn other ->
+          case infer_temporal_order(frame, other, ref_date) do
+            nil -> []
+            rel -> [rel]
+          end
+        end)
 
       %{frame | temporal_relations: relations}
     end)
   end
 
-  defp infer_temporal_order(frame, other_idx, _temporal_events) do
-    frame_temps = Enum.filter(frame.arguments, &(&1.role == :argm_tmp))
+  defp infer_temporal_order(frame, other, ref_date) do
+    frame_temp = temporal_text(frame)
 
-    if Enum.empty?(frame_temps) do
+    if is_nil(frame_temp) do
       nil
     else
-      if frame.trigger_index < other_idx do
-        %{target_event_index: other_idx, relation: :before}
-      else
-        %{target_event_index: other_idx, relation: :after}
-      end
+      relation =
+        case resolver_order(frame_temp, temporal_text(other), ref_date) do
+          order when order in [:before, :after] ->
+            order
+
+          # Dates equal or unresolvable (incl. the all-to-all argm_tmp case where
+          # both frames share the same temporal text): let grammatical tense —
+          # then position — decide, rather than collapsing everything to :during.
+          _ ->
+            tense_or_position(frame, other)
+        end
+
+      %{target_event_index: other.trigger_index, relation: relation}
     end
   end
 
-  defp detect_sub_events(event_frames) do
-    Enum.map(event_frames, fn frame ->
-      sub = event_frames
-      |> Enum.reject(&(&1.trigger_index == frame.trigger_index))
-      |> Enum.filter(fn other ->
-        other_temps = Enum.filter(other.arguments, &(&1.role == :argm_tmp))
-        frame_temps = Enum.filter(frame.arguments, &(&1.role == :argm_tmp))
+  defp resolver_order(_frame_temp, nil, _ref_date), do: :unknown
 
-        not Enum.empty?(other_temps) and not Enum.empty?(frame_temps) and
-          temporal_contains?(frame_temps, other_temps)
-      end)
-      |> Enum.map(& &1.trigger_index)
+  defp resolver_order(frame_temp, other_temp, ref_date),
+    do: TemporalResolver.order(frame_temp, other_temp, ref_date)
+
+  # Grammatical fallback: past < present/imperative < future; then token position.
+  defp tense_or_position(frame, other) do
+    fr = tense_rank(Map.get(frame, :tense))
+    ot = tense_rank(Map.get(other, :tense))
+
+    cond do
+      is_integer(fr) and is_integer(ot) and fr < ot -> :before
+      is_integer(fr) and is_integer(ot) and fr > ot -> :after
+      frame.trigger_index < other.trigger_index -> :before
+      frame.trigger_index > other.trigger_index -> :after
+      true -> :during
+    end
+  end
+
+  defp tense_rank(:past), do: 0
+  defp tense_rank(:present), do: 1
+  defp tense_rank(:imperative), do: 1
+  defp tense_rank(:infinitive), do: 1
+  defp tense_rank(:future), do: 2
+  defp tense_rank(_), do: nil
+
+  # A frame is a sub-event of another when its temporal span is contained by the
+  # other's (real interval containment via the resolver, e.g. "on Jan 3 2024"
+  # inside "in 2024").
+  defp detect_sub_events(event_frames, ref_date) do
+    Enum.map(event_frames, fn frame ->
+      outer = temporal_text(frame)
+
+      sub =
+        event_frames
+        |> Enum.reject(&(&1.trigger_index == frame.trigger_index))
+        |> Enum.filter(fn other ->
+          inner = temporal_text(other)
+          is_binary(outer) and is_binary(inner) and
+            TemporalResolver.contains?(outer, inner, ref_date)
+        end)
+        |> Enum.map(& &1.trigger_index)
 
       %{frame | sub_events: sub}
     end)
   end
 
-  defp temporal_contains?(_outer_temps, _inner_temps) do
-    false
+  # The first temporal (argm_tmp) argument's text, or nil.
+  defp temporal_text(frame) do
+    case Enum.find(frame.arguments, &(&1.role == :argm_tmp)) do
+      %{text: t} when is_binary(t) and t != "" -> t
+      _ -> nil
+    end
   end
+
+  defp get_tense(%{action: %{tense: tense}}) when is_atom(tense), do: tense
+  defp get_tense(%{"action" => %{"tense" => tense}}) when is_binary(tense), do: String.to_atom(tense)
+  defp get_tense(_), do: :unknown
 
   # --- Entity accessor helpers (handle both struct and map formats) ---
 

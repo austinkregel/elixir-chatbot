@@ -876,7 +876,18 @@ defmodule Brain.Analysis.Pipeline do
     %{value: inspect(other)}
   end
 
-  defp link_events(events, entities, pos_result, _opts) do
+  # A reference date for the TemporalResolver's relative-date resolution
+  # ("yesterday"/"next week"), taken from the user profile when present.
+  defp event_link_opts(opts) do
+    profile = Keyword.get(opts, :user_profile, %{})
+
+    case Map.get(profile, :reference_date) || Keyword.get(opts, :reference_date) do
+      %Date{} = d -> [reference_date: d]
+      _ -> []
+    end
+  end
+
+  defp link_events(events, entities, pos_result, opts) do
     case pos_result do
       {:ok, pos_tags_tuples, tokens} ->
         tag_strings = extract_tag_strings(pos_tags_tuples)
@@ -885,7 +896,7 @@ defmodule Brain.Analysis.Pipeline do
           %{text: t, normalized: String.downcase(t)}
         end)
 
-        frames = EventLinker.link(events, entities, token_maps, tag_strings)
+        frames = EventLinker.link(events, entities, token_maps, tag_strings, event_link_opts(opts))
         {frames, tag_strings}
 
       {:error, _} ->

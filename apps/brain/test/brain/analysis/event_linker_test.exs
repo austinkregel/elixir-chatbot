@@ -116,4 +116,70 @@ defmodule Brain.Analysis.EventLinkerTest do
       assert length(frames) == 2
     end
   end
+
+  describe "temporal reasoning (real dates, tense, containment)" do
+    @ref ~D[2024-06-15]
+
+    test "string-typed date entities now populate argm_tmp (was a dead atom check)" do
+      events = [%{action: %{verb: "arrived", tense: :past}, source_tokens: [0, 1]}]
+      # EntityExtractor emits string types like "date" — the old code compared
+      # to the atom :temporal and never matched.
+      entities = [%{entity_type: "date", value: "yesterday", start_pos: 2, confidence: 0.9}]
+
+      [frame] = EventLinker.link(events, entities, [], [], reference_date: @ref)
+      temporal = Enum.filter(frame.arguments, &(&1.role == :argm_tmp))
+
+      assert [%{text: "yesterday"}] = temporal
+    end
+
+    test "orders events by resolved dates" do
+      events = [
+        %{action: %{verb: "went", tense: :past}},
+        %{action: %{verb: "go", tense: :future}}
+      ]
+
+      entities = [
+        %{entity_type: "date", value: "yesterday", start_pos: 2, confidence: 0.9},
+        %{entity_type: "date", value: "tomorrow", start_pos: 7, confidence: 0.9}
+      ]
+
+      [went, go] = EventLinker.link(events, entities, [], [], reference_date: @ref)
+      assert %{relation: :before, target_event_index: 1} in went.temporal_relations
+      assert %{relation: :after, target_event_index: 0} in go.temporal_relations
+    end
+
+    test "falls back to grammatical tense when dates are equal/unresolvable" do
+      events = [
+        %{action: %{verb: "ate", tense: :past}},
+        %{action: %{verb: "sleep", tense: :future}}
+      ]
+
+      # both events carry a date that resolves equal → resolver returns :equal
+      # → grammatical tense decides the order
+      entities = [
+        %{entity_type: "date", value: "today", start_pos: 2, confidence: 0.9},
+        %{entity_type: "date", value: "today", start_pos: 7, confidence: 0.9}
+      ]
+
+      [ate, sleep] = EventLinker.link(events, entities, [], [], reference_date: @ref)
+      assert %{relation: :before, target_event_index: 1} in ate.temporal_relations
+      assert %{relation: :after, target_event_index: 0} in sleep.temporal_relations
+    end
+
+    test "detects a sub-event when one temporal span contains another" do
+      events = [
+        %{action: %{verb: "happened", tense: :past}},
+        %{action: %{verb: "occurred", tense: :past}}
+      ]
+
+      entities = [
+        %{entity_type: "year", value: "2024", start_pos: 3, confidence: 0.9},
+        %{entity_type: "date", value: "January 3 2024", start_pos: 12, confidence: 0.9}
+      ]
+
+      [outer, inner] = EventLinker.link(events, entities, [], [], reference_date: @ref)
+      assert 1 in outer.sub_events
+      assert inner.sub_events == []
+    end
+  end
 end
