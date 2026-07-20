@@ -607,7 +607,7 @@ defmodule Brain.ML.Gazetteer do
       case DataLoaders.load_all_entities() do
         {:ok, entities} ->
           entity_lookup = DataLoaders.build_entity_lookup(entities)
-          indexed = index_entities(entity_lookup, "json_entity")
+          indexed = index_entities(entity_lookup, "json_entity", state.tables)
           %{stats | entities: stats.entities + indexed, entity_types: map_size(entities)}
 
         {:error, _} ->
@@ -619,7 +619,7 @@ defmodule Brain.ML.Gazetteer do
       case DataLoaders.load_cities() do
         {:ok, cities} ->
           city_lookup = DataLoaders.build_city_lookup(cities)
-          indexed = index_entities(city_lookup, :cities)
+          indexed = index_entities(city_lookup, :cities, state.tables)
           %{stats | entities: stats.entities + indexed, cities: length(cities)}
 
         {:error, _} ->
@@ -631,7 +631,7 @@ defmodule Brain.ML.Gazetteer do
       case DataLoaders.load_us_cities() do
         {:ok, us_cities} ->
           us_city_lookup = DataLoaders.build_us_city_lookup(us_cities)
-          indexed = index_entities(us_city_lookup, :us_cities)
+          indexed = index_entities(us_city_lookup, :us_cities, state.tables)
           Logger.info("Loaded US cities", %{count: length(us_cities), indexed: indexed})
           %{stats | entities: stats.entities + indexed, us_cities: length(us_cities)}
 
@@ -644,7 +644,7 @@ defmodule Brain.ML.Gazetteer do
       case DataLoaders.load_artists() do
         {:ok, artists} ->
           artist_lookup = DataLoaders.build_artist_lookup(artists)
-          indexed = index_entities(artist_lookup, "artist")
+          indexed = index_entities(artist_lookup, "artist", state.tables)
           %{stats | entities: stats.entities + indexed, artists: length(artists)}
 
         {:error, _} ->
@@ -656,7 +656,7 @@ defmodule Brain.ML.Gazetteer do
       case DataLoaders.load_emojis() do
         {:ok, emojis} ->
           emoji_lookup = DataLoaders.build_emoji_lookup(emojis)
-          indexed = index_entities(emoji_lookup, "emoji")
+          indexed = index_entities(emoji_lookup, "emoji", state.tables)
           %{stats | entities: stats.entities + indexed, emojis: length(emojis)}
 
         {:error, _} ->
@@ -664,19 +664,19 @@ defmodule Brain.ML.Gazetteer do
       end
 
     # Enrich from Atlas knowledge_graph entities
-    atlas_synced = sync_from_atlas()
+    atlas_synced = sync_from_atlas(state.tables)
 
     stats = %{stats | entities: stats.entities + atlas_synced}
 
     # Build prefix index
-    prefix_count = build_prefix_index()
+    prefix_count = build_prefix_index(state.tables)
 
     end_time = System.monotonic_time(:millisecond)
     load_time = end_time - start_time
 
     final_stats = %{stats | prefixes: prefix_count, loaded: true, load_time_ms: load_time}
 
-    :ets.insert(@stats_table, {:stats, final_stats})
+    :ets.insert(state.tables.stats, {:stats, final_stats})
 
     Logger.info("Gazetteers loaded", %{
       entities: final_stats.entities,
@@ -696,7 +696,7 @@ defmodule Brain.ML.Gazetteer do
     normalized_key = normalize(name)
 
     # Check if entry already exists
-    case :ets.lookup(@table_name, normalized_key) do
+    case :ets.lookup(state.tables.entities, normalized_key) do
       [{^normalized_key, existing_info}] ->
         existing_type = existing_info[:entity_type] || existing_info[:type]
         {:reply, {:error, {:duplicate, existing_type}}, state}
@@ -711,7 +711,7 @@ defmodule Brain.ML.Gazetteer do
           |> Map.put(:source, :admin)
           |> Map.put(:added_at, System.system_time(:second))
 
-        :ets.insert(@table_name, {normalized_key, entity_info})
+        :ets.insert(state.tables.entities, {normalized_key, entity_info})
 
         # Update prefixes if multi-word
         words = String.split(normalized_key)
@@ -722,15 +722,15 @@ defmodule Brain.ML.Gazetteer do
             |> Enum.map(fn n -> Enum.take(words, n) |> Enum.join(" ") end)
 
           Enum.each(prefixes, fn prefix ->
-            :ets.insert(@prefix_table, {prefix, true})
+            :ets.insert(state.tables.prefixes, {prefix, true})
           end)
         end
 
         # Update stats
-        case :ets.lookup(@stats_table, :stats) do
+        case :ets.lookup(state.tables.stats, :stats) do
           [{:stats, current_stats}] ->
             new_stats = Map.update(current_stats, :entities, 1, &(&1 + 1))
-            :ets.insert(@stats_table, {:stats, new_stats})
+            :ets.insert(state.tables.stats, {:stats, new_stats})
 
           _ ->
             :ok
@@ -745,15 +745,15 @@ defmodule Brain.ML.Gazetteer do
   def handle_call({:remove_entry, name}, _from, state) do
     normalized_key = normalize(name)
 
-    case :ets.lookup(@table_name, normalized_key) do
+    case :ets.lookup(state.tables.entities, normalized_key) do
       [{^normalized_key, _info}] ->
-        :ets.delete(@table_name, normalized_key)
+        :ets.delete(state.tables.entities, normalized_key)
 
         # Update stats
-        case :ets.lookup(@stats_table, :stats) do
+        case :ets.lookup(state.tables.stats, :stats) do
           [{:stats, current_stats}] ->
             new_stats = Map.update(current_stats, :entities, 0, &max(&1 - 1, 0))
-            :ets.insert(@stats_table, {:stats, new_stats})
+            :ets.insert(state.tables.stats, {:stats, new_stats})
 
           _ ->
             :ok
@@ -771,7 +771,7 @@ defmodule Brain.ML.Gazetteer do
   def handle_call({:clear_by_type, entity_type}, _from, state) do
     # Find and delete all entries of the given type
     entries_to_delete =
-      :ets.tab2list(@table_name)
+      :ets.tab2list(state.tables.entities)
       |> Enum.filter(fn {_key, info} ->
         Map.get(info, :entity_type) == entity_type or
           Map.get(info, :type) == entity_type
@@ -780,11 +780,11 @@ defmodule Brain.ML.Gazetteer do
     count = length(entries_to_delete)
 
     Enum.each(entries_to_delete, fn {key, _info} ->
-      :ets.delete(@table_name, key)
+      :ets.delete(state.tables.entities, key)
     end)
 
     # Update stats
-    update_entity_count(-count)
+    update_entity_count(-count, state.tables)
 
     Logger.info("Cleared gazetteer entries by type", %{type: entity_type, count: count})
     {:reply, {:ok, count}, state}
@@ -794,7 +794,7 @@ defmodule Brain.ML.Gazetteer do
   def handle_call(:clear_admin_entries, _from, state) do
     # Find and delete all admin-added entries
     entries_to_delete =
-      :ets.tab2list(@table_name)
+      :ets.tab2list(state.tables.entities)
       |> Enum.filter(fn {_key, info} ->
         Map.get(info, :source) == :admin
       end)
@@ -802,11 +802,11 @@ defmodule Brain.ML.Gazetteer do
     count = length(entries_to_delete)
 
     Enum.each(entries_to_delete, fn {key, _info} ->
-      :ets.delete(@table_name, key)
+      :ets.delete(state.tables.entities, key)
     end)
 
     # Update stats
-    update_entity_count(-count)
+    update_entity_count(-count, state.tables)
 
     Logger.info("Cleared admin-added gazetteer entries", %{count: count})
     {:reply, {:ok, count}, state}
@@ -815,14 +815,14 @@ defmodule Brain.ML.Gazetteer do
   @impl true
   def handle_call(:clear_all, _from, state) do
     # Count before clearing
-    count = :ets.info(@table_name, :size) || 0
+    count = :ets.info(state.tables.entities, :size) || 0
 
     # Clear all tables
-    :ets.delete_all_objects(@table_name)
-    :ets.delete_all_objects(@prefix_table)
+    :ets.delete_all_objects(state.tables.entities)
+    :ets.delete_all_objects(state.tables.prefixes)
 
     # Reset stats
-    :ets.insert(@stats_table, {:stats, %{entities: 0, loaded: false}})
+    :ets.insert(state.tables.stats, {:stats, %{entities: 0, loaded: false}})
 
     Logger.info("Cleared all gazetteer entries", %{count: count})
     {:reply, {:ok, count}, state}
@@ -834,7 +834,7 @@ defmodule Brain.ML.Gazetteer do
   def handle_call({:create_world_overlay, world_id}, _from, state) do
     # Just mark that this world exists - entries are added individually
     :ets.insert(
-      @world_overlay_table,
+      state.tables.world_overlays,
       {{world_id, :_meta}, %{created_at: System.system_time(:second)}}
     )
 
@@ -845,8 +845,8 @@ defmodule Brain.ML.Gazetteer do
   @impl true
   def handle_call({:destroy_world_overlay, world_id}, _from, state) do
     # Delete all entries for this world
-    entries = :ets.match_object(@world_overlay_table, {{world_id, :_}, :_})
-    Enum.each(entries, fn {key, _} -> :ets.delete(@world_overlay_table, key) end)
+    entries = :ets.match_object(state.tables.world_overlays, {{world_id, :_}, :_})
+    Enum.each(entries, fn {key, _} -> :ets.delete(state.tables.world_overlays, key) end)
 
     Logger.debug("Destroyed world overlay", %{
       world_id: world_id,
@@ -872,7 +872,7 @@ defmodule Brain.ML.Gazetteer do
       |> Map.put(:added_at, System.system_time(:second))
 
     # Check if entry already exists
-    case :ets.lookup(@world_overlay_table, key) do
+    case :ets.lookup(state.tables.world_overlays, key) do
       [{^key, existing_infos}] when is_list(existing_infos) ->
         # Check if this type already exists
         already_has_type =
@@ -883,7 +883,7 @@ defmodule Brain.ML.Gazetteer do
         if already_has_type do
           {:reply, {:error, {:duplicate, entity_type}}, state}
         else
-          :ets.insert(@world_overlay_table, {key, [entity_info | existing_infos]})
+          :ets.insert(state.tables.world_overlays, {key, [entity_info | existing_infos]})
           {:reply, {:ok, normalized_key}, state}
         end
 
@@ -893,12 +893,12 @@ defmodule Brain.ML.Gazetteer do
         if existing_type == entity_type do
           {:reply, {:error, {:duplicate, entity_type}}, state}
         else
-          :ets.insert(@world_overlay_table, {key, [entity_info, existing_info]})
+          :ets.insert(state.tables.world_overlays, {key, [entity_info, existing_info]})
           {:reply, {:ok, normalized_key}, state}
         end
 
       [] ->
-        :ets.insert(@world_overlay_table, {key, [entity_info]})
+        :ets.insert(state.tables.world_overlays, {key, [entity_info]})
         {:reply, {:ok, normalized_key}, state}
     end
   end
@@ -906,12 +906,12 @@ defmodule Brain.ML.Gazetteer do
   @impl true
   def handle_call({:restore_world_overlay, world_id, overlay_data}, _from, state) do
     # First clean any existing overlay
-    entries = :ets.match_object(@world_overlay_table, {{world_id, :_}, :_})
-    Enum.each(entries, fn {key, _} -> :ets.delete(@world_overlay_table, key) end)
+    entries = :ets.match_object(state.tables.world_overlays, {{world_id, :_}, :_})
+    Enum.each(entries, fn {key, _} -> :ets.delete(state.tables.world_overlays, key) end)
 
     # Restore all entries
     Enum.each(overlay_data, fn {key, info} ->
-      :ets.insert(@world_overlay_table, {{world_id, key}, info})
+      :ets.insert(state.tables.world_overlays, {{world_id, key}, info})
     end)
 
     Logger.debug("Restored world overlay", %{world_id: world_id, entries: length(overlay_data)})
@@ -923,9 +923,9 @@ defmodule Brain.ML.Gazetteer do
     normalized_key = normalize(text)
     key = {world_id, normalized_key}
 
-    case :ets.lookup(@world_overlay_table, key) do
+    case :ets.lookup(state.tables.world_overlays, key) do
       [{^key, _}] ->
-        :ets.delete(@world_overlay_table, key)
+        :ets.delete(state.tables.world_overlays, key)
         {:reply, :ok, state}
 
       [] ->
@@ -937,12 +937,12 @@ defmodule Brain.ML.Gazetteer do
   # Private Functions
   # ============================================================================
 
-  defp sync_from_atlas do
+  defp sync_from_atlas(tables) do
     case Brain.Graph.Training.collect_gazetteer_entries() do
       {:ok, entries} ->
         count =
           Enum.count(entries, fn {name, entity_type, metadata} ->
-            insert_entry_direct(name, entity_type, metadata)
+            insert_entry_direct(name, entity_type, metadata, tables)
           end)
 
         Logger.debug("Gazetteer enriched from Atlas knowledge_graph (#{count} entries)")
@@ -958,7 +958,7 @@ defmodule Brain.ML.Gazetteer do
       0
   end
 
-  defp insert_entry_direct(name, entity_type, metadata) when is_binary(name) and name != "" do
+  defp insert_entry_direct(name, entity_type, metadata, tables) when is_binary(name) and name != "" do
     normalized_key = normalize(name)
 
     entity_info =
@@ -970,7 +970,7 @@ defmodule Brain.ML.Gazetteer do
       |> Map.put(:source, :atlas)
       |> Map.put(:added_at, System.system_time(:second))
 
-    case :ets.lookup(@table_name, normalized_key) do
+    case :ets.lookup(tables.entities, normalized_key) do
       [{^normalized_key, existing}] ->
         existing_list =
           case existing do
@@ -986,12 +986,12 @@ defmodule Brain.ML.Gazetteer do
         if already_has_type do
           false
         else
-          :ets.insert(@table_name, {normalized_key, [entity_info | existing_list]})
+          :ets.insert(tables.entities, {normalized_key, [entity_info | existing_list]})
           true
         end
 
       [] ->
-        :ets.insert(@table_name, {normalized_key, entity_info})
+        :ets.insert(tables.entities, {normalized_key, entity_info})
 
         words = String.split(normalized_key)
 
@@ -1001,7 +1001,7 @@ defmodule Brain.ML.Gazetteer do
             |> Enum.map(fn n -> Enum.take(words, n) |> Enum.join(" ") end)
 
           Enum.each(prefixes, fn prefix ->
-            :ets.insert(@prefix_table, {prefix, true})
+            :ets.insert(tables.prefixes, {prefix, true})
           end)
         end
 
@@ -1009,14 +1009,14 @@ defmodule Brain.ML.Gazetteer do
     end
   end
 
-  defp insert_entry_direct(_, _, _), do: false
+  defp insert_entry_direct(_, _, _, _), do: false
 
-  defp update_entity_count(delta) do
-    case :ets.lookup(@stats_table, :stats) do
+  defp update_entity_count(delta, tables) do
+    case :ets.lookup(tables.stats, :stats) do
       [{:stats, current_stats}] ->
         new_count = max((current_stats[:entities] || 0) + delta, 0)
         new_stats = Map.put(current_stats, :entities, new_count)
-        :ets.insert(@stats_table, {:stats, new_stats})
+        :ets.insert(tables.stats, {:stats, new_stats})
 
       _ ->
         :ok
@@ -1045,7 +1045,7 @@ defmodule Brain.ML.Gazetteer do
     :ets.new(table_name, [:set, :public, :named_table, read_concurrency: true])
   end
 
-  defp index_entities(lookup_map, source) do
+  defp index_entities(lookup_map, source, tables) do
     Enum.reduce(lookup_map, 0, fn {normalized_key, entity_info}, count ->
       # Handle both single entity and list of entities (from expanded ambiguous entries)
       entities_to_add =
@@ -1060,7 +1060,7 @@ defmodule Brain.ML.Gazetteer do
       # Append to existing entries instead of overwriting
       # This allows multiple entity types per key (e.g., "Austin" as person AND location)
       existing =
-        case :ets.lookup(@table_name, normalized_key) do
+        case :ets.lookup(tables.entities, normalized_key) do
           [{^normalized_key, infos}] when is_list(infos) -> infos
           [{^normalized_key, info}] when is_map(info) -> [info]
           [] -> []
@@ -1078,18 +1078,18 @@ defmodule Brain.ML.Gazetteer do
         end)
 
       if new_entries != [] do
-        :ets.insert(@table_name, {normalized_key, new_entries ++ existing})
+        :ets.insert(tables.entities, {normalized_key, new_entries ++ existing})
       end
 
       count + length(entities_to_add)
     end)
   end
 
-  defp build_prefix_index do
+  defp build_prefix_index(tables) do
     # Build prefixes for all multi-word entities
     # This enables efficient lookup of entities like "New York"
 
-    entities = :ets.tab2list(@table_name)
+    entities = :ets.tab2list(tables.entities)
 
     prefixes =
       Enum.flat_map(entities, fn {key, _infos} ->
@@ -1107,7 +1107,7 @@ defmodule Brain.ML.Gazetteer do
       |> Enum.uniq()
 
     Enum.each(prefixes, fn prefix ->
-      :ets.insert(@prefix_table, {prefix, true})
+      :ets.insert(tables.prefixes, {prefix, true})
     end)
 
     length(prefixes)
