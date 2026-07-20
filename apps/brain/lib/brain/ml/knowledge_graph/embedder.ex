@@ -19,45 +19,6 @@ defmodule Brain.ML.KnowledgeGraph.Embedder do
   alias Brain.ML.KnowledgeGraph.TripleScorer
 
   @doc """
-  Extract entity embeddings from a trained triple scorer model.
-
-  For each entity, encodes its name through the truncated model (stopping
-  at the 128-dim dense1 layer) and returns the resulting embedding vector.
-
-  ## Parameters
-    - `entities` - List of entity name strings
-    - `scorer_model` - Full trained TripleScorer Axon model
-    - `params` - Trained model parameters (from TripleScorer)
-    - `vocab` - Token vocabulary map
-
-  ## Returns
-    Map of entity_name => embedding_tensor (128-dim)
-  """
-  def extract_embeddings(entities, scorer_model, params, vocab) do
-    embedding_model = build_embedding_model(scorer_model)
-    model_state = ensure_model_state(params)
-
-    Map.new(entities, fn entity_name ->
-      embedding = encode_entity(entity_name, embedding_model, model_state, vocab)
-      {entity_name, embedding}
-    end)
-  end
-
-  @doc """
-  Build a truncated model that outputs the 128-dim dense1 activation.
-
-  Reuses the TripleScorer architecture but stops at the `dense1` layer,
-  before dropout and the final sigmoid output.
-  """
-  def build_embedding_model(scorer_model) do
-    Axon.nx(scorer_model, fn output ->
-      output
-    end)
-  rescue
-    _ -> scorer_model
-  end
-
-  @doc """
   Build a standalone embedding extraction model for a given vocab size.
 
   Uses the same architecture as TripleScorer up to and including `dense1`.
@@ -130,6 +91,4 @@ defmodule Brain.ML.KnowledgeGraph.Embedder do
     Nx.squeeze(output)
   end
 
-  defp ensure_model_state(%Axon.ModelState{} = state), do: state
-  defp ensure_model_state(params) when is_map(params), do: Axon.ModelState.new(params)
 end
