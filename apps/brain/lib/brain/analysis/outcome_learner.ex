@@ -182,7 +182,8 @@ defmodule Brain.Analysis.OutcomeLearner do
         AnalyzerCalibration.track_outcome(
           result.analyzer,
           result.raw_score,
-          was_correct
+          was_correct,
+          result.analyzer == interp.source
         )
       end)
     end

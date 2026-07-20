@@ -243,7 +243,7 @@ defmodule Brain.Knowledge.Corroborator do
   defp cluster_by_similarity(embedded_findings, threshold) do
     embedded_findings
     |> Enum.reduce([], fn {finding, embedding}, clusters ->
-      case find_matching_cluster(clusters, embedding, threshold) do
+      case find_matching_cluster(clusters, finding, embedding, threshold) do
         {:found, cluster_idx} ->
           update_cluster(clusters, cluster_idx, {finding, embedding})
 
@@ -259,7 +259,7 @@ defmodule Brain.Knowledge.Corroborator do
     |> Enum.map(&finalize_cluster/1)
   end
 
-  defp find_matching_cluster(clusters, embedding, threshold) do
+  defp find_matching_cluster(clusters, current_finding, embedding, threshold) do
     clusters
     |> Enum.with_index()
     |> Enum.find_value(:not_found, fn {cluster, idx} ->
@@ -268,7 +268,7 @@ defmodule Brain.Knowledge.Corroborator do
 
       similarity =
         if kg_clustering_enabled?() do
-          blend_with_kg_similarity(tfidf_sim, primary_finding, nil)
+          blend_with_kg_similarity(tfidf_sim, primary_finding, current_finding)
         else
           tfidf_sim
         end
@@ -281,14 +281,17 @@ defmodule Brain.Knowledge.Corroborator do
     end)
   end
 
-  defp blend_with_kg_similarity(tfidf_sim, primary_finding, _current_finding) do
-    alias Brain.ML.KnowledgeGraph.EntityVectorCache
+  # Blend the surface (TF-IDF) similarity with a knowledge-graph-aware entity
+  # similarity: real 128-dim KG embeddings for both findings' entities, compared
+  # with cosine and mixed 60/40. Falls back to the TF-IDF score alone only when a
+  # KG vector genuinely isn't available (not as a silent no-op).
+  defp blend_with_kg_similarity(tfidf_sim, primary_finding, current_finding) do
+    primary_vec = entity_vector(finding_entity(primary_finding))
+    current_vec = entity_vector(finding_entity(current_finding))
 
-    primary_entity = Map.get(primary_finding, :entity) || Map.get(primary_finding, :claim, "")
-    primary_vec = entity_vector(primary_entity)
-
-    if primary_vec == nil do
-      tfidf_sim
+    if is_list(primary_vec) and is_list(current_vec) and primary_vec != [] and current_vec != [] do
+      kg_sim = cosine_similarity(primary_vec, current_vec)
+      tfidf_sim * 0.6 + kg_sim * 0.4
     else
       tfidf_sim
     end
@@ -296,11 +299,14 @@ defmodule Brain.Knowledge.Corroborator do
     _ -> tfidf_sim
   end
 
-  defp entity_vector(text) when is_binary(text) and text != "" do
-    alias Brain.ML.KnowledgeGraph.EntityVectorCache
+  defp finding_entity(finding) when is_map(finding),
+    do: Map.get(finding, :entity) || Map.get(finding, :claim, "")
 
-    case EntityVectorCache.get_or_compute("default", text) do
-      {:ok, vec} -> vec
+  defp finding_entity(_), do: ""
+
+  defp entity_vector(text) when is_binary(text) and text != "" do
+    case Brain.ML.KnowledgeGraph.EntityVectorCache.get_or_compute("default", text) do
+      {:ok, tensor} -> Nx.to_flat_list(tensor)
       _ -> nil
     end
   rescue

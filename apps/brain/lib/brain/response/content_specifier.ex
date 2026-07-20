@@ -612,7 +612,11 @@ defmodule Brain.Response.ContentSpecifier do
 
   defp build_explanation_parts(_, _), do: []
 
-  defp check_action_capability(_intent, _opts), do: :unknown
+  # Real capability: resolve the intent to a service and check its
+  # credentials/registration via the Dispatcher (the shared source of truth),
+  # instead of a hardcoded :unknown.
+  defp check_action_capability(intent, opts),
+    do: Brain.Services.Dispatcher.action_capability(intent, opts)
 
   defp capability_to_result(capability) do
     case capability do

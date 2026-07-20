@@ -108,6 +108,27 @@ defmodule Brain.Services.Dispatcher do
   end
 
   @doc """
+  Whether the system can actually carry out `intent`: resolve it to a registered
+  service and check that service's credentials/registration. Returns `:capable`
+  or `:incapable` — never a fabricated `:unknown`. This is the single source of
+  truth consulted by the response planners (ContentSpecifier, DiscoursePlanner).
+  """
+  @spec action_capability(String.t() | nil, keyword()) :: :capable | :incapable
+  def action_capability(intent, opts \\ [])
+
+  def action_capability(intent, opts) when is_binary(intent) do
+    case find_service(intent) do
+      nil ->
+        :incapable
+
+      service ->
+        if service_available?(service.name(), opts), do: :capable, else: :incapable
+    end
+  end
+
+  def action_capability(_intent, _opts), do: :incapable
+
+  @doc """
   List all registered services with their status.
 
   ## Returns

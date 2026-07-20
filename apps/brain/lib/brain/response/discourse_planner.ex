@@ -243,7 +243,11 @@ defmodule Brain.Response.DiscoursePlanner do
   end
 
   defp seed_primitive_content(%Primitive{type: :acknowledgment, variant: :action} = p, analysis) do
-    Primitive.merge_content(p, %{action: analysis.intent, capability: :unknown, status: :pending})
+    # Real capability via the shared Dispatcher check, not a hardcoded :unknown;
+    # the pending/incapable status follows from whether we can actually act.
+    capability = Brain.Services.Dispatcher.action_capability(analysis.intent, [])
+    status = if capability == :capable, do: :pending, else: :incapable
+    Primitive.merge_content(p, %{action: analysis.intent, capability: capability, status: status})
   end
 
   defp seed_primitive_content(%Primitive{type: :acknowledgment, variant: :learning} = p, analysis) do

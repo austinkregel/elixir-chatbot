@@ -73,6 +73,20 @@ defmodule Brain.Analysis.AnalyzerCalibration do
   end
 
   @doc """
+  Like `track_outcome/3`, plus whether this analyzer *won* the interpretation
+  (was the selected source). This is what feeds the win-rate `is_dominating?/2`
+  reads — the caller (`OutcomeLearner`) already knows the winner per participant.
+  """
+  def track_outcome(analyzer, predicted_confidence, was_correct, won?)
+      when is_atom(analyzer) and is_float(predicted_confidence) and is_boolean(was_correct) and
+             is_boolean(won?) do
+    GenServer.cast(
+      __MODULE__,
+      {:track_outcome, analyzer, predicted_confidence, was_correct, won?}
+    )
+  end
+
+  @doc """
   Gets the calibration error for an analyzer.
 
   Lower is better - represents average deviation between predicted and actual accuracy.
@@ -167,6 +181,16 @@ defmodule Brain.Analysis.AnalyzerCalibration do
 
   @impl true
   def handle_cast({:track_outcome, analyzer, predicted_confidence, was_correct}, state) do
+    {:noreply, record_outcome(analyzer, predicted_confidence, was_correct, state)}
+  end
+
+  @impl true
+  def handle_cast({:track_outcome, analyzer, predicted_confidence, was_correct, won?}, state) do
+    update_win_rate(analyzer, won?)
+    {:noreply, record_outcome(analyzer, predicted_confidence, was_correct, state)}
+  end
+
+  defp record_outcome(analyzer, predicted_confidence, was_correct, state) do
     bucket = confidence_bucket(predicted_confidence)
 
     # Update bucket stats
@@ -180,22 +204,19 @@ defmodule Brain.Analysis.AnalyzerCalibration do
     outcomes_count = Map.get(new_outcomes, analyzer, 0)
     error = calculate_calibration_error(analyzer)
 
-    new_state =
-      if outcomes_count >= @recalibration_interval or error > @max_calibration_error do
-        perform_recalibration(analyzer)
+    if outcomes_count >= @recalibration_interval or error > @max_calibration_error do
+      perform_recalibration(analyzer)
 
-        %{
-          state
-          | outcomes_since_recalibration: Map.put(new_outcomes, analyzer, 0),
-            total_outcomes: new_total,
-            last_recalibration:
-              Map.put(state.last_recalibration, analyzer, System.monotonic_time(:second))
-        }
-      else
-        %{state | outcomes_since_recalibration: new_outcomes, total_outcomes: new_total}
-      end
-
-    {:noreply, new_state}
+      %{
+        state
+        | outcomes_since_recalibration: Map.put(new_outcomes, analyzer, 0),
+          total_outcomes: new_total,
+          last_recalibration:
+            Map.put(state.last_recalibration, analyzer, System.monotonic_time(:second))
+      }
+    else
+      %{state | outcomes_since_recalibration: new_outcomes, total_outcomes: new_total}
+    end
   end
 
   @impl true
@@ -246,11 +267,33 @@ defmodule Brain.Analysis.AnalyzerCalibration do
       :ets.insert(@table, {{:bucket, analyzer, bucket}, @default_bucket_accuracy, 0})
     end
 
-    # Initialize error tracking
+    # Initialize error tracking + win-rate counters
     for analyzer <- @tracked_analyzers do
       :ets.insert(@table, {{:error, analyzer}, 0.0})
       :ets.insert(@table, {{:win_rate, analyzer}, 0.0})
+      :ets.insert(@table, {{:wins, analyzer}, 0})
+      :ets.insert(@table, {{:plays, analyzer}, 0})
     end
+  end
+
+  # Records a participation (and a win, when `won?`), then recomputes the
+  # win-rate that `is_dominating?/2` reads. Previously `{:win_rate, _}` was
+  # zero-initialized once and never touched again — so nothing ever dominated.
+  defp update_win_rate(analyzer, won?) do
+    plays = :ets.update_counter(@table, {:plays, analyzer}, 1, {{:plays, analyzer}, 0})
+
+    wins =
+      if won? do
+        :ets.update_counter(@table, {:wins, analyzer}, 1, {{:wins, analyzer}, 0})
+      else
+        case :ets.lookup(@table, {:wins, analyzer}) do
+          [{_, w}] -> w
+          [] -> 0
+        end
+      end
+
+    win_rate = if plays > 0, do: wins / plays, else: 0.0
+    :ets.insert(@table, {{:win_rate, analyzer}, win_rate})
   end
 
   defp confidence_bucket(confidence) when is_float(confidence) do
