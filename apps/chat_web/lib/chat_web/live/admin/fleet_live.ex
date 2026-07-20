@@ -37,7 +37,7 @@ defmodule ChatWeb.Admin.FleetLive do
      |> assign(:selected, nil)
      |> assign(:detail, nil)
      |> assign(:roster_query, "")
-     |> assign(:command_tab, :commission)
+     |> assign(:show_commission, false)
      # Conversation state: the agent currently being hailed (spinner) and the last
      # hail Q&A, so the detail modal can show the exchange as it returns.
      |> assign(:hail_pending, nil)
@@ -91,180 +91,43 @@ defmodule ChatWeb.Admin.FleetLive do
           </div>
         </header>
 
-        <!-- Command panel -->
-        <div class="card bg-base-100 shadow">
-          <div class="card-body p-4">
-            <div class="flex items-center gap-1 border-b border-base-300 -mx-4 px-4 mb-4">
-              <.cmd_tab tab="commission" active={@command_tab} icon="hero-user-plus" label="Commission" />
-              <.cmd_tab tab="order" active={@command_tab} icon="hero-flag" label="Orders" />
-              <.cmd_tab tab="assign_co" active={@command_tab} icon="hero-share" label="Chain" />
-              <.cmd_tab tab="models" active={@command_tab} icon="hero-cpu-chip" label="Minds" />
-            </div>
-
-            <form :if={@command_tab == :commission} phx-submit="commission" class="max-w-lg space-y-4">
-              <p class="text-sm text-base-content/60">Bring a soul aboard as a commissioned officer.</p>
-              <div>
-                <.field_label>Officer</.field_label>
-                <select name="soul_id" phx-change="pick" class="select select-bordered w-full" required>
-                  <option value="" disabled selected={is_nil(@picks["soul_id"])}>Select a soul to commission…</option>
-                  <option :for={sid <- @souls} value={sid} selected={sid == @picks["soul_id"]}>{sid}</option>
-                </select>
-                <p :if={@souls == []} class="text-xs text-warning mt-1.5">
-                  No souls found in <code class="text-[11px]">{@souls_dir}</code>. Add one (e.g. <code>souls/ensign-jj7.json</code>) and refresh.
-                </p>
-              </div>
-              <div>
-                <.field_label>Posting</.field_label>
-                <select name="rank" phx-change="pick" class="select select-bordered w-full">
-                  <option :for={{key, meta} <- @billets} value={key} selected={to_string(key) == picked_rank(@picks)}>{meta.label}</option>
-                </select>
-                <p class="text-xs text-base-content/60 mt-1.5">{Fleet.Rank.describe(picked_rank(@picks))}</p>
-                <div class="mt-2 flex flex-wrap items-center gap-1.5">
-                  <%= case Fleet.Rank.standing_authorities(picked_rank(@picks)) do %>
-                    <% [] -> %>
-                      <span class="text-xs text-base-content/40">No standing authority — each order confers what its task needs.</span>
-                    <% auths -> %>
-                      <span class="text-[11px] uppercase tracking-wider text-base-content/40">Confers</span>
-                      <span :for={a <- auths} class="badge badge-ghost badge-sm">{fmt_grant(a)}</span>
-                  <% end %>
-                </div>
-              </div>
-              <details class="group">
-                <summary class="inline-flex items-center gap-1 text-xs text-base-content/50 hover:text-base-content cursor-pointer select-none">
-                  <.icon name="hero-chevron-right" class="size-3 group-open:rotate-90 transition-transform" /> Callsign (optional)
-                </summary>
-                <div class="mt-2 pl-4 space-y-1.5">
-                  <input name="commission_agent_id" value={@picks["commission_agent_id"]} phx-change="pick"
-                         class="input input-sm input-bordered w-full"
-                         placeholder={"defaults to " <> (@picks["soul_id"] || "the soul's id")} autocomplete="off" />
-                  <p class="text-xs text-base-content/50">
-                    Blank resumes the officer under the soul's own id. A distinct id stands up a second, independent officer from the same soul.
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <!-- The Watch — the crew, and the command surface -->
+          <div class="xl:col-span-2 rounded-xl border border-base-300 bg-base-100">
+            <div class="p-4 sm:p-5">
+              <div class="flex items-start justify-between gap-3 flex-wrap mb-4">
+                <div>
+                  <h2 class="text-sm font-semibold flex items-center gap-2">
+                    <.icon name="hero-users" class="size-4 text-base-content/50" /> Chain of command
+                  </h2>
+                  <p class="text-xs text-base-content/50 mt-1">
+                    Your officers, in order of command. Select one to give orders or review the record.
                   </p>
                 </div>
-              </details>
-              <button class="btn btn-primary"><.icon name="hero-user-plus" class="size-4" /> Commission officer</button>
-            </form>
-
-            <form :if={@command_tab == :order} phx-submit="issue_order" class="max-w-lg space-y-4">
-              <p class="text-sm text-base-content/60">Give a standing officer their orders.</p>
-              <div>
-                <.field_label>Officer</.field_label>
-                <select name="agent_id" phx-change="pick" class="select select-bordered w-full" required>
-                  <option value="" disabled selected={is_nil(@picks["agent_id"])}>Who receives the order?</option>
-                  <option :for={a <- @roster} value={a.agent_id} selected={a.agent_id == @picks["agent_id"]}>{agent_label(a)}</option>
-                </select>
-              </div>
-              <div>
-                <.field_label>Orders</.field_label>
-                <input name="directive" class="input input-bordered w-full"
-                       placeholder="e.g. Summarize sector 7 readiness and flag anomalies." required />
-              </div>
-              <button class="btn btn-primary"><.icon name="hero-flag" class="size-4" /> Issue order</button>
-            </form>
-
-            <form :if={@command_tab == :assign_co} phx-submit="assign_co" class="max-w-lg space-y-4">
-              <p class="text-sm text-base-content/60">Set who answers to whom.</p>
-              <div>
-                <.field_label>Officer</.field_label>
-                <select name="report_id" phx-change="pick" class="select select-bordered w-full" required>
-                  <option value="" disabled selected={is_nil(@picks["report_id"])}>Which officer reports…</option>
-                  <option :for={a <- @roster} value={a.agent_id} selected={a.agent_id == @picks["report_id"]}>{agent_label(a)}</option>
-                </select>
-              </div>
-              <div>
-                <.field_label>Reports to</.field_label>
-                <select name="co_id" phx-change="pick" class="select select-bordered w-full" required>
-                  <option value="" disabled selected={is_nil(@picks["co_id"])}>…their commanding officer</option>
-                  <option :for={a <- @roster} value={a.agent_id} selected={a.agent_id == @picks["co_id"]}>{agent_label(a)}</option>
-                </select>
-              </div>
-              <button class="btn btn-primary"><.icon name="hero-share" class="size-4" /> Assign</button>
-            </form>
-
-            <div :if={@command_tab == :models} class="max-w-xl space-y-4">
-              <div class="flex items-center justify-between">
-                <div class="text-xs text-base-content/60">
-                  Generation backend: <span class="font-mono">{@generation.name}</span>
-                  <span :if={@generation.name == :openai_compatible}>
-                    · active model <span class="font-mono">{Brain.ML.Generation.OllamaAdmin.current_model()}</span>
-                  </span>
+                <div class="flex items-center gap-2">
+                  <label class="input input-sm input-bordered flex items-center gap-1 w-36" :if={@roster != []}>
+                    <.icon name="hero-magnifying-glass" class="size-3.5 text-base-content/40" />
+                    <input
+                      type="text"
+                      phx-change="filter_roster"
+                      phx-debounce="150"
+                      name="q"
+                      value={@roster_query}
+                      placeholder="filter…"
+                      class="grow"
+                    />
+                  </label>
+                  <button class="btn btn-sm btn-primary gap-1" phx-click="open_commission">
+                    <.icon name="hero-user-plus" class="size-4" /> Commission officer
+                  </button>
                 </div>
-                <button class="btn btn-ghost btn-xs" phx-click="refresh_models">
-                  <.icon name="hero-arrow-path" class="size-3.5" /> refresh
-                </button>
-              </div>
-
-              <form phx-submit="pull_model" class="flex gap-2">
-                <input
-                  name="model_name"
-                  placeholder="model to pull, e.g. llama3.1:8b"
-                  class="input input-sm input-bordered flex-1"
-                  autocomplete="off"
-                  required
-                  disabled={not is_nil(@model_pull_pending)}
-                />
-                <button class="btn btn-sm btn-secondary" disabled={not is_nil(@model_pull_pending)}>
-                  Pull
-                </button>
-              </form>
-              <div :if={@model_pull_pending} class="text-xs text-base-content/60">
-                <span class="loading loading-dots loading-xs"></span> pulling “{@model_pull_pending}” — this can take a while for large models…
-              </div>
-
-              <div class="overflow-x-auto">
-                <table :if={@models != []} class="table table-xs">
-                  <thead><tr><th>Model</th><th>Size</th><th>Pulled</th><th></th></tr></thead>
-                  <tbody>
-                    <tr :for={m <- @models}>
-                      <td class="font-mono">{m.name}</td>
-                      <td>{format_bytes(m.size)}</td>
-                      <td class="text-base-content/50">{String.slice(to_string(m.modified_at), 0, 10)}</td>
-                      <td class="text-right">
-                        <button
-                          class={["btn btn-xs", m.name == Brain.ML.Generation.OllamaAdmin.current_model() && "btn-success", m.name != Brain.ML.Generation.OllamaAdmin.current_model() && "btn-ghost"]}
-                          phx-click="activate_model" phx-value-name={m.name}
-                        >
-                          {if m.name == Brain.ML.Generation.OllamaAdmin.current_model(), do: "active", else: "activate"}
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-                <p :if={@models == []} class="text-xs text-base-content/50">
-                  No local models found (or Ollama isn't reachable). Pull one above.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          <!-- Roster -->
-          <div class="xl:col-span-2 rounded-xl border border-base-300 bg-base-100">
-            <div class="p-4">
-              <div class="flex items-center justify-between gap-2 flex-wrap mb-3">
-                <h2 class="text-sm font-semibold flex items-center gap-2">
-                  <.icon name="hero-users" class="size-4 text-base-content/50" /> Chain of command
-                </h2>
-                <label class="input input-sm input-bordered flex items-center gap-1 w-48" :if={@roster != []}>
-                  <.icon name="hero-magnifying-glass" class="size-3.5 text-base-content/40" />
-                  <input
-                    type="text"
-                    phx-change="filter_roster"
-                    phx-debounce="150"
-                    name="q"
-                    value={@roster_query}
-                    placeholder="filter crew…"
-                    class="grow"
-                  />
-                </label>
               </div>
 
               <div :if={@roster == []} class="text-sm py-12 text-center space-y-3">
                 <.icon name="hero-user-group" class="size-10 mx-auto text-base-content/20" />
                 <p class="font-medium text-base-content/70">No officers aboard.</p>
                 <p class="text-xs text-base-content/50">
-                  Commission your first from the panel above to stand up the crew.
+                  Use <span class="font-medium">Commission officer</span> above to bring your first soul aboard.
                 </p>
               </div>
 
@@ -412,6 +275,129 @@ defmodule ChatWeb.Admin.FleetLive do
             </div>
           </div>
         </div>
+
+        <!-- Generation & models — ship ops, tucked away from commanding the crew -->
+        <details class="rounded-xl border border-base-300 bg-base-100 group">
+          <summary class="flex items-center gap-2 p-4 cursor-pointer select-none list-none">
+            <.icon name="hero-cpu-chip" class="size-4 text-base-content/50" />
+            <span class="text-sm font-semibold">Generation &amp; models</span>
+            <span class="text-xs text-base-content/50 truncate">
+              {@generation.name}<span :if={@generation.name == :openai_compatible}> · {Brain.ML.Generation.OllamaAdmin.current_model()}</span>
+            </span>
+            <span class="ml-auto text-[11px] uppercase tracking-wider text-base-content/40 flex items-center gap-1">
+              ship ops <.icon name="hero-chevron-down" class="size-4 group-open:rotate-180 transition-transform" />
+            </span>
+          </summary>
+          <div class="border-t border-base-300 p-4 space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="text-xs text-base-content/60">
+                Generation backend: <span class="font-mono">{@generation.name}</span>
+                <span :if={@generation.name == :openai_compatible}>
+                  · active model <span class="font-mono">{Brain.ML.Generation.OllamaAdmin.current_model()}</span>
+                </span>
+              </div>
+              <button class="btn btn-ghost btn-xs" phx-click="refresh_models">
+                <.icon name="hero-arrow-path" class="size-3.5" /> refresh
+              </button>
+            </div>
+
+            <form phx-submit="pull_model" class="flex gap-2">
+              <input
+                name="model_name"
+                placeholder="model to pull, e.g. llama3.1:8b"
+                class="input input-sm input-bordered flex-1"
+                autocomplete="off"
+                required
+                disabled={not is_nil(@model_pull_pending)}
+              />
+              <button class="btn btn-sm btn-secondary" disabled={not is_nil(@model_pull_pending)}>
+                Pull
+              </button>
+            </form>
+            <div :if={@model_pull_pending} class="text-xs text-base-content/60">
+              <span class="loading loading-dots loading-xs"></span> pulling “{@model_pull_pending}” — this can take a while for large models…
+            </div>
+
+            <div class="overflow-x-auto">
+              <table :if={@models != []} class="table table-xs">
+                <thead><tr><th>Model</th><th>Size</th><th>Pulled</th><th></th></tr></thead>
+                <tbody>
+                  <tr :for={m <- @models}>
+                    <td class="font-mono">{m.name}</td>
+                    <td>{format_bytes(m.size)}</td>
+                    <td class="text-base-content/50">{String.slice(to_string(m.modified_at), 0, 10)}</td>
+                    <td class="text-right">
+                      <button
+                        class={["btn btn-xs", m.name == Brain.ML.Generation.OllamaAdmin.current_model() && "btn-success", m.name != Brain.ML.Generation.OllamaAdmin.current_model() && "btn-ghost"]}
+                        phx-click="activate_model" phx-value-name={m.name}
+                      >
+                        {if m.name == Brain.ML.Generation.OllamaAdmin.current_model(), do: "active", else: "activate"}
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p :if={@models == []} class="text-xs text-base-content/50">
+                No local models found (or Ollama isn't reachable). Pull one above.
+              </p>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <!-- Commission modal: a focused dialog for the one global act — bringing a soul aboard -->
+      <div :if={@show_commission} class="modal modal-open">
+        <div class="modal-box max-w-lg">
+          <div class="text-[11px] uppercase tracking-[0.2em] text-primary/70 font-medium mb-1">New commission</div>
+          <h3 class="font-semibold text-xl">Commission an officer</h3>
+          <p class="text-sm text-base-content/60 mt-1 mb-4">Bring a soul aboard as a commissioned officer.</p>
+          <form phx-submit="commission" class="space-y-4">
+            <div>
+              <.field_label>Officer</.field_label>
+              <select name="soul_id" phx-change="pick" class="select select-bordered w-full" required>
+                <option value="" disabled selected={is_nil(@picks["soul_id"])}>Select a soul to commission…</option>
+                <option :for={sid <- @souls} value={sid} selected={sid == @picks["soul_id"]}>{sid}</option>
+              </select>
+              <p :if={@souls == []} class="text-xs text-warning mt-1.5">
+                No souls found in <code class="text-[11px]">{@souls_dir}</code>. Add one (e.g. <code>souls/ensign-jj7.json</code>) and refresh.
+              </p>
+            </div>
+            <div>
+              <.field_label>Posting</.field_label>
+              <select name="rank" phx-change="pick" class="select select-bordered w-full">
+                <option :for={{key, meta} <- @billets} value={key} selected={to_string(key) == picked_rank(@picks)}>{meta.label}</option>
+              </select>
+              <p class="text-xs text-base-content/60 mt-1.5">{Fleet.Rank.describe(picked_rank(@picks))}</p>
+              <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                <%= case Fleet.Rank.standing_authorities(picked_rank(@picks)) do %>
+                  <% [] -> %>
+                    <span class="text-xs text-base-content/40">No standing authority — each order confers what its task needs.</span>
+                  <% auths -> %>
+                    <span class="text-[11px] uppercase tracking-wider text-base-content/40">Confers</span>
+                    <span :for={a <- auths} class="badge badge-ghost badge-sm">{fmt_grant(a)}</span>
+                <% end %>
+              </div>
+            </div>
+            <details class="group">
+              <summary class="inline-flex items-center gap-1 text-xs text-base-content/50 hover:text-base-content cursor-pointer select-none">
+                <.icon name="hero-chevron-right" class="size-3 group-open:rotate-90 transition-transform" /> Callsign (optional)
+              </summary>
+              <div class="mt-2 pl-4 space-y-1.5">
+                <input name="commission_agent_id" value={@picks["commission_agent_id"]} phx-change="pick"
+                       class="input input-sm input-bordered w-full"
+                       placeholder={"defaults to " <> (@picks["soul_id"] || "the soul's id")} autocomplete="off" />
+                <p class="text-xs text-base-content/50">
+                  Blank resumes the officer under the soul's own id. A distinct id stands up a second, independent officer from the same soul.
+                </p>
+              </div>
+            </details>
+            <div class="modal-action">
+              <button type="button" class="btn btn-sm btn-ghost" phx-click="close_commission">Cancel</button>
+              <button class="btn btn-sm btn-primary gap-1"><.icon name="hero-user-plus" class="size-4" /> Commission officer</button>
+            </div>
+          </form>
+        </div>
+        <label class="modal-backdrop" phx-click="close_commission">close</label>
       </div>
 
       <!-- Detail modal -->
@@ -430,15 +416,61 @@ defmodule ChatWeb.Admin.FleetLive do
             <div class="stat py-2"><div class="stat-title text-xs">reliefs</div><div class="stat-value text-lg">{@detail.reliefs}</div></div>
           </div>
 
-          <div class="text-xs text-base-content/50 mb-3">
-            mind-world <code>{@detail.mind_world_id}</code>
-            <span :if={@detail.co}> · reports to <code>{@detail.co}</code></span>
+          <div class="text-[11px] text-base-content/40 mb-3 font-mono">mind-world {@detail.mind_world_id}</div>
+
+          <!-- Command this officer -->
+          <div class="my-4 space-y-4 rounded-lg border border-base-300 bg-base-200/40 p-3">
+            <!-- Orders -->
+            <div>
+              <div class="text-[11px] uppercase tracking-wider text-base-content/40 mb-1.5">Orders</div>
+              <div :if={@detail.directive} class="bg-base-100 border border-base-300 rounded p-2 text-sm mb-2">
+                <span :if={@detail.assignment_status} class={["badge badge-xs mr-1", status_class(@detail.assignment_status)]}>{@detail.assignment_status}</span>
+                “{@detail.directive}”
+              </div>
+              <div :if={@detail.report} class="mb-2">
+                <div class="text-xs font-semibold text-base-content/60 mb-1">Report — what the officer produced</div>
+                <div class="bg-base-100 border border-base-300 rounded p-2 text-sm whitespace-pre-wrap break-words">{report_text(@detail.report)}</div>
+              </div>
+              <details :if={@detail.timeline != []} class="mb-2">
+                <summary class="text-xs font-semibold text-base-content/60 cursor-pointer">Command timeline</summary>
+                <div class="mt-1 space-y-1 text-xs max-h-40 overflow-y-auto">
+                  <div :for={r <- @detail.timeline} class="flex gap-2 items-start">
+                    <span class={["badge badge-xs shrink-0", event_class(safe_atom(r.kind))]}>{r.kind}</span>
+                    <span class="text-base-content/60 break-words">{timeline_desc(r)}</span>
+                  </div>
+                </div>
+              </details>
+              <form phx-submit="issue_order" class="flex gap-2">
+                <input type="hidden" name="agent_id" value={@detail.agent_id} />
+                <input name="directive" class="input input-sm input-bordered flex-1"
+                       placeholder={if @detail.directive, do: "Issue a new order…", else: "Give this officer their orders…"}
+                       required autocomplete="off" />
+                <button class="btn btn-sm btn-primary gap-1"><.icon name="hero-flag" class="size-4" /> Issue order</button>
+              </form>
+            </div>
+
+            <!-- Chain -->
+            <div>
+              <div class="text-[11px] uppercase tracking-wider text-base-content/40 mb-1.5">Chain of command</div>
+              <p class="text-xs text-base-content/60 mb-1.5">
+                <span :if={@detail.co}>Reports to <span class="font-medium text-base-content/80">{@detail.co}</span>.</span>
+                <span :if={is_nil(@detail.co)}>Top of the chain — reports to no one.</span>
+              </p>
+              <form phx-submit="assign_co" class="flex gap-2">
+                <input type="hidden" name="report_id" value={@detail.agent_id} />
+                <select name="co_id" class="select select-sm select-bordered flex-1" required>
+                  <option value="" disabled selected>Set commanding officer…</option>
+                  <option :for={a <- @roster} :if={a.agent_id != @detail.agent_id} value={a.agent_id}>{agent_label(a)}</option>
+                </select>
+                <button class="btn btn-sm btn-ghost gap-1"><.icon name="hero-share" class="size-4" /> Set CO</button>
+              </form>
+            </div>
           </div>
 
           <div class="my-3">
-            <h4 class="font-semibold text-sm mb-1">Tools</h4>
+            <h4 class="font-semibold text-sm mb-1">Standing access</h4>
             <p class="text-xs text-base-content/50 mb-1.5">
-              Standing access you grant this officer — what it may call on, over and above what any order confers.
+              Tools you grant this officer — what it may call on, over and above what any order confers.
               Click a tool to grant or revoke it.
             </p>
             <div class="flex flex-wrap gap-1.5">
@@ -458,27 +490,6 @@ defmodule ChatWeb.Admin.FleetLive do
                 No tools registered (Fleet.Tool.registry/0 is empty).
               </span>
             </div>
-          </div>
-
-          <div :if={@detail.directive} class="my-3">
-            <h4 class="font-semibold text-sm mb-1">Current order</h4>
-            <div class="bg-base-200 rounded p-2 text-sm">
-              <span :if={@detail.assignment_status} class={["badge badge-xs mr-1", status_class(@detail.assignment_status)]}>{@detail.assignment_status}</span>
-              “{@detail.directive}”
-            </div>
-            <div :if={@detail.report} class="mt-2">
-              <div class="text-xs font-semibold text-base-content/60 mb-1">Report — what the agent produced</div>
-              <div class="bg-base-100 border border-base-300 rounded p-2 text-sm whitespace-pre-wrap break-words">{report_text(@detail.report)}</div>
-            </div>
-            <details :if={@detail.timeline != []} class="mt-2">
-              <summary class="text-xs font-semibold text-base-content/60 cursor-pointer">Command timeline</summary>
-              <div class="mt-1 space-y-1 text-xs max-h-40 overflow-y-auto">
-              <div :for={r <- @detail.timeline} class="flex gap-2 items-start">
-                <span class={["badge badge-xs shrink-0", event_class(safe_atom(r.kind))]}>{r.kind}</span>
-                <span class="text-base-content/60 break-words">{timeline_desc(r)}</span>
-              </div>
-              </div>
-            </details>
           </div>
 
           <!-- Hail: converse with the agent without giving an order -->
@@ -541,30 +552,6 @@ defmodule ChatWeb.Admin.FleetLive do
 
   # ── Small function components ───────────────────────────────────────────────
 
-  attr :tab, :string, required: true
-  attr :active, :atom, required: true
-  attr :icon, :string, required: true
-  attr :label, :string, required: true
-
-  defp cmd_tab(assigns) do
-    assigns = assign(assigns, :is_active, assigns.active == String.to_existing_atom(assigns.tab))
-
-    ~H"""
-    <button
-      type="button"
-      phx-click="command_tab"
-      phx-value-tab={@tab}
-      class={[
-        "flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors",
-        (@is_active && "border-primary text-primary") ||
-          "border-transparent text-base-content/50 hover:text-base-content"
-      ]}
-    >
-      <.icon name={@icon} class="size-4" /> {@label}
-    </button>
-    """
-  end
-
   slot :inner_block, required: true
 
   defp field_label(assigns) do
@@ -611,8 +598,12 @@ defmodule ChatWeb.Admin.FleetLive do
     {:noreply, assign(socket, :picks, picks)}
   end
 
-  def handle_event("command_tab", %{"tab" => tab}, socket) do
-    {:noreply, assign(socket, :command_tab, String.to_existing_atom(tab))}
+  def handle_event("open_commission", _params, socket) do
+    {:noreply, assign(socket, :show_commission, true)}
+  end
+
+  def handle_event("close_commission", _params, socket) do
+    {:noreply, assign(socket, :show_commission, false)}
   end
 
   def handle_event("filter_roster", %{"q" => q}, socket) do
@@ -671,6 +662,7 @@ defmodule ChatWeb.Admin.FleetLive do
     {:noreply,
      socket
      |> put_flash(kind, msg)
+     |> assign(:show_commission, false)
      |> drop_picks(["soul_id", "rank", "commission_agent_id"])
      |> assign_roster()}
   end
@@ -852,11 +844,6 @@ defmodule ChatWeb.Admin.FleetLive do
       _ -> %{}
     end
   end
-
-  defp systems_color(%{health_status: :healthy}), do: "text-success"
-  defp systems_color(%{health_status: s}) when s in [:degraded, :warning], do: "text-warning"
-  defp systems_color(%{health_status: :critical}), do: "text-error"
-  defp systems_color(_), do: "text-base-content/40"
 
   defp systems_pill_class(%{health_status: :healthy}), do: "border-success/30 text-success"
   defp systems_pill_class(%{health_status: s}) when s in [:degraded, :warning], do: "border-warning/30 text-warning"
