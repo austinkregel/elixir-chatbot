@@ -193,7 +193,6 @@ defmodule Brain.Analysis.RacingAnalyzer do
     analyzers = [
       model: fn -> analyze_with_model(text) end,
       structural: fn -> analyze_structure(text) end,
-      keyword: fn -> analyze_keywords(text) end,
       pattern_recognition: fn -> analyze_patterns(text) end
     ]
 
@@ -340,10 +339,6 @@ defmodule Brain.Analysis.RacingAnalyzer do
     )
   end
 
-  defp analyze_keywords(_text) do
-    AnalyzerResult.new(:keyword, nil, 0.0)
-  end
-
   defp analyze_patterns(text) do
     patterns = get_token_patterns()
     tokens = Tokenizer.tokenize_normalized(text, expand_contractions: true)
@@ -404,14 +399,11 @@ defmodule Brain.Analysis.RacingAnalyzer do
 
     case result do
       {:ok, data} ->
-        %{
-          keywords: parse_keyword_patterns(data),
-          patterns: parse_token_patterns(data)
-        }
+        %{patterns: parse_token_patterns(data)}
 
       nil ->
         handle_missing_file("Pattern triggers file not found", triggers_file)
-        %{keywords: [], patterns: []}
+        %{patterns: []}
     end
   end
 
@@ -421,17 +413,6 @@ defmodule Brain.Analysis.RacingAnalyzer do
     else
       Logger.warning(message)
     end
-  end
-
-  defp parse_keyword_patterns(data) do
-    (data["keywords"] || [])
-    |> Enum.map(fn entry ->
-      {
-        entry["intent"],
-        entry["keywords"],
-        entry["base_confidence"]
-      }
-    end)
   end
 
   defp parse_token_patterns(data) do
