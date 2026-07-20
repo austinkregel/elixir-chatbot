@@ -185,6 +185,42 @@ implementing, to confirm the exact variable that's being discarded.
 
 ## Tier 2 — Candidate: plausible existing-system reuse, not re-verified this round
 
+> **Verified + partially implemented 2026-07-19** (commit `076fe94`). All eight
+> candidates below were re-read against current code. Three were genuine
+> reuse-existing-signal fixes and are DONE; five turned out to need a new
+> dataset/model or cross-module plumbing (not the drop-in the table implied) and
+> are DEFERRED. Status per item:
+>
+> - **DONE — `SemanticChunker` discourse markers** (MODERATE, not "one-line"):
+>   the learned value is threaded through `detect_discourse_markers`/`find_leading_markers`.
+> - **DONE — `ContradictionHandler` assumption_metadata** (MODERATE): built live
+>   from the beliefs backing the JTMS nodes. Correction: confidence/created_at
+>   come from the `Belief`, **not** `JTMS.why_node` (the `Node` struct has neither).
+> - **DONE — `LearningCenter.apply_prediction_evaluation/1`** (DROP_IN): the
+>   `:belief_query` branch already *called* `query_beliefs/1` but discarded the
+>   result (both `{:ok, …}` clauses were identical); the result now drives status.
+>   The sibling `:corroboration_count` branch has the same dead-`if` and is a
+>   not-yet-listed follow-up.
+> - **DEFERRED — `BacktrackController.check_entity_mismatch/1`** (BIG as written):
+>   the "compare vs recent context/history" data is not in scope at the call site.
+>   A self-consistency variant (interp entities vs the intent's expected types,
+>   reusing `TypeHierarchy.compatible?/2`) is MODERATE but *activates a dormant
+>   backtracking path* with false-positive risk on OOV proper nouns — needs a
+>   product decision before enabling.
+> - **DEFERRED — `RacingAnalyzer.analyze_keywords/1`** (BIG): needs a new
+>   taxonomy-wide labeled dataset; would duplicate the existing `:intent_full`
+>   classifier. It is a dead voter slot — removal is a maintainer design call.
+> - **DEFERRED — `FollowupDetector`** (BIG): no `:followup` MicroClassifier or
+>   dataset exists; the problem is relational (message vs prior context), a poor
+>   fit for the single-utterance classifier interface.
+> - **DEFERRED — `FramingDetector`** (BIG): the SRL frames/tokens it needs are
+>   reduced to a lossy binary vector before the seam; `domain_histogram/1` can't
+>   run without new cross-struct plumbing, and nothing consumes the output today.
+> - **DEFERRED — `EventLinker` temporal ordering** (BIG): `Tokenizer.extract_dates/1`
+>   yields raw category tags + unresolved strings (no durations, no comparable
+>   dates), and token positions are stripped before EventLinker runs. Needs a new
+>   temporal resolver + struct/plumbing changes.
+
 Same "reuse before inventing" instinct, but these need a verification pass
 like Tier 1 got before anyone writes code against them.
 
