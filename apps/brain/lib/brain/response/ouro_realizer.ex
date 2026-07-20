@@ -63,7 +63,7 @@ defmodule Brain.Response.OuroRealizer do
     case Generation.generate(messages, gen_opts) do
       {:ok, text} when is_binary(text) and text != "" ->
         Logger.info("Realizer: generated #{String.length(text)} chars, validating structural constraints")
-        validate_and_return(text, primitives)
+        validate_and_return(text, primitives, Generation.name())
 
       {:ok, ""} ->
         {:error, {:backend_unavailable, Generation.name(), :empty_output}}
@@ -74,12 +74,12 @@ defmodule Brain.Response.OuroRealizer do
     end
   end
 
-  defp validate_and_return(text, primitives) do
+  defp validate_and_return(text, primitives, backend) do
     case ConstraintEnforcer.validate(text, primitives) do
       {:ok, validated_text} ->
         metadata = %{
-          source: :ouro,
-          model: "ouro-1.4b",
+          source: backend,
+          model: to_string(backend),
           primitive_count: length(primitives)
         }
 

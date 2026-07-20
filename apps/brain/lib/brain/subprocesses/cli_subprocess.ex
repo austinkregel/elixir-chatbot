@@ -229,7 +229,18 @@ defmodule Brain.Subprocesses.CliSubprocess do
         """
 
       ["conversations"] ->
-        "Conversations: (This would list active conversations)"
+        case Brain.Subprocesses.Supervisor.list_subprocesses() do
+          [] ->
+            "Active subprocesses: none"
+
+          children ->
+            lines =
+              children
+              |> Enum.map(fn {_id, pid, _type, _mods} -> "  - #{inspect(pid)}" end)
+              |> Enum.join("\n")
+
+            "Active subprocesses (#{length(children)}):\n#{lines}"
+        end
 
       ["create", name] ->
         case Brain.create_conversation() do
@@ -293,9 +304,11 @@ defmodule Brain.Subprocesses.CliSubprocess do
         end
 
       ["interrupt"] ->
+        handle_urgent_interrupt(state.subprocess_id, :interrupt, %{})
         "Sent urgent interrupt signal"
 
       ["emergency"] ->
+        handle_urgent_interrupt(state.subprocess_id, :emergency, %{})
         "Sent urgent emergency signal"
 
       ["quit", _] ->

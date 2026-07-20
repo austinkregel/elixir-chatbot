@@ -310,6 +310,10 @@ defmodule Brain.Response.DecompressorCollector do
           chunks = ChunkSegmenter.segment(text)
 
           Enum.map(chunks, fn chunk ->
+            # Real tone from the chunk's actual text (10-element vector + label),
+            # not a fabricated neutral/zero placeholder.
+            chunk = ChunkSegmenter.tag_tone(chunk)
+
             prototype_vector =
               case FragmentVectorizer.vectorize_fragment_text(chunk.text) do
                 {:ok, fv} -> fv
@@ -321,8 +325,8 @@ defmodule Brain.Response.DecompressorCollector do
               "chunk_type" => to_string(chunk.type),
               "primitive_type" => Map.get(prim, :type, "content"),
               "primitive_variant" => Map.get(prim, :variant),
-              "tone" => "neutral",
-              "tone_vector" => List.duplicate(0.0, 10),
+              "tone" => to_string(chunk.tone || :neutral),
+              "tone_vector" => chunk.tone_vector || List.duplicate(0.0, 10),
               "prototype_vector" => prototype_vector,
               "source_intent" => "runtime",
               "slots" => [],
