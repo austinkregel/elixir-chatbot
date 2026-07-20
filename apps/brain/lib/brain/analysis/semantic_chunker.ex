@@ -55,7 +55,7 @@ defmodule Brain.Analysis.SemanticChunker do
     |> extract_quoted_sections()
     |> split_into_sentences()
     |> merge_short_sentences(params.min_chunk_words)
-    |> detect_discourse_markers()
+    |> detect_discourse_markers(params.discourse_markers)
     |> apply_max_chunk_size(params.max_chunk_words)
     |> build_chunks(text)
   end
@@ -172,19 +172,19 @@ defmodule Brain.Analysis.SemanticChunker do
     {merged, quoted_map}
   end
 
-  defp detect_discourse_markers({sentences, quoted_map}) do
+  defp detect_discourse_markers({sentences, quoted_map}, discourse_markers) do
     marked =
       Enum.map(sentences, fn sentence ->
         lower = String.downcase(sentence)
-        markers = find_leading_markers(lower)
+        markers = find_leading_markers(lower, discourse_markers)
         {sentence, markers}
       end)
 
     {marked, quoted_map}
   end
 
-  defp find_leading_markers(text) do
-    @default_discourse_markers
+  defp find_leading_markers(text, discourse_markers) do
+    discourse_markers
     |> Enum.filter(fn marker ->
       Tokenizer.starts_with_word?(text, marker)
     end)

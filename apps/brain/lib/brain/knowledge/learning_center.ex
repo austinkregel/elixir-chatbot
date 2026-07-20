@@ -1042,13 +1042,24 @@ defmodule Brain.Knowledge.LearningCenter do
       pred when is_binary(pred) ->
         h
 
-      %{type: :belief_query, params: params} when is_map(params) ->
+      %{type: :belief_query, params: params} = pred when is_map(params) ->
         opts = Map.to_list(params)
 
         case BeliefStore.query_beliefs(opts) do
-          {:ok, beliefs} when beliefs == [] -> Hypothesis.evaluate(h)
-          {:ok, _} -> Hypothesis.evaluate(h)
-          _ -> h
+          {:ok, beliefs} ->
+            # The prediction's existence check now actually drives the outcome:
+            # previously both the empty and non-empty cases returned the same
+            # generic evaluation, discarding the store answer. `:expected`
+            # (default true) says whether the belief SHOULD be present.
+            present? = beliefs != []
+            expected_present? = Map.get(pred, :expected, true) != false
+            status = if present? == expected_present?, do: :supported, else: :falsified
+            %{h | status: status, tested_at: DateTime.utc_now()}
+
+          _ ->
+            # Store unreachable / not ready: fall back to the generic path
+            # rather than leaving the hypothesis untested.
+            Hypothesis.evaluate(h)
         end
 
       %{type: :corroboration_count, params: params, expected: expected}

@@ -64,12 +64,14 @@ defmodule Brain.Epistemic.ContradictionHandler do
       JTMS.set_contradiction_handler(&handle_jtms_callback/1)
     end
 
+    # NB: assumption metadata is built on demand per contradiction from the
+    # backing beliefs (see build_assumption_metadata/1), not held in state —
+    # a state-held map was previously initialized empty and never populated.
     state = %{
       pending: %{},
       history: [],
       strategy: :hybrid,
-      rules: %{},
-      assumption_metadata: %{}
+      rules: %{}
     }
 
     send(self(), :register_builtin_rules)
@@ -105,6 +107,12 @@ defmodule Brain.Epistemic.ContradictionHandler do
   def handle_call({:handle_contradiction, node_id, assumptions}, _from, state) do
     Logger.info("Handling contradiction", node_id: node_id, assumptions: assumptions)
 
+    # Build the assumption metadata live from the beliefs backing these JTMS
+    # nodes (real confidence + creation time), instead of reading a map that was
+    # initialized empty and never populated — which forced every strategy onto
+    # its 0.5-confidence / epoch-timestamp fallbacks.
+    metadata = build_assumption_metadata(assumptions)
+
     case try_rules(state.rules, node_id, assumptions) do
       {:resolve, assumption_id} ->
         result = do_resolution(assumption_id, node_id, :rule)
@@ -112,7 +120,7 @@ defmodule Brain.Epistemic.ContradictionHandler do
         {:reply, {:resolved, result}, new_state}
 
       :no_match ->
-        case apply_strategy(state.strategy, assumptions, state.assumption_metadata) do
+        case apply_strategy(state.strategy, assumptions, metadata) do
           {:auto_resolve, assumption_id, reason} ->
             result = do_resolution(assumption_id, node_id, reason)
             new_state = record_resolution(state, node_id, assumption_id, reason)
@@ -123,7 +131,7 @@ defmodule Brain.Epistemic.ContradictionHandler do
               node_id: node_id,
               assumptions: assumptions,
               detected_at: DateTime.utc_now(),
-              options: build_resolution_options(assumptions, state.assumption_metadata)
+              options: build_resolution_options(assumptions, metadata)
             }
 
             new_pending = Map.put(state.pending, node_id, pending_entry)
@@ -303,6 +311,42 @@ defmodule Brain.Epistemic.ContradictionHandler do
       case rule_fn.(node_id, assumptions) do
         {:resolve, assumption_id} -> {:resolve, assumption_id}
         _ -> nil
+      end
+    end)
+  end
+
+  # Build per-assumption metadata (real confidence, creation time, and the
+  # subject/predicate/object) from the beliefs backing these JTMS nodes. The
+  # link is stored forward (belief.node_id), so we reverse-map via the existing
+  # query API. Assumptions with no backing belief (e.g. nodes created directly
+  # in the JTMS) are simply absent, and the strategies' existing fallbacks apply.
+  defp build_assumption_metadata(assumptions) do
+    by_node =
+      case Brain.Epistemic.BeliefStore.query_beliefs([]) do
+        {:ok, beliefs} ->
+          beliefs
+          |> Enum.filter(& &1.node_id)
+          |> Map.new(fn b -> {b.node_id, b} end)
+
+        _ ->
+          %{}
+      end
+
+    Enum.reduce(assumptions, %{}, fn id, acc ->
+      case Map.get(by_node, id) do
+        nil ->
+          acc
+
+        b ->
+          Map.put(acc, id, %{
+            confidence: b.confidence,
+            created_at: b.created_at,
+            description: Brain.Epistemic.Types.Belief.to_text(b),
+            subject: b.subject,
+            predicate: b.predicate,
+            object: b.object,
+            provenance: b.provenance
+          })
       end
     end)
   end
