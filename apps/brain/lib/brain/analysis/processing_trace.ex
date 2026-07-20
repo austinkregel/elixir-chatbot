@@ -263,12 +263,12 @@ defmodule Brain.Analysis.ProcessingTrace do
     backtrack_state = BacktrackController.new(chunk_text)
 
     {final_interp, final_backtrack, clarification} =
-      case BacktrackController.check_for_contradictions(interpretation) do
+      case BacktrackController.check_for_contradictions(interpretation, opts) do
         :ok ->
           {interpretation, backtrack_state, nil}
 
         {:needs_backtrack, reason} ->
-          handle_backtrack(interpretation, backtrack_state, reason)
+          handle_backtrack(interpretation, backtrack_state, reason, opts)
       end
 
     all_activations = [
@@ -371,15 +371,15 @@ defmodule Brain.Analysis.ProcessingTrace do
     end
   end
 
-  defp handle_backtrack(interp, state, reason) do
+  defp handle_backtrack(interp, state, reason, opts) do
     case BacktrackController.attempt_backtrack(state, interp, reason) do
       {:ok, new_state, new_interp, _cost} ->
-        case BacktrackController.check_for_contradictions(new_interp) do
+        case BacktrackController.check_for_contradictions(new_interp, opts) do
           :ok ->
             {new_interp, new_state, nil}
 
           {:needs_backtrack, new_reason} ->
-            handle_backtrack(new_interp, new_state, new_reason)
+            handle_backtrack(new_interp, new_state, new_reason, opts)
         end
 
       {:force_clarification, clarification} ->
@@ -487,7 +487,7 @@ defmodule Brain.Analysis.ProcessingTrace do
   end
 
   defp format_backtrack_reason({:entity_mismatch, msg}) do
-    "Entity mismatch: #{msg}"
+    "Entity mismatch: #{inspect(msg)}"
   end
 
   defp format_backtrack_reason({:low_confidence, val}) do
