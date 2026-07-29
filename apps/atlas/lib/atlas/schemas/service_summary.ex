@@ -3,7 +3,7 @@ defmodule Atlas.Schemas.ServiceSummary do
   The durable rehydration snapshot for one soul: its standing chain position,
   standing grants, current assignment, duty status, mind-world binding, and
   career counters. One row per soul (upserted by the runtime). This is the
-  projection an ensign reads on restart to rebuild its durable self in a single
+  projection an officer reads on restart to rebuild its durable self in a single
   query; it is rebuildable from `atlas_service_records` and is never the record
   of truth.
 

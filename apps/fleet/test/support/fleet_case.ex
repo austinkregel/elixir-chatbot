@@ -5,7 +5,7 @@ defmodule Fleet.FleetCase do
   no graceful degradation; a missing database is a configuration error and the
   test fails.
 
-  Uses a shared sandbox owner (async: false) so dynamically-spawned ensigns and
+  Uses a shared sandbox owner (async: false) so dynamically-spawned officers and
   their cognition Tasks all share the test connection.
   """
   use ExUnit.CaseTemplate

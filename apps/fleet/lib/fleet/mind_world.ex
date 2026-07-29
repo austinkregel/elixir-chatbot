@@ -5,9 +5,9 @@ defmodule Fleet.MindWorld do
   same soul always rehydrates the same mind), never collides with another soul,
   and stays out of the normal training-world namespace via the `"mind:"` prefix.
 
-  This is what makes cognition per-agent: an ensign runs `Brain.evaluate` in its
+  This is what makes cognition per-agent: an officer runs `Brain.evaluate` in its
   mind-world, so everything it remembers/believes is isolated to it. Nothing
-  crosses between minds except what is communicated (see `Fleet.Ensign`).
+  crosses between minds except what is communicated (see `Fleet.Officer`).
   """
 
   @prefix "mind:"

@@ -4,7 +4,7 @@ defmodule Fleet.Audit do
   runtime — not by agents — so an agent can neither forge a superior's order nor
   scrub its own record. Two substrates:
 
-    * a live telemetry event (`[:chat_bot, :ensign, :event]`), and
+    * a live telemetry event (`[:chat_bot, :officer, :event]`), and
     * a durable, append-only `Atlas.Schemas.CommandRecord` row.
 
   `from_agent` is always the principal the runtime **attributed** (see

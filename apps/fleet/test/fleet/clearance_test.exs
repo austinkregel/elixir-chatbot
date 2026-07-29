@@ -9,7 +9,7 @@ defmodule Fleet.ClearanceTest do
   alias Fleet.{Clearance, Principal, InfoClass, Rank, Ship}
 
   @ship "USS-TEST"
-  defp ensign(attrs \\ []) do
+  defp officer(attrs \\ []) do
     Principal.agent(
       Enum.into(attrs, %{agent_id: "ens-1", rank: :ensign, duty: :active, ship_id: @ship})
     )
@@ -37,7 +37,7 @@ defmodule Fleet.ClearanceTest do
   # ── the gate ───────────────────────────────────────────────────────────────
 
   test "self-read is always allowed, even for a relieved agent" do
-    p = ensign(duty: :relieved)
+    p = officer(duty: :relieved)
     assert Clearance.can_read?(p, :agent_mind, "OTHER-SHIP", target_agent_id: "ens-1") == :allow
   end
 
@@ -50,49 +50,49 @@ defmodule Fleet.ClearanceTest do
 
   test "hard example B: ship status needs active duty AND commission to THAT ship" do
     # active + commissioned to the target ship → allow
-    assert Clearance.can_read?(ensign(), :system_status, @ship) == :allow
+    assert Clearance.can_read?(officer(), :system_status, @ship) == :allow
     # relieved → denied on duty
-    assert Clearance.can_read?(ensign(duty: :relieved), :system_status, @ship) == {:deny, :relieved}
+    assert Clearance.can_read?(officer(duty: :relieved), :system_status, @ship) == {:deny, :relieved}
     # active but commissioned elsewhere → denied on ship
-    assert Clearance.can_read?(ensign(), :system_status, "OTHER-SHIP") ==
+    assert Clearance.can_read?(officer(), :system_status, "OTHER-SHIP") ==
              {:deny, :not_commissioned_to_ship}
   end
 
-  test "billet floor gates a command-only class from an ensign" do
-    # souls is ship-scoped (ensign is commissioned, so the ship gate passes) but
-    # floors at :executive_officer → the ensign is denied on billet.
-    assert Clearance.can_read?(ensign(), :souls, @ship) == {:deny, :insufficient_billet}
+  test "billet floor gates a command-only class from an officer" do
+    # souls is ship-scoped (officer is commissioned, so the ship gate passes) but
+    # floors at :executive_officer → the officer is denied on billet.
+    assert Clearance.can_read?(officer(), :souls, @ship) == {:deny, :insufficient_billet}
     # an XO on the ship clears it.
-    xo = ensign(rank: :executive_officer)
+    xo = officer(rank: :executive_officer)
     assert Clearance.can_read?(xo, :souls, @ship) == :allow
   end
 
   test "unknown info class is default-denied" do
-    assert Clearance.can_read?(ensign(), :nonsense, @ship) == {:deny, :unknown_info_class}
+    assert Clearance.can_read?(officer(), :nonsense, @ship) == {:deny, :unknown_info_class}
   end
 
-  test "hard example A: an ensign cannot read Admiral<->Commander comms (off chain)" do
-    # participants are the Admiral and a Commander; our ensign is neither a
+  test "hard example A: an officer cannot read Admiral<->Commander comms (off chain)" do
+    # participants are the Admiral and a Commander; our officer is neither a
     # participant nor a superior of them → off chain.
-    parts = [participants: [:admiral, {:ensign, "cmdr-1"}]]
-    assert Clearance.can_read?(ensign(), :command_comms, @ship, parts) == {:deny, :off_chain}
+    parts = [participants: [:admiral, {:officer, "cmdr-1"}]]
+    assert Clearance.can_read?(officer(), :command_comms, @ship, parts) == {:deny, :off_chain}
   end
 
   test "chain analog: a participant, and a superior of every participant, may read" do
     # a CO reading a comm it participates in
-    co = ensign(agent_id: "co-1", rank: :executive_officer, reports: ["rep-1"])
-    assert Clearance.can_read?(co, :command_comms, @ship, participants: [{:ensign, "co-1"}, {:ensign, "rep-1"}]) == :allow
+    co = officer(agent_id: "co-1", rank: :executive_officer, reports: ["rep-1"])
+    assert Clearance.can_read?(co, :command_comms, @ship, participants: [{:officer, "co-1"}, {:officer, "rep-1"}]) == :allow
 
     # a CO reading a comm between two of its direct reports (superior of all)
-    co2 = ensign(agent_id: "co-2", rank: :executive_officer, reports: ["r1", "r2"])
-    assert Clearance.can_read?(co2, :command_comms, @ship, participants: [{:ensign, "r1"}, {:ensign, "r2"}]) == :allow
+    co2 = officer(agent_id: "co-2", rank: :executive_officer, reports: ["r1", "r2"])
+    assert Clearance.can_read?(co2, :command_comms, @ship, participants: [{:officer, "r1"}, {:officer, "r2"}]) == :allow
 
     # but not a comm involving someone off its chain
-    assert Clearance.can_read?(co2, :command_comms, @ship, participants: [{:ensign, "r1"}, {:ensign, "stranger"}]) == {:deny, :off_chain}
+    assert Clearance.can_read?(co2, :command_comms, @ship, participants: [{:officer, "r1"}, {:officer, "stranger"}]) == {:deny, :off_chain}
   end
 
   test "a comm read with no named participants is denied (can't establish chain membership)" do
-    assert Clearance.can_read?(ensign(), :command_comms, @ship) == {:deny, :off_chain}
+    assert Clearance.can_read?(officer(), :command_comms, @ship) == {:deny, :off_chain}
   end
 
   test "Fleet.Ship.id is configured" do

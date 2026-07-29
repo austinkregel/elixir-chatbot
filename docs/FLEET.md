@@ -286,7 +286,7 @@ modeled on `apps/chat_web/lib/chat_web/live/dashboard_live.ex` and especially
 LiveView pattern — the Fleet page extends it). It is where the Admiral:
 
 - sees the whole fleet (crew, ranks, assignments, chains, trust ledger);
-- reads reports from ensigns, XOs, and up the chain;
+- reads reports from officers, XOs, and up the chain;
 - reviews **court-martial drafts** and grants approval, leniency, or relief;
 - (later) confers advancement.
 
@@ -308,11 +308,11 @@ gravest escalation that reaches the Admiral is a *recommendation* of court marti
 
 - **Phase 0 — Soul-aware generation** ✅ (branch `feat/soul-aware-worlds`): the
   render seam. *(Built; see §3.3.)*
-- **Phase 1 — The agent as a process** ✅ (app `apps/fleet`): minimal ensign
+- **Phase 1 — The agent as a process** ✅ (app `apps/fleet`): minimal officer
   GenServer (soul + tags + standing order), `Fleet.CrewSupervisor`
   (`DynamicSupervisor`) + `Fleet.Registry`, reactive+autonomous loop with
   `Task.Supervisor.async_nolink` dispatch so it never blocks; send it an order →
-  it acks (caller + telemetry + audit line). Telemetry `[:chat_bot, :ensign,
+  it acks (caller + telemetry + audit line). Telemetry `[:chat_bot, :officer,
   :event]` from the first line. *(Built; see §7.)*
 - **Phase 2 — The command channel** ✅ (app `apps/fleet`): the full §4.1 protocol
   agent-to-agent over mailboxes — `ORDER`/`ACK`/`SITREP`/`REQUEST`/`GRANT`/`DENY`/
@@ -323,7 +323,7 @@ gravest escalation that reaches the Admiral is a *recommendation* of court marti
 - **Phase 3 — Accountable minds** ✅: each agent thinks in a private **mind-world**
   (keyed by soul_id) with its OWN memory, beliefs, and per-world **JTMS**; its own
   soul drives cognition; a durable **service record** + **duty log** persist and the
-  ensign **rehydrates on restart** (survives a crash without forgetting who it is or
+  officer **rehydrates on restart** (survives a crash without forgetting who it is or
   what it was doing); minds are private — another agent's info enters only via
   **communication**, with the sender's provenance. *(Built; see §7.)*
 - **Phase 4 — The Fleet page** ✅ (`/fleet`): the Admiral's LiveView console —
@@ -357,7 +357,7 @@ Branch `feat/soul-aware-worlds` (thin slice, backward-compatible, proven via
 - `apps/brain/test/brain/soul_aware_test.exs` — seam test (needs Postgres to run
   via `mix test`; logic proven with `--no-start`).
 
-### Phase 1 — the ensign process (app `apps/fleet`)
+### Phase 1 — the officer process (app `apps/fleet`)
 
 The runtime spine. New umbrella app depending on `brain` + `world` (kept out of
 `brain` to avoid deepening the `brain → world` wart):
@@ -365,10 +365,10 @@ The runtime spine. New umbrella app depending on `brain` + `world` (kept out of
 - `apps/fleet/lib/fleet/application.ex` — tree: `Fleet.Registry` (unique keys),
   `Fleet.TaskSupervisor`, `Fleet.CrewSupervisor`; attaches telemetry after boot.
 - `apps/fleet/lib/fleet/crew_supervisor.ex` — `DynamicSupervisor`;
-  `start_ensign/1` (commission), `retire/1`, `list/0`.
-- `apps/fleet/lib/fleet/ensign.ex` — **the GenServer**, one per agent. Holds its
+  `start_officer/1` (commission), `retire/1`, `list/0`.
+- `apps/fleet/lib/fleet/officer.ex` — **the GenServer**, one per agent. Holds its
   own `%Brain.Soul{}` (deferred `:hydrate_soul` load); addressed by
-  `{:ensign, agent_id}` via-tuple. Reactive `handle_cast({:order, ...})` acks at
+  `{:officer, agent_id}` via-tuple. Reactive `handle_cast({:order, ...})` acks at
   once; autonomous re-arming `:tick`; heavy cognition dispatched to a supervised
   Task (`{ref, result}` / `{:DOWN}` handled in `handle_info`) so the mailbox
   never blocks. Real `Brain.create_conversation` + `Brain.evaluate/3` path wired
@@ -376,12 +376,12 @@ The runtime spine. New umbrella app depending on `brain` + `world` (kept out of
 - `apps/fleet/lib/fleet/order.ex` — `%Fleet.Order{}` (id/from/reply_to/directive/
   grant/world_id/dry_run/priority/status); ORDER message + standing assignment
   record; status shape mirrors `ResearchGoal` for later persistence.
-- `apps/fleet/lib/fleet/telemetry.ex` — emits `[:chat_bot, :ensign, :event]`;
-  readiness reuses `Brain.Metrics.Aggregator.record_readiness(:ensign, _)`
+- `apps/fleet/lib/fleet/telemetry.ex` — emits `[:chat_bot, :officer, :event]`;
+  readiness reuses `Brain.Metrics.Aggregator.record_readiness(:officer, _)`
   (guarded, zero brain edits).
 - `apps/fleet/lib/fleet.ex` — Admiral facade: `commission/2`, `order/3`,
   `retire/1`, `list/0`, `ready?/1`.
-- `apps/fleet/test/fleet/ensign_test.exs` — offline tests prove spawn → order →
+- `apps/fleet/test/fleet/officer_test.exs` — offline tests prove spawn → order →
   ack → tick → non-blocking dispatch (dry-run, injected soul, no Postgres/Ouro);
   an `@tag :integration` test (excluded by default) commissions into a world with
   `ensign-jj7` as resident and runs **real** cognition, asserting the world feeds
@@ -420,7 +420,7 @@ fleet modules:
 - `apps/fleet/lib/fleet/audit.ex` — runtime-appended audit: a telemetry event **and**
   a durable `Atlas.Schemas.CommandRecord` row per message; `from_agent` is always the
   attributed principal. Fails loudly on write error.
-- `apps/fleet/lib/fleet/ensign.ex` — rewritten: duty state machine (`:active`/
+- `apps/fleet/lib/fleet/officer.ex` — rewritten: duty state machine (`:active`/
   `:relieved` with in-flight Task cancellation), the grant-enforcement gate that
   blocks and drives REQUEST→GRANT/DENY, per-message callbacks with attribution +
   topology, appraisal-gated dispatch, and REPORT/DISSENT on the Task result.
@@ -437,7 +437,7 @@ set up `atlas_test` + AGE themselves, reusing `Brain.Test.AtlasSandbox`). One-ti
 `mix atlas.bootstrap_age` (creates `command_graph` in an already-initialized DB) and
 `mix ecto.migrate -r Atlas.Repo`. Then `RELEASE_ROOT=$(pwd) mix cmd --app fleet mix
 test` — **32 tests, 0 failures** (verified 2026-07-03): `authority_test`/`appraisal_test`
-(unit), `ensign_test` (mechanics + a real-cognition JJ-7 case), the 7-scenario
+(unit), `officer_test` (mechanics + a real-cognition JJ-7 case), the 7-scenario
 `command_protocol_test.exs` (chain persistence, authorized ORDER→REPORT,
 REQUEST→GRANT→execute, REQUEST→DENY→DISSENT, value DISSENT, provenance anomaly,
 RELIEVE/REINSTATE — all with real `CommandRecord` rows), and the 8-scenario
@@ -449,7 +449,7 @@ orthogonal to the protocol.)
 
 Each agent now has its own mind and a durable, rehydratable self. Built in five stages:
 
-- **Mind-world + identity** — `Fleet.MindWorld` gives `mind:<soul_id>`; the ensign runs
+- **Mind-world + identity** — `Fleet.MindWorld` gives `mind:<soul_id>`; the officer runs
   cognition there (not the order's world) and passes its OWN soul into `Brain.evaluate`
   (`ContextBuilder.resolve_acting_soul` prefers it over the roster — wart closed).
   `agent_id == soul_id` (stable; idempotent re-commission).
@@ -462,9 +462,9 @@ Each agent now has its own mind and a durable, rehydratable self. Built in five 
 - **Durable self + rehydration** — `Atlas.Schemas.{ServiceRecord, ServiceSummary,
   DutyLogEntry}` (+ migration); `Fleet.Service` (runtime-written, append-only, raises) writes
   milestones (commission / order outcomes / relief / reinstate / rehydrated) and a per-soul
-  projection; `Fleet.DutyLog` is the agent's own journal. `Fleet.Ensign.init` →
+  projection; `Fleet.DutyLog` is the agent's own journal. `Fleet.Officer.init` →
   `handle_continue(:rehydrate)` restores durable fields (duty, chain, standing grants, last
-  assignment — mid-flight downgraded to re-drive) and resets transient ones; a crashed ensign
+  assignment — mid-flight downgraded to re-drive) and resets transient ones; a crashed officer
   is restarted by the supervisor and rehydrates from Postgres.
 - **Sharing via communication** — what an agent is TOLD (an order's directive it receives, a
   report/sitrep delivered to it) is written into its OWN mind-world as a memory episode with
@@ -491,7 +491,7 @@ LiveView style (inline `~H`, `<.app_shell>`, Tailwind + daisyUI, no auth):
   checkboxes → `Fleet.commission/2`), issue order (`Fleet.order/3` for top-level,
   `Fleet.issue_order/4` via CO for reports), assign CO (`Fleet.assign_co/2`).
 - **Activity feed** — live, newest-first, from `Brain.PubSub` topic `"fleet:events"`
-  (a new best-effort broadcast in `Fleet.Telemetry.handle_ensign_event/4`); backfilled
+  (a new best-effort broadcast in `Fleet.Telemetry.handle_officer_event/4`); backfilled
   on mount from recent `Atlas.Schemas.CommandRecord` rows; `:tick` filtered out.
 - **Per-agent drill-down** (modal) — `Fleet.Service.load/1` (career + counters) +
   `Fleet.DutyLog.for_soul/1` (the agent's own notes).
@@ -523,7 +523,7 @@ needs a crew accumulating a record).
 - **`Fleet.Authority`** — vocabulary + string codec extended with `:veto`,
   `:flag_anomaly`, `:review_plans`, `:draft_court_martial`, `:delegate` (so the new
   standing grants persist/rehydrate and Phase 5 enforcement plugs straight in).
-- **`Fleet.Ensign`** — `seed_grants/1` unions `Fleet.Rank.standing_authorities(rank)`
+- **`Fleet.Officer`** — `seed_grants/1` unions `Fleet.Rank.standing_authorities(rank)`
   into the standing grant at commission. No migration: `rank` + `standing_grants`
   already persist and rehydrate, so an XO's authority survives a restart.
 - **Souls** (human-authored) — `commander-vale` (XO), `lieutenant-mara-sil` (Security),
@@ -546,8 +546,8 @@ a question and get its in-character answer, conferring no authority and leaving 
 assignment.
 
 - **`Fleet.Comms.hail/2`** stamps the caller as sender (attribution) and reply target.
-- **`Fleet.Ensign`** `handle_cast({:hail, …})` runs the same soul-in-mind-world
-  cognition an order uses, but in a **fully detached `Task`** (the ensign stays
+- **`Fleet.Officer`** `handle_cast({:hail, …})` runs the same soul-in-mind-world
+  cognition an order uses, but in a **fully detached `Task`** (the officer stays
   responsive — you can hail Security mid-order; a hail crash never touches the
   agent or its assignment), replying `{:hail_reply, %{answer | error}}` to the
   caller. Bounded topology: the Admiral may hail any agent; an agent may hail only
@@ -610,7 +610,7 @@ the architecture (see `docs/TOOLS.md`); the model **proposes**, the harness
   a forged authority claim is inert); `Fleet.Dispatcher.dispatch/2` runs the
   code-owned tool (`Fleet.Tool`, default-deny), frames the result as `<data>`
   (`Fleet.DataFrame`, injection-flagged), and writes four ordered audit kinds
-  (thought · request · decision · effect) via `Fleet.Audit`. Wired to the Ensign as
+  (thought · request · decision · effect) via `Fleet.Audit`. Wired to the Officer as
   `Fleet.propose/2` (grants from process state).
 
 **Verified 2026-07-03:** the security-critical gate is a pure function — 13 checks

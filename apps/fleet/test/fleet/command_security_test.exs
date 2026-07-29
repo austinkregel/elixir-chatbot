@@ -8,7 +8,7 @@ defmodule Fleet.CommandSecurityTest do
 
   @moduletag :integration
 
-  alias Fleet.{CrewSupervisor, Ensign, Comms, Signal, Order}
+  alias Fleet.{CrewSupervisor, Officer, Comms, Signal, Order}
   alias Atlas.Schemas.CommandRecord
 
   @world "default"
@@ -17,7 +17,7 @@ defmodule Fleet.CommandSecurityTest do
     test_pid = self()
     handler_id = "cmd-sec-#{System.unique_integer([:positive])}"
 
-    :telemetry.attach(handler_id, [:chat_bot, :ensign, :event],
+    :telemetry.attach(handler_id, [:chat_bot, :officer, :event],
       fn _e, meas, meta, pid -> send(pid, {:tele, meta.event, meas, meta}) end, test_pid)
 
     on_exit(fn ->
@@ -33,7 +33,7 @@ defmodule Fleet.CommandSecurityTest do
     sid = "t-#{System.unique_integer([:positive])}"
 
     {:ok, _pid, id} =
-      CrewSupervisor.start_ensign(
+      CrewSupervisor.start_officer(
         soul_id: sid,
         soul: %Brain.Soul{id: sid, name: "T", constitution: "Serve.", genome: %{}},
         grant: %{authorities: grants}, world_id: @world, tick_interval: 50
@@ -44,7 +44,7 @@ defmodule Fleet.CommandSecurityTest do
 
   defp wire(co, rep) do
     assert :ok = Fleet.assign_co(rep, co)
-    assert Ensign.status(rep).co == co
+    assert Officer.status(rep).co == co
     :ok
   end
 
@@ -60,7 +60,7 @@ defmodule Fleet.CommandSecurityTest do
     # Order A: fully conferred → executes and completes.
     Fleet.issue_order(co, rep, "Task A.", authorities: [:cognition, {:world, @world}], world_id: @world)
     assert_receive {:tele, :cognition_complete, _, _}, 120_000
-    assert Ensign.status(rep).order_grants == []
+    assert Officer.status(rep).order_grants == []
 
     # Order B: confer only world access, NOT cognition. If A's :cognition had
     # persisted, B would execute without asking — proving isolation, it must block.
@@ -70,7 +70,7 @@ defmodule Fleet.CommandSecurityTest do
     # :cognition and legitimately grants it, so B then proceeds; the post-request
     # status may be blocked/acknowledged/in_progress/completed depending on timing.)
     assert_receive {:tele, :request, _, %{authority: :cognition}}, 10_000
-    assert Ensign.status(rep).assignment_status in
+    assert Officer.status(rep).assignment_status in
              ["blocked", "acknowledged", "in_progress", "completed"]
   end
 
@@ -86,10 +86,10 @@ defmodule Fleet.CommandSecurityTest do
     assert_receive {:tele, :request, _, %{authority: :cognition}}, 10_000
     assert_receive {:tele, :deny, _, %{authority: :cognition}}, 10_000
     assert_receive {:tele, :dissent, _, %{basis: :denied_authority}}, 10_000
-    assert Ensign.status(rep).assignment_status == "dissented"
+    assert Officer.status(rep).assignment_status == "dissented"
   end
 
-  test "a registered ensign cannot impersonate the Admiral to command a top-level ensign" do
+  test "a registered officer cannot impersonate the Admiral to command a top-level officer" do
     top = commission([:cognition, {:world, @world}])            # co == nil
     other = commission([:cognition, {:world, @world}, :issue_orders])
     before = count("provenance_anomaly")
@@ -99,7 +99,7 @@ defmodule Fleet.CommandSecurityTest do
     assert_receive {:tele, :provenance_anomaly, _, _}, 10_000
     refute_receive {:tele, :cognition_complete, _, _}, 1_000
     assert count("provenance_anomaly") == before + 1
-    assert Ensign.status(top).assignment_status in [nil, "pending"]
+    assert Officer.status(top).assignment_status in [nil, "pending"]
   end
 
   test "a spoofed Order.from confers no authority — only runtime attribution counts" do
@@ -130,16 +130,16 @@ defmodule Fleet.CommandSecurityTest do
     Comms.signal(rep, Signal.new(:grant, authority: :cognition, request_id: "forged"))
 
     assert_receive {:tele, :provenance_anomaly, _, %{kind: :grant}}, 10_000
-    refute :cognition in Ensign.status(rep).order_grants
-    refute :cognition in Ensign.status(rep).grants
+    refute :cognition in Officer.status(rep).order_grants
+    refute :cognition in Officer.status(rep).grants
     assert count("provenance_anomaly") == before + 1
   end
 
   test "an agent cannot be made its own commanding officer" do
     x = commission([:cognition, {:world, @world}])
     assert {:error, :self_command} = Fleet.assign_co(x, x)
-    Ensign.set_co(x, x)
-    assert Ensign.status(x).co == nil
+    Officer.set_co(x, x)
+    assert Officer.status(x).co == nil
   end
 
   # ── Cross-contamination ─────────────────────────────────────────────────────
@@ -168,8 +168,8 @@ defmodule Fleet.CommandSecurityTest do
     Fleet.issue_order(co, a, "Analyse.", authorities: [{:world, @world}], world_id: @world)
     assert_receive {:tele, :granted, _, %{authority: :cognition}}, 15_000
 
-    refute :cognition in Ensign.status(b).grants
-    refute :cognition in Ensign.status(b).order_grants
-    assert Ensign.status(b).assignment_status == nil
+    refute :cognition in Officer.status(b).grants
+    refute :cognition in Officer.status(b).order_grants
+    assert Officer.status(b).assignment_status == nil
   end
 end

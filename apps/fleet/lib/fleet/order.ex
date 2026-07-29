@@ -1,6 +1,6 @@
 defmodule Fleet.Order do
   @moduledoc """
-  An ORDER: the unit of command handed to an ensign, and the standing assignment
+  An ORDER: the unit of command handed to an officer, and the standing assignment
   record it carries while working. In Phase 1 this is a plain struct (transient
   message + in-process record). Its status shape mirrors
   `Atlas.Schemas.ResearchGoal` so it can later back onto a persisted, auditable
@@ -11,7 +11,7 @@ defmodule Fleet.Order do
     * `from`      — provenance: who issued it (`:admiral` | agent_id). DATA in
       Phase 1; sender authentication (via Registry) is deferred to Phase 2.
     * `reply_to`  — pid the ACK is sent back to (recorded at receipt).
-    * `directive` — the task text the ensign acts on (≈ `ResearchGoal.topic`).
+    * `directive` — the task text the officer acts on (≈ `ResearchGoal.topic`).
     * `grant`     — the order's authority scope: `%{authorities: [term], provenance: :command | :data}`.
       `authorities` are conferred to the report at ACK (see `Fleet.Authority`);
       `provenance: :data` marks a directive that came from data, not the command

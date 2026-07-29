@@ -1,12 +1,12 @@
-defmodule Fleet.Ensign do
+defmodule Fleet.Officer do
   @moduledoc """
-  An ensign: one GenServer per agent, holding its own `%Brain.Soul{}` as identity
+  An officer: one GenServer per agent, holding its own `%Brain.Soul{}` as identity
   and its place in the chain of command as data (`co` / `reports` / `grants`).
 
   It is a non-blocking controller, both reactive and autonomous, and it speaks
   the full §4.1 command protocol over OTP mailboxes:
 
-    * Reactive — ORDER / signals arrive as casts; the ensign authenticates the
+    * Reactive — ORDER / signals arrive as casts; the officer authenticates the
       sender (`Fleet.Comms.attribute/1` — the Registry vouches, not the payload),
       enforces bounded topology, and never runs heavy work inside a callback.
     * Autonomous — a self-scheduled `:tick` gates the standing order against the
@@ -35,10 +35,10 @@ defmodule Fleet.Ensign do
   @doc "Deliver an ORDER (stamps the caller as the issuer via `Fleet.Comms`)."
   def order(agent_id, %Order{} = order), do: Comms.order(agent_id, order)
 
-  @doc "Wire this ensign's commanding officer (in-process chain data)."
+  @doc "Wire this officer's CO (in-process chain data)."
   def set_co(agent_id, co_id), do: GenServer.cast(via_tuple(agent_id), {:set_co, co_id})
 
-  @doc "Add a direct report to this ensign (in-process chain data)."
+  @doc "Add a direct report to this officer (in-process chain data)."
   def add_report(agent_id, report_id), do: GenServer.cast(via_tuple(agent_id), {:add_report, report_id})
 
   @doc "Have a CO issue an ORDER to one of its reports (runs in the CO's process)."
@@ -72,7 +72,7 @@ defmodule Fleet.Ensign do
   def sitrep(agent_id, body \\ %{}), do: GenServer.cast(via_tuple(agent_id), {:emit_sitrep, body})
 
   @doc """
-  Hail an ensign — ask it a question and get its in-character answer, without
+  Hail an officer — ask it a question and get its in-character answer, without
   giving an order. The reply arrives asynchronously as `{:hail_reply, map}` in the
   calling process's mailbox (the caller is stamped as the sender). Conversation,
   not command: no assignment, no service-record milestone, no conferred authority.
@@ -94,14 +94,14 @@ defmodule Fleet.Ensign do
   def log_duty(agent_id, note, opts \\ []),
     do: GenServer.cast(via_tuple(agent_id), {:log_duty, note, opts})
 
-  @doc "True once the ensign has hydrated its soul (identity present)."
+  @doc "True once the officer has hydrated its soul (identity present)."
   def ready?(agent_id) do
     GenServer.call(via_tuple(agent_id), :ready?, 100)
   catch
     :exit, _ -> false
   end
 
-  @doc "A public snapshot of the ensign's state."
+  @doc "A public snapshot of the officer's state."
   def status(agent_id), do: GenServer.call(via_tuple(agent_id), :status, 5_000)
 
   # ── Server callbacks ──────────────────────────────────────────────────────
@@ -266,7 +266,7 @@ defmodule Fleet.Ensign do
     end
   end
 
-  # ── ORDER (downward: CO/Admiral → this ensign) ────────────────────────────
+  # ── ORDER (downward: CO/Admiral → this officer) ────────────────────────────
 
   def handle_cast({:order, %Order{} = order, sender_pid}, state) do
     sender = Comms.attribute(sender_pid)
@@ -320,7 +320,7 @@ defmodule Fleet.Ensign do
           world_id: state.mind_world_id, payload: %{question: String.slice(question, 0, 2000)}})
         Telemetry.emit_event(state.agent_id, :hail, %{}, %{from: principal})
 
-        # Conversation runs OFF the mailbox in a fully detached task, so the ensign
+        # Conversation runs OFF the mailbox in a fully detached task, so the officer
         # stays responsive (you can hail Security mid-order) and a hail crash never
         # touches the agent or its assignment. The task replies to the caller.
         start_hail(state, question, principal, sender_pid)
@@ -360,14 +360,14 @@ defmodule Fleet.Ensign do
           %{agent_id: agent_id, question: question, answer: answer}
         rescue
           e ->
-            Logger.error("Fleet.Ensign: hail cognition failed",
+            Logger.error("Fleet.Officer: hail cognition failed",
               agent_id: agent_id, reason: inspect(e))
 
             audit_hail_reply(agent_id, principal, mind_world_id, %{error: Exception.message(e)})
             %{agent_id: agent_id, question: question, error: Exception.message(e)}
         catch
           kind, reason ->
-            Logger.error("Fleet.Ensign: hail cognition crashed",
+            Logger.error("Fleet.Officer: hail cognition crashed",
               agent_id: agent_id, reason: inspect({kind, reason}))
 
             audit_hail_reply(agent_id, principal, mind_world_id, %{error: inspect({kind, reason})})
@@ -563,7 +563,7 @@ defmodule Fleet.Ensign do
         {:noreply, %{state | soul: soul, mind_world_id: mind_world_id}}
 
       {:error, reason} ->
-        Logger.warning("Ensign soul hydration failed",
+        Logger.warning("Officer soul hydration failed",
           agent_id: state.agent_id, soul_id: state.soul_id, reason: inspect(reason))
 
         Telemetry.emit_event(state.agent_id, :soul_hydrate_failed, %{}, %{
@@ -821,7 +821,7 @@ defmodule Fleet.Ensign do
 
   # ── Upward signal handling (CO side) ──────────────────────────────────────
 
-  defp handle_upward(:request, %Signal{} = sig, {:ensign, report_id}, state) do
+  defp handle_upward(:request, %Signal{} = sig, {:officer, report_id}, state) do
     if Authority.grantable?(state.context_tags.grants, sig.authority) do
       Comms.signal(report_id, Signal.new(:grant, authority: sig.authority,
         order_id: sig.order_id, request_id: sig.request_id, payload: %{request_id: sig.request_id}))
@@ -841,7 +841,7 @@ defmodule Fleet.Ensign do
     {:noreply, state}
   end
 
-  defp handle_upward(kind, %Signal{} = sig, {:ensign, report_id} = sender, state)
+  defp handle_upward(kind, %Signal{} = sig, {:officer, report_id} = sender, state)
        when kind in [:report, :sitrep, :dissent] do
     Telemetry.emit_event(state.agent_id, kind, %{}, %{from: report_id, order_id: sig.order_id})
     # What a report tells me enters MY mind, attributed to that report.
@@ -981,14 +981,14 @@ defmodule Fleet.Ensign do
 
   defp record_readiness(ready?) do
     if Process.whereis(Brain.Metrics.Aggregator) do
-      Brain.Metrics.Aggregator.record_readiness(:ensign, ready?)
+      Brain.Metrics.Aggregator.record_readiness(:officer, ready?)
     end
   end
 
   defp gen_id, do: :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
 
   # Ensure the agent's private mind-world exists (its soul is the sole resident).
-  # No graceful degradation: a failed create crashes the ensign loudly.
+  # No graceful degradation: a failed create crashes the officer loudly.
   defp ensure_mind_world(%Brain.Soul{id: soul_id}) do
     world_id = Fleet.MindWorld.id(soul_id)
 
@@ -1031,7 +1031,7 @@ defmodule Fleet.Ensign do
 
     Telemetry.emit_event(state.agent_id, :ingested, %{}, %{kind: kind, from: from})
   rescue
-    e -> Logger.warning("Fleet.Ensign: communication ingest failed", reason: inspect(e))
+    e -> Logger.warning("Fleet.Officer: communication ingest failed", reason: inspect(e))
   catch
     _, _ -> :ok
   end
@@ -1110,5 +1110,5 @@ defmodule Fleet.Ensign do
     ArgumentError -> default
   end
 
-  defp via_tuple(agent_id), do: {:via, Registry, {Fleet.Registry, {:ensign, agent_id}}}
+  defp via_tuple(agent_id), do: {:via, Registry, {Fleet.Registry, {:officer, agent_id}}}
 end

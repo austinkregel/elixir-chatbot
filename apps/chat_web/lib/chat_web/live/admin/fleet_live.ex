@@ -701,7 +701,7 @@ defmodule ChatWeb.Admin.FleetLive do
 
   def handle_event("retire", %{"agent" => id}, socket) do
     safe(fn ->
-      case Registry.lookup(Fleet.Registry, {:ensign, id}) do
+      case Registry.lookup(Fleet.Registry, {:officer, id}) do
         [{pid, _}] -> Fleet.retire(pid)
         _ -> :ok
       end
@@ -935,7 +935,7 @@ defmodule ChatWeb.Admin.FleetLive do
   # no shared order_id (a hail confers no assignment) — they're mirror images
   # (hail: A→B, reply: B→A) matched chronologically per (A,B) pair. A hail
   # with no matching reply yet (still in flight, or the caller disconnected
-  # before Ensign replied) surfaces as "awaiting reply", never silently dropped.
+  # before Officer replied) surfaces as "awaiting reply", never silently dropped.
   defp load_hail_log do
     safe(fn ->
       from(r in CommandRecord, where: r.kind in ["hail", "hail_reply"], order_by: [desc: r.inserted_at], limit: 50)
@@ -998,7 +998,7 @@ defmodule ChatWeb.Admin.FleetLive do
   # The currently-picked billet, as a string key (defaults to the default billet).
   defp picked_rank(picks), do: picks["rank"] || to_string(Fleet.Rank.default())
 
-  # agent_id defaults to soul_id (CrewSupervisor.start_ensign/1) so
+  # agent_id defaults to soul_id (CrewSupervisor.start_officer/1) so
   # re-commissioning the same soul resumes the existing crew member — that's
   # deliberate, for idempotent rehydration. A blank override preserves that;
   # a non-blank one stands up a genuinely separate instance of the soul under

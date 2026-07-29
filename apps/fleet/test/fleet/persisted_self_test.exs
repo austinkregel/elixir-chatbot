@@ -2,20 +2,20 @@ defmodule Fleet.PersistedSelfTest do
   @moduledoc """
   Proves an agent's durable self survives a crash "without forgetting who it is
   or what it was doing": a service record + summary + duty log persist, and on
-  restart the ensign rehydrates its identity, standing grants, last assignment,
+  restart the officer rehydrates its identity, standing grants, last assignment,
   and career counters.
   """
   use Fleet.FleetCase, async: false
 
   @moduletag :integration
 
-  alias Fleet.{CrewSupervisor, Ensign, Service, DutyLog}
+  alias Fleet.{CrewSupervisor, Officer, Service, DutyLog}
 
   setup do
     test_pid = self()
     handler_id = "persisted-#{System.unique_integer([:positive])}"
 
-    :telemetry.attach(handler_id, [:chat_bot, :ensign, :event],
+    :telemetry.attach(handler_id, [:chat_bot, :officer, :event],
       fn _e, meas, meta, pid -> send(pid, {:tele, meta.event, meas, meta}) end, test_pid)
 
     on_exit(fn ->
@@ -33,7 +33,7 @@ defmodule Fleet.PersistedSelfTest do
     grants = [:cognition, {:world, "default"}, :issue_orders]
 
     {:ok, pid, ^sid} =
-      CrewSupervisor.start_ensign(
+      CrewSupervisor.start_officer(
         soul_id: sid, soul: soul, grant: %{authorities: grants}, tick_interval: 50
       )
 
@@ -53,8 +53,8 @@ defmodule Fleet.PersistedSelfTest do
     assert Service.summary(sid).current_assignment["status"] == "completed"
 
     # The agent writes to its own duty log.
-    Ensign.log_duty(sid, "chose approach A because it was safest", tags: ["reasoning"])
-    _ = Ensign.status(sid)
+    Officer.log_duty(sid, "chose approach A because it was safest", tags: ["reasoning"])
+    _ = Officer.status(sid)
     notes = DutyLog.for_soul(sid)
     assert Enum.any?(notes, &(&1.note =~ "approach A" and &1.authored_by == "agent"))
 
@@ -70,13 +70,13 @@ defmodule Fleet.PersistedSelfTest do
 
     # The supervisor restarts it, and it rehydrates its durable self.
     assert_receive {:tele, :rehydrated, _, %{soul_id: ^sid}}, 10_000
-    assert Ensign.ready?(sid)
+    assert Officer.ready?(sid)
 
-    [{new_pid, _}] = Registry.lookup(Fleet.Registry, {:ensign, sid})
+    [{new_pid, _}] = Registry.lookup(Fleet.Registry, {:officer, sid})
     refute new_pid == pid
 
     # Remembers who it is and what it was doing.
-    st = Ensign.status(sid)
+    st = Officer.status(sid)
     assert st.soul_loaded
     assert :cognition in st.grants
     assert {:world, "default"} in st.grants

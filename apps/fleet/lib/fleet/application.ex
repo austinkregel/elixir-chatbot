@@ -4,11 +4,11 @@ defmodule Fleet.Application do
 
   Starts the addressing + supervision the crew needs to exist as live processes:
 
-    * `Fleet.Registry` — unique-key registry; every ensign is addressed by
-      `{:ensign, agent_id}` via-tuple (concepts are data, processes are keyed).
-    * `Fleet.TaskSupervisor` — supervises the off-mailbox Tasks an ensign spawns
-      for heavy cognition, so an ensign GenServer never blocks.
-    * `Fleet.CrewSupervisor` — the `DynamicSupervisor` that spawns/retires ensigns.
+    * `Fleet.Registry` — unique-key registry; every officer is addressed by
+      `{:officer, agent_id}` via-tuple (concepts are data, processes are keyed).
+    * `Fleet.TaskSupervisor` — supervises the off-mailbox Tasks an officer spawns
+      for heavy cognition, so an officer GenServer never blocks.
+    * `Fleet.CrewSupervisor` — the `DynamicSupervisor` that spawns/retires officers.
 
   Telemetry handlers attach after the tree is up, mirroring `Brain.Application`.
   """

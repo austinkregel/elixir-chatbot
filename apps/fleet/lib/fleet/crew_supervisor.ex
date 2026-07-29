@@ -1,9 +1,9 @@
 defmodule Fleet.CrewSupervisor do
   @moduledoc """
-  Dynamic supervisor of the crew. Each child is one `Fleet.Ensign` GenServer.
+  Dynamic supervisor of the crew. Each child is one `Fleet.Officer` GenServer.
 
-  Commissioning a crew member = `start_ensign/1`; retiring one = `retire/1`.
-  The command hierarchy (ship, rank, chain) is *data* the ensign carries, not
+  Commissioning a crew member = `start_officer/1`; retiring one = `retire/1`.
+  The command hierarchy (ship, rank, chain) is *data* the officer carries, not
   supervision structure — this supervisor only owns process lifecycle.
 
   Mirrors `Brain.Subprocesses.Supervisor`.
@@ -17,17 +17,17 @@ defmodule Fleet.CrewSupervisor do
   end
 
   @doc """
-  Commissions an ensign. `opts` are passed to `Fleet.Ensign.start_link/1`.
+  Commissions an officer. `opts` are passed to `Fleet.Officer.start_link/1`.
 
   Identity is **stable and soul-keyed**: `agent_id` defaults to `soul_id`, so
   the agent's durable self (service record, mind-world) can rehydrate across
   restarts. Re-commissioning the same soul is **idempotent** — if it is already
-  running, its existing pid is returned (Registry key `{:ensign, agent_id}` is
-  unique); if it is not, a fresh ensign starts and rehydrates from Postgres.
-  Anonymous (soul-less) ensigns fall back to a random id and have no durable self.
+  running, its existing pid is returned (Registry key `{:officer, agent_id}` is
+  unique); if it is not, a fresh officer starts and rehydrates from Postgres.
+  Anonymous (soul-less) officers fall back to a random id and have no durable self.
   Returns `{:ok, pid, agent_id}`.
   """
-  def start_ensign(opts \\ []) do
+  def start_officer(opts \\ []) do
     agent_id = opts[:agent_id] || opts[:soul_id] || generate_id()
 
     opts =
@@ -35,22 +35,22 @@ defmodule Fleet.CrewSupervisor do
       |> Keyword.put(:agent_id, agent_id)
       |> Keyword.put_new(:soul_id, agent_id)
 
-    case DynamicSupervisor.start_child(__MODULE__, {Fleet.Ensign, opts}) do
+    case DynamicSupervisor.start_child(__MODULE__, {Fleet.Officer, opts}) do
       {:ok, pid} ->
-        Logger.info("Ensign commissioned", %{agent_id: agent_id, pid: pid})
+        Logger.info("Officer commissioned", %{agent_id: agent_id, pid: pid})
         {:ok, pid, agent_id}
 
       {:error, {:already_started, pid}} ->
-        Logger.info("Ensign already commissioned; resuming", %{agent_id: agent_id, pid: pid})
+        Logger.info("Officer already commissioned; resuming", %{agent_id: agent_id, pid: pid})
         {:ok, pid, agent_id}
 
       {:error, reason} ->
-        Logger.error("Failed to commission ensign", %{agent_id: agent_id, reason: reason})
+        Logger.error("Failed to commission officer", %{agent_id: agent_id, reason: reason})
         {:error, reason}
     end
   end
 
-  @doc "Retires (terminates) an ensign by pid."
+  @doc "Retires (terminates) an officer by pid."
   def retire(pid) when is_pid(pid) do
     DynamicSupervisor.terminate_child(__MODULE__, pid)
   end

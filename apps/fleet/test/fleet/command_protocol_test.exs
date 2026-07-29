@@ -9,7 +9,7 @@ defmodule Fleet.CommandProtocolTest do
 
   @moduletag :integration
 
-  alias Fleet.{CrewSupervisor, Ensign}
+  alias Fleet.{CrewSupervisor, Officer}
   alias Atlas.Schemas.CommandRecord
 
   @world "default"
@@ -20,7 +20,7 @@ defmodule Fleet.CommandProtocolTest do
 
     :telemetry.attach(
       handler_id,
-      [:chat_bot, :ensign, :event],
+      [:chat_bot, :officer, :event],
       fn _e, meas, meta, pid -> send(pid, {:tele, meta.event, meas, meta}) end,
       test_pid
     )
@@ -46,7 +46,7 @@ defmodule Fleet.CommandProtocolTest do
     soul = %Brain.Soul{id: sid, name: "Ensign #{sid}", constitution: "Serve faithfully.", genome: genome}
 
     {:ok, _pid, id} =
-      CrewSupervisor.start_ensign(
+      CrewSupervisor.start_officer(
         soul_id: sid, soul: soul, grant: %{authorities: grants},
         world_id: @world, tick_interval: 50
       )
@@ -57,8 +57,8 @@ defmodule Fleet.CommandProtocolTest do
   defp wire(co, rep) do
     assert :ok = Fleet.assign_co(rep, co)
     # Force the in-process chain casts to be applied before we issue orders.
-    assert Ensign.status(rep).co == co
-    assert rep in Ensign.status(co).reports
+    assert Officer.status(rep).co == co
+    assert rep in Officer.status(co).reports
     :ok
   end
 
@@ -98,7 +98,7 @@ defmodule Fleet.CommandProtocolTest do
     assert_receive {:tele, :report, _, _}, 5_000
 
     assert count("report") == before + 1
-    assert Ensign.status(rep).assignment_status == "completed"
+    assert Officer.status(rep).assignment_status == "completed"
   end
 
   # ── 3. Missing authority → REQUEST → GRANT → execute ────────────────────────
@@ -118,7 +118,7 @@ defmodule Fleet.CommandProtocolTest do
 
     assert count("request") >= 1
     assert count("grant") >= 1
-    assert Ensign.status(rep).assignment_status == "completed"
+    assert Officer.status(rep).assignment_status == "completed"
   end
 
   # ── 4. REQUEST → DENY (can't delegate what you lack) → DISSENT ───────────────
@@ -138,7 +138,7 @@ defmodule Fleet.CommandProtocolTest do
 
     assert count("deny") >= 1
     assert count("dissent") >= 1
-    assert Ensign.status(rep).assignment_status == "dissented"
+    assert Officer.status(rep).assignment_status == "dissented"
   end
 
   # ── 5. Value-grounded DISSENT (soul genome) ─────────────────────────────────
@@ -154,20 +154,20 @@ defmodule Fleet.CommandProtocolTest do
     assert_receive {:tele, :dissent, _, %{basis: :value}}, 10_000
     refute_receive {:tele, :cognition_complete, _, _}, 1_000
 
-    assert Ensign.status(rep).assignment_status == "dissented"
+    assert Officer.status(rep).assignment_status == "dissented"
     assert Enum.any?(Atlas.Repo.all(CommandRecord.of_kind("dissent")), &(&1.verdict == "value"))
   end
 
-  # ── 6. Provenance anomaly (order from a non-CO ensign) ──────────────────────
+  # ── 6. Provenance anomaly (order from a non-CO officer) ──────────────────────
 
-  test "an order from an ensign that is not the CO is refused as a provenance anomaly" do
+  test "an order from an officer that is not the CO is refused as a provenance anomaly" do
     co = commission([:cognition, {:world, @world}, :issue_orders])
     rep = commission([])
     impostor = commission([:cognition, {:world, @world}, :issue_orders])
     :ok = wire(co, rep)
 
     before = count("provenance_anomaly")
-    # The impostor is a registered ensign, but it is NOT rep's CO.
+    # The impostor is a registered officer, but it is NOT rep's CO.
     Fleet.issue_order(impostor, rep, "Stand down immediately.",
       authorities: [:cognition, {:world, @world}], world_id: @world)
 
@@ -175,7 +175,7 @@ defmodule Fleet.CommandProtocolTest do
     refute_receive {:tele, :cognition_complete, _, _}, 1_000
 
     assert count("provenance_anomaly") == before + 1
-    assert Ensign.status(rep).assignment_status in [nil, "pending"]
+    assert Officer.status(rep).assignment_status in [nil, "pending"]
   end
 
   # ── 7. RELIEVE / REINSTATE ──────────────────────────────────────────────────
@@ -187,7 +187,7 @@ defmodule Fleet.CommandProtocolTest do
 
     Fleet.relieve(co, rep)
     assert_receive {:tele, :relieved, _, _}, 5_000
-    assert Ensign.status(rep).duty == :relieved
+    assert Officer.status(rep).duty == :relieved
 
     # An order while relieved is refused with a DISSENT and never executed.
     Fleet.issue_order(co, rep, "Resume analysis.",
@@ -197,7 +197,7 @@ defmodule Fleet.CommandProtocolTest do
 
     Fleet.reinstate(co, rep)
     assert_receive {:tele, :reinstated, _, _}, 5_000
-    assert Ensign.status(rep).duty == :active
+    assert Officer.status(rep).duty == :active
 
     assert count("relieve") >= 1
     assert count("reinstate") >= 1

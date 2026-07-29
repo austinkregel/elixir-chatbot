@@ -46,7 +46,7 @@ defmodule Fleet.Clearance do
   end
 
   # Rule 1 — the subject reads its own mind/orders/records.
-  defp self_read?(%Principal{kind: :ensign, id: id}, opts) when is_binary(id),
+  defp self_read?(%Principal{kind: :officer, id: id}, opts) when is_binary(id),
     do: Keyword.get(opts, :target_agent_id) == id
 
   defp self_read?(_, _), do: false
@@ -79,7 +79,7 @@ defmodule Fleet.Clearance do
     do: is_binary(sid) and is_binary(target) and sid == target
 
   # The read-side peer of `Fleet.Comms.from_co?/from_report?`. `opts[:participants]`
-  # names the item's principals (`:admiral` | `{:ensign, id}` | id); it only NARROWS
+  # names the item's principals (`:admiral` | `{:officer, id}` | id); it only NARROWS
   # the request — clearance denies if the reader isn't a participant or a superior of
   # every participant. (Phase 3 checks DIRECT reports; a transitive-subtree check for
   # deeper chains is an additive extension when the caller supplies the subtree.)
@@ -99,7 +99,7 @@ defmodule Fleet.Clearance do
   end
 
   defp participant_id(:admiral), do: "admiral"
-  defp participant_id({:ensign, id}) when is_binary(id), do: id
+  defp participant_id({:officer, id}) when is_binary(id), do: id
   defp participant_id(id) when is_binary(id), do: id
   defp participant_id(_), do: nil
 end

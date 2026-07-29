@@ -10,7 +10,7 @@ defmodule Fleet.Service do
   cannot account for what happened, we fail loudly. The append-only record is
   written before the projection is updated (record-of-truth before projection).
 
-  This module is called only from ensign lifecycle code — never from agent
+  This module is called only from officer lifecycle code — never from agent
   cognition.
   """
   require Logger
@@ -44,7 +44,7 @@ defmodule Fleet.Service do
     })
   end
 
-  @doc "Record that an ensign took on a standing order."
+  @doc "Record that an officer took on a standing order."
   def record_assignment(soul_id, order) do
     append!(%{
       soul_id: soul_id,
@@ -103,7 +103,7 @@ defmodule Fleet.Service do
     upsert!(soul_id, %{achievements: (current && current.achievements || []) ++ [stringify(achievement)]})
   end
 
-  @doc "Record that the ensign rehydrated after a restart (audit of the restart)."
+  @doc "Record that the officer rehydrated after a restart (audit of the restart)."
   def record_rehydrated(soul_id, attrs) do
     append!(%{soul_id: soul_id, kind: "rehydrated", payload: stringify(attrs)})
   end
@@ -148,7 +148,7 @@ defmodule Fleet.Service do
     end
   end
 
-  # Per-soul writes are serialized by the ensign process, so read-modify-write is
+  # Per-soul writes are serialized by the officer process, so read-modify-write is
   # safe; we upsert the whole projection.
   defp upsert!(soul_id, changes) do
     changes = changes |> Map.put(:soul_id, soul_id)

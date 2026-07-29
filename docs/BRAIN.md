@@ -176,7 +176,7 @@ The 12 modules directly under `apps/brain/lib/brain/` (not in any subdirectory)
 
 ### Brain.Soul
 **File:** soul.ex
-**Purpose:** Loads a per-agent "constitution" (identity/values/behavioral bounds) from a flat JSON file in `souls_dir()`. Confirmed real callers: `RealizationPacket.system_prompt/1`, `World.Roster`, `Fleet.Ensign`.
+**Purpose:** Loads a per-agent "constitution" (identity/values/behavioral bounds) from a flat JSON file in `souls_dir()`. Confirmed real callers: `RealizationPacket.system_prompt/1`, `World.Roster`, `Fleet.Officer`.
 **Public API:** `souls_dir/0`, `get/1`, `list_ids/0`, `system_prompt/1`.
 **Mismatches:** None.
 

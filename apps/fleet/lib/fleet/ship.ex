@@ -7,7 +7,7 @@ defmodule Fleet.Ship do
   later, each a differently-configured instance. `id/0` is the authoritative id of
   the ship this node *is* — the ship whose systems this node can actually answer
   for, and the default ship every locally-commissioned agent is posted to
-  (`Fleet.Ensign`), stamped onto every audit/black-box record (`Fleet.Audit`), and
+  (`Fleet.Officer`), stamped onto every audit/black-box record (`Fleet.Audit`), and
   compared against a reader's commission by `Fleet.Clearance`.
 
       config :fleet, ship_id: "USS-DREAMCOM"   # env-overridable via SHIP_ID

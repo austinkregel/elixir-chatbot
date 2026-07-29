@@ -18,7 +18,7 @@ defmodule Fleet.Dispatcher do
       The agent has no write path into the audit substrate; a refusal is recorded as
       a `grant_violation`.
 
-  `ctx` is supplied by the harness (the Ensign), holding the runtime-attributed
+  `ctx` is supplied by the harness (the Officer), holding the runtime-attributed
   `agent_id`, the `order_id`, the `world_id`, and the caller's `grants` — the union
   of standing + order-conferred authorities, straight from process state.
   """

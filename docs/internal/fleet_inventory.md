@@ -32,7 +32,7 @@ two batches rather than needing the ten-way split `BRAIN.md` required.
 - **`FLEET.md`'s ✅ status markers are accurate.** Every module checked
   against a specific ✅ claim in `FLEET.md` matched the real implementation,
   function-for-function in most cases (`Fleet`, `Application`, `Order`,
-  `Authority`, `Rank`, `Appraisal`, `Dispatcher`, `Ensign`, `CrewSupervisor`,
+  `Authority`, `Rank`, `Appraisal`, `Dispatcher`, `Officer`, `CrewSupervisor`,
   `CommandGraph`, `Audit`, `Comms`, `DataFrame`, `DutyLog`, `MindWorld`,
   `Proposal`, `Service`, `Signal`, `Tool` all confirmed). This is a real
   contrast with Brain's docs, which had drifted in several places (`docs/BRAIN.md`
@@ -55,12 +55,12 @@ That said, three things are worth attention:
    not *silent*, but both are a fallback-on-failure rather than a surfaced
    error: `Appraisal.cognition_verdict/3`'s `else` branch defers to a
    deference-based heuristic if `Brain.create_conversation` fails, and
-   `Ensign`'s catch-all `handle_info` clause discards unrecognized messages
+   `Officer`'s catch-all `handle_info` clause discards unrecognized messages
    with no logging at all (the one of the two that's actually silent).
 3. **A cluster of dead public functions** — 11 across the whole app (listed
    below). None are hardcoded-stub concerns; they're unused facade/helper
    surface area, most commonly a wrapper that nothing calls because callers
-   go one layer deeper instead (e.g. `Fleet.sitrep/2` wraps `Ensign.sitrep/2`,
+   go one layer deeper instead (e.g. `Fleet.sitrep/2` wraps `Officer.sitrep/2`,
    but nothing calls the wrapper).
 
 ---
@@ -70,12 +70,12 @@ That said, three things are worth attention:
 | Function | File:line | Note |
 |---|---|---|
 | `Fleet.list/0` | fleet.ex:127 | Zero callers, including Fleet's own tests |
-| `Fleet.ready?/1` | fleet.ex:130 | Zero callers; tests call `Ensign.ready?/1` directly |
-| `Fleet.sitrep/2` | fleet.ex:91 | Zero callers outside its own wrapped `Ensign.sitrep/1` call |
+| `Fleet.ready?/1` | fleet.ex:130 | Zero callers; tests call `Officer.ready?/1` directly |
+| `Fleet.sitrep/2` | fleet.ex:91 | Zero callers outside its own wrapped `Officer.sitrep/1` call |
 | `Order.valid_statuses/0` | order.ex:54 | Zero callers anywhere |
 | `Rank.known?/1` | rank.ex:66-67 | Zero callers, not even in `rank_test.exs` |
 | `Signal.kinds/0` | signal.ex:38 | Zero callers — every caller uses a literal atom instead |
-| `Telemetry.ensign_event/0` | telemetry.ex:20 | Zero callers — callers hardcode the event name literal instead |
+| `Telemetry.officer_event/0` | telemetry.ex:20 | Zero callers — callers hardcode the event name literal instead |
 | `CommandGraph.graph/0` | command_graph.ex:39 | Zero callers, despite its own doc comment claiming it's "for tests/queries" |
 | `Service.record_achievement/2` | service.ex:95-99 | Zero callers — also the scope-discipline item above |
 | `MindWorld.mind_world?/1` | mind_world.ex | No caller in `lib/`; not directly exercised by tests either |
@@ -92,7 +92,7 @@ pass, not correctness bugs.
 
 #### Fleet (facade)
 **File:** fleet.ex
-**Purpose:** The Admiral-facing public entry point wrapping `CrewSupervisor`, `Ensign`, `Comms`, `CommandGraph` — commission, chain-wiring, order/sitrep/hail dispatch, roster snapshot.
+**Purpose:** The Admiral-facing public entry point wrapping `CrewSupervisor`, `Officer`, `Comms`, `CommandGraph` — commission, chain-wiring, order/sitrep/hail dispatch, roster snapshot.
 **FLEET.md check:** Matches §7 Phase 1/2/4 claims function-for-function.
 **Notable:** `list/0`, `ready?/1`, `sitrep/2` are dead (see table above). Otherwise a thin, honest delegation layer with no hardcoded-signal issues.
 
@@ -106,7 +106,7 @@ pass, not correctness bugs.
 **File:** order.ex
 **Purpose:** The ORDER struct (transient message + standing-assignment record), shape deliberately mirroring `Atlas.Schemas.ResearchGoal` for later persistence; status transitions validated against a whitelist, raising on illegal values.
 **FLEET.md check:** Matches §7 Phase 1.
-**Notable:** `valid_statuses/0` is dead. A doc comment ("sender authentication... deferred to Phase 2") is stale — Phase 2 sender authentication is now live in `Comms`/`Ensign`, but this comment in `order.ex` wasn't updated to reflect that it shipped.
+**Notable:** `valid_statuses/0` is dead. A doc comment ("sender authentication... deferred to Phase 2") is stale — Phase 2 sender authentication is now live in `Comms`/`Officer`, but this comment in `order.ex` wasn't updated to reflect that it shipped.
 
 #### Fleet.Authority
 **File:** authority.ex
@@ -132,15 +132,15 @@ pass, not correctness bugs.
 **FLEET.md check:** Matches §7 "Tools/MCP — propose-not-dispatch" exactly, line-for-line for the audit-kind sequence.
 **Notable:** None — one of the most carefully-built, security-critical modules; no hardcoded-stub concerns.
 
-#### Fleet.Ensign
-**File:** ensign.ex
+#### Fleet.Officer
+**File:** officer.ex
 **Purpose:** The one-GenServer-per-agent runtime spine — soul identity, chain-of-command state, duty status, current assignment, full command protocol (ORDER acceptance with sender attribution + bounded-topology checks, grant-gated autonomous dispatch, REQUEST/GRANT/DENY, RELIEVE/REINSTATE with in-flight task cancellation, detached HAIL, tool-proposal gate). Cognition runs in a supervised non-linked Task so the mailbox never blocks. Rehydrates durable state from `Fleet.Service` on restart; incoming communication is written into the agent's own mind-world as a memory episode with attributed provenance.
 **FLEET.md check:** Matches §7 Phase 1/2/3 claims (duty state machine, grant-enforcement gate, per-message attribution, mind-world cognition, rehydration, HAIL) verified true against the actual line ranges.
 **Notable:** No hardcoded-stub issues — grant checks, appraisal, dispatch are all genuinely dynamic. The `handle_info(_msg, state)` catch-all silently discards unrecognized messages with zero logging — the one fully-silent instance flagged above. A `{:ack, ack}` raw-tuple handler is marked in a comment as a "backward-compatible" Phase-1 vestige but is still reachable (not dead).
 
 #### Fleet.CrewSupervisor
 **File:** crew_supervisor.ex
-**Purpose:** `DynamicSupervisor` owning ensign process lifecycle only (the command hierarchy is data the ensign carries, not supervision structure). `start_ensign/1` commissions with a stable soul-keyed `agent_id`, making re-commissioning idempotent.
+**Purpose:** `DynamicSupervisor` owning officer process lifecycle only (the command hierarchy is data the officer carries, not supervision structure). `start_officer/1` commissions with a stable soul-keyed `agent_id`, making re-commissioning idempotent.
 **FLEET.md check:** Matches §7 Phase 1/3 exactly, including the idempotent-rehydration claim.
 **Notable:** None.
 
@@ -156,7 +156,7 @@ pass, not correctness bugs.
 **File:** audit.ex
 **Purpose:** Runtime audit writer for the command channel — normalizes attrs, inserts a durable `Atlas.Schemas.CommandRecord` row *before* emitting the live telemetry event (deliberately ordered), raises loudly on DB write failure.
 **FLEET.md check:** Matches §7 Phase 2 exactly, including the durable-then-telemetry ordering and fail-loud behavior.
-**Notable:** None — confirmed real, ~20 real call sites in `ensign.ex`.
+**Notable:** None — confirmed real, ~20 real call sites in `officer.ex`.
 
 #### Fleet.Comms
 **File:** comms.ex
@@ -202,9 +202,9 @@ pass, not correctness bugs.
 
 #### Fleet.Telemetry
 **File:** telemetry.ex
-**Purpose:** Thin `:telemetry.execute/3` wrapper for the ensign lifecycle event, following `Brain.Telemetry`'s pattern; the attached handler debug-logs and best-effort-bridges to the `"fleet:events"` PubSub topic behind the Fleet page's activity feed.
-**FLEET.md check:** The Phase-4 Activity-feed claim matches exactly. **The one genuine misattribution found in this audit:** `FLEET.md`'s Phase-1 bullet for this file claims "readiness reuses `Brain.Metrics.Aggregator.record_readiness(:ensign, _)`" is implemented *in this module* — it's actually a private helper in `ensign.ex:863-866`. The underlying claim (readiness reuse, guarded, zero brain edits) is true; the doc just points at the wrong file.
-**Notable:** `ensign_event/0` is dead — callers hardcode the event-name literal instead of calling it back.
+**Purpose:** Thin `:telemetry.execute/3` wrapper for the officer lifecycle event, following `Brain.Telemetry`'s pattern; the attached handler debug-logs and best-effort-bridges to the `"fleet:events"` PubSub topic behind the Fleet page's activity feed.
+**FLEET.md check:** The Phase-4 Activity-feed claim matches exactly. **The one genuine misattribution found in this audit:** `FLEET.md`'s Phase-1 bullet for this file claims "readiness reuses `Brain.Metrics.Aggregator.record_readiness(:officer, _)`" is implemented *in this module* — it's actually a private helper in `officer.ex:863-866`. The underlying claim (readiness reuse, guarded, zero brain edits) is true; the doc just points at the wrong file.
+**Notable:** `officer_event/0` is dead — callers hardcode the event-name literal instead of calling it back.
 
 #### Fleet.Tool
 **File:** tool.ex

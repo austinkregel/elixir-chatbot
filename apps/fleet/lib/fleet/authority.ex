@@ -1,7 +1,7 @@
 defmodule Fleet.Authority do
   @moduledoc """
   Authorities are the real teeth of a grant: named terms that gate behaviour an
-  ensign actually performs. An order's grant is the agent's action scope; an
+  officer actually performs. An order's grant is the agent's action scope; an
   agent may only do what its held authorities permit.
 
   Vocabulary (extensible as capabilities grow):

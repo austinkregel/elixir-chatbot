@@ -16,7 +16,7 @@ defmodule Fleet.SystemsReadTest do
     test_pid = self()
     handler_id = "sysread-#{System.unique_integer([:positive])}"
 
-    :telemetry.attach(handler_id, [:chat_bot, :ensign, :event],
+    :telemetry.attach(handler_id, [:chat_bot, :officer, :event],
       fn _e, meas, meta, pid -> send(pid, {:tele, meta.event, meas, meta}) end, test_pid)
 
     on_exit(fn ->
@@ -30,7 +30,7 @@ defmodule Fleet.SystemsReadTest do
   defp commission(grants) do
     sid = "sysread-#{System.unique_integer([:positive])}"
     soul = %Brain.Soul{id: sid, name: "Agent #{sid}", constitution: "Serve.", genome: %{}}
-    {:ok, _pid, id} = CrewSupervisor.start_ensign(soul_id: sid, soul: soul, grant: %{authorities: grants}, tick_interval: 50)
+    {:ok, _pid, id} = CrewSupervisor.start_officer(soul_id: sid, soul: soul, grant: %{authorities: grants}, tick_interval: 50)
     assert_receive {:tele, :soul_hydrated, _, %{soul_id: ^sid}}, 5_000
     id
   end

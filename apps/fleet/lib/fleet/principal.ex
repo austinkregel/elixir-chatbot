@@ -2,12 +2,12 @@ defmodule Fleet.Principal do
   @moduledoc """
   A normalized **reader** — agent or human — that `Fleet.Clearance` reasons over.
 
-  Built from RUNTIME state (an ensign's `context_tags` + `duty`, or an authenticated
+  Built from RUNTIME state (an officer's `context_tags` + `duty`, or an authenticated
   human session), NEVER from anything the model wrote — the same trust invariant as
   `Fleet.Comms.attribute/1` (the Registry vouches for who a message is from). Two
   kinds:
 
-    * `:ensign` — a commissioned agent, with its billet, live duty, ship commission,
+    * `:officer` — a commissioned agent, with its billet, live duty, ship commission,
       and chain position.
     * `:admiral` — the human Admiralty: top of seniority, fleet-wide (`ship_id: nil`),
       always on duty. Bypasses the ship and chain gates but is still routed through
@@ -18,7 +18,7 @@ defmodule Fleet.Principal do
   defstruct kind: nil, id: nil, rank: :ensign, duty: :active, ship_id: nil, co: nil, reports: []
 
   @type t :: %__MODULE__{
-          kind: :ensign | :admiral,
+          kind: :officer | :admiral,
           id: String.t() | nil,
           rank: atom(),
           duty: :active | :relieved,
@@ -32,7 +32,7 @@ defmodule Fleet.Principal do
   def admiral, do: %__MODULE__{kind: :admiral, id: "admiral", rank: :admiral, duty: :active, ship_id: nil}
 
   @doc """
-  Build an agent principal from an ensign's runtime facts. `attrs` is a map/keyword
+  Build an agent principal from an officer's runtime facts. `attrs` is a map/keyword
   with `:agent_id, :rank, :duty, :ship_id, :co, :reports` — sourced from process
   state at dispatch time, never the payload.
   """
@@ -41,7 +41,7 @@ defmodule Fleet.Principal do
     a = Map.new(attrs)
 
     %__MODULE__{
-      kind: :ensign,
+      kind: :officer,
       id: a[:agent_id] || a[:id],
       rank: a[:rank] || :ensign,
       duty: a[:duty] || :active,

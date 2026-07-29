@@ -1,6 +1,6 @@
 defmodule Fleet.ToolDispatchTest do
   @moduledoc """
-  End-to-end proof of the propose-not-dispatch loop through a live Ensign: the same
+  End-to-end proof of the propose-not-dispatch loop through a live Officer: the same
   bypass guarantees as the pure gate test, but exercised via `Fleet.propose/2` with
   the agent's real order-conferred grant and real, runtime-written audit records.
   """
@@ -16,7 +16,7 @@ defmodule Fleet.ToolDispatchTest do
     test_pid = self()
     handler_id = "tool-#{System.unique_integer([:positive])}"
 
-    :telemetry.attach(handler_id, [:chat_bot, :ensign, :event],
+    :telemetry.attach(handler_id, [:chat_bot, :officer, :event],
       fn _e, meas, meta, pid -> send(pid, {:tele, meta.event, meas, meta}) end, test_pid)
 
     on_exit(fn ->
@@ -32,7 +32,7 @@ defmodule Fleet.ToolDispatchTest do
     soul = %Brain.Soul{id: sid, name: "Agent #{sid}", constitution: "Serve.", genome: %{}}
 
     {:ok, _pid, id} =
-      CrewSupervisor.start_ensign(
+      CrewSupervisor.start_officer(
         soul_id: sid,
         soul: soul,
         grant: %{authorities: grants},
