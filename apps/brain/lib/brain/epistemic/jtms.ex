@@ -156,7 +156,13 @@ defmodule Brain.Epistemic.JTMS do
       node_to_justifications: %{},
       justification_to_conclusion: %{},
       contradiction_nodes: MapSet.new(),
-      contradiction_handler: &default_contradiction_handler/1
+      # Every world's JTMS is born wired to the real handler. Registering from
+      # the handler's side is impossible: JTMS processes live under
+      # `{:via, Registry, {JTMSRegistry, {:jtms, world_id}}}`, so no process ever
+      # holds the bare `Brain.Epistemic.JTMS` atom for a `Process.whereis/1` to
+      # find — and `set_contradiction_handler/1` would only ever reach the
+      # "default" world anyway, which is wrong for per-officer mind-worlds.
+      contradiction_handler: &Brain.Epistemic.ContradictionHandler.handle_jtms_callback/1
     }
 
     Logger.info("JTMS initialized", world_id: state.world_id)
@@ -426,14 +432,17 @@ defmodule Brain.Epistemic.JTMS do
   end
 
   @impl true
-  def handle_call(:clear, _from, _state) do
+  def handle_call(:clear, _from, state) do
+    # `world_id` must survive a clear: it identifies which world's web this is,
+    # and `check_contradiction_triggered/2` stamps it into the handler callback.
     new_state = %{
+      world_id: state.world_id,
       nodes: %{},
       justifications: %{},
       node_to_justifications: %{},
       justification_to_conclusion: %{},
       contradiction_nodes: MapSet.new(),
-      contradiction_handler: &default_contradiction_handler/1
+      contradiction_handler: &Brain.Epistemic.ContradictionHandler.handle_jtms_callback/1
     }
 
     {:reply, :ok, new_state}
@@ -544,7 +553,10 @@ defmodule Brain.Epistemic.JTMS do
 
       if node && node.label == :in do
         assumptions = find_supporting_assumptions(state, node_id)
-        state.contradiction_handler.({:contradiction, node_id, assumptions})
+        # The world travels with the notification: without it a handler cannot
+        # know which world's web to retract in, and would silently act on
+        # "default" — a web belonging to no one under Fleet mind-worlds.
+        state.contradiction_handler.({:contradiction, state.world_id, node_id, assumptions})
       end
     end
 
@@ -613,13 +625,6 @@ defmodule Brain.Epistemic.JTMS do
 
         {:ok, result}
     end
-  end
-
-  defp default_contradiction_handler({:contradiction, node_id, assumptions}) do
-    Logger.warning("Contradiction detected",
-      node_id: node_id,
-      supporting_assumptions: assumptions
-    )
   end
 
   defp generate_id do

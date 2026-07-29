@@ -339,23 +339,13 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
 
   describe "JTMS integration with contradictions" do
     test "registers contradiction in JTMS when beliefs conflict" do
-      import ExUnit.CaptureLog
-
       {:ok, node1} =
         JTMS.create_assumption("User is from New York", true)
 
       {:ok, node2} =
         JTMS.create_assumption("User is from Chicago", true)
 
-      # register_contradiction triggers the handler immediately if both nodes are IN
-      # Capture the log to avoid leaking to test output
-      log =
-        capture_log([level: :warning], fn ->
-          {:ok, _} = JTMS.register_contradiction([node1, node2])
-        end)
-
-      # The contradiction was detected during registration
-      assert log =~ "Contradiction detected"
+      {:ok, _} = JTMS.register_contradiction([node1, node2])
 
       {:error, {:contradiction, contra_id}} = JTMS.check_consistency()
       contradictions = JTMS.get_contradictions()
@@ -364,28 +354,56 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
       assert contradiction_node.id == contra_id
     end
 
-    test "contradiction handler receives notification" do
-      import ExUnit.CaptureLog
-
+    # Previously this asserted only that a "Contradiction detected" warning was
+    # logged — which was all the system did, because ContradictionHandler never
+    # actually registered with any JTMS (it guarded on `Process.whereis(JTMS)`,
+    # but JTMS processes live behind a per-world Registry, so the guard was
+    # always nil). Now the handler really runs, so assert it really ran.
+    test "contradiction handler receives notification and records it" do
       {:ok, node1} = JTMS.create_assumption("Fact A is true", true)
       {:ok, node2} = JTMS.create_assumption("Fact A is not true", true)
 
-      # register_contradiction triggers the handler immediately if both nodes are IN
-      # Capture the log to avoid leaking to test output
-      log =
-        capture_log([level: :warning], fn ->
-          {:ok, _} = JTMS.register_contradiction([node1, node2])
-        end)
-
-      # The contradiction was detected during registration
-      assert log =~ "Contradiction detected"
+      {:ok, _} = JTMS.register_contradiction([node1, node2])
 
       {:error, {:contradiction, contra_id}} = JTMS.check_consistency()
-      contradictions = JTMS.get_contradictions()
-      assert length(contradictions) == 1
-      contradiction_node = hd(contradictions)
-      assert contradiction_node.label == :in
-      assert contradiction_node.id == contra_id
+
+      # The handler runs in a spawned process so the JTMS never blocks on it.
+      entry =
+        eventually(
+          fn -> Enum.find(ContradictionHandler.get_pending(), &(&1.node_id == contra_id)) end,
+          &(&1 != nil)
+        )
+
+      # Two same-confidence assumptions under the :hybrid strategy are not
+      # auto-resolvable, so this lands as a real pending decision with options.
+      assert entry.world_id == "default"
+      assert length(entry.options) == 2
+      assert Enum.sort(Enum.map(entry.options, & &1.assumption_id)) == Enum.sort([node1, node2])
+    end
+
+    # The regression the per-world wiring exists for: a contradiction raised in a
+    # Fleet mind-world must be attributed to THAT world, not "default". On main
+    # the handler was never invoked at all, so this could not pass.
+    test "a contradiction in a mind-world is attributed to that world" do
+      world_id = "mind:test-soul-#{System.unique_integer([:positive])}"
+      {:ok, _pid} = JTMS.ensure(world_id)
+
+      {:ok, n1} = JTMS.create_assumption("Reactor is at 94%", true, world_id: world_id)
+      {:ok, n2} = JTMS.create_assumption("Reactor is offline", true, world_id: world_id)
+      {:ok, _} = JTMS.register_contradiction(world_id, [n1, n2], "test")
+
+      {:error, {:contradiction, contra_id}} = JTMS.check_consistency(world_id)
+
+      entry =
+        eventually(
+          fn -> Enum.find(ContradictionHandler.get_pending(), &(&1.node_id == contra_id)) end,
+          &(&1 != nil)
+        )
+
+      assert entry.world_id == world_id
+
+      # And the default world's web is untouched by it.
+      assert JTMS.check_consistency("default") == {:ok, :consistent}
     end
   end
 
