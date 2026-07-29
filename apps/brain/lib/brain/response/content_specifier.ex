@@ -397,10 +397,16 @@ defmodule Brain.Response.ContentSpecifier do
     :exit, _ -> []
   end
 
+  # NB: `query_beliefs/1` replies `{:ok, beliefs}`, not a bare list, so the previous
+  # `beliefs when is_list(beliefs)` clause never matched and this function returned
+  # `[]` on every call where the store was actually up -- no belief has ever reached
+  # a narrative primitive through here. Unwrapping the tuple is what makes the
+  # disclosure filter below load-bearing rather than decorative.
   defp retrieve_beliefs(analysis) do
     try do
       if belief_store_available?() do
         case Brain.Epistemic.BeliefStore.query_beliefs(limit: 20) do
+          {:ok, beliefs} when is_list(beliefs) -> beliefs
           beliefs when is_list(beliefs) -> beliefs
           _ -> []
         end
@@ -414,20 +420,38 @@ defmodule Brain.Response.ContentSpecifier do
     end
   end
 
+  # Drops beliefs the disclosure policy says must not be said: the @never_disclose
+  # predicates (:password, :ssn, :credit_card, :health_condition, ...) and anything
+  # below the 0.3 confidence floor. Without this, low-confidence beliefs reach the
+  # prompt as though they were established fact, which is exactly how a small model
+  # ends up stating them confidently.
+  #
+  # NB: this used to call `filter_discloseable/1`, which only has a clause for
+  # `%SelfKnowledgeAssessment{}` -- passing a list raised FunctionClauseError into a
+  # blanket `rescue -> beliefs`, so the filter silently did nothing at all.
+  # `evaluate_disclosure/1` is the function that actually takes a belief.
   defp apply_disclosure_filter(beliefs) when is_list(beliefs) do
-    try do
-      if Code.ensure_loaded?(Brain.Epistemic.DisclosurePolicy) and
-           function_exported?(Brain.Epistemic.DisclosurePolicy, :filter_discloseable, 1) do
-        Brain.Epistemic.DisclosurePolicy.filter_discloseable(beliefs)
-      else
-        beliefs
-      end
-    rescue
-      _ -> beliefs
-    end
+    Enum.filter(beliefs, &discloseable?/1)
   end
 
   defp apply_disclosure_filter(beliefs), do: beliefs
+
+  defp discloseable?(%Brain.Epistemic.Types.Belief{} = belief) do
+    Brain.Epistemic.DisclosurePolicy.evaluate_disclosure(belief).should_disclose
+  rescue
+    e ->
+      # Withhold on error: a belief we cannot evaluate is one we should not state.
+      Logger.warning(
+        "ContentSpecifier: disclosure evaluation failed, withholding belief: " <>
+          Exception.message(e)
+      )
+
+      false
+  end
+
+  # Not a Belief struct (e.g. a pre-resolved map from analysis.related_beliefs) --
+  # the policy has nothing to say about it, so pass it through unchanged.
+  defp discloseable?(_other), do: true
 
   defp fact_retriever_available? do
     try do
