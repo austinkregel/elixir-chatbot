@@ -1752,6 +1752,11 @@ defmodule Brain do
     gen_opts = %{
       user_id: Keyword.get(opts, :user_id),
       conversation_id: Keyword.get(opts, :conversation_id),
+      # Threaded explicitly rather than left to `Process.get(:current_world_id)`:
+      # the epistemic checks in ResponseEvaluator must consult the ACTING agent's
+      # mind-world, and `agent_id` attributes the evaluation to that officer.
+      world_id: Keyword.get(opts, :world_id) || Process.get(:current_world_id),
+      agent_id: Keyword.get(opts, :agent_id),
       unified_context: unified_context,
       dry_run_ouro: Keyword.get(opts, :dry_run_ouro, false),
       require_llm: require_llm

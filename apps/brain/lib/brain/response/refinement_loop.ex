@@ -97,12 +97,23 @@ defmodule Brain.Response.RefinementLoop do
 
     case SurfaceRealizer.realize(specified, realize_opts) do
       {:ok, rendered, response} ->
-        score = ResponseEvaluator.evaluate(rendered, response, primary)
+        score = ResponseEvaluator.evaluate(rendered, response, primary, eval_opts(opts))
         {:ok, response, %{score: score, primitives: rendered, iterations: 1}}
 
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  # The epistemic dimensions need to know WHOSE knowledge they are checking
+  # against: `world_id` selects the JTMS web (an agent's mind-world under Fleet,
+  # not the global default), and `conversation_id` selects the recorded stances
+  # to measure drift over.
+  defp eval_opts(opts) do
+    [
+      world_id: Keyword.get(opts, :world_id) || Process.get(:current_world_id),
+      conversation_id: Keyword.get(opts, :conversation_id)
+    ]
   end
 
   defp iterate(plan, analysis, opts, iteration, max_iter, best_so_far) do
@@ -114,7 +125,7 @@ defmodule Brain.Response.RefinementLoop do
         {:ok, response, rendered, nil, iteration}
 
       {:ok, rendered, response} ->
-        score = ResponseEvaluator.evaluate(rendered, response, analysis)
+        score = ResponseEvaluator.evaluate(rendered, response, analysis, eval_opts(opts))
 
         current = %{response: response, primitives: rendered, score: score, iteration: iteration}
         best = pick_best(best_so_far, current)

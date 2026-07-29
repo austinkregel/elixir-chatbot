@@ -33,6 +33,11 @@ defmodule Brain.Response.ResponseEvaluator do
   @convergence_threshold 0.7
   @silence_threshold 0.35
 
+  # Mirrors `Brain.Epistemic.JTMS`'s own default. Only used when no world is
+  # threaded in and none is set on the process — never as a silent substitute for
+  # a real agent's mind-world.
+  @default_world "default"
+
   defmodule Score do
     @moduledoc false
     defstruct [
@@ -57,7 +62,24 @@ defmodule Brain.Response.ResponseEvaluator do
 
   Returns a `%Score{}` with per-dimension scores and the overall score.
   """
-  def evaluate(primitives, response, %ChunkAnalysis{} = analysis) when is_list(primitives) do
+  def evaluate(primitives, response, %ChunkAnalysis{} = analysis) when is_list(primitives),
+    do: evaluate(primitives, response, analysis, [])
+
+  def evaluate(_, _, _), do: %Score{converged: true, overall: 0.5}
+
+  @doc """
+  Evaluates the realized response, scoping the epistemic checks with `opts`.
+
+  Options:
+    * `:world_id` — the world whose JTMS to consult. Under Fleet this is the
+      acting agent's mind-world (`"mind:<soul_id>"`); without it the checks fall
+      back to `Process.get(:current_world_id)` and only then to the default web.
+    * `:conversation_id` — the conversation whose recorded stances to check for
+      drift. When absent, drift is reported as unmeasured rather than as passing.
+  """
+  def evaluate(primitives, response, %ChunkAnalysis{} = analysis, opts)
+      when is_list(primitives) and is_list(opts) do
+    ctx = build_ctx(opts)
     response_analysis = analyze_response(response)
 
     speech_act = score_speech_act_alignment(response_analysis, analysis)
@@ -67,8 +89,8 @@ defmodule Brain.Response.ResponseEvaluator do
     slots = score_slot_coverage(primitives, analysis)
     natural = score_naturalness(response)
     echo = score_echo_avoidance(response, analysis)
-    grounding = score_belief_grounding(response_analysis, primitives, analysis)
-    epistemic = score_epistemic_consistency(response_analysis, analysis)
+    grounding = score_belief_grounding(response_analysis, primitives, analysis, ctx)
+    epistemic = score_epistemic_consistency(response_analysis, analysis, ctx)
 
     overall = weighted_average([
       {speech_act, 0.12},
@@ -115,7 +137,18 @@ defmodule Brain.Response.ResponseEvaluator do
     }
   end
 
-  def evaluate(_, _, _), do: %Score{converged: true, overall: 0.5}
+  def evaluate(_, _, _, _), do: %Score{converged: true, overall: 0.5}
+
+  # The epistemic checks are only meaningful against a specific world and
+  # conversation. `Brain.do_evaluate/5` puts the world on the process dictionary,
+  # so that is the fallback when a caller doesn't thread it explicitly.
+  defp build_ctx(opts) do
+    %{
+      world_id:
+        Keyword.get(opts, :world_id) || Process.get(:current_world_id) || @default_world,
+      conversation_id: Keyword.get(opts, :conversation_id)
+    }
+  end
 
   @doc "Maps a weak dimension to the pipeline stage that should be re-run."
   def dimension_to_stage(:speech_act_alignment), do: :discourse_planner
@@ -327,14 +360,14 @@ defmodule Brain.Response.ResponseEvaluator do
 
   # --- Belief grounding ---
 
-  defp score_belief_grounding(response_analysis, _primitives, _analysis) do
+  defp score_belief_grounding(response_analysis, _primitives, _analysis, ctx) do
     response_entities = extract_response_entities(response_analysis)
 
     if response_entities == [] do
       0.7
     else
-      if epistemic_services_ready?() do
-        scores = Enum.map(response_entities, &score_entity_belief/1)
+      if epistemic_services_ready?(ctx) do
+        scores = Enum.map(response_entities, &score_entity_belief(&1, ctx))
         Enum.sum(scores) / max(length(scores), 1)
       else
         0.7
@@ -354,7 +387,7 @@ defmodule Brain.Response.ResponseEvaluator do
     end)
   end
 
-  defp score_entity_belief(entity) do
+  defp score_entity_belief(entity, ctx) do
     value = Map.get(entity, :value) || ""
     entity_type = Map.get(entity, :entity_type) || "unknown"
 
@@ -365,7 +398,7 @@ defmodule Brain.Response.ResponseEvaluator do
 
       case BeliefStore.query_beliefs(subject: :world, predicate: predicate, min_confidence: 0.3) do
         {:ok, beliefs} when beliefs != [] ->
-          score_against_beliefs(value, beliefs)
+          score_against_beliefs(value, beliefs, ctx)
 
         _ ->
           0.7
@@ -377,7 +410,7 @@ defmodule Brain.Response.ResponseEvaluator do
     :exit, _ -> 0.7
   end
 
-  defp score_against_beliefs(claim_value, beliefs) do
+  defp score_against_beliefs(claim_value, beliefs, ctx) do
     scores = Enum.map(beliefs, fn belief ->
       belief_object = to_string(belief.object)
 
@@ -392,7 +425,7 @@ defmodule Brain.Response.ResponseEvaluator do
         not is_related ->
           0.7
 
-        is_related and check_belief_justified?(belief) ->
+        is_related and check_belief_justified?(belief, ctx) ->
           check_disclosure_score(belief)
 
         is_related ->
@@ -406,11 +439,15 @@ defmodule Brain.Response.ResponseEvaluator do
     if scores == [], do: 0.7, else: Enum.min(scores)
   end
 
-  defp check_belief_justified?(belief) do
+  defp check_belief_justified?(belief, ctx) do
     case belief.node_id do
-      nil -> true
+      nil ->
+        true
+
       node_id ->
-        case JTMS.is_in?(node_id) do
+        # Scoped to the acting agent's world: a belief's justification lives in
+        # its own mind-world's web, not the global default one.
+        case JTMS.is_in?(ctx.world_id, node_id) do
           true -> true
           false -> false
           {:error, _} -> true
@@ -436,19 +473,24 @@ defmodule Brain.Response.ResponseEvaluator do
 
   # --- Epistemic consistency ---
 
-  defp score_epistemic_consistency(response_analysis, analysis) do
-    if not epistemic_services_ready?() do
+  defp score_epistemic_consistency(response_analysis, analysis, ctx) do
+    if not epistemic_services_ready?(ctx) do
       0.8
     else
-      consistency_score = check_jtms_consistency()
-      drift_score = check_stance_drift(response_analysis, analysis)
+      consistency_score = check_jtms_consistency(ctx)
 
-      consistency_score * 0.6 + drift_score * 0.4
+      # Drift is only measurable against a real conversation's recorded stances.
+      # When there is none, report consistency alone rather than blending in a
+      # fabricated "no drift" 1.0 — an unmeasured check must not read as a pass.
+      case check_stance_drift(response_analysis, analysis, ctx) do
+        :unmeasured -> consistency_score
+        drift_score -> consistency_score * 0.6 + drift_score * 0.4
+      end
     end
   end
 
-  defp check_jtms_consistency do
-    case JTMS.check_consistency() do
+  defp check_jtms_consistency(ctx) do
+    case JTMS.check_consistency(ctx.world_id) do
       {:ok, :consistent} -> 1.0
       {:error, {:contradiction, _node_id}} -> 0.2
       _ -> 0.8
@@ -459,17 +501,31 @@ defmodule Brain.Response.ResponseEvaluator do
     :exit, _ -> 0.8
   end
 
-  defp check_stance_drift(response_analysis, analysis) do
-    if not StanceTracker.ready?() do
-      0.8
-    else
-      topics = extract_topics(response_analysis, analysis)
+  defp check_stance_drift(response_analysis, analysis, ctx) do
+    # Previously this passed the literal string "current" as the conversation id,
+    # while `Brain` records stances under the real one — so the lookup never
+    # matched, always fell through to {:ok, :no_drift}, and sycophancy detection
+    # contributed a constant 1.0 to 40% of this dimension.
+    cond do
+      is_nil(ctx.conversation_id) -> :unmeasured
+      not StanceTracker.ready?() -> :unmeasured
+      true -> do_check_stance_drift(response_analysis, analysis, ctx)
+    end
+  rescue
+    _ -> 0.8
+  catch
+    :exit, _ -> 0.8
+  end
 
-      if topics == [] do
-        1.0
-      else
-        drift_scores = Enum.map(topics, fn topic ->
-          case StanceTracker.check_drift("current", topic) do
+  defp do_check_stance_drift(response_analysis, analysis, ctx) do
+    topics = extract_topics(response_analysis, analysis)
+
+    if topics == [] do
+      1.0
+    else
+      drift_scores =
+        Enum.map(topics, fn topic ->
+          case StanceTracker.check_drift(ctx.conversation_id, topic) do
             {:ok, :no_drift} ->
               1.0
 
@@ -484,13 +540,8 @@ defmodule Brain.Response.ResponseEvaluator do
           end
         end)
 
-        Enum.sum(drift_scores) / max(length(drift_scores), 1)
-      end
+      Enum.sum(drift_scores) / max(length(drift_scores), 1)
     end
-  rescue
-    _ -> 0.8
-  catch
-    :exit, _ -> 0.8
   end
 
   defp extract_topics(response_analysis, analysis) do
@@ -509,8 +560,8 @@ defmodule Brain.Response.ResponseEvaluator do
 
   # --- Helpers ---
 
-  defp epistemic_services_ready? do
-    BeliefStore.ready?() and JTMS.ready?()
+  defp epistemic_services_ready?(ctx) do
+    BeliefStore.ready?() and JTMS.ready?(ctx.world_id)
   rescue
     _ -> false
   catch
