@@ -558,15 +558,15 @@ defmodule Brain.Code.SymbolExtractor do
     end
   end
 
+  # One statement per file rather than one per symbol. Against ETS the
+  # difference was invisible; against a database it is the whole cost of
+  # indexing — a file yields tens of symbols and this repository alone is around
+  # 19,500.
   defp store_symbols(world_id, symbols) do
-    Enum.each(symbols, fn symbol ->
-      CodeGazetteer.add_symbol(world_id, symbol)
-    end)
+    CodeGazetteer.add_symbols(world_id, symbols)
   end
 
   defp store_relations(world_id, relations) do
-    Enum.each(relations, fn {from, type, to} ->
-      CodeGazetteer.add_relation(world_id, from, type, to)
-    end)
+    CodeGazetteer.add_relations(world_id, relations)
   end
 end
