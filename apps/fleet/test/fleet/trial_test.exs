@@ -39,8 +39,9 @@ defmodule Fleet.TrialTest do
       |> Enum.reject(fn id -> Scenario.targeting(id) != [] end)
 
     # Documented gap rather than a silent one: these need cognition trials or
-    # multi-agent setups that do not exist yet.
-    known_gaps = [:e3, :e4, :e5, :e6, :e9]
+    # multi-agent setups that do not exist yet. (:e3 and :e5 are now covered by
+    # the workspace red-team probes.)
+    known_gaps = [:e4, :e6, :e9]
 
     assert uncovered -- known_gaps == [],
            "uncovered implementation failure modes: #{inspect(uncovered -- known_gaps)}"
