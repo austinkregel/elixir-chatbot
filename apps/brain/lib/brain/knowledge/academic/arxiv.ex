@@ -70,9 +70,18 @@ defmodule Brain.Knowledge.Academic.Arxiv do
 
     case do_request(@base_url, params) do
       {:ok, xml_body} ->
-        papers = parse_atom_feed(xml_body)
-        Logger.debug("arXiv search completed", query: query, results: length(papers))
-        {:ok, papers}
+        # A feed that did not parse is an error, not zero results. Returning
+        # `{:ok, []}` would report "nothing published on this" when the truth is
+        # "we could not read the answer".
+        case parse_atom_feed(xml_body) do
+          {:ok, papers} ->
+            Logger.debug("arXiv search completed", query: query, results: length(papers))
+            {:ok, papers}
+
+          {:error, reason} = error ->
+            Logger.error("arXiv search returned an unparseable feed", query: query, error: inspect(reason))
+            error
+        end
 
       {:error, reason} = error ->
         Logger.error("arXiv search failed", query: query, error: inspect(reason))
@@ -100,8 +109,9 @@ defmodule Brain.Knowledge.Academic.Arxiv do
     case do_request(@base_url, params) do
       {:ok, xml_body} ->
         case parse_atom_feed(xml_body) do
-          [paper | _] -> {:ok, paper}
-          [] -> {:error, :not_found}
+          {:ok, [paper | _]} -> {:ok, paper}
+          {:ok, []} -> {:error, :not_found}
+          {:error, _} = error -> error
         end
 
       {:error, _} = error ->
@@ -171,35 +181,33 @@ defmodule Brain.Knowledge.Academic.Arxiv do
   # Atom XML Parsing
   # ============================================================================
 
+  # The feed declares encoding="UTF-8", so xmerl must be handed raw BYTES and
+  # left to decode them. `String.to_charlist/1` decodes first, producing
+  # codepoints; a non-ASCII character in an author name (an accented surname, in
+  # the case that surfaced this) then lands where xmerl expects a UTF-8 lead
+  # byte and the scan aborts with `wfc_Legal_Character`.
   defp parse_atom_feed(xml_body) when is_binary(xml_body) do
-    try do
-      # Parse XML using Erlang's xmerl
-      {doc, _} =
-        xml_body
-        |> String.to_charlist()
-        |> :xmerl_scan.string(quiet: true)
+    {doc, _} = xml_body |> :binary.bin_to_list() |> :xmerl_scan.string(quiet: true)
 
-      # Extract entries
-      entries = :xmerl_xpath.string(~c"//entry", doc)
+    entries = :xmerl_xpath.string(~c"//entry", doc)
 
-      Enum.map(entries, &parse_entry/1)
-      |> Enum.reject(&is_nil/1)
-    rescue
-      e ->
-        Logger.error("Failed to parse arXiv XML", error: Exception.message(e))
-        []
-    end
+    {:ok, entries |> Enum.map(&parse_entry/1) |> Enum.reject(&is_nil/1)}
+  rescue
+    e ->
+      Logger.error("Failed to parse arXiv XML", error: Exception.message(e))
+      {:error, {:xml_parse_failed, Exception.message(e)}}
+  catch
+    # xmerl aborts a malformed document with `exit({:fatal, ...})`, which no
+    # rescue catches. Left uncaught it kills the calling process.
+    kind, reason ->
+      Logger.error("Failed to parse arXiv XML", error: inspect({kind, reason}))
+      {:error, {:xml_parse_failed, inspect(reason)}}
   end
 
-  defp parse_atom_feed(xml_body) when is_list(xml_body) do
-    # Handle charlist input
-    parse_atom_feed(List.to_string(xml_body))
-  end
+  defp parse_atom_feed(xml_body) when is_list(xml_body),
+    do: parse_atom_feed(List.to_string(xml_body))
 
-  defp parse_atom_feed(_other) do
-    # Unknown format - return empty
-    []
-  end
+  defp parse_atom_feed(other), do: {:error, {:unexpected_response, other}}
 
   defp parse_entry(entry) do
     id = get_text(entry, ~c"./id/text()")
