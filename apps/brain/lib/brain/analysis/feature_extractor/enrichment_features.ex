@@ -193,25 +193,17 @@ defmodule Brain.Analysis.FeatureExtractor.EnrichmentFeatures do
                     ~w(now today tomorrow yesterday tonight later soon currently recently)
                   )
 
-  @recurring_tokens MapSet.new(
-                      ~w(every each daily weekly monthly yearly always weekday weekend)
-                    )
+  @recurring_tokens MapSet.new(~w(every each daily weekly monthly yearly always weekday weekend))
 
-  @weekday_tokens MapSet.new(
-                    ~w(monday tuesday wednesday thursday friday saturday sunday)
-                  )
+  @weekday_tokens MapSet.new(~w(monday tuesday wednesday thursday friday saturday sunday))
 
-  @month_tokens MapSet.new(
-                  ~w(january february march april may june july august september october
-                     november december)
-                )
+  @month_tokens MapSet.new(~w(january february march april may june july august september october
+                     november december))
 
   @timeofday_tokens MapSet.new(~w(noon midnight morning afternoon evening night am pm))
 
-  @duration_unit_tokens MapSet.new(
-                          ~w(second seconds minute minutes hour hours day days week weeks
-                             month months year years)
-                        )
+  @duration_unit_tokens MapSet.new(~w(second seconds minute minutes hour hours day days week weeks
+                             month months year years))
 
   @doc """
   Returns the four-dimension time-typology vector for a list of tokens.
@@ -267,11 +259,17 @@ defmodule Brain.Analysis.FeatureExtractor.EnrichmentFeatures do
   # chunk also has nouns.
   #
   # Atoms are grouped by their string prefix (`verb_`, `noun_`,
-  # `adj_`/`adv_`). The partition is derived from
-  # `Brain.Lexicon.domain_atoms/0` at compile time, so adding a new
-  # supersense to the lexicon automatically extends the right group.
+  # `adj_`/`adv_`). The partition is derived from the supersense table at
+  # compile time, so adding a new supersense to the lexicon automatically
+  # extends the right group.
+  #
+  # Read the table from `Brain.Lexicon.Supersenses` rather than the equivalent
+  # `Brain.Lexicon.domain_atoms/0`: evaluating a remote call in a module
+  # attribute creates a *compile-time* dependency on the callee, and
+  # `Brain.Lexicon` sits inside a 127-file runtime cycle. Pointing at the
+  # dependency-free leaf keeps this the cheap dependency it looks like.
 
-  @lexicon_domains Brain.Lexicon.domain_atoms()
+  @lexicon_domains Brain.Lexicon.Supersenses.domain_atoms()
 
   @verb_domains @lexicon_domains
                 |> Enum.filter(&String.starts_with?(Atom.to_string(&1), "verb_"))
@@ -716,10 +714,10 @@ defmodule Brain.Analysis.FeatureExtractor.EnrichmentFeatures do
     :confirmation
   ]
 
-  @dm_token_to_category (for {cat, toks} <- @dm_categories,
-                             t <- toks,
-                             into: %{},
-                             do: {t, cat})
+  @dm_token_to_category for {cat, toks} <- @dm_categories,
+                            t <- toks,
+                            into: %{},
+                            do: {t, cat}
 
   @dm_marker_set MapSet.new(Map.keys(@dm_token_to_category))
 
@@ -942,7 +940,10 @@ defmodule Brain.Analysis.FeatureExtractor.EnrichmentFeatures do
   defp normalize_pos_tag(pos) when pos in [:PRON, "PRON", "pron"], do: :PRON
   defp normalize_pos_tag(pos) when pos in [:DET, "DET", "det"], do: :DET
   defp normalize_pos_tag(pos) when pos in [:ADP, "ADP", "adp"], do: :ADP
-  defp normalize_pos_tag(pos) when pos in [:CONJ, :CCONJ, :SCONJ, "CONJ", "CCONJ", "SCONJ"], do: :CONJ
+
+  defp normalize_pos_tag(pos) when pos in [:CONJ, :CCONJ, :SCONJ, "CONJ", "CCONJ", "SCONJ"],
+    do: :CONJ
+
   defp normalize_pos_tag(pos) when pos in [:PART, "PART", "part"], do: :PART
   defp normalize_pos_tag(pos) when pos in [:NUM, "NUM", "num"], do: :NUM
   defp normalize_pos_tag(pos) when pos in [:INTJ, "INTJ", "intj"], do: :INTJ
