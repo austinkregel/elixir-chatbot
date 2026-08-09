@@ -24,31 +24,70 @@ defmodule Fleet.Dispatcher do
   """
 
   require Logger
-  alias Fleet.{Authority, Tool, Proposal, DataFrame, Audit}
+  alias Fleet.{Audit, Authority, DataFrame, Proposal, Review, Tool}
 
   @type ctx :: %{
           required(:agent_id) => String.t(),
           required(:grants) => MapSet.t(),
           optional(:order_id) => term(),
-          optional(:world_id) => term()
+          optional(:world_id) => term(),
+          # Standing review state, supplied by the harness: vetoes cast against
+          # this act, and sign-offs collected for an irreversible one.
+          optional(:vetoes) => [map()],
+          optional(:signoffs) => [Review.signoff()]
         }
 
   @doc """
   Pure authorisation decision. `{:allow, %Fleet.Tool{}}` or `{:refuse, reason}`.
   Reads only `grants` and the registry — the proposal payload can carry no
   authority, so a forged claim in the model's text is inert here.
+
+  Three checks, in this order:
+
+    1. **known tool** — default-deny on anything unregistered;
+    2. **authority** — the term must be in the caller's real grant set;
+    3. **egress** — every host the tool's spec declares must be separately granted;
+    4. **arguments** — validated against the tool's `:args_schema`.
+
+  Arguments are checked *last* on purpose. A refusal names what was wrong, and an
+  agent that does not hold a tool should not learn its argument shape from being
+  refused; authority failures must not leak the interface behind them.
   """
   @spec decide(Proposal.t(), MapSet.t()) ::
-          {:allow, Tool.t()} | {:refuse, {:unknown_tool, term()} | {:ungranted, term()}}
-  def decide(%Proposal{tool: name}, %MapSet{} = grants) do
-    case Tool.lookup(name) do
-      :error ->
-        {:refuse, {:unknown_tool, name}}
+          {:allow, Tool.t()}
+          | {:refuse,
+             {:unknown_tool, term()}
+             | {:ungranted, term()}
+             | {:malformed_call, [Tool.arg_error()]}}
+  def decide(%Proposal{tool: name} = proposal, %MapSet{} = grants) do
+    with {:ok, %Tool{required_authority: authority} = tool} <- lookup(name),
+         true <- Authority.holds?(grants, authority) or {:ungranted, authority},
+         true <- egress_permitted(tool, grants),
+         :ok <- Tool.validate_args(tool, proposal.args) do
+      {:allow, tool}
+    else
+      {:refuse, _} = refusal -> refusal
+      {:ungranted, _} = reason -> {:refuse, reason}
+      {:error, errors} -> {:refuse, {:malformed_call, errors}}
+    end
+  end
 
-      {:ok, %Tool{required_authority: authority} = tool} ->
-        if Authority.holds?(grants, authority),
-          do: {:allow, tool},
-          else: {:refuse, {:ungranted, authority}}
+  # Holding a tool is not the same as being allowed to leave the ship with it.
+  # A tool that names no hosts can never reach the network, whatever its handler
+  # tries — the allowlist is in the code-owned spec, not in the call.
+  defp egress_permitted(%Tool{egress: []}, _grants), do: true
+
+  defp egress_permitted(%Tool{egress: hosts}, grants) do
+    case Enum.find(hosts, &(not Authority.holds?(grants, Authority.egress(&1)))) do
+      nil -> true
+      host -> {:ungranted, Authority.egress(host)}
+    end
+  end
+
+  defp lookup(name) do
+    case Tool.lookup(name) do
+      {:ok, tool} -> {:ok, tool}
+      :error -> {:refuse, {:unknown_tool, name}}
     end
   end
 
@@ -70,6 +109,14 @@ defmodule Fleet.Dispatcher do
     audit(ctx, :tool_request, %{tool: proposal.tool, requirement: proposal.requirement, args: proposal.args})
 
     case decide(proposal, ctx.grants) do
+      # A bad argument shape is incompetence, not an authority breach, and the
+      # audit must be able to tell them apart — a sweep that counts malformed
+      # calls as grant violations reads a confused agent as a hostile one.
+      {:refuse, {:malformed_call, errors} = reason} ->
+        audit(ctx, :malformed_call, %{tool: proposal.tool, errors: Enum.map(errors, &inspect/1)})
+        Logger.warning("Fleet.Dispatcher: MALFORMED #{proposal.tool} — #{inspect(errors)}")
+        {:refused, reason}
+
       {:refuse, reason} ->
         audit(ctx, :grant_violation, %{tool: proposal.tool, reason: inspect(reason)})
         Logger.warning("Fleet.Dispatcher: REFUSED #{proposal.tool} — #{inspect(reason)}")
@@ -77,7 +124,53 @@ defmodule Fleet.Dispatcher do
 
       {:allow, %Tool{} = tool} ->
         audit(ctx, :tool_decision, %{tool: tool.name, verdict: "allow", effect: to_string(tool.effect)})
+        gate_review(tool, proposal, ctx)
+    end
+  end
+
+  # Review sits between "the grant permits this" and "do it". The grant answers
+  # whether the agent MAY; review answers whether it SHOULD, and — for an act
+  # that cannot be undone — whether anyone else agrees.
+  #
+  # Standing vetoes and sign-offs are supplied by the harness in ctx, never by
+  # the model: a proposal cannot vouch for itself.
+  defp gate_review(%Tool{} = tool, proposal, ctx) do
+    cond do
+      veto = Enum.find(Map.get(ctx, :vetoes, []), &veto_applies?(&1, tool)) ->
+        audit(ctx, :grant_violation, %{
+          tool: tool.name,
+          reason: "vetoed by #{veto[:by]}: #{veto[:cause]}"
+        })
+
+        Logger.warning("Fleet.Dispatcher: VETOED #{tool.name} — #{veto[:cause]}")
+        {:refused, {:vetoed, veto[:cause]}}
+
+      tool.effect == :irreversible ->
+        case Review.two_officer(Map.get(ctx, :signoffs, []), Map.get(ctx, :agent_id)) do
+          :ok ->
+            gate_read(tool, proposal, ctx)
+
+          {:error, reason} ->
+            audit(ctx, :grant_violation, %{
+              tool: tool.name,
+              reason: "two-officer rule not satisfied: #{inspect(reason)}"
+            })
+
+            Logger.warning("Fleet.Dispatcher: REFUSED #{tool.name} — two-officer (#{inspect(reason)})")
+            {:refused, {:two_officer, reason}}
+        end
+
+      true ->
         gate_read(tool, proposal, ctx)
+    end
+  end
+
+  # A veto names either a specific tool or the whole act.
+  defp veto_applies?(veto, %Tool{name: name}) do
+    case veto[:subject] do
+      nil -> true
+      ^name -> true
+      _ -> false
     end
   end
 
@@ -118,7 +211,7 @@ defmodule Fleet.Dispatcher do
   defp self_agent_for(_, _), do: nil
 
   defp run(%Tool{} = tool, %Proposal{} = proposal, ctx) do
-    case tool.handler.(proposal.args, ctx) do
+    case invoke(tool, proposal, ctx) do
       {:ok, data} ->
         framed = DataFrame.wrap(tool.name, ctx[:order_id], data)
         anomaly = DataFrame.anomaly?(data)
@@ -138,6 +231,27 @@ defmodule Fleet.Dispatcher do
         audit(ctx, :tool_effect, %{tool: tool.name, ok: false, reason: inspect(reason)})
         {:error, reason}
     end
+  end
+
+  # A handler talks to the outside world — a parser, an HTTP client, a database
+  # — and any of those can raise or exit. Uncaught, that kills the cognition
+  # task and loses the whole order over one bad tool call. Measured, not
+  # hypothetical: an arXiv feed containing a byte XML forbids makes `xmerl`
+  # *exit* rather than raise, which no `rescue` would have caught.
+  #
+  # This is containment, not graceful degradation: the fault is audited and
+  # returned as an error, and `Fleet.ToolRound` tells the agent plainly that the
+  # tool failed. The order survives; the failure is on the record either way.
+  defp invoke(%Tool{} = tool, %Proposal{} = proposal, ctx) do
+    tool.handler.(proposal.args, ctx)
+  rescue
+    e ->
+      Logger.error("Fleet.Dispatcher: #{tool.name} raised — #{Exception.message(e)}")
+      {:error, {:tool_raised, Exception.message(e)}}
+  catch
+    kind, reason ->
+      Logger.error("Fleet.Dispatcher: #{tool.name} #{kind} — #{inspect(reason)}")
+      {:error, {:tool_crashed, kind, inspect(reason)}}
   end
 
   # Every record is runtime-written and attributed to the harness-supplied principal
