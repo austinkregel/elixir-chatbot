@@ -184,6 +184,11 @@ defmodule Fleet.Officer do
     soul_id = Keyword.get(opts, :soul_id)
     interval = Keyword.get(opts, :tick_interval, @default_tick_interval)
 
+    # Trap exits so terminate/2 runs on retire and on supervisor shutdown — the
+    # hook that reaps this officer's workspace (see terminate/2). Without it a
+    # DynamicSupervisor.terminate_child kills the process with no cleanup.
+    Process.flag(:trap_exit, true)
+
     Process.send_after(self(), :tick, interval)
     send(self(), :hydrate_soul)
 
@@ -231,6 +236,23 @@ defmodule Fleet.Officer do
     # Rehydrate the durable self (service record) after init returns.
     {:ok, state, {:continue, :rehydrate}}
   end
+
+  @impl true
+  # Retiring an officer reaps its workspace. This fires on Fleet.retire/1
+  # (DynamicSupervisor terminate_child) and on supervisor shutdown, because
+  # init/1 traps exits. Relief does NOT come through here — it is a reversible
+  # duty suspension, and the officer keeps its workspace. Best-effort and keyed
+  # by soul_id; a soul-less officer has no durable workspace to reap.
+  def terminate(_reason, %{soul_id: soul_id}) when is_binary(soul_id) do
+    FourthWall.Holodeck.reap(soul_id)
+    :ok
+  rescue
+    _ -> :ok
+  catch
+    _, _ -> :ok
+  end
+
+  def terminate(_reason, _state), do: :ok
 
   @impl true
   def handle_continue(:rehydrate, state) do
@@ -1207,6 +1229,10 @@ defmodule Fleet.Officer do
 
     %{
       agent_id: state.agent_id,
+      # The durable soul identity, so a workspace tool keys its workspace to the
+      # officer's soul the way its mind-world is keyed. Nil for an anonymous
+      # officer; handlers fall back to agent_id.
+      soul_id: state.soul_id,
       order_id: assignment_id(state),
       world_id: state.mind_world_id,
       mind_world_id: state.mind_world_id,
