@@ -51,6 +51,7 @@ defmodule Fleet.Tool do
   alias Brain.Knowledge.Academic.{Arxiv, OpenAlex, SemanticScholar}
   alias Brain.Memory.Store, as: MemoryStore
   alias Brain.Services.HomeAssistant
+  alias FourthWall.Holodeck
   alias World.CodeContext
 
   # Narrowing descriptors the gate itself reads off every proposal
@@ -297,6 +298,73 @@ defmodule Fleet.Tool do
           }
         },
         handler: &home_assistant_read/2
+      },
+
+      # ── The workspace (write tier) ────────────────────────────────────────
+      # Each officer has its own private workspace. Reads carry no info_class:
+      # the workspace is the officer's own, so clearance does not apply — the
+      # confinement is per-soul in the handler and, underneath it, the container.
+      # The writes are `:mutate`, authority-gated. None of these descriptions
+      # mentions how the workspace is confined; an officer just has a computer.
+
+      "workspace.read" => %__MODULE__{
+        name: "workspace.read",
+        effect: :read,
+        required_authority: Fleet.Authority.tool("workspace.read"),
+        description: "Read a file from your workspace by path.",
+        args_schema: %{
+          "required" => ["path"],
+          "optional" => [],
+          "types" => %{"path" => :string},
+          "describe" => %{"path" => "Path within your workspace, e.g. lib/foo.ex."}
+        },
+        handler: &workspace_read/2
+      },
+      "workspace.list" => %__MODULE__{
+        name: "workspace.list",
+        effect: :read,
+        required_authority: Fleet.Authority.tool("workspace.list"),
+        description: "List a directory in your workspace.",
+        args_schema: %{
+          "required" => [],
+          "optional" => ["path"],
+          "types" => %{"path" => :string},
+          "describe" => %{"path" => "Directory within your workspace; defaults to the root."}
+        },
+        handler: &workspace_list/2
+      },
+      "workspace.write" => %__MODULE__{
+        name: "workspace.write",
+        effect: :mutate,
+        required_authority: Fleet.Authority.tool("workspace.write"),
+        description: "Write a file to your workspace, creating parent directories.",
+        args_schema: %{
+          "required" => ["path", "content"],
+          "optional" => [],
+          "types" => %{"path" => :string, "content" => :string},
+          "describe" => %{
+            "path" => "Path within your workspace to write.",
+            "content" => "The full file contents to write."
+          }
+        },
+        handler: &workspace_write/2
+      },
+      "shell.run" => %__MODULE__{
+        name: "shell.run",
+        effect: :mutate,
+        required_authority: Fleet.Authority.tool("shell.run"),
+        description:
+          "Run a command in your workspace and get its output. Give the command as a list " <>
+            "of arguments, e.g. [\"ls\", \"-la\"]. git is read-only.",
+        args_schema: %{
+          "required" => ["command"],
+          "optional" => [],
+          "types" => %{"command" => :list},
+          "describe" => %{
+            "command" => "Argv list; the first element is the program, e.g. [\"mix\", \"test\"]."
+          }
+        },
+        handler: &shell_run/2
       }
     }
   end
@@ -534,6 +602,45 @@ defmodule Fleet.Tool do
       domain: Map.get(args, "domain", "sensor")
     )
   end
+
+  # Workspace handlers. Every one keys on the officer's own soul (agent_id ==
+  # soul_id for a commissioned officer), so an officer can only ever reach its
+  # own workspace — the confinement is identity, not a path check the model could
+  # talk around. `Holodeck` returns typed errors (`:holodeck_unavailable`,
+  # `{:escapes_workspace, _}`, `{:forbidden_command, _}`), which the ToolRound
+  # frames as a fault rather than a finding — a missing workspace must never read
+  # as "the file does not exist".
+  defp workspace_read(%{"path" => path}, ctx) when is_binary(path),
+    do: Holodeck.read(workspace_soul(ctx), path)
+
+  defp workspace_read(_args, _ctx), do: {:error, :no_path}
+
+  defp workspace_list(args, ctx),
+    do: Holodeck.list(workspace_soul(ctx), Map.get(args, "path", "."))
+
+  defp workspace_write(%{"path" => path, "content" => content}, ctx)
+       when is_binary(path) and is_binary(content) do
+    case Holodeck.write(workspace_soul(ctx), path, content) do
+      :ok -> {:ok, %{written: path, bytes: byte_size(content)}}
+      {:error, _} = error -> error
+    end
+  end
+
+  defp workspace_write(_args, _ctx), do: {:error, :no_path_or_content}
+
+  defp shell_run(%{"command" => argv}, ctx) when is_list(argv) do
+    if Enum.all?(argv, &is_binary/1) do
+      Holodeck.run(workspace_soul(ctx), argv)
+    else
+      {:error, :malformed_command}
+    end
+  end
+
+  defp shell_run(_args, _ctx), do: {:error, :no_command}
+
+  # A commissioned officer's agent_id is its soul_id; an anonymous officer still
+  # has a stable agent_id. Either keys a workspace uniquely to this officer.
+  defp workspace_soul(ctx), do: ctx[:soul_id] || ctx[:agent_id]
 
   # ── Handler helpers ───────────────────────────────────────────────────────
 
