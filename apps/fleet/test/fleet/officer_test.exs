@@ -61,6 +61,85 @@ defmodule Fleet.OfficerTest do
     assert is_integer(dt)
   end
 
+  # Risk class is process. Until two-officer sign-off exists, an irreversible
+  # order is refused on the record rather than executed as if it were routine —
+  # the same posture the LCARS prototype takes at order composition.
+  test "an irreversible order is dissented, not executed", %{soul: soul} do
+    {:ok, _pid, id} =
+      CrewSupervisor.start_officer(soul_id: soul.id, soul: soul, tick_interval: 50)
+
+    assert_receive {:tele, :soul_hydrated, _, _}, 2_000
+
+    order =
+      Order.new(
+        id: "o-irr",
+        from: :admiral,
+        reply_to: self(),
+        objective: "purge the archive",
+        risk_class: :irreversible
+      )
+
+    Officer.order(id, order)
+    assert_receive {:ack, %{order_id: "o-irr"}}
+
+    assert_receive {:tele, :dissent, _, %{order_id: "o-irr", basis: :process}}, 2_000
+    refute_receive {:tele, :cognition_complete, _, %{order_id: "o-irr"}}, 500
+
+    assert Officer.status(id).assignment_status == "dissented"
+  end
+
+  # The ACK is a readback, not a receipt: it restates what the ship understood
+  # the order to be, so an issuer can catch a misread before work starts.
+  test "the ACK carries a readback of the order as received", %{soul: soul} do
+    {:ok, _pid, id} =
+      CrewSupervisor.start_officer(soul_id: soul.id, soul: soul, tick_interval: 50)
+
+    assert_receive {:tele, :soul_hydrated, _, _}, 2_000
+
+    order =
+      Order.new(
+        id: "o-rb",
+        from: :admiral,
+        reply_to: self(),
+        objective: "summarize the last three CI runs",
+        constraints: ["read-only: do not modify any file"],
+        context_refs: ["briefing/ci.md"],
+        risk_class: :sensitive,
+        dry_run: true
+      )
+
+    Officer.order(id, order)
+
+    assert_receive {:ack, %{order_id: "o-rb", readback: readback}}
+
+    assert readback.objective == "summarize the last three CI runs"
+    assert readback.constraints == ["read-only: do not modify any file"]
+    assert readback.risk_class == "sensitive"
+    assert readback.context_refs == ["briefing/ci.md"]
+    assert is_list(readback.authorities)
+  end
+
+  test "a routine order with stated constraints dispatches normally", %{soul: soul} do
+    {:ok, _pid, id} =
+      CrewSupervisor.start_officer(soul_id: soul.id, soul: soul, tick_interval: 50)
+
+    assert_receive {:tele, :soul_hydrated, _, _}, 2_000
+
+    order =
+      Order.new(
+        id: "o-con",
+        from: :admiral,
+        reply_to: self(),
+        objective: "survey the sector",
+        constraints: ["read-only: do not modify any file"],
+        dry_run: true
+      )
+
+    Officer.order(id, order)
+    assert_receive {:ack, %{order_id: "o-con"}}
+    assert_receive {:tele, :cognition_complete, _, %{order_id: "o-con"}}, 2_000
+  end
+
   test "mailbox stays responsive while cognition is in flight", %{soul: soul} do
     {:ok, _pid, id} =
       CrewSupervisor.start_officer(soul_id: soul.id, soul: soul, tick_interval: 50)
