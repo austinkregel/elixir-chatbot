@@ -222,6 +222,13 @@ defmodule Mix.Tasks.CleanupGoldStandard do
   @extra_renames %{
     "weather" => "weather.query",
     "default_welcome_intent" => "smalltalk.greet",
+    # The corpus carries Dialogflow's own display name, spaces and capitals
+    # intact. The snake_case rule above was written against a normalised form
+    # this data never had, so it could never fire — and nothing normalises
+    # label case (`mix normalize_gold_standard` handles context variants, empty
+    # text and duplicates, not casing). Matching the literal label is what
+    # actually retires the last 47 unregistered examples.
+    "Default Welcome Intent" => "smalltalk.greet",
     "message" => "communication.text"
   }
   |> Map.merge(@consolidation_renames)
