@@ -35,6 +35,31 @@ defmodule Fleet.Authority do
   """
   def tool(name) when is_binary(name), do: {:tool, name}
 
+  @doc """
+  The authority to reach a named host outside the ship.
+
+  Egress is a *separate* term from the tool grant, because "may this agent use
+  the arXiv tool" and "may this agent talk to the network" are different
+  questions and conflating them costs a real distinction. A semantic read that
+  happens to leave the ship — a paper search, a sensor poll — stays
+  `effect: :read` and pays for its reach with `{:egress, host}` instead of being
+  tiered up to `:irreversible`, which would put a literature search behind the
+  two-officer rule.
+
+  The allowlist lives on the tool (`Fleet.Tool`'s `:egress`), so a "read" tool is
+  structurally unable to reach a host its spec does not name — the floor
+  `docs/TOOLS.md` §3 asks for.
+  """
+  def egress(host) when is_binary(host), do: {:egress, host}
+
+  @doc "The hosts an agent may reach, from its grant set."
+  def granted_egress(%MapSet{} = grants) do
+    grants
+    |> Enum.filter(&match?({:egress, _}, &1))
+    |> Enum.map(fn {:egress, host} -> host end)
+    |> Enum.sort()
+  end
+
   @doc "The tool names held in a grant set — the vocabulary the agent may propose."
   def granted_tools(%MapSet{} = grants) do
     grants |> Enum.filter(&match?({:tool, _}, &1)) |> Enum.map(fn {:tool, name} -> name end) |> Enum.sort()
@@ -84,6 +109,7 @@ defmodule Fleet.Authority do
   def encode(:delegate), do: "delegate"
   def encode({:world, world_id}), do: "world:" <> to_string(world_id)
   def encode({:tool, name}), do: "tool:" <> to_string(name)
+  def encode({:egress, host}), do: "egress:" <> to_string(host)
   def encode(other), do: inspect(other)
 
   @doc "Decode a string back to an authority."
@@ -97,6 +123,7 @@ defmodule Fleet.Authority do
   def decode("delegate"), do: :delegate
   def decode("world:" <> world_id), do: {:world, world_id}
   def decode("tool:" <> name), do: {:tool, name}
+  def decode("egress:" <> host), do: {:egress, host}
   def decode(other), do: other
 
   @doc "Encode a grant set (MapSet or list) to a list of strings."
