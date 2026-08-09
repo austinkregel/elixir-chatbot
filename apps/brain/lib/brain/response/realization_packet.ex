@@ -12,6 +12,7 @@ defmodule Brain.Response.RealizationPacket do
   diagnostics, but the actual prompt sent to Ouro is natural language.
   """
 
+  alias Brain.Directive.Assessment
   alias Brain.Response.Primitive
   alias Brain.Analysis.{ChunkAnalysis, ChunkProfile}
 
@@ -50,6 +51,7 @@ defmodule Brain.Response.RealizationPacket do
       [
         render_analysis(analysis, unified_context),
         render_context(unified_context),
+        render_grounds(unified_context, analysis, opts),
         render_plan(primitives),
         render_instructions(tone, opts)
       ]
@@ -624,6 +626,15 @@ defmodule Brain.Response.RealizationPacket do
   defp describe_primitive(:content, :creative, _content), do: "Respond creatively."
   defp describe_primitive(:content, :action_result, _content), do: "Report the action result."
 
+  defp describe_primitive(:content, :report, content) do
+    topic = Map.get(content, :topic) || Map.get(content, "topic")
+
+    subject =
+      if is_binary(topic) and topic != "", do: "on #{topic}", else: "on what you were asked"
+
+    "Report your findings #{subject}: the findings first, then how confident you are."
+  end
+
   defp describe_primitive(:acknowledgment, :social, _content), do: "Acknowledge socially."
   defp describe_primitive(:acknowledgment, :general, _content), do: "Acknowledge the input."
   defp describe_primitive(:acknowledgment, :action, _content), do: "Acknowledge the action request."
@@ -654,6 +665,79 @@ defmodule Brain.Response.RealizationPacket do
     "Handle #{label} appropriately."
   end
 
+  # --- Grounds (directive mode only) ---
+  #
+  # Why an order can be answered the way it is about to be answered. Everything
+  # here was already computed and then discarded before reaching the prompt:
+  # the justification and evidence chains `Brain.Response.ContextBuilder` builds
+  # under :graph had no consumer anywhere in the codebase, and neither did the
+  # per-chunk epistemic status. For a report to a commanding officer, "what
+  # supports this" is exactly the part worth saying.
+  #
+  # Chat is untouched — without mode: :directive this renders nothing.
+
+  @max_ground_lines 10
+
+  defp render_grounds(unified_context, analysis, opts) do
+    if Keyword.get(opts, :mode, :chat) == :directive do
+      graph = if is_map(unified_context), do: Map.get(unified_context, :graph, %{}), else: %{}
+
+      grounds =
+        (justification_lines(graph) ++
+           evidence_lines(graph) ++
+           epistemic_lines(analysis) ++
+           task_frame_lines(Keyword.get(opts, :directive_assessment)))
+        |> Enum.reject(&(&1 in [nil, ""]))
+        |> Enum.take(@max_ground_lines)
+
+      if grounds == [], do: [], else: ["", "Grounds for this report:"] ++ grounds
+    else
+      []
+    end
+  end
+
+  defp justification_lines(graph) when is_map(graph) do
+    graph
+    |> Map.get(:justification_chains, [])
+    |> List.wrap()
+    |> Enum.map(fn chain -> "- believed because: #{fact_to_text(chain)}" end)
+  end
+
+  defp justification_lines(_), do: []
+
+  defp evidence_lines(graph) when is_map(graph) do
+    graph
+    |> Map.get(:evidence_chains, [])
+    |> List.wrap()
+    |> Enum.map(fn chain -> "- evidence: #{fact_to_text(chain)}" end)
+  end
+
+  defp evidence_lines(_), do: []
+
+  defp epistemic_lines(%ChunkAnalysis{epistemic_status: status})
+       when status in [:contradicted, "contradicted"] do
+    ["- NOTE: the order's premise conflicts with what is currently believed."]
+  end
+
+  defp epistemic_lines(%ChunkAnalysis{epistemic_status: status})
+       when status in [:verified, "verified"] do
+    ["- the order's premise matches what is currently believed."]
+  end
+
+  defp epistemic_lines(_), do: []
+
+  # "Who must do what", straight from the semantic-role frames the pipeline
+  # already labelled — so the report answers the order that was actually given
+  # rather than the topic it happens to mention.
+  defp task_frame_lines(%Assessment{task_frames: %{srl_triples: triples}})
+       when is_list(triples) and triples != [] do
+    triples
+    |> Enum.take(2)
+    |> Enum.map(fn frame -> "- the order asks: #{fact_to_text(frame)}" end)
+  end
+
+  defp task_frame_lines(_), do: []
+
   # --- Instructions ---
 
   defp render_instructions(tone, opts) do
@@ -662,9 +746,53 @@ defmodule Brain.Response.RealizationPacket do
     lines = []
     lines = lines ++ ["", "Write a #{tone}, #{verbosity}-length response."]
     lines = lines ++ ["Do not invent facts or capabilities not mentioned above."]
+    lines = lines ++ directive_instructions(opts)
 
     lines
   end
+
+  # An order is answered, not conversed with: the reply goes to the officer who
+  # issued it, so greetings, offers of further help and questions back are all
+  # wrong register. Anything the deterministic assessment flagged but did not
+  # block on is stated plainly rather than glossed over.
+  defp directive_instructions(opts) do
+    if Keyword.get(opts, :mode, :chat) == :directive do
+      assessment = Keyword.get(opts, :directive_assessment)
+
+      base = [
+        "This is a reply to an ORDER from a commanding officer. Report findings directly:",
+        "no greeting, no offer of further help, no question back."
+      ]
+
+      base ++ constraint_instruction(assessment) ++ advisory_instruction(assessment)
+    else
+      []
+    end
+  end
+
+  # Bounds the issuer stated on the order itself. They are not inferred, so they
+  # are stated to the model as binding rather than as context.
+  defp constraint_instruction(%Assessment{constraints: [_ | _] = constraints}) do
+    ["The order carries these constraints, which bind your response:"] ++
+      Enum.map(constraints, &"- #{&1}")
+  end
+
+  defp constraint_instruction(_), do: []
+
+  defp advisory_instruction(%Assessment{advisories: [_ | _] = advisories}) do
+    texts =
+      advisories
+      |> Enum.map(fn
+        {:incapable_action, intent} -> "you have no capability registered for #{intent}"
+        {:missing_slots, slots} -> "you were not given: #{Enum.join(slots, ", ")}"
+        other -> inspect(other)
+      end)
+      |> Enum.join("; ")
+
+    ["State plainly, without apologising, that #{texts}."]
+  end
+
+  defp advisory_instruction(_), do: []
 
   # --- Debug JSON dumps (not sent to Ouro) ---
 
