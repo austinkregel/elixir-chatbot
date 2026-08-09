@@ -34,6 +34,11 @@ services:
       - app_deps:/app/deps
       - app_build:/app/_build
       - ${XLA_CACHE_PATH:-.xla_cache}:/root/.cache
+      # The ship holds the Docker socket: FourthWall.Holodeck spawns and reaps a
+      # confined workspace container per officer through it. Root-equivalent, and
+      # deliberately on the ship alone — an officer only ever proposes tools and
+      # never sees this.
+      - /var/run/docker.sock:/var/run/docker.sock
     env_file: .env
     environment:
       MIX_ENV: ${MIX_ENV:-dev}
@@ -49,12 +54,39 @@ services:
         condition: service_healthy
     restart: no
     networks:
-      - prod  
+      - prod
+
+  # The holodeck workspace image and its canonical isolation config. Not a
+  # long-running service — live instances are spawned per officer by
+  # FourthWall.Holodeck.Backend.Docker with these same flags. It is behind the
+  # `holodeck` profile so `docker compose up` never starts it; `docker compose
+  # build holodeck` builds the image the backend runs. The settings here document
+  # the boundary: non-root, read-only root filesystem, repo mounted read-only, a
+  # writable /workspace, and its OWN network — never `prod`, so no route to `db`.
+  holodeck:
+    build:
+      context: .
+      dockerfile: Dockerfile.holodeck
+    image: chatbot-holodeck:latest
+    profiles: ["holodeck"]
+    read_only: true
+    user: "1000:1000"
+    tmpfs:
+      - /tmp
+    volumes:
+      - .:/repo:ro
+      - holodeck_ws:/workspace
+    networks:
+      - holodeck
+    command: ["sleep", "infinity"]
 
 networks:
   prod:
+    driver: bridge
+  holodeck:
     driver: bridge
 volumes:
   pgdata:
   app_deps:
   app_build:
+  holodeck_ws:
