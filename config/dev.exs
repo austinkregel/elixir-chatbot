@@ -51,3 +51,11 @@ config :phoenix, :plug_init_mode, :runtime
 
 # Enable dev routes for dashboard and mailbox
 config :chat_web, dev_routes: true
+
+# The holodeck runs real, confined workspace containers in dev. Build the image
+# first with `docker compose build holodeck`. `repo_path` defaults to the current
+# working directory (the umbrella root under `mix`), mounted read-only at /repo.
+config :fourth_wall, :holodeck,
+  backend: FourthWall.Holodeck.Backend.Docker,
+  image: "chatbot-holodeck:latest",
+  network: "none"
