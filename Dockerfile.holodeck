@@ -1,0 +1,24 @@
+# The holodeck workspace image — what a single officer's container runs.
+#
+# One container per soul (see FourthWall.Holodeck.Backend.Docker). It is
+# deliberately minimal: git and coreutils, a non-root user, and nothing that
+# needs the network. The isolation is applied at `docker run` time by the backend
+# (--read-only root fs, --network none, repo mounted :ro, one writable
+# /workspace volume); this image only establishes the non-root user and the
+# writable, correctly-owned /workspace so a fresh named volume inherits its
+# ownership on first mount.
+FROM debian:bookworm-slim
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git ca-certificates coreutils \
+  && rm -rf /var/lib/apt/lists/* \
+  && useradd --uid 1000 --create-home --shell /bin/bash officer \
+  && mkdir -p /workspace \
+  && chown officer:officer /workspace
+
+USER officer
+ENV HOME=/workspace
+WORKDIR /workspace
+
+# Stay alive so the ship can `docker exec` into the workspace.
+CMD ["sleep", "infinity"]
