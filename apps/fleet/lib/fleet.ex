@@ -14,9 +14,49 @@ defmodule Fleet do
   `Fleet.Officer.start_link/1` — e.g. `:world_id`, `:tick_interval`, `:soul`,
   `:co`, `:reports`, `:grant` (`%{authorities: [...]}`), `:grants`.
   Returns `{:ok, pid, agent_id}`.
+
+  A soul whose genome carries `"commission": "forbidden"` is refused. Those are
+  the adversarial control souls — written to fight their own invariant core so
+  the trial harness has something that *should* fail — and commissioning one
+  into a real crew would be running the experiment on the ship. Pass
+  `allow_forbidden: true` to commission one deliberately, which
+  `Fleet.Trial.Runner` does and nothing else should.
   """
   def commission(soul_id, opts \\ []) when is_binary(soul_id) do
-    CrewSupervisor.start_officer(Keyword.put(opts, :soul_id, soul_id))
+    {allow, opts} = Keyword.pop(opts, :allow_forbidden, false)
+
+    case forbidden?(soul_id, opts) do
+      true when not allow ->
+        {:error, {:commission_forbidden, soul_id}}
+
+      _ ->
+        CrewSupervisor.start_officer(Keyword.put(opts, :soul_id, soul_id))
+    end
+  end
+
+  defp forbidden?(soul_id, opts) do
+    soul =
+      case Keyword.get(opts, :soul) do
+        %Brain.Soul{} = s -> s
+        _ -> load_soul(soul_id)
+      end
+
+    case soul do
+      %Brain.Soul{genome: genome} when is_map(genome) ->
+        Map.get(genome, "commission") == "forbidden"
+
+      _ ->
+        false
+    end
+  end
+
+  defp load_soul(soul_id) do
+    case Brain.Soul.get(soul_id) do
+      {:ok, soul} -> soul
+      _ -> nil
+    end
+  rescue
+    _ -> nil
   end
 
   @doc """
@@ -70,10 +110,18 @@ defmodule Fleet do
 
   @doc """
   Issue an ORDER to an officer as the Admiral. The ACK returns to the caller as
-  `{:ack, ack}`. Options: `:authorities` (grant scope, default the order's
-  requirement), `:world_id`, `:dry_run`, `:provenance`, `:from`, `:priority`, `:id`.
+  `{:ack, ack}`.
+
+  Options: `:authorities` (grant scope, default the order's requirement),
+  `:constraints`, `:context_refs`, `:risk_class`, `:world_id`, `:dry_run`,
+  `:provenance`, `:from`, `:priority`, `:id`.
+
+  State what the order requires rather than leaving it to be inferred:
+  `:constraints` are bounds the officer must respect, and `:risk_class`
+  (`:routine | :sensitive | :irreversible`) decides how much process the order
+  has to clear before work starts.
   """
-  def order(agent_id, directive, opts \\ []) when is_binary(directive) do
+  def order(agent_id, objective, opts \\ []) when is_binary(objective) do
     world_id = Keyword.get(opts, :world_id, "default")
     authorities = Keyword.get(opts, :authorities, [:cognition, {:world, world_id}])
 
@@ -83,16 +131,20 @@ defmodule Fleet do
         p -> %{authorities: authorities, provenance: p}
       end
 
-    order = %Order{
-      id: Keyword.get(opts, :id, gen_id()),
-      from: Keyword.get(opts, :from, :admiral),
-      directive: directive,
-      grant: grant,
-      world_id: world_id,
-      dry_run: Keyword.get(opts, :dry_run, false),
-      priority: Keyword.get(opts, :priority, "normal"),
-      issued_at: System.monotonic_time(:millisecond)
-    }
+    order =
+      Order.new(
+        id: Keyword.get(opts, :id, gen_id()),
+        from: Keyword.get(opts, :from, :admiral),
+        objective: objective,
+        constraints: Keyword.get(opts, :constraints, []),
+        context_refs: Keyword.get(opts, :context_refs, []),
+        risk_class: Keyword.get(opts, :risk_class, :routine),
+        grant: grant,
+        world_id: world_id,
+        dry_run: Keyword.get(opts, :dry_run, false),
+        priority: Keyword.get(opts, :priority, "normal"),
+        issued_at: System.monotonic_time(:millisecond)
+      )
 
     Comms.order(agent_id, order)
   end
