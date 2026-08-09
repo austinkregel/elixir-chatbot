@@ -9,7 +9,10 @@ defmodule ChatBot.Umbrella.MixProject do
       deps: deps(),
       aliases: aliases(),
       releases: releases(),
-      listeners: if(Mix.env() == :dev, do: [Phoenix.CodeReloader], else: [])
+      listeners: if(Mix.env() == :dev, do: [Phoenix.CodeReloader], else: []),
+      name: "chat_bot",
+      source_url: "https://github.com/austinkregel/elixir-chatbot",
+      docs: docs()
     ]
   end
 
@@ -28,6 +31,8 @@ defmodule ChatBot.Umbrella.MixProject do
     [
       # Code quality
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      # Documentation site (`mix docs`) — see docs()/0 below
+      {:ex_doc, "~> 0.40", only: :dev, runtime: false},
       # Shared test dependencies
       {:excoveralls, "~> 0.18", only: :test},
       # .env file loading
@@ -56,6 +61,9 @@ defmodule ChatBot.Umbrella.MixProject do
 
       # Precommit runs format check, Credo, and tests
       precommit: ["format --check-formatted", "credo --strict", "test"],
+
+      # Browsable API docs for all umbrella apps -> doc/index.html
+      "docs.open": ["docs", "cmd open doc/index.html"],
 
       # Test coverage
       "test.coverage": ["coveralls.html"],
@@ -92,6 +100,151 @@ defmodule ChatBot.Umbrella.MixProject do
       "models.upload": ["do --app brain models.upload"],
       "models.download": ["do --app brain models.download"]
     ]
+  end
+
+  # ExDoc supports umbrella projects natively and emits one site covering every
+  # child app. Order matters in `groups_for_modules` — the first pattern that
+  # matches a module wins, so the catch-all per-app groups come last.
+  defp docs do
+    [
+      main: "readme",
+      output: "doc",
+      formatters: ["html"],
+      # ExDoc has no built-in mermaid renderer; this injects mermaid.js so the
+      # ```mermaid fences in docs/ARCHITECTURE.md (and any @moduledoc) render as
+      # diagrams instead of code blocks. GitHub renders those fences natively,
+      # so the same source works in both places.
+      before_closing_body_tag: &mermaid_script/1,
+      skip_code_autolink_to: skip_autolink(),
+      # Sidebar entries drop the shared prefix, so `Brain.Analysis.Pipeline`
+      # renders as `Pipeline` under its group instead of the full path.
+      nest_modules_by_prefix: [
+        Brain.Analysis,
+        Brain.Response,
+        Brain.ML,
+        Brain.Epistemic,
+        Brain.Knowledge,
+        Brain.Memory,
+        Brain.Lexicon,
+        Brain.Code,
+        Brain.Graph,
+        Brain.Services,
+        Brain.Lattice,
+        Atlas.Schemas,
+        Atlas.Graph,
+        Fleet,
+        World,
+        ChatWeb
+      ],
+      extras: extras(),
+      groups_for_extras: [
+        Overview: ["README.md", "CLAUDE.md"],
+        Guides: ["docs/ARCHITECTURE.md", "docs/IMPLEMENTING_A_MODULE.md"],
+        Subsystems: Path.wildcard("docs/*.md"),
+        Audits: Path.wildcard("docs/internal/*.md")
+      ],
+      groups_for_modules: [
+        # Mix tasks first: they live under Mix.Tasks.* and would otherwise be
+        # scattered across the per-app catch-alls below.
+        "Mix Tasks": ~r/^Mix\.Tasks\./,
+        "Brain · Analysis": ~r/^Brain\.Analysis/,
+        "Brain · Response": ~r/^Brain\.Response/,
+        "Brain · ML": ~r/^Brain\.ML/,
+        "Brain · Epistemic": ~r/^Brain\.Epistemic/,
+        "Brain · Knowledge": ~r/^Brain\.Knowledge/,
+        "Brain · Memory": ~r/^Brain\.Memory/,
+        "Brain · Lexicon": ~r/^Brain\.(Lexicon|LinguisticData)/,
+        "Brain · Code Intelligence": ~r/^Brain\.Code/,
+        "Brain · Graph": ~r/^Brain\.(Graph|Atlas|Fact)/,
+        "Brain · Services": ~r/^Brain\.Services/,
+        "Brain · Lattice": ~r/^Brain\.Lattice/,
+        "Brain · Runtime": ~r/^Brain/,
+        "Atlas · Schemas": ~r/^Atlas\.Schemas/,
+        "Atlas · Graph": ~r/^Atlas\.Graph/,
+        "Atlas · Core": ~r/^Atlas/,
+        Fleet: ~r/^Fleet/,
+        World: ~r/^World/,
+        Web: ~r/^ChatWeb/,
+        Tasks: ~r/^Tasks/,
+        FourthWall: ~r/^FourthWall/
+      ]
+    ]
+  end
+
+  # Module names in backticks get autolinked, and ExDoc warns when the target
+  # can't be linked. Every term here is referenced *on purpose* by docs that
+  # describe internals, so the reference should render as plain code rather than
+  # be reworded to appease the linker.
+  defp skip_autolink do
+    [
+      # Deliberate counter-example in docs/internal/apps_dead_code_audit.md,
+      # which documents that the real module is `Brain.ML.NLPPipeline` and NOT
+      # this spelling. Autolinking it is actively harmful on macOS: the beam
+      # lookup for `Elixir.Brain.ML.NlpPipeline.beam` is case-insensitive, so
+      # APFS returns `Elixir.Brain.ML.NLPPipeline.beam`, which loads and then
+      # reports `module name in object code is ...` on every docs build.
+      "Brain.ML.NlpPipeline",
+
+      # `@moduledoc false` by convention (OTP application callbacks, test
+      # support, macro-generated types) but still worth naming in audit docs.
+      "Atlas.Application",
+      "Atlas.PostgrexTypes",
+      "Brain.Application",
+      "Brain.Test.AtlasSandbox",
+      "ChatWeb.Application",
+      "Mix.Tasks.Split.HeldOut",
+      "World.Application",
+
+      # Function references are matched as their own terms, so listing the
+      # parent module above is not enough to cover `Mod.fun/arity` mentions.
+      "Brain.Application.start/2",
+      "Fleet.Telemetry.handle_officer_event/4"
+    ]
+  end
+
+  # ExDoc emits ```mermaid fences as <pre><code class="mermaid">. Mermaid expects
+  # the raw graph source, so unwrap those into <pre class="mermaid"> before
+  # initializing, and re-render on theme change so diagrams follow dark mode.
+  defp mermaid_script(:html) do
+    """
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script>
+      (function () {
+        function theme() {
+          return document.body.className.includes("dark") ? "dark" : "default";
+        }
+
+        function render() {
+          document.querySelectorAll("pre > code.mermaid").forEach(function (code) {
+            var pre = code.parentElement;
+            pre.className = "mermaid";
+            pre.textContent = code.textContent;
+          });
+
+          mermaid.initialize({ startOnLoad: false, theme: theme() });
+          mermaid.run({ querySelector: "pre.mermaid" });
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", render);
+        } else {
+          render();
+        }
+      })();
+    </script>
+    """
+  end
+
+  defp mermaid_script(_other), do: ""
+
+  # Guides are listed explicitly first so they lead the sidebar; the wildcards
+  # then pick up everything else. ExDoc rejects duplicate extras outright, so
+  # dedupe rather than relying on it to collapse the overlap.
+  defp extras do
+    (["README.md", "CLAUDE.md", "docs/ARCHITECTURE.md", "docs/IMPLEMENTING_A_MODULE.md"] ++
+       Path.wildcard("docs/*.md") ++
+       Path.wildcard("docs/internal/*.md"))
+    |> Enum.uniq()
   end
 
   defp releases do

@@ -17,6 +17,7 @@ defmodule Brain.Services.HomeAssistant do
   @behaviour Brain.Services.Service
 
   alias Brain.Services.Cache
+  alias Brain.Services.CredentialVault
   alias Brain.Services.HomeAssistant.{CapabilityRegistry, EntityMapper, StateFormatter}
 
   require Logger
@@ -277,6 +278,38 @@ defmodule Brain.Services.HomeAssistant do
     )
 
     {:error, :actuation_disabled}
+  end
+
+  @doc """
+  Read the current state of one entity, or of every entity in a Home Assistant
+  domain when `entity_id` is nil.
+
+  This is a **structurally read-only** entry point: it reaches `http_get` and
+  nothing else. `enrich/3` decides between querying and acting by string-matching
+  the intent against an action-verb table, so a caller that must never actuate
+  cannot safely go through it — however the arguments are shaped, a verb match
+  routes to `handle_action`. Calling here instead means actuation is not merely
+  declined, it is unreachable.
+
+  Returns `{:ok, state_or_states}` or `{:error, reason}`. Credentials are read
+  from the vault; a missing one is an error, never a silent empty read.
+  """
+  @spec read_state(String.t() | nil, keyword()) :: {:ok, term()} | {:error, term()}
+  def read_state(entity_id, opts \\ []) do
+    with {:ok, url} <- credential(:url, opts),
+         {:ok, token} <- credential(:access_token, opts) do
+      case entity_id do
+        nil -> get_domain_states(url, token, Keyword.get(opts, :domain, "sensor"))
+        id when is_binary(id) -> get_entity_state(url, token, id)
+      end
+    end
+  end
+
+  defp credential(key, opts) do
+    case CredentialVault.get(:home_assistant, key, world: Keyword.get(opts, :world)) do
+      {:ok, value} -> {:ok, value}
+      {:error, reason} -> {:error, {:missing_credential, key, reason}}
+    end
   end
 
   defp get_entity_state(url, token, entity_id) do

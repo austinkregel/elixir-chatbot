@@ -14,6 +14,7 @@ defmodule Brain.Response.ContentSpecifier do
   - **Pass-through types** need minimal content and pass through unchanged.
   """
 
+  alias Brain.Directive.Assessment
   alias Brain.Response.{Primitive, PrimitiveTypes}
   alias Brain.Analysis.{ChunkAnalysis, ChunkProfile}
 
@@ -97,6 +98,23 @@ defmodule Brain.Response.ContentSpecifier do
       capability: capability,
       result: capability_to_result(capability),
       details: %{}
+    })
+  end
+
+  # Answering an order. Everything here is grounded in what the pipeline and
+  # the directive assessment already established — beliefs, epistemic status,
+  # and any advisory finding (a capability the agent lacks, a parameter it was
+  # not given) that the report should be able to state rather than paper over.
+  defp specify_primitive(%Primitive{type: :content, variant: :report} = p, analysis, opts) do
+    assessment = Keyword.get(opts, :directive_assessment)
+
+    Primitive.merge_content(p, %{
+      topic: report_topic(analysis),
+      intent: analysis.intent,
+      beliefs: analysis.related_beliefs || [],
+      epistemic_status: analysis.epistemic_status,
+      capability: assessment && assessment.capability,
+      advisories: advisory_texts(assessment)
     })
   end
 
@@ -694,6 +712,33 @@ defmodule Brain.Response.ContentSpecifier do
   defp get_missing_slots(nil), do: []
   defp get_missing_slots(%{missing_required: m}) when is_list(m), do: m
   defp get_missing_slots(_), do: []
+
+  # Unlike extract_topic/1 this never falls back to the classified domain.
+  # For free-form orders that classification is frequently wrong (see
+  # `Brain.Directive.Assessor`), and telling the model to "report your findings
+  # on account" for "Investigate the anomaly at sector 7" would launder a bad
+  # guess into the prompt. No entity-grounded topic means no topic, and the
+  # report instruction falls back to "what you were asked".
+  defp report_topic(%ChunkAnalysis{entities: entities}) do
+    case extract_entity_topics(entities) do
+      [] -> nil
+      topics -> Enum.join(topics, ", ")
+    end
+  end
+
+  defp report_topic(_), do: nil
+
+  defp advisory_texts(nil), do: []
+
+  defp advisory_texts(%Assessment{advisories: advisories}) do
+    Enum.map(advisories, fn
+      {:incapable_action, intent} -> "no capability registered for #{intent}"
+      {:missing_slots, slots} -> "not given: #{Enum.join(slots, ", ")}"
+      other -> inspect(other)
+    end)
+  end
+
+  defp advisory_texts(_), do: []
 
   defp get_in_safe(struct, keys) when is_struct(struct), do: get_in_safe(Map.from_struct(struct), keys)
   defp get_in_safe(map, []) when is_map(map), do: map

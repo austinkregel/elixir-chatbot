@@ -56,6 +56,25 @@ defmodule Fleet.Proposal do
 
   def parse(_), do: :none
 
+  @doc """
+  Remove the proposal block from a turn, leaving the agent's own prose.
+
+  Used when a turn has to become a *report* but still carries a tool request —
+  after the order's tool budget is spent, say. This edits nothing the agent
+  said: it drops a request the harness has already refused, so a superior does
+  not read an unanswered ask as an answer. Returns `nil` if nothing but the
+  block remains, which is honestly "it produced no report".
+  """
+  @spec strip(term()) :: String.t() | nil
+  def strip(text) when is_binary(text) do
+    case text |> String.replace(@block, "") |> String.trim() do
+      "" -> nil
+      prose -> prose
+    end
+  end
+
+  def strip(_), do: nil
+
   defp from_json(json) do
     with {:ok, map} when is_map(map) <- Jason.decode(json),
          {:ok, tool} <- require_field(map, "tool"),

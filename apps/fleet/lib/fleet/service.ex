@@ -58,7 +58,15 @@ defmodule Fleet.Service do
     upsert!(soul_id, %{current_assignment: assignment_map(order, "acknowledged")})
   end
 
-  @doc "Record an order outcome (:completed | :dissented | :failed) and bump the counter."
+  @doc """
+  Record an order outcome and bump the matching counter.
+
+  `:completed | :dissented | :failed` are terminal and each bump a counter.
+  `:blocked` — an order awaiting clarification before it can be carried out —
+  is recorded as a milestone and reflected in `current_assignment`, but bumps
+  nothing: the order has not finished, and counting it as one would overstate
+  both throughput and failure.
+  """
   def record_order_outcome(soul_id, order, outcome, attrs \\ %{}) do
     kind = "order_" <> to_string(outcome)
 
@@ -77,14 +85,14 @@ defmodule Fleet.Service do
       payload: stringify(attrs)
     })
 
-    counter =
-      case outcome do
-        :completed -> :orders_completed
-        :dissented -> :orders_dissented
-        :failed -> :orders_failed
-      end
+    assignment = %{current_assignment: assignment_map(order, to_string(outcome))}
 
-    bump(soul_id, counter, %{current_assignment: assignment_map(order, to_string(outcome))})
+    case outcome do
+      :completed -> bump(soul_id, :orders_completed, assignment)
+      :dissented -> bump(soul_id, :orders_dissented, assignment)
+      :failed -> bump(soul_id, :orders_failed, assignment)
+      :blocked -> upsert!(soul_id, assignment)
+    end
   end
 
   def record_relief(soul_id, by_principal) do
@@ -180,7 +188,13 @@ defmodule Fleet.Service do
   defp assignment_map(order, status) do
     %{
       "order_id" => order.id,
+      # "directive" stays for every existing reader; the structured fields ride
+      # alongside so a rehydrated order keeps the bounds it was issued under.
       "directive" => to_string(order.directive),
+      "objective" => to_string(order.objective || order.directive),
+      "constraints" => order.constraints || [],
+      "context_refs" => order.context_refs || [],
+      "risk_class" => to_string(Fleet.Order.risk_class(order)),
       "status" => status,
       "world_id" => order.world_id,
       "from" => to_string(order.from),

@@ -84,6 +84,7 @@ defmodule Brain.Response.DiscoursePlanner do
       else: extract_domain(a.intent)
 
     %{
+      interaction_mode: safe_to_string(Keyword.get(opts, :mode, :chat)),
       speech_act_category: safe_to_string(Map.get(speech_act, :category)),
       sub_type: safe_to_string(Map.get(speech_act, :sub_type)),
       is_question: Map.get(speech_act, :is_question, false),
@@ -112,15 +113,47 @@ defmodule Brain.Response.DiscoursePlanner do
   end
 
   defp find_matching_pattern(signals) do
-    @patterns
+    signals
+    |> candidate_patterns()
     |> Enum.sort_by(fn {_name, %{"match" => match}} -> -map_size(match) end)
     |> Enum.find(fn {_name, %{"match" => match}} ->
       matches_signals?(match, signals)
     end)
     |> case do
       {_name, pattern} -> pattern
-      nil -> Map.get(@patterns, "default_fallback", %{"backbone" => [%{"type" => "acknowledgment", "variant" => "general"}, %{"type" => "follow_up", "variant" => "continuation"}]})
+      nil -> fallback_pattern(signals)
     end
+  end
+
+  # In directive mode only patterns that declare `interaction_mode` are
+  # eligible. Without this restriction the specificity sort (most match keys
+  # first) would hand an order to a three-key chat pattern before a two-key
+  # directive one — and chat patterns plan conversation: `default_directive`
+  # answers an imperative with a clarification question rather than a report.
+  defp candidate_patterns(%{interaction_mode: "directive"}) do
+    Enum.filter(@patterns, fn {_name, %{"match" => match}} ->
+      Map.has_key?(match, "interaction_mode")
+    end)
+  end
+
+  defp candidate_patterns(_signals), do: @patterns
+
+  defp fallback_pattern(%{interaction_mode: "directive"}) do
+    Map.get(@patterns, "directive_order", %{
+      "backbone" => [
+        %{"type" => "acknowledgment", "variant" => "action"},
+        %{"type" => "content", "variant" => "report"}
+      ]
+    })
+  end
+
+  defp fallback_pattern(_signals) do
+    Map.get(@patterns, "default_fallback", %{
+      "backbone" => [
+        %{"type" => "acknowledgment", "variant" => "general"},
+        %{"type" => "follow_up", "variant" => "continuation"}
+      ]
+    })
   end
 
   defp matches_signals?(match, _signals) when map_size(match) == 0, do: true

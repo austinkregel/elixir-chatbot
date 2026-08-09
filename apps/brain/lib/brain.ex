@@ -6,6 +6,7 @@ defmodule Brain do
   @compile {:no_warn_undefined, World.Context}
   @compile {:no_warn_undefined, World.Manager}
 
+  alias Brain.Directive.{Assessment, Assessor}
   alias Brain.ML.Tokenizer
   alias Brain.Learner
   alias Brain.ML.NLPPipeline
@@ -72,6 +73,32 @@ defmodule Brain do
   ## Options
     - `:server` - The server to call (default: `#{__MODULE__}`)
     - `:timeout` - Call timeout in ms (default: 90_000)
+    - `:mode` - `:chat` (default), `:directive`, or `:tool_result`. See below.
+    - `:require_llm` - demand real generation rather than a classical template.
+    - `:include_analysis` - add `:analysis_model` to the result.
+
+  ## `:mode` and `:require_llm` are orthogonal
+
+  They answer different questions:
+
+    * `:mode` decides **what gets decided, and what response is planned**. In
+      `:directive` mode the input is treated as an order: it is assessed by
+      `Brain.Directive.Assessor` before anything is generated, the chat
+      response-optionality heuristics are skipped (an order never warrants
+      silence), and the response is planned as a report rather than as
+      conversation. In `:tool_result` mode the input is data the agent itself
+      asked for: nothing is assessed (no superior spoke) and nothing is gated
+      (the agent asked, so an answer is owed).
+    * `:require_llm` decides **what may phrase the result** — real generation
+      versus the classical lattice/template systems.
+
+  A caller may use either, both, or neither. `Fleet` passes both: orders are
+  directives, and an agent's spoken output must be real cognition.
+
+  In `:directive` mode the result map carries a `:directive` key holding the
+  `Brain.Directive.Assessment`. When its verdict is not `:comply`, `:response`
+  is `nil` and `:processing_method` is `:directive_withheld` — the structured
+  verdict is the answer and no generator ran.
   """
   def evaluate(conversation_id, input, opts \\ []) do
     server = Keyword.get(opts, :server, __MODULE__)
@@ -81,6 +108,28 @@ defmodule Brain do
     Telemetry.span(:brain_evaluate, %{conversation_id: conversation_id}, fn ->
       GenServer.call(server, {:evaluate, conversation_id, input, opts}, timeout)
     end)
+  end
+
+  @doc """
+  Assess a directive without answering it.
+
+  Runs the analysis pipeline and `Brain.Directive.Assessor`, returning the
+  `Brain.Directive.Assessment` alone — no conversation, no generation. Use this
+  to ask "could this order be carried out?" ahead of issuing it; `evaluate/3`
+  with `mode: :directive` is the path that actually carries one out.
+
+  Options are forwarded to the pipeline and the assessor; `:world_id` scopes
+  which mind's knowledge the checks consult.
+
+  Note that pipeline side effects are not fully suppressible: `side_effects:
+  false` stops novel-candidate recording, but belief extraction from events
+  still runs when `:brain, :epistemic` has `auto_belief_extraction` enabled.
+  """
+  @spec assess_directive(String.t(), keyword()) :: Brain.Directive.Assessment.t()
+  def assess_directive(text, opts \\ []) when is_binary(text) do
+    text
+    |> Brain.Analysis.Pipeline.process(Keyword.put_new(opts, :side_effects, false))
+    |> Assessor.assess(opts)
   end
 
   @doc """
@@ -618,6 +667,15 @@ defmodule Brain do
   defp maybe_put_ouro_messages(result, nil), do: result
   defp maybe_put_ouro_messages(result, messages), do: Map.put(result, :ouro_messages, messages)
 
+  # Present only for directive-mode turns, so chat callers see an unchanged
+  # result shape.
+  defp maybe_put_directive_assessment(result, context) do
+    case Map.get(context, :directive_assessment) do
+      nil -> result
+      assessment -> Map.put(result, :directive, assessment)
+    end
+  end
+
   defp maybe_include_analysis(result, context, opts) do
     if Keyword.get(opts, :include_analysis, false) do
       Map.put(result, :analysis_model, Map.get(context, :analysis_model))
@@ -817,6 +875,7 @@ defmodule Brain do
         processing_method: processing_method
       }
       |> maybe_put_ouro_messages(ouro_messages)
+      |> maybe_put_directive_assessment(context)
       |> maybe_include_analysis(context, opts)
 
     {:reply, {:ok, enriched_result}, updated_state}
@@ -887,6 +946,83 @@ defmodule Brain do
       prompts: analysis_model.suggested_prompts
     })
 
+    case Keyword.get(opts, :mode, :chat) do
+      :directive ->
+        process_directive_message(persona, input, memory, analysis_model, opts)
+
+      :tool_result ->
+        process_tool_result_message(persona, input, memory, analysis_model, opts)
+
+      _chat ->
+        process_conversational_message(persona, input, memory, analysis_model, opts)
+    end
+  end
+
+  # Data the agent asked for, come back. Neither of the other two modes fits:
+  #
+  #   * it is **not a directive** — nothing arrived from a superior, so there is
+  #     nothing to assess, and running the assessment leaks its advisories into
+  #     what should be a plain continuation of the agent's own reasoning;
+  #   * it is **not a conversational turn** — answering is not optional, because
+  #     the agent asked the question. Measured, not assumed: put a framed
+  #     `<data>` block through `:chat` and `ResponseGate` returns
+  #     `:response_optional` and the turn produces `""`, which silently ends
+  #     every multi-step tool chain after its first call.
+  #
+  # So: no assessment, no gate, straight to generation.
+  defp process_tool_result_message(persona, input, memory, analysis_model, opts) do
+    Progress.report(opts, :response_gate_start, %{decision: :tool_result})
+    proceed_with_standard_response(persona, input, memory, analysis_model, opts)
+  end
+
+  # An order is assessed by deterministic machinery before anything is
+  # generated. A verdict other than :comply ends the turn with no text at all —
+  # the assessment IS the answer, and the caller (see Fleet.Officer) maps it
+  # onto its own protocol. Nothing generative contributes to that decision.
+  #
+  # ResponseGate is deliberately not consulted here. Its heuristics are about
+  # conversational optionality — backchannels, gratitude loops, echo repetition
+  # — and an order is never optional to answer. Left in place it would also
+  # silence two structurally similar consecutive orders via echo_repetition?,
+  # which returns {:optional, 0.8} against a 0.7 default threshold.
+  defp process_directive_message(persona, input, memory, analysis_model, opts) do
+    assessment = Assessor.assess(analysis_model, opts)
+
+    Progress.report(opts, :directive_assessed, %{
+      verdict: assessment.verdict,
+      rule: Assessment.primary_reason_tag(assessment)
+    })
+
+    case assessment.verdict do
+      :comply ->
+        {response, method, context} =
+          proceed_with_standard_response(
+            persona,
+            input,
+            memory,
+            analysis_model,
+            Keyword.put(opts, :directive_assessment, assessment)
+          )
+
+        {response, method, Map.put(context, :directive_assessment, assessment)}
+
+      _withheld ->
+        Logger.info("Directive withheld", %{
+          verdict: assessment.verdict,
+          reason: Assessment.explain(assessment)
+        })
+
+        Progress.report(opts, :response_generated, %{
+          response_type: :directive_withheld,
+          verdict: assessment.verdict
+        })
+
+        context = extract_context_from_analysis(analysis_model)
+        {nil, :directive_withheld, Map.put(context, :directive_assessment, assessment)}
+    end
+  end
+
+  defp process_conversational_message(persona, input, memory, analysis_model, opts) do
     Progress.report(opts, :response_gate_start, %{})
 
     gate_opts = Keyword.put(opts, :conversation_memory, memory)
@@ -1759,7 +1895,14 @@ defmodule Brain do
       agent_id: Keyword.get(opts, :agent_id),
       unified_context: unified_context,
       dry_run_ouro: Keyword.get(opts, :dry_run_ouro, false),
-      require_llm: require_llm
+      require_llm: require_llm,
+      # The interaction mode and its assessment reach the planners and the
+      # realization prompt: an order is planned as a report, and what the
+      # deterministic checks found (capability gaps, contradicted premises) is
+      # something the response should be able to state. This map is an explicit
+      # whitelist — anything not listed here does not cross into generation.
+      mode: Keyword.get(opts, :mode, :chat),
+      directive_assessment: Keyword.get(opts, :directive_assessment)
     }
 
     case Generator.generate_via_synthesis(analysis_model, intent, entities, query_text, gen_opts) do

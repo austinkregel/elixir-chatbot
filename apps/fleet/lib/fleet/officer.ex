@@ -15,12 +15,53 @@ defmodule Fleet.Officer do
       back via `handle_info/2` as a REPORT or a DISSENT.
 
   Duty status (`:active | :relieved`) is a real, reversible suspension.
+
+  ## Orders are directives, not conversation
+
+  Cognition for an order runs `Brain.evaluate/3` with `mode: :directive` (and
+  `require_llm: true`). The two flags answer different questions: `mode`
+  decides what gets *decided* — `Brain.Directive.Assessor` assesses the order
+  deterministically before anything is generated, and the chat
+  response-optionality heuristics are skipped, since an order is never optional
+  to answer. `require_llm` decides only what may *phrase* the result.
+
+  Hails keep `mode: :chat`: a hail is a question to the agent, not a command.
+
+  The assessment's verdict chooses the outcome before Fleet's own handling:
+
+    * `:comply`  — normal cognition, then a REPORT whose payload carries the
+      assessment alongside the (unchanged) `:outcome` summary.
+    * `:clarify` — the order is BLOCKED and a SITREP carries the deterministic
+      clarification prompts upward. Nothing was generated.
+    * `:refuse`  — DISSENT with `basis: :epistemic`, through the same machinery
+      as a value dissent.
+
+  ## Tool use is proposed, never taken
+
+  If cognition asks for a capability instead of answering, `Fleet.ToolRound`
+  runs exactly one gated round: the model's ```propose block is parsed, and
+  `Fleet.Dispatcher` decides against grants read from *this process's* state
+  (never the payload) before anything executes. The result returns framed as
+  DATA for a single follow-up turn.
   """
 
   use GenServer
   require Logger
 
-  alias Fleet.{Order, Signal, Comms, Authority, Appraisal, Audit, Telemetry}
+  alias Brain.Directive.Assessment
+
+  alias Fleet.{
+    Appraisal,
+    Audit,
+    Authority,
+    Comms,
+    GeneralOrders,
+    Order,
+    Review,
+    Signal,
+    Telemetry,
+    ToolRound
+  }
 
   @default_tick_interval 5_000
   @request_timeout 30_000
@@ -90,6 +131,37 @@ defmodule Fleet.Officer do
   def propose(agent_id, model_output) when is_binary(model_output),
     do: GenServer.call(via_tuple(agent_id), {:propose, model_output}, 30_000)
 
+  @doc """
+  Cast a Security veto against this officer's current act.
+
+  The vetoing officer must hold `:veto` and must not be the officer being
+  vetoed — a veto of oneself is not review. `subject` names a tool, or `nil` to
+  veto the act as a whole. Once recorded the veto stands for the current
+  assignment; a new order clears it.
+  """
+  @spec veto(String.t(), String.t(), MapSet.t(), String.t(), String.t() | nil) :: :ok
+  def veto(agent_id, reviewer_id, reviewer_grants, cause, subject \\ nil),
+    do:
+      GenServer.cast(
+        via_tuple(agent_id),
+        {:veto, reviewer_id, reviewer_grants, cause, subject}
+      )
+
+  @doc """
+  Record a review sign-off toward the two-officer rule for this officer's
+  current act.
+
+  Two approvals from two *distinct* officers, neither of them the acting agent,
+  are required before an irreversible act may proceed.
+  """
+  @spec sign_off(String.t(), String.t(), MapSet.t(), atom(), Fleet.Review.decision()) :: :ok
+  def sign_off(agent_id, reviewer_id, reviewer_grants, authority, decision \\ :approve),
+    do:
+      GenServer.cast(
+        via_tuple(agent_id),
+        {:sign_off, reviewer_id, reviewer_grants, authority, decision}
+      )
+
   @doc "Have the agent append a note to its own duty log (agent-written)."
   def log_duty(agent_id, note, opts \\ []),
     do: GenServer.cast(via_tuple(agent_id), {:log_duty, note, opts})
@@ -138,6 +210,13 @@ defmodule Fleet.Officer do
       # GRANTs received while working it). Kept separate from the standing grant
       # so privilege never accumulates across orders (least privilege per order).
       order_grants: MapSet.new(),
+      # Review state for the CURRENT assignment: sign-offs collected toward the
+      # two-officer rule, and vetoes cast against it. Scoped to the order for
+      # the same reason grants are — approval of one act is not approval of the
+      # next. Both are written by the harness from chain-of-command signals,
+      # never by anything cognition produces.
+      signoffs: [],
+      vetoes: [],
       awaiting: nil,
       relieved_by: nil,
       task_ref: nil,
@@ -217,26 +296,7 @@ defmodule Fleet.Officer do
           # agent's own order-conferred authorities, billet, live duty, and ship
           # commission — NOT from anything the model wrote. This is what makes a
           # forged authority/clearance claim in the model's text inert.
-          ct = state.context_tags
-
-          ctx = %{
-            agent_id: state.agent_id,
-            order_id: assignment_id(state),
-            world_id: state.mind_world_id,
-            ship_id: ct.ship,
-            grants: effective_grants(state),
-            principal:
-              Fleet.Principal.agent(%{
-                agent_id: state.agent_id,
-                rank: ct.rank,
-                duty: state.duty,
-                ship_id: ct.ship,
-                co: ct.co,
-                reports: ct.reports
-              })
-          }
-
-          Fleet.Dispatcher.dispatch(proposal, ctx)
+          Fleet.Dispatcher.dispatch(proposal, tool_ctx(state))
       end
 
     {:reply, reply, state}
@@ -338,7 +398,10 @@ defmodule Fleet.Officer do
   # same accountable path an order uses — but conferring nothing and recording a
   # conversation, not an assignment. Errors are surfaced in the reply, not hidden.
   defp start_hail(state, question, principal, reply_to) do
-    soul = soul_with_tool_context(state.soul, state.context_tags.grants)
+    soul =
+      state.soul
+      |> GeneralOrders.apply_to()
+      |> soul_with_tool_context(state.context_tags.grants)
     agent_id = state.agent_id
     mind_world_id = state.mind_world_id
 
@@ -410,22 +473,84 @@ defmodule Fleet.Officer do
         |> Keyword.get(:authorities, required)
         |> Enum.filter(&Authority.holds?(state.context_tags.grants, &1))
 
-      order = %Order{
-        id: gen_id(),
-        from: state.agent_id,
-        directive: directive,
-        grant: %{authorities: authorities},
-        world_id: world_id,
-        dry_run: Keyword.get(opts, :dry_run, false),
-        priority: Keyword.get(opts, :priority, "normal"),
-        issued_at: System.monotonic_time(:millisecond)
-      }
+      order =
+        Order.new(
+          id: gen_id(),
+          from: state.agent_id,
+          objective: directive,
+          constraints: Keyword.get(opts, :constraints, []),
+          context_refs: Keyword.get(opts, :context_refs, []),
+          risk_class: Keyword.get(opts, :risk_class, :routine),
+          grant: %{authorities: authorities},
+          world_id: world_id,
+          dry_run: Keyword.get(opts, :dry_run, false),
+          priority: Keyword.get(opts, :priority, "normal"),
+          issued_at: System.monotonic_time(:millisecond)
+        )
 
       Comms.order(report_id, order)
       {:noreply, state}
     else
       Telemetry.emit_event(state.agent_id, :unauthorized_action, %{}, %{action: :issue_orders})
       {:noreply, state}
+    end
+  end
+
+  # Review arrives over the command channel from a holder of the authority. The
+  # reviewer's grants are passed in by the caller (the console or the reviewing
+  # officer's own process) — Fleet.Review re-checks entitlement and self-review
+  # before anything is recorded, so a bad call is refused, not trusted.
+  def handle_cast({:veto, reviewer_id, reviewer_grants, cause, subject}, state) do
+    ctx = %{
+      agent_id: state.agent_id,
+      order_id: assignment_id(state),
+      world_id: state.mind_world_id,
+      subject: subject
+    }
+
+    case Review.veto(ctx, reviewer_id, reviewer_grants, cause) do
+      {:vetoed, record} ->
+        Telemetry.emit_event(state.agent_id, :vetoed, %{}, %{by: reviewer_id, subject: subject})
+        {:noreply, %{state | vetoes: state.vetoes ++ [record]}}
+
+      {:error, reason} ->
+        Telemetry.emit_event(state.agent_id, :review_refused, %{}, %{
+          by: reviewer_id,
+          kind: :veto,
+          reason: reason
+        })
+
+        {:noreply, state}
+    end
+  end
+
+  def handle_cast({:sign_off, reviewer_id, reviewer_grants, authority, decision}, state) do
+    ctx = %{
+      agent_id: state.agent_id,
+      order_id: assignment_id(state),
+      world_id: state.mind_world_id,
+      subject: assignment_id(state)
+    }
+
+    case Review.plan_review(ctx, reviewer_id, reviewer_grants, decision) do
+      {:error, reason} ->
+        Telemetry.emit_event(state.agent_id, :review_refused, %{}, %{
+          by: reviewer_id,
+          kind: :sign_off,
+          reason: reason
+        })
+
+        {:noreply, state}
+
+      {_outcome, _record} ->
+        signoff = %{agent_id: reviewer_id, authority: authority, decision: decision}
+
+        Telemetry.emit_event(state.agent_id, :signed_off, %{}, %{
+          by: reviewer_id,
+          decision: decision_label(decision)
+        })
+
+        {:noreply, %{state | signoffs: state.signoffs ++ [signoff]}}
     end
   end
 
@@ -603,17 +728,76 @@ defmodule Fleet.Officer do
                  assignment: order && Order.update_status(order, "dissented")}}
   end
 
+  # A directive the deterministic assessment could not act on without an answer.
+  # The order is BLOCKED, not failed and not dissented: nothing is wrong with it
+  # except that a parameter or a premise needs settling. The clarification text
+  # is SlotDetector's own template, travelling as structured data in a
+  # machine-to-machine signal — no generator produced it.
+  def handle_info({ref, {:clarify, %Assessment{} = a}}, %{task_ref: ref} = state) do
+    Process.demonitor(ref, [:flush])
+    order = state.assignment
+    payload = Assessment.to_report_payload(a)
+
+    Audit.record(:sitrep, %{order_id: order && order.id, from_agent: state.agent_id,
+                            to_agent: co_or_admiral(state), payload: payload})
+
+    Fleet.Service.record_order_outcome(state.soul_id, order, :blocked, payload)
+
+    sig = Signal.new(:sitrep, order_id: order && order.id,
+                     reason: Assessment.explain(a),
+                     payload: payload, world_id: state.world_id)
+
+    deliver_upward(state, sig)
+
+    Telemetry.emit_event(state.agent_id, :directive_clarification, %{}, %{
+      order_id: order && order.id, rule: payload[:rule]})
+
+    {:noreply, %{state | task_ref: nil, task_pid: nil, order_grants: MapSet.new(),
+                 assignment: order && Order.update_status(order, "blocked")}}
+  end
+
+  # Cognition proposed a tool the agent does not hold, tethered to a stated
+  # requirement. The order is not finished and not failed — it needs authority,
+  # so it takes the same REQUEST/GRANT path as an order that arrived without
+  # the grant it needs. A GRANT re-ticks and cognition runs again with the tool.
+  def handle_info({ref, {:needs_authority, authority, _meta}}, %{task_ref: ref} = state) do
+    Process.demonitor(ref, [:flush])
+    state = %{state | task_ref: nil, task_pid: nil}
+
+    case state.assignment do
+      %Order{} = order ->
+        Telemetry.emit_event(state.agent_id, :tool_authority_requested, %{}, %{
+          order_id: order.id,
+          authority: authority
+        })
+
+        block_and_request(state, order, [authority])
+
+      nil ->
+        {:noreply, state}
+    end
+  end
+
   def handle_info({ref, {:completed, result}}, %{task_ref: ref} = state) do
+    handle_info({ref, {:completed, result, %{}}}, state)
+  end
+
+  def handle_info({ref, {:completed, result, meta}}, %{task_ref: ref} = state) do
     Process.demonitor(ref, [:flush])
     order = state.assignment
     dt = System.monotonic_time(:millisecond) - state.started_at
 
+    # :outcome keeps its exact historical shape; everything the deterministic
+    # assessment learned rides alongside it as sibling keys, so a CO reading a
+    # report gets the analysis rather than 500 characters of prose.
+    payload = Map.merge(%{outcome: summarize(result)}, meta)
+
     Audit.record(:report, %{order_id: order && order.id, from_agent: state.agent_id,
-                            to_agent: co_or_admiral(state), payload: %{outcome: summarize(result)}})
-    Fleet.Service.record_order_outcome(state.soul_id, order, :completed, %{outcome: summarize(result)})
+                            to_agent: co_or_admiral(state), payload: payload})
+    Fleet.Service.record_order_outcome(state.soul_id, order, :completed, payload)
 
     sig = Signal.new(:report, order_id: order && order.id,
-                     payload: %{outcome: summarize(result)}, world_id: state.world_id)
+                     payload: payload, world_id: state.world_id)
     deliver_upward(state, sig)
 
     Telemetry.emit_event(state.agent_id, :cognition_complete, %{duration_ms: dt},
@@ -664,22 +848,32 @@ defmodule Fleet.Officer do
   # ── ORDER acceptance ──────────────────────────────────────────────────────
 
   defp accept_order(state, %Order{} = order, sender) do
+    readback = readback(order)
+
     ack = %{order_id: order.id, agent_id: state.agent_id, status: :accepted,
-            accepted_at: System.monotonic_time(:millisecond), note: nil}
+            accepted_at: System.monotonic_time(:millisecond), note: nil,
+            readback: readback}
 
     if is_pid(order.reply_to), do: send(order.reply_to, {:ack, ack})
 
     Audit.record(:order, %{order_id: order.id, from_agent: Comms.principal_string(sender),
                            to_agent: state.agent_id, world_id: order.world_id,
-                           payload: %{directive: to_string(order.directive)}})
+                           payload: %{
+                             directive: to_string(order.directive),
+                             constraints: order.constraints,
+                             risk_class: to_string(Order.risk_class(order))
+                           }})
     Audit.record(:ack, %{order_id: order.id, from_agent: state.agent_id,
-                         to_agent: Comms.principal_string(sender)})
+                         to_agent: Comms.principal_string(sender),
+                         payload: readback})
     Fleet.Service.record_assignment(state.soul_id, order)
     # What I was ordered enters my own mind, attributed to the issuer.
     ingest_communication(state, :order, order.directive, sender)
 
     # The order's grant is scoped to THIS assignment — it replaces (does not
-    # accumulate onto) any prior order's conferred authorities.
+    # accumulate onto) any prior order's conferred authorities. Review state is
+    # cleared for the same reason: sign-off on a previous act is not sign-off
+    # on this one.
     order_grants = Authority.to_set(Authority.conferred_by(order))
 
     Telemetry.emit_event(state.agent_id, :order_received, %{}, %{order_id: order.id})
@@ -689,7 +883,34 @@ defmodule Fleet.Officer do
      %{state
        | assignment: Order.update_status(order, "acknowledged"),
          order_grants: order_grants,
+         signoffs: [],
+         vetoes: [],
          last_ack: ack}}
+  end
+
+  # The readback: what the ship understood the order to be, restated from the
+  # order as received, before any work begins.
+  #
+  # The LCARS readback is load-bearing because it catches misunderstanding
+  # *before* execution and leaves a comparison artifact for drift detection.
+  # Here it restates what the harness parsed — objective, the bounds it will
+  # enforce, the risk class it will apply, and the authority it believes it
+  # holds — so an issuer can see immediately if the order was received as
+  # something other than what they meant.
+  #
+  # It is deliberately the *harness's* restatement rather than a model
+  # paraphrase. Cognition here only phrases responses; what matters for drift is
+  # what the deterministic layer will act on. What the *analysis* made of the
+  # order (its read of the intent, which is the part measured to be unreliable)
+  # travels separately, on the assessment in the REPORT.
+  defp readback(%Order{} = order) do
+    %{
+      objective: to_string(order.objective || order.directive),
+      constraints: order.constraints || [],
+      risk_class: to_string(Order.risk_class(order)),
+      authorities: order |> Authority.conferred_by() |> Enum.map(&Authority.encode/1),
+      context_refs: order.context_refs || []
+    }
   end
 
   # ── Tick gate: enforce the grant, then dispatch ───────────────────────────
@@ -700,6 +921,14 @@ defmodule Fleet.Officer do
     cond do
       order.dry_run ->
         start_dispatch(state, order)
+
+      # Risk class is process, not a label. An irreversible order proceeds only
+      # with two distinct officers' sign-off (Fleet.Review.two_officer/3);
+      # without it the order is refused on the record rather than quietly
+      # executed as if it were routine.
+      Order.risk_class(order) == :irreversible and
+          Review.two_officer(state.signoffs, state.agent_id) != :ok ->
+        refuse_irreversible(state, order)
 
       true ->
         case Authority.missing(effective_grants(state), Authority.required_for(order)) do
@@ -712,6 +941,34 @@ defmodule Fleet.Officer do
     end
   end
 
+  defp refuse_irreversible(state, order) do
+    detail =
+      case Review.two_officer(state.signoffs, state.agent_id) do
+        {:error, reason} -> to_string(reason)
+        _ -> "unknown"
+      end
+
+    verdict = %{
+      basis: :process,
+      rule: :irreversible_requires_two_officers,
+      reason:
+        "order is classed irreversible and lacks two-officer sign-off (#{detail}), " <>
+          "so it cannot be lawfully executed"
+    }
+
+    Audit.record(:dissent, %{order_id: order.id, from_agent: state.agent_id,
+                             to_agent: co_or_admiral(state), verdict: verdict[:basis],
+                             reason: verdict[:reason]})
+
+    Fleet.Service.record_order_outcome(state.soul_id, order, :dissented,
+      %{reason: verdict[:reason], basis: verdict[:basis]})
+
+    emit_dissent(state, order, verdict)
+
+    {:noreply,
+     %{state | order_grants: MapSet.new(), assignment: Order.update_status(order, "dissented")}}
+  end
+
   # Standing grant (from commission) ∪ the current order's scoped grant.
   defp effective_grants(state),
     do: MapSet.union(state.context_tags.grants, state.order_grants)
@@ -722,18 +979,35 @@ defmodule Fleet.Officer do
   # what it may do. Appended to the constitution, never the per-order
   # directive, so it reads as identity/standing-orders context, not a claim
   # riding in on this turn's input.
-  defp soul_with_tool_context(nil, _grants), do: nil
-
+  #
+  # There is no nil clause: both call sites pipe through `GeneralOrders.apply_to/1`,
+  # which returns a soul carrying just the constitution when an officer has none
+  # of its own, so a soulless agent still serves under the General Orders.
   defp soul_with_tool_context(soul, grants) do
     case Authority.granted_tools(grants) do
       [] ->
         soul
 
       tools ->
+        # Names alone left a proposing model guessing both what a tool is for and
+        # what shape its arguments take; the registry has always carried both.
+        catalog =
+          tools
+          |> Enum.flat_map(fn name ->
+            case Fleet.Tool.lookup(name) do
+              {:ok, tool} -> [Fleet.Tool.describe(tool)]
+              :error -> []
+            end
+          end)
+          |> Enum.join("\n\n")
+
         appendix =
-          "\n\n---\nTools currently granted to you by your chain of command: #{Enum.join(tools, ", ")}. " <>
-            "You may propose only these — via a fenced ```propose {\"tool\": \"...\", \"requirement\": \"...\"}``` " <>
-            "block — and nothing else; an unlisted tool will be refused."
+          "\n\n---\nTools currently granted to you by your chain of command:\n\n" <>
+            catalog <>
+            "\n\nYou may propose only these — via a fenced ```propose " <>
+            "{\"tool\": \"...\", \"requirement\": \"...\", \"args\": {...}}``` block — and nothing " <>
+            "else; an unlisted tool will be refused, and so will arguments that do not match " <>
+            "the shape above."
 
         %{soul | constitution: (soul.constitution || "") <> appendix}
     end
@@ -781,6 +1055,10 @@ defmodule Fleet.Officer do
   defp dispatch(state, %Order{} = order) do
     soul = state.soul
     agent_id = state.agent_id
+    # Built here, on the officer process, so the tool gate reads the agent's
+    # real billet, duty, ship and grants from process state — never from
+    # anything the model writes. Same construction as the :propose handle_call.
+    tool_ctx = tool_ctx(state, order)
     # Cognition runs in the AGENT's mind-world (its own memory/beliefs/JTMS),
     # NOT the order's world — the order's world is task context/authority only.
     mind_world_id = state.mind_world_id
@@ -790,27 +1068,52 @@ defmodule Fleet.Officer do
         fn -> Process.sleep(50); {:completed, %{response: "[dry-run] " <> to_string(order.directive)}} end
       else
         fn ->
-          case Appraisal.appraise(order, soul) do
+          case Appraisal.appraise(order, GeneralOrders.apply_to(soul),
+                 mind_world_id: mind_world_id,
+                 agent_id: agent_id
+               ) do
             {:dissent, verdict} ->
               {:dissent, verdict}
 
             :proceed ->
-              # Appraisal judges against the agent's real constitution, unaugmented.
-              # Cognition itself gets the tool-awareness appendix, so a granted tool
-              # is something the agent actually knows it holds, not just something
-              # the harness silently permits if proposed.
-              cognition_soul = soul_with_tool_context(soul, effective_grants(state))
+              # The normative stack, in order: General Orders above the officer's
+              # own constitution, then the tool appendix. Appraisal judges against
+              # the constitution WITHOUT the tool appendix (it asks what the agent
+              # may do, not what it holds), but the General Orders bind there too —
+              # "dissent is duty" is article 4.
+              cognition_soul =
+                soul
+                |> GeneralOrders.apply_to()
+                |> soul_with_tool_context(effective_grants(state))
 
               {:ok, conversation_id} =
                 Brain.create_conversation(world_id: mind_world_id, soul: cognition_soul, agent_id: agent_id)
 
+              # mode: :directive — an order is not a conversational turn. Brain
+              # assesses it deterministically before generating anything, and
+              # skips the chat response-optionality heuristics (which would
+              # silence two structurally similar consecutive orders).
+              #
               # Brain.evaluate/3 returns {:error, reason} rather than raising when
               # require_llm generation fails (Brain's own top-level rescue converts
               # it) — that must not be mistaken for a completed order.
-              case Brain.evaluate(conversation_id, order.directive,
-                     soul: cognition_soul, agent_id: agent_id, require_llm: true) do
-                {:error, reason} -> {:failed, reason}
-                result -> {:completed, result}
+              case Brain.evaluate(conversation_id, order.objective || order.directive,
+                     soul: cognition_soul,
+                     agent_id: agent_id,
+                     require_llm: true,
+                     mode: :directive,
+                     # What the issuer stated, passed through rather than
+                     # re-derived: the assessment gates on these instead of on a
+                     # classifier's reading of the objective.
+                     directive_constraints: order.constraints,
+                     directive_risk_class: Order.risk_class(order)) do
+                {:error, reason} ->
+                  {:failed, reason}
+
+                result ->
+                  result
+                  |> classify_cognition()
+                  |> maybe_run_tool_round(tool_ctx, conversation_id, cognition_soul, agent_id)
               end
           end
         end
@@ -818,6 +1121,138 @@ defmodule Fleet.Officer do
 
     Task.Supervisor.async_nolink(Fleet.TaskSupervisor, fun)
   end
+
+  # Brain's deterministic directive assessment decides the shape of the outcome
+  # before any of Fleet's own handling runs. A withheld directive produced no
+  # text at all — no generator was consulted — so it must not be reported as a
+  # completed order:
+  #
+  #   :refuse  -> DISSENT on epistemic grounds (the existing dissent machinery)
+  #   :clarify -> the order is blocked pending an answer, reported as a SITREP
+  #               carrying the deterministic clarification prompts
+  #   :comply  -> normal completion
+  #
+  # A result without a :directive key (chat mode, or an older Brain) completes
+  # as before.
+  defp classify_cognition({:ok, %{directive: %Assessment{} = a}} = result) do
+    case a.verdict do
+      :comply -> {:completed, result, cognition_meta(a)}
+      :refuse -> {:dissent, dissent_verdict(a)}
+      :clarify -> {:clarify, a}
+    end
+  end
+
+  defp classify_cognition(result), do: {:completed, result}
+
+  defp dissent_verdict(%Assessment{} = a) do
+    %{
+      basis: :epistemic,
+      rule: Assessment.primary_reason_tag(a) || :directive_refused,
+      reason: Assessment.explain(a),
+      assessment: Assessment.to_report_payload(a)
+    }
+  end
+
+  defp cognition_meta(%Assessment{} = a),
+    do: %{assessment: Assessment.to_report_payload(a)}
+
+  # If the agent asked for a capability instead of answering, run the single
+  # gated tool round and report what came back. Only a completed cognition can
+  # propose — a dissent or a blocked directive produced no answer to inspect.
+  defp maybe_run_tool_round({:completed, result, meta}, ctx, conversation_id, soul, agent_id) do
+    continue = fn framed ->
+      # The framed <data> block is the answer to the agent's own question, not
+      # an order from a superior: same conversation, no directive assessment.
+      #
+      # `mode: :tool_result` rather than plain chat because the chat path runs
+      # `ResponseGate`, whose conversational-optionality heuristics score a
+      # framed data block as not needing a reply — measured, and it silently
+      # ended every tool chain after its first call.
+      case Brain.evaluate(conversation_id, framed,
+             soul: soul,
+             agent_id: agent_id,
+             require_llm: true,
+             mode: :tool_result) do
+        {:ok, %{response: r}} when is_binary(r) -> r
+        _ -> nil
+      end
+    end
+
+    case ToolRound.run(response_text(result), ctx, continue) do
+      {:final, _text, %{disposition: :none}} ->
+        {:completed, result, meta}
+
+      {:final, text, tool_meta} ->
+        {:completed, put_response(result, text), Map.put(meta, :tool_use, tool_meta)}
+
+      # Escalation has to happen on the officer process (it owns `awaiting` and
+      # the request timeout), so the Task hands the decision back rather than
+      # trying to run the REQUEST/GRANT protocol from inside cognition.
+      {:needs_authority, authority, tool_meta} ->
+        {:needs_authority, authority, Map.put(meta, :tool_use, tool_meta)}
+    end
+  end
+
+  defp maybe_run_tool_round(outcome, _ctx, _conversation_id, _soul, _agent_id), do: outcome
+
+  # An officer stands in two worlds at once, and a tool has to say which it
+  # means. `world_id` is its mind-world — its own beliefs, memory and JTMS — and
+  # stays the default because that is what the existing read tools and the audit
+  # record refer to. `order_world_id` is the world the ORDER named, where a
+  # shared corpus (an indexed codebase, an ingested document set) actually
+  # lives. Cognition never leaves the mind-world; only a tool reaches across,
+  # and only under the `{:world, id}` authority the order already confers.
+  defp tool_ctx(state, order \\ nil) do
+    ct = state.context_tags
+
+    %{
+      agent_id: state.agent_id,
+      order_id: assignment_id(state),
+      world_id: state.mind_world_id,
+      mind_world_id: state.mind_world_id,
+      order_world_id: order_world_id(order || state.assignment),
+      tool_budget: tool_budget_for(order || state.assignment),
+      ship_id: ct.ship,
+      grants: effective_grants(state),
+      # Review state travels with the dispatch context so the tool gate can
+      # enforce a veto and the two-officer rule at the moment of the call.
+      vetoes: state.vetoes,
+      signoffs: state.signoffs,
+      principal:
+        Fleet.Principal.agent(%{
+          agent_id: state.agent_id,
+          rank: ct.rank,
+          duty: state.duty,
+          ship_id: ct.ship,
+          co: ct.co,
+          reports: ct.reports
+        })
+    }
+  end
+
+  defp order_world_id(%Order{world_id: world_id}) when is_binary(world_id), do: world_id
+  defp order_world_id(_), do: nil
+
+  # An irreversible order gets a tighter ceiling than a routine one: an act that
+  # cannot be undone should not be reached at the end of a long unattended chain
+  # of reads, where the reasoning that led there is hardest to review.
+  defp tool_budget_for(%Order{} = order) do
+    case Order.risk_class(order) do
+      :irreversible -> 3
+      _ -> Application.get_env(:fleet, :tool_budget, 8)
+    end
+  end
+
+  defp tool_budget_for(_), do: Application.get_env(:fleet, :tool_budget, 8)
+
+  defp response_text({:ok, %{response: r}}) when is_binary(r), do: r
+  defp response_text(%{response: r}) when is_binary(r), do: r
+  defp response_text(r) when is_binary(r), do: r
+  defp response_text(_), do: nil
+
+  defp put_response({:ok, map}, text) when is_map(map), do: {:ok, Map.put(map, :response, text)}
+  defp put_response(map, text) when is_map(map), do: Map.put(map, :response, text)
+  defp put_response(_other, text), do: %{response: text}
 
   # ── Upward signal handling (CO side) ──────────────────────────────────────
 
@@ -947,6 +1382,9 @@ defmodule Fleet.Officer do
   defp awaiting_request?(%{awaiting: %{request_id: rid}}, %Signal{request_id: rid}) when not is_nil(rid), do: true
   defp awaiting_request?(%{awaiting: %{request_id: rid}}, %Signal{payload: %{request_id: rid}}) when not is_nil(rid), do: true
   defp awaiting_request?(_, _), do: false
+
+  defp decision_label(:approve), do: :approve
+  defp decision_label({:reject, _}), do: :reject
 
   defp co_or_admiral(%{context_tags: %{co: nil}}), do: "admiral"
   defp co_or_admiral(%{context_tags: %{co: co}}), do: co
@@ -1089,14 +1527,17 @@ defmodule Fleet.Officer do
     resume_status = if status in ["in_progress", "blocked"], do: "acknowledged", else: status
     authorities = get_in(a, ["grant", "authorities"]) || []
 
-    %Order{
+    Order.new(
       id: Map.get(a, "order_id"),
       from: Map.get(a, "from", "admiral"),
-      directive: Map.get(a, "directive"),
+      objective: Map.get(a, "objective") || Map.get(a, "directive"),
+      constraints: Map.get(a, "constraints", []),
+      context_refs: Map.get(a, "context_refs", []),
+      risk_class: Map.get(a, "risk_class", :routine),
       grant: %{authorities: Enum.map(authorities, &Fleet.Authority.decode/1)},
       world_id: Map.get(a, "world_id", "default"),
       status: resume_status
-    }
+    )
   end
 
   defp rebuild_assignment(_), do: nil

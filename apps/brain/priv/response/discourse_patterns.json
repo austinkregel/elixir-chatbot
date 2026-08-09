@@ -478,6 +478,38 @@
           "variant": "continuation"
         }
       ]
+    },
+    "directive_order": {
+      "match": {
+        "interaction_mode": "directive",
+        "is_question": false
+      },
+      "backbone": [
+        {
+          "type": "acknowledgment",
+          "variant": "action"
+        },
+        {
+          "type": "content",
+          "variant": "report"
+        }
+      ]
+    },
+    "directive_question": {
+      "match": {
+        "interaction_mode": "directive",
+        "is_question": true
+      },
+      "backbone": [
+        {
+          "type": "framing",
+          "variant": "informative"
+        },
+        {
+          "type": "content",
+          "variant": "report"
+        }
+      ]
     }
   }
 }

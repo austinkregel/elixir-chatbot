@@ -17,14 +17,30 @@ defmodule Fleet.Appraisal do
 
   Tier 2 is gated behind `deep_appraisal` rather than run on every order — value
   appraisal via cognition would otherwise double every order's cognition cost.
+  It is also strictly *subordinate*: it runs only after every deterministic tier
+  above has passed, so an LLM verdict can add a refusal but never overturn one.
   """
 
   require Logger
-  alias Fleet.Order
+  alias Fleet.{MindWorld, Order}
   alias Brain.Analysis.SpeechActClassifier
 
-  @doc "Appraise an order against a soul. `:proceed | {:dissent, verdict_map}`."
-  def appraise(%Order{} = order, soul) do
+  @type verdict :: %{basis: atom(), rule: atom(), reason: String.t()}
+
+  @doc """
+  Appraise an order against a soul. `:proceed | {:dissent, verdict_map}`.
+
+  Options (used only by Tier 2, which is opt-in per soul):
+
+    * `:mind_world_id` — the agent's private mind-world. Tier 2's verdict
+      cognition runs here so beliefs extracted from the verdict turn stay
+      isolated to the agent, exactly like order and hail cognition. Defaults to
+      `Fleet.MindWorld.id(soul.id)`; only if the soul has no id does it fall
+      back to the order's (shared) world.
+    * `:agent_id` — attributes the verdict evaluation to the acting agent.
+  """
+  @spec appraise(Order.t(), Brain.Soul.t() | nil, keyword()) :: :proceed | {:dissent, verdict()}
+  def appraise(%Order{} = order, soul, opts \\ []) do
     genome = genome_of(soul)
     directive = to_string(order.directive || "")
 
@@ -42,7 +58,7 @@ defmodule Fleet.Appraisal do
                      reason: "directive is a prohibited speech act: #{sa}"}}
 
       deep_appraisal?(genome) ->
-        cognition_verdict(order, soul, genome)
+        cognition_verdict(order, soul, genome, opts)
 
       true ->
         :proceed
@@ -85,11 +101,14 @@ defmodule Fleet.Appraisal do
 
   # ── Tier 2: constrained Brain verdict ─────────────────────────────────────
 
-  defp cognition_verdict(%Order{} = order, soul, genome) do
-    prompt = verdict_prompt(soul, order)
+  defp cognition_verdict(%Order{} = order, soul, genome, opts) do
+    prompt = verdict_prompt(order)
+    agent_id = Keyword.get(opts, :agent_id)
+    world_id = verdict_world_id(order, soul, opts)
 
-    with {:ok, conv} <- Brain.create_conversation(world_id: order.world_id) do
-      text = order |> run_eval(conv, prompt) |> extract_text()
+    with {:ok, conv} <-
+           Brain.create_conversation(world_id: world_id, soul: soul, agent_id: agent_id) do
+      text = run_eval(conv, prompt, soul, agent_id) |> extract_text()
       parse_verdict(text, genome)
     else
       other ->
@@ -99,24 +118,39 @@ defmodule Fleet.Appraisal do
     end
   end
 
+  # The verdict conversation belongs in the AGENT's mind-world, not the order's
+  # (shared) world: Brain extracts beliefs from every turn it evaluates, so a
+  # verdict run in the order world leaks what the agent inferred while judging
+  # into everyone else's knowledge. Same isolation rule as order/hail cognition
+  # (see Fleet.Officer.dispatch/2).
+  defp verdict_world_id(%Order{} = order, soul, opts) do
+    Keyword.get(opts, :mind_world_id) ||
+      case soul do
+        %{id: id} when is_binary(id) -> MindWorld.id(id)
+        _ -> order.world_id
+      end
+  end
+
   # require_llm: true — the verdict token (PROCEED / DISSENT: <reason>) must
   # come from the model actually reasoning against its constitution. The
   # classical lattice/template/synthesizer systems have no way to produce that
   # token at all, so without this flag a constrained appraisal could silently
   # fall through to the ambiguous-verdict default below — indistinguishable
   # from the model genuinely being asked and declining to answer clearly.
-  defp run_eval(_order, conv, prompt), do: Brain.evaluate(conv, prompt, require_llm: true)
+  #
+  # The soul rides in as `soul:` so its constitution becomes the SYSTEM prompt.
+  # It is deliberately unaugmented — no tool appendix — because appraisal judges
+  # against the agent's real constitution (see Fleet.Officer.dispatch/2).
+  defp run_eval(conv, prompt, soul, agent_id) do
+    Brain.evaluate(conv, prompt, soul: soul, agent_id: agent_id, require_llm: true)
+  end
 
-  defp verdict_prompt(soul, %Order{} = order) do
-    constitution = (soul && Brain.Soul.system_prompt(soul)) || ""
-
+  defp verdict_prompt(%Order{} = order) do
     """
-    #{constitution}
-
     You have received the following ORDER:
     "#{order.directive}"
 
-    Decide, strictly against your constitution above, whether you may lawfully and
+    Decide, strictly against your own constitution, whether you may lawfully and
     ethically carry it out. Answer with a SINGLE leading token:
     - Reply exactly `PROCEED` if you may carry it out.
     - Reply `DISSENT: <reason>` if you must refuse.

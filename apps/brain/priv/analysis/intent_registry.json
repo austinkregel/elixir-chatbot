@@ -317,17 +317,6 @@
     ],
     "required": []
   },
-  "smalltalk.user.tired": {
-    "category": "expressive",
-    "clarification_templates": {},
-    "domain": "smalltalk",
-    "entity_mappings": {},
-    "input_contexts": [],
-    "optional": [],
-    "output_contexts": [],
-    "required": [],
-    "speech_act": "self_expression"
-  },
   "smalltalk.emotions.wow": {
     "category": "expressive",
     "clarification_templates": {},
@@ -425,17 +414,6 @@
     "required": [],
     "speech_act": "request"
   },
-  "smalltalk.user.joking": {
-    "category": "expressive",
-    "clarification_templates": {},
-    "domain": "smalltalk",
-    "entity_mappings": {},
-    "input_contexts": [],
-    "optional": [],
-    "output_contexts": [],
-    "required": [],
-    "speech_act": "self_expression"
-  },
   "smalltalk.agent.sure": {
     "category": "expressive",
     "clarification_templates": {},
@@ -448,17 +426,6 @@
     "speech_act": "general"
   },
   "smalltalk.user.will_be_back": {
-    "category": "expressive",
-    "clarification_templates": {},
-    "domain": "smalltalk",
-    "entity_mappings": {},
-    "input_contexts": [],
-    "optional": [],
-    "output_contexts": [],
-    "required": [],
-    "speech_act": "self_expression"
-  },
-  "smalltalk.user.does_not_want_to_talk": {
     "category": "expressive",
     "clarification_templates": {},
     "domain": "smalltalk",
@@ -663,27 +630,20 @@
   },
   "smarthome.device_set": {
     "category": "directive",
-    "clarification_templates": {
-      "device": "Which device would you like to adjust?",
-      "number": "What value should I set it to?"
-    },
+    "clarification_templates": {},
     "description": "Set a smart device to a specific value",
     "domain": "smarthome",
-    "entity_mappings": {
-      "device": ["device", "appliance"],
-      "location": ["location", "room"],
-      "number": ["number"]
-    },
+    "entity_mappings": {},
     "input_contexts": [
       {
         "lifespan": 2,
         "name": "room"
       }
     ],
-    "optional": ["location"],
+    "optional": [],
     "output_contexts": [],
-    "required": ["device"],
-    "speech_act": "command"
+    "required": [],
+    "speech_act": "request"
   },
   "calendar.query": {
     "category": "directive",
@@ -816,17 +776,6 @@
     "required": [],
     "speech_act": "general"
   },
-  "smalltalk.user.busy": {
-    "category": "expressive",
-    "clarification_templates": {},
-    "domain": "smalltalk",
-    "entity_mappings": {},
-    "input_contexts": [],
-    "optional": [],
-    "output_contexts": [],
-    "required": [],
-    "speech_act": "self_expression"
-  },
   "smalltalk.agent.hobby": {
     "category": "expressive",
     "clarification_templates": {},
@@ -848,17 +797,6 @@
     "output_contexts": [],
     "required": [],
     "speech_act": "appraisal"
-  },
-  "smalltalk.user.excited": {
-    "category": "expressive",
-    "clarification_templates": {},
-    "domain": "smalltalk",
-    "entity_mappings": {},
-    "input_contexts": [],
-    "optional": [],
-    "output_contexts": [],
-    "required": [],
-    "speech_act": "self_expression"
   },
   "todo.add": {
     "category": "directive",
@@ -1303,17 +1241,6 @@
     "required": [],
     "speech_act": "thanks"
   },
-  "smalltalk.user.misses_agent": {
-    "category": "expressive",
-    "clarification_templates": {},
-    "domain": "smalltalk",
-    "entity_mappings": {},
-    "input_contexts": [],
-    "optional": [],
-    "output_contexts": [],
-    "required": [],
-    "speech_act": "self_expression"
-  },
   "alarm.set": {
     "category": "directive",
     "clarification_templates": {
@@ -1348,15 +1275,10 @@
   },
   "smarthome.switch": {
     "category": "directive",
-    "clarification_templates": {
-      "device": "Which device would you like to control?"
-    },
+    "clarification_templates": {},
     "description": "Turn a smart device on or off",
     "domain": "smarthome",
-    "entity_mappings": {
-      "device": ["device", "appliance"],
-      "location": ["location", "room"]
-    },
+    "entity_mappings": {},
     "input_contexts": [
       {
         "lifespan": 2,
@@ -1367,7 +1289,7 @@
         "name": "room"
       }
     ],
-    "optional": ["location"],
+    "optional": [],
     "output_contexts": [
       {
         "lifespan": 5,
@@ -1386,8 +1308,8 @@
         "name": "schedule"
       }
     ],
-    "required": ["device"],
-    "speech_act": "command"
+    "required": [],
+    "speech_act": "request"
   },
   "smalltalk.agent.boss": {
     "category": "expressive",
@@ -1505,17 +1427,6 @@
     ],
     "required": []
   },
-  "smalltalk.user.angry": {
-    "category": "expressive",
-    "clarification_templates": {},
-    "domain": "smalltalk",
-    "entity_mappings": {},
-    "input_contexts": [],
-    "optional": [],
-    "output_contexts": [],
-    "required": [],
-    "speech_act": "self_expression"
-  },
   "smalltalk.agent.ready": {
     "category": "expressive",
     "clarification_templates": {},
@@ -1526,6 +1437,17 @@
     "output_contexts": [],
     "required": [],
     "speech_act": "general"
+  },
+  "smalltalk.user.emotion": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
   },
   "smalltalk.agent.fired": {
     "category": "expressive",
@@ -1650,17 +1572,6 @@
     "required": [],
     "speech_act": "general"
   },
-  "smalltalk.user.bored": {
-    "category": "expressive",
-    "clarification_templates": {},
-    "domain": "smalltalk",
-    "entity_mappings": {},
-    "input_contexts": [],
-    "optional": [],
-    "output_contexts": [],
-    "required": [],
-    "speech_act": "self_expression"
-  },
   "smalltalk.agent.be_clever": {
     "category": "expressive",
     "clarification_templates": {},
@@ -1763,17 +1674,6 @@
     "output_contexts": [],
     "required": [],
     "speech_act": "general"
-  },
-  "smalltalk.user.loves_agent": {
-    "category": "expressive",
-    "clarification_templates": {},
-    "domain": "smalltalk",
-    "entity_mappings": {},
-    "input_contexts": [],
-    "optional": [],
-    "output_contexts": [],
-    "required": [],
-    "speech_act": "self_expression"
   },
   "meta.privacy_probe": {
     "category": "directive",
@@ -2075,17 +1975,6 @@
     "required": [],
     "speech_act": "request"
   },
-  "smalltalk.user.can_not_sleep": {
-    "category": "expressive",
-    "clarification_templates": {},
-    "domain": "smalltalk",
-    "entity_mappings": {},
-    "input_contexts": [],
-    "optional": [],
-    "output_contexts": [],
-    "required": [],
-    "speech_act": "self_expression"
-  },
   "todo.list": {
     "category": "directive",
     "clarification_templates": {},
@@ -2214,6 +2103,27 @@
     "required": [],
     "speech_act": "request_information"
   },
+  "timer.start": {
+    "category": "directive",
+    "clarification_templates": {
+      "duration": "How long should the timer be?"
+    },
+    "description": "Start a countdown timer",
+    "domain": "timer",
+    "entity_mappings": {
+      "duration": [
+        "duration",
+        "number"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [
+      "duration"
+    ],
+    "speech_act": "command"
+  },
   "date.query": {
     "category": "directive",
     "clarification_templates": {},
@@ -2265,6 +2175,38 @@
     "output_contexts": [],
     "required": [],
     "speech_act": "general"
+  },
+  "smarthome.set": {
+    "category": "directive",
+    "clarification_templates": {
+      "device": "Which device would you like to adjust?",
+      "number": "What value should I set it to?"
+    },
+    "description": "Set a smart device to a specific value (temperature, brightness, etc.)",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "device": [
+        "device",
+        "appliance"
+      ],
+      "location": [
+        "location",
+        "room"
+      ],
+      "number": [
+        "number"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "location"
+    ],
+    "output_contexts": [],
+    "required": [
+      "device",
+      "number"
+    ],
+    "speech_act": "command"
   },
   "smalltalk.dialog.wrong": {
     "category": "expressive",
@@ -2376,17 +2318,6 @@
     "required": [],
     "speech_act": "general"
   },
-  "smalltalk.user.sad": {
-    "category": "expressive",
-    "clarification_templates": {},
-    "domain": "smalltalk",
-    "entity_mappings": {},
-    "input_contexts": [],
-    "optional": [],
-    "output_contexts": [],
-    "required": [],
-    "speech_act": "self_expression"
-  },
   "smalltalk.agent.my_friend": {
     "category": "expressive",
     "clarification_templates": {},
@@ -2441,19 +2372,6 @@
     "output_contexts": [],
     "required": [],
     "speech_act": "general"
-  },
-  "smalltalk.user.good": {
-    "category": "expressive",
-    "clarification_templates": {},
-    "defaults": {},
-    "description": "User expressing they are doing well",
-    "domain": "introduction",
-    "entity_mappings": {},
-    "input_contexts": [],
-    "optional": [],
-    "output_contexts": [],
-    "required": [],
-    "speech_act": "statement"
   },
   "music.search": {
     "category": "assertive",
@@ -2539,28 +2457,6 @@
     "output_contexts": [],
     "required": [],
     "speech_act": "command"
-  },
-  "smalltalk.user.happy": {
-    "category": "expressive",
-    "clarification_templates": {},
-    "domain": "smalltalk",
-    "entity_mappings": {},
-    "input_contexts": [],
-    "optional": [],
-    "output_contexts": [],
-    "required": [],
-    "speech_act": "self_expression"
-  },
-  "smalltalk.user.sleepy": {
-    "category": "expressive",
-    "clarification_templates": {},
-    "domain": "smalltalk",
-    "entity_mappings": {},
-    "input_contexts": [],
-    "optional": [],
-    "output_contexts": [],
-    "required": [],
-    "speech_act": "self_expression"
   },
   "code.explain": {
     "category": "directive",
@@ -2708,36 +2604,6 @@
     ],
     "required": []
   },
-  "smalltalk.user.lonely": {
-    "category": "expressive",
-    "clarification_templates": {},
-    "domain": "smalltalk",
-    "entity_mappings": {},
-    "input_contexts": [],
-    "optional": [],
-    "output_contexts": [],
-    "required": [],
-    "speech_act": "self_expression"
-  },
-  "smarthome.set": {
-    "category": "directive",
-    "clarification_templates": {
-      "device": "Which device would you like to adjust?",
-      "number": "What value should I set it to?"
-    },
-    "description": "Set a smart device to a specific value (temperature, brightness, etc.)",
-    "domain": "smarthome",
-    "entity_mappings": {
-      "device": ["device", "appliance"],
-      "location": ["location", "room"],
-      "number": ["number"]
-    },
-    "input_contexts": [],
-    "optional": ["location"],
-    "output_contexts": [],
-    "required": ["device", "number"],
-    "speech_act": "command"
-  },
   "device.control": {
     "category": "directive",
     "clarification_templates": {
@@ -2746,29 +2612,23 @@
     "description": "General device control command",
     "domain": "device",
     "entity_mappings": {
-      "device": ["device", "appliance"],
-      "location": ["location", "room"]
+      "device": [
+        "device",
+        "appliance"
+      ],
+      "location": [
+        "location",
+        "room"
+      ]
     },
     "input_contexts": [],
-    "optional": ["location"],
+    "optional": [
+      "location"
+    ],
     "output_contexts": [],
-    "required": ["device"],
-    "speech_act": "command"
-  },
-  "timer.start": {
-    "category": "directive",
-    "clarification_templates": {
-      "duration": "How long should the timer be?"
-    },
-    "description": "Start a countdown timer",
-    "domain": "timer",
-    "entity_mappings": {
-      "duration": ["duration", "number"]
-    },
-    "input_contexts": [],
-    "optional": [],
-    "output_contexts": [],
-    "required": ["duration"],
+    "required": [
+      "device"
+    ],
     "speech_act": "command"
   }
 }

@@ -29,7 +29,7 @@ defmodule Brain.SystemStatus do
       {Brain.Memory.Store, "Memory Store", :has_stats}
     ],
     epistemic: [
-      {Brain.Epistemic.JTMS, "JTMS", :has_ready_and_stats},
+      {Brain.Epistemic.JTMS, "JTMS", {:registry_pool, Brain.Epistemic.JTMSRegistry, "world"}},
       {Brain.Epistemic.BeliefStore, "Belief Store", :has_ready_and_stats},
       {Brain.Epistemic.UserModelStore, "User Model Store", :has_ready_and_stats},
       {Brain.Epistemic.ContradictionHandler, "Contradiction Handler", :has_ready_and_stats},
@@ -1142,26 +1142,34 @@ defmodule Brain.SystemStatus do
     end
   end
 
+  # A registry-named pool has no singleton `Process.whereis/1` to find — its
+  # members are per-key processes (JTMS: one truth-maintenance web per world).
+  # The pool is healthy when its registry is reachable; the live-member count is
+  # a stat, not a health signal, because members start lazily on first use — zero
+  # is the normal state on a fresh boot.
+  defp get_genserver_status(module, name, {:registry_pool, registry, member_label}) do
+    base_status = not_started_status(module, name)
+
+    case safe_registry_count(registry) do
+      nil ->
+        base_status
+
+      count ->
+        %{
+          base_status
+          | running: true,
+            ready: true,
+            status: :ready,
+            label: "Ready (#{count} #{member_label}#{if count == 1, do: "", else: "s"})",
+            stats: %{registry: registry, members: count}
+        }
+        |> add_utilization_metrics(module)
+    end
+  end
+
   defp get_genserver_status(module, name, type) do
     pid = Process.whereis(module)
-
-    base_status = %{
-      name: name,
-      module: module,
-      running: pid != nil,
-      pid: pid,
-      ready: false,
-      status: :not_started,
-      label: "Not started",
-      stats: nil,
-      memory_bytes: nil,
-      message_queue_len: nil,
-      last_activity_at: nil,
-      call_count_total: 0,
-      call_count_window: 0,
-      rate_per_minute: 0.0,
-      utilization_status: :not_started
-    }
+    base_status = %{not_started_status(module, name) | running: pid != nil, pid: pid}
 
     if pid do
       process_info = get_process_info(pid)
@@ -1180,6 +1188,38 @@ defmodule Brain.SystemStatus do
       |> add_utilization_metrics(module)
     else
       base_status
+    end
+  end
+
+  defp not_started_status(module, name) do
+    %{
+      name: name,
+      module: module,
+      running: false,
+      pid: nil,
+      ready: false,
+      status: :not_started,
+      label: "Not started",
+      stats: nil,
+      memory_bytes: nil,
+      message_queue_len: nil,
+      last_activity_at: nil,
+      call_count_total: 0,
+      call_count_window: 0,
+      rate_per_minute: 0.0,
+      utilization_status: :not_started
+    }
+  end
+
+  defp safe_registry_count(registry) do
+    if is_pid(Process.whereis(registry)) do
+      try do
+        Registry.count(registry)
+      catch
+        :exit, _ -> nil
+      end
+    else
+      nil
     end
   end
 

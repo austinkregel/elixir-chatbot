@@ -31,9 +31,9 @@ defmodule Atlas.Schemas.ServiceRecord do
     timestamps(type: :utc_datetime_usec)
   end
 
-  @valid_kinds ~w(commissioned order_assigned order_completed order_dissented
-                  order_failed relieved reinstated achievement rehydrated
-                  retired decommissioned)
+  @valid_kinds ~w(commissioned order_assigned order_blocked order_completed
+                  order_dissented order_failed relieved reinstated achievement
+                  rehydrated retired decommissioned)
 
   @required_fields ~w(soul_id kind)a
   @optional_fields ~w(agent_id order_id world_id under_order_of outcome reason

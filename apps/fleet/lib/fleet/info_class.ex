@@ -23,7 +23,17 @@ defmodule Fleet.InfoClass do
     trust_ledger: %{scope: :ship, min_billet: :executive_officer, sensitivity: :high},
     souls: %{scope: :ship, min_billet: :executive_officer, sensitivity: :moderate},
     agent_mind: %{scope: :ship, min_billet: :executive_officer, sensitivity: :critical},
-    audit_blackbox: %{scope: :chain, min_billet: :executive_officer, sensitivity: :critical}
+    audit_blackbox: %{scope: :chain, min_billet: :executive_officer, sensitivity: :critical},
+
+    # Working material rather than command information. These gate what an
+    # officer may *study*, and the floor is `:ensign` on purpose — an officer
+    # commissioned to do research or engineering that cannot read the corpus it
+    # was commissioned for is a compliance exercise, not a crew. The narrower
+    # control is the tool grant and, for anything leaving the ship, egress.
+    corpus: %{scope: :ship, min_billet: :ensign, sensitivity: :moderate},
+    world_knowledge: %{scope: :ship, min_billet: :ensign, sensitivity: :low},
+    external_research: %{scope: :ship, min_billet: :ensign, sensitivity: :moderate},
+    home_sensors: %{scope: :ship, min_billet: :ensign, sensitivity: :moderate}
   }
 
   @type t :: atom()

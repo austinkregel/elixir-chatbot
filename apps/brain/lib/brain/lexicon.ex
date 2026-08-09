@@ -11,65 +11,23 @@ defmodule Brain.Lexicon do
   - Sense drift detection
   """
 
-  alias Brain.ML.Lexicon, as: WordNet
   alias Brain.Lexicon.ConceptNet
+  alias Brain.Lexicon.Supersenses
   alias Brain.Lexicon.UserDefined
+  alias Brain.ML.Lexicon, as: WordNet
 
-  @lexfile_to_domain %{
-    0 => :adj_all,
-    1 => :adj_pert,
-    2 => :adv_all,
-    3 => :noun_tops,
-    4 => :noun_act,
-    5 => :noun_animal,
-    6 => :noun_artifact,
-    7 => :noun_attribute,
-    8 => :noun_body,
-    9 => :noun_cognition,
-    10 => :noun_communication,
-    11 => :noun_event,
-    12 => :noun_feeling,
-    13 => :noun_food,
-    14 => :noun_group,
-    15 => :noun_location,
-    16 => :noun_motive,
-    17 => :noun_object,
-    18 => :noun_person,
-    19 => :noun_phenomenon,
-    20 => :noun_plant,
-    21 => :noun_possession,
-    22 => :noun_process,
-    23 => :noun_quantity,
-    24 => :noun_relation,
-    25 => :noun_shape,
-    26 => :noun_state,
-    27 => :noun_substance,
-    28 => :noun_time,
-    29 => :verb_body,
-    30 => :verb_change,
-    31 => :verb_cognition,
-    32 => :verb_communication,
-    33 => :verb_competition,
-    34 => :verb_consumption,
-    35 => :verb_contact,
-    36 => :verb_creation,
-    37 => :verb_emotion,
-    38 => :verb_motion,
-    39 => :verb_perception,
-    40 => :verb_possession,
-    41 => :verb_social,
-    42 => :verb_stative,
-    43 => :verb_weather,
-    44 => :adj_ppl
-  }
-
-  @domain_atoms Map.values(@lexfile_to_domain) |> Enum.uniq()
-
+  # The supersense table itself lives in the dependency-free
+  # `Brain.Lexicon.Supersenses` leaf, so compile-time callers can reach it
+  # without a compile dependency on this module (which aliases a GenServer and
+  # sits inside a large runtime cycle). Runtime callers can use either entry
+  # point; these delegations keep this module's public API unchanged.
   @doc "Returns the list of all lexical domain atoms."
-  def domain_atoms, do: @domain_atoms
+  @spec domain_atoms() :: [Supersenses.domain()]
+  defdelegate domain_atoms(), to: Supersenses
 
   @doc "Returns the mapping from lexicographer file number to domain atom."
-  def lexfile_to_domain_map, do: @lexfile_to_domain
+  @spec lexfile_to_domain_map() :: %{non_neg_integer() => Supersenses.domain()}
+  defdelegate lexfile_to_domain_map(), to: Supersenses
 
   @doc """
   Looks up a word in all lexicon tiers.
@@ -282,7 +240,7 @@ defmodule Brain.Lexicon do
   def lexical_domain_for_synset(synset_id) when is_integer(synset_id) do
     case :ets.lookup(:lexicon_sense_keys, synset_id) do
       [{^synset_id, lex_filenum}] ->
-        Map.get(@lexfile_to_domain, lex_filenum, :unknown)
+        Map.get(Supersenses.lexfile_to_domain_map(), lex_filenum, :unknown)
 
       _ ->
         infer_domain_from_synset_id(synset_id)
