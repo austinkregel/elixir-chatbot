@@ -38,7 +38,11 @@ defmodule FourthWall.MixProject do
       # For JSON handling (templates, config)
       {:jason, "~> 1.2"},
       # Coverage - inherited from umbrella but also specified here for standalone runs
-      {:excoveralls, "~> 0.18", only: :test}
+      {:excoveralls, "~> 0.18", only: :test},
+      # Shared umbrella runtime config (config/runtime.exs) imports Dotenvy;
+      # listed here so this app's suite runs standalone without booting the
+      # whole umbrella (and Postgres). Same rationale as fleet.
+      {:dotenvy, "~> 1.1", only: [:dev, :test], runtime: false}
     ]
   end
 end

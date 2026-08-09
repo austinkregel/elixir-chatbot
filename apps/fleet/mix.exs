@@ -31,6 +31,10 @@ defmodule Fleet.MixProject do
       {:atlas, in_umbrella: true},
       {:brain, in_umbrella: true},
       {:world, in_umbrella: true},
+      # The holodeck (officer write-tier workspaces) lives in fourth_wall, a leaf
+      # app; fleet supervises it under Fleet.Application. No cycle — fourth_wall
+      # depends only on Jason.
+      {:fourth_wall, in_umbrella: true},
       {:jason, "~> 1.2"},
       # Shared umbrella runtime config (config/runtime.exs) imports Dotenvy;
       # fleet lists it so its suite can run standalone without booting the

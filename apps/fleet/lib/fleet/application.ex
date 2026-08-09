@@ -21,6 +21,12 @@ defmodule Fleet.Application do
     children = [
       {Registry, keys: :unique, name: Fleet.Registry},
       {Task.Supervisor, name: Fleet.TaskSupervisor},
+      # The holodeck — per-officer workspaces. It holds the Docker socket; the
+      # crew only ever proposes workspace tools. Supervised here (not in
+      # fourth_wall) so it runs exactly where the crew does and fourth_wall stays
+      # a stateless library. Disabled by default (backend :unavailable) until an
+      # operator configures the real backend.
+      FourthWall.Holodeck,
       Fleet.CrewSupervisor,
       # The ship's black box — periodically samples Fleet.Systems into a live ETS
       # ring + durable rows + a "systems:status" broadcast.

@@ -250,12 +250,28 @@ defmodule Fleet.ToolGateTest do
   # ── Registry invariants ───────────────────────────────────────────────────
 
   describe "the registry" do
-    # An officer can study, cite and report; it changes nothing. When the write
-    # tier lands this assertion is what forces a deliberate decision rather than
-    # a mutating tool arriving unnoticed alongside a read.
-    test "every registered tool is currently read-only" do
+    # The write tier (the holodeck workspace) is the deliberate exception the
+    # earlier read-only invariant was written to force. Every mutating tool must
+    # be a named member of that tier, and nothing is irreversible yet — so a new
+    # mutating or irreversible tool still cannot arrive unnoticed alongside a read.
+    @write_tier ~w(workspace.write shell.run)
+
+    test "the only mutating tools are the workspace write tier, and nothing is irreversible" do
       for {name, tool} <- Tool.registry() do
-        assert tool.effect == :read, "#{name} is #{tool.effect}, not :read"
+        case tool.effect do
+          :read ->
+            :ok
+
+          :mutate ->
+            assert name in @write_tier, "#{name} is :mutate but not a known write-tier tool"
+
+          other ->
+            flunk("#{name} has unexpected effect #{inspect(other)}")
+        end
+      end
+
+      for name <- @write_tier do
+        assert Tool.registry()[name].effect == :mutate, "#{name} was expected to be :mutate"
       end
     end
 
@@ -266,12 +282,27 @@ defmodule Fleet.ToolGateTest do
       end
     end
 
-    test "every read tool declares an info class, so clearance always runs" do
-      for {name, tool} <- Tool.registry() do
+    # The workspace read tools scope to the officer's OWN space, confined per-soul
+    # in the handler, so clearance does not apply and they carry no info_class.
+    # Every OTHER read tool reaches shared information and must be clearance-gated.
+    @self_scoped_reads ~w(workspace.read workspace.list)
+
+    test "every read tool over shared information declares an info class, so clearance runs" do
+      for {name, tool} <- Tool.registry(),
+          tool.effect == :read,
+          name not in @self_scoped_reads do
         assert tool.info_class != nil, "#{name} declares no info_class"
 
         assert Fleet.InfoClass.known?(tool.info_class),
                "#{name} declares unknown info_class #{inspect(tool.info_class)}"
+      end
+    end
+
+    test "the self-scoped workspace reads carry no info_class by design" do
+      for name <- @self_scoped_reads do
+        tool = Tool.registry()[name]
+        assert tool.effect == :read
+        assert tool.info_class == nil, "#{name} should self-confine, not run clearance"
       end
     end
 

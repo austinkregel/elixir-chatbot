@@ -213,6 +213,12 @@ config :atlas,
 # stamped with it (see Fleet.Ship). Override per instance for a fleet-of-ships.
 config :fleet, ship_id: System.get_env("SHIP_ID", "USS-DREAMCOM")
 
+# The holodeck (officer write-tier workspaces) is OFF by default: the write tier
+# has a real blast radius, so it runs no containers until an operator opts in.
+# `dev.exs` switches this to the Docker backend. When unavailable, the workspace
+# tools return `:holodeck_unavailable` honestly rather than faking a workspace.
+config :fourth_wall, :holodeck, backend: FourthWall.Holodeck.Backend.Unavailable
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"
