@@ -98,12 +98,17 @@ defmodule Brain.MemoryStore do
       case File.read(file_path) do
         {:ok, content} ->
           case Jason.decode(content) do
-            {:ok, json} -> json
-            {:error, _} -> []
+            {:ok, json} when is_list(json) -> json
+            {:ok, _} -> raise "Invalid memory file #{file_path}: expected a JSON array"
+            {:error, reason} -> raise "Corrupt memory file #{file_path}: #{inspect(reason)}"
           end
 
-        {:error, _} ->
+        # No memory file yet is a verified legitimate cold start for a persona.
+        {:error, :enoent} ->
           []
+
+        {:error, reason} ->
+          raise "Cannot read memory file #{file_path}: #{inspect(reason)}"
       end
 
     Logger.debug("Loaded memory", %{persona_name: persona_name, entries: length(memory)})
@@ -191,12 +196,16 @@ defmodule Brain.MemoryStore do
     case File.read(file_path) do
       {:ok, content} ->
         case Jason.decode(content) do
-          {:ok, json} -> json
-          {:error, _} -> []
+          {:ok, json} when is_list(json) -> json
+          {:ok, _} -> raise "Invalid memory file #{file_path}: expected a JSON array"
+          {:error, reason} -> raise "Corrupt memory file #{file_path}: #{inspect(reason)}"
         end
 
-      {:error, _} ->
+      {:error, :enoent} ->
         []
+
+      {:error, reason} ->
+        raise "Cannot read memory file #{file_path}: #{inspect(reason)}"
     end
   end
 
