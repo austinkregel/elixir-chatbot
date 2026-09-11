@@ -116,12 +116,21 @@ defmodule Brain.Response.TransitionModel do
     case File.read(path) do
       {:ok, content} ->
         case Jason.decode(content) do
-          {:ok, %{"bigrams" => bigrams}} when is_map(bigrams) -> bigrams
-          _ -> %{}
+          {:ok, %{"bigrams" => bigrams}} when is_map(bigrams) ->
+            bigrams
+
+          {:ok, _} ->
+            raise "Invalid #{path}: expected a JSON object with a \"bigrams\" map"
+
+          {:error, reason} ->
+            raise "Invalid #{path}: #{inspect(reason)}"
         end
 
-      {:error, _} ->
-        %{}
+      {:error, reason} ->
+        raise """
+        TransitionModel: cannot read #{path}: #{inspect(reason)}
+        Rebuild the lattice artifacts with `mix gen_lattice_data`.
+        """
     end
   end
 
