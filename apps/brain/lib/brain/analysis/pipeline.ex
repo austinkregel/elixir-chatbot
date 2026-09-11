@@ -1370,12 +1370,7 @@ defmodule Brain.Analysis.Pipeline do
 
   @entity_scoring_weights_path Path.join(:code.priv_dir(:brain), "analysis/entity_scoring_weights.json")
   @external_resource @entity_scoring_weights_path
-  @entity_scoring_weights (
-    case File.read(@entity_scoring_weights_path) do
-      {:ok, json} -> Jason.decode!(json)
-      _ -> %{}
-    end
-  )
+  @entity_scoring_weights @entity_scoring_weights_path |> File.read!() |> Jason.decode!()
 
   defp best_intent_by_signals(speech_act, profile, lattice, entities) do
     profile_domain = profile_domain_string(profile)
