@@ -37,7 +37,7 @@ defmodule Brain.Response.LatticeScorer do
   Returns `[{%Fragment{}, score}]` sorted by score descending.
   """
   def score_fragments(fragments, input_fv, desired_tone, opts \\ []) do
-    weights = Keyword.get(opts, :weights) || load_weights_or_nil()
+    weights = Keyword.get(opts, :weights) || load_weights!()
     intent = Keyword.get(opts, :intent)
     config = Keyword.get(opts, :lattice_config) || load_lattice_config()
 
@@ -134,26 +134,32 @@ defmodule Brain.Response.LatticeScorer do
     List.duplicate(0.5, @tone_dim)
   end
 
-  @doc "Loads scorer weights from disk if available."
-  def load_weights do
-    case load_weights_or_nil() do
-      nil -> {:error, :not_found}
-      w -> {:ok, w}
-    end
-  end
-
-  defp load_weights_or_nil do
+  # scorer_weights.json is a required build artifact of `mix gen_lattice_data`.
+  # A missing or malformed file used to yield nil, which silently downgraded the
+  # weighted feature similarity to a plain unweighted cosine -- the scorer kept
+  # returning numbers that looked fine. The public load_weights/0 wrapper had no
+  # callers and is gone.
+  defp load_weights! do
     path = brain_priv(@weights_path)
 
     case File.read(path) do
       {:ok, content} ->
         case Jason.decode(content) do
-          {:ok, %{"weights" => w}} when is_list(w) -> w
-          _ -> nil
+          {:ok, %{"weights" => w}} when is_list(w) ->
+            w
+
+          {:ok, _} ->
+            raise "Invalid #{path}: expected a JSON object with a \"weights\" list"
+
+          {:error, reason} ->
+            raise "Invalid #{path}: #{inspect(reason)}"
         end
 
-      {:error, _} ->
-        nil
+      {:error, reason} ->
+        raise """
+        LatticeScorer: cannot read #{path}: #{inspect(reason)}
+        Rebuild the lattice artifacts with `mix gen_lattice_data`.
+        """
     end
   end
 
