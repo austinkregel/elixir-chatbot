@@ -642,17 +642,26 @@ defmodule Brain.Response.TemplateStore do
   defp do_sync_to_file(state) do
     path = templates_file_path()
 
+    # An existing templates.json that cannot be read or parsed must never
+    # degrade to %{}: this map is the merge base for the file we are about to
+    # rewrite, so an empty default would silently drop every stored template.
     existing =
       if File.exists?(path) do
         case File.read(path) do
           {:ok, content} ->
             case Jason.decode(content) do
-              {:ok, data} -> data
-              _ -> %{}
+              {:ok, data} when is_map(data) ->
+                data
+
+              {:ok, _} ->
+                raise "Invalid #{path}: expected a JSON object; refusing to overwrite it"
+
+              {:error, reason} ->
+                raise "Invalid #{path}: #{inspect(reason)}; refusing to overwrite it"
             end
 
-          _ ->
-            %{}
+          {:error, reason} ->
+            raise "TemplateStore: cannot read #{path}: #{inspect(reason)}; refusing to overwrite it"
         end
       else
         %{}
