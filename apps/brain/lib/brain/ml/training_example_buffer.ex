@@ -191,8 +191,8 @@ defmodule Brain.ML.TrainingExampleBuffer do
   end
 
   defp run_incremental_updates(examples) do
-    Enum.reduce(@incremental_targets, %{}, fn classifier_name, acc ->
-      Map.put(acc, classifier_name, safe_incremental_update(classifier_name, examples))
+    Map.new(@incremental_targets, fn classifier_name ->
+      {classifier_name, safe_incremental_update(classifier_name, examples)}
     end)
   end
 

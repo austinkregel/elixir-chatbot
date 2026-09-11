@@ -28,9 +28,69 @@ defmodule Brain.Code.Tokenizer do
 
   # Operator characters by language
   @operators %{
-    common: ["+", "-", "*", "/", "%", "=", "<", ">", "!", "&", "|", "^", "~", "?", ":", ".", ",", ";", "(", ")", "[", "]", "{", "}"],
-    elixir: ["|>", "->", "<-", "::", "@", "\\", "++", "--", "..", "<>", "&&", "||", "!=", "==", "===", "!==", "<=", ">=", "=~"],
-    python: ["**", "//", "@", ":=", "->", "...", "//=", "**=", "@=", "<<=", ">>=", "&=", "^=", "|="],
+    common: [
+      "+",
+      "-",
+      "*",
+      "/",
+      "%",
+      "=",
+      "<",
+      ">",
+      "!",
+      "&",
+      "|",
+      "^",
+      "~",
+      "?",
+      ":",
+      ".",
+      ",",
+      ";",
+      "(",
+      ")",
+      "[",
+      "]",
+      "{",
+      "}"
+    ],
+    elixir: [
+      "|>",
+      "->",
+      "<-",
+      "::",
+      "@",
+      "\\",
+      "++",
+      "--",
+      "..",
+      "<>",
+      "&&",
+      "||",
+      "!=",
+      "==",
+      "===",
+      "!==",
+      "<=",
+      ">=",
+      "=~"
+    ],
+    python: [
+      "**",
+      "//",
+      "@",
+      ":=",
+      "->",
+      "...",
+      "//=",
+      "**=",
+      "@=",
+      "<<=",
+      ">>=",
+      "&=",
+      "^=",
+      "|="
+    ],
     ruby: ["<<", ">>", "<=>", "=~", "!~", "**", "&&=", "||=", "**="],
     go: [":=", "<-", "...", "&^", "&^="],
     java: ["++", "--", "<<", ">>", ">>>"],
@@ -126,41 +186,90 @@ defmodule Brain.Code.Tokenizer do
       is_line_comment_start?(source, language) ->
         {comment_text, rest} = consume_line_comment(source)
         token = make_token(:line_comment, comment_text, pos, line, col)
-        do_tokenize(rest, language, pos + String.length(comment_text), line, col + String.length(comment_text), [token | tokens])
+
+        do_tokenize(
+          rest,
+          language,
+          pos + String.length(comment_text),
+          line,
+          col + String.length(comment_text),
+          [token | tokens]
+        )
 
       # Block comment
       is_block_comment_start?(source, language) ->
         {comment_text, rest, lines_consumed} = consume_block_comment(source, language)
         token = make_token(:block_comment, comment_text, pos, line, col)
         new_line = line + lines_consumed
-        do_tokenize(rest, language, pos + String.length(comment_text), new_line, col + String.length(comment_text), [token | tokens])
+
+        do_tokenize(
+          rest,
+          language,
+          pos + String.length(comment_text),
+          new_line,
+          col + String.length(comment_text),
+          [token | tokens]
+        )
 
       # String literal
       is_string_start?(source, language) ->
         {string_text, rest, lines_consumed} = consume_string(source, language)
         token = make_token(:string, string_text, pos, line, col)
         new_line = line + lines_consumed
-        do_tokenize(rest, language, pos + String.length(string_text), new_line, col + String.length(string_text), [token | tokens])
+
+        do_tokenize(
+          rest,
+          language,
+          pos + String.length(string_text),
+          new_line,
+          col + String.length(string_text),
+          [token | tokens]
+        )
 
       # Number
       is_number_start?(source) ->
         {num_text, rest} = consume_number(source)
         token = make_token(:number, num_text, pos, line, col)
-        do_tokenize(rest, language, pos + String.length(num_text), line, col + String.length(num_text), [token | tokens])
+
+        do_tokenize(
+          rest,
+          language,
+          pos + String.length(num_text),
+          line,
+          col + String.length(num_text),
+          [token | tokens]
+        )
 
       # Identifier or keyword
       is_identifier_start?(source, language) ->
         {id_text, rest} = consume_identifier(source, language)
         type = if keyword?(id_text, language), do: :keyword, else: :identifier
         token = make_token(type, id_text, pos, line, col)
-        do_tokenize(rest, language, pos + String.length(id_text), line, col + String.length(id_text), [token | tokens])
+
+        do_tokenize(
+          rest,
+          language,
+          pos + String.length(id_text),
+          line,
+          col + String.length(id_text),
+          [token | tokens]
+        )
 
       # Operator or punctuation
       true ->
         {op_text, rest} = consume_operator(source, language)
+
         if op_text != "" do
           token = make_token(:operator, op_text, pos, line, col)
-          do_tokenize(rest, language, pos + String.length(op_text), line, col + String.length(op_text), [token | tokens])
+
+          do_tokenize(
+            rest,
+            language,
+            pos + String.length(op_text),
+            line,
+            col + String.length(op_text),
+            [token | tokens]
+          )
         else
           # Skip unknown character
           rest = String.slice(source, 1..-1//1)
@@ -198,7 +307,8 @@ defmodule Brain.Code.Tokenizer do
     case language do
       :python -> String.starts_with?(source, "\"\"\"") or String.starts_with?(source, "'''")
       :ruby -> String.starts_with?(source, "=begin")
-      :elixir -> false  # Elixir doesn't have block comments
+      # Elixir doesn't have block comments
+      :elixir -> false
       _ -> String.starts_with?(source, "/*")
     end
   end
@@ -206,34 +316,42 @@ defmodule Brain.Code.Tokenizer do
   defp consume_line_comment(source) do
     lines = String.split(source, "\n", parts: 2)
     comment = List.first(lines) || ""
-    rest = if length(lines) > 1, do: "\n" <> Enum.at(lines, 1), else: ""
+
+    rest =
+      case lines do
+        [_, second | _] -> "\n" <> second
+        _ -> ""
+      end
+
     {comment, rest}
   end
 
   defp consume_block_comment(source, language) do
-    end_marker = case language do
-      :python -> if String.starts_with?(source, "\"\"\""), do: "\"\"\"", else: "'''"
-      :ruby -> "=end"
-      _ -> "*/"
-    end
+    end_marker =
+      case language do
+        :python -> if String.starts_with?(source, "\"\"\""), do: "\"\"\"", else: "'''"
+        :ruby -> "=end"
+        _ -> "*/"
+      end
 
-    start_marker = case language do
-      :python -> if String.starts_with?(source, "\"\"\""), do: "\"\"\"", else: "'''"
-      :ruby -> "=begin"
-      _ -> "/*"
-    end
+    start_marker =
+      case language do
+        :python -> if String.starts_with?(source, "\"\"\""), do: "\"\"\"", else: "'''"
+        :ruby -> "=begin"
+        _ -> "/*"
+      end
 
     source_after_start = String.slice(source, String.length(start_marker)..-1//1)
 
     case String.split(source_after_start, end_marker, parts: 2) do
       [content, rest] ->
         full_comment = start_marker <> content <> end_marker
-        lines_consumed = String.graphemes(full_comment) |> Enum.count(&(&1 == "\n"))
+        lines_consumed = String.codepoints(full_comment) |> Enum.count(&(&1 == "\n"))
         {full_comment, rest, lines_consumed}
 
       [_] ->
         # Unclosed comment - consume rest
-        lines_consumed = String.graphemes(source) |> Enum.count(&(&1 == "\n"))
+        lines_consumed = String.codepoints(source) |> Enum.count(&(&1 == "\n"))
         {source, "", lines_consumed}
     end
   end
@@ -314,11 +432,11 @@ defmodule Brain.Code.Tokenizer do
     case find_closing_quote(rest, quote, false) do
       {:found, content, remaining} ->
         full_string = quote <> content <> quote
-        lines = String.graphemes(full_string) |> Enum.count(&(&1 == "\n"))
+        lines = String.codepoints(full_string) |> Enum.count(&(&1 == "\n"))
         {full_string, remaining, lines}
 
       :not_found ->
-        lines = String.graphemes(source) |> Enum.count(&(&1 == "\n"))
+        lines = String.codepoints(source) |> Enum.count(&(&1 == "\n"))
         {source, "", lines}
     end
   end
@@ -365,8 +483,10 @@ defmodule Brain.Code.Tokenizer do
 
   defp is_number_start?(source) do
     first = String.first(source)
-    first != nil and (first in ~w(0 1 2 3 4 5 6 7 8 9) or
-      (first == "." and second_is_digit?(source)))
+
+    first != nil and
+      (first in ~w(0 1 2 3 4 5 6 7 8 9) or
+         (first == "." and second_is_digit?(source)))
   end
 
   defp second_is_digit?(source) do
@@ -398,15 +518,16 @@ defmodule Brain.Code.Tokenizer do
   end
 
   defp consume_number_digits(source, prefix) do
-    valid_chars = case prefix do
-      "0x" <> _ -> ~w(0 1 2 3 4 5 6 7 8 9 a b c d e f A B C D E F _)
-      "0X" <> _ -> ~w(0 1 2 3 4 5 6 7 8 9 a b c d e f A B C D E F _)
-      "0b" <> _ -> ~w(0 1 _)
-      "0B" <> _ -> ~w(0 1 _)
-      "0o" <> _ -> ~w(0 1 2 3 4 5 6 7 _)
-      "0O" <> _ -> ~w(0 1 2 3 4 5 6 7 _)
-      _ -> ~w(0 1 2 3 4 5 6 7 8 9 . e E + - _)
-    end
+    valid_chars =
+      case prefix do
+        "0x" <> _ -> ~w(0 1 2 3 4 5 6 7 8 9 a b c d e f A B C D E F _)
+        "0X" <> _ -> ~w(0 1 2 3 4 5 6 7 8 9 a b c d e f A B C D E F _)
+        "0b" <> _ -> ~w(0 1 _)
+        "0B" <> _ -> ~w(0 1 _)
+        "0o" <> _ -> ~w(0 1 2 3 4 5 6 7 _)
+        "0O" <> _ -> ~w(0 1 2 3 4 5 6 7 _)
+        _ -> ~w(0 1 2 3 4 5 6 7 8 9 . e E + - _)
+      end
 
     consume_while(source, valid_chars)
   end
@@ -429,16 +550,17 @@ defmodule Brain.Code.Tokenizer do
   end
 
   defp consume_identifier(source, language) do
-    valid_chars = if language == :elixir do
-      # Elixir allows ? and ! at end of identifiers
-      ~w(a b c d e f g h i j k l m n o p q r s t u v w x y z
+    valid_chars =
+      if language == :elixir do
+        # Elixir allows ? and ! at end of identifiers
+        ~w(a b c d e f g h i j k l m n o p q r s t u v w x y z
          A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
          0 1 2 3 4 5 6 7 8 9 _ ? !)
-    else
-      ~w(a b c d e f g h i j k l m n o p q r s t u v w x y z
+      else
+        ~w(a b c d e f g h i j k l m n o p q r s t u v w x y z
          A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
          0 1 2 3 4 5 6 7 8 9 _ $)
-    end
+      end
 
     consume_while(source, valid_chars)
   end
@@ -451,12 +573,16 @@ defmodule Brain.Code.Tokenizer do
     # Try multi-char operators first, then single char
     lang_ops = Map.get(@operators, language, [])
     common_ops = Map.get(@operators, :common, [])
-    all_ops = (lang_ops ++ common_ops)
-      |> Enum.sort_by(&(-String.length(&1)))  # Longest first
 
-    found = Enum.find(all_ops, fn op ->
-      String.starts_with?(source, op)
-    end)
+    all_ops =
+      (lang_ops ++ common_ops)
+      # Longest first
+      |> Enum.sort_by(&(-String.length(&1)))
+
+    found =
+      Enum.find(all_ops, fn op ->
+        String.starts_with?(source, op)
+      end)
 
     if found do
       {found, String.slice(source, String.length(found)..-1//1)}
@@ -470,15 +596,24 @@ defmodule Brain.Code.Tokenizer do
   # ============================================================================
 
   @keywords_by_language %{
-    elixir: ~w(def defp defmodule do end fn case cond if else unless when with for receive after try catch rescue raise throw exit spawn import require use alias quote unquote and or not in true false nil),
-    python: ~w(False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield match case),
-    ruby: ~w(BEGIN END alias and begin break case class def defined? do else elsif end ensure false for if in module next nil not or redo rescue retry return self super then true undef unless until when while yield),
-    go: ~w(break case chan const continue default defer else fallthrough for func go goto if import interface map package range return select struct switch type var),
-    java: ~w(abstract assert boolean break byte case catch char class const continue default do double else enum extends final finally float for goto if implements import instanceof int interface long native new package private protected public return short static strictfp super switch synchronized this throw throws transient try void volatile while true false null var yield record sealed permits),
-    c: ~w(auto break case char const continue default do double else enum extern float for goto if inline int long register restrict return short signed sizeof static struct switch typedef union unsigned void volatile while),
-    cpp: ~w(alignas alignof and and_eq asm auto bitand bitor bool break case catch char char8_t char16_t char32_t class compl concept const consteval constexpr constinit const_cast continue co_await co_return co_yield decltype default delete do double dynamic_cast else enum explicit export extern false float for friend goto if inline int long mutable namespace new noexcept not not_eq nullptr operator or or_eq private protected public register reinterpret_cast requires return short signed sizeof static static_assert static_cast struct switch template this thread_local throw true try typedef typeid typename union unsigned using virtual void volatile wchar_t while xor xor_eq override final),
-    csharp: ~w(abstract as base bool break byte case catch char checked class const continue decimal default delegate do double else enum event explicit extern false finally fixed float for foreach goto if implicit in int interface internal is lock long namespace new null object operator out override params private protected public readonly ref return sbyte sealed short sizeof stackalloc static string struct switch this throw true try typeof uint ulong unchecked unsafe ushort using virtual void volatile while add alias ascending async await by descending dynamic equals from get global group into join let nameof on orderby partial remove select set value var when where with yield record init required file scoped),
-    php: ~w(abstract and array as break callable case catch class clone const continue declare default die do echo else elseif empty enddeclare endfor endforeach endif endswitch endwhile eval exit extends final finally fn for foreach function global goto if implements include include_once instanceof insteadof interface isset list match namespace new or print private protected public readonly require require_once return static switch throw trait try unset use var while xor yield true false null self parent enum)
+    elixir:
+      ~w(def defp defmodule do end fn case cond if else unless when with for receive after try catch rescue raise throw exit spawn import require use alias quote unquote and or not in true false nil),
+    python:
+      ~w(False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield match case),
+    ruby:
+      ~w(BEGIN END alias and begin break case class def defined? do else elsif end ensure false for if in module next nil not or redo rescue retry return self super then true undef unless until when while yield),
+    go:
+      ~w(break case chan const continue default defer else fallthrough for func go goto if import interface map package range return select struct switch type var),
+    java:
+      ~w(abstract assert boolean break byte case catch char class const continue default do double else enum extends final finally float for goto if implements import instanceof int interface long native new package private protected public return short static strictfp super switch synchronized this throw throws transient try void volatile while true false null var yield record sealed permits),
+    c:
+      ~w(auto break case char const continue default do double else enum extern float for goto if inline int long register restrict return short signed sizeof static struct switch typedef union unsigned void volatile while),
+    cpp:
+      ~w(alignas alignof and and_eq asm auto bitand bitor bool break case catch char char8_t char16_t char32_t class compl concept const consteval constexpr constinit const_cast continue co_await co_return co_yield decltype default delete do double dynamic_cast else enum explicit export extern false float for friend goto if inline int long mutable namespace new noexcept not not_eq nullptr operator or or_eq private protected public register reinterpret_cast requires return short signed sizeof static static_assert static_cast struct switch template this thread_local throw true try typedef typeid typename union unsigned using virtual void volatile wchar_t while xor xor_eq override final),
+    csharp:
+      ~w(abstract as base bool break byte case catch char checked class const continue decimal default delegate do double else enum event explicit extern false finally fixed float for foreach goto if implicit in int interface internal is lock long namespace new null object operator out override params private protected public readonly ref return sbyte sealed short sizeof stackalloc static string struct switch this throw true try typeof uint ulong unchecked unsafe ushort using virtual void volatile while add alias ascending async await by descending dynamic equals from get global group into join let nameof on orderby partial remove select set value var when where with yield record init required file scoped),
+    php:
+      ~w(abstract and array as break callable case catch class clone const continue declare default die do echo else elseif empty enddeclare endfor endforeach endif endswitch endwhile eval exit extends final finally fn for foreach function global goto if implements include include_once instanceof insteadof interface isset list match namespace new or print private protected public readonly require require_once return static switch throw trait try unset use var while xor yield true false null self parent enum)
   }
 
   defp keyword?(text, language) do

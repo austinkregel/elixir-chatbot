@@ -1,0 +1,376 @@
+{
+  "accumulator": {
+    "combined_confidence": 0.9667539818286291,
+    "conflict_measure": 0.5672301347253186,
+    "dominant_signal": [
+      "slot_fill",
+      true,
+      0.999
+    ],
+    "effective_confidence": 0.701997057832397,
+    "entity_familiarity": 0.001,
+    "should_hedge": true
+  },
+  "all_analyses": [
+    {
+      "chunk_index": 0,
+      "confidence": 0.702,
+      "entities": [
+        {
+          "confidence": 0.65,
+          "entity_type": "given-name",
+          "value": "A"
+        }
+      ],
+      "intent": "weather.statement",
+      "response_strategy": "hedged_response",
+      "speech_act": {
+        "category": "assertive",
+        "confidence": 0.677024138473434,
+        "intent_confidence": 0.40539770259582414,
+        "is_imperative": false,
+        "is_question": false,
+        "sub_type": "statement"
+      },
+      "text": "Task A."
+    }
+  ],
+  "analysis": {
+    "all_strategies": [
+      "hedged_response"
+    ],
+    "chunk_count": 1,
+    "confidence": 0.702,
+    "discourse": {
+      "addressee": "bot",
+      "confidence": 1.0,
+      "direct_address_detected": false,
+      "participants": [
+        "user",
+        "bot"
+      ]
+    },
+    "entities": [
+      {
+        "confidence": 0.65,
+        "disambiguation_confidence": 0.0,
+        "entity": "person",
+        "entity_type": "given-name",
+        "graph_known": false,
+        "match": "A",
+        "source": "pos_tagger_propn",
+        "value": "A"
+      }
+    ],
+    "epistemic_status": "unchecked",
+    "intent": "weather.statement",
+    "pos_tags": [
+      [
+        "Task",
+        "NOUN"
+      ],
+      [
+        "A",
+        "PROPN"
+      ],
+      [
+        ".",
+        "NOUN"
+      ]
+    ],
+    "raw_input": "Task A.",
+    "response_strategy": "hedged_response",
+    "sentiment": {
+      "confidence": 0.019098528490674824,
+      "label": "neutral"
+    },
+    "slots": {
+      "filled": {
+        "given-name": {
+          "confidence": 0.65,
+          "source": "explicit",
+          "value": "A"
+        }
+      }
+    },
+    "speech_act": {
+      "category": "assertive",
+      "confidence": 0.677024138473434,
+      "intent_confidence": 0.40539770259582414,
+      "is_imperative": false,
+      "is_question": false,
+      "sub_type": "statement"
+    },
+    "text": "Task A."
+  },
+  "enrichment": {
+    "enrichment_status": "not_configured",
+    "entity_familiarity": 0.0,
+    "graph_enrichment": {
+      "entity_context": [
+        {
+          "entity": {
+            "confidence": 0.65,
+            "disambiguation_confidence": 0.0,
+            "entity": "person",
+            "entity_type": "given-name",
+            "graph_known": false,
+            "match": "A",
+            "source": "pos_tagger_propn",
+            "value": "A"
+          }
+        }
+      ]
+    }
+  },
+  "memory": {
+    "similar_episodes": [
+      [
+        {
+          "action": "order",
+          "id": "7a233c49-97c5-4ccf-b905-f4ac4ed75380",
+          "outcome": "Task A.",
+          "state": "communication",
+          "tags": [
+            "communication",
+            "from:t-6275",
+            "order"
+          ],
+          "timestamp": 1783667601299
+        },
+        0.0
+      ]
+    ]
+  },
+  "overall_strategy": "hedged_response",
+  "primary_analysis": {
+    "accumulated_context": {
+      "combined_confidence": 0.9667539818286291,
+      "conflict_measure": 0.5672301347253186,
+      "dominant_signal": [
+        "slot_fill",
+        true,
+        0.999
+      ],
+      "entity_familiarity": 0.001,
+      "signals": [
+        [
+          "intent",
+          "knowledge.capital",
+          0.40539770259582414
+        ],
+        [
+          "entity_familiarity",
+          false,
+          0.001
+        ],
+        [
+          "sentiment",
+          "neutral",
+          0.019098528490674824
+        ],
+        [
+          "slot_fill",
+          true,
+          0.999
+        ],
+        [
+          "speech_act",
+          "assertive",
+          0.677024138473434
+        ],
+        [
+          "discourse",
+          "bot",
+          0.999
+        ]
+      ]
+    },
+    "chunk_index": 0,
+    "confidence": 0.702,
+    "discourse": {
+      "addressee": "bot",
+      "confidence": 1.0,
+      "direct_address_detected": false,
+      "participants": [
+        "user",
+        "bot"
+      ]
+    },
+    "entities": [
+      {
+        "confidence": 0.65,
+        "disambiguation_confidence": 0.0,
+        "entity": "person",
+        "entity_type": "given-name",
+        "graph_known": false,
+        "match": "A",
+        "source": "pos_tagger_propn",
+        "value": "A"
+      }
+    ],
+    "epistemic_status": "unchecked",
+    "intent": "weather.statement",
+    "intent_domain": "meta",
+    "pass": 2,
+    "pos_tags": [
+      [
+        "Task",
+        "NOUN"
+      ],
+      [
+        "A",
+        "PROPN"
+      ],
+      [
+        ".",
+        "NOUN"
+      ]
+    ],
+    "profile": {
+      "addressee": "bot",
+      "aspect": "progressive",
+      "certainty": "hedged",
+      "confidence": 0.702,
+      "derived_label": "weather.statement",
+      "domain": "weather",
+      "engagement_level": "urgent_demand",
+      "feature_provenance": {
+        "addressee": "analysis",
+        "aspect": "micro_classifier",
+        "certainty": "micro_classifier",
+        "confidence": "analysis",
+        "domain": "micro_classifier",
+        "modality": "composed",
+        "novelty_score": "analysis",
+        "polarity": "composed",
+        "sentiment_alignment": "composed",
+        "slot_completeness": "analysis",
+        "speech_act_category": "analysis",
+        "speech_act_subtype": "analysis",
+        "target": "composed",
+        "tense": "micro_classifier",
+        "urgency": "micro_classifier"
+      },
+      "modality": "declarative",
+      "novelty_score": 0.0,
+      "polarity": "affirmative",
+      "response_posture": "hedged",
+      "self_disclosure_level": "none",
+      "sentiment_alignment": "neutral",
+      "slot_completeness": 1.0,
+      "speech_act_category": "assertive",
+      "speech_act_subtype": "statement",
+      "target": "agent",
+      "temporal_framing": "ongoing",
+      "tense": "present",
+      "urgency": "high"
+    },
+    "response_strategy": "hedged_response",
+    "sentiment": {
+      "confidence": 0.019098528490674824,
+      "label": "neutral"
+    },
+    "slots": {
+      "all_required_filled": true,
+      "filled_slots": {
+        "given-name": {
+          "confidence": 0.65,
+          "source": "explicit",
+          "value": "A"
+        }
+      },
+      "schema_name": "unknown"
+    },
+    "speech_act": {
+      "category": "assertive",
+      "confidence": 0.677024138473434,
+      "indicators": [
+        "intent:status.diagnostic"
+      ],
+      "intent_confidence": 0.40539770259582414,
+      "is_imperative": false,
+      "is_question": false,
+      "raw_analyses": {
+        "intent": {
+          "category": "assertive",
+          "confidence": 0.40539770259582414,
+          "intent": "status.diagnostic",
+          "margin": 0.2545558090282808,
+          "second_score": 0.15084189356754335,
+          "source": "feature_vector",
+          "sub_type": "statement",
+          "top_k": [
+            {
+              "intent": "status.diagnostic",
+              "score": 0.40539770259582414
+            },
+            {
+              "intent": "calendar.cancel",
+              "score": 0.15084189356754335
+            },
+            {
+              "intent": "smalltalk.dialog.hug",
+              "score": 0.14860677543195752
+            },
+            {
+              "intent": "smalltalk.agent.be_clever",
+              "score": 0.14762049854525555
+            },
+            {
+              "intent": "weather.outfit",
+              "score": 0.14753312985941938
+            }
+          ]
+        },
+        "keyword": {
+          "confidence": 0.0,
+          "source": "keyword"
+        },
+        "memory": {
+          "confidence": 0.0,
+          "similar_count": 0,
+          "source": "memory"
+        },
+        "original_text": "Task A.",
+        "pragmatic": {
+          "expressive_score": 0.0,
+          "first_person_subject": false,
+          "has_acknowledgment": false,
+          "has_commissive": false,
+          "has_future": false,
+          "has_hedging": false,
+          "has_offer": false,
+          "has_please": false,
+          "has_thanks": false,
+          "has_urgency": false,
+          "is_backchannel": false,
+          "is_compliment": false,
+          "is_short_utterance": true,
+          "is_very_short": false,
+          "source": "pragmatic"
+        },
+        "structural": {
+          "category": "assertive",
+          "confidence": 0.7,
+          "has_modal": false,
+          "is_continuation": false,
+          "is_declarative": true,
+          "is_exclamatory": false,
+          "is_imperative": false,
+          "is_question": false,
+          "source": "structural",
+          "sub_type": "statement"
+        }
+      },
+      "sub_type": "statement"
+    },
+    "text": "Task A."
+  },
+  "raw_input": "Task A.",
+  "soul": {
+    "constitution": "Serve.",
+    "id": "t-6531",
+    "name": "T"
+  }
+}

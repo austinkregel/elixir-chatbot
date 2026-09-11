@@ -115,35 +115,35 @@ defmodule Brain.Epistemic.BeliefStoreTest do
     test "queries by subject" do
       {:ok, beliefs} = BeliefStore.query_beliefs(subject: :user)
 
-      assert length(beliefs) == 3
+      assert match?([_, _, _], beliefs)
       assert Enum.all?(beliefs, &(&1.subject == :user))
     end
 
     test "queries by predicate" do
       {:ok, beliefs} = BeliefStore.query_beliefs(predicate: :location)
 
-      assert length(beliefs) == 2
+      assert match?([_, _], beliefs)
       assert Enum.all?(beliefs, &(&1.predicate == :location))
     end
 
     test "queries by user_id" do
       {:ok, beliefs} = BeliefStore.query_beliefs(user_id: "user1")
 
-      assert length(beliefs) == 2
+      assert match?([_, _], beliefs)
       assert Enum.all?(beliefs, &(&1.user_id == "user1"))
     end
 
     test "queries by min_confidence" do
       {:ok, beliefs} = BeliefStore.query_beliefs(min_confidence: 0.8)
 
-      assert length(beliefs) == 2
+      assert match?([_, _], beliefs)
       assert Enum.all?(beliefs, &(&1.confidence >= 0.8))
     end
 
     test "queries by source" do
       {:ok, beliefs} = BeliefStore.query_beliefs(source: :explicit)
 
-      assert length(beliefs) == 2
+      assert match?([_, _], beliefs)
       assert Enum.all?(beliefs, &(&1.source == :explicit))
     end
 
@@ -155,7 +155,7 @@ defmodule Brain.Epistemic.BeliefStoreTest do
           min_confidence: 0.85
         )
 
-      assert length(beliefs) == 2
+      assert match?([_, _], beliefs)
     end
   end
 
@@ -237,7 +237,7 @@ defmodule Brain.Epistemic.BeliefStoreTest do
 
       {:ok, bob_beliefs} = BeliefStore.get_beliefs_for_user("bob")
 
-      assert length(bob_beliefs) == 2
+      assert match?([_, _], bob_beliefs)
       assert Enum.all?(bob_beliefs, &(&1.user_id == "bob"))
     end
   end

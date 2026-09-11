@@ -106,8 +106,7 @@ defmodule World.TypeInferrer do
     patterns =
       try do
         :ets.tab2list(@ets_patterns)
-        |> Enum.map(&serialize_ets_entry/1)
-        |> Enum.into(%{})
+        |> Map.new(&serialize_ets_entry/1)
       rescue
         ArgumentError -> %{}
       end
@@ -115,8 +114,7 @@ defmodule World.TypeInferrer do
     cooccurrences =
       try do
         :ets.tab2list(@ets_cooccurrence)
-        |> Enum.map(&serialize_ets_entry/1)
-        |> Enum.into(%{})
+        |> Map.new(&serialize_ets_entry/1)
       rescue
         ArgumentError -> %{}
       end
@@ -151,13 +149,18 @@ defmodule World.TypeInferrer do
   @doc "Imports previously exported learned data.\n"
   def import_learned_data(data) when is_map(data) do
     create_tables()
-    patterns = Map.get(data, :patterns) || Map.get(data, "patterns", %{})
+
+    # Normalize once at the boundary: callers pass either atom keys
+    # (export_learned_data/0, persistence) or string keys (JSON round-trips).
+    data = Map.new(data, fn {k, v} -> {to_string(k), v} end)
+
+    patterns = Map.get(data, "patterns", %{})
 
     Enum.each(patterns, fn {key, pattern_data} ->
       :ets.insert(@ets_patterns, {deserialize_key(key), pattern_data})
     end)
 
-    cooccurrences = Map.get(data, :cooccurrences) || Map.get(data, "cooccurrences", %{})
+    cooccurrences = Map.get(data, "cooccurrences", %{})
 
     Enum.each(cooccurrences, fn {key, cooc_data} ->
       :ets.insert(@ets_cooccurrence, {deserialize_key(key), cooc_data})

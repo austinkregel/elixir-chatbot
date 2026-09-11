@@ -186,7 +186,10 @@ defmodule Brain.Analysis.Pipeline do
     bot_names = Keyword.get(opts, :bot_names, [])
     history = Keyword.get(opts, :conversation_history, [])
     t0 = System.monotonic_time(:millisecond)
-    debug_pass1? = Keyword.get(opts, :debug_timing, false) or Application.get_env(:brain, :debug_pipeline_timing, false)
+
+    debug_pass1? =
+      Keyword.get(opts, :debug_timing, false) or
+        Application.get_env(:brain, :debug_pipeline_timing, false)
 
     Progress.report(opts, :chunk_start, %{
       chunk_index: chunk.index,
@@ -208,7 +211,8 @@ defmodule Brain.Analysis.Pipeline do
         :exit, _ -> []
       end
 
-    if debug_pass1?, do: Logger.info("pipeline:pass1 entities=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug_pass1?,
+      do: Logger.info("pipeline:pass1 entities=#{System.monotonic_time(:millisecond) - t0}ms")
 
     speech_act_task =
       Task.async(fn ->
@@ -235,7 +239,8 @@ defmodule Brain.Analysis.Pipeline do
           DiscourseAnalyzer.analyze("")
       end
 
-    if debug_pass1?, do: Logger.info("pipeline:pass1 discourse=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug_pass1?,
+      do: Logger.info("pipeline:pass1 discourse=#{System.monotonic_time(:millisecond) - t0}ms")
 
     speech_act_result =
       try do
@@ -246,7 +251,8 @@ defmodule Brain.Analysis.Pipeline do
           SpeechActClassifier.classify("")
       end
 
-    if debug_pass1?, do: Logger.info("pipeline:pass1 speech_act=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug_pass1?,
+      do: Logger.info("pipeline:pass1 speech_act=#{System.monotonic_time(:millisecond) - t0}ms")
 
     sentiment_result =
       try do
@@ -259,7 +265,8 @@ defmodule Brain.Analysis.Pipeline do
           %{label: :neutral, score: 0.5}
       end
 
-    if debug_pass1?, do: Logger.info("pipeline:pass1 sentiment=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug_pass1?,
+      do: Logger.info("pipeline:pass1 sentiment=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :discourse_complete, %{
       chunk_index: chunk.index,
@@ -284,7 +291,8 @@ defmodule Brain.Analysis.Pipeline do
     {resolved_text, anaphora_entities} =
       resolve_anaphora(chunk.text, history, chunk.index, opts)
 
-    if debug_pass1?, do: Logger.info("pipeline:pass1 anaphora=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug_pass1?,
+      do: Logger.info("pipeline:pass1 anaphora=#{System.monotonic_time(:millisecond) - t0}ms")
 
     speech_act_intent = extract_intent_from_speech_act(speech_act_result)
     speech_act_domain = extract_domain_from_intent(speech_act_intent)
@@ -301,7 +309,11 @@ defmodule Brain.Analysis.Pipeline do
     entities = extract_entities(resolved_text, entity_opts)
     entities = merge_anaphora_entities(entities, anaphora_entities)
 
-    if debug_pass1?, do: Logger.info("pipeline:pass1 extract_entities=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug_pass1?,
+      do:
+        Logger.info(
+          "pipeline:pass1 extract_entities=#{System.monotonic_time(:millisecond) - t0}ms"
+        )
 
     Progress.report(opts, :entities_extracted, %{
       chunk_index: chunk.index,
@@ -311,7 +323,8 @@ defmodule Brain.Analysis.Pipeline do
 
     entities = EntityGraphEnricher.enrich(entities)
 
-    if debug_pass1?, do: Logger.info("pipeline:pass1 graph_enrich=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug_pass1?,
+      do: Logger.info("pipeline:pass1 graph_enrich=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :entities_graph_enriched, %{
       chunk_index: chunk.index,
@@ -321,7 +334,8 @@ defmodule Brain.Analysis.Pipeline do
 
     pos_result = get_pos_tags(resolved_text)
 
-    if debug_pass1?, do: Logger.info("pipeline:pass1 pos_tags=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug_pass1?,
+      do: Logger.info("pipeline:pass1 pos_tags=#{System.monotonic_time(:millisecond) - t0}ms")
 
     events = extract_events(pos_result, entities, opts)
 
@@ -340,7 +354,8 @@ defmodule Brain.Analysis.Pipeline do
 
     srl_frames = run_srl(pos_result, entities, opts)
 
-    if debug_pass1?, do: Logger.info("pipeline:pass1 srl=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug_pass1?,
+      do: Logger.info("pipeline:pass1 srl=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :srl_complete, %{
       chunk_index: chunk.index,
@@ -358,11 +373,19 @@ defmodule Brain.Analysis.Pipeline do
       |> Map.put(:srl_frames, srl_frames)
       |> Map.put(:pos_tags, pos_result_to_tags(pos_result))
 
-    if debug_pass1?, do: Logger.info("pipeline:pass1 domain_classify_start=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug_pass1?,
+      do:
+        Logger.info(
+          "pipeline:pass1 domain_classify_start=#{System.monotonic_time(:millisecond) - t0}ms"
+        )
 
     pass1_domain = classify_intent_domain_lightweight(pass1_analysis)
 
-    if debug_pass1?, do: Logger.info("pipeline:pass1 domain_classify_end=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug_pass1?,
+      do:
+        Logger.info(
+          "pipeline:pass1 domain_classify_end=#{System.monotonic_time(:millisecond) - t0}ms"
+        )
 
     {prelim_intent, intent_method, prelim_intent_conf, prelim_intent_details} =
       determine_intent(
@@ -374,7 +397,11 @@ defmodule Brain.Analysis.Pipeline do
         nil
       )
 
-    if debug_pass1?, do: Logger.info("pipeline:pass1 determine_intent=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug_pass1?,
+      do:
+        Logger.info(
+          "pipeline:pass1 determine_intent=#{System.monotonic_time(:millisecond) - t0}ms"
+        )
 
     Progress.report(opts, :intent_determined, %{
       chunk_index: chunk.index,
@@ -411,7 +438,11 @@ defmodule Brain.Analysis.Pipeline do
           _ -> nil
         end
       rescue
-        _ -> nil
+        # Feature extraction over a malformed/degenerate analysis can raise on
+        # bad shapes or numeric edge cases; degrade to "no domain" for those.
+        # Structural bugs (RuntimeError, UndefinedFunctionError, ...) still crash.
+        _e in [ArgumentError, ArithmeticError, KeyError, FunctionClauseError, MatchError] ->
+          nil
       end
     else
       nil
@@ -441,7 +472,7 @@ defmodule Brain.Analysis.Pipeline do
         Map.get(primary.discourse || %{}, :addressee, :unknown),
         Map.get(primary.discourse || %{}, :confidence, 0.0)
       )
-      |> ContextAccumulator.add_signal(:entity_familiarity, length(entity_union) > 0, familiarity)
+      |> ContextAccumulator.add_signal(:entity_familiarity, entity_union != [], familiarity)
       |> ContextAccumulator.accumulate()
 
     %{
@@ -458,12 +489,12 @@ defmodule Brain.Analysis.Pipeline do
     pass1_analyses
     |> Enum.flat_map(fn analysis -> analysis.entities || [] end)
     |> Enum.uniq_by(fn entity ->
-      {Map.get(entity, :entity_type) || Map.get(entity, "entity_type"),
-       Map.get(entity, :value) || Map.get(entity, "value")}
+      {Map.get(entity, :entity_type), Map.get(entity, :value)}
     end)
   end
 
   defp entity_familiarity_signal([]), do: 0.5
+
   defp entity_familiarity_signal(entities) do
     EntityGraphEnricher.familiarity_score(entities)
   rescue
@@ -481,7 +512,7 @@ defmodule Brain.Analysis.Pipeline do
          question_chunk_index: question_index
        }) do
     cond do
-      length(pass1_analyses) == 1 -> true
+      match?([_], pass1_analyses) -> true
       analysis.chunk_index == primary_index -> true
       analysis.chunk_index == question_index -> true
       true -> assertive_or_directive_with_entity?(analysis)
@@ -492,7 +523,7 @@ defmodule Brain.Analysis.Pipeline do
 
   defp assertive_or_directive_with_entity?(%ChunkAnalysis{speech_act: speech_act, entities: ents}) do
     cat = Map.get(speech_act, :category)
-    cat in [:directive, :assertive] and length(ents || []) > 0
+    cat in [:directive, :assertive] and (ents || []) != []
   end
 
   # For non-substantive chunks: don't run pass 2, but do compute confidence
@@ -533,7 +564,9 @@ defmodule Brain.Analysis.Pipeline do
     {refined_speech_act, intent, intent_method, intent_confidence, intent_details, chunk_profile} =
       classify_intent_full_and_refine(pass1_with_context, opts)
 
-    if debug_pass2?, do: Logger.info("  pass2:classify_intent_full=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug_pass2?,
+      do:
+        Logger.info("  pass2:classify_intent_full=#{System.monotonic_time(:millisecond) - t0}ms")
 
     intent_details =
       if chunk_profile,
@@ -547,7 +580,9 @@ defmodule Brain.Analysis.Pipeline do
       intent_confidence: intent_confidence,
       margin: Map.get(intent_details, :margin, 0.0),
       top_k: Map.get(intent_details, :top_k, []),
-      lattice: Map.get(intent_details, :lattice) && Brain.Lattice.to_map(Map.get(intent_details, :lattice)),
+      lattice:
+        Map.get(intent_details, :lattice) &&
+          Brain.Lattice.to_map(Map.get(intent_details, :lattice)),
       pass: 2
     })
 
@@ -560,7 +595,8 @@ defmodule Brain.Analysis.Pipeline do
         world_id: Keyword.get(opts, :world_id, "default")
       )
 
-    if debug_pass2?, do: Logger.info("  pass2:entity_inference=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug_pass2?,
+      do: Logger.info("  pass2:entity_inference=#{System.monotonic_time(:millisecond) - t0}ms")
 
     relevant_entities =
       entities_after_inference
@@ -568,7 +604,9 @@ defmodule Brain.Analysis.Pipeline do
       |> maybe_retype_pos_music_artists(pass1.text)
       |> Brain.ML.EntityExtractor.refine_entity_types(to_string(intent))
 
-    if debug_pass2?, do: Logger.info("  pass2:entity_filter+refine=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug_pass2?,
+      do:
+        Logger.info("  pass2:entity_filter+refine=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :entities_filtered, %{
       chunk_index: pass1.chunk_index,
@@ -582,7 +620,8 @@ defmodule Brain.Analysis.Pipeline do
 
     fact_result = verify_facts_in_chunk(pass1.text, relevant_entities, refined_speech_act, opts)
 
-    if debug_pass2?, do: Logger.info("  pass2:fact_verify=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug_pass2?,
+      do: Logger.info("  pass2:fact_verify=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :fact_verification, %{
       chunk_index: pass1.chunk_index,
@@ -605,7 +644,8 @@ defmodule Brain.Analysis.Pipeline do
 
     slot_result = SlotDetector.detect(intent, relevant_entities)
 
-    if debug_pass2?, do: Logger.info("  pass2:slot_detect=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug_pass2?,
+      do: Logger.info("  pass2:slot_detect=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :slots_detected, %{
       chunk_index: pass1.chunk_index,
@@ -623,7 +663,8 @@ defmodule Brain.Analysis.Pipeline do
         user_id: user_id
       )
 
-    if debug_pass2?, do: Logger.info("  pass2:context_resolve=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug_pass2?,
+      do: Logger.info("  pass2:context_resolve=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :context_resolved, %{
       chunk_index: pass1.chunk_index,
@@ -663,7 +704,8 @@ defmodule Brain.Analysis.Pipeline do
 
     maybe_extract_beliefs_from_events(pass1.events, opts)
 
-    if debug_pass2?, do: Logger.info("  pass2:total=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug_pass2?,
+      do: Logger.info("  pass2:total=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :chunk_complete, %{
       chunk_index: pass1.chunk_index,
@@ -738,9 +780,10 @@ defmodule Brain.Analysis.Pipeline do
         if label_match != nil and lab_str == label_match, do: @profile_rerank_boost, else: 0.0
 
       domain_delta =
-        if domain != nil and intent_domain_prefix(lab_str) == domain and registered_intent?(lab_str),
-          do: @profile_domain_boost,
-          else: 0.0
+        if domain != nil and intent_domain_prefix(lab_str) == domain and
+             registered_intent?(lab_str),
+           do: @profile_domain_boost,
+           else: 0.0
 
       label_delta + domain_delta
     end)
@@ -771,7 +814,10 @@ defmodule Brain.Analysis.Pipeline do
           Lattice.empty(:intent_full, error: reason)
       end
     else
-      Logger.warning("MicroClassifiers not ready — intent_full classification skipped (not_loaded)")
+      Logger.warning(
+        "MicroClassifiers not ready — intent_full classification skipped (not_loaded)"
+      )
+
       Lattice.empty(:intent_full, error: :not_loaded)
     end
   end
@@ -892,11 +938,14 @@ defmodule Brain.Analysis.Pipeline do
       {:ok, pos_tags_tuples, tokens} ->
         tag_strings = extract_tag_strings(pos_tags_tuples)
 
-        token_maps = Enum.map(tokens, fn t ->
-          %{text: t, normalized: String.downcase(t)}
-        end)
+        token_maps =
+          Enum.map(tokens, fn t ->
+            %{text: t, normalized: String.downcase(t)}
+          end)
 
-        frames = EventLinker.link(events, entities, token_maps, tag_strings, event_link_opts(opts))
+        frames =
+          EventLinker.link(events, entities, token_maps, tag_strings, event_link_opts(opts))
+
         {frames, tag_strings}
 
       {:error, _} ->
@@ -968,14 +1017,16 @@ defmodule Brain.Analysis.Pipeline do
 
     entities
     |> Enum.reduce(%{}, fn entity, acc ->
-      value = Map.get(entity, :value) || Map.get(entity, "value") || ""
-      entity_type = Map.get(entity, :entity_type) || Map.get(entity, "entity_type") || ""
+      value = Map.get(entity, :value) || ""
+      entity_type = Map.get(entity, :entity_type) || ""
       entity_words = value |> String.downcase() |> String.split()
 
       role = entity_type_to_srl_role(entity_type)
 
       case find_span_start(downcased, entity_words) do
-        nil -> acc
+        nil ->
+          acc
+
         start_idx ->
           entity_words
           |> Enum.with_index()
@@ -1001,9 +1052,12 @@ defmodule Brain.Analysis.Pipeline do
     end)
   end
 
-  defp entity_type_to_srl_role(type) when is_atom(type), do: entity_type_to_srl_role(to_string(type))
+  defp entity_type_to_srl_role(type) when is_atom(type),
+    do: entity_type_to_srl_role(to_string(type))
+
   defp entity_type_to_srl_role(type) do
     downcased = String.downcase(type)
+
     cond do
       downcased in ["person", "user", "agent"] -> "ARG0"
       downcased in ["location", "place", "city", "country", "geo"] -> "ARGM-LOC"
@@ -1051,8 +1105,12 @@ defmodule Brain.Analysis.Pipeline do
 
   @doc false
   @spec registered_intent?(term()) :: boolean()
-  def registered_intent?(intent) when is_binary(intent), do: MapSet.member?(@registered_intent_set, intent)
-  def registered_intent?(intent) when is_atom(intent), do: registered_intent?(Atom.to_string(intent))
+  def registered_intent?(intent) when is_binary(intent),
+    do: MapSet.member?(@registered_intent_set, intent)
+
+  def registered_intent?(intent) when is_atom(intent),
+    do: registered_intent?(Atom.to_string(intent))
+
   def registered_intent?(_), do: false
 
   defp intent_domain_prefix(intent) when is_binary(intent) do
@@ -1062,7 +1120,9 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
-  defp intent_domain_prefix(intent) when is_atom(intent), do: intent_domain_prefix(Atom.to_string(intent))
+  defp intent_domain_prefix(intent) when is_atom(intent),
+    do: intent_domain_prefix(Atom.to_string(intent))
+
   defp intent_domain_prefix(_), do: ""
 
   defp determine_intent(speech_act, %Lattice{} = lattice, entities, text, opts, profile) do
@@ -1141,7 +1201,8 @@ defmodule Brain.Analysis.Pipeline do
   # that's far more reliable than the 232-class intent_full centroid.
   defp classifier_domain_conflicts_with_profile?(nil, _), do: false
 
-  defp classifier_domain_conflicts_with_profile?(classifier_intent, profile) when is_binary(classifier_intent) do
+  defp classifier_domain_conflicts_with_profile?(classifier_intent, profile)
+       when is_binary(classifier_intent) do
     case profile_domain_string(profile) do
       nil ->
         false
@@ -1181,7 +1242,14 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
-  defp disambiguate_with_atlas(classifier_intent, %Lattice{} = lattice, entities, _text, opts, profile) do
+  defp disambiguate_with_atlas(
+         classifier_intent,
+         %Lattice{} = lattice,
+         entities,
+         _text,
+         opts,
+         profile
+       ) do
     conversation_id = Keyword.get(opts, :conversation_id)
 
     recent_topics = graph_recent_topics(conversation_id)
@@ -1355,11 +1423,14 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
-  defp profile_derived_label(%ChunkProfile{derived_label: label}) when is_binary(label) and label != "", do: label
+  defp profile_derived_label(%ChunkProfile{derived_label: label})
+       when is_binary(label) and label != "", do: label
+
   defp profile_derived_label(_), do: nil
 
-  defp profile_domain_string(%ChunkProfile{domain: domain}) when is_atom(domain) and domain != :unknown,
-    do: Atom.to_string(domain)
+  defp profile_domain_string(%ChunkProfile{domain: domain})
+       when is_atom(domain) and domain != :unknown,
+       do: Atom.to_string(domain)
 
   defp profile_domain_string(_), do: nil
 
@@ -1379,14 +1450,15 @@ defmodule Brain.Analysis.Pipeline do
   @score_entity_per_match 0.10
   @score_entity_cap 0.30
 
-  @entity_scoring_weights_path Path.join(:code.priv_dir(:brain), "analysis/entity_scoring_weights.json")
+  @entity_scoring_weights_path Path.join(
+                                 :code.priv_dir(:brain),
+                                 "analysis/entity_scoring_weights.json"
+                               )
   @external_resource @entity_scoring_weights_path
-  @entity_scoring_weights (
-    case File.read(@entity_scoring_weights_path) do
-      {:ok, json} -> Jason.decode!(json)
-      _ -> %{}
-    end
-  )
+  @entity_scoring_weights (case File.read(@entity_scoring_weights_path) do
+                             {:ok, json} -> Jason.decode!(json)
+                             _ -> %{}
+                           end)
 
   defp best_intent_by_signals(speech_act, profile, lattice, entities) do
     profile_domain = profile_domain_string(profile)
@@ -1412,7 +1484,9 @@ defmodule Brain.Analysis.Pipeline do
 
     ranked =
       @intent_metadata
-      |> Enum.map(fn {intent, meta} -> {intent, score_intent_against_signals(intent, meta, sig)} end)
+      |> Enum.map(fn {intent, meta} ->
+        {intent, score_intent_against_signals(intent, meta, sig)}
+      end)
       |> Enum.filter(fn {_, score} -> score > 0.0 end)
       |> Enum.sort(fn {a_intent, a_score}, {b_intent, b_score} ->
         cond do
@@ -1503,8 +1577,10 @@ defmodule Brain.Analysis.Pipeline do
               acc -> max(acc, Brain.Lexicon.word_similarity(p, anchor) || 0.0)
             end
 
-          min(max_sim * Map.get(w, "concept_domain_similarity", 0.10),
-              Map.get(w, "concept_domain_cap", 0.10))
+          min(
+            max_sim * Map.get(w, "concept_domain_similarity", 0.10),
+            Map.get(w, "concept_domain_cap", 0.10)
+          )
         else
           0.0
         end
@@ -1513,8 +1589,10 @@ defmodule Brain.Analysis.Pipeline do
       end
 
     total_entity_signal =
-      min(entity_score + concept_domain_score,
-          Map.get(w, "total_entity_signal_cap", @score_entity_cap))
+      min(
+        entity_score + concept_domain_score,
+        Map.get(w, "total_entity_signal_cap", @score_entity_cap)
+      )
 
     lattice_score =
       cond do
@@ -1560,7 +1638,9 @@ defmodule Brain.Analysis.Pipeline do
       case Brain.ML.Poincare.Embeddings.entity_distance(etype, intent) do
         distance when is_number(distance) ->
           distance < Map.get(w, "poincare_distance_threshold", 2.0)
-        _ -> false
+
+        _ ->
+          false
       end
     else
       false
@@ -1582,12 +1662,16 @@ defmodule Brain.Analysis.Pipeline do
           Enum.any?(expected_types, fn expected ->
             case EntityVectorCache.get_cached_type(expected) do
               {:ok, exp_vec} ->
-                FourthWall.Math.cosine_similarity(etype_flat, Nx.to_flat_list(exp_vec)) > threshold
-              _ -> false
+                FourthWall.Math.cosine_similarity(etype_flat, Nx.to_flat_list(exp_vec)) >
+                  threshold
+
+              _ ->
+                false
             end
           end)
 
-        _ -> false
+        _ ->
+          false
       end
     else
       false
@@ -1659,7 +1743,7 @@ defmodule Brain.Analysis.Pipeline do
   defp entity_type_set(entities) when is_list(entities) do
     entities
     |> Enum.map(fn e ->
-      case Map.get(e, :entity_type) || Map.get(e, "entity_type") do
+      case Map.get(e, :entity_type) do
         nil -> nil
         t when is_atom(t) -> Atom.to_string(t)
         t when is_binary(t) -> t
@@ -1774,10 +1858,26 @@ defmodule Brain.Analysis.Pipeline do
 
     acc =
       %ContextAccumulator{}
-      |> ContextAccumulator.add_signal(:discourse, Map.get(analysis.discourse, :addressee), discourse_conf)
-      |> ContextAccumulator.add_signal(:speech_act, Map.get(analysis.speech_act, :category), speech_act_conf)
-      |> ContextAccumulator.add_signal(:slot_fill, Map.get(analysis.slots || %{}, :all_required_filled, false), slot_conf)
-      |> ContextAccumulator.add_signal(:sentiment, Map.get(analysis.sentiment || %{}, :label, :neutral), sentiment_conf)
+      |> ContextAccumulator.add_signal(
+        :discourse,
+        Map.get(analysis.discourse, :addressee),
+        discourse_conf
+      )
+      |> ContextAccumulator.add_signal(
+        :speech_act,
+        Map.get(analysis.speech_act, :category),
+        speech_act_conf
+      )
+      |> ContextAccumulator.add_signal(
+        :slot_fill,
+        Map.get(analysis.slots || %{}, :all_required_filled, false),
+        slot_conf
+      )
+      |> ContextAccumulator.add_signal(
+        :sentiment,
+        Map.get(analysis.sentiment || %{}, :label, :neutral),
+        sentiment_conf
+      )
       |> ContextAccumulator.add_signal(:entity_familiarity, entity_fam > 0.5, entity_fam)
       |> ContextAccumulator.add_signal(:intent, analysis.intent, intent_conf)
       |> ContextAccumulator.accumulate()
@@ -1968,7 +2068,9 @@ defmodule Brain.Analysis.Pipeline do
 
               inferred_domain =
                 case profile do
-                  %ChunkProfile{domain: domain} when domain != :unknown -> domain
+                  %ChunkProfile{domain: domain} when domain != :unknown ->
+                    domain
+
                   _ ->
                     case extract_domain_from_intent(intent) do
                       "" -> :unknown
@@ -2116,7 +2218,7 @@ defmodule Brain.Analysis.Pipeline do
 
     subject_entity =
       Enum.find(entities, fn entity ->
-        entity_type = Map.get(entity, :entity_type) || Map.get(entity, "entity_type")
+        entity_type = Map.get(entity, :entity_type)
         entity_type in subject_types
       end)
 
@@ -2126,7 +2228,7 @@ defmodule Brain.Analysis.Pipeline do
         extract_subject_from_text(text)
 
       entity ->
-        Map.get(entity, :value) || Map.get(entity, "value") || Map.get(entity, :match)
+        Map.get(entity, :value) || Map.get(entity, :match)
     end
   end
 
@@ -2179,15 +2281,18 @@ defmodule Brain.Analysis.Pipeline do
   end
 
   defp extract_domain_from_intent(nil), do: ""
+
   defp extract_domain_from_intent(intent) when is_binary(intent) do
     case String.split(intent, ".", parts: 2) do
       [domain, _] -> domain
       _ -> intent
     end
   end
+
   defp extract_domain_from_intent(_), do: ""
 
   defp extract_intent_from_speech_act(nil), do: nil
+
   defp extract_intent_from_speech_act(speech_act) do
     indicators =
       cond do

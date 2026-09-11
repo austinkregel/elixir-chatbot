@@ -42,6 +42,6 @@ defmodule Brain.Knowledge.HypothesisLatticeTest do
     goal = Brain.Knowledge.Types.ResearchGoal.new("Research X")
     lat = Brain.Knowledge.Types.ResearchGoal.formulate_competing_hypotheses(goal, "TestEntity")
     assert %Lattice{} = lat
-    assert length(lat.candidates) >= 3
+    assert Enum.count_until(lat.candidates, 3) >= 3
   end
 end

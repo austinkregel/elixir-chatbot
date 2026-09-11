@@ -158,7 +158,7 @@ defmodule Brain.Analysis.ContextResolverTest do
 
       prompts = ContextResolver.generate_clarification_prompts(slot_result)
 
-      assert length(prompts) == 1
+      assert match?([_], prompts)
       assert hd(prompts) =~ "location"
     end
 

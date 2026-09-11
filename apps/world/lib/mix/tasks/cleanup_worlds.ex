@@ -110,7 +110,7 @@ defmodule Mix.Tasks.CleanupWorlds do
             Mix.shell().info("  #{id}")
         end)
 
-        if length(valid) > 10 do
+        if Enum.count_until(valid, 11) > 10 do
           Mix.shell().info("  ... and #{length(valid) - 10} more")
         end
 

@@ -26,15 +26,17 @@ defmodule FourthWall.SafetyTest do
       """
 
       assert {:error, issues} = Safety.check_output(corrupted)
-      assert length(issues) >= 1
+      assert issues != []
+
       assert Enum.any?(issues, fn {_pattern, desc} ->
-        String.contains?(desc, "stray digit")
-      end)
+               String.contains?(desc, "stray digit")
+             end)
     end
 
     test "detects []1, []2, etc. variations" do
       for digit <- 0..9 do
         corrupted = "all_responses == []#{digit}"
+
         assert {:error, _} = Safety.check_output(corrupted),
                "Should detect []#{digit} corruption"
       end
@@ -50,18 +52,20 @@ defmodule FourthWall.SafetyTest do
       """
 
       assert {:error, issues} = Safety.check_output(corrupted)
+
       assert Enum.any?(issues, fn {_pattern, desc} ->
-        String.contains?(desc, "String.length")
-      end)
+               String.contains?(desc, "String.length")
+             end)
     end
 
     test "detects corrupted String.length with !=" do
       corrupted = "String.query != []"
 
       assert {:error, issues} = Safety.check_output(corrupted)
+
       assert Enum.any?(issues, fn {_pattern, desc} ->
-        String.contains?(desc, "String.length")
-      end)
+               String.contains?(desc, "String.length")
+             end)
     end
 
     test "detects corrupted capture operator (String.&1)" do
@@ -74,9 +78,10 @@ defmodule FourthWall.SafetyTest do
       """
 
       assert {:error, issues} = Safety.check_output(corrupted)
+
       assert Enum.any?(issues, fn {_pattern, desc} ->
-        String.contains?(desc, "capture")
-      end)
+               String.contains?(desc, "capture")
+             end)
     end
 
     test "detects multiple corruption patterns in same code" do
@@ -92,7 +97,7 @@ defmodule FourthWall.SafetyTest do
 
       assert {:error, issues} = Safety.check_output(corrupted)
       # Should detect all three patterns
-      assert length(issues) >= 3
+      assert Enum.count_until(issues, 3) >= 3
     end
 
     test "does not flag legitimate empty list comparisons" do
@@ -130,7 +135,7 @@ defmodule FourthWall.SafetyTest do
     test "returns list of known corruption patterns" do
       patterns = Safety.patterns()
       assert is_list(patterns)
-      assert length(patterns) >= 3
+      assert Enum.count_until(patterns, 3) >= 3
 
       # Each pattern should be a {regex, description} tuple
       for {regex, desc} <- patterns do
@@ -171,7 +176,7 @@ defmodule FourthWall.SafetyTest do
       """)
 
       assert {:error, issues} = Safety.scan_file(path)
-      assert length(issues) >= 1
+      assert issues != []
     end
 
     test "returns error for non-existent file" do

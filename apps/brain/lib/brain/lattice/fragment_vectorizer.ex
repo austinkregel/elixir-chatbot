@@ -76,11 +76,7 @@ defmodule Brain.Lattice.FragmentVectorizer do
         |> Task.async_stream(
           fn frag ->
             text = Map.get(frag, "text", "")
-
-            case vectorize_fragment_text(text) do
-              {:ok, fv} -> {:ok, fv}
-              {:error, reason} -> {:error, reason}
-            end
+            vectorize_fragment_text(text)
           end,
           max_concurrency: System.schedulers_online(),
           timeout: timeout_ms,
@@ -100,6 +96,7 @@ defmodule Brain.Lattice.FragmentVectorizer do
               {Map.put(frag, "prototype_vector", []), fail_count + 1}
           end
         end)
+
       success_count = Enum.count(vectorized, fn f -> Map.get(f, "prototype_vector", []) != [] end)
       elapsed = System.monotonic_time(:millisecond) - started_at
 

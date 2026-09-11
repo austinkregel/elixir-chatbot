@@ -40,8 +40,8 @@ defmodule Brain.Graph.Reader do
     world_id = Keyword.get(opts, :world_id, "default")
 
     Enum.map(entities, fn entity ->
-      entity_type = Map.get(entity, :entity_type) || Map.get(entity, "entity_type") || "Entity"
-      value = Map.get(entity, :value) || Map.get(entity, "value") || Map.get(entity, :text, "")
+      entity_type = Map.get(entity, :entity_type, "Entity")
+      value = Map.get(entity, :value) || Map.get(entity, :text, "")
 
       label = normalize_label(entity_type)
 
@@ -73,7 +73,8 @@ defmodule Brain.Graph.Reader do
   then fetches the neighborhood once for the first match. Returns a map
   keyed by normalized label: `%{label => %{node: vertex, neighbors: [vertex]}}`.
   """
-  def entity_context_multi_label(name, labels, opts \\ []) when is_binary(name) and is_list(labels) do
+  def entity_context_multi_label(name, labels, opts \\ [])
+      when is_binary(name) and is_list(labels) do
     depth = Keyword.get(opts, :depth, 2)
     world_id = Keyword.get(opts, :world_id, "default")
     escaped = String.replace(to_string(name), "'", "\\'")
@@ -105,7 +106,14 @@ defmodule Brain.Graph.Reader do
 
       [node | _] ->
         neighbors = get_neighbors("knowledge_graph", node.id, depth)
-        ContextCache.put(world_id, "knowledge_graph", hd(normalized_labels), name, {node, neighbors})
+
+        ContextCache.put(
+          world_id,
+          "knowledge_graph",
+          hd(normalized_labels),
+          name,
+          {node, neighbors}
+        )
 
         Map.new(normalized_labels, fn label ->
           {label, %{node: node, neighbors: neighbors}}
@@ -137,8 +145,8 @@ defmodule Brain.Graph.Reader do
   Returns `{:ok, path_nodes}` or `{:error, :not_found}`.
   """
   def relationship_path(entity_a, entity_b) do
-    name_a = Map.get(entity_a, :value) || Map.get(entity_a, "value", "")
-    name_b = Map.get(entity_b, :value) || Map.get(entity_b, "value", "")
+    name_a = Map.get(entity_a, :value, "")
+    name_b = Map.get(entity_b, :value, "")
     label_a = normalize_label(Map.get(entity_a, :entity_type, "Entity"))
     label_b = normalize_label(Map.get(entity_b, :entity_type, "Entity"))
 
@@ -234,8 +242,14 @@ defmodule Brain.Graph.Reader do
     escaped = String.replace(to_string(user_id), "'", "\\'")
     # AGE doesn't support type(r) or properties(r) as Cypher functions.
     # Query specific relationship types individually.
-    rel_types = [EdgeLabels.likes(), EdgeLabels.wants(), EdgeLabels.interested_in(),
-                  EdgeLabels.dislikes(), EdgeLabels.asked_about(), EdgeLabels.needs()]
+    rel_types = [
+      EdgeLabels.likes(),
+      EdgeLabels.wants(),
+      EdgeLabels.interested_in(),
+      EdgeLabels.dislikes(),
+      EdgeLabels.asked_about(),
+      EdgeLabels.needs()
+    ]
 
     Enum.flat_map(rel_types, fn rel_type ->
       query = """
@@ -278,6 +292,7 @@ defmodule Brain.Graph.Reader do
   """
   def evidence_chain(semantic_fact_name) do
     escaped = String.replace(to_string(semantic_fact_name), "'", "\\'")
+
     query = """
     MATCH (e:Episode)-[:#{EdgeLabels.evidence_for()}]->(sf:SemanticFact)
     WHERE sf.name = '#{escaped}'
@@ -286,7 +301,10 @@ defmodule Brain.Graph.Reader do
 
     case Graph.cypher("semantic_graph", query) do
       {:ok, rows} ->
-        Enum.map(rows, fn [%Vertex{} = v] -> v; _ -> nil end)
+        Enum.map(rows, fn
+          [%Vertex{} = v] -> v
+          _ -> nil
+        end)
         |> Enum.reject(&is_nil/1)
 
       _ ->
@@ -303,6 +321,7 @@ defmodule Brain.Graph.Reader do
   @doc "Get all topics discussed in a conversation."
   def conversation_topics(conversation_id) do
     escaped = String.replace(to_string(conversation_id), "'", "\\'")
+
     query = """
     MATCH (c:Conversation)-[:#{EdgeLabels.contains()}]->(m:Message)-[:#{EdgeLabels.has_topic()}]->(t:Topic)
     WHERE c.name = '#{escaped}'
@@ -332,7 +351,11 @@ defmodule Brain.Graph.Reader do
       {:ok, rows} ->
         rows
         |> Enum.map(fn
-          [%Vertex{properties: a_props}, %Vertex{properties: b_props}, %Atlas.Graph.Types.Edge{properties: r_props}] ->
+          [
+            %Vertex{properties: a_props},
+            %Vertex{properties: b_props},
+            %Atlas.Graph.Types.Edge{properties: r_props}
+          ] ->
             %{
               from: Map.get(a_props, "name", ""),
               to: Map.get(b_props, "name", ""),
@@ -356,6 +379,7 @@ defmodule Brain.Graph.Reader do
   @doc "Get the last N messages in a conversation with their topics."
   def recent_context(conversation_id, n \\ 5) do
     escaped = String.replace(to_string(conversation_id), "'", "\\'")
+
     query = """
     MATCH (c:Conversation)-[:#{EdgeLabels.contains()}]->(m:Message)
     WHERE c.name = '#{escaped}'
@@ -398,6 +422,7 @@ defmodule Brain.Graph.Reader do
   """
   def belief_justification_chain(node_name) do
     escaped = String.replace(to_string(node_name), "'", "\\'")
+
     query = """
     MATCH (j:Justification)-[:#{EdgeLabels.supports()}]->(n:JTMSNode)
     WHERE n.name = '#{escaped}'
@@ -409,7 +434,11 @@ defmodule Brain.Graph.Reader do
       {:ok, rows} ->
         Enum.map(rows, fn
           [%Vertex{} = node, %Vertex{} = just, requirements] ->
-            reqs = if is_list(requirements), do: Enum.filter(requirements, &match?(%Vertex{}, &1)), else: []
+            reqs =
+              if is_list(requirements),
+                do: Enum.filter(requirements, &match?(%Vertex{}, &1)),
+                else: []
+
             %{node: node, justification: just, requirements: reqs}
 
           _ ->
@@ -431,6 +460,7 @@ defmodule Brain.Graph.Reader do
   """
   def assumption_consequences(node_name) do
     escaped = String.replace(to_string(node_name), "'", "\\'")
+
     query = """
     MATCH (j:Justification)-[:#{EdgeLabels.requires_in()}]->(a:JTMSNode)
     WHERE a.name = '#{escaped}'
@@ -440,7 +470,10 @@ defmodule Brain.Graph.Reader do
 
     case Graph.cypher("epistemic_graph", query) do
       {:ok, rows} ->
-        Enum.map(rows, fn [%Vertex{} = v] -> v; _ -> nil end)
+        Enum.map(rows, fn
+          [%Vertex{} = v] -> v
+          _ -> nil
+        end)
         |> Enum.reject(&is_nil/1)
 
       _ ->
@@ -457,6 +490,7 @@ defmodule Brain.Graph.Reader do
   @doc "Get what POS tags commonly follow a given tag, with frequencies."
   def tag_transitions(from_tag) do
     escaped = String.replace(to_string(from_tag), "'", "\\'")
+
     query = """
     MATCH (a:POSTag)-[r:#{EdgeLabels.followed_by()}]->(b:POSTag)
     WHERE a.name = '#{escaped}'
@@ -519,6 +553,7 @@ defmodule Brain.Graph.Reader do
   def pos_patterns(tag_sequence) when is_list(tag_sequence) do
     pattern_name = Enum.join(tag_sequence, "_")
     escaped = String.replace(pattern_name, "'", "\\'")
+
     query = """
     MATCH (p:Pattern)
     WHERE p.name = '#{escaped}'

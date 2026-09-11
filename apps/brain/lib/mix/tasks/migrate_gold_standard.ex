@@ -41,7 +41,15 @@ defmodule Mix.Tasks.MigrateGoldStandard do
         preview_migration(select_filter, limit, merge_contexts?, exclude_context_variants?)
 
       true ->
-        run_migration(select_filter, limit, !no_ner?, append?, destructive?, merge_contexts?, exclude_context_variants?)
+        run_migration(
+          select_filter,
+          limit,
+          !no_ner?,
+          append?,
+          destructive?,
+          merge_contexts?,
+          exclude_context_variants?
+        )
     end
   end
 
@@ -96,7 +104,10 @@ Previewing migration for #{length(intent_names)} intent(s)...")
       IO.puts("NOTE: Context-variant usersays files will be excluded")
     end
 
-    opts = [merge_context_variants: merge_contexts?, exclude_context_variants: exclude_context_variants?]
+    opts = [
+      merge_context_variants: merge_contexts?,
+      exclude_context_variants: exclude_context_variants?
+    ]
 
     opts =
       if limit do
@@ -144,7 +155,7 @@ Previewing migration for #{length(intent_names)} intent(s)...")
         IO.puts("  [#{ex["intent"]}] #{ex["text"]}#{richness}")
       end)
 
-      if length(intent_examples) > 10 do
+      if Enum.count_until(intent_examples, 11) > 10 do
         IO.puts("  ... and #{length(intent_examples) - 10} more")
       end
     end
@@ -232,7 +243,7 @@ Previewing migration for #{length(intent_names)} intent(s)...")
           IO.puts("    - #{text}")
         end)
 
-        if length(tpls) > 2 do
+        if Enum.count_until(tpls, 3) > 2 do
           IO.puts("    - ... and #{length(tpls) - 2} more")
         end
       end)
@@ -309,7 +320,15 @@ Deleted #{length(deleted)} items:")
     end
   end
 
-  defp run_migration(select_filter, limit, include_ner?, append?, destructive?, merge_contexts?, exclude_context_variants?) do
+  defp run_migration(
+         select_filter,
+         limit,
+         include_ner?,
+         append?,
+         destructive?,
+         merge_contexts?,
+         exclude_context_variants?
+       ) do
     intent_names = resolve_intent_names(select_filter)
 
     mode =

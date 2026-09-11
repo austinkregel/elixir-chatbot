@@ -24,7 +24,9 @@ defmodule Atlas.SchemasExtendedTest do
         trust_tier: "trusted"
       }
 
-      assert {:ok, sr} = %SourceReliability{} |> SourceReliability.changeset(attrs) |> Repo.insert()
+      assert {:ok, sr} =
+               %SourceReliability{} |> SourceReliability.changeset(attrs) |> Repo.insert()
+
       assert sr.domain == "example.com"
       assert sr.reliability_score == 0.85
     end
@@ -53,7 +55,7 @@ defmodule Atlas.SchemasExtendedTest do
         |> Repo.insert()
 
       results = SourceReliability |> SourceReliability.for_domain("test.org") |> Repo.all()
-      assert length(results) == 1
+      assert match?([_], results)
     end
   end
 
@@ -88,7 +90,7 @@ defmodule Atlas.SchemasExtendedTest do
       uid = "user_query_#{System.unique_integer([:positive])}"
       {:ok, _} = %UserModel{} |> UserModel.changeset(%{user_id: uid}) |> Repo.insert()
       results = UserModel |> UserModel.for_user(uid) |> Repo.all()
-      assert length(results) == 1
+      assert match?([_], results)
     end
   end
 
@@ -107,7 +109,9 @@ defmodule Atlas.SchemasExtendedTest do
     end
 
     test "requires persona_name, category, key" do
-      assert {:error, changeset} = %KnowledgeEntry{} |> KnowledgeEntry.changeset(%{}) |> Repo.insert()
+      assert {:error, changeset} =
+               %KnowledgeEntry{} |> KnowledgeEntry.changeset(%{}) |> Repo.insert()
+
       assert errors_on(changeset)[:persona_name]
       assert errors_on(changeset)[:category]
       assert errors_on(changeset)[:key]
@@ -120,7 +124,7 @@ defmodule Atlas.SchemasExtendedTest do
         |> Repo.insert()
 
       results = KnowledgeEntry |> KnowledgeEntry.for_persona("test_p") |> Repo.all()
-      assert length(results) >= 1
+      assert results != []
     end
 
     test "queries for_world_persona" do
@@ -134,8 +138,10 @@ defmodule Atlas.SchemasExtendedTest do
         })
         |> Repo.insert()
 
-      results = KnowledgeEntry |> KnowledgeEntry.for_world_persona("test_world", "echo_wp") |> Repo.all()
-      assert length(results) >= 1
+      results =
+        KnowledgeEntry |> KnowledgeEntry.for_world_persona("test_world", "echo_wp") |> Repo.all()
+
+      assert results != []
     end
   end
 
@@ -152,7 +158,9 @@ defmodule Atlas.SchemasExtendedTest do
     end
 
     test "requires persona_name, role, content" do
-      assert {:error, changeset} = %PersonaMemory{} |> PersonaMemory.changeset(%{}) |> Repo.insert()
+      assert {:error, changeset} =
+               %PersonaMemory{} |> PersonaMemory.changeset(%{}) |> Repo.insert()
+
       assert errors_on(changeset)[:persona_name]
       assert errors_on(changeset)[:role]
       assert errors_on(changeset)[:content]
@@ -165,7 +173,7 @@ defmodule Atlas.SchemasExtendedTest do
         |> Repo.insert()
 
       results = PersonaMemory |> PersonaMemory.for_persona("pm_test") |> Repo.all()
-      assert length(results) >= 1
+      assert results != []
     end
   end
 
@@ -220,7 +228,8 @@ defmodule Atlas.SchemasExtendedTest do
         |> Repo.insert()
 
       results = LearningSession |> LearningSession.recent_first() |> Repo.all()
-      if length(results) >= 2 do
+
+      if Enum.count_until(results, 2) >= 2 do
         [first | _] = results
         assert first.topic == "newer"
       end
@@ -310,12 +319,24 @@ defmodule Atlas.SchemasExtendedTest do
     end
 
     test "changeset validates priority", %{session: session} do
-      cs = ResearchGoal.changeset(%ResearchGoal{}, %{session_id: session.id, topic: "T", priority: "bad"})
+      cs =
+        ResearchGoal.changeset(%ResearchGoal{}, %{
+          session_id: session.id,
+          topic: "T",
+          priority: "bad"
+        })
+
       assert errors_on(cs)[:priority]
     end
 
     test "changeset validates status", %{session: session} do
-      cs = ResearchGoal.changeset(%ResearchGoal{}, %{session_id: session.id, topic: "T", status: "bad"})
+      cs =
+        ResearchGoal.changeset(%ResearchGoal{}, %{
+          session_id: session.id,
+          topic: "T",
+          status: "bad"
+        })
+
       assert errors_on(cs)[:status]
     end
 
@@ -326,7 +347,7 @@ defmodule Atlas.SchemasExtendedTest do
         |> Repo.insert()
 
       results = ResearchGoal |> ResearchGoal.with_status("pending") |> Repo.all()
-      assert length(results) >= 1
+      assert results != []
     end
   end
 
@@ -354,7 +375,7 @@ defmodule Atlas.SchemasExtendedTest do
         |> Repo.insert()
 
       results = Investigation |> Investigation.with_status("planning") |> Repo.all()
-      assert length(results) >= 1
+      assert results != []
     end
   end
 
@@ -394,7 +415,7 @@ defmodule Atlas.SchemasExtendedTest do
         |> Repo.insert()
 
       results = Hypothesis |> Hypothesis.promotable() |> Repo.all()
-      assert length(results) >= 1
+      assert results != []
     end
   end
 
@@ -427,7 +448,7 @@ defmodule Atlas.SchemasExtendedTest do
         |> Repo.insert()
 
       results = Evidence |> Evidence.with_type("supporting") |> Repo.all()
-      assert length(results) >= 1
+      assert results != []
     end
 
     test "queries by entity", %{investigation: inv} do
@@ -437,7 +458,7 @@ defmodule Atlas.SchemasExtendedTest do
         |> Repo.insert()
 
       results = Evidence |> Evidence.for_entity("Elixir") |> Repo.all()
-      assert length(results) >= 1
+      assert results != []
     end
 
     test "queries for hypothesis", %{investigation: inv} do
@@ -452,7 +473,7 @@ defmodule Atlas.SchemasExtendedTest do
         |> Repo.insert()
 
       results = Evidence |> Evidence.for_hypothesis(hyp.id) |> Repo.all()
-      assert length(results) >= 1
+      assert results != []
     end
   end
 end

@@ -35,7 +35,7 @@ defmodule Brain.Knowledge.LearningCenterTest do
     test "generates goals from topic" do
       {:ok, session} = LearningCenter.start_session("Test topic", mock: true, max_goals: 2)
 
-      assert length(session.goals) <= 2
+      assert Enum.count_until(session.goals, 3) <= 2
       assert Enum.all?(session.goals, &match?(%ResearchGoal{}, &1))
     end
 
@@ -87,7 +87,7 @@ defmodule Brain.Knowledge.LearningCenterTest do
 
       sessions = LearningCenter.list_sessions()
 
-      assert length(sessions) >= 2
+      assert Enum.count_until(sessions, 2) >= 2
     end
 
     test "filters by status" do
@@ -108,7 +108,7 @@ defmodule Brain.Knowledge.LearningCenterTest do
 
       sessions = LearningCenter.list_sessions(limit: 3)
 
-      assert length(sessions) == 3
+      assert match?([_, _, _], sessions)
     end
   end
 

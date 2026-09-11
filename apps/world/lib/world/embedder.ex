@@ -278,12 +278,11 @@ defmodule World.Embedder do
 
       idf_weights =
         vocabulary
-        |> Enum.map(fn {word, _idx} ->
+        |> Map.new(fn {word, _idx} ->
           doc_freq = Enum.count(text_sets, fn set -> MapSet.member?(set, word) end)
           idf = :math.log(num_docs / max(doc_freq, 1))
           {word, idf}
         end)
-        |> Enum.into(%{})
 
       vocab_size = map_size(vocabulary)
 

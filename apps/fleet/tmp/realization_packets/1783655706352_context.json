@@ -1,0 +1,286 @@
+{
+  "accumulator": {
+    "combined_confidence": 0.9991084642500506,
+    "conflict_measure": 0.5303620319767376,
+    "dominant_signal": [
+      "slot_fill",
+      true,
+      0.999
+    ],
+    "effective_confidence": 0.7344002849736049,
+    "entity_familiarity": 0.5,
+    "should_hedge": true
+  },
+  "all_analyses": [
+    {
+      "chunk_index": 0,
+      "confidence": 0.734,
+      "intent": "smalltalk.statement",
+      "response_strategy": "hedged_response",
+      "speech_act": {
+        "category": "assertive",
+        "confidence": 0.6756190945968197,
+        "intent_confidence": 0.4016509189248526,
+        "is_imperative": false,
+        "is_question": false,
+        "sub_type": "statement"
+      },
+      "text": "Analyse."
+    }
+  ],
+  "analysis": {
+    "all_strategies": [
+      "hedged_response"
+    ],
+    "chunk_count": 1,
+    "confidence": 0.734,
+    "discourse": {
+      "addressee": "bot",
+      "confidence": 1.0,
+      "direct_address_detected": false,
+      "participants": [
+        "user",
+        "bot"
+      ]
+    },
+    "epistemic_status": "unchecked",
+    "intent": "smalltalk.statement",
+    "pos_tags": [
+      [
+        "Analyse",
+        "NOUN"
+      ],
+      [
+        ".",
+        "NOUN"
+      ]
+    ],
+    "raw_input": "Analyse.",
+    "response_strategy": "hedged_response",
+    "sentiment": {
+      "confidence": 0.0,
+      "label": "negative"
+    },
+    "speech_act": {
+      "category": "assertive",
+      "confidence": 0.6756190945968197,
+      "intent_confidence": 0.4016509189248526,
+      "is_imperative": false,
+      "is_question": false,
+      "sub_type": "statement"
+    },
+    "text": "Analyse."
+  },
+  "enrichment": {
+    "enrichment_status": "not_configured",
+    "entity_familiarity": 0.5
+  },
+  "overall_strategy": "hedged_response",
+  "primary_analysis": {
+    "accumulated_context": {
+      "combined_confidence": 0.9991084642500506,
+      "conflict_measure": 0.5303620319767376,
+      "dominant_signal": [
+        "slot_fill",
+        true,
+        0.999
+      ],
+      "entity_familiarity": 0.5,
+      "signals": [
+        [
+          "intent",
+          "smalltalk.apology",
+          0.4016509189248526
+        ],
+        [
+          "entity_familiarity",
+          false,
+          0.5
+        ],
+        [
+          "sentiment",
+          "negative",
+          0.001
+        ],
+        [
+          "slot_fill",
+          true,
+          0.999
+        ],
+        [
+          "speech_act",
+          "assertive",
+          0.6756190945968197
+        ],
+        [
+          "discourse",
+          "bot",
+          0.999
+        ]
+      ]
+    },
+    "chunk_index": 0,
+    "confidence": 0.734,
+    "discourse": {
+      "addressee": "bot",
+      "confidence": 1.0,
+      "direct_address_detected": false,
+      "participants": [
+        "user",
+        "bot"
+      ]
+    },
+    "epistemic_status": "unchecked",
+    "intent": "smalltalk.statement",
+    "intent_domain": "smalltalk",
+    "pass": 2,
+    "pos_tags": [
+      [
+        "Analyse",
+        "NOUN"
+      ],
+      [
+        ".",
+        "NOUN"
+      ]
+    ],
+    "profile": {
+      "addressee": "bot",
+      "aspect": "simple",
+      "certainty": "hedged",
+      "confidence": 0.734,
+      "derived_label": "smalltalk.statement",
+      "domain": "smalltalk",
+      "engagement_level": "urgent_demand",
+      "feature_provenance": {
+        "addressee": "analysis",
+        "aspect": "micro_classifier",
+        "certainty": "micro_classifier",
+        "confidence": "analysis",
+        "domain": "micro_classifier",
+        "modality": "composed",
+        "novelty_score": "analysis",
+        "polarity": "composed",
+        "sentiment_alignment": "composed",
+        "slot_completeness": "analysis",
+        "speech_act_category": "analysis",
+        "speech_act_subtype": "analysis",
+        "target": "composed",
+        "tense": "micro_classifier",
+        "urgency": "micro_classifier"
+      },
+      "modality": "declarative",
+      "novelty_score": 0.0,
+      "polarity": "affirmative",
+      "response_posture": "hedged",
+      "self_disclosure_level": "none",
+      "sentiment_alignment": "neutral",
+      "slot_completeness": 1.0,
+      "speech_act_category": "assertive",
+      "speech_act_subtype": "statement",
+      "target": "agent",
+      "temporal_framing": "completed_past",
+      "tense": "past",
+      "urgency": "critical"
+    },
+    "response_strategy": "hedged_response",
+    "sentiment": {
+      "confidence": 0.0,
+      "label": "negative"
+    },
+    "slots": {
+      "all_required_filled": true,
+      "schema_name": "unknown"
+    },
+    "speech_act": {
+      "category": "assertive",
+      "confidence": 0.6756190945968197,
+      "indicators": [
+        "intent:smalltalk.apology"
+      ],
+      "intent_confidence": 0.4016509189248526,
+      "is_imperative": false,
+      "is_question": false,
+      "raw_analyses": {
+        "intent": {
+          "category": "assertive",
+          "confidence": 0.4016509189248526,
+          "intent": "smalltalk.apology",
+          "margin": 0.2469588437204313,
+          "second_score": 0.1546920752044213,
+          "source": "feature_vector",
+          "sub_type": "statement",
+          "top_k": [
+            {
+              "intent": "smalltalk.apology",
+              "score": 0.4016509189248526
+            },
+            {
+              "intent": "smalltalk.emotions.ha_ha",
+              "score": 0.1546920752044213
+            },
+            {
+              "intent": "smalltalk.agent.acquaintance",
+              "score": 0.14897579992616325
+            },
+            {
+              "intent": "smalltalk.thanks",
+              "score": 0.1477310096076296
+            },
+            {
+              "intent": "smalltalk.user.joking",
+              "score": 0.14695019633693332
+            }
+          ]
+        },
+        "keyword": {
+          "confidence": 0.0,
+          "source": "keyword"
+        },
+        "memory": {
+          "confidence": 0.0,
+          "similar_count": 0,
+          "source": "memory"
+        },
+        "original_text": "Analyse.",
+        "pragmatic": {
+          "expressive_score": 0.0,
+          "first_person_subject": false,
+          "has_acknowledgment": false,
+          "has_commissive": false,
+          "has_future": false,
+          "has_hedging": false,
+          "has_offer": false,
+          "has_please": false,
+          "has_thanks": false,
+          "has_urgency": false,
+          "is_backchannel": false,
+          "is_compliment": false,
+          "is_short_utterance": true,
+          "is_very_short": true,
+          "source": "pragmatic"
+        },
+        "structural": {
+          "category": "assertive",
+          "confidence": 0.7,
+          "has_modal": false,
+          "is_continuation": false,
+          "is_declarative": true,
+          "is_exclamatory": false,
+          "is_imperative": false,
+          "is_question": false,
+          "source": "structural",
+          "sub_type": "statement"
+        }
+      },
+      "sub_type": "statement"
+    },
+    "text": "Analyse."
+  },
+  "raw_input": "Analyse.",
+  "soul": {
+    "constitution": "Serve.",
+    "id": "t-12930",
+    "name": "T"
+  }
+}

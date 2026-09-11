@@ -47,7 +47,7 @@ defmodule Brain.Graph.Writer do
         end)
         |> Enum.reject(&is_nil/1)
 
-      if length(nodes) > 1 do
+      if match?([_, _ | _], nodes) do
         write_co_occurrences(nodes)
       end
     end)
@@ -126,11 +126,20 @@ defmodule Brain.Graph.Writer do
   """
   def write_user_preference(user_id, predicate, object, confidence \\ 0.5) do
     AtlasIntegration.async(fn ->
-      {:ok, user_node} = AtlasIntegration.ensure_node("user_graph", "User", %{name: to_string(user_id), id: to_string(user_id)})
-      {:ok, topic_node} = AtlasIntegration.ensure_node("user_graph", "Topic", %{name: to_string(object)})
+      {:ok, user_node} =
+        AtlasIntegration.ensure_node("user_graph", "User", %{
+          name: to_string(user_id),
+          id: to_string(user_id)
+        })
+
+      {:ok, topic_node} =
+        AtlasIntegration.ensure_node("user_graph", "Topic", %{name: to_string(object)})
 
       rel_type = preference_rel_type(predicate)
-      AtlasIntegration.find_or_create_edge("user_graph", user_node.id, topic_node.id, rel_type, %{confidence: confidence})
+
+      AtlasIntegration.find_or_create_edge("user_graph", user_node.id, topic_node.id, rel_type, %{
+        confidence: confidence
+      })
     end)
   end
 
@@ -154,8 +163,18 @@ defmodule Brain.Graph.Writer do
       case Atlas.Graph.add_node("semantic_graph", "SemanticFact", props) do
         {:ok, fact_node} ->
           Enum.each(episode_ids, fn ep_id ->
-            {:ok, ep_node} = AtlasIntegration.ensure_node("semantic_graph", "Episode", %{name: to_string(ep_id), id: to_string(ep_id)})
-            Atlas.Graph.add_edge("semantic_graph", ep_node.id, fact_node.id, EdgeLabels.evidence_for())
+            {:ok, ep_node} =
+              AtlasIntegration.ensure_node("semantic_graph", "Episode", %{
+                name: to_string(ep_id),
+                id: to_string(ep_id)
+              })
+
+            Atlas.Graph.add_edge(
+              "semantic_graph",
+              ep_node.id,
+              fact_node.id,
+              EdgeLabels.evidence_for()
+            )
           end)
 
         _ ->
@@ -173,8 +192,8 @@ defmodule Brain.Graph.Writer do
   @doc "Write a new conversation node."
   def write_conversation(conversation) do
     AtlasIntegration.async(fn ->
-      conv_id = Map.get(conversation, :id) || Map.get(conversation, "id", "")
-      world_id = Map.get(conversation, :world_id) || Map.get(conversation, "world_id", "default")
+      conv_id = Map.get(conversation, :id, "")
+      world_id = Map.get(conversation, :world_id, "default")
 
       Atlas.Graph.add_node("conversation_graph", "Conversation", %{
         name: to_string(conv_id),
@@ -192,9 +211,10 @@ defmodule Brain.Graph.Writer do
   """
   def write_message(conversation_id, message, analysis \\ nil) do
     AtlasIntegration.async(fn ->
-      msg_id = Map.get(message, :id) || Map.get(message, "id", "msg_#{System.unique_integer([:positive])}")
-      role = Map.get(message, :role) || Map.get(message, "role", "user")
-      content = Map.get(message, :content) || Map.get(message, "content", "")
+      msg_id = Map.get(message, :id) || "msg_#{System.unique_integer([:positive])}"
+
+      role = Map.get(message, :role, "user")
+      content = Map.get(message, :content, "")
 
       props = %{
         name: to_string(msg_id),
@@ -271,7 +291,12 @@ defmodule Brain.Graph.Writer do
         |> Enum.reject(&is_nil/1)
 
       for a <- graph_nodes, b <- graph_nodes, a.id != b.id do
-        AtlasIntegration.find_or_create_edge("epistemic_graph", a.id, b.id, EdgeLabels.contradicts())
+        AtlasIntegration.find_or_create_edge(
+          "epistemic_graph",
+          a.id,
+          b.id,
+          EdgeLabels.contradicts()
+        )
       end
     end)
   end
@@ -282,7 +307,9 @@ defmodule Brain.Graph.Writer do
   def update_jtms_label(node_id, new_label) do
     AtlasIntegration.async(fn ->
       escaped_name = String.replace(to_string(node_id), "'", "\\'")
-      query = "MATCH (n:JTMSNode) WHERE n.name = '#{escaped_name}' SET n.label = '#{new_label}' RETURN n"
+
+      query =
+        "MATCH (n:JTMSNode) WHERE n.name = '#{escaped_name}' SET n.label = '#{new_label}' RETURN n"
 
       Atlas.Graph.cypher("epistemic_graph", query)
     end)
@@ -302,9 +329,18 @@ defmodule Brain.Graph.Writer do
     AtlasIntegration.async(fn ->
       Enum.each(token_tag_pairs, fn
         {token, tag} when is_binary(token) and is_binary(tag) ->
-          {:ok, token_node} = AtlasIntegration.ensure_node("pos_graph", "Token", %{name: String.downcase(token)})
+          {:ok, token_node} =
+            AtlasIntegration.ensure_node("pos_graph", "Token", %{name: String.downcase(token)})
+
           {:ok, tag_node} = AtlasIntegration.ensure_node("pos_graph", "POSTag", %{name: tag})
-          increment_edge_count("pos_graph", token_node.id, tag_node.id, EdgeLabels.has_tag(), "count")
+
+          increment_edge_count(
+            "pos_graph",
+            token_node.id,
+            tag_node.id,
+            EdgeLabels.has_tag(),
+            "count"
+          )
 
         _ ->
           :ok
@@ -329,7 +365,14 @@ defmodule Brain.Graph.Writer do
       |> Enum.each(fn [from_tag, to_tag] ->
         {:ok, from_node} = AtlasIntegration.ensure_node("pos_graph", "POSTag", %{name: from_tag})
         {:ok, to_node} = AtlasIntegration.ensure_node("pos_graph", "POSTag", %{name: to_tag})
-        increment_edge_count("pos_graph", from_node.id, to_node.id, EdgeLabels.followed_by(), "frequency")
+
+        increment_edge_count(
+          "pos_graph",
+          from_node.id,
+          to_node.id,
+          EdgeLabels.followed_by(),
+          "frequency"
+        )
       end)
     end)
   end
@@ -403,7 +446,12 @@ defmodule Brain.Graph.Writer do
       record_predicate_frequency(normalized)
 
       elapsed = System.monotonic_time(:millisecond) - start_time
-      :telemetry.execute([:brain, :kg_signal, :srl_batch], %{duration_ms: elapsed, count: length(triples)}, %{})
+
+      :telemetry.execute(
+        [:brain, :kg_signal, :srl_batch],
+        %{duration_ms: elapsed, count: length(triples)},
+        %{}
+      )
     end)
 
     :ok
@@ -548,9 +596,10 @@ defmodule Brain.Graph.Writer do
           trigger = Map.get(frame, :trigger, "unknown")
 
           case AtlasIntegration.ensure_node(
-            "knowledge_graph", "LinkedEvent",
-            %{name: "event_#{trigger}", type: "LinkedEvent", trigger: trigger}
-          ) do
+                 "knowledge_graph",
+                 "LinkedEvent",
+                 %{name: "event_#{trigger}", type: "LinkedEvent", trigger: trigger}
+               ) do
             {:ok, event_node} ->
               args = Map.get(frame, :arguments, [])
 
@@ -559,9 +608,10 @@ defmodule Brain.Graph.Writer do
                 arg_role = Map.get(arg, :role, "ARG")
 
                 case AtlasIntegration.ensure_node(
-                  "knowledge_graph", "EventArgument",
-                  %{name: arg_text, type: "EventArgument"}
-                ) do
+                       "knowledge_graph",
+                       "EventArgument",
+                       %{name: arg_text, type: "EventArgument"}
+                     ) do
                   {:ok, arg_node} ->
                     AtlasIntegration.find_or_create_edge(
                       "knowledge_graph",
@@ -570,11 +620,13 @@ defmodule Brain.Graph.Writer do
                       "has_#{arg_role}"
                     )
 
-                  _ -> :ok
+                  _ ->
+                    :ok
                 end
               end)
 
-            _ -> :ok
+            _ ->
+              :ok
           end
         end)
       end)
@@ -591,8 +643,8 @@ defmodule Brain.Graph.Writer do
   # Private Helpers
   # ============================================================================
 
-  defp entity_type(e), do: Map.get(e, :entity_type) || Map.get(e, "entity_type") || "Entity"
-  defp entity_value(e), do: Map.get(e, :value) || Map.get(e, "value") || Map.get(e, :text)
+  defp entity_type(e), do: Map.get(e, :entity_type) || "Entity"
+  defp entity_value(e), do: Map.get(e, :value) || Map.get(e, :text)
 
   defp normalize_label(type) when is_binary(type) do
     type
@@ -607,14 +659,19 @@ defmodule Brain.Graph.Writer do
 
   defp write_co_occurrences(nodes) do
     for {_e1, v1} <- nodes, {_e2, v2} <- nodes, v1.id < v2.id do
-      AtlasIntegration.find_or_create_edge("knowledge_graph", v1.id, v2.id, EdgeLabels.co_occurs_with())
+      AtlasIntegration.find_or_create_edge(
+        "knowledge_graph",
+        v1.id,
+        v2.id,
+        EdgeLabels.co_occurs_with()
+      )
     end
   end
 
   defp write_single_event(event) do
     action = Map.get(event, :action, %{})
-    lemma = Map.get(action, :lemma) || Map.get(action, "lemma", "unknown")
-    tense = Map.get(action, :tense) || Map.get(action, "tense", "unknown")
+    lemma = Map.get(action, :lemma, "unknown")
+    tense = Map.get(action, :tense, "unknown")
 
     props = %{
       name: "evt_#{:crypto.strong_rand_bytes(4) |> Base.encode16(case: :lower)}",
@@ -628,12 +685,19 @@ defmodule Brain.Graph.Writer do
         object = Map.get(event, :object)
 
         if actor do
-          actor_text = Map.get(actor, :text) || Map.get(actor, "text", "")
-          actor_type = Map.get(actor, :type) || Map.get(actor, "type", "Entity")
+          actor_text = Map.get(actor, :text, "")
+          actor_type = Map.get(actor, :type, "Entity")
 
-          case AtlasIntegration.ensure_node("knowledge_graph", normalize_label(actor_type), %{name: actor_text}) do
+          case AtlasIntegration.ensure_node("knowledge_graph", normalize_label(actor_type), %{
+                 name: actor_text
+               }) do
             {:ok, actor_node} ->
-              Atlas.Graph.add_edge("knowledge_graph", actor_node.id, event_node.id, EdgeLabels.actor())
+              Atlas.Graph.add_edge(
+                "knowledge_graph",
+                actor_node.id,
+                event_node.id,
+                EdgeLabels.actor()
+              )
 
             _ ->
               :ok
@@ -641,12 +705,19 @@ defmodule Brain.Graph.Writer do
         end
 
         if object do
-          obj_text = Map.get(object, :text) || Map.get(object, "text", "")
-          obj_type = Map.get(object, :type) || Map.get(object, "type", "Entity")
+          obj_text = Map.get(object, :text, "")
+          obj_type = Map.get(object, :type, "Entity")
 
-          case AtlasIntegration.ensure_node("knowledge_graph", normalize_label(obj_type), %{name: obj_text}) do
+          case AtlasIntegration.ensure_node("knowledge_graph", normalize_label(obj_type), %{
+                 name: obj_text
+               }) do
             {:ok, obj_node} ->
-              Atlas.Graph.add_edge("knowledge_graph", event_node.id, obj_node.id, EdgeLabels.acts_on())
+              Atlas.Graph.add_edge(
+                "knowledge_graph",
+                event_node.id,
+                obj_node.id,
+                EdgeLabels.acts_on()
+              )
 
             _ ->
               :ok
@@ -666,9 +737,16 @@ defmodule Brain.Graph.Writer do
     if predicate in [:likes, :wants, :interested_in, :needs] and object do
       user_id = if subject in [:user, "user"], do: "default_user", else: to_string(subject)
       rel_type = preference_rel_type(predicate)
-      {:ok, user_node} = AtlasIntegration.ensure_node("user_graph", "User", %{name: user_id, id: user_id})
-      {:ok, topic_node} = AtlasIntegration.ensure_node("user_graph", "Topic", %{name: to_string(object)})
-      AtlasIntegration.find_or_create_edge("user_graph", user_node.id, topic_node.id, rel_type, %{confidence: confidence})
+
+      {:ok, user_node} =
+        AtlasIntegration.ensure_node("user_graph", "User", %{name: user_id, id: user_id})
+
+      {:ok, topic_node} =
+        AtlasIntegration.ensure_node("user_graph", "Topic", %{name: to_string(object)})
+
+      AtlasIntegration.find_or_create_edge("user_graph", user_node.id, topic_node.id, rel_type, %{
+        confidence: confidence
+      })
     end
   end
 
@@ -684,9 +762,18 @@ defmodule Brain.Graph.Writer do
   end
 
   defp link_message_to_conversation(conversation_id, msg_node) do
-    case AtlasIntegration.find_node("conversation_graph", "Conversation", to_string(conversation_id)) do
+    case AtlasIntegration.find_node(
+           "conversation_graph",
+           "Conversation",
+           to_string(conversation_id)
+         ) do
       {:ok, conv_node} ->
-        Atlas.Graph.add_edge("conversation_graph", conv_node.id, msg_node.id, EdgeLabels.contains())
+        Atlas.Graph.add_edge(
+          "conversation_graph",
+          conv_node.id,
+          msg_node.id,
+          EdgeLabels.contains()
+        )
 
       _ ->
         :ok
@@ -695,6 +782,7 @@ defmodule Brain.Graph.Writer do
 
   defp link_message_to_previous(conversation_id, msg_node) do
     escaped_conv = String.replace(to_string(conversation_id), "'", "\\'")
+
     query = """
     MATCH (c:Conversation)-[:#{EdgeLabels.contains()}]->(m:Message)
     WHERE c.name = '#{escaped_conv}' AND id(m) <> #{msg_node.id}
@@ -715,17 +803,28 @@ defmodule Brain.Graph.Writer do
   defp link_message_to_topic(msg_node, analysis) do
     intent =
       cond do
-        is_map(analysis) and Map.has_key?(analysis, :intent) -> analysis.intent
+        is_map(analysis) and Map.has_key?(analysis, :intent) ->
+          analysis.intent
+
         is_map(analysis) and Map.has_key?(analysis, :analyses) ->
           analysis.analyses
           |> Enum.max_by(fn a -> Map.get(a, :confidence, 0) end, fn -> %{} end)
           |> Map.get(:intent)
-        true -> nil
+
+        true ->
+          nil
       end
 
     if intent do
-      {:ok, topic_node} = AtlasIntegration.ensure_node("conversation_graph", "Topic", %{name: to_string(intent)})
-      Atlas.Graph.add_edge("conversation_graph", msg_node.id, topic_node.id, EdgeLabels.has_topic())
+      {:ok, topic_node} =
+        AtlasIntegration.ensure_node("conversation_graph", "Topic", %{name: to_string(intent)})
+
+      Atlas.Graph.add_edge(
+        "conversation_graph",
+        msg_node.id,
+        topic_node.id,
+        EdgeLabels.has_topic()
+      )
 
       create_topic_transition(msg_node, topic_node)
     end
@@ -745,7 +844,13 @@ defmodule Brain.Graph.Writer do
 
     case Atlas.Graph.cypher("conversation_graph", query) do
       {:ok, [[%Atlas.Graph.Types.Vertex{} = prev_topic] | _]} ->
-        increment_edge_count("conversation_graph", prev_topic.id, current_topic.id, EdgeLabels.topic_transition(), "count")
+        increment_edge_count(
+          "conversation_graph",
+          prev_topic.id,
+          current_topic.id,
+          EdgeLabels.topic_transition(),
+          "count"
+        )
 
       _ ->
         :ok
@@ -755,7 +860,12 @@ defmodule Brain.Graph.Writer do
   defp link_justification_to_conclusion(just_node, conclusion_id) do
     case AtlasIntegration.find_node("epistemic_graph", "JTMSNode", to_string(conclusion_id)) do
       {:ok, conclusion_node} ->
-        Atlas.Graph.add_edge("epistemic_graph", just_node.id, conclusion_node.id, EdgeLabels.supports())
+        Atlas.Graph.add_edge(
+          "epistemic_graph",
+          just_node.id,
+          conclusion_node.id,
+          EdgeLabels.supports()
+        )
 
       _ ->
         :ok
@@ -775,7 +885,8 @@ defmodule Brain.Graph.Writer do
   end
 
   defp increment_edge_count(graph, from_id, to_id, rel_type, count_field) do
-    query = "MATCH (a)-[r:#{rel_type}]->(b) WHERE id(a) = #{from_id} AND id(b) = #{to_id} RETURN r"
+    query =
+      "MATCH (a)-[r:#{rel_type}]->(b) WHERE id(a) = #{from_id} AND id(b) = #{to_id} RETURN r"
 
     case Atlas.Graph.cypher(graph, query) do
       {:ok, [[%Atlas.Graph.Types.Edge{properties: props} = _edge] | _]} ->

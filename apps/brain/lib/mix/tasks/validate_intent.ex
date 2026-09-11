@@ -299,7 +299,7 @@ defmodule Mix.Tasks.ValidateIntent do
   end
 
   defp validate_phrasing_variety(examples, errors, warnings, _verbose) do
-    if length(examples) < 5 do
+    if Enum.count_until(examples, 5) < 5 do
       {errors, warnings}
     else
       texts =

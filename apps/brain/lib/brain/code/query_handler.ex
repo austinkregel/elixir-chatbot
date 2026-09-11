@@ -220,17 +220,17 @@ defmodule Brain.Code.QueryHandler do
   defp extract_symbol_name(entities, query_text) do
     symbol =
       Enum.find(entities, fn e ->
-        entity_type = e[:entity_type] || e["entity_type"]
+        entity_type = e[:entity_type]
         entity_type in ["code.symbol", "symbol", "code.file"]
       end)
 
     cond do
       symbol ->
-        symbol[:value] || symbol["value"]
+        symbol[:value]
 
       entities != [] ->
         entity = List.first(entities)
-        entity[:value] || entity["value"]
+        entity[:value]
 
       query_text ->
         extract_code_pattern(query_text)

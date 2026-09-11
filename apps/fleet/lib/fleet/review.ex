@@ -149,10 +149,10 @@ defmodule Fleet.Review do
       not Enum.all?(approvals, &(&1.authority in accepted_authorities)) ->
         {:error, :insufficient_signoffs}
 
-      length(approvals) < 2 ->
+      Enum.count_until(approvals, 2) < 2 ->
         {:error, :insufficient_signoffs}
 
-      approvals |> Enum.map(& &1.agent_id) |> Enum.uniq() |> length() < 2 ->
+      approvals |> Enum.map(& &1.agent_id) |> Enum.uniq() |> Enum.count_until(2) < 2 ->
         {:error, :not_distinct}
 
       true ->

@@ -33,7 +33,7 @@ defmodule Brain.Knowledge.ResearchAgentTest do
       {:ok, findings} = ResearchAgent.research(goal, mock: true)
 
       assert is_list(findings)
-      assert length(findings) >= 0
+      assert Enum.count_until(findings, 0) >= 0
     end
 
     test "handles empty topic gracefully" do

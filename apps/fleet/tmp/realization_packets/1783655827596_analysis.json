@@ -1,0 +1,102 @@
+{
+  "confidence": 0.752,
+  "entities": [],
+  "intent": "code.statement",
+  "profile": {
+    "confidence": 0.752,
+    "derived_label": "code.statement",
+    "domain": "code",
+    "engagement_level": "urgent_demand",
+    "modality": "declarative",
+    "response_posture": "hedged"
+  },
+  "response_strategy": "hedged_response",
+  "sentiment": {
+    "confidence": 0.19621991244033476,
+    "label": "neutral"
+  },
+  "speech_act": {
+    "category": "assertive",
+    "confidence": 0.6893148287024059,
+    "indicators": [
+      "intent:calendar.cancel"
+    ],
+    "intent_confidence": 0.43817287653974907,
+    "is_imperative": false,
+    "is_question": false,
+    "raw_analyses": {
+      "intent": {
+        "category": "assertive",
+        "confidence": 0.43817287653974907,
+        "intent": "calendar.cancel",
+        "margin": 0.2970250847368271,
+        "second_score": 0.141147791802922,
+        "source": "feature_vector",
+        "sub_type": "statement",
+        "top_k": [
+          {
+            "intent": "calendar.cancel",
+            "score": 0.43817287653974907
+          },
+          {
+            "intent": "code.signature",
+            "score": 0.141147791802922
+          },
+          {
+            "intent": "news.search",
+            "score": 0.1408160468325861
+          },
+          {
+            "intent": "knowledge.define",
+            "score": 0.1401841310063668
+          },
+          {
+            "intent": "smalltalk.agent.can_you_help",
+            "score": 0.13967915381837603
+          }
+        ]
+      },
+      "keyword": {
+        "confidence": 0.0,
+        "source": "keyword"
+      },
+      "memory": {
+        "confidence": 0.0,
+        "similar_count": 0,
+        "source": "memory"
+      },
+      "original_text": "Analyse the sector.",
+      "pragmatic": {
+        "expressive_score": 0.0,
+        "first_person_subject": false,
+        "has_acknowledgment": false,
+        "has_commissive": false,
+        "has_future": false,
+        "has_hedging": false,
+        "has_offer": false,
+        "has_please": false,
+        "has_thanks": false,
+        "has_urgency": false,
+        "is_backchannel": false,
+        "is_compliment": false,
+        "is_short_utterance": false,
+        "is_very_short": false,
+        "source": "pragmatic"
+      },
+      "structural": {
+        "category": "assertive",
+        "confidence": 0.7,
+        "has_modal": false,
+        "is_continuation": false,
+        "is_declarative": true,
+        "is_exclamatory": false,
+        "is_imperative": false,
+        "is_question": false,
+        "source": "structural",
+        "sub_type": "statement"
+      }
+    },
+    "sub_type": "statement"
+  },
+  "text": "Analyse the sector."
+}

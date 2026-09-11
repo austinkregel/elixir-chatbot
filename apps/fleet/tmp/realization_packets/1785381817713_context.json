@@ -1,0 +1,313 @@
+{
+  "accumulator": {
+    "combined_confidence": 0.9999451287131383,
+    "conflict_measure": 0.5416874994562124,
+    "dominant_signal": [
+      "slot_fill",
+      true,
+      0.999
+    ],
+    "effective_confidence": 0.7291311020752042,
+    "entity_familiarity": 0.5,
+    "should_hedge": true
+  },
+  "all_analyses": [
+    {
+      "chunk_index": 0,
+      "confidence": 0.729,
+      "intent": "meta.statement",
+      "response_strategy": "hedged_response",
+      "speech_act": {
+        "category": "assertive",
+        "confidence": 0.6266102835039826,
+        "intent_confidence": 0.27096075601062053,
+        "is_imperative": false,
+        "is_question": false,
+        "sub_type": "statement"
+      },
+      "text": "Task B."
+    }
+  ],
+  "analysis": {
+    "all_strategies": [
+      "hedged_response"
+    ],
+    "chunk_count": 1,
+    "confidence": 0.729,
+    "discourse": {
+      "addressee": "bot",
+      "confidence": 1.0,
+      "direct_address_detected": false,
+      "participants": [
+        "user",
+        "bot"
+      ]
+    },
+    "epistemic_status": "unchecked",
+    "intent": "meta.statement",
+    "pos_tags": [
+      [
+        "Task",
+        "NOUN"
+      ],
+      [
+        "B",
+        "NOUN"
+      ],
+      [
+        ".",
+        "NOUN"
+      ]
+    ],
+    "raw_input": "Task B.",
+    "response_strategy": "hedged_response",
+    "sentiment": {
+      "confidence": 0.019374342458161678,
+      "label": "neutral"
+    },
+    "speech_act": {
+      "category": "assertive",
+      "confidence": 0.6266102835039826,
+      "intent_confidence": 0.27096075601062053,
+      "is_imperative": false,
+      "is_question": false,
+      "sub_type": "statement"
+    },
+    "text": "Task B."
+  },
+  "enrichment": {
+    "enrichment_status": "not_configured",
+    "entity_familiarity": 0.5
+  },
+  "memory": {
+    "similar_episodes": [
+      [
+        {
+          "action": "conversation",
+          "id": "32cf6858-2eb0-4395-b8c2-49fbb9a9ba70",
+          "outcome": "\"Task A, acknowledged. We have found that the task has been assigned, but specific details and objectives are unclear at this time.\"",
+          "state": "Task A.",
+          "tags": [
+            "conversation",
+            "10b402a1a3f534b5",
+            "calendar.cancel"
+          ],
+          "timestamp": 1785381817528
+        },
+        0.7
+      ]
+    ]
+  },
+  "overall_strategy": "hedged_response",
+  "primary_analysis": {
+    "accumulated_context": {
+      "combined_confidence": 0.9999451287131383,
+      "conflict_measure": 0.5416874994562124,
+      "dominant_signal": [
+        "slot_fill",
+        true,
+        0.999
+      ],
+      "entity_familiarity": 0.5,
+      "signals": [
+        [
+          "intent",
+          "meta.memory_check",
+          0.27096075601062053
+        ],
+        [
+          "entity_familiarity",
+          false,
+          0.5
+        ],
+        [
+          "sentiment",
+          "neutral",
+          0.019374342458161678
+        ],
+        [
+          "slot_fill",
+          true,
+          0.999
+        ],
+        [
+          "speech_act",
+          "assertive",
+          0.6266102835039826
+        ],
+        [
+          "discourse",
+          "bot",
+          0.999
+        ]
+      ]
+    },
+    "chunk_index": 0,
+    "confidence": 0.729,
+    "discourse": {
+      "addressee": "bot",
+      "confidence": 1.0,
+      "direct_address_detected": false,
+      "participants": [
+        "user",
+        "bot"
+      ]
+    },
+    "epistemic_status": "unchecked",
+    "intent": "meta.statement",
+    "intent_domain": "meta",
+    "pass": 2,
+    "pos_tags": [
+      [
+        "Task",
+        "NOUN"
+      ],
+      [
+        "B",
+        "NOUN"
+      ],
+      [
+        ".",
+        "NOUN"
+      ]
+    ],
+    "profile": {
+      "addressee": "bot",
+      "aspect": "progressive",
+      "certainty": "hedged",
+      "confidence": 0.729,
+      "derived_label": "meta.statement",
+      "domain": "meta",
+      "engagement_level": "urgent_demand",
+      "feature_provenance": {
+        "addressee": "analysis",
+        "aspect": "micro_classifier",
+        "certainty": "micro_classifier",
+        "confidence": "analysis",
+        "domain": "micro_classifier",
+        "modality": "composed",
+        "novelty_score": "analysis",
+        "polarity": "composed",
+        "sentiment_alignment": "composed",
+        "slot_completeness": "analysis",
+        "speech_act_category": "analysis",
+        "speech_act_subtype": "analysis",
+        "target": "composed",
+        "tense": "micro_classifier",
+        "urgency": "micro_classifier"
+      },
+      "modality": "declarative",
+      "novelty_score": 0.0,
+      "polarity": "affirmative",
+      "response_posture": "hedged",
+      "self_disclosure_level": "none",
+      "sentiment_alignment": "neutral",
+      "slot_completeness": 1.0,
+      "speech_act_category": "assertive",
+      "speech_act_subtype": "statement",
+      "target": "agent",
+      "temporal_framing": "hypothetical_future",
+      "tense": "future",
+      "urgency": "critical"
+    },
+    "response_strategy": "hedged_response",
+    "sentiment": {
+      "confidence": 0.019374342458161678,
+      "label": "neutral"
+    },
+    "slots": {
+      "all_required_filled": true,
+      "schema_name": "unknown"
+    },
+    "speech_act": {
+      "category": "assertive",
+      "confidence": 0.6266102835039826,
+      "indicators": [
+        "intent:calendar.cancel"
+      ],
+      "intent_confidence": 0.27096075601062053,
+      "is_imperative": false,
+      "is_question": false,
+      "raw_analyses": {
+        "intent": {
+          "category": "assertive",
+          "confidence": 0.27096075601062053,
+          "intent": "calendar.cancel",
+          "margin": 0.08704713591477628,
+          "second_score": 0.18391362009584425,
+          "source": "feature_vector",
+          "sub_type": "statement",
+          "top_k": [
+            {
+              "intent": "calendar.cancel",
+              "score": 0.27096075601062053
+            },
+            {
+              "intent": "status.diagnostic",
+              "score": 0.18391362009584425
+            },
+            {
+              "intent": "smalltalk.dialog.hug",
+              "score": 0.18215288643179414
+            },
+            {
+              "intent": "display.zoom",
+              "score": 0.18198945823104007
+            },
+            {
+              "intent": "smalltalk.user.bored",
+              "score": 0.18098327923070104
+            }
+          ]
+        },
+        "keyword": {
+          "confidence": 0.0,
+          "source": "keyword"
+        },
+        "memory": {
+          "confidence": 0.0,
+          "similar_count": 0,
+          "source": "memory"
+        },
+        "original_text": "Task B.",
+        "pragmatic": {
+          "expressive_score": 0.0,
+          "first_person_subject": false,
+          "has_acknowledgment": false,
+          "has_commissive": false,
+          "has_future": false,
+          "has_hedging": false,
+          "has_offer": false,
+          "has_please": false,
+          "has_thanks": false,
+          "has_urgency": false,
+          "is_backchannel": false,
+          "is_compliment": false,
+          "is_short_utterance": true,
+          "is_very_short": false,
+          "source": "pragmatic"
+        },
+        "structural": {
+          "category": "assertive",
+          "confidence": 0.7,
+          "has_modal": false,
+          "is_continuation": false,
+          "is_declarative": true,
+          "is_exclamatory": false,
+          "is_imperative": false,
+          "is_question": false,
+          "source": "structural",
+          "sub_type": "statement"
+        }
+      },
+      "sub_type": "statement"
+    },
+    "text": "Task B."
+  },
+  "raw_input": "Task B.",
+  "soul": {
+    "constitution": "Serve.",
+    "id": "t-4611",
+    "name": "T"
+  }
+}

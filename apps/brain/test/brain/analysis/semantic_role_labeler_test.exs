@@ -10,7 +10,7 @@ defmodule Brain.Analysis.SemanticRoleLabelerTest do
 
       frames = SemanticRoleLabeler.label(tokens, bio_tags)
 
-      assert length(frames) == 1
+      assert match?([_], frames)
       frame = hd(frames)
 
       assert frame.predicate == "visited"
@@ -31,7 +31,7 @@ defmodule Brain.Analysis.SemanticRoleLabelerTest do
 
       frames = SemanticRoleLabeler.label(tokens, bio_tags)
 
-      assert length(frames) == 2
+      assert match?([_, _], frames)
 
       predicates = Enum.map(frames, & &1.predicate)
       assert "visited" in predicates
@@ -40,11 +40,20 @@ defmodule Brain.Analysis.SemanticRoleLabelerTest do
 
     test "handles modifier arguments (LOC, TMP, MNR)" do
       tokens = ["She", "ran", "quickly", "in", "the", "park", "yesterday"]
-      bio_tags = ["B-ARG0", "B-V", "B-ARGM-MNR", "B-ARGM-LOC", "I-ARGM-LOC", "I-ARGM-LOC", "B-ARGM-TMP"]
+
+      bio_tags = [
+        "B-ARG0",
+        "B-V",
+        "B-ARGM-MNR",
+        "B-ARGM-LOC",
+        "I-ARGM-LOC",
+        "I-ARGM-LOC",
+        "B-ARGM-TMP"
+      ]
 
       frames = SemanticRoleLabeler.label(tokens, bio_tags)
 
-      assert length(frames) == 1
+      assert match?([_], frames)
       frame = hd(frames)
 
       assert frame.predicate == "ran"
@@ -62,6 +71,7 @@ defmodule Brain.Analysis.SemanticRoleLabelerTest do
     test "links arguments to matching entities" do
       tokens = ["John", "visited", "Berlin"]
       bio_tags = ["B-ARG0", "B-V", "B-ARG1"]
+
       entities = [
         %{text: "John", type: :person, start_pos: 0},
         %{text: "Berlin", type: :location, start_pos: 2}
@@ -93,10 +103,11 @@ defmodule Brain.Analysis.SemanticRoleLabelerTest do
         %{text: "visited"},
         %{text: "Berlin"}
       ]
+
       bio_tags = ["B-ARG0", "B-V", "B-ARG1"]
 
       frames = SemanticRoleLabeler.label(tokens, bio_tags)
-      assert length(frames) == 1
+      assert match?([_], frames)
       assert hd(frames).predicate == "visited"
     end
   end
@@ -106,7 +117,7 @@ defmodule Brain.Analysis.SemanticRoleLabelerTest do
       tags = ["B-ARG0", "I-ARG0", "O", "B-V", "B-ARG1"]
       spans = SemanticRoleLabeler.extract_spans(tags)
 
-      assert length(spans) == 3
+      assert match?([_, _, _], spans)
       assert {:arg0, 0, 1} in spans
       assert {:verb, 3, 3} in spans
       assert {:arg1, 4, 4} in spans
@@ -116,7 +127,7 @@ defmodule Brain.Analysis.SemanticRoleLabelerTest do
       tags = ["B-ARG0", "B-ARG1"]
       spans = SemanticRoleLabeler.extract_spans(tags)
 
-      assert length(spans) == 2
+      assert match?([_, _], spans)
     end
 
     test "handles empty tag list" do

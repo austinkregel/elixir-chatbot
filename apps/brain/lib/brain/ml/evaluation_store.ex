@@ -80,7 +80,7 @@ defmodule Brain.ML.EvaluationStore do
     |> Enum.reverse()
     |> Enum.map(fn run ->
       %{
-        timestamp: run["timestamp"] || run[:timestamp],
+        timestamp: run["timestamp"],
         value: get_metric(run, metric)
       }
     end)
@@ -100,8 +100,8 @@ defmodule Brain.ML.EvaluationStore do
       macro_f1_delta: get_val.(run_b, :macro_f1) - get_val.(run_a, :macro_f1),
       weighted_f1_delta: get_val.(run_b, :weighted_f1) - get_val.(run_a, :weighted_f1),
       examples_delta: get_val.(run_b, :total_examples) - get_val.(run_a, :total_examples),
-      run_a_timestamp: Map.get(run_a, "timestamp") || Map.get(run_a, :timestamp),
-      run_b_timestamp: Map.get(run_b, "timestamp") || Map.get(run_b, :timestamp)
+      run_a_timestamp: Map.get(run_a, "timestamp"),
+      run_b_timestamp: Map.get(run_b, :timestamp)
     }
   end
 
@@ -274,8 +274,8 @@ defmodule Brain.ML.EvaluationStore do
     Brain.priv_path("evaluation")
   end
 
-  defp get_metric(run, :accuracy), do: run["accuracy"] || run[:accuracy]
-  defp get_metric(run, :macro_f1), do: run["macro_f1"] || run[:macro_f1]
-  defp get_metric(run, :weighted_f1), do: run["weighted_f1"] || run[:weighted_f1]
+  defp get_metric(run, :accuracy), do: run["accuracy"]
+  defp get_metric(run, :macro_f1), do: run["macro_f1"]
+  defp get_metric(run, :weighted_f1), do: run["weighted_f1"]
   defp get_metric(run, metric), do: run[to_string(metric)] || run[metric]
 end

@@ -1,0 +1,60 @@
+[
+  {
+    "content": {
+      "content_complete": true,
+      "user_input_summary": "Investigate the anomaly at sector 7."
+    },
+    "type": "acknowledgment",
+    "variant": "general"
+  },
+  {
+    "content": {
+      "confidence": 0.717,
+      "content_complete": true,
+      "emotional_tone": "neutral",
+      "entities": [
+        {
+          "confidence": 0.9,
+          "entity_type": "number",
+          "graph_known": false,
+          "match": "7",
+          "source": "system",
+          "value": "7"
+        }
+      ],
+      "intent": "music.statement",
+      "key_elements": {
+        "entities": [
+          "7"
+        ],
+        "intent": "music.statement"
+      },
+      "related_beliefs": [],
+      "text": "Investigate the anomaly at sector 7.",
+      "understood_meaning": "you're talking about 7"
+    },
+    "type": "content",
+    "variant": "reflective"
+  },
+  {
+    "content": {
+      "aspect_to_explore": "7",
+      "content_complete": true,
+      "entities": [
+        {
+          "confidence": 0.9,
+          "entity_type": "number",
+          "graph_known": false,
+          "match": "7",
+          "source": "system",
+          "value": "7"
+        }
+      ],
+      "intent": "music.statement",
+      "text": "Investigate the anomaly at sector 7.",
+      "topic": "music"
+    },
+    "type": "follow_up",
+    "variant": "elaboration"
+  }
+]

@@ -1,0 +1,607 @@
+{
+  "accumulator": {
+    "combined_confidence": 0.9987896342418207,
+    "conflict_measure": 0.5299707188150702,
+    "dominant_signal": [
+      "slot_fill",
+      true,
+      0.999
+    ],
+    "effective_confidence": 0.734445733245177,
+    "entity_familiarity": 0.5,
+    "should_hedge": true
+  },
+  "all_analyses": [
+    {
+      "chunk_index": 0,
+      "confidence": 0.734,
+      "entities": [
+        {
+          "confidence": 0.62,
+          "entity_type": "slot_mappings",
+          "value": "name"
+        },
+        {
+          "confidence": 0.65,
+          "entity_type": "given-name",
+          "value": "Bex"
+        }
+      ],
+      "intent": "smalltalk.statement",
+      "response_strategy": "hedged_response",
+      "speech_act": {
+        "category": "assertive",
+        "confidence": 0.6323722063566665,
+        "intent_confidence": 0.2863258836177774,
+        "is_imperative": false,
+        "is_question": false,
+        "sub_type": "statement"
+      },
+      "text": "My name is Bex."
+    }
+  ],
+  "analysis": {
+    "all_strategies": [
+      "hedged_response"
+    ],
+    "chunk_count": 1,
+    "confidence": 0.734,
+    "discourse": {
+      "addressee": "ambiguous",
+      "confidence": 0.8999999999999999,
+      "direct_address_detected": false,
+      "participants": [
+        "user",
+        "bot"
+      ]
+    },
+    "entities": [
+      {
+        "confidence": 0.62,
+        "entity_type": "slot_mappings",
+        "graph_known": true,
+        "match": "name",
+        "source": "gazetteer",
+        "value": "name"
+      },
+      {
+        "confidence": 0.65,
+        "disambiguation_reason": "introduction_pattern",
+        "entity_type": "given-name",
+        "graph_known": false,
+        "match": "Bex",
+        "source": "pos_tagger_propn",
+        "value": "Bex"
+      }
+    ],
+    "epistemic_status": "unchecked",
+    "event_frames": [
+      {
+        "arguments": [
+          {
+            "confidence": 0.15209175867524802,
+            "entity_type": "slot_mappings",
+            "role": "argm_loc",
+            "text": "name"
+          },
+          {
+            "confidence": 0.22226487027866235,
+            "entity_type": "person",
+            "role": "arg0",
+            "text": "Bex"
+          }
+        ],
+        "tense": "imperative",
+        "trigger": "My",
+        "trigger_index": 0
+      },
+      {
+        "arguments": [
+          {
+            "confidence": 0.5109726660969851,
+            "entity_type": "slot_mappings",
+            "role": "arg1",
+            "text": "name"
+          },
+          {
+            "confidence": 0.6963864203106462,
+            "entity_type": "person",
+            "role": "arg0",
+            "text": "Bex"
+          }
+        ],
+        "tense": "present",
+        "trigger": "is",
+        "trigger_index": 1
+      }
+    ],
+    "events": [
+      {
+        "action": {
+          "lemma": "my",
+          "tense": "imperative",
+          "verb": "My"
+        },
+        "confidence": 0.7999999999999999,
+        "id": "evt_c9e8d636659ee8f6",
+        "object": {
+          "text": "Bex",
+          "type": "proper_noun"
+        }
+      },
+      {
+        "action": {
+          "lemma": "is",
+          "tense": "present",
+          "verb": "is"
+        },
+        "actor": {
+          "text": "name",
+          "type": "pronoun"
+        },
+        "confidence": 0.9999999999999999,
+        "id": "evt_985f772d27f3631a",
+        "object": {
+          "text": "Bex",
+          "type": "proper_noun"
+        }
+      }
+    ],
+    "intent": "smalltalk.statement",
+    "pos_tags": [
+      [
+        "My",
+        "VERB"
+      ],
+      [
+        "name",
+        "PRON"
+      ],
+      [
+        "is",
+        "VERB"
+      ],
+      [
+        "Bex",
+        "PROPN"
+      ],
+      [
+        ".",
+        "NOUN"
+      ]
+    ],
+    "raw_input": "My name is Bex.",
+    "response_strategy": "hedged_response",
+    "sentiment": {
+      "confidence": 0.10498200529816362,
+      "label": "negative"
+    },
+    "slots": {
+      "filled": {
+        "given-name": {
+          "confidence": 0.65,
+          "source": "explicit",
+          "value": "Bex"
+        },
+        "slot_mappings": {
+          "confidence": 0.62,
+          "source": "explicit",
+          "value": "name"
+        }
+      }
+    },
+    "speech_act": {
+      "category": "assertive",
+      "confidence": 0.6323722063566665,
+      "intent_confidence": 0.2863258836177774,
+      "is_imperative": false,
+      "is_question": false,
+      "sub_type": "statement"
+    },
+    "text": "My name is Bex."
+  },
+  "enrichment": {
+    "enrichment_status": "not_configured",
+    "entity_familiarity": 0.5,
+    "graph_enrichment": {
+      "entity_context": [
+        {
+          "entity": {
+            "confidence": 0.62,
+            "entity_type": "slot_mappings",
+            "graph_known": true,
+            "match": "name",
+            "source": "gazetteer",
+            "value": "name"
+          },
+          "neighbors": [
+            {
+              "name": "Nice",
+              "type": ""
+            },
+            {
+              "name": "there",
+              "type": ""
+            },
+            {
+              "name": "it",
+              "type": ""
+            },
+            {
+              "name": "that",
+              "type": ""
+            },
+            {
+              "name": "Ansel",
+              "type": ""
+            }
+          ],
+          "node": {
+            "confidence": 0.62,
+            "entity_type": "slot_mappings",
+            "graph_known": true,
+            "match": "name",
+            "source": "gazetteer",
+            "value": "name"
+          }
+        },
+        {
+          "entity": {
+            "confidence": 0.65,
+            "disambiguation_reason": "introduction_pattern",
+            "entity_type": "given-name",
+            "graph_known": false,
+            "match": "Bex",
+            "source": "pos_tagger_propn",
+            "value": "Bex"
+          }
+        }
+      ]
+    }
+  },
+  "memory": {
+    "similar_episodes": [
+      [
+        {
+          "action": "order",
+          "id": "c6fe5a12-7a1f-4e1d-a822-11c0b06ad967",
+          "outcome": "My name is Bex.",
+          "state": "communication",
+          "tags": [
+            "communication",
+            "from:admiral",
+            "order"
+          ],
+          "timestamp": 1785357984144
+        },
+        0.0
+      ]
+    ]
+  },
+  "overall_strategy": "hedged_response",
+  "primary_analysis": {
+    "accumulated_context": {
+      "combined_confidence": 0.9987896342418207,
+      "conflict_measure": 0.5299707188150702,
+      "dominant_signal": [
+        "slot_fill",
+        true,
+        0.999
+      ],
+      "entity_familiarity": 0.5,
+      "signals": [
+        [
+          "intent",
+          "smalltalk.emotions.ha_ha",
+          0.2863258836177774
+        ],
+        [
+          "entity_familiarity",
+          false,
+          0.5
+        ],
+        [
+          "sentiment",
+          "negative",
+          0.10498200529816362
+        ],
+        [
+          "slot_fill",
+          true,
+          0.999
+        ],
+        [
+          "speech_act",
+          "assertive",
+          0.6323722063566665
+        ],
+        [
+          "discourse",
+          "ambiguous",
+          0.8999999999999999
+        ]
+      ]
+    },
+    "chunk_index": 0,
+    "confidence": 0.734,
+    "discourse": {
+      "addressee": "ambiguous",
+      "confidence": 0.8999999999999999,
+      "direct_address_detected": false,
+      "indicators": [
+        "self_referential"
+      ],
+      "participants": [
+        "user",
+        "bot"
+      ]
+    },
+    "entities": [
+      {
+        "confidence": 0.62,
+        "entity_type": "slot_mappings",
+        "graph_known": true,
+        "match": "name",
+        "source": "gazetteer",
+        "value": "name"
+      },
+      {
+        "confidence": 0.65,
+        "disambiguation_reason": "introduction_pattern",
+        "entity_type": "given-name",
+        "graph_known": false,
+        "match": "Bex",
+        "source": "pos_tagger_propn",
+        "value": "Bex"
+      }
+    ],
+    "epistemic_status": "unchecked",
+    "event_frames": [
+      {
+        "arguments": [
+          {
+            "confidence": 0.15209175867524802,
+            "entity_type": "slot_mappings",
+            "role": "argm_loc",
+            "text": "name"
+          },
+          {
+            "confidence": 0.22226487027866235,
+            "entity_type": "person",
+            "role": "arg0",
+            "text": "Bex"
+          }
+        ],
+        "tense": "imperative",
+        "trigger": "My",
+        "trigger_index": 0
+      },
+      {
+        "arguments": [
+          {
+            "confidence": 0.5109726660969851,
+            "entity_type": "slot_mappings",
+            "role": "arg1",
+            "text": "name"
+          },
+          {
+            "confidence": 0.6963864203106462,
+            "entity_type": "person",
+            "role": "arg0",
+            "text": "Bex"
+          }
+        ],
+        "tense": "present",
+        "trigger": "is",
+        "trigger_index": 1
+      }
+    ],
+    "events": [
+      {
+        "action": {
+          "lemma": "my",
+          "tense": "imperative",
+          "verb": "My"
+        },
+        "confidence": 0.7999999999999999,
+        "id": "evt_c9e8d636659ee8f6",
+        "object": {
+          "text": "Bex",
+          "type": "proper_noun"
+        }
+      },
+      {
+        "action": {
+          "lemma": "is",
+          "tense": "present",
+          "verb": "is"
+        },
+        "actor": {
+          "text": "name",
+          "type": "pronoun"
+        },
+        "confidence": 0.9999999999999999,
+        "id": "evt_985f772d27f3631a",
+        "object": {
+          "text": "Bex",
+          "type": "proper_noun"
+        }
+      }
+    ],
+    "intent": "smalltalk.statement",
+    "intent_domain": "smalltalk",
+    "pass": 2,
+    "pos_tags": [
+      [
+        "My",
+        "VERB"
+      ],
+      [
+        "name",
+        "PRON"
+      ],
+      [
+        "is",
+        "VERB"
+      ],
+      [
+        "Bex",
+        "PROPN"
+      ],
+      [
+        ".",
+        "NOUN"
+      ]
+    ],
+    "profile": {
+      "addressee": "ambiguous",
+      "aspect": "simple",
+      "certainty": "hedged",
+      "confidence": 0.734,
+      "derived_label": "smalltalk.statement",
+      "domain": "smalltalk",
+      "engagement_level": "urgent_demand",
+      "feature_provenance": {
+        "addressee": "analysis",
+        "aspect": "micro_classifier",
+        "certainty": "micro_classifier",
+        "confidence": "analysis",
+        "domain": "micro_classifier",
+        "modality": "composed",
+        "novelty_score": "analysis",
+        "polarity": "composed",
+        "sentiment_alignment": "composed",
+        "slot_completeness": "analysis",
+        "speech_act_category": "analysis",
+        "speech_act_subtype": "analysis",
+        "target": "composed",
+        "tense": "micro_classifier",
+        "urgency": "micro_classifier"
+      },
+      "modality": "declarative",
+      "novelty_score": 0.0,
+      "polarity": "affirmative",
+      "response_posture": "hedged",
+      "self_disclosure_level": "none",
+      "sentiment_alignment": "neutral",
+      "slot_completeness": 1.0,
+      "speech_act_category": "assertive",
+      "speech_act_subtype": "statement",
+      "target": "ambiguous",
+      "temporal_framing": "completed_past",
+      "tense": "past",
+      "urgency": "critical"
+    },
+    "response_strategy": "hedged_response",
+    "sentiment": {
+      "confidence": 0.10498200529816362,
+      "label": "negative"
+    },
+    "slots": {
+      "all_required_filled": true,
+      "filled_slots": {
+        "given-name": {
+          "confidence": 0.65,
+          "source": "explicit",
+          "value": "Bex"
+        },
+        "slot_mappings": {
+          "confidence": 0.62,
+          "source": "explicit",
+          "value": "name"
+        }
+      },
+      "schema_name": "unknown"
+    },
+    "speech_act": {
+      "category": "assertive",
+      "confidence": 0.6323722063566665,
+      "indicators": [
+        "intent:smalltalk.emotions.ha_ha"
+      ],
+      "intent_confidence": 0.2863258836177774,
+      "is_imperative": false,
+      "is_question": false,
+      "raw_analyses": {
+        "intent": {
+          "category": "assertive",
+          "confidence": 0.2863258836177774,
+          "intent": "smalltalk.emotions.ha_ha",
+          "margin": 0.10489398163060393,
+          "second_score": 0.18143190198717346,
+          "source": "feature_vector",
+          "sub_type": "statement",
+          "top_k": [
+            {
+              "intent": "smalltalk.emotions.ha_ha",
+              "score": 0.2863258836177774
+            },
+            {
+              "intent": "smalltalk.apology",
+              "score": 0.18143190198717346
+            },
+            {
+              "intent": "smalltalk.user.joking",
+              "score": 0.17962798651748899
+            },
+            {
+              "intent": "smalltalk.agent.acquaintance",
+              "score": 0.17633543735047705
+            },
+            {
+              "intent": "smalltalk.dialog.i_do_not_care",
+              "score": 0.17627879052708315
+            }
+          ]
+        },
+        "keyword": {
+          "confidence": 0.0,
+          "source": "keyword"
+        },
+        "memory": {
+          "confidence": 0.0,
+          "similar_count": 0,
+          "source": "memory"
+        },
+        "original_text": "My name is Bex.",
+        "pragmatic": {
+          "expressive_score": 0.0,
+          "first_person_subject": false,
+          "has_acknowledgment": false,
+          "has_commissive": false,
+          "has_future": false,
+          "has_hedging": false,
+          "has_offer": false,
+          "has_please": false,
+          "has_thanks": false,
+          "has_urgency": false,
+          "is_backchannel": false,
+          "is_compliment": false,
+          "is_short_utterance": false,
+          "is_very_short": false,
+          "source": "pragmatic"
+        },
+        "structural": {
+          "category": "assertive",
+          "confidence": 0.7,
+          "has_modal": false,
+          "is_continuation": false,
+          "is_declarative": true,
+          "is_exclamatory": false,
+          "is_imperative": false,
+          "is_question": false,
+          "source": "structural",
+          "sub_type": "statement"
+        }
+      },
+      "sub_type": "statement"
+    },
+    "text": "My name is Bex."
+  },
+  "raw_input": "My name is Bex.",
+  "soul": {
+    "constitution": "Serve.",
+    "id": "mind-2307",
+    "name": "Agent mind-2307"
+  }
+}

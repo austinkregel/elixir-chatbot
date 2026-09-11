@@ -32,8 +32,8 @@ defmodule Brain.Analysis.PipelineIntegrationTest do
 
     test "greeting with followup question" do
       model = Pipeline.process("Hi! How are you doing today?")
-      assert length(model.chunks) >= 2
-      assert length(model.analyses) >= 2
+      assert Enum.count_until(model.chunks, 2) >= 2
+      assert Enum.count_until(model.analyses, 2) >= 2
 
       # First chunk should be a greeting
       first = List.first(model.analyses)
@@ -107,7 +107,7 @@ defmodule Brain.Analysis.PipelineIntegrationTest do
       model = Pipeline.process("Play some jazz and what's the weather like?")
       analyses = model.analyses || []
       # Should produce multiple analyses for the compound request
-      assert length(analyses) >= 1
+      assert analyses != []
     end
   end
 
@@ -136,9 +136,11 @@ defmodule Brain.Analysis.PipelineIntegrationTest do
     end
 
     test "multiple sentences are chunked correctly" do
-      model = Pipeline.process("I love Paris. Can you tell me about the Eiffel Tower? It's amazing!")
-      assert length(model.chunks) >= 3
-      assert length(model.analyses) >= 3
+      model =
+        Pipeline.process("I love Paris. Can you tell me about the Eiffel Tower? It's amazing!")
+
+      assert Enum.count_until(model.chunks, 3) >= 3
+      assert Enum.count_until(model.analyses, 3) >= 3
     end
   end
 
@@ -214,7 +216,7 @@ defmodule Brain.Analysis.PipelineIntegrationTest do
           end
         end)
 
-      assert :command in categories or :directive in categories or length(analyses) >= 1
+      assert :command in categories or :directive in categories or analyses != []
     end
   end
 end

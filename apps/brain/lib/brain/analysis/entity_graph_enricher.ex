@@ -36,16 +36,29 @@ defmodule Brain.Analysis.EntityGraphEnricher do
 
       context_results = safe_entity_context(entities)
 
-      if debug?, do: Logger.info("    graph_enrich:entity_context=#{System.monotonic_time(:millisecond) - t0}ms (#{length(entities)} entities)")
+      if debug?,
+        do:
+          Logger.info(
+            "    graph_enrich:entity_context=#{System.monotonic_time(:millisecond) - t0}ms (#{length(entities)} entities)"
+          )
 
       enriched = apply_context(entities, context_results)
 
       known_count = Enum.count(enriched, &Map.get(&1, :graph_known, false))
-      if debug?, do: Logger.info("    graph_enrich:apply_context=#{System.monotonic_time(:millisecond) - t0}ms (#{known_count} known)")
+
+      if debug?,
+        do:
+          Logger.info(
+            "    graph_enrich:apply_context=#{System.monotonic_time(:millisecond) - t0}ms (#{known_count} known)"
+          )
 
       result = apply_relationships(enriched)
 
-      if debug?, do: Logger.info("    graph_enrich:relationships=#{System.monotonic_time(:millisecond) - t0}ms")
+      if debug?,
+        do:
+          Logger.info(
+            "    graph_enrich:relationships=#{System.monotonic_time(:millisecond) - t0}ms"
+          )
 
       result
     end
@@ -107,7 +120,7 @@ defmodule Brain.Analysis.EntityGraphEnricher do
   defp apply_relationships(entities) do
     known_entities = Enum.filter(entities, &Map.get(&1, :graph_known, false))
 
-    if length(known_entities) < 2 do
+    if match?([], known_entities) or match?([_], known_entities) do
       Enum.map(entities, &Map.put_new(&1, :graph_relationships, []))
     else
       pairs = for a <- known_entities, b <- known_entities, a != b, do: {a, b}

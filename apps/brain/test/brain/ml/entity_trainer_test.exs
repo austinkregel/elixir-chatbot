@@ -17,7 +17,7 @@ defmodule Brain.ML.EntityTrainerTest do
 
       sequences = EntityTrainer.convert_to_bio_sequences(examples)
 
-      assert length(sequences) == 1
+      assert match?([_], sequences)
       seq = Enum.at(sequences, 0)
 
       assert seq.intent == "weather.query"
@@ -66,7 +66,7 @@ defmodule Brain.ML.EntityTrainerTest do
       examples = [%{text: "hello", intent: "smalltalk.greetings.hello", entities: nil}]
 
       sequences = EntityTrainer.convert_to_bio_sequences(examples)
-      assert length(sequences) == 1
+      assert match?([_], sequences)
     end
 
     test "filters out empty text examples" do
@@ -76,7 +76,7 @@ defmodule Brain.ML.EntityTrainerTest do
       ]
 
       sequences = EntityTrainer.convert_to_bio_sequences(examples)
-      assert length(sequences) == 1
+      assert match?([_], sequences)
       assert Enum.at(sequences, 0).intent == "valid"
     end
   end
@@ -93,7 +93,7 @@ defmodule Brain.ML.EntityTrainerTest do
 
       entities = EntityTrainer.extract_entities_from_bio(token_tag_pairs)
 
-      assert length(entities) == 1
+      assert match?([_], entities)
       entity = Enum.at(entities, 0)
       assert entity.entity_type == "location"
       assert entity.value == "New York"
@@ -109,7 +109,7 @@ defmodule Brain.ML.EntityTrainerTest do
 
       entities = EntityTrainer.extract_entities_from_bio(token_tag_pairs)
 
-      assert length(entities) == 2
+      assert match?([_, _], entities)
 
       location = Enum.find(entities, fn e -> e.entity_type == "location" end)
       date = Enum.find(entities, fn e -> e.entity_type == "date" end)
@@ -135,7 +135,7 @@ defmodule Brain.ML.EntityTrainerTest do
 
       entities = EntityTrainer.extract_entities_from_bio(token_tag_pairs)
 
-      assert length(entities) == 2
+      assert match?([_, _], entities)
     end
 
     test "handles entity at end of sequence" do
@@ -143,7 +143,7 @@ defmodule Brain.ML.EntityTrainerTest do
 
       entities = EntityTrainer.extract_entities_from_bio(token_tag_pairs)
 
-      assert length(entities) == 1
+      assert match?([_], entities)
       assert Enum.at(entities, 0).value == "Paris"
     end
   end
@@ -185,7 +185,7 @@ defmodule Brain.ML.EntityTrainerTest do
       tokens = ["weather", "in", "London"]
       predictions = EntityTrainer.predict(tokens, model)
 
-      assert length(predictions) == 3
+      assert match?([_, _, _], predictions)
 
       Enum.each(predictions, fn {token, tag} ->
         assert is_binary(token)

@@ -30,7 +30,7 @@ defmodule Atlas.StatsTest do
     test "migration_status returns applied migrations" do
       migrations = Atlas.Stats.migration_status()
       assert is_list(migrations)
-      assert length(migrations) >= 2
+      assert Enum.count_until(migrations, 2) >= 2
     end
   end
 

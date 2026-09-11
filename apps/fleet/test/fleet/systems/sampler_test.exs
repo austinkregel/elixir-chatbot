@@ -32,12 +32,13 @@ defmodule Fleet.Systems.SamplerTest do
 
     rows =
       Atlas.Repo.all(
-        from s in SystemStatusSample,
+        from(s in SystemStatusSample,
           where: s.ship_id == ^ship and s.system_id == "ship",
           limit: 1
+        )
       )
 
-    assert length(rows) == 1
+    assert match?([_], rows)
     assert hd(rows).metric == score * 1.0
   end
 end

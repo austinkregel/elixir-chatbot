@@ -38,11 +38,12 @@ defmodule Brain.ML.GraphEnrichedPipelineTest do
         {"location", "entity"}
       ]
 
-      {:ok, embeddings, entity_to_idx, _idx_to_entity} = Poincare.Embeddings.train(pairs,
-        dim: 5,
-        epochs: 50,
-        learning_rate: 0.01
-      )
+      {:ok, embeddings, entity_to_idx, _idx_to_entity} =
+        Poincare.Embeddings.train(pairs,
+          dim: 5,
+          epochs: 50,
+          learning_rate: 0.01
+        )
 
       # All embeddings should be inside the Poincare ball
       for {_name, idx} <- entity_to_idx do
@@ -54,7 +55,10 @@ defmodule Brain.ML.GraphEnrichedPipelineTest do
       # Distances should be valid floats
       dog_idx = Map.fetch!(entity_to_idx, "dog")
       cat_idx = Map.fetch!(entity_to_idx, "cat")
-      dist = Poincare.Distance.distance(embeddings[dog_idx], embeddings[cat_idx]) |> Nx.to_number()
+
+      dist =
+        Poincare.Distance.distance(embeddings[dog_idx], embeddings[cat_idx]) |> Nx.to_number()
+
       assert is_float(dist)
       assert dist > 0.0
     end
@@ -76,7 +80,8 @@ defmodule Brain.ML.GraphEnrichedPipelineTest do
 
       frames = EventLinker.link(events, entities, tokens, pos_tags)
 
-      assert length(frames) == 2
+      assert match?([_, _], frames)
+
       for frame <- frames do
         assert is_binary(frame.trigger)
         assert is_list(frame.arguments)
@@ -94,12 +99,13 @@ defmodule Brain.ML.GraphEnrichedPipelineTest do
         {"Newton", "BORN_IN", "England"}
       ]
 
-      {:ok, model, params, vocab, _config} = TripleScorer.train(triples,
-        epochs: 30,
-        neg_ratio: 3,
-        embedding_dim: 16,
-        hidden_dim: 32
-      )
+      {:ok, model, params, vocab, _config} =
+        TripleScorer.train(triples,
+          epochs: 30,
+          neg_ratio: 3,
+          embedding_dim: 16,
+          hidden_dim: 32
+        )
 
       for {h, r, t} <- triples do
         text = "[HEAD] #{h} [REL] #{r} [TAIL] #{t}"
@@ -108,7 +114,7 @@ defmodule Brain.ML.GraphEnrichedPipelineTest do
         score = Nx.squeeze(output) |> Nx.to_number()
 
         assert score > 0.0 and score < 1.0,
-          "Score for #{h}-#{r}-#{t} should be in (0,1), got #{score}"
+               "Score for #{h}-#{r}-#{t} should be in (0,1), got #{score}"
       end
     end
 
@@ -134,7 +140,8 @@ defmodule Brain.ML.GraphEnrichedPipelineTest do
       frames = SemanticRoleLabeler.label(tokens, bio_tags)
       triples = SemanticRoleLabeler.to_triples(frames)
 
-      assert length(triples) >= 1
+      assert triples != []
+
       for {subj, pred, obj} <- triples do
         assert is_binary(subj)
         assert is_binary(pred)
@@ -143,7 +150,8 @@ defmodule Brain.ML.GraphEnrichedPipelineTest do
     end
 
     test "Phase 5A: Stance tracker records and detects drift" do
-      {:ok, tracker} = StanceTracker.start_link(name: :"integration_tracker_#{:rand.uniform(100000)}")
+      {:ok, tracker} =
+        StanceTracker.start_link(name: :"integration_tracker_#{:rand.uniform(100_000)}")
 
       StanceTracker.record_stance("test_conv", "climate", 0.3, :system, tracker)
       StanceTracker.record_stance("test_conv", "climate", 0.8, :user, tracker)
@@ -164,7 +172,8 @@ defmodule Brain.ML.GraphEnrichedPipelineTest do
       triples = SemanticRoleLabeler.to_triples(frames)
 
       # Triples can be scored
-      assert length(triples) >= 1
+      assert triples != []
+
       for {s, p, o} <- triples do
         assert is_binary(s) and is_binary(p) and is_binary(o)
       end
@@ -177,6 +186,7 @@ defmodule Brain.ML.GraphEnrichedPipelineTest do
       for frame <- event_frames do
         assert Map.has_key?(frame, :trigger)
         assert Map.has_key?(frame, :arguments)
+
         for arg <- frame.arguments do
           assert Map.has_key?(arg, :role)
           assert Map.has_key?(arg, :text)
@@ -190,6 +200,7 @@ defmodule Brain.ML.GraphEnrichedPipelineTest do
     Enum.with_index(tokens)
     |> Enum.map(fn {token, idx} ->
       downcased = String.downcase(token)
+
       cond do
         idx == 0 -> "B-ARG0"
         downcased in ~w(visited discovered gave ran explained hired is are) -> "B-V"

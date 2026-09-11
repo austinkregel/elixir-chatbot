@@ -70,8 +70,8 @@ defmodule Mix.Tasks.IngestEntityTypes do
     Mix.shell().info("  #{entity_type}: #{instance_count} entries")
 
     Enum.each(entries, fn entry ->
-      value = Map.get(entry, :value) || Map.get(entry, "value", "")
-      synonyms = Map.get(entry, :synonyms) || Map.get(entry, "synonyms", [])
+      value = Map.get(entry, :value) || ""
+      synonyms = Map.get(entry, :synonyms) || []
 
       if value != "" do
         {:ok, instance_node} =

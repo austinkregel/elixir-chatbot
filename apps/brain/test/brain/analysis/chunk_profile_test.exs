@@ -79,8 +79,7 @@ defmodule Brain.Analysis.ChunkProfileTest do
       analysis = %ChunkAnalysis{
         chunk_index: 0,
         text: "what is the weather",
-        speech_act:
-          SpeechActResult.new(:directive, :question_factual, 0.8, is_question: true),
+        speech_act: SpeechActResult.new(:directive, :question_factual, 0.8, is_question: true),
         discourse: DiscourseResult.new(:bot, 0.7),
         confidence: 0.7,
         pos_tags: [{"what", "PRON"}, {"is", "AUX"}, {"the", "DET"}, {"weather", "NOUN"}]
@@ -89,15 +88,14 @@ defmodule Brain.Analysis.ChunkProfileTest do
       feature_vector = List.duplicate(0.5, 140)
       profile = ChunkProfile.materialize(analysis, feature_vector)
 
-      assert length(profile.feature_vector) == 140
+      assert Enum.count(profile.feature_vector) == 140
     end
 
     test "projects modality from speech act" do
       question_analysis = %ChunkAnalysis{
         chunk_index: 0,
         text: "what time is it",
-        speech_act:
-          SpeechActResult.new(:directive, :question_factual, 0.9, is_question: true),
+        speech_act: SpeechActResult.new(:directive, :question_factual, 0.9, is_question: true),
         discourse: DiscourseResult.new(:bot, 0.8),
         confidence: 0.8,
         pos_tags: []

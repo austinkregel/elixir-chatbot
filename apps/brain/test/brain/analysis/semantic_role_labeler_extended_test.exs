@@ -22,7 +22,7 @@ defmodule Brain.Analysis.SemanticRoleLabelerExtendedTest do
       bio_tags = ["B-V"]
 
       frames = SemanticRoleLabeler.label(tokens, bio_tags)
-      assert length(frames) == 1
+      assert match?([_], frames)
       assert hd(frames).predicate == "run"
       assert hd(frames).arguments == []
     end
@@ -64,7 +64,7 @@ defmodule Brain.Analysis.SemanticRoleLabelerExtendedTest do
       bio_tags = ["B-ARG0", "B-V", "O", "B-ARG0", "B-V"]
 
       frames = SemanticRoleLabeler.label(tokens, bio_tags)
-      assert length(frames) >= 2
+      assert Enum.count_until(frames, 2) >= 2
 
       predicates = Enum.map(frames, & &1.predicate) |> Enum.sort()
       assert "jumped" in predicates
@@ -73,10 +73,21 @@ defmodule Brain.Analysis.SemanticRoleLabelerExtendedTest do
 
     test "all modifier types" do
       tokens = ["He", "spoke", "loudly", "in", "Berlin", "yesterday", "because", "of", "that"]
-      bio_tags = ["B-ARG0", "B-V", "B-ARGM-MNR", "B-ARGM-LOC", "I-ARGM-LOC", "B-ARGM-TMP", "B-ARGM-CAU", "I-ARGM-CAU", "I-ARGM-CAU"]
+
+      bio_tags = [
+        "B-ARG0",
+        "B-V",
+        "B-ARGM-MNR",
+        "B-ARGM-LOC",
+        "I-ARGM-LOC",
+        "B-ARGM-TMP",
+        "B-ARGM-CAU",
+        "I-ARGM-CAU",
+        "I-ARGM-CAU"
+      ]
 
       frames = SemanticRoleLabeler.label(tokens, bio_tags)
-      assert length(frames) >= 1
+      assert frames != []
 
       frame = hd(frames)
       roles = Enum.map(frame.arguments, & &1.role)
@@ -96,16 +107,18 @@ defmodule Brain.Analysis.SemanticRoleLabelerExtendedTest do
     end
 
     test "frame with ARG0 and ARG1 produces triple" do
-      frames = [%{
-        predicate: "ate",
-        arguments: [
-          %{role: :arg0, text: "John", span: {0, 0}, entity: nil},
-          %{role: :arg1, text: "pizza", span: {2, 2}, entity: nil}
-        ]
-      }]
+      frames = [
+        %{
+          predicate: "ate",
+          arguments: [
+            %{role: :arg0, text: "John", span: {0, 0}, entity: nil},
+            %{role: :arg1, text: "pizza", span: {2, 2}, entity: nil}
+          ]
+        }
+      ]
 
       triples = SemanticRoleLabeler.to_triples(frames)
-      assert length(triples) >= 1
+      assert triples != []
 
       {subj, pred, obj} = hd(triples)
       assert subj == "John"
@@ -114,13 +127,15 @@ defmodule Brain.Analysis.SemanticRoleLabelerExtendedTest do
     end
 
     test "frame with only modifiers" do
-      frames = [%{
-        predicate: "ran",
-        arguments: [
-          %{role: :argm_loc, text: "park", span: {2, 2}, entity: nil},
-          %{role: :argm_tmp, text: "yesterday", span: {3, 3}, entity: nil}
-        ]
-      }]
+      frames = [
+        %{
+          predicate: "ran",
+          arguments: [
+            %{role: :argm_loc, text: "park", span: {2, 2}, entity: nil},
+            %{role: :argm_tmp, text: "yesterday", span: {3, 3}, entity: nil}
+          ]
+        }
+      ]
 
       triples = SemanticRoleLabeler.to_triples(frames)
       assert is_list(triples)
@@ -128,18 +143,24 @@ defmodule Brain.Analysis.SemanticRoleLabelerExtendedTest do
 
     test "multiple frames produce multiple triples" do
       frames = [
-        %{predicate: "ate", arguments: [
-          %{role: :arg0, text: "John", span: {0, 0}, entity: nil},
-          %{role: :arg1, text: "pizza", span: {2, 2}, entity: nil}
-        ]},
-        %{predicate: "drank", arguments: [
-          %{role: :arg0, text: "Mary", span: {0, 0}, entity: nil},
-          %{role: :arg1, text: "coffee", span: {2, 2}, entity: nil}
-        ]}
+        %{
+          predicate: "ate",
+          arguments: [
+            %{role: :arg0, text: "John", span: {0, 0}, entity: nil},
+            %{role: :arg1, text: "pizza", span: {2, 2}, entity: nil}
+          ]
+        },
+        %{
+          predicate: "drank",
+          arguments: [
+            %{role: :arg0, text: "Mary", span: {0, 0}, entity: nil},
+            %{role: :arg1, text: "coffee", span: {2, 2}, entity: nil}
+          ]
+        }
       ]
 
       triples = SemanticRoleLabeler.to_triples(frames)
-      assert length(triples) >= 2
+      assert Enum.count_until(triples, 2) >= 2
     end
   end
 
@@ -151,13 +172,13 @@ defmodule Brain.Analysis.SemanticRoleLabelerExtendedTest do
 
     test "single B- tag produces one span" do
       spans = SemanticRoleLabeler.extract_spans(["B-ARG0"])
-      assert length(spans) == 1
+      assert match?([_], spans)
       assert {:arg0, 0, 0} in spans
     end
 
     test "B- followed by I- creates multi-word span" do
       spans = SemanticRoleLabeler.extract_spans(["B-ARG1", "I-ARG1", "I-ARG1"])
-      assert length(spans) == 1
+      assert match?([_], spans)
       {role, start_idx, end_idx} = hd(spans)
       assert role == :arg1
       assert start_idx == 0
@@ -166,7 +187,7 @@ defmodule Brain.Analysis.SemanticRoleLabelerExtendedTest do
 
     test "O tags are skipped" do
       spans = SemanticRoleLabeler.extract_spans(["O", "O", "B-V", "O"])
-      assert length(spans) == 1
+      assert match?([_], spans)
       assert {:verb, 2, 2} in spans
     end
   end
@@ -175,20 +196,23 @@ defmodule Brain.Analysis.SemanticRoleLabelerExtendedTest do
     test "entities link to matching spans" do
       tokens = ["John", "visited", "Berlin"]
       bio_tags = ["B-ARG0", "B-V", "B-ARG1"]
+
       entities = [
         %{text: "John", entity_type: :person, value: "John"},
         %{text: "Berlin", entity_type: :location, value: "Berlin"}
       ]
 
       frames = SemanticRoleLabeler.label(tokens, bio_tags, entities: entities)
-      assert length(frames) >= 1
+      assert frames != []
 
       frame = hd(frames)
-      linked_args = Enum.filter(frame.arguments, fn arg ->
-        arg.entity != nil
-      end)
 
-      assert length(linked_args) >= 1
+      linked_args =
+        Enum.filter(frame.arguments, fn arg ->
+          arg.entity != nil
+        end)
+
+      assert linked_args != []
     end
 
     test "entities with no matching span are not linked" do

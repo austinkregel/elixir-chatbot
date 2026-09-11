@@ -12,11 +12,21 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
 
     # Teach TypeInferrer about introduction patterns for "person" type
     # Pattern: PRON + VERB + PROPN (e.g., "I am John")
-    TypeInferrer.learn_from_known_entity("person", ["I", "am", "John"], ["PRON", "VERB", "PROPN"], @test_world_id)
+    TypeInferrer.learn_from_known_entity(
+      "person",
+      ["I", "am", "John"],
+      ["PRON", "VERB", "PROPN"],
+      @test_world_id
+    )
 
     # Teach about location patterns
     # Pattern: ADP + PROPN (e.g., "in Austin")
-    TypeInferrer.learn_from_known_entity("location", ["in", "Austin"], ["ADP", "PROPN"], @test_world_id)
+    TypeInferrer.learn_from_known_entity(
+      "location",
+      ["in", "Austin"],
+      ["ADP", "PROPN"],
+      @test_world_id
+    )
 
     on_exit(fn ->
       TypeInferrer.clear()
@@ -42,7 +52,7 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
 
       result = EntityDisambiguator.disambiguate(entities, pos_tagged, context)
 
-      assert length(result) == 1
+      assert match?([_], result)
       assert hd(result).entity_type == "person"
     end
 
@@ -70,7 +80,7 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
 
       result = EntityDisambiguator.disambiguate(entities, pos_tagged, context)
 
-      assert length(result) == 1
+      assert match?([_], result)
       # In introduction context, should prefer person over location
       assert hd(result).entity_type == "person"
     end
@@ -107,7 +117,7 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
 
       result = EntityDisambiguator.disambiguate(entities, pos_tagged, context)
 
-      assert length(result) == 1
+      assert match?([_], result)
       # For weather intent, should prefer location
       assert hd(result).entity_type == "location"
     end
@@ -137,7 +147,7 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
 
       result = EntityDisambiguator.disambiguate(entities, pos_tagged, context)
 
-      assert length(result) == 1
+      assert match?([_], result)
       # For music intent, should prefer music-artist
       assert hd(result).entity_type == "music-artist"
     end
@@ -197,7 +207,9 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
   end
 
   describe "introduction_confidence/3" do
-    test "high confidence for PRON+VERB pattern with self-referential discourse", %{world_id: world_id} do
+    test "high confidence for PRON+VERB pattern with self-referential discourse", %{
+      world_id: world_id
+    } do
       pos_tagged = [{"I", "PRON"}, {"am", "VERB"}, {"Austin", "PROPN"}]
       entity_position = 2
 
@@ -376,14 +388,15 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
         profile: profile
       }
 
-      ref = :telemetry.attach(
-        "test-atlas-cypher-counter",
-        [:brain, :atlas, :cypher],
-        fn _event, _measurements, _metadata, _config ->
-          flunk("Atlas Cypher query was issued when domain scoring was decisive")
-        end,
-        nil
-      )
+      ref =
+        :telemetry.attach(
+          "test-atlas-cypher-counter",
+          [:brain, :atlas, :cypher],
+          fn _event, _measurements, _metadata, _config ->
+            flunk("Atlas Cypher query was issued when domain scoring was decisive")
+          end,
+          nil
+        )
 
       result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
 
@@ -403,8 +416,13 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
       }
 
       pos_tagged = [
-        {"What", "PRON"}, {"'s", "PUNCT"}, {"the", "DET"},
-        {"weather", "NOUN"}, {"in", "ADP"}, {"Owosso", "PROPN"}, {"?", "PUNCT"}
+        {"What", "PRON"},
+        {"'s", "PUNCT"},
+        {"the", "DET"},
+        {"weather", "NOUN"},
+        {"in", "ADP"},
+        {"Owosso", "PROPN"},
+        {"?", "PUNCT"}
       ]
 
       profile = %Brain.Analysis.ChunkProfile{

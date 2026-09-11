@@ -1,6 +1,7 @@
 defmodule Brain.ML.Generation.Backend do
   @moduledoc """
-  The behaviour every generation backend implements.
+  Contract for a generation backend: turn a realization packet (ChatML
+  messages) into prose.
 
   Generation — turning a realization packet (ChatML messages) into prose — is a
   *pluggable, optional* capability of Brain, not a hard dependency. A backend is

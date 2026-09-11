@@ -14,15 +14,13 @@ defmodule Brain.Analysis.EntityDisambiguator do
   alias World.TypeInferrer
 
   @external_resource Path.join(:code.priv_dir(:brain), "analysis/entity_types.json")
-  @ambiguous_types (
-    Path.join(:code.priv_dir(:brain), "analysis/entity_types.json")
-    |> File.read!()
-    |> Jason.decode!()
-    |> Map.get("disambiguation_groups", %{})
-    |> Map.values()
-    |> List.flatten()
-    |> MapSet.new()
-  )
+  @ambiguous_types Path.join(:code.priv_dir(:brain), "analysis/entity_types.json")
+                   |> File.read!()
+                   |> Jason.decode!()
+                   |> Map.get("disambiguation_groups", %{})
+                   |> Map.values()
+                   |> List.flatten()
+                   |> MapSet.new()
 
   @external_resource Path.join(:code.priv_dir(:brain), "analysis/context_preferences.json")
   @context_preferences Path.join(:code.priv_dir(:brain), "analysis/context_preferences.json")
@@ -56,17 +54,18 @@ defmodule Brain.Analysis.EntityDisambiguator do
     types = get_entity_types(entity)
     entity_position = get_entity_position(entity, pos_tagged)
     entity_type = get_type_name(entity)
-    entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
+    entity_value = Map.get(entity, :value) || ""
     enriched_context = Map.put(context, :entity_value, entity_value)
 
     default_propn_type = TypeHierarchy.config("default_propn_type", "person")
 
     cond do
-      length(types) <= 1 and requires_inference?(entity_type) ->
+      (match?([], types) or match?([_], types)) and requires_inference?(entity_type) ->
         intro_confidence = introduction_confidence(pos_tagged, entity_position, enriched_context)
 
         if intro_confidence >= 0.7 do
-          if TypeHierarchy.is_a?(entity_type, default_propn_type) or entity_type == default_propn_type do
+          if TypeHierarchy.is_a?(entity_type, default_propn_type) or
+               entity_type == default_propn_type do
             entity
             |> Map.put(:disambiguation_reason, "introduction_pattern")
             |> Map.put(:disambiguation_source, :context_analysis)
@@ -76,7 +75,7 @@ defmodule Brain.Analysis.EntityDisambiguator do
         else
           expanded = expand_with_domain_candidates(entity, entity_type, context)
 
-          if length(expanded) > 1 do
+          if match?([_, _ | _], expanded) do
             score_and_select(entity, expanded, pos_tagged, context)
           else
             infer_type_with_type_inferrer(entity, pos_tagged, context)
@@ -86,7 +85,7 @@ defmodule Brain.Analysis.EntityDisambiguator do
       types == [] ->
         entity
 
-      length(types) == 1 ->
+      match?([_], types) ->
         single_type = hd(types)
         single_type_name = get_type_name(single_type)
         intro_confidence = introduction_confidence(pos_tagged, entity_position, enriched_context)
@@ -103,10 +102,11 @@ defmodule Brain.Analysis.EntityDisambiguator do
         intro_confidence = introduction_confidence(pos_tagged, entity_position, enriched_context)
 
         if intro_confidence >= 0.7 do
-          person_type = Enum.find(types, fn t ->
-            tn = get_type_name(t)
-            tn == default_propn_type or TypeHierarchy.is_a?(tn, default_propn_type)
-          end)
+          person_type =
+            Enum.find(types, fn t ->
+              tn = get_type_name(t)
+              tn == default_propn_type or TypeHierarchy.is_a?(tn, default_propn_type)
+            end)
 
           if person_type do
             select_type(entity, person_type)
@@ -125,7 +125,7 @@ defmodule Brain.Analysis.EntityDisambiguator do
     name_type = %{
       entity_type: default_type,
       entity: default_type,
-      value: Map.get(entity, :value) || Map.get(entity, "value"),
+      value: Map.get(entity, :value),
       confidence: intro_confidence,
       disambiguation_reason: "introduction_pattern"
     }
@@ -147,7 +147,7 @@ defmodule Brain.Analysis.EntityDisambiguator do
       end
 
     if expected_types != [] and current_type not in expected_types do
-      entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
+      entity_value = Map.get(entity, :value) || ""
 
       original = %{
         entity_type: current_type,
@@ -192,7 +192,7 @@ defmodule Brain.Analysis.EntityDisambiguator do
           base_scored
 
         _ ->
-          entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
+          entity_value = Map.get(entity, :value) || ""
           candidate_labels = Enum.map(types, &get_type_name/1)
 
           prefetched =
@@ -235,7 +235,7 @@ defmodule Brain.Analysis.EntityDisambiguator do
 
   @doc "Infer the entity type using intent context and TypeInferrer.\n\nPrimary: Uses ChunkProfile domain to derive expected entity types for\nthe current intent's requirements.\n\nFallback: TypeInferrer's learned patterns when no intent context or\nwhen TypeInferrer returns a type that matches expected types.\n\nRequires world_id in context for proper data isolation.\n"
   def infer_type_with_type_inferrer(entity, pos_tagged, context) do
-    entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
+    entity_value = Map.get(entity, :value) || ""
     original_type = Map.get(entity, :entity_type) || ""
     intent = Map.get(context, :intent, "")
     world_id = Map.get(context, :world_id) || "default"
@@ -273,15 +273,18 @@ defmodule Brain.Analysis.EntityDisambiguator do
           original_type
 
         expected_types != [] ->
-          compatible = Enum.find(expected_types, fn et ->
-            TypeHierarchy.compatible?(inferred_type, et) or
-              TypeHierarchy.compatible?(original_type, et)
-          end)
+          compatible =
+            Enum.find(expected_types, fn et ->
+              TypeHierarchy.compatible?(inferred_type, et) or
+                TypeHierarchy.compatible?(original_type, et)
+            end)
 
           compatible || hd(expected_types)
 
         inferred_type in ["unknown", ""] or inferred_type == nil ->
-          if original_type != "" and original_type != "unknown", do: original_type, else: inferred_type
+          if original_type != "" and original_type != "unknown",
+            do: original_type,
+            else: inferred_type
 
         true ->
           inferred_type
@@ -371,7 +374,7 @@ defmodule Brain.Analysis.EntityDisambiguator do
   end
 
   defp get_entity_position(entity, pos_tagged) when is_list(pos_tagged) do
-    entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
+    entity_value = Map.get(entity, :value) || ""
     entity_value_lower = String.downcase(entity_value)
 
     pos_tagged
@@ -399,7 +402,6 @@ defmodule Brain.Analysis.EntityDisambiguator do
         []
     end
   end
-
 
   defp has_pron_verb_before?(pos_tagged, entity_pos) when is_list(pos_tagged) do
     preceding =
@@ -443,7 +445,6 @@ defmodule Brain.Analysis.EntityDisambiguator do
     Map.get(speech_act, :category) == :expressive and
       Map.get(speech_act, :sub_type) in [:greeting, :nice_to_meet]
   end
-
 
   defp score_type_base(type_info, features, context) do
     entity_type = get_type_name(type_info)
@@ -563,6 +564,7 @@ defmodule Brain.Analysis.EntityDisambiguator do
 
           Enum.any?(expected_types, fn et ->
             et_lower = String.downcase(et)
+
             Enum.any?(neighbor_type_indicators, fn ind ->
               ind == et_lower or String.contains?(ind, et_lower)
             end)
@@ -598,9 +600,10 @@ defmodule Brain.Analysis.EntityDisambiguator do
     |> Enum.join("")
   end
 
-  defp normalize_label_for_lookup(type) when is_atom(type), do: normalize_label_for_lookup(to_string(type))
-  defp normalize_label_for_lookup(_), do: "Entity"
+  defp normalize_label_for_lookup(type) when is_atom(type),
+    do: normalize_label_for_lookup(to_string(type))
 
+  defp normalize_label_for_lookup(_), do: "Entity"
 
   defp get_type_name(type_info) when is_map(type_info) do
     Map.get(type_info, :entity_type, "unknown")
@@ -614,8 +617,7 @@ defmodule Brain.Analysis.EntityDisambiguator do
     base_merge = %{
       entity: get_type_name(selected_type),
       entity_type: get_type_name(selected_type),
-      value:
-        Map.get(selected_type, :value) || Map.get(entity, :value) || Map.get(entity, "value"),
+      value: Map.get(selected_type, :value) || Map.get(entity, :value),
       disambiguation_source: :context_analysis
     }
 
@@ -637,11 +639,13 @@ defmodule Brain.Analysis.EntityDisambiguator do
   end
 
   defp domain_from_intent(nil), do: nil
+
   defp domain_from_intent(intent) when is_binary(intent) do
     case String.split(intent, ".", parts: 2) do
       [d, _] -> String.to_atom(d)
       _ -> nil
     end
   end
+
   defp domain_from_intent(_), do: nil
 end

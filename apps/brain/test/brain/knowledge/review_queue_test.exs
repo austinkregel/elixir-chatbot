@@ -47,7 +47,7 @@ defmodule Brain.Knowledge.ReviewQueueTest do
 
       pending = ReviewQueue.get_pending()
 
-      assert length(pending) == 2
+      assert match?([_, _], pending)
     end
 
     test "respects limit option" do
@@ -57,7 +57,7 @@ defmodule Brain.Knowledge.ReviewQueueTest do
 
       pending = ReviewQueue.get_pending(limit: 5)
 
-      assert length(pending) == 5
+      assert match?([_, _, _, _, _], pending)
     end
 
     test "sorts by confidence by default" do

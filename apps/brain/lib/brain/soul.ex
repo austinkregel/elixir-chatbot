@@ -51,8 +51,11 @@ defmodule Brain.Soul do
   @doc "Lists the ids of all Souls on file."
   def list_ids do
     case File.ls(souls_dir()) do
-      {:ok, files} -> files |> Enum.filter(&String.ends_with?(&1, ".json")) |> Enum.map(&Path.rootname/1)
-      _ -> []
+      {:ok, files} ->
+        files |> Enum.filter(&String.ends_with?(&1, ".json")) |> Enum.map(&Path.rootname/1)
+
+      _ ->
+        []
     end
   end
 
@@ -67,11 +70,11 @@ defmodule Brain.Soul do
 
   defp from_map(data) when is_map(data) do
     %__MODULE__{
-      id: data["id"] || data[:id],
-      name: data["name"] || data[:name],
-      constitution: data["constitution"] || data[:constitution],
-      genome: data["genome"] || data[:genome] || %{},
-      metadata: data["metadata"] || data[:metadata] || %{}
+      id: data["id"],
+      name: data["name"],
+      constitution: data["constitution"],
+      genome: data["genome"] || %{},
+      metadata: data["metadata"] || %{}
     }
   end
 end

@@ -17,7 +17,7 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasTest do
 
       result = UnusedAlias.parse_unused_alias_warnings(output, ["lib/"])
 
-      assert length(result) == 1
+      assert match?([_], result)
       [entry] = result
       assert entry.alias_name == "Analysis"
       assert entry.line == 4
@@ -43,7 +43,7 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasTest do
 
       result = UnusedAlias.parse_unused_alias_warnings(output, ["lib/"])
 
-      assert length(result) == 2
+      assert match?([_, _], result)
       alias_names = Enum.map(result, & &1.alias_name) |> Enum.sort()
       assert alias_names == ["Analysis", "Types"]
     end
@@ -62,7 +62,7 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasTest do
       # Only apps/brain should match
       result = UnusedAlias.parse_unused_alias_warnings(output, ["apps/brain"])
 
-      assert length(result) == 1
+      assert match?([_], result)
       [entry] = result
       assert entry.alias_name == "Foo"
     end
@@ -95,7 +95,7 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasTest do
 
       result = UnusedAlias.parse_unused_alias_warnings(output, ["lib/"])
 
-      assert length(result) == 1
+      assert match?([_], result)
       [entry] = result
       assert entry.alias_name == "Tokenizer"
       assert String.contains?(entry.file, "micro_classifiers.ex")
@@ -122,7 +122,7 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasTest do
 
       result = UnusedAlias.parse_unused_alias_warnings(output, ["lib/"])
 
-      assert length(result) == 1
+      assert match?([_], result)
       [entry] = result
       assert entry.alias_name == "Foo"
     end
@@ -136,7 +136,7 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasTest do
 
       result = UnusedAlias.parse_unused_alias_warnings(output, ["apps/"])
 
-      assert length(result) == 1
+      assert match?([_], result)
       [entry] = result
       assert entry.alias_name == "Bar"
     end
@@ -150,7 +150,7 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasTest do
 
       result = UnusedAlias.parse_unused_alias_warnings(output, ["apps/brain"])
 
-      assert length(result) == 1
+      assert match?([_], result)
       [entry] = result
       assert entry.alias_name == "Baz"
     end
@@ -164,7 +164,7 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasTest do
 
       result = UnusedAlias.parse_unused_alias_warnings(output, ["lib/"])
 
-      assert length(result) == 1
+      assert match?([_], result)
       [entry] = result
       assert entry.alias_name == "Simple"
       assert entry.line == 12
@@ -182,7 +182,8 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasTest do
       end
       """
 
-      {:ok, output, count} = UnusedAlias.remove_unused_aliases(input, ["Module"], false, "test.ex")
+      {:ok, output, count} =
+        UnusedAlias.remove_unused_aliases(input, ["Module"], false, "test.ex")
 
       assert count == 1
       refute String.contains?(output, "alias Some.Module")
@@ -320,7 +321,8 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasTest do
       end
       """
 
-      {:ok, output, count} = UnusedAlias.remove_unused_aliases(input, ["Module"], false, "test.ex")
+      {:ok, output, count} =
+        UnusedAlias.remove_unused_aliases(input, ["Module"], false, "test.ex")
 
       assert count == 0
       assert output == input
@@ -405,10 +407,11 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasTest do
       aliases = [%{file: path, line: 2, alias_name: "Unused"}]
 
       # Error output goes to stderr
-      output = capture_io(:stderr, fn ->
-        count = UnusedAlias.process_file(path, aliases, false, true)
-        assert count == 0
-      end)
+      output =
+        capture_io(:stderr, fn ->
+          count = UnusedAlias.process_file(path, aliases, false, true)
+          assert count == 0
+        end)
 
       assert output =~ "Failed to read"
     end
@@ -420,10 +423,11 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasTest do
       aliases = [%{file: path, line: 1, alias_name: "Unused"}]
 
       # Note: parse error may go to stderr or be silent
-      _output = capture_io(:stderr, fn ->
-        count = UnusedAlias.process_file(path, aliases, false, true)
-        assert count == 0
-      end)
+      _output =
+        capture_io(:stderr, fn ->
+          count = UnusedAlias.process_file(path, aliases, false, true)
+          assert count == 0
+        end)
 
       # Test passes if it doesn't crash - parse error handling is internal
     end
@@ -440,10 +444,11 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasTest do
       File.write!(path, content)
       aliases = [%{file: path, line: 2, alias_name: "Unused"}]
 
-      output = capture_io(fn ->
-        count = UnusedAlias.process_file(path, aliases, false, true)
-        assert count == 1
-      end)
+      output =
+        capture_io(fn ->
+          count = UnusedAlias.process_file(path, aliases, false, true)
+          assert count == 1
+        end)
 
       assert output =~ "removing unused alias Unused"
       assert output =~ path
@@ -453,10 +458,13 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasTest do
       invalid_content = "defmodule Broken { invalid syntax"
       alias_names = ["Unused"]
 
-      output = capture_io(:stderr, fn ->
-        result = UnusedAlias.remove_unused_aliases(invalid_content, alias_names, true, "broken.ex")
-        assert match?({:error, _}, result)
-      end)
+      output =
+        capture_io(:stderr, fn ->
+          result =
+            UnusedAlias.remove_unused_aliases(invalid_content, alias_names, true, "broken.ex")
+
+          assert match?({:error, _}, result)
+        end)
 
       assert output =~ "Failed to parse"
       assert output =~ "broken.ex"
@@ -466,10 +474,11 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasTest do
       path = Path.join(tmp_dir, "nonexistent.ex")
       aliases = [%{file: path, line: 2, alias_name: "Unused"}]
 
-      stderr = capture_io(:stderr, fn ->
-        count = UnusedAlias.process_file(path, aliases, false, false)
-        assert count == 0
-      end)
+      stderr =
+        capture_io(:stderr, fn ->
+          count = UnusedAlias.process_file(path, aliases, false, false)
+          assert count == 0
+        end)
 
       assert stderr == ""
     end
@@ -492,9 +501,10 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasTest do
     end
 
     test "displays help message in dry-run mode" do
-      output = capture_io(fn ->
-        assert {:ok, _count} = UnusedAlias.run(["--dry-run"])
-      end)
+      output =
+        capture_io(fn ->
+          assert {:ok, _count} = UnusedAlias.run(["--dry-run"])
+        end)
 
       assert output =~ "DRY RUN" or output =~ "Scanning"
     end

@@ -126,7 +126,7 @@ defmodule Brain.Epistemic.StanceTracker do
       observations ->
         system_obs = Enum.filter(observations, &(&1.source == :system))
 
-        if length(system_obs) < 2 do
+        if match?([], system_obs) or match?([_], system_obs) do
           {:reply, {:ok, :no_drift}, state}
         else
           initial = hd(system_obs).position
@@ -134,12 +134,14 @@ defmodule Brain.Epistemic.StanceTracker do
           drift = current - initial
 
           user_obs = Enum.filter(observations, &(&1.source == :user))
-          user_direction = if user_obs != [] do
-            avg_user = Enum.sum(Enum.map(user_obs, & &1.position)) / length(user_obs)
-            if avg_user > initial, do: :toward_user, else: :away_from_user
-          else
-            :unknown
-          end
+
+          user_direction =
+            if user_obs != [] do
+              avg_user = Enum.sum(Enum.map(user_obs, & &1.position)) / length(user_obs)
+              if avg_user > initial, do: :toward_user, else: :away_from_user
+            else
+              :unknown
+            end
 
           drift_info = %{
             initial_position: initial,
@@ -175,16 +177,18 @@ defmodule Brain.Epistemic.StanceTracker do
       timestamp: DateTime.utc_now()
     }
 
-    conversations = state.conversations
-    |> Map.update(conversation_id, %{canonical_topic => [observation]}, fn conv ->
-      Map.update(conv, canonical_topic, [observation], &(&1 ++ [observation]))
-    end)
+    conversations =
+      state.conversations
+      |> Map.update(conversation_id, %{canonical_topic => [observation]}, fn conv ->
+        Map.update(conv, canonical_topic, [observation], &(&1 ++ [observation]))
+      end)
 
     persist_stance_to_belief_store(conversation_id, topic, clamped_position, source)
 
-    new_stats = %{state.stats |
-      total_observations: state.stats.total_observations + 1,
-      conversations_tracked: map_size(conversations)
+    new_stats = %{
+      state.stats
+      | total_observations: state.stats.total_observations + 1,
+        conversations_tracked: map_size(conversations)
     }
 
     new_stats = maybe_warn_drift(conversations, conversation_id, topic, state, new_stats)
@@ -196,11 +200,13 @@ defmodule Brain.Epistemic.StanceTracker do
 
   defp maybe_warn_drift(conversations, conversation_id, topic, state, stats) do
     case get_in(conversations, [conversation_id, topic]) do
-      nil -> stats
+      nil ->
+        stats
+
       observations ->
         system_obs = Enum.filter(observations, &(&1.source == :system))
 
-        if length(system_obs) >= 2 do
+        if match?([_, _ | _], system_obs) do
           initial = hd(system_obs).position
           current = List.last(system_obs).position
           drift = abs(current - initial)
@@ -208,12 +214,14 @@ defmodule Brain.Epistemic.StanceTracker do
           if drift > state.drift_threshold do
             Logger.warning(
               "Stance drift detected on topic '#{topic}' in conversation #{conversation_id}: " <>
-              "#{Float.round(drift, 3)} exceeds threshold #{state.drift_threshold}"
+                "#{Float.round(drift, 3)} exceeds threshold #{state.drift_threshold}"
             )
+
             :telemetry.execute([:brain, :epistemic, :stance_drift], %{drift: drift}, %{
               conversation_id: conversation_id,
               topic: topic
             })
+
             %{stats | drift_warnings: stats.drift_warnings + 1}
           else
             stats

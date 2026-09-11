@@ -170,7 +170,7 @@ defmodule World.TrainingWorldTest do
       Process.sleep(50)
 
       events = WorldManager.get_events(world.id)
-      assert length(events) >= 2
+      assert Enum.count_until(events, 2) >= 2
     end
 
     test "manages entity candidates" do
@@ -229,7 +229,7 @@ defmodule World.TrainingWorldTest do
       Gazetteer.add_to_world(world.id, "Entity2", "type2")
 
       overlay = Gazetteer.get_world_overlay(world.id)
-      assert length(overlay) >= 2
+      assert Enum.count_until(overlay, 2) >= 2
     end
   end
 

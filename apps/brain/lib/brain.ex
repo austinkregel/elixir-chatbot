@@ -1,5 +1,15 @@
 defmodule Brain do
-  @moduledoc "The Brain GenServer manages the AI personality, subprocesses, and global memory.\nThis is the core component that orchestrates all chat bot functionality.\n"
+  @moduledoc """
+  Top-level GenServer for a single mind: holds the loaded persona, its active
+  conversations, global memory, and the learning queue.
+
+  Every turn funnels through `evaluate/3`, which routes input through the
+  analysis pipeline and then an optional generation backend. Conversations are
+  per-mind isolated — each carries its own `world_id`, soul, and agent id — so a
+  Fleet of agents can share one Brain process without bleeding memory across
+  minds. Also supervises HTTP/conversation/CLI subprocesses that each get a
+  snapshot of knowledge and memory at spawn.
+  """
 
   # World.Context and World.Manager are in a sibling umbrella app that depends on :brain.
   # They are available at runtime but not at compile time.
@@ -751,6 +761,7 @@ defmodule Brain do
       |> Keyword.put(:world_id, world_id)
       |> Keyword.put(:soul, soul)
       |> Keyword.put(:agent_id, agent_id)
+
     ml_config = Application.get_env(:brain, :ml) || Application.get_env(:chat_bot, :ml) || []
 
     {response, processing_method, context} =
@@ -881,7 +892,10 @@ defmodule Brain do
     {:reply, {:ok, enriched_result}, updated_state}
   rescue
     e ->
-      Logger.error("Evaluation failed for conversation #{conversation_id}: #{Exception.message(e)}")
+      Logger.error(
+        "Evaluation failed for conversation #{conversation_id}: #{Exception.message(e)}"
+      )
+
       {:reply, {:error, {:generation_failed, Exception.message(e)}}, state}
   end
 
@@ -924,7 +938,8 @@ defmodule Brain do
     # response is real cognition, full stop — the classical epistemic-response
     # template (Synthesizer.synthesize_self_knowledge_response/2) never runs
     # for a require_llm caller, even for a self-knowledge query.
-    if Config.enabled?() and not require_llm and SelfKnowledgeAnalyzer.is_self_knowledge_query?(input) do
+    if Config.enabled?() and not require_llm and
+         SelfKnowledgeAnalyzer.is_self_knowledge_query?(input) do
       Progress.report(opts, :meta_cognitive_query, %{
         query_type: :self_knowledge
       })
@@ -1030,7 +1045,11 @@ defmodule Brain do
     case ResponseGate.evaluate(analysis_model, memory, gate_opts) do
       {:defer, reason} ->
         Logger.info("Response deferred by ResponseGate", reason)
-        Progress.report(opts, :response_gate_complete, %{decision: :defer, reason: reason[:reason]})
+
+        Progress.report(opts, :response_gate_complete, %{
+          decision: :defer,
+          reason: reason[:reason]
+        })
 
         Progress.report(opts, :response_generated, %{
           response_type: :deferred,
@@ -1077,7 +1096,11 @@ defmodule Brain do
         end
 
       {:respond, reason} ->
-        Progress.report(opts, :response_gate_complete, %{decision: :respond, reason: reason[:reason]})
+        Progress.report(opts, :response_gate_complete, %{
+          decision: :respond,
+          reason: reason[:reason]
+        })
+
         proceed_with_standard_response(persona, input, memory, analysis_model, opts)
     end
   end
@@ -1203,14 +1226,7 @@ defmodule Brain do
 
     entities =
       if best_analysis do
-        (best_analysis.entities || [])
-        |> Enum.map(fn e ->
-          %{
-            entity_type: e["type"] || e[:entity_type] || e["entity_type"],
-            value: e["name"] || e[:value] || e["value"],
-            confidence: e["confidence"] || e[:confidence] || 0.8
-          }
-        end)
+        normalize_chunk_entities(best_analysis.entities || [])
       else
         EntityExtractor.extract_entities(input)
       end
@@ -1278,11 +1294,31 @@ defmodule Brain do
   end
 
   defp normalize_chunk_entity(e) do
+    e = atomize_entity(e)
+
     %{
-      entity_type: e[:entity_type] || e["entity_type"] || e["type"],
-      value: e[:value] || e["value"] || e["name"],
-      confidence: e[:confidence] || e["confidence"] || 0.8
+      entity_type: e[:entity_type],
+      value: e[:value],
+      confidence: e[:confidence] || 0.8
     }
+  end
+
+  # Chunk entities reach us in two shapes: internally they are atom-keyed
+  # (%{entity_type:, value:, confidence:}), while decoded/benchmark inputs are
+  # string-keyed (%{"type" =>, "name" =>, "confidence" =>}). Fold the string
+  # shape onto its canonical atom key ONCE here so downstream reads use a single
+  # key type. Atom keys take precedence over their string aliases, matching the
+  # original `e[:k] || e["k"]` precedence.
+  defp atomize_entity(e) do
+    Enum.reduce(e, %{}, fn
+      {k, v}, acc when is_atom(k) -> Map.put(acc, k, v)
+      {"type", v}, acc -> Map.put_new(acc, :entity_type, v)
+      {"entity_type", v}, acc -> Map.put_new(acc, :entity_type, v)
+      {"name", v}, acc -> Map.put_new(acc, :value, v)
+      {"value", v}, acc -> Map.put_new(acc, :value, v)
+      {"confidence", v}, acc -> Map.put_new(acc, :confidence, v)
+      {_k, _v}, acc -> acc
+    end)
   end
 
   defp normalize_chunk_entities(entities) when is_list(entities) do
@@ -1584,9 +1620,12 @@ defmodule Brain do
           {:ok, %{confidence: conf, intent: nlp_intent, entities: nlp_entities}} ->
             {intent, method} =
               reconcile_intents(
-                analysis_intent, analysis_intent_confidence,
-                nlp_intent, conf,
-                input, analysis_entities
+                analysis_intent,
+                analysis_intent_confidence,
+                nlp_intent,
+                conf,
+                input,
+                analysis_entities
               )
 
             entities =
@@ -1634,15 +1673,18 @@ defmodule Brain do
         []
       end
 
-    ConsistencyChecker.check_and_report(%{
-      text: input,
-      final_intent: intent,
-      analysis_intent: analysis_intent,
-      analysis_confidence: best_analysis && best_analysis.confidence,
-      nlp_intent: nlp_info.intent,
-      nlp_confidence: nlp_info.confidence,
-      events: events
-    }, opts)
+    ConsistencyChecker.check_and_report(
+      %{
+        text: input,
+        final_intent: intent,
+        analysis_intent: analysis_intent,
+        analysis_confidence: best_analysis && best_analysis.confidence,
+        nlp_intent: nlp_info.intent,
+        nlp_confidence: nlp_info.confidence,
+        events: events
+      },
+      opts
+    )
 
     speech_act_info =
       if(best_analysis) do
@@ -1700,6 +1742,7 @@ defmodule Brain do
   end
 
   defp get_analysis_intent_confidence(nil), do: 0.0
+
   defp get_analysis_intent_confidence(analysis) do
     case analysis.speech_act do
       %{intent_confidence: c} when is_number(c) -> c
@@ -1708,8 +1751,11 @@ defmodule Brain do
   end
 
   defp reconcile_intents(nil, _analysis_conf, nlp_intent, nlp_conf, _text, _entities) do
-    method = if NLPPipeline.should_use_classical_result?(nlp_conf),
-      do: :classical, else: :classical_low_confidence
+    method =
+      if NLPPipeline.should_use_classical_result?(nlp_conf),
+        do: :classical,
+        else: :classical_low_confidence
+
     {nlp_intent, method}
   end
 
@@ -1754,7 +1800,7 @@ defmodule Brain do
     analysis_values =
       all_entities_for_conflict_check
       |> Enum.map(fn e ->
-        value = e[:value] || e["value"] || ""
+        value = e[:value] || ""
         String.downcase(to_string(value))
       end)
       |> MapSet.new()
@@ -1763,7 +1809,7 @@ defmodule Brain do
       nlp_entities
       |> Enum.reject(fn e ->
         e_type = e.entity_type
-        e_value = String.downcase(to_string(e[:value] || e["value"] || ""))
+        e_value = String.downcase(to_string(e[:value] || ""))
         same_type = MapSet.member?(analysis_types, e_type)
         value_conflict = MapSet.member?(analysis_values, e_value) and not same_type
 
@@ -1799,17 +1845,21 @@ defmodule Brain do
       label = Map.get(sentiment, :label, :neutral)
       score = Map.get(sentiment, :confidence, 0.5)
 
-      position = case label do
-        :positive -> score
-        :negative -> -score
-        _ -> 0.0
-      end
+      position =
+        case label do
+          :positive -> score
+          :negative -> -score
+          _ -> 0.0
+        end
 
       topic = intent_to_topic(intent)
 
       if topic != nil do
         Brain.Epistemic.StanceTracker.record_stance(
-          conversation_id, topic, position, :user
+          conversation_id,
+          topic,
+          position,
+          :user
         )
       end
     end
@@ -1820,12 +1870,14 @@ defmodule Brain do
   end
 
   defp intent_to_topic(nil), do: nil
+
   defp intent_to_topic(intent) when is_binary(intent) do
     case String.split(intent, ".") do
       [domain | _] when domain != "" -> domain
       _ -> nil
     end
   end
+
   defp intent_to_topic(_), do: nil
 
   defp build_clarification_response(prompts, _persona) do
@@ -1928,7 +1980,9 @@ defmodule Brain do
       # if some other error still reaches here, raise rather than emit
       # Synthesizer's canned text as if it were the agent's own answer.
       {:error, reason} when require_llm ->
-        raise Brain.ML.Generation.BackendError, backend: Brain.ML.Generation.name(), reason: reason
+        raise Brain.ML.Generation.BackendError,
+          backend: Brain.ML.Generation.name(),
+          reason: reason
 
       {:error, reason} ->
         Logger.warning("Synthesis failed, falling back: #{inspect(reason)}")
@@ -2410,8 +2464,8 @@ defmodule Brain do
     now = DateTime.utc_now()
 
     Enum.each(entities, fn entity ->
-      value = entity[:value] || entity["value"]
-      type = entity[:entity_type] || entity["entity_type"] || "unknown"
+      value = entity[:value]
+      type = entity[:entity_type] || "unknown"
       type_str = to_string(type) |> String.downcase()
 
       if value &&
@@ -2420,7 +2474,7 @@ defmodule Brain do
         candidate = %{
           value: to_string(value),
           inferred_type: type_str,
-          confidence: entity[:confidence] || entity["confidence"] || 0.5,
+          confidence: entity[:confidence] || 0.5,
           discovered_at: now,
           occurrences: 1
         }
@@ -2634,18 +2688,24 @@ defmodule Brain do
       {"", d, _} when is_binary(d) and d != "" ->
         %{analysis | intent: d}
 
-      {existing, d, dom} when is_binary(existing) and is_binary(d) and d != "" and dom != :unknown ->
+      {existing, d, dom}
+      when is_binary(existing) and is_binary(d) and d != "" and dom != :unknown ->
         intent_domain = extract_intent_domain(existing)
         profile_domain = to_string(dom)
         intent_conf = get_speech_act_intent_confidence(analysis)
 
         if domains_disagree?(intent_domain, profile_domain) or intent_conf <= 0.5 do
           Logger.debug("Intent override: #{existing} -> #{d}",
-            reason: if(domains_disagree?(intent_domain, profile_domain), do: :domain_mismatch, else: :low_confidence),
+            reason:
+              if(domains_disagree?(intent_domain, profile_domain),
+                do: :domain_mismatch,
+                else: :low_confidence
+              ),
             intent_confidence: intent_conf,
             profile_domain: profile_domain,
             intent_domain: intent_domain
           )
+
           %{analysis | intent: d}
         else
           analysis
@@ -2667,7 +2727,9 @@ defmodule Brain do
     intent_domain != profile_domain and profile_domain != "unknown"
   end
 
-  defp get_speech_act_intent_confidence(%{speech_act: %{intent_confidence: c}}) when is_number(c), do: c
+  defp get_speech_act_intent_confidence(%{speech_act: %{intent_confidence: c}}) when is_number(c),
+    do: c
+
   defp get_speech_act_intent_confidence(_), do: 0.0
 
   defp greeting_or_farewell?(analysis) do

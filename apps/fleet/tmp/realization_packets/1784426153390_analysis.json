@@ -1,0 +1,111 @@
+{
+  "confidence": 0.718,
+  "entities": [
+    {
+      "confidence": 0.9,
+      "entity_type": "number",
+      "graph_known": false,
+      "match": "7",
+      "source": "system",
+      "value": "7"
+    }
+  ],
+  "intent": "music.statement",
+  "profile": {
+    "confidence": 0.718,
+    "derived_label": "music.statement",
+    "domain": "music",
+    "engagement_level": "urgent_demand",
+    "modality": "declarative",
+    "response_posture": "hedged"
+  },
+  "response_strategy": "hedged_response",
+  "sentiment": {
+    "confidence": 0.10331416642354829,
+    "label": "neutral"
+  },
+  "speech_act": {
+    "category": "assertive",
+    "confidence": 0.6789987458644314,
+    "indicators": [
+      "intent:calendar.cancel"
+    ],
+    "intent_confidence": 0.41066332230515057,
+    "is_imperative": false,
+    "is_question": false,
+    "raw_analyses": {
+      "intent": {
+        "category": "assertive",
+        "confidence": 0.41066332230515057,
+        "intent": "calendar.cancel",
+        "margin": 0.2621666415505982,
+        "second_score": 0.14849668075455238,
+        "source": "feature_vector",
+        "sub_type": "statement",
+        "top_k": [
+          {
+            "intent": "calendar.cancel",
+            "score": 0.41066332230515057
+          },
+          {
+            "intent": "status.diagnostic",
+            "score": 0.14849668075455238
+          },
+          {
+            "intent": "smalltalk.agent.residence",
+            "score": 0.14721419152118828
+          },
+          {
+            "intent": "smalltalk.user.will_be_back",
+            "score": 0.1470592650319069
+          },
+          {
+            "intent": "code.signature",
+            "score": 0.1465665403872019
+          }
+        ]
+      },
+      "keyword": {
+        "confidence": 0.0,
+        "source": "keyword"
+      },
+      "memory": {
+        "confidence": 0.0,
+        "similar_count": 0,
+        "source": "memory"
+      },
+      "original_text": "Investigate the anomaly at sector 7.",
+      "pragmatic": {
+        "expressive_score": 0.0,
+        "first_person_subject": false,
+        "has_acknowledgment": false,
+        "has_commissive": false,
+        "has_future": false,
+        "has_hedging": false,
+        "has_offer": false,
+        "has_please": false,
+        "has_thanks": false,
+        "has_urgency": false,
+        "is_backchannel": false,
+        "is_compliment": false,
+        "is_short_utterance": false,
+        "is_very_short": false,
+        "source": "pragmatic"
+      },
+      "structural": {
+        "category": "assertive",
+        "confidence": 0.7,
+        "has_modal": false,
+        "is_continuation": false,
+        "is_declarative": true,
+        "is_exclamatory": false,
+        "is_imperative": false,
+        "is_question": false,
+        "source": "structural",
+        "sub_type": "statement"
+      }
+    },
+    "sub_type": "statement"
+  },
+  "text": "Investigate the anomaly at sector 7."
+}

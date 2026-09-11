@@ -42,14 +42,14 @@ defmodule Brain.Services.HomeAssistant.EntityMapper do
   end
 
   def resolve_entity_id(%{} = slots) do
-    ha_entity_id = Map.get(slots, :_ha_entity_id) || Map.get(slots, "_ha_entity_id")
+    slots = Brain.Services.Service.normalize_slots(slots)
+    ha_entity_id = Map.get(slots, :_ha_entity_id)
 
     if ha_entity_id do
       ha_entity_id
     else
-      device = Map.get(slots, :device) || Map.get(slots, "device")
-      location = Map.get(slots, :location) || Map.get(slots, "location") ||
-                 Map.get(slots, :room) || Map.get(slots, "room")
+      device = Map.get(slots, :device)
+      location = Map.get(slots, :location) || Map.get(slots, :room)
 
       resolve_from_slots(device, location)
     end
@@ -140,14 +140,16 @@ defmodule Brain.Services.HomeAssistant.EntityMapper do
 
   defp find_entity_by_type(entities, types) when is_list(entities) do
     Enum.find(entities, fn entity ->
-      entity_type = Map.get(entity, :type) || Map.get(entity, "type")
+      entity_type = Map.get(entity, :type)
       to_string(entity_type) in types
     end)
   end
 
   defp maybe_add(data, slots, ha_key, slot_keys, :number) do
     case find_slot_value(slots, slot_keys) do
-      nil -> data
+      nil ->
+        data
+
       val ->
         case parse_number(val) do
           nil -> data
@@ -165,7 +167,9 @@ defmodule Brain.Services.HomeAssistant.EntityMapper do
 
   defp maybe_add_volume(data, slots) do
     case find_slot_value(slots, [:volume]) do
-      nil -> data
+      nil ->
+        data
+
       val ->
         case parse_number(val) do
           nil -> data
@@ -181,12 +185,14 @@ defmodule Brain.Services.HomeAssistant.EntityMapper do
   end
 
   defp parse_number(val) when is_number(val), do: val
+
   defp parse_number(val) when is_binary(val) do
     case Float.parse(val) do
       {n, _} -> n
       :error -> nil
     end
   end
+
   defp parse_number(_), do: nil
 
   defp load_domain_types do
@@ -198,7 +204,9 @@ defmodule Brain.Services.HomeAssistant.EntityMapper do
           {:ok, map} -> map
           _ -> %{}
         end
-      {:error, _} -> %{}
+
+      {:error, _} ->
+        %{}
     end
   end
 

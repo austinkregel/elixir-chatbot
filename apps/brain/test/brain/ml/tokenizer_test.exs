@@ -7,7 +7,7 @@ defmodule Brain.ML.TokenizerTest do
     test "tokenizes simple text" do
       tokens = Tokenizer.tokenize("hello world")
 
-      assert length(tokens) == 2
+      assert match?([_, _], tokens)
       assert Enum.at(tokens, 0).text == "hello"
       assert Enum.at(tokens, 1).text == "world"
     end
@@ -37,7 +37,7 @@ defmodule Brain.ML.TokenizerTest do
       tokens = Tokenizer.tokenize("I'm going to don't")
 
       texts = Enum.map(tokens, & &1.text)
-      assert length(texts) >= 4
+      assert Enum.count_until(texts, 4) >= 4
       assert "going" in texts
       assert "to" in texts
       has_contraction = "I'm" in texts or ("I" in texts and "m" in texts)
@@ -121,7 +121,7 @@ defmodule Brain.ML.TokenizerTest do
     test "splits on sentence boundaries" do
       sentences = Tokenizer.split_sentences("Hello world. How are you? I'm fine!")
 
-      assert length(sentences) == 3
+      assert match?([_, _, _], sentences)
       assert Enum.at(sentences, 0).text =~ "Hello world."
       assert Enum.at(sentences, 1).text =~ "How are you?"
       assert Enum.at(sentences, 2).text =~ "I'm fine!"
@@ -161,7 +161,7 @@ defmodule Brain.ML.TokenizerTest do
     test "extracts numbers with positions" do
       numbers = Tokenizer.extract_numbers("I have 42 apples and 3 oranges")
 
-      assert length(numbers) == 2
+      assert match?([_, _], numbers)
       {num1, _, _} = Enum.at(numbers, 0)
       {num2, _, _} = Enum.at(numbers, 1)
       assert num1 == "42"
@@ -171,7 +171,7 @@ defmodule Brain.ML.TokenizerTest do
     test "handles decimals" do
       numbers = Tokenizer.extract_numbers("The price is 19.99")
 
-      assert length(numbers) == 1
+      assert match?([_], numbers)
       {num, _, _} = Enum.at(numbers, 0)
       assert num == "19.99"
     end
@@ -182,7 +182,7 @@ defmodule Brain.ML.TokenizerTest do
       tokens = Tokenizer.tokenize("I'll do it tomorrow")
       dates = Tokenizer.extract_dates(tokens)
 
-      assert length(dates) == 1
+      assert match?([_], dates)
       {type, value, _, _} = Enum.at(dates, 0)
       assert type == :relative_date
       assert value == "tomorrow"
@@ -192,7 +192,7 @@ defmodule Brain.ML.TokenizerTest do
       tokens = Tokenizer.tokenize("See you on Monday")
       dates = Tokenizer.extract_dates(tokens)
 
-      assert length(dates) == 1
+      assert match?([_], dates)
       {type, value, _, _} = Enum.at(dates, 0)
       assert type == :day_name
       assert value == "Monday"

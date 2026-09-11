@@ -95,8 +95,11 @@ defmodule Brain.Test.ModelFactory do
   defp ensure_gazetteer_non_empty!(path) do
     term =
       case File.read(path) do
-        {:ok, bin} -> :erlang.binary_to_term(bin)
-        {:error, reason} -> raise "ModelFactory: cannot read gazetteer at #{path}: #{inspect(reason)}"
+        {:ok, bin} ->
+          :erlang.binary_to_term(bin)
+
+        {:error, reason} ->
+          raise "ModelFactory: cannot read gazetteer at #{path}: #{inspect(reason)}"
       end
 
     if is_map(term) and map_size(term) == 0 do
@@ -244,8 +247,11 @@ defmodule Brain.Test.ModelFactory do
     persist_root_model!("speech_act_classifier.term", model)
 
     case GenServer.call(Brain.ML.SpeechActClassifierSimple, {:load_trained_model, model}, 5_000) do
-      {:ok, :loaded} -> {:ok, length(data)}
-      other -> raise "ModelFactory: SpeechActClassifierSimple rejected trained model: #{inspect(other)}"
+      {:ok, :loaded} ->
+        {:ok, length(data)}
+
+      other ->
+        raise "ModelFactory: SpeechActClassifierSimple rejected trained model: #{inspect(other)}"
     end
   end
 
@@ -424,7 +430,9 @@ defmodule Brain.Test.ModelFactory do
       """
     end
 
-    Logger.info("[ModelFactory] POS training using #{length(sequences)} sequences from #{source_path}")
+    Logger.info(
+      "[ModelFactory] POS training using #{length(sequences)} sequences from #{source_path}"
+    )
 
     case POSTagger.train(sequences) do
       {:ok, model} ->
@@ -478,7 +486,7 @@ defmodule Brain.Test.ModelFactory do
 
     triples = load_hierarchy_triples()
 
-    if length(triples) < 3 do
+    if Enum.count_until(triples, 3) < 3 do
       raise "ModelFactory: insufficient triple data (#{length(triples)}) at #{entity_types_path()}; need at least 3"
     end
 
@@ -617,7 +625,10 @@ defmodule Brain.Test.ModelFactory do
         end
 
       {:error, :enoent} ->
-        Logger.info("[ModelFactory] gold standard not found at #{path}, using small fallback fixture")
+        Logger.info(
+          "[ModelFactory] gold standard not found at #{path}, using small fallback fixture"
+        )
+
         load_intent_fallback()
 
       {:error, reason} ->
@@ -735,7 +746,7 @@ defmodule Brain.Test.ModelFactory do
           {:ok, entries} when is_list(entries) ->
             Enum.flat_map(entries, fn
               %{"feature_vector" => vec, "label" => label}
-              when is_list(vec) and is_binary(label) and length(vec) > 0 ->
+              when is_list(vec) and is_binary(label) and vec != [] ->
                 [{vec, label}]
 
               _ ->
@@ -869,10 +880,12 @@ defmodule Brain.Test.ModelFactory do
               Enum.map(children, fn child -> {child, parent} end)
             end)
 
-          _ -> []
+          _ ->
+            []
         end
 
-      _ -> []
+      _ ->
+        []
     end
   end
 
@@ -889,10 +902,12 @@ defmodule Brain.Test.ModelFactory do
               end)
             end)
 
-          _ -> []
+          _ ->
+            []
         end
 
-      _ -> []
+      _ ->
+        []
     end
   end
 

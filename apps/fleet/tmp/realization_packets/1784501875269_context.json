@@ -1,0 +1,606 @@
+{
+  "accumulator": {
+    "combined_confidence": 0.999990573959518,
+    "conflict_measure": 0.518059821382806,
+    "dominant_signal": [
+      "slot_fill",
+      true,
+      0.999
+    ],
+    "effective_confidence": 0.7409655465209635,
+    "entity_familiarity": 0.5,
+    "should_hedge": true
+  },
+  "all_analyses": [
+    {
+      "chunk_index": 0,
+      "confidence": 0.741,
+      "intent": "knowledge.command",
+      "response_strategy": "hedged_response",
+      "speech_act": {
+        "category": "directive",
+        "confidence": 0.7222828168356559,
+        "intent_confidence": 0.4260875115617491,
+        "is_imperative": true,
+        "is_question": false,
+        "sub_type": "command"
+      },
+      "text": "Give a one-line readiness report."
+    }
+  ],
+  "analysis": {
+    "all_strategies": [
+      "hedged_response"
+    ],
+    "chunk_count": 1,
+    "confidence": 0.741,
+    "discourse": {
+      "addressee": "bot",
+      "confidence": 1.0,
+      "direct_address_detected": false,
+      "participants": [
+        "user",
+        "bot"
+      ]
+    },
+    "epistemic_status": "unchecked",
+    "event_frames": [
+      {
+        "trigger": "Give",
+        "trigger_index": 0
+      }
+    ],
+    "events": [
+      {
+        "action": {
+          "lemma": "give",
+          "tense": "imperative",
+          "verb": "Give"
+        },
+        "confidence": 0.7999999999999999,
+        "id": "evt_9a639b5c1d812659",
+        "object": {
+          "text": "one-line",
+          "type": "noun"
+        }
+      }
+    ],
+    "intent": "knowledge.command",
+    "pos_tags": [
+      [
+        "Give",
+        "VERB"
+      ],
+      [
+        "a",
+        "DET"
+      ],
+      [
+        "one-line",
+        "NOUN"
+      ],
+      [
+        "readiness",
+        "NOUN"
+      ],
+      [
+        "report",
+        "NOUN"
+      ],
+      [
+        ".",
+        "NOUN"
+      ]
+    ],
+    "raw_input": "Give a one-line readiness report.",
+    "response_strategy": "hedged_response",
+    "sentiment": {
+      "confidence": 0.04980187536452404,
+      "label": "neutral"
+    },
+    "speech_act": {
+      "category": "directive",
+      "confidence": 0.7222828168356559,
+      "intent_confidence": 0.4260875115617491,
+      "is_imperative": true,
+      "is_question": false,
+      "sub_type": "command"
+    },
+    "text": "Give a one-line readiness report."
+  },
+  "enrichment": {
+    "enrichment_status": "not_configured",
+    "entity_familiarity": 0.5
+  },
+  "overall_strategy": "hedged_response",
+  "primary_analysis": {
+    "accumulated_context": {
+      "combined_confidence": 0.999990573959518,
+      "conflict_measure": 0.518059821382806,
+      "dominant_signal": [
+        "slot_fill",
+        true,
+        0.999
+      ],
+      "entity_familiarity": 0.5,
+      "signals": [
+        [
+          "intent",
+          "knowledge.capital",
+          0.4260875115617491
+        ],
+        [
+          "entity_familiarity",
+          false,
+          0.5
+        ],
+        [
+          "sentiment",
+          "neutral",
+          0.04980187536452404
+        ],
+        [
+          "slot_fill",
+          true,
+          0.999
+        ],
+        [
+          "speech_act",
+          "directive",
+          0.7222828168356559
+        ],
+        [
+          "discourse",
+          "bot",
+          0.999
+        ]
+      ]
+    },
+    "chunk_index": 0,
+    "confidence": 0.741,
+    "discourse": {
+      "addressee": "bot",
+      "confidence": 1.0,
+      "direct_address_detected": false,
+      "indicators": [
+        "imperative_mood"
+      ],
+      "participants": [
+        "user",
+        "bot"
+      ]
+    },
+    "epistemic_status": "unchecked",
+    "event_frames": [
+      {
+        "trigger": "Give",
+        "trigger_index": 0
+      }
+    ],
+    "events": [
+      {
+        "action": {
+          "lemma": "give",
+          "tense": "imperative",
+          "verb": "Give"
+        },
+        "confidence": 0.7999999999999999,
+        "id": "evt_9a639b5c1d812659",
+        "object": {
+          "text": "one-line",
+          "type": "noun"
+        }
+      }
+    ],
+    "intent": "knowledge.command",
+    "intent_domain": "music",
+    "pass": 2,
+    "pos_tags": [
+      [
+        "Give",
+        "VERB"
+      ],
+      [
+        "a",
+        "DET"
+      ],
+      [
+        "one-line",
+        "NOUN"
+      ],
+      [
+        "readiness",
+        "NOUN"
+      ],
+      [
+        "report",
+        "NOUN"
+      ],
+      [
+        ".",
+        "NOUN"
+      ]
+    ],
+    "profile": {
+      "addressee": "bot",
+      "aspect": "simple",
+      "certainty": "committed",
+      "confidence": 0.741,
+      "derived_label": "knowledge.command",
+      "domain": "knowledge",
+      "engagement_level": "urgent_demand",
+      "feature_provenance": {
+        "addressee": "analysis",
+        "aspect": "micro_classifier",
+        "certainty": "micro_classifier",
+        "confidence": "analysis",
+        "domain": "micro_classifier",
+        "modality": "composed",
+        "novelty_score": "analysis",
+        "polarity": "composed",
+        "sentiment_alignment": "composed",
+        "slot_completeness": "analysis",
+        "speech_act_category": "analysis",
+        "speech_act_subtype": "analysis",
+        "target": "composed",
+        "tense": "micro_classifier",
+        "urgency": "micro_classifier"
+      },
+      "modality": "imperative",
+      "novelty_score": 0.0,
+      "polarity": "affirmative",
+      "response_posture": "direct",
+      "self_disclosure_level": "none",
+      "sentiment_alignment": "neutral",
+      "slot_completeness": 1.0,
+      "speech_act_category": "directive",
+      "speech_act_subtype": "command",
+      "target": "agent",
+      "temporal_framing": "timeless",
+      "tense": "present",
+      "urgency": "high"
+    },
+    "response_strategy": "hedged_response",
+    "sentiment": {
+      "confidence": 0.04980187536452404,
+      "label": "neutral"
+    },
+    "slots": {
+      "all_required_filled": true,
+      "schema_name": "unknown"
+    },
+    "speech_act": {
+      "category": "directive",
+      "confidence": 0.7222828168356559,
+      "indicators": [
+        "imperative_from_intent",
+        "intent:smarthome.switch"
+      ],
+      "intent_confidence": 0.4260875115617491,
+      "is_imperative": true,
+      "is_question": false,
+      "raw_analyses": {
+        "intent": {
+          "category": "directive",
+          "confidence": 0.4260875115617491,
+          "intent": "smarthome.switch",
+          "margin": 0.28212722932713813,
+          "second_score": 0.143960282234611,
+          "source": "feature_vector",
+          "sub_type": "command",
+          "top_k": [
+            {
+              "intent": "smarthome.switch",
+              "score": 0.4260875115617491
+            },
+            {
+              "intent": "smarthome.device_up",
+              "score": 0.143960282234611
+            },
+            {
+              "intent": "reminder.create",
+              "score": 0.14378437772817415
+            },
+            {
+              "intent": "music.play",
+              "score": 0.14326280045376927
+            },
+            {
+              "intent": "smarthome.device_down",
+              "score": 0.14290502802169655
+            }
+          ]
+        },
+        "keyword": {
+          "confidence": 0.0,
+          "source": "keyword"
+        },
+        "memory": {
+          "confidence": 0.0,
+          "similar_count": 0,
+          "source": "memory"
+        },
+        "original_text": "Give a one-line readiness report.",
+        "pragmatic": {
+          "expressive_score": 0.0,
+          "first_person_subject": false,
+          "has_acknowledgment": false,
+          "has_commissive": false,
+          "has_future": false,
+          "has_hedging": false,
+          "has_offer": false,
+          "has_please": false,
+          "has_thanks": false,
+          "has_urgency": false,
+          "is_backchannel": false,
+          "is_compliment": false,
+          "is_short_utterance": false,
+          "is_very_short": false,
+          "source": "pragmatic"
+        },
+        "structural": {
+          "category": "directive",
+          "confidence": 0.75,
+          "has_modal": false,
+          "is_continuation": false,
+          "is_declarative": true,
+          "is_exclamatory": false,
+          "is_imperative": true,
+          "is_question": false,
+          "source": "structural",
+          "sub_type": "command"
+        }
+      },
+      "sub_type": "command"
+    },
+    "text": "Give a one-line readiness report."
+  },
+  "question_chunk": {
+    "accumulated_context": {
+      "combined_confidence": 0.999990573959518,
+      "conflict_measure": 0.518059821382806,
+      "dominant_signal": [
+        "slot_fill",
+        true,
+        0.999
+      ],
+      "entity_familiarity": 0.5,
+      "signals": [
+        [
+          "intent",
+          "knowledge.capital",
+          0.4260875115617491
+        ],
+        [
+          "entity_familiarity",
+          false,
+          0.5
+        ],
+        [
+          "sentiment",
+          "neutral",
+          0.04980187536452404
+        ],
+        [
+          "slot_fill",
+          true,
+          0.999
+        ],
+        [
+          "speech_act",
+          "directive",
+          0.7222828168356559
+        ],
+        [
+          "discourse",
+          "bot",
+          0.999
+        ]
+      ]
+    },
+    "chunk_index": 0,
+    "confidence": 0.741,
+    "discourse": {
+      "addressee": "bot",
+      "confidence": 1.0,
+      "direct_address_detected": false,
+      "indicators": [
+        "imperative_mood"
+      ],
+      "participants": [
+        "user",
+        "bot"
+      ]
+    },
+    "epistemic_status": "unchecked",
+    "event_frames": [
+      {
+        "trigger": "Give",
+        "trigger_index": 0
+      }
+    ],
+    "events": [
+      {
+        "action": {
+          "lemma": "give",
+          "tense": "imperative",
+          "verb": "Give"
+        },
+        "confidence": 0.7999999999999999,
+        "id": "evt_9a639b5c1d812659",
+        "object": {
+          "text": "one-line",
+          "type": "noun"
+        }
+      }
+    ],
+    "intent": "knowledge.command",
+    "intent_domain": "music",
+    "pass": 2,
+    "pos_tags": [
+      [
+        "Give",
+        "VERB"
+      ],
+      [
+        "a",
+        "DET"
+      ],
+      [
+        "one-line",
+        "NOUN"
+      ],
+      [
+        "readiness",
+        "NOUN"
+      ],
+      [
+        "report",
+        "NOUN"
+      ],
+      [
+        ".",
+        "NOUN"
+      ]
+    ],
+    "profile": {
+      "addressee": "bot",
+      "aspect": "simple",
+      "certainty": "committed",
+      "confidence": 0.741,
+      "derived_label": "knowledge.command",
+      "domain": "knowledge",
+      "engagement_level": "urgent_demand",
+      "feature_provenance": {
+        "addressee": "analysis",
+        "aspect": "micro_classifier",
+        "certainty": "micro_classifier",
+        "confidence": "analysis",
+        "domain": "micro_classifier",
+        "modality": "composed",
+        "novelty_score": "analysis",
+        "polarity": "composed",
+        "sentiment_alignment": "composed",
+        "slot_completeness": "analysis",
+        "speech_act_category": "analysis",
+        "speech_act_subtype": "analysis",
+        "target": "composed",
+        "tense": "micro_classifier",
+        "urgency": "micro_classifier"
+      },
+      "modality": "imperative",
+      "novelty_score": 0.0,
+      "polarity": "affirmative",
+      "response_posture": "direct",
+      "self_disclosure_level": "none",
+      "sentiment_alignment": "neutral",
+      "slot_completeness": 1.0,
+      "speech_act_category": "directive",
+      "speech_act_subtype": "command",
+      "target": "agent",
+      "temporal_framing": "timeless",
+      "tense": "present",
+      "urgency": "high"
+    },
+    "response_strategy": "hedged_response",
+    "sentiment": {
+      "confidence": 0.04980187536452404,
+      "label": "neutral"
+    },
+    "slots": {
+      "all_required_filled": true,
+      "schema_name": "unknown"
+    },
+    "speech_act": {
+      "category": "directive",
+      "confidence": 0.7222828168356559,
+      "indicators": [
+        "imperative_from_intent",
+        "intent:smarthome.switch"
+      ],
+      "intent_confidence": 0.4260875115617491,
+      "is_imperative": true,
+      "is_question": false,
+      "raw_analyses": {
+        "intent": {
+          "category": "directive",
+          "confidence": 0.4260875115617491,
+          "intent": "smarthome.switch",
+          "margin": 0.28212722932713813,
+          "second_score": 0.143960282234611,
+          "source": "feature_vector",
+          "sub_type": "command",
+          "top_k": [
+            {
+              "intent": "smarthome.switch",
+              "score": 0.4260875115617491
+            },
+            {
+              "intent": "smarthome.device_up",
+              "score": 0.143960282234611
+            },
+            {
+              "intent": "reminder.create",
+              "score": 0.14378437772817415
+            },
+            {
+              "intent": "music.play",
+              "score": 0.14326280045376927
+            },
+            {
+              "intent": "smarthome.device_down",
+              "score": 0.14290502802169655
+            }
+          ]
+        },
+        "keyword": {
+          "confidence": 0.0,
+          "source": "keyword"
+        },
+        "memory": {
+          "confidence": 0.0,
+          "similar_count": 0,
+          "source": "memory"
+        },
+        "original_text": "Give a one-line readiness report.",
+        "pragmatic": {
+          "expressive_score": 0.0,
+          "first_person_subject": false,
+          "has_acknowledgment": false,
+          "has_commissive": false,
+          "has_future": false,
+          "has_hedging": false,
+          "has_offer": false,
+          "has_please": false,
+          "has_thanks": false,
+          "has_urgency": false,
+          "is_backchannel": false,
+          "is_compliment": false,
+          "is_short_utterance": false,
+          "is_very_short": false,
+          "source": "pragmatic"
+        },
+        "structural": {
+          "category": "directive",
+          "confidence": 0.75,
+          "has_modal": false,
+          "is_continuation": false,
+          "is_declarative": true,
+          "is_exclamatory": false,
+          "is_imperative": true,
+          "is_question": false,
+          "source": "structural",
+          "sub_type": "command"
+        }
+      },
+      "sub_type": "command"
+    },
+    "text": "Give a one-line readiness report."
+  },
+  "raw_input": "Give a one-line readiness report.",
+  "soul": {
+    "constitution": "Serve faithfully.",
+    "id": "t-11266",
+    "name": "Ensign t-11266"
+  }
+}

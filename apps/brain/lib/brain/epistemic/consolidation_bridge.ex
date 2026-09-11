@@ -104,7 +104,7 @@ defmodule Brain.Epistemic.ConsolidationBridge do
   defp run_srl(text) do
     tokens = Brain.ML.Tokenizer.tokenize_words(text)
 
-    if length(tokens) >= 2 do
+    if match?([_, _ | _], tokens) do
       bio_tags = generate_bio_tags(tokens)
       frames = Brain.Analysis.SemanticRoleLabeler.label(tokens, bio_tags)
       Brain.Analysis.SemanticRoleLabeler.to_triples(frames)
@@ -120,7 +120,10 @@ defmodule Brain.Epistemic.ConsolidationBridge do
       case Brain.ML.POSTagger.load_model() do
         {:ok, model} ->
           tags = Brain.ML.POSTagger.predict(tokens, model)
-          if is_list(tags) and length(tags) == length(tokens), do: pos_to_bio(tags), else: fallback_bio(tokens)
+
+          if is_list(tags) and length(tags) == length(tokens),
+            do: pos_to_bio(tags),
+            else: fallback_bio(tokens)
 
         _ ->
           fallback_bio(tokens)

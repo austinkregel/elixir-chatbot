@@ -1,14 +1,12 @@
 defmodule Atlas.DataCase do
   @moduledoc """
-  This module defines the setup for tests requiring
-  access to the Atlas data layer.
+  Case template for tests that touch the Atlas data layer.
 
-  You may define functions here to be used as helpers in
-  your tests.
-
-  Finally, if the test case interacts with the database,
-  we enable the SQL sandbox so changes are rolled back
-  at the end of every test.
+  Opens an Ecto SQL sandbox per test (shared when the test is not `async`) so
+  every change rolls back at the end. Because Atlas runs on Apache AGE, each
+  checked-out connection also loads the `age` extension and pins `search_path`
+  to `atlas_test, ag_catalog, ...` so both plain tables and cypher graphs
+  resolve. `errors_on/1` is provided for asserting on changeset errors.
   """
 
   use ExUnit.CaseTemplate

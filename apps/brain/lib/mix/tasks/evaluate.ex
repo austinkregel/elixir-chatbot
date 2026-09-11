@@ -104,7 +104,10 @@ defmodule Mix.Tasks.Evaluate do
     gold = EvaluationStore.load_gold_standard("ner")
 
     if gold == [] do
-      IO.puts("  ner: No gold standard data (add examples to priv/evaluation/ner/gold_standard.json)")
+      IO.puts(
+        "  ner: No gold standard data (add examples to priv/evaluation/ner/gold_standard.json)"
+      )
+
       nil
     else
       IO.puts("  Evaluating ner (#{length(gold)} examples)...")
@@ -121,7 +124,9 @@ defmodule Mix.Tasks.Evaluate do
       end
 
       if verbose? do
-        report = Evaluation.classification_report(Evaluation.confusion_matrix(predictions, actuals))
+        report =
+          Evaluation.classification_report(Evaluation.confusion_matrix(predictions, actuals))
+
         IO.puts("")
         IO.puts(Evaluation.format_report(report))
         IO.puts("")
@@ -186,13 +191,13 @@ defmodule Mix.Tasks.Evaluate do
 
       match =
         Enum.find(extracted, fn ext ->
-          ext_value = Map.get(ext, :value) || Map.get(ext, "value")
+          ext_value = Map.get(ext, :value)
           normalize_value(ext_value) == normalize_value(expected_value)
         end)
 
       predicted_type =
         if match do
-          to_string(Map.get(match, :entity_type) || Map.get(match, "entity_type") || "none")
+          to_string(Map.get(match, :entity_type) || "none")
         else
           "none"
         end
@@ -236,7 +241,9 @@ defmodule Mix.Tasks.Evaluate do
     end
 
     if counts.unknown > 0 or counts.errored > 0 do
-      IO.puts("    Diagnostics: ok=#{counts.ok} unknown=#{counts.unknown} errored=#{counts.errored}")
+      IO.puts(
+        "    Diagnostics: ok=#{counts.ok} unknown=#{counts.unknown} errored=#{counts.errored}"
+      )
     end
 
     results = Enum.reverse(results)

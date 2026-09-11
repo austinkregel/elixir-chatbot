@@ -1,0 +1,633 @@
+{
+  "accumulator": {
+    "combined_confidence": 0.9999984039960007,
+    "conflict_measure": 0.4930779865292605,
+    "dominant_signal": [
+      "slot_fill",
+      true,
+      0.999
+    ],
+    "effective_confidence": 0.753460197685809,
+    "entity_familiarity": 0.5,
+    "should_hedge": true
+  },
+  "all_analyses": [
+    {
+      "chunk_index": 0,
+      "confidence": 0.753,
+      "intent": "knowledge.request_information",
+      "response_strategy": "hedged_response",
+      "speech_act": {
+        "category": "directive",
+        "confidence": 0.8109617583918429,
+        "intent_confidence": 0.4625646890449146,
+        "is_imperative": false,
+        "is_question": true,
+        "sub_type": "request_information"
+      },
+      "text": "Who are you?"
+    }
+  ],
+  "analysis": {
+    "all_strategies": [
+      "hedged_response"
+    ],
+    "chunk_count": 1,
+    "confidence": 0.753,
+    "discourse": {
+      "addressee": "bot",
+      "confidence": 1.0,
+      "direct_address_detected": false,
+      "participants": [
+        "user",
+        "bot"
+      ]
+    },
+    "epistemic_status": "unchecked",
+    "event_frames": [
+      {
+        "trigger": "are",
+        "trigger_index": 0
+      },
+      {
+        "trigger": "?",
+        "trigger_index": 1
+      }
+    ],
+    "events": [
+      {
+        "action": {
+          "lemma": "are",
+          "tense": "present",
+          "verb": "are"
+        },
+        "actor": {
+          "text": "Who",
+          "type": "pronoun"
+        },
+        "confidence": 0.7999999999999999,
+        "id": "evt_7011a34b7dd0ca4b"
+      },
+      {
+        "action": {
+          "lemma": "?",
+          "tense": "present",
+          "verb": "?"
+        },
+        "actor": {
+          "text": "you",
+          "type": "pronoun"
+        },
+        "confidence": 0.7999999999999999,
+        "id": "evt_b4627b0461c11366"
+      }
+    ],
+    "intent": "knowledge.request_information",
+    "pos_tags": [
+      [
+        "Who",
+        "PRON"
+      ],
+      [
+        "are",
+        "VERB"
+      ],
+      [
+        "you",
+        "PRON"
+      ],
+      [
+        "?",
+        "VERB"
+      ]
+    ],
+    "raw_input": "Who are you?",
+    "response_strategy": "hedged_response",
+    "sentiment": {
+      "confidence": 0.1394692817322629,
+      "label": "negative"
+    },
+    "speech_act": {
+      "category": "directive",
+      "confidence": 0.8109617583918429,
+      "intent_confidence": 0.4625646890449146,
+      "is_imperative": false,
+      "is_question": true,
+      "sub_type": "request_information"
+    },
+    "text": "Who are you?"
+  },
+  "enrichment": {
+    "enrichment_status": "not_configured",
+    "entity_familiarity": 0.5
+  },
+  "overall_strategy": "hedged_response",
+  "primary_analysis": {
+    "accumulated_context": {
+      "combined_confidence": 0.9999984039960007,
+      "conflict_measure": 0.4930779865292605,
+      "dominant_signal": [
+        "slot_fill",
+        true,
+        0.999
+      ],
+      "entity_familiarity": 0.5,
+      "signals": [
+        [
+          "intent",
+          "knowledge.capital",
+          0.4625646890449146
+        ],
+        [
+          "entity_familiarity",
+          false,
+          0.5
+        ],
+        [
+          "sentiment",
+          "negative",
+          0.1394692817322629
+        ],
+        [
+          "slot_fill",
+          true,
+          0.999
+        ],
+        [
+          "speech_act",
+          "directive",
+          0.8109617583918429
+        ],
+        [
+          "discourse",
+          "bot",
+          0.999
+        ]
+      ]
+    },
+    "chunk_index": 0,
+    "confidence": 0.753,
+    "discourse": {
+      "addressee": "bot",
+      "confidence": 1.0,
+      "direct_address_detected": false,
+      "indicators": [
+        "question"
+      ],
+      "participants": [
+        "user",
+        "bot"
+      ]
+    },
+    "epistemic_status": "unchecked",
+    "event_frames": [
+      {
+        "trigger": "are",
+        "trigger_index": 0
+      },
+      {
+        "trigger": "?",
+        "trigger_index": 1
+      }
+    ],
+    "events": [
+      {
+        "action": {
+          "lemma": "are",
+          "tense": "present",
+          "verb": "are"
+        },
+        "actor": {
+          "text": "Who",
+          "type": "pronoun"
+        },
+        "confidence": 0.7999999999999999,
+        "id": "evt_7011a34b7dd0ca4b"
+      },
+      {
+        "action": {
+          "lemma": "?",
+          "tense": "present",
+          "verb": "?"
+        },
+        "actor": {
+          "text": "you",
+          "type": "pronoun"
+        },
+        "confidence": 0.7999999999999999,
+        "id": "evt_b4627b0461c11366"
+      }
+    ],
+    "intent": "knowledge.request_information",
+    "intent_domain": "knowledge",
+    "pass": 2,
+    "pos_tags": [
+      [
+        "Who",
+        "PRON"
+      ],
+      [
+        "are",
+        "VERB"
+      ],
+      [
+        "you",
+        "PRON"
+      ],
+      [
+        "?",
+        "VERB"
+      ]
+    ],
+    "profile": {
+      "addressee": "bot",
+      "aspect": "simple",
+      "certainty": "tentative",
+      "confidence": 0.753,
+      "derived_label": "knowledge.request_information",
+      "domain": "knowledge",
+      "engagement_level": "active_request",
+      "feature_provenance": {
+        "addressee": "analysis",
+        "aspect": "micro_classifier",
+        "certainty": "micro_classifier",
+        "confidence": "analysis",
+        "domain": "micro_classifier",
+        "modality": "composed",
+        "novelty_score": "analysis",
+        "polarity": "composed",
+        "sentiment_alignment": "composed",
+        "slot_completeness": "analysis",
+        "speech_act_category": "analysis",
+        "speech_act_subtype": "analysis",
+        "target": "composed",
+        "tense": "micro_classifier",
+        "urgency": "micro_classifier"
+      },
+      "modality": "interrogative",
+      "novelty_score": 0.0,
+      "polarity": "affirmative",
+      "response_posture": "direct",
+      "self_disclosure_level": "none",
+      "sentiment_alignment": "neutral",
+      "slot_completeness": 1.0,
+      "speech_act_category": "directive",
+      "speech_act_subtype": "request_information",
+      "target": "agent",
+      "temporal_framing": "completed_past",
+      "tense": "past",
+      "urgency": "low"
+    },
+    "response_strategy": "hedged_response",
+    "sentiment": {
+      "confidence": 0.1394692817322629,
+      "label": "negative"
+    },
+    "slots": {
+      "all_required_filled": true,
+      "schema_name": "unknown"
+    },
+    "speech_act": {
+      "category": "directive",
+      "confidence": 0.8109617583918429,
+      "indicators": [
+        "question_structure",
+        "intent:code.signature"
+      ],
+      "intent_confidence": 0.4625646890449146,
+      "is_imperative": false,
+      "is_question": true,
+      "raw_analyses": {
+        "intent": {
+          "category": "assertive",
+          "confidence": 0.4625646890449146,
+          "intent": "code.signature",
+          "margin": 0.3265933060060746,
+          "second_score": 0.13597138303883996,
+          "source": "feature_vector",
+          "sub_type": "statement",
+          "top_k": [
+            {
+              "intent": "code.signature",
+              "score": 0.4625646890449146
+            },
+            {
+              "intent": "smalltalk.agent.boss",
+              "score": 0.13597138303883996
+            },
+            {
+              "intent": "code.explain",
+              "score": 0.13413966243342879
+            },
+            {
+              "intent": "smalltalk.agent.hobby",
+              "score": 0.1337554355866303
+            },
+            {
+              "intent": "smarthome.device_check",
+              "score": 0.1335688298961863
+            }
+          ]
+        },
+        "keyword": {
+          "confidence": 0.0,
+          "source": "keyword"
+        },
+        "memory": {
+          "confidence": 0.0,
+          "similar_count": 0,
+          "source": "memory"
+        },
+        "original_text": "Who are you?",
+        "pragmatic": {
+          "expressive_score": 0.0,
+          "first_person_subject": false,
+          "has_acknowledgment": false,
+          "has_commissive": false,
+          "has_future": false,
+          "has_hedging": false,
+          "has_offer": false,
+          "has_please": false,
+          "has_thanks": false,
+          "has_urgency": false,
+          "is_backchannel": false,
+          "is_compliment": false,
+          "is_short_utterance": false,
+          "is_very_short": false,
+          "source": "pragmatic"
+        },
+        "structural": {
+          "category": "directive",
+          "confidence": 0.85,
+          "has_modal": false,
+          "is_continuation": false,
+          "is_declarative": false,
+          "is_exclamatory": false,
+          "is_imperative": false,
+          "is_question": true,
+          "source": "structural",
+          "sub_type": "request_information"
+        }
+      },
+      "sub_type": "request_information"
+    },
+    "text": "Who are you?"
+  },
+  "question_chunk": {
+    "accumulated_context": {
+      "combined_confidence": 0.9999984039960007,
+      "conflict_measure": 0.4930779865292605,
+      "dominant_signal": [
+        "slot_fill",
+        true,
+        0.999
+      ],
+      "entity_familiarity": 0.5,
+      "signals": [
+        [
+          "intent",
+          "knowledge.capital",
+          0.4625646890449146
+        ],
+        [
+          "entity_familiarity",
+          false,
+          0.5
+        ],
+        [
+          "sentiment",
+          "negative",
+          0.1394692817322629
+        ],
+        [
+          "slot_fill",
+          true,
+          0.999
+        ],
+        [
+          "speech_act",
+          "directive",
+          0.8109617583918429
+        ],
+        [
+          "discourse",
+          "bot",
+          0.999
+        ]
+      ]
+    },
+    "chunk_index": 0,
+    "confidence": 0.753,
+    "discourse": {
+      "addressee": "bot",
+      "confidence": 1.0,
+      "direct_address_detected": false,
+      "indicators": [
+        "question"
+      ],
+      "participants": [
+        "user",
+        "bot"
+      ]
+    },
+    "epistemic_status": "unchecked",
+    "event_frames": [
+      {
+        "trigger": "are",
+        "trigger_index": 0
+      },
+      {
+        "trigger": "?",
+        "trigger_index": 1
+      }
+    ],
+    "events": [
+      {
+        "action": {
+          "lemma": "are",
+          "tense": "present",
+          "verb": "are"
+        },
+        "actor": {
+          "text": "Who",
+          "type": "pronoun"
+        },
+        "confidence": 0.7999999999999999,
+        "id": "evt_7011a34b7dd0ca4b"
+      },
+      {
+        "action": {
+          "lemma": "?",
+          "tense": "present",
+          "verb": "?"
+        },
+        "actor": {
+          "text": "you",
+          "type": "pronoun"
+        },
+        "confidence": 0.7999999999999999,
+        "id": "evt_b4627b0461c11366"
+      }
+    ],
+    "intent": "knowledge.request_information",
+    "intent_domain": "knowledge",
+    "pass": 2,
+    "pos_tags": [
+      [
+        "Who",
+        "PRON"
+      ],
+      [
+        "are",
+        "VERB"
+      ],
+      [
+        "you",
+        "PRON"
+      ],
+      [
+        "?",
+        "VERB"
+      ]
+    ],
+    "profile": {
+      "addressee": "bot",
+      "aspect": "simple",
+      "certainty": "tentative",
+      "confidence": 0.753,
+      "derived_label": "knowledge.request_information",
+      "domain": "knowledge",
+      "engagement_level": "active_request",
+      "feature_provenance": {
+        "addressee": "analysis",
+        "aspect": "micro_classifier",
+        "certainty": "micro_classifier",
+        "confidence": "analysis",
+        "domain": "micro_classifier",
+        "modality": "composed",
+        "novelty_score": "analysis",
+        "polarity": "composed",
+        "sentiment_alignment": "composed",
+        "slot_completeness": "analysis",
+        "speech_act_category": "analysis",
+        "speech_act_subtype": "analysis",
+        "target": "composed",
+        "tense": "micro_classifier",
+        "urgency": "micro_classifier"
+      },
+      "modality": "interrogative",
+      "novelty_score": 0.0,
+      "polarity": "affirmative",
+      "response_posture": "direct",
+      "self_disclosure_level": "none",
+      "sentiment_alignment": "neutral",
+      "slot_completeness": 1.0,
+      "speech_act_category": "directive",
+      "speech_act_subtype": "request_information",
+      "target": "agent",
+      "temporal_framing": "completed_past",
+      "tense": "past",
+      "urgency": "low"
+    },
+    "response_strategy": "hedged_response",
+    "sentiment": {
+      "confidence": 0.1394692817322629,
+      "label": "negative"
+    },
+    "slots": {
+      "all_required_filled": true,
+      "schema_name": "unknown"
+    },
+    "speech_act": {
+      "category": "directive",
+      "confidence": 0.8109617583918429,
+      "indicators": [
+        "question_structure",
+        "intent:code.signature"
+      ],
+      "intent_confidence": 0.4625646890449146,
+      "is_imperative": false,
+      "is_question": true,
+      "raw_analyses": {
+        "intent": {
+          "category": "assertive",
+          "confidence": 0.4625646890449146,
+          "intent": "code.signature",
+          "margin": 0.3265933060060746,
+          "second_score": 0.13597138303883996,
+          "source": "feature_vector",
+          "sub_type": "statement",
+          "top_k": [
+            {
+              "intent": "code.signature",
+              "score": 0.4625646890449146
+            },
+            {
+              "intent": "smalltalk.agent.boss",
+              "score": 0.13597138303883996
+            },
+            {
+              "intent": "code.explain",
+              "score": 0.13413966243342879
+            },
+            {
+              "intent": "smalltalk.agent.hobby",
+              "score": 0.1337554355866303
+            },
+            {
+              "intent": "smarthome.device_check",
+              "score": 0.1335688298961863
+            }
+          ]
+        },
+        "keyword": {
+          "confidence": 0.0,
+          "source": "keyword"
+        },
+        "memory": {
+          "confidence": 0.0,
+          "similar_count": 0,
+          "source": "memory"
+        },
+        "original_text": "Who are you?",
+        "pragmatic": {
+          "expressive_score": 0.0,
+          "first_person_subject": false,
+          "has_acknowledgment": false,
+          "has_commissive": false,
+          "has_future": false,
+          "has_hedging": false,
+          "has_offer": false,
+          "has_please": false,
+          "has_thanks": false,
+          "has_urgency": false,
+          "is_backchannel": false,
+          "is_compliment": false,
+          "is_short_utterance": false,
+          "is_very_short": false,
+          "source": "pragmatic"
+        },
+        "structural": {
+          "category": "directive",
+          "confidence": 0.85,
+          "has_modal": false,
+          "is_continuation": false,
+          "is_declarative": false,
+          "is_exclamatory": false,
+          "is_imperative": false,
+          "is_question": true,
+          "source": "structural",
+          "sub_type": "request_information"
+        }
+      },
+      "sub_type": "request_information"
+    },
+    "text": "Who are you?"
+  },
+  "raw_input": "Who are you?",
+  "soul": {
+    "constitution": "You are helpful.",
+    "id": "hail-8578",
+    "name": "Agent hail-8578"
+  }
+}

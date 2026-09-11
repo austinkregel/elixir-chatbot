@@ -40,9 +40,33 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   alias Brain.Analysis.FeatureExtractor.{WordFeatures, EnrichmentFeatures}
   alias Brain.Lexicon
 
-  @all_pos [:NOUN, :PROPN, :VERB, :AUX, :ADJ, :ADV, :PRON, :DET, :ADP, :CONJ, :PART, :NUM, :INTJ, :PUNCT, :SYM, :X]
+  @all_pos [
+    :NOUN,
+    :PROPN,
+    :VERB,
+    :AUX,
+    :ADJ,
+    :ADV,
+    :PRON,
+    :DET,
+    :ADP,
+    :CONJ,
+    :PART,
+    :NUM,
+    :INTJ,
+    :PUNCT,
+    :SYM,
+    :X
+  ]
 
-  @speech_act_categories [:assertive, :directive, :commissive, :expressive, :declarative, :unknown]
+  @speech_act_categories [
+    :assertive,
+    :directive,
+    :commissive,
+    :expressive,
+    :declarative,
+    :unknown
+  ]
   @question_subtypes [:request_information, :request_action, :command]
   @addressee_values [:bot, :user, :third_party, :unknown]
 
@@ -109,11 +133,27 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
 
     group23 = EnrichmentFeatures.entity_type_semantics(analysis)
 
-    group1 ++ group2 ++ group3 ++ group4 ++ group5 ++ group6 ++
-      group7 ++ group8 ++ group9 ++ group10 ++ group11 ++ group12 ++
-      group13 ++ group14 ++
-      group15 ++ group16 ++ group17_verb ++ group17_noun ++ group17_adj ++
-      group18 ++ group19 ++
+    group1 ++
+      group2 ++
+      group3 ++
+      group4 ++
+      group5 ++
+      group6 ++
+      group7 ++
+      group8 ++
+      group9 ++
+      group10 ++
+      group11 ++
+      group12 ++
+      group13 ++
+      group14 ++
+      group15 ++
+      group16 ++
+      group17_verb ++
+      group17_noun ++
+      group17_adj ++
+      group18 ++
+      group19 ++
       group20 ++ group21 ++ group22 ++ group23
   end
 
@@ -176,52 +216,52 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   """
   def vector_dimension do
     # group 1 — surface/lexical
+    # group 2 — POS distribution (one-hot over @all_pos, 16 tags)
+    # group 3 — syntactic/structural
+    # group 4 — pronoun/person/target
+    # group 5 — modality/certainty
+    # group 6 — speech act: category one-hot + question-subtype one-hot + 2 flags
+    # group 7 — discourse: addressee one-hot + 4 indicator flags
+    # group 8 — sentiment
+    # group 9 — entity: count + density + per-type counts + has_named + new_entity
+    # group 10 — lexical-semantic fingerprint over domains
+    # group 11 — word-meaning depth/ambiguity
+    # group 12 — SRL frames: frame_count + per-role flags + coverage
+    # group 13 — memory/context
+    # group 14 — slot completeness
+    # group 15 — wh-target type
+    # group 16 — time-expression typology
+    # group 17 — POS-conditional supersense fingerprints (verb / noun / adj-adv)
+    # group 18 — ConceptNet edge-type fingerprint
+    # group 19 — verb × argument selectional preferences
+    # group 20 — subcategorization frame (POS-only)
+    # group 21 — discourse-marker semantic categories
+    # group 22 — speech-act × wh-target interaction grid
+    # group 23 — entity type semantics (parent histogram + coherence + coverage)
     12 +
-      # group 2 — POS distribution (one-hot over @all_pos, 16 tags)
       16 +
-      # group 3 — syntactic/structural
       10 +
-      # group 4 — pronoun/person/target
       8 +
-      # group 5 — modality/certainty
       8 +
-      # group 6 — speech act: category one-hot + question-subtype one-hot + 2 flags
       length(@speech_act_categories) + length(@question_subtypes) + 2 +
-      # group 7 — discourse: addressee one-hot + 4 indicator flags
       length(@addressee_values) + 4 +
-      # group 8 — sentiment
       5 +
-      # group 9 — entity: count + density + per-type counts + has_named + new_entity
       2 + length(@entity_types) + 2 +
-      # group 10 — lexical-semantic fingerprint over domains
       length(Lexicon.domain_atoms()) +
-      # group 11 — word-meaning depth/ambiguity
       6 +
-      # group 12 — SRL frames: frame_count + per-role flags + coverage
       1 + length(@srl_roles) + 1 +
-      # group 13 — memory/context
       6 +
-      # group 14 — slot completeness
       6 +
-      # group 15 — wh-target type
       EnrichmentFeatures.wh_dimension() +
-      # group 16 — time-expression typology
       EnrichmentFeatures.time_typology_dimension() +
-      # group 17 — POS-conditional supersense fingerprints (verb / noun / adj-adv)
       EnrichmentFeatures.verb_supersense_dimension() +
       EnrichmentFeatures.noun_supersense_dimension() +
       EnrichmentFeatures.adj_adv_supersense_dimension() +
-      # group 18 — ConceptNet edge-type fingerprint
       EnrichmentFeatures.conceptnet_edge_dimension() +
-      # group 19 — verb × argument selectional preferences
       EnrichmentFeatures.selectional_preferences_dimension() +
-      # group 20 — subcategorization frame (POS-only)
       EnrichmentFeatures.subcategorization_frame_dimension() +
-      # group 21 — discourse-marker semantic categories
       EnrichmentFeatures.discourse_markers_dimension() +
-      # group 22 — speech-act × wh-target interaction grid
       EnrichmentFeatures.speech_act_wh_interaction_dimension() +
-      # group 23 — entity type semantics (parent histogram + coherence + coverage)
       EnrichmentFeatures.entity_type_semantics_dimension()
   end
 
@@ -344,10 +384,11 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   # -- Group 3: Syntactic/structural (~10 dims) --------------------------------
 
   defp syntactic_structural(tokens, pos_tags) do
-    tags = Enum.map(pos_tags, fn
-      {_t, tag} -> normalize_pos(tag)
-      tag -> normalize_pos(tag)
-    end)
+    tags =
+      Enum.map(pos_tags, fn
+        {_t, tag} -> normalize_pos(tag)
+        tag -> normalize_pos(tag)
+      end)
 
     verb_count = Enum.count(tags, &(&1 == :VERB))
     modal_aux_count = Enum.count(tags, &(&1 == :AUX))
@@ -369,7 +410,11 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
     subordinate_flag = if conj_count > 0, do: 1.0, else: 0.0
 
     relative_words = MapSet.new(~w(who whom which that whose))
-    relative_flag = if Enum.any?(tokens, fn t -> MapSet.member?(relative_words, String.downcase(t)) end), do: 1.0, else: 0.0
+
+    relative_flag =
+      if Enum.any?(tokens, fn t -> MapSet.member?(relative_words, String.downcase(t)) end),
+        do: 1.0,
+        else: 0.0
 
     [
       min(verb_count / 5.0, 1.0),
@@ -417,9 +462,21 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
     should_must = Enum.count(lower, &(&1 in ~w(should must shall ought)))
 
     conditional = Enum.count(lower, &(&1 in ~w(if unless whether provided assuming)))
-    intensifier = Enum.count(lower, &(&1 in ~w(very really extremely absolutely definitely certainly surely)))
-    hedge = Enum.count(lower, &(&1 in ~w(maybe perhaps possibly probably likely seemingly apparently kind sort)))
-    certainty = Enum.count(lower, &(&1 in ~w(definitely certainly absolutely surely clearly obviously undoubtedly)))
+
+    intensifier =
+      Enum.count(lower, &(&1 in ~w(very really extremely absolutely definitely certainly surely)))
+
+    hedge =
+      Enum.count(
+        lower,
+        &(&1 in ~w(maybe perhaps possibly probably likely seemingly apparently kind sort))
+      )
+
+    certainty =
+      Enum.count(
+        lower,
+        &(&1 in ~w(definitely certainly absolutely surely clearly obviously undoubtedly))
+      )
 
     [
       min(can_could / 2.0, 1.0),
@@ -438,13 +495,15 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   defp speech_act_features(analysis) do
     sa = get_speech_act(analysis)
 
-    category_one_hot = Enum.map(@speech_act_categories, fn cat ->
-      if sa.category == cat, do: 1.0, else: 0.0
-    end)
+    category_one_hot =
+      Enum.map(@speech_act_categories, fn cat ->
+        if sa.category == cat, do: 1.0, else: 0.0
+      end)
 
-    question_subtype_one_hot = Enum.map(@question_subtypes, fn st ->
-      if sa.sub_type == st, do: 1.0, else: 0.0
-    end)
+    question_subtype_one_hot =
+      Enum.map(@question_subtypes, fn st ->
+        if sa.sub_type == st, do: 1.0, else: 0.0
+      end)
 
     is_imperative = if sa.is_imperative, do: 1.0, else: 0.0
     is_request = if sa.sub_type in [:request_action, :request_information], do: 1.0, else: 0.0
@@ -458,9 +517,10 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
     disc = get_discourse(analysis)
     sa = get_speech_act(analysis)
 
-    addressee_one_hot = Enum.map(@addressee_values, fn a ->
-      if disc.addressee == a, do: 1.0, else: 0.0
-    end)
+    addressee_one_hot =
+      Enum.map(@addressee_values, fn a ->
+        if disc.addressee == a, do: 1.0, else: 0.0
+      end)
 
     disc_indicators = disc.indicators || []
     sa_indicators = Map.get(sa, :indicators) || []
@@ -470,7 +530,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
 
     greeting =
       if sa.sub_type in [:greeting] or
-           sa.category == :expressive and sa.sub_type == :greeting,
+           (sa.category == :expressive and sa.sub_type == :greeting),
          do: 1.0,
          else: 0.0
 
@@ -516,14 +576,20 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
     entity_count = min(total / 10.0, 1.0)
     entity_density = min(total / token_count, 1.0)
 
-    type_counts = Enum.map(@entity_types, fn type ->
-      count = Enum.count(entities, fn e ->
-        entity_type(e) == type
-      end)
-      min(count / 3.0, 1.0)
-    end)
+    type_counts =
+      Enum.map(@entity_types, fn type ->
+        count =
+          Enum.count(entities, fn e ->
+            entity_type(e) == type
+          end)
 
-    has_named = if Enum.any?(entities, fn e -> entity_type(e) in [:person, :location, :organization] end), do: 1.0, else: 0.0
+        min(count / 3.0, 1.0)
+      end)
+
+    has_named =
+      if Enum.any?(entities, fn e -> entity_type(e) in [:person, :location, :organization] end),
+        do: 1.0,
+        else: 0.0
 
     acc = get_accumulated_context(analysis)
     familiarity = if acc, do: Map.get(acc, :entity_familiarity, 0.5), else: 0.5
@@ -573,11 +639,11 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
 
       antonym_flag =
         if Enum.any?(content, fn wf ->
-          case Lexicon.antonyms(wf.token) do
-            [] -> false
-            _ -> true
-          end
-        end), do: 1.0, else: 0.0
+             case Lexicon.antonyms(wf.token) do
+               [] -> false
+               _ -> true
+             end
+           end), do: 1.0, else: 0.0
 
       [avg_depth, max_depth, avg_polysemy, abstraction_range, avg_similarity, antonym_flag]
     end
@@ -616,12 +682,13 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
       |> Enum.reject(&is_nil/1)
       |> MapSet.new()
 
-    role_flags = Enum.map(@srl_roles, fn role ->
-      if MapSet.member?(all_roles, role), do: 1.0, else: 0.0
-    end)
+    role_flags =
+      Enum.map(@srl_roles, fn role ->
+        if MapSet.member?(all_roles, role), do: 1.0, else: 0.0
+      end)
 
     tokens = extract_tokens(analysis)
-    coverage = if length(tokens) > 0, do: min(length(frames) / length(tokens), 1.0), else: 0.0
+    coverage = if tokens != [], do: min(length(frames) / length(tokens), 1.0), else: 0.0
 
     [frame_count] ++ role_flags ++ [coverage]
   end
@@ -673,7 +740,8 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   defp clamp01(v) when is_number(v), do: min(max(v * 1.0, 0.0), 1.0)
   defp clamp01(_), do: 0.5
 
-  defp compute_avg_similarity(content_words) when length(content_words) < 2, do: 0.5
+  defp compute_avg_similarity([]), do: 0.5
+  defp compute_avg_similarity([_]), do: 0.5
 
   defp compute_avg_similarity(content_words) do
     tokens = Enum.map(content_words, & &1.token)
@@ -741,8 +809,18 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
 
   defp get_speech_act(analysis) do
     case Map.get(analysis, :speech_act) do
-      %{category: _} = sa -> sa
-      _ -> %{category: :unknown, sub_type: :unknown, is_question: false, is_imperative: false, indicators: [], confidence: 0.0}
+      %{category: _} = sa ->
+        sa
+
+      _ ->
+        %{
+          category: :unknown,
+          sub_type: :unknown,
+          is_question: false,
+          is_imperative: false,
+          indicators: [],
+          confidence: 0.0
+        }
     end
   end
 
@@ -779,9 +857,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   defp entity_type(entity) when is_map(entity) do
     type =
       Map.get(entity, :type) ||
-        Map.get(entity, "type") ||
-        Map.get(entity, :entity_type) ||
-        Map.get(entity, "entity_type")
+        Map.get(entity, :entity_type)
 
     if is_atom(type), do: type, else: safe_to_atom(type)
   end

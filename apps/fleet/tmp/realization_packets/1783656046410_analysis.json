@@ -1,0 +1,111 @@
+{
+  "confidence": 0.718,
+  "entities": [
+    {
+      "confidence": 0.9,
+      "entity_type": "number",
+      "graph_known": false,
+      "match": "7",
+      "source": "system",
+      "value": "7"
+    }
+  ],
+  "intent": "music.statement",
+  "profile": {
+    "confidence": 0.718,
+    "derived_label": "music.statement",
+    "domain": "music",
+    "engagement_level": "urgent_demand",
+    "modality": "declarative",
+    "response_posture": "hedged"
+  },
+  "response_strategy": "hedged_response",
+  "sentiment": {
+    "confidence": 0.10331416642354829,
+    "label": "neutral"
+  },
+  "speech_act": {
+    "category": "assertive",
+    "confidence": 0.6875126611555065,
+    "indicators": [
+      "intent:weather.condition"
+    ],
+    "intent_confidence": 0.43336709641468396,
+    "is_imperative": false,
+    "is_question": false,
+    "raw_analyses": {
+      "intent": {
+        "category": "assertive",
+        "confidence": 0.43336709641468396,
+        "intent": "weather.condition",
+        "margin": 0.2903699500031406,
+        "second_score": 0.14299714641154337,
+        "source": "feature_vector",
+        "sub_type": "statement",
+        "top_k": [
+          {
+            "intent": "weather.condition",
+            "score": 0.43336709641468396
+          },
+          {
+            "intent": "calendar.cancel",
+            "score": 0.14299714641154337
+          },
+          {
+            "intent": "news.search",
+            "score": 0.14177425212313158
+          },
+          {
+            "intent": "status.diagnostic",
+            "score": 0.14098302394941087
+          },
+          {
+            "intent": "code.signature",
+            "score": 0.14087848110123022
+          }
+        ]
+      },
+      "keyword": {
+        "confidence": 0.0,
+        "source": "keyword"
+      },
+      "memory": {
+        "confidence": 0.0,
+        "similar_count": 0,
+        "source": "memory"
+      },
+      "original_text": "Investigate the anomaly at sector 7.",
+      "pragmatic": {
+        "expressive_score": 0.0,
+        "first_person_subject": false,
+        "has_acknowledgment": false,
+        "has_commissive": false,
+        "has_future": false,
+        "has_hedging": false,
+        "has_offer": false,
+        "has_please": false,
+        "has_thanks": false,
+        "has_urgency": false,
+        "is_backchannel": false,
+        "is_compliment": false,
+        "is_short_utterance": false,
+        "is_very_short": false,
+        "source": "pragmatic"
+      },
+      "structural": {
+        "category": "assertive",
+        "confidence": 0.7,
+        "has_modal": false,
+        "is_continuation": false,
+        "is_declarative": true,
+        "is_exclamatory": false,
+        "is_imperative": false,
+        "is_question": false,
+        "source": "structural",
+        "sub_type": "statement"
+      }
+    },
+    "sub_type": "statement"
+  },
+  "text": "Investigate the anomaly at sector 7."
+}

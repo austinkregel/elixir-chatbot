@@ -1,0 +1,102 @@
+{
+  "confidence": 0.743,
+  "entities": [],
+  "intent": "knowledge.statement",
+  "profile": {
+    "confidence": 0.743,
+    "derived_label": "knowledge.statement",
+    "domain": "knowledge",
+    "engagement_level": "urgent_demand",
+    "modality": "declarative",
+    "response_posture": "hedged"
+  },
+  "response_strategy": "hedged_response",
+  "sentiment": {
+    "confidence": 0.11933412534421795,
+    "label": "neutral"
+  },
+  "speech_act": {
+    "category": "assertive",
+    "confidence": 0.6746948183354847,
+    "indicators": [
+      "intent:smalltalk.user.will_be_back"
+    ],
+    "intent_confidence": 0.3991861822279593,
+    "is_imperative": false,
+    "is_question": false,
+    "raw_analyses": {
+      "intent": {
+        "category": "assertive",
+        "confidence": 0.3991861822279593,
+        "intent": "smalltalk.user.will_be_back",
+        "margin": 0.24744543982161057,
+        "second_score": 0.15174074240634874,
+        "source": "feature_vector",
+        "sub_type": "statement",
+        "top_k": [
+          {
+            "intent": "smalltalk.user.will_be_back",
+            "score": 0.3991861822279593
+          },
+          {
+            "intent": "smarthome.device_down",
+            "score": 0.15174074240634874
+          },
+          {
+            "intent": "news.search",
+            "score": 0.15047202367354534
+          },
+          {
+            "intent": "todo.add",
+            "score": 0.1493420925445927
+          },
+          {
+            "intent": "code.signature",
+            "score": 0.14925895914755385
+          }
+        ]
+      },
+      "keyword": {
+        "confidence": 0.0,
+        "source": "keyword"
+      },
+      "memory": {
+        "confidence": 0.0,
+        "similar_count": 0,
+        "source": "memory"
+      },
+      "original_text": "In one sentence, report your current readiness.",
+      "pragmatic": {
+        "expressive_score": 0.0,
+        "first_person_subject": false,
+        "has_acknowledgment": false,
+        "has_commissive": false,
+        "has_future": false,
+        "has_hedging": false,
+        "has_offer": false,
+        "has_please": false,
+        "has_thanks": false,
+        "has_urgency": false,
+        "is_backchannel": false,
+        "is_compliment": false,
+        "is_short_utterance": false,
+        "is_very_short": false,
+        "source": "pragmatic"
+      },
+      "structural": {
+        "category": "assertive",
+        "confidence": 0.7,
+        "has_modal": false,
+        "is_continuation": false,
+        "is_declarative": true,
+        "is_exclamatory": false,
+        "is_imperative": false,
+        "is_question": false,
+        "source": "structural",
+        "sub_type": "statement"
+      }
+    },
+    "sub_type": "statement"
+  },
+  "text": "In one sentence, report your current readiness."
+}

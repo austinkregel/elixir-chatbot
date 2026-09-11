@@ -138,7 +138,7 @@ defmodule Brain.ML.WeightOptimizerTest do
 
       assert status in [:complete, :early_stop]
       assert is_list(history) and history != []
-      assert is_list(weights) and length(weights) == 4
+      assert is_list(weights) and match?([_, _, _, _], weights)
       assert measurements.duration_ms >= 0
       assert measurements.total_dims == 4
       assert measurements.alive_dims >= 0 and measurements.alive_dims <= 4

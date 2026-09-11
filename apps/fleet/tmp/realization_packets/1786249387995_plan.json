@@ -1,0 +1,29 @@
+[
+  {
+    "content": {
+      "action": "knowledge.command",
+      "capability": "incapable",
+      "content_complete": true,
+      "status": "incapable"
+    },
+    "type": "acknowledgment",
+    "variant": "action"
+  },
+  {
+    "content": {
+      "advisories": [],
+      "beliefs": [],
+      "capability": "cognitive",
+      "confidence": 0.738,
+      "content_complete": true,
+      "entities": [],
+      "epistemic_status": "unchecked",
+      "intent": "knowledge.command",
+      "related_beliefs": [],
+      "text": "Give a one-line readiness report.",
+      "topic": null
+    },
+    "type": "content",
+    "variant": "report"
+  }
+]

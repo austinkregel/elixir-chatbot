@@ -1,5 +1,12 @@
 defmodule ChatWeb.ConnCase do
-  @moduledoc "This module defines the test case to be used by\ntests that require setting up a connection.\n\nSuch tests rely on `Phoenix.ConnTest` and also\nimport other functionality to make it easier\nto build common data structures.\n"
+  @moduledoc """
+  Case template for tests that need a `Plug.Conn`.
+
+  Imports `Phoenix.ConnTest` and the verified-routes sigil, and builds a fresh
+  conn per test. When `Atlas.Repo` is running it also checks out the Brain/Atlas
+  SQL sandbox so Brain GenServers can reach the database, and (unless tagged
+  `:skip_endpoint`) starts `ChatWeb.Endpoint`.
+  """
 
   alias ChatWeb.Endpoint
   alias Phoenix.ConnTest

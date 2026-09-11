@@ -55,7 +55,7 @@ defmodule Atlas.SchemasTest do
       assert belief.confidence == 0.95
 
       active_beliefs = Belief |> Belief.active() |> Repo.all()
-      assert length(active_beliefs) >= 1
+      assert active_beliefs != []
     end
   end
 
@@ -74,7 +74,7 @@ defmodule Atlas.SchemasTest do
       assert episode.tags == ["weather", "query"]
 
       world_episodes = Episode |> Episode.for_world("default") |> Repo.all()
-      assert length(world_episodes) >= 1
+      assert world_episodes != []
     end
   end
 
@@ -108,7 +108,7 @@ defmodule Atlas.SchemasTest do
       assert candidate.status == "pending"
 
       pending = ReviewCandidate |> ReviewCandidate.pending() |> Repo.all()
-      assert length(pending) >= 1
+      assert pending != []
     end
   end
 
@@ -128,7 +128,7 @@ defmodule Atlas.SchemasTest do
       assert fact.entity == "Elixir"
 
       elixir_facts = LearnedFact |> LearnedFact.for_entity("Elixir") |> Repo.all()
-      assert length(elixir_facts) >= 1
+      assert elixir_facts != []
     end
   end
 end

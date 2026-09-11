@@ -177,9 +177,14 @@ defmodule Brain.ML.SpeechActClassifierSimple do
         model = path |> File.read!() |> :erlang.binary_to_term()
         {:ok, model}
       rescue
-        e ->
-          Logger.warning("SpeechActClassifierSimple: failed to load model: #{inspect(e)}")
-          {:error, :load_failed}
+        # File.read! -> File.Error (IO error), binary_to_term -> ArgumentError
+        # (corrupt model file). Preserve the reason instead of a bare atom.
+        e in [File.Error, ArgumentError] ->
+          Logger.warning(
+            "SpeechActClassifierSimple: failed to load model: #{Exception.message(e)}"
+          )
+
+          {:error, {:load_failed, Exception.message(e)}}
       end
     else
       {:error, :model_not_found}

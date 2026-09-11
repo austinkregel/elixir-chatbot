@@ -147,7 +147,9 @@ defmodule Brain.ML.FeatureVectorClassifier do
       weighted_vec = apply_model_weights(vec, model)
       normalized = normalize_centroids(centroids)
       top_k_limit = Keyword.get(opts, :top_k_limit, 5)
-      {label, top_score, second_score, top_k} = rank_with_top_k(weighted_vec, normalized, top_k_limit)
+
+      {label, top_score, second_score, top_k} =
+        rank_with_top_k(weighted_vec, normalized, top_k_limit)
 
       details = %{
         top_score: top_score,
@@ -373,7 +375,7 @@ defmodule Brain.ML.FeatureVectorClassifier do
         end)
         |> Enum.reject(&is_nil/1)
 
-      if length(margins_and_correct) >= 50 do
+      if Enum.count_until(margins_and_correct, 50) >= 50 do
         platt_params = fit_platt_params(margins_and_correct)
         %{model | platt_params: platt_params}
       else

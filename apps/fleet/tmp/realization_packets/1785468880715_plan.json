@@ -1,0 +1,53 @@
+[
+  {
+    "content": {
+      "action": "music.statement",
+      "capability": "incapable",
+      "content_complete": true,
+      "status": "incapable"
+    },
+    "type": "acknowledgment",
+    "variant": "action"
+  },
+  {
+    "content": {
+      "advisories": [
+        "no capability registered for music.statement"
+      ],
+      "beliefs": [],
+      "capability": [
+        "external",
+        "incapable"
+      ],
+      "confidence": 0.716,
+      "content_complete": true,
+      "entities": [
+        {
+          "confidence": 0.59,
+          "entity": "eventargument",
+          "entity_type": "eventargument",
+          "graph_known": false,
+          "match": "one",
+          "source": "gazetteer",
+          "value": "one"
+        },
+        {
+          "confidence": 0.71,
+          "entity": "news_sort",
+          "entity_type": "news_sort",
+          "graph_known": false,
+          "match": "current",
+          "source": "gazetteer",
+          "value": "latest"
+        }
+      ],
+      "epistemic_status": "unchecked",
+      "intent": "music.statement",
+      "related_beliefs": [],
+      "text": "In one sentence, report your current readiness.",
+      "topic": "one, latest"
+    },
+    "type": "content",
+    "variant": "report"
+  }
+]

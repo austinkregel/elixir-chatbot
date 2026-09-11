@@ -1,0 +1,52 @@
+[
+  {
+    "content": {
+      "action": "music.statement",
+      "capability": "incapable",
+      "content_complete": true,
+      "status": "incapable"
+    },
+    "type": "acknowledgment",
+    "variant": "action"
+  },
+  {
+    "content": {
+      "advisories": [
+        "no capability registered for music.statement"
+      ],
+      "beliefs": [],
+      "capability": [
+        "external",
+        "incapable"
+      ],
+      "confidence": 0.525,
+      "content_complete": true,
+      "entities": [
+        {
+          "confidence": 0.62,
+          "entity_type": "slot_mappings",
+          "graph_known": false,
+          "match": "name",
+          "source": "gazetteer",
+          "value": "name"
+        },
+        {
+          "confidence": 0.65,
+          "disambiguation_reason": "introduction_pattern",
+          "entity_type": "given-name",
+          "graph_known": false,
+          "match": "Ansel",
+          "source": "pos_tagger_propn",
+          "value": "Ansel"
+        }
+      ],
+      "epistemic_status": "unchecked",
+      "intent": "music.statement",
+      "related_beliefs": [],
+      "text": "My name is Ansel.",
+      "topic": "name, Ansel"
+    },
+    "type": "content",
+    "variant": "report"
+  }
+]

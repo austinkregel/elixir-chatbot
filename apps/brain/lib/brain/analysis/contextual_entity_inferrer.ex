@@ -64,8 +64,13 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
       hypotheses =
         Enum.map(top_k, fn {candidate_intent, candidate_score} ->
           evaluate_hypothesis(
-            candidate_intent, candidate_score,
-            entities, narrowable, text, pos_tags, opts
+            candidate_intent,
+            candidate_score,
+            entities,
+            narrowable,
+            text,
+            pos_tags,
+            opts
           )
         end)
         |> Enum.reject(&is_nil/1)
@@ -121,13 +126,22 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
   # Pass 2: Evaluate Hypotheses
   # ============================================================================
 
-  defp evaluate_hypothesis(candidate_intent, candidate_score, entities, narrowable, text, pos_tags, opts) do
+  defp evaluate_hypothesis(
+         candidate_intent,
+         candidate_score,
+         entities,
+         narrowable,
+         text,
+         pos_tags,
+         opts
+       ) do
     profile = Keyword.get(opts, :profile)
 
     entity_mappings =
       case profile do
         %ChunkProfile{domain: domain} when domain != :unknown ->
           domain_mappings = entity_mappings_from_domain(domain)
+
           if domain_mappings == %{} do
             entity_mappings_from_domain(domain_from_intent(candidate_intent))
           else
@@ -146,6 +160,7 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
       unfilled_slots =
         if current_slot_result.schema_name == "unknown" do
           filled_types = entities |> Enum.map(& &1[:entity_type]) |> MapSet.new()
+
           entity_mappings
           |> Map.keys()
           |> Enum.reject(fn slot ->
@@ -162,7 +177,8 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
           acceptable_types = Map.get(entity_mappings, slot_name, [])
 
           Enum.flat_map(narrowable, fn entity ->
-            candidates = TypeHierarchy.narrowing_candidates(entity[:entity_type], acceptable_types)
+            candidates =
+              TypeHierarchy.narrowing_candidates(entity[:entity_type], acceptable_types)
 
             Enum.map(candidates, fn narrowed_type ->
               score = score_narrowing(entity, narrowed_type, text, pos_tags, opts)
@@ -181,7 +197,9 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
         |> deduplicate_assignments()
 
       filled_count = Enum.count(narrowings, &(&1.score > 0.0))
-      slot_fill_ratio = if length(unfilled_slots) > 0, do: filled_count / length(unfilled_slots), else: 1.0
+
+      slot_fill_ratio =
+        if unfilled_slots != [], do: filled_count / length(unfilled_slots), else: 1.0
 
       mean_quality =
         if narrowings == [] do
@@ -203,14 +221,15 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
 
   defp deduplicate_assignments(narrowings) do
     {_used_entities, _used_slots, result} =
-      Enum.reduce(narrowings, {MapSet.new(), MapSet.new(), []}, fn narrowing, {used_entities, used_slots, acc} ->
+      Enum.reduce(narrowings, {MapSet.new(), MapSet.new(), []}, fn narrowing,
+                                                                   {used_entities, used_slots,
+                                                                    acc} ->
         entity_key = entity_identity(narrowing.entity)
 
         if MapSet.member?(used_entities, entity_key) or MapSet.member?(used_slots, narrowing.slot) do
           {used_entities, used_slots, acc}
         else
-          {MapSet.put(used_entities, entity_key),
-           MapSet.put(used_slots, narrowing.slot),
+          {MapSet.put(used_entities, entity_key), MapSet.put(used_slots, narrowing.slot),
            [narrowing | acc]}
         end
       end)
@@ -257,7 +276,8 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
     tokens = Tokenizer.tokenize_words(text)
     tags = Enum.map(pos_tags, fn {_token, tag} -> tag end)
 
-    if Code.ensure_loaded?(World.TypeInferrer) and function_exported?(World.TypeInferrer, :infer_type, 4) do
+    if Code.ensure_loaded?(World.TypeInferrer) and
+         function_exported?(World.TypeInferrer, :infer_type, 4) do
       try do
         case World.TypeInferrer.infer_type(entity_value, tokens, tags, world_id) do
           {inferred_type, confidence} when is_binary(inferred_type) and confidence > 0.3 ->
@@ -458,7 +478,8 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
       end)
 
     updated_intent =
-      if hypothesis.intent != current_intent and hypothesis.intent_score > (Map.get(current_details, :intent_confidence) || 0.0) do
+      if hypothesis.intent != current_intent and
+           hypothesis.intent_score > (Map.get(current_details, :intent_confidence) || 0.0) do
         hypothesis.intent
       else
         current_intent
@@ -482,7 +503,11 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
         "ContextualEntityInferrer: narrowed #{narrowed_count} entities for intent #{updated_intent}"
       )
 
-      report_narrowings_for_learning(hypothesis.narrowings, text, Keyword.get(opts, :world_id, "default"))
+      report_narrowings_for_learning(
+        hypothesis.narrowings,
+        text,
+        Keyword.get(opts, :world_id, "default")
+      )
     end
 
     {updated_entities, updated_intent, updated_details}
@@ -577,7 +602,10 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
                function_exported?(World.TypeInferrer, :learn_from_known_entity, 4) do
             try do
               World.TypeInferrer.learn_from_known_entity(
-                narrowing.narrowed_type, tokens, tags, world_id
+                narrowing.narrowed_type,
+                tokens,
+                tags,
+                world_id
               )
             rescue
               _ -> :ok
@@ -620,11 +648,13 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
   end
 
   defp domain_from_intent(nil), do: nil
+
   defp domain_from_intent(intent) when is_binary(intent) do
     case String.split(intent, ".", parts: 2) do
       [d, _] -> String.to_atom(d)
       _ -> nil
     end
   end
+
   defp domain_from_intent(_), do: nil
 end

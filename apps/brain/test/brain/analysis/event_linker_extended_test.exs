@@ -16,7 +16,7 @@ defmodule Brain.Analysis.EventLinkerExtendedTest do
       pos_tags = ["PRP", "VB"]
 
       frames = EventLinker.link(events, entities, tokens, pos_tags)
-      assert length(frames) == 1
+      assert match?([_], frames)
       assert hd(frames).trigger == "run"
       assert is_list(hd(frames).arguments)
     end
@@ -32,11 +32,12 @@ defmodule Brain.Analysis.EventLinkerExtendedTest do
       pos_tags = List.duplicate("NN", 6)
 
       frames = EventLinker.link(events, entities, tokens, pos_tags)
-      assert length(frames) == 2
+      assert match?([_, _], frames)
     end
 
     test "event with temporal entity assigns argm_tmp role" do
       events = [%{action: %{verb: "met"}, source_tokens: [1]}]
+
       entities = [
         %{text: "John", type: :person, start_pos: 0},
         %{text: "yesterday", type: :temporal, start_pos: 2}
@@ -47,17 +48,19 @@ defmodule Brain.Analysis.EventLinkerExtendedTest do
         %{text: "met", normalized: "met"},
         %{text: "yesterday", normalized: "yesterday"}
       ]
+
       pos_tags = ["NNP", "VBD", "NN"]
 
       frames = EventLinker.link(events, entities, tokens, pos_tags)
-      assert length(frames) == 1
+      assert match?([_], frames)
       frame = hd(frames)
 
-      temporal_args = Enum.filter(frame.arguments, fn arg ->
-        arg.role == :argm_tmp
-      end)
+      temporal_args =
+        Enum.filter(frame.arguments, fn arg ->
+          arg.role == :argm_tmp
+        end)
 
-      assert length(temporal_args) >= 1
+      assert temporal_args != []
     end
 
     test "POS tags shorter than tokens" do
@@ -82,6 +85,7 @@ defmodule Brain.Analysis.EventLinkerExtendedTest do
 
     test "entities with various type formats" do
       events = [%{action: %{verb: "saw"}, source_tokens: [1]}]
+
       entities = [
         %{text: "Berlin", type: "location", start_pos: 2},
         %{text: "John", type: :person, start_pos: 0}
@@ -92,11 +96,12 @@ defmodule Brain.Analysis.EventLinkerExtendedTest do
         %{text: "saw", normalized: "saw"},
         %{text: "Berlin", normalized: "berlin"}
       ]
+
       pos_tags = ["NNP", "VBD", "NNP"]
 
       frames = EventLinker.link(events, entities, tokens, pos_tags)
-      assert length(frames) == 1
-      assert length(hd(frames).arguments) >= 1
+      assert match?([_], frames)
+      assert hd(frames).arguments != []
     end
   end
 
@@ -104,32 +109,43 @@ defmodule Brain.Analysis.EventLinkerExtendedTest do
     test "returns empty list for no entities" do
       event = %{action: %{verb: "go"}, source_tokens: [0]}
 
-      result = EventLinker.assign_argument_roles(
-        event, [],
-        [%{text: "go", normalized: "go"}],
-        ["VB"]
-      )
+      result =
+        EventLinker.assign_argument_roles(
+          event,
+          [],
+          [%{text: "go", normalized: "go"}],
+          ["VB"]
+        )
+
       assert result == []
     end
 
     test "filters out temporal entities" do
       event = %{action: %{verb: "walked"}, source_tokens: [2]}
+
       entities = [
         %{text: "today", type: :temporal, start_pos: 0},
         %{text: "John", type: :person, start_pos: 1}
       ]
 
-      result = EventLinker.assign_argument_roles(
-        event, entities,
-        [%{text: "today", normalized: "today"}, %{text: "John", normalized: "john"}, %{text: "walked", normalized: "walked"}],
-        ["NN", "NNP", "VBD"]
-      )
+      result =
+        EventLinker.assign_argument_roles(
+          event,
+          entities,
+          [
+            %{text: "today", normalized: "today"},
+            %{text: "John", normalized: "john"},
+            %{text: "walked", normalized: "walked"}
+          ],
+          ["NN", "NNP", "VBD"]
+        )
 
-      temporal_in_result = Enum.filter(result, fn arg ->
-        arg.entity_type == :temporal
-      end)
+      temporal_in_result =
+        Enum.filter(result, fn arg ->
+          arg.entity_type == :temporal
+        end)
 
-      assert length(temporal_in_result) == 0
+      assert temporal_in_result == []
     end
   end
 end

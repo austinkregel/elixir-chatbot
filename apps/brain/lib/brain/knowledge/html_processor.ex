@@ -90,7 +90,10 @@ defmodule Brain.Knowledge.HtmlProcessor do
         {:error, :no_content}
       end
     rescue
-      _ -> {:error, :no_content}
+      # Malformed markup makes Floki.parse_document return {:error, _} (failing
+      # the {:ok, document} match) or the DOM traversal raise ArgumentError.
+      # Either way there is no extractable article text.
+      _e in [MatchError, ArgumentError] -> {:error, :no_content}
     end
   end
 

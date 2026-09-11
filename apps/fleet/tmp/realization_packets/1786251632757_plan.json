@@ -1,0 +1,43 @@
+[
+  {
+    "content": {
+      "action": "music.statement",
+      "capability": "incapable",
+      "content_complete": true,
+      "status": "incapable"
+    },
+    "type": "acknowledgment",
+    "variant": "action"
+  },
+  {
+    "content": {
+      "advisories": [
+        "no capability registered for music.statement"
+      ],
+      "beliefs": [],
+      "capability": [
+        "external",
+        "incapable"
+      ],
+      "confidence": 0.719,
+      "content_complete": true,
+      "entities": [
+        {
+          "confidence": 0.9,
+          "entity_type": "number",
+          "graph_known": false,
+          "match": "7",
+          "source": "system",
+          "value": "7"
+        }
+      ],
+      "epistemic_status": "unchecked",
+      "intent": "music.statement",
+      "related_beliefs": [],
+      "text": "Investigate the anomaly at sector 7.",
+      "topic": null
+    },
+    "type": "content",
+    "variant": "report"
+  }
+]

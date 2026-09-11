@@ -60,10 +60,13 @@ defmodule Brain.Code.RelationMapper do
 
   # Inheritance patterns
   @extends_patterns %{
-    elixir: [],  # Elixir uses behaviours, not inheritance
-    python: ["argument_list"],  # class Foo(Bar)
+    # Elixir uses behaviours, not inheritance
+    elixir: [],
+    # class Foo(Bar)
+    python: ["argument_list"],
     ruby: ["superclass"],
-    go: [],  # Go uses composition
+    # Go uses composition
+    go: [],
     java: ["superclass", "extends"],
     cpp: ["base_class_clause"],
     csharp: ["base_list"],
@@ -186,10 +189,9 @@ defmodule Brain.Code.RelationMapper do
 
     imports
     |> Enum.group_by(&Map.get(&1, :file_path))
-    |> Enum.map(fn {file, import_symbols} ->
+    |> Map.new(fn {file, import_symbols} ->
       {file, Enum.map(import_symbols, & &1.name)}
     end)
-    |> Enum.into(%{})
   end
 
   # ============================================================================
@@ -200,25 +202,28 @@ defmodule Brain.Code.RelationMapper do
     node_type = Map.get(node, :type, "")
 
     # Check for call expressions
-    context = if matches_pattern?(node_type, get_patterns(@call_patterns, context.language)) do
-      extract_call_relation(node, context)
-    else
-      context
-    end
+    context =
+      if matches_pattern?(node_type, get_patterns(@call_patterns, context.language)) do
+        extract_call_relation(node, context)
+      else
+        context
+      end
 
     # Check for extends/inheritance
-    context = if matches_pattern?(node_type, get_patterns(@extends_patterns, context.language)) do
-      extract_extends_relation(node, context)
-    else
-      context
-    end
+    context =
+      if matches_pattern?(node_type, get_patterns(@extends_patterns, context.language)) do
+        extract_extends_relation(node, context)
+      else
+        context
+      end
 
     # Check for new/instantiation
-    context = if String.contains?(node_type, "new") or String.contains?(node_type, "object_creation") do
-      extract_instantiation_relation(node, context)
-    else
-      context
-    end
+    context =
+      if String.contains?(node_type, "new") or String.contains?(node_type, "object_creation") do
+        extract_instantiation_relation(node, context)
+      else
+        context
+      end
 
     # Update scope if entering a class/function
     context = maybe_push_scope(node, node_type, context)
@@ -226,9 +231,10 @@ defmodule Brain.Code.RelationMapper do
     # Recurse into children
     children = Map.get(node, :children, [])
 
-    result = Enum.reduce(children, context, fn child, ctx ->
-      walk_for_relations(child, ctx)
-    end)
+    result =
+      Enum.reduce(children, context, fn child, ctx ->
+        walk_for_relations(child, ctx)
+      end)
 
     # Pop scope if we pushed one
     maybe_pop_scope(node, node_type, result, context)
@@ -340,13 +346,15 @@ defmodule Brain.Code.RelationMapper do
     children = Map.get(node, :children, [])
 
     # Look for identifier or member access
-    callee = Enum.find(children, fn child ->
-      type = Map.get(child, :type, "")
-      String.contains?(type, "identifier") or
-        String.contains?(type, "member") or
-        String.contains?(type, "attribute") or
-        String.contains?(type, "field")
-    end)
+    callee =
+      Enum.find(children, fn child ->
+        type = Map.get(child, :type, "")
+
+        String.contains?(type, "identifier") or
+          String.contains?(type, "member") or
+          String.contains?(type, "attribute") or
+          String.contains?(type, "field")
+      end)
 
     if callee do
       Map.get(callee, :text, "")
@@ -369,10 +377,11 @@ defmodule Brain.Code.RelationMapper do
     children = Map.get(node, :children, [])
 
     # Look for identifier in superclass/extends node
-    super_node = Enum.find(children, fn child ->
-      type = Map.get(child, :type, "")
-      String.contains?(type, "identifier") or String.contains?(type, "type")
-    end)
+    super_node =
+      Enum.find(children, fn child ->
+        type = Map.get(child, :type, "")
+        String.contains?(type, "identifier") or String.contains?(type, "type")
+      end)
 
     if super_node do
       Map.get(super_node, :text, "")
@@ -383,10 +392,11 @@ defmodule Brain.Code.RelationMapper do
     children = Map.get(node, :children, [])
 
     # Look for type identifier after "new"
-    type_node = Enum.find(children, fn child ->
-      type = Map.get(child, :type, "")
-      String.contains?(type, "type") or String.contains?(type, "identifier")
-    end)
+    type_node =
+      Enum.find(children, fn child ->
+        type = Map.get(child, :type, "")
+        String.contains?(type, "type") or String.contains?(type, "identifier")
+      end)
 
     if type_node do
       Map.get(type_node, :text, "")
@@ -424,6 +434,7 @@ defmodule Brain.Code.RelationMapper do
   end
 
   defp build_scoped_name(name, []), do: name
+
   defp build_scoped_name(name, scope) do
     Enum.join(Enum.reverse(scope) ++ [name], ".")
   end
@@ -443,6 +454,7 @@ defmodule Brain.Code.RelationMapper do
     # Check if this is a scope-creating node (class, function, module)
     if is_scope_node?(node_type) do
       name = find_node_name(node)
+
       if name do
         %{context | current_scope: [name | context.current_scope]}
       else
@@ -473,10 +485,11 @@ defmodule Brain.Code.RelationMapper do
   defp find_node_name(node) do
     children = Map.get(node, :children, [])
 
-    name_node = Enum.find(children, fn child ->
-      type = Map.get(child, :type, "")
-      String.contains?(type, "identifier") or String.contains?(type, "name")
-    end)
+    name_node =
+      Enum.find(children, fn child ->
+        type = Map.get(child, :type, "")
+        String.contains?(type, "identifier") or String.contains?(type, "name")
+      end)
 
     if name_node do
       Map.get(name_node, :text)
@@ -498,6 +511,7 @@ defmodule Brain.Code.RelationMapper do
     case CodeGazetteer.lookup_qualified(world_id, class_name) do
       {:ok, symbol} ->
         superclass = get_in(symbol, [:metadata, :superclass])
+
         if superclass && superclass not in acc do
           find_ancestors_recursive(world_id, superclass, [superclass | acc])
         else

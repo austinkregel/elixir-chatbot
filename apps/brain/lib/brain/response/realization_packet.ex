@@ -60,11 +60,17 @@ defmodule Brain.Response.RealizationPacket do
       |> Enum.reject(&(&1 == ""))
       |> Enum.join("\n")
 
-    Logger.info("RealizationPacket prompt: #{byte_size(user_message)} chars, #{length(primitives)} primitives")
+    Logger.info(
+      "RealizationPacket prompt: #{byte_size(user_message)} chars, #{length(primitives)} primitives"
+    )
 
     dump_dir = Path.join([File.cwd!(), "tmp", "realization_packets"])
     ts = System.system_time(:millisecond)
-    File.write(Path.join(dump_dir, "#{ts}_prompt.txt"), "=== SYSTEM ===\n#{system_prompt}\n=== USER ===\n#{user_message}")
+
+    File.write(
+      Path.join(dump_dir, "#{ts}_prompt.txt"),
+      "=== SYSTEM ===\n#{system_prompt}\n=== USER ===\n#{user_message}"
+    )
 
     [
       %{role: "system", content: system_prompt},
@@ -100,7 +106,7 @@ defmodule Brain.Response.RealizationPacket do
 
   defp multi_chunk_analyses(unified_context) when is_map(unified_context) do
     case Map.get(unified_context, :all_analyses) do
-      list when is_list(list) and length(list) > 1 -> list
+      [_, _ | _] = list -> list
       _ -> nil
     end
   end
@@ -127,8 +133,10 @@ defmodule Brain.Response.RealizationPacket do
     speech_act = chunk_field(chunk, :speech_act)
     entities = chunk_field(chunk, :entities) || []
 
-    intent_label = if match?(%ChunkProfile{derived_label: l} when l != "", profile),
-      do: profile.derived_label, else: intent
+    intent_label =
+      if match?(%ChunkProfile{derived_label: l} when l != "", profile),
+        do: profile.derived_label,
+        else: intent
 
     base = "#{idx}. \"#{text}\""
 
@@ -188,14 +196,19 @@ defmodule Brain.Response.RealizationPacket do
 
   defp render_intent_with_profile(%ChunkProfile{} = profile, _intent, _confidence) do
     label = profile.derived_label
-    conf_str = if is_number(profile.confidence) and profile.confidence > 0.0,
-      do: " (confidence #{Float.round(profile.confidence * 1.0, 2)})", else: ""
+
+    conf_str =
+      if is_number(profile.confidence) and profile.confidence > 0.0,
+        do: " (confidence #{Float.round(profile.confidence * 1.0, 2)})",
+        else: ""
 
     axes_parts =
       [
         if(profile.domain not in [:unknown, nil], do: "domain: #{profile.domain}"),
         if(profile.modality not in [:declarative, nil], do: "modality: #{profile.modality}"),
-        if(profile.response_posture not in [:direct, nil], do: "posture: #{profile.response_posture}"),
+        if(profile.response_posture not in [:direct, nil],
+          do: "posture: #{profile.response_posture}"
+        ),
         if(profile.urgency not in [:low, nil], do: "urgency: #{profile.urgency}")
       ]
       |> Enum.reject(&is_nil/1)
@@ -206,7 +219,11 @@ defmodule Brain.Response.RealizationPacket do
 
   defp render_intent_with_profile(_, intent, confidence) do
     if intent do
-      conf_str = if is_number(confidence), do: " (confidence #{Float.round(confidence * 1.0, 2)})", else: ""
+      conf_str =
+        if is_number(confidence),
+          do: " (confidence #{Float.round(confidence * 1.0, 2)})",
+          else: ""
+
       ["Intent: #{intent}#{conf_str}."]
     else
       []
@@ -224,11 +241,11 @@ defmodule Brain.Response.RealizationPacket do
   defp format_chunk_speech_act(nil), do: nil
 
   defp format_chunk_speech_act(speech_act) when is_map(speech_act) do
-    category = Map.get(speech_act, :category) || Map.get(speech_act, "category")
-    sub_type = Map.get(speech_act, :sub_type) || Map.get(speech_act, "sub_type")
+    category = Map.get(speech_act, :category)
+    sub_type = Map.get(speech_act, :sub_type)
 
     is_question =
-      Map.get(speech_act, :is_question) || Map.get(speech_act, "is_question") || false
+      Map.get(speech_act, :is_question) || false
 
     parts = [stringify_atom(category), stringify_atom(sub_type)] |> Enum.reject(&is_nil/1)
     base = if parts == [], do: nil, else: "speech act: #{Enum.join(parts, "/")}"
@@ -248,8 +265,8 @@ defmodule Brain.Response.RealizationPacket do
     parts =
       entities
       |> Enum.map(fn e ->
-        value = Map.get(e, :value) || Map.get(e, "value") || "?"
-        type = Map.get(e, :entity_type) || Map.get(e, "entity_type") || ""
+        value = Map.get(e, :value) || "?"
+        type = Map.get(e, :entity_type) || ""
         if type == "", do: value, else: "#{value} (#{type})"
       end)
       |> Enum.reject(&(&1 == "" or &1 == "?"))
@@ -283,11 +300,16 @@ defmodule Brain.Response.RealizationPacket do
       entities ->
         parts =
           Enum.map(entities, fn e ->
-            value = Map.get(e, :value) || Map.get(e, "value") || "?"
-            type = Map.get(e, :entity_type) || Map.get(e, :entity) || Map.get(e, "entity_type") || ""
-            conf = Map.get(e, :confidence) || Map.get(e, "confidence")
+            value = Map.get(e, :value) || "?"
 
-            conf_str = if is_number(conf), do: ", confidence #{Float.round(conf * 1.0, 2)}", else: ""
+            type =
+              Map.get(e, :entity_type) || Map.get(e, :entity) || ""
+
+            conf = Map.get(e, :confidence)
+
+            conf_str =
+              if is_number(conf), do: ", confidence #{Float.round(conf * 1.0, 2)}", else: ""
+
             "#{value} (#{type}#{conf_str})"
           end)
 
@@ -303,9 +325,9 @@ defmodule Brain.Response.RealizationPacket do
         []
 
       sa when is_struct(sa) or is_map(sa) ->
-        category = Map.get(sa, :category) || Map.get(sa, "category")
-        sub_type = Map.get(sa, :sub_type) || Map.get(sa, "sub_type")
-        is_question = Map.get(sa, :is_question) || Map.get(sa, "is_question") || false
+        category = Map.get(sa, :category)
+        sub_type = Map.get(sa, :sub_type)
+        is_question = Map.get(sa, :is_question) || false
 
         parts = [stringify_atom(category), stringify_atom(sub_type)] |> Enum.reject(&is_nil/1)
         question_note = if is_question, do: " (question)", else: ""
@@ -344,9 +366,9 @@ defmodule Brain.Response.RealizationPacket do
       beliefs ->
         parts =
           Enum.map(beliefs, fn b ->
-            subject = Map.get(b, :subject) || Map.get(b, "subject") || "?"
-            predicate = Map.get(b, :predicate) || Map.get(b, "predicate") || ""
-            object = Map.get(b, :object) || Map.get(b, "object") || ""
+            subject = Map.get(b, :subject) || "?"
+            predicate = Map.get(b, :predicate) || ""
+            object = Map.get(b, :object) || ""
             "#{subject} #{predicate} #{object}" |> String.trim()
           end)
 
@@ -362,7 +384,7 @@ defmodule Brain.Response.RealizationPacket do
         []
 
       s when is_struct(s) or is_map(s) ->
-        missing = Map.get(s, :missing_required) || Map.get(s, "missing_required") || []
+        missing = Map.get(s, :missing_required) || []
 
         if missing != [] do
           ["Missing required information: #{Enum.join(Enum.map(missing, &to_string/1), ", ")}."]
@@ -403,7 +425,9 @@ defmodule Brain.Response.RealizationPacket do
 
         facts_map
         |> Enum.sort_by(fn {chunk_index, _} -> chunk_index || 0 end)
-        |> Enum.flat_map(fn {chunk_index, facts} -> render_chunk_facts(chunk_index, facts, index_to_position) end)
+        |> Enum.flat_map(fn {chunk_index, facts} ->
+          render_chunk_facts(chunk_index, facts, index_to_position)
+        end)
     end
   end
 
@@ -462,9 +486,9 @@ defmodule Brain.Response.RealizationPacket do
 
   defp fact_to_text(text) when is_binary(text), do: text
 
-  defp fact_to_text(map) when is_map(map) do
-    Map.get(map, :text) || Map.get(map, "text") || nil
-  end
+  defp fact_to_text(%{text: t}) when not is_nil(t), do: t
+  defp fact_to_text(%{"text" => t}) when not is_nil(t), do: t
+  defp fact_to_text(map) when is_map(map), do: nil
 
   defp fact_to_text(_), do: nil
 
@@ -476,7 +500,9 @@ defmodule Brain.Response.RealizationPacket do
       pairs =
         enriched_data
         |> Enum.reject(fn {k, _} -> to_string(k) in ["raw", "__struct__"] end)
-        |> Enum.reject(fn {_, v} -> is_nil(v) or v == "" or v == [] or (is_map(v) and map_size(v) == 0) end)
+        |> Enum.reject(fn {_, v} ->
+          is_nil(v) or v == "" or v == [] or (is_map(v) and map_size(v) == 0)
+        end)
         |> Enum.map(fn {k, v} -> render_data_value(to_string(k), v) end)
 
       if pairs != [] do
@@ -493,6 +519,7 @@ defmodule Brain.Response.RealizationPacket do
   defp render_data_value(key, value) when is_number(value), do: "#{key} is #{value}"
   defp render_data_value(key, value) when is_boolean(value), do: "#{key} is #{value}"
   defp render_data_value(key, value) when is_list(value), do: "#{key}: #{inspect(value)}"
+
   defp render_data_value(key, value) when is_map(value) do
     inner =
       value
@@ -502,15 +529,21 @@ defmodule Brain.Response.RealizationPacket do
 
     "#{key}: (#{inner})"
   end
+
   defp render_data_value(key, value), do: "#{key} is #{format_short(value)}"
 
   defp render_accumulator(ctx) do
     acc = Map.get(ctx, :accumulator, %{})
 
     cond do
-      not is_map(acc) or acc == %{} -> []
-      Map.get(acc, :should_hedge, false) -> ["The system is uncertain, so hedge the response with appropriate qualifiers."]
-      true -> []
+      not is_map(acc) or acc == %{} ->
+        []
+
+      Map.get(acc, :should_hedge, false) ->
+        ["The system is uncertain, so hedge the response with appropriate qualifiers."]
+
+      true ->
+        []
     end
   end
 
@@ -528,7 +561,12 @@ defmodule Brain.Response.RealizationPacket do
           |> Enum.take(3)
           |> Enum.map(fn ep ->
             {state, similarity} = extract_episode_info(ep)
-            sim_str = if is_number(similarity), do: " (similarity #{Float.round(similarity * 1.0, 2)})", else: ""
+
+            sim_str =
+              if is_number(similarity),
+                do: " (similarity #{Float.round(similarity * 1.0, 2)})",
+                else: ""
+
             "\"#{state}\"#{sim_str}"
           end)
           |> Enum.reject(&(&1 == "\"\""))
@@ -542,13 +580,13 @@ defmodule Brain.Response.RealizationPacket do
   end
 
   defp extract_episode_info({episode, score}) when is_map(episode) do
-    state = Map.get(episode, :state) || Map.get(episode, "state") || ""
+    state = Map.get(episode, :state) || ""
     {to_string(state), score}
   end
 
   defp extract_episode_info(episode) when is_map(episode) do
-    state = Map.get(episode, :state) || Map.get(episode, "state") || ""
-    similarity = Map.get(episode, :similarity) || Map.get(episode, "similarity")
+    state = Map.get(episode, :state) || ""
+    similarity = Map.get(episode, :similarity)
     {to_string(state), similarity}
   end
 
@@ -573,26 +611,30 @@ defmodule Brain.Response.RealizationPacket do
     "[#{label}] #{desc}"
   end
 
-  defp describe_primitive(:framing, :informative, _content), do: "Frame the response informatively."
+  defp describe_primitive(:framing, :informative, _content),
+    do: "Frame the response informatively."
+
   defp describe_primitive(:framing, :affirmative, _content), do: "Affirm the user's statement."
   defp describe_primitive(:framing, :negative, _content), do: "Gently correct or deny."
   defp describe_primitive(:framing, :reframe, _content), do: "Reframe the question thoughtfully."
 
   defp describe_primitive(:framing, :boundary, content) do
-    alt = Map.get(content, :alternative) || Map.get(content, "alternative")
+    alt = Map.get(content, :alternative)
     if alt, do: "Acknowledge the boundary. Suggest: #{alt}.", else: "Acknowledge the limitation."
   end
 
   defp describe_primitive(:content, :factual, content) do
-    facts = Map.get(content, :facts) || Map.get(content, "facts") || []
+    facts = Map.get(content, :facts) || []
 
     if facts != [] do
-      fact_texts = Enum.map(facts, fn
-        %{fact: t} -> t
-        %{"fact" => t} -> t
-        t when is_binary(t) -> t
-        _ -> nil
-      end) |> Enum.reject(&is_nil/1)
+      fact_texts =
+        Enum.map(facts, fn
+          %{fact: t} -> t
+          %{"fact" => t} -> t
+          t when is_binary(t) -> t
+          _ -> nil
+        end)
+        |> Enum.reject(&is_nil/1)
 
       "Present these facts: #{Enum.join(fact_texts, "; ")}."
     else
@@ -601,8 +643,10 @@ defmodule Brain.Response.RealizationPacket do
   end
 
   defp describe_primitive(:content, :enriched, content) do
-    placeholders = Map.get(content, :available_placeholders) || Map.get(content, "available_placeholders") || []
-    topic = Map.get(content, :topic) || Map.get(content, "topic")
+    placeholders =
+      Map.get(content, :available_placeholders) || []
+
+    topic = Map.get(content, :topic)
 
     placeholder_str =
       placeholders
@@ -613,8 +657,10 @@ defmodule Brain.Response.RealizationPacket do
     cond do
       topic && placeholder_str != "" ->
         "Present the #{topic} data using these placeholders: #{placeholder_str}."
+
       placeholder_str != "" ->
         "Present the data using these placeholders: #{placeholder_str}."
+
       true ->
         "Present the available data."
     end
@@ -622,12 +668,15 @@ defmodule Brain.Response.RealizationPacket do
 
   defp describe_primitive(:content, :reflective, _content), do: "Reflect on what the user shared."
   defp describe_primitive(:content, :explanatory, _content), do: "Explain the concept clearly."
-  defp describe_primitive(:content, :narrative, _content), do: "Share relevant context narratively."
+
+  defp describe_primitive(:content, :narrative, _content),
+    do: "Share relevant context narratively."
+
   defp describe_primitive(:content, :creative, _content), do: "Respond creatively."
   defp describe_primitive(:content, :action_result, _content), do: "Report the action result."
 
   defp describe_primitive(:content, :report, content) do
-    topic = Map.get(content, :topic) || Map.get(content, "topic")
+    topic = Map.get(content, :topic)
 
     subject =
       if is_binary(topic) and topic != "", do: "on #{topic}", else: "on what you were asked"
@@ -637,16 +686,22 @@ defmodule Brain.Response.RealizationPacket do
 
   defp describe_primitive(:acknowledgment, :social, _content), do: "Acknowledge socially."
   defp describe_primitive(:acknowledgment, :general, _content), do: "Acknowledge the input."
-  defp describe_primitive(:acknowledgment, :action, _content), do: "Acknowledge the action request."
-  defp describe_primitive(:acknowledgment, :learning, _content), do: "Acknowledge that you learned something."
-  defp describe_primitive(:acknowledgment, :repair, _content), do: "Acknowledge the need for repair."
+
+  defp describe_primitive(:acknowledgment, :action, _content),
+    do: "Acknowledge the action request."
+
+  defp describe_primitive(:acknowledgment, :learning, _content),
+    do: "Acknowledge that you learned something."
+
+  defp describe_primitive(:acknowledgment, :repair, _content),
+    do: "Acknowledge the need for repair."
 
   defp describe_primitive(:attunement, :empathy, _content), do: "Show empathy."
   defp describe_primitive(:attunement, :interest, _content), do: "Show interest."
   defp describe_primitive(:attunement, :concern, _content), do: "Express concern."
 
   defp describe_primitive(:follow_up, :clarification, content) do
-    missing = Map.get(content, :missing_slots) || Map.get(content, "missing_slots") || []
+    missing = Map.get(content, :missing_slots) || []
 
     if missing != [] do
       "Ask for clarification about: #{Enum.join(Enum.map(missing, &to_string/1), ", ")}."
@@ -657,7 +712,10 @@ defmodule Brain.Response.RealizationPacket do
 
   defp describe_primitive(:follow_up, :elaboration, _content), do: "Invite the user to elaborate."
   defp describe_primitive(:follow_up, :continuation, _content), do: "Invite further conversation."
-  defp describe_primitive(:follow_up, :correction_invite, _content), do: "Invite correction if needed."
+
+  defp describe_primitive(:follow_up, :correction_invite, _content),
+    do: "Invite correction if needed."
+
   defp describe_primitive(:follow_up, :context_probe, _content), do: "Probe for more context."
 
   defp describe_primitive(type, variant, _content) do

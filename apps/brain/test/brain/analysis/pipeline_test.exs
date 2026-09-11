@@ -45,8 +45,8 @@ defmodule Brain.Analysis.PipelineTest do
     test "handles multi-sentence input" do
       model = Pipeline.process("Hello! What's the news? Also check the weather.")
 
-      assert length(model.chunks) >= 2
-      assert length(model.analyses) >= 2
+      assert Enum.count_until(model.chunks, 2) >= 2
+      assert Enum.count_until(model.analyses, 2) >= 2
     end
 
     test "detects need for clarification when context missing" do

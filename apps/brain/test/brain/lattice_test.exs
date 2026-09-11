@@ -31,7 +31,7 @@ defmodule Brain.LatticeTest do
       refute Lattice.empty?(l)
       assert Lattice.best_label(l) == "a"
       assert %Candidate{label: "a"} = Lattice.best(l)
-      assert length(l.candidates) == 3
+      assert match?([_, _, _], l.candidates)
       assert Lattice.margin(l) >= 0.0
     end
   end
@@ -40,9 +40,9 @@ defmodule Brain.LatticeTest do
     test "rerank adds delta then finalize updates margin" do
       l =
         Lattice.from_top_k([{"x", 0.8}, {"y", 0.2}], stage: :test, source: :test)
-          |> Lattice.rerank(fn %Candidate{label: lab} ->
-            if lab == "y", do: 0.5, else: 0.0
-          end)
+        |> Lattice.rerank(fn %Candidate{label: lab} ->
+          if lab == "y", do: 0.5, else: 0.0
+        end)
 
       assert Lattice.best_label(l) == "y"
     end

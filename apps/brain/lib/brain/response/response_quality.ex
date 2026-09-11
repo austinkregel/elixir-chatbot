@@ -180,7 +180,7 @@ defmodule Brain.Response.ResponseQuality do
 
     unique = Enum.uniq(trigrams)
 
-    if length(trigrams) > 3 and length(unique) < length(trigrams) * 0.8 do
+    if Enum.count_until(trigrams, 4) > 3 and length(unique) < length(trigrams) * 0.8 do
       %{severity: :medium, message: "Response contains repetitive phrases"}
     else
       nil
@@ -207,7 +207,7 @@ defmodule Brain.Response.ResponseQuality do
       entity_values =
         entities
         |> Enum.map(fn e ->
-          value = Map.get(e, :value) || Map.get(e, "value") || ""
+          value = Map.get(e, :value) || ""
           String.downcase(value)
         end)
         |> Enum.filter(&(String.length(&1) > 0))
@@ -372,7 +372,7 @@ defmodule Brain.Response.ResponseQuality do
           |> Enum.map(fn t ->
             cond do
               is_binary(t) -> t
-              is_map(t) -> Map.get(t, :text) || Map.get(t, "text") || ""
+              is_map(t) -> template_text(t)
               true -> ""
             end
           end)
@@ -389,6 +389,12 @@ defmodule Brain.Response.ResponseQuality do
     |> Enum.filter(&(String.length(&1) > 0))
     |> Enum.take(num_candidates)
   end
+
+  # Template maps arrive either as %TemplateStore.Template{} structs (atom :text)
+  # or as legacy raw maps keyed by the string "text". Dispatch on shape once.
+  defp template_text(%{text: text}) when not is_nil(text), do: text
+  defp template_text(%{"text" => text}) when not is_nil(text), do: text
+  defp template_text(_), do: ""
 
   defp extract_token_text(token) when is_binary(token) do
     token

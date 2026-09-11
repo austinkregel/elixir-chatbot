@@ -40,7 +40,7 @@ defmodule Brain.Subprocesses.HttpSubprocessTest do
     {:ok, conversation_id} = HttpSubprocess.create_conversation(subprocess_id)
     assert is_binary(conversation_id)
     conversations = HttpSubprocess.get_conversations(subprocess_id)
-    assert length(conversations) == 1
+    assert match?([_], conversations)
     assert hd(conversations).id == conversation_id
 
     {:ok, response} =

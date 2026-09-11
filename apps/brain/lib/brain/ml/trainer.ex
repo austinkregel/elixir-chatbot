@@ -129,7 +129,10 @@ defmodule Brain.ML.Trainer do
     gold = ML.EvaluationStore.load_gold_standard("sentiment")
 
     if gold == [] do
-      Logger.warning("No sentiment gold standard data found. Skipping sentiment classifier training.")
+      Logger.warning(
+        "No sentiment gold standard data found. Skipping sentiment classifier training."
+      )
+
       Logger.warning("Add examples to: priv/evaluation/sentiment/gold_standard.json")
       stats
     else
@@ -215,12 +218,7 @@ defmodule Brain.ML.Trainer do
     gazetteer_data =
       case DataLoaders.load_cities() do
         {:ok, cities} ->
-          sampled_cities =
-            if length(cities) > 10_000 do
-              Enum.take(cities, 10_000)
-            else
-              cities
-            end
+          sampled_cities = Enum.take(cities, 10_000)
 
           city_lookup = DataLoaders.build_city_lookup(sampled_cities)
           Logger.info("Built city lookup", %{entries: map_size(city_lookup)})
@@ -233,12 +231,7 @@ defmodule Brain.ML.Trainer do
     gazetteer_data =
       case DataLoaders.load_artists() do
         {:ok, artists} ->
-          sampled_artists =
-            if length(artists) > 10_000 do
-              Enum.take(artists, 10_000)
-            else
-              artists
-            end
+          sampled_artists = Enum.take(artists, 10_000)
 
           artist_lookup = DataLoaders.build_artist_lookup(sampled_artists)
           Logger.info("Built artist lookup", %{entries: map_size(artist_lookup)})
@@ -429,7 +422,6 @@ defmodule Brain.ML.Trainer do
     }
   end
 
-
   defp extract_intent_name(filename) do
     filename
     |> String.replace("_usersays_en.json", "")
@@ -563,7 +555,7 @@ defmodule Brain.ML.Trainer do
 
     idf_values =
       vocabulary
-      |> Enum.map(fn {term, _index} ->
+      |> Map.new(fn {term, _index} ->
         doc_freq =
           texts
           |> Enum.count(fn text ->
@@ -574,7 +566,6 @@ defmodule Brain.ML.Trainer do
         idf = :math.log(num_docs / max(doc_freq, 1))
         {term, idf}
       end)
-      |> Enum.into(%{})
 
     idf_list =
       vocabulary
@@ -586,5 +577,4 @@ defmodule Brain.ML.Trainer do
 
     Nx.tensor(idf_list, type: :f32)
   end
-
 end

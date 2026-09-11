@@ -178,24 +178,25 @@ defmodule Brain.Services.Dispatcher do
       for service <- @registered_services,
           Code.ensure_loaded?(service),
           function_exported?(service, :slot_schema, 0) do
-        domains = cond do
-          function_exported?(service, :supported_domains, 0) ->
-            service.supported_domains()
+        domains =
+          cond do
+            function_exported?(service, :supported_domains, 0) ->
+              service.supported_domains()
 
-          function_exported?(service, :supported_intents, 0) ->
-            service.supported_intents()
-            |> Enum.map(fn intent ->
-              case String.split(intent, ".", parts: 2) do
-                [domain, _] -> domain
-                _ -> nil
-              end
-            end)
-            |> Enum.uniq()
-            |> Enum.reject(&is_nil/1)
+            function_exported?(service, :supported_intents, 0) ->
+              service.supported_intents()
+              |> Enum.map(fn intent ->
+                case String.split(intent, ".", parts: 2) do
+                  [domain, _] -> domain
+                  _ -> nil
+                end
+              end)
+              |> Enum.uniq()
+              |> Enum.reject(&is_nil/1)
 
-          true ->
-            []
-        end
+            true ->
+              []
+          end
 
         Enum.map(domains, fn domain ->
           {domain, service.slot_schema()}
@@ -227,10 +228,11 @@ defmodule Brain.Services.Dispatcher do
   end
 
   defp find_service_by_domain(intent) do
-    domain = case String.split(intent, ".", parts: 2) do
-      [d, _] -> d
-      _ -> nil
-    end
+    domain =
+      case String.split(intent, ".", parts: 2) do
+        [d, _] -> d
+        _ -> nil
+      end
 
     if domain do
       Enum.find(@registered_services, fn service ->
@@ -297,36 +299,39 @@ defmodule Brain.Services.Dispatcher do
     # Check if service is enabled
     if service_enabled?(service) do
       case get_credentials(service, world) do
-      {:ok, credentials} ->
-        # Call the service
-        start_time = System.monotonic_time(:millisecond)
+        {:ok, credentials} ->
+          # Call the service
+          start_time = System.monotonic_time(:millisecond)
 
-        result =
-          try do
-            service.enrich(intent, slots, credentials)
-          rescue
-            e ->
-              Logger.error("Service error",
-                service: service.name(),
-                intent: intent,
-                error: Exception.message(e)
-              )
+          result =
+            try do
+              service.enrich(intent, slots, credentials)
+            rescue
+              # Service-boundary bulkhead: any third-party enrich/1 crash is
+              # isolated here, but the exception detail is carried out in the
+              # error tuple rather than being flattened to a bare atom.
+              e ->
+                Logger.error("Service error",
+                  service: service.name(),
+                  intent: intent,
+                  error: Exception.message(e)
+                )
 
-              {:error, :service_error}
-          end
+                {:error, {:service_error, Exception.message(e)}}
+            end
 
-        duration = System.monotonic_time(:millisecond) - start_time
-        log_dispatch(service, intent, result, duration)
-        result
+          duration = System.monotonic_time(:millisecond) - start_time
+          log_dispatch(service, intent, result, duration)
+          result
 
-      {:error, :missing_credentials} ->
-        Logger.debug("Missing credentials for service",
-          service: service.name(),
-          intent: intent
-        )
+        {:error, :missing_credentials} ->
+          Logger.debug("Missing credentials for service",
+            service: service.name(),
+            intent: intent
+          )
 
-        {:error, :missing_credentials}
-    end
+          {:error, :missing_credentials}
+      end
     else
       Logger.debug("Service disabled", service: service.name())
       {:error, :service_disabled}

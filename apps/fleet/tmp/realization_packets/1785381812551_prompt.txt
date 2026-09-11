@@ -1,0 +1,25 @@
+=== SYSTEM ===
+Serve.
+
+Generate a natural response based on the context below.
+Be concise and helpful. Do not mention internal systems, plans, or analysis.
+Output only the final response text.
+If $placeholder tokens appear in the instructions, keep them exactly as shown in your output.
+
+=== USER ===
+The user said: "My name is Bex."
+Intent: smalltalk.statement (confidence 0.73).
+domain: smalltalk; posture: hedged; urgency: critical.
+Entities: name (slot_mappings, confidence 0.62); Bex (given-name, confidence 0.65).
+Speech act: assertive, statement.
+Sentiment: negative (confidence 0.1).
+Response strategy: hedged_response.
+The system is uncertain, so hedge the response with appropriate qualifiers.
+Similar past interactions: "communication" (similarity 0.0).
+Response plan:
+1. [acknowledgment/action] Acknowledge the action request.
+2. [content/report] Report your findings on name, Bex: the findings first, then how confident you are.
+Write a gentle, medium-length response.
+Do not invent facts or capabilities not mentioned above.
+This is a reply to an ORDER from a commanding officer. Report findings directly:
+no greeting, no offer of further help, no question back.

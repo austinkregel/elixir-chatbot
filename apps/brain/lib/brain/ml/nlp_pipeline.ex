@@ -233,7 +233,11 @@ defmodule Brain.ML.NLPPipeline do
             {:error, :classification_failed}
         end
       rescue
-        _ -> {:error, :classification_failed}
+        # Chunk analysis / feature extraction over degenerate text can raise on
+        # bad shapes or numeric edge cases; report classification failure for
+        # those. Structural bugs (RuntimeError, UndefinedFunctionError) crash.
+        _e in [ArgumentError, ArithmeticError, KeyError, FunctionClauseError, MatchError] ->
+          {:error, :classification_failed}
       end
     else
       {:error, :no_classifier_available}

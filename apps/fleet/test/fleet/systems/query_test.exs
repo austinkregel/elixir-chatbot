@@ -9,18 +9,21 @@ defmodule Fleet.Systems.QueryTest do
   alias Atlas.Schemas.CommandRecord
 
   test "the admiral queries a system → allowed, and a `query` record is written" do
-    assert {:ok, %{matches: matches}} = Systems.query(Principal.admiral(), %{system_id: "Postgres"})
+    assert {:ok, %{matches: matches}} =
+             Systems.query(Principal.admiral(), %{system_id: "Postgres"})
+
     assert Enum.any?(matches, &(&1.system.name =~ "Postgres"))
 
     rows =
       Atlas.Repo.all(
-        from r in CommandRecord,
+        from(r in CommandRecord,
           where: r.kind == "query" and r.from_agent == "admiral",
           order_by: [desc: r.inserted_at],
           limit: 1
+        )
       )
 
-    assert length(rows) == 1
+    assert match?([_], rows)
     assert hd(rows).verdict == "allow"
     assert hd(rows).ship_id == Ship.id()
   end
@@ -32,10 +35,10 @@ defmodule Fleet.Systems.QueryTest do
 
     rows =
       Atlas.Repo.all(
-        from r in CommandRecord, where: r.kind == "query" and r.from_agent == "q-ens", limit: 1
+        from(r in CommandRecord, where: r.kind == "query" and r.from_agent == "q-ens", limit: 1)
       )
 
-    assert length(rows) == 1
+    assert match?([_], rows)
     assert hd(rows).verdict == "deny"
   end
 end

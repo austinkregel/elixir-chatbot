@@ -253,7 +253,7 @@ defmodule Brain.Code.Pipeline do
         class_names = Enum.map(classes, & &1.name) |> Enum.take(5) |> Enum.join(", ")
 
         part =
-          if length(classes) > 5 do
+          if Enum.count_until(classes, 6) > 5 do
             "Defines #{length(classes)} classes including #{class_names}"
           else
             "Defines classes: #{class_names}"
@@ -269,7 +269,7 @@ defmodule Brain.Code.Pipeline do
         func_names = Enum.map(functions, & &1.name) |> Enum.take(5) |> Enum.join(", ")
 
         part =
-          if length(functions) > 5 do
+          if Enum.count_until(functions, 6) > 5 do
             "Contains #{length(functions)} functions including #{func_names}"
           else
             "Functions: #{func_names}"

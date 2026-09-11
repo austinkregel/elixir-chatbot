@@ -80,7 +80,8 @@ defmodule Fleet.Officer do
   def set_co(agent_id, co_id), do: GenServer.cast(via_tuple(agent_id), {:set_co, co_id})
 
   @doc "Add a direct report to this officer (in-process chain data)."
-  def add_report(agent_id, report_id), do: GenServer.cast(via_tuple(agent_id), {:add_report, report_id})
+  def add_report(agent_id, report_id),
+    do: GenServer.cast(via_tuple(agent_id), {:add_report, report_id})
 
   @doc "Have a CO issue an ORDER to one of its reports (runs in the CO's process)."
   def issue_order(co_agent_id, report_id, directive, opts \\ []),
@@ -357,18 +358,30 @@ defmodule Fleet.Officer do
       state.duty == :relieved ->
         verdict = %{basis: :relieved, reason: "relieved of duty"}
         emit_dissent(state, order, verdict)
-        Audit.record(:dissent, %{order_id: order.id, from_agent: state.agent_id,
-                                 to_agent: Comms.principal_string(sender), verdict: :relieved,
-                                 reason: "relieved of duty"})
+
+        Audit.record(:dissent, %{
+          order_id: order.id,
+          from_agent: state.agent_id,
+          to_agent: Comms.principal_string(sender),
+          verdict: :relieved,
+          reason: "relieved of duty"
+        })
+
         {:noreply, state}
 
       not Comms.authorized_issuer?(sender, state) ->
-        Audit.record(:provenance_anomaly, %{order_id: order.id,
-          from_agent: Comms.principal_string(sender), to_agent: state.agent_id,
-          reason: "order issuer is not my CO"})
-        Telemetry.emit_event(state.agent_id, :provenance_anomaly, %{}, %{
-          order_id: order.id, sender: Comms.principal_string(sender)
+        Audit.record(:provenance_anomaly, %{
+          order_id: order.id,
+          from_agent: Comms.principal_string(sender),
+          to_agent: state.agent_id,
+          reason: "order issuer is not my CO"
         })
+
+        Telemetry.emit_event(state.agent_id, :provenance_anomaly, %{}, %{
+          order_id: order.id,
+          sender: Comms.principal_string(sender)
+        })
+
         emit_dissent(state, order, %{basis: :provenance, reason: "issuer not my CO"})
         {:noreply, state}
 
@@ -384,22 +397,47 @@ defmodule Fleet.Officer do
 
     cond do
       is_nil(state.soul) or is_nil(state.mind_world_id) ->
-        send(sender_pid, {:hail_reply, %{agent_id: state.agent_id, question: question,
-          error: "not ready — soul not yet hydrated"}})
+        send(
+          sender_pid,
+          {:hail_reply,
+           %{
+             agent_id: state.agent_id,
+             question: question,
+             error: "not ready — soul not yet hydrated"
+           }}
+        )
+
         {:noreply, state}
 
       not may_hail?(sender, state) ->
-        Audit.record(:provenance_anomaly, %{from_agent: Comms.principal_string(sender),
-          to_agent: state.agent_id, reason: "hail from outside the chain"})
-        send(sender_pid, {:hail_reply, %{agent_id: state.agent_id, question: question,
-          error: "not permitted to hail this agent"}})
+        Audit.record(:provenance_anomaly, %{
+          from_agent: Comms.principal_string(sender),
+          to_agent: state.agent_id,
+          reason: "hail from outside the chain"
+        })
+
+        send(
+          sender_pid,
+          {:hail_reply,
+           %{
+             agent_id: state.agent_id,
+             question: question,
+             error: "not permitted to hail this agent"
+           }}
+        )
+
         {:noreply, state}
 
       true ->
         principal = Comms.principal_string(sender)
 
-        Audit.record(:hail, %{from_agent: principal, to_agent: state.agent_id,
-          world_id: state.mind_world_id, payload: %{question: String.slice(question, 0, 2000)}})
+        Audit.record(:hail, %{
+          from_agent: principal,
+          to_agent: state.agent_id,
+          world_id: state.mind_world_id,
+          payload: %{question: String.slice(question, 0, 2000)}
+        })
+
         Telemetry.emit_event(state.agent_id, :hail, %{}, %{from: principal})
 
         # Conversation runs OFF the mailbox in a fully detached task, so the officer
@@ -414,7 +452,9 @@ defmodule Fleet.Officer do
   # for agent-to-agent conversation, only along this agent's chain — its CO or a
   # direct report. Conversation respects bounded topology just like commands do.
   defp may_hail?(:admiral, _state), do: true
-  defp may_hail?(sender, state), do: Comms.from_co?(sender, state) or Comms.from_report?(sender, state)
+
+  defp may_hail?(sender, state),
+    do: Comms.from_co?(sender, state) or Comms.from_report?(sender, state)
 
   # Run the hail's cognition in the agent's own mind-world, with its soul — the
   # same accountable path an order uses — but conferring nothing and recording a
@@ -424,6 +464,7 @@ defmodule Fleet.Officer do
       state.soul
       |> GeneralOrders.apply_to()
       |> soul_with_tool_context(state.context_tags.grants)
+
     agent_id = state.agent_id
     mind_world_id = state.mind_world_id
 
@@ -436,26 +477,37 @@ defmodule Fleet.Officer do
           answer =
             hail_answer(
               Brain.evaluate(conversation_id, question,
-                soul: soul, agent_id: agent_id, require_llm: true)
+                soul: soul,
+                agent_id: agent_id,
+                require_llm: true
+              )
             )
 
-          audit_hail_reply(agent_id, principal, mind_world_id, %{answer: String.slice(answer, 0, 2000)})
+          audit_hail_reply(agent_id, principal, mind_world_id, %{
+            answer: String.slice(answer, 0, 2000)
+          })
+
           Telemetry.emit_event(agent_id, :hail_reply, %{}, %{to: principal})
 
           %{agent_id: agent_id, question: question, answer: answer}
         rescue
           e ->
             Logger.error("Fleet.Officer: hail cognition failed",
-              agent_id: agent_id, reason: inspect(e))
+              agent_id: agent_id,
+              reason: inspect(e)
+            )
 
             audit_hail_reply(agent_id, principal, mind_world_id, %{error: Exception.message(e)})
             %{agent_id: agent_id, question: question, error: Exception.message(e)}
         catch
           kind, reason ->
             Logger.error("Fleet.Officer: hail cognition crashed",
-              agent_id: agent_id, reason: inspect({kind, reason}))
+              agent_id: agent_id,
+              reason: inspect({kind, reason})
+            )
 
             audit_hail_reply(agent_id, principal, mind_world_id, %{error: inspect({kind, reason})})
+
             %{agent_id: agent_id, question: question, error: inspect({kind, reason})}
         end
 
@@ -467,8 +519,12 @@ defmodule Fleet.Officer do
   # is inspectable in the durable log, not just in the live caller's mailbox.
   # A payload with :error (no :answer) is how a caller distinguishes the two.
   defp audit_hail_reply(agent_id, principal, mind_world_id, payload) do
-    Audit.record(:hail_reply, %{from_agent: agent_id, to_agent: principal,
-      world_id: mind_world_id, payload: payload})
+    Audit.record(:hail_reply, %{
+      from_agent: agent_id,
+      to_agent: principal,
+      world_id: mind_world_id,
+      payload: payload
+    })
   end
 
   defp hail_answer({:ok, %{response: r}}) when is_binary(r), do: r
@@ -479,7 +535,9 @@ defmodule Fleet.Officer do
   # Brain.evaluate/3 returns {:error, reason} (rather than raising) when
   # require_llm generation fails — that must become a real failure here, not
   # get inspect()'d into text and handed back as if the agent said it.
-  defp hail_answer({:error, reason}), do: raise("hail cognition returned an error: #{inspect(reason)}")
+  defp hail_answer({:error, reason}),
+    do: raise("hail cognition returned an error: #{inspect(reason)}")
+
   defp hail_answer(other), do: inspect(other)
 
   # ── CO-side directives (run in the CO's process; self() is the CO) ────────
@@ -594,8 +652,12 @@ defmodule Fleet.Officer do
   def handle_cast({:grant_standing_authority, authority}, state) do
     grants = Authority.confer(state.context_tags.grants, authority)
 
-    Audit.record(:grant, %{from_agent: "admiral", to_agent: state.agent_id,
-      authority: Authority.encode(authority)})
+    Audit.record(:grant, %{
+      from_agent: "admiral",
+      to_agent: state.agent_id,
+      authority: Authority.encode(authority)
+    })
+
     Telemetry.emit_event(state.agent_id, :grant, %{}, %{authority: authority})
 
     {:noreply, put_in(state.context_tags.grants, grants)}
@@ -604,8 +666,13 @@ defmodule Fleet.Officer do
   def handle_cast({:revoke_standing_authority, authority}, state) do
     grants = MapSet.delete(state.context_tags.grants, authority)
 
-    Audit.record(:deny, %{from_agent: "admiral", to_agent: state.agent_id,
-      authority: Authority.encode(authority), reason: "revoked by Admiral"})
+    Audit.record(:deny, %{
+      from_agent: "admiral",
+      to_agent: state.agent_id,
+      authority: Authority.encode(authority),
+      reason: "revoked by Admiral"
+    })
+
     Telemetry.emit_event(state.agent_id, :deny, %{}, %{authority: authority})
 
     {:noreply, put_in(state.context_tags.grants, grants)}
@@ -624,11 +691,23 @@ defmodule Fleet.Officer do
   end
 
   def handle_cast({:emit_sitrep, body}, state) do
-    sig = Signal.new(:sitrep, order_id: assignment_id(state), payload: as_map(body), world_id: state.world_id)
+    sig =
+      Signal.new(:sitrep,
+        order_id: assignment_id(state),
+        payload: as_map(body),
+        world_id: state.world_id
+      )
+
     co = state.context_tags.co
     if co, do: Comms.signal(co, sig)
-    Audit.record(:sitrep, %{order_id: assignment_id(state), from_agent: state.agent_id,
-                            to_agent: co || "admiral", payload: as_map(body)})
+
+    Audit.record(:sitrep, %{
+      order_id: assignment_id(state),
+      from_agent: state.agent_id,
+      to_agent: co || "admiral",
+      payload: as_map(body)
+    })
+
     {:noreply, state}
   end
 
@@ -711,10 +790,15 @@ defmodule Fleet.Officer do
 
       {:error, reason} ->
         Logger.warning("Officer soul hydration failed",
-          agent_id: state.agent_id, soul_id: state.soul_id, reason: inspect(reason))
+          agent_id: state.agent_id,
+          soul_id: state.soul_id,
+          reason: inspect(reason)
+        )
 
         Telemetry.emit_event(state.agent_id, :soul_hydrate_failed, %{}, %{
-          soul_id: state.soul_id, reason: inspect(reason)})
+          soul_id: state.soul_id,
+          reason: inspect(reason)
+        })
 
         {:noreply, state}
     end
@@ -726,11 +810,22 @@ defmodule Fleet.Officer do
     order = state.assignment
     verdict = %{basis: :authority_timeout, reason: "authority request timed out"}
     emit_dissent(state, order, verdict)
-    Audit.record(:dissent, %{order_id: order && order.id, from_agent: state.agent_id,
-                             to_agent: co_or_admiral(state), verdict: :authority_timeout,
-                             reason: "request #{rid} timed out"})
-    {:noreply, %{state | awaiting: nil, order_grants: MapSet.new(),
-                 assignment: order && Order.update_status(order, "dissented")}}
+
+    Audit.record(:dissent, %{
+      order_id: order && order.id,
+      from_agent: state.agent_id,
+      to_agent: co_or_admiral(state),
+      verdict: :authority_timeout,
+      reason: "request #{rid} timed out"
+    })
+
+    {:noreply,
+     %{
+       state
+       | awaiting: nil,
+         order_grants: MapSet.new(),
+         assignment: order && Order.update_status(order, "dissented")
+     }}
   end
 
   def handle_info({:request_timeout, _rid}, state), do: {:noreply, state}
@@ -740,14 +835,30 @@ defmodule Fleet.Officer do
   def handle_info({ref, {:dissent, verdict}}, %{task_ref: ref} = state) do
     Process.demonitor(ref, [:flush])
     order = state.assignment
-    Audit.record(:dissent, %{order_id: order && order.id, from_agent: state.agent_id,
-                             to_agent: co_or_admiral(state), verdict: verdict[:basis],
-                             reason: verdict[:reason]})
-    Fleet.Service.record_order_outcome(state.soul_id, order, :dissented,
-      %{reason: verdict[:reason], basis: verdict[:basis]})
+
+    Audit.record(:dissent, %{
+      order_id: order && order.id,
+      from_agent: state.agent_id,
+      to_agent: co_or_admiral(state),
+      verdict: verdict[:basis],
+      reason: verdict[:reason]
+    })
+
+    Fleet.Service.record_order_outcome(state.soul_id, order, :dissented, %{
+      reason: verdict[:reason],
+      basis: verdict[:basis]
+    })
+
     emit_dissent(state, order, verdict)
-    {:noreply, %{state | task_ref: nil, task_pid: nil, order_grants: MapSet.new(),
-                 assignment: order && Order.update_status(order, "dissented")}}
+
+    {:noreply,
+     %{
+       state
+       | task_ref: nil,
+         task_pid: nil,
+         order_grants: MapSet.new(),
+         assignment: order && Order.update_status(order, "dissented")
+     }}
   end
 
   # A directive the deterministic assessment could not act on without an answer.
@@ -760,22 +871,38 @@ defmodule Fleet.Officer do
     order = state.assignment
     payload = Assessment.to_report_payload(a)
 
-    Audit.record(:sitrep, %{order_id: order && order.id, from_agent: state.agent_id,
-                            to_agent: co_or_admiral(state), payload: payload})
+    Audit.record(:sitrep, %{
+      order_id: order && order.id,
+      from_agent: state.agent_id,
+      to_agent: co_or_admiral(state),
+      payload: payload
+    })
 
     Fleet.Service.record_order_outcome(state.soul_id, order, :blocked, payload)
 
-    sig = Signal.new(:sitrep, order_id: order && order.id,
-                     reason: Assessment.explain(a),
-                     payload: payload, world_id: state.world_id)
+    sig =
+      Signal.new(:sitrep,
+        order_id: order && order.id,
+        reason: Assessment.explain(a),
+        payload: payload,
+        world_id: state.world_id
+      )
 
     deliver_upward(state, sig)
 
     Telemetry.emit_event(state.agent_id, :directive_clarification, %{}, %{
-      order_id: order && order.id, rule: payload[:rule]})
+      order_id: order && order.id,
+      rule: payload[:rule]
+    })
 
-    {:noreply, %{state | task_ref: nil, task_pid: nil, order_grants: MapSet.new(),
-                 assignment: order && Order.update_status(order, "blocked")}}
+    {:noreply,
+     %{
+       state
+       | task_ref: nil,
+         task_pid: nil,
+         order_grants: MapSet.new(),
+         assignment: order && Order.update_status(order, "blocked")
+     }}
   end
 
   # Cognition proposed a tool the agent does not hold, tethered to a stated
@@ -814,20 +941,34 @@ defmodule Fleet.Officer do
     # report gets the analysis rather than 500 characters of prose.
     payload = Map.merge(%{outcome: summarize(result)}, meta)
 
-    Audit.record(:report, %{order_id: order && order.id, from_agent: state.agent_id,
-                            to_agent: co_or_admiral(state), payload: payload})
+    Audit.record(:report, %{
+      order_id: order && order.id,
+      from_agent: state.agent_id,
+      to_agent: co_or_admiral(state),
+      payload: payload
+    })
+
     Fleet.Service.record_order_outcome(state.soul_id, order, :completed, payload)
 
-    sig = Signal.new(:report, order_id: order && order.id,
-                     payload: payload, world_id: state.world_id)
+    sig =
+      Signal.new(:report, order_id: order && order.id, payload: payload, world_id: state.world_id)
+
     deliver_upward(state, sig)
 
-    Telemetry.emit_event(state.agent_id, :cognition_complete, %{duration_ms: dt},
-      %{order_id: order && order.id})
+    Telemetry.emit_event(state.agent_id, :cognition_complete, %{duration_ms: dt}, %{
+      order_id: order && order.id
+    })
+
     Telemetry.emit_event(state.agent_id, :report, %{}, %{order_id: order && order.id})
 
-    {:noreply, %{state | task_ref: nil, task_pid: nil, order_grants: MapSet.new(),
-                 assignment: order && Order.update_status(order, "completed")}}
+    {:noreply,
+     %{
+       state
+       | task_ref: nil,
+         task_pid: nil,
+         order_grants: MapSet.new(),
+         assignment: order && Order.update_status(order, "completed")
+     }}
   end
 
   # A cognition call that returned an error (e.g. require_llm generation
@@ -839,11 +980,20 @@ defmodule Fleet.Officer do
     order = state.assignment
 
     Fleet.Service.record_order_outcome(state.soul_id, order, :failed, %{reason: inspect(reason)})
-    Telemetry.emit_event(state.agent_id, :cognition_failed, %{}, %{
-      order_id: order && order.id, reason: inspect(reason)})
 
-    {:noreply, %{state | task_ref: nil, task_pid: nil, order_grants: MapSet.new(),
-                 assignment: order && Order.update_status(order, "failed")}}
+    Telemetry.emit_event(state.agent_id, :cognition_failed, %{}, %{
+      order_id: order && order.id,
+      reason: inspect(reason)
+    })
+
+    {:noreply,
+     %{
+       state
+       | task_ref: nil,
+         task_pid: nil,
+         order_grants: MapSet.new(),
+         assignment: order && Order.update_status(order, "failed")
+     }}
   end
 
   # Any other Task return is treated as a completed result.
@@ -853,11 +1003,22 @@ defmodule Fleet.Officer do
 
   def handle_info({:DOWN, ref, :process, _pid, reason}, %{task_ref: ref} = state) do
     order = state.assignment
+
     Telemetry.emit_event(state.agent_id, :cognition_failed, %{}, %{
-      order_id: order && order.id, reason: inspect(reason)})
+      order_id: order && order.id,
+      reason: inspect(reason)
+    })
+
     Fleet.Service.record_order_outcome(state.soul_id, order, :failed, %{reason: inspect(reason)})
-    {:noreply, %{state | task_ref: nil, task_pid: nil, order_grants: MapSet.new(),
-                 assignment: order && Order.update_status(order, "failed")}}
+
+    {:noreply,
+     %{
+       state
+       | task_ref: nil,
+         task_pid: nil,
+         order_grants: MapSet.new(),
+         assignment: order && Order.update_status(order, "failed")
+     }}
   end
 
   # ACK readback from a report (backward-compatible raw tuple).
@@ -872,22 +1033,36 @@ defmodule Fleet.Officer do
   defp accept_order(state, %Order{} = order, sender) do
     readback = readback(order)
 
-    ack = %{order_id: order.id, agent_id: state.agent_id, status: :accepted,
-            accepted_at: System.monotonic_time(:millisecond), note: nil,
-            readback: readback}
+    ack = %{
+      order_id: order.id,
+      agent_id: state.agent_id,
+      status: :accepted,
+      accepted_at: System.monotonic_time(:millisecond),
+      note: nil,
+      readback: readback
+    }
 
     if is_pid(order.reply_to), do: send(order.reply_to, {:ack, ack})
 
-    Audit.record(:order, %{order_id: order.id, from_agent: Comms.principal_string(sender),
-                           to_agent: state.agent_id, world_id: order.world_id,
-                           payload: %{
-                             directive: to_string(order.directive),
-                             constraints: order.constraints,
-                             risk_class: to_string(Order.risk_class(order))
-                           }})
-    Audit.record(:ack, %{order_id: order.id, from_agent: state.agent_id,
-                         to_agent: Comms.principal_string(sender),
-                         payload: readback})
+    Audit.record(:order, %{
+      order_id: order.id,
+      from_agent: Comms.principal_string(sender),
+      to_agent: state.agent_id,
+      world_id: order.world_id,
+      payload: %{
+        directive: to_string(order.directive),
+        constraints: order.constraints,
+        risk_class: to_string(Order.risk_class(order))
+      }
+    })
+
+    Audit.record(:ack, %{
+      order_id: order.id,
+      from_agent: state.agent_id,
+      to_agent: Comms.principal_string(sender),
+      payload: readback
+    })
+
     Fleet.Service.record_assignment(state.soul_id, order)
     # What I was ordered enters my own mind, attributed to the issuer.
     ingest_communication(state, :order, order.directive, sender)
@@ -902,12 +1077,14 @@ defmodule Fleet.Officer do
     send(self(), :tick)
 
     {:noreply,
-     %{state
+     %{
+       state
        | assignment: Order.update_status(order, "acknowledged"),
          order_grants: order_grants,
          signoffs: [],
          vetoes: [],
-         last_ack: ack}}
+         last_ack: ack
+     }}
   end
 
   # The readback: what the ship understood the order to be, restated from the
@@ -978,12 +1155,18 @@ defmodule Fleet.Officer do
           "so it cannot be lawfully executed"
     }
 
-    Audit.record(:dissent, %{order_id: order.id, from_agent: state.agent_id,
-                             to_agent: co_or_admiral(state), verdict: verdict[:basis],
-                             reason: verdict[:reason]})
+    Audit.record(:dissent, %{
+      order_id: order.id,
+      from_agent: state.agent_id,
+      to_agent: co_or_admiral(state),
+      verdict: verdict[:basis],
+      reason: verdict[:reason]
+    })
 
-    Fleet.Service.record_order_outcome(state.soul_id, order, :dissented,
-      %{reason: verdict[:reason], basis: verdict[:basis]})
+    Fleet.Service.record_order_outcome(state.soul_id, order, :dissented, %{
+      reason: verdict[:reason],
+      basis: verdict[:basis]
+    })
 
     emit_dissent(state, order, verdict)
 
@@ -1027,7 +1210,7 @@ defmodule Fleet.Officer do
           "\n\n---\nTools currently granted to you by your chain of command:\n\n" <>
             catalog <>
             "\n\nYou may propose only these — via a fenced ```propose " <>
-            "{\"tool\": \"...\", \"requirement\": \"...\", \"args\": {...}}``` block — and nothing " <>
+            ~s({"tool": "...", "requirement": "...", "args": {...}}``` block — and nothing ) <>
             "else; an unlisted tool will be refused, and so will arguments that do not match " <>
             "the shape above."
 
@@ -1039,36 +1222,74 @@ defmodule Fleet.Officer do
     task = dispatch(state, order)
 
     {:noreply,
-     %{state
+     %{
+       state
        | task_ref: task.ref,
          task_pid: task.pid,
-         assignment: Order.update_status(order, "in_progress")}}
+         assignment: Order.update_status(order, "in_progress")
+     }}
   end
 
   defp block_and_request(state, %Order{} = order, missing) do
     case state.context_tags.co do
       nil ->
         # No CO to ask — a terminal structural dissent.
-        verdict = %{basis: :authority, reason: "missing #{inspect(missing)}, no CO to request from"}
+        verdict = %{
+          basis: :authority,
+          reason: "missing #{inspect(missing)}, no CO to request from"
+        }
+
         emit_dissent(state, order, verdict)
-        Audit.record(:dissent, %{order_id: order.id, from_agent: state.agent_id,
-                                 to_agent: "admiral", verdict: :authority, reason: inspect(missing)})
-        {:noreply, %{state | order_grants: MapSet.new(), assignment: Order.update_status(order, "dissented")}}
+
+        Audit.record(:dissent, %{
+          order_id: order.id,
+          from_agent: state.agent_id,
+          to_agent: "admiral",
+          verdict: :authority,
+          reason: inspect(missing)
+        })
+
+        {:noreply,
+         %{
+           state
+           | order_grants: MapSet.new(),
+             assignment: Order.update_status(order, "dissented")
+         }}
 
       co ->
         rid = gen_id()
-        sig = Signal.new(:request, order_id: order.id, request_id: rid, authority: missing,
-                         payload: %{reason: "requires #{inspect(missing)}"}, world_id: order.world_id)
+
+        sig =
+          Signal.new(:request,
+            order_id: order.id,
+            request_id: rid,
+            authority: missing,
+            payload: %{reason: "requires #{inspect(missing)}"},
+            world_id: order.world_id
+          )
+
         Comms.signal(co, sig)
-        Audit.record(:request, %{order_id: order.id, from_agent: state.agent_id,
-                                 to_agent: co, authority: missing})
-        Telemetry.emit_event(state.agent_id, :request, %{}, %{order_id: order.id, authority: missing})
+
+        Audit.record(:request, %{
+          order_id: order.id,
+          from_agent: state.agent_id,
+          to_agent: co,
+          authority: missing
+        })
+
+        Telemetry.emit_event(state.agent_id, :request, %{}, %{
+          order_id: order.id,
+          authority: missing
+        })
+
         Process.send_after(self(), {:request_timeout, rid}, @request_timeout)
 
         {:noreply,
-         %{state
+         %{
+           state
            | assignment: Order.update_status(order, "blocked"),
-             awaiting: %{authority: missing, order_id: order.id, request_id: rid}}}
+             awaiting: %{authority: missing, order_id: order.id, request_id: rid}
+         }}
     end
   end
 
@@ -1087,7 +1308,10 @@ defmodule Fleet.Officer do
 
     fun =
       if order.dry_run do
-        fn -> Process.sleep(50); {:completed, %{response: "[dry-run] " <> to_string(order.directive)}} end
+        fn ->
+          Process.sleep(50)
+          {:completed, %{response: "[dry-run] " <> to_string(order.directive)}}
+        end
       else
         fn ->
           case Appraisal.appraise(order, GeneralOrders.apply_to(soul),
@@ -1109,7 +1333,11 @@ defmodule Fleet.Officer do
                 |> soul_with_tool_context(effective_grants(state))
 
               {:ok, conversation_id} =
-                Brain.create_conversation(world_id: mind_world_id, soul: cognition_soul, agent_id: agent_id)
+                Brain.create_conversation(
+                  world_id: mind_world_id,
+                  soul: cognition_soul,
+                  agent_id: agent_id
+                )
 
               # mode: :directive — an order is not a conversational turn. Brain
               # assesses it deterministically before generating anything, and
@@ -1128,7 +1356,8 @@ defmodule Fleet.Officer do
                      # re-derived: the assessment gates on these instead of on a
                      # classifier's reading of the objective.
                      directive_constraints: order.constraints,
-                     directive_risk_class: Order.risk_class(order)) do
+                     directive_risk_class: Order.risk_class(order)
+                   ) do
                 {:error, reason} ->
                   {:failed, reason}
 
@@ -1194,7 +1423,8 @@ defmodule Fleet.Officer do
              soul: soul,
              agent_id: agent_id,
              require_llm: true,
-             mode: :tool_result) do
+             mode: :tool_result
+           ) do
         {:ok, %{response: r}} when is_binary(r) -> r
         _ -> nil
       end
@@ -1284,18 +1514,44 @@ defmodule Fleet.Officer do
 
   defp handle_upward(:request, %Signal{} = sig, {:officer, report_id}, state) do
     if Authority.grantable?(state.context_tags.grants, sig.authority) do
-      Comms.signal(report_id, Signal.new(:grant, authority: sig.authority,
-        order_id: sig.order_id, request_id: sig.request_id, payload: %{request_id: sig.request_id}))
-      Audit.record(:grant, %{order_id: sig.order_id, from_agent: state.agent_id,
-                             to_agent: report_id, authority: sig.authority})
+      Comms.signal(
+        report_id,
+        Signal.new(:grant,
+          authority: sig.authority,
+          order_id: sig.order_id,
+          request_id: sig.request_id,
+          payload: %{request_id: sig.request_id}
+        )
+      )
+
+      Audit.record(:grant, %{
+        order_id: sig.order_id,
+        from_agent: state.agent_id,
+        to_agent: report_id,
+        authority: sig.authority
+      })
+
       Telemetry.emit_event(state.agent_id, :grant, %{}, %{to: report_id, authority: sig.authority})
     else
-      Comms.signal(report_id, Signal.new(:deny, authority: sig.authority,
-        order_id: sig.order_id, request_id: sig.request_id,
-        reason: "CO does not hold #{inspect(sig.authority)}", payload: %{request_id: sig.request_id}))
-      Audit.record(:deny, %{order_id: sig.order_id, from_agent: state.agent_id,
-                            to_agent: report_id, authority: sig.authority,
-                            reason: "CO does not hold #{inspect(sig.authority)}"})
+      Comms.signal(
+        report_id,
+        Signal.new(:deny,
+          authority: sig.authority,
+          order_id: sig.order_id,
+          request_id: sig.request_id,
+          reason: "CO does not hold #{inspect(sig.authority)}",
+          payload: %{request_id: sig.request_id}
+        )
+      )
+
+      Audit.record(:deny, %{
+        order_id: sig.order_id,
+        from_agent: state.agent_id,
+        to_agent: report_id,
+        authority: sig.authority,
+        reason: "CO does not hold #{inspect(sig.authority)}"
+      })
+
       Telemetry.emit_event(state.agent_id, :deny, %{}, %{to: report_id, authority: sig.authority})
     end
 
@@ -1307,7 +1563,9 @@ defmodule Fleet.Officer do
     Telemetry.emit_event(state.agent_id, kind, %{}, %{from: report_id, order_id: sig.order_id})
     # What a report tells me enters MY mind, attributed to that report.
     ingest_communication(state, kind, sig.payload, sender)
-    {:noreply, %{state | last_signals: Enum.take([{kind, report_id, sig} | state.last_signals], 20)}}
+
+    {:noreply,
+     %{state | last_signals: Enum.take([{kind, report_id, sig} | state.last_signals], 20)}}
   end
 
   # ── GRANT / DENY (requester side) ─────────────────────────────────────────
@@ -1327,11 +1585,22 @@ defmodule Fleet.Officer do
     order = state.assignment
     verdict = %{basis: :denied_authority, reason: sig.reason || "authority denied"}
     emit_dissent(state, order, verdict)
-    Audit.record(:dissent, %{order_id: order && order.id, from_agent: state.agent_id,
-                             to_agent: co_or_admiral(state), verdict: :denied_authority,
-                             reason: verdict.reason})
-    {:noreply, %{state | awaiting: nil, order_grants: MapSet.new(),
-                 assignment: order && Order.update_status(order, "dissented")}}
+
+    Audit.record(:dissent, %{
+      order_id: order && order.id,
+      from_agent: state.agent_id,
+      to_agent: co_or_admiral(state),
+      verdict: :denied_authority,
+      reason: verdict.reason
+    })
+
+    {:noreply,
+     %{
+       state
+       | awaiting: nil,
+         order_grants: MapSet.new(),
+         assignment: order && Order.update_status(order, "dissented")
+     }}
   end
 
   # ── RELIEVE / REINSTATE ───────────────────────────────────────────────────
@@ -1339,22 +1608,41 @@ defmodule Fleet.Officer do
   defp handle_duty(:relieve, %Signal{}, sender, state) do
     state = cancel_inflight(state)
     Telemetry.emit_event(state.agent_id, :relieved, %{}, %{by: Comms.principal_string(sender)})
+
     Audit.record(:relieve, %{from_agent: Comms.principal_string(sender), to_agent: state.agent_id})
+
     Fleet.Service.record_relief(state.soul_id, Comms.principal_string(sender))
     assignment = state.assignment && Order.update_status(state.assignment, "failed")
-    {:noreply, %{state | duty: :relieved, relieved_by: sender, task_ref: nil, task_pid: nil,
-                 order_grants: MapSet.new(), assignment: assignment}}
+
+    {:noreply,
+     %{
+       state
+       | duty: :relieved,
+         relieved_by: sender,
+         task_ref: nil,
+         task_pid: nil,
+         order_grants: MapSet.new(),
+         assignment: assignment
+     }}
   end
 
   defp handle_duty(:reinstate, %Signal{}, sender, state) do
     Telemetry.emit_event(state.agent_id, :reinstated, %{}, %{by: Comms.principal_string(sender)})
-    Audit.record(:reinstate, %{from_agent: Comms.principal_string(sender), to_agent: state.agent_id})
+
+    Audit.record(:reinstate, %{
+      from_agent: Comms.principal_string(sender),
+      to_agent: state.agent_id
+    })
+
     Fleet.Service.record_reinstatement(state.soul_id, Comms.principal_string(sender))
     # A standing order (still "acknowledged"/"blocked") resumes on the next tick.
     assignment =
       case state.assignment do
-        %Order{status: s} = o when s in ["failed", "blocked"] -> Order.update_status(o, "acknowledged")
-        other -> other
+        %Order{status: s} = o when s in ["failed", "blocked"] ->
+          Order.update_status(o, "acknowledged")
+
+        other ->
+          other
       end
 
     send(self(), :tick)
@@ -1364,11 +1652,18 @@ defmodule Fleet.Officer do
   # ── Anomalies & dissent delivery ──────────────────────────────────────────
 
   defp signal_anomaly(kind, %Signal{} = sig, sender, state) do
-    Audit.record(:provenance_anomaly, %{order_id: sig.order_id,
-      from_agent: Comms.principal_string(sender), to_agent: state.agent_id,
-      reason: "unauthorized #{kind} signal"})
+    Audit.record(:provenance_anomaly, %{
+      order_id: sig.order_id,
+      from_agent: Comms.principal_string(sender),
+      to_agent: state.agent_id,
+      reason: "unauthorized #{kind} signal"
+    })
+
     Telemetry.emit_event(state.agent_id, :provenance_anomaly, %{}, %{
-      kind: kind, sender: Comms.principal_string(sender)})
+      kind: kind,
+      sender: Comms.principal_string(sender)
+    })
+
     {:noreply, state}
   end
 
@@ -1376,10 +1671,18 @@ defmodule Fleet.Officer do
   # and emit the (uniform) dissent telemetry. Every dissent path routes here.
   defp emit_dissent(state, order, verdict) do
     Telemetry.emit_event(state.agent_id, :dissent, %{}, %{
-      order_id: order && order.id, basis: verdict[:basis]})
+      order_id: order && order.id,
+      basis: verdict[:basis]
+    })
 
-    sig = Signal.new(:dissent, order_id: order && order.id,
-                     reason: verdict[:reason], payload: as_map(verdict), world_id: state.world_id)
+    sig =
+      Signal.new(:dissent,
+        order_id: order && order.id,
+        reason: verdict[:reason],
+        payload: as_map(verdict),
+        world_id: state.world_id
+      )
+
     deliver_upward(state, sig, order)
   end
 
@@ -1405,8 +1708,12 @@ defmodule Fleet.Officer do
     %{state | task_ref: nil, task_pid: nil}
   end
 
-  defp awaiting_request?(%{awaiting: %{request_id: rid}}, %Signal{request_id: rid}) when not is_nil(rid), do: true
-  defp awaiting_request?(%{awaiting: %{request_id: rid}}, %Signal{payload: %{request_id: rid}}) when not is_nil(rid), do: true
+  defp awaiting_request?(%{awaiting: %{request_id: rid}}, %Signal{request_id: rid})
+       when not is_nil(rid), do: true
+
+  defp awaiting_request?(%{awaiting: %{request_id: rid}}, %Signal{payload: %{request_id: rid}})
+       when not is_nil(rid), do: true
+
   defp awaiting_request?(_, _), do: false
 
   defp decision_label(:approve), do: :approve
@@ -1466,7 +1773,10 @@ defmodule Fleet.Officer do
         # it needn't survive a restart on its own — avoids disk-checkpoint churn.
         {:ok, _world} =
           World.Manager.create("mind:" <> soul_id,
-            id: world_id, mode: :ephemeral, residents: [soul_id])
+            id: world_id,
+            mode: :ephemeral,
+            residents: [soul_id]
+          )
 
         world_id
     end

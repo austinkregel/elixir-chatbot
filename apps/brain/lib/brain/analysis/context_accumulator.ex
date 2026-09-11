@@ -77,11 +77,12 @@ defmodule Brain.Analysis.ContextAccumulator do
   def accumulate(%__MODULE__{signals: signals} = acc) do
     weighted = compute_relevance_weights(signals)
 
-    %{acc |
-      combined_confidence: log_odds_combine(weighted),
-      conflict_measure: compute_conflict(signals),
-      dominant_signal: find_dominant(weighted),
-      entity_familiarity: extract_entity_familiarity(signals)
+    %{
+      acc
+      | combined_confidence: log_odds_combine(weighted),
+        conflict_measure: compute_conflict(signals),
+        dominant_signal: find_dominant(weighted),
+        entity_familiarity: extract_entity_familiarity(signals)
     }
   end
 
@@ -157,7 +158,8 @@ defmodule Brain.Analysis.ContextAccumulator do
   # ===========================================================================
 
   @doc false
-  def compute_conflict(signals) when length(signals) < 2, do: 0.0
+  def compute_conflict([]), do: 0.0
+  def compute_conflict([_]), do: 0.0
 
   def compute_conflict(signals) do
     pairs =
@@ -278,9 +280,15 @@ defmodule Brain.Analysis.ContextAccumulator do
   end
 
   @practical_topics MapSet.new([
-    "fahrenheit", "celsius", "metric", "imperial",
-    "24h", "12h", "date_format", "timezone"
-  ])
+                      "fahrenheit",
+                      "celsius",
+                      "metric",
+                      "imperial",
+                      "24h",
+                      "12h",
+                      "date_format",
+                      "timezone"
+                    ])
 
   defp extract_practical_adaptation(acc, topic, props) do
     normalized = String.downcase(topic)

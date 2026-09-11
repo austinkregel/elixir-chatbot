@@ -184,11 +184,14 @@ defmodule Brain.AtlasIntegration do
   def update_belief_confidence(belief_id, confidence, last_confirmed) do
     async(fn ->
       case Atlas.Repo.get(Atlas.Schemas.Belief, belief_id) do
-        nil -> :ok
+        nil ->
+          :ok
 
         belief ->
           attrs = %{confidence: confidence}
-          attrs = if last_confirmed, do: Map.put(attrs, :last_confirmed, last_confirmed), else: attrs
+
+          attrs =
+            if last_confirmed, do: Map.put(attrs, :last_confirmed, last_confirmed), else: attrs
 
           belief
           |> Atlas.Schemas.Belief.changeset(attrs)
@@ -201,7 +204,8 @@ defmodule Brain.AtlasIntegration do
   def retract_belief_in_atlas(belief_id) do
     async(fn ->
       case Atlas.Repo.get(Atlas.Schemas.Belief, belief_id) do
-        nil -> :ok
+        nil ->
+          :ok
 
         belief ->
           belief
@@ -337,7 +341,8 @@ defmodule Brain.AtlasIntegration do
   def link_episode_semantic(episode_id, semantic_id) do
     sync(fn ->
       case Atlas.Repo.get(Atlas.Schemas.Episode, episode_id) do
-        nil -> :ok
+        nil ->
+          :ok
 
         ep ->
           ep
@@ -606,7 +611,10 @@ defmodule Brain.AtlasIntegration do
     sync(fn ->
       if world_id do
         Atlas.Schemas.Episode |> where([e], e.world_id == ^world_id) |> Atlas.Repo.delete_all()
-        Atlas.Schemas.SemanticFact |> where([s], s.world_id == ^world_id) |> Atlas.Repo.delete_all()
+
+        Atlas.Schemas.SemanticFact
+        |> where([s], s.world_id == ^world_id)
+        |> Atlas.Repo.delete_all()
       else
         Atlas.Repo.delete_all(Atlas.Schemas.Episode)
         Atlas.Repo.delete_all(Atlas.Schemas.SemanticFact)
@@ -683,7 +691,17 @@ defmodule Brain.AtlasIntegration do
       %Atlas.Schemas.ReviewCandidate{}
       |> Atlas.Schemas.ReviewCandidate.changeset(attrs)
       |> Atlas.Repo.insert(
-        on_conflict: {:replace, [:status, :finding, :aggregate_confidence, :corroborating_sources, :reviewer_notes, :reviewed_at, :updated_at]},
+        on_conflict:
+          {:replace,
+           [
+             :status,
+             :finding,
+             :aggregate_confidence,
+             :corroborating_sources,
+             :reviewer_notes,
+             :reviewed_at,
+             :updated_at
+           ]},
         conflict_target: :id
       )
     end)
@@ -731,7 +749,17 @@ defmodule Brain.AtlasIntegration do
       %Atlas.Schemas.SourceReliability{}
       |> Atlas.Schemas.SourceReliability.changeset(attrs)
       |> Atlas.Repo.insert(
-        on_conflict: {:replace, [:reliability_score, :bias_rating, :trust_tier, :confirmed_count, :rejected_count, :admin_decisions, :updated_at]},
+        on_conflict:
+          {:replace,
+           [
+             :reliability_score,
+             :bias_rating,
+             :trust_tier,
+             :confirmed_count,
+             :rejected_count,
+             :admin_decisions,
+             :updated_at
+           ]},
         conflict_target: :domain
       )
     end)
@@ -834,7 +862,16 @@ defmodule Brain.AtlasIntegration do
       %Atlas.Schemas.SourceAuthority{}
       |> Atlas.Schemas.SourceAuthority.changeset(attrs)
       |> Atlas.Repo.insert(
-        on_conflict: {:replace, [:confirmed_count, :contradicted_count, :total_added, :credibility, :last_updated, :updated_at]},
+        on_conflict:
+          {:replace,
+           [
+             :confirmed_count,
+             :contradicted_count,
+             :total_added,
+             :credibility,
+             :last_updated,
+             :updated_at
+           ]},
         conflict_target: :authority_key
       )
     end)
@@ -884,7 +921,16 @@ defmodule Brain.AtlasIntegration do
       %Atlas.Schemas.UserModel{}
       |> Atlas.Schemas.UserModel.changeset(attrs)
       |> Atlas.Repo.insert(
-        on_conflict: {:replace, [:facts, :interaction_patterns, :epistemic_bounds, :provenance_map, :disclosure_history, :updated_at]},
+        on_conflict:
+          {:replace,
+           [
+             :facts,
+             :interaction_patterns,
+             :epistemic_bounds,
+             :provenance_map,
+             :disclosure_history,
+             :updated_at
+           ]},
         conflict_target: :user_id
       )
     end)
@@ -944,7 +990,7 @@ defmodule Brain.AtlasIntegration do
   Otherwise creates a new node with the given properties.
   """
   def ensure_node(graph, label, properties) when is_map(properties) do
-    name = Map.get(properties, :name) || Map.get(properties, "name")
+    name = Map.get(properties, :name)
 
     case find_node(graph, label, name) do
       {:ok, vertex} ->
@@ -1075,7 +1121,8 @@ defmodule Brain.AtlasIntegration do
   between the two nodes. If not, creates it with the given properties.
   """
   def find_or_create_edge(graph, from_id, to_id, rel_type, properties \\ %{}) do
-    query = "MATCH (a)-[r:#{rel_type}]->(b) WHERE id(a) = #{from_id} AND id(b) = #{to_id} RETURN r"
+    query =
+      "MATCH (a)-[r:#{rel_type}]->(b) WHERE id(a) = #{from_id} AND id(b) = #{to_id} RETURN r"
 
     case Atlas.Graph.cypher(graph, query) do
       {:ok, [[%Atlas.Graph.Types.Edge{} = e] | _]} ->
@@ -1157,7 +1204,9 @@ defmodule Brain.AtlasIntegration do
             best_score: row.best_score || 0.0,
             second_score: row.second_score || 0.0,
             margin: row.margin || 0.0,
-            top_k: (row.top_k || []) |> Enum.map(fn m -> {Map.get(m, "intent", ""), Map.get(m, "score", 0.0)} end),
+            top_k:
+              (row.top_k || [])
+              |> Enum.map(fn m -> {Map.get(m, "intent", ""), Map.get(m, "score", 0.0)} end),
             extracted_entities: row.extracted_entities || [],
             slot_fill_summary: row.slot_fill_summary || %{},
             annotation: atomize_annotation(row.annotation || %{}),
@@ -1178,10 +1227,11 @@ defmodule Brain.AtlasIntegration do
   @doc "Persist an intent review candidate to Atlas."
   def persist_intent_review_candidate(%Brain.Analysis.Types.IntentReviewCandidate{} = candidate) do
     async(fn ->
-      top_k_maps = Enum.map(candidate.top_k || [], fn
-        {intent, score} -> %{"intent" => intent, "score" => score}
-        other -> other
-      end)
+      top_k_maps =
+        Enum.map(candidate.top_k || [], fn
+          {intent, score} -> %{"intent" => intent, "score" => score}
+          other -> other
+        end)
 
       annotation_map = stringify_annotation(candidate.annotation)
 
@@ -1201,14 +1251,32 @@ defmodule Brain.AtlasIntegration do
         world_id: candidate.world_id,
         reviewer_notes: candidate.reviewer_notes,
         reviewed_at: candidate.reviewed_at,
-        promotion_action: if(candidate.promotion_action, do: to_string(candidate.promotion_action)),
+        promotion_action:
+          if(candidate.promotion_action, do: to_string(candidate.promotion_action)),
         promoted_to_intent: candidate.promoted_to_intent
       }
 
       %Atlas.Schemas.IntentReviewCandidate{}
       |> Atlas.Schemas.IntentReviewCandidate.changeset(attrs)
       |> Atlas.Repo.insert(
-        on_conflict: {:replace, [:status, :predicted_intent, :best_score, :second_score, :margin, :top_k, :extracted_entities, :slot_fill_summary, :annotation, :reviewer_notes, :reviewed_at, :promotion_action, :promoted_to_intent, :updated_at]},
+        on_conflict:
+          {:replace,
+           [
+             :status,
+             :predicted_intent,
+             :best_score,
+             :second_score,
+             :margin,
+             :top_k,
+             :extracted_entities,
+             :slot_fill_summary,
+             :annotation,
+             :reviewer_notes,
+             :reviewed_at,
+             :promotion_action,
+             :promoted_to_intent,
+             :updated_at
+           ]},
         conflict_target: :id
       )
     end)
@@ -1250,5 +1318,6 @@ defmodule Brain.AtlasIntegration do
     }
   end
 
-  defp stringify_annotation(_), do: %{"tags" => [], "notes" => nil, "domain_guess" => nil, "spans" => []}
+  defp stringify_annotation(_),
+    do: %{"tags" => [], "notes" => nil, "domain_guess" => nil, "spans" => []}
 end

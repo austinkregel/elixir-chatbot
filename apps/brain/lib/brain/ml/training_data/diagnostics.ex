@@ -33,9 +33,14 @@ defmodule Brain.ML.TrainingData.Diagnostics do
 
             skew_warning =
               cond do
-                ratio >= threshold -> "#{Float.round(ratio, 1)}x median — overrepresented"
-                1 / max(ratio, 0.001) >= threshold -> "#{Float.round(1 / ratio, 1)}x below median — underrepresented"
-                true -> nil
+                ratio >= threshold ->
+                  "#{Float.round(ratio, 1)}x median — overrepresented"
+
+                1 / max(ratio, 0.001) >= threshold ->
+                  "#{Float.round(1 / ratio, 1)}x below median — underrepresented"
+
+                true ->
+                  nil
               end
 
             %{label: label, count: count, pct: pct, skew_warning: skew_warning}
@@ -87,8 +92,6 @@ defmodule Brain.ML.TrainingData.Diagnostics do
          gold_intent_count: MapSet.size(gold_intents),
          registry_intent_count: MapSet.size(registry_intents)
        }}
-    else
-      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -226,7 +229,10 @@ defmodule Brain.ML.TrainingData.Diagnostics do
        confidence: sa.intent_confidence,
        strategy: model.overall_strategy,
        classifier_raw: classifier_raw,
-       entities: Enum.map(a.entities, fn e -> %{entity: e[:entity], type: e[:entity_type], value: e[:value]} end),
+       entities:
+         Enum.map(a.entities, fn e ->
+           %{entity: e[:entity], type: e[:entity_type], value: e[:value]}
+         end),
        missing_context: a.missing_context,
        neighbors: neighbors
      }}
@@ -243,7 +249,14 @@ defmodule Brain.ML.TrainingData.Diagnostics do
           case Map.get(rec, "feature_vector") do
             fv when is_list(fv) and fv != [] ->
               sim = FourthWall.Math.cosine_similarity(query_fv, fv)
-              [%{text: Map.get(rec, "text", ""), intent: Map.get(rec, "intent", ""), similarity: Float.round(sim, 4)}]
+
+              [
+                %{
+                  text: Map.get(rec, "text", ""),
+                  intent: Map.get(rec, "intent", ""),
+                  similarity: Float.round(sim, 4)
+                }
+              ]
 
             _ ->
               []
@@ -261,7 +274,11 @@ defmodule Brain.ML.TrainingData.Diagnostics do
 
   defp matches_label_or_text?(rec, query, %{record_kind: :intent_example}) do
     text = Map.get(rec, "text", "")
-    intent = Map.get(rec, "intent", "") || Map.get(rec, "speech_act", "") || Map.get(rec, "sentiment", "")
+
+    intent =
+      Map.get(rec, "intent", "") || Map.get(rec, "speech_act", "") ||
+        Map.get(rec, "sentiment", "")
+
     String.contains?(String.downcase(text), query) or String.downcase(to_string(intent)) == query
   end
 

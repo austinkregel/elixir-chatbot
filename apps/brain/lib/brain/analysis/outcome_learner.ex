@@ -131,7 +131,7 @@ defmodule Brain.Analysis.OutcomeLearner do
       Map.has_key?(pattern, :phrase) ->
         :user
 
-      Map.has_key?(pattern, :keywords) and length(pattern.keywords) >= 2 ->
+      Map.has_key?(pattern, :keywords) and match?([_, _ | _], pattern.keywords) ->
         :cohort
 
       Map.has_key?(pattern, :first_word) ->
@@ -364,8 +364,12 @@ defmodule Brain.Analysis.OutcomeLearner do
 
   defp specific_intent?(intent, profile \\ nil) do
     case profile do
-      %ChunkProfile{confidence: confidence} -> confidence > 0.6
-      _ -> intent != nil and intent != "" and intent != "unknown" and String.contains?(to_string(intent), ".")
+      %ChunkProfile{confidence: confidence} ->
+        confidence > 0.6
+
+      _ ->
+        intent != nil and intent != "" and intent != "unknown" and
+          String.contains?(to_string(intent), ".")
     end
   end
 

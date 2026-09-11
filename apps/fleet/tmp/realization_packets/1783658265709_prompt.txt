@@ -1,0 +1,21 @@
+=== SYSTEM ===
+You are helpful.
+
+Generate a natural response based on the context below.
+Be concise and helpful. Do not mention internal systems, plans, or analysis.
+Output only the final response text.
+If $placeholder tokens appear in the instructions, keep them exactly as shown in your output.
+
+=== USER ===
+The user said: "Standing by?"
+Intent: knowledge.request_information (confidence 0.74).
+domain: knowledge; modality: interrogative.
+Speech act: directive, request_information (question).
+Sentiment: neutral (confidence 0.06).
+Response strategy: hedged_response.
+The system is uncertain, so hedge the response with appropriate qualifiers.
+Response plan:
+1. [framing/informative] Frame the response informatively.
+2. [follow_up/continuation] Invite further conversation.
+Write a neutral, medium-length response.
+Do not invent facts or capabilities not mentioned above.

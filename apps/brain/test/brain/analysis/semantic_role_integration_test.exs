@@ -17,8 +17,8 @@ defmodule Brain.Analysis.SemanticRoleIntegrationTest do
       frames = SemanticRoleLabeler.label(tokens, bio_tags, entities: entities)
       triples = SemanticRoleLabeler.to_triples(frames)
 
-      assert length(frames) == 1
-      assert length(triples) >= 2
+      assert match?([_], frames)
+      assert Enum.count_until(triples, 2) >= 2
 
       assert {"The president", "visited", "Berlin"} in triples
       assert {"visited", "OCCURRED_AT", "yesterday"} in triples
@@ -26,12 +26,22 @@ defmodule Brain.Analysis.SemanticRoleIntegrationTest do
 
     test "multiple frames produce independent triple sets" do
       tokens = ["John", "gave", "Mary", "the", "book", "in", "the", "library"]
-      bio_tags = ["B-ARG0", "B-V", "B-ARG2", "B-ARG1", "I-ARG1", "B-ARGM-LOC", "I-ARGM-LOC", "I-ARGM-LOC"]
+
+      bio_tags = [
+        "B-ARG0",
+        "B-V",
+        "B-ARG2",
+        "B-ARG1",
+        "I-ARG1",
+        "B-ARGM-LOC",
+        "I-ARGM-LOC",
+        "I-ARGM-LOC"
+      ]
 
       frames = SemanticRoleLabeler.label(tokens, bio_tags)
       triples = SemanticRoleLabeler.to_triples(frames)
 
-      assert length(frames) == 1
+      assert match?([_], frames)
       frame = hd(frames)
 
       assert frame.predicate == "gave"

@@ -294,6 +294,7 @@ defmodule Brain.Response.ConditionEvaluator do
   # ============================================================================
 
   defp safe_atom(val) when is_atom(val), do: val
+
   defp safe_atom(val) when is_binary(val) do
     String.to_existing_atom(val)
   rescue
@@ -301,7 +302,7 @@ defmodule Brain.Response.ConditionEvaluator do
   end
 
   defp get_entity_type(entity) when is_map(entity) do
-    entity[:entity_type] || entity["entity_type"] || ""
+    entity[:entity_type] || ""
   end
 
   defp get_entity_type(_), do: ""

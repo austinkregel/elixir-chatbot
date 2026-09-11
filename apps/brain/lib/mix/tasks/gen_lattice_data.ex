@@ -187,7 +187,9 @@ defmodule Mix.Tasks.GenLatticeData do
     ensure_app_started_for_dimension!()
 
     case FragmentVectorizer.vectorize_fragments(fragments, verbose: verbose) do
-      {:ok, vectorized} -> vectorized
+      {:ok, vectorized} ->
+        vectorized
+
       {:error, reason} ->
         Mix.shell().error("  Fragment vectorization failed: #{reason}")
         System.halt(1)
@@ -407,10 +409,12 @@ defmodule Mix.Tasks.GenLatticeData do
             |> Enum.filter(&(String.trim(&1) != ""))
             |> Enum.uniq()
 
-          _ -> []
+          _ ->
+            []
         end
 
-      {:error, _} -> []
+      {:error, _} ->
+        []
     end
   end
 
@@ -439,6 +443,7 @@ defmodule Mix.Tasks.GenLatticeData do
                     frames
                     |> Enum.flat_map(fn {_key, templates} ->
                       templates = if is_list(templates), do: templates, else: []
+
                       Enum.flat_map(templates, fn template ->
                         segment_template(template, "#{domain}.response", "domain_knowledge")
                       end)
@@ -451,7 +456,9 @@ defmodule Mix.Tasks.GenLatticeData do
                       requires = Map.get(frame_config, "requires_enrichment", [])
 
                       Enum.flat_map(templates, fn template ->
-                        frags = segment_template(template, "#{domain}.enriched", "domain_knowledge")
+                        frags =
+                          segment_template(template, "#{domain}.enriched", "domain_knowledge")
+
                         Enum.map(frags, fn frag ->
                           Map.merge(frag, %{
                             "enrichment_fields" => requires,
@@ -462,15 +469,19 @@ defmodule Mix.Tasks.GenLatticeData do
                     end)
 
                   if verbose and (frame_fragments != [] or enriched_fragments != []) do
-                    Mix.shell().info("    #{domain}: #{length(frame_fragments)} frame + #{length(enriched_fragments)} enriched fragments")
+                    Mix.shell().info(
+                      "    #{domain}: #{length(frame_fragments)} frame + #{length(enriched_fragments)} enriched fragments"
+                    )
                   end
 
                   frame_fragments ++ enriched_fragments
 
-                _ -> []
+                _ ->
+                  []
               end
 
-            {:error, _} -> []
+            {:error, _} ->
+              []
           end
         end)
 
@@ -494,8 +505,10 @@ defmodule Mix.Tasks.GenLatticeData do
                   is_map(variants_or_phrases) ->
                     Enum.flat_map(variants_or_phrases, fn {variant_or_level, phrases} ->
                       phrases = if is_list(phrases), do: phrases, else: []
+
                       Enum.map(phrases, fn phrase ->
                         chunk_type = infer_chunk_type_from_primitive(prim_type)
+
                         %{
                           "text" => phrase,
                           "chunk_type" => chunk_type,
@@ -514,6 +527,7 @@ defmodule Mix.Tasks.GenLatticeData do
                   is_list(variants_or_phrases) ->
                     Enum.map(variants_or_phrases, fn phrase ->
                       chunk_type = infer_chunk_type_from_primitive(prim_type)
+
                       %{
                         "text" => phrase,
                         "chunk_type" => chunk_type,
@@ -539,10 +553,12 @@ defmodule Mix.Tasks.GenLatticeData do
 
             fragments
 
-          _ -> []
+          _ ->
+            []
         end
 
-      {:error, _} -> []
+      {:error, _} ->
+        []
     end
   end
 
@@ -552,7 +568,10 @@ defmodule Mix.Tasks.GenLatticeData do
     sentences
     |> Enum.map(fn sentence ->
       chunk_type = classify_chunk_heuristic(sentence)
-      {prim_type, prim_variant} = Map.get(@primitive_type_map, chunk_type, {"content", "enriched"})
+
+      {prim_type, prim_variant} =
+        Map.get(@primitive_type_map, chunk_type, {"content", "enriched"})
+
       slots = extract_slots(sentence)
       enrichment = extract_enrichment_fields(slots)
 
@@ -596,24 +615,24 @@ defmodule Mix.Tasks.GenLatticeData do
 
     cond do
       first in @greeting_words or
-        (first == "good" and Enum.at(tokens, 1) in ~w(morning afternoon evening)) ->
+          (first == "good" and Enum.at(tokens, 1) in ~w(morning afternoon evening)) ->
         "greeting"
 
       first in @closing_words or
         (first == "have" and MapSet.member?(token_set, "day")) or
-        (first == "take" and Enum.at(tokens, 1) == "care") ->
+          (first == "take" and Enum.at(tokens, 1) == "care") ->
         "closing"
 
       not MapSet.disjoint?(token_set, @offer_words) and
-        (MapSet.member?(token_set, "else") or MapSet.member?(token_set, "can")) ->
+          (MapSet.member?(token_set, "else") or MapSet.member?(token_set, "can")) ->
         "offer"
 
-      (first in ~w(which what where when how) and length(tokens) < 10) or
-        (String.ends_with?(sentence, "?") and length(tokens) < 8) ->
+      (first in ~w(which what where when how) and Enum.count_until(tokens, 10) < 10) or
+          (String.ends_with?(sentence, "?") and Enum.count_until(tokens, 8) < 8) ->
         "clarification"
 
       first in @ack_words or
-        (first == "i" and Enum.at(tokens, 1) in ~w(understand understood)) ->
+          (first == "i" and Enum.at(tokens, 1) in ~w(understand understood)) ->
         "acknowledgment"
 
       true ->
@@ -668,8 +687,18 @@ defmodule Mix.Tasks.GenLatticeData do
     playfulness = if exclamation_count > 1, do: 0.4, else: 0.2
     directness = if word_count < 4, do: 0.8, else: 0.5
 
-    estimated_vector = [positive, negative, neutral, confidence, polarity,
-                        arousal, warmth, formality, playfulness, directness]
+    estimated_vector = [
+      positive,
+      negative,
+      neutral,
+      confidence,
+      polarity,
+      arousal,
+      warmth,
+      formality,
+      playfulness,
+      directness
+    ]
 
     {tone_label, _} = find_nearest_tone(estimated_vector, tone_vectors)
     {tone_label, estimated_vector}
@@ -677,7 +706,8 @@ defmodule Mix.Tasks.GenLatticeData do
 
   defp auto_tag_tone(_, _), do: {"neutral", List.duplicate(0.0, 10)}
 
-  defp find_nearest_tone(vector, tone_vectors) when is_map(tone_vectors) and map_size(tone_vectors) > 0 do
+  defp find_nearest_tone(vector, tone_vectors)
+       when is_map(tone_vectors) and map_size(tone_vectors) > 0 do
     tone_vectors
     |> Enum.map(fn {name, tv} ->
       sim = cosine_similarity(vector, tv)
@@ -704,7 +734,9 @@ defmodule Mix.Tasks.GenLatticeData do
           {:ok, %{"tone" => %{"tone_vectors" => vectors}}} -> vectors
           _ -> %{}
         end
-      {:error, _} -> %{}
+
+      {:error, _} ->
+        %{}
     end
   end
 
@@ -717,7 +749,7 @@ defmodule Mix.Tasks.GenLatticeData do
       end)
       |> Enum.map(& &1["text"])
     end)
-    |> Enum.filter(&(length(&1) >= 2))
+    |> Enum.filter(&match?([_, _ | _], &1))
   end
 
   defp chunk_order("greeting"), do: 0
@@ -733,6 +765,7 @@ defmodule Mix.Tasks.GenLatticeData do
       sequences
       |> Enum.flat_map(fn seq ->
         pairs = Enum.zip(seq, tl(seq))
+
         Enum.flat_map(pairs, fn {a, b} ->
           a_tokens = last_n_tokens(a, 3)
           b_tokens = first_n_tokens(b, 3)

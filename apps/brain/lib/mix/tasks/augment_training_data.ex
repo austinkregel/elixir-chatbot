@@ -94,12 +94,16 @@ defmodule Mix.Tasks.AugmentTrainingData do
     all_new_examples = []
 
     {all_new_examples, total_generated} =
-      Enum.reduce(sparse_intents, {all_new_examples, total_generated}, fn {intent, count}, {acc_examples, acc_count} ->
+      Enum.reduce(sparse_intents, {all_new_examples, total_generated}, fn {intent, count},
+                                                                          {acc_examples,
+                                                                           acc_count} ->
         needed = min_threshold - count
         existing = Enum.filter(gold, fn ex -> ex["intent"] == intent end)
         new_examples = generate_intent_variations(existing, needed, intent)
 
-        IO.puts("    #{String.pad_trailing(intent, 45)} #{count} -> #{count + length(new_examples)} (+#{length(new_examples)})")
+        IO.puts(
+          "    #{String.pad_trailing(intent, 45)} #{count} -> #{count + length(new_examples)} (+#{length(new_examples)})"
+        )
 
         {acc_examples ++ new_examples, acc_count + length(new_examples)}
       end)
@@ -115,7 +119,7 @@ defmodule Mix.Tasks.AugmentTrainingData do
         IO.puts("    [#{ex["intent"]}] #{ex["text"]}")
       end)
 
-      if length(all_new_examples) > 10 do
+      if Enum.count_until(all_new_examples, 11) > 10 do
         IO.puts("    ... and #{length(all_new_examples) - 10} more")
       end
     else
@@ -210,7 +214,7 @@ defmodule Mix.Tasks.AugmentTrainingData do
     pos_tags = example["pos_tags"] || []
 
     strategies =
-      if length(tokens) > 3 do
+      if Enum.count_until(tokens, 4) > 3 do
         [:word_dropout, :adjacent_swap, :prefix_add, :prefix_remove, :truncate_end]
       else
         [:prefix_add, :prefix_remove, :adjacent_swap]
@@ -241,9 +245,9 @@ defmodule Mix.Tasks.AugmentTrainingData do
     }
   end
 
-  defp word_dropout(tokens, _pos_tags) when length(tokens) <= 2 do
-    Enum.join(tokens, " ")
-  end
+  defp word_dropout([], _pos_tags), do: ""
+  defp word_dropout([_] = tokens, _pos_tags), do: Enum.join(tokens, " ")
+  defp word_dropout([_, _] = tokens, _pos_tags), do: Enum.join(tokens, " ")
 
   defp word_dropout(tokens, pos_tags) do
     droppable_indices =
@@ -268,9 +272,9 @@ defmodule Mix.Tasks.AugmentTrainingData do
     end
   end
 
-  defp adjacent_swap(tokens, _pos_tags) when length(tokens) <= 2 do
-    Enum.join(tokens, " ")
-  end
+  defp adjacent_swap([], _pos_tags), do: ""
+  defp adjacent_swap([_] = tokens, _pos_tags), do: Enum.join(tokens, " ")
+  defp adjacent_swap([_, _] = tokens, _pos_tags), do: Enum.join(tokens, " ")
 
   defp adjacent_swap(tokens, pos_tags) do
     content_pairs =
@@ -280,6 +284,7 @@ defmodule Mix.Tasks.AugmentTrainingData do
       |> Enum.filter(fn [{_t1, i1}, {_t2, _i2}] ->
         p1 = Enum.at(pos_tags, i1)
         p2 = Enum.at(pos_tags, i1 + 1)
+
         (p1 == nil or p1 not in @droppable_pos) and
           (p2 == nil or p2 not in @droppable_pos)
       end)
@@ -331,9 +336,10 @@ defmodule Mix.Tasks.AugmentTrainingData do
     end
   end
 
-  defp truncate_end(tokens, _pos_tags) when length(tokens) <= 3 do
-    Enum.join(tokens, " ")
-  end
+  defp truncate_end([], _pos_tags), do: ""
+  defp truncate_end([_] = tokens, _pos_tags), do: Enum.join(tokens, " ")
+  defp truncate_end([_, _] = tokens, _pos_tags), do: Enum.join(tokens, " ")
+  defp truncate_end([_, _, _] = tokens, _pos_tags), do: Enum.join(tokens, " ")
 
   defp truncate_end(tokens, pos_tags) do
     last_pos = List.last(pos_tags)

@@ -15,7 +15,7 @@ defmodule Brain.Analysis.EventExtractorTest do
 
       {:ok, events} = EventExtractor.extract(analysis)
 
-      assert length(events) == 1
+      assert match?([_], events)
       [event] = events
 
       assert %Event{} = event

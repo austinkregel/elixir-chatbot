@@ -26,7 +26,7 @@ defmodule Brain.Response.TemplateStoreTest do
 
       result = TemplateStore.filter_by_conditions(templates, context)
 
-      assert length(result) == 1
+      assert match?([_], result)
       assert List.first(result).text == "Hello $person!"
     end
 
@@ -49,7 +49,7 @@ defmodule Brain.Response.TemplateStoreTest do
       context = %{entities: []}
 
       result = TemplateStore.filter_by_conditions(templates, context)
-      assert length(result) == 1
+      assert match?([_], result)
       assert List.first(result).text == "Hello!"
     end
 
@@ -66,7 +66,7 @@ defmodule Brain.Response.TemplateStoreTest do
       context = %{entities: []}
 
       result = TemplateStore.filter_by_conditions(templates, context)
-      assert length(result) == 1
+      assert match?([_], result)
     end
 
     test "filters by slot conditions" do
@@ -92,7 +92,7 @@ defmodule Brain.Response.TemplateStoreTest do
 
       result = TemplateStore.filter_by_conditions(templates, context)
 
-      assert length(result) == 1
+      assert match?([_], result)
       assert List.first(result).text == "What location?"
     end
 
@@ -116,7 +116,7 @@ defmodule Brain.Response.TemplateStoreTest do
 
       result = TemplateStore.filter_by_conditions(templates, context)
 
-      assert length(result) == 1
+      assert match?([_], result)
       assert String.contains?(List.first(result).text, "confident")
     end
 
@@ -136,7 +136,7 @@ defmodule Brain.Response.TemplateStoreTest do
       }
 
       result_both = TemplateStore.filter_by_conditions(templates, context_both)
-      assert length(result_both) == 1
+      assert match?([_], result_both)
 
       context_one = %{
         entities: [],
@@ -163,7 +163,7 @@ defmodule Brain.Response.TemplateStoreTest do
       }
 
       result_first = TemplateStore.filter_by_conditions(templates, context_first)
-      assert length(result_first) == 1
+      assert match?([_], result_first)
 
       context_second = %{
         entities: [],
@@ -171,7 +171,7 @@ defmodule Brain.Response.TemplateStoreTest do
       }
 
       result_second = TemplateStore.filter_by_conditions(templates, context_second)
-      assert length(result_second) == 1
+      assert match?([_], result_second)
 
       context_neither = %{
         entities: [],

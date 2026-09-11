@@ -100,7 +100,7 @@ defmodule Brain.Epistemic.UserModelStoreTest do
     test "returns all facts above threshold" do
       facts = UserModelStore.get_facts_with_confidence("user1", 0.7)
 
-      assert length(facts) == 2
+      assert match?([_, _], facts)
 
       keys = Enum.map(facts, & &1.key)
       assert :name in keys
@@ -110,7 +110,7 @@ defmodule Brain.Epistemic.UserModelStoreTest do
     test "returns all facts with 0.0 threshold" do
       facts = UserModelStore.get_facts_with_confidence("user1", 0.0)
 
-      assert length(facts) == 4
+      assert match?([_, _, _, _], facts)
     end
 
     test "returns empty list for high threshold" do
@@ -146,7 +146,7 @@ defmodule Brain.Epistemic.UserModelStoreTest do
 
       model = UserModelStore.get("user1")
 
-      assert length(model.interaction_patterns[:question_style]) == 2
+      assert match?([_, _], model.interaction_patterns[:question_style])
     end
   end
 
@@ -157,7 +157,7 @@ defmodule Brain.Epistemic.UserModelStoreTest do
 
       history = UserModelStore.get_disclosure_history("user1")
 
-      assert length(history) == 1
+      assert match?([_], history)
       assert hd(history).keys == [:name, :location]
     end
 
@@ -172,7 +172,7 @@ defmodule Brain.Epistemic.UserModelStoreTest do
       history = UserModelStore.get_disclosure_history("user1", 100)
 
       # Should be capped at 50
-      assert length(history) == 50
+      assert Enum.count(history) == 50
     end
   end
 

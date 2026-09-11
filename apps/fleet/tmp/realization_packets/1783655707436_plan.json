@@ -1,0 +1,39 @@
+[
+  {
+    "content": {
+      "content_complete": true,
+      "user_input_summary": "Task A."
+    },
+    "type": "acknowledgment",
+    "variant": "general"
+  },
+  {
+    "content": {
+      "confidence": 0.739,
+      "content_complete": true,
+      "emotional_tone": "neutral",
+      "entities": [],
+      "intent": "code.statement",
+      "key_elements": {
+        "intent": "code.statement"
+      },
+      "related_beliefs": [],
+      "text": "Task A.",
+      "understood_meaning": "you're asking about code"
+    },
+    "type": "content",
+    "variant": "reflective"
+  },
+  {
+    "content": {
+      "aspect_to_explore": null,
+      "content_complete": true,
+      "entities": [],
+      "intent": "code.statement",
+      "text": "Task A.",
+      "topic": "code"
+    },
+    "type": "follow_up",
+    "variant": "elaboration"
+  }
+]

@@ -33,7 +33,7 @@ defmodule Brain.ML.FeatureVectorClassifierTest do
       assert Map.has_key?(model.label_centroids, "calendar")
       assert Map.has_key?(model.label_centroids, "weather")
       assert Map.has_key?(model.label_centroids, "meta")
-      assert length(model.label_centroids["calendar"]) == 3
+      assert match?([_, _, _], model.label_centroids["calendar"])
     end
 
     test "centroid for a label averages its training vectors componentwise" do
@@ -84,7 +84,7 @@ defmodule Brain.ML.FeatureVectorClassifierTest do
       assert is_float(confidence)
       assert confidence > 0.5
       assert is_list(details[:top_k])
-      assert length(details[:top_k]) == 3
+      assert match?([_, _, _], details[:top_k])
       assert hd(details[:top_k]) == {"weather", details[:top_score]}
     end
 

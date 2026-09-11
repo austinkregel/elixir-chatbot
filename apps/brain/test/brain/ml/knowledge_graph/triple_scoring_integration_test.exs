@@ -25,12 +25,13 @@ defmodule Brain.ML.KnowledgeGraph.TripleScoringIntegrationTest do
     @tag :convergence
     @tag timeout: 120_000
     test "trained scorer differentiates valid from invalid triples" do
-      {:ok, model, params, vocab, _config} = TripleScorer.train(@knowledge_triples,
-        epochs: 50,
-        neg_ratio: 5,
-        embedding_dim: 32,
-        hidden_dim: 64
-      )
+      {:ok, model, params, vocab, _config} =
+        TripleScorer.train(@knowledge_triples,
+          epochs: 50,
+          neg_ratio: 5,
+          embedding_dim: 32,
+          hidden_dim: 64
+        )
 
       valid_novel = [
         {"Einstein", "IS_A", "scientist"},
@@ -42,19 +43,21 @@ defmodule Brain.ML.KnowledgeGraph.TripleScoringIntegrationTest do
         {"Paris", "BORN_IN", "biology"}
       ]
 
-      valid_scores = Enum.map(valid_novel, fn {h, r, t} ->
-        text = "[HEAD] #{h} [REL] #{r} [TAIL] #{t}"
-        {input, mask} = TripleScorer.encode_single_public(text, vocab)
-        output = Axon.predict(model, params, %{"input" => input, "mask" => mask})
-        Nx.squeeze(output) |> Nx.to_number()
-      end)
+      valid_scores =
+        Enum.map(valid_novel, fn {h, r, t} ->
+          text = "[HEAD] #{h} [REL] #{r} [TAIL] #{t}"
+          {input, mask} = TripleScorer.encode_single_public(text, vocab)
+          output = Axon.predict(model, params, %{"input" => input, "mask" => mask})
+          Nx.squeeze(output) |> Nx.to_number()
+        end)
 
-      invalid_scores = Enum.map(invalid, fn {h, r, t} ->
-        text = "[HEAD] #{h} [REL] #{r} [TAIL] #{t}"
-        {input, mask} = TripleScorer.encode_single_public(text, vocab)
-        output = Axon.predict(model, params, %{"input" => input, "mask" => mask})
-        Nx.squeeze(output) |> Nx.to_number()
-      end)
+      invalid_scores =
+        Enum.map(invalid, fn {h, r, t} ->
+          text = "[HEAD] #{h} [REL] #{r} [TAIL] #{t}"
+          {input, mask} = TripleScorer.encode_single_public(text, vocab)
+          output = Axon.predict(model, params, %{"input" => input, "mask" => mask})
+          Nx.squeeze(output) |> Nx.to_number()
+        end)
 
       # Both should produce valid scores in (0, 1)
       for s <- valid_scores ++ invalid_scores do
@@ -64,12 +67,13 @@ defmodule Brain.ML.KnowledgeGraph.TripleScoringIntegrationTest do
 
     @tag timeout: 60_000
     test "graph writer gating: low-scoring triples are flaggable" do
-      {:ok, model, params, vocab, _config} = TripleScorer.train(@knowledge_triples,
-        epochs: 30,
-        neg_ratio: 3,
-        embedding_dim: 16,
-        hidden_dim: 32
-      )
+      {:ok, model, params, vocab, _config} =
+        TripleScorer.train(@knowledge_triples,
+          epochs: 30,
+          neg_ratio: 3,
+          embedding_dim: 16,
+          hidden_dim: 32
+        )
 
       test_triples = [
         {"Einstein", "BORN_IN", "Germany"},
@@ -77,17 +81,19 @@ defmodule Brain.ML.KnowledgeGraph.TripleScoringIntegrationTest do
         {"Newton", "FIELD_OF", "physics"}
       ]
 
-      scored = Enum.map(test_triples, fn {h, r, t} = triple ->
-        text = "[HEAD] #{h} [REL] #{r} [TAIL] #{t}"
-        {input, mask} = TripleScorer.encode_single_public(text, vocab)
-        output = Axon.predict(model, params, %{"input" => input, "mask" => mask})
-        score = Nx.squeeze(output) |> Nx.to_number()
+      scored =
+        Enum.map(test_triples, fn {h, r, t} = triple ->
+          text = "[HEAD] #{h} [REL] #{r} [TAIL] #{t}"
+          {input, mask} = TripleScorer.encode_single_public(text, vocab)
+          output = Axon.predict(model, params, %{"input" => input, "mask" => mask})
+          score = Nx.squeeze(output) |> Nx.to_number()
 
-        flag = if score < 0.3, do: :low_confidence, else: :ok
-        {triple, score, flag}
-      end)
+          flag = if score < 0.3, do: :low_confidence, else: :ok
+          {triple, score, flag}
+        end)
 
-      assert length(scored) == 3
+      assert match?([_, _, _], scored)
+
       for {_triple, _score, flag} <- scored do
         assert flag in [:ok, :low_confidence]
       end

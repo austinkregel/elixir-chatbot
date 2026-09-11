@@ -388,14 +388,23 @@ defmodule World.ModelRegistry do
   end
 
   defp load_term_file(path) do
-    try do
-      binary = File.read!(path)
-      :erlang.binary_to_term(binary)
-    rescue
-      e ->
-        Logger.warning("Failed to load model from #{path}: #{inspect(e)}")
+    with {:ok, binary} <- File.read(path),
+         {:ok, term} <- safe_binary_to_term(binary) do
+      term
+    else
+      {:error, reason} ->
+        Logger.warning("Failed to load model from #{path}: #{inspect(reason)}")
         nil
     end
+  end
+
+  # binary_to_term raises ArgumentError on a truncated/corrupt term file; convert
+  # that into an error tuple so load_term_file can report it (via the caller's
+  # `else`) instead of losing it in a blanket rescue.
+  defp safe_binary_to_term(binary) do
+    {:ok, :erlang.binary_to_term(binary)}
+  rescue
+    ArgumentError -> {:error, :corrupt_term}
   end
 
   defp load_embedder_model(world_id) do

@@ -55,7 +55,7 @@ defmodule Brain.Response.FactRetriever do
         entity_name =
           cond do
             is_binary(entity) -> entity
-            is_map(entity) -> entity[:value] || entity["value"] || ""
+            is_map(entity) -> entity[:value] || ""
             true -> ""
           end
 

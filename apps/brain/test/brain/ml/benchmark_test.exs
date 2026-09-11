@@ -47,7 +47,8 @@ defmodule Brain.ML.BenchmarkTest do
 
       correct =
         Enum.count(results, fn {_text, intent} ->
-          intent_starts_with?(intent, "weather.query") or intent_starts_with?(intent, "weather.condition")
+          intent_starts_with?(intent, "weather.query") or
+            intent_starts_with?(intent, "weather.condition")
         end)
 
       assert correct >= 3,
@@ -117,8 +118,8 @@ defmodule Brain.ML.BenchmarkTest do
 
           location_found =
             Enum.any?(entities, fn entity ->
-              entity_value = Map.get(entity, :value) || Map.get(entity, "value", "")
-              entity_type = Map.get(entity, :entity_type) || Map.get(entity, "entity_type", "")
+              entity_value = Map.get(entity, :value) || ""
+              entity_type = Map.get(entity, :entity_type) || ""
 
               String.downcase(to_string(entity_value)) == String.downcase(expected_location) and
                 to_string(entity_type) in ["location", "city", "country"]
@@ -143,7 +144,7 @@ defmodule Brain.ML.BenchmarkTest do
 
           found =
             Enum.any?(entities, fn entity ->
-              entity_value = Map.get(entity, :value) || Map.get(entity, "value", "")
+              entity_value = Map.get(entity, :value) || ""
               String.downcase(to_string(entity_value)) == String.downcase(expected_name)
             end)
 

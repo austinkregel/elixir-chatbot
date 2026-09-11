@@ -1,0 +1,109 @@
+[
+  {
+    "content": {
+      "content_complete": true,
+      "entities": [],
+      "intent": "music.command",
+      "speech_act": {
+        "category": "directive",
+        "confidence": 0.6841105882836159,
+        "indicators": [
+          "imperative_from_intent",
+          "intent:music.search"
+        ],
+        "intent_confidence": 0.32429490208964257,
+        "is_imperative": true,
+        "is_question": false,
+        "raw_analyses": {
+          "intent": {
+            "category": "directive",
+            "confidence": 0.32429490208964257,
+            "intent": "music.search",
+            "margin": 0.15457868092332955,
+            "second_score": 0.16971622116631302,
+            "source": "feature_vector",
+            "sub_type": "command",
+            "top_k": [
+              {
+                "intent": "music.search",
+                "score": 0.32429490208964257
+              },
+              {
+                "intent": "music.player.skip_backward",
+                "score": 0.16971622116631302
+              },
+              {
+                "intent": "music.player.skip_forward",
+                "score": 0.16945225975580006
+              },
+              {
+                "intent": "music.player.repeat",
+                "score": 0.1685245977202795
+              },
+              {
+                "intent": "music.play",
+                "score": 0.16801201926796494
+              }
+            ]
+          },
+          "keyword": {
+            "confidence": 0.0,
+            "source": "keyword"
+          },
+          "memory": {
+            "confidence": 0.0,
+            "similar_count": 0,
+            "source": "memory"
+          },
+          "original_text": "Report your status.",
+          "pragmatic": {
+            "expressive_score": 0.0,
+            "first_person_subject": false,
+            "has_acknowledgment": false,
+            "has_commissive": false,
+            "has_future": false,
+            "has_hedging": false,
+            "has_offer": false,
+            "has_please": false,
+            "has_thanks": false,
+            "has_urgency": false,
+            "is_backchannel": false,
+            "is_compliment": false,
+            "is_short_utterance": false,
+            "is_very_short": false,
+            "source": "pragmatic"
+          },
+          "structural": {
+            "category": "directive",
+            "confidence": 0.75,
+            "has_modal": false,
+            "is_continuation": false,
+            "is_declarative": true,
+            "is_exclamatory": false,
+            "is_imperative": true,
+            "is_question": false,
+            "source": "structural",
+            "sub_type": "command"
+          }
+        },
+        "sub_type": "command"
+      },
+      "topic": "music"
+    },
+    "type": "framing",
+    "variant": "informative"
+  },
+  {
+    "content": {
+      "ambiguity_type": "unclear_intent",
+      "content_complete": true,
+      "intent": "music.command",
+      "missing_slots": [],
+      "partial_understanding": {
+        "intent": "music.command"
+      }
+    },
+    "type": "follow_up",
+    "variant": "clarification"
+  }
+]

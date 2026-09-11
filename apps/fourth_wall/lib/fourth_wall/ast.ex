@@ -56,10 +56,7 @@ defmodule FourthWall.AST do
   """
   @spec parse(String.t()) :: {:ok, Macro.t()} | {:error, term()}
   def parse(source) when is_binary(source) do
-    case Code.string_to_quoted(source, columns: true, token_metadata: true) do
-      {:ok, ast} -> {:ok, ast}
-      {:error, reason} -> {:error, reason}
-    end
+    Code.string_to_quoted(source, columns: true, token_metadata: true)
   end
 
   @doc """
@@ -132,9 +129,6 @@ defmodule FourthWall.AST do
          {:ok, ast} <- parse(source) do
       {new_ast, _acc} = transform(ast, initial_acc, fun)
       {:ok, to_source(new_ast)}
-    else
-      {:error, :enoent} -> {:error, :enoent}
-      {:error, reason} -> {:error, reason}
     end
   end
 

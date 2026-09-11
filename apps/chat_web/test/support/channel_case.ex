@@ -1,5 +1,11 @@
 defmodule ChatWeb.ChannelCase do
-  @moduledoc "This module defines the test case to be used by\nchannel tests.\n\nSuch tests rely on `Phoenix.ChannelTest` and also\nimport other functionality to make it easier\nto build common data structures.\n"
+  @moduledoc """
+  Case template for Phoenix channel tests.
+
+  Imports `Phoenix.ChannelTest` and sets `@endpoint`, and — unless the test is
+  tagged `:skip_endpoint` — starts `ChatWeb.Endpoint` and waits for its config
+  ETS table to be ready before the test runs.
+  """
 
   alias ChatWeb.Endpoint
   use ExUnit.CaseTemplate

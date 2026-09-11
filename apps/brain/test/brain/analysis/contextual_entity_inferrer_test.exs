@@ -76,7 +76,7 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
 
       # The entity type should be narrowed from person to artist or music-artist
       assert narrowed[:entity_type] in ["artist", "music-artist"],
-        "Expected type narrowing to artist or music-artist, got: #{narrowed[:entity_type]}"
+             "Expected type narrowing to artist or music-artist, got: #{narrowed[:entity_type]}"
 
       assert narrowed[:source] == :type_narrowing
       assert narrowed[:original_type] == "person"
@@ -128,7 +128,12 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
       intent_details = %{top_k: [{"weather.query", 0.9}]}
 
       {updated_entities, _intent, _details} =
-        ContextualEntityInferrer.infer("What's the weather in London", entities, intent, intent_details)
+        ContextualEntityInferrer.infer(
+          "What's the weather in London",
+          entities,
+          intent,
+          intent_details
+        )
 
       london = Enum.find(updated_entities, &(&1[:value] == "London"))
       assert london[:entity_type] == "city"
@@ -164,7 +169,12 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
       intent_details = %{top_k: [{"weather.query", 0.85}]}
 
       {updated_entities, _intent, _details} =
-        ContextualEntityInferrer.infer("What is the weather in Paris", entities, intent, intent_details)
+        ContextualEntityInferrer.infer(
+          "What is the weather in Paris",
+          entities,
+          intent,
+          intent_details
+        )
 
       paris = Enum.find(updated_entities, &(&1[:value] == "Paris"))
       assert paris != nil
@@ -188,6 +198,7 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
       ]
 
       intent = "music.play"
+
       intent_details = %{
         top_k: [
           {"music.play", 0.6},
@@ -222,14 +233,15 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
         # because music-artist IS-A person. If entities were extracted, they should
         # not have been filtered out.
         if analysis.entities != [] do
-          taylor = Enum.find(analysis.entities, fn e ->
-            (e[:value] || e[:match] || "") |> String.downcase() |> String.contains?("taylor")
-          end)
+          taylor =
+            Enum.find(analysis.entities, fn e ->
+              (e[:value] || e[:match] || "") |> String.downcase() |> String.contains?("taylor")
+            end)
 
           if taylor != nil do
             # If Taylor was extracted and narrowed, check the type
             assert taylor[:entity_type] in ["person", "artist", "music-artist"],
-              "Expected person, artist, or music-artist type, got: #{taylor[:entity_type]}"
+                   "Expected person, artist, or music-artist type, got: #{taylor[:entity_type]}"
           end
         end
       end
@@ -238,7 +250,12 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
     test "hierarchy-aware filter keeps person entities for music intents" do
       # Simulate the filter directly with a person entity and music intent
       entities = [
-        %{entity_type: "person", value: "Taylor Swift", confidence: 0.65, source: :pos_tagger_propn}
+        %{
+          entity_type: "person",
+          value: "Taylor Swift",
+          confidence: 0.65,
+          source: :pos_tagger_propn
+        }
       ]
 
       # After narrowing, the entity should have been narrowed to music-artist
@@ -255,16 +272,18 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
         entity_mappings = Map.get(schema, "entity_mappings", %{})
         valid_types = entity_mappings |> Map.values() |> List.flatten() |> MapSet.new()
 
-        filtered = Enum.filter(narrowed_entities, fn entity ->
-          et = entity[:entity_type]
-          MapSet.member?(valid_types, et) or
-            Enum.any?(valid_types, &TypeHierarchy.compatible?(et, &1))
-        end)
+        filtered =
+          Enum.filter(narrowed_entities, fn entity ->
+            et = entity[:entity_type]
+
+            MapSet.member?(valid_types, et) or
+              Enum.any?(valid_types, &TypeHierarchy.compatible?(et, &1))
+          end)
 
         # The person/artist entity should NOT be filtered out
-        assert length(filtered) > 0,
-          "Entity was filtered out. Narrowed entities: #{inspect(narrowed_entities)}, " <>
-          "valid_types: #{inspect(MapSet.to_list(valid_types))}"
+        assert filtered != [],
+               "Entity was filtered out. Narrowed entities: #{inspect(narrowed_entities)}, " <>
+                 "valid_types: #{inspect(MapSet.to_list(valid_types))}"
       end
     end
   end

@@ -81,12 +81,11 @@ defmodule Brain.Analysis.ContextResolver do
     entity_map =
       entities
       |> Enum.group_by(fn e -> e[:entity_type] end)
-      |> Enum.map(fn {type, ents} ->
+      |> Map.new(fn {type, ents} ->
         # Take the highest confidence one
-        best = Enum.max_by(ents, fn e -> e[:confidence] || e["confidence"] || 0 end)
-        {type, best[:value] || best["value"]}
+        best = Enum.max_by(ents, fn e -> e[:confidence] || 0 end)
+        {type, best[:value]}
       end)
-      |> Enum.into(%{})
 
     %{
       entities: entity_map,
@@ -240,7 +239,7 @@ defmodule Brain.Analysis.ContextResolver do
     case Gazetteer.lookup(slot_name) do
       {:ok, %{entity_type: "slot_mapping", metadata: meta}} ->
         # Get predicates from the slot mapping
-        keys = meta["user_model_keys"] || meta[:user_model_keys] || []
+        keys = meta["user_model_keys"] || []
         Enum.map(keys, &safe_atom_key/1)
 
       _ ->
@@ -295,6 +294,7 @@ defmodule Brain.Analysis.ContextResolver do
   end
 
   defp safe_atom_key(val) when is_atom(val), do: val
+
   defp safe_atom_key(val) when is_binary(val) do
     String.to_existing_atom(val)
   rescue

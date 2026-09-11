@@ -65,33 +65,35 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
 
   defp assert_coherent_response(input, response, metadata) do
     assert is_binary(response),
-      "Response must be a string, got: #{inspect(response)}"
+           "Response must be a string, got: #{inspect(response)}"
 
     assert word_count(response) >= @min_response_words,
-      "Response too short (#{word_count(response)} words): #{inspect(response)}"
+           "Response too short (#{word_count(response)} words): #{inspect(response)}"
 
     refute String.contains?(response, "$"),
-      "Response contains unresolved template placeholder: #{inspect(response)}"
+           "Response contains unresolved template placeholder: #{inspect(response)}"
 
     refute String.contains?(response, "%{"),
-      "Response contains unresolved interpolation: #{inspect(response)}"
+           "Response contains unresolved interpolation: #{inspect(response)}"
 
     sents = sentences(response)
     dupes = sents -- Enum.uniq(sents)
+
     assert dupes == [],
-      """
-      Response contains duplicate sentences (sign of primitive concatenation):
-      Duplicated: #{inspect(dupes)}
-      Full response: #{inspect(response)}
-      """
+           """
+           Response contains duplicate sentences (sign of primitive concatenation):
+           Duplicated: #{inspect(dupes)}
+           Full response: #{inspect(response)}
+           """
 
     response_model = analyze(response)
+
     assert response_model.analyses != [],
-      """
-      Generated response could not be analyzed as language.
-      Input:    #{inspect(input)}
-      Response: #{inspect(response)}
-      """
+           """
+           Generated response could not be analyzed as language.
+           Input:    #{inspect(input)}
+           Response: #{inspect(response)}
+           """
 
     response_analysis = List.first(response_model.analyses)
 
@@ -105,13 +107,14 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
     input_sentiment_label = Map.get(input_sentiment, :label, :neutral)
     input_is_negative = input_sentiment_label == :negative
 
-    refute response_sentiment_label == :negative and response_sentiment_conf > 0.3 and not input_is_negative,
-      """
-      Response to user has negative sentiment — the bot should not sound hostile.
-      Input:    #{inspect(input)}
-      Response: #{inspect(response)}
-      Sentiment: #{inspect(response_sentiment)}
-      """
+    refute response_sentiment_label == :negative and response_sentiment_conf > 0.3 and
+             not input_is_negative,
+           """
+           Response to user has negative sentiment — the bot should not sound hostile.
+           Input:    #{inspect(input)}
+           Response: #{inspect(response)}
+           Sentiment: #{inspect(response_sentiment)}
+           """
 
     assert_no_echo(input, response)
 
@@ -121,15 +124,15 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
       |> Enum.reject(&(is_nil(&1) or &1 == ""))
 
     assert rendered_texts != [],
-      "No primitives were rendered: #{inspect(Enum.map(metadata.primitives, &{&1.type, &1.variant}))}"
+           "No primitives were rendered: #{inspect(Enum.map(metadata.primitives, &{&1.type, &1.variant}))}"
 
     for rendered <- rendered_texts do
       assert String.contains?(response, rendered),
-        """
-        Response is not composed from its primitives.
-        Missing: #{inspect(rendered)}
-        Response: #{inspect(response)}
-        """
+             """
+             Response is not composed from its primitives.
+             Missing: #{inspect(rendered)}
+             Response: #{inspect(response)}
+             """
     end
 
     {input, response, response_model}
@@ -138,19 +141,19 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
   defp assert_no_echo(input, response) do
     input_words = input |> String.downcase() |> String.split()
 
-    if length(input_words) < 4 do
+    if Enum.count_until(input_words, 4) < 4 do
       :ok
     else
       response_words = response |> String.downcase() |> String.split()
       echoed = find_longest_echo(input_words, response_words)
 
-      assert length(echoed) < 4,
-        """
-        Response echoes the user's input verbatim (#{length(echoed)} consecutive words).
-        Echoed:   #{inspect(Enum.join(echoed, " "))}
-        Input:    #{inspect(input)}
-        Response: #{inspect(response)}
-        """
+      assert Enum.count_until(echoed, 4) < 4,
+             """
+             Response echoes the user's input verbatim (#{length(echoed)} consecutive words).
+             Echoed:   #{inspect(Enum.join(echoed, " "))}
+             Input:    #{inspect(input)}
+             Response: #{inspect(response)}
+             """
     end
   end
 
@@ -185,6 +188,7 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
 
   defp count_prefix_match([], _, acc), do: Enum.reverse(acc)
   defp count_prefix_match(_, [], acc), do: Enum.reverse(acc)
+
   defp count_prefix_match([a | rest_a], [b | rest_b], acc) do
     if a == b, do: count_prefix_match(rest_a, rest_b, [a | acc]), else: Enum.reverse(acc)
   end
@@ -205,19 +209,20 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
 
       social = find_primitive(metadata, :acknowledgment, :social)
       assert social != nil, "Expected a social acknowledgment primitive"
+
       assert social.rendered != nil and social.rendered != "",
-        "Social acknowledgment was planned but never rendered"
+             "Social acknowledgment was planned but never rendered"
 
       response_analysis = List.first(response_model.analyses)
       response_speech_act = response_analysis.speech_act || %{}
       response_category = Map.get(response_speech_act, :category, :unknown)
 
       assert response_category in [:expressive, :commissive, :assertive],
-        """
-        Response to a greeting should read as expressive, commissive, or assertive.
-        Got speech act: #{inspect(response_category)}
-        Response: #{inspect(response)}
-        """
+             """
+             Response to a greeting should read as expressive, commissive, or assertive.
+             Got speech act: #{inspect(response_category)}
+             Response: #{inspect(response)}
+             """
 
       assert %Score{} = metadata.score
       assert metadata.score.speech_act_alignment >= 0.7
@@ -230,8 +235,9 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
       assert_coherent_response("Hey there, how are you?", response, metadata)
 
       types = primitive_types(metadata)
+
       assert :acknowledgment in types or :follow_up in types,
-        "Expected acknowledgment or follow_up for conversational greeting, got: #{inspect(types)}"
+             "Expected acknowledgment or follow_up for conversational greeting, got: #{inspect(types)}"
     end
   end
 
@@ -247,8 +253,9 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
       assert_coherent_response("What's the weather like today?", response, metadata)
 
       types = primitive_types(metadata)
+
       assert :framing in types or :content in types,
-        "Expected framing or content for a question, got: #{inspect(types)}"
+             "Expected framing or content for a question, got: #{inspect(types)}"
 
       assert %Score{} = metadata.score
       assert metadata.score.speech_act_alignment >= 0.5
@@ -260,11 +267,13 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
 
       assert_coherent_response("What do you know about machine learning?", response, metadata)
 
-      has_content = Enum.any?(metadata.primitives, fn p ->
-        p.type in [:content, :framing] and p.rendered != nil and p.rendered != ""
-      end)
+      has_content =
+        Enum.any?(metadata.primitives, fn p ->
+          p.type in [:content, :framing] and p.rendered != nil and p.rendered != ""
+        end)
+
       assert has_content,
-        "Expected at least one rendered content/framing primitive for a knowledge question"
+             "Expected at least one rendered content/framing primitive for a knowledge question"
     end
   end
 
@@ -284,9 +293,11 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
 
       model =
         if Map.get(sentiment, :label) != :negative or Map.get(sentiment, :confidence, 0) < 0.6 do
-          updated = Enum.map(model.analyses, fn a ->
-            %{a | sentiment: %{label: :negative, confidence: 0.85}}
-          end)
+          updated =
+            Enum.map(model.analyses, fn a ->
+              %{a | sentiment: %{label: :negative, confidence: 0.85}}
+            end)
+
           %{model | analyses: updated}
         else
           model
@@ -297,14 +308,17 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
       assert_coherent_response(input, response, metadata)
 
       types = primitive_types(metadata)
+
       assert :attunement in types,
-        "Expected attunement primitive for strong negative sentiment, got: #{inspect(types)}"
+             "Expected attunement primitive for strong negative sentiment, got: #{inspect(types)}"
 
       attunement = find_primitive(metadata, :attunement)
+
       assert attunement.rendered != nil and attunement.rendered != "",
-        "Attunement was planned but never rendered"
+             "Attunement was planned but never rendered"
+
       assert String.contains?(response, attunement.rendered),
-        "Response does not include its own empathetic attunement: #{inspect(response)}"
+             "Response does not include its own empathetic attunement: #{inspect(response)}"
     end
 
     test "sad statement through real pipeline produces a coherent response" do
@@ -319,7 +333,7 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
 
       if Map.get(sentiment, :label) == :negative and Map.get(sentiment, :confidence, 0) > 0.6 do
         assert :attunement in primitive_types(metadata),
-          "Classifier detected strong negative sentiment but no attunement was planned"
+               "Classifier detected strong negative sentiment but no attunement was planned"
       end
     end
   end
@@ -346,17 +360,21 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
       assert_coherent_response(input, response, metadata)
 
       types = primitive_types(metadata)
+
       assert :hedging in types,
-        "Expected hedging primitive for low-confidence input, got: #{inspect(types)}"
+             "Expected hedging primitive for low-confidence input, got: #{inspect(types)}"
 
       hedging = find_primitive(metadata, :hedging)
       assert hedging.content[:confidence_level] != nil
+
       assert hedging.content[:confidence_level] <= 0.4,
-        "Hedging should reflect low confidence, got: #{hedging.content[:confidence_level]}"
+             "Hedging should reflect low confidence, got: #{hedging.content[:confidence_level]}"
+
       assert hedging.rendered != nil and hedging.rendered != "",
-        "Hedging was planned but never rendered"
+             "Hedging was planned but never rendered"
+
       assert String.contains?(response, hedging.rendered),
-        "Response does not include its own hedging text: #{inspect(response)}"
+             "Response does not include its own hedging text: #{inspect(response)}"
     end
   end
 
@@ -370,17 +388,25 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
 
       plan = DiscoursePlanner.plan(model)
       assert is_list(plan)
-      assert length(plan) >= 1
+      assert plan != []
 
       for p <- plan do
         assert is_struct(p, Primitive),
-          "Planner must return Primitive structs, got: #{inspect(p)}"
+               "Planner must return Primitive structs, got: #{inspect(p)}"
 
         assert is_atom(p.type), "Primitive type must be an atom, got: #{inspect(p.type)}"
 
-        assert p.type in [:acknowledgment, :framing, :hedging, :content,
-                          :attunement, :follow_up, :contradiction_response, :transition],
-          "Unexpected primitive type: #{inspect(p.type)}"
+        assert p.type in [
+                 :acknowledgment,
+                 :framing,
+                 :hedging,
+                 :content,
+                 :attunement,
+                 :follow_up,
+                 :contradiction_response,
+                 :transition
+               ],
+               "Unexpected primitive type: #{inspect(p.type)}"
       end
     end
 
@@ -392,14 +418,14 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
       specified = ContentSpecifier.specify(plan, primary)
 
       assert length(specified) == length(plan),
-        "Specifier must preserve primitive count (plan: #{length(plan)}, specified: #{length(specified)})"
+             "Specifier must preserve primitive count (plan: #{length(plan)}, specified: #{length(specified)})"
 
       for {original, spec} <- Enum.zip(plan, specified) do
         assert spec.type == original.type,
-          "Specifier must not change primitive types (was #{original.type}, became #{spec.type})"
+               "Specifier must not change primitive types (was #{original.type}, became #{spec.type})"
 
         assert is_map(spec.content),
-          "Primitive #{spec.type}/#{spec.variant} has no content map after specification"
+               "Primitive #{spec.type}/#{spec.variant} has no content map after specification"
       end
     end
 
@@ -412,8 +438,8 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
 
       for p <- specified do
         refute Primitive.rendered?(p),
-          "Primitives should not be rendered until SurfaceRealizer runs, " <>
-          "but #{p.type}/#{p.variant} has rendered=#{inspect(p.rendered)}"
+               "Primitives should not be rendered until SurfaceRealizer runs, " <>
+                 "but #{p.type}/#{p.variant} has rendered=#{inspect(p.rendered)}"
       end
     end
   end
@@ -431,10 +457,10 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
       assert_coherent_response(input, response, metadata)
 
       assert metadata.score.converged == true or metadata.iterations < 5,
-        "Expected convergence for simple greeting, took #{metadata.iterations} iterations"
+             "Expected convergence for simple greeting, took #{metadata.iterations} iterations"
 
       assert metadata.score.overall >= 0.5,
-        "Converged greeting should score >= 0.5, got: #{metadata.score.overall}"
+             "Converged greeting should score >= 0.5, got: #{metadata.score.overall}"
     end
 
     test "single_pass produces a coherent scored response" do
@@ -466,10 +492,10 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
       has_informative = :framing in types or :content in types
 
       assert has_social or has_informative,
-        "Expected social or informative primitives for greeting+question, got: #{inspect(types)}"
+             "Expected social or informative primitives for greeting+question, got: #{inspect(types)}"
 
-      assert length(metadata.primitives) >= 2,
-        "Mixed input should produce >= 2 primitives, got: #{length(metadata.primitives)}"
+      assert Enum.count_until(metadata.primitives, 2) >= 2,
+             "Mixed input should produce >= 2 primitives, got: #{length(metadata.primitives)}"
     end
 
     test "statement + request produces coherent multi-primitive response" do
@@ -478,7 +504,7 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
       assert {:ok, response, metadata} = generate(model)
 
       assert_coherent_response(input, response, metadata)
-      assert length(metadata.primitives) >= 1
+      assert metadata.primitives != []
     end
   end
 
@@ -507,12 +533,13 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
 
       for {name, value} <- dimensions do
         assert is_float(value), "#{name} should be a float, got: #{inspect(value)}"
+
         assert value >= 0.0 and value <= 1.0,
-          "#{name} should be in [0.0, 1.0], got: #{value}"
+               "#{name} should be in [0.0, 1.0], got: #{value}"
       end
 
       assert score.overall > 0.0,
-        "Overall score should be positive for a valid response"
+             "Overall score should be positive for a valid response"
     end
   end
 end

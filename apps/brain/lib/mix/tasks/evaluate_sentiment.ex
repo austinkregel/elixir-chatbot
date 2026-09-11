@@ -51,7 +51,9 @@ defmodule Mix.Tasks.Evaluate.Sentiment do
     end
 
     if counts.unknown > 0 or counts.errored > 0 do
-      IO.puts("Diagnostics: ok=#{counts.ok} unknown=#{counts.unknown} errored=#{counts.errored}\n")
+      IO.puts(
+        "Diagnostics: ok=#{counts.ok} unknown=#{counts.unknown} errored=#{counts.errored}\n"
+      )
     end
 
     result = Evaluation.build_result("sentiment", predictions, actuals)
@@ -62,6 +64,7 @@ defmodule Mix.Tasks.Evaluate.Sentiment do
     IO.puts("")
 
     broadcast_result(result, duration_ms)
+
     Brain.Telemetry.emit_evaluation_complete("sentiment", %{
       accuracy: result.accuracy,
       macro_f1: result.macro_f1,
@@ -106,7 +109,8 @@ defmodule Mix.Tasks.Evaluate.Sentiment do
     gold
     |> Enum.with_index(1)
     |> Enum.reduce({[], [], %{ok: 0, unknown: 0, errored: 0}, []}, fn {example, idx},
-                                                                       {preds, acts, counts, disagrees} ->
+                                                                      {preds, acts, counts,
+                                                                       disagrees} ->
       text = example["text"]
       expected = example["sentiment"]
 
@@ -131,7 +135,9 @@ defmodule Mix.Tasks.Evaluate.Sentiment do
         rescue
           e ->
             Logger.warning("Sentiment classify crashed: #{Exception.message(e)}")
-            {:error, "neutral", nil}
+            # Carry the failure reason in the (otherwise-unused for :error rows)
+            # prediction slot so the crash isn't reduced to an opaque :error.
+            {:error, Exception.message(e), nil}
         catch
           :exit, reason ->
             Logger.warning("Sentiment classify exited: #{inspect(reason)}")
@@ -143,7 +149,10 @@ defmodule Mix.Tasks.Evaluate.Sentiment do
       disagrees =
         if audit? and status == :ok and confidence != nil and confidence > 0.9 and
              predicted != expected do
-          [%{text: text, expected: expected, predicted: predicted, confidence: confidence} | disagrees]
+          [
+            %{text: text, expected: expected, predicted: predicted, confidence: confidence}
+            | disagrees
+          ]
         else
           disagrees
         end
@@ -161,16 +170,20 @@ defmodule Mix.Tasks.Evaluate.Sentiment do
   defp status_key(:error), do: :errored
 
   defp broadcast_result(result, duration_ms) do
-    Phoenix.PubSub.broadcast(Brain.PubSub, "evaluation:complete",
-      {:evaluation_complete, %{
-        task: "sentiment",
-        accuracy: result.accuracy,
-        macro_f1: result.macro_f1,
-        weighted_f1: result.weighted_f1,
-        total_examples: result.total_examples,
-        duration_ms: duration_ms,
-        timestamp: DateTime.utc_now()
-      }})
+    Phoenix.PubSub.broadcast(
+      Brain.PubSub,
+      "evaluation:complete",
+      {:evaluation_complete,
+       %{
+         task: "sentiment",
+         accuracy: result.accuracy,
+         macro_f1: result.macro_f1,
+         weighted_f1: result.weighted_f1,
+         total_examples: result.total_examples,
+         duration_ms: duration_ms,
+         timestamp: DateTime.utc_now()
+       }}
+    )
   rescue
     _ -> :ok
   end

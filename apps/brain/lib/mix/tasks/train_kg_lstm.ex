@@ -74,7 +74,15 @@ defmodule Mix.Tasks.TrainKgLstm do
 
     Mix.shell().info("Training KG-LSTM triple scorer for world: #{world_id}")
 
-    triples = load_triples(opts, world_id, include_conceptnet, include_srl, include_beliefs, max_conceptnet)
+    triples =
+      load_triples(
+        opts,
+        world_id,
+        include_conceptnet,
+        include_srl,
+        include_beliefs,
+        max_conceptnet
+      )
 
     if Enum.empty?(triples) do
       Mix.shell().error("No triples found. Cannot train.")
@@ -82,7 +90,10 @@ defmodule Mix.Tasks.TrainKgLstm do
     end
 
     relation_coverage = compute_relation_coverage(triples)
-    Mix.shell().info("Loaded #{length(triples)} positive triples across #{map_size(relation_coverage)} relations")
+
+    Mix.shell().info(
+      "Loaded #{length(triples)} positive triples across #{map_size(relation_coverage)} relations"
+    )
 
     if verbose do
       Enum.each(Enum.sort_by(relation_coverage, fn {_, c} -> -c end), fn {rel, count} ->
@@ -138,7 +149,14 @@ defmodule Mix.Tasks.TrainKgLstm do
     end
   end
 
-  defp load_triples(opts, world_id, include_conceptnet, include_srl, include_beliefs, max_conceptnet) do
+  defp load_triples(
+         opts,
+         world_id,
+         include_conceptnet,
+         include_srl,
+         include_beliefs,
+         max_conceptnet
+       ) do
     hierarchy_triples = load_hierarchy_triples()
     knowledge_triples = load_knowledge_triples()
 
@@ -265,7 +283,9 @@ defmodule Mix.Tasks.TrainKgLstm do
               related = if is_list(related_list), do: related_list, else: []
 
               normalized_rel = PredicateNormalizer.normalize(to_string(rel_type))
-              if normalized_rel in @canonical_relations or to_string(rel_type) in @canonical_relations do
+
+              if normalized_rel in @canonical_relations or
+                   to_string(rel_type) in @canonical_relations do
                 Enum.map(related, fn target ->
                   target_str = if is_binary(target), do: target, else: to_string(target)
                   {concept, normalized_rel, target_str}
@@ -332,7 +352,8 @@ defmodule Mix.Tasks.TrainKgLstm do
         case Jason.decode(content) do
           {:ok, entries} when is_list(entries) ->
             Enum.map(entries, fn entry ->
-              {Map.get(entry, "head", ""), Map.get(entry, "relation", ""), Map.get(entry, "tail", "")}
+              {Map.get(entry, "head", ""), Map.get(entry, "relation", ""),
+               Map.get(entry, "tail", "")}
             end)
 
           _ ->
@@ -349,7 +370,7 @@ defmodule Mix.Tasks.TrainKgLstm do
   defp srl_text_to_triples(text) do
     tokens = Brain.ML.Tokenizer.tokenize_words(text)
 
-    if length(tokens) >= 2 do
+    if match?([_, _ | _], tokens) do
       bio_tags = generate_minimal_bio_tags(tokens)
       frames = Brain.Analysis.SemanticRoleLabeler.label(tokens, bio_tags)
       Brain.Analysis.SemanticRoleLabeler.to_triples(frames)
@@ -362,18 +383,21 @@ defmodule Mix.Tasks.TrainKgLstm do
 
   defp generate_minimal_bio_tags(tokens) do
     pos_tags =
-    if Brain.ML.POSTagger.model_exists?() do
-      case Brain.ML.POSTagger.load_model() do
-        {:ok, model} ->
-          tags = Brain.ML.POSTagger.predict(tokens, model)
-          if is_list(tags) and length(tags) == length(tokens), do: tags, else: Enum.map(tokens, fn _ -> "NN" end)
+      if Brain.ML.POSTagger.model_exists?() do
+        case Brain.ML.POSTagger.load_model() do
+          {:ok, model} ->
+            tags = Brain.ML.POSTagger.predict(tokens, model)
 
-        _ ->
-          Enum.map(tokens, fn _ -> "NN" end)
+            if is_list(tags) and length(tags) == length(tokens),
+              do: tags,
+              else: Enum.map(tokens, fn _ -> "NN" end)
+
+          _ ->
+            Enum.map(tokens, fn _ -> "NN" end)
+        end
+      else
+        Enum.map(tokens, fn _ -> "NN" end)
       end
-    else
-      Enum.map(tokens, fn _ -> "NN" end)
-    end
 
     pos_tags
     |> Enum.with_index()
@@ -522,8 +546,12 @@ defmodule Mix.Tasks.TrainKgLstm do
 
   defp resolve_knowledge_dir do
     cond do
-      File.dir?("priv/knowledge") -> "priv/knowledge"
-      File.dir?("apps/brain/priv/knowledge") -> "apps/brain/priv/knowledge"
+      File.dir?("priv/knowledge") ->
+        "priv/knowledge"
+
+      File.dir?("apps/brain/priv/knowledge") ->
+        "apps/brain/priv/knowledge"
+
       true ->
         priv = :code.priv_dir(:brain) |> to_string()
         Path.join(priv, "knowledge")

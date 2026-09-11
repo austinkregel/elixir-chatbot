@@ -16,7 +16,7 @@ defmodule Brain.ML.MicroClassifiersDetailedTest do
         case MicroClassifiers.classify_vector_detailed(:intent_full, vec) do
           {:ok, %Lattice{} = lat} ->
             refute Lattice.empty?(lat)
-            assert length(lat.candidates) >= 1
+            assert lat.candidates != []
             assert Lattice.best_label(lat) != nil
 
           {:error, _} ->

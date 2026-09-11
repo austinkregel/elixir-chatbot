@@ -107,7 +107,14 @@ defmodule Mix.Tasks.TrainMicro do
 
       results =
         Enum.map(names, fn name ->
-          train_classifier(name, output_dir, opts[:verbose] || false, publish?, skip_optimization?, balance?)
+          train_classifier(
+            name,
+            output_dir,
+            opts[:verbose] || false,
+            publish?,
+            skip_optimization?,
+            balance?
+          )
         end)
 
       successes = Enum.count(results, fn {status, _, _} -> status == :ok end)
@@ -160,7 +167,9 @@ defmodule Mix.Tasks.TrainMicro do
             "\n[WARN] speech_act_intent_map.json references intents not in intent_full model: #{inspect(MapSet.to_list(missing))}"
           )
         else
-          Mix.shell().info("\n[OK] speech_act_intent_map.json labels validated against intent_full model")
+          Mix.shell().info(
+            "\n[OK] speech_act_intent_map.json labels validated against intent_full model"
+          )
         end
       end
     else
@@ -237,8 +246,8 @@ defmodule Mix.Tasks.TrainMicro do
   defp extract_feature_vector_pairs(name, entries) do
     pairs =
       Enum.flat_map(entries, fn
-        %{"feature_vector" => vec, "label" => label}
-        when is_list(vec) and is_binary(label) and length(vec) > 0 ->
+        %{"feature_vector" => [_ | _] = vec, "label" => label}
+        when is_binary(label) ->
           [{vec, label}]
 
         _ ->
@@ -248,8 +257,9 @@ defmodule Mix.Tasks.TrainMicro do
     case pairs do
       [] ->
         {:error, :shape_mismatch,
-         {name, "no records with non-empty :feature_vector found. " <>
-                  "Did you run `mix gen_micro_data` after the axis classifier migration?"}}
+         {name,
+          "no records with non-empty :feature_vector found. " <>
+            "Did you run `mix gen_micro_data` after the axis classifier migration?"}}
 
       _ ->
         {:ok, pairs, :feature_vector}
@@ -272,15 +282,23 @@ defmodule Mix.Tasks.TrainMicro do
 
     cond do
       n_classes < 2 ->
-        Mix.shell().info("  [#{name}] Only #{n_classes} class — skipping GA (nothing to optimize)")
+        Mix.shell().info(
+          "  [#{name}] Only #{n_classes} class — skipping GA (nothing to optimize)"
+        )
+
         FeatureVectorClassifier.train(training_data, balance: balance?)
 
       skip_optimization? ->
-        Mix.shell().info("  [#{name}] Skipping weight optimization (--skip-weight-optimization)#{balance_label}")
+        Mix.shell().info(
+          "  [#{name}] Skipping weight optimization (--skip-weight-optimization)#{balance_label}"
+        )
+
         FeatureVectorClassifier.train(training_data, balance: balance?)
 
       true ->
-        Mix.shell().info("  [#{name}] Running GA weight optimization (#{n_classes} classes, balanced fitness)...")
+        Mix.shell().info(
+          "  [#{name}] Running GA weight optimization (#{n_classes} classes, balanced fitness)..."
+        )
 
         result = WeightOptimizer.optimize(training_data, verbose: true, classifier: name)
 
@@ -290,7 +308,10 @@ defmodule Mix.Tasks.TrainMicro do
         )
 
         alive = Enum.count(result.weights, &(&1 > 0.01))
-        Mix.shell().info("  [#{name}] #{alive}/#{length(result.weights)} dimensions active (weight > 0.01)")
+
+        Mix.shell().info(
+          "  [#{name}] #{alive}/#{length(result.weights)} dimensions active (weight > 0.01)"
+        )
 
         FeatureVectorClassifier.train(training_data, weights: result.weights, balance: balance?)
     end

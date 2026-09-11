@@ -103,7 +103,8 @@ defmodule Fleet.Tool do
         effect: :read,
         info_class: :agent_mind,
         required_authority: Fleet.Authority.tool("beliefs.read"),
-        description: "Read the calling agent's own beliefs (its mind-world belief store). Read-only.",
+        description:
+          "Read the calling agent's own beliefs (its mind-world belief store). Read-only.",
         handler: &beliefs_read/2
       },
       "systems.read" => %__MODULE__{
@@ -222,7 +223,8 @@ defmodule Fleet.Tool do
         effect: :read,
         info_class: :corpus,
         required_authority: Fleet.Authority.tool("code.explain"),
-        description: "Explain a symbol in the indexed corpus — what it is, where, and what it does.",
+        description:
+          "Explain a symbol in the indexed corpus — what it is, where, and what it does.",
         args_schema: %{
           "required" => ["symbol"],
           "optional" => [],
@@ -400,9 +402,10 @@ defmodule Fleet.Tool do
         if blank?(Map.get(args, key)), do: {:missing, key}
       end) ++
         Enum.map(Map.keys(args), fn key ->
-          cond do
-            key not in declared -> {:unknown, key}
-            true -> type_error(key, Map.get(args, key), Map.get(types, key))
+          if key in declared do
+            type_error(key, Map.get(args, key), Map.get(types, key))
+          else
+            {:unknown, key}
           end
         end)
 
@@ -465,21 +468,21 @@ defmodule Fleet.Tool do
   # it is ever called. It only produces data, which the dispatcher frames as DATA.
 
   defp beliefs_read(_args, %{world_id: world_id}) when is_binary(world_id) do
-    cond do
-      is_nil(Process.whereis(BeliefStore)) ->
-        {:error, :belief_store_unavailable}
+    if is_nil(Process.whereis(BeliefStore)) do
+      {:error, :belief_store_unavailable}
+    else
+      case BeliefStore.query_beliefs(world_id: world_id) do
+        {:ok, beliefs} ->
+          {:ok,
+           Enum.map(beliefs, fn b ->
+             b
+             |> Map.from_struct()
+             |> Map.take([:subject, :predicate, :object, :confidence, :world_id])
+           end)}
 
-      true ->
-        case BeliefStore.query_beliefs(world_id: world_id) do
-          {:ok, beliefs} ->
-            {:ok,
-             Enum.map(beliefs, fn b ->
-               b |> Map.from_struct() |> Map.take([:subject, :predicate, :object, :confidence, :world_id])
-             end)}
-
-          {:error, reason} ->
-            {:error, reason}
-        end
+        {:error, reason} ->
+          {:error, reason}
+      end
     end
   end
 
@@ -568,10 +571,17 @@ defmodule Fleet.Tool do
     with {:ok, world_id} <- corpus_world(ctx),
          :ok <- corpus_indexed(world_id) do
       case Map.get(args, "direction", "callers") do
-        "callers" -> {:ok, %{symbol: symbol, callers: CodeContext.get_callers(world_id, symbol)}}
-        "callees" -> {:ok, %{symbol: symbol, callees: CodeContext.get_callees(world_id, symbol)}}
-        "dependencies" -> {:ok, %{symbol: symbol, dependencies: CodeContext.get_dependencies(world_id, symbol)}}
-        other -> {:error, {:unknown_direction, other}}
+        "callers" ->
+          {:ok, %{symbol: symbol, callers: CodeContext.get_callers(world_id, symbol)}}
+
+        "callees" ->
+          {:ok, %{symbol: symbol, callees: CodeContext.get_callees(world_id, symbol)}}
+
+        "dependencies" ->
+          {:ok, %{symbol: symbol, dependencies: CodeContext.get_dependencies(world_id, symbol)}}
+
+        other ->
+          {:error, {:unknown_direction, other}}
       end
     end
   end
@@ -708,7 +718,15 @@ defmodule Fleet.Tool do
     {:ok,
      %{
        ship_id: snap.ship_id,
-       health: Map.take(snap.health, [:health_score, :health_status, :services_up, :services_total, :genservers_running, :genservers_total]),
+       health:
+         Map.take(snap.health, [
+           :health_score,
+           :health_status,
+           :services_up,
+           :services_total,
+           :genservers_running,
+           :genservers_total
+         ]),
        counts: snap.counts,
        not_nominal: not_nominal
      }}
@@ -725,8 +743,15 @@ defmodule Fleet.Tool do
 
       {:ok,
        ledger
-       |> Map.take([:soul_id, :orders, :verified_accuracy, :dissent_quality, :anomaly_record,
-                    :calibration, :evidence_quality])
+       |> Map.take([
+         :soul_id,
+         :orders,
+         :verified_accuracy,
+         :dissent_quality,
+         :anomaly_record,
+         :calibration,
+         :evidence_quality
+       ])
        |> Map.put(:score, Fleet.TrustLedger.score(ledger))}
     else
       {:error, :no_subject}

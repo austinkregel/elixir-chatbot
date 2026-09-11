@@ -1,0 +1,120 @@
+{
+  "confidence": 0.739,
+  "entities": [
+    {
+      "confidence": 0.62,
+      "entity_type": "slot_mappings",
+      "graph_known": true,
+      "match": "name",
+      "source": "gazetteer",
+      "value": "name"
+    },
+    {
+      "confidence": 0.65,
+      "disambiguation_reason": "introduction_pattern",
+      "entity_type": "given-name",
+      "graph_known": false,
+      "match": "Bex",
+      "source": "pos_tagger_propn",
+      "value": "Bex"
+    }
+  ],
+  "intent": "smalltalk.statement",
+  "profile": {
+    "confidence": 0.739,
+    "derived_label": "smalltalk.statement",
+    "domain": "smalltalk",
+    "engagement_level": "urgent_demand",
+    "modality": "declarative",
+    "response_posture": "hedged"
+  },
+  "response_strategy": "hedged_response",
+  "sentiment": {
+    "confidence": 0.10027796379146987,
+    "label": "negative"
+  },
+  "speech_act": {
+    "category": "assertive",
+    "confidence": 0.6695608332677269,
+    "indicators": [
+      "intent:smalltalk.emotions.ha_ha"
+    ],
+    "intent_confidence": 0.3854955553806051,
+    "is_imperative": false,
+    "is_question": false,
+    "raw_analyses": {
+      "intent": {
+        "category": "assertive",
+        "confidence": 0.3854955553806051,
+        "intent": "smalltalk.emotions.ha_ha",
+        "margin": 0.22859831354783083,
+        "second_score": 0.15689724183277426,
+        "source": "feature_vector",
+        "sub_type": "statement",
+        "top_k": [
+          {
+            "intent": "smalltalk.emotions.ha_ha",
+            "score": 0.3854955553806051
+          },
+          {
+            "intent": "smalltalk.apology",
+            "score": 0.15689724183277426
+          },
+          {
+            "intent": "smalltalk.user.joking",
+            "score": 0.15429586154677008
+          },
+          {
+            "intent": "smalltalk.user.introduction",
+            "score": 0.15184314855245376
+          },
+          {
+            "intent": "smalltalk.agent.acquaintance",
+            "score": 0.15146819268739678
+          }
+        ]
+      },
+      "keyword": {
+        "confidence": 0.0,
+        "source": "keyword"
+      },
+      "memory": {
+        "confidence": 0.0,
+        "similar_count": 0,
+        "source": "memory"
+      },
+      "original_text": "My name is Bex.",
+      "pragmatic": {
+        "expressive_score": 0.0,
+        "first_person_subject": false,
+        "has_acknowledgment": false,
+        "has_commissive": false,
+        "has_future": false,
+        "has_hedging": false,
+        "has_offer": false,
+        "has_please": false,
+        "has_thanks": false,
+        "has_urgency": false,
+        "is_backchannel": false,
+        "is_compliment": false,
+        "is_short_utterance": false,
+        "is_very_short": false,
+        "source": "pragmatic"
+      },
+      "structural": {
+        "category": "assertive",
+        "confidence": 0.7,
+        "has_modal": false,
+        "is_continuation": false,
+        "is_declarative": true,
+        "is_exclamatory": false,
+        "is_imperative": false,
+        "is_question": false,
+        "source": "structural",
+        "sub_type": "statement"
+      }
+    },
+    "sub_type": "statement"
+  },
+  "text": "My name is Bex."
+}

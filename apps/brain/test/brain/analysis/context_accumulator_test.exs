@@ -10,7 +10,7 @@ defmodule Brain.Analysis.ContextAccumulatorTest do
         |> ContextAccumulator.add_signal(:discourse, :bot, 0.9)
         |> ContextAccumulator.add_signal(:speech_act, :directive, 0.8)
 
-      assert length(acc.signals) == 2
+      assert match?([_, _], acc.signals)
     end
 
     test "clamps confidence to valid range" do
@@ -144,22 +144,42 @@ defmodule Brain.Analysis.ContextAccumulatorTest do
 
   describe "should_hedge?/1" do
     test "returns true when conflict is high" do
-      acc = %ContextAccumulator{conflict_measure: 0.5, entity_familiarity: 0.8, combined_confidence: 0.8}
+      acc = %ContextAccumulator{
+        conflict_measure: 0.5,
+        entity_familiarity: 0.8,
+        combined_confidence: 0.8
+      }
+
       assert ContextAccumulator.should_hedge?(acc)
     end
 
     test "returns true when entity familiarity is low" do
-      acc = %ContextAccumulator{conflict_measure: 0.0, entity_familiarity: 0.1, combined_confidence: 0.8}
+      acc = %ContextAccumulator{
+        conflict_measure: 0.0,
+        entity_familiarity: 0.1,
+        combined_confidence: 0.8
+      }
+
       assert ContextAccumulator.should_hedge?(acc)
     end
 
     test "returns true when effective confidence is low" do
-      acc = %ContextAccumulator{conflict_measure: 0.0, entity_familiarity: 0.8, combined_confidence: 0.3}
+      acc = %ContextAccumulator{
+        conflict_measure: 0.0,
+        entity_familiarity: 0.8,
+        combined_confidence: 0.3
+      }
+
       assert ContextAccumulator.should_hedge?(acc)
     end
 
     test "returns false when all indicators are strong" do
-      acc = %ContextAccumulator{conflict_measure: 0.1, entity_familiarity: 0.8, combined_confidence: 0.85}
+      acc = %ContextAccumulator{
+        conflict_measure: 0.1,
+        entity_familiarity: 0.8,
+        combined_confidence: 0.85
+      }
+
       refute ContextAccumulator.should_hedge?(acc)
     end
   end

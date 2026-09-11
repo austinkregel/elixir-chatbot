@@ -29,12 +29,12 @@ defmodule Brain.Analysis.EventLinkerTest do
 
       frames = EventLinker.link(events, @sample_entities, @sample_tokens, @sample_pos_tags)
 
-      assert length(frames) == 1
+      assert match?([_], frames)
       frame = hd(frames)
 
       assert frame.trigger == "visited"
       assert is_list(frame.arguments)
-      assert length(frame.arguments) >= 1
+      assert frame.arguments != []
     end
 
     test "temporal entities get argm_tmp role" do
@@ -44,7 +44,7 @@ defmodule Brain.Analysis.EventLinkerTest do
       frame = hd(frames)
       temporal_args = Enum.filter(frame.arguments, &(&1.role == :argm_tmp))
 
-      assert length(temporal_args) >= 1
+      assert temporal_args != []
       temporal_arg = hd(temporal_args)
       assert temporal_arg.text == "yesterday"
       assert temporal_arg.entity_type == :temporal
@@ -59,7 +59,7 @@ defmodule Brain.Analysis.EventLinkerTest do
       events = [@sample_event]
       frames = EventLinker.link(events, [], @sample_tokens, @sample_pos_tags)
 
-      assert length(frames) == 1
+      assert match?([_], frames)
       frame = hd(frames)
       assert is_list(frame.arguments)
     end
@@ -67,12 +67,13 @@ defmodule Brain.Analysis.EventLinkerTest do
 
   describe "assign_argument_roles/4" do
     test "assigns roles to non-temporal entities" do
-      roles = EventLinker.assign_argument_roles(
-        @sample_event,
-        @sample_entities,
-        @sample_tokens,
-        @sample_pos_tags
-      )
+      roles =
+        EventLinker.assign_argument_roles(
+          @sample_event,
+          @sample_entities,
+          @sample_tokens,
+          @sample_pos_tags
+        )
 
       non_temporal = Enum.reject(roles, &(&1.entity_type == :temporal))
 
@@ -84,12 +85,13 @@ defmodule Brain.Analysis.EventLinkerTest do
     end
 
     test "skips temporal entities (handled separately)" do
-      roles = EventLinker.assign_argument_roles(
-        @sample_event,
-        @sample_entities,
-        @sample_tokens,
-        @sample_pos_tags
-      )
+      roles =
+        EventLinker.assign_argument_roles(
+          @sample_event,
+          @sample_entities,
+          @sample_tokens,
+          @sample_pos_tags
+        )
 
       temporal = Enum.filter(roles, &(&1.entity_type == :temporal))
       assert temporal == []
@@ -113,7 +115,7 @@ defmodule Brain.Analysis.EventLinkerTest do
 
       frames = EventLinker.link(events, entities, tokens, pos_tags)
 
-      assert length(frames) == 2
+      assert match?([_, _], frames)
     end
   end
 

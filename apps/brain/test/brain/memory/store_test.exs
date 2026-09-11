@@ -31,14 +31,20 @@ defmodule Brain.Memory.StoreTest do
 
   describe "add_episode" do
     test "adds an episode and returns its id" do
-      {:ok, id} = Store.add_episode("hello world", "smalltalk.greetings.hello", "hi there", ["smalltalk.greetings.hello"])
+      {:ok, id} =
+        Store.add_episode("hello world", "smalltalk.greetings.hello", "hi there", [
+          "smalltalk.greetings.hello"
+        ])
 
       assert is_binary(id)
       assert String.length(id) == 36
     end
 
     test "episode can be retrieved by id" do
-      {:ok, id} = Store.add_episode("hello world", "smalltalk.greetings.hello", "hi there", ["smalltalk.greetings.hello"])
+      {:ok, id} =
+        Store.add_episode("hello world", "smalltalk.greetings.hello", "hi there", [
+          "smalltalk.greetings.hello"
+        ])
 
       {:ok, episode} = Store.get_episode(id)
 
@@ -55,13 +61,21 @@ defmodule Brain.Memory.StoreTest do
 
   describe "query_similar" do
     test "finds similar episodes" do
-      {:ok, _} = Store.add_episode("hello world", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
-      {:ok, _} = Store.add_episode("hello there", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
+      {:ok, _} =
+        Store.add_episode("hello world", "smalltalk.greetings.hello", "", [
+          "smalltalk.greetings.hello"
+        ])
+
+      {:ok, _} =
+        Store.add_episode("hello there", "smalltalk.greetings.hello", "", [
+          "smalltalk.greetings.hello"
+        ])
+
       {:ok, _} = Store.add_episode("goodbye world", "farewell", "", ["farewell"])
 
       {:ok, results} = Store.query_similar("hello friend", 3)
 
-      assert length(results) == 3
+      assert match?([_, _, _], results)
       [{ep1, sim1} | _] = results
       assert is_struct(ep1)
       assert is_float(sim1)
@@ -75,18 +89,29 @@ defmodule Brain.Memory.StoreTest do
 
   describe "query_by_tags" do
     test "finds episodes with matching tags" do
-      {:ok, _} = Store.add_episode("hello", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello", "casual"])
+      {:ok, _} =
+        Store.add_episode("hello", "smalltalk.greetings.hello", "", [
+          "smalltalk.greetings.hello",
+          "casual"
+        ])
+
       {:ok, _} = Store.add_episode("goodbye", "farewell", "", ["farewell"])
-      {:ok, _} = Store.add_episode("hi there", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello", "formal"])
+
+      {:ok, _} =
+        Store.add_episode("hi there", "smalltalk.greetings.hello", "", [
+          "smalltalk.greetings.hello",
+          "formal"
+        ])
 
       {:ok, results} = Store.query_by_tags(["smalltalk.greetings.hello"])
 
-      assert length(results) == 2
+      assert match?([_, _], results)
       assert Enum.all?(results, fn ep -> "smalltalk.greetings.hello" in ep.tags end)
     end
 
     test "returns empty list when no tags match" do
-      {:ok, _} = Store.add_episode("hello", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
+      {:ok, _} =
+        Store.add_episode("hello", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
 
       {:ok, results} = Store.query_by_tags(["nonexistent"])
       assert results == []
@@ -95,7 +120,11 @@ defmodule Brain.Memory.StoreTest do
 
   describe "semantic facts" do
     test "adds and retrieves semantic facts" do
-      fact = SemanticFact.new("greeting pattern", [0.1, 0.2, 0.3], ["ep1"], ["smalltalk.greetings.hello"])
+      fact =
+        SemanticFact.new("greeting pattern", [0.1, 0.2, 0.3], ["ep1"], [
+          "smalltalk.greetings.hello"
+        ])
+
       {:ok, id} = Store.add_semantic(fact)
 
       {:ok, retrieved} = Store.get_semantic(id)
@@ -107,12 +136,14 @@ defmodule Brain.Memory.StoreTest do
     test "queries semantic facts by similarity" do
       {:ok, embedding} = Embedder.embed("hello world")
 
-      fact = SemanticFact.new("greeting pattern", embedding, ["ep1"], ["smalltalk.greetings.hello"])
+      fact =
+        SemanticFact.new("greeting pattern", embedding, ["ep1"], ["smalltalk.greetings.hello"])
+
       {:ok, _} = Store.add_semantic(fact)
 
       {:ok, results} = Store.query_semantic("hello there", 5)
 
-      assert length(results) == 1
+      assert match?([_], results)
       [{semantic, _sim}] = results
       assert semantic.representation == "greeting pattern"
     end
@@ -144,7 +175,7 @@ defmodule Brain.Memory.StoreTest do
 
       {:ok, episodes} = Store.all_episodes()
 
-      assert length(episodes) == 2
+      assert match?([_, _], episodes)
     end
 
     test "returns all semantic facts" do
@@ -157,7 +188,7 @@ defmodule Brain.Memory.StoreTest do
 
       {:ok, semantics} = Store.all_semantics()
 
-      assert length(semantics) == 2
+      assert match?([_, _], semantics)
     end
   end
 
@@ -188,8 +219,15 @@ defmodule Brain.Memory.StoreTest do
 
   describe "rerank option" do
     test "query_similar with rerank: false returns results without entity extraction" do
-      {:ok, _} = Store.add_episode("hello world", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
-      {:ok, _} = Store.add_episode("hello there", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
+      {:ok, _} =
+        Store.add_episode("hello world", "smalltalk.greetings.hello", "", [
+          "smalltalk.greetings.hello"
+        ])
+
+      {:ok, _} =
+        Store.add_episode("hello there", "smalltalk.greetings.hello", "", [
+          "smalltalk.greetings.hello"
+        ])
 
       {:ok, results} = Store.query_similar("hello friend", 3, rerank: false)
 
@@ -197,7 +235,10 @@ defmodule Brain.Memory.StoreTest do
     end
 
     test "query_similar with rerank: false skips rerank even when config enables it" do
-      {:ok, _} = Store.add_episode("hello world", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
+      {:ok, _} =
+        Store.add_episode("hello world", "smalltalk.greetings.hello", "", [
+          "smalltalk.greetings.hello"
+        ])
 
       original_config = Application.get_env(:brain, :kg_signals, [])
       Application.put_env(:brain, :kg_signals, Keyword.put(original_config, :memory_rerank, true))
@@ -211,7 +252,12 @@ defmodule Brain.Memory.StoreTest do
 
     test "query_semantic with rerank: false returns results" do
       {:ok, embedding} = Embedder.embed("hello world")
-      fact = Brain.Memory.Types.SemanticFact.new("greeting", embedding, [], ["smalltalk.greetings.hello"])
+
+      fact =
+        Brain.Memory.Types.SemanticFact.new("greeting", embedding, [], [
+          "smalltalk.greetings.hello"
+        ])
+
       {:ok, _} = Store.add_semantic(fact)
 
       {:ok, results} = Store.query_semantic("hello there", 5, rerank: false)
@@ -222,20 +268,26 @@ defmodule Brain.Memory.StoreTest do
 
   describe "entity_names on episodes" do
     test "add_episode populates entity_names field" do
-      {:ok, id} = Store.add_episode("hello world", "smalltalk.greetings.hello", "hi there", ["smalltalk.greetings.hello"])
+      {:ok, id} =
+        Store.add_episode("hello world", "smalltalk.greetings.hello", "hi there", [
+          "smalltalk.greetings.hello"
+        ])
+
       {:ok, episode} = Store.get_episode(id)
 
       assert is_list(episode.entity_names)
     end
 
     test "add_episode_direct preserves pre-populated entity_names" do
-      episode = Brain.Memory.Types.Episode.new(
-        "hello world",
-        "smalltalk.greetings.hello",
-        "hi there",
-        ["smalltalk.greetings.hello"],
-        []
-      )
+      episode =
+        Brain.Memory.Types.Episode.new(
+          "hello world",
+          "smalltalk.greetings.hello",
+          "hi there",
+          ["smalltalk.greetings.hello"],
+          []
+        )
+
       episode = %{episode | entity_names: ["world"]}
 
       {:ok, id} = Store.add_episode_direct(episode)

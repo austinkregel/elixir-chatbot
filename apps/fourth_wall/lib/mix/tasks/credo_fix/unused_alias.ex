@@ -403,7 +403,10 @@ defmodule Mix.Tasks.CredoFix.UnusedAlias do
 
         # Grouped alias: alias Foo.{Bar, Baz, Qux}
         {:alias, meta,
-         [{{:., dot_meta, [{:__aliases__, prefix_meta, prefix_parts}, :{}]}, group_meta, suffixes}]} =
+         [
+           {{:., dot_meta, [{:__aliases__, prefix_meta, prefix_parts}, :{}]}, group_meta,
+            suffixes}
+         ]} =
             node,
         acc ->
           # Filter out unused suffixes
@@ -430,7 +433,7 @@ defmodule Mix.Tasks.CredoFix.UnusedAlias do
               {nil, acc + removed}
 
             # Only one remaining - convert to simple alias
-            length(remaining) == 1 ->
+            match?([_], remaining) ->
               [{:__aliases__, _, suffix_parts}] = remaining
               full_parts = prefix_parts ++ suffix_parts
               new_node = {:alias, meta, [{:__aliases__, prefix_meta, full_parts}]}

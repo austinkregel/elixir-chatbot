@@ -42,15 +42,19 @@ defmodule Atlas.Schemas.SourceAuthorityTest do
       assert sa.contradicted_count == 0
 
       results = SourceAuthority |> SourceAuthority.for_key(attrs.authority_key) |> Repo.all()
-      assert length(results) == 1
+      assert match?([_], results)
     end
 
     test "enforces unique authority_key" do
       key = "unique_sa_#{System.unique_integer([:positive])}"
-      {:ok, _} = %SourceAuthority{} |> SourceAuthority.changeset(%{authority_key: key}) |> Repo.insert()
+
+      {:ok, _} =
+        %SourceAuthority{} |> SourceAuthority.changeset(%{authority_key: key}) |> Repo.insert()
 
       assert {:error, changeset} =
-               %SourceAuthority{} |> SourceAuthority.changeset(%{authority_key: key}) |> Repo.insert()
+               %SourceAuthority{}
+               |> SourceAuthority.changeset(%{authority_key: key})
+               |> Repo.insert()
 
       assert errors_on(changeset)[:authority_key]
     end

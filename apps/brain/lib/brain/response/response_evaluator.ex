@@ -40,21 +40,19 @@ defmodule Brain.Response.ResponseEvaluator do
 
   defmodule Score do
     @moduledoc false
-    defstruct [
-      speech_act_alignment: 0.0,
-      confidence_alignment: 0.0,
-      content_coverage: 0.0,
-      content_completeness: 0.0,
-      slot_coverage: 0.0,
-      naturalness: 0.0,
-      echo_avoidance: 0.0,
-      belief_grounding: 0.0,
-      epistemic_consistency: 0.0,
-      overall: 0.0,
-      weakest_dimension: nil,
-      converged: false,
-      silence_preferred: false
-    ]
+    defstruct speech_act_alignment: 0.0,
+              confidence_alignment: 0.0,
+              content_coverage: 0.0,
+              content_completeness: 0.0,
+              slot_coverage: 0.0,
+              naturalness: 0.0,
+              echo_avoidance: 0.0,
+              belief_grounding: 0.0,
+              epistemic_consistency: 0.0,
+              overall: 0.0,
+              weakest_dimension: nil,
+              converged: false,
+              silence_preferred: false
   end
 
   @doc """
@@ -92,17 +90,18 @@ defmodule Brain.Response.ResponseEvaluator do
     grounding = score_belief_grounding(response_analysis, primitives, analysis, ctx)
     epistemic = score_epistemic_consistency(response_analysis, analysis, ctx)
 
-    overall = weighted_average([
-      {speech_act, 0.12},
-      {confidence, 0.10},
-      {coverage, 0.12},
-      {completeness, 0.10},
-      {slots, 0.08},
-      {natural, 0.12},
-      {echo, 0.10},
-      {grounding, 0.16},
-      {epistemic, 0.10}
-    ])
+    overall =
+      weighted_average([
+        {speech_act, 0.12},
+        {confidence, 0.10},
+        {coverage, 0.12},
+        {completeness, 0.10},
+        {slots, 0.08},
+        {natural, 0.12},
+        {echo, 0.10},
+        {grounding, 0.16},
+        {epistemic, 0.10}
+      ])
 
     dimensions = %{
       speech_act_alignment: speech_act,
@@ -116,9 +115,10 @@ defmodule Brain.Response.ResponseEvaluator do
       epistemic_consistency: epistemic
     }
 
-    weakest = dimensions
-    |> Enum.min_by(fn {_k, v} -> v end)
-    |> elem(0)
+    weakest =
+      dimensions
+      |> Enum.min_by(fn {_k, v} -> v end)
+      |> elem(0)
 
     %Score{
       speech_act_alignment: speech_act,
@@ -144,8 +144,7 @@ defmodule Brain.Response.ResponseEvaluator do
   # so that is the fallback when a caller doesn't thread it explicitly.
   defp build_ctx(opts) do
     %{
-      world_id:
-        Keyword.get(opts, :world_id) || Process.get(:current_world_id) || @default_world,
+      world_id: Keyword.get(opts, :world_id) || Process.get(:current_world_id) || @default_world,
       conversation_id: Keyword.get(opts, :conversation_id)
     }
   end
@@ -168,7 +167,10 @@ defmodule Brain.Response.ResponseEvaluator do
     Pipeline.process(response)
   rescue
     e ->
-      Logger.debug("ResponseEvaluator: Pipeline.process on response failed: #{Exception.message(e)}")
+      Logger.debug(
+        "ResponseEvaluator: Pipeline.process on response failed: #{Exception.message(e)}"
+      )
+
       nil
   catch
     :exit, _ -> nil
@@ -257,28 +259,32 @@ defmodule Brain.Response.ResponseEvaluator do
 
   defp score_content_coverage(primitives, response, analysis) do
     entities = analysis.entities || []
-    entity_values = entities
-    |> Enum.map(&(Map.get(&1, :value) || Map.get(&1, :text) || ""))
-    |> Enum.reject(&(&1 == ""))
 
-    entity_score = if entity_values == [] do
-      1.0
-    else
-      response_tokens = Tokenizer.tokenize_normalized(response) |> MapSet.new()
+    entity_values =
+      entities
+      |> Enum.map(&(Map.get(&1, :value) || Map.get(&1, :text) || ""))
+      |> Enum.reject(&(&1 == ""))
 
-      matched = Enum.count(entity_values, fn val ->
-        val_tokens = Tokenizer.tokenize_normalized(val) |> MapSet.new()
-        overlap = MapSet.intersection(response_tokens, val_tokens) |> MapSet.size()
-        overlap >= max(MapSet.size(val_tokens), 1)
-      end)
+    entity_score =
+      if entity_values == [] do
+        1.0
+      else
+        response_tokens = Tokenizer.tokenize_normalized(response) |> MapSet.new()
 
-      min(matched / length(entity_values), 1.0)
-    end
+        matched =
+          Enum.count(entity_values, fn val ->
+            val_tokens = Tokenizer.tokenize_normalized(val) |> MapSet.new()
+            overlap = MapSet.intersection(response_tokens, val_tokens) |> MapSet.size()
+            overlap >= max(MapSet.size(val_tokens), 1)
+          end)
+
+        min(matched / length(entity_values), 1.0)
+      end
 
     has_substantive = Enum.any?(primitives, &(&1.type == :content))
     content_score = if has_substantive, do: 0.8, else: 0.4
 
-    (entity_score * 0.4 + content_score * 0.6)
+    entity_score * 0.4 + content_score * 0.6
   end
 
   defp score_slot_coverage(primitives, analysis) do
@@ -288,14 +294,16 @@ defmodule Brain.Response.ResponseEvaluator do
     if missing == [] do
       1.0
     else
-      has_clarification = Enum.any?(primitives, fn p ->
-        p.type == :follow_up and p.variant == :clarification
-      end)
+      has_clarification =
+        Enum.any?(primitives, fn p ->
+          p.type == :follow_up and p.variant == :clarification
+        end)
 
       if has_clarification do
-        mentioned_slots = primitives
-        |> Enum.filter(&(&1.type == :follow_up and &1.variant == :clarification))
-        |> Enum.flat_map(&(Map.get(&1.content, :missing_slots, [])))
+        mentioned_slots =
+          primitives
+          |> Enum.filter(&(&1.type == :follow_up and &1.variant == :clarification))
+          |> Enum.flat_map(&Map.get(&1.content, :missing_slots, []))
 
         if mentioned_slots != [] do
           overlap = Enum.count(missing, &(&1 in mentioned_slots))
@@ -310,40 +318,44 @@ defmodule Brain.Response.ResponseEvaluator do
   end
 
   defp score_naturalness(response) when is_binary(response) do
-    tokens = try do
-      Tokenizer.tokenize(response)
-    rescue
-      _ -> String.split(response)
-    end
+    tokens =
+      try do
+        Tokenizer.tokenize(response)
+      rescue
+        _ -> String.split(response)
+      end
 
     word_count = length(tokens)
 
-    length_score = cond do
-      word_count == 0 -> 0.1
-      word_count < 2 -> 0.4
-      word_count > 100 -> 0.5
-      word_count > 50 -> 0.7
-      true -> 1.0
-    end
+    length_score =
+      cond do
+        word_count == 0 -> 0.1
+        word_count < 2 -> 0.4
+        word_count > 100 -> 0.5
+        word_count > 50 -> 0.7
+        true -> 1.0
+      end
 
-    words = if is_list(tokens) do
-      Enum.map(tokens, fn
-        t when is_map(t) -> Map.get(t, :text, "")
-        t when is_binary(t) -> t
-        _ -> ""
-      end)
-    else
-      String.split(response)
-    end
+    words =
+      if is_list(tokens) do
+        Enum.map(tokens, fn
+          t when is_map(t) -> Map.get(t, :text, "")
+          t when is_binary(t) -> t
+          _ -> ""
+        end)
+      else
+        String.split(response)
+      end
 
-    repetition_score = if length(words) > 3 do
-      unique = words |> Enum.map(&String.downcase/1) |> Enum.uniq() |> length()
-      min(unique / length(words) + 0.2, 1.0)
-    else
-      1.0
-    end
+    repetition_score =
+      if Enum.count_until(words, 4) > 3 do
+        unique = words |> Enum.map(&String.downcase/1) |> Enum.uniq() |> length()
+        min(unique / length(words) + 0.2, 1.0)
+      else
+        1.0
+      end
 
-    (length_score * 0.5 + repetition_score * 0.5)
+    length_score * 0.5 + repetition_score * 0.5
   end
 
   defp score_naturalness(_), do: 0.3
@@ -353,7 +365,9 @@ defmodule Brain.Response.ResponseEvaluator do
     input_words = input_text |> String.downcase() |> String.split()
     response_words = response |> String.downcase() |> String.split()
 
-    if length(input_words) < 4, do: 1.0, else: do_score_echo(input_words, response_words)
+    if Enum.count_until(input_words, 4) < 4,
+      do: 1.0,
+      else: do_score_echo(input_words, response_words)
   end
 
   defp score_echo_avoidance(_, _), do: 1.0
@@ -411,30 +425,31 @@ defmodule Brain.Response.ResponseEvaluator do
   end
 
   defp score_against_beliefs(claim_value, beliefs, ctx) do
-    scores = Enum.map(beliefs, fn belief ->
-      belief_object = to_string(belief.object)
+    scores =
+      Enum.map(beliefs, fn belief ->
+        belief_object = to_string(belief.object)
 
-      claim_tokens = Tokenizer.tokenize_normalized(claim_value) |> MapSet.new()
-      belief_tokens = Tokenizer.tokenize_normalized(belief_object) |> MapSet.new()
-      overlap = MapSet.intersection(claim_tokens, belief_tokens) |> MapSet.size()
-      max_possible = max(MapSet.size(belief_tokens), 1)
+        claim_tokens = Tokenizer.tokenize_normalized(claim_value) |> MapSet.new()
+        belief_tokens = Tokenizer.tokenize_normalized(belief_object) |> MapSet.new()
+        overlap = MapSet.intersection(claim_tokens, belief_tokens) |> MapSet.size()
+        max_possible = max(MapSet.size(belief_tokens), 1)
 
-      is_related = overlap >= max(div(max_possible, 3), 1)
+        is_related = overlap >= max(div(max_possible, 3), 1)
 
-      cond do
-        not is_related ->
-          0.7
+        cond do
+          not is_related ->
+            0.7
 
-        is_related and check_belief_justified?(belief, ctx) ->
-          check_disclosure_score(belief)
+          is_related and check_belief_justified?(belief, ctx) ->
+            check_disclosure_score(belief)
 
-        is_related ->
-          0.5
+          is_related ->
+            0.5
 
-        true ->
-          0.7
-      end
-    end)
+          true ->
+            0.7
+        end
+      end)
 
     if scores == [], do: 0.7, else: Enum.min(scores)
   end
@@ -545,13 +560,15 @@ defmodule Brain.Response.ResponseEvaluator do
   end
 
   defp extract_topics(response_analysis, analysis) do
-    input_entities = (analysis.entities || [])
-    |> Enum.map(&(Map.get(&1, :value) || ""))
-    |> Enum.reject(&(&1 == ""))
+    input_entities =
+      (analysis.entities || [])
+      |> Enum.map(&(Map.get(&1, :value) || ""))
+      |> Enum.reject(&(&1 == ""))
 
-    response_entities = extract_response_entities(response_analysis)
-    |> Enum.map(&(Map.get(&1, :value) || ""))
-    |> Enum.reject(&(&1 == ""))
+    response_entities =
+      extract_response_entities(response_analysis)
+      |> Enum.map(&(Map.get(&1, :value) || ""))
+      |> Enum.reject(&(&1 == ""))
 
     (input_entities ++ response_entities)
     |> Enum.uniq()
@@ -605,14 +622,16 @@ defmodule Brain.Response.ResponseEvaluator do
 
   defp count_matching_prefix([], _, count), do: count
   defp count_matching_prefix(_, [], count), do: count
+
   defp count_matching_prefix([a | rest_a], [b | rest_b], count) do
     if a == b, do: count_matching_prefix(rest_a, rest_b, count + 1), else: count
   end
 
   defp weighted_average(scores_and_weights) do
-    {sum, weight_sum} = Enum.reduce(scores_and_weights, {0.0, 0.0}, fn {score, weight}, {s, w} ->
-      {s + score * weight, w + weight}
-    end)
+    {sum, weight_sum} =
+      Enum.reduce(scores_and_weights, {0.0, 0.0}, fn {score, weight}, {s, w} ->
+        {s + score * weight, w + weight}
+      end)
 
     if weight_sum > 0, do: sum / weight_sum, else: 0.0
   end

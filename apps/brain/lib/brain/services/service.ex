@@ -221,4 +221,33 @@ defmodule Brain.Services.Service do
   rescue
     _ -> false
   end
+
+  @doc """
+  Normalize a slot map to atom keys at a service's `enrich/3` boundary.
+
+  Slots produced by the response pipeline are atom-keyed (see
+  `Brain.Response.Generator` / `Brain.Response.ContextBuilder`), but services
+  are public entry points that historically also accepted string-keyed slot
+  maps. Rather than checking both key styles at every read site, services call
+  this once on entry so the rest of the function can read a single (atom) key.
+
+  String keys are converted to their existing atom when one is known
+  (i.e. referenced somewhere in the loaded code); unknown string keys are left
+  untouched so no new atoms are created from external data.
+  """
+  @spec normalize_slots(map()) :: map()
+  def normalize_slots(slots) when is_map(slots) do
+    Map.new(slots, fn
+      {key, value} when is_binary(key) -> {existing_atom(key), value}
+      {key, value} -> {key, value}
+    end)
+  end
+
+  def normalize_slots(other), do: other
+
+  defp existing_atom(key) do
+    String.to_existing_atom(key)
+  rescue
+    ArgumentError -> key
+  end
 end

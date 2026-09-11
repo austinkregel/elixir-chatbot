@@ -1,0 +1,102 @@
+{
+  "confidence": 0.739,
+  "entities": [],
+  "intent": "code.statement",
+  "profile": {
+    "confidence": 0.739,
+    "derived_label": "code.statement",
+    "domain": "code",
+    "engagement_level": "urgent_demand",
+    "modality": "declarative",
+    "response_posture": "hedged"
+  },
+  "response_strategy": "hedged_response",
+  "sentiment": {
+    "confidence": 0.019098528490674824,
+    "label": "neutral"
+  },
+  "speech_act": {
+    "category": "assertive",
+    "confidence": 0.6915581722885151,
+    "indicators": [
+      "intent:calendar.cancel"
+    ],
+    "intent_confidence": 0.4441551261027072,
+    "is_imperative": false,
+    "is_question": false,
+    "raw_analyses": {
+      "intent": {
+        "category": "assertive",
+        "confidence": 0.4441551261027072,
+        "intent": "calendar.cancel",
+        "margin": 0.3043411042746176,
+        "second_score": 0.1398140218280896,
+        "source": "feature_vector",
+        "sub_type": "statement",
+        "top_k": [
+          {
+            "intent": "calendar.cancel",
+            "score": 0.4441551261027072
+          },
+          {
+            "intent": "code.signature",
+            "score": 0.1398140218280896
+          },
+          {
+            "intent": "news.search",
+            "score": 0.13926357036244216
+          },
+          {
+            "intent": "knowledge.define",
+            "score": 0.1386101948428724
+          },
+          {
+            "intent": "smalltalk.agent.can_you_help",
+            "score": 0.13815708686388853
+          }
+        ]
+      },
+      "keyword": {
+        "confidence": 0.0,
+        "source": "keyword"
+      },
+      "memory": {
+        "confidence": 0.0,
+        "similar_count": 0,
+        "source": "memory"
+      },
+      "original_text": "Task A.",
+      "pragmatic": {
+        "expressive_score": 0.0,
+        "first_person_subject": false,
+        "has_acknowledgment": false,
+        "has_commissive": false,
+        "has_future": false,
+        "has_hedging": false,
+        "has_offer": false,
+        "has_please": false,
+        "has_thanks": false,
+        "has_urgency": false,
+        "is_backchannel": false,
+        "is_compliment": false,
+        "is_short_utterance": true,
+        "is_very_short": false,
+        "source": "pragmatic"
+      },
+      "structural": {
+        "category": "assertive",
+        "confidence": 0.7,
+        "has_modal": false,
+        "is_continuation": false,
+        "is_declarative": true,
+        "is_exclamatory": false,
+        "is_imperative": false,
+        "is_question": false,
+        "source": "structural",
+        "sub_type": "statement"
+      }
+    },
+    "sub_type": "statement"
+  },
+  "text": "Task A."
+}

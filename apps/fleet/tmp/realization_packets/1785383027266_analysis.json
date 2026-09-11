@@ -1,0 +1,103 @@
+{
+  "confidence": 0.744,
+  "entities": [],
+  "intent": "knowledge.request_information",
+  "profile": {
+    "confidence": 0.744,
+    "derived_label": "knowledge.request_information",
+    "domain": "knowledge",
+    "engagement_level": "active_request",
+    "modality": "interrogative",
+    "response_posture": "direct"
+  },
+  "response_strategy": "hedged_response",
+  "sentiment": {
+    "confidence": 0.13616202621870246,
+    "label": "negative"
+  },
+  "speech_act": {
+    "category": "directive",
+    "confidence": 0.7661461147616685,
+    "indicators": [
+      "question_structure",
+      "intent:code.signature"
+    ],
+    "intent_confidence": 0.34305630603111603,
+    "is_imperative": false,
+    "is_question": true,
+    "raw_analyses": {
+      "intent": {
+        "category": "assertive",
+        "confidence": 0.34305630603111603,
+        "intent": "code.signature",
+        "margin": 0.17647936309225248,
+        "second_score": 0.16657694293886355,
+        "source": "feature_vector",
+        "sub_type": "statement",
+        "top_k": [
+          {
+            "intent": "code.signature",
+            "score": 0.34305630603111603
+          },
+          {
+            "intent": "smalltalk.agent.boss",
+            "score": 0.16657694293886355
+          },
+          {
+            "intent": "smalltalk.agent.hobby",
+            "score": 0.1638627637112396
+          },
+          {
+            "intent": "meta.self_knowledge",
+            "score": 0.1635099618173015
+          },
+          {
+            "intent": "code.explain",
+            "score": 0.1629940255014793
+          }
+        ]
+      },
+      "keyword": {
+        "confidence": 0.0,
+        "source": "keyword"
+      },
+      "memory": {
+        "confidence": 0.0,
+        "similar_count": 0,
+        "source": "memory"
+      },
+      "original_text": "Who are you?",
+      "pragmatic": {
+        "expressive_score": 0.0,
+        "first_person_subject": false,
+        "has_acknowledgment": false,
+        "has_commissive": false,
+        "has_future": false,
+        "has_hedging": false,
+        "has_offer": false,
+        "has_please": false,
+        "has_thanks": false,
+        "has_urgency": false,
+        "is_backchannel": false,
+        "is_compliment": false,
+        "is_short_utterance": false,
+        "is_very_short": false,
+        "source": "pragmatic"
+      },
+      "structural": {
+        "category": "directive",
+        "confidence": 0.85,
+        "has_modal": false,
+        "is_continuation": false,
+        "is_declarative": false,
+        "is_exclamatory": false,
+        "is_imperative": false,
+        "is_question": true,
+        "source": "structural",
+        "sub_type": "request_information"
+      }
+    },
+    "sub_type": "request_information"
+  },
+  "text": "Who are you?"
+}

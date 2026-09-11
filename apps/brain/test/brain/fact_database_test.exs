@@ -20,7 +20,7 @@ defmodule Brain.FactDatabaseDataTest do
     {"Paris", :list, "query facts about Paris"},
     {"United States", :list, "query facts about US"},
     {"NonExistent12345", :empty_or_list, "query non-existent entity"},
-    {"", :empty_or_list, "empty entity query"},
+    {"", :empty_or_list, "empty entity query"}
   ]
 
   describe "query/1 with entity - data driven" do
@@ -49,7 +49,7 @@ defmodule Brain.FactDatabaseDataTest do
     {"science", :list, "science category"},
     {"history", :list, "history category"},
     {"general", :list, "general category"},
-    {"nonexistent_category", :empty_or_list, "unknown category"},
+    {"nonexistent_category", :empty_or_list, "unknown category"}
   ]
 
   describe "query/1 with category - data driven" do
@@ -72,7 +72,7 @@ defmodule Brain.FactDatabaseDataTest do
     {"population", :list, "search for population"},
     {"president", :list, "search for president"},
     {"xyznonexistent123", :empty_or_list, "search non-existent term"},
-    {"", :list, "empty search"},
+    {"", :list, "empty search"}
   ]
 
   describe "query/1 with search - data driven" do
@@ -94,7 +94,7 @@ defmodule Brain.FactDatabaseDataTest do
     {1, "limit to 1"},
     {5, "limit to 5"},
     {10, "limit to 10"},
-    {100, "limit to 100"},
+    {100, "limit to 100"}
   ]
 
   describe "query/1 with limit - data driven" do
@@ -117,7 +117,7 @@ defmodule Brain.FactDatabaseDataTest do
     "Germany",
     "Tokyo",
     "Microsoft",
-    "NonExistent12345",
+    "NonExistent12345"
   ]
 
   describe "get_entity_facts/1 - data driven" do
@@ -136,7 +136,8 @@ defmodule Brain.FactDatabaseDataTest do
   describe "add_fact_direct/1" do
     @add_fact_cases [
       {%{entity: "TestEntity", fact: "Test fact 1", category: "test"}, "basic fact"},
-      {%{entity: "AnotherTest", fact: "Fact with details", category: "test", confidence: 0.9}, "fact with confidence"},
+      {%{entity: "AnotherTest", fact: "Fact with details", category: "test", confidence: 0.9},
+       "fact with confidence"}
     ]
 
     for {fact_data, description} <- @add_fact_cases do
@@ -171,13 +172,13 @@ defmodule Brain.FactDatabaseDataTest do
     test "search + limit" do
       result = FactDatabase.query(search: "capital", limit: 3)
       assert is_list(result)
-      assert length(result) <= 3
+      assert Enum.count_until(result, 4) <= 3
     end
 
     test "category + limit" do
       result = FactDatabase.query(category: "geography", limit: 5)
       assert is_list(result)
-      assert length(result) <= 5
+      assert Enum.count_until(result, 6) <= 5
     end
   end
 

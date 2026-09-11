@@ -116,8 +116,8 @@ defmodule Mix.Tasks.TrainFraming do
   defp extract_training_data(entries) do
     pairs =
       Enum.flat_map(entries, fn
-        %{"feature_vector" => vec, "label" => label}
-        when is_list(vec) and is_binary(label) and length(vec) > 0 ->
+        %{"feature_vector" => [_ | _] = vec, "label" => label}
+        when is_binary(label) ->
           [{vec, label}]
 
         _ ->
@@ -174,7 +174,11 @@ defmodule Mix.Tasks.TrainFraming do
               end
           end
 
-        result = WeightOptimizer.optimize(training_data, Keyword.put(ga_opts, :classifier, "framing_class"))
+        result =
+          WeightOptimizer.optimize(
+            training_data,
+            Keyword.put(ga_opts, :classifier, "framing_class")
+          )
 
         Mix.shell().info(
           "GA complete: #{Float.round(result.fitness * 100, 1)}% composite fitness " <>

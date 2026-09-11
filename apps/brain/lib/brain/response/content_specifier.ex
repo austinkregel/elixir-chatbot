@@ -128,13 +128,17 @@ defmodule Brain.Response.ContentSpecifier do
 
   defp specify_primitive(%Primitive{type: :content, variant: :enriched} = p, analysis, opts) do
     unified_context = Keyword.get(opts, :unified_context, %{})
-    enrichment = if is_map(unified_context), do: Map.get(unified_context, :enrichment, %{}), else: %{}
+
+    enrichment =
+      if is_map(unified_context), do: Map.get(unified_context, :enrichment, %{}), else: %{}
+
     enriched_data = if is_map(enrichment), do: Map.get(enrichment, :enriched_data, %{}), else: %{}
 
-    available_fields = enriched_data
-    |> Map.keys()
-    |> Enum.reject(&(&1 == :raw))
-    |> Enum.map(&to_string/1)
+    available_fields =
+      enriched_data
+      |> Map.keys()
+      |> Enum.reject(&(&1 == :raw))
+      |> Enum.map(&to_string/1)
 
     p
     |> Primitive.merge_content(%{
@@ -230,7 +234,11 @@ defmodule Brain.Response.ContentSpecifier do
     })
   end
 
-  defp specify_primitive(%Primitive{type: :follow_up, variant: :clarification} = p, analysis, _opts) do
+  defp specify_primitive(
+         %Primitive{type: :follow_up, variant: :clarification} = p,
+         analysis,
+         _opts
+       ) do
     slots = analysis.slots
     missing = get_missing_slots(slots)
 
@@ -249,21 +257,33 @@ defmodule Brain.Response.ContentSpecifier do
     })
   end
 
-  defp specify_primitive(%Primitive{type: :follow_up, variant: :context_probe} = p, analysis, _opts) do
+  defp specify_primitive(
+         %Primitive{type: :follow_up, variant: :context_probe} = p,
+         analysis,
+         _opts
+       ) do
     Primitive.merge_content(p, %{
       possible_interpretations: [],
       conversation_context: analysis.text
     })
   end
 
-  defp specify_primitive(%Primitive{type: :follow_up, variant: :correction_invite} = p, analysis, _opts) do
+  defp specify_primitive(
+         %Primitive{type: :follow_up, variant: :correction_invite} = p,
+         analysis,
+         _opts
+       ) do
     Primitive.merge_content(p, %{
       uncertain_claim: nil,
       confidence: analysis.confidence || 0.5
     })
   end
 
-  defp specify_primitive(%Primitive{type: :follow_up, variant: :continuation} = p, _analysis, _opts) do
+  defp specify_primitive(
+         %Primitive{type: :follow_up, variant: :continuation} = p,
+         _analysis,
+         _opts
+       ) do
     Primitive.merge_content(p, %{context: :general})
   end
 
@@ -280,8 +300,9 @@ defmodule Brain.Response.ContentSpecifier do
   end
 
   defp specify_primitive(%Primitive{type: :acknowledgment, variant: :social} = p, analysis, _opts) do
-    sub_type = p.content[:speech_act_sub_type] ||
-      get_in_safe(analysis, [:speech_act, :sub_type]) || :unknown
+    sub_type =
+      p.content[:speech_act_sub_type] ||
+        get_in_safe(analysis, [:speech_act, :sub_type]) || :unknown
 
     Primitive.merge_content(p, %{speech_act_sub_type: sub_type})
   end
@@ -297,12 +318,20 @@ defmodule Brain.Response.ContentSpecifier do
     })
   end
 
-  defp specify_primitive(%Primitive{type: :acknowledgment, variant: :learning} = p, analysis, _opts) do
+  defp specify_primitive(
+         %Primitive{type: :acknowledgment, variant: :learning} = p,
+         analysis,
+         _opts
+       ) do
     entities = analysis.entities || []
-    learned = Enum.map(entities, fn e ->
-      %{type: Map.get(e, :type) || Map.get(e, :entity_type),
-        value: Map.get(e, :value) || Map.get(e, :text)}
-    end)
+
+    learned =
+      Enum.map(entities, fn e ->
+        %{
+          type: Map.get(e, :type) || Map.get(e, :entity_type),
+          value: Map.get(e, :value) || Map.get(e, :text)
+        }
+      end)
 
     Primitive.merge_content(p, %{
       learned_fact: List.first(learned),
@@ -311,14 +340,22 @@ defmodule Brain.Response.ContentSpecifier do
     })
   end
 
-  defp specify_primitive(%Primitive{type: :acknowledgment, variant: :repair} = p, _analysis, _opts) do
+  defp specify_primitive(
+         %Primitive{type: :acknowledgment, variant: :repair} = p,
+         _analysis,
+         _opts
+       ) do
     Primitive.merge_content(p, %{
       what_went_wrong: :misunderstanding,
       adjustment: :retry
     })
   end
 
-  defp specify_primitive(%Primitive{type: :acknowledgment, variant: :general} = p, analysis, _opts) do
+  defp specify_primitive(
+         %Primitive{type: :acknowledgment, variant: :general} = p,
+         analysis,
+         _opts
+       ) do
     Primitive.merge_content(p, %{user_input_summary: analysis.text})
   end
 
@@ -333,10 +370,14 @@ defmodule Brain.Response.ContentSpecifier do
     if PrimitiveTypes.valid?(p) do
       Primitive.merge_content(p, %{content_complete: true})
     else
-      missing = PrimitiveTypes.required_content(p.type, p.variant)
-                |> Enum.reject(&Map.has_key?(p.content, &1))
+      missing =
+        PrimitiveTypes.required_content(p.type, p.variant)
+        |> Enum.reject(&Map.has_key?(p.content, &1))
 
-      Logger.debug("Primitive #{p.type}/#{p.variant} missing required content: #{inspect(missing)}")
+      Logger.debug(
+        "Primitive #{p.type}/#{p.variant} missing required content: #{inspect(missing)}"
+      )
+
       Primitive.merge_content(p, %{content_complete: false, missing_fields: missing})
     end
   end
@@ -359,7 +400,10 @@ defmodule Brain.Response.ContentSpecifier do
           _ ->
             lookup_chunk = pick_lookup_chunk(analysis, unified_context)
             query = (lookup_chunk && Map.get(lookup_chunk, :text)) || analysis.text || ""
-            entities = (lookup_chunk && Map.get(lookup_chunk, :entities)) || analysis.entities || []
+
+            entities =
+              (lookup_chunk && Map.get(lookup_chunk, :entities)) || analysis.entities || []
+
             do_fact_lookup(query, entities)
         end
     end
@@ -492,6 +536,7 @@ defmodule Brain.Response.ContentSpecifier do
   end
 
   defp determine_fact_source([]), do: :none
+
   defp determine_fact_source(facts) when is_list(facts) do
     if Enum.any?(facts, &is_map/1) do
       :fact_database
@@ -499,6 +544,7 @@ defmodule Brain.Response.ContentSpecifier do
       :unknown
     end
   end
+
   defp determine_fact_source(_), do: :unknown
 
   @generic_labels ~w(unknown query define factual general default greeting
@@ -561,11 +607,12 @@ defmodule Brain.Response.ContentSpecifier do
   defp extract_emotional_tone(_), do: :neutral
 
   defp summarize_meaning(%ChunkAnalysis{} = analysis) do
-    entity_names = (analysis.entities || [])
-    |> Enum.take(3)
-    |> Enum.map(&(Map.get(&1, :value) || Map.get(&1, :text) || ""))
-    |> Enum.reject(&(&1 == ""))
-    |> Enum.reject(&stopword?/1)
+    entity_names =
+      (analysis.entities || [])
+      |> Enum.take(3)
+      |> Enum.map(&(Map.get(&1, :value) || Map.get(&1, :text) || ""))
+      |> Enum.reject(&(&1 == ""))
+      |> Enum.reject(&stopword?/1)
 
     sentiment = analysis.sentiment || %{}
     sentiment_label = Map.get(sentiment, :label)
@@ -605,13 +652,27 @@ defmodule Brain.Response.ContentSpecifier do
   end
 
   @perspective_map %{
-    "i" => "you", "i'm" => "you're", "i've" => "you've", "i'd" => "you'd",
-    "i'll" => "you'll", "im" => "you're", "ive" => "you've",
-    "my" => "your", "me" => "you", "myself" => "yourself",
-    "mine" => "yours", "we" => "you", "we're" => "you're",
-    "we've" => "you've", "we'd" => "you'd", "we'll" => "you'll",
-    "our" => "your", "ours" => "yours", "ourselves" => "yourselves",
-    "us" => "you", "am" => "are"
+    "i" => "you",
+    "i'm" => "you're",
+    "i've" => "you've",
+    "i'd" => "you'd",
+    "i'll" => "you'll",
+    "im" => "you're",
+    "ive" => "you've",
+    "my" => "your",
+    "me" => "you",
+    "myself" => "yourself",
+    "mine" => "yours",
+    "we" => "you",
+    "we're" => "you're",
+    "we've" => "you've",
+    "we'd" => "you'd",
+    "we'll" => "you'll",
+    "our" => "your",
+    "ours" => "yours",
+    "ourselves" => "yourselves",
+    "us" => "you",
+    "am" => "are"
   }
 
   defp shift_perspective(text) when is_binary(text) do
@@ -645,7 +706,7 @@ defmodule Brain.Response.ContentSpecifier do
   defp build_explanation_parts(facts, _analysis) when is_list(facts) and facts != [] do
     Enum.map(facts, fn fact ->
       cond do
-        is_map(fact) -> Map.get(fact, :fact) || Map.get(fact, "fact") || inspect(fact)
+        is_map(fact) -> fact_display(fact)
         is_binary(fact) -> fact
         true -> inspect(fact)
       end
@@ -653,6 +714,13 @@ defmodule Brain.Response.ContentSpecifier do
   end
 
   defp build_explanation_parts(_, _), do: []
+
+  # Facts reach here either as %FactDatabase.Fact{} structs (atom :fact) or as
+  # legacy raw maps that used the string "fact" key. Dispatch on shape once
+  # instead of probing both keys at the access site.
+  defp fact_display(%{fact: f}) when not is_nil(f), do: f
+  defp fact_display(%{"fact" => f}) when not is_nil(f), do: f
+  defp fact_display(fact), do: inspect(fact)
 
   # Real capability: resolve the intent to a service and check its
   # credentials/registration via the Dispatcher (the shared source of truth),
@@ -740,8 +808,11 @@ defmodule Brain.Response.ContentSpecifier do
 
   defp advisory_texts(_), do: []
 
-  defp get_in_safe(struct, keys) when is_struct(struct), do: get_in_safe(Map.from_struct(struct), keys)
+  defp get_in_safe(struct, keys) when is_struct(struct),
+    do: get_in_safe(Map.from_struct(struct), keys)
+
   defp get_in_safe(map, []) when is_map(map), do: map
+
   defp get_in_safe(map, [key | rest]) when is_map(map) do
     case Map.get(map, key) do
       nil -> nil
@@ -751,5 +822,6 @@ defmodule Brain.Response.ContentSpecifier do
       _ -> nil
     end
   end
+
   defp get_in_safe(_, _), do: nil
 end

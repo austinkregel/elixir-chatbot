@@ -38,7 +38,7 @@ defmodule Brain.Knowledge.CorroboratorTest do
 
       {:ok, candidates} = Corroborator.corroborate(findings, include_uncorroborated: true)
 
-      assert length(candidates) == 1
+      assert match?([_], candidates)
     end
 
     test "returns empty list for empty input" do
@@ -88,7 +88,7 @@ defmodule Brain.Knowledge.CorroboratorTest do
 
       conflicts = Corroborator.find_conflicts(finding, existing)
 
-      assert length(conflicts) == 1
+      assert match?([_], conflicts)
     end
 
     test "detects number disagreements" do
@@ -98,7 +98,7 @@ defmodule Brain.Knowledge.CorroboratorTest do
 
       conflicts = Corroborator.find_conflicts(finding, existing)
 
-      assert length(conflicts) == 1
+      assert match?([_], conflicts)
     end
 
     test "does not flag similar claims as conflicts" do

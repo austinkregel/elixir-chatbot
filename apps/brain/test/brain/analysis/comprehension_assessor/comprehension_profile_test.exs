@@ -38,7 +38,7 @@ defmodule Brain.Analysis.ComprehensionAssessor.ComprehensionProfileTest do
       assert profile.verdict == :garbled
       assert profile.learnable == false
       assert profile.composite_score < 0.2
-      assert length(profile.gaps) > 0
+      assert profile.gaps != []
     end
 
     test "structural_coherence hard gate overrides other high scores" do
@@ -92,7 +92,7 @@ defmodule Brain.Analysis.ComprehensionAssessor.ComprehensionProfileTest do
 
       profile = ComprehensionProfile.build(scores, equal_weights())
 
-      assert length(profile.gaps) == 1
+      assert match?([_], profile.gaps)
       [gap] = profile.gaps
       assert gap.dimension == :temporal_grounding
       assert gap.score == 0.1
@@ -141,7 +141,7 @@ defmodule Brain.Analysis.ComprehensionAssessor.ComprehensionProfileTest do
   describe "dimension_names/0" do
     test "returns all 8 dimension names" do
       names = ComprehensionProfile.dimension_names()
-      assert length(names) == 8
+      assert Enum.count(names) == 8
       assert :referential_clarity in names
       assert :structural_coherence in names
     end

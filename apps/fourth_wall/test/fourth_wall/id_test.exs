@@ -32,7 +32,7 @@ defmodule FourthWall.IDTest do
   describe "uniqueness" do
     test "generate 1000 IDs, all unique" do
       ids = for _ <- 1..1000, do: ID.generate()
-      assert length(Enum.uniq(ids)) == 1000
+      assert Enum.count_until(Enum.uniq(ids), 1001) == 1000
     end
   end
 end

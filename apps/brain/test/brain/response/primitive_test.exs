@@ -34,8 +34,9 @@ defmodule Brain.Response.PrimitiveTest do
 
   describe "Primitive.put_content/3" do
     test "adds a key to the content map" do
-      p = Primitive.new(:content, :factual)
-          |> Primitive.put_content(:fact, "The sky is blue")
+      p =
+        Primitive.new(:content, :factual)
+        |> Primitive.put_content(:fact, "The sky is blue")
 
       assert p.content.fact == "The sky is blue"
     end
@@ -43,8 +44,9 @@ defmodule Brain.Response.PrimitiveTest do
 
   describe "Primitive.merge_content/2" do
     test "merges additional content" do
-      p = Primitive.new(:content, :factual, %{fact: "original"})
-          |> Primitive.merge_content(%{confidence: 0.9, source: :database})
+      p =
+        Primitive.new(:content, :factual, %{fact: "original"})
+        |> Primitive.merge_content(%{confidence: 0.9, source: :database})
 
       assert p.content.fact == "original"
       assert p.content.confidence == 0.9
@@ -137,7 +139,7 @@ defmodule Brain.Response.PrimitiveTest do
   describe "PrimitiveTypes.all_types/0" do
     test "returns all 8 primitive types" do
       types = PrimitiveTypes.all_types()
-      assert length(types) == 8
+      assert Enum.count(types) == 8
       assert :acknowledgment in types
       assert :framing in types
       assert :hedging in types

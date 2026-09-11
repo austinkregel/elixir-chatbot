@@ -1,0 +1,103 @@
+{
+  "confidence": 0.742,
+  "entities": [],
+  "intent": "knowledge.request_information",
+  "profile": {
+    "confidence": 0.742,
+    "derived_label": "knowledge.request_information",
+    "domain": "knowledge",
+    "engagement_level": "active_request",
+    "modality": "interrogative",
+    "response_posture": "direct"
+  },
+  "response_strategy": "hedged_response",
+  "sentiment": {
+    "confidence": 0.06454815404126779,
+    "label": "neutral"
+  },
+  "speech_act": {
+    "category": "directive",
+    "confidence": 0.7861732541499461,
+    "indicators": [
+      "question_structure",
+      "intent:code.signature"
+    ],
+    "intent_confidence": 0.39646201106652296,
+    "is_imperative": false,
+    "is_question": true,
+    "raw_analyses": {
+      "intent": {
+        "category": "assertive",
+        "confidence": 0.39646201106652296,
+        "intent": "code.signature",
+        "margin": 0.24421936490913676,
+        "second_score": 0.1522426461573862,
+        "source": "feature_vector",
+        "sub_type": "statement",
+        "top_k": [
+          {
+            "intent": "code.signature",
+            "score": 0.39646201106652296
+          },
+          {
+            "intent": "payment.due_date",
+            "score": 0.1522426461573862
+          },
+          {
+            "intent": "search.locate",
+            "score": 0.1511785108988478
+          },
+          {
+            "intent": "web.search",
+            "score": 0.1501243163408434
+          },
+          {
+            "intent": "music.player.skip_forward",
+            "score": 0.1499925155363997
+          }
+        ]
+      },
+      "keyword": {
+        "confidence": 0.0,
+        "source": "keyword"
+      },
+      "memory": {
+        "confidence": 0.0,
+        "similar_count": 0,
+        "source": "memory"
+      },
+      "original_text": "Standing by?",
+      "pragmatic": {
+        "expressive_score": 0.0,
+        "first_person_subject": false,
+        "has_acknowledgment": false,
+        "has_commissive": false,
+        "has_future": false,
+        "has_hedging": false,
+        "has_offer": false,
+        "has_please": false,
+        "has_thanks": false,
+        "has_urgency": false,
+        "is_backchannel": false,
+        "is_compliment": false,
+        "is_short_utterance": true,
+        "is_very_short": false,
+        "source": "pragmatic"
+      },
+      "structural": {
+        "category": "directive",
+        "confidence": 0.85,
+        "has_modal": false,
+        "is_continuation": false,
+        "is_declarative": false,
+        "is_exclamatory": false,
+        "is_imperative": false,
+        "is_question": true,
+        "source": "structural",
+        "sub_type": "request_information"
+      }
+    },
+    "sub_type": "request_information"
+  },
+  "text": "Standing by?"
+}

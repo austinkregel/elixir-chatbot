@@ -39,7 +39,7 @@ defmodule Brain.Analysis.AdaptiveProcessingTest do
 
       assert interp.intent == "weather.query"
       assert interp.activation == 0.85
-      assert length(interp.alternatives) == 2
+      assert match?([_, _], interp.alternatives)
       assert hd(interp.alternatives).intent == "news.query"
     end
 

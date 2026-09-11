@@ -367,7 +367,7 @@ defmodule Brain.ML.EntityExtractorTest do
           confidence >= 0.51
         end)
 
-      assert length(filtered) == 2
+      assert match?([_, _], filtered)
       assert Enum.any?(filtered, &(&1.value == "Austin"))
       assert Enum.any?(filtered, &(&1.value == "John"))
       refute Enum.any?(filtered, &(&1.value == "Friend"))

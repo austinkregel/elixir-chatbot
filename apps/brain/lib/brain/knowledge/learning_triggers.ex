@@ -100,8 +100,7 @@ defmodule Brain.Knowledge.LearningTriggers do
 
   @impl true
   def handle_info(
-        {:investigation_concluded, session_id, _inv_id, %Lattice{} = lat, dominant_gap,
-         domain},
+        {:investigation_concluded, session_id, _inv_id, %Lattice{} = lat, dominant_gap, domain},
         state
       ) do
     state = maybe_reset_daily_counter(state)
@@ -233,8 +232,7 @@ defmodule Brain.Knowledge.LearningTriggers do
     %{
       state
       | sessions_total_today: total + 1,
-        sessions_per_domain:
-          Map.update(state.sessions_per_domain, domain_key, 1, &(&1 + 1))
+        sessions_per_domain: Map.update(state.sessions_per_domain, domain_key, 1, &(&1 + 1))
     }
   end
 
@@ -272,7 +270,7 @@ defmodule Brain.Knowledge.LearningTriggers do
       confidence > 0.3
     end)
     |> Enum.map(fn entity ->
-      Map.get(entity, :value) || Map.get(entity, "value") || ""
+      Map.get(entity, :value) || ""
     end)
     |> Enum.reject(&(&1 == ""))
     |> Enum.uniq()

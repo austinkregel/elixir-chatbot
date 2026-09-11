@@ -1,0 +1,102 @@
+{
+  "confidence": 0.731,
+  "entities": [],
+  "intent": "smalltalk.statement",
+  "profile": {
+    "confidence": 0.731,
+    "derived_label": "smalltalk.statement",
+    "domain": "smalltalk",
+    "engagement_level": "urgent_demand",
+    "modality": "declarative",
+    "response_posture": "hedged"
+  },
+  "response_strategy": "hedged_response",
+  "sentiment": {
+    "confidence": 0.0,
+    "label": "negative"
+  },
+  "speech_act": {
+    "category": "assertive",
+    "confidence": 0.6504918129865803,
+    "indicators": [
+      "intent:smalltalk.emotions.ha_ha"
+    ],
+    "intent_confidence": 0.3346448346308809,
+    "is_imperative": false,
+    "is_question": false,
+    "raw_analyses": {
+      "intent": {
+        "category": "assertive",
+        "confidence": 0.3346448346308809,
+        "intent": "smalltalk.emotions.ha_ha",
+        "margin": 0.16533796035963363,
+        "second_score": 0.16930687427124727,
+        "source": "feature_vector",
+        "sub_type": "statement",
+        "top_k": [
+          {
+            "intent": "smalltalk.emotions.ha_ha",
+            "score": 0.3346448346308809
+          },
+          {
+            "intent": "smalltalk.apology",
+            "score": 0.16930687427124727
+          },
+          {
+            "intent": "smalltalk.agent.acquaintance",
+            "score": 0.16640982354445047
+          },
+          {
+            "intent": "smalltalk.thanks",
+            "score": 0.16549129563441498
+          },
+          {
+            "intent": "smalltalk.user.joking",
+            "score": 0.1641471719190064
+          }
+        ]
+      },
+      "keyword": {
+        "confidence": 0.0,
+        "source": "keyword"
+      },
+      "memory": {
+        "confidence": 0.0,
+        "similar_count": 0,
+        "source": "memory"
+      },
+      "original_text": "Analyse.",
+      "pragmatic": {
+        "expressive_score": 0.0,
+        "first_person_subject": false,
+        "has_acknowledgment": false,
+        "has_commissive": false,
+        "has_future": false,
+        "has_hedging": false,
+        "has_offer": false,
+        "has_please": false,
+        "has_thanks": false,
+        "has_urgency": false,
+        "is_backchannel": false,
+        "is_compliment": false,
+        "is_short_utterance": true,
+        "is_very_short": true,
+        "source": "pragmatic"
+      },
+      "structural": {
+        "category": "assertive",
+        "confidence": 0.7,
+        "has_modal": false,
+        "is_continuation": false,
+        "is_declarative": true,
+        "is_exclamatory": false,
+        "is_imperative": false,
+        "is_question": false,
+        "source": "structural",
+        "sub_type": "statement"
+      }
+    },
+    "sub_type": "statement"
+  },
+  "text": "Analyse."
+}

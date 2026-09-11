@@ -162,7 +162,7 @@ defmodule Brain.SubprocessRegistryIntegrationTest do
       subprocesses = list_subprocesses()
 
       assert is_list(subprocesses)
-      assert length(subprocesses) >= 2
+      assert Enum.count_until(subprocesses, 2) >= 2
 
       ids = Enum.map(subprocesses, & &1.subprocess_id)
       assert "list_test_1" in ids
@@ -183,8 +183,8 @@ defmodule Brain.SubprocessRegistryIntegrationTest do
       type_a_list = list_subprocesses_by_type(:filter_type_a)
       type_b_list = list_subprocesses_by_type(:filter_type_b)
 
-      assert length(type_a_list) == 2
-      assert length(type_b_list) == 1
+      assert match?([_, _], type_a_list)
+      assert match?([_], type_b_list)
 
       # All type_a entries should have correct type
       Enum.each(type_a_list, fn sp ->

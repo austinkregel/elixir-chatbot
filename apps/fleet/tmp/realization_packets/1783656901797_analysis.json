@@ -1,0 +1,103 @@
+{
+  "confidence": 0.739,
+  "entities": [],
+  "intent": "knowledge.command",
+  "profile": {
+    "confidence": 0.739,
+    "derived_label": "knowledge.command",
+    "domain": "knowledge",
+    "engagement_level": "urgent_demand",
+    "modality": "imperative",
+    "response_posture": "direct"
+  },
+  "response_strategy": "hedged_response",
+  "sentiment": {
+    "confidence": 0.04980187536452404,
+    "label": "neutral"
+  },
+  "speech_act": {
+    "category": "directive",
+    "confidence": 0.7085772705863214,
+    "indicators": [
+      "imperative_from_intent",
+      "intent:smarthome.device_up"
+    ],
+    "intent_confidence": 0.3895393882301903,
+    "is_imperative": true,
+    "is_question": false,
+    "raw_analyses": {
+      "intent": {
+        "category": "directive",
+        "confidence": 0.3895393882301903,
+        "intent": "smarthome.device_up",
+        "margin": 0.23636339441419715,
+        "second_score": 0.15317599381599314,
+        "source": "feature_vector",
+        "sub_type": "command",
+        "top_k": [
+          {
+            "intent": "smarthome.device_up",
+            "score": 0.3895393882301903
+          },
+          {
+            "intent": "reminder.create",
+            "score": 0.15317599381599314
+          },
+          {
+            "intent": "smarthome.switch",
+            "score": 0.15286559494825971
+          },
+          {
+            "intent": "music.play",
+            "score": 0.1522772953535505
+          },
+          {
+            "intent": "music.search",
+            "score": 0.15214172765200631
+          }
+        ]
+      },
+      "keyword": {
+        "confidence": 0.0,
+        "source": "keyword"
+      },
+      "memory": {
+        "confidence": 0.0,
+        "similar_count": 0,
+        "source": "memory"
+      },
+      "original_text": "Give a one-line readiness report.",
+      "pragmatic": {
+        "expressive_score": 0.0,
+        "first_person_subject": false,
+        "has_acknowledgment": false,
+        "has_commissive": false,
+        "has_future": false,
+        "has_hedging": false,
+        "has_offer": false,
+        "has_please": false,
+        "has_thanks": false,
+        "has_urgency": false,
+        "is_backchannel": false,
+        "is_compliment": false,
+        "is_short_utterance": false,
+        "is_very_short": false,
+        "source": "pragmatic"
+      },
+      "structural": {
+        "category": "directive",
+        "confidence": 0.75,
+        "has_modal": false,
+        "is_continuation": false,
+        "is_declarative": true,
+        "is_exclamatory": false,
+        "is_imperative": true,
+        "is_question": false,
+        "source": "structural",
+        "sub_type": "command"
+      }
+    },
+    "sub_type": "command"
+  },
+  "text": "Give a one-line readiness report."
+}

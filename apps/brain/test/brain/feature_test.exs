@@ -15,6 +15,7 @@ defmodule Brain.FeatureTest do
 
   setup_all do
     Brain.TestHelpers.require_services!(:brain)
+
     require_models!([
       :gazetteer,
       :entities,
@@ -23,6 +24,7 @@ defmodule Brain.FeatureTest do
       :speech_act,
       :micro_classifiers
     ])
+
     :ok
   end
 
@@ -75,7 +77,8 @@ defmodule Brain.FeatureTest do
 
   describe "question responses" do
     test "responds to weather question", %{conversation_id: conv_id} do
-      {:ok, response, context} = evaluate_with_context(conv_id, "Can you tell me about the weather?")
+      {:ok, response, context} =
+        evaluate_with_context(conv_id, "Can you tell me about the weather?")
 
       # Semantic assertion: Should be classified as a question/directive
       assert_is_question(context)
@@ -105,6 +108,7 @@ defmodule Brain.FeatureTest do
 
       # Semantic assertion: Should be classified as a question or expressive
       speech_act = get_speech_act(context)
+
       assert speech_act[:is_question] == true or speech_act[:category] == :expressive,
              "Expected question or expressive, got: #{inspect(speech_act)}"
 
@@ -139,8 +143,10 @@ defmodule Brain.FeatureTest do
       speech_act = get_speech_act(context)
       intent = Map.get(context, :intent, "")
 
-      is_command = speech_act[:category] == :directive or
-                   speech_act[:sub_type] in [:command, :request_action]
+      is_command =
+        speech_act[:category] == :directive or
+          speech_act[:sub_type] in [:command, :request_action]
+
       is_music_intent = is_binary(intent) and String.contains?(intent, "music")
 
       if map_size(speech_act) > 0 do
@@ -174,6 +180,7 @@ defmodule Brain.FeatureTest do
       # Semantic assertion: Should be classified as a command/directive
       # Note: If context is empty, we fall back to checking response text
       speech_act = get_speech_act(context)
+
       if map_size(speech_act) > 0 do
         assert_is_command(context)
       else
@@ -247,6 +254,7 @@ defmodule Brain.FeatureTest do
 
       # The context should show some intent was detected (greeting or command)
       speech_act = get_speech_act(context)
+
       assert context[:intent] != nil or speech_act[:category] in [:directive, :expressive],
              "Expected greeting or command classification, got: #{inspect(context)}"
 
@@ -303,6 +311,7 @@ defmodule Brain.FeatureTest do
       # Semantic assertion: Should be classified as a greeting
       # Note: If context is empty, we fall back to checking response text
       speech_act = get_speech_act(context)
+
       if map_size(speech_act) > 0 do
         assert_is_greeting(context)
       else
@@ -325,8 +334,10 @@ defmodule Brain.FeatureTest do
       # Semantic assertion: Should be classified as a greeting/introduction or assertive
       # Note: If context is empty, we fall back to checking response exists
       speech_act = get_speech_act(context)
+
       if map_size(speech_act) > 0 do
-        assert speech_act[:sub_type] == :greeting or speech_act[:category] in [:assertive, :expressive],
+        assert speech_act[:sub_type] == :greeting or
+                 speech_act[:category] in [:assertive, :expressive],
                "Expected greeting/statement classification, got: #{inspect(speech_act)}"
       end
 
@@ -342,6 +353,7 @@ defmodule Brain.FeatureTest do
 
       # Semantic assertion: Should be classified as expressive (thanks)
       speech_act = get_speech_act(context)
+
       assert speech_act[:category] == :expressive or speech_act[:sub_type] == :thanks,
              "Expected expressive/thanks classification, got: #{inspect(speech_act)}"
 
@@ -385,10 +397,13 @@ defmodule Brain.FeatureTest do
       # Location might be in slots, entities, or mentioned in the response
       location_value = get_in(slots, [:location])
       location_in_slots = is_binary(location_value) and location_value =~ ~r/dallas/i
-      location_in_entities = Enum.any?(entities, fn e ->
-        entity_text = e[:text] || e["text"] || e[:value] || e["value"] || e[:match] || ""
-        is_binary(entity_text) and String.downcase(entity_text) =~ "dallas"
-      end)
+
+      location_in_entities =
+        Enum.any?(entities, fn e ->
+          entity_text = e[:text] || e[:value] || e[:match] || ""
+          is_binary(entity_text) and String.downcase(entity_text) =~ "dallas"
+        end)
+
       location_in_response = response =~ ~r/dallas/i
 
       assert location_in_slots or location_in_entities or location_in_response,
@@ -398,7 +413,8 @@ defmodule Brain.FeatureTest do
     end
 
     test "multi-sentence greeting + weather responds to BOTH parts", %{conversation_id: conv_id} do
-      {:ok, response, _context} = evaluate_with_context(conv_id, "Hello! What's the weather in NYC?")
+      {:ok, response, _context} =
+        evaluate_with_context(conv_id, "Hello! What's the weather in NYC?")
 
       # Should handle both the greeting AND the weather query
       # The response should acknowledge the greeting or be polite, AND address weather/NYC
@@ -418,7 +434,9 @@ defmodule Brain.FeatureTest do
   end
 
   describe "music slot handling" do
-    test "play music with unknown artist extracts and narrows artist entity", %{conversation_id: conv_id} do
+    test "play music with unknown artist extracts and narrows artist entity", %{
+      conversation_id: conv_id
+    } do
       # "Korvo Mitski" is completely absent from training data and Gazetteer.
       # The system should:
       # 1. POS-tag "Korvo Mitski" as proper nouns (PROPN)
@@ -432,18 +450,20 @@ defmodule Brain.FeatureTest do
 
       entities = Map.get(context, :entities, [])
 
-      artist_entity = Enum.find(entities, fn e ->
-        entity_text = e[:text] || e["text"] || e[:value] || e["value"] || e[:match] || ""
-        is_binary(entity_text) and String.downcase(entity_text) =~ "korvo"
-      end)
+      artist_entity =
+        Enum.find(entities, fn e ->
+          entity_text = e[:text] || e[:value] || e[:match] || ""
+          is_binary(entity_text) and String.downcase(entity_text) =~ "korvo"
+        end)
 
       assert artist_entity != nil,
-        "Expected 'Korvo Mitski' to be extracted as an entity. " <>
-        "Got entities: #{inspect(entities)}"
+             "Expected 'Korvo Mitski' to be extracted as an entity. " <>
+               "Got entities: #{inspect(entities)}"
 
-      entity_type = artist_entity[:entity_type] || artist_entity["entity_type"]
+      entity_type = artist_entity[:entity_type]
+
       assert entity_type in ["artist", "music-artist", "person"],
-        "Expected entity type to be artist, music-artist, or person, got: #{entity_type}"
+             "Expected entity type to be artist, music-artist, or person, got: #{entity_type}"
 
       assert_has_response(response)
     end
@@ -457,16 +477,21 @@ defmodule Brain.FeatureTest do
       slots = Map.get(context, :slots, %{})
       entities = Map.get(context, :entities, [])
 
-      song_in_slots = is_binary(get_in(slots, [:song])) and
-                      String.downcase(slots[:song]) =~ "bohemian"
-      song_in_entities = Enum.any?(entities, fn e ->
-        entity_text = e[:text] || e["text"] || e[:value] || e["value"] || e[:match] || ""
-        is_binary(entity_text) and String.downcase(entity_text) =~ "bohemian"
-      end)
+      song_in_slots =
+        is_binary(get_in(slots, [:song])) and
+          String.downcase(slots[:song]) =~ "bohemian"
+
+      song_in_entities =
+        Enum.any?(entities, fn e ->
+          entity_text = e[:text] || e[:value] || e[:match] || ""
+          is_binary(entity_text) and String.downcase(entity_text) =~ "bohemian"
+        end)
+
       song_in_response = response =~ ~r/bohemian/i
 
       # At least one should be true OR the response acknowledges the request
-      assert song_in_slots or song_in_entities or song_in_response or response =~ ~r/play|music|song/i,
+      assert song_in_slots or song_in_entities or song_in_response or
+               response =~ ~r/play|music|song/i,
              "Expected song recognition, got slots: #{inspect(slots)}"
 
       assert_has_response(response)
@@ -477,6 +502,7 @@ defmodule Brain.FeatureTest do
 
       # Should classify as command/directive
       speech_act = get_speech_act(context)
+
       assert speech_act[:category] == :directive or context[:intent] =~ ~r/music|search|find/i,
              "Expected directive/search intent, got: #{inspect(context)}"
 
@@ -491,7 +517,8 @@ defmodule Brain.FeatureTest do
     test "weather question gets weather-related response, not random facts", %{
       conversation_id: conv_id
     } do
-      {:ok, response, context} = evaluate_with_context(conv_id, "Can you tell me about the weather?")
+      {:ok, response, context} =
+        evaluate_with_context(conv_id, "Can you tell me about the weather?")
 
       # Semantic assertion: Should be classified as a question
       assert_is_question(context)
@@ -504,7 +531,8 @@ defmodule Brain.FeatureTest do
     end
 
     test "greeting with weather question gets contextual response", %{conversation_id: conv_id} do
-      {:ok, response, context} = evaluate_with_context(conv_id, "Hello! Can you tell me about the weather?")
+      {:ok, response, context} =
+        evaluate_with_context(conv_id, "Hello! Can you tell me about the weather?")
 
       # The context should show some intent was detected (greeting or weather)
       assert context[:intent] != nil or get_speech_act(context)[:category] != nil,
@@ -535,6 +563,7 @@ defmodule Brain.FeatureTest do
 
       # Semantic assertion: Should be classified as a question or expressive
       speech_act = get_speech_act(context)
+
       assert speech_act[:is_question] == true or speech_act[:category] == :expressive,
              "Expected question or expressive, got: #{inspect(speech_act)}"
 

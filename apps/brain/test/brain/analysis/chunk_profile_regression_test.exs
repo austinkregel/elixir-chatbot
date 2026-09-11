@@ -76,7 +76,7 @@ defmodule Brain.Analysis.ChunkProfileRegressionTest do
 
       mismatches = Enum.reject(results, & &1.match)
 
-      if length(mismatches) > 0 do
+      if mismatches != [] do
         IO.puts("Mismatches (first 10):")
 
         mismatches

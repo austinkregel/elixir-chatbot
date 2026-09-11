@@ -47,8 +47,8 @@ defmodule Brain.ML.POSTagger do
         valid_sequences =
           training_sequences
           |> Enum.filter(fn seq ->
-            tokens = Map.get(seq, :tokens) || Map.get(seq, "tokens", [])
-            tags = Map.get(seq, :tags) || Map.get(seq, "tags", [])
+            tokens = Map.get(seq, :tokens) || []
+            tags = Map.get(seq, :tags) || []
             tokens != [] and length(tokens) == length(tags)
           end)
           |> Enum.map(&normalize_sequence/1)
@@ -108,10 +108,10 @@ defmodule Brain.ML.POSTagger do
       {:ok, content} ->
         case Jason.decode(content) do
           {:ok, sequences} when is_list(sequences) ->
-            train(sequences)
+            train(Enum.map(sequences, &sequence_from_json/1))
 
           {:ok, %{"sequences" => sequences}} when is_list(sequences) ->
-            train(sequences)
+            train(Enum.map(sequences, &sequence_from_json/1))
 
           {:error, reason} ->
             {:error, "Failed to parse training file: #{inspect(reason)}"}
@@ -368,10 +368,21 @@ defmodule Brain.ML.POSTagger do
     @pos_tags
   end
 
+  # Boundary normalizer for JSON-loaded (string-keyed) training sequences.
+  # JSON decoding always yields string keys, so the internal pipeline can then
+  # work with atom keys exclusively.
+  defp sequence_from_json(seq) do
+    %{
+      tokens: Map.get(seq, "tokens", []),
+      tags: Map.get(seq, "tags", []),
+      source: Map.get(seq, "source")
+    }
+  end
+
   defp normalize_sequence(seq) do
-    tokens = Map.get(seq, :tokens) || Map.get(seq, "tokens", [])
-    tags = Map.get(seq, :tags) || Map.get(seq, "tags", [])
-    source = Map.get(seq, :source) || Map.get(seq, "source")
+    tokens = Map.get(seq, :tokens) || []
+    tags = Map.get(seq, :tags) || []
+    source = Map.get(seq, :source)
     normalized_tags = Enum.map(tags, &normalize_tag/1)
 
     %{
@@ -520,6 +531,7 @@ defmodule Brain.ML.POSTagger do
       if idx > 0 do
         prev_token = Enum.at(all_tokens, idx - 1)
         prev_lower = String.downcase(prev_token)
+
         [
           "prev_token:#{prev_lower}",
           if(is_cap and capitalized?(prev_token), do: "prev_also_cap", else: nil)
@@ -532,6 +544,7 @@ defmodule Brain.ML.POSTagger do
       if idx < length(all_tokens) - 1 do
         next_token = Enum.at(all_tokens, idx + 1)
         next_lower = String.downcase(next_token)
+
         [
           "next_token:#{next_lower}",
           if(is_cap and capitalized?(next_token), do: "next_also_cap", else: nil)

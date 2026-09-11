@@ -308,15 +308,15 @@ defmodule Brain.ML.DataLoaders do
   end
 
   defp build_entries_from_data(entry, value, original) do
-    types = Map.get(entry, :types) || Map.get(entry, "types")
+    types = Map.get(entry, :types)
 
     if is_list(types) and types != [] do
       Enum.map(types, fn type_data ->
         build_entry_from_type_data(type_data, value, original)
       end)
     else
-      entity_type = Map.get(entry, :entity_type) || Map.get(entry, "entity_type") || "unknown"
-      metadata = Map.get(entry, :metadata) || Map.get(entry, "metadata") || %{}
+      entity_type = Map.get(entry, :entity_type) || "unknown"
+      metadata = Map.get(entry, :metadata) || %{}
 
       [
         %{
@@ -337,7 +337,7 @@ defmodule Brain.ML.DataLoaders do
   end
 
   defp ensure_entity_type(entry) do
-    entity_type = Map.get(entry, :entity_type) || Map.get(entry, "entity_type")
+    entity_type = Map.get(entry, :entity_type)
 
     if entity_type do
       entry
@@ -349,7 +349,7 @@ defmodule Brain.ML.DataLoaders do
   defp add_entries_to_lookup(lookup, normalized, entries) when is_list(entries) do
     case Map.get(lookup, normalized) do
       nil ->
-        if length(entries) == 1 do
+        if match?([_], entries) do
           Map.put(lookup, normalized, hd(entries))
         else
           Map.put(lookup, normalized, entries)
@@ -470,7 +470,6 @@ defmodule Brain.ML.DataLoaders do
     end)
   end
 
-
   @doc "Load negative training examples from *_negative_en.json files.\n\nNegative examples are phrases that should NOT be classified as a particular intent.\nThey help the model learn to distinguish between similar-sounding but semantically\ndifferent inputs (e.g., \"tell me about the weather\" should NOT be meta.self_knowledge).\n\n## Format\nEach negative example file contains:\n```json\n[\n  {\"text\": \"tell me about the weather\", \"correct_intent\": \"weather.query\"},\n  {\"text\": \"what can you tell me about music\", \"correct_intent\": \"music.search\"}\n]\n```\n\nThe filename indicates what intent these are negative for (e.g., meta.self_knowledge_negative_en.json).\n"
   def load_negative_examples(path \\ nil) do
     negative_dir = path || get_data_path("intents/negative_examples")
@@ -531,7 +530,6 @@ defmodule Brain.ML.DataLoaders do
     end
   end
 
-
   @doc "Build intent label vocabulary from training examples.\n\nReturns `{label_to_idx, idx_to_label}` maps.\n"
   def build_intent_vocabulary(examples) do
     intents =
@@ -546,9 +544,7 @@ defmodule Brain.ML.DataLoaders do
       |> Enum.into(%{})
 
     idx_to_label =
-      label_to_idx
-      |> Enum.map(fn {k, v} -> {v, k} end)
-      |> Enum.into(%{})
+      Map.new(label_to_idx, fn {k, v} -> {v, k} end)
 
     Logger.info("Built intent vocabulary", %{num_intents: length(intents)})
 
@@ -561,7 +557,7 @@ defmodule Brain.ML.DataLoaders do
       examples
       |> Enum.flat_map(fn ex ->
         Enum.map(ex.entities || [], fn e ->
-          e[:type] || e["type"] || "unknown"
+          e[:type] || "unknown"
         end)
       end)
       |> Enum.uniq()
@@ -579,9 +575,7 @@ defmodule Brain.ML.DataLoaders do
       |> Enum.into(%{})
 
     idx_to_bio =
-      bio_to_idx
-      |> Enum.map(fn {k, v} -> {v, k} end)
-      |> Enum.into(%{})
+      Map.new(bio_to_idx, fn {k, v} -> {v, k} end)
 
     Logger.info("Built BIO vocabulary", %{
       entity_types: length(entity_types),

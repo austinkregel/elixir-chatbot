@@ -49,8 +49,8 @@ defmodule Brain.AtlasGraphPipelineTest do
 
       assert model != nil
       assert model.raw_input == "What is the capital of France?"
-      assert length(model.chunks) >= 1
-      assert length(model.analyses) >= 1
+      assert model.chunks != []
+      assert model.analyses != []
 
       best = Enum.max_by(model.analyses, & &1.confidence)
 
@@ -72,7 +72,7 @@ defmodule Brain.AtlasGraphPipelineTest do
 
       # Relational data should still be queryable
       beliefs = Belief |> Belief.for_subject("Paris") |> Atlas.Repo.all()
-      assert length(beliefs) >= 1
+      assert beliefs != []
       assert hd(beliefs).object == "France"
     end
 
@@ -80,7 +80,7 @@ defmodule Brain.AtlasGraphPipelineTest do
       model = Pipeline.process("Hello there!")
 
       assert model != nil
-      assert length(model.analyses) >= 1
+      assert model.analyses != []
 
       best = Enum.max_by(model.analyses, & &1.confidence)
       assert best.speech_act.category == :expressive
@@ -92,7 +92,7 @@ defmodule Brain.AtlasGraphPipelineTest do
       model = Pipeline.process("I really like jazz music")
 
       assert model != nil
-      assert length(model.analyses) >= 1
+      assert model.analyses != []
 
       best = Enum.max_by(model.analyses, & &1.confidence)
       assert best.intent != nil
@@ -107,8 +107,8 @@ defmodule Brain.AtlasGraphPipelineTest do
       model = Pipeline.process("I love Elixir. What runtime does it use?")
 
       assert model != nil
-      assert length(model.chunks) >= 2
-      assert length(model.analyses) >= 2
+      assert Enum.count_until(model.chunks, 2) >= 2
+      assert Enum.count_until(model.analyses, 2) >= 2
 
       has_question =
         Enum.any?(model.analyses, fn a ->
@@ -126,7 +126,7 @@ defmodule Brain.AtlasGraphPipelineTest do
 
       # Graph adjacency should be extractable
       {:ok, adjacency} = Graph.to_adjacency("knowledge_graph")
-      assert length(adjacency.node_ids) >= 2
+      assert Enum.count_until(adjacency.node_ids, 2) >= 2
     end
 
     test "directive speech act with graph-enriched domain" do
@@ -151,7 +151,7 @@ defmodule Brain.AtlasGraphPipelineTest do
 
       {:ok, triples} = Graph.to_triples("knowledge_graph")
       # Seed data + new nodes = at least 3 triples from the new nodes
-      assert length(triples) >= 3
+      assert Enum.count_until(triples, 3) >= 3
 
       model = Pipeline.process("What is TensorFlow used for?")
       assert model != nil
@@ -185,17 +185,29 @@ defmodule Brain.AtlasGraphPipelineTest do
       :ok = Writer.write_conversation(%{id: "roundtrip_conv", world_id: "default"})
       Process.sleep(200)
 
-      :ok = Writer.write_message("roundtrip_conv", %{id: "rt_msg_1", role: "user", content: "Hello"}, %{intent: "smalltalk.greetings.hello"})
+      :ok =
+        Writer.write_message(
+          "roundtrip_conv",
+          %{id: "rt_msg_1", role: "user", content: "Hello"},
+          %{intent: "smalltalk.greetings.hello"}
+        )
+
       Process.sleep(200)
 
-      :ok = Writer.write_message("roundtrip_conv", %{id: "rt_msg_2", role: "assistant", content: "Hi!"}, nil)
+      :ok =
+        Writer.write_message(
+          "roundtrip_conv",
+          %{id: "rt_msg_2", role: "assistant", content: "Hi!"},
+          nil
+        )
+
       Process.sleep(200)
 
       topics = Reader.conversation_topics("roundtrip_conv")
       assert "smalltalk.greetings.hello" in topics
 
       context = Reader.recent_context("roundtrip_conv", 5)
-      assert length(context) >= 2
+      assert Enum.count_until(context, 2) >= 2
     end
 
     test "POS tag writes accumulate and are readable" do
@@ -204,7 +216,7 @@ defmodule Brain.AtlasGraphPipelineTest do
 
       transitions = Reader.tag_transitions("DET")
       # Seeds have DET transitions
-      assert length(transitions) >= 2
+      assert Enum.count_until(transitions, 2) >= 2
     end
   end
 end

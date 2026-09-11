@@ -212,7 +212,9 @@ defmodule ChatWeb.WorldContext do
     try do
       :ets.insert(@ets_table, {session_id, world_id, System.monotonic_time(:millisecond)})
     rescue
-      _ -> :ok
+      # :ets.insert raises ArgumentError if the table was concurrently deleted;
+      # the cache is best-effort, so silently skip caching in that race.
+      ArgumentError -> :ok
     end
   end
 
@@ -233,7 +235,9 @@ defmodule ChatWeb.WorldContext do
           nil
       end
     rescue
-      _ -> nil
+      # :ets.lookup raises ArgumentError if the table was concurrently deleted;
+      # treat a missing cache table as a cache miss.
+      ArgumentError -> nil
     end
   end
 end

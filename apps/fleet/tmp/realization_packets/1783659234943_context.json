@@ -1,0 +1,344 @@
+{
+  "accumulator": {
+    "combined_confidence": 0.9999981754756291,
+    "conflict_measure": 0.4969802470547211,
+    "dominant_signal": [
+      "slot_fill",
+      true,
+      0.999
+    ],
+    "effective_confidence": 0.7515089587008411,
+    "entity_familiarity": 0.5,
+    "should_hedge": true
+  },
+  "all_analyses": [
+    {
+      "chunk_index": 0,
+      "confidence": 0.752,
+      "intent": "code.statement",
+      "response_strategy": "hedged_response",
+      "speech_act": {
+        "category": "assertive",
+        "confidence": 0.6893215083641355,
+        "intent_confidence": 0.4381906889710283,
+        "is_imperative": false,
+        "is_question": false,
+        "sub_type": "statement"
+      },
+      "text": "Analyse the sector."
+    }
+  ],
+  "analysis": {
+    "all_strategies": [
+      "hedged_response"
+    ],
+    "chunk_count": 1,
+    "confidence": 0.752,
+    "discourse": {
+      "addressee": "bot",
+      "confidence": 1.0,
+      "direct_address_detected": false,
+      "participants": [
+        "user",
+        "bot"
+      ]
+    },
+    "epistemic_status": "unchecked",
+    "event_frames": [
+      {
+        "trigger": "Analyse",
+        "trigger_index": 0
+      }
+    ],
+    "events": [
+      {
+        "action": {
+          "lemma": "analyse",
+          "tense": "imperative",
+          "verb": "Analyse"
+        },
+        "confidence": 0.7999999999999999,
+        "id": "evt_4bc77af100de8907",
+        "object": {
+          "text": "sector",
+          "type": "noun"
+        }
+      }
+    ],
+    "intent": "code.statement",
+    "pos_tags": [
+      [
+        "Analyse",
+        "VERB"
+      ],
+      [
+        "the",
+        "DET"
+      ],
+      [
+        "sector",
+        "NOUN"
+      ],
+      [
+        ".",
+        "NOUN"
+      ]
+    ],
+    "raw_input": "Analyse the sector.",
+    "response_strategy": "hedged_response",
+    "sentiment": {
+      "confidence": 0.19621991244033476,
+      "label": "neutral"
+    },
+    "speech_act": {
+      "category": "assertive",
+      "confidence": 0.6893215083641355,
+      "intent_confidence": 0.4381906889710283,
+      "is_imperative": false,
+      "is_question": false,
+      "sub_type": "statement"
+    },
+    "text": "Analyse the sector."
+  },
+  "enrichment": {
+    "enrichment_status": "not_configured",
+    "entity_familiarity": 0.5
+  },
+  "overall_strategy": "hedged_response",
+  "primary_analysis": {
+    "accumulated_context": {
+      "combined_confidence": 0.9999981754756291,
+      "conflict_measure": 0.4969802470547211,
+      "dominant_signal": [
+        "slot_fill",
+        true,
+        0.999
+      ],
+      "entity_familiarity": 0.5,
+      "signals": [
+        [
+          "intent",
+          "code.signature",
+          0.4381906889710283
+        ],
+        [
+          "entity_familiarity",
+          false,
+          0.5
+        ],
+        [
+          "sentiment",
+          "neutral",
+          0.19621991244033476
+        ],
+        [
+          "slot_fill",
+          true,
+          0.999
+        ],
+        [
+          "speech_act",
+          "assertive",
+          0.6893215083641355
+        ],
+        [
+          "discourse",
+          "bot",
+          0.999
+        ]
+      ]
+    },
+    "chunk_index": 0,
+    "confidence": 0.752,
+    "discourse": {
+      "addressee": "bot",
+      "confidence": 1.0,
+      "direct_address_detected": false,
+      "participants": [
+        "user",
+        "bot"
+      ]
+    },
+    "epistemic_status": "unchecked",
+    "event_frames": [
+      {
+        "trigger": "Analyse",
+        "trigger_index": 0
+      }
+    ],
+    "events": [
+      {
+        "action": {
+          "lemma": "analyse",
+          "tense": "imperative",
+          "verb": "Analyse"
+        },
+        "confidence": 0.7999999999999999,
+        "id": "evt_4bc77af100de8907",
+        "object": {
+          "text": "sector",
+          "type": "noun"
+        }
+      }
+    ],
+    "intent": "code.statement",
+    "intent_domain": "knowledge",
+    "pass": 2,
+    "pos_tags": [
+      [
+        "Analyse",
+        "VERB"
+      ],
+      [
+        "the",
+        "DET"
+      ],
+      [
+        "sector",
+        "NOUN"
+      ],
+      [
+        ".",
+        "NOUN"
+      ]
+    ],
+    "profile": {
+      "addressee": "bot",
+      "aspect": "simple",
+      "certainty": "hedged",
+      "confidence": 0.752,
+      "derived_label": "code.statement",
+      "domain": "code",
+      "engagement_level": "urgent_demand",
+      "feature_provenance": {
+        "addressee": "analysis",
+        "aspect": "micro_classifier",
+        "certainty": "micro_classifier",
+        "confidence": "analysis",
+        "domain": "micro_classifier",
+        "modality": "composed",
+        "novelty_score": "analysis",
+        "polarity": "composed",
+        "sentiment_alignment": "composed",
+        "slot_completeness": "analysis",
+        "speech_act_category": "analysis",
+        "speech_act_subtype": "analysis",
+        "target": "composed",
+        "tense": "micro_classifier",
+        "urgency": "micro_classifier"
+      },
+      "modality": "declarative",
+      "novelty_score": 0.0,
+      "polarity": "affirmative",
+      "response_posture": "hedged",
+      "self_disclosure_level": "none",
+      "sentiment_alignment": "neutral",
+      "slot_completeness": 1.0,
+      "speech_act_category": "assertive",
+      "speech_act_subtype": "statement",
+      "target": "ambiguous",
+      "temporal_framing": "hypothetical_future",
+      "tense": "future",
+      "urgency": "high"
+    },
+    "response_strategy": "hedged_response",
+    "sentiment": {
+      "confidence": 0.19621991244033476,
+      "label": "neutral"
+    },
+    "slots": {
+      "all_required_filled": true,
+      "schema_name": "unknown"
+    },
+    "speech_act": {
+      "category": "assertive",
+      "confidence": 0.6893215083641355,
+      "indicators": [
+        "intent:calendar.cancel"
+      ],
+      "intent_confidence": 0.4381906889710283,
+      "is_imperative": false,
+      "is_question": false,
+      "raw_analyses": {
+        "intent": {
+          "category": "assertive",
+          "confidence": 0.4381906889710283,
+          "intent": "calendar.cancel",
+          "margin": 0.29704717316746365,
+          "second_score": 0.14114351580356463,
+          "source": "feature_vector",
+          "sub_type": "statement",
+          "top_k": [
+            {
+              "intent": "calendar.cancel",
+              "score": 0.4381906889710283
+            },
+            {
+              "intent": "code.signature",
+              "score": 0.14114351580356463
+            },
+            {
+              "intent": "news.search",
+              "score": 0.1408116855258786
+            },
+            {
+              "intent": "knowledge.define",
+              "score": 0.14017960782702887
+            },
+            {
+              "intent": "smalltalk.agent.can_you_help",
+              "score": 0.13967450187249963
+            }
+          ]
+        },
+        "keyword": {
+          "confidence": 0.0,
+          "source": "keyword"
+        },
+        "memory": {
+          "confidence": 0.0,
+          "similar_count": 0,
+          "source": "memory"
+        },
+        "original_text": "Analyse the sector.",
+        "pragmatic": {
+          "expressive_score": 0.0,
+          "first_person_subject": false,
+          "has_acknowledgment": false,
+          "has_commissive": false,
+          "has_future": false,
+          "has_hedging": false,
+          "has_offer": false,
+          "has_please": false,
+          "has_thanks": false,
+          "has_urgency": false,
+          "is_backchannel": false,
+          "is_compliment": false,
+          "is_short_utterance": false,
+          "is_very_short": false,
+          "source": "pragmatic"
+        },
+        "structural": {
+          "category": "assertive",
+          "confidence": 0.7,
+          "has_modal": false,
+          "is_continuation": false,
+          "is_declarative": true,
+          "is_exclamatory": false,
+          "is_imperative": false,
+          "is_question": false,
+          "source": "structural",
+          "sub_type": "statement"
+        }
+      },
+      "sub_type": "statement"
+    },
+    "text": "Analyse the sector."
+  },
+  "raw_input": "Analyse the sector.",
+  "soul": {
+    "constitution": "Serve faithfully.",
+    "id": "t-45954",
+    "name": "Ensign t-45954"
+  }
+}

@@ -83,7 +83,7 @@ defmodule Brain.ML.FramingClassifierAccuracyTest do
 
       data = load_training_data!(data_path)
 
-      assert length(data) >= 100,
+      assert Enum.count_until(data, 100) >= 100,
              "Refusing to evaluate on tiny corpus (#{length(data)} examples). " <>
                "Re-run `mix gen_framing_data --corpus gvfc`."
 
@@ -116,7 +116,7 @@ defmodule Brain.ML.FramingClassifierAccuracyTest do
 
     Enum.flat_map(entries, fn
       %{"feature_vector" => vec, "label" => label}
-      when is_list(vec) and is_binary(label) and length(vec) > 0 ->
+      when is_list(vec) and is_binary(label) and vec != [] ->
         [{vec, label}]
 
       _ ->

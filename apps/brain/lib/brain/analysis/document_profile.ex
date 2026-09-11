@@ -285,9 +285,7 @@ defmodule Brain.Analysis.DocumentProfile do
   defp extract_entity_tokens(entity) when is_map(entity) do
     value =
       Map.get(entity, :value) ||
-        Map.get(entity, "value") ||
-        Map.get(entity, :name) ||
-        Map.get(entity, "name")
+        Map.get(entity, :name)
 
     if is_binary(value) and value != "" do
       [String.downcase(value)]
@@ -304,7 +302,8 @@ defmodule Brain.Analysis.DocumentProfile do
     n = max(length(profiles), 1)
 
     counts =
-      Enum.reduce(profiles, %{assertion: 0, question: 0, imperative: 0, expressive: 0}, fn p, acc ->
+      Enum.reduce(profiles, %{assertion: 0, question: 0, imperative: 0, expressive: 0}, fn p,
+                                                                                           acc ->
         case p do
           %ChunkProfile{modality: :interrogative} ->
             %{acc | question: acc.question + 1}

@@ -49,7 +49,8 @@ defmodule Brain.Response.DiscoursePlanner do
     |> insert_transitions(model.analyses)
   end
 
-  def plan(_, _opts), do: [Primitive.new(:acknowledgment, :general), Primitive.new(:follow_up, :continuation)]
+  def plan(_, _opts),
+    do: [Primitive.new(:acknowledgment, :general), Primitive.new(:follow_up, :continuation)]
 
   @doc """
   Plans primitives for a single chunk analysis.
@@ -75,13 +76,18 @@ defmodule Brain.Response.DiscoursePlanner do
     profile = a.profile
     unified_context = Keyword.get(opts, :unified_context, %{})
 
-    enrichment = if is_map(unified_context), do: Map.get(unified_context, :enrichment, %{}), else: %{}
-    enrichment_status = if is_map(enrichment), do: Map.get(enrichment, :enrichment_status), else: nil
+    enrichment =
+      if is_map(unified_context), do: Map.get(unified_context, :enrichment, %{}), else: %{}
+
+    enrichment_status =
+      if is_map(enrichment), do: Map.get(enrichment, :enrichment_status), else: nil
+
     enriched_data = if is_map(enrichment), do: Map.get(enrichment, :enriched_data, %{}), else: %{}
 
-    intent_domain = if match?(%ChunkProfile{domain: d} when d not in [:unknown, nil], profile),
-      do: safe_to_string(profile.domain),
-      else: extract_domain(a.intent)
+    intent_domain =
+      if match?(%ChunkProfile{domain: d} when d not in [:unknown, nil], profile),
+        do: safe_to_string(profile.domain),
+        else: extract_domain(a.intent)
 
     %{
       interaction_mode: safe_to_string(Keyword.get(opts, :mode, :chat)),
@@ -170,7 +176,10 @@ defmodule Brain.Response.DiscoursePlanner do
   end
 
   defp matches_value?(actual, expected) when is_boolean(expected), do: actual == expected
-  defp matches_value?(actual, expected) when is_binary(expected), do: safe_to_string(actual) == expected
+
+  defp matches_value?(actual, expected) when is_binary(expected),
+    do: safe_to_string(actual) == expected
+
   defp matches_value?(_, _), do: false
 
   defp backbone_to_primitives(%{"backbone" => backbone}) when is_list(backbone) do
@@ -191,7 +200,8 @@ defmodule Brain.Response.DiscoursePlanner do
   end
 
   defp maybe_insert_hedging(primitives, %{low_confidence: true, confidence: conf}) do
-    hedging = Primitive.new(:hedging, nil, %{confidence_level: conf, confidence_source: :accumulated})
+    hedging =
+      Primitive.new(:hedging, nil, %{confidence_level: conf, confidence_source: :accumulated})
 
     case Enum.find_index(primitives, &(&1.type in [:content, :framing])) do
       nil -> [hedging | primitives]
@@ -201,7 +211,9 @@ defmodule Brain.Response.DiscoursePlanner do
 
   defp maybe_insert_hedging(primitives, %{accumulated_context: %{should_hedge: true} = ctx}) do
     conf = Map.get(ctx, :effective_confidence, 0.5)
-    hedging = Primitive.new(:hedging, nil, %{confidence_level: conf, confidence_source: :accumulated})
+
+    hedging =
+      Primitive.new(:hedging, nil, %{confidence_level: conf, confidence_source: :accumulated})
 
     case Enum.find_index(primitives, &(&1.type in [:content, :framing])) do
       nil -> [hedging | primitives]
@@ -239,27 +251,36 @@ defmodule Brain.Response.DiscoursePlanner do
     |> apply_arousal_scaled_attunement(signals)
   end
 
-  defp apply_arousal_scaled_attunement(_primitives, %{sentiment: "negative", sentiment_confidence: conf})
+  defp apply_arousal_scaled_attunement(_primitives, %{
+         sentiment: "negative",
+         sentiment_confidence: conf
+       })
        when conf > @high_arousal_threshold do
-    attunement = Primitive.new(:attunement, :empathy, %{
-      arousal_level: :high,
-      sentiment_confidence: conf,
-      de_escalation: true
-    })
+    attunement =
+      Primitive.new(:attunement, :empathy, %{
+        arousal_level: :high,
+        sentiment_confidence: conf,
+        de_escalation: true
+      })
 
     [attunement]
   end
 
-  defp apply_arousal_scaled_attunement(primitives, %{sentiment: "negative", sentiment_confidence: conf})
+  defp apply_arousal_scaled_attunement(primitives, %{
+         sentiment: "negative",
+         sentiment_confidence: conf
+       })
        when conf > @moderate_arousal_threshold do
     if Enum.any?(primitives, &(&1.type == :attunement)) do
       primitives
     else
-      attunement = Primitive.new(:attunement, :empathy, %{
-        arousal_level: :moderate,
-        sentiment_confidence: conf,
-        de_escalation: false
-      })
+      attunement =
+        Primitive.new(:attunement, :empathy, %{
+          arousal_level: :moderate,
+          sentiment_confidence: conf,
+          de_escalation: false
+        })
+
       [attunement | primitives]
     end
   end
@@ -312,6 +333,7 @@ defmodule Brain.Response.DiscoursePlanner do
 
   defp seed_primitive_content(%Primitive{type: :attunement} = p, analysis) do
     sentiment = analysis.sentiment || %{}
+
     Primitive.merge_content(p, %{
       sentiment_label: Map.get(sentiment, :label, :neutral),
       sentiment_confidence: Map.get(sentiment, :confidence, 0.0),
@@ -322,6 +344,7 @@ defmodule Brain.Response.DiscoursePlanner do
 
   defp seed_primitive_content(%Primitive{type: :follow_up, variant: :clarification} = p, analysis) do
     slots = analysis.slots
+
     Primitive.merge_content(p, %{
       missing_slots: get_missing_slots(slots),
       intent: analysis.intent,
@@ -348,26 +371,25 @@ defmodule Brain.Response.DiscoursePlanner do
   defp seed_primitive_content(%Primitive{type: :transition} = p, _analysis), do: p
   defp seed_primitive_content(p, _analysis), do: p
 
-  defp insert_transitions(primitives, analyses) when length(analyses) <= 1, do: primitives
+  defp insert_transitions(primitives, []), do: primitives
+  defp insert_transitions(primitives, [_single]), do: primitives
 
-  defp insert_transitions(primitives, analyses) do
-    chunk_count = length(analyses)
-    if chunk_count <= 1 do
-      primitives
-    else
-      chunks_with_primitives = Enum.chunk_by(primitives, & &1.content[:chunk_index])
-      Enum.intersperse(chunks_with_primitives, [Primitive.new(:transition)])
-      |> List.flatten()
-    end
+  defp insert_transitions(primitives, _analyses) do
+    chunks_with_primitives = Enum.chunk_by(primitives, & &1.content[:chunk_index])
+
+    Enum.intersperse(chunks_with_primitives, [Primitive.new(:transition)])
+    |> List.flatten()
   end
 
   defp extract_domain(nil), do: nil
+
   defp extract_domain(intent) when is_binary(intent) do
     case String.split(intent, ".", parts: 2) do
       [domain | _] -> domain
       _ -> intent
     end
   end
+
   defp extract_domain(intent), do: safe_to_string(intent)
 
   defp has_missing_slots?(nil), do: false

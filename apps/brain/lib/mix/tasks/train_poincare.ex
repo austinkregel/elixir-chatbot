@@ -23,17 +23,18 @@ defmodule Mix.Tasks.TrainPoincare do
 
   @impl true
   def run(args) do
-    {opts, _, _} = OptionParser.parse(args,
-      strict: [
-        world: :string,
-        dim: :integer,
-        epochs: :integer,
-        learning_rate: :float,
-        verbose: :boolean,
-        publish: :boolean
-      ],
-      aliases: [w: :world, d: :dim, e: :epochs, v: :verbose]
-    )
+    {opts, _, _} =
+      OptionParser.parse(args,
+        strict: [
+          world: :string,
+          dim: :integer,
+          epochs: :integer,
+          learning_rate: :float,
+          verbose: :boolean,
+          publish: :boolean
+        ],
+        aliases: [w: :world, d: :dim, e: :epochs, v: :verbose]
+      )
 
     Mix.Task.run("app.start")
 
@@ -55,20 +56,23 @@ defmodule Mix.Tasks.TrainPoincare do
     Mix.shell().info("Loaded #{length(pairs)} hierarchy pairs")
 
     if verbose do
-      entities = pairs
-      |> Enum.flat_map(fn {c, p} -> [c, p] end)
-      |> Enum.uniq()
+      entities =
+        pairs
+        |> Enum.flat_map(fn {c, p} -> [c, p] end)
+        |> Enum.uniq()
+
       Mix.shell().info("#{length(entities)} unique entities")
     end
 
     Mix.shell().info("Training (dim: #{dim}, epochs: #{epochs}, lr: #{lr})...")
 
-    {:ok, embeddings, entity_to_idx, idx_to_entity} = Embeddings.train(pairs,
-      dim: dim,
-      epochs: epochs,
-      learning_rate: lr,
-      verbose: true
-    )
+    {:ok, embeddings, entity_to_idx, idx_to_entity} =
+      Embeddings.train(pairs,
+        dim: dim,
+        epochs: epochs,
+        learning_rate: lr,
+        verbose: true
+      )
 
     output_path = model_path(world_id)
     Embeddings.save(embeddings, entity_to_idx, idx_to_entity, dim, output_path)
@@ -110,10 +114,12 @@ defmodule Mix.Tasks.TrainPoincare do
               _ -> []
             end)
 
-          _ -> []
+          _ ->
+            []
         end
 
-      {:error, _} -> []
+      {:error, _} ->
+        []
     end
   end
 
@@ -129,17 +135,19 @@ defmodule Mix.Tasks.TrainPoincare do
             |> Enum.flat_map(&intent_name_to_pairs/1)
             |> Enum.uniq()
 
-          _ -> []
+          _ ->
+            []
         end
 
-      {:error, _} -> []
+      {:error, _} ->
+        []
     end
   end
 
   defp intent_name_to_pairs(intent_name) do
     parts = String.split(intent_name, ".")
 
-    if length(parts) < 2 do
+    if match?([], parts) or match?([_], parts) do
       []
     else
       build_hierarchy_chain(parts, [])
@@ -147,6 +155,7 @@ defmodule Mix.Tasks.TrainPoincare do
   end
 
   defp build_hierarchy_chain([_single], acc), do: acc
+
   defp build_hierarchy_chain(parts, acc) do
     child = Enum.join(parts, ".")
     parent = parts |> Enum.drop(-1) |> Enum.join(".")
@@ -196,10 +205,12 @@ defmodule Mix.Tasks.TrainPoincare do
           {:ok, data} when is_map(data) ->
             extract_context_pairs(data)
 
-          _ -> []
+          _ ->
+            []
         end
 
-      {:error, _} -> []
+      {:error, _} ->
+        []
     end
   end
 
@@ -215,7 +226,8 @@ defmodule Mix.Tasks.TrainPoincare do
             _ -> []
           end)
 
-        _ -> []
+        _ ->
+          []
       end
     end)
     |> Enum.uniq()
@@ -223,15 +235,16 @@ defmodule Mix.Tasks.TrainPoincare do
       pattern = Map.get(@context_consumer_patterns, context_name)
 
       if pattern do
-        consumers = Enum.filter(all_intents, fn intent ->
-          cond do
-            String.contains?(pattern, ".schedule.") ->
-              String.contains?(intent, "schedule")
+        consumers =
+          Enum.filter(all_intents, fn intent ->
+            cond do
+              String.contains?(pattern, ".schedule.") ->
+                String.contains?(intent, "schedule")
 
-            true ->
-              String.starts_with?(intent, pattern)
-          end
-        end)
+              true ->
+                String.starts_with?(intent, pattern)
+            end
+          end)
 
         Enum.map(consumers, fn intent -> {intent, "ctx:" <> context_name} end)
       else
@@ -252,20 +265,23 @@ defmodule Mix.Tasks.TrainPoincare do
     domains_dir = resolve_brain_priv_path("knowledge/domains")
     intent_registry_path = resolve_intent_registry_path()
 
-    domain_to_intents = case File.read(intent_registry_path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, registry} when is_map(registry) ->
-            Enum.reduce(registry, %{}, fn {intent_name, meta}, acc ->
-              domain = Map.get(meta, "domain", "")
-              Map.update(acc, domain, [intent_name], &[intent_name | &1])
-            end)
+    domain_to_intents =
+      case File.read(intent_registry_path) do
+        {:ok, content} ->
+          case Jason.decode(content) do
+            {:ok, registry} when is_map(registry) ->
+              Enum.reduce(registry, %{}, fn {intent_name, meta}, acc ->
+                domain = Map.get(meta, "domain", "")
+                Map.update(acc, domain, [intent_name], &[intent_name | &1])
+              end)
 
-          _ -> %{}
-        end
+            _ ->
+              %{}
+          end
 
-      {:error, _} -> %{}
-    end
+        {:error, _} ->
+          %{}
+      end
 
     case File.ls(domains_dir) do
       {:ok, files} ->
@@ -283,14 +299,17 @@ defmodule Mix.Tasks.TrainPoincare do
                   primary_intent = find_primary_intent(domain_name, domain_to_intents)
                   extract_frame_pairs(config, domain_name, primary_intent)
 
-                _ -> []
+                _ ->
+                  []
               end
 
-            {:error, _} -> []
+            {:error, _} ->
+              []
           end
         end)
 
-      {:error, _} -> []
+      {:error, _} ->
+        []
     end
   end
 
@@ -298,6 +317,7 @@ defmodule Mix.Tasks.TrainPoincare do
     intents = Map.get(domain_to_intents, domain_name, [])
 
     common_primary = "#{domain_name}.query"
+
     if common_primary in intents do
       common_primary
     else
@@ -316,7 +336,8 @@ defmodule Mix.Tasks.TrainPoincare do
             {"resp:#{domain_name}.#{frame_key}", primary_intent}
           end)
 
-        _ -> []
+        _ ->
+          []
       end
 
     enriched_pairs =
@@ -326,7 +347,8 @@ defmodule Mix.Tasks.TrainPoincare do
             {"resp:#{domain_name}.#{frame_key}", primary_intent}
           end)
 
-        _ -> []
+        _ ->
+          []
       end
 
     frame_pairs ++ enriched_pairs
@@ -339,21 +361,24 @@ defmodule Mix.Tasks.TrainPoincare do
       {:ok, content} ->
         case Jason.decode(content) do
           {:ok, data} when is_map(data) ->
-            Enum.flat_map(data, fn {intent_name, %{"templates" => templates}} when is_list(templates) ->
-              templates
-              |> Enum.with_index()
-              |> Enum.map(fn {_template, idx} ->
-                {"resp:#{intent_name}:#{idx}", intent_name}
-              end)
+            Enum.flat_map(data, fn
+              {intent_name, %{"templates" => templates}} when is_list(templates) ->
+                templates
+                |> Enum.with_index()
+                |> Enum.map(fn {_template, idx} ->
+                  {"resp:#{intent_name}:#{idx}", intent_name}
+                end)
 
               {_intent_name, _} ->
                 []
             end)
 
-          _ -> []
+          _ ->
+            []
         end
 
-      {:error, _} -> []
+      {:error, _} ->
+        []
     end
   end
 
@@ -361,8 +386,11 @@ defmodule Mix.Tasks.TrainPoincare do
     hierarchy = Map.get(data, "type_hierarchy", data)
 
     Enum.flat_map(hierarchy, fn
-      {"description", _} -> []
-      {"config", _} -> []
+      {"description", _} ->
+        []
+
+      {"config", _} ->
+        []
 
       {parent, %{"subtypes" => subtypes}} when is_list(subtypes) ->
         Enum.map(subtypes, &{&1, parent})
@@ -370,7 +398,8 @@ defmodule Mix.Tasks.TrainPoincare do
       {parent, children} when is_list(children) ->
         Enum.map(children, &{&1, parent})
 
-      _ -> []
+      _ ->
+        []
     end)
   end
 
@@ -402,25 +431,27 @@ defmodule Mix.Tasks.TrainPoincare do
 
     num_entities = map_size(entity_to_idx)
 
-    {total_rank, count} = Enum.reduce(pairs, {0, 0}, fn {child, parent}, {rank_acc, count_acc} ->
-      child_idx = Map.get(entity_to_idx, child)
-      parent_idx = Map.get(entity_to_idx, parent)
+    {total_rank, count} =
+      Enum.reduce(pairs, {0, 0}, fn {child, parent}, {rank_acc, count_acc} ->
+        child_idx = Map.get(entity_to_idx, child)
+        parent_idx = Map.get(entity_to_idx, parent)
 
-      if child_idx && parent_idx do
-        child_emb = embeddings[child_idx]
+        if child_idx && parent_idx do
+          child_emb = embeddings[child_idx]
 
-        distances = for i <- 0..(num_entities - 1) do
-          {i, Distance.distance(child_emb, embeddings[i]) |> Nx.to_number()}
+          distances =
+            for i <- 0..(num_entities - 1) do
+              {i, Distance.distance(child_emb, embeddings[i]) |> Nx.to_number()}
+            end
+
+          sorted = Enum.sort_by(distances, fn {_i, d} -> d end)
+          rank = Enum.find_index(sorted, fn {i, _d} -> i == parent_idx end) + 1
+
+          {rank_acc + rank, count_acc + 1}
+        else
+          {rank_acc, count_acc}
         end
-
-        sorted = Enum.sort_by(distances, fn {_i, d} -> d end)
-        rank = Enum.find_index(sorted, fn {i, _d} -> i == parent_idx end) + 1
-
-        {rank_acc + rank, count_acc + 1}
-      else
-        {rank_acc, count_acc}
-      end
-    end)
+      end)
 
     if count > 0 do
       mean_rank = total_rank / count

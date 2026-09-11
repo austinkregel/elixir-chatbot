@@ -32,7 +32,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
       result = Integration.verify_fact("france", "The capital is not Paris")
 
       assert {:contradicted, conflicting_beliefs} = result
-      assert length(conflicting_beliefs) == 1
+      assert match?([_], conflicting_beliefs)
       assert hd(conflicting_beliefs).id == belief_id1
       assert hd(conflicting_beliefs).object == "The capital is Paris"
     end
@@ -50,7 +50,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
       result = Integration.verify_fact("water", "Water does not boil at 100C")
 
       assert {:contradicted, conflicting_beliefs} = result
-      assert length(conflicting_beliefs) == 1
+      assert match?([_], conflicting_beliefs)
     end
 
     test "returns verified when fact is consistent" do
@@ -107,7 +107,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
       result = Integration.check_contradiction("france", "The capital is not Paris")
 
       assert {:contradiction, conflicting_beliefs} = result
-      assert length(conflicting_beliefs) == 1
+      assert match?([_], conflicting_beliefs)
     end
 
     test "returns consistent when no contradiction" do
@@ -202,7 +202,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
       {:ok, beliefs} =
         BeliefStore.query_beliefs(subject: :user, predicate: :location, user_id: user_id)
 
-      assert length(beliefs) == 2
+      assert match?([_, _], beliefs)
       locations = Enum.map(beliefs, &String.downcase(&1.object))
       assert "new york" in locations
       assert "chicago" in locations
@@ -229,14 +229,14 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
       result = Integration.verify_fact("france", "The capital is not Paris")
       assert {:contradicted, conflicting_beliefs} = result
 
-      assert length(conflicting_beliefs) == 1,
+      assert match?([_], conflicting_beliefs),
              "Expected 1 conflicting belief, got: #{inspect(conflicting_beliefs)}"
 
       {:ok, beliefs} = BeliefStore.query_beliefs(subject: :world, predicate: :france)
       paris_beliefs = Enum.filter(beliefs, &(&1.object == "The capital is Paris"))
       not_paris_beliefs = Enum.filter(beliefs, &(&1.object == "The capital is not Paris"))
 
-      assert length(paris_beliefs) == 1,
+      assert match?([_], paris_beliefs),
              "Original belief should still exist when contradiction detected"
 
       assert not_paris_beliefs == [],
@@ -349,7 +349,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
 
       {:error, {:contradiction, contra_id}} = JTMS.check_consistency()
       contradictions = JTMS.get_contradictions()
-      assert length(contradictions) == 1
+      assert match?([_], contradictions)
       contradiction_node = hd(contradictions)
       assert contradiction_node.id == contra_id
     end
@@ -377,7 +377,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
       # Two same-confidence assumptions under the :hybrid strategy are not
       # auto-resolvable, so this lands as a real pending decision with options.
       assert entry.world_id == "default"
-      assert length(entry.options) == 2
+      assert match?([_, _], entry.options)
       assert Enum.sort(Enum.map(entry.options, & &1.assumption_id)) == Enum.sort([node1, node2])
     end
 
@@ -430,7 +430,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
       result = Integration.check_contradiction("france", "The capital is Paris")
       assert match?({:contradiction, _}, result)
       {:ok, beliefs} = BeliefStore.query_beliefs(subject: :world, predicate: :france)
-      assert length(beliefs) == 2
+      assert match?([_, _], beliefs)
       high_conf = Enum.find(beliefs, &(&1.id == high_conf_belief_id))
       assert high_conf.confidence == 0.95
     end

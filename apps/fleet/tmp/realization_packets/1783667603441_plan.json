@@ -1,0 +1,64 @@
+[
+  {
+    "content": {
+      "content_complete": true,
+      "user_input_summary": "Task A."
+    },
+    "type": "acknowledgment",
+    "variant": "general"
+  },
+  {
+    "content": {
+      "confidence": 0.702,
+      "content_complete": true,
+      "emotional_tone": "neutral",
+      "entities": [
+        {
+          "confidence": 0.65,
+          "disambiguation_confidence": 0.0,
+          "entity": "person",
+          "entity_type": "given-name",
+          "graph_known": false,
+          "match": "A",
+          "source": "pos_tagger_propn",
+          "value": "A"
+        }
+      ],
+      "intent": "weather.statement",
+      "key_elements": {
+        "entities": [
+          "A"
+        ],
+        "intent": "weather.statement"
+      },
+      "related_beliefs": [],
+      "text": "Task A.",
+      "understood_meaning": "you're asking about weather"
+    },
+    "type": "content",
+    "variant": "reflective"
+  },
+  {
+    "content": {
+      "aspect_to_explore": "A",
+      "content_complete": true,
+      "entities": [
+        {
+          "confidence": 0.65,
+          "disambiguation_confidence": 0.0,
+          "entity": "person",
+          "entity_type": "given-name",
+          "graph_known": false,
+          "match": "A",
+          "source": "pos_tagger_propn",
+          "value": "A"
+        }
+      ],
+      "intent": "weather.statement",
+      "text": "Task A.",
+      "topic": "weather"
+    },
+    "type": "follow_up",
+    "variant": "elaboration"
+  }
+]

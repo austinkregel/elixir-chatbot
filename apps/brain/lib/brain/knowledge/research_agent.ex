@@ -249,7 +249,7 @@ Year: #{paper.year}"
 Citations: #{paper.citation_count}"
       ]
       |> Enum.reject(&(&1 == ""))
-      |> Enum.join("")
+      |> Enum.join()
 
     %{
       url: paper.url || "academic://#{paper.source}/#{paper.id}",
@@ -289,10 +289,7 @@ Citations: #{paper.citation_count}"
 
   defp do_fetch(url, timeout) do
     try do
-      case @http_client.get(url, receive_timeout: timeout) do
-        {:ok, response} -> {:ok, response}
-        {:error, reason} -> {:error, reason}
-      end
+      @http_client.get(url, receive_timeout: timeout)
     rescue
       e -> {:error, {:fetch_error, Exception.message(e)}}
     end
@@ -441,7 +438,7 @@ Citations: #{paper.citation_count}"
     claim = Map.get(analysis, :text, "")
 
     if primary_entity && String.length(claim) > 10 do
-      entity_value = Map.get(primary_entity, :value) || Map.get(primary_entity, "value")
+      entity_value = Map.get(primary_entity, :value)
       entity_type = Map.get(primary_entity, :entity_type) || Map.get(primary_entity, "type")
 
       base_confidence = Map.get(analysis, :confidence, 0.5)

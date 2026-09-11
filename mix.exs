@@ -31,6 +31,8 @@ defmodule ChatBot.Umbrella.MixProject do
     [
       # Code quality
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      # Credo plugin: flags AI-generated code slop
+      {:ex_slop, "~> 0.4", only: [:dev, :test], runtime: false},
       # Documentation site (`mix docs`) — see docs()/0 below
       {:ex_doc, "~> 0.40", only: :dev, runtime: false},
       # Shared test dependencies

@@ -240,7 +240,7 @@ defmodule Mix.Tasks.GenMicroData do
     end
   end
 
-  defp has_feature_vector?(%{"feature_vector" => v}) when is_list(v) and length(v) > 0, do: true
+  defp has_feature_vector?(%{"feature_vector" => [_ | _]}), do: true
   defp has_feature_vector?(_), do: false
 
   defp validate_intent_labels(data) do
@@ -426,8 +426,11 @@ defmodule Mix.Tasks.GenMicroData do
 
   defp has_perfect?(tokens) do
     has_have = Enum.any?(tokens, &(&1 in ~w(have has had)))
-    has_past_participle = Enum.any?(tokens, &String.ends_with?(&1, "ed")) or
-                          Enum.any?(tokens, &(&1 in ~w(been done gone seen taken given known)))
+
+    has_past_participle =
+      Enum.any?(tokens, &String.ends_with?(&1, "ed")) or
+        Enum.any?(tokens, &(&1 in ~w(been done gone seen taken given known)))
+
     has_have and has_past_participle
   end
 
@@ -466,9 +469,11 @@ defmodule Mix.Tasks.GenMicroData do
     certainty_count = MapSet.intersection(lower_tokens, @certainty_words) |> MapSet.size()
 
     has_question = Enum.any?(tokens || [], &(&1 == "?"))
-    has_conditional = Enum.any?(tokens || [], fn t ->
-      String.downcase(t) in ~w(if unless whether)
-    end)
+
+    has_conditional =
+      Enum.any?(tokens || [], fn t ->
+        String.downcase(t) in ~w(if unless whether)
+      end)
 
     cond do
       certainty_count >= 1 -> "committed"
@@ -499,7 +504,11 @@ defmodule Mix.Tasks.GenMicroData do
     domain = intent |> String.split(".") |> List.first()
     full_intent_prefix = intent |> String.split(".") |> Enum.take(2) |> Enum.join(".")
 
-    primary_pos = (pos_tags || []) |> Enum.frequencies() |> Enum.max_by(fn {_k, v} -> v end, fn -> {"NOUN", 0} end) |> elem(0)
+    primary_pos =
+      (pos_tags || [])
+      |> Enum.frequencies()
+      |> Enum.max_by(fn {_k, v} -> v end, fn -> {"NOUN", 0} end)
+      |> elem(0)
 
     cond do
       MapSet.member?(@person_intents, full_intent_prefix) -> "person"
@@ -528,7 +537,8 @@ defmodule Mix.Tasks.GenMicroData do
   end
 
   defp show_stats(name, data) do
-    labels = data |> Enum.map(& &1["label"]) |> Enum.frequencies() |> Enum.sort_by(&elem(&1, 1), :desc)
+    labels =
+      data |> Enum.map(& &1["label"]) |> Enum.frequencies() |> Enum.sort_by(&elem(&1, 1), :desc)
 
     Mix.shell().info("\n#{name} (#{length(data)} total):")
 
@@ -548,7 +558,9 @@ defmodule Mix.Tasks.GenMicroData do
     case File.read(path) do
       {:ok, json} ->
         case Jason.decode(json) do
-          {:ok, data} -> data
+          {:ok, data} ->
+            data
+
           {:error, reason} ->
             Mix.raise("Failed to parse gold_standard.json: #{inspect(reason)}")
         end
@@ -593,8 +605,24 @@ defmodule Mix.Tasks.GenMicroData do
     conceptnet_ok = File.exists?(conceptnet_path)
 
     warnings = []
-    warnings = if wordnet_ok, do: warnings, else: warnings ++ ["WordNet not found — lexical domains, supersenses, selectional preferences will be empty. Run: mix download_wordnet"]
-    warnings = if conceptnet_ok, do: warnings, else: warnings ++ ["ConceptNet not found — ConceptNet edge fingerprint dims (218-229) will be empty. Run: mix ingest_lexicon"]
+
+    warnings =
+      if wordnet_ok,
+        do: warnings,
+        else:
+          warnings ++
+            [
+              "WordNet not found — lexical domains, supersenses, selectional preferences will be empty. Run: mix download_wordnet"
+            ]
+
+    warnings =
+      if conceptnet_ok,
+        do: warnings,
+        else:
+          warnings ++
+            [
+              "ConceptNet not found — ConceptNet edge fingerprint dims (218-229) will be empty. Run: mix ingest_lexicon"
+            ]
 
     unless warnings == [] do
       Mix.shell().info("")

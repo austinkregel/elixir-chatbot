@@ -41,7 +41,8 @@ defmodule Brain.ML.ModelStore do
   The `remote_key` is built as `v<timestamp>/<relative_path>` so that every
   training run produces a unique version prefix.
   """
-  @spec publish(String.t(), String.t(), keyword()) :: {:ok, String.t()} | {:error, term()} | :disabled
+  @spec publish(String.t(), String.t(), keyword()) ::
+          {:ok, String.t()} | {:error, term()} | :disabled
   def publish(local_path, remote_key, opts \\ []) do
     if enabled?() do
       bucket = opts[:bucket] || bucket()
@@ -115,7 +116,9 @@ defmodule Brain.ML.ModelStore do
     if enabled?() do
       bucket = opts[:bucket] || bucket()
 
-      case ExAws.request(ExAws.S3.get_object(bucket, remote_key), http_opts: [recv_timeout: @download_timeout]) do
+      case ExAws.request(ExAws.S3.get_object(bucket, remote_key),
+             http_opts: [recv_timeout: @download_timeout]
+           ) do
         {:ok, %{body: body}} ->
           File.mkdir_p!(Path.dirname(local_path))
           File.write!(local_path, body)
@@ -229,7 +232,8 @@ defmodule Brain.ML.ModelStore do
   Reads the `latest` pointer to discover the current version prefix,
   then downloads all objects under that prefix to the given local directory.
   """
-  @spec fetch_latest(String.t(), keyword()) :: {:ok, non_neg_integer()} | {:error, term()} | :disabled
+  @spec fetch_latest(String.t(), keyword()) ::
+          {:ok, non_neg_integer()} | {:error, term()} | :disabled
   def fetch_latest(local_dir, opts \\ []) do
     if enabled?() do
       bucket = opts[:bucket] || bucket()
@@ -251,8 +255,6 @@ defmodule Brain.ML.ModelStore do
 
         Logger.info("[ModelStore] Fetched #{count} models from #{version_prefix}")
         {:ok, count}
-      else
-        {:error, reason} -> {:error, reason}
       end
     else
       :disabled
@@ -349,7 +351,10 @@ defmodule Brain.ML.ModelStore do
                 :ok
 
               {:error, reason} ->
-                Logger.warning("[ModelStore] Could not create bucket #{bucket}: #{inspect(reason)}")
+                Logger.warning(
+                  "[ModelStore] Could not create bucket #{bucket}: #{inspect(reason)}"
+                )
+
                 :ok
             end
           rescue

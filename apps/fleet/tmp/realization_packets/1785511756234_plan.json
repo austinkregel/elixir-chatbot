@@ -1,0 +1,47 @@
+[
+  {
+    "content": {
+      "action": "smalltalk.statement",
+      "capability": "incapable",
+      "content_complete": true,
+      "status": "incapable"
+    },
+    "type": "acknowledgment",
+    "variant": "action"
+  },
+  {
+    "content": {
+      "advisories": [],
+      "beliefs": [],
+      "capability": "cognitive",
+      "confidence": 0.739,
+      "content_complete": true,
+      "entities": [
+        {
+          "confidence": 0.62,
+          "entity_type": "slot_mappings",
+          "graph_known": true,
+          "match": "name",
+          "source": "gazetteer",
+          "value": "name"
+        },
+        {
+          "confidence": 0.65,
+          "disambiguation_reason": "introduction_pattern",
+          "entity_type": "given-name",
+          "graph_known": false,
+          "match": "Bex",
+          "source": "pos_tagger_propn",
+          "value": "Bex"
+        }
+      ],
+      "epistemic_status": "unchecked",
+      "intent": "smalltalk.statement",
+      "related_beliefs": [],
+      "text": "My name is Bex.",
+      "topic": "name, Bex"
+    },
+    "type": "content",
+    "variant": "report"
+  }
+]

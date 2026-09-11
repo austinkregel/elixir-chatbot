@@ -1,0 +1,460 @@
+{
+  "accumulator": {
+    "combined_confidence": 0.9960574049759716,
+    "conflict_measure": 0.5596098709857568,
+    "dominant_signal": [
+      "slot_fill",
+      true,
+      0.999
+    ],
+    "effective_confidence": 0.7184587845758388,
+    "entity_familiarity": 0.001,
+    "should_hedge": true
+  },
+  "all_analyses": [
+    {
+      "chunk_index": 0,
+      "confidence": 0.718,
+      "entities": [
+        {
+          "confidence": 0.9,
+          "entity_type": "number",
+          "value": "7"
+        }
+      ],
+      "intent": "music.statement",
+      "response_strategy": "hedged_response",
+      "speech_act": {
+        "category": "assertive",
+        "confidence": 0.6875126611555065,
+        "intent_confidence": 0.43336709641468396,
+        "is_imperative": false,
+        "is_question": false,
+        "sub_type": "statement"
+      },
+      "text": "Investigate the anomaly at sector 7."
+    }
+  ],
+  "analysis": {
+    "all_strategies": [
+      "hedged_response"
+    ],
+    "chunk_count": 1,
+    "confidence": 0.718,
+    "discourse": {
+      "addressee": "bot",
+      "confidence": 1.0,
+      "direct_address_detected": false,
+      "participants": [
+        "user",
+        "bot"
+      ]
+    },
+    "entities": [
+      {
+        "confidence": 0.9,
+        "entity_type": "number",
+        "graph_known": false,
+        "match": "7",
+        "source": "system",
+        "value": "7"
+      }
+    ],
+    "epistemic_status": "unchecked",
+    "event_frames": [
+      {
+        "arguments": [
+          {
+            "confidence": 0.5109726660969851,
+            "entity_type": "number",
+            "role": "arg1",
+            "text": "7"
+          }
+        ],
+        "trigger": "Investigate",
+        "trigger_index": 0
+      }
+    ],
+    "events": [
+      {
+        "action": {
+          "lemma": "investigate",
+          "tense": "imperative",
+          "verb": "Investigate"
+        },
+        "confidence": 0.7999999999999999,
+        "id": "evt_dfb47da36d985f7a",
+        "object": {
+          "text": "anomaly",
+          "type": "noun"
+        }
+      }
+    ],
+    "intent": "music.statement",
+    "pos_tags": [
+      [
+        "Investigate",
+        "VERB"
+      ],
+      [
+        "the",
+        "DET"
+      ],
+      [
+        "anomaly",
+        "NOUN"
+      ],
+      [
+        "at",
+        "NOUN"
+      ],
+      [
+        "sector",
+        "ADP"
+      ],
+      [
+        "7",
+        "NUM"
+      ],
+      [
+        ".",
+        "NOUN"
+      ]
+    ],
+    "raw_input": "Investigate the anomaly at sector 7.",
+    "response_strategy": "hedged_response",
+    "sentiment": {
+      "confidence": 0.10331416642354829,
+      "label": "neutral"
+    },
+    "slots": {
+      "filled": {
+        "number": {
+          "confidence": 0.9,
+          "source": "explicit",
+          "value": "7"
+        }
+      }
+    },
+    "speech_act": {
+      "category": "assertive",
+      "confidence": 0.6875126611555065,
+      "intent_confidence": 0.43336709641468396,
+      "is_imperative": false,
+      "is_question": false,
+      "sub_type": "statement"
+    },
+    "text": "Investigate the anomaly at sector 7."
+  },
+  "enrichment": {
+    "enrichment_status": "not_configured",
+    "entity_familiarity": 0.0,
+    "graph_enrichment": {
+      "entity_context": [
+        {
+          "entity": {
+            "confidence": 0.9,
+            "entity_type": "number",
+            "graph_known": false,
+            "match": "7",
+            "source": "system",
+            "value": "7"
+          }
+        }
+      ]
+    }
+  },
+  "memory": {
+    "similar_episodes": [
+      [
+        {
+          "action": "order",
+          "id": "771b8575-7afd-4ada-865b-6bcf500d6564",
+          "outcome": "Investigate the anomaly at sector 7.",
+          "state": "communication",
+          "tags": [
+            "communication",
+            "from:sh-5250",
+            "order"
+          ],
+          "timestamp": 1783656882569
+        },
+        0.0
+      ]
+    ]
+  },
+  "overall_strategy": "hedged_response",
+  "primary_analysis": {
+    "accumulated_context": {
+      "combined_confidence": 0.9960574049759716,
+      "conflict_measure": 0.5596098709857568,
+      "dominant_signal": [
+        "slot_fill",
+        true,
+        0.999
+      ],
+      "entity_familiarity": 0.001,
+      "signals": [
+        [
+          "intent",
+          "statement.observation",
+          0.43336709641468396
+        ],
+        [
+          "entity_familiarity",
+          false,
+          0.001
+        ],
+        [
+          "sentiment",
+          "neutral",
+          0.10331416642354829
+        ],
+        [
+          "slot_fill",
+          true,
+          0.999
+        ],
+        [
+          "speech_act",
+          "assertive",
+          0.6875126611555065
+        ],
+        [
+          "discourse",
+          "bot",
+          0.999
+        ]
+      ]
+    },
+    "chunk_index": 0,
+    "confidence": 0.718,
+    "discourse": {
+      "addressee": "bot",
+      "confidence": 1.0,
+      "direct_address_detected": false,
+      "participants": [
+        "user",
+        "bot"
+      ]
+    },
+    "entities": [
+      {
+        "confidence": 0.9,
+        "entity_type": "number",
+        "graph_known": false,
+        "match": "7",
+        "source": "system",
+        "value": "7"
+      }
+    ],
+    "epistemic_status": "unchecked",
+    "event_frames": [
+      {
+        "arguments": [
+          {
+            "confidence": 0.5109726660969851,
+            "entity_type": "number",
+            "role": "arg1",
+            "text": "7"
+          }
+        ],
+        "trigger": "Investigate",
+        "trigger_index": 0
+      }
+    ],
+    "events": [
+      {
+        "action": {
+          "lemma": "investigate",
+          "tense": "imperative",
+          "verb": "Investigate"
+        },
+        "confidence": 0.7999999999999999,
+        "id": "evt_dfb47da36d985f7a",
+        "object": {
+          "text": "anomaly",
+          "type": "noun"
+        }
+      }
+    ],
+    "intent": "music.statement",
+    "intent_domain": "knowledge",
+    "pass": 2,
+    "pos_tags": [
+      [
+        "Investigate",
+        "VERB"
+      ],
+      [
+        "the",
+        "DET"
+      ],
+      [
+        "anomaly",
+        "NOUN"
+      ],
+      [
+        "at",
+        "NOUN"
+      ],
+      [
+        "sector",
+        "ADP"
+      ],
+      [
+        "7",
+        "NUM"
+      ],
+      [
+        ".",
+        "NOUN"
+      ]
+    ],
+    "profile": {
+      "addressee": "bot",
+      "aspect": "progressive",
+      "certainty": "hedged",
+      "confidence": 0.718,
+      "derived_label": "music.statement",
+      "domain": "music",
+      "engagement_level": "urgent_demand",
+      "feature_provenance": {
+        "addressee": "analysis",
+        "aspect": "micro_classifier",
+        "certainty": "micro_classifier",
+        "confidence": "analysis",
+        "domain": "micro_classifier",
+        "modality": "composed",
+        "novelty_score": "analysis",
+        "polarity": "composed",
+        "sentiment_alignment": "composed",
+        "slot_completeness": "analysis",
+        "speech_act_category": "analysis",
+        "speech_act_subtype": "analysis",
+        "target": "composed",
+        "tense": "micro_classifier",
+        "urgency": "micro_classifier"
+      },
+      "modality": "declarative",
+      "novelty_score": 0.0,
+      "polarity": "affirmative",
+      "response_posture": "hedged",
+      "self_disclosure_level": "none",
+      "sentiment_alignment": "neutral",
+      "slot_completeness": 1.0,
+      "speech_act_category": "assertive",
+      "speech_act_subtype": "statement",
+      "target": "ambiguous",
+      "temporal_framing": "ongoing",
+      "tense": "present",
+      "urgency": "high"
+    },
+    "response_strategy": "hedged_response",
+    "sentiment": {
+      "confidence": 0.10331416642354829,
+      "label": "neutral"
+    },
+    "slots": {
+      "all_required_filled": true,
+      "filled_slots": {
+        "number": {
+          "confidence": 0.9,
+          "source": "explicit",
+          "value": "7"
+        }
+      },
+      "schema_name": "unknown"
+    },
+    "speech_act": {
+      "category": "assertive",
+      "confidence": 0.6875126611555065,
+      "indicators": [
+        "intent:weather.condition"
+      ],
+      "intent_confidence": 0.43336709641468396,
+      "is_imperative": false,
+      "is_question": false,
+      "raw_analyses": {
+        "intent": {
+          "category": "assertive",
+          "confidence": 0.43336709641468396,
+          "intent": "weather.condition",
+          "margin": 0.2903699500031406,
+          "second_score": 0.14299714641154337,
+          "source": "feature_vector",
+          "sub_type": "statement",
+          "top_k": [
+            {
+              "intent": "weather.condition",
+              "score": 0.43336709641468396
+            },
+            {
+              "intent": "calendar.cancel",
+              "score": 0.14299714641154337
+            },
+            {
+              "intent": "news.search",
+              "score": 0.14177425212313158
+            },
+            {
+              "intent": "status.diagnostic",
+              "score": 0.14098302394941087
+            },
+            {
+              "intent": "code.signature",
+              "score": 0.14087848110123022
+            }
+          ]
+        },
+        "keyword": {
+          "confidence": 0.0,
+          "source": "keyword"
+        },
+        "memory": {
+          "confidence": 0.0,
+          "similar_count": 0,
+          "source": "memory"
+        },
+        "original_text": "Investigate the anomaly at sector 7.",
+        "pragmatic": {
+          "expressive_score": 0.0,
+          "first_person_subject": false,
+          "has_acknowledgment": false,
+          "has_commissive": false,
+          "has_future": false,
+          "has_hedging": false,
+          "has_offer": false,
+          "has_please": false,
+          "has_thanks": false,
+          "has_urgency": false,
+          "is_backchannel": false,
+          "is_compliment": false,
+          "is_short_utterance": false,
+          "is_very_short": false,
+          "source": "pragmatic"
+        },
+        "structural": {
+          "category": "assertive",
+          "confidence": 0.7,
+          "has_modal": false,
+          "is_continuation": false,
+          "is_declarative": true,
+          "is_exclamatory": false,
+          "is_imperative": false,
+          "is_question": false,
+          "source": "structural",
+          "sub_type": "statement"
+        }
+      },
+      "sub_type": "statement"
+    },
+    "text": "Investigate the anomaly at sector 7."
+  },
+  "raw_input": "Investigate the anomaly at sector 7.",
+  "soul": {
+    "constitution": "Serve.",
+    "id": "sh-5506",
+    "name": "T"
+  }
+}

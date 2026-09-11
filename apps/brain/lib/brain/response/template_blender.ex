@@ -121,7 +121,7 @@ defmodule Brain.Response.TemplateBlender do
             ChunkSegmenter.segment(template, intent)
           end)
         end)
-        |> Enum.filter(fn chunks -> length(chunks) > 1 end)
+        |> Enum.filter(fn chunks -> match?([_, _ | _], chunks) end)
 
       ChunkCompatibility.learn(templates_as_chunk_lists)
     end
@@ -266,7 +266,7 @@ defmodule Brain.Response.TemplateBlender do
     entity_match =
       entities
       |> Enum.any?(fn entity ->
-        entity_type = entity[:entity_type] || entity["entity_type"] || ""
+        entity_type = entity[:entity_type] || ""
         et_words = entity_type |> Tokenizer.tokenize_normalized(min_length: 2)
         et_words != [] and Enum.any?(et_words, &MapSet.member?(chunk_words, &1))
       end)

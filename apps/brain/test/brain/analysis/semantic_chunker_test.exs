@@ -8,14 +8,14 @@ defmodule Brain.Analysis.SemanticChunkerTest do
     test "handles simple single sentence" do
       chunks = SemanticChunker.chunk("Hello, how are you?")
 
-      assert length(chunks) == 1
+      assert match?([_], chunks)
       assert %Chunk{text: "Hello, how are you?", index: 0} = hd(chunks)
     end
 
     test "splits on sentence boundaries" do
       chunks = SemanticChunker.chunk("Hello there. How are you? I am fine.")
 
-      assert length(chunks) == 3
+      assert match?([_, _, _], chunks)
       assert Enum.at(chunks, 0).text == "Hello there."
       assert Enum.at(chunks, 1).text == "How are you?"
       assert Enum.at(chunks, 2).text == "I am fine."
@@ -24,7 +24,7 @@ defmodule Brain.Analysis.SemanticChunkerTest do
     test "handles discourse markers" do
       chunks = SemanticChunker.chunk("I want to check the weather. Also, what's the news?")
 
-      assert length(chunks) == 2
+      assert match?([_, _], chunks)
       second_chunk = Enum.at(chunks, 1)
       assert String.contains?(second_chunk.text, "Also")
       assert "also" in second_chunk.discourse_markers
@@ -33,7 +33,7 @@ defmodule Brain.Analysis.SemanticChunkerTest do
     test "preserves quoted content" do
       chunks = SemanticChunker.chunk("She said \"Hello, how are you?\" to me.")
 
-      assert length(chunks) == 1
+      assert match?([_], chunks)
       chunk = hd(chunks)
       assert chunk.is_quoted == true
       assert String.contains?(chunk.text, "\"Hello, how are you?\"")
@@ -44,7 +44,7 @@ defmodule Brain.Analysis.SemanticChunkerTest do
       chunks = SemanticChunker.chunk(input)
 
       # May merge short sentences, so at least 2 chunks
-      assert length(chunks) >= 2
+      assert Enum.count_until(chunks, 2) >= 2
       # First chunk should end with ! or contain it
       assert String.contains?(Enum.at(chunks, 0).text, "!")
     end
@@ -57,7 +57,7 @@ defmodule Brain.Analysis.SemanticChunkerTest do
     test "normalizes whitespace" do
       chunks = SemanticChunker.chunk("Hello   there.    How   are   you?")
 
-      assert length(chunks) == 2
+      assert match?([_, _], chunks)
       assert Enum.at(chunks, 0).text == "Hello there."
     end
 
@@ -81,7 +81,7 @@ defmodule Brain.Analysis.SemanticChunkerTest do
                avg_chunk_length: _
              } = result
 
-      assert length(chunks) == 2
+      assert match?([_, _], chunks)
     end
 
     test "detects quoted content" do

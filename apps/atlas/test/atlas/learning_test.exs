@@ -59,7 +59,7 @@ defmodule Atlas.LearningTest do
       {:ok, _} = Learning.create_session(%{topic: "B", status: "completed"})
 
       all = Learning.list_sessions()
-      assert length(all) >= 2
+      assert Enum.count_until(all, 2) >= 2
 
       active = Learning.list_sessions(status: "active")
       assert Enum.all?(active, &(&1.status == "active"))
@@ -72,10 +72,10 @@ defmodule Atlas.LearningTest do
       for i <- 1..5, do: Learning.create_session(%{topic: "Session #{i}"})
 
       limited = Learning.list_sessions(limit: 2)
-      assert length(limited) == 2
+      assert match?([_, _], limited)
 
       offset = Learning.list_sessions(limit: 2, offset: 2)
-      assert length(offset) == 2
+      assert match?([_, _], offset)
     end
 
     test "session_with_details returns session with associations" do
@@ -126,7 +126,7 @@ defmodule Atlas.LearningTest do
       {:ok, _} = Learning.create_goal(%{session_id: session.id, topic: "G2"})
 
       goals = Learning.goals_for_session(session.id)
-      assert length(goals) == 2
+      assert match?([_, _], goals)
     end
   end
 
@@ -162,7 +162,7 @@ defmodule Atlas.LearningTest do
       {:ok, _} = Learning.create_investigation(%{session_id: session.id, topic: "I2"})
 
       invs = Learning.investigations_for_session(session.id)
-      assert length(invs) == 2
+      assert match?([_, _], invs)
     end
   end
 
@@ -216,7 +216,7 @@ defmodule Atlas.LearningTest do
       {:ok, _} = Learning.create_hypothesis(%{investigation_id: inv.id, claim: "H2"})
 
       hyps = Learning.hypotheses_for_investigation(inv.id)
-      assert length(hyps) == 2
+      assert match?([_, _], hyps)
     end
   end
 
@@ -252,7 +252,7 @@ defmodule Atlas.LearningTest do
       {:ok, _} = Learning.create_evidence(%{investigation_id: inv.id, claim: "E2"})
 
       evidence = Learning.evidence_for_investigation(inv.id)
-      assert length(evidence) == 2
+      assert match?([_, _], evidence)
     end
 
     test "lists all evidence for session", %{session: session, investigation: inv} do
@@ -262,7 +262,7 @@ defmodule Atlas.LearningTest do
       {:ok, _} = Learning.create_evidence(%{investigation_id: inv2.id, claim: "E2"})
 
       all = Learning.all_evidence_for_session(session.id)
-      assert length(all) == 2
+      assert match?([_, _], all)
     end
   end
 end

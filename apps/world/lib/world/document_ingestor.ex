@@ -487,7 +487,7 @@ defmodule World.DocumentIngestor do
     |> Enum.each(fn {{token_text, _tag}, idx} ->
       known_types = Gazetteer.lookup_all_types(token_text, world_id)
 
-      if length(known_types) == 1 do
+      if match?([_], known_types) do
         entity_type = Map.get(hd(known_types), :entity_type) || Map.get(hd(known_types), :type)
         context_window = 5
         start_idx = max(0, idx - context_window)

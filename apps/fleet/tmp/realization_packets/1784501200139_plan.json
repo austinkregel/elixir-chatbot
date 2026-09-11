@@ -1,0 +1,43 @@
+[
+  {
+    "content": {
+      "arousal_level": "low",
+      "content_complete": true,
+      "context": "Analyse.",
+      "intensity": "mild",
+      "sentiment_confidence": 0.0,
+      "sentiment_label": "negative"
+    },
+    "type": "attunement",
+    "variant": "empathy"
+  },
+  {
+    "content": {
+      "confidence": 0.734,
+      "content_complete": true,
+      "emotional_tone": "negative",
+      "entities": [],
+      "intent": "smalltalk.statement",
+      "key_elements": {
+        "intent": "smalltalk.statement"
+      },
+      "related_beliefs": [],
+      "text": "Analyse.",
+      "understood_meaning": "you're asking about smalltalk"
+    },
+    "type": "content",
+    "variant": "reflective"
+  },
+  {
+    "content": {
+      "aspect_to_explore": null,
+      "content_complete": true,
+      "entities": [],
+      "intent": "smalltalk.statement",
+      "text": "Analyse.",
+      "topic": "smalltalk"
+    },
+    "type": "follow_up",
+    "variant": "elaboration"
+  }
+]

@@ -1,0 +1,121 @@
+{
+  "confidence": 0.739,
+  "entities": [
+    {
+      "confidence": 0.59,
+      "entity": "pronoun",
+      "entity_type": "pronoun",
+      "graph_known": true,
+      "match": "one",
+      "source": "gazetteer",
+      "value": "one"
+    },
+    {
+      "confidence": 0.71,
+      "entity": "news_sort",
+      "entity_type": "news_sort",
+      "graph_known": false,
+      "match": "current",
+      "source": "gazetteer",
+      "value": "latest"
+    }
+  ],
+  "intent": "smarthome.statement",
+  "profile": {
+    "confidence": 0.739,
+    "derived_label": "smarthome.statement",
+    "domain": "smarthome",
+    "engagement_level": "urgent_demand",
+    "modality": "declarative",
+    "response_posture": "hedged"
+  },
+  "response_strategy": "hedged_response",
+  "sentiment": {
+    "confidence": 0.11728401385836786,
+    "label": "neutral"
+  },
+  "speech_act": {
+    "category": "assertive",
+    "confidence": 0.6740278016729513,
+    "indicators": [
+      "intent:todo.add"
+    ],
+    "intent_confidence": 0.3974074711278702,
+    "is_imperative": false,
+    "is_question": false,
+    "raw_analyses": {
+      "intent": {
+        "category": "assertive",
+        "confidence": 0.3974074711278702,
+        "intent": "todo.add",
+        "margin": 0.24505453160554874,
+        "second_score": 0.15235293952232148,
+        "source": "feature_vector",
+        "sub_type": "statement",
+        "top_k": [
+          {
+            "intent": "todo.add",
+            "score": 0.3974074711278702
+          },
+          {
+            "intent": "code.signature",
+            "score": 0.15235293952232148
+          },
+          {
+            "intent": "analysis.analyze",
+            "score": 0.15047309395137143
+          },
+          {
+            "intent": "smalltalk.user.will_be_back",
+            "score": 0.15003759210628054
+          },
+          {
+            "intent": "news.search",
+            "score": 0.1497289032921563
+          }
+        ]
+      },
+      "keyword": {
+        "confidence": 0.0,
+        "source": "keyword"
+      },
+      "memory": {
+        "confidence": 0.0,
+        "similar_count": 0,
+        "source": "memory"
+      },
+      "original_text": "In one sentence, report your current readiness.",
+      "pragmatic": {
+        "expressive_score": 0.0,
+        "first_person_subject": false,
+        "has_acknowledgment": false,
+        "has_commissive": false,
+        "has_future": false,
+        "has_hedging": false,
+        "has_offer": false,
+        "has_please": false,
+        "has_thanks": false,
+        "has_urgency": false,
+        "is_backchannel": false,
+        "is_compliment": false,
+        "is_short_utterance": false,
+        "is_very_short": false,
+        "source": "pragmatic"
+      },
+      "structural": {
+        "category": "assertive",
+        "confidence": 0.7,
+        "has_modal": false,
+        "is_continuation": false,
+        "is_declarative": true,
+        "is_exclamatory": false,
+        "is_imperative": false,
+        "is_question": false,
+        "source": "structural",
+        "sub_type": "statement"
+      }
+    },
+    "sub_type": "statement"
+  },
+  "text": "In one sentence, report your current readiness."
+}

@@ -169,7 +169,7 @@ defmodule Brain.Knowledge.Academic.SemanticScholarTest do
       {:ok, papers} = SemanticScholar.search("transformer attention", limit: 3)
 
       assert is_list(papers)
-      assert length(papers) == 3
+      assert match?([_, _, _], papers)
 
       [paper | _] = papers
       assert %Paper{} = paper

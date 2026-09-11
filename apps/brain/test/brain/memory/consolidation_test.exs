@@ -37,9 +37,27 @@ defmodule Brain.Memory.ConsolidationTest do
       {:ok, emb_bye} = Embedder.embed("goodbye world")
 
       episodes = [
-        Episode.new("hello world", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"], emb_hello1),
-        Episode.new("hello there", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"], emb_hello2),
-        Episode.new("goodbye world", "smalltalk.greetings.bye", "", ["smalltalk.greetings.bye"], emb_bye)
+        Episode.new(
+          "hello world",
+          "smalltalk.greetings.hello",
+          "",
+          ["smalltalk.greetings.hello"],
+          emb_hello1
+        ),
+        Episode.new(
+          "hello there",
+          "smalltalk.greetings.hello",
+          "",
+          ["smalltalk.greetings.hello"],
+          emb_hello2
+        ),
+        Episode.new(
+          "goodbye world",
+          "smalltalk.greetings.bye",
+          "",
+          ["smalltalk.greetings.bye"],
+          emb_bye
+        )
       ]
 
       clusters = Consolidation.find_clusters(episodes, 0.5, 2)
@@ -51,7 +69,7 @@ defmodule Brain.Memory.ConsolidationTest do
         end)
 
       if hello_cluster do
-        assert length(hello_cluster) >= 2
+        assert Enum.count_until(hello_cluster, 2) >= 2
       end
     end
 
@@ -73,8 +91,15 @@ defmodule Brain.Memory.ConsolidationTest do
 
   describe "create_semantic_from_cluster" do
     test "creates a semantic fact from episode cluster" do
-      {:ok, id1} = Store.add_episode("hello world", "smalltalk.greetings.hello", "hi", ["smalltalk.greetings.hello"])
-      {:ok, id2} = Store.add_episode("hello there", "smalltalk.greetings.hello", "hey", ["smalltalk.greetings.hello"])
+      {:ok, id1} =
+        Store.add_episode("hello world", "smalltalk.greetings.hello", "hi", [
+          "smalltalk.greetings.hello"
+        ])
+
+      {:ok, id2} =
+        Store.add_episode("hello there", "smalltalk.greetings.hello", "hey", [
+          "smalltalk.greetings.hello"
+        ])
 
       {:ok, ep1} = Store.get_episode(id1)
       {:ok, ep2} = Store.get_episode(id2)
@@ -86,7 +111,7 @@ defmodule Brain.Memory.ConsolidationTest do
       assert is_binary(semantic_id)
       {:ok, semantic} = Store.get_semantic(semantic_id)
       assert "smalltalk.greetings.hello" in semantic.tags
-      assert length(semantic.evidence_ids) == 2
+      assert match?([_, _], semantic.evidence_ids)
       {:ok, updated_ep1} = Store.get_episode(id1)
       assert updated_ep1.semantic_id == semantic_id
     end
@@ -98,9 +123,21 @@ defmodule Brain.Memory.ConsolidationTest do
 
   describe "consolidate" do
     test "creates semantic facts from similar episodes" do
-      {:ok, _} = Store.add_episode("hello world", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
-      {:ok, _} = Store.add_episode("hello there", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
-      {:ok, _} = Store.add_episode("hi friend", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
+      {:ok, _} =
+        Store.add_episode("hello world", "smalltalk.greetings.hello", "", [
+          "smalltalk.greetings.hello"
+        ])
+
+      {:ok, _} =
+        Store.add_episode("hello there", "smalltalk.greetings.hello", "", [
+          "smalltalk.greetings.hello"
+        ])
+
+      {:ok, _} =
+        Store.add_episode("hi friend", "smalltalk.greetings.hello", "", [
+          "smalltalk.greetings.hello"
+        ])
+
       {:ok, new_count} = Consolidation.consolidate(threshold: 0.3, min_cluster_size: 2)
       assert new_count >= 0
 

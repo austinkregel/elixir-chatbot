@@ -108,8 +108,8 @@ defmodule Tasks.AnalyzerTest do
       {:ok, result} = Analyzer.analyze_all(tasks_path: @test_tasks_path)
 
       assert result.total_tasks == 3
-      assert length(result.useful_tasks) == 2
-      assert length(result.skipped_tasks) == 1
+      assert match?([_, _], result.useful_tasks)
+      assert match?([_], result.skipped_tasks)
     end
 
     test "filters by english only" do
@@ -198,14 +198,14 @@ defmodule Tasks.AnalyzerTest do
       {:ok, instances} = Analyzer.load_instances(file_path)
 
       # Should include examples + instances
-      assert length(instances) == 3
+      assert match?([_, _, _], instances)
     end
 
     test "respects max_instances option" do
       file_path = Path.join(@test_tasks_path, "task_test_qa.json")
       {:ok, instances} = Analyzer.load_instances(file_path, max_instances: 2)
 
-      assert length(instances) == 2
+      assert match?([_, _], instances)
     end
 
     test "can exclude examples" do
@@ -213,7 +213,7 @@ defmodule Tasks.AnalyzerTest do
       {:ok, instances} = Analyzer.load_instances(file_path, include_examples: false)
 
       # Only instances, no examples
-      assert length(instances) == 2
+      assert match?([_, _], instances)
     end
   end
 
@@ -236,8 +236,8 @@ defmodule Tasks.AnalyzerTest do
 
       grouped = Analyzer.group_by_category(tasks)
 
-      assert length(grouped["Question Answering"]) == 2
-      assert length(grouped["Commonsense Classification"]) == 1
+      assert match?([_, _], grouped["Question Answering"])
+      assert match?([_], grouped["Commonsense Classification"])
     end
   end
 end

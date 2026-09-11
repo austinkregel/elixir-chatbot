@@ -8,9 +8,20 @@ defmodule Brain.Response.ChunkSegmenter do
 
   defmodule Chunk do
     @moduledoc "A segmented piece of a response template"
-    defstruct [:text, :type, :embedding, :source_intent, :tone, :tone_vector,
-               :prototype_vector, :primitive_type, :primitive_variant,
-               slots: [], enrichment_fields: [], conditions: %{}]
+    defstruct [
+      :text,
+      :type,
+      :embedding,
+      :source_intent,
+      :tone,
+      :tone_vector,
+      :prototype_vector,
+      :primitive_type,
+      :primitive_variant,
+      slots: [],
+      enrichment_fields: [],
+      conditions: %{}
+    ]
   end
 
   @smalltalk_path "priv/knowledge/domains/smalltalk.json"
@@ -32,13 +43,25 @@ defmodule Brain.Response.ChunkSegmenter do
                              }
 
                            {:error, _} ->
-                             %{greeting: [], acknowledgment: [], body: [],
-                               offer: [], clarification: [], closing: []}
+                             %{
+                               greeting: [],
+                               acknowledgment: [],
+                               body: [],
+                               offer: [],
+                               clarification: [],
+                               closing: []
+                             }
                          end
 
                        {:error, _} ->
-                         %{greeting: [], acknowledgment: [], body: [],
-                           offer: [], clarification: [], closing: []}
+                         %{
+                           greeting: [],
+                           acknowledgment: [],
+                           body: [],
+                           offer: [],
+                           clarification: [],
+                           closing: []
+                         }
                      end)
   @centroid_key :chunk_type_centroids
 
@@ -152,7 +175,18 @@ defmodule Brain.Response.ChunkSegmenter do
     conf = max(0.0, directness - hedge_count * 0.1)
     polarity = pos - neg
 
-    tone_vector = [pos, neg, neu, conf, polarity, arousal, warmth, formality, playfulness, directness]
+    tone_vector = [
+      pos,
+      neg,
+      neu,
+      conf,
+      polarity,
+      arousal,
+      warmth,
+      formality,
+      playfulness,
+      directness
+    ]
 
     tone =
       cond do
@@ -190,10 +224,12 @@ defmodule Brain.Response.ChunkSegmenter do
 
   defp classify_and_embed(sentence) do
     heuristic_type = classify_by_heuristic(sentence)
-    embedding = case Embedder.embed(sentence) do
-      {:ok, emb} -> emb
-      _ -> nil
-    end
+
+    embedding =
+      case Embedder.embed(sentence) do
+        {:ok, emb} -> emb
+        _ -> nil
+      end
 
     chunk_type =
       if heuristic_type != :body do
@@ -243,13 +279,13 @@ defmodule Brain.Response.ChunkSegmenter do
     cond do
       first_token in @greeting_tokens or
         (first_token == "good" and Enum.at(tokens, 1) in ~w(morning afternoon evening)) or
-        (first_token == "nice" and Enum.at(tokens, 1) == "to" and Enum.at(tokens, 2) == "meet") ->
+          (first_token == "nice" and Enum.at(tokens, 1) == "to" and Enum.at(tokens, 2) == "meet") ->
         :greeting
 
       first_token in @closing_tokens or
         (first_token == "take" and Enum.at(tokens, 1) == "care") or
         (first_token == "see" and Enum.at(tokens, 1) == "you") or
-        (MapSet.member?(token_set, "great") and MapSet.member?(token_set, "day")) ->
+          (MapSet.member?(token_set, "great") and MapSet.member?(token_set, "day")) ->
         :closing
 
       not MapSet.disjoint?(token_set, @offer_tokens) and
@@ -259,12 +295,12 @@ defmodule Brain.Response.ChunkSegmenter do
 
       first_token in @clarification_start_tokens or
         (MapSet.member?(token_set, "need") and MapSet.member?(token_set, "know")) or
-        (List.last(tokens) == "?" and length(tokens) < 8) ->
+          (List.last(tokens) == "?" and Enum.count_until(tokens, 8) < 8) ->
         :clarification
 
       (first_token == "i" and Enum.at(tokens, 1) == "understand") or
         (first_token == "got" and Enum.at(tokens, 1) == "it") or
-        first_token in @acknowledgment_tokens ->
+          first_token in @acknowledgment_tokens ->
         :acknowledgment
 
       true ->

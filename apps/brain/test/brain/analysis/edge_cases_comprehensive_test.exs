@@ -670,6 +670,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
       [greeting, introduction, weather_query] = snapshot.analyses
 
       assert greeting.index == 0
+
       assert greeting.speech_act_category == :expressive,
              "Expected greeting chunk to be :expressive, got: #{inspect(greeting.speech_act_category)}"
 
@@ -678,10 +679,12 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
              "Expected greeting intent, got: #{inspect(greeting.detected_intent)}"
 
       assert introduction.index == 1
+
       assert introduction.speech_act_category in [:expressive, :assertive],
              "Expected intro chunk to be :expressive or :assertive, got: #{inspect(introduction.speech_act_category)}"
 
       assert weather_query.index == 2
+
       assert is_binary(weather_query.detected_intent) and
                String.contains?(weather_query.detected_intent, "weather"),
              "Expected weather intent on chunk 2, got: #{inspect(weather_query.detected_intent)}"
@@ -757,7 +760,9 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
         )
 
       chunks = SemanticChunker.chunk(long_input)
-      assert length(chunks) > 1, "Long input should be chunked, got #{length(chunks)} chunks"
+
+      assert match?([_, _ | _], chunks),
+             "Long input should be chunked, got #{length(chunks)} chunks"
 
       Enum.each(chunks, fn chunk ->
         word_count = chunk.text |> String.split() |> length()
@@ -1130,7 +1135,10 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
           v =~ ~r/light|living|room/i
         end)
 
-      assert has_relevant or length(analysis.entities) >= 0
+      # length(analysis.entities) >= 0 only ever asserted that entities is a
+      # list (length/1 raises otherwise); made that precondition explicit
+      # rather than re-walking the list to compute a length nothing uses.
+      assert has_relevant or is_list(analysis.entities)
     end
   end
 

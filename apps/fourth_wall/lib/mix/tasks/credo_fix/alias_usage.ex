@@ -258,7 +258,7 @@ defmodule Mix.Tasks.CredoFix.AliasUsage do
         # Exclude :{} which is the special atom for grouped aliases
         {{:., _, [{:__aliases__, _, parts}, fun]}, _, _} = node, acc
         when is_list(parts) and is_atom(fun) and fun != :{} ->
-          if length(parts) > 1 do
+          if Enum.count_until(parts, 2) > 1 do
             {node, [parts | acc]}
           else
             {node, acc}
@@ -273,12 +273,12 @@ defmodule Mix.Tasks.CredoFix.AliasUsage do
 
   defp should_alias?(parts, existing_lastnames) when is_list(parts) do
     # Must have at least 2 parts
-    length(parts) > 1 and
-      # First part not in excluded namespaces
+    # First part not in excluded namespaces
+    # Last part not in excluded lastnames
+    # Last name not already aliased
+    Enum.count_until(parts, 2) > 1 and
       not Enum.member?(@excluded_namespaces, to_string(List.first(parts))) and
-      # Last part not in excluded lastnames
       not Enum.member?(@excluded_lastnames, to_string(List.last(parts))) and
-      # Last name not already aliased
       not MapSet.member?(existing_lastnames, List.last(parts))
   end
 

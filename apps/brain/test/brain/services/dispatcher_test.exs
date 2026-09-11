@@ -41,7 +41,7 @@ defmodule Brain.Services.DispatcherTest do
       services = Dispatcher.list_services()
 
       assert is_list(services)
-      assert length(services) >= 1
+      assert services != []
 
       weather = Enum.find(services, &(&1.name == :weather))
       assert weather != nil

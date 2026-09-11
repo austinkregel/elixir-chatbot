@@ -9,7 +9,6 @@ defmodule Brain.Epistemic.UserModelStore do
 
   require Logger
 
-
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -21,7 +20,7 @@ defmodule Brain.Epistemic.UserModelStore do
 
   @doc "Gets a UserModel by user ID, returns nil if not found.\n"
   def get(user_id) do
-    GenServer.call(__MODULE__, {:get, user_id})
+    GenServer.call(__MODULE__, {:fetch_model, user_id})
   end
 
   @doc "Updates a fact in the user's model.\n\nParameters:\n- user_id: The user identifier\n- key: Fact key (atom or string)\n- value: The fact value\n- source: How the fact was learned (:explicit | :inferred | :assumed | :learned)\n- confidence: Confidence level (0.0 - 1.0)\n"
@@ -133,7 +132,7 @@ defmodule Brain.Epistemic.UserModelStore do
   end
 
   @impl true
-  def handle_call({:get, user_id}, _from, state) do
+  def handle_call({:fetch_model, user_id}, _from, state) do
     {:reply, Map.get(state.models, user_id), state}
   end
 

@@ -61,7 +61,7 @@ defmodule Brain.ML.TrainingServerTest do
     test "returns created schedules", %{name: name} do
       {:ok, _id} = TrainingServer.schedule(:tfidf, [], 24, name)
       schedules = TrainingServer.list_schedules(name)
-      assert length(schedules) == 1
+      assert match?([_], schedules)
       [schedule] = schedules
       assert schedule.model_type == :tfidf
       assert schedule.interval_hours == 24

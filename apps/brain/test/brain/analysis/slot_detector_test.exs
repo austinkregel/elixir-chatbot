@@ -212,7 +212,9 @@ defmodule Brain.Analysis.SlotDetectorTest do
     end
 
     test "returns template for smarthome device slots" do
-      device_prompt = SlotDetector.get_clarification_prompt("device", "smarthome.lights.switch.on")
+      device_prompt =
+        SlotDetector.get_clarification_prompt("device", "smarthome.lights.switch.on")
+
       room_prompt = SlotDetector.get_clarification_prompt("room", "smarthome.lights.switch.on")
 
       # Should return a prompt (either from registry or generic fallback)
@@ -250,9 +252,11 @@ defmodule Brain.Analysis.SlotDetectorTest do
   describe "get_clarification_prompts/2" do
     test "returns list of prompts for multiple missing slots" do
       missing_slots = ["device", "room"]
-      prompts = SlotDetector.get_clarification_prompts(missing_slots, "smarthome.lights.switch.on")
 
-      assert length(prompts) == 2
+      prompts =
+        SlotDetector.get_clarification_prompts(missing_slots, "smarthome.lights.switch.on")
+
+      assert match?([_, _], prompts)
       assert Enum.all?(prompts, &is_binary/1)
     end
 
@@ -266,7 +270,7 @@ defmodule Brain.Analysis.SlotDetectorTest do
       missing_slots = [:location, :date]
       prompts = SlotDetector.get_clarification_prompts(missing_slots, "weather.query")
 
-      assert length(prompts) == 2
+      assert match?([_, _], prompts)
       assert "What location would you like the weather for?" in prompts
     end
   end

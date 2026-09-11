@@ -32,7 +32,7 @@ defmodule Brain.Analysis.DocumentProfileTest do
 
       result = DocumentProfile.aggregate(profiles)
       assert result.chunk_count == 1
-      assert length(result.mean_vector) == 5
+      assert match?([_, _, _, _, _], result.mean_vector)
 
       Enum.zip(result.mean_vector, vec)
       |> Enum.each(fn {got, expected} ->
@@ -135,10 +135,10 @@ defmodule Brain.Analysis.DocumentProfileTest do
       assert Map.has_key?(result.entity_slices, "paris")
 
       france_vec = result.entity_slices["france"]
-      assert length(france_vec) == 3
+      assert match?([_, _, _], france_vec)
 
       paris_vec = result.entity_slices["paris"]
-      assert length(paris_vec) == 3
+      assert match?([_, _, _], paris_vec)
     end
 
     test "skips entity slicing when entity_lists is nil" do
@@ -155,7 +155,7 @@ defmodule Brain.Analysis.DocumentProfileTest do
       result = DocumentProfile.aggregate([valid, empty])
 
       assert result.chunk_count == 2
-      assert length(result.mean_vector) == 3
+      assert match?([_, _, _], result.mean_vector)
       assert_in_delta hd(result.mean_vector), 1.0, 1.0e-6
     end
   end

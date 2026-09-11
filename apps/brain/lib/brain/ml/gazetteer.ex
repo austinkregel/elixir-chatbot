@@ -203,7 +203,7 @@ defmodule Brain.ML.Gazetteer do
     Same as `lookup_spans/2`.
   """
   def lookup_spans_lattice(tokens, opts \\ []) when is_list(tokens) do
-      Telemetry.span(:gazetteer_lookup, %{token_count: length(tokens)}, fn ->
+    Telemetry.span(:gazetteer_lookup, %{token_count: length(tokens)}, fn ->
       token_count = length(tokens)
       domain = Keyword.get(opts, :domain)
       intent = Keyword.get(opts, :intent)
@@ -722,7 +722,7 @@ defmodule Brain.ML.Gazetteer do
         # Update prefixes if multi-word
         words = String.split(normalized_key)
 
-        if length(words) > 1 do
+        if match?([_, _ | _], words) do
           prefixes =
             1..(length(words) - 1)
             |> Enum.map(fn n -> Enum.take(words, n) |> Enum.join(" ") end)
@@ -964,7 +964,8 @@ defmodule Brain.ML.Gazetteer do
       0
   end
 
-  defp insert_entry_direct(name, entity_type, metadata, tables) when is_binary(name) and name != "" do
+  defp insert_entry_direct(name, entity_type, metadata, tables)
+       when is_binary(name) and name != "" do
     normalized_key = normalize(name)
 
     entity_info =
@@ -1001,7 +1002,7 @@ defmodule Brain.ML.Gazetteer do
 
         words = String.split(normalized_key)
 
-        if length(words) > 1 do
+        if match?([_, _ | _], words) do
           prefixes =
             1..(length(words) - 1)
             |> Enum.map(fn n -> Enum.take(words, n) |> Enum.join(" ") end)
@@ -1102,7 +1103,7 @@ defmodule Brain.ML.Gazetteer do
         # Handle both list and single entity formats
         words = String.split(key)
 
-        if length(words) > 1 do
+        if match?([_, _ | _], words) do
           # Generate all prefixes
           1..(length(words) - 1)
           |> Enum.map(fn n -> Enum.take(words, n) |> Enum.join(" ") end)
@@ -1184,7 +1185,8 @@ defmodule Brain.ML.Gazetteer do
   """
   def rank_types_with_context(infos, opts \\ [])
 
-  def rank_types_with_context(infos, _opts) when length(infos) <= 1, do: infos
+  def rank_types_with_context([], _opts), do: []
+  def rank_types_with_context([_single] = infos, _opts), do: infos
 
   def rank_types_with_context(infos, opts) when is_list(infos) do
     domain = Keyword.get(opts, :domain)
@@ -1208,9 +1210,10 @@ defmodule Brain.ML.Gazetteer do
         type_score = Map.get(adjustments, entity_type, 0.0)
         source_score = Map.get(source_priority, source, 0)
 
-        total = domain_score * 3.0 + poincare_score * 2.0 +
-                conceptnet_score * 1.5 + learned_score * 2.0 +
-                source_score * 0.5 + type_score * 0.3
+        total =
+          domain_score * 3.0 + poincare_score * 2.0 +
+            conceptnet_score * 1.5 + learned_score * 2.0 +
+            source_score * 0.5 + type_score * 0.3
 
         -total
       end)
@@ -1291,9 +1294,12 @@ defmodule Brain.ML.Gazetteer do
       case ranked_infos do
         [best | _] ->
           entity_type = Map.get(best, :entity_type) || Map.get(best, :type) || "unknown"
+
           domain_alignment_score(entity_type, domain) +
             poincare_proximity_score(entity_type, intent) * 0.5
-        [] -> 0.0
+
+        [] ->
+          0.0
       end
 
     length_bonus + type_score

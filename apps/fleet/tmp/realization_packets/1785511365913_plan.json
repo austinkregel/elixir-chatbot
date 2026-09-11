@@ -1,0 +1,29 @@
+[
+  {
+    "content": {
+      "action": "meta.statement",
+      "capability": "incapable",
+      "content_complete": true,
+      "status": "incapable"
+    },
+    "type": "acknowledgment",
+    "variant": "action"
+  },
+  {
+    "content": {
+      "advisories": [],
+      "beliefs": [],
+      "capability": "cognitive",
+      "confidence": 0.729,
+      "content_complete": true,
+      "entities": [],
+      "epistemic_status": "unchecked",
+      "intent": "meta.statement",
+      "related_beliefs": [],
+      "text": "Task B.",
+      "topic": null
+    },
+    "type": "content",
+    "variant": "report"
+  }
+]

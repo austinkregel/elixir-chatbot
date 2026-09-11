@@ -35,7 +35,10 @@ defmodule Mix.Tasks.GenerateIntentData do
     case args do
       [] ->
         Mix.shell().info("Usage: mix generate_intent_data <domain>")
-        Mix.shell().info("Domains: calendar, reminder, todo, communication, entertainment, education, utilities, display, search, analysis, status")
+
+        Mix.shell().info(
+          "Domains: calendar, reminder, todo, communication, entertainment, education, utilities, display, search, analysis, status"
+        )
 
       [domain | _] ->
         File.mkdir_p!(@output_dir)
@@ -706,12 +709,13 @@ defmodule Mix.Tasks.GenerateIntentData do
     examples = expand_templates(templates, intent_name)
 
     # Ensure minimum 20 examples
-    examples = if length(examples) < 20 do
-      # Duplicate and vary examples if needed
-      examples ++ Enum.take(examples, 20 - length(examples))
-    else
-      examples
-    end
+    examples =
+      if Enum.count_until(examples, 20) < 20 do
+        # Duplicate and vary examples if needed
+        examples ++ Enum.take(examples, 20 - length(examples))
+      else
+        examples
+      end
 
     # Write to file
     file_name = String.replace(intent_name, ".", "_") <> ".json"
@@ -729,8 +733,26 @@ defmodule Mix.Tasks.GenerateIntentData do
 
   defp expand_templates(templates, intent_name) do
     # Sample entity values for expansion
-    event_titles = ["meeting", "dentist appointment", "lunch", "conference call", "interview", "workout", "standup", "presentation"]
-    date_times = ["tomorrow", "next Monday", "Friday at 3pm", "tomorrow at 2pm", "next week", "in 2 hours"]
+    event_titles = [
+      "meeting",
+      "dentist appointment",
+      "lunch",
+      "conference call",
+      "interview",
+      "workout",
+      "standup",
+      "presentation"
+    ]
+
+    date_times = [
+      "tomorrow",
+      "next Monday",
+      "Friday at 3pm",
+      "tomorrow at 2pm",
+      "next week",
+      "in 2 hours"
+    ]
+
     persons = ["John", "Sarah", "the team", "my manager", "Mike", "Lisa"]
     locations = ["the office", "conference room A", "downtown", "Zoom", "the coffee shop"]
     durations = ["30 minutes", "1 hour", "15 minutes", "2 hours"]
@@ -741,13 +763,14 @@ defmodule Mix.Tasks.GenerateIntentData do
       # Generate 3-5 variations of each template
       1..3
       |> Enum.map(fn _ ->
-        text = template
-        |> String.replace("{event_title}", Enum.random(event_titles))
-        |> String.replace("{date_time}", Enum.random(date_times))
-        |> String.replace("{person}", Enum.random(persons))
-        |> String.replace("{location}", Enum.random(locations))
-        |> String.replace("{duration}", Enum.random(durations))
-        |> String.replace("{recurrence}", Enum.random(recurrences))
+        text =
+          template
+          |> String.replace("{event_title}", Enum.random(event_titles))
+          |> String.replace("{date_time}", Enum.random(date_times))
+          |> String.replace("{person}", Enum.random(persons))
+          |> String.replace("{location}", Enum.random(locations))
+          |> String.replace("{duration}", Enum.random(durations))
+          |> String.replace("{recurrence}", Enum.random(recurrences))
 
         build_training_example(text, intent_name)
       end)
@@ -781,16 +804,102 @@ defmodule Mix.Tasks.GenerateIntentData do
     # Simple rule-based POS tagging
     Enum.map(tokens, fn token ->
       cond do
-        token in ["i", "you", "he", "she", "it", "we", "they", "me", "my", "your"] -> "PRON"
-        token in ["the", "a", "an", "this", "that", "my", "your"] -> "DET"
-        token in ["is", "are", "was", "were", "be", "been", "am", "have", "has", "had", "do", "does", "did", "can", "could", "will", "would", "should", "may", "might", "must"] -> "AUX"
-        token in ["and", "or", "but", "if", "because", "when", "while", "although"] -> "CONJ"
-        token in ["in", "on", "at", "to", "for", "with", "from", "by", "about", "of", "between", "through", "during", "before", "after"] -> "ADP"
-        token in ["not", "never", "always", "also", "just", "only", "very", "really", "too"] -> "ADV"
-        String.match?(token, ~r/^\d+$/) -> "NUM"
-        String.match?(token, ~r/^[A-Z]/) -> "PROPN"
-        token in ["schedule", "create", "add", "delete", "remove", "cancel", "update", "change", "set", "show", "check", "find", "join", "move", "make", "put", "get", "take", "give", "send", "call", "invite", "book", "arrange", "reschedule", "remind", "notify", "list"] -> "VERB"
-        true -> "NOUN"
+        token in ["i", "you", "he", "she", "it", "we", "they", "me", "my", "your"] ->
+          "PRON"
+
+        token in ["the", "a", "an", "this", "that", "my", "your"] ->
+          "DET"
+
+        token in [
+          "is",
+          "are",
+          "was",
+          "were",
+          "be",
+          "been",
+          "am",
+          "have",
+          "has",
+          "had",
+          "do",
+          "does",
+          "did",
+          "can",
+          "could",
+          "will",
+          "would",
+          "should",
+          "may",
+          "might",
+          "must"
+        ] ->
+          "AUX"
+
+        token in ["and", "or", "but", "if", "because", "when", "while", "although"] ->
+          "CONJ"
+
+        token in [
+          "in",
+          "on",
+          "at",
+          "to",
+          "for",
+          "with",
+          "from",
+          "by",
+          "about",
+          "of",
+          "between",
+          "through",
+          "during",
+          "before",
+          "after"
+        ] ->
+          "ADP"
+
+        token in ["not", "never", "always", "also", "just", "only", "very", "really", "too"] ->
+          "ADV"
+
+        String.match?(token, ~r/^\d+$/) ->
+          "NUM"
+
+        String.match?(token, ~r/^[A-Z]/) ->
+          "PROPN"
+
+        token in [
+          "schedule",
+          "create",
+          "add",
+          "delete",
+          "remove",
+          "cancel",
+          "update",
+          "change",
+          "set",
+          "show",
+          "check",
+          "find",
+          "join",
+          "move",
+          "make",
+          "put",
+          "get",
+          "take",
+          "give",
+          "send",
+          "call",
+          "invite",
+          "book",
+          "arrange",
+          "reschedule",
+          "remind",
+          "notify",
+          "list"
+        ] ->
+          "VERB"
+
+        true ->
+          "NOUN"
       end
     end)
   end
@@ -799,10 +908,49 @@ defmodule Mix.Tasks.GenerateIntentData do
     entities = []
 
     # Simple entity detection patterns
-    event_titles = ["meeting", "dentist appointment", "lunch", "conference call", "interview", "workout", "standup", "presentation", "dentist", "conference", "appointment"]
-    date_times = ["tomorrow", "next monday", "friday at 3pm", "tomorrow at 2pm", "next week", "in 2 hours", "today", "next friday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+    event_titles = [
+      "meeting",
+      "dentist appointment",
+      "lunch",
+      "conference call",
+      "interview",
+      "workout",
+      "standup",
+      "presentation",
+      "dentist",
+      "conference",
+      "appointment"
+    ]
+
+    date_times = [
+      "tomorrow",
+      "next monday",
+      "friday at 3pm",
+      "tomorrow at 2pm",
+      "next week",
+      "in 2 hours",
+      "today",
+      "next friday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+      "sunday"
+    ]
+
     persons = ["john", "sarah", "the team", "my manager", "mike", "lisa"]
-    locations = ["the office", "conference room a", "downtown", "zoom", "the coffee shop", "office"]
+
+    locations = [
+      "the office",
+      "conference room a",
+      "downtown",
+      "zoom",
+      "the coffee shop",
+      "office"
+    ]
+
     durations = ["30 minutes", "1 hour", "15 minutes", "2 hours", "an hour", "half an hour"]
 
     _text_lower = String.downcase(text)
@@ -822,10 +970,12 @@ defmodule Mix.Tasks.GenerateIntentData do
     values
     |> Enum.flat_map(fn value ->
       value_tokens = String.split(String.downcase(value), ~r/\s+/, trim: true)
+
       find_subsequence_indices(tokens_lower, value_tokens)
       |> Enum.map(fn start_idx ->
         end_idx = start_idx + length(value_tokens) - 1
         matched_text = tokens |> Enum.slice(start_idx..end_idx) |> Enum.join(" ")
+
         %{
           "text" => matched_text,
           "type" => entity_type,
@@ -850,7 +1000,14 @@ defmodule Mix.Tasks.GenerateIntentData do
   defp generate_uuid do
     # Generate a simple UUID v4
     <<a::32, b::16, c::16, d::16, e::48>> = :crypto.strong_rand_bytes(16)
-    :io_lib.format("~8.16.0b-~4.16.0b-~4.16.0b-~4.16.0b-~12.16.0b", [a, b, band(c, 0x0FFF) ||| 0x4000, band(d, 0x3FFF) ||| 0x8000, e])
+
+    :io_lib.format("~8.16.0b-~4.16.0b-~4.16.0b-~4.16.0b-~12.16.0b", [
+      a,
+      b,
+      band(c, 0x0FFF) ||| 0x4000,
+      band(d, 0x3FFF) ||| 0x8000,
+      e
+    ])
     |> IO.iodata_to_binary()
   end
 
@@ -2671,63 +2828,378 @@ defmodule Mix.Tasks.GenerateIntentData do
   end
 
   defp movie_search_templates do
-    ["find movies about {topic}", "search for {movie_title}", "movies with {actor}", "find action movies", "search for comedy films", "movies directed by {director}", "find sci-fi movies", "search horror movies", "find movies from 2024", "look for thriller movies", "find romantic comedies", "search drama films", "movies like {movie_title}", "find animated movies", "search for new movies", "find {genre} movies", "look up movies with {actor}", "find movies starring {actor}", "search for films by {director}", "movies about aliens"]
+    [
+      "find movies about {topic}",
+      "search for {movie_title}",
+      "movies with {actor}",
+      "find action movies",
+      "search for comedy films",
+      "movies directed by {director}",
+      "find sci-fi movies",
+      "search horror movies",
+      "find movies from 2024",
+      "look for thriller movies",
+      "find romantic comedies",
+      "search drama films",
+      "movies like {movie_title}",
+      "find animated movies",
+      "search for new movies",
+      "find {genre} movies",
+      "look up movies with {actor}",
+      "find movies starring {actor}",
+      "search for films by {director}",
+      "movies about aliens"
+    ]
   end
 
   defp movie_recommend_templates do
-    ["recommend a movie", "suggest a good movie", "what movie should I watch", "give me a movie recommendation", "recommend a {genre} movie", "suggest something to watch", "what's a good movie", "recommend me a film", "movie suggestions", "what should I watch tonight", "suggest a movie for date night", "recommend a family movie", "good movies to watch", "what's a good {genre} film", "suggest a classic movie", "recommend something new", "movie recommendation please", "what movie do you suggest", "give me a good movie", "recommend a movie like {movie_title}"]
+    [
+      "recommend a movie",
+      "suggest a good movie",
+      "what movie should I watch",
+      "give me a movie recommendation",
+      "recommend a {genre} movie",
+      "suggest something to watch",
+      "what's a good movie",
+      "recommend me a film",
+      "movie suggestions",
+      "what should I watch tonight",
+      "suggest a movie for date night",
+      "recommend a family movie",
+      "good movies to watch",
+      "what's a good {genre} film",
+      "suggest a classic movie",
+      "recommend something new",
+      "movie recommendation please",
+      "what movie do you suggest",
+      "give me a good movie",
+      "recommend a movie like {movie_title}"
+    ]
   end
 
   defp movie_info_templates do
-    ["tell me about {movie_title}", "info about {movie_title}", "what is {movie_title} about", "who's in {movie_title}", "who directed {movie_title}", "when did {movie_title} come out", "how long is {movie_title}", "rating of {movie_title}", "cast of {movie_title}", "plot of {movie_title}", "what's {movie_title} about", "details about {movie_title}", "{movie_title} information", "give me info on {movie_title}", "what year was {movie_title}", "who stars in {movie_title}", "synopsis of {movie_title}", "summary of {movie_title}", "reviews of {movie_title}", "is {movie_title} good"]
+    [
+      "tell me about {movie_title}",
+      "info about {movie_title}",
+      "what is {movie_title} about",
+      "who's in {movie_title}",
+      "who directed {movie_title}",
+      "when did {movie_title} come out",
+      "how long is {movie_title}",
+      "rating of {movie_title}",
+      "cast of {movie_title}",
+      "plot of {movie_title}",
+      "what's {movie_title} about",
+      "details about {movie_title}",
+      "{movie_title} information",
+      "give me info on {movie_title}",
+      "what year was {movie_title}",
+      "who stars in {movie_title}",
+      "synopsis of {movie_title}",
+      "summary of {movie_title}",
+      "reviews of {movie_title}",
+      "is {movie_title} good"
+    ]
   end
 
   defp movie_play_templates do
-    ["play {movie_title}", "start {movie_title}", "watch {movie_title}", "play the movie {movie_title}", "put on {movie_title}", "I want to watch {movie_title}", "can you play {movie_title}", "show {movie_title}", "stream {movie_title}", "play movie {movie_title}", "start playing {movie_title}", "let's watch {movie_title}", "begin {movie_title}", "turn on {movie_title}", "queue up {movie_title}", "load {movie_title}", "open {movie_title}", "run {movie_title}", "play the film {movie_title}", "start the movie {movie_title}"]
+    [
+      "play {movie_title}",
+      "start {movie_title}",
+      "watch {movie_title}",
+      "play the movie {movie_title}",
+      "put on {movie_title}",
+      "I want to watch {movie_title}",
+      "can you play {movie_title}",
+      "show {movie_title}",
+      "stream {movie_title}",
+      "play movie {movie_title}",
+      "start playing {movie_title}",
+      "let's watch {movie_title}",
+      "begin {movie_title}",
+      "turn on {movie_title}",
+      "queue up {movie_title}",
+      "load {movie_title}",
+      "open {movie_title}",
+      "run {movie_title}",
+      "play the film {movie_title}",
+      "start the movie {movie_title}"
+    ]
   end
 
   defp tv_search_templates do
-    ["find TV shows about {topic}", "search for {tv_show}", "TV shows with {actor}", "find comedy shows", "search for drama series", "shows like {tv_show}", "find new TV shows", "look for reality shows", "search sitcoms", "find documentary series", "TV shows from 2024", "look up {tv_show}", "find shows starring {actor}", "search TV series", "find streaming shows", "look for {genre} shows", "find binge-worthy shows", "search for miniseries", "TV shows on Netflix", "find popular shows"]
+    [
+      "find TV shows about {topic}",
+      "search for {tv_show}",
+      "TV shows with {actor}",
+      "find comedy shows",
+      "search for drama series",
+      "shows like {tv_show}",
+      "find new TV shows",
+      "look for reality shows",
+      "search sitcoms",
+      "find documentary series",
+      "TV shows from 2024",
+      "look up {tv_show}",
+      "find shows starring {actor}",
+      "search TV series",
+      "find streaming shows",
+      "look for {genre} shows",
+      "find binge-worthy shows",
+      "search for miniseries",
+      "TV shows on Netflix",
+      "find popular shows"
+    ]
   end
 
   defp tv_recommend_templates do
-    ["recommend a TV show", "suggest a good show", "what show should I watch", "give me a show recommendation", "recommend a {genre} show", "suggest something to binge", "what's a good series", "recommend me a show", "show suggestions", "what should I binge", "suggest a show for tonight", "recommend a funny show", "good shows to watch", "what series do you suggest", "suggest a new show", "recommend something to stream", "TV recommendation please", "what show do you recommend", "give me a good show", "recommend a show like {tv_show}"]
+    [
+      "recommend a TV show",
+      "suggest a good show",
+      "what show should I watch",
+      "give me a show recommendation",
+      "recommend a {genre} show",
+      "suggest something to binge",
+      "what's a good series",
+      "recommend me a show",
+      "show suggestions",
+      "what should I binge",
+      "suggest a show for tonight",
+      "recommend a funny show",
+      "good shows to watch",
+      "what series do you suggest",
+      "suggest a new show",
+      "recommend something to stream",
+      "TV recommendation please",
+      "what show do you recommend",
+      "give me a good show",
+      "recommend a show like {tv_show}"
+    ]
   end
 
   defp tv_info_templates do
-    ["tell me about {tv_show}", "info about {tv_show}", "what is {tv_show} about", "who's in {tv_show}", "how many seasons of {tv_show}", "when did {tv_show} start", "cast of {tv_show}", "plot of {tv_show}", "what's {tv_show} about", "details about {tv_show}", "{tv_show} information", "is {tv_show} still on", "who stars in {tv_show}", "synopsis of {tv_show}", "summary of {tv_show}", "reviews of {tv_show}", "is {tv_show} good", "where can I watch {tv_show}", "episodes of {tv_show}", "when does {tv_show} air"]
+    [
+      "tell me about {tv_show}",
+      "info about {tv_show}",
+      "what is {tv_show} about",
+      "who's in {tv_show}",
+      "how many seasons of {tv_show}",
+      "when did {tv_show} start",
+      "cast of {tv_show}",
+      "plot of {tv_show}",
+      "what's {tv_show} about",
+      "details about {tv_show}",
+      "{tv_show} information",
+      "is {tv_show} still on",
+      "who stars in {tv_show}",
+      "synopsis of {tv_show}",
+      "summary of {tv_show}",
+      "reviews of {tv_show}",
+      "is {tv_show} good",
+      "where can I watch {tv_show}",
+      "episodes of {tv_show}",
+      "when does {tv_show} air"
+    ]
   end
 
   defp sports_score_templates do
-    ["what's the score", "score of the {sports_team} game", "how's the {sports_team} doing", "did the {sports_team} win", "final score of {sports_team}", "{sports_team} score", "who won the game", "current score", "what's the {sports_team} score", "game score", "score update", "how did {sports_team} do", "result of {sports_team} game", "who's winning", "latest score", "sports scores", "{sports_league} scores", "today's scores", "score of today's game", "what was the final"]
+    [
+      "what's the score",
+      "score of the {sports_team} game",
+      "how's the {sports_team} doing",
+      "did the {sports_team} win",
+      "final score of {sports_team}",
+      "{sports_team} score",
+      "who won the game",
+      "current score",
+      "what's the {sports_team} score",
+      "game score",
+      "score update",
+      "how did {sports_team} do",
+      "result of {sports_team} game",
+      "who's winning",
+      "latest score",
+      "sports scores",
+      "{sports_league} scores",
+      "today's scores",
+      "score of today's game",
+      "what was the final"
+    ]
   end
 
   defp sports_schedule_templates do
-    ["when do the {sports_team} play", "next {sports_team} game", "{sports_team} schedule", "when's the next game", "upcoming {sports_team} games", "what time is the game", "game schedule", "when does {sports_team} play next", "{sports_league} schedule", "next game time", "upcoming games", "today's games", "games this weekend", "when is the match", "sports schedule", "what games are on today", "game times", "{sports_team} next match", "schedule for {sports_team}", "when do they play"]
+    [
+      "when do the {sports_team} play",
+      "next {sports_team} game",
+      "{sports_team} schedule",
+      "when's the next game",
+      "upcoming {sports_team} games",
+      "what time is the game",
+      "game schedule",
+      "when does {sports_team} play next",
+      "{sports_league} schedule",
+      "next game time",
+      "upcoming games",
+      "today's games",
+      "games this weekend",
+      "when is the match",
+      "sports schedule",
+      "what games are on today",
+      "game times",
+      "{sports_team} next match",
+      "schedule for {sports_team}",
+      "when do they play"
+    ]
   end
 
   defp sports_standings_templates do
-    ["show {sports_league} standings", "team standings", "who's in first place", "league standings", "{sports_team} standings", "current standings", "{sports_league} rankings", "who's leading the league", "playoff standings", "division standings", "conference standings", "where is {sports_team} in standings", "top teams in {sports_league}", "standings table", "who's on top", "league leaders", "current rankings", "team rankings", "who's winning the division", "playoff picture"]
+    [
+      "show {sports_league} standings",
+      "team standings",
+      "who's in first place",
+      "league standings",
+      "{sports_team} standings",
+      "current standings",
+      "{sports_league} rankings",
+      "who's leading the league",
+      "playoff standings",
+      "division standings",
+      "conference standings",
+      "where is {sports_team} in standings",
+      "top teams in {sports_league}",
+      "standings table",
+      "who's on top",
+      "league leaders",
+      "current rankings",
+      "team rankings",
+      "who's winning the division",
+      "playoff picture"
+    ]
   end
 
   defp game_play_templates do
-    ["let's play a game", "play a game with me", "I want to play a game", "can we play a game", "start a game", "play something", "let's play", "game time", "play with me", "want to play a game", "begin a game", "games to play", "play a fun game", "let's have fun", "interactive game", "start playing", "game on", "play a word game", "play twenty questions", "play a guessing game"]
+    [
+      "let's play a game",
+      "play a game with me",
+      "I want to play a game",
+      "can we play a game",
+      "start a game",
+      "play something",
+      "let's play",
+      "game time",
+      "play with me",
+      "want to play a game",
+      "begin a game",
+      "games to play",
+      "play a fun game",
+      "let's have fun",
+      "interactive game",
+      "start playing",
+      "game on",
+      "play a word game",
+      "play twenty questions",
+      "play a guessing game"
+    ]
   end
 
   defp game_trivia_templates do
-    ["play trivia", "trivia game", "ask me trivia", "let's play trivia", "trivia question", "quiz me", "start trivia", "trivia time", "give me a trivia question", "play quiz", "ask me a question", "test my knowledge", "trivia challenge", "random trivia", "fun facts quiz", "general knowledge quiz", "play a quiz game", "trivia please", "quiz game", "knowledge test"]
+    [
+      "play trivia",
+      "trivia game",
+      "ask me trivia",
+      "let's play trivia",
+      "trivia question",
+      "quiz me",
+      "start trivia",
+      "trivia time",
+      "give me a trivia question",
+      "play quiz",
+      "ask me a question",
+      "test my knowledge",
+      "trivia challenge",
+      "random trivia",
+      "fun facts quiz",
+      "general knowledge quiz",
+      "play a quiz game",
+      "trivia please",
+      "quiz game",
+      "knowledge test"
+    ]
   end
 
   defp game_joke_templates do
-    ["tell me a joke", "make me laugh", "say something funny", "joke please", "give me a joke", "I need a laugh", "tell a joke", "funny joke", "make a joke", "got any jokes", "hear a joke", "random joke", "tell me something funny", "cheer me up with a joke", "comedy time", "dad joke", "knock knock joke", "pun please", "witty joke", "humor me"]
+    [
+      "tell me a joke",
+      "make me laugh",
+      "say something funny",
+      "joke please",
+      "give me a joke",
+      "I need a laugh",
+      "tell a joke",
+      "funny joke",
+      "make a joke",
+      "got any jokes",
+      "hear a joke",
+      "random joke",
+      "tell me something funny",
+      "cheer me up with a joke",
+      "comedy time",
+      "dad joke",
+      "knock knock joke",
+      "pun please",
+      "witty joke",
+      "humor me"
+    ]
   end
 
   defp book_search_templates do
-    ["find books about {topic}", "search for {book_title}", "books by {person}", "find mystery books", "search for romance novels", "books like {book_title}", "find new books", "look for thrillers", "search fiction books", "find sci-fi novels", "books from this year", "look up {book_title}", "find bestsellers", "search non-fiction", "find audiobooks", "look for {genre} books", "find highly rated books", "search for classics", "books to read", "find popular books"]
+    [
+      "find books about {topic}",
+      "search for {book_title}",
+      "books by {person}",
+      "find mystery books",
+      "search for romance novels",
+      "books like {book_title}",
+      "find new books",
+      "look for thrillers",
+      "search fiction books",
+      "find sci-fi novels",
+      "books from this year",
+      "look up {book_title}",
+      "find bestsellers",
+      "search non-fiction",
+      "find audiobooks",
+      "look for {genre} books",
+      "find highly rated books",
+      "search for classics",
+      "books to read",
+      "find popular books"
+    ]
   end
 
   defp book_recommend_templates do
-    ["recommend a book", "suggest a good book", "what book should I read", "give me a book recommendation", "recommend a {genre} book", "suggest something to read", "what's a good book", "recommend me a novel", "book suggestions", "what should I read next", "suggest a book for vacation", "recommend a page-turner", "good books to read", "what book do you suggest", "suggest a classic", "recommend something new", "book recommendation please", "what book do you recommend", "give me a good book", "recommend a book like {book_title}"]
+    [
+      "recommend a book",
+      "suggest a good book",
+      "what book should I read",
+      "give me a book recommendation",
+      "recommend a {genre} book",
+      "suggest something to read",
+      "what's a good book",
+      "recommend me a novel",
+      "book suggestions",
+      "what should I read next",
+      "suggest a book for vacation",
+      "recommend a page-turner",
+      "good books to read",
+      "what book do you suggest",
+      "suggest a classic",
+      "recommend something new",
+      "book recommendation please",
+      "what book do you recommend",
+      "give me a good book",
+      "recommend a book like {book_title}"
+    ]
   end
 
   defp generate_entertainment_negative_examples do
@@ -2783,71 +3255,428 @@ defmodule Mix.Tasks.GenerateIntentData do
   end
 
   defp knowledge_define_templates do
-    ["define {word}", "what does {word} mean", "definition of {word}", "what is the definition of {word}", "meaning of {word}", "what's {word} mean", "define the word {word}", "tell me what {word} means", "{word} definition", "what is {word}", "explain {word}", "what's the meaning of {word}", "dictionary {word}", "look up {word}", "what does the word {word} mean", "define {word} for me", "meaning of the word {word}", "what is meant by {word}", "what do you mean by {word}", "give me the definition of {word}"]
+    [
+      "define {word}",
+      "what does {word} mean",
+      "definition of {word}",
+      "what is the definition of {word}",
+      "meaning of {word}",
+      "what's {word} mean",
+      "define the word {word}",
+      "tell me what {word} means",
+      "{word} definition",
+      "what is {word}",
+      "explain {word}",
+      "what's the meaning of {word}",
+      "dictionary {word}",
+      "look up {word}",
+      "what does the word {word} mean",
+      "define {word} for me",
+      "meaning of the word {word}",
+      "what is meant by {word}",
+      "what do you mean by {word}",
+      "give me the definition of {word}"
+    ]
   end
 
   defp knowledge_synonym_templates do
-    ["synonym for {word}", "what's another word for {word}", "synonyms of {word}", "different word for {word}", "give me a synonym for {word}", "what can I say instead of {word}", "alternative to {word}", "similar word to {word}", "words like {word}", "another way to say {word}", "what else means {word}", "synonym of {word}", "related words to {word}", "like {word} but different", "thesaurus {word}", "other words for {word}", "what's similar to {word}", "equivalent of {word}", "substitute for {word}", "synonyms for the word {word}"]
+    [
+      "synonym for {word}",
+      "what's another word for {word}",
+      "synonyms of {word}",
+      "different word for {word}",
+      "give me a synonym for {word}",
+      "what can I say instead of {word}",
+      "alternative to {word}",
+      "similar word to {word}",
+      "words like {word}",
+      "another way to say {word}",
+      "what else means {word}",
+      "synonym of {word}",
+      "related words to {word}",
+      "like {word} but different",
+      "thesaurus {word}",
+      "other words for {word}",
+      "what's similar to {word}",
+      "equivalent of {word}",
+      "substitute for {word}",
+      "synonyms for the word {word}"
+    ]
   end
 
   defp knowledge_spell_templates do
-    ["how do you spell {word}", "spell {word}", "spelling of {word}", "how is {word} spelled", "what's the spelling of {word}", "can you spell {word}", "spell out {word}", "how to spell {word}", "{word} spelling", "correct spelling of {word}", "is {word} spelled correctly", "how do I spell {word}", "spelling for {word}", "what's the correct spelling of {word}", "spell the word {word}", "how should I spell {word}", "letter by letter {word}", "s-p-e-l-l {word}", "help me spell {word}", "check spelling of {word}"]
+    [
+      "how do you spell {word}",
+      "spell {word}",
+      "spelling of {word}",
+      "how is {word} spelled",
+      "what's the spelling of {word}",
+      "can you spell {word}",
+      "spell out {word}",
+      "how to spell {word}",
+      "{word} spelling",
+      "correct spelling of {word}",
+      "is {word} spelled correctly",
+      "how do I spell {word}",
+      "spelling for {word}",
+      "what's the correct spelling of {word}",
+      "spell the word {word}",
+      "how should I spell {word}",
+      "letter by letter {word}",
+      "s-p-e-l-l {word}",
+      "help me spell {word}",
+      "check spelling of {word}"
+    ]
   end
 
   defp knowledge_fact_templates do
-    ["tell me a fact", "random fact", "give me a fun fact", "interesting fact", "did you know", "fact of the day", "tell me something interesting", "share a fact", "trivia fact", "cool fact", "fun fact please", "tell me something I don't know", "surprising fact", "science fact", "history fact", "nature fact", "world fact", "amazing fact", "educational fact", "quick fact"]
+    [
+      "tell me a fact",
+      "random fact",
+      "give me a fun fact",
+      "interesting fact",
+      "did you know",
+      "fact of the day",
+      "tell me something interesting",
+      "share a fact",
+      "trivia fact",
+      "cool fact",
+      "fun fact please",
+      "tell me something I don't know",
+      "surprising fact",
+      "science fact",
+      "history fact",
+      "nature fact",
+      "world fact",
+      "amazing fact",
+      "educational fact",
+      "quick fact"
+    ]
   end
 
   defp knowledge_who_templates do
-    ["who is {person}", "who was {person}", "tell me about {person}", "who's {person}", "information about {person}", "biography of {person}", "facts about {person}", "who is {person} known for", "what did {person} do", "who exactly is {person}", "{person} bio", "details about {person}", "what is {person} famous for", "why is {person} famous", "learn about {person}", "who was {person} really", "history of {person}", "{person} information", "what do you know about {person}", "tell me who {person} is"]
+    [
+      "who is {person}",
+      "who was {person}",
+      "tell me about {person}",
+      "who's {person}",
+      "information about {person}",
+      "biography of {person}",
+      "facts about {person}",
+      "who is {person} known for",
+      "what did {person} do",
+      "who exactly is {person}",
+      "{person} bio",
+      "details about {person}",
+      "what is {person} famous for",
+      "why is {person} famous",
+      "learn about {person}",
+      "who was {person} really",
+      "history of {person}",
+      "{person} information",
+      "what do you know about {person}",
+      "tell me who {person} is"
+    ]
   end
 
   defp knowledge_what_templates do
-    ["what is {topic}", "what are {topic}", "tell me about {topic}", "explain {topic}", "what exactly is {topic}", "information about {topic}", "describe {topic}", "what's {topic}", "facts about {topic}", "what do you know about {topic}", "details about {topic}", "learn about {topic}", "educate me on {topic}", "what can you tell me about {topic}", "explain what {topic} is", "give me info on {topic}", "what is a {topic}", "define {topic}", "overview of {topic}", "{topic} explanation"]
+    [
+      "what is {topic}",
+      "what are {topic}",
+      "tell me about {topic}",
+      "explain {topic}",
+      "what exactly is {topic}",
+      "information about {topic}",
+      "describe {topic}",
+      "what's {topic}",
+      "facts about {topic}",
+      "what do you know about {topic}",
+      "details about {topic}",
+      "learn about {topic}",
+      "educate me on {topic}",
+      "what can you tell me about {topic}",
+      "explain what {topic} is",
+      "give me info on {topic}",
+      "what is a {topic}",
+      "define {topic}",
+      "overview of {topic}",
+      "{topic} explanation"
+    ]
   end
 
   defp knowledge_when_templates do
-    ["when did {topic} happen", "when was {topic}", "what year was {topic}", "when did {topic} occur", "date of {topic}", "when is {topic}", "what date is {topic}", "when was {topic} invented", "when was {topic} discovered", "when did {topic} start", "when did {topic} end", "year of {topic}", "when was {topic} founded", "when did {topic} begin", "when was {topic} built", "what time was {topic}", "when did {topic} take place", "historical date of {topic}", "when exactly was {topic}", "timeline of {topic}"]
+    [
+      "when did {topic} happen",
+      "when was {topic}",
+      "what year was {topic}",
+      "when did {topic} occur",
+      "date of {topic}",
+      "when is {topic}",
+      "what date is {topic}",
+      "when was {topic} invented",
+      "when was {topic} discovered",
+      "when did {topic} start",
+      "when did {topic} end",
+      "year of {topic}",
+      "when was {topic} founded",
+      "when did {topic} begin",
+      "when was {topic} built",
+      "what time was {topic}",
+      "when did {topic} take place",
+      "historical date of {topic}",
+      "when exactly was {topic}",
+      "timeline of {topic}"
+    ]
   end
 
   defp knowledge_where_templates do
-    ["where is {location}", "where was {topic}", "location of {location}", "where can I find {topic}", "where is {location} located", "where did {topic} happen", "where was {topic} invented", "where was {topic} discovered", "where is {location} on the map", "where exactly is {location}", "location of {topic}", "where was {topic} founded", "where did {topic} originate", "where can I see {topic}", "where is the {location}", "in which country is {location}", "where was {topic} built", "where does {topic} come from", "geographical location of {location}", "where did {topic} take place"]
+    [
+      "where is {location}",
+      "where was {topic}",
+      "location of {location}",
+      "where can I find {topic}",
+      "where is {location} located",
+      "where did {topic} happen",
+      "where was {topic} invented",
+      "where was {topic} discovered",
+      "where is {location} on the map",
+      "where exactly is {location}",
+      "location of {topic}",
+      "where was {topic} founded",
+      "where did {topic} originate",
+      "where can I see {topic}",
+      "where is the {location}",
+      "in which country is {location}",
+      "where was {topic} built",
+      "where does {topic} come from",
+      "geographical location of {location}",
+      "where did {topic} take place"
+    ]
   end
 
   defp knowledge_how_templates do
-    ["how does {topic} work", "how do {topic} work", "explain how {topic} works", "how is {topic} made", "how to {topic}", "how can I {topic}", "how did {topic} happen", "process of {topic}", "how is {topic} done", "steps for {topic}", "how do you {topic}", "how does {topic} function", "mechanism of {topic}", "how was {topic} created", "how is {topic} produced", "how do I {topic}", "explain the process of {topic}", "how does {topic} operate", "how can {topic} be done", "way to {topic}"]
+    [
+      "how does {topic} work",
+      "how do {topic} work",
+      "explain how {topic} works",
+      "how is {topic} made",
+      "how to {topic}",
+      "how can I {topic}",
+      "how did {topic} happen",
+      "process of {topic}",
+      "how is {topic} done",
+      "steps for {topic}",
+      "how do you {topic}",
+      "how does {topic} function",
+      "mechanism of {topic}",
+      "how was {topic} created",
+      "how is {topic} produced",
+      "how do I {topic}",
+      "explain the process of {topic}",
+      "how does {topic} operate",
+      "how can {topic} be done",
+      "way to {topic}"
+    ]
   end
 
   defp translate_templates do
-    ["translate {word}", "how do you say {word}", "translate this", "what is {word} in other languages", "translate {word} please", "can you translate {word}", "translation of {word}", "help me translate", "translate the word {word}", "what does {word} mean in other languages", "translate for me", "how to say {word}", "give me translation", "translate {word} for me", "I need a translation", "help with translation", "translation please", "what's the translation of {word}", "can you translate this", "translate the phrase"]
+    [
+      "translate {word}",
+      "how do you say {word}",
+      "translate this",
+      "what is {word} in other languages",
+      "translate {word} please",
+      "can you translate {word}",
+      "translation of {word}",
+      "help me translate",
+      "translate the word {word}",
+      "what does {word} mean in other languages",
+      "translate for me",
+      "how to say {word}",
+      "give me translation",
+      "translate {word} for me",
+      "I need a translation",
+      "help with translation",
+      "translation please",
+      "what's the translation of {word}",
+      "can you translate this",
+      "translate the phrase"
+    ]
   end
 
   defp translate_to_templates do
-    ["translate {word} to {language}", "how do you say {word} in {language}", "{word} in {language}", "what is {word} in {language}", "translate to {language}", "say {word} in {language}", "{language} translation of {word}", "convert {word} to {language}", "how is {word} said in {language}", "{word} translated to {language}", "translate {word} into {language}", "what's {word} in {language}", "tell me {word} in {language}", "{language} word for {word}", "how would you say {word} in {language}", "express {word} in {language}", "{word} to {language}", "translation of {word} to {language}", "in {language} what is {word}", "{language} for {word}"]
+    [
+      "translate {word} to {language}",
+      "how do you say {word} in {language}",
+      "{word} in {language}",
+      "what is {word} in {language}",
+      "translate to {language}",
+      "say {word} in {language}",
+      "{language} translation of {word}",
+      "convert {word} to {language}",
+      "how is {word} said in {language}",
+      "{word} translated to {language}",
+      "translate {word} into {language}",
+      "what's {word} in {language}",
+      "tell me {word} in {language}",
+      "{language} word for {word}",
+      "how would you say {word} in {language}",
+      "express {word} in {language}",
+      "{word} to {language}",
+      "translation of {word} to {language}",
+      "in {language} what is {word}",
+      "{language} for {word}"
+    ]
   end
 
   defp math_calculate_templates do
-    ["calculate {math_expression}", "what is {math_expression}", "compute {math_expression}", "{math_expression} equals", "solve {math_expression}", "what's {math_expression}", "work out {math_expression}", "figure out {math_expression}", "{math_expression} result", "answer to {math_expression}", "do the math {math_expression}", "calculate {math_expression} for me", "what does {math_expression} equal", "evaluate {math_expression}", "process {math_expression}", "find {math_expression}", "determine {math_expression}", "compute the result of {math_expression}", "mathematical result of {math_expression}", "{math_expression} solution"]
+    [
+      "calculate {math_expression}",
+      "what is {math_expression}",
+      "compute {math_expression}",
+      "{math_expression} equals",
+      "solve {math_expression}",
+      "what's {math_expression}",
+      "work out {math_expression}",
+      "figure out {math_expression}",
+      "{math_expression} result",
+      "answer to {math_expression}",
+      "do the math {math_expression}",
+      "calculate {math_expression} for me",
+      "what does {math_expression} equal",
+      "evaluate {math_expression}",
+      "process {math_expression}",
+      "find {math_expression}",
+      "determine {math_expression}",
+      "compute the result of {math_expression}",
+      "mathematical result of {math_expression}",
+      "{math_expression} solution"
+    ]
   end
 
   defp math_percentage_templates do
-    ["what's {number} percent of {number}", "{number}% of {number}", "calculate {number} percent", "percentage of {number}", "what is {number} percent of {number}", "find {number}% of {number}", "compute {number} percent of {number}", "{number} percent of {number} is", "work out {number}%", "figure {number} percent", "how much is {number}% of {number}", "{number} percentage of {number}", "what's the percentage", "calculate percentage", "percent calculation", "{number}% calculation", "what percentage is {number} of {number}", "find the percentage", "percent of {number}", "percentage calculator"]
+    [
+      "what's {number} percent of {number}",
+      "{number}% of {number}",
+      "calculate {number} percent",
+      "percentage of {number}",
+      "what is {number} percent of {number}",
+      "find {number}% of {number}",
+      "compute {number} percent of {number}",
+      "{number} percent of {number} is",
+      "work out {number}%",
+      "figure {number} percent",
+      "how much is {number}% of {number}",
+      "{number} percentage of {number}",
+      "what's the percentage",
+      "calculate percentage",
+      "percent calculation",
+      "{number}% calculation",
+      "what percentage is {number} of {number}",
+      "find the percentage",
+      "percent of {number}",
+      "percentage calculator"
+    ]
   end
 
   defp math_convert_templates do
-    ["convert {number} {unit_from} to {unit_to}", "{number} {unit_from} in {unit_to}", "how many {unit_to} is {number} {unit_from}", "{number} {unit_from} to {unit_to}", "what is {number} {unit_from} in {unit_to}", "change {number} {unit_from} to {unit_to}", "{unit_from} to {unit_to} conversion", "convert {unit_from} to {unit_to}", "{number} {unit_from} equals how many {unit_to}", "calculate {number} {unit_from} in {unit_to}", "how much is {number} {unit_from} in {unit_to}", "transform {number} {unit_from} to {unit_to}", "unit conversion {unit_from} {unit_to}", "{unit_from} {unit_to} calculator", "convert units {unit_from} {unit_to}", "measurement conversion", "{number} {unit_from} converted to {unit_to}", "what's {number} {unit_from} in {unit_to}", "{unit_from} into {unit_to}", "change units"]
+    [
+      "convert {number} {unit_from} to {unit_to}",
+      "{number} {unit_from} in {unit_to}",
+      "how many {unit_to} is {number} {unit_from}",
+      "{number} {unit_from} to {unit_to}",
+      "what is {number} {unit_from} in {unit_to}",
+      "change {number} {unit_from} to {unit_to}",
+      "{unit_from} to {unit_to} conversion",
+      "convert {unit_from} to {unit_to}",
+      "{number} {unit_from} equals how many {unit_to}",
+      "calculate {number} {unit_from} in {unit_to}",
+      "how much is {number} {unit_from} in {unit_to}",
+      "transform {number} {unit_from} to {unit_to}",
+      "unit conversion {unit_from} {unit_to}",
+      "{unit_from} {unit_to} calculator",
+      "convert units {unit_from} {unit_to}",
+      "measurement conversion",
+      "{number} {unit_from} converted to {unit_to}",
+      "what's {number} {unit_from} in {unit_to}",
+      "{unit_from} into {unit_to}",
+      "change units"
+    ]
   end
 
   defp reference_capital_templates do
-    ["what is the capital of {location}", "capital of {location}", "{location} capital", "what's the capital of {location}", "capital city of {location}", "name the capital of {location}", "tell me the capital of {location}", "which city is the capital of {location}", "capital of the country {location}", "what's {location}'s capital", "{location}'s capital city", "where is the capital of {location}", "what is {location} capital", "find capital of {location}", "capital for {location}", "main city of {location}", "what city is the capital of {location}", "identify capital of {location}", "{location} capital name", "government seat of {location}"]
+    [
+      "what is the capital of {location}",
+      "capital of {location}",
+      "{location} capital",
+      "what's the capital of {location}",
+      "capital city of {location}",
+      "name the capital of {location}",
+      "tell me the capital of {location}",
+      "which city is the capital of {location}",
+      "capital of the country {location}",
+      "what's {location}'s capital",
+      "{location}'s capital city",
+      "where is the capital of {location}",
+      "what is {location} capital",
+      "find capital of {location}",
+      "capital for {location}",
+      "main city of {location}",
+      "what city is the capital of {location}",
+      "identify capital of {location}",
+      "{location} capital name",
+      "government seat of {location}"
+    ]
   end
 
   defp reference_population_templates do
-    ["what is the population of {location}", "population of {location}", "how many people live in {location}", "{location} population", "what's the population of {location}", "how big is {location}", "number of people in {location}", "tell me the population of {location}", "{location}'s population", "population count for {location}", "how many inhabitants in {location}", "citizens of {location}", "population size of {location}", "what is {location} population", "find population of {location}", "how populous is {location}", "demographic of {location}", "people in {location}", "population figure for {location}", "residents of {location}"]
+    [
+      "what is the population of {location}",
+      "population of {location}",
+      "how many people live in {location}",
+      "{location} population",
+      "what's the population of {location}",
+      "how big is {location}",
+      "number of people in {location}",
+      "tell me the population of {location}",
+      "{location}'s population",
+      "population count for {location}",
+      "how many inhabitants in {location}",
+      "citizens of {location}",
+      "population size of {location}",
+      "what is {location} population",
+      "find population of {location}",
+      "how populous is {location}",
+      "demographic of {location}",
+      "people in {location}",
+      "population figure for {location}",
+      "residents of {location}"
+    ]
   end
 
   defp reference_distance_templates do
-    ["how far is {location} from {location}", "distance between {location} and {location}", "how far is it to {location}", "distance to {location}", "{location} to {location} distance", "how many miles to {location}", "how far from here to {location}", "travel distance to {location}", "what's the distance to {location}", "km from {location} to {location}", "miles between {location} and {location}", "how far away is {location}", "distance from {location}", "length from {location} to {location}", "how long is the drive to {location}", "measure distance to {location}", "calculate distance to {location}", "route distance {location} {location}", "how far to travel to {location}", "distance calculator {location}"]
+    [
+      "how far is {location} from {location}",
+      "distance between {location} and {location}",
+      "how far is it to {location}",
+      "distance to {location}",
+      "{location} to {location} distance",
+      "how many miles to {location}",
+      "how far from here to {location}",
+      "travel distance to {location}",
+      "what's the distance to {location}",
+      "km from {location} to {location}",
+      "miles between {location} and {location}",
+      "how far away is {location}",
+      "distance from {location}",
+      "length from {location} to {location}",
+      "how long is the drive to {location}",
+      "measure distance to {location}",
+      "calculate distance to {location}",
+      "route distance {location} {location}",
+      "how far to travel to {location}",
+      "distance calculator {location}"
+    ]
   end
 
   defp generate_education_negative_examples do
@@ -2902,67 +3731,403 @@ defmodule Mix.Tasks.GenerateIntentData do
   end
 
   defp time_current_templates do
-    ["what time is it", "current time", "what's the time", "time please", "tell me the time", "what time is it now", "the time", "time now", "what's the current time", "do you have the time", "can you tell me the time", "what is the time", "show me the time", "time check", "give me the time", "present time", "time right now", "actual time", "what time do we have", "clock check"]
+    [
+      "what time is it",
+      "current time",
+      "what's the time",
+      "time please",
+      "tell me the time",
+      "what time is it now",
+      "the time",
+      "time now",
+      "what's the current time",
+      "do you have the time",
+      "can you tell me the time",
+      "what is the time",
+      "show me the time",
+      "time check",
+      "give me the time",
+      "present time",
+      "time right now",
+      "actual time",
+      "what time do we have",
+      "clock check"
+    ]
   end
 
   defp time_location_templates do
-    ["what time is it in {location}", "time in {location}", "current time in {location}", "{location} time", "what's the time in {location}", "tell me the time in {location}", "time zone for {location}", "what time in {location}", "{location} current time", "local time in {location}", "time right now in {location}", "what's {location} time", "give me time in {location}", "check time in {location}", "what is the time in {location}", "show time in {location}", "clock in {location}", "{location} timezone", "how late is it in {location}", "what hour is it in {location}"]
+    [
+      "what time is it in {location}",
+      "time in {location}",
+      "current time in {location}",
+      "{location} time",
+      "what's the time in {location}",
+      "tell me the time in {location}",
+      "time zone for {location}",
+      "what time in {location}",
+      "{location} current time",
+      "local time in {location}",
+      "time right now in {location}",
+      "what's {location} time",
+      "give me time in {location}",
+      "check time in {location}",
+      "what is the time in {location}",
+      "show time in {location}",
+      "clock in {location}",
+      "{location} timezone",
+      "how late is it in {location}",
+      "what hour is it in {location}"
+    ]
   end
 
   defp date_current_templates do
-    ["what's today's date", "what is the date", "today's date", "what day is it", "the date today", "current date", "what's the date today", "tell me the date", "date please", "what date is it", "show me the date", "give me today's date", "date today", "what is today's date", "present date", "what day is today", "the date", "check the date", "what's today", "today is"]
+    [
+      "what's today's date",
+      "what is the date",
+      "today's date",
+      "what day is it",
+      "the date today",
+      "current date",
+      "what's the date today",
+      "tell me the date",
+      "date please",
+      "what date is it",
+      "show me the date",
+      "give me today's date",
+      "date today",
+      "what is today's date",
+      "present date",
+      "what day is today",
+      "the date",
+      "check the date",
+      "what's today",
+      "today is"
+    ]
   end
 
   defp date_day_templates do
-    ["what day of the week is {date_time}", "what day is {date_time}", "is {date_time} a weekday", "what day of week is {date_time}", "which day is {date_time}", "day of {date_time}", "what day will {date_time} be", "tell me what day {date_time} is", "is {date_time} a weekend", "what day does {date_time} fall on", "{date_time} day of week", "find day for {date_time}", "what day was {date_time}", "check day of {date_time}", "which weekday is {date_time}", "day for {date_time}", "what day of the week is it on {date_time}", "day on {date_time}", "{date_time} is what day", "when is {date_time}"]
+    [
+      "what day of the week is {date_time}",
+      "what day is {date_time}",
+      "is {date_time} a weekday",
+      "what day of week is {date_time}",
+      "which day is {date_time}",
+      "day of {date_time}",
+      "what day will {date_time} be",
+      "tell me what day {date_time} is",
+      "is {date_time} a weekend",
+      "what day does {date_time} fall on",
+      "{date_time} day of week",
+      "find day for {date_time}",
+      "what day was {date_time}",
+      "check day of {date_time}",
+      "which weekday is {date_time}",
+      "day for {date_time}",
+      "what day of the week is it on {date_time}",
+      "day on {date_time}",
+      "{date_time} is what day",
+      "when is {date_time}"
+    ]
   end
 
   defp random_number_templates do
-    ["pick a random number", "random number", "give me a random number", "generate a random number", "pick a number", "random number between {number} and {number}", "choose a random number", "number between {number} and {number}", "random from {number} to {number}", "pick any number", "generate number", "random number please", "give me a number", "select a random number", "number generator", "pick a number for me", "random integer", "choose a number", "roll a random number", "any random number"]
+    [
+      "pick a random number",
+      "random number",
+      "give me a random number",
+      "generate a random number",
+      "pick a number",
+      "random number between {number} and {number}",
+      "choose a random number",
+      "number between {number} and {number}",
+      "random from {number} to {number}",
+      "pick any number",
+      "generate number",
+      "random number please",
+      "give me a number",
+      "select a random number",
+      "number generator",
+      "pick a number for me",
+      "random integer",
+      "choose a number",
+      "roll a random number",
+      "any random number"
+    ]
   end
 
   defp random_coin_templates do
-    ["flip a coin", "coin flip", "heads or tails", "toss a coin", "flip coin", "coin toss", "random coin flip", "flip", "toss coin", "heads tails", "call the coin", "throw a coin", "coin flip please", "flip it", "do a coin flip", "50 50", "flip a coin for me", "let the coin decide", "coin", "random flip"]
+    [
+      "flip a coin",
+      "coin flip",
+      "heads or tails",
+      "toss a coin",
+      "flip coin",
+      "coin toss",
+      "random coin flip",
+      "flip",
+      "toss coin",
+      "heads tails",
+      "call the coin",
+      "throw a coin",
+      "coin flip please",
+      "flip it",
+      "do a coin flip",
+      "50 50",
+      "flip a coin for me",
+      "let the coin decide",
+      "coin",
+      "random flip"
+    ]
   end
 
   defp random_dice_templates do
-    ["roll a dice", "roll dice", "throw dice", "dice roll", "roll the dice", "roll a die", "toss dice", "roll", "dice throw", "give me a dice roll", "roll for me", "random dice", "dice please", "throw the dice", "roll a d6", "roll two dice", "dice game", "roll dice for me", "cast dice", "dice toss"]
+    [
+      "roll a dice",
+      "roll dice",
+      "throw dice",
+      "dice roll",
+      "roll the dice",
+      "roll a die",
+      "toss dice",
+      "roll",
+      "dice throw",
+      "give me a dice roll",
+      "roll for me",
+      "random dice",
+      "dice please",
+      "throw the dice",
+      "roll a d6",
+      "roll two dice",
+      "dice game",
+      "roll dice for me",
+      "cast dice",
+      "dice toss"
+    ]
   end
 
   defp random_choice_templates do
-    ["pick between {topic} and {topic}", "choose between {topic} or {topic}", "random choice", "help me decide", "pick one", "which should I choose", "make a choice", "decide for me", "random pick", "choose for me", "pick something", "help me pick", "random selection", "which one", "either {topic} or {topic}", "select one", "choose one for me", "make the decision", "I can't decide", "you pick"]
+    [
+      "pick between {topic} and {topic}",
+      "choose between {topic} or {topic}",
+      "random choice",
+      "help me decide",
+      "pick one",
+      "which should I choose",
+      "make a choice",
+      "decide for me",
+      "random pick",
+      "choose for me",
+      "pick something",
+      "help me pick",
+      "random selection",
+      "which one",
+      "either {topic} or {topic}",
+      "select one",
+      "choose one for me",
+      "make the decision",
+      "I can't decide",
+      "you pick"
+    ]
   end
 
   defp device_battery_templates do
-    ["what's my battery level", "battery status", "how much battery", "check battery", "battery percentage", "battery level", "how's my battery", "show battery", "battery remaining", "current battery", "battery check", "power level", "how much charge left", "battery life", "percentage of battery", "my battery", "device battery", "battery info", "check power level", "remaining battery"]
+    [
+      "what's my battery level",
+      "battery status",
+      "how much battery",
+      "check battery",
+      "battery percentage",
+      "battery level",
+      "how's my battery",
+      "show battery",
+      "battery remaining",
+      "current battery",
+      "battery check",
+      "power level",
+      "how much charge left",
+      "battery life",
+      "percentage of battery",
+      "my battery",
+      "device battery",
+      "battery info",
+      "check power level",
+      "remaining battery"
+    ]
   end
 
   defp device_storage_templates do
-    ["how much storage do I have", "storage space", "check storage", "available storage", "storage left", "how much space left", "disk space", "free space", "storage status", "my storage", "device storage", "remaining storage", "storage check", "memory space", "available space", "how full is my storage", "storage info", "check disk space", "space remaining", "storage available"]
+    [
+      "how much storage do I have",
+      "storage space",
+      "check storage",
+      "available storage",
+      "storage left",
+      "how much space left",
+      "disk space",
+      "free space",
+      "storage status",
+      "my storage",
+      "device storage",
+      "remaining storage",
+      "storage check",
+      "memory space",
+      "available space",
+      "how full is my storage",
+      "storage info",
+      "check disk space",
+      "space remaining",
+      "storage available"
+    ]
   end
 
   defp device_wifi_templates do
-    ["wifi status", "am I connected to wifi", "check wifi", "wifi connection", "connected to wifi", "show wifi", "wifi network", "which wifi", "what wifi am I on", "wifi info", "check internet connection", "is wifi connected", "my wifi", "current wifi", "network status", "internet connection", "wifi check", "connected network", "wifi name", "show my wifi"]
+    [
+      "wifi status",
+      "am I connected to wifi",
+      "check wifi",
+      "wifi connection",
+      "connected to wifi",
+      "show wifi",
+      "wifi network",
+      "which wifi",
+      "what wifi am I on",
+      "wifi info",
+      "check internet connection",
+      "is wifi connected",
+      "my wifi",
+      "current wifi",
+      "network status",
+      "internet connection",
+      "wifi check",
+      "connected network",
+      "wifi name",
+      "show my wifi"
+    ]
   end
 
   defp device_volume_templates do
-    ["set volume to {number}", "volume {number}", "turn volume to {number}", "set the volume to {number} percent", "change volume to {number}", "volume at {number}", "make volume {number}", "adjust volume to {number}", "volume level {number}", "set audio to {number}", "turn up volume to {number}", "turn down volume to {number}", "volume {number} percent", "system volume {number}", "media volume {number}", "set sound to {number}", "audio level {number}", "put volume at {number}", "speaker volume {number}", "change sound to {number}"]
+    [
+      "set volume to {number}",
+      "volume {number}",
+      "turn volume to {number}",
+      "set the volume to {number} percent",
+      "change volume to {number}",
+      "volume at {number}",
+      "make volume {number}",
+      "adjust volume to {number}",
+      "volume level {number}",
+      "set audio to {number}",
+      "turn up volume to {number}",
+      "turn down volume to {number}",
+      "volume {number} percent",
+      "system volume {number}",
+      "media volume {number}",
+      "set sound to {number}",
+      "audio level {number}",
+      "put volume at {number}",
+      "speaker volume {number}",
+      "change sound to {number}"
+    ]
   end
 
   defp device_brightness_templates do
-    ["set brightness to {number}", "brightness {number}", "screen brightness {number}", "turn brightness to {number}", "change brightness to {number}", "brightness level {number}", "adjust brightness to {number}", "display brightness {number}", "make it brighter", "make it dimmer", "increase brightness", "decrease brightness", "lower brightness", "raise brightness", "brightness up", "brightness down", "dim the screen", "brighten the screen", "set screen to {number}", "screen at {number} percent"]
+    [
+      "set brightness to {number}",
+      "brightness {number}",
+      "screen brightness {number}",
+      "turn brightness to {number}",
+      "change brightness to {number}",
+      "brightness level {number}",
+      "adjust brightness to {number}",
+      "display brightness {number}",
+      "make it brighter",
+      "make it dimmer",
+      "increase brightness",
+      "decrease brightness",
+      "lower brightness",
+      "raise brightness",
+      "brightness up",
+      "brightness down",
+      "dim the screen",
+      "brighten the screen",
+      "set screen to {number}",
+      "screen at {number} percent"
+    ]
   end
 
   defp device_screenshot_templates do
-    ["take a screenshot", "screenshot", "capture screen", "screen capture", "take screenshot", "grab screenshot", "capture the screen", "screenshot please", "take a screen shot", "screen shot", "capture this screen", "save screenshot", "snap the screen", "get a screenshot", "screenshot now", "take screen capture", "capture display", "screenshot this", "screen grab", "take a picture of the screen"]
+    [
+      "take a screenshot",
+      "screenshot",
+      "capture screen",
+      "screen capture",
+      "take screenshot",
+      "grab screenshot",
+      "capture the screen",
+      "screenshot please",
+      "take a screen shot",
+      "screen shot",
+      "capture this screen",
+      "save screenshot",
+      "snap the screen",
+      "get a screenshot",
+      "screenshot now",
+      "take screen capture",
+      "capture display",
+      "screenshot this",
+      "screen grab",
+      "take a picture of the screen"
+    ]
   end
 
   defp device_settings_templates do
-    ["open settings", "go to settings", "settings", "show settings", "device settings", "open device settings", "system settings", "access settings", "settings menu", "configuration", "preferences", "open preferences", "phone settings", "app settings", "general settings", "show me settings", "take me to settings", "launch settings", "settings please", "open system settings"]
+    [
+      "open settings",
+      "go to settings",
+      "settings",
+      "show settings",
+      "device settings",
+      "open device settings",
+      "system settings",
+      "access settings",
+      "settings menu",
+      "configuration",
+      "preferences",
+      "open preferences",
+      "phone settings",
+      "app settings",
+      "general settings",
+      "show me settings",
+      "take me to settings",
+      "launch settings",
+      "settings please",
+      "open system settings"
+    ]
   end
 
   defp device_location_templates do
-    ["where am I", "my location", "current location", "show my location", "what's my location", "find my location", "my current location", "location", "GPS location", "where is my location", "show where I am", "get my location", "my position", "current position", "locate me", "pin my location", "my coordinates", "where am I right now", "location check", "tell me where I am"]
+    [
+      "where am I",
+      "my location",
+      "current location",
+      "show my location",
+      "what's my location",
+      "find my location",
+      "my current location",
+      "location",
+      "GPS location",
+      "where is my location",
+      "show where I am",
+      "get my location",
+      "my position",
+      "current position",
+      "locate me",
+      "pin my location",
+      "my coordinates",
+      "where am I right now",
+      "location check",
+      "tell me where I am"
+    ]
   end
 
   defp generate_utilities_negative_examples do
@@ -3014,55 +4179,328 @@ defmodule Mix.Tasks.GenerateIntentData do
   end
 
   defp display_show_templates do
-    ["show me the {file_name}", "display the {file_name}", "put {file_name} on screen", "show {file_name}", "display {file_name}", "let me see {file_name}", "bring up {file_name}", "show the {file_name}", "display the {file_name} file", "pull up {file_name}", "open and display {file_name}", "show {file_name} on screen", "view {file_name}", "present {file_name}", "exhibit {file_name}", "on screen {file_name}", "display data from {file_name}", "show me {file_name} data", "visualize {file_name}", "render {file_name}"]
+    [
+      "show me the {file_name}",
+      "display the {file_name}",
+      "put {file_name} on screen",
+      "show {file_name}",
+      "display {file_name}",
+      "let me see {file_name}",
+      "bring up {file_name}",
+      "show the {file_name}",
+      "display the {file_name} file",
+      "pull up {file_name}",
+      "open and display {file_name}",
+      "show {file_name} on screen",
+      "view {file_name}",
+      "present {file_name}",
+      "exhibit {file_name}",
+      "on screen {file_name}",
+      "display data from {file_name}",
+      "show me {file_name} data",
+      "visualize {file_name}",
+      "render {file_name}"
+    ]
   end
 
   defp display_show_image_templates do
-    ["show the image", "display the picture", "show me that image", "put the image on screen", "display that picture", "show the photo", "bring up the image", "show image", "display image", "view the image", "present the image", "show the picture on screen", "display the photo", "let me see the image", "pull up the image", "image on screen", "show the visual", "display the visual", "open the image", "show photograph"]
+    [
+      "show the image",
+      "display the picture",
+      "show me that image",
+      "put the image on screen",
+      "display that picture",
+      "show the photo",
+      "bring up the image",
+      "show image",
+      "display image",
+      "view the image",
+      "present the image",
+      "show the picture on screen",
+      "display the photo",
+      "let me see the image",
+      "pull up the image",
+      "image on screen",
+      "show the visual",
+      "display the visual",
+      "open the image",
+      "show photograph"
+    ]
   end
 
   defp display_show_chart_templates do
-    ["show me a chart of {query_term}", "display a graph of {query_term}", "chart {query_term}", "graph the {query_term}", "show {query_term} chart", "display {query_term} graph", "visualize {query_term}", "plot {query_term}", "show graph of {query_term}", "chart of {query_term}", "display chart for {query_term}", "graph of {query_term}", "show data chart", "display bar chart", "show line graph", "pie chart of {query_term}", "histogram of {query_term}", "trend chart {query_term}", "show visualization", "data graph {query_term}"]
+    [
+      "show me a chart of {query_term}",
+      "display a graph of {query_term}",
+      "chart {query_term}",
+      "graph the {query_term}",
+      "show {query_term} chart",
+      "display {query_term} graph",
+      "visualize {query_term}",
+      "plot {query_term}",
+      "show graph of {query_term}",
+      "chart of {query_term}",
+      "display chart for {query_term}",
+      "graph of {query_term}",
+      "show data chart",
+      "display bar chart",
+      "show line graph",
+      "pie chart of {query_term}",
+      "histogram of {query_term}",
+      "trend chart {query_term}",
+      "show visualization",
+      "data graph {query_term}"
+    ]
   end
 
   defp display_freeze_templates do
-    ["freeze", "freeze frame", "freeze image", "hold that image", "freeze the display", "pause the image", "stop there", "freeze that", "hold the frame", "freeze on this", "capture this frame", "lock the image", "freeze playback", "hold it there", "freeze screen", "stop the frame", "hold this", "freeze the picture", "static hold", "stop on this frame"]
+    [
+      "freeze",
+      "freeze frame",
+      "freeze image",
+      "hold that image",
+      "freeze the display",
+      "pause the image",
+      "stop there",
+      "freeze that",
+      "hold the frame",
+      "freeze on this",
+      "capture this frame",
+      "lock the image",
+      "freeze playback",
+      "hold it there",
+      "freeze screen",
+      "stop the frame",
+      "hold this",
+      "freeze the picture",
+      "static hold",
+      "stop on this frame"
+    ]
   end
 
   defp display_enhance_templates do
-    ["enhance", "enhance that section", "enhance the image", "improve the image", "enhance {section_id}", "sharpen the image", "clarify the image", "enhance resolution", "make it clearer", "enhance that area", "improve clarity", "enhance detail", "sharpen that", "make it sharper", "enhance quality", "better resolution", "clean up the image", "enhance and clarify", "improve the picture", "detail enhance"]
+    [
+      "enhance",
+      "enhance that section",
+      "enhance the image",
+      "improve the image",
+      "enhance {section_id}",
+      "sharpen the image",
+      "clarify the image",
+      "enhance resolution",
+      "make it clearer",
+      "enhance that area",
+      "improve clarity",
+      "enhance detail",
+      "sharpen that",
+      "make it sharper",
+      "enhance quality",
+      "better resolution",
+      "clean up the image",
+      "enhance and clarify",
+      "improve the picture",
+      "detail enhance"
+    ]
   end
 
   defp display_magnify_templates do
-    ["magnify {section_id}", "magnify that section", "enlarge {section_id}", "magnify the image", "zoom into {section_id}", "magnify by {magnification_level}", "expand {section_id}", "magnify the selected area", "increase magnification", "magnify that area", "blow up {section_id}", "magnify to {magnification_level}", "magnification {magnification_level}", "enlarge that section", "magnify the display", "expand the view", "magnify region", "magnify on {section_id}", "larger view of {section_id}", "amplify {section_id}"]
+    [
+      "magnify {section_id}",
+      "magnify that section",
+      "enlarge {section_id}",
+      "magnify the image",
+      "zoom into {section_id}",
+      "magnify by {magnification_level}",
+      "expand {section_id}",
+      "magnify the selected area",
+      "increase magnification",
+      "magnify that area",
+      "blow up {section_id}",
+      "magnify to {magnification_level}",
+      "magnification {magnification_level}",
+      "enlarge that section",
+      "magnify the display",
+      "expand the view",
+      "magnify region",
+      "magnify on {section_id}",
+      "larger view of {section_id}",
+      "amplify {section_id}"
+    ]
   end
 
   defp display_zoom_in_templates do
-    ["zoom in", "zoom in on that", "get closer", "zoom in on {section_id}", "closer look", "zoom in more", "increase zoom", "zoom closer", "move in", "tighter shot", "zoom in on the {section_id}", "go closer", "magnify view", "zoom in please", "closer view", "zoom in to {magnification_level}", "enhance and zoom", "tighten the view", "zoom in further", "get a closer look"]
+    [
+      "zoom in",
+      "zoom in on that",
+      "get closer",
+      "zoom in on {section_id}",
+      "closer look",
+      "zoom in more",
+      "increase zoom",
+      "zoom closer",
+      "move in",
+      "tighter shot",
+      "zoom in on the {section_id}",
+      "go closer",
+      "magnify view",
+      "zoom in please",
+      "closer view",
+      "zoom in to {magnification_level}",
+      "enhance and zoom",
+      "tighten the view",
+      "zoom in further",
+      "get a closer look"
+    ]
   end
 
   defp display_zoom_out_templates do
-    ["zoom out", "pull back", "wider view", "zoom out more", "decrease zoom", "step back", "full view", "zoom out please", "wider shot", "back out", "reduce zoom", "zoom out to see more", "pull back the view", "expand view", "show more", "zoom all the way out", "full screen view", "overall view", "complete picture", "zoom out further"]
+    [
+      "zoom out",
+      "pull back",
+      "wider view",
+      "zoom out more",
+      "decrease zoom",
+      "step back",
+      "full view",
+      "zoom out please",
+      "wider shot",
+      "back out",
+      "reduce zoom",
+      "zoom out to see more",
+      "pull back the view",
+      "expand view",
+      "show more",
+      "zoom all the way out",
+      "full screen view",
+      "overall view",
+      "complete picture",
+      "zoom out further"
+    ]
   end
 
   defp display_compare_templates do
-    ["compare these two", "show side by side", "compare {file_name} with {file_name}", "comparison view", "put them side by side", "compare the images", "show comparison", "side by side comparison", "compare {query_term}", "show the difference", "compare these files", "visual comparison", "compare data", "show both", "differential view", "contrast these", "compare versions", "show differences between", "dual view comparison", "juxtapose these"]
+    [
+      "compare these two",
+      "show side by side",
+      "compare {file_name} with {file_name}",
+      "comparison view",
+      "put them side by side",
+      "compare the images",
+      "show comparison",
+      "side by side comparison",
+      "compare {query_term}",
+      "show the difference",
+      "compare these files",
+      "visual comparison",
+      "compare data",
+      "show both",
+      "differential view",
+      "contrast these",
+      "compare versions",
+      "show differences between",
+      "dual view comparison",
+      "juxtapose these"
+    ]
   end
 
   defp display_overlay_templates do
-    ["overlay the two", "superimpose", "overlay {file_name} on {file_name}", "combine the images", "put one over the other", "overlay these", "superimpose the images", "merge the displays", "layer them", "overlay data", "composite view", "blend the images", "stack the views", "overlay on top", "superimpose data", "combine views", "layer the displays", "merge these", "create overlay", "stack these images"]
+    [
+      "overlay the two",
+      "superimpose",
+      "overlay {file_name} on {file_name}",
+      "combine the images",
+      "put one over the other",
+      "overlay these",
+      "superimpose the images",
+      "merge the displays",
+      "layer them",
+      "overlay data",
+      "composite view",
+      "blend the images",
+      "stack the views",
+      "overlay on top",
+      "superimpose data",
+      "combine views",
+      "layer the displays",
+      "merge these",
+      "create overlay",
+      "stack these images"
+    ]
   end
 
   defp display_play_templates do
-    ["play the recording", "start playback", "play", "begin playback", "play the video", "start the recording", "play it", "begin playing", "run the recording", "play the footage", "start playing", "resume playback", "play the file", "initiate playback", "run video", "play from the beginning", "start video", "commence playback", "play this", "activate playback"]
+    [
+      "play the recording",
+      "start playback",
+      "play",
+      "begin playback",
+      "play the video",
+      "start the recording",
+      "play it",
+      "begin playing",
+      "run the recording",
+      "play the footage",
+      "start playing",
+      "resume playback",
+      "play the file",
+      "initiate playback",
+      "run video",
+      "play from the beginning",
+      "start video",
+      "commence playback",
+      "play this",
+      "activate playback"
+    ]
   end
 
   defp display_pause_templates do
-    ["pause", "pause playback", "pause the video", "hold playback", "stop playing temporarily", "pause it", "freeze playback", "suspend playback", "pause the recording", "halt playback", "pause here", "stop here", "temporary stop", "pause display", "hold it", "pause the footage", "stop playback", "break playback", "pause playing", "hold the video"]
+    [
+      "pause",
+      "pause playback",
+      "pause the video",
+      "hold playback",
+      "stop playing temporarily",
+      "pause it",
+      "freeze playback",
+      "suspend playback",
+      "pause the recording",
+      "halt playback",
+      "pause here",
+      "stop here",
+      "temporary stop",
+      "pause display",
+      "hold it",
+      "pause the footage",
+      "stop playback",
+      "break playback",
+      "pause playing",
+      "hold the video"
+    ]
   end
 
   defp display_stop_templates do
-    ["stop", "stop playback", "end playback", "stop the video", "halt", "stop playing", "terminate playback", "end the recording", "stop the footage", "cease playback", "stop it", "kill playback", "abort playback", "stop the display", "end video", "finish playback", "stop this", "discontinue", "shut off playback", "close playback"]
+    [
+      "stop",
+      "stop playback",
+      "end playback",
+      "stop the video",
+      "halt",
+      "stop playing",
+      "terminate playback",
+      "end the recording",
+      "stop the footage",
+      "cease playback",
+      "stop it",
+      "kill playback",
+      "abort playback",
+      "stop the display",
+      "end video",
+      "finish playback",
+      "stop this",
+      "discontinue",
+      "shut off playback",
+      "close playback"
+    ]
   end
 
   defp generate_display_negative_examples do
@@ -3116,63 +4554,378 @@ defmodule Mix.Tasks.GenerateIntentData do
   end
 
   defp search_locate_person_templates do
-    ["locate {person}", "where is {person}", "find {person}", "location of {person}", "where can I find {person}", "track {person}", "position of {person}", "find the location of {person}", "where's {person}", "locate {person} please", "find where {person} is", "search for {person}", "get location of {person}", "look for {person}", "trace {person}", "pinpoint {person}", "find {person}'s location", "where is {person} now", "locate {person} currently", "find {person} for me"]
+    [
+      "locate {person}",
+      "where is {person}",
+      "find {person}",
+      "location of {person}",
+      "where can I find {person}",
+      "track {person}",
+      "position of {person}",
+      "find the location of {person}",
+      "where's {person}",
+      "locate {person} please",
+      "find where {person} is",
+      "search for {person}",
+      "get location of {person}",
+      "look for {person}",
+      "trace {person}",
+      "pinpoint {person}",
+      "find {person}'s location",
+      "where is {person} now",
+      "locate {person} currently",
+      "find {person} for me"
+    ]
   end
 
   defp search_locate_file_templates do
-    ["find the {file_name}", "locate {file_name}", "where is {file_name}", "search for {file_name}", "find {file_name}", "look for {file_name}", "locate the {file_name} file", "find file {file_name}", "where's the {file_name}", "search {file_name}", "find the file called {file_name}", "locate document {file_name}", "where is the {file_name} document", "find {file_name} please", "look up {file_name}", "search for file {file_name}", "get {file_name}", "pull up {file_name}", "find document {file_name}", "locate {file_name} for me"]
+    [
+      "find the {file_name}",
+      "locate {file_name}",
+      "where is {file_name}",
+      "search for {file_name}",
+      "find {file_name}",
+      "look for {file_name}",
+      "locate the {file_name} file",
+      "find file {file_name}",
+      "where's the {file_name}",
+      "search {file_name}",
+      "find the file called {file_name}",
+      "locate document {file_name}",
+      "where is the {file_name} document",
+      "find {file_name} please",
+      "look up {file_name}",
+      "search for file {file_name}",
+      "get {file_name}",
+      "pull up {file_name}",
+      "find document {file_name}",
+      "locate {file_name} for me"
+    ]
   end
 
   defp search_identify_templates do
-    ["identify this", "what is this", "identify the object", "recognize this", "what am I looking at", "identify", "can you identify this", "tell me what this is", "identify this item", "what is that", "identify the subject", "recognition", "who or what is this", "analyze and identify", "determine what this is", "identify for me", "what's this", "identify the contents", "scan and identify", "ID this"]
+    [
+      "identify this",
+      "what is this",
+      "identify the object",
+      "recognize this",
+      "what am I looking at",
+      "identify",
+      "can you identify this",
+      "tell me what this is",
+      "identify this item",
+      "what is that",
+      "identify the subject",
+      "recognition",
+      "who or what is this",
+      "analyze and identify",
+      "determine what this is",
+      "identify for me",
+      "what's this",
+      "identify the contents",
+      "scan and identify",
+      "ID this"
+    ]
   end
 
   defp search_database_templates do
-    ["search the database for {query_term}", "find {query_term} in the database", "database search {query_term}", "query database for {query_term}", "look up {query_term} in database", "search {data_source} for {query_term}", "find in database {query_term}", "database query {query_term}", "search records for {query_term}", "find {query_term} in records", "query {data_source} for {query_term}", "search {data_source}", "look in database for {query_term}", "database lookup {query_term}", "search for {query_term} in {data_source}", "pull records for {query_term}", "find data on {query_term}", "search all records for {query_term}", "query for {query_term}", "database find {query_term}"]
+    [
+      "search the database for {query_term}",
+      "find {query_term} in the database",
+      "database search {query_term}",
+      "query database for {query_term}",
+      "look up {query_term} in database",
+      "search {data_source} for {query_term}",
+      "find in database {query_term}",
+      "database query {query_term}",
+      "search records for {query_term}",
+      "find {query_term} in records",
+      "query {data_source} for {query_term}",
+      "search {data_source}",
+      "look in database for {query_term}",
+      "database lookup {query_term}",
+      "search for {query_term} in {data_source}",
+      "pull records for {query_term}",
+      "find data on {query_term}",
+      "search all records for {query_term}",
+      "query for {query_term}",
+      "database find {query_term}"
+    ]
   end
 
   defp search_by_date_templates do
-    ["find entries from {date_range}", "search records from {date_range}", "show entries from {date_range}", "find items from {date_range}", "search by date {date_range}", "get records from {date_range}", "entries dated {date_range}", "find {date_range} records", "search {date_range}", "items from {date_range}", "data from {date_range}", "records dated {date_range}", "find from {date_range}", "search {date_range} data", "show {date_range} entries", "pull {date_range} records", "filter by {date_range}", "date range {date_range}", "get {date_range} data", "find during {date_range}"]
+    [
+      "find entries from {date_range}",
+      "search records from {date_range}",
+      "show entries from {date_range}",
+      "find items from {date_range}",
+      "search by date {date_range}",
+      "get records from {date_range}",
+      "entries dated {date_range}",
+      "find {date_range} records",
+      "search {date_range}",
+      "items from {date_range}",
+      "data from {date_range}",
+      "records dated {date_range}",
+      "find from {date_range}",
+      "search {date_range} data",
+      "show {date_range} entries",
+      "pull {date_range} records",
+      "filter by {date_range}",
+      "date range {date_range}",
+      "get {date_range} data",
+      "find during {date_range}"
+    ]
   end
 
   defp search_by_type_templates do
-    ["find all {file_name} files", "search for {file_name} type", "list all {file_name}", "show me {file_name} files", "find files of type {file_name}", "filter by type {file_name}", "get all {file_name}", "find {file_name} documents", "search for {file_name}", "list {file_name} files", "show {file_name} items", "all {file_name} files", "find by type {file_name}", "filter {file_name}", "type search {file_name}", "get files matching {file_name}", "locate {file_name} files", "find {file_name} format", "search type {file_name}", "show all {file_name}"]
+    [
+      "find all {file_name} files",
+      "search for {file_name} type",
+      "list all {file_name}",
+      "show me {file_name} files",
+      "find files of type {file_name}",
+      "filter by type {file_name}",
+      "get all {file_name}",
+      "find {file_name} documents",
+      "search for {file_name}",
+      "list {file_name} files",
+      "show {file_name} items",
+      "all {file_name} files",
+      "find by type {file_name}",
+      "filter {file_name}",
+      "type search {file_name}",
+      "get files matching {file_name}",
+      "locate {file_name} files",
+      "find {file_name} format",
+      "search type {file_name}",
+      "show all {file_name}"
+    ]
   end
 
   defp search_cross_reference_templates do
-    ["cross reference these", "cross reference {query_term} with {query_term}", "compare and cross reference", "find correlations", "cross check the data", "reference against each other", "cross reference the information", "check for cross references", "correlate these entries", "cross reference records", "find connections between", "match and compare", "cross check these", "reference check", "find links between", "correlate the data", "cross match", "check against each other", "find overlaps", "cross reference analysis"]
+    [
+      "cross reference these",
+      "cross reference {query_term} with {query_term}",
+      "compare and cross reference",
+      "find correlations",
+      "cross check the data",
+      "reference against each other",
+      "cross reference the information",
+      "check for cross references",
+      "correlate these entries",
+      "cross reference records",
+      "find connections between",
+      "match and compare",
+      "cross check these",
+      "reference check",
+      "find links between",
+      "correlate the data",
+      "cross match",
+      "check against each other",
+      "find overlaps",
+      "cross reference analysis"
+    ]
   end
 
   defp search_find_related_templates do
-    ["find related entries", "show related items", "find similar", "related records", "associated entries", "find connections", "show related data", "linked items", "find related to {query_term}", "similar entries", "related to {query_term}", "show associated", "find matching entries", "related information", "find linked", "show connected items", "find associations", "related data", "show similar", "connected records"]
+    [
+      "find related entries",
+      "show related items",
+      "find similar",
+      "related records",
+      "associated entries",
+      "find connections",
+      "show related data",
+      "linked items",
+      "find related to {query_term}",
+      "similar entries",
+      "related to {query_term}",
+      "show associated",
+      "find matching entries",
+      "related information",
+      "find linked",
+      "show connected items",
+      "find associations",
+      "related data",
+      "show similar",
+      "connected records"
+    ]
   end
 
   defp search_find_duplicates_templates do
-    ["find duplicates", "check for duplicates", "duplicate entries", "find duplicate records", "show duplicates", "identify duplicates", "duplicate check", "find repeated entries", "search for duplicates", "duplicate detection", "find copies", "locate duplicates", "show duplicate items", "find matching duplicates", "detect duplicate data", "duplicates in the system", "find redundant entries", "check for copies", "identify repeated data", "scan for duplicates"]
+    [
+      "find duplicates",
+      "check for duplicates",
+      "duplicate entries",
+      "find duplicate records",
+      "show duplicates",
+      "identify duplicates",
+      "duplicate check",
+      "find repeated entries",
+      "search for duplicates",
+      "duplicate detection",
+      "find copies",
+      "locate duplicates",
+      "show duplicate items",
+      "find matching duplicates",
+      "detect duplicate data",
+      "duplicates in the system",
+      "find redundant entries",
+      "check for copies",
+      "identify repeated data",
+      "scan for duplicates"
+    ]
   end
 
   defp search_how_many_templates do
-    ["how many entries", "how many {query_term}", "count of {query_term}", "number of {query_term}", "how many records match", "total {query_term}", "how many items", "quantity of {query_term}", "how many are there", "count {query_term}", "how many results", "total number of {query_term}", "how many entries for {query_term}", "amount of {query_term}", "how many matching", "how many found", "query count", "result count", "how many exist", "total count of {query_term}"]
+    [
+      "how many entries",
+      "how many {query_term}",
+      "count of {query_term}",
+      "number of {query_term}",
+      "how many records match",
+      "total {query_term}",
+      "how many items",
+      "quantity of {query_term}",
+      "how many are there",
+      "count {query_term}",
+      "how many results",
+      "total number of {query_term}",
+      "how many entries for {query_term}",
+      "amount of {query_term}",
+      "how many matching",
+      "how many found",
+      "query count",
+      "result count",
+      "how many exist",
+      "total count of {query_term}"
+    ]
   end
 
   defp search_count_templates do
-    ["count the entries", "count {query_term}", "get the count", "tally the results", "count all", "number of records", "count items", "total count", "enumerate", "count matching entries", "count the {query_term}", "total up", "count records", "get count of {query_term}", "sum up the entries", "count all {query_term}", "quantity count", "total number", "count the matches", "record count"]
+    [
+      "count the entries",
+      "count {query_term}",
+      "get the count",
+      "tally the results",
+      "count all",
+      "number of records",
+      "count items",
+      "total count",
+      "enumerate",
+      "count matching entries",
+      "count the {query_term}",
+      "total up",
+      "count records",
+      "get count of {query_term}",
+      "sum up the entries",
+      "count all {query_term}",
+      "quantity count",
+      "total number",
+      "count the matches",
+      "record count"
+    ]
   end
 
   defp search_access_file_templates do
-    ["access the {file_name}", "open {file_name}", "retrieve {file_name}", "get access to {file_name}", "access {file_name} file", "open the {file_name} file", "load {file_name}", "access the {file_name} document", "retrieve the {file_name}", "get {file_name}", "open file {file_name}", "access file {file_name}", "pull {file_name}", "access record {file_name}", "retrieve file {file_name}", "load the {file_name}", "access document {file_name}", "open record {file_name}", "get the {file_name} file", "access the {file_name} record"]
+    [
+      "access the {file_name}",
+      "open {file_name}",
+      "retrieve {file_name}",
+      "get access to {file_name}",
+      "access {file_name} file",
+      "open the {file_name} file",
+      "load {file_name}",
+      "access the {file_name} document",
+      "retrieve the {file_name}",
+      "get {file_name}",
+      "open file {file_name}",
+      "access file {file_name}",
+      "pull {file_name}",
+      "access record {file_name}",
+      "retrieve file {file_name}",
+      "load the {file_name}",
+      "access document {file_name}",
+      "open record {file_name}",
+      "get the {file_name} file",
+      "access the {file_name} record"
+    ]
   end
 
   defp search_access_log_templates do
-    ["access the log", "show the logs", "open activity log", "view the log", "access system logs", "show log entries", "open the log file", "access {system_name} logs", "view activity log", "get the logs", "show system logs", "access log file", "open logs", "retrieve the logs", "access {process_name} log", "show the log file", "view logs", "access event log", "get log entries", "show activity logs"]
+    [
+      "access the log",
+      "show the logs",
+      "open activity log",
+      "view the log",
+      "access system logs",
+      "show log entries",
+      "open the log file",
+      "access {system_name} logs",
+      "view activity log",
+      "get the logs",
+      "show system logs",
+      "access log file",
+      "open logs",
+      "retrieve the logs",
+      "access {process_name} log",
+      "show the log file",
+      "view logs",
+      "access event log",
+      "get log entries",
+      "show activity logs"
+    ]
   end
 
   defp search_confirm_templates do
-    ["confirm that {query_term}", "verify {query_term} is true", "confirm {query_term}", "is {query_term} correct", "confirm the information", "verify that {query_term}", "please confirm {query_term}", "can you confirm {query_term}", "confirm this is {query_term}", "verify the {query_term}", "is {query_term} accurate", "confirm accuracy of {query_term}", "double check {query_term}", "confirm the data", "is this {query_term} right", "verify correctness", "confirm {query_term} please", "make sure {query_term}", "check if {query_term} is true", "confirm authenticity"]
+    [
+      "confirm that {query_term}",
+      "verify {query_term} is true",
+      "confirm {query_term}",
+      "is {query_term} correct",
+      "confirm the information",
+      "verify that {query_term}",
+      "please confirm {query_term}",
+      "can you confirm {query_term}",
+      "confirm this is {query_term}",
+      "verify the {query_term}",
+      "is {query_term} accurate",
+      "confirm accuracy of {query_term}",
+      "double check {query_term}",
+      "confirm the data",
+      "is this {query_term} right",
+      "verify correctness",
+      "confirm {query_term} please",
+      "make sure {query_term}",
+      "check if {query_term} is true",
+      "confirm authenticity"
+    ]
   end
 
   defp search_verify_templates do
-    ["verify this information", "verify {query_term}", "check the validity", "verify the data", "validate {query_term}", "verify accuracy", "confirm and verify", "verify this is correct", "check authenticity", "verify the record", "validate this information", "verify {query_term} is accurate", "authentication check", "verify the source", "validate accuracy", "verify this data", "check if valid", "verify the entry", "validation check", "verify correctness of {query_term}"]
+    [
+      "verify this information",
+      "verify {query_term}",
+      "check the validity",
+      "verify the data",
+      "validate {query_term}",
+      "verify accuracy",
+      "confirm and verify",
+      "verify this is correct",
+      "check authenticity",
+      "verify the record",
+      "validate this information",
+      "verify {query_term} is accurate",
+      "authentication check",
+      "verify the source",
+      "validate accuracy",
+      "verify this data",
+      "check if valid",
+      "verify the entry",
+      "validation check",
+      "verify correctness of {query_term}"
+    ]
   end
 
   defp generate_search_negative_examples do
@@ -3226,63 +4979,378 @@ defmodule Mix.Tasks.GenerateIntentData do
   end
 
   defp analyze_data_templates do
-    ["analyze the data", "analyze {data_source}", "run analysis on the data", "analyze this dataset", "perform data analysis", "analyze the {data_source}", "data analysis", "analyze the information", "run data analysis", "analyze these numbers", "examine the data", "analyze the dataset", "process and analyze", "run analysis", "analyze the records", "detailed analysis", "analyze {query_term} data", "analyze the results", "perform analysis on {data_source}", "full data analysis"]
+    [
+      "analyze the data",
+      "analyze {data_source}",
+      "run analysis on the data",
+      "analyze this dataset",
+      "perform data analysis",
+      "analyze the {data_source}",
+      "data analysis",
+      "analyze the information",
+      "run data analysis",
+      "analyze these numbers",
+      "examine the data",
+      "analyze the dataset",
+      "process and analyze",
+      "run analysis",
+      "analyze the records",
+      "detailed analysis",
+      "analyze {query_term} data",
+      "analyze the results",
+      "perform analysis on {data_source}",
+      "full data analysis"
+    ]
   end
 
   defp analyze_pattern_templates do
-    ["find patterns in the data", "pattern analysis", "detect patterns", "analyze for patterns", "identify patterns", "look for patterns", "pattern recognition", "find recurring patterns", "analyze patterns in {data_source}", "pattern detection", "search for patterns", "what patterns exist", "identify data patterns", "find the pattern", "patterns in {query_term}", "analyze pattern trends", "detect recurring patterns", "spot patterns", "pattern identification", "analyze for pattern recognition"]
+    [
+      "find patterns in the data",
+      "pattern analysis",
+      "detect patterns",
+      "analyze for patterns",
+      "identify patterns",
+      "look for patterns",
+      "pattern recognition",
+      "find recurring patterns",
+      "analyze patterns in {data_source}",
+      "pattern detection",
+      "search for patterns",
+      "what patterns exist",
+      "identify data patterns",
+      "find the pattern",
+      "patterns in {query_term}",
+      "analyze pattern trends",
+      "detect recurring patterns",
+      "spot patterns",
+      "pattern identification",
+      "analyze for pattern recognition"
+    ]
   end
 
   defp analyze_trend_templates do
-    ["show me the trend", "analyze trends", "trend analysis", "what's the trend", "identify trends", "find trends", "trending analysis", "analyze {query_term} trends", "show trend for {query_term}", "trend detection", "what are the trends", "analyze the trend", "trend over time", "historical trend", "show trends in {data_source}", "upward or downward trend", "analyze trend data", "find the trend", "trend identification", "analyze for trends"]
+    [
+      "show me the trend",
+      "analyze trends",
+      "trend analysis",
+      "what's the trend",
+      "identify trends",
+      "find trends",
+      "trending analysis",
+      "analyze {query_term} trends",
+      "show trend for {query_term}",
+      "trend detection",
+      "what are the trends",
+      "analyze the trend",
+      "trend over time",
+      "historical trend",
+      "show trends in {data_source}",
+      "upward or downward trend",
+      "analyze trend data",
+      "find the trend",
+      "trend identification",
+      "analyze for trends"
+    ]
   end
 
   defp analyze_anomaly_templates do
-    ["detect anomalies", "find anomalies", "anomaly detection", "look for anomalies", "identify anomalies", "analyze for anomalies", "find outliers", "anomaly analysis", "detect outliers", "unusual data points", "find irregularities", "spot anomalies", "anomaly scan", "check for anomalies", "identify outliers", "find deviations", "abnormal data detection", "locate anomalies", "analyze anomalies in {data_source}", "outlier detection"]
+    [
+      "detect anomalies",
+      "find anomalies",
+      "anomaly detection",
+      "look for anomalies",
+      "identify anomalies",
+      "analyze for anomalies",
+      "find outliers",
+      "anomaly analysis",
+      "detect outliers",
+      "unusual data points",
+      "find irregularities",
+      "spot anomalies",
+      "anomaly scan",
+      "check for anomalies",
+      "identify outliers",
+      "find deviations",
+      "abnormal data detection",
+      "locate anomalies",
+      "analyze anomalies in {data_source}",
+      "outlier detection"
+    ]
   end
 
   defp analyze_compare_templates do
-    ["compare the datasets", "compare {query_term} with {query_term}", "comparison analysis", "analyze and compare", "compare these two", "run comparison", "compare the data", "side by side comparison", "comparative analysis", "compare {data_source}", "compare the values", "analyze differences", "compare metrics", "comparison of {query_term}", "compare the results", "analyze both", "compare {comparison_target}", "run a comparison", "compare these datasets", "difference comparison"]
+    [
+      "compare the datasets",
+      "compare {query_term} with {query_term}",
+      "comparison analysis",
+      "analyze and compare",
+      "compare these two",
+      "run comparison",
+      "compare the data",
+      "side by side comparison",
+      "comparative analysis",
+      "compare {data_source}",
+      "compare the values",
+      "analyze differences",
+      "compare metrics",
+      "comparison of {query_term}",
+      "compare the results",
+      "analyze both",
+      "compare {comparison_target}",
+      "run a comparison",
+      "compare these datasets",
+      "difference comparison"
+    ]
   end
 
   defp analyze_difference_templates do
-    ["what's the difference", "show the difference between", "difference analysis", "find the differences", "what changed", "analyze the difference", "difference between {query_term} and {query_term}", "calculate the difference", "compare differences", "identify differences", "what's different", "differential analysis", "show me the changes", "difference from {comparison_target}", "analyze changes", "what differs", "find what changed", "delta analysis", "differences in the data", "show differences"]
+    [
+      "what's the difference",
+      "show the difference between",
+      "difference analysis",
+      "find the differences",
+      "what changed",
+      "analyze the difference",
+      "difference between {query_term} and {query_term}",
+      "calculate the difference",
+      "compare differences",
+      "identify differences",
+      "what's different",
+      "differential analysis",
+      "show me the changes",
+      "difference from {comparison_target}",
+      "analyze changes",
+      "what differs",
+      "find what changed",
+      "delta analysis",
+      "differences in the data",
+      "show differences"
+    ]
   end
 
   defp compute_calculate_templates do
-    ["calculate the result", "compute {math_expression}", "run the calculation", "calculate {query_term}", "perform calculation", "compute the value", "calculate it", "mathematical calculation", "compute this", "calculate the total", "run computation", "figure this out", "compute the result", "calculate for me", "do the calculation", "compute {query_term}", "calculation needed", "work out the math", "calculate these values", "compute the figures"]
+    [
+      "calculate the result",
+      "compute {math_expression}",
+      "run the calculation",
+      "calculate {query_term}",
+      "perform calculation",
+      "compute the value",
+      "calculate it",
+      "mathematical calculation",
+      "compute this",
+      "calculate the total",
+      "run computation",
+      "figure this out",
+      "compute the result",
+      "calculate for me",
+      "do the calculation",
+      "compute {query_term}",
+      "calculation needed",
+      "work out the math",
+      "calculate these values",
+      "compute the figures"
+    ]
   end
 
   defp compute_sum_templates do
-    ["sum these values", "add up the total", "total sum", "sum of {query_term}", "add these numbers", "calculate the sum", "total of all", "sum it up", "add up", "get the total", "sum all values", "total calculation", "sum the numbers", "add together", "cumulative sum", "aggregate total", "sum of the data", "add all", "calculate total sum", "running total"]
+    [
+      "sum these values",
+      "add up the total",
+      "total sum",
+      "sum of {query_term}",
+      "add these numbers",
+      "calculate the sum",
+      "total of all",
+      "sum it up",
+      "add up",
+      "get the total",
+      "sum all values",
+      "total calculation",
+      "sum the numbers",
+      "add together",
+      "cumulative sum",
+      "aggregate total",
+      "sum of the data",
+      "add all",
+      "calculate total sum",
+      "running total"
+    ]
   end
 
   defp compute_average_templates do
-    ["what's the average", "calculate the average", "average of {query_term}", "find the mean", "average value", "compute average", "mean value", "average calculation", "get the average", "calculate mean", "find average", "average of these", "compute the mean", "average across", "mean of {query_term}", "overall average", "average calculation for {query_term}", "what's the mean", "calculate the mean", "determine average"]
+    [
+      "what's the average",
+      "calculate the average",
+      "average of {query_term}",
+      "find the mean",
+      "average value",
+      "compute average",
+      "mean value",
+      "average calculation",
+      "get the average",
+      "calculate mean",
+      "find average",
+      "average of these",
+      "compute the mean",
+      "average across",
+      "mean of {query_term}",
+      "overall average",
+      "average calculation for {query_term}",
+      "what's the mean",
+      "calculate the mean",
+      "determine average"
+    ]
   end
 
   defp compute_percentage_templates do
-    ["what percentage", "calculate percentage", "percentage of {query_term}", "find the percentage", "percentage calculation", "what percent is {query_term}", "compute percentage", "percentage change", "calculate the percent", "percent of total", "percentage of the whole", "what's the percentage", "percentage analysis", "find the percent", "percentage breakdown", "percent calculation", "what percentage of {query_term}", "calculate percent change", "percentage value", "determine percentage"]
+    [
+      "what percentage",
+      "calculate percentage",
+      "percentage of {query_term}",
+      "find the percentage",
+      "percentage calculation",
+      "what percent is {query_term}",
+      "compute percentage",
+      "percentage change",
+      "calculate the percent",
+      "percent of total",
+      "percentage of the whole",
+      "what's the percentage",
+      "percentage analysis",
+      "find the percent",
+      "percentage breakdown",
+      "percent calculation",
+      "what percentage of {query_term}",
+      "calculate percent change",
+      "percentage value",
+      "determine percentage"
+    ]
   end
 
   defp compute_estimate_templates do
-    ["estimate the time needed", "provide an estimate", "estimate {query_term}", "give me an estimate", "estimate how long", "estimation", "rough estimate", "estimate the cost", "approximate", "estimate the effort", "time estimate", "estimate duration", "estimate the value", "provide estimation", "calculate estimate", "estimate required time", "estimate for {query_term}", "approximate value", "give estimation", "estimate this"]
+    [
+      "estimate the time needed",
+      "provide an estimate",
+      "estimate {query_term}",
+      "give me an estimate",
+      "estimate how long",
+      "estimation",
+      "rough estimate",
+      "estimate the cost",
+      "approximate",
+      "estimate the effort",
+      "time estimate",
+      "estimate duration",
+      "estimate the value",
+      "provide estimation",
+      "calculate estimate",
+      "estimate required time",
+      "estimate for {query_term}",
+      "approximate value",
+      "give estimation",
+      "estimate this"
+    ]
   end
 
   defp compute_project_templates do
-    ["project future values", "projection for {query_term}", "project the trend", "forecast", "project forward", "future projection", "project the data", "extrapolate", "make a projection", "project into the future", "trend projection", "project next quarter", "forecast {query_term}", "future forecast", "project growth", "projection analysis", "project the outcome", "predict future", "project values", "forecast ahead"]
+    [
+      "project future values",
+      "projection for {query_term}",
+      "project the trend",
+      "forecast",
+      "project forward",
+      "future projection",
+      "project the data",
+      "extrapolate",
+      "make a projection",
+      "project into the future",
+      "trend projection",
+      "project next quarter",
+      "forecast {query_term}",
+      "future forecast",
+      "project growth",
+      "projection analysis",
+      "project the outcome",
+      "predict future",
+      "project values",
+      "forecast ahead"
+    ]
   end
 
   defp compute_elapsed_templates do
-    ["how long has it been", "elapsed time", "time elapsed", "how much time has passed", "time since {query_term}", "duration so far", "how long since", "elapsed duration", "time running", "how long ago", "time passed", "elapsed time since {query_term}", "running time", "how long elapsed", "time since start", "duration elapsed", "how much time elapsed", "elapsed since {query_term}", "total elapsed time", "time duration so far"]
+    [
+      "how long has it been",
+      "elapsed time",
+      "time elapsed",
+      "how much time has passed",
+      "time since {query_term}",
+      "duration so far",
+      "how long since",
+      "elapsed duration",
+      "time running",
+      "how long ago",
+      "time passed",
+      "elapsed time since {query_term}",
+      "running time",
+      "how long elapsed",
+      "time since start",
+      "duration elapsed",
+      "how much time elapsed",
+      "elapsed since {query_term}",
+      "total elapsed time",
+      "time duration so far"
+    ]
   end
 
   defp compute_eta_templates do
-    ["estimated time of arrival", "ETA", "when will it finish", "how long until complete", "estimated completion", "time remaining", "when will it be done", "ETA for {query_term}", "estimated finish time", "how much longer", "completion estimate", "time to completion", "when will {query_term} finish", "projected finish", "estimated time left", "how long until done", "time until complete", "arrival time", "completion time estimate", "when does it end"]
+    [
+      "estimated time of arrival",
+      "ETA",
+      "when will it finish",
+      "how long until complete",
+      "estimated completion",
+      "time remaining",
+      "when will it be done",
+      "ETA for {query_term}",
+      "estimated finish time",
+      "how much longer",
+      "completion estimate",
+      "time to completion",
+      "when will {query_term} finish",
+      "projected finish",
+      "estimated time left",
+      "how long until done",
+      "time until complete",
+      "arrival time",
+      "completion time estimate",
+      "when does it end"
+    ]
   end
 
   defp analyze_diagnose_templates do
-    ["diagnose the problem", "run diagnostics", "diagnostic analysis", "diagnose {system_name}", "find the issue", "troubleshoot", "diagnose the issue", "problem diagnosis", "identify the problem", "run diagnostic check", "diagnose the error", "diagnostic scan", "find what's wrong", "analyze the problem", "system diagnosis", "diagnostic report", "diagnose {process_name}", "troubleshoot the issue", "diagnose and fix", "identify the cause"]
+    [
+      "diagnose the problem",
+      "run diagnostics",
+      "diagnostic analysis",
+      "diagnose {system_name}",
+      "find the issue",
+      "troubleshoot",
+      "diagnose the issue",
+      "problem diagnosis",
+      "identify the problem",
+      "run diagnostic check",
+      "diagnose the error",
+      "diagnostic scan",
+      "find what's wrong",
+      "analyze the problem",
+      "system diagnosis",
+      "diagnostic report",
+      "diagnose {process_name}",
+      "troubleshoot the issue",
+      "diagnose and fix",
+      "identify the cause"
+    ]
   end
 
   defp generate_analysis_negative_examples do
@@ -3335,59 +5403,353 @@ defmodule Mix.Tasks.GenerateIntentData do
   end
 
   defp status_report_templates do
-    ["status report", "give me a status report", "report status", "current status", "status please", "what's the status", "status update", "system status", "full status report", "provide status", "status check", "report on status", "give status update", "overall status", "status summary", "brief status", "status overview", "get status", "current status report", "status now"]
+    [
+      "status report",
+      "give me a status report",
+      "report status",
+      "current status",
+      "status please",
+      "what's the status",
+      "status update",
+      "system status",
+      "full status report",
+      "provide status",
+      "status check",
+      "report on status",
+      "give status update",
+      "overall status",
+      "status summary",
+      "brief status",
+      "status overview",
+      "get status",
+      "current status report",
+      "status now"
+    ]
   end
 
   defp status_summary_templates do
-    ["give me a summary", "summary please", "summarize", "brief summary", "overview", "quick summary", "summary of the situation", "summarize the status", "provide a summary", "high level summary", "executive summary", "status summary", "sum it up", "in summary", "give overview", "summarize for me", "brief overview", "short summary", "quick overview", "summary report"]
+    [
+      "give me a summary",
+      "summary please",
+      "summarize",
+      "brief summary",
+      "overview",
+      "quick summary",
+      "summary of the situation",
+      "summarize the status",
+      "provide a summary",
+      "high level summary",
+      "executive summary",
+      "status summary",
+      "sum it up",
+      "in summary",
+      "give overview",
+      "summarize for me",
+      "brief overview",
+      "short summary",
+      "quick overview",
+      "summary report"
+    ]
   end
 
   defp status_time_templates do
-    ["what time is it", "current time", "time please", "what's the time", "tell me the time", "time now", "the time", "check the time", "give me the time", "display time", "show time", "time check", "current time please", "what time do we have", "present time", "actual time", "what's the current time", "time status", "clock check", "system time"]
+    [
+      "what time is it",
+      "current time",
+      "time please",
+      "what's the time",
+      "tell me the time",
+      "time now",
+      "the time",
+      "check the time",
+      "give me the time",
+      "display time",
+      "show time",
+      "time check",
+      "current time please",
+      "what time do we have",
+      "present time",
+      "actual time",
+      "what's the current time",
+      "time status",
+      "clock check",
+      "system time"
+    ]
   end
 
   defp status_check_system_templates do
-    ["check system status", "system status", "how is the system", "is the system running", "check {system_name} status", "system check", "status of {system_name}", "is {system_name} working", "system health", "check the system", "system operational status", "how is {system_name}", "is the system ok", "check all systems", "system readiness", "system status check", "are systems running", "verify system status", "check system health", "system operational"]
+    [
+      "check system status",
+      "system status",
+      "how is the system",
+      "is the system running",
+      "check {system_name} status",
+      "system check",
+      "status of {system_name}",
+      "is {system_name} working",
+      "system health",
+      "check the system",
+      "system operational status",
+      "how is {system_name}",
+      "is the system ok",
+      "check all systems",
+      "system readiness",
+      "system status check",
+      "are systems running",
+      "verify system status",
+      "check system health",
+      "system operational"
+    ]
   end
 
   defp status_check_process_templates do
-    ["is the process running", "check {process_name} status", "is {process_name} running", "process status", "status of {process_name}", "check process", "is the {process_name} active", "process running check", "verify {process_name} is running", "check if {process_name} running", "process operational", "is {process_name} still running", "status of the process", "is {process_name} working", "check on {process_name}", "process health", "is the job running", "check running processes", "{process_name} status check", "task status"]
+    [
+      "is the process running",
+      "check {process_name} status",
+      "is {process_name} running",
+      "process status",
+      "status of {process_name}",
+      "check process",
+      "is the {process_name} active",
+      "process running check",
+      "verify {process_name} is running",
+      "check if {process_name} running",
+      "process operational",
+      "is {process_name} still running",
+      "status of the process",
+      "is {process_name} working",
+      "check on {process_name}",
+      "process health",
+      "is the job running",
+      "check running processes",
+      "{process_name} status check",
+      "task status"
+    ]
   end
 
   defp status_check_complete_templates do
-    ["is it finished", "is it done", "is the task complete", "check if complete", "has it finished", "is {process_name} done", "completion status", "is it completed", "check completion", "done yet", "is it over", "has it completed", "is the process done", "finished yet", "is it ready", "completion check", "is {query_term} complete", "check if done", "is it finished yet", "task completion status"]
+    [
+      "is it finished",
+      "is it done",
+      "is the task complete",
+      "check if complete",
+      "has it finished",
+      "is {process_name} done",
+      "completion status",
+      "is it completed",
+      "check completion",
+      "done yet",
+      "is it over",
+      "has it completed",
+      "is the process done",
+      "finished yet",
+      "is it ready",
+      "completion check",
+      "is {query_term} complete",
+      "check if done",
+      "is it finished yet",
+      "task completion status"
+    ]
   end
 
   defp status_health_check_templates do
-    ["health check", "run a health check", "system health", "check system health", "health status", "is everything healthy", "health report", "system health check", "service health", "check health", "application health", "health monitoring", "overall health", "health of the system", "run health diagnostics", "infrastructure health", "health assessment", "check service health", "wellness check", "system wellness"]
+    [
+      "health check",
+      "run a health check",
+      "system health",
+      "check system health",
+      "health status",
+      "is everything healthy",
+      "health report",
+      "system health check",
+      "service health",
+      "check health",
+      "application health",
+      "health monitoring",
+      "overall health",
+      "health of the system",
+      "run health diagnostics",
+      "infrastructure health",
+      "health assessment",
+      "check service health",
+      "wellness check",
+      "system wellness"
+    ]
   end
 
   defp status_run_diagnostic_templates do
-    ["run diagnostics", "diagnostic check", "run a diagnostic", "perform diagnostics", "system diagnostics", "diagnostics please", "execute diagnostics", "run system diagnostics", "diagnostic scan", "self diagnostic", "run tests", "diagnostic routine", "check diagnostics", "full diagnostic", "initiate diagnostics", "diagnostic mode", "run diagnostic tests", "diagnostics report", "perform diagnostic check", "diagnostic analysis"]
+    [
+      "run diagnostics",
+      "diagnostic check",
+      "run a diagnostic",
+      "perform diagnostics",
+      "system diagnostics",
+      "diagnostics please",
+      "execute diagnostics",
+      "run system diagnostics",
+      "diagnostic scan",
+      "self diagnostic",
+      "run tests",
+      "diagnostic routine",
+      "check diagnostics",
+      "full diagnostic",
+      "initiate diagnostics",
+      "diagnostic mode",
+      "run diagnostic tests",
+      "diagnostics report",
+      "perform diagnostic check",
+      "diagnostic analysis"
+    ]
   end
 
   defp status_what_running_templates do
-    ["what's currently running", "what's running", "show running processes", "active processes", "what is running now", "list running tasks", "currently running", "what processes are active", "show active processes", "running now", "what's active", "current processes", "what's happening now", "show what's running", "active right now", "running tasks", "what's in progress", "show running", "what's executing", "active operations"]
+    [
+      "what's currently running",
+      "what's running",
+      "show running processes",
+      "active processes",
+      "what is running now",
+      "list running tasks",
+      "currently running",
+      "what processes are active",
+      "show active processes",
+      "running now",
+      "what's active",
+      "current processes",
+      "what's happening now",
+      "show what's running",
+      "active right now",
+      "running tasks",
+      "what's in progress",
+      "show running",
+      "what's executing",
+      "active operations"
+    ]
   end
 
   defp status_active_tasks_templates do
-    ["show active tasks", "active tasks", "current tasks", "what tasks are active", "list active tasks", "running tasks", "tasks in progress", "show current tasks", "active jobs", "what's being worked on", "tasks currently running", "ongoing tasks", "show running tasks", "active operations", "current active tasks", "list running jobs", "tasks in execution", "show ongoing work", "active task list", "current operations"]
+    [
+      "show active tasks",
+      "active tasks",
+      "current tasks",
+      "what tasks are active",
+      "list active tasks",
+      "running tasks",
+      "tasks in progress",
+      "show current tasks",
+      "active jobs",
+      "what's being worked on",
+      "tasks currently running",
+      "ongoing tasks",
+      "show running tasks",
+      "active operations",
+      "current active tasks",
+      "list running jobs",
+      "tasks in execution",
+      "show ongoing work",
+      "active task list",
+      "current operations"
+    ]
   end
 
   defp status_progress_templates do
-    ["what's the progress", "progress report", "check progress", "how far along", "progress status", "progress update", "show progress", "current progress", "how is it progressing", "progress so far", "completion progress", "percentage complete", "progress percentage", "how much done", "progress check", "advancement status", "show current progress", "progress indicator", "track progress", "what percentage done"]
+    [
+      "what's the progress",
+      "progress report",
+      "check progress",
+      "how far along",
+      "progress status",
+      "progress update",
+      "show progress",
+      "current progress",
+      "how is it progressing",
+      "progress so far",
+      "completion progress",
+      "percentage complete",
+      "progress percentage",
+      "how much done",
+      "progress check",
+      "advancement status",
+      "show current progress",
+      "progress indicator",
+      "track progress",
+      "what percentage done"
+    ]
   end
 
   defp status_identify_self_templates do
-    ["what are you", "who are you", "identify yourself", "what is your name", "tell me about yourself", "what kind of system are you", "your identity", "introduce yourself", "what should I call you", "what's your name", "describe yourself", "who am I talking to", "what can you tell me about yourself", "your designation", "what are you called", "system identification", "identify", "name yourself", "what system is this", "self identification"]
+    [
+      "what are you",
+      "who are you",
+      "identify yourself",
+      "what is your name",
+      "tell me about yourself",
+      "what kind of system are you",
+      "your identity",
+      "introduce yourself",
+      "what should I call you",
+      "what's your name",
+      "describe yourself",
+      "who am I talking to",
+      "what can you tell me about yourself",
+      "your designation",
+      "what are you called",
+      "system identification",
+      "identify",
+      "name yourself",
+      "what system is this",
+      "self identification"
+    ]
   end
 
   defp status_version_templates do
-    ["what version", "version number", "current version", "which version", "version info", "what version is this", "software version", "system version", "check version", "version status", "show version", "what release", "version information", "running version", "what version are you", "version check", "app version", "display version", "get version", "version details"]
+    [
+      "what version",
+      "version number",
+      "current version",
+      "which version",
+      "version info",
+      "what version is this",
+      "software version",
+      "system version",
+      "check version",
+      "version status",
+      "show version",
+      "what release",
+      "version information",
+      "running version",
+      "what version are you",
+      "version check",
+      "app version",
+      "display version",
+      "get version",
+      "version details"
+    ]
   end
 
   defp status_capabilities_templates do
-    ["what can you do", "your capabilities", "what are you capable of", "list your functions", "what features do you have", "show capabilities", "what are your abilities", "what can I ask you", "capability list", "available functions", "what do you do", "your features", "list capabilities", "what are you able to do", "system capabilities", "functionality list", "what can you help with", "your skills", "help me understand what you do", "supported features"]
+    [
+      "what can you do",
+      "your capabilities",
+      "what are you capable of",
+      "list your functions",
+      "what features do you have",
+      "show capabilities",
+      "what are your abilities",
+      "what can I ask you",
+      "capability list",
+      "available functions",
+      "what do you do",
+      "your features",
+      "list capabilities",
+      "what are you able to do",
+      "system capabilities",
+      "functionality list",
+      "what can you help with",
+      "your skills",
+      "help me understand what you do",
+      "supported features"
+    ]
   end
 
   defp generate_status_negative_examples do

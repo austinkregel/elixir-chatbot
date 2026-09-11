@@ -1,7 +1,7 @@
 defmodule FourthWall.Holodeck.Backend do
   @moduledoc """
-  The behaviour a holodeck backend implements — the thing that actually holds an
-  officer's workspace and runs commands in it.
+  Contract for a holodeck backend — the thing that actually holds an officer's
+  workspace and runs commands in it.
 
   `FourthWall.Holodeck` owns lifecycle, keying, and the confinement policy; a
   backend owns the mechanism. Splitting them keeps the boundary honest in two

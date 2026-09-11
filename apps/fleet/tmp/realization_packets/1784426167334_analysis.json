@@ -1,0 +1,113 @@
+{
+  "confidence": 0.702,
+  "entities": [
+    {
+      "confidence": 0.65,
+      "disambiguation_confidence": 0.0,
+      "entity": "person",
+      "entity_type": "given-name",
+      "graph_known": false,
+      "match": "A",
+      "source": "pos_tagger_propn",
+      "value": "A"
+    }
+  ],
+  "intent": "weather.statement",
+  "profile": {
+    "confidence": 0.702,
+    "derived_label": "weather.statement",
+    "domain": "weather",
+    "engagement_level": "urgent_demand",
+    "modality": "declarative",
+    "response_posture": "hedged"
+  },
+  "response_strategy": "hedged_response",
+  "sentiment": {
+    "confidence": 0.019098528490674824,
+    "label": "neutral"
+  },
+  "speech_act": {
+    "category": "assertive",
+    "confidence": 0.677024138473434,
+    "indicators": [
+      "intent:status.diagnostic"
+    ],
+    "intent_confidence": 0.40539770259582414,
+    "is_imperative": false,
+    "is_question": false,
+    "raw_analyses": {
+      "intent": {
+        "category": "assertive",
+        "confidence": 0.40539770259582414,
+        "intent": "status.diagnostic",
+        "margin": 0.2545558090282808,
+        "second_score": 0.15084189356754335,
+        "source": "feature_vector",
+        "sub_type": "statement",
+        "top_k": [
+          {
+            "intent": "status.diagnostic",
+            "score": 0.40539770259582414
+          },
+          {
+            "intent": "calendar.cancel",
+            "score": 0.15084189356754335
+          },
+          {
+            "intent": "smalltalk.dialog.hug",
+            "score": 0.14860677543195752
+          },
+          {
+            "intent": "smalltalk.agent.be_clever",
+            "score": 0.14762049854525555
+          },
+          {
+            "intent": "weather.outfit",
+            "score": 0.14753312985941938
+          }
+        ]
+      },
+      "keyword": {
+        "confidence": 0.0,
+        "source": "keyword"
+      },
+      "memory": {
+        "confidence": 0.0,
+        "similar_count": 0,
+        "source": "memory"
+      },
+      "original_text": "Task A.",
+      "pragmatic": {
+        "expressive_score": 0.0,
+        "first_person_subject": false,
+        "has_acknowledgment": false,
+        "has_commissive": false,
+        "has_future": false,
+        "has_hedging": false,
+        "has_offer": false,
+        "has_please": false,
+        "has_thanks": false,
+        "has_urgency": false,
+        "is_backchannel": false,
+        "is_compliment": false,
+        "is_short_utterance": true,
+        "is_very_short": false,
+        "source": "pragmatic"
+      },
+      "structural": {
+        "category": "assertive",
+        "confidence": 0.7,
+        "has_modal": false,
+        "is_continuation": false,
+        "is_declarative": true,
+        "is_exclamatory": false,
+        "is_imperative": false,
+        "is_question": false,
+        "source": "structural",
+        "sub_type": "statement"
+      }
+    },
+    "sub_type": "statement"
+  },
+  "text": "Task A."
+}

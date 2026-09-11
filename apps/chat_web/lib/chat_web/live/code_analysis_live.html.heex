@@ -1,0 +1,749 @@
+<.app_shell
+  current_world_id={@current_world_id}
+  available_worlds={@available_worlds}
+  current_path={@current_path}
+  system_ready={@system_ready}
+  flash={@flash}
+>
+  <:page_header>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h1 class="text-xl font-bold flex items-center gap-2">
+          <.icon name="hero-code-bracket" class="size-6 text-violet-500" />
+          Code Analysis
+        </h1>
+        <p class="text-sm text-base-content/60">
+          World: <span class="font-medium text-primary">{@current_world_id}</span>
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <.badge
+          variant={if @code_status.ready, do: :success, else: :warning}
+          size={:sm}
+        >
+          <%= if @code_status.ready do %>
+            <.icon name="hero-check-circle" class="size-3 mr-1" /> System Ready
+          <% else %>
+            <.icon name="hero-clock" class="size-3 mr-1" /> Initializing
+          <% end %>
+        </.badge>
+      </div>
+    </div>
+  </:page_header>
+
+  <div class="p-4 sm:p-6 lg:p-8 space-y-6">
+    <!-- Stats Overview -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
+        <div class="text-2xl font-bold text-violet-500">
+          {Map.get(@world_stats, :symbols, 0)}
+        </div>
+        <div class="text-xs text-base-content/60">Symbols (this world)</div>
+      </div>
+      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
+        <div class="text-2xl font-bold text-blue-500">
+          {Map.get(@world_stats, :relations, 0)}
+        </div>
+        <div class="text-xs text-base-content/60">Relations</div>
+      </div>
+      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
+        <div class="text-2xl font-bold text-green-500">
+          {length(@analyzed_files)}
+        </div>
+        <div class="text-xs text-base-content/60">Files Analyzed</div>
+      </div>
+      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
+        <div class="text-2xl font-bold text-amber-500">
+          {length(@language_breakdown)}
+        </div>
+        <div class="text-xs text-base-content/60">Languages Used</div>
+      </div>
+    </section>
+
+    <!-- Tab Navigation -->
+    <div class="flex flex-wrap gap-2 border-b border-base-300">
+      <button
+        type="button"
+        class={[
+          "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+          if(@active_tab == :browse, do: "border-violet-500 text-violet-500", else: "border-transparent text-base-content/60 hover:text-base-content")
+        ]}
+        phx-click="switch_tab"
+        phx-value-tab="browse"
+      >
+        <.icon name="hero-magnifying-glass" class="size-4 mr-1" />
+        Browse
+      </button>
+      <button
+        type="button"
+        class={[
+          "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+          if(@active_tab == :stats, do: "border-violet-500 text-violet-500", else: "border-transparent text-base-content/60 hover:text-base-content")
+        ]}
+        phx-click="switch_tab"
+        phx-value-tab="stats"
+      >
+        <.icon name="hero-chart-pie" class="size-4 mr-1" />
+        Statistics
+      </button>
+      <button
+        type="button"
+        class={[
+          "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+          if(@active_tab == :files, do: "border-violet-500 text-violet-500", else: "border-transparent text-base-content/60 hover:text-base-content")
+        ]}
+        phx-click="switch_tab"
+        phx-value-tab="files"
+      >
+        <.icon name="hero-folder" class="size-4 mr-1" />
+        Files
+      </button>
+      <button
+        type="button"
+        class={[
+          "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+          if(@active_tab == :metrics, do: "border-violet-500 text-violet-500", else: "border-transparent text-base-content/60 hover:text-base-content")
+        ]}
+        phx-click="switch_tab"
+        phx-value-tab="metrics"
+      >
+        <.icon name="hero-chart-bar" class="size-4 mr-1" />
+        Metrics
+      </button>
+      <button
+        type="button"
+        class={[
+          "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+          if(@active_tab == :analyze, do: "border-violet-500 text-violet-500", else: "border-transparent text-base-content/60 hover:text-base-content")
+        ]}
+        phx-click="switch_tab"
+        phx-value-tab="analyze"
+      >
+        <.icon name="hero-beaker" class="size-4 mr-1" />
+        Analyze
+      </button>
+    </div>
+
+    <!-- Browse Tab -->
+    <%= if @active_tab == :browse do %>
+      <div class="flex gap-6">
+        <!-- Main Content -->
+        <section class={[
+          "rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden",
+          if(@selected_symbol, do: "flex-1", else: "w-full")
+        ]}>
+          <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+            <div class="flex flex-col md:flex-row gap-4">
+              <!-- Search -->
+              <div class="flex-1">
+                <form phx-change="search_symbols" phx-submit="search_symbols">
+                  <div class="relative">
+                    <.icon name="hero-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/40" />
+                    <input
+                      type="text"
+                      name="query"
+                      value={@search_query}
+                      placeholder="Search symbols..."
+                      class="input input-bordered w-full pl-10"
+                      phx-debounce="300"
+                    />
+                  </div>
+                </form>
+              </div>
+
+              <!-- Filters -->
+              <div class="flex gap-2">
+                <form phx-change="filter_type">
+                  <select name="type" class="select select-bordered select-sm">
+                    <option value="">All Types</option>
+                    <%= for type <- entity_types() do %>
+                      <option value={type} selected={@selected_type == type}>
+                        {entity_type_label(type)}
+                      </option>
+                    <% end %>
+                  </select>
+                </form>
+
+                <form phx-change="filter_language">
+                  <select name="language" class="select select-bordered select-sm">
+                    <option value="">All Languages</option>
+                    <%= for lang <- supported_languages() do %>
+                      <option value={lang} selected={@selected_language == lang}>
+                        {language_name(lang)}
+                      </option>
+                    <% end %>
+                  </select>
+                </form>
+
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-sm text-error"
+                  phx-click="clear_world_symbols"
+                  data-confirm="Are you sure you want to clear all symbols for this world?"
+                >
+                  <.icon name="hero-trash" class="size-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-4">
+            <%= if length(@symbols) > 0 do %>
+              <div class="overflow-x-auto">
+                <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>Name</th>
+                      <th>Qualified Name</th>
+                      <th>Language</th>
+                      <th>Location</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <%= for symbol <- @symbols do %>
+                      <tr 
+                        class="hover cursor-pointer"
+                        phx-click="select_symbol"
+                        phx-value-name={symbol.qualified_name}
+                      >
+                        <td>
+                          <div class="flex items-center gap-2">
+                            <.icon name={entity_type_icon(symbol.entity_type)} class={["size-4", entity_type_color(symbol.entity_type)]} />
+                            <span class="text-xs">{entity_type_label(symbol.entity_type)}</span>
+                          </div>
+                        </td>
+                        <td class="font-mono font-medium">{symbol.name}</td>
+                        <td class="font-mono text-xs text-base-content/60 max-w-[200px] truncate" title={symbol.qualified_name}>{symbol.qualified_name}</td>
+                        <td>
+                          <.badge variant={:default} size={:xs}>
+                            {language_name(symbol.language)}
+                          </.badge>
+                        </td>
+                        <td class="text-xs text-base-content/60">
+                          <%= if symbol.file_path do %>
+                            <span class="font-mono" title={symbol.file_path}>
+                              {Path.basename(symbol.file_path || "")}<%= if symbol.line do %>:{symbol.line}<% end %>
+                            </span>
+                          <% else %>
+                            <span class="italic">-</span>
+                          <% end %>
+                        </td>
+                      </tr>
+                    <% end %>
+                  </tbody>
+                </table>
+              </div>
+              <div class="mt-4 text-xs text-base-content/50">
+                Showing {length(@symbols)} symbols · Click a row for details
+              </div>
+            <% else %>
+              <div class="text-center py-12">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-base-200 mb-4">
+                  <.icon name="hero-code-bracket" class="size-8 text-base-content/30" />
+                </div>
+                <p class="text-base-content/60 font-medium">No symbols found</p>
+                <p class="text-xs text-base-content/40 mt-1">
+                  <%= if @search_query != "" do %>
+                    Try a different search query
+                  <% else %>
+                    Analyze some code to populate the symbol database
+                  <% end %>
+                </p>
+              </div>
+            <% end %>
+          </div>
+        </section>
+
+        <!-- Symbol Detail Panel -->
+        <%= if @selected_symbol do %>
+          <aside class="w-96 rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden h-fit">
+            <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class={["p-2 rounded-lg", entity_type_bg(@selected_symbol.entity_type)]}>
+                    <.icon name={entity_type_icon(@selected_symbol.entity_type)} class={["size-5", entity_type_color(@selected_symbol.entity_type)]} />
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-sm">{@selected_symbol.name}</h3>
+                    <p class="text-xs text-base-content/60">{entity_type_label(@selected_symbol.entity_type)}</p>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-ghost btn-sm btn-square" phx-click="close_symbol_detail">
+                  <.icon name="hero-x-mark" class="size-4" />
+                </button>
+              </div>
+            </div>
+
+            <div class="p-4 space-y-4">
+              <!-- Details -->
+              <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-base-content/60">Qualified Name</span>
+                  <span class="font-mono text-xs">{@selected_symbol.qualified_name}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-base-content/60">Language</span>
+                  <.badge variant={:default} size={:xs}>{language_name(@selected_symbol.language)}</.badge>
+                </div>
+                <%= if @selected_symbol.file_path do %>
+                  <div class="flex justify-between">
+                    <span class="text-base-content/60">File</span>
+                    <button 
+                      class="text-xs font-mono text-primary hover:underline text-right max-w-[180px] truncate"
+                      phx-click="view_file_symbols"
+                      phx-value-path={@selected_symbol.file_path}
+                      title={@selected_symbol.file_path}
+                    >
+                      {Path.basename(@selected_symbol.file_path)}
+                    </button>
+                  </div>
+                <% end %>
+                <%= if @selected_symbol.line do %>
+                  <div class="flex justify-between">
+                    <span class="text-base-content/60">Line</span>
+                    <span class="font-mono text-xs">{@selected_symbol.line}</span>
+                  </div>
+                <% end %>
+              </div>
+
+              <!-- Metadata -->
+              <%= if @selected_symbol.metadata && map_size(@selected_symbol.metadata) > 0 do %>
+                <div>
+                  <h4 class="font-semibold text-xs text-base-content/60 uppercase mb-2">Metadata</h4>
+                  <div class="space-y-1">
+                    <%= for {key, value} <- @selected_symbol.metadata do %>
+                      <div class="flex justify-between text-sm">
+                        <span class="text-base-content/60">{key}</span>
+                        <span class="font-mono text-xs">{inspect(value)}</span>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+
+              <!-- Relations -->
+              <%= if length(@symbol_relations) > 0 do %>
+                <div>
+                  <h4 class="font-semibold text-xs text-base-content/60 uppercase mb-2">Relationships</h4>
+                  <div class="space-y-1">
+                    <%= for rel <- @symbol_relations do %>
+                      <div class="flex items-center gap-2 p-2 rounded-lg bg-base-200/30 text-xs">
+                        <.icon name={relation_icon(rel.type)} class="size-3 text-base-content/60" />
+                        <span class="text-base-content/60">{relation_label(rel.type)}</span>
+                        <span class="font-mono flex-1 truncate" title={rel.target}>{rel.target}</span>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </aside>
+        <% end %>
+      </div>
+    <% end %>
+
+    <!-- Statistics Tab -->
+    <%= if @active_tab == :stats do %>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Type Breakdown -->
+        <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+          <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+            <div class="flex items-center gap-2">
+              <.icon name="hero-cube" class="size-5 text-violet-500" />
+              <h2 class="font-bold">Symbols by Type</h2>
+            </div>
+          </div>
+          <div class="p-4">
+            <%= if length(@type_breakdown) > 0 do %>
+              <div class="space-y-3">
+                <%= for {type, count} <- @type_breakdown do %>
+                  <div class="flex items-center gap-3">
+                    <div class={["p-1.5 rounded-lg", entity_type_bg(type)]}>
+                      <.icon name={entity_type_icon(type)} class={["size-4", entity_type_color(type)]} />
+                    </div>
+                    <div class="flex-1">
+                      <div class="flex justify-between items-center mb-1">
+                        <span class="text-sm font-medium">{entity_type_label(type)}</span>
+                        <span class="text-sm font-mono text-base-content/60">{count}</span>
+                      </div>
+                      <div class="h-2 bg-base-200 rounded-full overflow-hidden">
+                        <div 
+                          class={["h-full rounded-full", String.replace(entity_type_color(type), "text-", "bg-")]}
+                          style={"width: #{min(count / max(elem(hd(@type_breakdown), 1), 1) * 100, 100)}%"}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            <% else %>
+              <p class="text-center text-base-content/60 py-8">No symbols analyzed yet</p>
+            <% end %>
+          </div>
+        </section>
+
+        <!-- Language Breakdown -->
+        <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+          <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+            <div class="flex items-center gap-2">
+              <.icon name="hero-language" class="size-5 text-cyan-500" />
+              <h2 class="font-bold">Symbols by Language</h2>
+            </div>
+          </div>
+          <div class="p-4">
+            <%= if length(@language_breakdown) > 0 do %>
+              <div class="space-y-3">
+                <%= for {lang, count} <- @language_breakdown do %>
+                  <div class="flex items-center gap-3">
+                    <.badge variant={:default} size={:sm}>{language_name(lang)}</.badge>
+                    <div class="flex-1">
+                      <div class="flex justify-between items-center mb-1">
+                        <div></div>
+                        <span class="text-sm font-mono text-base-content/60">{count}</span>
+                      </div>
+                      <div class="h-2 bg-base-200 rounded-full overflow-hidden">
+                        <div 
+                          class="h-full rounded-full bg-cyan-500"
+                          style={"width: #{min(count / max(elem(hd(@language_breakdown), 1), 1) * 100, 100)}%"}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            <% else %>
+              <p class="text-center text-base-content/60 py-8">No symbols analyzed yet</p>
+            <% end %>
+          </div>
+        </section>
+
+        <!-- Supported Languages -->
+        <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden lg:col-span-2">
+          <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+            <div class="flex items-center gap-2">
+              <.icon name="hero-check-circle" class="size-5 text-success" />
+              <h2 class="font-bold">Supported Languages</h2>
+            </div>
+          </div>
+          <div class="p-4">
+            <div class="flex flex-wrap gap-2">
+              <%= for lang <- @code_status.language_grammar.stats.languages do %>
+                <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-base-200/50 border border-base-300/30">
+                  <.icon name="hero-check-circle" class="size-4 text-success" />
+                  <span class="font-medium text-sm">{language_name(lang)}</span>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </section>
+      </div>
+    <% end %>
+
+    <!-- Files Tab -->
+    <%= if @active_tab == :files do %>
+      <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+        <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <.icon name="hero-folder" class="size-5 text-amber-500" />
+              <h2 class="font-bold">Analyzed Files</h2>
+            </div>
+            <.badge variant={:default} size={:sm}>{length(@analyzed_files)} files</.badge>
+          </div>
+        </div>
+        <div class="p-4">
+          <%= if length(@analyzed_files) > 0 do %>
+            <div class="max-h-96 overflow-y-auto space-y-1">
+              <%= for file <- @analyzed_files do %>
+                <button
+                  type="button"
+                  class="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-base-200/50 text-left transition-colors"
+                  phx-click="view_file_symbols"
+                  phx-value-path={file}
+                >
+                  <.icon name="hero-document-text" class="size-4 text-base-content/40" />
+                  <span class="font-mono text-sm truncate flex-1" title={file}>{file}</span>
+                  <.icon name="hero-chevron-right" class="size-4 text-base-content/30" />
+                </button>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="text-center py-12">
+              <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-base-200 mb-4">
+                <.icon name="hero-folder" class="size-8 text-base-content/30" />
+              </div>
+              <p class="text-base-content/60 font-medium">No files analyzed</p>
+              <p class="text-xs text-base-content/40 mt-1">
+                Ingest a codebase to see analyzed files
+              </p>
+            </div>
+          <% end %>
+        </div>
+      </section>
+    <% end %>
+
+    <!-- Metrics Tab -->
+    <%= if @active_tab == :metrics do %>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Pipeline Metrics -->
+        <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+          <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-violet-500/10 to-violet-500/5">
+            <div class="flex items-center gap-2">
+              <.icon name="hero-cpu-chip" class="size-5 text-violet-500" />
+              <h2 class="font-bold text-sm">Pipeline</h2>
+            </div>
+          </div>
+          <div class="p-4 space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-base-content/60">Avg Time</span>
+              <span class="font-mono text-sm font-bold">{format_metric_value(@code_metrics.pipeline)}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-base-content/60">Total Calls</span>
+              <span class="font-mono text-sm">{format_metric_count(@code_metrics.pipeline)}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-base-content/60">Rate</span>
+              <span class="font-mono text-sm">{format_metric_rate(@code_metrics.pipeline)}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Parse Metrics -->
+        <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+          <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-blue-500/10 to-blue-500/5">
+            <div class="flex items-center gap-2">
+              <.icon name="hero-document-text" class="size-5 text-blue-500" />
+              <h2 class="font-bold text-sm">Parsing</h2>
+            </div>
+          </div>
+          <div class="p-4 space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-base-content/60">Avg Time</span>
+              <span class="font-mono text-sm font-bold">{format_metric_value(@code_metrics.parse)}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-base-content/60">Total Calls</span>
+              <span class="font-mono text-sm">{format_metric_count(@code_metrics.parse)}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-base-content/60">Rate</span>
+              <span class="font-mono text-sm">{format_metric_rate(@code_metrics.parse)}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Extract Metrics -->
+        <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+          <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-green-500/10 to-green-500/5">
+            <div class="flex items-center gap-2">
+              <.icon name="hero-scissors" class="size-5 text-green-500" />
+              <h2 class="font-bold text-sm">Extraction</h2>
+            </div>
+          </div>
+          <div class="p-4 space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-base-content/60">Avg Time</span>
+              <span class="font-mono text-sm font-bold">{format_metric_value(@code_metrics.extract)}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-base-content/60">Total Calls</span>
+              <span class="font-mono text-sm">{format_metric_count(@code_metrics.extract)}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-base-content/60">Rate</span>
+              <span class="font-mono text-sm">{format_metric_rate(@code_metrics.extract)}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Lookup Metrics -->
+        <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+          <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-amber-500/10 to-amber-500/5">
+            <div class="flex items-center gap-2">
+              <.icon name="hero-magnifying-glass" class="size-5 text-amber-500" />
+              <h2 class="font-bold text-sm">Lookups</h2>
+            </div>
+          </div>
+          <div class="p-4 space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-base-content/60">Avg Time</span>
+              <span class="font-mono text-sm font-bold">{format_metric_value(@code_metrics.gazetteer_lookup)}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-base-content/60">Total Calls</span>
+              <span class="font-mono text-sm">{format_metric_count(@code_metrics.gazetteer_lookup)}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-base-content/60">Rate</span>
+              <span class="font-mono text-sm">{format_metric_rate(@code_metrics.gazetteer_lookup)}</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Usage Hint -->
+      <div class="p-4 rounded-lg bg-info/10 border border-info/20">
+        <p class="text-sm text-info">
+          <.icon name="hero-information-circle" class="size-4 inline mr-1" />
+          Metrics update automatically every 5 seconds. To analyze a codebase, use:
+        </p>
+        <code class="block mt-2 px-3 py-2 bg-base-200 rounded font-mono text-xs">
+          World.DocumentIngestor.ingest_codebase("{@current_world_id}", "/path/to/project")
+        </code>
+      </div>
+    <% end %>
+
+    <!-- Analyze Tab -->
+    <%= if @active_tab == :analyze do %>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Code Input -->
+        <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+          <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <.icon name="hero-document-text" class="size-5 text-violet-500" />
+                <h2 class="font-bold">Code Input</h2>
+              </div>
+              <form phx-change="select_input_language">
+                <select name="language" class="select select-bordered select-sm">
+                  <%= for lang <- supported_languages() do %>
+                    <option value={lang} selected={@selected_input_language == lang}>
+                      {language_name(lang)}
+                    </option>
+                  <% end %>
+                </select>
+              </form>
+            </div>
+          </div>
+
+          <div class="p-4 space-y-4">
+            <form phx-change="update_code_input">
+              <textarea
+                name="code"
+                rows="15"
+                class="textarea textarea-bordered w-full font-mono text-sm"
+                placeholder={"Enter #{language_name(@selected_input_language)} code to analyze..."}
+                phx-debounce="300"
+              >{@code_input}</textarea>
+            </form>
+
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="btn btn-primary flex-1"
+                phx-click="analyze_code"
+                disabled={@analyzing or String.trim(@code_input) == ""}
+              >
+                <%= if @analyzing do %>
+                  <span class="loading loading-spinner loading-sm"></span>
+                  Analyzing...
+                <% else %>
+                  <.icon name="hero-play" class="size-4" />
+                  Analyze
+                <% end %>
+              </button>
+              <button
+                type="button"
+                class="btn btn-ghost"
+                phx-click="clear_analysis"
+                disabled={@analyzing}
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Analysis Results -->
+        <section class="rounded-2xl bg-base-100 border border-base-300/50 shadow-xl shadow-base-300/20 overflow-hidden">
+          <div class="p-4 border-b border-base-300/50 bg-gradient-to-r from-base-100 to-base-200/30">
+            <div class="flex items-center gap-2">
+              <.icon name="hero-chart-bar" class="size-5 text-blue-500" />
+              <h2 class="font-bold">Analysis Results</h2>
+            </div>
+          </div>
+
+          <div class="p-4">
+            <%= if @analysis_result do %>
+              <%= if @analysis_result.success do %>
+                <div class="space-y-4">
+                  <%= if @analysis_result.summary && @analysis_result.summary != "" do %>
+                    <div class="rounded-lg bg-base-200/50 p-3">
+                      <h3 class="font-semibold text-sm mb-1">Summary</h3>
+                      <p class="text-sm text-base-content/80">{@analysis_result.summary}</p>
+                    </div>
+                  <% end %>
+
+                  <div class="grid grid-cols-3 gap-3">
+                    <div class="rounded-lg bg-gradient-to-br from-violet-500/10 to-violet-500/5 border border-violet-500/20 p-3 text-center">
+                      <div class="text-xl font-bold text-violet-500">{length(@analysis_result.symbols)}</div>
+                      <div class="text-xs text-base-content/60">Symbols</div>
+                    </div>
+                    <div class="rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20 p-3 text-center">
+                      <div class="text-xl font-bold text-blue-500">{length(@analysis_result.relations)}</div>
+                      <div class="text-xs text-base-content/60">Relations</div>
+                    </div>
+                    <div class="rounded-lg bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-amber-500/20 p-3 text-center">
+                      <div class="text-xl font-bold text-amber-500">{length(@analysis_result.errors)}</div>
+                      <div class="text-xs text-base-content/60">Warnings</div>
+                    </div>
+                  </div>
+
+                  <%= if length(@analysis_result.symbols) > 0 do %>
+                    <div>
+                      <h3 class="font-semibold text-sm mb-2">Extracted Symbols</h3>
+                      <div class="max-h-64 overflow-y-auto space-y-1">
+                        <%= for symbol <- @analysis_result.symbols do %>
+                          <div class="flex items-center gap-2 p-2 rounded-lg bg-base-200/30 hover:bg-base-200/50">
+                            <.icon name={entity_type_icon(symbol.entity_type)} class={["size-4", entity_type_color(symbol.entity_type)]} />
+                            <span class="font-mono text-sm">{symbol.name}</span>
+                            <span class="text-xs text-base-content/50">{entity_type_label(symbol.entity_type)}</span>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
+
+                  <%= if length(@analysis_result.relations) > 0 do %>
+                    <div>
+                      <h3 class="font-semibold text-sm mb-2">Relationships</h3>
+                      <div class="max-h-48 overflow-y-auto space-y-1">
+                        <%= for relation <- @analysis_result.relations do %>
+                          <div class="flex items-center gap-2 p-2 rounded-lg bg-base-200/30 text-xs">
+                            <span class="font-mono">{relation.from}</span>
+                            <.icon name="hero-arrow-right" class="size-3 text-base-content/40" />
+                            <.badge variant={:default} size={:xs}>{relation.type}</.badge>
+                            <.icon name="hero-arrow-right" class="size-3 text-base-content/40" />
+                            <span class="font-mono">{relation.to}</span>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              <% else %>
+                <div class="text-center py-8">
+                  <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-error/10 mb-3">
+                    <.icon name="hero-exclamation-triangle" class="size-6 text-error" />
+                  </div>
+                  <p class="text-error font-medium">Analysis Failed</p>
+                  <p class="text-xs text-base-content/60 mt-1 font-mono">{@analysis_result.error}</p>
+                </div>
+              <% end %>
+            <% else %>
+              <div class="text-center py-12">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-base-200 mb-4">
+                  <.icon name="hero-beaker" class="size-8 text-base-content/30" />
+                </div>
+                <p class="text-base-content/60 font-medium">No analysis results yet</p>
+                <p class="text-xs text-base-content/40 mt-1">Enter code and click Analyze to see results</p>
+              </div>
+            <% end %>
+          </div>
+        </section>
+      </div>
+    <% end %>
+  </div>
+</.app_shell>

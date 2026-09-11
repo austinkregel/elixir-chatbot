@@ -23,18 +23,20 @@ defmodule Brain.ML.SimpleClassifier do
 
     vocabulary = all_words |> Enum.with_index() |> Enum.into(%{})
     num_docs = length(texts)
-    Logger.info("[SimpleClassifier] Tokenized #{sample_count} samples, vocabulary size: #{map_size(vocabulary)}")
+
+    Logger.info(
+      "[SimpleClassifier] Tokenized #{sample_count} samples, vocabulary size: #{map_size(vocabulary)}"
+    )
 
     doc_token_sets = Enum.map(doc_tokens, &MapSet.new/1)
 
     idf_weights =
       vocabulary
-      |> Enum.map(fn {word, _idx} ->
+      |> Map.new(fn {word, _idx} ->
         doc_freq = Enum.count(doc_token_sets, fn token_set -> MapSet.member?(token_set, word) end)
         idf = :math.log(num_docs / max(doc_freq, 1))
         {word, idf}
       end)
-      |> Enum.into(%{})
 
     Logger.info("[SimpleClassifier] Computed IDF weights")
 
@@ -52,15 +54,20 @@ defmodule Brain.ML.SimpleClassifier do
 
     label_centroids =
       label_vectors
-      |> Enum.map(fn {label, vecs} ->
-        Logger.debug("[SimpleClassifier] Computing centroid for label '#{label}' (#{length(vecs)} vectors)")
+      |> Map.new(fn {label, vecs} ->
+        Logger.debug(
+          "[SimpleClassifier] Computing centroid for label '#{label}' (#{length(vecs)} vectors)"
+        )
+
         centroid = calculate_centroid(vecs)
         {label, centroid}
       end)
-      |> Enum.into(%{})
 
     label_count = map_size(label_centroids)
-    Logger.info("[SimpleClassifier] Training complete: #{label_count} labels, vocab size #{map_size(vocabulary)}")
+
+    Logger.info(
+      "[SimpleClassifier] Training complete: #{label_count} labels, vocab size #{map_size(vocabulary)}"
+    )
 
     %{
       vocabulary: vocabulary,
@@ -88,7 +95,9 @@ defmodule Brain.ML.SimpleClassifier do
       |> Enum.filter(fn {_word, count} -> count >= 1 end)
 
     existing_vocab = model.vocabulary
-    max_index = if map_size(existing_vocab) > 0, do: Enum.max(Map.values(existing_vocab)), else: -1
+
+    max_index =
+      if map_size(existing_vocab) > 0, do: Enum.max(Map.values(existing_vocab)), else: -1
 
     new_words =
       all_words

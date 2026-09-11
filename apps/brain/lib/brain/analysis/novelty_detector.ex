@@ -135,7 +135,7 @@ defmodule Brain.Analysis.NoveltyDetector do
     end)
     |> Enum.any?(fn entity ->
       entity_type =
-        Map.get(entity, :entity_type) || Map.get(entity, "entity_type") || Map.get(entity, :type)
+        Map.get(entity, :entity_type) || Map.get(entity, :type)
 
       graph_known = Map.get(entity, :graph_known, true)
 
@@ -209,17 +209,28 @@ defmodule Brain.Analysis.NoveltyDetector do
           {belief, similarity} = best_match
 
           if is_state_change?(belief, analysis_chunk) do
-            :telemetry.execute([:brain, :novelty, :state_change_detected], %{similarity: similarity}, %{})
+            :telemetry.execute(
+              [:brain, :novelty, :state_change_detected],
+              %{similarity: similarity},
+              %{}
+            )
+
             novelty_score
           else
             if belief_still_active?(belief) do
               downweight = similarity * 0.5
               downweighted = novelty_score * (1.0 - downweight)
-              :telemetry.execute([:brain, :novelty, :downweighted], %{
-                original: novelty_score,
-                downweighted: downweighted,
-                similarity: similarity
-              }, %{})
+
+              :telemetry.execute(
+                [:brain, :novelty, :downweighted],
+                %{
+                  original: novelty_score,
+                  downweighted: downweighted,
+                  similarity: similarity
+                },
+                %{}
+              )
+
               downweighted
             else
               novelty_score
@@ -287,7 +298,7 @@ defmodule Brain.Analysis.NoveltyDetector do
   end
 
   defp sentiment_polarity(sentiment) when is_map(sentiment) do
-    label = Map.get(sentiment, :label) || Map.get(sentiment, "label")
+    label = Map.get(sentiment, :label)
 
     cond do
       label in [:positive, "positive"] -> :positive

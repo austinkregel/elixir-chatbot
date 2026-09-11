@@ -16,8 +16,12 @@ defmodule Fleet.SystemsReadTest do
     test_pid = self()
     handler_id = "sysread-#{System.unique_integer([:positive])}"
 
-    :telemetry.attach(handler_id, [:chat_bot, :officer, :event],
-      fn _e, meas, meta, pid -> send(pid, {:tele, meta.event, meas, meta}) end, test_pid)
+    :telemetry.attach(
+      handler_id,
+      [:chat_bot, :officer, :event],
+      fn _e, meas, meta, pid -> send(pid, {:tele, meta.event, meas, meta}) end,
+      test_pid
+    )
 
     on_exit(fn ->
       :telemetry.detach(handler_id)
@@ -30,7 +34,15 @@ defmodule Fleet.SystemsReadTest do
   defp commission(grants) do
     sid = "sysread-#{System.unique_integer([:positive])}"
     soul = %Brain.Soul{id: sid, name: "Agent #{sid}", constitution: "Serve.", genome: %{}}
-    {:ok, _pid, id} = CrewSupervisor.start_officer(soul_id: sid, soul: soul, grant: %{authorities: grants}, tick_interval: 50)
+
+    {:ok, _pid, id} =
+      CrewSupervisor.start_officer(
+        soul_id: sid,
+        soul: soul,
+        grant: %{authorities: grants},
+        tick_interval: 50
+      )
+
     assert_receive {:tele, :soul_hydrated, _, %{soul_id: ^sid}}, 5_000
     id
   end
@@ -38,14 +50,14 @@ defmodule Fleet.SystemsReadTest do
   defp block(json), do: "I need the ship's status first.\n\n```propose\n#{json}\n```\n"
 
   defp kinds_for(agent_id) do
-    Atlas.Repo.all(from r in CommandRecord, where: r.from_agent == ^agent_id, select: r.kind)
+    Atlas.Repo.all(from(r in CommandRecord, where: r.from_agent == ^agent_id, select: r.kind))
   end
 
   test "the registry snapshots 200+ layered systems, ship-stamped" do
     snap = Fleet.Systems.snapshot()
     assert snap.ship_id == Ship.id()
     assert snap.counts.subsystems > 200
-    assert length(snap.services) >= 3
+    assert Enum.count_until(snap.services, 3) >= 3
     assert Enum.any?(snap.services, &(&1.name =~ "Postgres"))
     assert is_integer(snap.health.health_score)
     # every system carries this ship's id
@@ -56,7 +68,10 @@ defmodule Fleet.SystemsReadTest do
     id = commission([Authority.tool("systems.read")])
 
     assert {:ok, %{data: framed}} =
-             Fleet.propose(id, block(~s({"tool": "systems.read", "requirement": "to report readiness"})))
+             Fleet.propose(
+               id,
+               block(~s({"tool": "systems.read", "requirement": "to report readiness"}))
+             )
 
     assert framed =~ "<data source=\"systems.read\""
     assert framed =~ "health_score"
@@ -73,7 +88,10 @@ defmodule Fleet.SystemsReadTest do
     assert_receive {:tele, :relieved, _, _}, 5_000
 
     assert {:refused, {:clearance, :relieved}} =
-             Fleet.propose(id, block(~s({"tool": "systems.read", "requirement": "to report readiness"})))
+             Fleet.propose(
+               id,
+               block(~s({"tool": "systems.read", "requirement": "to report readiness"}))
+             )
 
     assert "grant_violation" in kinds_for(id)
   end
@@ -82,7 +100,10 @@ defmodule Fleet.SystemsReadTest do
     id = commission([Authority.tool("beliefs.read")])
 
     assert {:ok, %{data: framed}} =
-             Fleet.propose(id, block(~s({"tool": "beliefs.read", "requirement": "to recall what I know"})))
+             Fleet.propose(
+               id,
+               block(~s({"tool": "beliefs.read", "requirement": "to recall what I know"}))
+             )
 
     assert framed =~ "<data source=\"beliefs.read\""
     assert "read" in kinds_for(id)

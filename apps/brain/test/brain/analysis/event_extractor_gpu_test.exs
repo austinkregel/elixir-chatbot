@@ -55,9 +55,10 @@ defmodule Brain.Analysis.EventExtractorGPUTest do
       _result1 = EventExtractor.find_verb_positions(pos_tensor)
 
       # Second call should be faster (cached compilation)
-      {time_us, result2} = :timer.tc(fn ->
-        EventExtractor.find_verb_positions(pos_tensor)
-      end)
+      {time_us, result2} =
+        :timer.tc(fn ->
+          EventExtractor.find_verb_positions(pos_tensor)
+        end)
 
       # Verify result is correct
       assert Nx.to_flat_list(result2) == [0, 1, 0, 1, 0, 1]
@@ -82,13 +83,14 @@ defmodule Brain.Analysis.EventExtractorGPUTest do
       _ = EventExtractor.find_object_positions(large_input)
 
       # Benchmark current backend
-      {current_time, _} = :timer.tc(fn ->
-        for _ <- 1..10 do
-          EventExtractor.find_verb_positions(large_input)
-          EventExtractor.find_actor_positions(large_input)
-          EventExtractor.find_object_positions(large_input)
-        end
-      end)
+      {current_time, _} =
+        :timer.tc(fn ->
+          for _ <- 1..10 do
+            EventExtractor.find_verb_positions(large_input)
+            EventExtractor.find_actor_positions(large_input)
+            EventExtractor.find_object_positions(large_input)
+          end
+        end)
 
       avg_time_us = current_time / 10
 
@@ -111,17 +113,19 @@ defmodule Brain.Analysis.EventExtractorGPUTest do
       seq_length = 100
 
       # Generate batch of sequences
-      batch = Nx.tensor(
-        for _ <- 1..batch_size do
-          for _ <- 1..seq_length, do: Enum.random(1..5)
-        end,
-        type: :s32
-      )
+      batch =
+        Nx.tensor(
+          for _ <- 1..batch_size do
+            for _ <- 1..seq_length, do: Enum.random(1..5)
+          end,
+          type: :s32
+        )
 
       # Benchmark batch operation
-      {time_us, result} = :timer.tc(fn ->
-        EventExtractor.batch_find_verb_positions(batch)
-      end)
+      {time_us, result} =
+        :timer.tc(fn ->
+          EventExtractor.batch_find_verb_positions(batch)
+        end)
 
       # Log timing for benchmarking (captured to avoid log leaks)
       capture_io(fn ->
@@ -135,18 +139,20 @@ defmodule Brain.Analysis.EventExtractorGPUTest do
     @tag :benchmark
     test "parallel extraction completes efficiently" do
       # Create multiple analysis chunks
-      chunks = for i <- 1..10 do
-        %{
-          pos_tags: generate_random_pos_tags(50),
-          entities: [],
-          tokens: (for j <- 1..50, do: "token_#{i}_#{j}")
-        }
-      end
+      chunks =
+        for i <- 1..10 do
+          %{
+            pos_tags: generate_random_pos_tags(50),
+            entities: [],
+            tokens: for(j <- 1..50, do: "token_#{i}_#{j}")
+          }
+        end
 
       # Benchmark parallel extraction
-      {time_us, {:ok, events}} = :timer.tc(fn ->
-        EventExtractor.extract_parallel(chunks, timeout: 5000)
-      end)
+      {time_us, {:ok, events}} =
+        :timer.tc(fn ->
+          EventExtractor.extract_parallel(chunks, timeout: 5000)
+        end)
 
       # Log timing for benchmarking (captured to avoid log leaks)
       capture_io(fn ->
@@ -202,11 +208,12 @@ defmodule Brain.Analysis.EventExtractorGPUTest do
       # Warm up
       _ = EventExtractor.find_verb_positions(input)
 
-      {binary_time, _} = :timer.tc(fn ->
-        for _ <- 1..5 do
-          EventExtractor.find_verb_positions(input)
-        end
-      end)
+      {binary_time, _} =
+        :timer.tc(fn ->
+          for _ <- 1..5 do
+            EventExtractor.find_verb_positions(input)
+          end
+        end)
 
       results = Map.put(results, :binary, binary_time / 5)
 
@@ -218,15 +225,19 @@ defmodule Brain.Analysis.EventExtractorGPUTest do
           # Warm up (JIT)
           _ = EventExtractor.find_verb_positions(input)
 
-          {exla_time, _} = :timer.tc(fn ->
-            for _ <- 1..5 do
-              EventExtractor.find_verb_positions(input)
-            end
-          end)
+          {exla_time, _} =
+            :timer.tc(fn ->
+              for _ <- 1..5 do
+                EventExtractor.find_verb_positions(input)
+              end
+            end)
 
           {:ok, exla_time / 5}
         rescue
-          _ ->
+          # EXLA is an optional dependency: its module may be missing
+          # (UndefinedFunctionError) or the XLA backend may fail to initialize
+          # (RuntimeError/ArgumentError). Any of these just means "no GPU here".
+          _e in [UndefinedFunctionError, RuntimeError, ArgumentError] ->
             {:error, :unavailable}
         end
 

@@ -36,7 +36,7 @@ defmodule Brain.ML.GoldStandardMigratorTest do
           String.match?(basename, ~r/context_.*_usersays_en\.json$/)
         end)
 
-      assert length(context_sources) > 0,
+      assert context_sources != [],
              "Expected some context-variant source files to be included by default"
     end
   end

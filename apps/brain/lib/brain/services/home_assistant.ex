@@ -54,7 +54,16 @@ defmodule Brain.Services.HomeAssistant do
   def slot_schema do
     %{
       "required" => [],
-      "optional" => ["device", "location", "brightness", "color", "temperature", "volume", "duration", "time"],
+      "optional" => [
+        "device",
+        "location",
+        "brightness",
+        "color",
+        "temperature",
+        "volume",
+        "duration",
+        "time"
+      ],
       "entity_mappings" => %{
         "device" => ["device", "appliance", "light", "switch"],
         "location" => ["room", "location", "area"],
@@ -86,20 +95,26 @@ defmodule Brain.Services.HomeAssistant do
   def enrich(intent, slots, credentials) do
     url = Map.get(credentials, :url, Map.get(credentials, "url"))
     token = Map.get(credentials, :access_token, Map.get(credentials, "access_token"))
+    slots = Brain.Services.Service.normalize_slots(slots)
 
-    Logger.info("HomeAssistant.enrich called: intent=#{inspect(intent)} slots=#{inspect(slots)} url=#{is_binary(url) and url != ""} token=#{is_binary(token) and token != ""}")
+    Logger.info(
+      "HomeAssistant.enrich called: intent=#{inspect(intent)} slots=#{inspect(slots)} url=#{is_binary(url) and url != ""} token=#{is_binary(token) and token != ""}"
+    )
 
     entity_id = EntityMapper.resolve_entity_id(slots)
     action_suffix = extract_action_suffix(intent)
     ha_services = resolve_ha_services(action_suffix)
 
-    Logger.info("HomeAssistant.enrich resolved: entity_id=#{inspect(entity_id)} action_suffix=#{inspect(action_suffix)} ha_services=#{inspect(ha_services)}")
+    Logger.info(
+      "HomeAssistant.enrich resolved: entity_id=#{inspect(entity_id)} action_suffix=#{inspect(action_suffix)} ha_services=#{inspect(ha_services)}"
+    )
 
-    result = if ha_services do
-      handle_action(entity_id, ha_services, slots, url, token, intent, action_suffix)
-    else
-      handle_query(entity_id, url, token, intent)
-    end
+    result =
+      if ha_services do
+        handle_action(entity_id, ha_services, slots, url, token, intent, action_suffix)
+      else
+        handle_query(entity_id, url, token, intent)
+      end
 
     Logger.info("HomeAssistant.enrich result: #{inspect(result)}")
     result
@@ -110,10 +125,12 @@ defmodule Brain.Services.HomeAssistant do
     action_verbs = load_action_verbs()
 
     parts = String.split(intent_str, ".", parts: 2)
-    suffix = case parts do
-      [_domain, rest] -> rest
-      _ -> intent_str
-    end
+
+    suffix =
+      case parts do
+        [_domain, rest] -> rest
+        _ -> intent_str
+      end
 
     cond do
       Map.has_key?(action_verbs, suffix) ->
@@ -149,13 +166,19 @@ defmodule Brain.Services.HomeAssistant do
       |> EntityMapper.build_service_data()
       |> maybe_add_entity_id(entity_id)
 
-    Logger.info("HomeAssistant: calling #{ha_domain}/#{ha_service} entity_id=#{inspect(entity_id)} service_data=#{inspect(service_data)}")
+    Logger.info(
+      "HomeAssistant: calling #{ha_domain}/#{ha_service} entity_id=#{inspect(entity_id)} service_data=#{inspect(service_data)}"
+    )
 
     case call_service(url, token, ha_domain, ha_service, service_data) do
       {:ok, result} ->
         device_name = extract_device_name(slots, entity_id)
         enrichment = StateFormatter.format_action_result(ha_service, device_name)
-        Logger.info("HomeAssistant: action succeeded device=#{inspect(device_name)} result_size=#{if is_list(result), do: length(result), else: "map"}")
+
+        Logger.info(
+          "HomeAssistant: action succeeded device=#{inspect(device_name)} result_size=#{if is_list(result), do: length(result), else: "map"}"
+        )
+
         {:ok, enrichment}
 
       {:error, reason} ->
@@ -170,13 +193,17 @@ defmodule Brain.Services.HomeAssistant do
 
       state =
         case Cache.get(:home_assistant, cache_key) do
-          {:ok, cached} -> cached
+          {:ok, cached} ->
+            cached
+
           :miss ->
             case get_entity_state(url, token, entity_id) do
               {:ok, state} ->
                 Cache.put(:home_assistant, cache_key, state, ttl: @cache_ttl_ms)
                 state
-              {:error, _} -> nil
+
+              {:error, _} ->
+                nil
             end
         end
 
@@ -222,39 +249,65 @@ defmodule Brain.Services.HomeAssistant do
   defp pick_service_with_polarity(ha_domain, ha_services, slots, action_suffix) do
     polarity = infer_polarity(slots, action_suffix)
 
-    preferred = case polarity do
-      :off -> Enum.find(ha_services, fn s -> String.contains?(s, "off") or String.contains?(s, "stop") or String.contains?(s, "pause") end)
-      :on -> Enum.find(ha_services, fn s -> String.contains?(s, "on") or String.contains?(s, "play") or String.contains?(s, "start") end)
-      :toggle -> Enum.find(ha_services, fn s -> s == "toggle" end)
-      _ -> nil
-    end
+    preferred =
+      case polarity do
+        :off ->
+          Enum.find(ha_services, fn s ->
+            String.contains?(s, "off") or String.contains?(s, "stop") or
+              String.contains?(s, "pause")
+          end)
 
-    service = preferred || Enum.find(ha_services, List.first(ha_services), fn service ->
-      CapabilityRegistry.can_handle?(ha_domain, service)
-    end)
+        :on ->
+          Enum.find(ha_services, fn s ->
+            String.contains?(s, "on") or String.contains?(s, "play") or
+              String.contains?(s, "start")
+          end)
 
-    if CapabilityRegistry.can_handle?(ha_domain, service), do: service, else: List.first(ha_services)
+        :toggle ->
+          Enum.find(ha_services, fn s -> s == "toggle" end)
+
+        _ ->
+          nil
+      end
+
+    service =
+      preferred ||
+        Enum.find(ha_services, List.first(ha_services), fn service ->
+          CapabilityRegistry.can_handle?(ha_domain, service)
+        end)
+
+    if CapabilityRegistry.can_handle?(ha_domain, service),
+      do: service,
+      else: List.first(ha_services)
   end
 
   defp infer_polarity(slots, action_suffix) do
-    action_val = Map.get(slots, :action) || Map.get(slots, "action") || ""
-    query_text = Map.get(slots, :_query_text) || Map.get(slots, "_query_text") || ""
+    action_val = Map.get(slots, :action) || ""
+    query_text = Map.get(slots, :_query_text) || ""
     text = String.downcase(to_string(action_val) <> " " <> to_string(query_text))
 
     cond do
       String.contains?(text, "turn off") or String.contains?(text, "shut off") or
-        String.contains?(text, "switch off") or String.contains?(text, "disable") -> :off
+        String.contains?(text, "switch off") or String.contains?(text, "disable") ->
+        :off
+
       String.contains?(text, "turn on") or String.contains?(text, "switch on") or
-        String.contains?(text, "enable") -> :on
-      action_suffix in ["device_down", "pause", "stop"] -> :off
-      action_suffix in ["device_up", "play", "device_set"] -> :on
-      true -> :toggle
+          String.contains?(text, "enable") ->
+        :on
+
+      action_suffix in ["device_down", "pause", "stop"] ->
+        :off
+
+      action_suffix in ["device_up", "play", "device_set"] ->
+        :on
+
+      true ->
+        :toggle
     end
   end
 
   defp extract_device_name(slots, entity_id) do
-    Map.get(slots, :device) || Map.get(slots, "device") ||
-      Map.get(slots, :location) || Map.get(slots, "location") ||
+    Map.get(slots, :device) || Map.get(slots, :location) ||
       entity_id || "device"
   end
 
@@ -321,14 +374,20 @@ defmodule Brain.Services.HomeAssistant do
     case http_get("#{url}/api/states", token) do
       {:ok, states} when is_list(states) ->
         prefix = "#{ha_domain}."
-        filtered = Enum.filter(states, fn s ->
-          entity_id = Map.get(s, "entity_id", "")
-          String.starts_with?(entity_id, prefix)
-        end)
+
+        filtered =
+          Enum.filter(states, fn s ->
+            entity_id = Map.get(s, "entity_id", "")
+            String.starts_with?(entity_id, prefix)
+          end)
+
         {:ok, filtered}
 
-      {:ok, _} -> {:error, :unexpected_response}
-      {:error, reason} -> {:error, reason}
+      {:ok, _} ->
+        {:error, :unexpected_response}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -341,7 +400,9 @@ defmodule Brain.Services.HomeAssistant do
           {:ok, map} -> map
           _ -> %{}
         end
-      {:error, _} -> %{}
+
+      {:error, _} ->
+        %{}
     end
   end
 

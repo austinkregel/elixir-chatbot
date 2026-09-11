@@ -1,0 +1,109 @@
+[
+  {
+    "content": {
+      "content_complete": true,
+      "entities": [],
+      "intent": "knowledge.command",
+      "speech_act": {
+        "category": "directive",
+        "confidence": 0.7222828168356559,
+        "indicators": [
+          "imperative_from_intent",
+          "intent:smarthome.switch"
+        ],
+        "intent_confidence": 0.4260875115617491,
+        "is_imperative": true,
+        "is_question": false,
+        "raw_analyses": {
+          "intent": {
+            "category": "directive",
+            "confidence": 0.4260875115617491,
+            "intent": "smarthome.switch",
+            "margin": 0.28212722932713813,
+            "second_score": 0.143960282234611,
+            "source": "feature_vector",
+            "sub_type": "command",
+            "top_k": [
+              {
+                "intent": "smarthome.switch",
+                "score": 0.4260875115617491
+              },
+              {
+                "intent": "smarthome.device_up",
+                "score": 0.143960282234611
+              },
+              {
+                "intent": "reminder.create",
+                "score": 0.14378437772817415
+              },
+              {
+                "intent": "music.play",
+                "score": 0.14326280045376927
+              },
+              {
+                "intent": "smarthome.device_down",
+                "score": 0.14290502802169655
+              }
+            ]
+          },
+          "keyword": {
+            "confidence": 0.0,
+            "source": "keyword"
+          },
+          "memory": {
+            "confidence": 0.0,
+            "similar_count": 0,
+            "source": "memory"
+          },
+          "original_text": "Give a one-line readiness report.",
+          "pragmatic": {
+            "expressive_score": 0.0,
+            "first_person_subject": false,
+            "has_acknowledgment": false,
+            "has_commissive": false,
+            "has_future": false,
+            "has_hedging": false,
+            "has_offer": false,
+            "has_please": false,
+            "has_thanks": false,
+            "has_urgency": false,
+            "is_backchannel": false,
+            "is_compliment": false,
+            "is_short_utterance": false,
+            "is_very_short": false,
+            "source": "pragmatic"
+          },
+          "structural": {
+            "category": "directive",
+            "confidence": 0.75,
+            "has_modal": false,
+            "is_continuation": false,
+            "is_declarative": true,
+            "is_exclamatory": false,
+            "is_imperative": true,
+            "is_question": false,
+            "source": "structural",
+            "sub_type": "command"
+          }
+        },
+        "sub_type": "command"
+      },
+      "topic": "knowledge"
+    },
+    "type": "framing",
+    "variant": "informative"
+  },
+  {
+    "content": {
+      "ambiguity_type": "unclear_intent",
+      "content_complete": true,
+      "intent": "knowledge.command",
+      "missing_slots": [],
+      "partial_understanding": {
+        "intent": "knowledge.command"
+      }
+    },
+    "type": "follow_up",
+    "variant": "clarification"
+  }
+]

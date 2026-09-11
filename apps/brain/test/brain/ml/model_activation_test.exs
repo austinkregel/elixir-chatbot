@@ -103,7 +103,7 @@ defmodule Brain.ML.ModelActivationTest do
       model = Brain.Analysis.Pipeline.process("Einstein discovered relativity in 1905")
 
       analyses = model.analyses
-      assert length(analyses) >= 1
+      assert analyses != []
 
       first = hd(analyses)
       assert Map.has_key?(first, :event_frames)

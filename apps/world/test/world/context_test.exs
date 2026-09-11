@@ -78,7 +78,7 @@ defmodule World.ContextTest do
       chain = WorldContext.get_inheritance_chain(child.id)
 
       # Chain should be [child, parent]
-      assert length(chain) >= 2
+      assert Enum.count_until(chain, 2) >= 2
       assert child.id in chain
       assert parent.id in chain
 

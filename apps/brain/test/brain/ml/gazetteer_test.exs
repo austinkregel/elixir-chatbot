@@ -254,11 +254,11 @@ defmodule Brain.ML.GazetteerTest do
         Gazetteer.add_entry(unique_key, "location", %{source: :csv})
 
         existing_before = Gazetteer.lookup_all_types(unique_key)
-        assert length(existing_before) >= 1
+        assert existing_before != []
 
         assert Enum.any?(existing_before, fn entry ->
-          Map.get(entry, :entity_type) == "location"
-        end)
+                 Map.get(entry, :entity_type) == "location"
+               end)
       else
         assert true
       end
@@ -320,7 +320,11 @@ defmodule Brain.ML.GazetteerTest do
       table = :gazetteer_entities
 
       :ets.insert(table, {"new", [%{entity_type: "person", value: "New", source: :json}]})
-      :ets.insert(table, {"new york", [%{entity_type: "location", value: "New York", source: :csv}]})
+
+      :ets.insert(
+        table,
+        {"new york", [%{entity_type: "location", value: "New York", source: :csv}]}
+      )
 
       :ets.insert(:gazetteer_prefixes, {"new", true})
 
@@ -330,7 +334,7 @@ defmodule Brain.ML.GazetteerTest do
     test "lookup_spans_lattice returns overlapping spans" do
       lattice = Gazetteer.lookup_spans_lattice(["new", "york"])
 
-      assert length(lattice) >= 1
+      assert lattice != []
 
       starts = Enum.map(lattice, fn {start, _end, _infos, _score} -> start end)
       assert 0 in starts

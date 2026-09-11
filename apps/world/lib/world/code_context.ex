@@ -75,7 +75,9 @@ defmodule World.CodeContext do
   def get_symbol(world_id, name) do
     # Try qualified name first
     case CodeGazetteer.lookup_qualified(world_id, name) do
-      {:ok, symbol} -> {:ok, symbol}
+      {:ok, symbol} ->
+        {:ok, symbol}
+
       :not_found ->
         # Fall back to simple name lookup
         case CodeGazetteer.lookup(world_id, name) do
@@ -231,7 +233,7 @@ defmodule World.CodeContext do
   """
   @spec analyze_code(String.t(), String.t(), atom(), keyword()) :: {:ok, map()} | {:error, term()}
   def analyze_code(world_id, source_code, language, opts \\ []) do
-    opts = Keyword.merge(opts, [world_id: world_id, store: true])
+    opts = Keyword.merge(opts, world_id: world_id, store: true)
     Pipeline.process(source_code, language, opts)
   end
 
@@ -240,7 +242,7 @@ defmodule World.CodeContext do
   """
   @spec analyze_file(String.t(), String.t(), keyword()) :: {:ok, map()} | {:error, term()}
   def analyze_file(world_id, file_path, opts \\ []) do
-    opts = Keyword.merge(opts, [world_id: world_id, store: true])
+    opts = Keyword.merge(opts, world_id: world_id, store: true)
     Pipeline.process_file(file_path, opts)
   end
 
@@ -249,7 +251,7 @@ defmodule World.CodeContext do
   """
   @spec analyze_directory(String.t(), String.t(), keyword()) :: {:ok, map()} | {:error, term()}
   def analyze_directory(world_id, dir_path, opts \\ []) do
-    opts = Keyword.merge(opts, [world_id: world_id, store: true])
+    opts = Keyword.merge(opts, world_id: world_id, store: true)
     Pipeline.process_directory(dir_path, opts)
   end
 
@@ -265,11 +267,11 @@ defmodule World.CodeContext do
     base_stats = CodeGazetteer.stats(world_id)
 
     # Count by entity type
-    type_counts = CodeGazetteer.entity_types()
-      |> Enum.map(fn type ->
+    type_counts =
+      CodeGazetteer.entity_types()
+      |> Map.new(fn type ->
         {type, length(CodeGazetteer.list_by_type(world_id, type))}
       end)
-      |> Enum.into(%{})
 
     Map.merge(base_stats, %{
       by_type: type_counts,
@@ -348,6 +350,7 @@ defmodule World.CodeContext do
   end
 
   defp maybe_filter_by_language(symbols, nil), do: symbols
+
   defp maybe_filter_by_language(symbols, language) do
     Enum.filter(symbols, fn s -> s.language == language end)
   end

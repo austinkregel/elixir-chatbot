@@ -1,0 +1,120 @@
+{
+  "confidence": 0.517,
+  "entities": [
+    {
+      "confidence": 0.62,
+      "entity_type": "slot_mappings",
+      "graph_known": false,
+      "match": "name",
+      "source": "gazetteer",
+      "value": "name"
+    },
+    {
+      "confidence": 0.65,
+      "disambiguation_reason": "introduction_pattern",
+      "entity_type": "given-name",
+      "graph_known": false,
+      "match": "Ansel",
+      "source": "pos_tagger_propn",
+      "value": "Ansel"
+    }
+  ],
+  "intent": "music.statement",
+  "profile": {
+    "confidence": 0.517,
+    "derived_label": "music.statement",
+    "domain": "music",
+    "engagement_level": "urgent_demand",
+    "modality": "declarative",
+    "response_posture": "hedged"
+  },
+  "response_strategy": "hedged_response",
+  "sentiment": {
+    "confidence": 0.10027796379146987,
+    "label": "negative"
+  },
+  "speech_act": {
+    "category": "assertive",
+    "confidence": 0.6753860770059135,
+    "indicators": [
+      "intent:statement.observation"
+    ],
+    "intent_confidence": 0.401029538682436,
+    "is_imperative": false,
+    "is_question": false,
+    "raw_analyses": {
+      "intent": {
+        "category": "assertive",
+        "confidence": 0.401029538682436,
+        "intent": "statement.observation",
+        "margin": 0.25019820346588273,
+        "second_score": 0.15083133521655331,
+        "source": "feature_vector",
+        "sub_type": "statement",
+        "top_k": [
+          {
+            "intent": "statement.observation",
+            "score": 0.401029538682436
+          },
+          {
+            "intent": "smalltalk.emotions.ha_ha",
+            "score": 0.15083133521655331
+          },
+          {
+            "intent": "smalltalk.user.introduction",
+            "score": 0.1503204339129626
+          },
+          {
+            "intent": "smalltalk.apology",
+            "score": 0.14942115014787732
+          },
+          {
+            "intent": "smalltalk.user.joking",
+            "score": 0.14839754204017067
+          }
+        ]
+      },
+      "keyword": {
+        "confidence": 0.0,
+        "source": "keyword"
+      },
+      "memory": {
+        "confidence": 0.0,
+        "similar_count": 0,
+        "source": "memory"
+      },
+      "original_text": "My name is Ansel.",
+      "pragmatic": {
+        "expressive_score": 0.0,
+        "first_person_subject": false,
+        "has_acknowledgment": false,
+        "has_commissive": false,
+        "has_future": false,
+        "has_hedging": false,
+        "has_offer": false,
+        "has_please": false,
+        "has_thanks": false,
+        "has_urgency": false,
+        "is_backchannel": false,
+        "is_compliment": false,
+        "is_short_utterance": false,
+        "is_very_short": false,
+        "source": "pragmatic"
+      },
+      "structural": {
+        "category": "assertive",
+        "confidence": 0.7,
+        "has_modal": false,
+        "is_continuation": false,
+        "is_declarative": true,
+        "is_exclamatory": false,
+        "is_imperative": false,
+        "is_question": false,
+        "source": "structural",
+        "sub_type": "statement"
+      }
+    },
+    "sub_type": "statement"
+  },
+  "text": "My name is Ansel."
+}

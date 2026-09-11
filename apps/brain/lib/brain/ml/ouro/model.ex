@@ -366,8 +366,8 @@ defmodule Brain.ML.Ouro.Model do
   defp normalize_messages(messages) when is_list(messages) do
     Enum.map(messages, fn msg ->
       %{
-        role: to_string(msg[:role] || msg["role"] || "user"),
-        content: to_string(msg[:content] || msg["content"] || "")
+        role: to_string(msg[:role] || "user"),
+        content: to_string(msg[:content] || "")
       }
     end)
   end

@@ -63,6 +63,7 @@ defmodule Mix.Tasks.Evaluate.Ner do
     IO.puts("")
 
     broadcast_result(result, duration_ms)
+
     Brain.Telemetry.emit_evaluation_complete("ner", %{
       accuracy: result.accuracy,
       macro_f1: result.macro_f1,
@@ -114,13 +115,13 @@ defmodule Mix.Tasks.Evaluate.Ner do
 
           match =
             Enum.find(extracted, fn ext ->
-              ext_value = Map.get(ext, :value) || Map.get(ext, "value")
+              ext_value = Map.get(ext, :value)
               normalize_entity_value(ext_value) == normalize_entity_value(expected_value)
             end)
 
           predicted_type =
             if match do
-              Map.get(match, :entity_type) || Map.get(match, "entity_type") || "none"
+              Map.get(match, :entity_type) || "none"
             else
               "none"
             end
@@ -142,16 +143,20 @@ defmodule Mix.Tasks.Evaluate.Ner do
   defp normalize_entity_value(value), do: to_string(value)
 
   defp broadcast_result(result, duration_ms) do
-    Phoenix.PubSub.broadcast(Brain.PubSub, "evaluation:complete",
-      {:evaluation_complete, %{
-        task: "ner",
-        accuracy: result.accuracy,
-        macro_f1: result.macro_f1,
-        weighted_f1: result.weighted_f1,
-        total_examples: result.total_examples,
-        duration_ms: duration_ms,
-        timestamp: DateTime.utc_now()
-      }})
+    Phoenix.PubSub.broadcast(
+      Brain.PubSub,
+      "evaluation:complete",
+      {:evaluation_complete,
+       %{
+         task: "ner",
+         accuracy: result.accuracy,
+         macro_f1: result.macro_f1,
+         weighted_f1: result.weighted_f1,
+         total_examples: result.total_examples,
+         duration_ms: duration_ms,
+         timestamp: DateTime.utc_now()
+       }}
+    )
   rescue
     _ -> :ok
   end

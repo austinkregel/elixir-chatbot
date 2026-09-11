@@ -81,7 +81,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
       result = Pipeline.process(text, [])
       assert result.analyses != []
 
-      if length(result.analyses) > 1 do
+      if match?([_, _ | _], result.analyses) do
         categories = Enum.map(result.analyses, & &1.speech_act.category)
         assert :expressive in categories or :assertive in categories
       else
@@ -105,7 +105,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
 
       austin_entity =
         Enum.find(entities, fn e ->
-          value = e[:value] || e["value"] || ""
+          value = e[:value] || ""
           String.downcase(value) == "austin"
         end)
 
@@ -120,10 +120,10 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
 
       types = austin_entity[:types]
 
-      if types && length(types) > 1 do
+      if types && match?([_, _ | _], types) do
         type_names =
           Enum.map(types, fn t ->
-            t[:entity_type] || t[:type] || t["entity_type"]
+            t[:entity_type] || t[:type]
           end)
 
         assert "person" in type_names or "location" in type_names
@@ -428,7 +428,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
              "Expected proper noun recognition (mapped to 'person'), got: #{inspect(result)}"
 
       disambiguation_reason =
-        Map.get(result, :disambiguation_reason) || Map.get(result, "disambiguation_reason")
+        Map.get(result, :disambiguation_reason)
 
       valid_reasons = ["proper_noun_usage", "introduction_pattern", "context_analysis"]
 
@@ -471,7 +471,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
               Map.get(info, :entity_type) || Map.get(info, :type)
             end)
 
-          if length(types) > 1 do
+          if match?([_, _ | _], types) do
             assert "person" in type_names or "location" in type_names,
                    "Expected Austin to have person or location type"
           end

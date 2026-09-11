@@ -42,8 +42,8 @@ defmodule Atlas.Graph.TypesTest do
       e = %Edge{id: 1, start_id: 1, end_id: 2, label: "KNOWS", properties: %{}}
 
       p = %Path{vertices: [v1, v2], edges: [e]}
-      assert length(p.vertices) == 2
-      assert length(p.edges) == 1
+      assert match?([_, _], p.vertices)
+      assert match?([_], p.edges)
     end
 
     test "creates empty path" do

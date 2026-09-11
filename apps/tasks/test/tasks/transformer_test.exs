@@ -131,13 +131,13 @@ defmodule Tasks.TransformerTest do
       file_path = Path.join(@test_tasks_path, "task_test_qa.json")
 
       {:ok, result} = Transformer.transform_task(file_path, extract_entities: false)
-      assert length(result.training_samples) == 3
+      assert match?([_, _, _], result.training_samples)
       sample = Enum.find(result.training_samples, &(&1.id == "test-qa-1"))
       assert sample.text == "Who wrote Romeo and Juliet?"
       assert sample.intent == "factual_question"
       assert is_list(sample.tokens)
       assert is_list(sample.pos_tags)
-      assert length(result.knowledge_facts) >= 2
+      assert Enum.count_until(result.knowledge_facts, 2) >= 2
 
       fact = Enum.find(result.knowledge_facts, &(&1.subject =~ "Romeo"))
       assert fact.predicate == "has_answer"
@@ -149,7 +149,7 @@ defmodule Tasks.TransformerTest do
 
       {:ok, result} = Transformer.transform_task(file_path, extract_entities: false)
 
-      assert length(result.training_samples) == 2
+      assert match?([_, _], result.training_samples)
       positive_sample = Enum.find(result.training_samples, &(&1.text =~ "fantastic"))
       assert positive_sample.intent == "sentiment.positive"
 
@@ -162,7 +162,7 @@ defmodule Tasks.TransformerTest do
       file_path = Path.join(@test_tasks_path, "task_test_paraphrase.json")
 
       {:ok, result} = Transformer.transform_task(file_path, extract_entities: false)
-      assert length(result.training_samples) >= 2
+      assert Enum.count_until(result.training_samples, 2) >= 2
       intents = Enum.map(result.training_samples, & &1.intent)
       assert "paraphrase.original" in intents
       assert "paraphrase.variant" in intents
@@ -173,7 +173,7 @@ defmodule Tasks.TransformerTest do
 
       {:ok, result} = Transformer.transform_task(file_path, extract_entities: false)
 
-      assert length(result.training_samples) == 2
+      assert match?([_, _], result.training_samples)
       sample = List.first(result.training_samples)
       assert sample.intent == "commonsense_query"
       assert result.knowledge_facts != []
@@ -185,7 +185,7 @@ defmodule Tasks.TransformerTest do
       {:ok, result} =
         Transformer.transform_task(file_path, max_instances: 1, extract_entities: false)
 
-      assert length(result.training_samples) == 1
+      assert match?([_], result.training_samples)
     end
 
     test "returns error for nonexistent file" do
@@ -234,7 +234,7 @@ defmodule Tasks.TransformerTest do
       ]
 
       {:ok, result} = Transformer.transform_tasks(files, extract_entities: false)
-      assert length(result.training_samples) >= 5
+      assert Enum.count_until(result.training_samples, 5) >= 5
     end
 
     test "reports progress via callback" do
@@ -273,8 +273,8 @@ defmodule Tasks.TransformerTest do
 
       result = Transformer.convert_qa(instances, metadata, "", extract_entities: false)
 
-      assert length(result.training_samples) == 1
-      assert length(result.knowledge_facts) == 1
+      assert match?([_], result.training_samples)
+      assert match?([_], result.knowledge_facts)
 
       fact = List.first(result.knowledge_facts)
       assert fact.subject =~ "World War"
@@ -296,7 +296,7 @@ defmodule Tasks.TransformerTest do
       result =
         Transformer.convert_sentiment(instances, metadata, "", extract_entities: false)
 
-      assert length(result.training_samples) == 3
+      assert match?([_, _, _], result.training_samples)
 
       intents = Enum.map(result.training_samples, & &1.intent) |> Enum.sort()
       assert intents == ["sentiment.negative", "sentiment.neutral", "sentiment.positive"]
@@ -319,8 +319,8 @@ defmodule Tasks.TransformerTest do
       result =
         Transformer.convert_commonsense(instances, metadata, "", extract_entities: false)
 
-      assert length(result.training_samples) == 1
-      assert length(result.knowledge_facts) == 1
+      assert match?([_], result.training_samples)
+      assert match?([_], result.knowledge_facts)
 
       fact = List.first(result.knowledge_facts)
       assert fact.predicate == "implies"

@@ -58,7 +58,7 @@ defmodule Brain.Memory.VectorIndexTest do
       query = [1.0, 0.0, 0.0]
       results = VectorIndex.search(table, query, 2)
 
-      assert length(results) == 2
+      assert match?([_, _], results)
       [{first_id, first_sim}, {second_id, _second_sim}] = results
 
       # "a" should be most similar (identical)
@@ -79,7 +79,7 @@ defmodule Brain.Memory.VectorIndexTest do
       VectorIndex.insert(table, "b", [0.0, 1.0])
 
       results = VectorIndex.search(table, [1.0, 0.0], 10)
-      assert length(results) == 2
+      assert match?([_, _], results)
     end
   end
 
@@ -138,7 +138,7 @@ defmodule Brain.Memory.VectorIndexTest do
       VectorIndex.insert(table, "b", [0.0, 1.0])
 
       exported = VectorIndex.export(table)
-      assert length(exported) == 2
+      assert match?([_, _], exported)
 
       new_table = VectorIndex.new()
       :ok = VectorIndex.import(new_table, exported)

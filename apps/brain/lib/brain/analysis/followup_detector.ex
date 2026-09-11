@@ -223,7 +223,7 @@ defmodule Brain.Analysis.FollowupDetector do
           {filled, [slot_name | still_missing]}
 
         entity ->
-          value = entity[:value] || entity["value"]
+          value = entity[:value]
           {Map.put(filled, slot_name, value), still_missing}
       end
     end)
@@ -231,12 +231,15 @@ defmodule Brain.Analysis.FollowupDetector do
   end
 
   defp entity_mappings_from_intent(intent) when is_binary(intent) do
-    domain = case String.split(intent, ".", parts: 2) do
-      [d, _] -> String.to_atom(d)
-      _ -> :unknown
-    end
+    domain =
+      case String.split(intent, ".", parts: 2) do
+        [d, _] -> String.to_atom(d)
+        _ -> :unknown
+      end
+
     entity_mappings_from_domain(domain)
   end
+
   defp entity_mappings_from_intent(_), do: %{}
 
   defp entity_mappings_from_domain(domain) do

@@ -48,22 +48,22 @@ defmodule Brain.Response.TransitionModel do
   @doc """
   Scores a full path of fragment texts, returning the average transition score.
   """
-  def score_path(fragment_texts, opts \\ []) when is_list(fragment_texts) do
-    if length(fragment_texts) < 2 do
-      1.0
-    else
-      bigram_scores = Keyword.get(opts, :bigram_scores, load_bigram_scores())
-      opts_with_scores = Keyword.put(opts, :bigram_scores, bigram_scores)
+  def score_path(fragment_texts, opts \\ [])
+  def score_path([], _opts), do: 1.0
+  def score_path([_single], _opts), do: 1.0
 
-      pairs = Enum.zip(fragment_texts, tl(fragment_texts))
+  def score_path(fragment_texts, opts) when is_list(fragment_texts) do
+    bigram_scores = Keyword.get(opts, :bigram_scores, load_bigram_scores())
+    opts_with_scores = Keyword.put(opts, :bigram_scores, bigram_scores)
 
-      scores =
-        Enum.map(pairs, fn {a, b} ->
-          score(a, b, opts_with_scores)
-        end)
+    pairs = Enum.zip(fragment_texts, tl(fragment_texts))
 
-      Enum.sum(scores) / length(scores)
-    end
+    scores =
+      Enum.map(pairs, fn {a, b} ->
+        score(a, b, opts_with_scores)
+      end)
+
+    Enum.sum(scores) / length(scores)
   end
 
   @doc """
@@ -147,7 +147,7 @@ defmodule Brain.Response.TransitionModel do
     boundary = if last && first, do: [bigram_key(last, first)], else: []
 
     within_tail =
-      if length(tail_tokens) >= 2 do
+      if match?([_, _ | _], tail_tokens) do
         tail_tokens
         |> Enum.chunk_every(2, 1, :discard)
         |> Enum.map(fn [a, b] -> bigram_key(a, b) end)
@@ -156,7 +156,7 @@ defmodule Brain.Response.TransitionModel do
       end
 
     within_head =
-      if length(head_tokens) >= 2 do
+      if match?([_, _ | _], head_tokens) do
         head_tokens
         |> Enum.chunk_every(2, 1, :discard)
         |> Enum.map(fn [a, b] -> bigram_key(a, b) end)

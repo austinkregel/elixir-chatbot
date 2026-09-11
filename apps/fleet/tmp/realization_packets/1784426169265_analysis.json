@@ -1,0 +1,102 @@
+{
+  "confidence": 0.735,
+  "entities": [],
+  "intent": "meta.statement",
+  "profile": {
+    "confidence": 0.735,
+    "derived_label": "meta.statement",
+    "domain": "meta",
+    "engagement_level": "urgent_demand",
+    "modality": "declarative",
+    "response_posture": "hedged"
+  },
+  "response_strategy": "hedged_response",
+  "sentiment": {
+    "confidence": 0.019098528490674824,
+    "label": "neutral"
+  },
+  "speech_act": {
+    "category": "assertive",
+    "confidence": 0.6674812527301033,
+    "indicators": [
+      "intent:calendar.cancel"
+    ],
+    "intent_confidence": 0.37995000728027545,
+    "is_imperative": false,
+    "is_question": false,
+    "raw_analyses": {
+      "intent": {
+        "category": "assertive",
+        "confidence": 0.37995000728027545,
+        "intent": "calendar.cancel",
+        "margin": 0.22368308273060772,
+        "second_score": 0.15626692454966773,
+        "source": "feature_vector",
+        "sub_type": "statement",
+        "top_k": [
+          {
+            "intent": "calendar.cancel",
+            "score": 0.37995000728027545
+          },
+          {
+            "intent": "status.diagnostic",
+            "score": 0.15626692454966773
+          },
+          {
+            "intent": "smalltalk.dialog.hug",
+            "score": 0.15477032082611358
+          },
+          {
+            "intent": "display.zoom",
+            "score": 0.15463139206631416
+          },
+          {
+            "intent": "smalltalk.agent.can_you_help",
+            "score": 0.15438135527762903
+          }
+        ]
+      },
+      "keyword": {
+        "confidence": 0.0,
+        "source": "keyword"
+      },
+      "memory": {
+        "confidence": 0.0,
+        "similar_count": 0,
+        "source": "memory"
+      },
+      "original_text": "Task B.",
+      "pragmatic": {
+        "expressive_score": 0.0,
+        "first_person_subject": false,
+        "has_acknowledgment": false,
+        "has_commissive": false,
+        "has_future": false,
+        "has_hedging": false,
+        "has_offer": false,
+        "has_please": false,
+        "has_thanks": false,
+        "has_urgency": false,
+        "is_backchannel": false,
+        "is_compliment": false,
+        "is_short_utterance": true,
+        "is_very_short": false,
+        "source": "pragmatic"
+      },
+      "structural": {
+        "category": "assertive",
+        "confidence": 0.7,
+        "has_modal": false,
+        "is_continuation": false,
+        "is_declarative": true,
+        "is_exclamatory": false,
+        "is_imperative": false,
+        "is_question": false,
+        "source": "structural",
+        "sub_type": "statement"
+      }
+    },
+    "sub_type": "statement"
+  },
+  "text": "Task B."
+}

@@ -174,8 +174,12 @@ defmodule Brain.Analysis.BacktrackController do
       :ok
     else
       case Enum.find(entities, fn e -> qualifies?(e) and conflicts_with_history?(e, prior) end) do
-        nil -> :ok
-        e -> {:contradiction, {:entity_mismatch, {:cross_turn, entity_value_of(e), entity_type_of(e)}}}
+        nil ->
+          :ok
+
+        e ->
+          {:contradiction,
+           {:entity_mismatch, {:cross_turn, entity_value_of(e), entity_type_of(e)}}}
       end
     end
   end
@@ -197,7 +201,7 @@ defmodule Brain.Analysis.BacktrackController do
   defp recent_entities(history) when is_list(history) do
     history
     |> Enum.take(@history_depth)
-    |> Enum.flat_map(fn turn -> Map.get(turn, :entities) || Map.get(turn, "entities") || [] end)
+    |> Enum.flat_map(fn turn -> Map.get(turn, :entities) || [] end)
     |> Enum.filter(&is_map/1)
   end
 
@@ -212,14 +216,14 @@ defmodule Brain.Analysis.BacktrackController do
   end
 
   defp entity_type_of(e),
-    do: to_string(Map.get(e, :entity_type) || Map.get(e, "entity_type") || "unknown")
+    do: to_string(Map.get(e, :entity_type) || "unknown")
 
   defp entity_value_of(e),
-    do: to_string(Map.get(e, :value) || Map.get(e, "value") || Map.get(e, :text) || "")
+    do: to_string(Map.get(e, :value) || Map.get(e, :text) || "")
 
-  defp entity_conf_of(e), do: Map.get(e, :confidence) || Map.get(e, "confidence") || 1.0
+  defp entity_conf_of(e), do: Map.get(e, :confidence) || 1.0
 
-  defp entity_source_of(e), do: Map.get(e, :source) || Map.get(e, "source")
+  defp entity_source_of(e), do: Map.get(e, :source)
 
   defp domain_from_intent(intent) when is_binary(intent) do
     case String.split(intent, ".", parts: 2) do
@@ -298,6 +302,7 @@ defmodule Brain.Analysis.BacktrackController do
 
   defp build_clarification_from_ambiguity(state, interp) do
     profile = Map.get(interp, :profile)
+
     candidates =
       [interp.intent | Enum.map(state.demoted_interpretations, & &1.intent)]
       |> Enum.uniq()
@@ -334,6 +339,7 @@ defmodule Brain.Analysis.BacktrackController do
 
   defp build_oscillation_clarification(state, interp) do
     profile = Map.get(interp, :profile)
+
     oscillating =
       [interp.intent | state.interpretation_history]
       |> Enum.uniq()

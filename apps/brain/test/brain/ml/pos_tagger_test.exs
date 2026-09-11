@@ -69,7 +69,7 @@ defmodule Brain.ML.POSTaggerTest do
       tokens = ["I", "am", "John"]
       predictions = POSTagger.predict(tokens, model)
 
-      assert length(predictions) == 3
+      assert match?([_, _, _], predictions)
 
       assert Enum.all?(predictions, fn {token, tag} ->
                is_binary(token) and is_binary(tag)
@@ -84,7 +84,7 @@ defmodule Brain.ML.POSTaggerTest do
       tokens = ["Hello", "there"]
       tags = POSTagger.predict_tags(tokens, model)
 
-      assert length(tags) == 2
+      assert match?([_, _], tags)
       assert Enum.all?(tags, &is_binary/1)
     end
 
@@ -93,7 +93,7 @@ defmodule Brain.ML.POSTaggerTest do
       predictions = POSTagger.predict(tokens, model)
 
       # Should return some prediction even for unknown tokens
-      assert length(predictions) == 2
+      assert match?([_, _], predictions)
     end
   end
 

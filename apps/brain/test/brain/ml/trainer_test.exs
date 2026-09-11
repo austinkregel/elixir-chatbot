@@ -33,7 +33,7 @@ defmodule Brain.ML.TrainerTest do
     test "parses Dialogflow-style usersays files" do
       data = Trainer.load_training_data()
       intents = Enum.map(data, fn {_text, intent} -> intent end) |> Enum.uniq()
-      assert length(intents) > 1
+      assert Enum.count_until(intents, 2) > 1
     end
   end
 

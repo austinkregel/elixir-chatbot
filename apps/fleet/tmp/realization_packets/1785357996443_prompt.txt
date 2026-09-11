@@ -1,0 +1,23 @@
+=== SYSTEM ===
+Serve faithfully.
+
+Generate a natural response based on the context below.
+Be concise and helpful. Do not mention internal systems, plans, or analysis.
+Output only the final response text.
+If $placeholder tokens appear in the instructions, keep them exactly as shown in your output.
+
+=== USER ===
+The user said: "Analyse the sector."
+Intent: code.statement (confidence 0.74).
+domain: code; posture: hedged; urgency: high.
+Speech act: assertive, statement.
+Sentiment: neutral (confidence 0.2).
+Response strategy: hedged_response.
+The system is uncertain, so hedge the response with appropriate qualifiers.
+Similar past interactions: "communication" (similarity 0.0).
+Response plan:
+1. [acknowledgment/general] Acknowledge the input.
+2. [content/reflective] Reflect on what the user shared.
+3. [follow_up/elaboration] Invite the user to elaborate.
+Write a neutral, medium-length response.
+Do not invent facts or capabilities not mentioned above.

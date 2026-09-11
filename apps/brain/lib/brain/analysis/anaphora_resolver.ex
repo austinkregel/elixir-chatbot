@@ -54,7 +54,7 @@ defmodule Brain.Analysis.AnaphoraResolver do
           |> Enum.map(fn {token, idx} ->
             case Enum.find(resolutions, fn {res_idx, _, _} -> res_idx == idx end) do
               {_, _, entity} when not is_nil(entity) ->
-                entity[:value] || entity["value"] || token
+                entity[:value] || token
 
               _ ->
                 token
@@ -82,7 +82,7 @@ defmodule Brain.Analysis.AnaphoraResolver do
 
       case Gazetteer.lookup(normalized) do
         {:ok, %{entity_type: "anaphora", metadata: meta}} ->
-          anaphora_type = meta["anaphora_type"] || meta[:anaphora_type]
+          anaphora_type = meta["anaphora_type"]
           [{idx, anaphora_type, token}]
 
         _ ->
@@ -109,7 +109,7 @@ defmodule Brain.Analysis.AnaphoraResolver do
   end
 
   defp extract_entities_from_context(context) when is_map(context) do
-    entities = Map.get(context, :entities) || Map.get(context, "entities") || %{}
+    entities = Map.get(context, :entities) || %{}
 
     case entities do
       list when is_list(list) ->

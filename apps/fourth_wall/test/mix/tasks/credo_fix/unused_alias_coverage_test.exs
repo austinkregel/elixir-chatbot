@@ -24,7 +24,7 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasCoverageTest do
       """
 
       result = UnusedAlias.parse_unused_alias_warnings(output, ["apps/brain"])
-      assert length(result) == 1
+      assert match?([_], result)
     end
   end
 
@@ -37,7 +37,7 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasCoverageTest do
       """
 
       result = UnusedAlias.parse_unused_alias_warnings(output, ["lib/"])
-      assert length(result) == 1
+      assert match?([_], result)
     end
 
     test "matches apps/ path with lib/ relative files" do
@@ -48,7 +48,7 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasCoverageTest do
       """
 
       result = UnusedAlias.parse_unused_alias_warnings(output, ["apps/"])
-      assert length(result) == 1
+      assert match?([_], result)
     end
 
     test "matches specific app path with lib/ relative files" do
@@ -59,7 +59,7 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasCoverageTest do
       """
 
       result = UnusedAlias.parse_unused_alias_warnings(output, ["apps/brain"])
-      assert length(result) == 1
+      assert match?([_], result)
     end
 
     test "rejects files not in target paths" do
@@ -83,7 +83,7 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasCoverageTest do
       """
 
       result = UnusedAlias.parse_unused_alias_warnings(output, ["lib/"])
-      assert length(result) == 1
+      assert match?([_], result)
       [entry] = result
       assert entry.alias_name == "Simple"
       assert entry.line == 42
@@ -210,7 +210,9 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasCoverageTest do
     test "returns ok tuple with count" do
       result =
         capture_io(fn ->
-          assert {:ok, count} = UnusedAlias.run(["--dry-run", "nonexistent_#{:rand.uniform(100_000)}"])
+          assert {:ok, count} =
+                   UnusedAlias.run(["--dry-run", "nonexistent_#{:rand.uniform(100_000)}"])
+
           assert is_integer(count)
         end)
 
@@ -227,7 +229,7 @@ defmodule Mix.Tasks.CredoFix.UnusedAliasCoverageTest do
       """
 
       result = UnusedAlias.parse_unused_alias_warnings(output, ["lib/"])
-      assert length(result) == 1
+      assert match?([_], result)
       [entry] = result
       refute String.contains?(entry.file, "(brain")
       assert String.contains?(entry.file, "config.ex")

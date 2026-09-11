@@ -258,7 +258,7 @@ defmodule Brain.Analysis.FramingDetector do
 
     modality_skew =
       case modality_dims do
-        dims when length(dims) >= 8 ->
+        [_, _, _, _, _, _, _, _ | _] = dims ->
           hedge = Enum.at(dims, 6, 0.0)
           certainty = Enum.at(dims, 7, 0.0)
           certainty - hedge
@@ -305,7 +305,9 @@ defmodule Brain.Analysis.FramingDetector do
 
   # The profile already carries the top domains (populated in
   # DocumentProfile.aggregate/2 from the group-10 lexical fingerprint).
-  defp dominant_lexical_domains(%DocumentProfile{dominant_lexical_domains: d}) when is_list(d), do: d
+  defp dominant_lexical_domains(%DocumentProfile{dominant_lexical_domains: d}) when is_list(d),
+    do: d
+
   defp dominant_lexical_domains(_), do: []
 
   # -- Drift detection ---------------------------------------------------
@@ -375,7 +377,9 @@ defmodule Brain.Analysis.FramingDetector do
         try do
           :erlang.binary_to_term(bin)
         rescue
-          _ -> nil
+          # A truncated/corrupt centroid file makes binary_to_term raise
+          # ArgumentError; treat it as "no centroid" rather than crashing.
+          ArgumentError -> nil
         end
 
       _ ->

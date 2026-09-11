@@ -87,7 +87,7 @@ defmodule Brain.Knowledge.TypesTest do
           priority: :high
         )
 
-      assert length(goal.questions) == 2
+      assert match?([_, _], goal.questions)
       assert goal.constraints.min_sources == 2
       assert goal.priority == :high
     end
@@ -157,7 +157,7 @@ defmodule Brain.Knowledge.TypesTest do
       goal = ResearchGoal.new("Subtopic")
 
       session = LearningSession.add_goal(session, goal)
-      assert length(session.goals) == 1
+      assert match?([_], session.goals)
 
       session = LearningSession.record_findings(session, 5)
       assert session.findings_count == 5

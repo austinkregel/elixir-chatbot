@@ -57,8 +57,8 @@ defmodule Brain.TelemetryCompletionTest do
       # Aggregator runs on interval - metrics may need time to aggregate
       metric = Brain.Metrics.Aggregator.get_metric(:knowledge_research)
       assert metric != nil
-      assert (metric[:count] || metric["count"] || 0) >= 0
-      assert (metric[:avg_ms] || metric["avg_ms"] || 0) >= 0 or metric == %{}
+      assert (metric[:count] || 0) >= 0
+      assert (metric[:avg_ms] || 0) >= 0 or metric == %{}
     end
   end
 end

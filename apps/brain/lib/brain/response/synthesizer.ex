@@ -152,10 +152,15 @@ defmodule Brain.Response.Synthesizer do
               if frames == [] do
                 :not_synthesized
               else
-                slot_type_aliases = get_in(domain_config, ["slot_requirements", "slot_type_aliases"]) || %{}
+                slot_type_aliases =
+                  get_in(domain_config, ["slot_requirements", "slot_type_aliases"]) || %{}
+
                 frame = Enum.random(frames)
                 filled_response = fill_entity_slots(frame, entities, slot_type_aliases)
-                final_response = maybe_add_acknowledgment(filled_response, confidence, domain_config)
+
+                final_response =
+                  maybe_add_acknowledgment(filled_response, confidence, domain_config)
+
                 final_response = maybe_add_graph_context(final_response, context)
 
                 {:ok, final_response}
@@ -204,7 +209,8 @@ defmodule Brain.Response.Synthesizer do
       "I think "
     ]
 
-    Enum.random(hedges) <> String.downcase(String.first(response)) <> String.slice(response, 1..-1//1)
+    Enum.random(hedges) <>
+      String.downcase(String.first(response)) <> String.slice(response, 1..-1//1)
   end
 
   # Try to build a response using enriched_response_frames if enrichment succeeded
@@ -227,7 +233,14 @@ defmodule Brain.Response.Synthesizer do
 
         if condition && Brain.Response.ConditionEvaluator.evaluate(condition, context) do
           frames = Map.get(frame_config, "templates", [])
-          select_and_fill_enriched_frame(frames, entities, enriched_data, domain_config, confidence)
+
+          select_and_fill_enriched_frame(
+            frames,
+            entities,
+            enriched_data,
+            domain_config,
+            confidence
+          )
         else
           :not_enriched
         end
@@ -244,7 +257,14 @@ defmodule Brain.Response.Synthesizer do
 
           {_frame_key, frame_config} ->
             frames = Map.get(frame_config, "templates", [])
-            select_and_fill_enriched_frame(frames, entities, enriched_data, domain_config, confidence)
+
+            select_and_fill_enriched_frame(
+              frames,
+              entities,
+              enriched_data,
+              domain_config,
+              confidence
+            )
         end
 
       true ->
@@ -258,11 +278,14 @@ defmodule Brain.Response.Synthesizer do
     |> Enum.reject(fn {key, _} -> key == "service_error" or key == "service_not_configured" end)
     |> Enum.sort_by(fn {_, config} ->
       required = Map.get(config, "requires_enrichment", [])
-      -length(required)  # Negative for descending order (most specific first)
+      # Negative for descending order (most specific first)
+      -length(required)
     end)
     |> Enum.find(fn {_key, config} ->
       required = Map.get(config, "requires_enrichment", [])
-      has_all_required_enrichment?(required, enriched_data) and has_required_entities?(config, entities)
+
+      has_all_required_enrichment?(required, enriched_data) and
+        has_required_entities?(config, entities)
     end)
   end
 
@@ -275,6 +298,7 @@ defmodule Brain.Response.Synthesizer do
   end
 
   defp safe_field_atom(field) when is_atom(field), do: field
+
   defp safe_field_atom(field) when is_binary(field) do
     String.to_existing_atom(field)
   rescue
@@ -361,9 +385,10 @@ defmodule Brain.Response.Synthesizer do
 
   @doc "Gets a generic clarification request when no specific prompts are available.\n"
   def get_generic_clarification do
-    pool = @primitives
-    |> Map.get("clarification_requests", %{})
-    |> Map.get("generic", [])
+    pool =
+      @primitives
+      |> Map.get("clarification_requests", %{})
+      |> Map.get("generic", [])
 
     if pool == [], do: raise("No clarification data in primitives.json")
     Enum.random(pool)
@@ -373,9 +398,10 @@ defmodule Brain.Response.Synthesizer do
   def get_transition_phrase(type \\ :additional_info) do
     type_str = to_string(type)
 
-    pool = @primitives
-    |> Map.get("transition_phrases", %{})
-    |> Map.get(type_str, [])
+    pool =
+      @primitives
+      |> Map.get("transition_phrases", %{})
+      |> Map.get(type_str, [])
 
     if pool == [], do: raise("No transition phrase data for #{type_str} in primitives.json")
     Enum.random(pool)
@@ -423,8 +449,8 @@ defmodule Brain.Response.Synthesizer do
 
   defp adapt_response_pattern(outcome, entities) when is_binary(outcome) do
     Enum.reduce(entities, outcome, fn entity, acc ->
-      entity_type = entity[:entity_type] || entity["entity_type"] || ""
-      entity_value = entity[:value] || entity["value"] || ""
+      entity_type = entity[:entity_type] || ""
+      entity_value = entity[:value] || ""
 
       if entity_type != "" and entity_value != "" do
         acc
@@ -493,13 +519,14 @@ defmodule Brain.Response.Synthesizer do
     reverse_alias_map = build_reverse_alias_map(slot_type_aliases)
 
     Enum.reduce(entities, frame, fn entity, acc ->
-      entity_type = to_string(entity[:entity_type] || entity["entity_type"] || "")
-      entity_value = entity[:value] || entity["value"] || ""
+      entity_type = to_string(entity[:entity_type] || "")
+      entity_value = entity[:value] || ""
 
       if entity_type != "" and entity_value != "" do
         acc = String.replace(acc, "$#{entity_type}", entity_value)
 
         slot_names = Map.get(reverse_alias_map, entity_type, [])
+
         Enum.reduce(slot_names, acc, fn slot_name, inner_acc ->
           String.replace(inner_acc, "$#{slot_name}", entity_value)
         end)
@@ -558,7 +585,9 @@ defmodule Brain.Response.Synthesizer do
                        {:ok, data} -> data
                        _ -> %{}
                      end
-                   _ -> %{}
+
+                   _ ->
+                     %{}
                  end)
 
   defp load_clarification_templates(intent) when is_binary(intent) do
@@ -573,7 +602,7 @@ defmodule Brain.Response.Synthesizer do
   defp build_partial_acknowledgment(entities, _domain_config, _opts) do
     filled_values =
       entities
-      |> Enum.map(fn e -> e[:value] || e["value"] end)
+      |> Enum.map(fn e -> e[:value] end)
       |> Enum.filter(&(&1 != nil and &1 != ""))
 
     if filled_values != [] do
@@ -587,10 +616,10 @@ defmodule Brain.Response.Synthesizer do
     type_strings = Enum.map(acceptable_types, &to_string/1)
 
     Enum.find_value(entities, fn entity ->
-      type = to_string(entity[:entity_type] || entity["entity_type"] || "")
+      type = to_string(entity[:entity_type] || "")
 
       if type in type_strings do
-        entity[:value] || entity["value"]
+        entity[:value]
       else
         nil
       end
@@ -601,7 +630,9 @@ defmodule Brain.Response.Synthesizer do
     case String.split(intent, ".", parts: 2) do
       [domain | _] when domain != "" ->
         String.to_existing_atom(domain)
-      _ -> nil
+
+      _ ->
+        nil
     end
   rescue
     ArgumentError -> String.to_atom(intent |> String.split(".", parts: 2) |> List.first())
@@ -684,6 +715,7 @@ defmodule Brain.Response.Synthesizer do
         phrases
         |> Enum.flat_map(fn phrase ->
           variant = paraphrase_phrase(phrase)
+
           if variant != phrase and not MapSet.member?(original_set, variant) do
             [phrase, variant]
           else
@@ -707,7 +739,9 @@ defmodule Brain.Response.Synthesizer do
 
         if String.length(lower) >= 4 and Brain.ML.Lexicon.known_word?(lower) do
           case Brain.ML.Lexicon.synonyms(lower) do
-            [] -> word
+            [] ->
+              word
+
             [syn | _] ->
               if String.length(syn) >= 3 and not String.contains?(syn, "_") do
                 syn
@@ -905,7 +939,8 @@ defmodule Brain.Response.Synthesizer do
     synthesize_contradiction_response(beliefs)
   end
 
-  defp handle_epistemic_context(%{status: :uncertain}, _entities, confidence) when confidence < 0.6 do
+  defp handle_epistemic_context(%{status: :uncertain}, _entities, confidence)
+       when confidence < 0.6 do
     synthesize_uncertain_response()
   end
 

@@ -12,7 +12,7 @@ defmodule Brain.Analysis.EntityGraphEnricherTest do
       entities = [%{value: "TestEntity", entity_type: "location", confidence: 0.9}]
 
       enriched = EntityGraphEnricher.enrich(entities)
-      assert length(enriched) == 1
+      assert match?([_], enriched)
 
       [entity] = enriched
       assert Map.has_key?(entity, :graph_known)

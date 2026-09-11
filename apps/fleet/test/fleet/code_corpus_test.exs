@@ -104,7 +104,7 @@ defmodule Fleet.CodeCorpusTest do
       ])
 
       assert {:ok, found} = CodeGazetteer.lookup(w, "calculate_tax")
-      assert length(found) == 3
+      assert match?([_, _, _], found)
     end
 
     test "re-indexing updates a symbol in place rather than duplicating it" do
@@ -151,7 +151,7 @@ defmodule Fleet.CodeCorpusTest do
         symbol(%{name: "Billing", qualified_name: "Billing", entity_type: "code.class", line: 1})
       ])
 
-      assert length(CodeGazetteer.search(w, "billing")) == 2
+      assert match?([_, _], CodeGazetteer.search(w, "billing"))
       assert [only] = CodeGazetteer.search(w, "billing", entity_type: "code.class")
       assert only.entity_type == "code.class"
     end
@@ -176,7 +176,7 @@ defmodule Fleet.CodeCorpusTest do
       symbols = for i <- 1..10, do: symbol(%{qualified_name: "Billing.f#{i}", line: i})
       CodeGazetteer.add_symbols(w, symbols)
 
-      assert length(CodeGazetteer.search(w, "calculate", limit: 3)) == 3
+      assert match?([_, _, _], CodeGazetteer.search(w, "calculate", limit: 3))
     end
   end
 

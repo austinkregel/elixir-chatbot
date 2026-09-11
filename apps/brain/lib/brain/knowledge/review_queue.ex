@@ -732,7 +732,9 @@ defmodule Brain.Knowledge.ReviewQueue do
             %{entity: finding.entity, type: finding.entity_type, error: Exception.message(e)}
           )
 
-          Logger.warning("ReviewQueue: KG write failed for #{finding.entity}: #{Exception.message(e)}")
+          Logger.warning(
+            "ReviewQueue: KG write failed for #{finding.entity}: #{Exception.message(e)}"
+          )
       end
     end
 
@@ -769,7 +771,8 @@ defmodule Brain.Knowledge.ReviewQueue do
         deferred = 0
 
         {pending, approved, rejected, deferred} =
-          Enum.reduce(candidates, {pending, approved, rejected, deferred}, fn {id, candidate}, {p, a, r, d} ->
+          Enum.reduce(candidates, {pending, approved, rejected, deferred}, fn {id, candidate},
+                                                                              {p, a, r, d} ->
             :ets.insert(@ets_table, {id, candidate})
 
             case candidate.status do
@@ -808,17 +811,17 @@ defmodule Brain.Knowledge.ReviewQueue do
     auto_enabled = Application.get_env(:brain, :auto_approval_enabled, false)
 
     if auto_enabled and auto_approval_eligible?(candidate, state) do
-        case do_approve(candidate.id, "auto-approved: high confidence corroborated finding", state) do
-          {:ok, _updated, new_state} ->
-            maybe_warn_first_auto_approval_after_reliability_fix()
+      case do_approve(candidate.id, "auto-approved: high confidence corroborated finding", state) do
+        {:ok, _updated, new_state} ->
+          maybe_warn_first_auto_approval_after_reliability_fix()
 
-            Logger.info("ReviewQueue: auto-approved candidate",
-              id: candidate.id,
-              confidence: candidate.aggregate_confidence,
-              sources: length(candidate.corroborating_sources)
-            )
+          Logger.info("ReviewQueue: auto-approved candidate",
+            id: candidate.id,
+            confidence: candidate.aggregate_confidence,
+            sources: length(candidate.corroborating_sources)
+          )
 
-            new_state
+          new_state
 
         _ ->
           state
@@ -835,7 +838,7 @@ defmodule Brain.Knowledge.ReviewQueue do
 
     # All criteria must be met
     candidate.aggregate_confidence >= 0.85 and
-      length(candidate.corroborating_sources) >= 3 and
+      Enum.count_until(candidate.corroborating_sources, 3) >= 3 and
       all_sources_reliable?(candidate.corroborating_sources) and
       candidate.conflicting_findings == [] and
       candidate.existing_contradictions == [] and

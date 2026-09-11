@@ -50,7 +50,7 @@ defmodule Brain.Knowledge.Academic.ArxivTest do
       {:ok, papers} = Arxiv.search("transformer attention", limit: 3)
 
       assert is_list(papers)
-      assert length(papers) == 3
+      assert match?([_, _, _], papers)
 
       [paper | _] = papers
       assert %Paper{} = paper

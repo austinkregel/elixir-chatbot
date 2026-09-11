@@ -24,7 +24,7 @@ defmodule Brain.Graph.TrainingTest do
 
         # Seeds have Paris, London, France, UK, Elixir, BEAM
         case Brain.ML.Gazetteer.lookup("Paris") do
-          {:ok, results} -> assert length(results) >= 1
+          {:ok, results} -> assert results != []
           :not_found -> flunk("Expected Paris to be found in Gazetteer after sync")
         end
       end
@@ -61,12 +61,18 @@ defmodule Brain.Graph.TrainingTest do
   describe "apply_intent_priors/4" do
     test "boosts scores based on prior transitions" do
       scores = [{"weather.query", 0.8}, {"smalltalk.greetings.hello", 0.3}, {"unknown", 0.1}]
-      priors = %{"smalltalk.greetings.hello" => %{"weather.query" => 5, "smalltalk.greetings.hello" => 1}}
 
-      boosted = Brain.Graph.Training.apply_intent_priors(scores, "smalltalk.greetings.hello", priors, weight: 0.3)
+      priors = %{
+        "smalltalk.greetings.hello" => %{"weather.query" => 5, "smalltalk.greetings.hello" => 1}
+      }
+
+      boosted =
+        Brain.Graph.Training.apply_intent_priors(scores, "smalltalk.greetings.hello", priors,
+          weight: 0.3
+        )
 
       assert is_list(boosted)
-      assert length(boosted) == 3
+      assert match?([_, _, _], boosted)
 
       # weather.query should get a boost from greeting -> weather.query prior
       {_, weather_score} = Enum.find(boosted, fn {intent, _} -> intent == "weather.query" end)

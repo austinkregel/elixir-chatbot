@@ -1,0 +1,121 @@
+{
+  "confidence": 0.716,
+  "entities": [
+    {
+      "confidence": 0.59,
+      "entity": "eventargument",
+      "entity_type": "eventargument",
+      "graph_known": false,
+      "match": "one",
+      "source": "gazetteer",
+      "value": "one"
+    },
+    {
+      "confidence": 0.71,
+      "entity": "news_sort",
+      "entity_type": "news_sort",
+      "graph_known": false,
+      "match": "current",
+      "source": "gazetteer",
+      "value": "latest"
+    }
+  ],
+  "intent": "music.statement",
+  "profile": {
+    "confidence": 0.716,
+    "derived_label": "music.statement",
+    "domain": "music",
+    "engagement_level": "urgent_demand",
+    "modality": "declarative",
+    "response_posture": "hedged"
+  },
+  "response_strategy": "hedged_response",
+  "sentiment": {
+    "confidence": 0.11933412534421795,
+    "label": "neutral"
+  },
+  "speech_act": {
+    "category": "assertive",
+    "confidence": 0.6347778933665158,
+    "indicators": [
+      "intent:smalltalk.user.will_be_back"
+    ],
+    "intent_confidence": 0.2927410489773757,
+    "is_imperative": false,
+    "is_question": false,
+    "raw_analyses": {
+      "intent": {
+        "category": "assertive",
+        "confidence": 0.2927410489773757,
+        "intent": "smalltalk.user.will_be_back",
+        "margin": 0.11489585172837097,
+        "second_score": 0.17784519724900472,
+        "source": "feature_vector",
+        "sub_type": "statement",
+        "top_k": [
+          {
+            "intent": "smalltalk.user.will_be_back",
+            "score": 0.2927410489773757
+          },
+          {
+            "intent": "smarthome.device_down",
+            "score": 0.17784519724900472
+          },
+          {
+            "intent": "todo.add",
+            "score": 0.17773614646304906
+          },
+          {
+            "intent": "news.search",
+            "score": 0.17595510763472075
+          },
+          {
+            "intent": "code.signature",
+            "score": 0.1757224996758498
+          }
+        ]
+      },
+      "keyword": {
+        "confidence": 0.0,
+        "source": "keyword"
+      },
+      "memory": {
+        "confidence": 0.0,
+        "similar_count": 0,
+        "source": "memory"
+      },
+      "original_text": "In one sentence, report your current readiness.",
+      "pragmatic": {
+        "expressive_score": 0.0,
+        "first_person_subject": false,
+        "has_acknowledgment": false,
+        "has_commissive": false,
+        "has_future": false,
+        "has_hedging": false,
+        "has_offer": false,
+        "has_please": false,
+        "has_thanks": false,
+        "has_urgency": false,
+        "is_backchannel": false,
+        "is_compliment": false,
+        "is_short_utterance": false,
+        "is_very_short": false,
+        "source": "pragmatic"
+      },
+      "structural": {
+        "category": "assertive",
+        "confidence": 0.7,
+        "has_modal": false,
+        "is_continuation": false,
+        "is_declarative": true,
+        "is_exclamatory": false,
+        "is_imperative": false,
+        "is_question": false,
+        "source": "structural",
+        "sub_type": "statement"
+      }
+    },
+    "sub_type": "statement"
+  },
+  "text": "In one sentence, report your current readiness."
+}

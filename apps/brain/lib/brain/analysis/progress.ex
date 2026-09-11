@@ -9,10 +9,9 @@ defmodule Brain.Analysis.Progress do
     progress = Keyword.get(opts, :progress)
 
     if is_map(progress) do
-      conversation_id =
-        Map.get(progress, :conversation_id) || Map.get(progress, "conversation_id")
+      conversation_id = Map.get(progress, :conversation_id)
 
-      message_id = Map.get(progress, :message_id) || Map.get(progress, "message_id")
+      message_id = Map.get(progress, :message_id)
 
       if is_binary(conversation_id) and is_binary(message_id) do
         payload =

@@ -84,9 +84,7 @@ defmodule Brain.Analysis.ChunkProfileNounInvarianceTest do
             )
 
           {:error, reason} ->
-            flunk(
-              "Axis classifier #{inspect(axis)} could not be inspected: #{inspect(reason)}"
-            )
+            flunk("Axis classifier #{inspect(axis)} could not be inspected: #{inspect(reason)}")
         end
       end
     end
@@ -99,7 +97,7 @@ defmodule Brain.Analysis.ChunkProfileNounInvarianceTest do
 
       refute_all_default(domains, :unknown, :domain)
 
-      assert length(Enum.uniq(domains)) == 1,
+      assert match?([_], Enum.uniq(domains)),
              "domain swung across name permutations. pairs: " <>
                inspect(Enum.zip(names, domains))
     end
@@ -110,7 +108,7 @@ defmodule Brain.Analysis.ChunkProfileNounInvarianceTest do
 
       refute_all_default(domains, :unknown, :domain)
 
-      assert length(Enum.uniq(domains)) == 1,
+      assert match?([_], Enum.uniq(domains)),
              "domain swung across location permutations. pairs: " <>
                inspect(Enum.zip(places, domains))
     end
@@ -141,7 +139,7 @@ defmodule Brain.Analysis.ChunkProfileNounInvarianceTest do
 
       refute_all_default(domains, :unknown, :domain)
 
-      assert length(Enum.uniq(domains)) == 1,
+      assert match?([_], Enum.uniq(domains)),
              "domain swung across domain-neutral topic permutations. pairs: " <>
                inspect(Enum.zip(topics, domains))
     end
@@ -198,7 +196,7 @@ defmodule Brain.Analysis.ChunkProfileNounInvarianceTest do
   defp assert_axis_stable(profiles, axis, fillers) do
     values = Enum.map(profiles, &Map.get(&1, axis))
 
-    assert length(Enum.uniq(values)) == 1,
+    assert match?([_], Enum.uniq(values)),
            "axis #{inspect(axis)} swung across permutations. pairs: " <>
              inspect(Enum.zip(fillers, values))
   end

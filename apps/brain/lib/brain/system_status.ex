@@ -485,7 +485,10 @@ defmodule Brain.SystemStatus do
     try do
       EvaluationStore.latest("intent")
     rescue
-      _ -> nil
+      # Atlas/DB failures are already caught inside EvaluationStore; the only
+      # exception that can still escape is File.Error from reading the on-disk
+      # results directory. A status probe should report "no data", not crash.
+      File.Error -> nil
     end
   end
 

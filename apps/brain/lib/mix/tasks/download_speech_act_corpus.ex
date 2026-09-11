@@ -46,12 +46,36 @@ defmodule Mix.Tasks.DownloadSpeechActCorpus do
   }
 
   @expressive_markers [
-    "thank", "thanks", "hello", "hi", "hey", "goodbye", "bye",
-    "sorry", "congratulations", "congrats", "wow", "oh",
-    "great", "awesome", "wonderful", "terrible", "amazing",
-    "welcome", "cheers", "bravo", "ouch", "yay", "hooray",
-    "good morning", "good evening", "good night", "good afternoon",
-    "happy birthday", "merry christmas", "happy new year"
+    "thank",
+    "thanks",
+    "hello",
+    "hi",
+    "hey",
+    "goodbye",
+    "bye",
+    "sorry",
+    "congratulations",
+    "congrats",
+    "wow",
+    "oh",
+    "great",
+    "awesome",
+    "wonderful",
+    "terrible",
+    "amazing",
+    "welcome",
+    "cheers",
+    "bravo",
+    "ouch",
+    "yay",
+    "hooray",
+    "good morning",
+    "good evening",
+    "good night",
+    "good afternoon",
+    "happy birthday",
+    "merry christmas",
+    "happy new year"
   ]
 
   @declarative_seeds [
@@ -458,19 +482,12 @@ defmodule Mix.Tasks.DownloadSpeechActCorpus do
           |> String.split(" ", trim: true)
           |> Enum.map(fn s -> String.trim(s) |> String.to_integer() end)
 
-        utts
-        |> Enum.with_index()
-        |> Enum.flat_map(fn {utt, i} ->
-          if byte_size(utt) > 2 do
-            [{utt, Enum.at(acts, i), Enum.at(emos, i)}]
-          else
-            []
-          end
-        end)
+        for {utt, i} <- Enum.with_index(utts), byte_size(utt) > 2 do
+          {utt, Enum.at(acts, i), Enum.at(emos, i)}
+        end
       end)
 
-    {Enum.map(triples, &elem(&1, 0)),
-     Enum.map(triples, &elem(&1, 1)),
+    {Enum.map(triples, &elem(&1, 0)), Enum.map(triples, &elem(&1, 1)),
      Enum.map(triples, &elem(&1, 2))}
   end
 
@@ -513,7 +530,7 @@ defmodule Mix.Tasks.DownloadSpeechActCorpus do
   defp classify_utterance(text, act, emotion) do
     lower = String.downcase(text)
     tokens = String.split(lower)
-    short? = length(tokens) <= 8
+    short? = Enum.count_until(tokens, 9) <= 8
 
     has_expressive_marker =
       Enum.any?(@expressive_markers, fn marker -> String.contains?(lower, marker) end)
@@ -526,7 +543,6 @@ defmodule Mix.Tasks.DownloadSpeechActCorpus do
       true -> nil
     end
   end
-
 
   defp normalize(text) do
     text |> String.downcase() |> String.trim()

@@ -23,7 +23,7 @@ defmodule Brain.Analysis.EventGraphEnrichmentTest do
 
       frames = EventLinker.link(events, entities, tokens, pos_tags)
 
-      assert length(frames) == 2
+      assert match?([_, _], frames)
 
       for frame <- frames do
         assert is_binary(frame.trigger)
@@ -61,7 +61,7 @@ defmodule Brain.Analysis.EventGraphEnrichmentTest do
       frame = hd(frames)
 
       assert frame.trigger == "announced"
-      assert length(frame.arguments) >= 1
+      assert frame.arguments != []
 
       # Verify the frame structure is suitable for graph writing
       assert is_binary(frame.trigger)

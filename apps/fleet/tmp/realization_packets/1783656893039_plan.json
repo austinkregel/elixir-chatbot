@@ -1,0 +1,39 @@
+[
+  {
+    "content": {
+      "content_complete": true,
+      "user_input_summary": "Task B."
+    },
+    "type": "acknowledgment",
+    "variant": "general"
+  },
+  {
+    "content": {
+      "confidence": 0.735,
+      "content_complete": true,
+      "emotional_tone": "neutral",
+      "entities": [],
+      "intent": "meta.statement",
+      "key_elements": {
+        "intent": "meta.statement"
+      },
+      "related_beliefs": [],
+      "text": "Task B.",
+      "understood_meaning": "you're asking about meta"
+    },
+    "type": "content",
+    "variant": "reflective"
+  },
+  {
+    "content": {
+      "aspect_to_explore": null,
+      "content_complete": true,
+      "entities": [],
+      "intent": "meta.statement",
+      "text": "Task B.",
+      "topic": "meta"
+    },
+    "type": "follow_up",
+    "variant": "elaboration"
+  }
+]

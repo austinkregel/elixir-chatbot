@@ -70,7 +70,7 @@ defmodule Brain.Analysis.ProcessingTraceTest do
 
       assert is_list(trace.analyzer_results)
 
-      if length(trace.analyzer_results) > 1 do
+      if match?([_, _ | _], trace.analyzer_results) do
         first = hd(trace.analyzer_results)
         second = Enum.at(trace.analyzer_results, 1)
         assert first.calibrated >= second.calibrated
@@ -102,7 +102,7 @@ defmodule Brain.Analysis.ProcessingTraceTest do
       {trace, _interpretation} = ProcessingTrace.trace_processing("Hello!")
 
       assert trace.chunk_count == 1
-      assert length(trace.chunks) == 1
+      assert match?([_], trace.chunks)
 
       chunk = hd(trace.chunks)
       assert chunk.text == "Hello!"

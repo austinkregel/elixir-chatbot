@@ -30,9 +30,10 @@ defmodule Brain.Response.RefinementLoopTest do
 
   describe "generate/2" do
     test "greeting produces social acknowledgment with evaluator convergence" do
-      model = build_model("Hello!",
-        speech_act: SpeechActResult.new(:expressive, :greeting, 0.9)
-      )
+      model =
+        build_model("Hello!",
+          speech_act: SpeechActResult.new(:expressive, :greeting, 0.9)
+        )
 
       assert {:ok, response, metadata} = RefinementLoop.generate(model)
 
@@ -44,16 +45,19 @@ defmodule Brain.Response.RefinementLoopTest do
       primitive_types = Enum.map(metadata.primitives, & &1.type)
       assert :acknowledgment in primitive_types
 
-      social = Enum.find(metadata.primitives, &(&1.type == :acknowledgment and &1.variant == :social))
+      social =
+        Enum.find(metadata.primitives, &(&1.type == :acknowledgment and &1.variant == :social))
+
       assert social != nil
       assert social.rendered == response or String.contains?(response, social.rendered)
     end
 
     test "question plans informative framing and evaluator scores speech act alignment" do
-      model = build_model("What's the weather?",
-        speech_act: SpeechActResult.new(:directive, :question, 0.8, is_question: true),
-        intent: "weather.query"
-      )
+      model =
+        build_model("What's the weather?",
+          speech_act: SpeechActResult.new(:directive, :question, 0.8, is_question: true),
+          intent: "weather.query"
+        )
 
       assert {:ok, _response, metadata} = RefinementLoop.generate(model)
 
@@ -66,10 +70,11 @@ defmodule Brain.Response.RefinementLoopTest do
     end
 
     test "negative sentiment sharing includes attunement primitive" do
-      model = build_model("I had a terrible day",
-        speech_act: SpeechActResult.new(:assertive, :statement, 0.7),
-        sentiment: %{label: :negative, confidence: 0.8}
-      )
+      model =
+        build_model("I had a terrible day",
+          speech_act: SpeechActResult.new(:assertive, :statement, 0.7),
+          sentiment: %{label: :negative, confidence: 0.8}
+        )
 
       assert {:ok, _response, metadata} = RefinementLoop.generate(model)
 
@@ -84,10 +89,11 @@ defmodule Brain.Response.RefinementLoopTest do
     end
 
     test "low confidence input produces hedging and appropriate confidence score" do
-      model = build_model("What is quantum decoherence?",
-        speech_act: SpeechActResult.new(:directive, :question, 0.3, is_question: true),
-        confidence: 0.2
-      )
+      model =
+        build_model("What is quantum decoherence?",
+          speech_act: SpeechActResult.new(:directive, :question, 0.3, is_question: true),
+          confidence: 0.2
+        )
 
       assert {:ok, _response, metadata} = RefinementLoop.generate(model)
 
@@ -107,19 +113,21 @@ defmodule Brain.Response.RefinementLoopTest do
     end
 
     test "max_iterations is respected" do
-      model = build_model("Hello!",
-        speech_act: SpeechActResult.new(:expressive, :greeting, 0.9)
-      )
+      model =
+        build_model("Hello!",
+          speech_act: SpeechActResult.new(:expressive, :greeting, 0.9)
+        )
 
       assert {:ok, _response, metadata} = RefinementLoop.generate(model, max_iterations: 1)
       assert metadata.iterations <= 1
     end
 
     test "converged responses stop iterating early" do
-      model = build_model("Hello!",
-        speech_act: SpeechActResult.new(:expressive, :greeting, 0.9),
-        confidence: 0.9
-      )
+      model =
+        build_model("Hello!",
+          speech_act: SpeechActResult.new(:expressive, :greeting, 0.9),
+          confidence: 0.9
+        )
 
       assert {:ok, _response, metadata} = RefinementLoop.generate(model, max_iterations: 5)
 
@@ -130,9 +138,10 @@ defmodule Brain.Response.RefinementLoopTest do
 
   describe "single_pass/2" do
     test "runs exactly one iteration and returns scored primitives" do
-      model = build_model("Hello!",
-        speech_act: SpeechActResult.new(:expressive, :greeting, 0.9)
-      )
+      model =
+        build_model("Hello!",
+          speech_act: SpeechActResult.new(:expressive, :greeting, 0.9)
+        )
 
       assert {:ok, response, metadata} = RefinementLoop.single_pass(model)
 
@@ -141,7 +150,7 @@ defmodule Brain.Response.RefinementLoopTest do
       assert metadata.iterations == 1
       assert %Score{} = metadata.score
       assert is_list(metadata.primitives)
-      assert length(metadata.primitives) >= 1
+      assert metadata.primitives != []
 
       for p <- metadata.primitives do
         assert p.source == :ouro, "Each primitive should have source :ouro"

@@ -49,7 +49,7 @@ defmodule Brain.Analysis.ConsistencyChecker do
     signals = build_signals(params)
     non_nil_signals = Enum.filter(signals, &(&1.intent != nil))
 
-    if length(non_nil_signals) < 2 do
+    if match?([], non_nil_signals) or match?([_], non_nil_signals) do
       %{
         consistent: true,
         final_intent: final_intent,
@@ -92,9 +92,11 @@ defmodule Brain.Analysis.ConsistencyChecker do
       )
 
       if result.severity in [:medium, :high] do
-        Logger.warning("Classification inconsistency (#{result.severity}): " <>
-          "final=#{result.final_intent}, consensus=#{result.consensus_intent}, " <>
-          "dissenting=#{inspect(result.dissenting_signals)}")
+        Logger.warning(
+          "Classification inconsistency (#{result.severity}): " <>
+            "final=#{result.final_intent}, consensus=#{result.consensus_intent}, " <>
+            "dissenting=#{inspect(result.dissenting_signals)}"
+        )
       end
 
       broadcast_disagreement(metadata, opts)
@@ -112,7 +114,9 @@ defmodule Brain.Analysis.ConsistencyChecker do
     ]
   end
 
-  defp build_fast_path_signal(nil), do: %{source: :fast_path, intent: nil, domain: nil, confidence: nil}
+  defp build_fast_path_signal(nil),
+    do: %{source: :fast_path, intent: nil, domain: nil, confidence: nil}
+
   defp build_fast_path_signal(%{intent: intent} = fp) do
     %{
       source: :fast_path,
@@ -121,9 +125,13 @@ defmodule Brain.Analysis.ConsistencyChecker do
       confidence: fp[:activation] || fp[:confidence]
     }
   end
-  defp build_fast_path_signal(_), do: %{source: :fast_path, intent: nil, domain: nil, confidence: nil}
 
-  defp build_analysis_signal(nil, _), do: %{source: :analysis, intent: nil, domain: nil, confidence: nil}
+  defp build_fast_path_signal(_),
+    do: %{source: :fast_path, intent: nil, domain: nil, confidence: nil}
+
+  defp build_analysis_signal(nil, _),
+    do: %{source: :analysis, intent: nil, domain: nil, confidence: nil}
+
   defp build_analysis_signal(intent, confidence) do
     %{
       source: :analysis,
@@ -134,6 +142,7 @@ defmodule Brain.Analysis.ConsistencyChecker do
   end
 
   defp build_nlp_signal(nil, _), do: %{source: :nlp, intent: nil, domain: nil, confidence: nil}
+
   defp build_nlp_signal(intent, confidence) do
     %{
       source: :nlp,
@@ -145,6 +154,7 @@ defmodule Brain.Analysis.ConsistencyChecker do
 
   defp build_event_signal(nil), do: %{source: :events, intent: nil, domain: nil, confidence: nil}
   defp build_event_signal([]), do: %{source: :events, intent: nil, domain: nil, confidence: nil}
+
   defp build_event_signal(events) when is_list(events) do
     primary_event = List.first(events)
     object_text = if primary_event.object, do: primary_event.object.text
@@ -157,6 +167,7 @@ defmodule Brain.Analysis.ConsistencyChecker do
       confidence: primary_event.confidence
     }
   end
+
   defp build_event_signal(_), do: %{source: :events, intent: nil, domain: nil, confidence: nil}
 
   defp analyze_consistency(final_intent, non_nil_signals, all_signals) do
@@ -169,6 +180,7 @@ defmodule Brain.Analysis.ConsistencyChecker do
       end)
 
     domain_signals = Enum.filter(all_signals, &(&1.domain != nil))
+
     {domain_agreeing, domain_dissenting} =
       Enum.split_with(domain_signals, fn signal ->
         domain_matches?(signal.domain, final_domain)
@@ -180,11 +192,21 @@ defmodule Brain.Analysis.ConsistencyChecker do
 
     severity =
       cond do
-        dissent_count == 0 -> :none
-        dissent_count == 1 and total_signals <= 2 -> :low
-        dissent_count >= 2 and consensus.intent != nil and consensus.intent != to_str(final_intent) -> :high
-        dissent_count >= 1 and consensus.domain != nil and consensus.domain != final_domain -> :medium
-        true -> :low
+        dissent_count == 0 ->
+          :none
+
+        dissent_count == 1 and total_signals <= 2 ->
+          :low
+
+        dissent_count >= 2 and consensus.intent != nil and
+            consensus.intent != to_str(final_intent) ->
+          :high
+
+        dissent_count >= 1 and consensus.domain != nil and consensus.domain != final_domain ->
+          :medium
+
+        true ->
+          :low
       end
 
     %{
@@ -236,6 +258,7 @@ defmodule Brain.Analysis.ConsistencyChecker do
 
   defp extract_domain(nil), do: nil
   defp extract_domain(""), do: nil
+
   defp extract_domain(intent) when is_binary(intent) do
     case String.split(intent, ".", parts: 2) do
       [domain, _] -> domain

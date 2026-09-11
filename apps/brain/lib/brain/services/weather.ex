@@ -80,7 +80,8 @@ defmodule Brain.Services.Weather do
 
   @impl true
   def enrich(intent, slots, credentials) do
-    location = Map.get(slots, :location) || Map.get(slots, "location")
+    slots = Brain.Services.Service.normalize_slots(slots)
+    location = Map.get(slots, :location)
 
     if location do
       case intent do
@@ -186,7 +187,7 @@ defmodule Brain.Services.Weather do
       :miss ->
         # Use normalized location for API call to improve consistency
         geocode_location = format_for_geocoding(location)
-        
+
         case geocode(geocode_location, api_key) do
           {:ok, coords} = result ->
             Cache.put(:geocoding, cache_key, coords, ttl: :timer.hours(24))
@@ -203,8 +204,10 @@ defmodule Brain.Services.Weather do
   defp format_for_geocoding(location) when is_binary(location) do
     location
     |> String.trim()
-    |> String.replace(", ", ",")  # Remove space after comma
-    |> String.replace(" ", ",")   # Replace remaining spaces with commas
+    # Remove space after comma
+    |> String.replace(", ", ",")
+    # Replace remaining spaces with commas
+    |> String.replace(" ", ",")
     |> then(fn loc ->
       # Append US if not specified
       if String.contains?(loc, "US") or String.contains?(loc, "us") do
@@ -353,7 +356,7 @@ defmodule Brain.Services.Weather do
       |> Enum.map(fn {date, entries} ->
         # Get min/max temps and most common condition
         temps = Enum.map(entries, & &1["main"]["temp"])
-        conditions = Enum.map(entries, & &1["weather"] |> List.first() |> Map.get("main"))
+        conditions = Enum.map(entries, &(&1["weather"] |> List.first() |> Map.get("main")))
 
         most_common_condition =
           conditions

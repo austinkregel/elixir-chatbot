@@ -1,0 +1,573 @@
+{
+  "accumulator": {
+    "combined_confidence": 0.5390501257268514,
+    "conflict_measure": 0.5568302152878801,
+    "dominant_signal": [
+      "slot_fill",
+      true,
+      0.999
+    ],
+    "effective_confidence": 0.5173058358113499,
+    "entity_familiarity": 0.001,
+    "should_hedge": true
+  },
+  "all_analyses": [
+    {
+      "chunk_index": 0,
+      "confidence": 0.517,
+      "entities": [
+        {
+          "confidence": 0.62,
+          "entity_type": "slot_mappings",
+          "value": "name"
+        },
+        {
+          "confidence": 0.65,
+          "entity_type": "given-name",
+          "value": "Ansel"
+        }
+      ],
+      "intent": "music.statement",
+      "response_strategy": "hedged_response",
+      "speech_act": {
+        "category": "assertive",
+        "confidence": 0.6753860770059135,
+        "intent_confidence": 0.401029538682436,
+        "is_imperative": false,
+        "is_question": false,
+        "sub_type": "statement"
+      },
+      "text": "My name is Ansel."
+    }
+  ],
+  "analysis": {
+    "all_strategies": [
+      "hedged_response"
+    ],
+    "chunk_count": 1,
+    "confidence": 0.517,
+    "discourse": {
+      "addressee": "ambiguous",
+      "confidence": 0.8999999999999999,
+      "direct_address_detected": false,
+      "participants": [
+        "user",
+        "bot"
+      ]
+    },
+    "entities": [
+      {
+        "confidence": 0.62,
+        "entity_type": "slot_mappings",
+        "graph_known": false,
+        "match": "name",
+        "source": "gazetteer",
+        "value": "name"
+      },
+      {
+        "confidence": 0.65,
+        "disambiguation_reason": "introduction_pattern",
+        "entity_type": "given-name",
+        "graph_known": false,
+        "match": "Ansel",
+        "source": "pos_tagger_propn",
+        "value": "Ansel"
+      }
+    ],
+    "epistemic_status": "unchecked",
+    "event_frames": [
+      {
+        "arguments": [
+          {
+            "confidence": 0.15209175867524802,
+            "entity_type": "slot_mappings",
+            "role": "argm_loc",
+            "text": "name"
+          },
+          {
+            "confidence": 0.22226487027866235,
+            "entity_type": "person",
+            "role": "arg0",
+            "text": "Ansel"
+          }
+        ],
+        "trigger": "My",
+        "trigger_index": 0
+      },
+      {
+        "arguments": [
+          {
+            "confidence": 0.5109726660969851,
+            "entity_type": "slot_mappings",
+            "role": "arg1",
+            "text": "name"
+          },
+          {
+            "confidence": 0.6963864203106462,
+            "entity_type": "person",
+            "role": "arg0",
+            "text": "Ansel"
+          }
+        ],
+        "trigger": "is",
+        "trigger_index": 1
+      }
+    ],
+    "events": [
+      {
+        "action": {
+          "lemma": "my",
+          "tense": "imperative",
+          "verb": "My"
+        },
+        "confidence": 0.7999999999999999,
+        "id": "evt_5b5ffb574be52250",
+        "object": {
+          "text": "Ansel",
+          "type": "proper_noun"
+        }
+      },
+      {
+        "action": {
+          "lemma": "is",
+          "tense": "present",
+          "verb": "is"
+        },
+        "actor": {
+          "text": "name",
+          "type": "pronoun"
+        },
+        "confidence": 0.9999999999999999,
+        "id": "evt_5745c4e498d034de",
+        "object": {
+          "text": "Ansel",
+          "type": "proper_noun"
+        }
+      }
+    ],
+    "intent": "music.statement",
+    "pos_tags": [
+      [
+        "My",
+        "VERB"
+      ],
+      [
+        "name",
+        "PRON"
+      ],
+      [
+        "is",
+        "VERB"
+      ],
+      [
+        "Ansel",
+        "PROPN"
+      ],
+      [
+        ".",
+        "NOUN"
+      ]
+    ],
+    "raw_input": "My name is Ansel.",
+    "response_strategy": "hedged_response",
+    "sentiment": {
+      "confidence": 0.10027796379146987,
+      "label": "negative"
+    },
+    "slots": {
+      "filled": {
+        "given-name": {
+          "confidence": 0.65,
+          "source": "explicit",
+          "value": "Ansel"
+        },
+        "slot_mappings": {
+          "confidence": 0.62,
+          "source": "explicit",
+          "value": "name"
+        }
+      }
+    },
+    "speech_act": {
+      "category": "assertive",
+      "confidence": 0.6753860770059135,
+      "intent_confidence": 0.401029538682436,
+      "is_imperative": false,
+      "is_question": false,
+      "sub_type": "statement"
+    },
+    "text": "My name is Ansel."
+  },
+  "enrichment": {
+    "enrichment_status": "not_configured",
+    "entity_familiarity": 0.0,
+    "graph_enrichment": {
+      "entity_context": [
+        {
+          "entity": {
+            "confidence": 0.62,
+            "entity_type": "slot_mappings",
+            "graph_known": false,
+            "match": "name",
+            "source": "gazetteer",
+            "value": "name"
+          }
+        },
+        {
+          "entity": {
+            "confidence": 0.65,
+            "disambiguation_reason": "introduction_pattern",
+            "entity_type": "given-name",
+            "graph_known": false,
+            "match": "Ansel",
+            "source": "pos_tagger_propn",
+            "value": "Ansel"
+          }
+        }
+      ]
+    }
+  },
+  "memory": {
+    "similar_episodes": [
+      [
+        {
+          "action": "order",
+          "id": "3f969517-07b4-4d70-b629-ebe4e0e308b8",
+          "outcome": "My name is Ansel.",
+          "state": "communication",
+          "tags": [
+            "communication",
+            "from:admiral",
+            "order"
+          ],
+          "timestamp": 1783656106199
+        },
+        0.0
+      ]
+    ]
+  },
+  "overall_strategy": "hedged_response",
+  "primary_analysis": {
+    "accumulated_context": {
+      "combined_confidence": 0.5390501257268514,
+      "conflict_measure": 0.5568302152878801,
+      "dominant_signal": [
+        "slot_fill",
+        true,
+        0.999
+      ],
+      "entity_familiarity": 0.001,
+      "signals": [
+        [
+          "intent",
+          "smalltalk.emotions.ha_ha",
+          0.401029538682436
+        ],
+        [
+          "entity_familiarity",
+          false,
+          0.001
+        ],
+        [
+          "sentiment",
+          "negative",
+          0.10027796379146987
+        ],
+        [
+          "slot_fill",
+          true,
+          0.999
+        ],
+        [
+          "speech_act",
+          "assertive",
+          0.6753860770059135
+        ],
+        [
+          "discourse",
+          "ambiguous",
+          0.8999999999999999
+        ]
+      ]
+    },
+    "chunk_index": 0,
+    "confidence": 0.517,
+    "discourse": {
+      "addressee": "ambiguous",
+      "confidence": 0.8999999999999999,
+      "direct_address_detected": false,
+      "indicators": [
+        "self_referential"
+      ],
+      "participants": [
+        "user",
+        "bot"
+      ]
+    },
+    "entities": [
+      {
+        "confidence": 0.62,
+        "entity_type": "slot_mappings",
+        "graph_known": false,
+        "match": "name",
+        "source": "gazetteer",
+        "value": "name"
+      },
+      {
+        "confidence": 0.65,
+        "disambiguation_reason": "introduction_pattern",
+        "entity_type": "given-name",
+        "graph_known": false,
+        "match": "Ansel",
+        "source": "pos_tagger_propn",
+        "value": "Ansel"
+      }
+    ],
+    "epistemic_status": "unchecked",
+    "event_frames": [
+      {
+        "arguments": [
+          {
+            "confidence": 0.15209175867524802,
+            "entity_type": "slot_mappings",
+            "role": "argm_loc",
+            "text": "name"
+          },
+          {
+            "confidence": 0.22226487027866235,
+            "entity_type": "person",
+            "role": "arg0",
+            "text": "Ansel"
+          }
+        ],
+        "trigger": "My",
+        "trigger_index": 0
+      },
+      {
+        "arguments": [
+          {
+            "confidence": 0.5109726660969851,
+            "entity_type": "slot_mappings",
+            "role": "arg1",
+            "text": "name"
+          },
+          {
+            "confidence": 0.6963864203106462,
+            "entity_type": "person",
+            "role": "arg0",
+            "text": "Ansel"
+          }
+        ],
+        "trigger": "is",
+        "trigger_index": 1
+      }
+    ],
+    "events": [
+      {
+        "action": {
+          "lemma": "my",
+          "tense": "imperative",
+          "verb": "My"
+        },
+        "confidence": 0.7999999999999999,
+        "id": "evt_5b5ffb574be52250",
+        "object": {
+          "text": "Ansel",
+          "type": "proper_noun"
+        }
+      },
+      {
+        "action": {
+          "lemma": "is",
+          "tense": "present",
+          "verb": "is"
+        },
+        "actor": {
+          "text": "name",
+          "type": "pronoun"
+        },
+        "confidence": 0.9999999999999999,
+        "id": "evt_5745c4e498d034de",
+        "object": {
+          "text": "Ansel",
+          "type": "proper_noun"
+        }
+      }
+    ],
+    "intent": "music.statement",
+    "intent_domain": "smalltalk",
+    "pass": 2,
+    "pos_tags": [
+      [
+        "My",
+        "VERB"
+      ],
+      [
+        "name",
+        "PRON"
+      ],
+      [
+        "is",
+        "VERB"
+      ],
+      [
+        "Ansel",
+        "PROPN"
+      ],
+      [
+        ".",
+        "NOUN"
+      ]
+    ],
+    "profile": {
+      "addressee": "ambiguous",
+      "aspect": "progressive",
+      "certainty": "hedged",
+      "confidence": 0.517,
+      "derived_label": "music.statement",
+      "domain": "music",
+      "engagement_level": "urgent_demand",
+      "feature_provenance": {
+        "addressee": "analysis",
+        "aspect": "micro_classifier",
+        "certainty": "micro_classifier",
+        "confidence": "analysis",
+        "domain": "micro_classifier",
+        "modality": "composed",
+        "novelty_score": "analysis",
+        "polarity": "composed",
+        "sentiment_alignment": "composed",
+        "slot_completeness": "analysis",
+        "speech_act_category": "analysis",
+        "speech_act_subtype": "analysis",
+        "target": "composed",
+        "tense": "micro_classifier",
+        "urgency": "micro_classifier"
+      },
+      "modality": "declarative",
+      "novelty_score": 0.0,
+      "polarity": "affirmative",
+      "response_posture": "hedged",
+      "self_disclosure_level": "none",
+      "sentiment_alignment": "neutral",
+      "slot_completeness": 1.0,
+      "speech_act_category": "assertive",
+      "speech_act_subtype": "statement",
+      "target": "ambiguous",
+      "temporal_framing": "timeless",
+      "tense": "past",
+      "urgency": "high"
+    },
+    "response_strategy": "hedged_response",
+    "sentiment": {
+      "confidence": 0.10027796379146987,
+      "label": "negative"
+    },
+    "slots": {
+      "all_required_filled": true,
+      "filled_slots": {
+        "given-name": {
+          "confidence": 0.65,
+          "source": "explicit",
+          "value": "Ansel"
+        },
+        "slot_mappings": {
+          "confidence": 0.62,
+          "source": "explicit",
+          "value": "name"
+        }
+      },
+      "schema_name": "unknown"
+    },
+    "speech_act": {
+      "category": "assertive",
+      "confidence": 0.6753860770059135,
+      "indicators": [
+        "intent:statement.observation"
+      ],
+      "intent_confidence": 0.401029538682436,
+      "is_imperative": false,
+      "is_question": false,
+      "raw_analyses": {
+        "intent": {
+          "category": "assertive",
+          "confidence": 0.401029538682436,
+          "intent": "statement.observation",
+          "margin": 0.25019820346588273,
+          "second_score": 0.15083133521655331,
+          "source": "feature_vector",
+          "sub_type": "statement",
+          "top_k": [
+            {
+              "intent": "statement.observation",
+              "score": 0.401029538682436
+            },
+            {
+              "intent": "smalltalk.emotions.ha_ha",
+              "score": 0.15083133521655331
+            },
+            {
+              "intent": "smalltalk.user.introduction",
+              "score": 0.1503204339129626
+            },
+            {
+              "intent": "smalltalk.apology",
+              "score": 0.14942115014787732
+            },
+            {
+              "intent": "smalltalk.user.joking",
+              "score": 0.14839754204017067
+            }
+          ]
+        },
+        "keyword": {
+          "confidence": 0.0,
+          "source": "keyword"
+        },
+        "memory": {
+          "confidence": 0.0,
+          "similar_count": 0,
+          "source": "memory"
+        },
+        "original_text": "My name is Ansel.",
+        "pragmatic": {
+          "expressive_score": 0.0,
+          "first_person_subject": false,
+          "has_acknowledgment": false,
+          "has_commissive": false,
+          "has_future": false,
+          "has_hedging": false,
+          "has_offer": false,
+          "has_please": false,
+          "has_thanks": false,
+          "has_urgency": false,
+          "is_backchannel": false,
+          "is_compliment": false,
+          "is_short_utterance": false,
+          "is_very_short": false,
+          "source": "pragmatic"
+        },
+        "structural": {
+          "category": "assertive",
+          "confidence": 0.7,
+          "has_modal": false,
+          "is_continuation": false,
+          "is_declarative": true,
+          "is_exclamatory": false,
+          "is_imperative": false,
+          "is_question": false,
+          "source": "structural",
+          "sub_type": "statement"
+        }
+      },
+      "sub_type": "statement"
+    },
+    "text": "My name is Ansel."
+  },
+  "raw_input": "My name is Ansel.",
+  "soul": {
+    "constitution": "Serve.",
+    "id": "mind-9218",
+    "name": "Agent mind-9218"
+  }
+}

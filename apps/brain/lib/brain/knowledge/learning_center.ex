@@ -528,7 +528,8 @@ defmodule Brain.Knowledge.LearningCenter do
     priority = Keyword.get(opts, :priority, :normal)
 
     categories =
-      if Code.ensure_loaded?(Tasks.Source) and function_exported?(Tasks.Source, :capability_categories, 1) do
+      if Code.ensure_loaded?(Tasks.Source) and
+           function_exported?(Tasks.Source, :capability_categories, 1) do
         Tasks.Source.capability_categories(capability)
       else
         [to_string(capability)]
@@ -659,7 +660,7 @@ defmodule Brain.Knowledge.LearningCenter do
       end
 
     questions =
-      if length(tokens) > 1 do
+      if match?([_, _ | _], tokens) do
         questions ++ [topic]
       else
         questions

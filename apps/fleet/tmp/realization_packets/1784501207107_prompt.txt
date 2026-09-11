@@ -1,0 +1,21 @@
+=== SYSTEM ===
+Serve faithfully.
+
+Generate a natural response based on the context below.
+Be concise and helpful. Do not mention internal systems, plans, or analysis.
+Output only the final response text.
+If $placeholder tokens appear in the instructions, keep them exactly as shown in your output.
+
+=== USER ===
+The user said: "Give a one-line readiness report."
+Intent: knowledge.command (confidence 0.74).
+domain: knowledge; modality: imperative; urgency: high.
+Speech act: directive, command.
+Sentiment: neutral (confidence 0.05).
+Response strategy: hedged_response.
+The system is uncertain, so hedge the response with appropriate qualifiers.
+Response plan:
+1. [framing/informative] Frame the response informatively.
+2. [follow_up/clarification] Ask a clarifying question.
+Write a neutral, medium-length response.
+Do not invent facts or capabilities not mentioned above.

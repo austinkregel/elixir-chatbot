@@ -26,7 +26,7 @@ defmodule Fleet.OrderTest do
           context_refs: ["briefing/ci-background.md"]
         )
 
-      assert length(order.constraints) == 2
+      assert match?([_, _], order.constraints)
       assert order.context_refs == ["briefing/ci-background.md"]
     end
 

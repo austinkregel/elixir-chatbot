@@ -103,7 +103,7 @@ defmodule Brain.ML.WeightOptimizer.TrackerTest do
       run = Tracker.get_run(run_id)
       assert run.generation == 1
       assert run.best_fitness == 0.7
-      assert length(run.history) == 2
+      assert match?([_, _], run.history)
     end
 
     test "moves run from active → recent on :stop and broadcasts :run_complete" do
@@ -160,7 +160,8 @@ defmodule Brain.ML.WeightOptimizer.TrackerTest do
     test "feature_vector_classifiers/0 lists the GA-eligible models" do
       classifiers = Tracker.feature_vector_classifiers()
 
-      for expected <- ~w(intent_full intent_domain tense_class aspect_class urgency certainty_level) do
+      for expected <-
+            ~w(intent_full intent_domain tense_class aspect_class urgency certainty_level) do
         assert expected in classifiers,
                "expected #{expected} in feature_vector_classifiers/0"
       end

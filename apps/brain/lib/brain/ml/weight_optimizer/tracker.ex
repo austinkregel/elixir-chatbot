@@ -191,6 +191,7 @@ defmodule Brain.ML.WeightOptimizer.Tracker do
         end
 
         cancelled = run |> Map.put(:status, :cancelled) |> Map.put(:completed_at, now())
+
         new_state =
           state
           |> remove_active(run_id)
@@ -496,7 +497,11 @@ defmodule Brain.ML.WeightOptimizer.Tracker do
   end
 
   defp remove_active(state, run_id) do
-    %{state | active: Map.delete(state.active, run_id), pid_by_run: Map.delete(state.pid_by_run, run_id)}
+    %{
+      state
+      | active: Map.delete(state.active, run_id),
+        pid_by_run: Map.delete(state.pid_by_run, run_id)
+    }
   end
 
   defp push_recent(state, run) do
@@ -574,8 +579,8 @@ defmodule Brain.ML.WeightOptimizer.Tracker do
   defp extract_feature_vector_pairs(entries) when is_list(entries) do
     pairs =
       Enum.flat_map(entries, fn
-        %{"feature_vector" => vec, "label" => label}
-        when is_list(vec) and is_binary(label) and length(vec) > 0 ->
+        %{"feature_vector" => [_ | _] = vec, "label" => label}
+        when is_binary(label) ->
           [{vec, label}]
 
         _ ->
@@ -720,8 +725,10 @@ defmodule Brain.ML.WeightOptimizer.Tracker do
 
   defp encode_value({a, b}), do: [a, b]
   defp encode_value(%DateTime{} = dt), do: DateTime.to_iso8601(dt)
+
   defp encode_value(value) when is_atom(value) and not is_boolean(value) and not is_nil(value),
     do: Atom.to_string(value)
+
   defp encode_value(map) when is_map(map), do: stringify_for_json(map)
   defp encode_value(list) when is_list(list), do: Enum.map(list, &encode_value/1)
   defp encode_value(value), do: value

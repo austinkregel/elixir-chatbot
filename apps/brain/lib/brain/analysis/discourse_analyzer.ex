@@ -31,7 +31,13 @@ defmodule Brain.Analysis.DiscourseAnalyzer do
                      end)
 
   # Bot name patterns - loaded from discourse_config.json
-  @default_bot_names Map.get(@discourse_config, "bot_names", ["companion", "bot", "assistant", "ai", "echo"])
+  @default_bot_names Map.get(@discourse_config, "bot_names", [
+                       "companion",
+                       "bot",
+                       "assistant",
+                       "ai",
+                       "echo"
+                     ])
 
   # Second person pronouns indicating addressing someone
   @second_person_pronouns ~w(you your yours yourself)
@@ -43,7 +49,14 @@ defmodule Brain.Analysis.DiscourseAnalyzer do
   @third_person_pronouns ~w(he she it they him her them his hers its their theirs)
 
   # Direct address indicators - loaded from discourse_config.json
-  @address_prefixes Map.get(@discourse_config, "address_prefixes", ["hey", "hi", "hello", "ok", "okay", "yo"])
+  @address_prefixes Map.get(@discourse_config, "address_prefixes", [
+                      "hey",
+                      "hi",
+                      "hello",
+                      "ok",
+                      "okay",
+                      "yo"
+                    ])
 
   @doc """
   Analyzes discourse structure to determine the addressee.
@@ -114,7 +127,7 @@ defmodule Brain.Analysis.DiscourseAnalyzer do
 
         # In 1-on-1 with bot, "you" refers to bot
         new_scores =
-          if :bot in participants and length(participants) == 2 do
+          if :bot in participants and match?([_, _], participants) do
             Map.update!(scores, :bot, &(&1 + 0.3))
           else
             Map.update!(scores, :ambiguous, &(&1 + 0.2))
@@ -132,7 +145,7 @@ defmodule Brain.Analysis.DiscourseAnalyzer do
 
         # Imperatives in 1-on-1 are directed at bot
         new_scores =
-          if :bot in participants and length(participants) == 2 do
+          if :bot in participants and match?([_, _], participants) do
             Map.update!(scores, :bot, &(&1 + 0.25))
           else
             Map.update!(scores, :ambiguous, &(&1 + 0.15))
@@ -150,7 +163,7 @@ defmodule Brain.Analysis.DiscourseAnalyzer do
 
         # Questions in 1-on-1 expect bot to answer
         new_scores =
-          if :bot in participants and length(participants) == 2 do
+          if :bot in participants and match?([_, _], participants) do
             Map.update!(scores, :bot, &(&1 + 0.2))
           else
             Map.update!(scores, :ambiguous, &(&1 + 0.1))
@@ -194,7 +207,7 @@ defmodule Brain.Analysis.DiscourseAnalyzer do
 
     # Baseline: in 1-on-1 conversation, default to bot addressee
     scores =
-      if :bot in participants and length(participants) == 2 do
+      if :bot in participants and match?([_, _], participants) do
         Map.update!(scores, :bot, &(&1 + 0.1))
       else
         scores
@@ -230,7 +243,7 @@ defmodule Brain.Analysis.DiscourseAnalyzer do
     # If ambiguous has the highest score but bot is close, prefer bot in 1-on-1
     final_addressee =
       cond do
-        best_addressee == :ambiguous and :bot in participants and length(participants) == 2 ->
+        best_addressee == :ambiguous and :bot in participants and match?([_, _], participants) ->
           bot_score = Map.get(scores, :bot, 0)
           if bot_score > 0.1, do: :bot, else: :ambiguous
 

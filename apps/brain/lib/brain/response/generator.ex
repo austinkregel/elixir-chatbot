@@ -25,7 +25,13 @@ defmodule Brain.Response.Generator do
       # Build slot map for enrichment from entity list
       slots = build_slot_map_for_enrichment(entities)
       slots = if query_text, do: Map.put(slots, :_query_text, query_text), else: slots
-      filled_slots = slots |> Map.keys() |> Enum.reject(fn k -> k in [:_query_text, :_ha_entity_id] end) |> Enum.map(&to_string/1)
+
+      filled_slots =
+        slots
+        |> Map.keys()
+        |> Enum.reject(fn k -> k in [:_query_text, :_ha_entity_id] end)
+        |> Enum.map(&to_string/1)
+
       context = Map.put(context, :filled_slots, filled_slots)
 
       # Prepare context with enrichment data (before pipeline, for template conditions)
@@ -39,12 +45,12 @@ defmodule Brain.Response.Generator do
 
   defp build_slot_map_for_enrichment(entities) when is_list(entities) do
     Enum.reduce(entities, %{}, fn entity, acc ->
-      type = Map.get(entity, :entity_type) || Map.get(entity, "entity_type")
-      value = Map.get(entity, :value) || Map.get(entity, "value") || Map.get(entity, :text)
+      type = Map.get(entity, :entity_type)
+      value = Map.get(entity, :value) || Map.get(entity, :text)
 
       if type && value do
         slot_name = safe_slot_atom(type)
-        metadata = Map.get(entity, :metadata) || Map.get(entity, "metadata")
+        metadata = Map.get(entity, :metadata)
         ha_entity_id = get_ha_entity_id(entity, metadata)
 
         acc = Map.put(acc, slot_name, value)
@@ -64,12 +70,12 @@ defmodule Brain.Response.Generator do
 
   defp get_ha_entity_id(entity, metadata) do
     Map.get(entity, :ha_entity_id) ||
-      Map.get(entity, "ha_entity_id") ||
       (is_map(metadata) && Map.get(metadata, :ha_entity_id)) ||
       nil
   end
 
   defp safe_slot_atom(type) when is_atom(type), do: type
+
   defp safe_slot_atom(type) when is_binary(type) do
     normalized = type |> to_string() |> String.downcase()
     String.to_existing_atom(normalized)
@@ -139,7 +145,6 @@ defmodule Brain.Response.Generator do
     }
   end
 
-
   defp retrieve_event_episodes(events) when is_list(events) and events != [] do
     case get_primary_action(events) do
       nil ->
@@ -178,9 +183,9 @@ defmodule Brain.Response.Generator do
   defp build_entity_slots(entities) when is_list(entities) do
     Enum.reduce(entities, %{}, fn entity, acc ->
       type =
-        Map.get(entity, :entity_type) || Map.get(entity, "entity_type") || Map.get(entity, :type)
+        Map.get(entity, :entity_type) || Map.get(entity, :type)
 
-      value = Map.get(entity, :value) || Map.get(entity, "value") || Map.get(entity, :text)
+      value = Map.get(entity, :value) || Map.get(entity, :text)
 
       case Map.get(@entity_type_to_slot, type) do
         nil -> acc
@@ -260,7 +265,7 @@ defmodule Brain.Response.Generator do
       [
         intent || "",
         query_text || "",
-        entities |> Enum.map_join(" ", fn e -> e[:value] || e["value"] || "" end)
+        entities |> Enum.map_join(" ", fn e -> e[:value] || "" end)
       ]
       |> Enum.filter(&(&1 != ""))
       |> Enum.join(" ")
@@ -357,9 +362,11 @@ defmodule Brain.Response.Generator do
   end
 
   defp infer_domain_from_label(nil), do: nil
+
   defp infer_domain_from_label(intent) when is_binary(intent) do
     intent |> String.split(".", parts: 2) |> List.first() |> safe_to_domain_atom()
   end
+
   defp infer_domain_from_label(_), do: nil
 
   defp safe_to_domain_atom(str) when is_binary(str) do
@@ -371,10 +378,7 @@ defmodule Brain.Response.Generator do
   defp handle_code_intent(intent, entities, query_text) do
     world_id = get_code_world_id()
 
-    case QueryHandler.handle(intent, entities, world_id: world_id, query_text: query_text) do
-      {:ok, response} -> {:ok, response}
-      :not_handled -> :not_handled
-    end
+    QueryHandler.handle(intent, entities, world_id: world_id, query_text: query_text)
   end
 
   # Handle factual queries using semantic search with keyword fallback.
@@ -542,7 +546,7 @@ defmodule Brain.Response.Generator do
 
   @doc "Builds the context map for conditional template selection from entities and analysis.\n"
   def build_template_context(entities, additional_context \\ %{}) do
-    entity_types = Enum.map(entities, fn e -> e[:entity_type] || e["entity_type"] end)
+    entity_types = Enum.map(entities, fn e -> e[:entity_type] end)
 
     %{
       entities: entities,
@@ -586,7 +590,10 @@ defmodule Brain.Response.Generator do
 
   defp maybe_enrich_synthesis_response(response, opts) do
     unified_context = Map.get(opts, :unified_context, %{})
-    enrichment = if is_map(unified_context), do: Map.get(unified_context, :enrichment, %{}), else: %{}
+
+    enrichment =
+      if is_map(unified_context), do: Map.get(unified_context, :enrichment, %{}), else: %{}
+
     enriched_data = if is_map(enrichment), do: Map.get(enrichment, :enriched_data, %{}), else: %{}
 
     enriched =
@@ -664,7 +671,11 @@ defmodule Brain.Response.Generator do
 
     # Expand query with graph-derived related concepts
     {_original, related_terms} = Brain.Graph.Reader.expand_query(query_str, entities)
-    expanded_query = if related_terms != [], do: query_str <> " " <> Enum.join(Enum.take(related_terms, 3), " "), else: query_str
+
+    expanded_query =
+      if related_terms != [],
+        do: query_str <> " " <> Enum.join(Enum.take(related_terms, 3), " "),
+        else: query_str
 
     if SemanticFactRetriever.ready?() and query_str != "" do
       results = SemanticFactRetriever.search(expanded_query, limit: 3, threshold: 0.25)
@@ -912,7 +923,7 @@ defmodule Brain.Response.Generator do
   defp extract_entity_names_for_facts(entities) when is_list(entities) do
     entities
     |> Enum.map(fn e ->
-      e[:value] || e["value"] || ""
+      e[:value] || ""
     end)
     |> Enum.filter(&(&1 != ""))
   end
@@ -920,5 +931,4 @@ defmodule Brain.Response.Generator do
   defp extract_entity_names_for_facts(_) do
     []
   end
-
 end

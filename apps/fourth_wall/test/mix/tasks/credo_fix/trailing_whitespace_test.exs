@@ -53,11 +53,12 @@ defmodule Mix.Tasks.CredoFix.TrailingWhitespaceTest do
       path = Path.join(test_dir, "test.ex")
       File.write!(path, "hello  \nworld\n")
 
-      output = capture_io(fn ->
-        result = TrailingWhitespace.run(["--list-files", test_dir])
-        assert is_map(result)
-        assert length(result.files_with_issues) == 1
-      end)
+      output =
+        capture_io(fn ->
+          result = TrailingWhitespace.run(["--list-files", test_dir])
+          assert is_map(result)
+          assert match?([_], result.files_with_issues)
+        end)
 
       assert output =~ "test.ex"
     end
@@ -121,11 +122,12 @@ defmodule Mix.Tasks.CredoFix.TrailingWhitespaceTest do
     test "processes file with verbose mode", %{path: path} do
       File.write!(path, "hello  \nworld\n")
 
-      output = capture_io(fn ->
-        {result_path, changes} = TrailingWhitespace.process_file(path, true, true)
-        assert result_path == path
-        assert changes == 1
-      end)
+      output =
+        capture_io(fn ->
+          {result_path, changes} = TrailingWhitespace.process_file(path, true, true)
+          assert result_path == path
+          assert changes == 1
+        end)
 
       assert output =~ "1 lines"
     end
@@ -141,10 +143,11 @@ defmodule Mix.Tasks.CredoFix.TrailingWhitespaceTest do
 
     test "handles non-existent file" do
       # Error output goes to stderr
-      output = capture_io(:stderr, fn ->
-        {_path, changes} = TrailingWhitespace.process_file("/nonexistent/file.ex", true, false)
-        assert changes == 0
-      end)
+      output =
+        capture_io(:stderr, fn ->
+          {_path, changes} = TrailingWhitespace.process_file("/nonexistent/file.ex", true, false)
+          assert changes == 0
+        end)
 
       assert output =~ "Failed to read"
     end

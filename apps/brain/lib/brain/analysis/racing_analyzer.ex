@@ -326,7 +326,7 @@ defmodule Brain.Analysis.RacingAnalyzer do
         first_word in imperative_words ->
           {"command.general", 0.7, ["imperative_verb"]}
 
-        length(words) <= 3 and first_word in ~w(hi hello hey) ->
+        Enum.count_until(words, 4) <= 3 and first_word in ~w(hi hello hey) ->
           {"smalltalk.greetings.hello", 0.8, ["short_utterance", "greeting_word"]}
 
         true ->

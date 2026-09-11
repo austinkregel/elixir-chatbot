@@ -174,9 +174,9 @@ defmodule Brain.ML.EntityExtractor do
         rescue
           e ->
             reraise """
-            EntityExtractor: corrupt gazetteer at #{gazetteer_path}: #{Exception.message(e)}
-            Retrain with `mix train` or delete the file and regenerate.
-            """,
+                    EntityExtractor: corrupt gazetteer at #{gazetteer_path}: #{Exception.message(e)}
+                    Retrain with `mix train` or delete the file and regenerate.
+                    """,
                     __STACKTRACE__
         end
 
@@ -232,21 +232,32 @@ defmodule Brain.ML.EntityExtractor do
     world_id = Keyword.get(opts, :world_id)
     tokens = Tokenizer.tokenize(text)
 
-    if debug?, do: Logger.info("    extractor:tokenize=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug?,
+      do: Logger.info("    extractor:tokenize=#{System.monotonic_time(:millisecond) - t0}ms")
 
     gaz_context = Keyword.take(opts, [:domain, :intent, :world_id])
     gazetteer_entities = extract_gazetteer_entities(tokens, entity_maps, gaz_context)
 
-    if debug?, do: Logger.info("    extractor:gazetteer=#{System.monotonic_time(:millisecond) - t0}ms (#{length(gazetteer_entities)} found)")
+    if debug?,
+      do:
+        Logger.info(
+          "    extractor:gazetteer=#{System.monotonic_time(:millisecond) - t0}ms (#{length(gazetteer_entities)} found)"
+        )
 
     system_entities = extract_system_entities(tokens, text)
 
-    if debug?, do: Logger.info("    extractor:system=#{System.monotonic_time(:millisecond) - t0}ms (#{length(system_entities)} found)")
+    if debug?,
+      do:
+        Logger.info(
+          "    extractor:system=#{System.monotonic_time(:millisecond) - t0}ms (#{length(system_entities)} found)"
+        )
 
     location_entities = extract_location_hints(tokens, entity_maps)
     proper_noun_entities = extract_proper_noun_hints(tokens, entity_maps)
 
-    if debug?, do: Logger.info("    extractor:location+proper=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug?,
+      do:
+        Logger.info("    extractor:location+proper=#{System.monotonic_time(:millisecond) - t0}ms")
 
     all_entities =
       gazetteer_entities ++ system_entities ++ location_entities ++ proper_noun_entities
@@ -256,7 +267,11 @@ defmodule Brain.ML.EntityExtractor do
       |> resolve_entity_conflicts()
       |> merge_adjacent_entities(tokens)
 
-    if debug?, do: Logger.info("    extractor:resolve+merge=#{System.monotonic_time(:millisecond) - t0}ms (#{length(resolved_entities)} resolved)")
+    if debug?,
+      do:
+        Logger.info(
+          "    extractor:resolve+merge=#{System.monotonic_time(:millisecond) - t0}ms (#{length(resolved_entities)} resolved)"
+        )
 
     disambiguated_entities =
       if skip_disambiguation or (is_nil(discourse) and is_nil(speech_act)) do
@@ -265,7 +280,8 @@ defmodule Brain.ML.EntityExtractor do
         disambiguate_entities(resolved_entities, tokens, discourse, speech_act, text, world_id)
       end
 
-    if debug?, do: Logger.info("    extractor:disambiguate=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug?,
+      do: Logger.info("    extractor:disambiguate=#{System.monotonic_time(:millisecond) - t0}ms")
 
     min_confidence = Keyword.get(opts, :min_confidence) || get_min_confidence_threshold()
 
@@ -322,7 +338,8 @@ defmodule Brain.ML.EntityExtractor do
   ## Options
     - `:intent` - The classified intent string (e.g., "smarthome.heating.set")
   """
-  def refine_entity_types(entities, intent, _opts \\ []) when is_list(entities) and is_binary(intent) do
+  def refine_entity_types(entities, intent, _opts \\ [])
+      when is_list(entities) and is_binary(intent) do
     schema = Analysis.SlotDetector.get_schema(intent)
 
     entities
@@ -348,10 +365,15 @@ defmodule Brain.ML.EntityExtractor do
 
     refined_numbers =
       case {numeric_slots, number_entities} do
-        {[], _} -> number_entities
-        {_, []} -> []
+        {[], _} ->
+          number_entities
+
+        {_, []} ->
+          []
+
         {[single_slot], _} ->
           Enum.map(number_entities, fn e -> Map.put(e, :entity_type, single_slot) end)
+
         {slots, nums} ->
           assign_numbers_to_slots(nums, slots)
       end
@@ -382,10 +404,23 @@ defmodule Brain.ML.EntityExtractor do
 
           [first | rest] ->
             last = List.last(rest)
-            given = %{entity | entity_type: "given-name", value: first,
-                       match: first, confidence: entity[:confidence]}
-            family = %{entity | entity_type: "last-name", value: last,
-                        match: last, confidence: entity[:confidence] * 0.95}
+
+            given = %{
+              entity
+              | entity_type: "given-name",
+                value: first,
+                match: first,
+                confidence: entity[:confidence]
+            }
+
+            family = %{
+              entity
+              | entity_type: "last-name",
+                value: last,
+                match: last,
+                confidence: entity[:confidence] * 0.95
+            }
+
             [given, family]
 
           _ ->
@@ -424,6 +459,7 @@ defmodule Brain.ML.EntityExtractor do
 
   defp is_year_only?(value) do
     trimmed = String.trim(value)
+
     case Integer.parse(trimmed) do
       {n, ""} -> n >= 1900 and n <= 2100
       _ -> false
@@ -443,7 +479,7 @@ defmodule Brain.ML.EntityExtractor do
       entities
     else
       Enum.map(entities, fn entity ->
-        entity_type = Map.get(entity, :entity_type) || Map.get(entity, "entity_type", "")
+        entity_type = Map.get(entity, :entity_type) || ""
         canonical = Map.get(mappings, entity_type, entity_type)
         Map.put(entity, :entity_type, canonical)
       end)
@@ -462,7 +498,7 @@ defmodule Brain.ML.EntityExtractor do
 
   defp filter_by_confidence(entities, min_confidence) when is_float(min_confidence) do
     Enum.filter(entities, fn entity ->
-      confidence = Map.get(entity, :confidence) || Map.get(entity, "confidence", 0.0)
+      confidence = Map.get(entity, :confidence) || 0.0
       confidence >= min_confidence
     end)
   end
@@ -531,7 +567,7 @@ defmodule Brain.ML.EntityExtractor do
       match_text = Enum.map_join(matched_tokens, " ", & &1.text)
 
       case entity_info do
-        infos when is_list(infos) and length(infos) > 1 ->
+        [_, _ | _] = infos ->
           primary_info = score_and_pick_primary(infos)
           primary_type = Map.get(primary_info, :entity_type, "unknown")
           entity_value = Map.get(primary_info, :value, match_text)
@@ -747,7 +783,7 @@ defmodule Brain.ML.EntityExtractor do
 
           temporal_match =
             Enum.find(matches, fn match ->
-              entity_type = match[:entity_type] || match["entity_type"] || ""
+              entity_type = match[:entity_type] || ""
               entity_type in temporal_types
             end)
 
@@ -756,7 +792,7 @@ defmodule Brain.ML.EntityExtractor do
               []
 
             match ->
-              entity_type = match[:entity_type] || match["entity_type"]
+              entity_type = match[:entity_type]
 
               if entity_type in month_types do
                 maybe_date = check_for_date_pattern(tokens, idx)
@@ -883,22 +919,45 @@ defmodule Brain.ML.EntityExtractor do
     end
   end
 
-  @street_indicators ["street", "st", "avenue", "ave", "boulevard", "blvd",
-                       "road", "rd", "drive", "dr", "lane", "ln", "way",
-                       "court", "ct", "place", "pl", "circle", "cir",
-                       "highway", "hwy", "parkway", "pkwy", "terrace"]
+  @street_indicators [
+    "street",
+    "st",
+    "avenue",
+    "ave",
+    "boulevard",
+    "blvd",
+    "road",
+    "rd",
+    "drive",
+    "dr",
+    "lane",
+    "ln",
+    "way",
+    "court",
+    "ct",
+    "place",
+    "pl",
+    "circle",
+    "cir",
+    "highway",
+    "hwy",
+    "parkway",
+    "pkwy",
+    "terrace"
+  ]
 
   defp classify_location_type(location_text, surrounding_tokens) do
     lower = String.downcase(location_text)
     words = String.split(lower, " ", trim: true)
 
-    has_number = Enum.any?(surrounding_tokens, fn t -> t.type == :number end) or
-                 Enum.any?(words, fn w ->
-                   case Integer.parse(w) do
-                     {_, ""} -> true
-                     _ -> false
-                   end
-                 end)
+    has_number =
+      Enum.any?(surrounding_tokens, fn t -> t.type == :number end) or
+        Enum.any?(words, fn w ->
+          case Integer.parse(w) do
+            {_, ""} -> true
+            _ -> false
+          end
+        end)
 
     has_street_word = Enum.any?(words, fn w -> w in @street_indicators end)
 
@@ -930,14 +989,16 @@ defmodule Brain.ML.EntityExtractor do
 
             case acc do
               [%{source: :pos_tagger_propn, _merge_end_idx: prev_idx} = prev | rest]
-                when prev_idx == idx - 1 ->
-                merged = %{prev |
-                  value: prev.value <> " " <> word,
-                  match: prev.match <> " " <> word,
-                  end_pos: token.end_pos,
-                  confidence: min(0.8, prev.confidence + 0.05),
-                  _merge_end_idx: idx
+              when prev_idx == idx - 1 ->
+                merged = %{
+                  prev
+                  | value: prev.value <> " " <> word,
+                    match: prev.match <> " " <> word,
+                    end_pos: token.end_pos,
+                    confidence: min(0.8, prev.confidence + 0.05),
+                    _merge_end_idx: idx
                 }
+
                 [merged | rest]
 
               _ ->
@@ -951,6 +1012,7 @@ defmodule Brain.ML.EntityExtractor do
                   source: :pos_tagger_propn,
                   _merge_end_idx: idx
                 }
+
                 [entity | acc]
             end
           else
@@ -996,7 +1058,15 @@ defmodule Brain.ML.EntityExtractor do
   end
 
   defp extract_gazetteer_metadata(base, info) when is_map(info) do
-    metadata_keys = [:ha_entity_id, :ha_domain, :state_code, :state_name, :region, :country, :county]
+    metadata_keys = [
+      :ha_entity_id,
+      :ha_domain,
+      :state_code,
+      :state_name,
+      :region,
+      :country,
+      :county
+    ]
 
     metadata =
       metadata_keys
@@ -1066,14 +1136,18 @@ defmodule Brain.ML.EntityExtractor do
              types_compatible_for_merge?(prev, entity) and
              adjacent_in_text?(prev, entity, tokens) do
           merged_type = common_compatible_type(prev, entity)
-          combined = %{prev |
-            value: prev.value <> " " <> entity.value,
-            match: prev.match <> " " <> entity.match,
-            end_pos: entity.end_pos,
-            entity_type: merged_type,
-            confidence: min(0.85, max(prev.confidence, entity.confidence) + 0.05)
-          }
-          |> Map.delete(:types)
+
+          combined =
+            %{
+              prev
+              | value: prev.value <> " " <> entity.value,
+                match: prev.match <> " " <> entity.match,
+                end_pos: entity.end_pos,
+                entity_type: merged_type,
+                confidence: min(0.85, max(prev.confidence, entity.confidence) + 0.05)
+            }
+            |> Map.delete(:types)
+
           {List.replace_at(acc, -1, combined), combined}
         else
           {acc ++ [entity], entity}
@@ -1121,18 +1195,21 @@ defmodule Brain.ML.EntityExtractor do
 
   defp all_entity_types(entity) do
     primary = [entity.entity_type]
-    from_types = entity
+
+    from_types =
+      entity
       |> Map.get(:types, [])
-      |> Enum.map(&(&1[:entity_type] || &1["entity_type"]))
+      |> Enum.map(& &1[:entity_type])
       |> Enum.filter(&is_binary/1)
 
     MapSet.new(primary ++ from_types)
   end
 
   defp adjacent_in_text?(prev, next, tokens) do
-    between = Enum.filter(tokens, fn t ->
-      t.start_pos > prev.end_pos and t.end_pos < next.start_pos
-    end)
+    between =
+      Enum.filter(tokens, fn t ->
+        t.start_pos > prev.end_pos and t.end_pos < next.start_pos
+      end)
 
     Enum.empty?(between) or Enum.all?(between, &(&1.type == :punctuation))
   end
@@ -1201,7 +1278,11 @@ defmodule Brain.ML.EntityExtractor do
 
     pos_tagged = get_pos_tags(tokens)
 
-    if debug?, do: Logger.info("      disambig:pos_tags=#{System.monotonic_time(:millisecond) - t0}ms (#{length(entities)} entities, intent=#{classified_intent})")
+    if debug?,
+      do:
+        Logger.info(
+          "      disambig:pos_tags=#{System.monotonic_time(:millisecond) - t0}ms (#{length(entities)} entities, intent=#{classified_intent})"
+        )
 
     disambiguated =
       entities
@@ -1211,20 +1292,28 @@ defmodule Brain.ML.EntityExtractor do
         entity_type = entity[:entity_type] || ""
 
         needs_disambiguation =
-          length(types) > 1 or EntityDisambiguator.requires_inference?(entity_type)
+          match?([_, _ | _], types) or EntityDisambiguator.requires_inference?(entity_type)
 
         if needs_disambiguation do
           et0 = if debug?, do: System.monotonic_time(:millisecond)
 
           result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
 
-          if debug?, do: Logger.info("      disambig:entity[#{idx}] disambiguate_single=#{System.monotonic_time(:millisecond) - et0}ms val=#{entity[:value]} type=#{entity_type} types=#{length(types)}")
+          if debug?,
+            do:
+              Logger.info(
+                "      disambig:entity[#{idx}] disambiguate_single=#{System.monotonic_time(:millisecond) - et0}ms val=#{entity[:value]} type=#{entity_type} types=#{length(types)}"
+              )
 
           pt0 = if debug?, do: System.monotonic_time(:millisecond)
 
           result = refine_with_poincare(result, types, context)
 
-          if debug?, do: Logger.info("      disambig:entity[#{idx}] poincare=#{System.monotonic_time(:millisecond) - pt0}ms types=#{length(types)}")
+          if debug?,
+            do:
+              Logger.info(
+                "      disambig:entity[#{idx}] poincare=#{System.monotonic_time(:millisecond) - pt0}ms types=#{length(types)}"
+              )
 
           :telemetry.execute(
             [:chat_bot, :analysis, :disambiguation, :entity],
@@ -1242,18 +1331,24 @@ defmodule Brain.ML.EntityExtractor do
 
           result
         else
-          if debug?, do: Logger.info("      disambig:entity[#{idx}] skip (no ambiguity) val=#{entity[:value]} type=#{entity_type}")
+          if debug?,
+            do:
+              Logger.info(
+                "      disambig:entity[#{idx}] skip (no ambiguity) val=#{entity[:value]} type=#{entity_type}"
+              )
+
           entity
         end
       end)
 
-    if debug?, do: Logger.info("      disambig:total=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug?,
+      do: Logger.info("      disambig:total=#{System.monotonic_time(:millisecond) - t0}ms")
 
     ambiguous_count =
       Enum.count(entities, fn e ->
         types = get_entity_types(e)
         entity_type = e[:entity_type] || ""
-        length(types) > 1 or EntityDisambiguator.requires_inference?(entity_type)
+        match?([_, _ | _], types) or EntityDisambiguator.requires_inference?(entity_type)
       end)
 
     if ambiguous_count > 0 do
@@ -1273,7 +1368,7 @@ defmodule Brain.ML.EntityExtractor do
     disambiguated
   end
 
-  defp refine_with_poincare(result, candidate_types, context) when length(candidate_types) > 1 do
+  defp refine_with_poincare(result, [_, _ | _] = candidate_types, context) do
     debug? = Application.get_env(:brain, :debug_pipeline_timing, false)
 
     if Brain.ML.Poincare.Embeddings.ready?() do
@@ -1291,7 +1386,11 @@ defmodule Brain.ML.EntityExtractor do
         |> Enum.filter(fn {_t, d, _c} -> d != nil end)
         |> Enum.sort_by(fn {_t, d, _c} -> d end)
 
-      if debug?, do: Logger.info("        poincare:scored #{length(candidate_types)} candidates in #{System.monotonic_time(:millisecond) - pt0}ms")
+      if debug?,
+        do:
+          Logger.info(
+            "        poincare:scored #{length(candidate_types)} candidates in #{System.monotonic_time(:millisecond) - pt0}ms"
+          )
 
       case scored do
         [{best_type, best_dist, _best_candidate} | _] when best_type != current_type ->
@@ -1299,7 +1398,9 @@ defmodule Brain.ML.EntityExtractor do
 
           if current_dist != nil and best_dist < current_dist * 0.8 do
             Logger.debug("Poincare refinement: #{current_type} -> #{best_type}",
-              current_dist: current_dist, best_dist: best_dist)
+              current_dist: current_dist,
+              best_dist: best_dist
+            )
 
             :telemetry.execute(
               [:chat_bot, :analysis, :poincare_refinement],
@@ -1350,15 +1451,32 @@ defmodule Brain.ML.EntityExtractor do
     intent = context[:intent] || extract_intent_from_speech_act(context[:speech_act])
 
     cond do
-      profile != nil and is_map(profile) and Map.get(profile, :domain) == :introduction -> :introduction
-      profile != nil and is_map(profile) and Map.get(profile, :domain) == :weather -> :weather
-      profile != nil and is_map(profile) and Map.get(profile, :domain) == :music -> :music
-      profile != nil and is_map(profile) and Map.get(profile, :domain) == :smarthome -> :device
-      String.starts_with?(to_string(intent || ""), "greeting") -> :introduction
-      String.starts_with?(to_string(intent || ""), "weather") -> :weather
-      String.starts_with?(to_string(intent || ""), "music") -> :music
-      String.starts_with?(to_string(intent || ""), "smarthome") -> :device
-      true -> :default
+      profile != nil and is_map(profile) and Map.get(profile, :domain) == :introduction ->
+        :introduction
+
+      profile != nil and is_map(profile) and Map.get(profile, :domain) == :weather ->
+        :weather
+
+      profile != nil and is_map(profile) and Map.get(profile, :domain) == :music ->
+        :music
+
+      profile != nil and is_map(profile) and Map.get(profile, :domain) == :smarthome ->
+        :device
+
+      String.starts_with?(to_string(intent || ""), "greeting") ->
+        :introduction
+
+      String.starts_with?(to_string(intent || ""), "weather") ->
+        :weather
+
+      String.starts_with?(to_string(intent || ""), "music") ->
+        :music
+
+      String.starts_with?(to_string(intent || ""), "smarthome") ->
+        :device
+
+      true ->
+        :default
     end
   end
 
@@ -1441,6 +1559,7 @@ defmodule Brain.ML.EntityExtractor do
 
   defp log_once(key, message) do
     pt_key = {__MODULE__, :logged, key}
+
     unless :persistent_term.get(pt_key, false) do
       Logger.info(message)
       :persistent_term.put(pt_key, true)

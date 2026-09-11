@@ -174,7 +174,7 @@ defmodule Brain.Epistemic.JTMSTest do
       {:ok, result} = JTMS.why_node(conclusion)
 
       assert result.node.id == conclusion
-      assert length(result.supporting_justifications) == 1
+      assert match?([_], result.supporting_justifications)
       assert hd(result.supporting_justifications).id == just_id
     end
   end

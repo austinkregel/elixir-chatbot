@@ -1,0 +1,81 @@
+[
+  {
+    "content": {
+      "content_complete": true,
+      "user_input_summary": "In one sentence, report your current readiness."
+    },
+    "type": "acknowledgment",
+    "variant": "general"
+  },
+  {
+    "content": {
+      "confidence": 0.739,
+      "content_complete": true,
+      "emotional_tone": "neutral",
+      "entities": [
+        {
+          "confidence": 0.59,
+          "entity": "pronoun",
+          "entity_type": "pronoun",
+          "graph_known": true,
+          "match": "one",
+          "source": "gazetteer",
+          "value": "one"
+        },
+        {
+          "confidence": 0.71,
+          "entity": "news_sort",
+          "entity_type": "news_sort",
+          "graph_known": false,
+          "match": "current",
+          "source": "gazetteer",
+          "value": "latest"
+        }
+      ],
+      "intent": "smarthome.statement",
+      "key_elements": {
+        "entities": [
+          "one",
+          "latest"
+        ],
+        "intent": "smarthome.statement"
+      },
+      "related_beliefs": [],
+      "text": "In one sentence, report your current readiness.",
+      "understood_meaning": "you're talking about one and latest"
+    },
+    "type": "content",
+    "variant": "reflective"
+  },
+  {
+    "content": {
+      "aspect_to_explore": "one",
+      "content_complete": true,
+      "entities": [
+        {
+          "confidence": 0.59,
+          "entity": "pronoun",
+          "entity_type": "pronoun",
+          "graph_known": true,
+          "match": "one",
+          "source": "gazetteer",
+          "value": "one"
+        },
+        {
+          "confidence": 0.71,
+          "entity": "news_sort",
+          "entity_type": "news_sort",
+          "graph_known": false,
+          "match": "current",
+          "source": "gazetteer",
+          "value": "latest"
+        }
+      ],
+      "intent": "smarthome.statement",
+      "text": "In one sentence, report your current readiness.",
+      "topic": "one, latest"
+    },
+    "type": "follow_up",
+    "variant": "elaboration"
+  }
+]

@@ -9,7 +9,7 @@ defmodule Brain.Graph.ReaderTest do
       result = Reader.entity_context([%{entity_type: "Location", value: "Paris"}])
       assert [%{entity: _, neighbors: neighbors, node: node}] = result
       assert node != nil
-      neighbor_names = Enum.map(neighbors, &(&1.properties["name"]))
+      neighbor_names = Enum.map(neighbors, & &1.properties["name"])
       assert "France" in neighbor_names
     end
 
@@ -25,26 +25,28 @@ defmodule Brain.Graph.ReaderTest do
       ]
 
       result = Reader.entity_context(entities)
-      assert length(result) == 2
+      assert match?([_, _], result)
       assert Enum.all?(result, fn r -> r.node != nil end)
     end
   end
 
   describe "relationship_path/2" do
     test "finds path between related entities" do
-      result = Reader.relationship_path(
-        %{entity_type: "Location", value: "Paris"},
-        %{entity_type: "Location", value: "France"}
-      )
+      result =
+        Reader.relationship_path(
+          %{entity_type: "Location", value: "Paris"},
+          %{entity_type: "Location", value: "France"}
+        )
 
       assert {:ok, _path} = result
     end
 
     test "returns error for unrelated entities" do
-      result = Reader.relationship_path(
-        %{entity_type: "Location", value: "Atlantis"},
-        %{entity_type: "Location", value: "Narnia"}
-      )
+      result =
+        Reader.relationship_path(
+          %{entity_type: "Location", value: "Atlantis"},
+          %{entity_type: "Location", value: "Narnia"}
+        )
 
       assert {:error, :not_found} = result
     end
@@ -64,6 +66,7 @@ defmodule Brain.Graph.ReaderTest do
       entities = [%{entity_type: "Location", value: "Atlantis"}]
       {_query, related} = Reader.expand_query("Find Atlantis", entities)
       assert is_list(related)
+
       refute "Atlantis" in related,
              "Should not return the query entity itself as a related term"
     end
@@ -72,7 +75,7 @@ defmodule Brain.Graph.ReaderTest do
   describe "user_preferences/1" do
     test "returns preference edges for seeded user" do
       prefs = Reader.user_preferences("test_user_1")
-      assert length(prefs) >= 1
+      assert prefs != []
       assert Enum.any?(prefs, fn p -> p.topic == "jazz" end)
     end
 
@@ -85,7 +88,7 @@ defmodule Brain.Graph.ReaderTest do
   describe "evidence_chain/1" do
     test "returns episodes for seeded semantic fact" do
       episodes = Reader.evidence_chain("weather_pattern")
-      assert length(episodes) >= 2
+      assert Enum.count_until(episodes, 2) >= 2
     end
 
     test "returns empty for unknown fact" do
@@ -110,7 +113,7 @@ defmodule Brain.Graph.ReaderTest do
     test "returns topic transition data" do
       transitions = Reader.topic_transitions(10)
       assert is_list(transitions)
-      assert length(transitions) >= 1
+      assert transitions != []
 
       t = hd(transitions)
       assert Map.has_key?(t, :from)
@@ -122,7 +125,7 @@ defmodule Brain.Graph.ReaderTest do
   describe "recent_context/2" do
     test "returns messages from seeded conversation" do
       context = Reader.recent_context("test_conv_1", 5)
-      assert length(context) >= 2
+      assert Enum.count_until(context, 2) >= 2
 
       roles = Enum.map(context, fn c -> c.message["role"] end)
       assert "user" in roles
@@ -133,7 +136,7 @@ defmodule Brain.Graph.ReaderTest do
   describe "belief_justification_chain/1" do
     test "returns justification chain for derived belief" do
       chain = Reader.belief_justification_chain("recommend_jazz")
-      assert length(chain) >= 1
+      assert chain != []
 
       entry = hd(chain)
       assert entry.node != nil
@@ -149,8 +152,8 @@ defmodule Brain.Graph.ReaderTest do
   describe "assumption_consequences/1" do
     test "finds nodes that depend on an assumption" do
       consequences = Reader.assumption_consequences("user_likes_jazz")
-      assert length(consequences) >= 1
-      names = Enum.map(consequences, &(&1.properties["name"]))
+      assert consequences != []
+      names = Enum.map(consequences, & &1.properties["name"])
       assert "recommend_jazz" in names
     end
 
@@ -163,7 +166,7 @@ defmodule Brain.Graph.ReaderTest do
   describe "tag_transitions/1" do
     test "returns FOLLOWED_BY edges for DET" do
       transitions = Reader.tag_transitions("DET")
-      assert length(transitions) >= 2
+      assert Enum.count_until(transitions, 2) >= 2
 
       noun_t = Enum.find(transitions, fn t -> t.to_tag == "NOUN" end)
       assert noun_t != nil
@@ -179,7 +182,7 @@ defmodule Brain.Graph.ReaderTest do
   describe "ambiguous_tokens/1" do
     test "finds tokens with multiple POS tags" do
       ambiguous = Reader.ambiguous_tokens(2)
-      assert length(ambiguous) >= 1
+      assert ambiguous != []
       assert Enum.any?(ambiguous, fn a -> a.token == "run" end)
     end
   end

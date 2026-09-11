@@ -1,7 +1,8 @@
 defmodule ChatWeb.Layouts do
   @moduledoc """
-  This module holds layouts and related functionality
-  used by your application.
+  Root and app layouts for the Phoenix UI, with the templates in `layouts/*`
+  embedded at compile time. Also home to the shared `flash_group` and the
+  `theme_toggle` (system/light/dark) wired to the `phx:set-theme` client hook.
   """
   use ChatWeb, :html
 

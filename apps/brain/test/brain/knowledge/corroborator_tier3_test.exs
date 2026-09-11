@@ -40,25 +40,27 @@ defmodule Brain.Knowledge.CorroboratorTier3Test do
       findings = [Finding.new("Some fact", "entity", source, confidence: 0.9)]
 
       {:ok, candidates} = Corroborator.corroborate(findings, include_uncorroborated: true)
-      assert length(candidates) >= 1
+      assert candidates != []
     end
   end
 
   describe "compare_claims/2" do
     test "identical claims have high similarity" do
-      {:ok, similarity} = Corroborator.compare_claims(
-        "Paris is the capital of France",
-        "Paris is the capital of France"
-      )
+      {:ok, similarity} =
+        Corroborator.compare_claims(
+          "Paris is the capital of France",
+          "Paris is the capital of France"
+        )
 
       assert similarity >= 0.9
     end
 
     test "different claims have lower similarity" do
-      {:ok, similarity} = Corroborator.compare_claims(
-        "Paris is the capital of France",
-        "Tokyo is the capital of Japan"
-      )
+      {:ok, similarity} =
+        Corroborator.compare_claims(
+          "Paris is the capital of France",
+          "Tokyo is the capital of Japan"
+        )
 
       assert similarity < 1.0
     end

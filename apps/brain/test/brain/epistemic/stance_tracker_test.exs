@@ -4,7 +4,7 @@ defmodule Brain.Epistemic.StanceTrackerTest do
   alias Brain.Epistemic.StanceTracker
 
   setup do
-    {:ok, pid} = StanceTracker.start_link(name: :"tracker_#{:rand.uniform(100000)}")
+    {:ok, pid} = StanceTracker.start_link(name: :"tracker_#{:rand.uniform(100_000)}")
     %{tracker: pid}
   end
 
@@ -24,7 +24,7 @@ defmodule Brain.Epistemic.StanceTrackerTest do
 
       {:ok, stances} = StanceTracker.conversation_stances("conv1", tracker)
       assert Map.has_key?(stances, "climate")
-      assert length(stances["climate"]) == 2
+      assert match?([_, _], stances["climate"])
     end
 
     test "clamps positions to [-1, 1]", %{tracker: tracker} do

@@ -121,9 +121,9 @@ defmodule Brain.Response.ContextBuilder do
   defp normalize_entities_for_summary(entities) when is_list(entities) do
     Enum.map(entities, fn e ->
       %{
-        entity_type: e[:entity_type] || e["entity_type"] || e["type"],
-        value: e[:value] || e["value"] || e["name"],
-        confidence: e[:confidence] || e["confidence"] || 0.8
+        entity_type: e[:entity_type],
+        value: e[:value],
+        confidence: e[:confidence] || 0.8
       }
     end)
   end
@@ -277,15 +277,18 @@ defmodule Brain.Response.ContextBuilder do
   defp fetch_justification_chains(beliefs) do
     beliefs
     |> Enum.flat_map(fn belief ->
-      node_id = Map.get(belief, :node_id) || Map.get(belief, "node_id")
-      if node_id, do: safe_call(fn -> Reader.belief_justification_chain(to_string(node_id)) end), else: []
+      node_id = Map.get(belief, :node_id)
+
+      if node_id,
+        do: safe_call(fn -> Reader.belief_justification_chain(to_string(node_id)) end),
+        else: []
     end)
   end
 
   defp fetch_evidence_chains(beliefs) do
     beliefs
     |> Enum.flat_map(fn belief ->
-      subject = Map.get(belief, :subject) || Map.get(belief, "subject")
+      subject = Map.get(belief, :subject)
       if subject, do: safe_call(fn -> Reader.evidence_chain(to_string(subject)) end), else: []
     end)
   end
@@ -297,8 +300,11 @@ defmodule Brain.Response.ContextBuilder do
     if has_contradiction do
       beliefs
       |> Enum.flat_map(fn belief ->
-        node_id = Map.get(belief, :node_id) || Map.get(belief, "node_id")
-        if node_id, do: safe_call(fn -> Reader.assumption_consequences(to_string(node_id)) end), else: []
+        node_id = Map.get(belief, :node_id)
+
+        if node_id,
+          do: safe_call(fn -> Reader.assumption_consequences(to_string(node_id)) end),
+          else: []
       end)
     else
       []
@@ -371,7 +377,7 @@ defmodule Brain.Response.ContextBuilder do
       [
         primary.intent || "",
         primary.text || "",
-        (primary.entities || []) |> Enum.map_join(" ", fn e -> e[:value] || e["value"] || "" end)
+        (primary.entities || []) |> Enum.map_join(" ", fn e -> e[:value] || "" end)
       ]
       |> Enum.filter(&(&1 != ""))
       |> Enum.join(" ")

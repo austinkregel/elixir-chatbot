@@ -80,6 +80,7 @@ defmodule Brain.Analysis.SlotDetector do
         filled_required =
           Enum.count(required, fn slot ->
             mapped = Map.get(mappings, slot, [])
+
             Enum.any?(entity_types, fn etype ->
               etype in mapped or narrowing_match?(etype, mapped)
             end)
@@ -310,8 +311,8 @@ defmodule Brain.Analysis.SlotDetector do
             record_learned_type_preference(entity, slot_name, result.schema_name)
           end
 
-          value = entity[:value] || entity["value"]
-          confidence = entity[:confidence] || entity["confidence"] || 1.0
+          value = entity[:value]
+          confidence = entity[:confidence] || 1.0
           SlotResult.fill_slot(acc, slot_name, value, :explicit, confidence)
       end
     end)
@@ -329,6 +330,7 @@ defmodule Brain.Analysis.SlotDetector do
 
   defp record_learned_type_preference(entity, slot_name, schema_name) do
     entity_value = entity[:value] || entity[:match] || ""
+
     domain =
       case String.split(to_string(schema_name), ".", parts: 2) do
         [d, _] -> String.to_atom(d)

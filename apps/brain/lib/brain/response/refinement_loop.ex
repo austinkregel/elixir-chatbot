@@ -51,30 +51,39 @@ defmodule Brain.Response.RefinementLoop do
 
       case result do
         {:ok, {:ouro_dry_run, _messages} = response, primitives, _score, iterations} ->
-          Logger.info("RefinementLoop: dry_run_ouro=true, returning ChatML messages without evaluation")
-          {:ok, response, %{
-            score: nil,
-            iterations: iterations,
-            primitives: primitives,
-            method: :ouro_dry_run
-          }}
+          Logger.info(
+            "RefinementLoop: dry_run_ouro=true, returning ChatML messages without evaluation"
+          )
+
+          {:ok, response,
+           %{
+             score: nil,
+             iterations: iterations,
+             primitives: primitives,
+             method: :ouro_dry_run
+           }}
 
         {:ok, response, primitives, score, iterations} ->
           if score != nil and score.silence_preferred do
-            Logger.info("RefinementLoop: silence preferred (score=#{Float.round(score.overall, 2)})")
-            {:ok, nil, %{
-              score: score,
-              iterations: iterations,
-              primitives: primitives,
-              method: :silence_preferred
-            }}
+            Logger.info(
+              "RefinementLoop: silence preferred (score=#{Float.round(score.overall, 2)})"
+            )
+
+            {:ok, nil,
+             %{
+               score: score,
+               iterations: iterations,
+               primitives: primitives,
+               method: :silence_preferred
+             }}
           else
-            {:ok, response, %{
-              score: score,
-              iterations: iterations,
-              primitives: primitives,
-              method: :synthesis_pipeline
-            }}
+            {:ok, response,
+             %{
+               score: score,
+               iterations: iterations,
+               primitives: primitives,
+               method: :synthesis_pipeline
+             }}
           end
 
         {:error, reason} ->
@@ -133,7 +142,9 @@ defmodule Brain.Response.RefinementLoop do
         if score.converged or iteration >= max_iter do
           {:ok, best.response, best.primitives, best.score, iteration}
         else
-          Logger.debug("RefinementLoop iteration #{iteration}: overall=#{Float.round(score.overall, 2)}, weakest=#{score.weakest_dimension}")
+          Logger.debug(
+            "RefinementLoop iteration #{iteration}: overall=#{Float.round(score.overall, 2)}, weakest=#{score.weakest_dimension}"
+          )
 
           refined_plan = refine(plan, score, analysis, opts)
           iterate(refined_plan, analysis, opts, iteration + 1, max_iter, best)
@@ -141,7 +152,10 @@ defmodule Brain.Response.RefinementLoop do
 
       {:error, reason} ->
         if best_so_far do
-          Logger.warning("RefinementLoop: realization failed at iteration #{iteration}, using best so far")
+          Logger.warning(
+            "RefinementLoop: realization failed at iteration #{iteration}, using best so far"
+          )
+
           {:ok, best_so_far.response, best_so_far.primitives, best_so_far.score, iteration}
         else
           {:error, reason}
@@ -193,7 +207,9 @@ defmodule Brain.Response.RefinementLoop do
 
     merged =
       case Enum.at(plan, -1) do
-        nil -> merged
+        nil ->
+          merged
+
         last ->
           if merged == [] or List.last(merged) != last do
             merged ++ [last]
@@ -208,7 +224,8 @@ defmodule Brain.Response.RefinementLoop do
   defp mergeable?(a, b) do
     (a.type == :hedging and b.type == :content) or
       (a.type == :attunement and b.type == :follow_up and b.variant == :clarification) or
-      (a.type == :contradiction_response and b.type == :follow_up and b.variant == :correction_invite)
+      (a.type == :contradiction_response and b.type == :follow_up and
+         b.variant == :correction_invite)
   end
 
   defp maybe_simplify(plan, _unified_context) do
@@ -216,7 +233,7 @@ defmodule Brain.Response.RefinementLoop do
 
     essential = Enum.reject(plan, &(&1.type in optional_types))
 
-    if length(essential) >= 1, do: essential, else: plan
+    if essential != [], do: essential, else: plan
   end
 
   defp adjust_plan(plan, :speech_act_alignment, analysis) do
@@ -235,10 +252,13 @@ defmodule Brain.Response.RefinementLoop do
     has_contradiction_response = Enum.any?(plan, &(&1.type == :contradiction_response))
 
     if not has_contradiction_response do
-      plan ++ [Brain.Response.Primitive.new(:hedging, nil, %{
-        confidence_level: 0.3,
-        reason: :epistemic_contradiction
-      })]
+      plan ++
+        [
+          Brain.Response.Primitive.new(:hedging, nil, %{
+            confidence_level: 0.3,
+            reason: :epistemic_contradiction
+          })
+        ]
     else
       plan
     end
@@ -253,6 +273,7 @@ defmodule Brain.Response.RefinementLoop do
     cond do
       conf < 0.4 and not has_hedging ->
         hedging = Brain.Response.Primitive.new(:hedging, nil, %{confidence_level: conf})
+
         case Enum.find_index(plan, &(&1.type in [:content, :framing])) do
           nil -> [hedging | plan]
           idx -> List.insert_at(plan, idx, hedging)
@@ -289,9 +310,10 @@ defmodule Brain.Response.RefinementLoop do
   end
 
   defp adjust_content(plan, :slot_coverage, analysis, _opts) do
-    has_clarification = Enum.any?(plan, fn p ->
-      p.type == :follow_up and p.variant == :clarification
-    end)
+    has_clarification =
+      Enum.any?(plan, fn p ->
+        p.type == :follow_up and p.variant == :clarification
+      end)
 
     slots = analysis.slots
     missing = get_missing_slots(slots)
@@ -318,6 +340,7 @@ defmodule Brain.Response.RefinementLoop do
   end
 
   defp pick_best(nil, current), do: current
+
   defp pick_best(best, current) do
     if current.score.overall >= best.score.overall, do: current, else: best
   end

@@ -202,7 +202,7 @@ defmodule Brain.Analysis.FramingDetectorTest do
 
       assert report.drifted == true
       assert report.similarity_to_ema < 0.85
-      assert length(report.top_changed_dimensions) > 0
+      assert report.top_changed_dimensions != []
     end
   end
 
@@ -213,7 +213,8 @@ defmodule Brain.Analysis.FramingDetectorTest do
     end
 
     test "returns :not_found for unknown source" do
-      assert :not_found = FramingDetector.get_source_ema("nonexistent_#{System.unique_integer([:positive])}")
+      assert :not_found =
+               FramingDetector.get_source_ema("nonexistent_#{System.unique_integer([:positive])}")
     end
 
     test "returns ema and count after detecting drift" do
@@ -224,7 +225,7 @@ defmodule Brain.Analysis.FramingDetectorTest do
       {:ok, _} = FramingDetector.detect_drift(source_id, doc)
 
       assert {:ok, ema, 1} = FramingDetector.get_source_ema(source_id)
-      assert length(ema) == 3
+      assert match?([_, _, _], ema)
     end
   end
 

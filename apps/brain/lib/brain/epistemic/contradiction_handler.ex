@@ -314,7 +314,7 @@ defmodule Brain.Epistemic.ContradictionHandler do
       end)
       |> Enum.reject(&is_nil/1)
 
-    if length(papers) >= 2 do
+    if match?([_, _ | _], papers) do
       sorted =
         papers
         |> Enum.sort_by(
@@ -443,7 +443,7 @@ defmodule Brain.Epistemic.ContradictionHandler do
   end
 
   defp apply_strategy(:hybrid, assumptions, metadata) do
-    if length(assumptions) == 1 do
+    if match?([_], assumptions) do
       {:auto_resolve, hd(assumptions), :only_option}
     else
       confidences =
@@ -520,7 +520,8 @@ defmodule Brain.Epistemic.ContradictionHandler do
   defp kg_default_confidence(id, metadata) do
     config = Application.get_env(:brain, :kg_signals, [])
 
-    if Keyword.get(config, :enabled, true) and Keyword.get(config, :contradiction_default_kg, true) do
+    if Keyword.get(config, :enabled, true) and
+         Keyword.get(config, :contradiction_default_kg, true) do
       meta = Map.get(metadata, id, %{})
       subject = Map.get(meta, :subject)
       predicate = Map.get(meta, :predicate)

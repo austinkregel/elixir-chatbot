@@ -115,11 +115,14 @@ defmodule Brain.Response.ChunkSegmenterTest do
       result = ChunkSegmenter.segment_all(templates_by_intent)
 
       assert is_list(result)
-      assert length(result) >= 3
-      greeting_chunks = Enum.filter(result, fn c -> c.source_intent == "smalltalk.greetings.hello" end)
+      assert Enum.count_until(result, 3) >= 3
+
+      greeting_chunks =
+        Enum.filter(result, fn c -> c.source_intent == "smalltalk.greetings.hello" end)
+
       weather_chunks = Enum.filter(result, fn c -> c.source_intent == "weather.query" end)
 
-      assert length(greeting_chunks) >= 2
+      assert Enum.count_until(greeting_chunks, 2) >= 2
       assert weather_chunks != []
     end
 

@@ -82,18 +82,16 @@ defmodule FourthWall.Holodeck.Policy do
   def resolve_path(requested) when is_binary(requested) do
     trimmed = String.trim(requested)
 
-    cond do
-      trimmed == "" ->
-        {:error, {:blank_path, requested}}
+    if trimmed == "" do
+      {:error, {:blank_path, requested}}
+    else
+      abs = Path.expand(trimmed, @workspace_root)
 
-      true ->
-        abs = Path.expand(trimmed, @workspace_root)
-
-        if abs == @workspace_root or String.starts_with?(abs, @workspace_root <> "/") do
-          {:ok, abs}
-        else
-          {:error, {:escapes_workspace, requested}}
-        end
+      if abs == @workspace_root or String.starts_with?(abs, @workspace_root <> "/") do
+        {:ok, abs}
+      else
+        {:error, {:escapes_workspace, requested}}
+      end
     end
   end
 
@@ -132,9 +130,8 @@ defmodule FourthWall.Holodeck.Policy do
              | {:shell_metacharacter, String.t()}}
   def check_command([cmd | _] = argv) when is_binary(cmd) do
     with :ok <- check_metacharacters(argv),
-         :ok <- check_executable(cmd),
-         :ok <- check_git(argv) do
-      :ok
+         :ok <- check_executable(cmd) do
+      check_git(argv)
     end
   end
 

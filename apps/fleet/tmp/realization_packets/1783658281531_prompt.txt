@@ -1,0 +1,22 @@
+=== SYSTEM ===
+Serve.
+
+Generate a natural response based on the context below.
+Be concise and helpful. Do not mention internal systems, plans, or analysis.
+Output only the final response text.
+If $placeholder tokens appear in the instructions, keep them exactly as shown in your output.
+
+=== USER ===
+The user said: "Analyse."
+Intent: smalltalk.statement (confidence 0.73).
+domain: smalltalk; posture: hedged; urgency: critical.
+Speech act: assertive, statement.
+Sentiment: negative (confidence 0.0).
+Response strategy: hedged_response.
+The system is uncertain, so hedge the response with appropriate qualifiers.
+Response plan:
+1. [attunement/empathy] Show empathy.
+2. [content/reflective] Reflect on what the user shared.
+3. [follow_up/elaboration] Invite the user to elaborate.
+Write a gentle, medium-length response.
+Do not invent facts or capabilities not mentioned above.

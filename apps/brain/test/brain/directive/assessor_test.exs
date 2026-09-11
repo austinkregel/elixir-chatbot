@@ -172,8 +172,8 @@ defmodule Brain.Directive.AssessorTest do
       a = Assessor.assess(model([c]))
 
       assert a.verdict == :comply
-      assert length(a.task_frames.events) == 1
-      assert length(a.task_frames.srl_triples) == 1
+      assert match?([_], a.task_frames.events)
+      assert match?([_], a.task_frames.srl_triples)
     end
   end
 end

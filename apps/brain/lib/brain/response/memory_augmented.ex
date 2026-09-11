@@ -21,10 +21,7 @@ defmodule Brain.Response.MemoryAugmented do
   def find_similar_episodes(intent, entities, limit \\ @max_episodes) do
     query = build_semantic_query(intent, entities)
 
-    case Store.query_similar(query, limit) do
-      {:ok, episodes} -> {:ok, episodes}
-      error -> error
-    end
+    Store.query_similar(query, limit)
   end
 
   defp do_generate(intent, entities, context) do
@@ -46,7 +43,7 @@ defmodule Brain.Response.MemoryAugmented do
   defp build_semantic_query(intent, entities) do
     entity_text =
       entities
-      |> Enum.map(fn e -> e[:value] || e["value"] || "" end)
+      |> Enum.map(fn e -> e[:value] || "" end)
       |> Enum.filter(&(&1 != ""))
       |> Enum.join(" ")
 
@@ -106,8 +103,12 @@ defmodule Brain.Response.MemoryAugmented do
     tags = MapSet.new(episode.tags || [])
 
     cond do
-      not MapSet.disjoint?(tags, @positive_tags) -> true
-      not MapSet.disjoint?(tags, @negative_tags) -> false
+      not MapSet.disjoint?(tags, @positive_tags) ->
+        true
+
+      not MapSet.disjoint?(tags, @negative_tags) ->
+        false
+
       true ->
         outcome = episode.outcome || ""
 

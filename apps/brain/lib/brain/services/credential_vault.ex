@@ -293,10 +293,7 @@ defmodule Brain.Services.CredentialVault do
   end
 
   defp decrypt_value(encrypted, key) when is_binary(encrypted) do
-    case Plug.Crypto.decrypt(key, "credential_vault", encrypted, max_age: :infinity) do
-      {:ok, value} -> {:ok, value}
-      {:error, reason} -> {:error, reason}
-    end
+    Plug.Crypto.decrypt(key, "credential_vault", encrypted, max_age: :infinity)
   end
 
   defp persist_to_database(state) do
@@ -334,7 +331,9 @@ defmodule Brain.Services.CredentialVault do
              entries_count: length(credentials)
            )
          end) do
-      {:ok, _} -> state
+      {:ok, _} ->
+        state
+
       {:error, reason} ->
         Logger.warning("Failed to load credentials from database: #{reason}")
         state

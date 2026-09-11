@@ -79,7 +79,7 @@ defmodule Brain.Services.HomeAssistant.EntityMapperTest do
   describe "find_entities_for_area/1 domain priority" do
     test "lights sort before switches and sensors" do
       results = CapabilityRegistry.find_entities_for_area("office")
-      assert length(results) >= 2
+      assert Enum.count_until(results, 2) >= 2
 
       domains = Enum.map(results, & &1.ha_domain)
       light_idx = Enum.find_index(domains, &(&1 == "light"))

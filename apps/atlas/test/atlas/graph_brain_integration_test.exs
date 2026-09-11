@@ -27,11 +27,19 @@ defmodule Atlas.GraphBrainIntegrationTest do
     test "creates a domain of cities, countries, and relations and extracts adjacency data" do
       # --- Seed the knowledge graph with a known topology ---
       # Nodes: Paris, France, Europe, Berlin, Germany
-      {:ok, paris} = Graph.add_node(@knowledge_graph, "City", %{name: "Paris", population: 2161000})
-      {:ok, france} = Graph.add_node(@knowledge_graph, "Country", %{name: "France", continent: "Europe"})
+      {:ok, paris} =
+        Graph.add_node(@knowledge_graph, "City", %{name: "Paris", population: 2_161_000})
+
+      {:ok, france} =
+        Graph.add_node(@knowledge_graph, "Country", %{name: "France", continent: "Europe"})
+
       {:ok, europe} = Graph.add_node(@knowledge_graph, "Continent", %{name: "Europe"})
-      {:ok, berlin} = Graph.add_node(@knowledge_graph, "City", %{name: "Berlin", population: 3748148})
-      {:ok, germany} = Graph.add_node(@knowledge_graph, "Country", %{name: "Germany", continent: "Europe"})
+
+      {:ok, berlin} =
+        Graph.add_node(@knowledge_graph, "City", %{name: "Berlin", population: 3_748_148})
+
+      {:ok, germany} =
+        Graph.add_node(@knowledge_graph, "Country", %{name: "Germany", continent: "Europe"})
 
       # Verify nodes are Vertex structs with properties
       assert %Vertex{label: "City", properties: %{"name" => "Paris"}} = paris
@@ -61,9 +69,9 @@ defmodule Atlas.GraphBrainIntegrationTest do
       {:ok, adjacency} = Graph.to_adjacency(@knowledge_graph)
 
       assert is_list(adjacency.node_ids)
-      assert length(adjacency.node_ids) == 5
+      assert match?([_, _, _, _, _], adjacency.node_ids)
       assert is_list(adjacency.edges)
-      assert length(adjacency.edges) == 4
+      assert match?([_, _, _, _], adjacency.edges)
       assert is_map(adjacency.features)
       assert map_size(adjacency.features) == 5
 
@@ -83,7 +91,7 @@ defmodule Atlas.GraphBrainIntegrationTest do
 
       # --- Triples export for KG-BERT ---
       {:ok, triples} = Graph.to_triples(@knowledge_graph)
-      assert length(triples) == 4
+      assert match?([_, _, _, _], triples)
 
       Enum.each(triples, fn [subj_props, _rel_type, obj_props] ->
         assert is_map(subj_props)
@@ -101,7 +109,7 @@ defmodule Atlas.GraphBrainIntegrationTest do
 
       # Elixir's 1-hop neighborhood should include BEAM
       {:ok, neighbors} = Graph.neighborhood(@knowledge_graph, elixir.id, 1)
-      assert length(neighbors) >= 1
+      assert neighbors != []
 
       neighbor_names =
         neighbors
@@ -194,7 +202,7 @@ defmodule Atlas.GraphBrainIntegrationTest do
 
       # Verify beliefs are queryable
       paris_beliefs = Belief |> Belief.for_subject("Paris") |> Belief.active() |> Repo.all()
-      assert length(paris_beliefs) == 2
+      assert match?([_, _], paris_beliefs)
 
       capital_belief =
         Enum.find(paris_beliefs, &(&1.predicate == "is_capital_of"))
@@ -204,7 +212,7 @@ defmodule Atlas.GraphBrainIntegrationTest do
 
       # Verify learned facts are queryable
       paris_facts = LearnedFact |> LearnedFact.for_entity("Paris") |> Repo.all()
-      assert length(paris_facts) == 1
+      assert match?([_], paris_facts)
       assert hd(paris_facts).fact == "Paris is the capital city of France"
 
       # Verify confidence filtering works

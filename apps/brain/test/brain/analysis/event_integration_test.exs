@@ -71,7 +71,7 @@ defmodule Brain.Analysis.EventIntegrationTest do
       ]
 
       updated = ChunkAnalysis.with_events(analysis, events)
-      assert length(updated.events) == 1
+      assert match?([_], updated.events)
       assert ChunkAnalysis.has_events?(updated)
       assert ChunkAnalysis.primary_event(updated) != nil
     end
@@ -97,7 +97,9 @@ defmodule Brain.Analysis.EventIntegrationTest do
 
         assert is_binary(episode_id)
         {:ok, episodes} = MemoryStore.query_events_by_action("play", 5, world_id: "test_events")
-        assert length(episodes) >= 0
+        # length(episodes) >= 0 is a tautology for any list; preserved as-is
+        # (this assertion only ever verified `episodes` is a list at all).
+        assert is_list(episodes)
       end
     end
 
