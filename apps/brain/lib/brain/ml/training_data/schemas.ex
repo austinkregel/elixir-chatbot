@@ -61,16 +61,6 @@ defmodule Brain.ML.TrainingData.Schemas do
 
   def validate(:registry_entry, _), do: {:error, "Registry entry must be a {key, value} tuple"}
 
-  def validate(:slot_schema_entry, {key, val}) when is_binary(key) and is_map(val) do
-    if String.trim(key) == "" do
-      {:error, "Slot schema key cannot be empty"}
-    else
-      :ok
-    end
-  end
-
-  def validate(:slot_schema_entry, _), do: {:error, "Slot schema entry must be a {key, value} tuple"}
-
   def validate(:speech_act_map_entry, {key, val}) when is_binary(key) and is_binary(val) do
     cond do
       String.trim(key) == "" -> {:error, "Speech act map key cannot be empty"}
