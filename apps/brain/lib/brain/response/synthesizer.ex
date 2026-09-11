@@ -1,6 +1,7 @@
 defmodule Brain.Response.Synthesizer do
   @moduledoc "Generative response composition from primitives and domain knowledge.\n\nInstead of template-based responses, this module composes responses\nfrom primitives based on:\n- Domain knowledge (loaded from priv/knowledge/domains/*.json)\n- Confidence levels of the knowledge being shared\n- Speech act analysis\n- Entity slot filling\n- Disclosure policy decisions\n\nResponse primitives:\n- Acknowledgments - \"Sure,\", \"Of course,\"\n- Hedges - confidence-based language adjustments\n- Entity verbalizations - \"in $location\", \"by $artist\"\n- Response frames - domain-specific sentence structures\n- Uncertainty markers - \"but that's just my understanding\"\n\nThis enables novel, appropriate responses without massive training data.\n"
 
+  alias Brain.Analysis.SlotDetector
   alias Brain.Epistemic.Types.SelfKnowledgeAssessment
   alias Brain.Epistemic.DisclosurePolicy
 
@@ -10,16 +11,7 @@ defmodule Brain.Response.Synthesizer do
   @primitives_path "priv/knowledge/domains/primitives.json"
   @external_resource @primitives_path
 
-  @primitives (case File.read(@primitives_path) do
-                 {:ok, content} ->
-                   case Jason.decode(content) do
-                     {:ok, data} -> data
-                     {:error, _} -> %{}
-                   end
-
-                 {:error, _} ->
-                   %{}
-               end)
+  @primitives @primitives_path |> File.read!() |> Jason.decode!()
   @domain_files Path.wildcard(Path.join(@domains_path, "*.json"))
   @external_resource @domains_path
 
@@ -30,20 +22,9 @@ defmodule Brain.Response.Synthesizer do
   @domain_knowledge @domain_files
                     |> Enum.reject(&String.ends_with?(&1, "primitives.json"))
                     |> Enum.reduce(%{}, fn file, acc ->
-                      case File.read(file) do
-                        {:ok, content} ->
-                          case Jason.decode(content) do
-                            {:ok, data} ->
-                              domain = Map.get(data, "domain", Path.basename(file, ".json"))
-                              Map.put(acc, domain, data)
-
-                            {:error, _} ->
-                              acc
-                          end
-
-                        {:error, _} ->
-                          acc
-                      end
+                      data = file |> File.read!() |> Jason.decode!()
+                      domain = Map.get(data, "domain", Path.basename(file, ".json"))
+                      Map.put(acc, domain, data)
                     end)
   @soft_prefaces Map.get(@primitives, "hedges", %{})
                  |> Map.get("low_confidence", [
@@ -538,37 +519,19 @@ defmodule Brain.Response.Synthesizer do
     end
   end
 
+  # Clarification prompts live in priv/analysis/intent_registry.json and are
+  # owned by SlotDetector. This module used to load a parallel
+  # priv/analysis/slot_schemas.json -- a file nothing ever generated -- which
+  # silently compiled to %{}, so every missing slot got the generic prompt.
   defp get_slot_clarification(intent, missing_slots, _domain_config) do
-    templates = load_clarification_templates(intent)
-
-    case missing_slots do
-      [slot] ->
-        Map.get(templates, slot) || get_generic_clarification()
+    case {missing_slots, intent} do
+      {[slot], intent} when is_binary(intent) ->
+        SlotDetector.get_clarification_prompt(slot, intent)
 
       _ ->
         get_generic_clarification()
     end
   end
-
-  @slot_schemas_path Path.join(:code.priv_dir(:brain), "analysis/slot_schemas.json")
-  @external_resource @slot_schemas_path
-  @slot_schemas (case File.read(@slot_schemas_path) do
-                   {:ok, content} ->
-                     case Jason.decode(content) do
-                       {:ok, data} -> data
-                       _ -> %{}
-                     end
-                   _ -> %{}
-                 end)
-
-  defp load_clarification_templates(intent) when is_binary(intent) do
-    case Map.get(@slot_schemas, intent) do
-      %{"clarification_templates" => templates} when is_map(templates) -> templates
-      _ -> %{}
-    end
-  end
-
-  defp load_clarification_templates(_), do: %{}
 
   defp build_partial_acknowledgment(entities, _domain_config, _opts) do
     filled_values =
