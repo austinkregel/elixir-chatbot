@@ -152,12 +152,18 @@ defmodule Brain.KnowledgeStore do
       case File.read(file_path) do
         {:ok, content} ->
           case Jason.decode(content) do
-            {:ok, json} -> json
-            {:error, _} -> %{}
+            {:ok, json} when is_map(json) -> json
+            {:ok, _} -> raise "Invalid knowledge file #{file_path}: expected a JSON object"
+            {:error, reason} -> raise "Corrupt knowledge file #{file_path}: #{inspect(reason)}"
           end
 
-        {:error, _} ->
+        # A persona that has never been taught anything has no file yet; that
+        # is a verified legitimate cold start. Any other read error is not.
+        {:error, :enoent} ->
           %{}
+
+        {:error, reason} ->
+          raise "Cannot read knowledge file #{file_path}: #{inspect(reason)}"
       end
 
     Logger.debug("Loaded knowledge", %{persona_name: persona_name, size: map_size(knowledge)})
@@ -567,12 +573,16 @@ defmodule Brain.KnowledgeStore do
     case File.read(file_path) do
       {:ok, content} ->
         case Jason.decode(content) do
-          {:ok, json} -> json
-          {:error, _} -> %{}
+          {:ok, json} when is_map(json) -> json
+          {:ok, _} -> raise "Invalid knowledge file #{file_path}: expected a JSON object"
+          {:error, reason} -> raise "Corrupt knowledge file #{file_path}: #{inspect(reason)}"
         end
 
-      {:error, _} ->
+      {:error, :enoent} ->
         %{}
+
+      {:error, reason} ->
+        raise "Cannot read knowledge file #{file_path}: #{inspect(reason)}"
     end
   end
 
@@ -592,12 +602,15 @@ defmodule Brain.KnowledgeStore do
       {:ok, content} ->
         case Jason.decode(content) do
           {:ok, json} when is_map(json) -> json
-          {:ok, _non_map} -> %{}
-          {:error, _} -> %{}
+          {:ok, _} -> raise "Invalid world knowledge file #{file_path}: expected a JSON object"
+          {:error, reason} -> raise "Corrupt world knowledge file #{file_path}: #{inspect(reason)}"
         end
 
-      {:error, _} ->
+      {:error, :enoent} ->
         %{}
+
+      {:error, reason} ->
+        raise "Cannot read world knowledge file #{file_path}: #{inspect(reason)}"
     end
   end
 
