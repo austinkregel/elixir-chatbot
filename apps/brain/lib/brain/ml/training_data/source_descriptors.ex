@@ -14,7 +14,6 @@ defmodule Brain.ML.TrainingData.SourceDescriptors do
           | :text_classifier_row
           | :fv_classifier_row
           | :registry_entry
-          | :slot_schema_entry
           | :speech_act_map_entry
           | :entity_type_entry
           | :gazetteer_entry
@@ -308,17 +307,10 @@ defmodule Brain.ML.TrainingData.SourceDescriptors do
       },
 
       # ── Analysis registries ────────────────────────────────────────────
-      %{
-        id: :slot_schemas,
-        label: "Slot Schemas",
-        category: "Analysis Registries",
-        tag: :registry,
-        record_kind: :slot_schema_entry,
-        path: brain_priv("analysis/slot_schemas.json"),
-        description: "Per-intent required/optional slots and clarification templates",
-        upstream_of: [],
-        generated_by: nil
-      },
+      # Slot schemas are not a separate source: per-intent required/optional
+      # slots and clarification templates live in :intent_registry above, which
+      # is what SlotDetector reads. A :slot_schemas descriptor used to point at
+      # priv/analysis/slot_schemas.json -- a file nothing ever generated.
       %{
         id: :entity_types,
         label: "Entity Type Hierarchy",
