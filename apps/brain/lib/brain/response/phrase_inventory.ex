@@ -12,7 +12,6 @@ defmodule Brain.Response.PhraseInventory do
   require Logger
 
   @inventory_path "priv/ml_models/lattice/phrase_inventory.json"
-  @runtime_path "priv/ml_models/lattice/phrase_inventory_runtime.json"
   @config_path "priv/response/system_config.json"
 
   defmodule Fragment do
@@ -171,23 +170,28 @@ defmodule Brain.Response.PhraseInventory do
 
   # Internal
 
+  # phrase_inventory_runtime.json used to be read here as a second source, but
+  # nothing in the codebase ever wrote it: runtime-learned fragments go to
+  # add_fragments/2, which is in-memory only. The dead read is gone.
   defp load_inventory do
     inventory_path = brain_priv(@inventory_path)
-    runtime_path = brain_priv(@runtime_path)
     config_path = brain_priv(@config_path)
 
     tone_config = load_tone_config(config_path)
-    fragments = load_fragments_file(inventory_path) ++ load_fragments_file(runtime_path)
-    loaded = fragments != []
+    fragments = load_fragments_file(inventory_path)
 
-    if loaded do
-      Logger.info("PhraseInventory: loaded #{length(fragments)} fragments")
-    else
-      Logger.debug("PhraseInventory: no inventory files found, starting empty")
+    if fragments == [] do
+      raise """
+      PhraseInventory: #{inventory_path} yielded zero fragments.
+      The lattice realizer cannot run without an inventory.
+      Rebuild it with `mix gen_lattice_data`.
+      """
     end
 
+    Logger.info("PhraseInventory: loaded #{length(fragments)} fragments")
+
     %{
-      loaded: loaded,
+      loaded: true,
       all_fragments: fragments,
       by_chunk_type: index_by_chunk_type(fragments),
       by_primitive: index_by_primitive(fragments),
@@ -205,12 +209,18 @@ defmodule Brain.Response.PhraseInventory do
               Enum.map(frags, &parse_fragment/1)
             end)
 
-          _ ->
-            []
+          {:ok, _} ->
+            raise "Invalid phrase inventory at #{path}: expected a JSON object with a \"fragments\" map"
+
+          {:error, reason} ->
+            raise "Invalid phrase inventory at #{path}: #{inspect(reason)}"
         end
 
-      {:error, _} ->
-        []
+      {:error, reason} ->
+        raise """
+        PhraseInventory: cannot read #{path}: #{inspect(reason)}
+        Rebuild it with `mix gen_lattice_data`.
+        """
     end
   end
 
@@ -218,12 +228,18 @@ defmodule Brain.Response.PhraseInventory do
     case File.read(path) do
       {:ok, content} ->
         case Jason.decode(content) do
-          {:ok, %{"tone" => tone}} -> tone
-          _ -> %{}
+          {:ok, %{"tone" => tone}} when is_map(tone) ->
+            tone
+
+          {:ok, _} ->
+            raise "Invalid #{path}: expected a JSON object with a \"tone\" map"
+
+          {:error, reason} ->
+            raise "Invalid #{path}: #{inspect(reason)}"
         end
 
-      {:error, _} ->
-        %{}
+      {:error, reason} ->
+        raise "PhraseInventory: cannot read #{path}: #{inspect(reason)}"
     end
   end
 
