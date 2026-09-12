@@ -1,6 +1,7 @@
 defmodule Brain.Response.Synthesizer do
   @moduledoc "Generative response composition from primitives and domain knowledge.\n\nInstead of template-based responses, this module composes responses\nfrom primitives based on:\n- Domain knowledge (loaded from priv/knowledge/domains/*.json)\n- Confidence levels of the knowledge being shared\n- Speech act analysis\n- Entity slot filling\n- Disclosure policy decisions\n\nResponse primitives:\n- Acknowledgments - \"Sure,\", \"Of course,\"\n- Hedges - confidence-based language adjustments\n- Entity verbalizations - \"in $location\", \"by $artist\"\n- Response frames - domain-specific sentence structures\n- Uncertainty markers - \"but that's just my understanding\"\n\nThis enables novel, appropriate responses without massive training data.\n"
 
+  alias Brain.Analysis.SlotDetector
   alias Brain.Epistemic.Types.SelfKnowledgeAssessment
   alias Brain.Epistemic.DisclosurePolicy
 
@@ -10,16 +11,7 @@ defmodule Brain.Response.Synthesizer do
   @primitives_path "priv/knowledge/domains/primitives.json"
   @external_resource @primitives_path
 
-  @primitives (case File.read(@primitives_path) do
-                 {:ok, content} ->
-                   case Jason.decode(content) do
-                     {:ok, data} -> data
-                     {:error, _} -> %{}
-                   end
-
-                 {:error, _} ->
-                   %{}
-               end)
+  @primitives @primitives_path |> File.read!() |> Jason.decode!()
   @domain_files Path.wildcard(Path.join(@domains_path, "*.json"))
   @external_resource @domains_path
 
@@ -30,20 +22,9 @@ defmodule Brain.Response.Synthesizer do
   @domain_knowledge @domain_files
                     |> Enum.reject(&String.ends_with?(&1, "primitives.json"))
                     |> Enum.reduce(%{}, fn file, acc ->
-                      case File.read(file) do
-                        {:ok, content} ->
-                          case Jason.decode(content) do
-                            {:ok, data} ->
-                              domain = Map.get(data, "domain", Path.basename(file, ".json"))
-                              Map.put(acc, domain, data)
-
-                            {:error, _} ->
-                              acc
-                          end
-
-                        {:error, _} ->
-                          acc
-                      end
+                      data = file |> File.read!() |> Jason.decode!()
+                      domain = Map.get(data, "domain", Path.basename(file, ".json"))
+                      Map.put(acc, domain, data)
                     end)
   @soft_prefaces Map.get(@primitives, "hedges", %{})
                  |> Map.get("low_confidence", [
@@ -152,8 +133,9 @@ defmodule Brain.Response.Synthesizer do
               if frames == [] do
                 :not_synthesized
               else
+                slot_type_aliases = get_in(domain_config, ["slot_requirements", "slot_type_aliases"]) || %{}
                 frame = Enum.random(frames)
-                filled_response = fill_entity_slots(frame, entities)
+                filled_response = fill_entity_slots(frame, entities, slot_type_aliases)
                 final_response = maybe_add_acknowledgment(filled_response, confidence, domain_config)
                 final_response = maybe_add_graph_context(final_response, context)
 
@@ -442,10 +424,12 @@ defmodule Brain.Response.Synthesizer do
   defp determine_frame_key(domain_config, entities) do
     slot_requirements = Map.get(domain_config, "slot_requirements", %{})
     required_slots = Map.get(slot_requirements, "required", [])
+    slot_type_aliases = Map.get(slot_requirements, "slot_type_aliases", %{})
 
     filled_required =
       Enum.filter(required_slots, fn slot ->
-        find_entity_value(entities, slot) != nil
+        acceptable_types = Map.get(slot_type_aliases, slot, [slot])
+        find_entity_value_by_types(entities, acceptable_types) != nil
       end)
 
     missing_required = required_slots -- filled_required
@@ -486,16 +470,38 @@ defmodule Brain.Response.Synthesizer do
     end)
   end
 
-  defp fill_entity_slots(frame, entities) do
+  defp fill_entity_slots(frame, entities, slot_type_aliases \\ %{}) do
+    reverse_alias_map = build_reverse_alias_map(slot_type_aliases)
+
     Enum.reduce(entities, frame, fn entity, acc ->
-      entity_type = entity[:entity_type] || entity["entity_type"] || ""
+      entity_type = to_string(entity[:entity_type] || entity["entity_type"] || "")
       entity_value = entity[:value] || entity["value"] || ""
 
       if entity_type != "" and entity_value != "" do
-        String.replace(acc, "$#{entity_type}", entity_value)
+        acc = String.replace(acc, "$#{entity_type}", entity_value)
+
+        slot_names = Map.get(reverse_alias_map, entity_type, [])
+        Enum.reduce(slot_names, acc, fn slot_name, inner_acc ->
+          String.replace(inner_acc, "$#{slot_name}", entity_value)
+        end)
       else
         acc
       end
+    end)
+  end
+
+  defp build_reverse_alias_map(slot_type_aliases) do
+    Enum.reduce(slot_type_aliases, %{}, fn {slot_name, type_list}, acc ->
+      Enum.reduce(type_list, acc, fn type, inner_acc ->
+        type_str = to_string(type)
+        existing = Map.get(inner_acc, type_str, [])
+
+        if slot_name in existing do
+          inner_acc
+        else
+          Map.put(inner_acc, type_str, [slot_name | existing])
+        end
+      end)
     end)
   end
 
@@ -513,37 +519,19 @@ defmodule Brain.Response.Synthesizer do
     end
   end
 
+  # Clarification prompts live in priv/analysis/intent_registry.json and are
+  # owned by SlotDetector. This module used to load a parallel
+  # priv/analysis/slot_schemas.json -- a file nothing ever generated -- which
+  # silently compiled to %{}, so every missing slot got the generic prompt.
   defp get_slot_clarification(intent, missing_slots, _domain_config) do
-    templates = load_clarification_templates(intent)
-
-    case missing_slots do
-      [slot] ->
-        Map.get(templates, slot) || get_generic_clarification()
+    case {missing_slots, intent} do
+      {[slot], intent} when is_binary(intent) ->
+        SlotDetector.get_clarification_prompt(slot, intent)
 
       _ ->
         get_generic_clarification()
     end
   end
-
-  @slot_schemas_path Path.join(:code.priv_dir(:brain), "analysis/slot_schemas.json")
-  @external_resource @slot_schemas_path
-  @slot_schemas (case File.read(@slot_schemas_path) do
-                   {:ok, content} ->
-                     case Jason.decode(content) do
-                       {:ok, data} -> data
-                       _ -> %{}
-                     end
-                   _ -> %{}
-                 end)
-
-  defp load_clarification_templates(intent) when is_binary(intent) do
-    case Map.get(@slot_schemas, intent) do
-      %{"clarification_templates" => templates} when is_map(templates) -> templates
-      _ -> %{}
-    end
-  end
-
-  defp load_clarification_templates(_), do: %{}
 
   defp build_partial_acknowledgment(entities, _domain_config, _opts) do
     filled_values =
@@ -558,11 +546,13 @@ defmodule Brain.Response.Synthesizer do
     end
   end
 
-  defp find_entity_value(entities, entity_type) do
-    Enum.find_value(entities, fn entity ->
-      type = entity[:entity_type] || entity["entity_type"]
+  defp find_entity_value_by_types(entities, acceptable_types) do
+    type_strings = Enum.map(acceptable_types, &to_string/1)
 
-      if type == entity_type do
+    Enum.find_value(entities, fn entity ->
+      type = to_string(entity[:entity_type] || entity["entity_type"] || "")
+
+      if type in type_strings do
         entity[:value] || entity["value"]
       else
         nil

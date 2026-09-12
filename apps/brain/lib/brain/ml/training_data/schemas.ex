@@ -61,16 +61,6 @@ defmodule Brain.ML.TrainingData.Schemas do
 
   def validate(:registry_entry, _), do: {:error, "Registry entry must be a {key, value} tuple"}
 
-  def validate(:slot_schema_entry, {key, val}) when is_binary(key) and is_map(val) do
-    if String.trim(key) == "" do
-      {:error, "Slot schema key cannot be empty"}
-    else
-      :ok
-    end
-  end
-
-  def validate(:slot_schema_entry, _), do: {:error, "Slot schema entry must be a {key, value} tuple"}
-
   def validate(:speech_act_map_entry, {key, val}) when is_binary(key) and is_binary(val) do
     cond do
       String.trim(key) == "" -> {:error, "Speech act map key cannot be empty"}
@@ -111,6 +101,30 @@ defmodule Brain.ML.TrainingData.Schemas do
   end
 
   def validate(:csv_row, _), do: {:error, "CSV rows are read-only"}
+
+  def validate(:response_frame, rec) when is_map(rec) do
+    domain = Map.get(rec, "domain")
+
+    if is_binary(domain) and String.trim(domain) != "" do
+      :ok
+    else
+      {:error, "Response frame must have a non-empty \"domain\" field"}
+    end
+  end
+
+  def validate(:phrase_inventory_entry, _rec) do
+    {:error, "Phrase inventory entries are build artifacts and cannot be edited directly"}
+  end
+
+  def validate(:response_config_entry, rec) when is_map(rec) do
+    system = Map.get(rec, "system")
+
+    if is_binary(system) and system in ["lattice", "ouro", "template"] do
+      :ok
+    else
+      {:error, "Response config entry must have a valid \"system\" field (lattice, ouro, or template)"}
+    end
+  end
 
   def validate(kind, _), do: {:error, "Unknown record kind: #{inspect(kind)}"}
 

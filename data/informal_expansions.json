@@ -1,0 +1,1032 @@
+{
+  "version": "1.0.0",
+  "description": "Informal English to standard English expansions",
+  "generated_by": "scripts/generate_informal_expansions.py",
+  "include_internet_abbrevs": false,
+  "phonetic_validation": false,
+  "total_entries": 170,
+  "expansions": {
+    "i'm": "i am",
+    "you're": "you are",
+    "we're": "we are",
+    "they're": "they are",
+    "he's": "he is",
+    "she's": "she is",
+    "it's": "it is",
+    "that's": "that is",
+    "what's": "what is",
+    "who's": "who is",
+    "there's": "there is",
+    "here's": "here is",
+    "i'll": "i will",
+    "you'll": "you will",
+    "we'll": "we will",
+    "they'll": "they will",
+    "he'll": "he will",
+    "she'll": "she will",
+    "it'll": "it will",
+    "that'll": "that will",
+    "i'd": "i would",
+    "you'd": "you would",
+    "we'd": "we would",
+    "they'd": "they would",
+    "he'd": "he would",
+    "she'd": "she would",
+    "it'd": "it would",
+    "i've": "i have",
+    "you've": "you have",
+    "we've": "we have",
+    "they've": "they have",
+    "could've": "could have",
+    "would've": "would have",
+    "should've": "should have",
+    "might've": "might have",
+    "must've": "must have",
+    "don't": "do not",
+    "doesn't": "does not",
+    "didn't": "did not",
+    "won't": "will not",
+    "wouldn't": "would not",
+    "couldn't": "could not",
+    "shouldn't": "should not",
+    "can't": "cannot",
+    "cannot": "can not",
+    "isn't": "is not",
+    "aren't": "are not",
+    "wasn't": "was not",
+    "weren't": "were not",
+    "hasn't": "has not",
+    "haven't": "have not",
+    "hadn't": "had not",
+    "mustn't": "must not",
+    "needn't": "need not",
+    "shan't": "shall not",
+    "let's": "let us",
+    "how's": "how is",
+    "where's": "where is",
+    "when's": "when is",
+    "why's": "why is",
+    "gonna": "going to",
+    "gotta": "got to",
+    "wanna": "want to",
+    "hafta": "have to",
+    "hasta": "has to",
+    "oughta": "ought to",
+    "needa": "need to",
+    "useta": "used to",
+    "supposta": "supposed to",
+    "sposta": "supposed to",
+    "coulda": "could have",
+    "woulda": "would have",
+    "shoulda": "should have",
+    "mighta": "might have",
+    "musta": "must have",
+    "kinda": "kind of",
+    "sorta": "sort of",
+    "lotta": "lot of",
+    "outta": "out of",
+    "coupla": "couple of",
+    "buncha": "bunch of",
+    "loadsa": "loads of",
+    "lotsa": "lots of",
+    "alla": "all of",
+    "lemme": "let me",
+    "gimme": "give me",
+    "imma": "i am going to",
+    "ima": "i am going to",
+    "ya": "you",
+    "yer": "your",
+    "yall": "you all",
+    "y'all": "you all",
+    "em": "them",
+    "'em": "them",
+    "da": "the",
+    "dunno": "do not know",
+    "donno": "do not know",
+    "innit": "is it not",
+    "init": "is it not",
+    "aint": "am not",
+    "ain't": "am not",
+    "aight": "alright",
+    "alright": "all right",
+    "howdy": "how do you do",
+    "sup": "what is up",
+    "wassup": "what is up",
+    "whatup": "what is up",
+    "whassup": "what is up",
+    "finna": "fixing to",
+    "fitna": "fixing to",
+    "tryna": "trying to",
+    "boutta": "about to",
+    "abouta": "about to",
+    "didja": "did you",
+    "didya": "did you",
+    "dija": "did you",
+    "wouldja": "would you",
+    "wouldya": "would you",
+    "couldja": "could you",
+    "couldya": "could you",
+    "shouldja": "should you",
+    "doya": "do you",
+    "d'ya": "do you",
+    "d'you": "do you",
+    "dontcha": "do you not",
+    "doncha": "do you not",
+    "gotcha": "got you",
+    "gotya": "got you",
+    "betcha": "bet you",
+    "whatcha": "what are you",
+    "watcha": "what are you",
+    "whaddya": "what do you",
+    "whaddaya": "what do you",
+    "whadya": "what do you",
+    "wheredja": "where did you",
+    "howdja": "how did you",
+    "meetcha": "meet you",
+    "letcha": "let you",
+    "getcha": "get you",
+    "catchya": "catch you",
+    "cause": "because",
+    "'cause": "because",
+    "cuz": "because",
+    "coz": "because",
+    "'coz": "because",
+    "cos": "because",
+    "'cos": "because",
+    "bout": "about",
+    "'bout": "about",
+    "til": "until",
+    "'til": "until",
+    "round": "around",
+    "'round": "around",
+    "fore": "before",
+    "'fore": "before",
+    "nother": "another",
+    "'nother": "another",
+    "jeet": "did you eat",
+    "jever": "did you ever",
+    "jew": "did you",
+    "ju": "did you",
+    "dyaknow": "do you know",
+    "yaknow": "you know",
+    "yanno": "you know",
+    "yknow": "you know",
+    "y'know": "you know",
+    "whadyamean": "what do you mean",
+    "arya": "are you",
+    "areya": "are you",
+    "havya": "have you"
+  },
+  "entries_with_metadata": [
+    {
+      "informal": "i'm",
+      "formal": "i am",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "you're",
+      "formal": "you are",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "we're",
+      "formal": "we are",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "they're",
+      "formal": "they are",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "he's",
+      "formal": "he is",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "she's",
+      "formal": "she is",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "it's",
+      "formal": "it is",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "that's",
+      "formal": "that is",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "what's",
+      "formal": "what is",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "who's",
+      "formal": "who is",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "there's",
+      "formal": "there is",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "here's",
+      "formal": "here is",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "i'll",
+      "formal": "i will",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "you'll",
+      "formal": "you will",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "we'll",
+      "formal": "we will",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "they'll",
+      "formal": "they will",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "he'll",
+      "formal": "he will",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "she'll",
+      "formal": "she will",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "it'll",
+      "formal": "it will",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "that'll",
+      "formal": "that will",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "i'd",
+      "formal": "i would",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "you'd",
+      "formal": "you would",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "we'd",
+      "formal": "we would",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "they'd",
+      "formal": "they would",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "he'd",
+      "formal": "he would",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "she'd",
+      "formal": "she would",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "it'd",
+      "formal": "it would",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "i've",
+      "formal": "i have",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "you've",
+      "formal": "you have",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "we've",
+      "formal": "we have",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "they've",
+      "formal": "they have",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "could've",
+      "formal": "could have",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "would've",
+      "formal": "would have",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "should've",
+      "formal": "should have",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "might've",
+      "formal": "might have",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "must've",
+      "formal": "must have",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "don't",
+      "formal": "do not",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "doesn't",
+      "formal": "does not",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "didn't",
+      "formal": "did not",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "won't",
+      "formal": "will not",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "wouldn't",
+      "formal": "would not",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "couldn't",
+      "formal": "could not",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "shouldn't",
+      "formal": "should not",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "can't",
+      "formal": "cannot",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "cannot",
+      "formal": "can not",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "isn't",
+      "formal": "is not",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "aren't",
+      "formal": "are not",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "wasn't",
+      "formal": "was not",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "weren't",
+      "formal": "were not",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "hasn't",
+      "formal": "has not",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "haven't",
+      "formal": "have not",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "hadn't",
+      "formal": "had not",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "mustn't",
+      "formal": "must not",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "needn't",
+      "formal": "need not",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "shan't",
+      "formal": "shall not",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "let's",
+      "formal": "let us",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "how's",
+      "formal": "how is",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "where's",
+      "formal": "where is",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "when's",
+      "formal": "when is",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "why's",
+      "formal": "why is",
+      "category": "apostrophe_contractions"
+    },
+    {
+      "informal": "gonna",
+      "formal": "going to",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "gotta",
+      "formal": "got to",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "wanna",
+      "formal": "want to",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "hafta",
+      "formal": "have to",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "hasta",
+      "formal": "has to",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "oughta",
+      "formal": "ought to",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "needa",
+      "formal": "need to",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "useta",
+      "formal": "used to",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "supposta",
+      "formal": "supposed to",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "sposta",
+      "formal": "supposed to",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "coulda",
+      "formal": "could have",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "woulda",
+      "formal": "would have",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "shoulda",
+      "formal": "should have",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "mighta",
+      "formal": "might have",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "musta",
+      "formal": "must have",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "kinda",
+      "formal": "kind of",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "sorta",
+      "formal": "sort of",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "lotta",
+      "formal": "lot of",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "outta",
+      "formal": "out of",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "coupla",
+      "formal": "couple of",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "buncha",
+      "formal": "bunch of",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "loadsa",
+      "formal": "loads of",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "lotsa",
+      "formal": "lots of",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "alla",
+      "formal": "all of",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "lemme",
+      "formal": "let me",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "gimme",
+      "formal": "give me",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "imma",
+      "formal": "i am going to",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "ima",
+      "formal": "i am going to",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "ya",
+      "formal": "you",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "yer",
+      "formal": "your",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "yall",
+      "formal": "you all",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "y'all",
+      "formal": "you all",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "em",
+      "formal": "them",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "'em",
+      "formal": "them",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "da",
+      "formal": "the",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "dunno",
+      "formal": "do not know",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "donno",
+      "formal": "do not know",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "innit",
+      "formal": "is it not",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "init",
+      "formal": "is it not",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "aint",
+      "formal": "am not",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "ain't",
+      "formal": "am not",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "aight",
+      "formal": "alright",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "alright",
+      "formal": "all right",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "howdy",
+      "formal": "how do you do",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "sup",
+      "formal": "what is up",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "wassup",
+      "formal": "what is up",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "whatup",
+      "formal": "what is up",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "whassup",
+      "formal": "what is up",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "finna",
+      "formal": "fixing to",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "fitna",
+      "formal": "fixing to",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "tryna",
+      "formal": "trying to",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "boutta",
+      "formal": "about to",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "abouta",
+      "formal": "about to",
+      "category": "phonetic_reductions"
+    },
+    {
+      "informal": "didja",
+      "formal": "did you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "didya",
+      "formal": "did you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "dija",
+      "formal": "did you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "wouldja",
+      "formal": "would you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "wouldya",
+      "formal": "would you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "couldja",
+      "formal": "could you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "couldya",
+      "formal": "could you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "shouldja",
+      "formal": "should you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "doya",
+      "formal": "do you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "d'ya",
+      "formal": "do you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "d'you",
+      "formal": "do you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "dontcha",
+      "formal": "do you not",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "doncha",
+      "formal": "do you not",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "gotcha",
+      "formal": "got you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "gotya",
+      "formal": "got you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "betcha",
+      "formal": "bet you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "whatcha",
+      "formal": "what are you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "watcha",
+      "formal": "what are you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "whaddya",
+      "formal": "what do you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "whaddaya",
+      "formal": "what do you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "whadya",
+      "formal": "what do you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "wheredja",
+      "formal": "where did you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "howdja",
+      "formal": "how did you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "meetcha",
+      "formal": "meet you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "letcha",
+      "formal": "let you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "getcha",
+      "formal": "get you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "catchya",
+      "formal": "catch you",
+      "category": "coalescence_patterns"
+    },
+    {
+      "informal": "cause",
+      "formal": "because",
+      "category": "elision_patterns"
+    },
+    {
+      "informal": "'cause",
+      "formal": "because",
+      "category": "elision_patterns"
+    },
+    {
+      "informal": "cuz",
+      "formal": "because",
+      "category": "elision_patterns"
+    },
+    {
+      "informal": "coz",
+      "formal": "because",
+      "category": "elision_patterns"
+    },
+    {
+      "informal": "'coz",
+      "formal": "because",
+      "category": "elision_patterns"
+    },
+    {
+      "informal": "cos",
+      "formal": "because",
+      "category": "elision_patterns"
+    },
+    {
+      "informal": "'cos",
+      "formal": "because",
+      "category": "elision_patterns"
+    },
+    {
+      "informal": "bout",
+      "formal": "about",
+      "category": "elision_patterns"
+    },
+    {
+      "informal": "'bout",
+      "formal": "about",
+      "category": "elision_patterns"
+    },
+    {
+      "informal": "til",
+      "formal": "until",
+      "category": "elision_patterns"
+    },
+    {
+      "informal": "'til",
+      "formal": "until",
+      "category": "elision_patterns"
+    },
+    {
+      "informal": "round",
+      "formal": "around",
+      "category": "elision_patterns"
+    },
+    {
+      "informal": "'round",
+      "formal": "around",
+      "category": "elision_patterns"
+    },
+    {
+      "informal": "fore",
+      "formal": "before",
+      "category": "elision_patterns"
+    },
+    {
+      "informal": "'fore",
+      "formal": "before",
+      "category": "elision_patterns"
+    },
+    {
+      "informal": "nother",
+      "formal": "another",
+      "category": "elision_patterns"
+    },
+    {
+      "informal": "'nother",
+      "formal": "another",
+      "category": "elision_patterns"
+    },
+    {
+      "informal": "jeet",
+      "formal": "did you eat",
+      "category": "question_compressions"
+    },
+    {
+      "informal": "jever",
+      "formal": "did you ever",
+      "category": "question_compressions"
+    },
+    {
+      "informal": "jew",
+      "formal": "did you",
+      "category": "question_compressions"
+    },
+    {
+      "informal": "ju",
+      "formal": "did you",
+      "category": "question_compressions"
+    },
+    {
+      "informal": "dyaknow",
+      "formal": "do you know",
+      "category": "question_compressions"
+    },
+    {
+      "informal": "yaknow",
+      "formal": "you know",
+      "category": "question_compressions"
+    },
+    {
+      "informal": "yanno",
+      "formal": "you know",
+      "category": "question_compressions"
+    },
+    {
+      "informal": "yknow",
+      "formal": "you know",
+      "category": "question_compressions"
+    },
+    {
+      "informal": "y'know",
+      "formal": "you know",
+      "category": "question_compressions"
+    },
+    {
+      "informal": "whadyamean",
+      "formal": "what do you mean",
+      "category": "question_compressions"
+    },
+    {
+      "informal": "arya",
+      "formal": "are you",
+      "category": "question_compressions"
+    },
+    {
+      "informal": "areya",
+      "formal": "are you",
+      "category": "question_compressions"
+    },
+    {
+      "informal": "havya",
+      "formal": "have you",
+      "category": "question_compressions"
+    }
+  ]
+}

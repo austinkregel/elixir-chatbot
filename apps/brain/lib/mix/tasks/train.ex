@@ -35,12 +35,13 @@ defmodule Mix.Tasks.Train do
     --skip-kg-lstm     Skip KG triple scorer
     --skip-micro       Skip TF-IDF micro-classifiers (including ChunkProfile axis models)
     --skip-framing     Skip framing classifier (GVFC corpus)
+    --skip-lattice     Skip lattice phrase inventory generation
     --include-graph    Run graph-to-training integration after training
     --world ID         Train world-specific models
     --publish          Publish trained models to S3/MinIO
     --list             List all available training tasks
 
-  ## Training order (6 stages)
+  ## Training order (9 stages)
 
   1. **TF-IDF bundle** — `Trainer.train_and_save/1`: entity model, gazetteer,
      embedder vocabulary, plus speech-act TF-IDF (~1 minute).
@@ -53,6 +54,12 @@ defmodule Mix.Tasks.Train do
   6. **Framing Classifier** — runs `mix gen_framing_data` (if JSON missing) then
      `mix train_framing`. Requires GVFC corpus at `data/framing/`. Run
      `mix ingest_framing_corpus` if the CSV is not yet extracted.
+  7. **Lattice Phrase Inventory** — runs `mix gen_lattice_data` to generate
+     phrase inventory fragments with prototype vectors for the lattice realizer.
+     Use `mix train --skip-vectorize` to skip the slow vectorization step.
+  8. **Entity Type Ingestion** — ingests entity types from Atlas into the
+     training world.
+  9. **Type Vector Warm-up** — warms up entity type vectors in the KG cache.
 
   ## Examples
 
@@ -128,6 +135,18 @@ defmodule Mix.Tasks.Train do
       task: :framing,
       duration: "~2-5 minutes",
       outputs: ["micro/framing_class.term", "micro/framing_neutral_centroid.term"]
+    },
+    %{
+      name: "Lattice Phrase Inventory",
+      description:
+        "Generates phrase inventory + prototype vectors for lattice realizer (`mix gen_lattice_data`)",
+      task: :lattice,
+      duration: "~2-10 minutes (vectorization)",
+      outputs: [
+        "lattice/phrase_inventory.json",
+        "lattice/transition_scores.json",
+        "lattice/scorer_weights.json"
+      ]
     }
   ]
 
@@ -143,6 +162,8 @@ defmodule Mix.Tasks.Train do
           skip_kg_lstm: :boolean,
           skip_micro: :boolean,
           skip_framing: :boolean,
+          skip_lattice: :boolean,
+          skip_vectorize: :boolean,
           skip_entity_ingest: :boolean,
           skip_type_vectors: :boolean,
           include_graph: :boolean,
@@ -266,6 +287,13 @@ defmodule Mix.Tasks.Train do
     skip_list =
       if opts[:skip_framing] do
         [:framing | skip_list]
+      else
+        skip_list
+      end
+
+    skip_list =
+      if opts[:skip_lattice] do
+        [:lattice | skip_list]
       else
         skip_list
       end
@@ -414,6 +442,16 @@ defmodule Mix.Tasks.Train do
       end
 
     results =
+      if :lattice in skip_list do
+        [{:lattice, :skipped, 0} | results]
+      else
+        start = System.monotonic_time(:second)
+        result = train_lattice(opts)
+        duration = System.monotonic_time(:second) - start
+        [{:lattice, result, duration} | results]
+      end
+
+    results =
       if :entity_ingest in skip_list do
         [{:entity_ingest, :skipped, 0} | results]
       else
@@ -441,7 +479,7 @@ defmodule Mix.Tasks.Train do
   defp train_tfidf_models(opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 1/6: TF-IDF Models  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 1/9: TF-IDF Models  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
     models_path = get_models_path(opts[:world])
@@ -486,7 +524,7 @@ defmodule Mix.Tasks.Train do
   defp train_pos_model(opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 2/6: POS Tagger  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 2/9: POS Tagger  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
     models_path = get_models_path(opts[:world])
@@ -532,7 +570,7 @@ defmodule Mix.Tasks.Train do
   defp train_poincare_embeddings(opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 3/6: Poincare Embeddings  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 3/9: Poincare Embeddings  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
     world = if opts[:world], do: ["--world", opts[:world]], else: []
@@ -551,7 +589,7 @@ defmodule Mix.Tasks.Train do
   defp train_kg_triple_scorer(opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 4/6: KG Triple Scorer  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 4/9: KG Triple Scorer  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
     world = if opts[:world], do: ["--world", opts[:world]], else: []
@@ -570,7 +608,7 @@ defmodule Mix.Tasks.Train do
   defp train_micro_classifiers do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 5/6: MicroClassifiers  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 5/9: MicroClassifiers  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
     try do
@@ -586,7 +624,7 @@ defmodule Mix.Tasks.Train do
   defp train_framing_classifier do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 6/6: Framing Classifier  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 6/9: Framing Classifier  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
     data_path = "data/classifiers/framing_class.json"
@@ -621,10 +659,34 @@ defmodule Mix.Tasks.Train do
     end
   end
 
+  defp train_lattice(opts) do
+    Mix.shell().info("")
+    Mix.shell().info("=" |> String.duplicate(70))
+    Mix.shell().info("  Stage 7/9: Lattice Phrase Inventory  [#{stage_timestamp()}]")
+    Mix.shell().info("=" |> String.duplicate(70))
+
+    lattice_args =
+      if opts[:skip_vectorize] do
+        Mix.shell().info("  --skip-vectorize: fragment templates only (no prototype vectors)")
+        ["--skip-vectorize"]
+      else
+        []
+      end
+
+    try do
+      Mix.Tasks.GenLatticeData.run(lattice_args)
+      {:ok, %{lattice_generated: true}}
+    rescue
+      e -> {:error, Exception.message(e)}
+    catch
+      :exit, {:shutdown, 1} -> {:error, "lattice data generation failed"}
+    end
+  end
+
   defp run_entity_type_ingestion(opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 7/8: Entity Type Ingestion  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 8/9: Entity Type Ingestion  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
     if not Brain.AtlasIntegration.available?() do
@@ -645,7 +707,7 @@ defmodule Mix.Tasks.Train do
   defp warm_up_type_vectors do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 8/8: Type Vector Warm-up  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 9/9: Type Vector Warm-up  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
     try do
@@ -739,6 +801,7 @@ defmodule Mix.Tasks.Train do
       kg_lstm: "KG Triple Scorer",
       micro: "MicroClassifiers",
       framing: "Framing Classifier",
+      lattice: "Lattice Phrase Inventory",
       entity_ingest: "Entity Type Ingestion",
       type_vectors: "Type Vector Warm-up"
     }

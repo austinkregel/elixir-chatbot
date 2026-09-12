@@ -1,0 +1,105 @@
+{
+  "domain": "weather",
+  "description": "Weather information queries and responses with live data enrichment",
+  "response_frames": {
+    "has_location": [
+      "Let me check the weather for $location.",
+      "Looking up weather conditions in $location.",
+      "Here's what I found for $location weather."
+    ],
+    "missing_location": [
+      "What location would you like the weather for?",
+      "Which city or area should I check the weather for?",
+      "Where would you like me to check the weather?"
+    ],
+    "with_date": [
+      "Checking the weather for $location on $date.",
+      "Looking up the forecast for $location on $date."
+    ]
+  },
+  "enriched_response_frames": {
+    "current_enriched": {
+      "condition": "enriched:temperature",
+      "requires_enrichment": ["temperature", "conditions"],
+      "templates": [
+        "It's currently $temperature and $conditions in $location.",
+        "The weather in $location is $temperature with $conditions.",
+        "Right now in $location: $temperature, $conditions.",
+        "In $location it's $temperature and $conditions."
+      ]
+    },
+    "current_enriched_detailed": {
+      "condition": "enriched:temperature AND enriched:humidity",
+      "requires_enrichment": ["temperature", "conditions", "humidity", "wind_speed"],
+      "templates": [
+        "The weather in $location is $temperature and $conditions. Humidity is at $humidity with winds at $wind_speed.",
+        "It's $temperature in $location with $conditions. The humidity is $humidity and wind speed is $wind_speed."
+      ]
+    },
+    "forecast_enriched": {
+      "condition": "enriched:forecast",
+      "requires_enrichment": ["forecast"],
+      "templates": [
+        "Here's the forecast for $location: $forecast",
+        "The upcoming weather for $location: $forecast"
+      ]
+    },
+    "service_not_configured": {
+      "condition": "slot_filled:location AND NOT service_available:weather",
+      "templates": [
+        "I can tell you about the weather in $location once my weather service is configured.",
+        "Weather information for $location isn't available right now - the weather service needs to be set up.",
+        "I'd check the weather for $location, but the weather service isn't configured yet."
+      ]
+    },
+    "service_error": {
+      "condition": "enrichment_failed",
+      "templates": [
+        "I'm having trouble getting weather information right now. Please try again in a moment.",
+        "The weather service isn't responding at the moment. Try again shortly.",
+        "I couldn't reach the weather service. Please try again later."
+      ]
+    }
+  },
+  "entity_verbalizations": {
+    "location": ["in $value", "for $value", "around $value"],
+    "date": ["on $value", "for $value"],
+    "time": ["at $value", "around $value"]
+  },
+  "acknowledgment_prefixes": [
+    "Sure,",
+    "Of course,",
+    "Absolutely,"
+  ],
+  "slot_requirements": {
+    "required": ["location"],
+    "optional": ["date", "time"]
+  },
+  "enrichment_service": "weather",
+  "enrichment_fields": {
+    "temperature": {
+      "description": "Current temperature (e.g., '72°F')",
+      "source": "weather"
+    },
+    "conditions": {
+      "description": "Weather conditions (e.g., 'sunny', 'partly cloudy')",
+      "source": "weather"
+    },
+    "humidity": {
+      "description": "Humidity percentage (e.g., '45%')",
+      "source": "weather"
+    },
+    "wind_speed": {
+      "description": "Wind speed (e.g., '10 mph')",
+      "source": "weather"
+    },
+    "feels_like": {
+      "description": "Feels like temperature",
+      "source": "weather"
+    },
+    "forecast": {
+      "description": "Multi-day forecast summary",
+      "source": "weather"
+    }
+  }
+}

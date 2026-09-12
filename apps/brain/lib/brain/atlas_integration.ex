@@ -234,7 +234,8 @@ defmodule Brain.AtlasIntegration do
             tags: row.tags || [],
             embedding: row.embedding || [],
             timestamp: DateTime.to_unix(row.inserted_at, :millisecond),
-            semantic_id: row.semantic_id
+            semantic_id: row.semantic_id,
+            entity_names: row.entity_names || []
           }
 
           {row.id, ep}
@@ -285,7 +286,8 @@ defmodule Brain.AtlasIntegration do
         outcome: episode.outcome,
         tags: episode.tags || [],
         embedding: episode.embedding || [],
-        semantic_id: episode.semantic_id
+        semantic_id: episode.semantic_id,
+        entity_names: episode.entity_names || []
       }
 
       case Atlas.Repo.get(Atlas.Schemas.Episode, episode.id) do
@@ -361,7 +363,8 @@ defmodule Brain.AtlasIntegration do
             outcome: episode.outcome,
             tags: episode.tags || [],
             embedding: episode.embedding || [],
-            semantic_id: episode.semantic_id
+            semantic_id: episode.semantic_id,
+            entity_names: episode.entity_names || []
           }
 
           case Atlas.Repo.get(Atlas.Schemas.Episode, episode.id) do
@@ -576,7 +579,8 @@ defmodule Brain.AtlasIntegration do
       tags: row.tags || [],
       embedding: row.embedding || [],
       timestamp: DateTime.to_unix(row.inserted_at, :millisecond),
-      semantic_id: row.semantic_id
+      semantic_id: row.semantic_id,
+      entity_names: row.entity_names || []
     }
   end
 

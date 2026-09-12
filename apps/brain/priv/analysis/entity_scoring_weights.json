@@ -1,0 +1,12 @@
+{
+  "entity_exact_match": 0.10,
+  "entity_hierarchy_match": 0.07,
+  "entity_poincare_proximity": 0.05,
+  "entity_vector_similarity": 0.04,
+  "entity_cap": 0.30,
+  "concept_domain_similarity": 0.10,
+  "concept_domain_cap": 0.10,
+  "total_entity_signal_cap": 0.30,
+  "poincare_distance_threshold": 2.0,
+  "vector_similarity_threshold": 0.6
+}

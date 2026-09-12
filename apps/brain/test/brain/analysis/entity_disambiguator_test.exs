@@ -339,6 +339,60 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
     end
   end
 
+  describe "lazy atlas boost" do
+    test "skips atlas boost when domain-expected type dominates scoring", %{world_id: world_id} do
+      person_info = %{entity_type: "person", value: "Austin"}
+      location_info = %{entity_type: "location", value: "Austin"}
+
+      entity = %{
+        value: "Austin",
+        match: "Austin",
+        start_pos: 20,
+        end_pos: 26,
+        types: [person_info, location_info]
+      }
+
+      pos_tagged = [
+        {"What", "PRON"},
+        {"is", "VERB"},
+        {"the", "DET"},
+        {"weather", "NOUN"},
+        {"in", "ADP"},
+        {"Austin", "PROPN"}
+      ]
+
+      profile = %Brain.Analysis.ChunkProfile{
+        domain: :weather,
+        speech_act_category: :directive,
+        speech_act_subtype: :request_information,
+        derived_label: "weather.request_information"
+      }
+
+      context = %{
+        discourse: %{indicators: []},
+        speech_act: %{category: :directive, sub_type: :request_information},
+        intent: "weather.query",
+        world_id: world_id,
+        profile: profile
+      }
+
+      ref = :telemetry.attach(
+        "test-atlas-cypher-counter",
+        [:brain, :atlas, :cypher],
+        fn _event, _measurements, _metadata, _config ->
+          flunk("Atlas Cypher query was issued when domain scoring was decisive")
+        end,
+        nil
+      )
+
+      result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
+
+      assert result.entity_type == "location"
+
+      :telemetry.detach("test-atlas-cypher-counter")
+    end
+  end
+
   describe "domain-aware disambiguation" do
     test "picks location over room when profile.domain is :weather", %{world_id: world_id} do
       entity = %{

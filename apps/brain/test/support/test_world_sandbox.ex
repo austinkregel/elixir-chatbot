@@ -1,6 +1,10 @@
 defmodule Brain.TestWorldSandbox do
   @moduledoc "Sandbox module for managing test world lifecycle.\n\nProvides automatic cleanup of test worlds to ensure complete isolation\nbetween tests and prevent pollution of production world data.\n\n## Usage\n\nIn your test module:\n\n    defmodule MyTest do\n      use ExUnit.Case\n      import Brain.TestHelpers\n\n      setup do\n        setup_world_sandbox()\n      end\n\n      test \"creates a test world\" do\n        {:ok, world} = create_test_world(\"my_test\")\n        assert world.metadata.test == true\n        # World is automatically cleaned up after test\n      end\n    end\n\n## How It Works\n\n1. `setup_world_sandbox/0` registers an `on_exit` callback that cleans up\n   all worlds created during the test.\n\n2. `create_test_world/2` creates a world with `:test` metadata and tracks\n   it for cleanup.\n\n3. When the test completes (pass or fail), all tracked worlds are destroyed.\n\n4. Test worlds are stored in a temp directory (configured via `:test_world_sandbox`)\n   to ensure complete isolation from production worlds.\n"
 
+  # World.Manager is in a sibling umbrella app that depends on :brain.
+  # It's available at runtime but not at compile time.
+  @compile {:no_warn_undefined, World.Manager}
+
   alias World.Manager, as: WorldManager
 
   alias ExUnit.Callbacks

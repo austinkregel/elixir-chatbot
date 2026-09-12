@@ -1,0 +1,8 @@
+{
+  "location": ["location", "room", "city", "place-name", "geo-location", "address", "state", "country", "region"],
+  "device": ["device", "lights", "heating", "thermostat", "switch", "outlet"],
+  "time": ["time", "sys-time", "clock"],
+  "date": ["date", "relative_date", "sys-date", "day", "month", "year"],
+  "temperature": ["temperature", "number", "unit-temperature"],
+  "query": ["query", "search-term", "topic"]
+}

@@ -120,9 +120,39 @@ apps/brain/test/brain/ml/lexicon/
 apps/brain/test/brain/ml_models/
 apps/brain/data/
 apps/brain/priv/*
+# JSON configs are read at compile time (@external_resource) and must be tracked;
+# models, lexicons, runtime stores, and secrets above stay ignored.
+!apps/brain/priv/analysis/
+!apps/brain/priv/knowledge/
+!apps/brain/priv/response/
+!apps/brain/priv/services/
+apps/brain/priv/knowledge/Echo.json
+# Evaluation gold standards train the test models at suite startup
+# (ModelFactory); results, backups, and the large sentiment corpus
+# (which has a small tracked fixture fallback) stay ignored.
+!apps/brain/priv/evaluation/
+apps/brain/priv/evaluation/results/
+apps/brain/priv/evaluation/sentiment/
+apps/brain/priv/evaluation/**/*.bak
 
-data/
+# Umbrella-root training data stays local, except the small hand-curated
+# informal-expansions map that InformalExpansions loads at runtime.
+/data/*
+!/data/informal_expansions.json
+# app-local and test-local data dirs (previously covered by unanchored data/)
+apps/*/data/
+test/data/
 .vscode/
 .idea/
 apps/chat_web/tmp/**/*.json
 apps/chat_web/tmp/*
+
+__pycache__/
+scripts/__pycache__/
+
+.DS_Store
+.openclaw/
+GVFC.zip
+/memory/
+/priv/data_cache/
+apps/brain/tmp/

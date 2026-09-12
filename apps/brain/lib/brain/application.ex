@@ -16,6 +16,8 @@ defmodule Brain.Application do
 
   @impl true
   def start(_type, _args) do
+    Brain.Graph.ContextCache.init()
+
     children = [
       {Phoenix.PubSub, [name: Brain.PubSub]},
       {Task.Supervisor, [name: Brain.AtlasTaskSupervisor]},
@@ -58,6 +60,8 @@ defmodule Brain.Application do
       Brain.Response.TemplateBlender,
       Brain.Response.SemanticFactRetriever,
       Brain.Response.DecompressorCollector,
+      Brain.Response.PhraseInventory,
+      Brain.Services.HomeAssistant.CapabilityRegistry,
       Brain.ML.Ouro.Model,
       Brain.ML.Ouro.SidecarLauncher,
       Brain.ML.TrainingServer,

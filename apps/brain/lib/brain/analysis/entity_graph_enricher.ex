@@ -31,9 +31,23 @@ defmodule Brain.Analysis.EntityGraphEnricher do
     if entities == [] or not atlas_available?() do
       Enum.map(entities, &default_enrichment/1)
     else
+      debug? = Application.get_env(:brain, :debug_pipeline_timing, false)
+      t0 = if debug?, do: System.monotonic_time(:millisecond)
+
       context_results = safe_entity_context(entities)
+
+      if debug?, do: Logger.info("    graph_enrich:entity_context=#{System.monotonic_time(:millisecond) - t0}ms (#{length(entities)} entities)")
+
       enriched = apply_context(entities, context_results)
-      apply_relationships(enriched)
+
+      known_count = Enum.count(enriched, &Map.get(&1, :graph_known, false))
+      if debug?, do: Logger.info("    graph_enrich:apply_context=#{System.monotonic_time(:millisecond) - t0}ms (#{known_count} known)")
+
+      result = apply_relationships(enriched)
+
+      if debug?, do: Logger.info("    graph_enrich:relationships=#{System.monotonic_time(:millisecond) - t0}ms")
+
+      result
     end
   end
 

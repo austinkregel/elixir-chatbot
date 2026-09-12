@@ -54,8 +54,7 @@ config :atlas, Atlas.Repo,
 
 phx_port = env!("PHX_PORT", :integer, 4000)
 
-config :chat_web, ChatWeb.Endpoint,
-  http: [port: phx_port]
+config :chat_web, ChatWeb.Endpoint, http: [port: phx_port]
 
 # S3 / MinIO Model Store
 # Disabled in test env to prevent ad-hoc S3 fetches during test runs.
@@ -77,7 +76,6 @@ config :ex_aws,
   ]
 
 if config_env() == :prod do
-
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you
   # want to use a different value for prod and you most likely don't want

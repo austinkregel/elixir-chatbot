@@ -409,7 +409,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
         {:error, :embedder_not_ready}
 
       true ->
-        task = Task.async(fn -> Store.query_similar(text, 5) end)
+        task = Task.async(fn -> Store.query_similar(text, 5, rerank: false) end)
 
         case Task.yield(task, 500) || Task.shutdown(task, :brutal_kill) do
           {:ok, result} -> result
@@ -878,7 +878,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
     cond do
       domain in ~w(greeting farewell thanks apology compliment) -> {:expressive, String.to_atom(domain)}
       domain in ~w(question request query search) -> {:directive, :request_information}
-      domain in ~w(command action set turn) -> {:directive, :command}
+      domain in ~w(command action set turn smarthome device music alarm timer reminder) -> {:directive, :command}
       domain in ~w(promise offer) -> {:commissive, :offer}
       true -> {:assertive, :statement}
     end

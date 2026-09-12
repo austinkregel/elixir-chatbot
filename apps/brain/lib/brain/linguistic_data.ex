@@ -15,16 +15,9 @@ defmodule Brain.LinguisticData do
   @linguistic_path "priv/knowledge/linguistic.json"
   @external_resource @linguistic_path
 
-  @data (case File.read(@linguistic_path) do
-           {:ok, content} ->
-             case Jason.decode(content) do
-               {:ok, data} -> data
-               {:error, _} -> %{}
-             end
-
-           {:error, _} ->
-             %{}
-         end)
+  # This module is nothing but this file's contents; compiling it to %{} on a
+  # read error would leave every accessor silently returning its default.
+  @data @linguistic_path |> File.read!() |> Jason.decode!()
 
   @doc """
   Returns the list of negation words.

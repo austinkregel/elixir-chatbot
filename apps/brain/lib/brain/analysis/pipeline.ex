@@ -113,6 +113,8 @@ defmodule Brain.Analysis.Pipeline do
 
     Brain.Graph.Writer.write_analysis(model)
 
+    Brain.Graph.ContextCache.purge_process_entries()
+
     Progress.report(opts, :pipeline_complete, %{elapsed_ms: elapsed})
 
     model
@@ -183,6 +185,8 @@ defmodule Brain.Analysis.Pipeline do
     participants = Keyword.get(opts, :participants, [:user, :bot])
     bot_names = Keyword.get(opts, :bot_names, [])
     history = Keyword.get(opts, :conversation_history, [])
+    t0 = System.monotonic_time(:millisecond)
+    debug_pass1? = Keyword.get(opts, :debug_timing, false) or Application.get_env(:brain, :debug_pipeline_timing, false)
 
     Progress.report(opts, :chunk_start, %{
       chunk_index: chunk.index,
@@ -203,6 +207,8 @@ defmodule Brain.Analysis.Pipeline do
       catch
         :exit, _ -> []
       end
+
+    if debug_pass1?, do: Logger.info("pipeline:pass1 entities=#{System.monotonic_time(:millisecond) - t0}ms")
 
     speech_act_task =
       Task.async(fn ->
@@ -229,6 +235,8 @@ defmodule Brain.Analysis.Pipeline do
           DiscourseAnalyzer.analyze("")
       end
 
+    if debug_pass1?, do: Logger.info("pipeline:pass1 discourse=#{System.monotonic_time(:millisecond) - t0}ms")
+
     speech_act_result =
       try do
         Task.await(speech_act_task, 3000)
@@ -237,6 +245,8 @@ defmodule Brain.Analysis.Pipeline do
           Task.shutdown(speech_act_task, :brutal_kill)
           SpeechActClassifier.classify("")
       end
+
+    if debug_pass1?, do: Logger.info("pipeline:pass1 speech_act=#{System.monotonic_time(:millisecond) - t0}ms")
 
     sentiment_result =
       try do
@@ -248,6 +258,8 @@ defmodule Brain.Analysis.Pipeline do
           Logger.warning("Sentiment classification timed out. Using neutral fallback.")
           %{label: :neutral, score: 0.5}
       end
+
+    if debug_pass1?, do: Logger.info("pipeline:pass1 sentiment=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :discourse_complete, %{
       chunk_index: chunk.index,
@@ -272,6 +284,8 @@ defmodule Brain.Analysis.Pipeline do
     {resolved_text, anaphora_entities} =
       resolve_anaphora(chunk.text, history, chunk.index, opts)
 
+    if debug_pass1?, do: Logger.info("pipeline:pass1 anaphora=#{System.monotonic_time(:millisecond) - t0}ms")
+
     speech_act_intent = extract_intent_from_speech_act(speech_act_result)
     speech_act_domain = extract_domain_from_intent(speech_act_intent)
 
@@ -287,6 +301,8 @@ defmodule Brain.Analysis.Pipeline do
     entities = extract_entities(resolved_text, entity_opts)
     entities = merge_anaphora_entities(entities, anaphora_entities)
 
+    if debug_pass1?, do: Logger.info("pipeline:pass1 extract_entities=#{System.monotonic_time(:millisecond) - t0}ms")
+
     Progress.report(opts, :entities_extracted, %{
       chunk_index: chunk.index,
       entity_count: length(entities),
@@ -295,6 +311,8 @@ defmodule Brain.Analysis.Pipeline do
 
     entities = EntityGraphEnricher.enrich(entities)
 
+    if debug_pass1?, do: Logger.info("pipeline:pass1 graph_enrich=#{System.monotonic_time(:millisecond) - t0}ms")
+
     Progress.report(opts, :entities_graph_enriched, %{
       chunk_index: chunk.index,
       graph_known_count: Enum.count(entities, &Map.get(&1, :graph_known, false)),
@@ -302,6 +320,8 @@ defmodule Brain.Analysis.Pipeline do
     })
 
     pos_result = get_pos_tags(resolved_text)
+
+    if debug_pass1?, do: Logger.info("pipeline:pass1 pos_tags=#{System.monotonic_time(:millisecond) - t0}ms")
 
     events = extract_events(pos_result, entities, opts)
 
@@ -320,6 +340,8 @@ defmodule Brain.Analysis.Pipeline do
 
     srl_frames = run_srl(pos_result, entities, opts)
 
+    if debug_pass1?, do: Logger.info("pipeline:pass1 srl=#{System.monotonic_time(:millisecond) - t0}ms")
+
     Progress.report(opts, :srl_complete, %{
       chunk_index: chunk.index,
       srl_frame_count: length(srl_frames)
@@ -336,7 +358,11 @@ defmodule Brain.Analysis.Pipeline do
       |> Map.put(:srl_frames, srl_frames)
       |> Map.put(:pos_tags, pos_result_to_tags(pos_result))
 
+    if debug_pass1?, do: Logger.info("pipeline:pass1 domain_classify_start=#{System.monotonic_time(:millisecond) - t0}ms")
+
     pass1_domain = classify_intent_domain_lightweight(pass1_analysis)
+
+    if debug_pass1?, do: Logger.info("pipeline:pass1 domain_classify_end=#{System.monotonic_time(:millisecond) - t0}ms")
 
     {prelim_intent, intent_method, prelim_intent_conf, prelim_intent_details} =
       determine_intent(
@@ -347,6 +373,8 @@ defmodule Brain.Analysis.Pipeline do
         opts,
         nil
       )
+
+    if debug_pass1?, do: Logger.info("pipeline:pass1 determine_intent=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :intent_determined, %{
       chunk_index: chunk.index,
@@ -497,11 +525,15 @@ defmodule Brain.Analysis.Pipeline do
   defp refine_chunk_pass2(%ChunkAnalysis{} = pass1, cross_context, opts) do
     history = Keyword.get(opts, :conversation_history, [])
     profile = Keyword.get(opts, :user_profile, %{})
+    debug_pass2? = Application.get_env(:brain, :debug_pipeline_timing, false)
+    t0 = if debug_pass2?, do: System.monotonic_time(:millisecond)
 
     pass1_with_context = Map.put(pass1, :accumulated_context, cross_context.accumulator)
 
     {refined_speech_act, intent, intent_method, intent_confidence, intent_details, chunk_profile} =
       classify_intent_full_and_refine(pass1_with_context, opts)
+
+    if debug_pass2?, do: Logger.info("  pass2:classify_intent_full=#{System.monotonic_time(:millisecond) - t0}ms")
 
     intent_details =
       if chunk_profile,
@@ -528,11 +560,15 @@ defmodule Brain.Analysis.Pipeline do
         world_id: Keyword.get(opts, :world_id, "default")
       )
 
+    if debug_pass2?, do: Logger.info("  pass2:entity_inference=#{System.monotonic_time(:millisecond) - t0}ms")
+
     relevant_entities =
       entities_after_inference
       |> filter_entities_by_intent(intent)
       |> maybe_retype_pos_music_artists(pass1.text)
       |> Brain.ML.EntityExtractor.refine_entity_types(to_string(intent))
+
+    if debug_pass2?, do: Logger.info("  pass2:entity_filter+refine=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :entities_filtered, %{
       chunk_index: pass1.chunk_index,
@@ -545,6 +581,8 @@ defmodule Brain.Analysis.Pipeline do
     })
 
     fact_result = verify_facts_in_chunk(pass1.text, relevant_entities, refined_speech_act, opts)
+
+    if debug_pass2?, do: Logger.info("  pass2:fact_verify=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :fact_verification, %{
       chunk_index: pass1.chunk_index,
@@ -567,6 +605,8 @@ defmodule Brain.Analysis.Pipeline do
 
     slot_result = SlotDetector.detect(intent, relevant_entities)
 
+    if debug_pass2?, do: Logger.info("  pass2:slot_detect=#{System.monotonic_time(:millisecond) - t0}ms")
+
     Progress.report(opts, :slots_detected, %{
       chunk_index: pass1.chunk_index,
       missing_required: Map.get(slot_result, :missing_required, []),
@@ -582,6 +622,8 @@ defmodule Brain.Analysis.Pipeline do
         user_profile: profile,
         user_id: user_id
       )
+
+    if debug_pass2?, do: Logger.info("  pass2:context_resolve=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :context_resolved, %{
       chunk_index: pass1.chunk_index,
@@ -620,6 +662,8 @@ defmodule Brain.Analysis.Pipeline do
       |> ChunkAnalysis.determine_response_strategy()
 
     maybe_extract_beliefs_from_events(pass1.events, opts)
+
+    if debug_pass2?, do: Logger.info("  pass2:total=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :chunk_complete, %{
       chunk_index: pass1.chunk_index,
@@ -1326,12 +1370,7 @@ defmodule Brain.Analysis.Pipeline do
 
   @entity_scoring_weights_path Path.join(:code.priv_dir(:brain), "analysis/entity_scoring_weights.json")
   @external_resource @entity_scoring_weights_path
-  @entity_scoring_weights (
-    case File.read(@entity_scoring_weights_path) do
-      {:ok, json} -> Jason.decode!(json)
-      _ -> %{}
-    end
-  )
+  @entity_scoring_weights @entity_scoring_weights_path |> File.read!() |> Jason.decode!()
 
   defp best_intent_by_signals(speech_act, profile, lattice, entities) do
     profile_domain = profile_domain_string(profile)
@@ -1366,6 +1405,8 @@ defmodule Brain.Analysis.Pipeline do
           true -> a_intent <= b_intent
         end
       end)
+
+    flush_entity_layer_telemetry()
 
     case ranked do
       [{intent, _} | _] -> {:ok, intent}
@@ -1516,19 +1557,16 @@ defmodule Brain.Analysis.Pipeline do
     alias Brain.ML.KnowledgeGraph.EntityVectorCache
 
     if Code.ensure_loaded?(EntityVectorCache) and
-         function_exported?(EntityVectorCache, :get_or_compute_type, 1) do
-      case EntityVectorCache.get_or_compute_type(etype) do
+         function_exported?(EntityVectorCache, :get_cached_type, 1) do
+      case EntityVectorCache.get_cached_type(etype) do
         {:ok, etype_vec} ->
           threshold = Map.get(w, "vector_similarity_threshold", 0.6)
+          etype_flat = Nx.to_flat_list(etype_vec)
 
           Enum.any?(expected_types, fn expected ->
-            case EntityVectorCache.get_or_compute_type(expected) do
+            case EntityVectorCache.get_cached_type(expected) do
               {:ok, exp_vec} ->
-                sim = FourthWall.Math.cosine_similarity(
-                  Nx.to_flat_list(etype_vec),
-                  Nx.to_flat_list(exp_vec)
-                )
-                sim > threshold
+                FourthWall.Math.cosine_similarity(etype_flat, Nx.to_flat_list(exp_vec)) > threshold
               _ -> false
             end
           end)
@@ -1542,12 +1580,26 @@ defmodule Brain.Analysis.Pipeline do
     _ -> false
   end
 
-  defp emit_entity_layer_telemetry(intent, etype, layer, available) do
-    :telemetry.execute(
-      [:brain, :intent_scoring, :entity_layer],
-      %{score: 1},
-      %{intent: intent, entity_type: etype, layer: layer, layer_available: available}
-    )
+  defp emit_entity_layer_telemetry(_intent, _etype, layer, available) do
+    key = {:entity_layer_counts, layer, available}
+    Process.put(key, (Process.get(key) || 0) + 1)
+  end
+
+  defp flush_entity_layer_telemetry do
+    counts =
+      Process.get()
+      |> Enum.filter(fn {k, _} -> match?({:entity_layer_counts, _, _}, k) end)
+
+    if counts != [] do
+      measurements =
+        Enum.reduce(counts, %{}, fn {{:entity_layer_counts, layer, available}, count}, acc ->
+          Process.delete({:entity_layer_counts, layer, available})
+          suffix = if available, do: layer, else: :"#{layer}_unavailable"
+          Map.put(acc, suffix, count)
+        end)
+
+      :telemetry.execute([:brain, :intent_scoring, :entity_layers_batch], measurements, %{})
+    end
   end
 
   defp entity_scoring_weights do

@@ -3,7 +3,11 @@ import Config
 # Test-specific Repo options (connection config loaded from .env via runtime.exs)
 config :atlas, Atlas.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: min(System.schedulers_online() * 2, 32),
+  # Floor of 12 so low-core CI runners survive the boot-time query burst;
+  # generous queueing since CI Postgres is slow under cold caches.
+  pool_size: System.schedulers_online() |> Kernel.*(2) |> max(12) |> min(32),
+  queue_target: 1_000,
+  queue_interval: 5_000,
   migration_default_prefix: "atlas_test",
   after_connect: {Atlas.Repo, :load_age_test, []}
 
@@ -20,7 +24,7 @@ config :chat_web, ChatWeb.Endpoint,
 
 # Only show warnings and errors during tests
 # Individual tests can use ExUnit.CaptureLog to capture and verify log messages
-config :logger, level: :debug
+config :logger, level: :warning
 
 # Respect XLA_TARGET for tests so GPU tests run on the configured backend.
 # Falls back to :host (CPU) when XLA_TARGET is unset or "cpu".
@@ -90,7 +94,9 @@ ouro_ml =
 
 # Brain app test configuration
 config :brain,
-  ouro_enabled: true,
+  # OURO_ENABLED=false skips the Python sidecar (and, via test_helper, the
+  # :requires_ouro tests) on machines that can't run the model — e.g. CI.
+  ouro_enabled: System.get_env("OURO_ENABLED", "true") != "false",
   # Use mock HTTP client for snapshot-based testing (no external API calls)
   http_client: Brain.Test.MockHTTP,
   # Use test-specific directories
@@ -107,8 +113,10 @@ config :brain,
   pipeline_belief_extraction_sync: true,
   # Test fixture paths - use absolute paths relative to brain app
   facts_dir: Path.expand("../apps/brain/test/fixtures/facts", __DIR__),
-  pattern_triggers_file: Path.expand("../apps/brain/test/fixtures/pattern_triggers.json", __DIR__),
-  response_connectors_file: Path.expand("../apps/brain/test/fixtures/response_connectors.json", __DIR__)
+  pattern_triggers_file:
+    Path.expand("../apps/brain/test/fixtures/pattern_triggers.json", __DIR__),
+  response_connectors_file:
+    Path.expand("../apps/brain/test/fixtures/response_connectors.json", __DIR__)
 
 # World app test configuration
 config :world,

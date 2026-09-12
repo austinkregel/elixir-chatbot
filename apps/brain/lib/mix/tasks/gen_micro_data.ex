@@ -129,6 +129,10 @@ defmodule Mix.Tasks.GenMicroData do
     Enum.each(names, fn name ->
       data = generate_data(name, enriched)
 
+      if name == "intent_full" do
+        validate_intent_labels(data)
+      end
+
       if opts[:stats] do
         show_stats(name, data)
       else
@@ -238,6 +242,44 @@ defmodule Mix.Tasks.GenMicroData do
 
   defp has_feature_vector?(%{"feature_vector" => v}) when is_list(v) and length(v) > 0, do: true
   defp has_feature_vector?(_), do: false
+
+  defp validate_intent_labels(data) do
+    registry_path =
+      Application.app_dir(:brain)
+      |> Path.join("priv/analysis/intent_registry.json")
+
+    case File.read(registry_path) do
+      {:ok, content} ->
+        registry_intents =
+          content
+          |> Jason.decode!()
+          |> Map.keys()
+          |> MapSet.new()
+
+        unregistered =
+          data
+          |> Enum.map(& &1["label"])
+          |> Enum.reject(&MapSet.member?(registry_intents, &1))
+          |> Enum.frequencies()
+          |> Enum.sort_by(fn {_, count} -> -count end)
+
+        if unregistered != [] do
+          total = Enum.reduce(unregistered, 0, fn {_, c}, acc -> acc + c end)
+
+          Mix.shell().error(
+            "[gen_micro_data] WARNING: #{length(unregistered)} intent_full labels (#{total} examples) " <>
+              "are NOT in intent_registry.json — run `mix cleanup_gold_standard` first:"
+          )
+
+          Enum.each(unregistered, fn {label, count} ->
+            Mix.shell().error("  #{count} examples: #{label}")
+          end)
+        end
+
+      {:error, _} ->
+        Mix.shell().error("[gen_micro_data] Could not read intent_registry.json for validation")
+    end
+  end
 
   defp generate_data("intent_full", entries) do
     entries

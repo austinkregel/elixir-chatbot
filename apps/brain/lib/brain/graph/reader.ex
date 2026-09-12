@@ -18,6 +18,7 @@ defmodule Brain.Graph.Reader do
   """
 
   alias Brain.AtlasIntegration
+  alias Brain.Graph.ContextCache
   alias Atlas.Graph
   alias Atlas.Graph.EdgeLabels
   alias Atlas.Graph.Types.Vertex
@@ -36,6 +37,7 @@ defmodule Brain.Graph.Reader do
   """
   def entity_context(entities, opts \\ []) when is_list(entities) do
     depth = Keyword.get(opts, :depth, 2)
+    world_id = Keyword.get(opts, :world_id, "default")
 
     Enum.map(entities, fn entity ->
       entity_type = Map.get(entity, :entity_type) || Map.get(entity, "entity_type") || "Entity"
@@ -43,17 +45,87 @@ defmodule Brain.Graph.Reader do
 
       label = normalize_label(entity_type)
 
-      case AtlasIntegration.find_node("knowledge_graph", label, value) do
-        {:ok, node} ->
-          neighbors = get_neighbors("knowledge_graph", node.id, depth)
+      case ContextCache.get(world_id, "knowledge_graph", label, value) do
+        {:ok, {node, neighbors}} ->
           %{entity: entity, neighbors: neighbors, node: node}
 
-        _ ->
-          %{entity: entity, neighbors: [], node: nil}
+        :miss ->
+          result = fetch_entity_context(label, value, depth)
+          ContextCache.put(world_id, "knowledge_graph", label, value, result)
+
+          case result do
+            {node, neighbors} when not is_nil(node) ->
+              %{entity: entity, neighbors: neighbors, node: node}
+
+            _ ->
+              %{entity: entity, neighbors: [], node: nil}
+          end
       end
     end)
   rescue
     _ -> Enum.map(entities, fn e -> %{entity: e, neighbors: [], node: nil} end)
+  end
+
+  @doc """
+  Look up a single entity name across multiple candidate labels in one batch.
+
+  Issues a single Cypher query that matches any of the provided labels,
+  then fetches the neighborhood once for the first match. Returns a map
+  keyed by normalized label: `%{label => %{node: vertex, neighbors: [vertex]}}`.
+  """
+  def entity_context_multi_label(name, labels, opts \\ []) when is_binary(name) and is_list(labels) do
+    depth = Keyword.get(opts, :depth, 2)
+    world_id = Keyword.get(opts, :world_id, "default")
+    escaped = String.replace(to_string(name), "'", "\\'")
+    normalized_labels = Enum.map(labels, &normalize_label/1)
+
+    label_or =
+      normalized_labels
+      |> Enum.map(fn l -> "(n:#{l})" end)
+      |> Enum.join(" OR ")
+
+    query = "MATCH (n) WHERE (#{label_or}) AND n.name = '#{escaped}' RETURN n"
+
+    nodes =
+      case Graph.cypher("knowledge_graph", query) do
+        {:ok, rows} when is_list(rows) ->
+          rows
+          |> Enum.flat_map(fn
+            [%Vertex{} = v] -> [v]
+            _ -> []
+          end)
+
+        _ ->
+          []
+      end
+
+    case nodes do
+      [] ->
+        %{}
+
+      [node | _] ->
+        neighbors = get_neighbors("knowledge_graph", node.id, depth)
+        ContextCache.put(world_id, "knowledge_graph", hd(normalized_labels), name, {node, neighbors})
+
+        Map.new(normalized_labels, fn label ->
+          {label, %{node: node, neighbors: neighbors}}
+        end)
+    end
+  rescue
+    _ -> %{}
+  end
+
+  defp fetch_entity_context(label, value, depth) do
+    case AtlasIntegration.find_node("knowledge_graph", label, value) do
+      {:ok, node} ->
+        neighbors = get_neighbors("knowledge_graph", node.id, depth)
+        {node, neighbors}
+
+      _ ->
+        {nil, []}
+    end
+  rescue
+    _ -> {nil, []}
   end
 
   @doc """

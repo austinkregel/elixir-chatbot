@@ -1,0 +1,42 @@
+{
+  "introduction": {
+    "person": 1.0,
+    "location": 0.2,
+    "city": 0.2,
+    "music-artist": 0.3
+  },
+  "weather": {
+    "location": 1.0,
+    "city": 1.0,
+    "person": 0.1,
+    "music-artist": 0.1
+  },
+  "navigation": {
+    "location": 1.0,
+    "city": 1.0,
+    "person": 0.1,
+    "music-artist": 0.1
+  },
+  "music": {
+    "music-artist": 1.0,
+    "person": 0.3,
+    "location": 0.1,
+    "city": 0.1
+  },
+  "device": {
+    "device": 1.0,
+    "lights": 1.0,
+    "heating": 1.0,
+    "room": 0.8,
+    "music-artist": 0.1,
+    "person": 0.1,
+    "location": 0.1,
+    "city": 0.1
+  },
+  "default": {
+    "person": 0.5,
+    "location": 0.5,
+    "city": 0.5,
+    "music-artist": 0.5
+  }
+}

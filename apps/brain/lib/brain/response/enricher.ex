@@ -226,16 +226,21 @@ defmodule Brain.Response.Enricher do
     else
       case Dispatcher.find_service(intent) do
         nil ->
+          Logger.debug("Enricher: no service found for intent=#{intent}")
           []
 
         service_module ->
           all_services = Dispatcher.list_services(world: world)
 
-          all_services
-          |> Enum.filter(fn service ->
-            service.configured and service.module == service_module
-          end)
-          |> Enum.map(& &1.name)
+          result =
+            all_services
+            |> Enum.filter(fn service ->
+              service.configured and service.module == service_module
+            end)
+            |> Enum.map(& &1.name)
+
+          Logger.info("Enricher: found service #{inspect(service_module)} for intent=#{intent}, configured=#{result != []}")
+          result
       end
     end
   end

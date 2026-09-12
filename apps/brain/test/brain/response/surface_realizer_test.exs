@@ -1,6 +1,10 @@
 defmodule Brain.Response.SurfaceRealizerTest do
   use ExUnit.Case, async: false
 
+  # Asserts on real Ouro-rendered primitives; excluded when the sidecar is
+  # disabled (OURO_ENABLED=false, e.g. CI).
+  @moduletag :requires_ouro
+
   alias Brain.Response.{Primitive, SurfaceRealizer}
 
   describe "realize/2 with empty list" do
@@ -22,7 +26,10 @@ defmodule Brain.Response.SurfaceRealizerTest do
       assert length(rendered) == 1, "Should return one rendered primitive per input"
 
       [r] = rendered
-      assert r.source == :ouro, "Rendered primitive should have source :ouro, got: #{inspect(r.source)}"
+
+      assert r.source == :ouro,
+             "Rendered primitive should have source :ouro, got: #{inspect(r.source)}"
+
       assert Primitive.rendered?(r), "Primitive should be marked as rendered"
       assert r.rendered == response, "Rendered text should match the full response"
     end
@@ -40,7 +47,7 @@ defmodule Brain.Response.SurfaceRealizerTest do
       assert response != ""
 
       assert length(rendered) == length(primitives),
-        "Should return one rendered primitive per input (expected #{length(primitives)}, got #{length(rendered)})"
+             "Should return one rendered primitive per input (expected #{length(primitives)}, got #{length(rendered)})"
 
       for r <- rendered do
         assert r.source == :ouro, "Each rendered primitive should have source :ouro"
@@ -54,17 +61,20 @@ defmodule Brain.Response.SurfaceRealizerTest do
       {:ok, [rendered], _response} = SurfaceRealizer.realize([p])
 
       assert rendered.type == :hedging, "Type should be preserved, got: #{inspect(rendered.type)}"
-      assert rendered.variant == :epistemic, "Variant should be preserved, got: #{inspect(rendered.variant)}"
+
+      assert rendered.variant == :epistemic,
+             "Variant should be preserved, got: #{inspect(rendered.variant)}"
     end
   end
 
   describe "realize/2 opts forwarding" do
     test "passes analysis from opts through to OuroRealizer" do
-      p = Primitive.new(:follow_up, :clarification, %{
-        missing_slots: ["location"],
-        ambiguity_type: :missing_slots,
-        intent: "weather.query"
-      })
+      p =
+        Primitive.new(:follow_up, :clarification, %{
+          missing_slots: ["location"],
+          ambiguity_type: :missing_slots,
+          intent: "weather.query"
+        })
 
       analysis = %Brain.Analysis.ChunkAnalysis{
         text: "What's the weather?",

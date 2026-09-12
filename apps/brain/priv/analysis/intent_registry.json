@@ -1,0 +1,2774 @@
+{
+  "communication.text": {
+    "category": "directive",
+    "clarification_templates": {
+      "contact": "Who would you like to text?",
+      "message": "What would you like to say?"
+    },
+    "defaults": {},
+    "description": "Send a text message or SMS",
+    "domain": "communication",
+    "entity_mappings": {
+      "contact": [
+        "person"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "call-context"
+      },
+      {
+        "lifespan": 2,
+        "name": "text-context"
+      }
+    ],
+    "optional": [
+      "contact",
+      "message"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "text-context"
+      }
+    ],
+    "required": [],
+    "speech_act": "request"
+  },
+  "smalltalk.user.needs_advice": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "meta.self_knowledge": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Query about what the system knows about the user",
+    "domain": "meta",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "query_type": "self_query",
+    "required": [],
+    "speech_act": "request_information"
+  },
+  "smalltalk.agent.busy": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "music.play": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Music playback request",
+    "domain": "music",
+    "entity_mappings": {
+      "music-album": [
+        "music-album"
+      ],
+      "music-artist": [
+        "music-artist"
+      ],
+      "music-service": [
+        "music-service"
+      ],
+      "music-sort": [
+        "music-sort"
+      ],
+      "playlist": [
+        "playlist"
+      ],
+      "song": [
+        "song"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "play-music"
+      },
+      {
+        "lifespan": 2,
+        "name": "search-music"
+      }
+    ],
+    "optional": [
+      "song",
+      "music-artist",
+      "music-album",
+      "playlist",
+      "music-service",
+      "music-sort"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "play-music"
+      },
+      {
+        "lifespan": 3,
+        "name": "music-player-control"
+      }
+    ],
+    "required": [],
+    "speech_act": "command"
+  },
+  "smalltalk.agent.crazy": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "enrichment_sources": [
+      "system_stats"
+    ],
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "statement.observation": {
+    "category": "assertive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Factual observation or statement about the world",
+    "domain": "observation",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "statement"
+  },
+  "smalltalk.greet": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "greeting"
+  },
+  "smalltalk.dialog.hold_on": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.agent.occupation": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.user.introduction": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "User introducing themselves",
+    "domain": "introduction",
+    "entity_mappings": {
+      "person": [
+        "person",
+        "name"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "person"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "statement"
+  },
+  "analysis.trend": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Show or analyze trends",
+    "domain": "analysis",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [
+      "metric",
+      "timeframe"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request_information"
+  },
+  "reminder.create": {
+    "category": "directive",
+    "clarification_templates": {
+      "time": "When should I remind you?"
+    },
+    "defaults": {},
+    "description": "Create a reminder",
+    "domain": "reminder",
+    "entity_mappings": {
+      "date": [
+        "date"
+      ],
+      "time": [
+        "time"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "reminder-context"
+      }
+    ],
+    "optional": [
+      "time",
+      "date"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "reminder-context"
+      }
+    ],
+    "required": [],
+    "speech_act": "request"
+  },
+  "smalltalk.agent.residence": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "status.report": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Get status report or update",
+    "domain": "status",
+    "enrichment_sources": [
+      "system_stats"
+    ],
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [
+      "system"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request_information"
+  },
+  "music.player.skip_forward": {
+    "category": "directive",
+    "clarification_templates": {},
+    "domain": "music",
+    "entity_mappings": {},
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "music-player-control"
+      },
+      {
+        "lifespan": 2,
+        "name": "play-music"
+      },
+      {
+        "lifespan": 2,
+        "name": "search-music"
+      }
+    ],
+    "optional": [],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "music-player-control"
+      }
+    ],
+    "required": []
+  },
+  "smalltalk.user.tired": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "smalltalk.emotions.wow": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "exclamation"
+  },
+  "smalltalk.user.wants_to_see_agent_again": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "music.shuffle": {
+    "category": "assertive",
+    "clarification_templates": {},
+    "domain": "music",
+    "entity_mappings": {
+      "album": [
+        "music-album"
+      ],
+      "artist": [
+        "sys.music-artist"
+      ],
+      "genre": [
+        "sys.music-genre"
+      ],
+      "playlist": [
+        "playlist"
+      ],
+      "year": [
+        "sys.number"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "play-music"
+      },
+      {
+        "lifespan": 2,
+        "name": "search-music"
+      }
+    ],
+    "optional": [
+      "artist",
+      "album",
+      "playlist",
+      "year",
+      "genre"
+    ],
+    "output_contexts": [],
+    "required": []
+  },
+  "smalltalk.agent.acquaintance": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "search.locate": {
+    "category": "directive",
+    "clarification_templates": {
+      "target": "What are you looking for?"
+    },
+    "defaults": {},
+    "description": "Search for or locate something",
+    "domain": "search",
+    "entity_mappings": {
+      "target": [
+        "person",
+        "file",
+        "location"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "target"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request"
+  },
+  "smalltalk.user.joking": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "smalltalk.agent.sure": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.user.will_be_back": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "smalltalk.user.does_not_want_to_talk": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "smalltalk.appraisal.welcome": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "greeting"
+  },
+  "display.zoom": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Zoom in or out on display",
+    "domain": "display",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [
+      "direction",
+      "amount"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "command"
+  },
+  "smalltalk.dialog.hug": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "account.spending.check": {
+    "category": "directive",
+    "clarification_templates": {
+      "account": "What account are we checking?"
+    },
+    "domain": "account",
+    "entity_mappings": {
+      "account": [
+        "account"
+      ],
+      "category": [
+        "category"
+      ],
+      "date-time": [
+        "sys.date-time"
+      ],
+      "merchant": [
+        "merchant"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "balance"
+      },
+      {
+        "lifespan": 2,
+        "name": "due_date"
+      },
+      {
+        "lifespan": 2,
+        "name": "earning"
+      },
+      {
+        "lifespan": 2,
+        "name": "spending"
+      }
+    ],
+    "optional": [
+      "merchant",
+      "account",
+      "category",
+      "date-time"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "spending"
+      }
+    ],
+    "required": []
+  },
+  "music.player.play": {
+    "category": "directive",
+    "clarification_templates": {},
+    "domain": "music",
+    "entity_mappings": {},
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "music-player-control"
+      },
+      {
+        "lifespan": 2,
+        "name": "play-music"
+      },
+      {
+        "lifespan": 2,
+        "name": "search-music"
+      }
+    ],
+    "optional": [],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "music-player-control"
+      }
+    ],
+    "required": []
+  },
+  "smalltalk.user.going_to_bed": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "weather.activity": {
+    "category": "assertive",
+    "clarification_templates": {},
+    "domain": "weather",
+    "entity_mappings": {
+      "activity": [
+        "activity"
+      ],
+      "address": [
+        "sys.location"
+      ],
+      "date-time": [
+        "sys.date-time"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "weather"
+      }
+    ],
+    "optional": [
+      "activity",
+      "date-time",
+      "address"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 2,
+        "name": "weather"
+      }
+    ],
+    "required": []
+  },
+  "smalltalk.apology": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Apology expression",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "optional": [],
+    "required": [],
+    "speech_act": "apology"
+  },
+  "timer.check": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Check remaining time on timer",
+    "domain": "timer",
+    "entity_mappings": {},
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "timer-context"
+      }
+    ],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request_information"
+  },
+  "smarthome.device_set": {
+    "category": "directive",
+    "clarification_templates": {
+      "device": "Which device would you like to adjust?",
+      "number": "What value should I set it to?"
+    },
+    "description": "Set a smart device to a specific value",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "device": ["device", "appliance"],
+      "location": ["location", "room"],
+      "number": ["number"]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "room"
+      }
+    ],
+    "optional": ["location"],
+    "output_contexts": [],
+    "required": ["device"],
+    "speech_act": "command"
+  },
+  "calendar.query": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Query calendar events or schedule",
+    "domain": "calendar",
+    "entity_mappings": {
+      "date": [
+        "date"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "calendar-context"
+      }
+    ],
+    "optional": [
+      "date"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request_information"
+  },
+  "smalltalk.agent.there": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.dialog.what_do_you_mean": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "news.search": {
+    "category": "assertive",
+    "clarification_templates": {},
+    "domain": "news",
+    "entity_mappings": {
+      "category": [
+        "topic"
+      ],
+      "date-time": [
+        "sys.date-time"
+      ],
+      "keyword": [
+        "sys.any"
+      ],
+      "sort": [
+        "news-sort"
+      ],
+      "source": [
+        "news-source"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "news-search"
+      },
+      {
+        "lifespan": 2,
+        "name": "newssearch-followup"
+      }
+    ],
+    "optional": [
+      "keyword",
+      "date-time",
+      "category",
+      "source",
+      "sort"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "news-search"
+      },
+      {
+        "lifespan": 2,
+        "name": "newssearch-followup"
+      }
+    ],
+    "required": []
+  },
+  "smalltalk.user.back": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "display.enhance": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Enhance or improve image quality",
+    "domain": "display",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "command"
+  },
+  "smalltalk.agent.good": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.user.busy": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "smalltalk.agent.hobby": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.appraisal.well_done": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "appraisal"
+  },
+  "smalltalk.user.excited": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "todo.add": {
+    "category": "directive",
+    "clarification_templates": {
+      "task": "What would you like to add to your todo list?"
+    },
+    "defaults": {},
+    "description": "Add a task to todo list",
+    "domain": "todo",
+    "entity_mappings": {},
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "todo-context"
+      }
+    ],
+    "optional": [
+      "task",
+      "due_date"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "todo-context"
+      }
+    ],
+    "required": [],
+    "speech_act": "request"
+  },
+  "knowledge.translate": {
+    "category": "directive",
+    "clarification_templates": {
+      "language": "What language would you like to translate to?"
+    },
+    "defaults": {},
+    "description": "Translate text to another language",
+    "domain": "knowledge",
+    "entity_mappings": {
+      "language": [
+        "language"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "text",
+      "language"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request"
+  },
+  "smalltalk.agent.age": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {
+      "age": [
+        "sys.number"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "age"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "communication.email": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Check or read email",
+    "domain": "communication",
+    "entity_mappings": {
+      "sender": [
+        "person"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "call-context"
+      },
+      {
+        "lifespan": 2,
+        "name": "text-context"
+      }
+    ],
+    "optional": [
+      "sender"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request_information"
+  },
+  "web.search": {
+    "category": "assertive",
+    "clarification_templates": {},
+    "domain": "web",
+    "entity_mappings": {
+      "q": [
+        "sys.any"
+      ],
+      "service": [
+        "search-engine"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "control_lists_web_search"
+      },
+      {
+        "lifespan": 2,
+        "name": "web-search"
+      },
+      {
+        "lifespan": 2,
+        "name": "websearch-followup"
+      }
+    ],
+    "optional": [
+      "q",
+      "service"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "web-search"
+      },
+      {
+        "lifespan": 5,
+        "name": "control_lists_web_search"
+      },
+      {
+        "lifespan": 2,
+        "name": "websearch-followup"
+      }
+    ],
+    "required": []
+  },
+  "weather.query": {
+    "category": "directive",
+    "clarification_templates": {
+      "location": "What location would you like the weather for?"
+    },
+    "defaults": {
+      "date": "today"
+    },
+    "description": "Weather information request",
+    "domain": "weather",
+    "entity_mappings": {
+      "date": [
+        "date",
+        "relative_date",
+        "sys-date"
+      ],
+      "location": [
+        "location",
+        "room",
+        "city",
+        "ambiguous_name_location"
+      ],
+      "time": [
+        "time",
+        "sys-time"
+      ],
+      "unit-temperature": [
+        "unit-temperature"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "weather"
+      }
+    ],
+    "optional": [
+      "date",
+      "time",
+      "unit-temperature"
+    ],
+    "required": [
+      "location"
+    ],
+    "speech_act": "request_information"
+  },
+  "smalltalk.emotions.ha_ha": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "exclamation"
+  },
+  "weather.outfit": {
+    "category": "assertive",
+    "clarification_templates": {},
+    "domain": "weather",
+    "entity_mappings": {
+      "address": [
+        "sys.location"
+      ],
+      "date-time": [
+        "sys.date-time"
+      ],
+      "outfit": [
+        "outfit"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "weather"
+      }
+    ],
+    "optional": [
+      "outfit",
+      "address",
+      "date-time"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 2,
+        "name": "weather"
+      }
+    ],
+    "required": []
+  },
+  "analysis.analyze": {
+    "category": "directive",
+    "clarification_templates": {
+      "data": "What would you like me to analyze?"
+    },
+    "defaults": {},
+    "description": "Perform data analysis",
+    "domain": "analysis",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [
+      "data"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request"
+  },
+  "music.player.resume": {
+    "category": "directive",
+    "clarification_templates": {},
+    "domain": "music",
+    "entity_mappings": {},
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "music-player-control"
+      },
+      {
+        "lifespan": 2,
+        "name": "play-music"
+      },
+      {
+        "lifespan": 2,
+        "name": "search-music"
+      }
+    ],
+    "optional": [],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "music-player-control"
+      }
+    ],
+    "required": []
+  },
+  "code.signature": {
+    "category": "directive",
+    "clarification_templates": {
+      "symbol": "What function or method signature would you like to see?"
+    },
+    "defaults": {},
+    "description": "Request function/method signature",
+    "domain": "code",
+    "entity_mappings": {
+      "file": [
+        "file",
+        "filepath"
+      ],
+      "language": [
+        "language",
+        "programming_language"
+      ],
+      "symbol": [
+        "symbol",
+        "function",
+        "class",
+        "method"
+      ]
+    },
+    "optional": [
+      "file",
+      "language"
+    ],
+    "required": [
+      "symbol"
+    ],
+    "speech_act": "request_information"
+  },
+  "smalltalk.farewell": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Farewell exchange",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "optional": [],
+    "required": [],
+    "speech_act": "farewell"
+  },
+  "knowledge.capital": {
+    "category": "directive",
+    "clarification_templates": {
+      "country": "Which country's capital would you like to know?"
+    },
+    "defaults": {},
+    "description": "Ask about a country's capital city",
+    "domain": "knowledge",
+    "entity_mappings": {
+      "country": [
+        "location"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "country"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request_information"
+  },
+  "account.earning.check": {
+    "category": "directive",
+    "clarification_templates": {
+      "account": "What account are we checking?"
+    },
+    "domain": "account",
+    "entity_mappings": {
+      "account": [
+        "account"
+      ],
+      "category": [
+        "category"
+      ],
+      "date-time": [
+        "sys.date-time"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "balance"
+      },
+      {
+        "lifespan": 2,
+        "name": "due_date"
+      },
+      {
+        "lifespan": 2,
+        "name": "earning"
+      },
+      {
+        "lifespan": 2,
+        "name": "spending"
+      }
+    ],
+    "optional": [
+      "account",
+      "date-time",
+      "category"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "earning"
+      },
+      {
+        "lifespan": 5,
+        "name": "I"
+      }
+    ],
+    "required": []
+  },
+  "account.open": {
+    "category": "assertive",
+    "clarification_templates": {},
+    "domain": "account",
+    "entity_mappings": {},
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "balance"
+      },
+      {
+        "lifespan": 2,
+        "name": "due_date"
+      },
+      {
+        "lifespan": 2,
+        "name": "earning"
+      },
+      {
+        "lifespan": 2,
+        "name": "spending"
+      }
+    ],
+    "optional": [],
+    "output_contexts": [],
+    "required": []
+  },
+  "smalltalk.agent.bad": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.thanks": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Expression of gratitude",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "optional": [],
+    "required": [],
+    "speech_act": "thanks"
+  },
+  "smalltalk.user.misses_agent": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "alarm.set": {
+    "category": "directive",
+    "clarification_templates": {
+      "time": "What time should I set the alarm for?"
+    },
+    "defaults": {},
+    "description": "Set an alarm",
+    "domain": "alarm",
+    "entity_mappings": {
+      "time": [
+        "time"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "alarm-context"
+      }
+    ],
+    "optional": [
+      "time",
+      "recurring"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "alarm-context"
+      }
+    ],
+    "required": [],
+    "speech_act": "request"
+  },
+  "smarthome.switch": {
+    "category": "directive",
+    "clarification_templates": {
+      "device": "Which device would you like to control?"
+    },
+    "description": "Turn a smart device on or off",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "device": ["device", "appliance"],
+      "location": ["location", "room"]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "device-switch"
+      },
+      {
+        "lifespan": 2,
+        "name": "room"
+      }
+    ],
+    "optional": ["location"],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "device-switch"
+      },
+      {
+        "lifespan": 3,
+        "name": "room"
+      },
+      {
+        "lifespan": 3,
+        "name": "check"
+      },
+      {
+        "lifespan": 3,
+        "name": "schedule"
+      }
+    ],
+    "required": ["device"],
+    "speech_act": "command"
+  },
+  "smalltalk.agent.boss": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.dialog.i_do_not_care": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.acknowledgment": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Acknowledgment response",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "optional": [],
+    "required": [],
+    "speech_act": "acknowledgment"
+  },
+  "smalltalk.agent.happy": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "code.find_usage": {
+    "category": "directive",
+    "clarification_templates": {
+      "symbol": "What symbol would you like to find usages for?"
+    },
+    "defaults": {},
+    "description": "Find usages of a symbol in code",
+    "domain": "code",
+    "entity_mappings": {
+      "file": [
+        "file",
+        "filepath"
+      ],
+      "language": [
+        "language",
+        "programming_language"
+      ],
+      "symbol": [
+        "symbol",
+        "function",
+        "class",
+        "method",
+        "variable"
+      ]
+    },
+    "optional": [
+      "file",
+      "language"
+    ],
+    "required": [
+      "symbol"
+    ],
+    "speech_act": "request_information"
+  },
+  "weather.temperature": {
+    "category": "assertive",
+    "clarification_templates": {},
+    "domain": "weather",
+    "entity_mappings": {
+      "address": [
+        "sys.location"
+      ],
+      "date-time": [
+        "sys.date-time"
+      ],
+      "temperature": [
+        "temperature"
+      ],
+      "unit": [
+        "unit-temperature"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "weather"
+      }
+    ],
+    "optional": [
+      "address",
+      "temperature",
+      "date-time",
+      "unit"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 2,
+        "name": "weather"
+      }
+    ],
+    "required": []
+  },
+  "smalltalk.user.angry": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "smalltalk.agent.ready": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.agent.fired": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "calendar.cancel": {
+    "category": "directive",
+    "clarification_templates": {
+      "event": "Which event would you like to cancel?"
+    },
+    "defaults": {},
+    "description": "Cancel a meeting or appointment",
+    "domain": "calendar",
+    "entity_mappings": {
+      "event": [
+        "event"
+      ],
+      "person": [
+        "person"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "calendar-context"
+      }
+    ],
+    "optional": [
+      "event",
+      "person",
+      "date",
+      "time"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request"
+  },
+  "meta.memory_check": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Query about whether the system remembers something",
+    "domain": "meta",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "query_type": "memory_check",
+    "required": [],
+    "speech_act": "request_information"
+  },
+  "smalltalk.user.waits": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "calendar.schedule": {
+    "category": "directive",
+    "clarification_templates": {
+      "date": "When would you like to schedule this?",
+      "time": "What time should I schedule this for?"
+    },
+    "defaults": {},
+    "description": "Schedule or book a meeting or appointment",
+    "domain": "calendar",
+    "entity_mappings": {
+      "date": [
+        "date"
+      ],
+      "person": [
+        "person"
+      ],
+      "time": [
+        "time"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "calendar-context"
+      },
+      {
+        "lifespan": 2,
+        "name": "schedule"
+      }
+    ],
+    "optional": [
+      "date",
+      "time",
+      "person"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "calendar-context"
+      }
+    ],
+    "required": [],
+    "speech_act": "request"
+  },
+  "smalltalk.agent.answer_my_question": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.user.bored": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "smalltalk.agent.be_clever": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "communication.call": {
+    "category": "directive",
+    "clarification_templates": {
+      "contact": "Who would you like to call?"
+    },
+    "defaults": {},
+    "description": "Make a phone call",
+    "domain": "communication",
+    "entity_mappings": {
+      "contact": [
+        "person"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "call-context"
+      },
+      {
+        "lifespan": 2,
+        "name": "text-context"
+      }
+    ],
+    "optional": [
+      "contact"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "call-context"
+      }
+    ],
+    "required": [],
+    "speech_act": "request"
+  },
+  "smalltalk.agent.chatbot": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.user.wants_to_talk": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "smarthome.device_up": {
+    "category": "directive",
+    "clarification_templates": {},
+    "domain": "smarthome",
+    "entity_mappings": {},
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "device-volume"
+      },
+      {
+        "lifespan": 2,
+        "name": "room"
+      },
+      {
+        "lifespan": 2,
+        "name": "volume-check"
+      }
+    ],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request"
+  },
+  "smalltalk.agent.hungry": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.user.loves_agent": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "meta.privacy_probe": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Query about privacy and tracking",
+    "domain": "meta",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "query_type": "privacy_probe",
+    "required": [],
+    "speech_act": "request_information"
+  },
+  "payment.due_date": {
+    "category": "assertive",
+    "clarification_templates": {},
+    "domain": "payment",
+    "entity_mappings": {},
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "balance"
+      },
+      {
+        "lifespan": 2,
+        "name": "due_date"
+      }
+    ],
+    "optional": [],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "due_date"
+      },
+      {
+        "lifespan": 5,
+        "name": "balance"
+      }
+    ],
+    "required": []
+  },
+  "music.player.shuffle": {
+    "category": "directive",
+    "clarification_templates": {},
+    "domain": "music",
+    "entity_mappings": {},
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "music-player-control"
+      },
+      {
+        "lifespan": 2,
+        "name": "play-music"
+      },
+      {
+        "lifespan": 2,
+        "name": "search-music"
+      }
+    ],
+    "optional": [],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "music-player-control"
+      }
+    ],
+    "required": []
+  },
+  "music.player.stop": {
+    "category": "directive",
+    "clarification_templates": {},
+    "domain": "music",
+    "entity_mappings": {},
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "music-player-control"
+      },
+      {
+        "lifespan": 2,
+        "name": "play-music"
+      },
+      {
+        "lifespan": 2,
+        "name": "search-music"
+      }
+    ],
+    "optional": [],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "music-player-control"
+      }
+    ],
+    "required": []
+  },
+  "smalltalk.agent.boring": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.appraisal.good": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "appraisal"
+  },
+  "smalltalk.agent.can_you_help": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "account.balance.check": {
+    "category": "directive",
+    "clarification_templates": {
+      "account": "Balance for which savings or checking?"
+    },
+    "domain": "account",
+    "entity_mappings": {
+      "account": [
+        "account"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "balance"
+      },
+      {
+        "lifespan": 2,
+        "name": "due_date"
+      },
+      {
+        "lifespan": 2,
+        "name": "earning"
+      },
+      {
+        "lifespan": 2,
+        "name": "spending"
+      }
+    ],
+    "optional": [],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "balance"
+      }
+    ],
+    "required": [
+      "account"
+    ]
+  },
+  "knowledge.define": {
+    "category": "directive",
+    "clarification_templates": {
+      "term": "What word would you like me to define?"
+    },
+    "defaults": {},
+    "description": "Define a word or term",
+    "domain": "knowledge",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [
+      "term"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request_information"
+  },
+  "smarthome.device_check": {
+    "category": "directive",
+    "clarification_templates": {},
+    "domain": "smarthome",
+    "entity_mappings": {},
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "device-brightness"
+      },
+      {
+        "lifespan": 2,
+        "name": "room"
+      }
+    ],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request"
+  },
+  "smarthome.device_down": {
+    "category": "directive",
+    "clarification_templates": {},
+    "domain": "smarthome",
+    "entity_mappings": {},
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "device-volume"
+      },
+      {
+        "lifespan": 2,
+        "name": "room"
+      },
+      {
+        "lifespan": 2,
+        "name": "volume-check"
+      }
+    ],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request"
+  },
+  "smalltalk.user.has_birthday": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "smarthome.schedule_create": {
+    "category": "directive",
+    "clarification_templates": {},
+    "domain": "smarthome",
+    "entity_mappings": {},
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "close"
+      },
+      {
+        "lifespan": 2,
+        "name": "lock"
+      },
+      {
+        "lifespan": 2,
+        "name": "open"
+      },
+      {
+        "lifespan": 2,
+        "name": "room"
+      },
+      {
+        "lifespan": 2,
+        "name": "schedule"
+      },
+      {
+        "lifespan": 2,
+        "name": "unlock"
+      }
+    ],
+    "optional": [],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "schedule"
+      }
+    ],
+    "required": [],
+    "speech_act": "request"
+  },
+  "status.diagnostic": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Run system diagnostics or health check",
+    "domain": "status",
+    "enrichment_sources": [
+      "system_stats"
+    ],
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request"
+  },
+  "smalltalk.user.can_not_sleep": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "todo.list": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Show or list todo tasks",
+    "domain": "todo",
+    "entity_mappings": {},
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "todo-context"
+      }
+    ],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request_information"
+  },
+  "music.player.skip_backward": {
+    "category": "directive",
+    "clarification_templates": {},
+    "domain": "music",
+    "entity_mappings": {},
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "music-player-control"
+      },
+      {
+        "lifespan": 2,
+        "name": "play-music"
+      },
+      {
+        "lifespan": 2,
+        "name": "search-music"
+      }
+    ],
+    "optional": [],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "music-player-control"
+      }
+    ],
+    "required": []
+  },
+  "alarm.snooze": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Snooze an active alarm",
+    "domain": "alarm",
+    "entity_mappings": {
+      "duration": [
+        "duration"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "alarm-context"
+      }
+    ],
+    "optional": [
+      "duration"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "command"
+  },
+  "smalltalk.appraisal.bad": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "appraisal"
+  },
+  "music.player.pause": {
+    "category": "directive",
+    "clarification_templates": {},
+    "domain": "music",
+    "entity_mappings": {},
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "music-player-control"
+      },
+      {
+        "lifespan": 2,
+        "name": "play-music"
+      },
+      {
+        "lifespan": 2,
+        "name": "search-music"
+      }
+    ],
+    "optional": [],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "music-player-control"
+      }
+    ],
+    "required": []
+  },
+  "time.query": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Ask for the current time",
+    "domain": "time",
+    "entity_mappings": {
+      "location": [
+        "location"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "location"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request_information"
+  },
+  "date.query": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Ask for the current date",
+    "domain": "date",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request_information"
+  },
+  "music.player.repeat": {
+    "category": "directive",
+    "clarification_templates": {},
+    "domain": "music",
+    "entity_mappings": {},
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "music-player-control"
+      },
+      {
+        "lifespan": 2,
+        "name": "play-music"
+      },
+      {
+        "lifespan": 2,
+        "name": "search-music"
+      }
+    ],
+    "optional": [],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "music-player-control"
+      }
+    ],
+    "required": []
+  },
+  "smalltalk.agent.origin": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.dialog.wrong": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "weather.condition": {
+    "category": "directive",
+    "clarification_templates": {
+      "location": "What location would you like the weather for?"
+    },
+    "defaults": {},
+    "description": "Weather condition query",
+    "domain": "weather",
+    "entity_mappings": {
+      "date": [
+        "date",
+        "relative_date"
+      ],
+      "location": [
+        "location",
+        "city",
+        "ambiguous_name_location"
+      ],
+      "time": [
+        "time"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "weather"
+      }
+    ],
+    "optional": [
+      "date",
+      "time"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 2,
+        "name": "weather"
+      }
+    ],
+    "required": [
+      "location"
+    ],
+    "speech_act": "request_information"
+  },
+  "music.player.add_playlist": {
+    "category": "directive",
+    "clarification_templates": {},
+    "domain": "music",
+    "entity_mappings": {
+      "playlist": [
+        "sys.any"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "music-player-control"
+      },
+      {
+        "lifespan": 2,
+        "name": "play-music"
+      },
+      {
+        "lifespan": 2,
+        "name": "search-music"
+      }
+    ],
+    "optional": [
+      "playlist"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "music-player-control"
+      }
+    ],
+    "required": []
+  },
+  "smalltalk.agent.marry_user": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.agent.real": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.user.sad": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "smalltalk.agent.my_friend": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.agent.right": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.user.here": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "smalltalk.user.looks_like": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "smalltalk.agent.birth_date": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.user.good": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "User expressing they are doing well",
+    "domain": "introduction",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "statement"
+  },
+  "music.search": {
+    "category": "assertive",
+    "clarification_templates": {},
+    "domain": "music",
+    "entity_mappings": {
+      "album": [
+        "music-album"
+      ],
+      "amount": [
+        "sys.number"
+      ],
+      "artist": [
+        "sys.music-artist"
+      ],
+      "end-year": [
+        "sys.number"
+      ],
+      "genre": [
+        "sys.music-genre"
+      ],
+      "language": [
+        "sys.language"
+      ],
+      "playlist": [
+        "playlist"
+      ],
+      "service": [
+        "music-service"
+      ],
+      "song": [
+        "song"
+      ],
+      "sort": [
+        "music-sort"
+      ],
+      "start-year": [
+        "sys.number"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "play-music"
+      },
+      {
+        "lifespan": 2,
+        "name": "search-music"
+      }
+    ],
+    "optional": [
+      "song",
+      "artist",
+      "album",
+      "genre",
+      "sort",
+      "playlist",
+      "service",
+      "language",
+      "start-year",
+      "end-year",
+      "amount"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "search-music"
+      }
+    ],
+    "required": []
+  },
+  "display.show": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Show or display content",
+    "domain": "display",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [
+      "content"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "command"
+  },
+  "smalltalk.user.happy": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "smalltalk.user.sleepy": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "code.explain": {
+    "category": "directive",
+    "clarification_templates": {
+      "symbol": "What code would you like me to explain?"
+    },
+    "defaults": {},
+    "description": "Request explanation of code",
+    "domain": "code",
+    "entity_mappings": {
+      "file": [
+        "file",
+        "filepath"
+      ],
+      "language": [
+        "language",
+        "programming_language"
+      ],
+      "symbol": [
+        "symbol",
+        "function",
+        "class",
+        "method"
+      ]
+    },
+    "optional": [
+      "symbol",
+      "file",
+      "language"
+    ],
+    "required": [],
+    "speech_act": "request_information"
+  },
+  "test.intent.promotion": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Intent created from novel candidate review",
+    "domain": "test",
+    "entity_mappings": {},
+    "optional": [],
+    "required": [],
+    "speech_act": "request_information"
+  },
+  "smalltalk.compliment": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Compliment or praise",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "optional": [],
+    "required": [],
+    "speech_act": "compliment"
+  },
+  "timer.set": {
+    "category": "directive",
+    "clarification_templates": {
+      "duration": "How long should I set the timer for?"
+    },
+    "defaults": {},
+    "description": "Set a countdown timer",
+    "domain": "timer",
+    "entity_mappings": {
+      "duration": [
+        "duration"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "timer-context"
+      }
+    ],
+    "optional": [
+      "duration"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "timer-context"
+      }
+    ],
+    "required": [],
+    "speech_act": "request"
+  },
+  "smalltalk.agent.talk_to_me": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.agent.annoying": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.user.testing_agent": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "music.player.add_favorite": {
+    "category": "directive",
+    "clarification_templates": {},
+    "domain": "music",
+    "entity_mappings": {},
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "music-player-control"
+      },
+      {
+        "lifespan": 2,
+        "name": "play-music"
+      },
+      {
+        "lifespan": 2,
+        "name": "search-music"
+      }
+    ],
+    "optional": [],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "music-player-control"
+      }
+    ],
+    "required": []
+  },
+  "smalltalk.user.lonely": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "smarthome.set": {
+    "category": "directive",
+    "clarification_templates": {
+      "device": "Which device would you like to adjust?",
+      "number": "What value should I set it to?"
+    },
+    "description": "Set a smart device to a specific value (temperature, brightness, etc.)",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "device": ["device", "appliance"],
+      "location": ["location", "room"],
+      "number": ["number"]
+    },
+    "input_contexts": [],
+    "optional": ["location"],
+    "output_contexts": [],
+    "required": ["device", "number"],
+    "speech_act": "command"
+  },
+  "device.control": {
+    "category": "directive",
+    "clarification_templates": {
+      "device": "Which device would you like to control?"
+    },
+    "description": "General device control command",
+    "domain": "device",
+    "entity_mappings": {
+      "device": ["device", "appliance"],
+      "location": ["location", "room"]
+    },
+    "input_contexts": [],
+    "optional": ["location"],
+    "output_contexts": [],
+    "required": ["device"],
+    "speech_act": "command"
+  },
+  "timer.start": {
+    "category": "directive",
+    "clarification_templates": {
+      "duration": "How long should the timer be?"
+    },
+    "description": "Start a countdown timer",
+    "domain": "timer",
+    "entity_mappings": {
+      "duration": ["duration", "number"]
+    },
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": ["duration"],
+    "speech_act": "command"
+  }
+}

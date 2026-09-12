@@ -177,15 +177,45 @@ defmodule Brain.Analysis.EntityDisambiguator do
   defp score_and_select(entity, types, pos_tagged, context) do
     features = extract_features(entity, pos_tagged, context)
 
-    scored_types =
+    base_scored =
       Enum.map(types, fn type_info ->
-        score = score_type(type_info, features, context)
+        score = score_type_base(type_info, features, context)
         {type_info, score}
       end)
+      |> Enum.sort_by(fn {_, score} -> -score end)
+
+    atlas_margin = atlas_boost_margin()
+
+    scored_types =
+      case base_scored do
+        [{_, top}, {_, second} | _] when top - second > atlas_margin ->
+          base_scored
+
+        _ ->
+          entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
+          candidate_labels = Enum.map(types, &get_type_name/1)
+
+          prefetched =
+            if entity_value != "" do
+              Reader.entity_context_multi_label(entity_value, candidate_labels)
+            else
+              %{}
+            end
+
+          Enum.map(base_scored, fn {type_info, base} ->
+            boost = atlas_co_occurrence_boost_from_prefetch(type_info, context, prefetched)
+            {type_info, base + boost}
+          end)
+      end
 
     {best_type, _score} = Enum.max_by(scored_types, fn {_, score} -> score end)
 
     select_type(entity, best_type)
+  end
+
+  defp atlas_boost_margin do
+    config = Application.get_env(:brain, :disambiguation, [])
+    Keyword.get(config, :atlas_boost_margin, 0.1)
   end
 
   @doc """
@@ -415,7 +445,7 @@ defmodule Brain.Analysis.EntityDisambiguator do
   end
 
 
-  defp score_type(type_info, features, context) do
+  defp score_type_base(type_info, features, context) do
     entity_type = get_type_name(type_info)
     domain = features.domain
     expected_types = Map.get(features, :expected_entity_types, [])
@@ -437,10 +467,9 @@ defmodule Brain.Analysis.EntityDisambiguator do
         static_score
       end
 
-    atlas_boost = atlas_co_occurrence_boost(type_info, context)
     lexicon_boost = lexicon_sense_boost(type_info, context)
 
-    base_score + atlas_boost + lexicon_boost
+    base_score + lexicon_boost
   end
 
   defp lexicon_sense_boost(type_info, context) do
@@ -491,84 +520,86 @@ defmodule Brain.Analysis.EntityDisambiguator do
     end
   end
 
-  defp atlas_co_occurrence_boost(type_info, context) do
-    entity_value = Map.get(type_info, :value) || ""
+  defp atlas_co_occurrence_boost_from_prefetch(type_info, context, prefetched) do
     entity_type = get_type_name(type_info)
+    label = normalize_label_for_lookup(entity_type)
 
-    if entity_value == "" do
-      0.0
-    else
-      entity = %{entity_type: entity_type, value: entity_value}
+    case Map.get(prefetched, label) do
+      %{node: node, neighbors: neighbors} when not is_nil(node) ->
+        score_atlas_neighbors(neighbors, context)
 
-      case Reader.entity_context([entity]) do
-        [%{node: node, neighbors: neighbors}] when node != nil ->
-          intent = Map.get(context, :intent, "")
-          profile = Map.get(context, :profile)
-
-          expected_types =
-            case profile do
-              %ChunkProfile{domain: domain} when domain != :unknown ->
-                Pipeline.expected_entity_types_from_domain(domain)
-
-              _ ->
-                Pipeline.expected_entity_types_from_domain(domain_from_intent(intent))
-            end
-          neighbor_count = length(neighbors)
-
-          # Check if neighbor labels/types align with what the intent expects.
-          # e.g., for weather.query expecting ["location"], if "Austin" as location
-          # has neighbors whose labels include Location-related types, that's a signal.
-          intent_aligned =
-            if expected_types != [] do
-              Enum.count(neighbors, fn neighbor ->
-                neighbor_labels = Map.get(neighbor, :labels, [])
-                neighbor_props = Map.get(neighbor, :properties, %{})
-                neighbor_type = Map.get(neighbor_props, "type", "")
-
-                neighbor_type_indicators =
-                  [neighbor_type | neighbor_labels]
-                  |> Enum.map(&String.downcase(to_string(&1)))
-
-                Enum.any?(expected_types, fn et ->
-                  et_lower = String.downcase(et)
-                  Enum.any?(neighbor_type_indicators, fn ind ->
-                    ind == et_lower or String.contains?(ind, et_lower)
-                  end)
-                end)
-              end)
-            else
-              0
-            end
-
-          # Intent-aligned neighbors are a strong disambiguation signal:
-          # Atlas confirms this entity type co-occurs with the intent's expected types
-          intent_boost =
-            cond do
-              intent_aligned >= 3 -> 0.35
-              intent_aligned >= 1 -> 0.25
-              true -> 0.0
-            end
-
-          # General existence in Atlas is a weaker but still useful signal
-          existence_boost =
-            cond do
-              neighbor_count >= 5 -> 0.15
-              neighbor_count >= 2 -> 0.1
-              neighbor_count >= 1 -> 0.05
-              true -> 0.0
-            end
-
-          max(intent_boost, existence_boost)
-
-        _ ->
-          0.0
-      end
+      _ ->
+        0.0
     end
   rescue
     _ -> 0.0
-  catch
-    :exit, _ -> 0.0
   end
+
+  defp score_atlas_neighbors(neighbors, context) do
+    intent = Map.get(context, :intent, "")
+    profile = Map.get(context, :profile)
+
+    expected_types =
+      case profile do
+        %ChunkProfile{domain: domain} when domain != :unknown ->
+          Pipeline.expected_entity_types_from_domain(domain)
+
+        _ ->
+          Pipeline.expected_entity_types_from_domain(domain_from_intent(intent))
+      end
+
+    neighbor_count = length(neighbors)
+
+    intent_aligned =
+      if expected_types != [] do
+        Enum.count(neighbors, fn neighbor ->
+          neighbor_labels = Map.get(neighbor, :labels, [])
+          neighbor_props = Map.get(neighbor, :properties, %{})
+          neighbor_type = Map.get(neighbor_props, "type", "")
+
+          neighbor_type_indicators =
+            [neighbor_type | neighbor_labels]
+            |> Enum.map(&String.downcase(to_string(&1)))
+
+          Enum.any?(expected_types, fn et ->
+            et_lower = String.downcase(et)
+            Enum.any?(neighbor_type_indicators, fn ind ->
+              ind == et_lower or String.contains?(ind, et_lower)
+            end)
+          end)
+        end)
+      else
+        0
+      end
+
+    intent_boost =
+      cond do
+        intent_aligned >= 3 -> 0.35
+        intent_aligned >= 1 -> 0.25
+        true -> 0.0
+      end
+
+    existence_boost =
+      cond do
+        neighbor_count >= 5 -> 0.15
+        neighbor_count >= 2 -> 0.1
+        neighbor_count >= 1 -> 0.05
+        true -> 0.0
+      end
+
+    max(intent_boost, existence_boost)
+  end
+
+  defp normalize_label_for_lookup(type) when is_binary(type) do
+    type
+    |> String.replace("-", "_")
+    |> String.split("_")
+    |> Enum.map(&String.capitalize/1)
+    |> Enum.join("")
+  end
+
+  defp normalize_label_for_lookup(type) when is_atom(type), do: normalize_label_for_lookup(to_string(type))
+  defp normalize_label_for_lookup(_), do: "Entity"
 
 
   defp get_type_name(type_info) when is_map(type_info) do
