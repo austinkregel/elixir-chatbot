@@ -171,6 +171,37 @@ defmodule Brain.ML.MicroClassifiers do
     end
   end
 
+  @doc """
+  Return the label vocabulary of the named classifier's loaded model.
+
+  This is the set of values the classifier can actually emit, read off the
+  trained model's `:label_centroids` — both `SimpleClassifier` (text) and
+  `FeatureVectorClassifier` key their centroids by label, so one accessor
+  covers both kinds.
+
+  Exists so that consumers can declare an axis's value domain by *asking the
+  model* instead of hardcoding a parallel list. A hand-maintained copy of a
+  trained model's classes is a second source of truth that silently goes stale
+  the first time a model is retrained on different data.
+
+  Labels are returned sorted, as strings, exactly as the model stores them —
+  converting to atoms is the caller's decision, because an unknown label
+  string must not silently mint an atom here.
+
+  Returns `{:error, :not_trained}` for a model with an empty centroid map: a
+  classifier that can emit nothing has no value domain, and reporting `[]`
+  would let a caller mistake that for a successfully-read empty vocabulary.
+  """
+  @spec labels(atom()) ::
+          {:ok, [String.t()]} | {:error, :not_loaded | :not_trained}
+  def labels(name) when is_atom(name) do
+    if ready?() do
+      GenServer.call(__MODULE__, {:labels, name}, 1_000)
+    else
+      {:error, :not_loaded}
+    end
+  end
+
   @doc "Check if the MicroClassifiers server is ready."
   def ready? do
     try do
@@ -370,6 +401,23 @@ defmodule Brain.ML.MicroClassifiers do
 
       _other ->
         {:reply, {:ok, :text}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:labels, name}, _from, state) do
+    case Map.get(state.models, name) do
+      nil ->
+        {:reply, {:error, :not_loaded}, state}
+
+      %{label_centroids: centroids} when map_size(centroids) == 0 ->
+        {:reply, {:error, :not_trained}, state}
+
+      %{label_centroids: centroids} ->
+        {:reply, {:ok, centroids |> Map.keys() |> Enum.sort()}, state}
+
+      _other ->
+        {:reply, {:error, :not_trained}, state}
     end
   end
 
