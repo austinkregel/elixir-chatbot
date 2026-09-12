@@ -133,6 +133,10 @@ defmodule Brain.Analysis.FeatureExtractor.EnrichmentFeatures do
   @spec wh_dimension() :: 6
   def wh_dimension, do: length(@wh_categories)
 
+  @doc "Ordered dimension names emitted by `wh_target/1`."
+  @spec wh_names() :: [atom()]
+  def wh_names, do: Enum.map(@wh_categories, &:"wh_#{&1}")
+
   # ---- internals ----
 
   # `classify_wh/2` walks the token list with a lookahead so we can
@@ -243,6 +247,10 @@ defmodule Brain.Analysis.FeatureExtractor.EnrichmentFeatures do
   @spec time_typology_dimension() :: 4
   def time_typology_dimension, do: length(@time_categories)
 
+  @doc "Ordered dimension names emitted by `time_typology/1`."
+  @spec time_typology_names() :: [atom()]
+  def time_typology_names, do: Enum.map(@time_categories, &:"time_#{&1}")
+
   defp count_in(tokens, %MapSet{} = set) do
     Enum.count(tokens, &MapSet.member?(set, &1))
   end
@@ -329,13 +337,40 @@ defmodule Brain.Analysis.FeatureExtractor.EnrichmentFeatures do
   @spec verb_supersense_dimension() :: non_neg_integer()
   def verb_supersense_dimension, do: length(@verb_domains)
 
+  @doc """
+  Returns the size of the lexical-domain vocabulary frozen at compile time.
+
+  `ChunkFeatures` group 10 asks `Brain.Lexicon.domain_atoms/0` for the same
+  vocabulary at **runtime**, while the supersense groups here partition the
+  copy captured when this module was compiled. If the WordNet data changes
+  without a recompile the two disagree, and the feature vector is then built
+  from two different vocabularies with no symptom at the call site.
+
+  Exposed so that disagreement can be asserted against rather than assumed
+  away. See `Brain.Analysis.FeatureExtractor.ChunkFeatures.dimension_manifest/0`.
+  """
+  @spec lexicon_domain_count() :: non_neg_integer()
+  def lexicon_domain_count, do: length(@lexicon_domains)
+
+  @doc "Ordered dimension names emitted by `verb_supersenses/1`."
+  @spec verb_supersense_names() :: [atom()]
+  def verb_supersense_names, do: Enum.map(@verb_domains, &:"ss_#{&1}")
+
   @doc "Number of dimensions emitted by `noun_supersenses/1`."
   @spec noun_supersense_dimension() :: non_neg_integer()
   def noun_supersense_dimension, do: length(@noun_domains)
 
+  @doc "Ordered dimension names emitted by `noun_supersenses/1`."
+  @spec noun_supersense_names() :: [atom()]
+  def noun_supersense_names, do: Enum.map(@noun_domains, &:"ss_#{&1}")
+
   @doc "Number of dimensions emitted by `adj_adv_supersenses/1`."
   @spec adj_adv_supersense_dimension() :: non_neg_integer()
   def adj_adv_supersense_dimension, do: length(@adj_adv_domains)
+
+  @doc "Ordered dimension names emitted by `adj_adv_supersenses/1`."
+  @spec adj_adv_supersense_names() :: [atom()]
+  def adj_adv_supersense_names, do: Enum.map(@adj_adv_domains, &:"ss_#{&1}")
 
   # ---------------------------------------------------------------------------
   # Group 18: ConceptNet edge-type fingerprint
@@ -401,6 +436,10 @@ defmodule Brain.Analysis.FeatureExtractor.EnrichmentFeatures do
   @spec conceptnet_edge_dimension() :: 12
   def conceptnet_edge_dimension, do: length(@conceptnet_edge_types)
 
+  @doc "Ordered dimension names emitted by `conceptnet_edges/1`."
+  @spec conceptnet_edge_names() :: [atom()]
+  def conceptnet_edge_names, do: Enum.map(@conceptnet_edge_types, &:"cn_#{&1}")
+
   # ---------------------------------------------------------------------------
   # Group 19: verb × argument selectional-preference cross-product
   # ---------------------------------------------------------------------------
@@ -453,6 +492,19 @@ defmodule Brain.Analysis.FeatureExtractor.EnrichmentFeatures do
   @doc "Number of buckets / dimensions emitted by `selectional_preferences/1`."
   @spec selectional_preferences_dimension() :: 32
   def selectional_preferences_dimension, do: @selpref_buckets
+
+  @doc """
+  Ordered dimension names emitted by `selectional_preferences/1`.
+
+  These are hash buckets, not semantic categories -- the name records the
+  bucket index because `:erlang.phash2/2` gives no stable meaning to a slot.
+  """
+  @spec selectional_preference_names() :: [atom()]
+  def selectional_preference_names do
+    Enum.map(0..(@selpref_buckets - 1), fn i ->
+      :"selpref_bucket_#{String.pad_leading(Integer.to_string(i), 2, "0")}"
+    end)
+  end
 
   defp filter_with_domain(word_feats, allowed_pos) do
     pos_set = MapSet.new(allowed_pos)
@@ -632,6 +684,26 @@ defmodule Brain.Analysis.FeatureExtractor.EnrichmentFeatures do
   @spec subcategorization_frame_dimension() :: 13
   def subcategorization_frame_dimension, do: @subcat_dim
 
+  @doc "Ordered dimension names emitted by `subcategorization_frame/1`."
+  @spec subcategorization_frame_names() :: [atom()]
+  def subcategorization_frame_names do
+    [
+      :subcat_modal_directive,
+      :subcat_copular,
+      :subcat_transitive,
+      :subcat_ditransitive,
+      :subcat_intransitive,
+      :subcat_pron_subject,
+      :subcat_verb_norm,
+      :subcat_noun_norm,
+      :subcat_aux_norm,
+      :subcat_det_norm,
+      :subcat_adj_norm,
+      :subcat_adv_norm,
+      :subcat_arg_position
+    ]
+  end
+
   # Counts object-position NPs in a POS-suffix. An NP head is any of
   # NOUN / PROPN / PRON, optionally preceded by a DET. We walk the
   # sequence consuming one head per NP so adjacent NPs (as in the
@@ -762,6 +834,10 @@ defmodule Brain.Analysis.FeatureExtractor.EnrichmentFeatures do
   @spec discourse_markers_dimension() :: 9
   def discourse_markers_dimension, do: @discmark_dim
 
+  @doc "Ordered dimension names emitted by `discourse_markers/1`."
+  @spec discourse_marker_names() :: [atom()]
+  def discourse_marker_names, do: Enum.map(@dm_order, &:"dm_#{&1}") ++ [:dm_density]
+
   # ──────────────────────────────────────────────────────────────────────
   # Tier 2 / Feature 8 — speech-act × wh-target interaction grid
   # ──────────────────────────────────────────────────────────────────────
@@ -829,6 +905,16 @@ defmodule Brain.Analysis.FeatureExtractor.EnrichmentFeatures do
   @doc "Number of dimensions emitted by `speech_act_wh_interaction/2`."
   @spec speech_act_wh_interaction_dimension() :: 42
   def speech_act_wh_interaction_dimension, do: @swh_dim
+
+  @doc """
+  Ordered dimension names emitted by `speech_act_wh_interaction/2`.
+
+  Row-major over `act x wh`, matching the emission order.
+  """
+  @spec speech_act_wh_interaction_names() :: [atom()]
+  def speech_act_wh_interaction_names do
+    for act <- @swh_acts, wh <- @swh_wh, do: :"swh_#{act}_#{wh}"
+  end
 
   defp swh_act_index(act) do
     case Enum.find_index(@swh_acts, &(&1 == act)) do
@@ -908,6 +994,18 @@ defmodule Brain.Analysis.FeatureExtractor.EnrichmentFeatures do
   @spec entity_type_semantics_dimension() :: non_neg_integer()
   def entity_type_semantics_dimension do
     length(parent_type_list()) + 2
+  end
+
+  @doc """
+  Ordered dimension names emitted by `entity_type_semantics/1`.
+
+  Width depends on `TypeHierarchy.parent_types/0` at runtime, so this is
+  resolved per call rather than frozen at compile time.
+  """
+  @spec entity_type_semantics_names() :: [atom()]
+  def entity_type_semantics_names do
+    Enum.map(parent_type_list(), &:"etype_parent_#{&1}") ++
+      [:etype_coherence, :etype_coverage]
   end
 
   defp parent_type_list do
