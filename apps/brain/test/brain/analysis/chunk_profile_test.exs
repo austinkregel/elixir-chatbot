@@ -12,7 +12,7 @@ defmodule Brain.Analysis.ChunkProfileTest do
       assert profile.speech_act_subtype == :unknown
       assert profile.target == :ambiguous
       assert profile.modality == :declarative
-      assert profile.polarity == :affirmative
+      assert profile.polarity == 0.0
       assert profile.tense == :present
       assert profile.aspect == :simple
       assert profile.addressee == :unknown
@@ -380,8 +380,9 @@ defmodule Brain.Analysis.ChunkProfileTest do
       @tag_class tag
 
       test "negation on #{tag} is detected: #{text}" do
-        assert profile_for(@text).polarity == :negative,
-               "#{@tag_class} negation in #{inspect(@text)} must not be missed"
+        assert profile_for(@text).polarity == 1.0,
+               "#{@tag_class} negation in #{inspect(@text)} scopes over the clause and must " <>
+                 "score full sentential negation"
       end
     end
 
@@ -395,7 +396,7 @@ defmodule Brain.Analysis.ChunkProfileTest do
       @text text
 
       test "contracted negation is detected: #{text}" do
-        assert profile_for(@text).polarity == :negative,
+        assert profile_for(@text).polarity == 1.0,
                "the pipeline tokeniser splits #{inspect(@text)} into stem/'/t, so detection " <>
                  "must not rely on the token list alone"
       end
@@ -404,7 +405,7 @@ defmodule Brain.Analysis.ChunkProfileTest do
     test "affirmative text is a determination, not a default" do
       profile = profile_for("I like rain", [{"I", "PRON"}, {"like", "VERB"}, {"rain", "NOUN"}])
 
-      assert profile.polarity == :affirmative
+      assert profile.polarity == 0.0
       assert Map.fetch!(profile.feature_provenance, :polarity)[:status] == :computed
     end
 
@@ -412,13 +413,65 @@ defmodule Brain.Analysis.ChunkProfileTest do
       entry = Map.fetch!(profile_for("", []).feature_provenance, :polarity)
 
       assert entry[:status] == :defaulted
-      assert entry[:reason] == :no_pos_tags
-      assert ChunkProfile.new().polarity == :affirmative
+      assert entry[:reason] == :no_tokens
+      assert ChunkProfile.new().polarity == 0.0
     end
 
     test "negation does not fire on substrings" do
-      assert profile_for("She tied a knot in the rope").polarity == :affirmative
-      assert profile_for("The cannon fired").polarity == :affirmative
+      assert profile_for("She tied a knot in the rope").polarity == 0.0
+      assert profile_for("The cannon fired").polarity == 0.0
+    end
+
+    # Polarity is a strength, not a flag. Negation inside a noun phrase leaves
+    # the clause asserting something positively, so it must not score the same
+    # as negation that scopes over the predicate.
+    test "constituent negation scores lower than sentential negation" do
+      sentential = profile_for("I am not competent").polarity
+      constituent = profile_for("the unhealthy meals I cook made my partner gain weight").polarity
+      none = profile_for("I finished the whole report").polarity
+
+      assert sentential == 1.0
+      assert constituent > none and constituent < sentential
+      assert none == 0.0
+    end
+
+    test "constituent negators accumulate" do
+      one = profile_for("I am unable to finish this").polarity
+      two = profile_for("I feel useless, so I am useless").polarity
+
+      assert two > one
+      assert two <= 1.0
+    end
+
+    test "morphological negation comes from WordNet, not a word list" do
+      # "unable" is absent from the closed-class vocabulary; it is recognised
+      # because WordNet makes it the antonym of "able" plus a negative prefix.
+      refute "unable" in Brain.LinguisticData.negation_words()
+      assert Brain.LinguisticData.morphological_negator?("unable")
+      assert profile_for("I am unable to finish this").polarity > 0.0
+    end
+
+    # Regression: @sentential_negation was defined below its use in
+    # derive_temporal_framing/1. Elixir evaluates an undefined attribute as nil,
+    # and `1.0 >= nil` is false under term ordering, so :negated_past silently
+    # became unreachable. Every polarity test still passed, because none of them
+    # exercised the axis that consumes polarity.
+    test "past tense plus sentential negation reaches :negated_past" do
+      profile = profile_for("I did not finish the report yesterday")
+
+      assert profile.polarity == 1.0
+
+      if profile.tense == :past do
+        assert profile.temporal_framing == :negated_past,
+               "past + full negation must reach :negated_past; got " <>
+                 inspect(profile.temporal_framing)
+      end
+    end
+
+    test "plain opposition is not negation" do
+      # "cold" is the antonym of "hot" but is not derived from it by an affix.
+      refute Brain.LinguisticData.morphological_negator?("cold")
+      assert profile_for("The coffee is cold").polarity == 0.0
     end
   end
 end
