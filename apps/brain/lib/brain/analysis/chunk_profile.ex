@@ -58,6 +58,7 @@ defmodule Brain.Analysis.ChunkProfile do
   """
 
   alias Brain.Analysis.ChunkAnalysis
+  alias Brain.LinguisticData
   alias Brain.ML.MicroClassifiers
 
   @type t :: %__MODULE__{
@@ -474,7 +475,7 @@ defmodule Brain.Analysis.ChunkProfile do
 
     {target, target_prov} = derive_target(discourse, pos_tags, analysis)
     {modality, modality_prov} = derive_modality(speech_act)
-    {polarity, polarity_prov} = derive_polarity(pos_tags)
+    {polarity, polarity_prov} = derive_polarity(pos_tags, Map.get(analysis, :text, ""))
     {sentiment_alignment, sentiment_prov} = derive_sentiment_alignment(analysis, speech_act)
 
     axes = %{
@@ -759,14 +760,7 @@ defmodule Brain.Analysis.ChunkProfile do
   defp personal_vote(_), do: nil
 
   defp pronoun_target_signal(pos_tags) do
-    tokens =
-      pos_tags
-      |> Enum.map(fn
-        {word, _tag} -> String.downcase(word)
-        %{word: word} -> String.downcase(word)
-        _ -> nil
-      end)
-      |> Enum.reject(&is_nil/1)
+    tokens = pos_tokens(pos_tags)
 
     first_person = Enum.count(tokens, &(&1 in ~w(i me my mine myself)))
     second_person = Enum.count(tokens, &(&1 in ~w(you your yours yourself yourselves)))
@@ -816,20 +810,37 @@ defmodule Brain.Analysis.ChunkProfile do
   # Polarity derivation — negation particle count from POS tags
   # -------------------------------------------------------------------
 
-  # KNOWN DEFECT, deliberately not fixed here (tasks 074 / 081).
+  # Polarity is determined lexically, not by POS tag.
   #
-  # This matches the *atom* `:PART`, but the tagger emits tag names as
-  # upcased *strings* — so `neg_count` is 0 on every input and the axis is
-  # pinned to `:affirmative`. Task 081 proved the one-line type fix delivers
-  # nothing on its own, because the tagger does not emit `PART` at all: its
-  # emission probability uses an arithmetic mean, so ordinary words are tagged
-  # `NOUN` (task 074).
+  # This previously counted `PART` tags. That cannot work for English. Measured
+  # over 206 negated sentences from the cognitive-distortions set, only 108
+  # carry the negation on a PART token (`not`, `n't`). The rest carry it on ADV
+  # (`never`), DET (`no`, `neither`) or PRON (`nothing`, `nobody`) — 47.1% of
+  # negated input is invisible to a PART count even with a correct tagger.
   #
-  # The evidence below counts both spellings so the two failures are separable
-  # in a snapshot: `atom_part` non-zero would mean the type assumption was
-  # right after all, and `string_part` non-zero after 074 lands proves the
-  # tagger is fixed and only the type fix remains.
-  defp derive_polarity(pos_tags) do
+  # A token in the negation vocabulary is a negator whatever its tag, so this
+  # works against the current tagger rather than waiting on task 074.
+  #
+  # The PART counts are kept as evidence because they still measure the tagger,
+  # not the axis: both being zero over 204 negated sentences is what proves 074
+  # — and not the atom/string mismatch this code once assumed — is why PART
+  # never appears. See apps/brain/priv/baselines/.
+  defp derive_polarity(pos_tags, text) do
+    # Detection runs on the text, not the tag list, because the pipeline's
+    # tokeniser splits contractions into three tokens — "doesn't" becomes
+    # ["doesn", "'", "t"] — and none of those is in the negation vocabulary.
+    # Measured: that alone accounted for 55 of 206 negated sentences.
+    # `LinguisticData.has_negation?/1` expands contractions first.
+    #
+    # The token scan is kept as well, so a negator the text check misses but a
+    # token carries is still caught, and so `negators` names what fired.
+    token_negators =
+      pos_tags
+      |> pos_tokens()
+      |> Enum.filter(&LinguisticData.negation?/1)
+
+    negated? = LinguisticData.has_negation?(text) or token_negators != []
+
     atom_part =
       Enum.count(pos_tags, fn
         {_word, :PART} -> true
@@ -847,29 +858,36 @@ defmodule Brain.Analysis.ChunkProfile do
     evidence = %{
       pos_tag_count: length(pos_tags),
       atom_part: atom_part,
-      string_part: string_part
+      string_part: string_part,
+      negators: token_negators
     }
 
     cond do
-      atom_part > 0 ->
+      negated? ->
         {:negative, %{source: :composed, status: :computed, evidence: evidence}}
 
-      pos_tags == [] ->
+      pos_tags == [] and text == "" ->
         {:affirmative,
          %{source: :composed, status: :defaulted, reason: :no_pos_tags, evidence: evidence}}
 
       true ->
-        # Tags were present and none matched. Given the type mismatch above
-        # this is currently the only reachable outcome for tagged input, so it
-        # is recorded as defaulted rather than as a detected affirmative.
-        {:affirmative,
-         %{
-           source: :composed,
-           status: :defaulted,
-           reason: :no_negation_particle_matched,
-           evidence: evidence
-         }}
+        # Tokens were present and none was a negator. That is a determination,
+        # not a default.
+        {:affirmative, %{source: :composed, status: :computed, evidence: evidence}}
     end
+  end
+
+  # Lowercased surface tokens from a POS-tagged list. Tolerates the tuple and
+  # map shapes the tagger and its callers both produce.
+  defp pos_tokens(pos_tags) do
+    pos_tags
+    |> Enum.map(fn
+      {word, _tag} when is_binary(word) -> String.downcase(word)
+      %{word: word} when is_binary(word) -> String.downcase(word)
+      %{token: word} when is_binary(word) -> String.downcase(word)
+      _ -> nil
+    end)
+    |> Enum.reject(&is_nil/1)
   end
 
   # -------------------------------------------------------------------
