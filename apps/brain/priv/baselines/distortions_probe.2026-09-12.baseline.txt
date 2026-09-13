@@ -1,0 +1,35 @@
+=== per-axis computed / distinct values over 450 sentences ===
+
+axis                      computed  values
+----------------------------------------------------------------------------------------------------
+domain                     450/450  :smalltalk=133, :music=116, :calendar=73, :weather=49, :reminder=40, :
+tense                      450/450  :future=252, :past=191, :present=7
+aspect                     450/450  :simple=373, :progressive=62, :perfect=15
+urgency                    450/450  :critical=420, :low=30
+certainty                  450/450  :hedged=363, :committed=87
+speech_act_category        450/450  :assertive=447, :directive=3
+speech_act_subtype         450/450  :statement=447, :command=3
+addressee                  450/450  :ambiguous=412, :bot=23, :third_party=15
+slot_completeness          376/450  1.0=374, 0.0=76
+novelty_score                0/450  0.0=450
+target                     162/450  :ambiguous=288, :agent=162
+modality                     3/450  :declarative=447, :imperative=3
+polarity                     0/450  :affirmative=450
+sentiment_alignment          0/450  :neutral=450
+response_posture           370/450  :hedged=294, :direct=80, :clarify=76
+engagement_level           421/450  :urgent_demand=420, :casual_engagement=29, :active_request=1
+self_disclosure_level        0/450  :none=450
+temporal_framing           411/450  :hypothetical_future=252, :completed_past=159, :timeless=39
+
+=== TEST 1: polarity on 204 sentences containing negation tokens ===
+  polarity: %{affirmative: 204}
+  status: %{defaulted: 204}
+
+=== TEST 2: target/self_disclosure on 430 first-person sentences ===
+  target: %{ambiguous: 272, agent: 158}
+  addressee: %{ambiguous: 404, bot: 19, third_party: 7}
+  self_disclosure: %{none: 430}
+
+=== TEST 3: certainty vs absolutist/hedging split ===
+  certainty: %{hedged: 363, committed: 87}
+  speech_act: %{directive: 3, assertive: 447}
