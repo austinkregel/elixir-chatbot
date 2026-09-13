@@ -1,0 +1,18 @@
+=== tag distribution over 3952 tokens from negated sentences ===
+  "NOUN"         3614  91.4%
+  "DET"           144  3.6%
+  "ADP"            66  1.7%
+  "PRON"           64  1.6%
+  "PUNCT"          64  1.6%
+
+=== the model's own tag_vocabulary (what it CAN emit) ===
+  tags in model: ["ADJ", "ADP", "AUX", "CONJ", "DET", "INTJ", "NOUN", "NUM", "PART", "PRON",
+ "PROPN", "PUNCT", "VERB"]
+
+=== negation tokens specifically: what tag do they get? ===
+  "I can't help but feel that they think I'm weird fo" -> [{"not", "NOUN"}, {"no", "NOUN"}]
+  "I just know i know she's judging me for what I sai" -> [{"Nothing", "NOUN"}]
+  "I feel like the traffic is bad, I'll be so late th" -> [{"no", "NOUN"}]
+  "I never do anything right." -> [{"never", "NOUN"}]
+  "I truly believe i feel guilty, so I must have done" -> [{"Nothing", "NOUN"}]
+  "I keep thinking i can tell she doesn't like me by " -> [{"no", "NOUN"}]
