@@ -1,0 +1,44 @@
+=== axis provenance census over 16 sentences ===
+
+axis                     computed  dflt  distinct values                   top reason
+----------------------------------------------------------------------------------------------------
+domain                         16     0  :smarthome, :smalltalk, :code...  
+tense                          16     0  :present, :past, :future          
+aspect                         16     0  :simple, :progressive             
+urgency                        16     0  :low, :critical, :high            
+certainty                      16     0  :committed, :hedged, :tentative   
+speech_act_category            16     0  :directive, :assertive, :expr...  
+speech_act_subtype             16     0  :command, :statement, :greeti...  
+addressee                      16     0  :bot, :ambiguous, :third_party    
+slot_completeness              11     5  1.0                               no_slots_detected (5)
+novelty_score                   0    16  0.0                               absent (16)
+target                          4    12  :ambiguous, :agent                no_majority (12)
+modality                        9     7  :imperative, :declarative, :i...  no_modality_signal (7)
+polarity                        0    16  :affirmative                      no_negation_particle_matched (16)
+sentiment_alignment             1    15  :neutral, :incongruent            no_expectation_for_category (15)
+response_posture                2    14  :direct, :hedged                  no_posture_signal (14)
+engagement_level               11     5  :casual_engagement, :urgent_d...  no_engagement_signal (5)
+self_disclosure_level           0    16  :none                             target_not_self (16)
+temporal_framing                8     8  :timeless, :completed_past, :...  no_temporal_signal (8)
+
+3 axes NEVER computed on this sample:
+  novelty_score — absent (16)
+  polarity — no_negation_particle_matched (16)
+  self_disclosure_level — target_not_self (16)
+
+4 axes took only one value:
+  slot_completeness = 1.0 (11 computed)
+  novelty_score = 0.0 (0 computed)
+  polarity = :affirmative (0 computed)
+  self_disclosure_level = :none (0 computed)
+
+=== value domain conformance ===
+
+  all axis values fall inside their declared domains
+
+=== interaction axes: how often are their parents defaulted? ===
+
+response_posture: [novelty_score: 16, slot_completeness: 5]
+engagement_level: [target: 12, modality: 7]
+self_disclosure_level: [sentiment_alignment: 15, target: 12]
+temporal_framing: [polarity: 16]
