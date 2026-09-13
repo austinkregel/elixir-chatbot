@@ -79,8 +79,7 @@ defmodule Brain.Analysis.ChunkProfileTest do
       analysis = %ChunkAnalysis{
         chunk_index: 0,
         text: "what is the weather",
-        speech_act:
-          SpeechActResult.new(:directive, :question_factual, 0.8, is_question: true),
+        speech_act: SpeechActResult.new(:directive, :question_factual, 0.8, is_question: true),
         discourse: DiscourseResult.new(:bot, 0.7),
         confidence: 0.7,
         pos_tags: [{"what", "PRON"}, {"is", "AUX"}, {"the", "DET"}, {"weather", "NOUN"}]
@@ -96,8 +95,7 @@ defmodule Brain.Analysis.ChunkProfileTest do
       question_analysis = %ChunkAnalysis{
         chunk_index: 0,
         text: "what time is it",
-        speech_act:
-          SpeechActResult.new(:directive, :question_factual, 0.9, is_question: true),
+        speech_act: SpeechActResult.new(:directive, :question_factual, 0.9, is_question: true),
         discourse: DiscourseResult.new(:bot, 0.8),
         confidence: 0.8,
         pos_tags: []
@@ -347,6 +345,80 @@ defmodule Brain.Analysis.ChunkProfileTest do
       assert evidence[:pos_tag_count] == 5
       assert Map.has_key?(evidence, :atom_part)
       assert Map.has_key?(evidence, :string_part)
+    end
+  end
+
+  describe "polarity detection" do
+    # Polarity used to count PART tags. English does not put negation only on
+    # PART: measured over 206 negated sentences, 108 carry it on PART ("not",
+    # "n't") and the other 98 on ADV ("never"), DET ("no", "neither") or PRON
+    # ("nothing", "nobody"). A PART count is blind to 47.1% of negated input
+    # even with a correct tagger.
+    defp profile_for(text, pos_tags \\ []) do
+      ChunkProfile.materialize(
+        %ChunkAnalysis{
+          chunk_index: 0,
+          text: text,
+          speech_act: SpeechActResult.new(:assertive, :statement, 0.9, is_question: false),
+          discourse: DiscourseResult.new(:bot, 0.8),
+          confidence: 0.8,
+          pos_tags: pos_tags
+        },
+        []
+      )
+    end
+
+    for {text, tag} <- [
+          {"I do not like rain", "PART"},
+          {"I never do anything right", "ADV"},
+          {"There is no point in trying", "DET"},
+          {"Nothing will change that", "PRON"},
+          {"Nobody loves me", "PRON"},
+          {"Neither option works", "DET"}
+        ] do
+      @text text
+      @tag_class tag
+
+      test "negation on #{tag} is detected: #{text}" do
+        assert profile_for(@text).polarity == :negative,
+               "#{@tag_class} negation in #{inspect(@text)} must not be missed"
+      end
+    end
+
+    for text <- [
+          "I don't like rain",
+          "She didn't come",
+          "It won't work",
+          "That wasn't flawless",
+          "My boss isn't thrilled"
+        ] do
+      @text text
+
+      test "contracted negation is detected: #{text}" do
+        assert profile_for(@text).polarity == :negative,
+               "the pipeline tokeniser splits #{inspect(@text)} into stem/'/t, so detection " <>
+                 "must not rely on the token list alone"
+      end
+    end
+
+    test "affirmative text is a determination, not a default" do
+      profile = profile_for("I like rain", [{"I", "PRON"}, {"like", "VERB"}, {"rain", "NOUN"}])
+
+      assert profile.polarity == :affirmative
+      assert Map.fetch!(profile.feature_provenance, :polarity)[:status] == :computed
+    end
+
+    test "only genuinely empty input defaults" do
+      entry = Map.fetch!(profile_for("", []).feature_provenance, :polarity)
+
+      assert entry[:status] == :defaulted
+      assert entry[:reason] == :no_pos_tags
+      assert ChunkProfile.new().polarity == :affirmative
+    end
+
+    test "negation does not fire on substrings" do
+      assert profile_for("She tied a knot in the rope").polarity == :affirmative
+      assert profile_for("The cannon fired").polarity == :affirmative
     end
   end
 end
