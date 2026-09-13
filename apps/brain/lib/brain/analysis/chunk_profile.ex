@@ -59,6 +59,7 @@ defmodule Brain.Analysis.ChunkProfile do
 
   alias Brain.Analysis.ChunkAnalysis
   alias Brain.LinguisticData
+  alias Brain.ML.Tokenizer
   alias Brain.ML.MicroClassifiers
 
   @type t :: %__MODULE__{
@@ -67,7 +68,7 @@ defmodule Brain.Analysis.ChunkProfile do
           speech_act_subtype: atom(),
           target: atom(),
           modality: atom(),
-          polarity: atom(),
+          polarity: float(),
           tense: atom(),
           aspect: atom(),
           addressee: atom(),
@@ -91,7 +92,7 @@ defmodule Brain.Analysis.ChunkProfile do
             speech_act_subtype: :unknown,
             target: :ambiguous,
             modality: :declarative,
-            polarity: :affirmative,
+            polarity: 0.0,
             tense: :present,
             aspect: :simple,
             addressee: :unknown,
@@ -152,7 +153,7 @@ defmodule Brain.Analysis.ChunkProfile do
     {:target, :categorical, {:enum, [:agent, :self, :other_person, :ambiguous]}, :composed},
     {:modality, :categorical, {:enum, [:interrogative, :imperative, :exclamatory, :declarative]},
      :composed},
-    {:polarity, :categorical, {:enum, [:affirmative, :negative]}, :composed},
+    {:polarity, :continuous, {:range, 0.0, 1.0}, :composed},
     {:sentiment_alignment, :categorical, {:enum, [:neutral, :congruent, :incongruent]},
      :composed},
     {:response_posture, :categorical, {:enum, [:clarify, :hedged, :tentative_confirm, :direct]},
@@ -649,6 +650,16 @@ defmodule Brain.Analysis.ChunkProfile do
     end
   end
 
+  # Polarity is a negation STRENGTH on 0.0..1.0, not a flag. These two points
+  # on that scale are named because both derive_polarity/2 (which assigns them)
+  # and derive_temporal_framing/1 (which thresholds on them) must agree.
+  #
+  # sentential: negation scoping over the clause -- "I am not competent".
+  # constituent: negation inside a phrase while the clause still asserts --
+  #   "the unhealthy meals I cook". Slightly negative, not negative.
+  @sentential_negation 1.0
+  @constituent_negation 0.35
+
   @framing_parents [:tense, :aspect, :polarity]
 
   defp derive_temporal_framing(
@@ -661,7 +672,7 @@ defmodule Brain.Analysis.ChunkProfile do
     parents = @framing_parents
 
     cond do
-      tense == :past and polarity == :negative ->
+      tense == :past and polarity >= @sentential_negation ->
         {:negated_past, derived_prov(:computed, parents, p)}
 
       tense == :past and aspect in [:perfect, :simple] ->
@@ -810,36 +821,44 @@ defmodule Brain.Analysis.ChunkProfile do
   # Polarity derivation — negation particle count from POS tags
   # -------------------------------------------------------------------
 
-  # Polarity is determined lexically, not by POS tag.
+  # Polarity is the STRENGTH of negation, not a yes/no.
   #
-  # This previously counted `PART` tags. That cannot work for English. Measured
-  # over 206 negated sentences from the cognitive-distortions set, only 108
-  # carry the negation on a PART token (`not`, `n't`). The rest carry it on ADV
-  # (`never`), DET (`no`, `neither`) or PRON (`nothing`, `nobody`) — 47.1% of
-  # negated input is invisible to a PART count even with a correct tagger.
+  # It was an enum of [:affirmative, :negative] decided by counting PART tags.
+  # Two things were wrong with that.
   #
-  # A token in the negation vocabulary is a negator whatever its tag, so this
-  # works against the current tagger rather than waiting on task 074.
+  # First, English does not put negation only on PART. Measured over 206 negated
+  # sentences, 108 carry it on PART ("not", "n't") and the rest on ADV
+  # ("never"), DET ("no") or PRON ("nothing") — so a PART count is blind to
+  # 47.1% of negated input even with a correct tagger, and the current tagger
+  # emits no PART at all.
   #
-  # The PART counts are kept as evidence because they still measure the tagger,
-  # not the axis: both being zero over 204 negated sentences is what proves 074
-  # — and not the atom/string mismatch this code once assumed — is why PART
-  # never appears. See apps/brain/priv/baselines/.
+  # Second, negation is not binary. "I am not competent" negates the predicate.
+  # "the unhealthy meals I cook" carries negation inside a noun phrase while the
+  # clause asserts something positively; it is slightly negative, not negative.
+  # Collapsing both to :negative loses the distinction that matters downstream.
+  #
+  # Scale: 0.0 affirmative, 1.0 fully negated.
   defp derive_polarity(pos_tags, text) do
-    # Detection runs on the text, not the tag list, because the pipeline's
-    # tokeniser splits contractions into three tokens — "doesn't" becomes
-    # ["doesn", "'", "t"] — and none of those is in the negation vocabulary.
-    # Measured: that alone accounted for 55 of 206 negated sentences.
-    # `LinguisticData.has_negation?/1` expands contractions first.
-    #
-    # The token scan is kept as well, so a negator the text check misses but a
-    # token carries is still caught, and so `negators` names what fired.
-    token_negators =
-      pos_tags
-      |> pos_tokens()
-      |> Enum.filter(&LinguisticData.negation?/1)
+    tokens =
+      text
+      |> Tokenizer.expand_contractions()
+      |> Tokenizer.tokenize_normalized(expand_contractions: false)
 
-    negated? = LinguisticData.has_negation?(text) or token_negators != []
+    # Closed-class negators scope over the clause. They are function words, so
+    # WordNet cannot supply them; they come from the declared vocabulary.
+    sentential = Enum.filter(tokens, &LinguisticData.negation?/1)
+
+    # Morphological negators ("unable", "useless") are derived from WordNet
+    # antonymy plus a negative affix. They negate the word they attach to, not
+    # necessarily the clause, so they score lower and accumulate.
+    constituent = Enum.filter(tokens, &LinguisticData.morphological_negator?/1)
+
+    score =
+      cond do
+        sentential != [] -> @sentential_negation
+        constituent != [] -> min(@constituent_negation * length(constituent), 1.0)
+        true -> 0.0
+      end
 
     atom_part =
       Enum.count(pos_tags, fn
@@ -859,21 +878,14 @@ defmodule Brain.Analysis.ChunkProfile do
       pos_tag_count: length(pos_tags),
       atom_part: atom_part,
       string_part: string_part,
-      negators: token_negators
+      sentential_negators: sentential,
+      constituent_negators: constituent
     }
 
-    cond do
-      negated? ->
-        {:negative, %{source: :composed, status: :computed, evidence: evidence}}
-
-      pos_tags == [] and text == "" ->
-        {:affirmative,
-         %{source: :composed, status: :defaulted, reason: :no_pos_tags, evidence: evidence}}
-
-      true ->
-        # Tokens were present and none was a negator. That is a determination,
-        # not a default.
-        {:affirmative, %{source: :composed, status: :computed, evidence: evidence}}
+    if tokens == [] do
+      {0.0, %{source: :composed, status: :defaulted, reason: :no_tokens, evidence: evidence}}
+    else
+      {score, %{source: :composed, status: :computed, evidence: evidence}}
     end
   end
 
