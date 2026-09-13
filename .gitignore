@@ -127,6 +127,11 @@ apps/brain/priv/*
 !apps/brain/priv/response/
 !apps/brain/priv/services/
 apps/brain/priv/knowledge/Echo.json
+# Axis baselines: the frozen pre-rebuild reference point for tasks 081/082, plus
+# the scripts that regenerate them. These must survive a clone or the POS rebuild
+# has no measured before/after to compare against.
+!apps/brain/priv/baselines/
+
 # Evaluation gold standards train the test models at suite startup
 # (ModelFactory); results, backups, and the large sentiment corpus
 # (which has a small tracked fixture fallback) stay ignored.
