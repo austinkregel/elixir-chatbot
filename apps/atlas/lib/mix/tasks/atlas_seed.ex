@@ -4,7 +4,8 @@ defmodule Mix.Tasks.Atlas.Seed do
 
   Seeds curated facts into Atlas, syncs them to the epistemic system as
   beliefs with JTMS premises, ensures source authority profiles exist,
-  and creates default training worlds.
+  seeds the brain's own lexicon from the corpora it is built on, and
+  creates default training worlds.
 
   Safe to run on every deploy — all operations use conflict-ignore or
   existence checks.
@@ -23,7 +24,8 @@ defmodule Mix.Tasks.Atlas.Seed do
     World.Manager,
     Brain.FactDatabase,
     Brain.FactDatabase.Integration,
-    Brain.Epistemic.SourceAuthority
+    Brain.Epistemic.SourceAuthority,
+    Brain.Lexicon.Seeder
   ]}
 
   @shortdoc "Seed baseline facts, beliefs, authority profiles, and worlds"
@@ -46,6 +48,7 @@ defmodule Mix.Tasks.Atlas.Seed do
       {"Curated facts", seed_curated_facts(verbose?, dry_run?)},
       {"Facts → Beliefs sync", seed_beliefs(verbose?, dry_run?)},
       {"Source authority", seed_source_authority(verbose?, dry_run?)},
+      {"Lexicon facts", seed_lexicon(verbose?, dry_run?)},
       {"Training worlds", seed_training_worlds(verbose?, dry_run?)}
     ]
 
@@ -173,6 +176,21 @@ defmodule Mix.Tasks.Atlas.Seed do
     end
   rescue
     e -> {:error, Exception.message(e)}
+  end
+
+  # ---------------------------------------------------------------------------
+  # Seed the brain's own lexicon from the corpora it is built on
+  # ---------------------------------------------------------------------------
+  defp seed_lexicon(verbose?, dry_run?) do
+    if dry_run? do
+      {:ok, "would seed #{length(Brain.Lexicon.Seeder.derive_negation())} negation facts"}
+    else
+      {:ok, counts} = Brain.Lexicon.Seeder.seed_all()
+
+      if verbose?, do: Mix.shell().info("  Negation facts written: #{counts.negation}")
+
+      {:ok, "#{counts.negation} negation facts"}
+    end
   end
 
   # ---------------------------------------------------------------------------
