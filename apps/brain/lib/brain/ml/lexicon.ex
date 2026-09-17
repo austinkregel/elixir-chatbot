@@ -144,6 +144,20 @@ defmodule Brain.ML.Lexicon do
     end
   end
 
+  @doc """
+  Returns every `{word, antonym}` pair WordNet holds.
+
+  Used to derive facts from the whole corpus at seed time, rather than asking
+  about one word at a time. Roughly 8,000 pairs.
+  """
+  def antonym_pairs(name \\ __MODULE__) do
+    table_for(name, :words)
+    |> :ets.tab2list()
+    |> Enum.flat_map(fn {word, _entries} ->
+      Enum.map(antonyms(word, name), &{word, &1})
+    end)
+  end
+
   @doc "Returns the base/lemma form of an inflected word using WordNet morphological exceptions."
   def lemma(word, name \\ __MODULE__) when is_binary(word) do
     normalized = String.downcase(word)
