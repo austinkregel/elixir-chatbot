@@ -17,7 +17,8 @@ defmodule Brain.Test.AtlasSandbox do
     Brain.ML.Gazetteer,
     Brain,
     Brain.Epistemic.JTMS,
-    Brain.Analysis.ComprehensionAssessor
+    Brain.Analysis.ComprehensionAssessor,
+    Brain.Lexicon.UserDefined
   ]
 
   @task_supervisors [
