@@ -916,21 +916,17 @@ defmodule Brain.AtlasIntegration do
   end
 
   defp find_node_via_synonyms(graph, label, name) do
-    if Process.whereis(Brain.ML.Lexicon) do
-      synonyms = Brain.ML.Lexicon.synonyms(to_string(name))
+    synonyms = Brain.Lexicon.synonyms(to_string(name))
 
-      Enum.find_value(Enum.take(synonyms, 5), :not_found, fn syn ->
-        escaped = String.replace(syn, "'", "\\'")
-        query = "MATCH (n:#{label}) WHERE n.name = '#{escaped}' RETURN n"
+    Enum.find_value(Enum.take(synonyms, 5), :not_found, fn syn ->
+      escaped = String.replace(syn, "'", "\\'")
+      query = "MATCH (n:#{label}) WHERE n.name = '#{escaped}' RETURN n"
 
-        case Atlas.Graph.cypher(graph, query) do
-          {:ok, [[%Atlas.Graph.Types.Vertex{} = v] | _]} -> {:ok, v}
-          _ -> nil
-        end
-      end)
-    else
-      :not_found
-    end
+      case Atlas.Graph.cypher(graph, query) do
+        {:ok, [[%Atlas.Graph.Types.Vertex{} = v] | _]} -> {:ok, v}
+        _ -> nil
+      end
+    end)
   rescue
     _ -> :not_found
   end
@@ -986,15 +982,15 @@ defmodule Brain.AtlasIntegration do
   defp enrich_with_lexicon(properties, name) when is_binary(name) do
     lookup_name = resolve_lexicon_name(name)
 
-    if Process.whereis(Brain.ML.Lexicon) != nil && Brain.ML.Lexicon.known_word?(lookup_name) do
+    if Brain.Lexicon.known_word?(lookup_name) do
       definition =
-        case Brain.ML.Lexicon.definition(lookup_name) do
+        case Brain.Lexicon.definition(lookup_name) do
           {:ok, defn} -> defn
           _ -> nil
         end
 
-      synonyms = Brain.ML.Lexicon.synonyms(lookup_name) |> Enum.take(5)
-      hypernyms = Brain.ML.Lexicon.hypernyms(lookup_name) |> Enum.take(3)
+      synonyms = Brain.Lexicon.synonyms(lookup_name) |> Enum.take(5)
+      hypernyms = Brain.Lexicon.hypernyms(lookup_name) |> Enum.take(3)
       domain = Brain.Lexicon.primary_domain(lookup_name)
       polysemy = Brain.Lexicon.polysemy_count(lookup_name)
 
@@ -1049,7 +1045,7 @@ defmodule Brain.AtlasIntegration do
   end
 
   defp resolve_lexicon_name(name) when is_binary(name) do
-    if Process.whereis(Brain.ML.Lexicon) != nil and Brain.ML.Lexicon.known_word?(name) do
+    if Brain.Lexicon.known_word?(name) do
       name
     else
       compounds = Brain.Analysis.TypeHierarchy.config("compound_entity_types", %{})
