@@ -3,6 +3,17 @@
 {:ok, _} = Application.ensure_all_started(:world)
 {:ok, _} = Application.ensure_all_started(:chat_web)
 
+# Seed the brain's own lexicon. The lexicon page shows the facts the brain
+# owns, so without this it would have nothing to show and its tests would fail
+# for lack of data rather than for a real reason. Seeding runs with the pool in
+# :auto, before per-test sandboxing, so the facts persist for the whole run.
+# It is idempotent.
+if Process.whereis(Atlas.Repo) do
+  Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :auto)
+  {:ok, _} = Brain.Lexicon.Seeder.seed_all()
+  {:ok, _} = Brain.Lexicon.UserDefined.reload()
+end
+
 # Set Atlas.Repo to sandbox mode for test isolation
 if Process.whereis(Atlas.Repo) do
   Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :manual)
