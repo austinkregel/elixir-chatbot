@@ -239,6 +239,85 @@ defmodule Brain.Lexicon.ContractTest do
     end
   end
 
+  describe "the facade agrees with WordNet while the brain owns no facts" do
+    # Every lexical call site is being moved from Brain.ML.Lexicon to
+    # Brain.Lexicon. That move is only safe if, with nothing in the owned store,
+    # the facade returns exactly what WordNet returns -- same values, same order.
+    @words ~w(dog bank run happy glad unable quickly car cat geese goose dogs
+              running zorbl cold hot hopeless light fair spring)
+
+    setup do
+      assert Brain.Lexicon.UserDefined.fact_count() == 0,
+             "the global lexicon store holds facts, so the facade is no longer " <>
+               "expected to equal WordNet; this comparison needs an empty store"
+
+      :ok
+    end
+
+    test "synonyms/2" do
+      for word <- @words, pos <- [nil, :noun, :verb, :adj] do
+        assert Lexicon.synonyms(word, pos) == WordNet.synonyms(word, pos),
+               "synonyms(#{inspect(word)}, #{inspect(pos)}) diverged"
+      end
+    end
+
+    test "hypernyms/2" do
+      for word <- @words, pos <- [nil, :noun, :verb] do
+        assert Lexicon.hypernyms(word, pos) == WordNet.hypernyms(word, pos),
+               "hypernyms(#{inspect(word)}, #{inspect(pos)}) diverged"
+      end
+    end
+
+    test "antonyms/1" do
+      for word <- @words do
+        assert Lexicon.antonyms(word) == WordNet.antonyms(word),
+               "antonyms(#{inspect(word)}) diverged"
+      end
+    end
+
+    test "definition/2" do
+      for word <- @words, pos <- [nil, :noun, :verb] do
+        assert Lexicon.definition(word, pos) == WordNet.definition(word, pos),
+               "definition(#{inspect(word)}, #{inspect(pos)}) diverged"
+      end
+    end
+
+    test "hypernym_chain/3" do
+      for word <- @words, pos <- [nil, :noun], depth <- [3, 8] do
+        assert Lexicon.hypernym_chain(word, pos, max_depth: depth) ==
+                 WordNet.hypernym_chain(word, pos, max_depth: depth),
+               "hypernym_chain(#{inspect(word)}, #{inspect(pos)}, #{depth}) diverged"
+      end
+    end
+
+    test "senses/1, pos/1, known_word?/1 and lemma/1" do
+      for word <- @words do
+        assert Lexicon.senses(word) == WordNet.senses(word), "senses(#{inspect(word)}) diverged"
+        assert Lexicon.pos(word) == WordNet.pos(word), "pos(#{inspect(word)}) diverged"
+
+        assert Lexicon.known_word?(word) == WordNet.known_word?(word),
+               "known_word?(#{inspect(word)}) diverged"
+
+        assert Lexicon.lemma(word) == WordNet.lemma(word), "lemma(#{inspect(word)}) diverged"
+      end
+    end
+
+    test "expand_with_synonyms/2" do
+      vocabularies = [
+        %{},
+        %{"canis familiaris" => 0},
+        %{"dog" => 0, "goose" => 1},
+        %{"run" => 0, "felicitous" => 1, "automobile" => 2}
+      ]
+
+      for vocabulary <- vocabularies, tokens <- [@words, ~w(geese running happy car)] do
+        assert Lexicon.expand_with_synonyms(tokens, vocabulary) ==
+                 WordNet.expand_with_synonyms(tokens, vocabulary),
+               "expand_with_synonyms diverged for vocabulary #{inspect(vocabulary)}"
+      end
+    end
+  end
+
   describe "disambiguate/3" do
     # Shape only. Sense selection is currently not context-sensitive for "bank"
     # (river and money contexts both return synset 109236472), so pinning the
