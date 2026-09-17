@@ -985,9 +985,7 @@ defmodule Mix.Tasks.Train do
   end
 
   defp wordnet_pos_lookup(lower, original) do
-    alias Brain.ML.Lexicon, as: WordNet
-
-    case WordNet.senses(lower) do
+    case Brain.Lexicon.senses(lower) do
       [_ | _] = senses ->
         best =
           senses
