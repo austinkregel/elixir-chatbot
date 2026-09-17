@@ -94,29 +94,39 @@ defmodule Mix.Tasks.Atlas.Seed do
       if dry_run? do
         {:ok, "would upsert #{length(all_facts)} facts"}
       else
-        inserted =
-          Enum.count(all_facts, fn f ->
-            attrs = %{
-              id: f["id"] || "fact_#{System.unique_integer([:positive])}",
-              entity: f["entity"] || "unknown",
-              entity_type: f["entity_type"],
-              fact: f["fact"] || "",
-              category: f["category"] || "learned",
-              confidence: f["confidence"] || 1.0,
-              verification_source: f["verification_source"]
-            }
+        # Counted from the table, not from insert/2's reply. With
+        # `on_conflict: :nothing` Postgres writes nothing on a conflict but
+        # Ecto still replies `{:ok, struct}`, so counting replies reported every
+        # fact as newly inserted on every run.
+        before_count = Atlas.Repo.aggregate(Atlas.Schemas.LearnedFact, :count)
 
-            changeset =
-              Atlas.Schemas.LearnedFact.changeset(
-                struct(Atlas.Schemas.LearnedFact),
-                attrs
-              )
+        Enum.each(all_facts, fn f ->
+          attrs = %{
+            id: f["id"] || "fact_#{System.unique_integer([:positive])}",
+            entity: f["entity"] || "unknown",
+            entity_type: f["entity_type"],
+            fact: f["fact"] || "",
+            category: f["category"] || "learned",
+            confidence: f["confidence"] || 1.0,
+            verification_source: f["verification_source"]
+          }
 
-            case Atlas.Repo.insert(changeset, on_conflict: :nothing) do
-              {:ok, _} -> true
-              _ -> false
-            end
-          end)
+          changeset =
+            Atlas.Schemas.LearnedFact.changeset(
+              struct(Atlas.Schemas.LearnedFact),
+              attrs
+            )
+
+          case Atlas.Repo.insert(changeset, on_conflict: :nothing) do
+            {:ok, _} ->
+              :ok
+
+            {:error, failed} ->
+              raise "seed: fact #{inspect(attrs.id)} is invalid: #{inspect(failed.errors)}"
+          end
+        end)
+
+        inserted = Atlas.Repo.aggregate(Atlas.Schemas.LearnedFact, :count) - before_count
 
         # Reload FactDatabase so it picks up newly inserted facts
         if inserted > 0 do
