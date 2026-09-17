@@ -27,6 +27,7 @@ defmodule Brain.Application do
       Brain.Services.Cache,
       Brain.ML.Lexicon,
       Brain.Lexicon.Loader,
+      Brain.Lexicon.UserDefined,
       Brain.ML.InformalExpansions,
       Brain.ML.Gazetteer,
       Brain.Analysis.LearningStore,
