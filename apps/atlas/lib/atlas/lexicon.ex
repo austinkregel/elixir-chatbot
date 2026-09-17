@@ -84,6 +84,22 @@ defmodule Atlas.Lexicon do
     |> Repo.all()
   end
 
+  @doc """
+  Returns every fact about any of the given words.
+
+  Used after a bulk write to refresh only the words that changed, instead of
+  reloading the whole lexicon.
+  """
+  @spec list_facts_for_words([String.t()]) :: [LexiconFact.t()]
+  def list_facts_for_words([]), do: []
+
+  def list_facts_for_words(words) when is_list(words) do
+    LexiconFact
+    |> where([f], f.word in ^words)
+    |> order_by([f], asc: f.word, asc: f.kind, asc: f.key, asc: f.ref, asc: f.source)
+    |> Repo.all()
+  end
+
   @doc "Updates an existing fact."
   @spec update_fact(LexiconFact.t(), map()) ::
           {:ok, LexiconFact.t()} | {:error, Ecto.Changeset.t()}
