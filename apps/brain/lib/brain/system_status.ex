@@ -58,6 +58,7 @@ defmodule Brain.SystemStatus do
       {Brain.ML.KnowledgeGraph.EntityVectorCache, "Entity Vector Cache", :has_stats},
       {Brain.ML.Poincare.Embeddings, "Poincare Embeddings", :has_ready},
       {Brain.ML.Lexicon, "Lexicon", :has_stats},
+      {Brain.Lexicon.UserDefined, "Owned Lexicon", :basic},
       {Brain.ML.WeightOptimizer.Tracker, "Weight Optimizer Tracker", :basic}
     ],
     response: [
