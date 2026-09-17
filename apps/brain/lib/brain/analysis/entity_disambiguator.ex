@@ -473,50 +473,46 @@ defmodule Brain.Analysis.EntityDisambiguator do
   end
 
   defp lexicon_sense_boost(type_info, context) do
-    if Process.whereis(Brain.ML.Lexicon) do
-      entity_value = Map.get(type_info, :value) || ""
-      entity_type = get_type_name(type_info)
-      original_text = Map.get(context, :original_text, "")
+    entity_value = Map.get(type_info, :value) || ""
+    entity_type = get_type_name(type_info)
+    original_text = Map.get(context, :original_text, "")
 
-      if entity_value == "" or original_text == "" do
+    if entity_value == "" or original_text == "" do
+      0.0
+    else
+      senses = Brain.Lexicon.senses(entity_value)
+
+      if senses == [] do
         0.0
       else
-        senses = Brain.ML.Lexicon.senses(entity_value)
+        context_words =
+          original_text
+          |> Brain.ML.Tokenizer.tokenize_normalized(min_length: 3)
+          |> MapSet.new()
 
-        if senses == [] do
-          0.0
-        else
-          context_words =
-            original_text
-            |> Brain.ML.Tokenizer.tokenize_normalized(min_length: 3)
-            |> MapSet.new()
+        best_match =
+          senses
+          |> Enum.map(fn sense ->
+            defn_words =
+              sense.definition
+              |> Brain.ML.Tokenizer.tokenize_normalized(min_length: 3)
+              |> MapSet.new()
 
-          best_match =
-            senses
-            |> Enum.map(fn sense ->
-              defn_words =
-                sense.definition
-                |> Brain.ML.Tokenizer.tokenize_normalized(min_length: 3)
-                |> MapSet.new()
+            overlap = MapSet.intersection(context_words, defn_words) |> MapSet.size()
 
-              overlap = MapSet.intersection(context_words, defn_words) |> MapSet.size()
+            chain = Brain.Lexicon.hypernym_chain(entity_value, sense.pos, max_depth: 5)
+            type_match = if entity_type in chain, do: 1, else: 0
 
-              chain = Brain.ML.Lexicon.hypernym_chain(entity_value, sense.pos, max_depth: 5)
-              type_match = if entity_type in chain, do: 1, else: 0
+            overlap + type_match * 2
+          end)
+          |> Enum.max(fn -> 0 end)
 
-              overlap + type_match * 2
-            end)
-            |> Enum.max(fn -> 0 end)
-
-          cond do
-            best_match >= 3 -> 0.2
-            best_match >= 1 -> 0.1
-            true -> 0.0
-          end
+        cond do
+          best_match >= 3 -> 0.2
+          best_match >= 1 -> 0.1
+          true -> 0.0
         end
       end
-    else
-      0.0
     end
   end
 
