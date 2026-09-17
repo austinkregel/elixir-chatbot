@@ -131,12 +131,6 @@ defmodule Brain.LinguisticData do
 
   def has_negation?(_), do: false
 
-  # Negative affixes. This list is the rule, not the answer: it only decides
-  # whether an antonym pair is related *by negation* rather than by plain
-  # opposition. The negators themselves come from WordNet.
-  @negative_prefixes ~w(un im in ir il non dis)
-  @negative_suffix "less"
-
   @doc """
   Returns true if the word negates, from either of the two sources English uses.
 
@@ -144,16 +138,18 @@ defmodule Brain.LinguisticData do
   Finite by definition and listed in `priv/knowledge/linguistic.json`. WordNet
   contains no function words, so these cannot be derived from it.
 
-  **Morphological** — `unable`, `impossible`, `hopeless`. Derived from WordNet:
-  a word negates when it is the antonym of another word **and** is that word
-  plus a negative affix. The affix test is what separates negation from mere
-  opposition — `hot`/`cold` are antonyms and neither negates, so the pair is
-  correctly rejected.
+  **Morphological** — `unable`, `impossible`, `hopeless`. Read from the brain's
+  own lexicon, which `Brain.Lexicon.Seeder` fills from WordNet: a word negates
+  when it is the antonym of another word **and** is that word plus a negative
+  affix. The affix test is what separates negation from mere opposition —
+  `hot`/`cold` are antonyms and neither negates, so the pair is correctly
+  rejected.
 
-  The derived half grows when WordNet grows. It does not require anyone to
-  notice a missing word and edit a list, which is the failure mode a
-  hand-maintained vocabulary has: measured against negation drawn from outside
-  the 19-word list, the list alone recognised 1 of 12.
+  That half grows when WordNet grows, and can be corrected or retired once
+  seeded, rather than requiring someone to notice a missing word and edit a
+  list — the failure mode of a hand-maintained vocabulary. Measured against
+  negation drawn from outside the 19-word closed-class list, the list alone
+  recognised 1 of 12; seeding adds 1,374 words.
 
   ## Examples
 
@@ -174,57 +170,24 @@ defmodule Brain.LinguisticData do
   def negator?(_), do: false
 
   @doc """
-  Returns true if the word is an antonym of some word it is derived from by a
-  negative affix.
+  Returns true if the brain holds a morphological negation fact for the word.
 
-  Restricted to adjectives, adverbs and verbs. Nominalisations (`inability`,
-  `impossibility`) are excluded: they name a negated concept rather than negate
-  a clause, and admitting them makes every mention of a shortcoming a negation.
+  The facts are derived from WordNet by `Brain.Lexicon.Seeder` -- a word
+  negates when it is the antonym of another word and is that word plus a
+  negative affix -- and written into the brain's own lexicon. This reads them;
+  it does not re-derive them, so a fact that is later corrected or retired
+  changes the answer here.
 
-  Reads through `Brain.Lexicon`, whose WordNet base is supervised and
-  required — it crashes on init if the WordNet data is missing, so there is no
-  degraded mode here.
+  An unseeded lexicon holds no such facts, and every word reads as
+  non-negating. `mix atlas.seed` fills it.
   """
   @spec morphological_negator?(String.t()) :: boolean()
   def morphological_negator?(word) when is_binary(word) do
-    normalized = String.downcase(word)
-
-    if clause_level_pos?(normalized) do
-      normalized
-      |> Lexicon.antonyms()
-      |> Enum.any?(&derived_by_negative_affix?(normalized, &1))
-    else
-      false
-    end
+    word
+    |> String.downcase()
+    |> Lexicon.owned_facts(kind: "property", key: "negation")
+    |> Enum.any?(&(&1.value["kind"] == "morphological"))
   end
 
   def morphological_negator?(_), do: false
-
-  # POS atoms as `Brain.Lexicon.pos/2` returns them, per the WordNet mapping in
-  # `Brain.ML.Lexicon.WordNetParser` (n->:noun, v->:verb, a->:adj,
-  # s->:adj_satellite, r->:adv). Nouns are excluded deliberately; see
-  # `morphological_negator?/1`.
-  @clause_level_pos [:adj, :adj_satellite, :adv, :verb]
-
-  defp clause_level_pos?(word) do
-    Enum.any?(Lexicon.pos(word), &(&1 in @clause_level_pos))
-  end
-
-  # Two shapes of affixal negation, and they anchor differently.
-  #
-  #   prefix: the word is the antonym plus a prefix -- "unable" / "able".
-  #   suffix: the word and its antonym share a stem, and the word is that stem
-  #           plus "-less" -- "hopeless" / "hopeful" both sit on "hope". The
-  #           antonym is not the root here, so the prefix test cannot be reused.
-  defp derived_by_negative_affix?(word, antonym) do
-    Enum.any?(@negative_prefixes, &(word == &1 <> antonym)) or
-      privative_suffix?(word, antonym)
-  end
-
-  defp privative_suffix?(word, antonym) do
-    case String.split(word, @negative_suffix) do
-      [stem, ""] when byte_size(stem) >= 3 -> String.starts_with?(antonym, stem)
-      _ -> false
-    end
-  end
 end
