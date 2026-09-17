@@ -12,7 +12,7 @@ defmodule Brain.LinguisticData do
   Data is loaded at compile time via @external_resource for efficiency.
   """
 
-  alias Brain.ML.Lexicon
+  alias Brain.Lexicon
   alias Brain.ML.Tokenizer
 
   @linguistic_path "priv/knowledge/linguistic.json"
@@ -181,8 +181,9 @@ defmodule Brain.LinguisticData do
   `impossibility`) are excluded: they name a negated concept rather than negate
   a clause, and admitting them makes every mention of a shortcoming a negation.
 
-  Reads `Brain.ML.Lexicon`, which is supervised and required — it crashes on
-  init if the WordNet data is missing, so there is no degraded mode here.
+  Reads through `Brain.Lexicon`, whose WordNet base is supervised and
+  required — it crashes on init if the WordNet data is missing, so there is no
+  degraded mode here.
   """
   @spec morphological_negator?(String.t()) :: boolean()
   def morphological_negator?(word) when is_binary(word) do
@@ -199,7 +200,7 @@ defmodule Brain.LinguisticData do
 
   def morphological_negator?(_), do: false
 
-  # POS atoms as `Brain.ML.Lexicon` exposes them, per the mapping in
+  # POS atoms as `Brain.Lexicon.pos/2` returns them, per the WordNet mapping in
   # `Brain.ML.Lexicon.WordNetParser` (n->:noun, v->:verb, a->:adj,
   # s->:adj_satellite, r->:adv). Nouns are excluded deliberately; see
   # `morphological_negator?/1`.
