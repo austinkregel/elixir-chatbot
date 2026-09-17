@@ -178,6 +178,20 @@ defmodule Atlas.LexiconTest do
     end
   end
 
+  describe "list_facts_for_words/1" do
+    test "returns facts for exactly the requested words" do
+      batch = for w <- ~w(unable impossible hopeless), do: fact(%{word: w})
+      {:ok, 3} = Lexicon.upsert_facts(batch)
+
+      words = Lexicon.list_facts_for_words(["unable", "hopeless"]) |> Enum.map(& &1.word)
+      assert words == ["hopeless", "unable"]
+    end
+
+    test "an empty list returns nothing without querying" do
+      assert Lexicon.list_facts_for_words([]) == []
+    end
+  end
+
   describe "list_facts/0" do
     test "includes archived facts, so decay state survives a restart" do
       {:ok, stored} = Lexicon.upsert_fact(fact())
