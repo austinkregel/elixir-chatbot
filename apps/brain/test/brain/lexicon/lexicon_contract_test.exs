@@ -247,9 +247,17 @@ defmodule Brain.Lexicon.ContractTest do
               running zorbl cold hot hopeless light fair spring)
 
     setup do
-      assert Brain.Lexicon.UserDefined.fact_count() == 0,
-             "the global lexicon store holds facts, so the facade is no longer " <>
-               "expected to equal WordNet; this comparison needs an empty store"
+      # The store holds seeded negation *properties*, which no lookup below
+      # consults. Only relations and senses can change these answers, so those
+      # are what must be absent for the equivalence to mean anything.
+      for word <- @words do
+        assert Brain.Lexicon.owned_facts(word, kind: "relation") == [],
+               "#{word} has an owned relation, so the facade is no longer expected " <>
+                 "to equal WordNet for it"
+
+        assert Brain.Lexicon.owned_facts(word, kind: "sense") == [],
+               "#{word} has an owned sense, so pos/1 is no longer expected to equal WordNet"
+      end
 
       :ok
     end
