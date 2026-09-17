@@ -208,17 +208,13 @@ defmodule Brain.Graph.Reader do
   end
 
   defp lexicon_query_synonyms(query_text) do
-    if Process.whereis(Brain.ML.Lexicon) do
-      query_text
-      |> Brain.ML.Tokenizer.tokenize_normalized(min_length: 3)
-      |> Enum.flat_map(fn token ->
-        Brain.ML.Lexicon.synonyms(token)
-        |> Enum.take(2)
-      end)
-      |> Enum.uniq()
-    else
-      []
-    end
+    query_text
+    |> Brain.ML.Tokenizer.tokenize_normalized(min_length: 3)
+    |> Enum.flat_map(fn token ->
+      Brain.Lexicon.synonyms(token)
+      |> Enum.take(2)
+    end)
+    |> Enum.uniq()
   end
 
   # ============================================================================
