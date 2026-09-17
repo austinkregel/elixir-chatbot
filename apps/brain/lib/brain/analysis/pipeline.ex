@@ -1481,7 +1481,7 @@ defmodule Brain.Analysis.Pipeline do
           |> Enum.reject(&is_nil/1)
           |> Enum.uniq()
 
-        if parents != [] and Process.whereis(Brain.ML.Lexicon) != nil do
+        if parents != [] do
           max_sim =
             for p <- parents, anchor <- domain_anchors, reduce: 0.0 do
               acc -> max(acc, Brain.Lexicon.word_similarity(p, anchor) || 0.0)
