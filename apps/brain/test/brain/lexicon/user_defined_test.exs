@@ -16,10 +16,13 @@ defmodule Brain.Lexicon.UserDefinedTest do
     name
   end
 
+  # "zorbl" is not a word, so it can never collide with the seeded lexicon that
+  # test_helper writes. Using a real negator like "unable" would share an
+  # identity with a seeded fact and update it instead of inserting.
   defp negation(overrides \\ %{}) do
     Map.merge(
       %{
-        word: "unable",
+        word: "zorbl",
         kind: "property",
         key: "negation",
         value: %{"kind" => "morphological", "strength" => 0.35},
@@ -39,19 +42,18 @@ defmodule Brain.Lexicon.UserDefinedTest do
 
       store = start_store()
 
-      assert [fact] = UserDefined.facts("unable", [], store)
+      assert [fact] = UserDefined.facts("zorbl", [], store)
       assert fact.value["strength"] == 0.35
-      assert UserDefined.fact_count(store) == 1
     end
 
-    test "starts empty when Atlas holds nothing" do
+    test "loads exactly what Atlas holds, no more and no less" do
       store = start_store()
-      assert UserDefined.fact_count(store) == 0
-      assert UserDefined.facts("unable", [], store) == []
+      assert UserDefined.fact_count(store) == Facts.count_facts()
+      assert UserDefined.facts("zorbl", [], store) == []
     end
 
     test "a store that is not running fails loudly instead of reading as empty" do
-      assert catch_exit(UserDefined.facts("unable", [], :no_such_lexicon_store))
+      assert catch_exit(UserDefined.facts("zorbl", [], :no_such_lexicon_store))
     end
   end
 
@@ -60,26 +62,31 @@ defmodule Brain.Lexicon.UserDefinedTest do
       store = start_store()
 
       assert {:ok, 1} = UserDefined.put_fact(negation(), store)
-      assert [_] = Facts.list_facts_for_word("unable")
-      assert [_] = UserDefined.facts("unable", [], store)
+      assert [_] = Facts.list_facts_for_word("zorbl")
+      assert [_] = UserDefined.facts("zorbl", [], store)
     end
 
     test "an invalid fact is rejected and nothing is cached" do
       store = start_store()
+      before_store = UserDefined.fact_count(store)
+      before_atlas = Facts.count_facts()
 
-      assert {:error, changeset} = UserDefined.put_fact(negation(%{word: "Unable"}), store)
+      assert {:error, changeset} = UserDefined.put_fact(negation(%{word: "Zorbl"}), store)
       refute changeset.valid?
-      assert UserDefined.fact_count(store) == 0
-      assert Facts.count_facts() == 0
+      assert UserDefined.fact_count(store) == before_store
+      assert Facts.count_facts() == before_atlas
     end
 
     test "one invalid entry in a batch writes nothing anywhere" do
       store = start_store()
-      batch = [negation(), negation(%{word: "impossible", kind: "bogus"})]
+      before_store = UserDefined.fact_count(store)
+      before_atlas = Facts.count_facts()
+      batch = [negation(), negation(%{word: "blorp", kind: "bogus"})]
 
       assert {:error, {1, _changeset}} = UserDefined.put_facts(batch, store)
-      assert UserDefined.fact_count(store) == 0
-      assert Facts.count_facts() == 0
+      assert UserDefined.fact_count(store) == before_store
+      assert Facts.count_facts() == before_atlas
+      assert UserDefined.facts("zorbl", [], store) == []
     end
 
     test "rewriting a fact updates the cached copy in place" do
@@ -88,7 +95,7 @@ defmodule Brain.Lexicon.UserDefinedTest do
       {:ok, 1} = UserDefined.put_fact(negation(), store)
       {:ok, 1} = UserDefined.put_fact(negation(%{value: %{"strength" => 0.9}}), store)
 
-      assert [fact] = UserDefined.facts("unable", [], store)
+      assert [fact] = UserDefined.facts("zorbl", [], store)
       assert fact.value == %{"strength" => 0.9}
     end
   end
@@ -103,7 +110,7 @@ defmodule Brain.Lexicon.UserDefinedTest do
             negation(),
             negation(%{source: "derived", value: %{"kind" => "none"}}),
             %{
-              word: "unable",
+              word: "zorbl",
               kind: "relation",
               key: "antonym",
               ref: "able",
@@ -113,10 +120,10 @@ defmodule Brain.Lexicon.UserDefinedTest do
           store
         )
 
-      assert length(UserDefined.facts("unable", [], store)) == 3
-      assert length(UserDefined.facts("unable", [kind: "property"], store)) == 2
-      assert [_] = UserDefined.facts("unable", [kind: "relation", key: "antonym"], store)
-      assert [derived] = UserDefined.facts("unable", [source: "derived"], store)
+      assert length(UserDefined.facts("zorbl", [], store)) == 3
+      assert length(UserDefined.facts("zorbl", [kind: "property"], store)) == 2
+      assert [_] = UserDefined.facts("zorbl", [kind: "relation", key: "antonym"], store)
+      assert [derived] = UserDefined.facts("zorbl", [source: "derived"], store)
       assert derived.value == %{"kind" => "none"}
     end
 
@@ -126,7 +133,7 @@ defmodule Brain.Lexicon.UserDefinedTest do
       {:ok, _} =
         UserDefined.put_facts([negation(), negation(%{source: "clarified", value: %{}})], store)
 
-      sources = UserDefined.facts("unable", [key: "negation"], store) |> Enum.map(& &1.source)
+      sources = UserDefined.facts("zorbl", [key: "negation"], store) |> Enum.map(& &1.source)
       assert Enum.sort(sources) == ["clarified", "seed:wordnet"]
     end
 
@@ -135,15 +142,15 @@ defmodule Brain.Lexicon.UserDefinedTest do
       {:ok, _} = Facts.update_fact(stored, %{archived: true})
       store = start_store()
 
-      assert UserDefined.facts("unable", [], store) == []
-      assert [_] = UserDefined.facts("unable", [include_archived: true], store)
+      assert UserDefined.facts("zorbl", [], store) == []
+      assert [_] = UserDefined.facts("zorbl", [include_archived: true], store)
     end
 
     test "looks words up case-insensitively" do
       store = start_store()
       {:ok, _} = UserDefined.put_fact(negation(), store)
 
-      assert [_] = UserDefined.facts("UNABLE", [], store)
+      assert [_] = UserDefined.facts("ZORBL", [], store)
     end
   end
 
@@ -152,8 +159,8 @@ defmodule Brain.Lexicon.UserDefinedTest do
       store = start_store()
       {:ok, _} = UserDefined.put_fact(negation(), store)
 
-      assert UserDefined.get("unable", store) == nil
-      refute UserDefined.has_entry?("unable", store)
+      assert UserDefined.get("zorbl", store) == nil
+      refute UserDefined.has_entry?("zorbl", store)
       assert UserDefined.all(store) == []
       assert UserDefined.count(store) == 0
     end
@@ -282,9 +289,13 @@ defmodule Brain.Lexicon.UserDefinedTest do
       store = start_store()
       {:ok, _} = Facts.upsert_fact(negation())
 
-      assert UserDefined.facts("unable", [], store) == []
-      assert {:ok, 1} = UserDefined.reload(store)
-      assert [_] = UserDefined.facts("unable", [], store)
+      assert UserDefined.facts("zorbl", [], store) == []
+
+      before_reload = UserDefined.fact_count(store)
+      assert {:ok, reloaded} = UserDefined.reload(store)
+      assert reloaded == before_reload + 1
+
+      assert [_] = UserDefined.facts("zorbl", [], store)
     end
   end
 end
