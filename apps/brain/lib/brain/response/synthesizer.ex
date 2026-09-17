@@ -640,25 +640,18 @@ defmodule Brain.Response.Synthesizer do
   end
 
   defp expand_phrases(phrases) when is_list(phrases) do
-    if Process.whereis(Brain.ML.Lexicon) do
-      original_set = MapSet.new(phrases)
+    original_set = MapSet.new(phrases)
 
-      expanded =
-        phrases
-        |> Enum.flat_map(fn phrase ->
-          variant = paraphrase_phrase(phrase)
-          if variant != phrase and not MapSet.member?(original_set, variant) do
-            [phrase, variant]
-          else
-            [phrase]
-          end
-        end)
-        |> Enum.uniq()
-
-      expanded
-    else
-      phrases
-    end
+    phrases
+    |> Enum.flat_map(fn phrase ->
+      variant = paraphrase_phrase(phrase)
+      if variant != phrase and not MapSet.member?(original_set, variant) do
+        [phrase, variant]
+      else
+        [phrase]
+      end
+    end)
+    |> Enum.uniq()
   end
 
   defp paraphrase_phrase(phrase) do
@@ -668,8 +661,8 @@ defmodule Brain.Response.Synthesizer do
       Enum.map(words, fn word ->
         lower = String.downcase(word)
 
-        if String.length(lower) >= 4 and Brain.ML.Lexicon.known_word?(lower) do
-          case Brain.ML.Lexicon.synonyms(lower) do
+        if String.length(lower) >= 4 and Brain.Lexicon.known_word?(lower) do
+          case Brain.Lexicon.synonyms(lower) do
             [] -> word
             [syn | _] ->
               if String.length(syn) >= 3 and not String.contains?(syn, "_") do
