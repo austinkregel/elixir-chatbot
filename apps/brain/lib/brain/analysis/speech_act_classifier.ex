@@ -849,16 +849,12 @@ defmodule Brain.Analysis.SpeechActClassifier do
   )
 
   defp expanded_imperative_verbs do
-    if Process.whereis(Brain.ML.Lexicon) do
-      @seed_imperative_verbs
-      |> Enum.flat_map(fn verb ->
-        syns = Brain.ML.Lexicon.synonyms(verb, :verb)
-        [verb | Enum.take(syns, 3)]
-      end)
-      |> MapSet.new()
-    else
-      MapSet.new(@seed_imperative_verbs)
-    end
+    @seed_imperative_verbs
+    |> Enum.flat_map(fn verb ->
+      syns = Brain.Lexicon.synonyms(verb, :verb)
+      [verb | Enum.take(syns, 3)]
+    end)
+    |> MapSet.new()
   end
 
   defp has_continuation_structure?(text, _normalized) do
