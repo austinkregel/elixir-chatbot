@@ -55,6 +55,27 @@ after
   Ecto.Adapters.SQL.Sandbox.stop_owner(bootstrap_owner)
 end
 
+# Seed the brain's own lexicon. This runs while the Repo is still in :auto mode,
+# after the bootstrap owner has stopped and before per-test sandboxing begins,
+# so the facts persist for the whole run instead of being rolled back with the
+# first test. Seeding is idempotent, so later runs reuse what is already there.
+#
+# Without this, every word reads as non-negating and anything asserting on
+# morphological negation fails for lack of data rather than for a real reason.
+#
+# The pool is left in :manual mode once the bootstrap owner stops, and seeding
+# runs from the store's own process, which owns no connection. :auto lets it
+# write; the block below puts the pool back into :manual for the tests.
+Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :auto)
+
+{:ok, lexicon_counts} = Brain.Lexicon.Seeder.seed_all()
+{:ok, lexicon_facts} = Brain.Lexicon.UserDefined.reload()
+
+IO.puts(
+  "test_helper: lexicon seeded (#{lexicon_counts.negation} negation facts, " <>
+    "#{lexicon_facts} facts loaded)"
+)
+
 # Per-test isolation: each case template checks out or shares its own owner.
 if Process.whereis(Atlas.Repo) do
   Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :manual)
