@@ -51,7 +51,7 @@ defmodule Brain.ML.Tokenizer do
   def tokenize_lemmatized(text, opts \\ []) when is_binary(text) do
     text
     |> tokenize_normalized(opts)
-    |> Enum.map(&Brain.ML.Lexicon.lemma/1)
+    |> Enum.map(&Brain.Lexicon.lemma/1)
   end
 
   @doc "Tokenize text into normalized lowercase words.\nFilters out punctuation and short tokens.\n\nOptions:\n  - :min_length - minimum token length (default: 1)\n  - :include_numbers - include number tokens (default: true)\n  - :expand_contractions - expand contractions before tokenizing (default: false)\n"
