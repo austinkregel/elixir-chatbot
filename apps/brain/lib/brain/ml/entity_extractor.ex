@@ -269,9 +269,7 @@ defmodule Brain.ML.EntityExtractor do
 
     min_confidence = Keyword.get(opts, :min_confidence) || get_min_confidence_threshold()
 
-    disambiguated_entities
-    |> filter_by_confidence(min_confidence)
-    |> normalize_entity_types()
+    filter_by_confidence(disambiguated_entities, min_confidence)
   end
 
   @doc """
@@ -378,13 +376,13 @@ defmodule Brain.ML.EntityExtractor do
 
         case tokens do
           [single] ->
-            [Map.put(entity, :entity_type, "given-name") |> Map.put(:value, single)]
+            [Map.put(entity, :entity_type, "given_name") |> Map.put(:value, single)]
 
           [first | rest] ->
             last = List.last(rest)
-            given = %{entity | entity_type: "given-name", value: first,
+            given = %{entity | entity_type: "given_name", value: first,
                        match: first, confidence: entity[:confidence]}
-            family = %{entity | entity_type: "last-name", value: last,
+            family = %{entity | entity_type: "last_name", value: last,
                         match: last, confidence: entity[:confidence] * 0.95}
             [given, family]
 
@@ -406,7 +404,7 @@ defmodule Brain.ML.EntityExtractor do
         entity_type == "number" and is_year_value?(value) ->
           Map.put(entity, :entity_type, "year")
 
-        entity_type in ["date-time", "date", "sys-date", "relative_date"] and is_year_only?(value) ->
+        entity_type in ["date_time", "date", "sys_date", "relative_date"] and is_year_only?(value) ->
           Map.put(entity, :entity_type, "year")
 
         true ->
@@ -431,10 +429,12 @@ defmodule Brain.ML.EntityExtractor do
   end
 
   @doc """
-  Normalizes entity types using the data-driven type mappings.
+  Maps entity types onto the NER gold standard's labels, for evaluation only.
 
-  Converts system-specific types (e.g., "heating", "music-artist") to
-  canonical gold-standard types (e.g., "device", "artist").
+  Converts system types (e.g., "heating", "music_artist") to the labels the
+  gold standard uses (e.g., "device", "artist"). The runtime keeps system
+  types, which the intent registry and slot mappings are written in; only the
+  NER evaluators call this, when comparing against the gold standard.
   """
   def normalize_entity_types(entities) when is_list(entities) do
     mappings = load_type_mappings()
