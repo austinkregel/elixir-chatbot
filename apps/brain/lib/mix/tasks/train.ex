@@ -4,8 +4,8 @@ defmodule Mix.Tasks.Train do
 
   Primary runtime “understanding” for utterances uses `ChunkProfile` (engineered
   features + micro-classifiers), not the old registry/TF-IDF intent GenServer.
-  This pipeline trains entity model, gazetteer, embedder vocabulary, speech-act
-  TF-IDF, and **all** micro-classifiers including axis models
+  This pipeline trains entity model, embedder vocabulary, speech-act TF-IDF,
+  and **all** micro-classifiers including axis models
   (`intent_domain`, `tense_class`, …).
 
   Use `--list` to print stages. Hyperparameters live in the per-stage trainers below.
@@ -28,7 +28,7 @@ defmodule Mix.Tasks.Train do
   ## Options
 
     --quick            Skip slow/optional models
-    --skip-tfidf       Skip TF-IDF bundle (entity model, gazetteer, embedder, speech-act TF-IDF)
+    --skip-tfidf       Skip TF-IDF bundle (entity model, embedder, speech-act TF-IDF)
     --skip-pos         Skip POS tagger training
     --skip-seq2seq     Skip seq2seq generation model
     --skip-poincare    Skip Poincare embeddings
@@ -43,8 +43,8 @@ defmodule Mix.Tasks.Train do
 
   ## Training order (9 stages)
 
-  1. **TF-IDF bundle** — `Trainer.train_and_save/1`: entity model, gazetteer,
-     embedder vocabulary, plus speech-act TF-IDF (~1 minute).
+  1. **TF-IDF bundle** — `Trainer.train_and_save/1`: entity model, embedder
+     vocabulary, plus speech-act TF-IDF (~1 minute).
   2. **POS tagger** — `pos_model.term` (~1 second).
   3. **Poincare embeddings** — `poincare/embeddings.term` (~1 min).
   4. **KG triple scorer** — `kg_lstm/triple_scorer.term` (~1 min GPU).
@@ -89,12 +89,11 @@ defmodule Mix.Tasks.Train do
     %{
       name: "TF-IDF bundle",
       description:
-        "Entity model, gazetteer, embedder vocabulary, speech-act TF-IDF",
+        "Entity model, embedder vocabulary, speech-act TF-IDF",
       task: :tfidf,
       duration: "~1 minute",
       outputs: [
         "entity_model.term",
-        "gazetteer.term",
         "embedder.term",
         "speech_act_classifier.term"
       ]
