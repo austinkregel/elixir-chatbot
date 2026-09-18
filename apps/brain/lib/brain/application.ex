@@ -8,9 +8,7 @@ defmodule Brain.Application do
   require Logger
 
   alias World.Embedder
-  alias Brain.ML.EntityExtractor
   alias World.ModelRegistry
-  alias Brain.ML.Gazetteer
   alias Brain.Telemetry
   use Application
 
@@ -53,7 +51,6 @@ defmodule Brain.Application do
       Brain.Analysis.FramingDetector,
       Brain.ML.SentimentClassifierSimple,
       Brain.ML.SpeechActClassifierSimple,
-      Brain.ML.EntityExtractor,
       Brain.Code.LanguageGrammar,
       Brain.Code.CodeGazetteer,
       Brain.Response.TemplateStore,
@@ -100,13 +97,8 @@ defmodule Brain.Application do
 
       Logger.info("Initializing NLP pipeline...")
 
-      case Gazetteer.load_all() do
-        {:ok, stats} ->
-          Logger.info("Gazetteer loaded", stats)
-
-        {:error, reason} ->
-          Logger.warning("Gazetteer loading failed: #{inspect(reason)}")
-      end
+      # The gazetteer is not loaded here: Brain.ML.Gazetteer loads its sources
+      # in init/1, before anything that reads it starts.
 
       if Code.ensure_loaded?(World.ModelRegistry) and Process.whereis(World.ModelRegistry) do
         case ModelRegistry.activate_world("default") do
@@ -120,13 +112,6 @@ defmodule Brain.Application do
       else
         Logger.debug("World.ModelRegistry not available, using fallback classifier loading")
         load_classifier_fallback()
-      end
-
-      if EntityExtractor.is_loaded?() do
-        status = EntityExtractor.get_status()
-        Logger.info("Entity extractor ready", %{entities_count: status.entities_count})
-      else
-        Logger.debug("Entity extractor still loading...")
       end
 
       # Ensure the embedder is loaded (may not be loaded by ModelRegistry)
