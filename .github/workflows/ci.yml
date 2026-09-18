@@ -252,9 +252,6 @@ jobs:
       - name: Download WordNet data
         run: mix download_wordnet
 
-      - name: Build test gazetteer
-        run: mix ensure_gazetteer
-
       # Feature-vector micro-classifiers train from data/classifiers/*.json
       # (115MB, gitignored). Generating them runs the full analysis pipeline
       # over the gold standard, so cache the result keyed on its content.
