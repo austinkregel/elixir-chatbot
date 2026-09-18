@@ -80,8 +80,7 @@ defmodule Mix.Tasks.GenerateFortune500 do
 
     Mix.shell().info("Successfully generated #{length(entries)} company entries")
     Mix.shell().info("Next steps:")
-    Mix.shell().info("  1. Run `mix train_models --gazetteer-only`")
-    Mix.shell().info("  2. Restart the app")
+    Mix.shell().info("  1. Restart the app; the gazetteer is rebuilt from data/entities at startup")
   end
 
   defp load_wikitext(cache_path, force_download) do
