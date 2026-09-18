@@ -138,6 +138,29 @@ defmodule Brain.Analysis.SlotDetectorTest do
 
       assert schema == nil
     end
+
+    test "reads the intent registry regardless of the working directory" do
+      # mix test runs from apps/brain, where a path relative to the working
+      # directory happens to resolve. The app and the axis probe run from the
+      # umbrella root, where it does not.
+      original = File.cwd!()
+      on_exit(fn -> File.cd!(original) end)
+      File.cd!(Path.expand("../..", original))
+
+      schema = SlotDetector.get_schema("music.play")
+
+      assert "music_artist" in schema["optional"]
+    end
+  end
+
+  describe "detect/2 for music.play" do
+    test "fills the artist slot from a music_artist entity" do
+      entities = [%{entity_type: "music_artist", value: "The Beatles", confidence: 0.9}]
+
+      result = SlotDetector.detect("music.play", entities)
+
+      assert SlotResult.get_slot_value(result, "music_artist") == "The Beatles"
+    end
   end
 
   describe "suggest_intent_from_entities/1" do
