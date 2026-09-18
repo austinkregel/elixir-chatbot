@@ -141,9 +141,16 @@ apps/brain/priv/evaluation/sentiment/
 apps/brain/priv/evaluation/**/*.bak
 
 # Umbrella-root training data stays local, except the small hand-curated
-# informal-expansions map that InformalExpansions loads at runtime.
+# informal-expansions map that InformalExpansions loads at runtime, and the
+# gazetteer's sources: Brain.ML.Gazetteer refuses to start without every one of
+# them, so a clone (and CI) must carry them.
 /data/*
 !/data/informal_expansions.json
+!/data/entities/
+!/data/world-cities.csv
+!/data/us_cities.csv
+!/data/Global Music Artists.csv
+!/data/emojis.csv
 # app-local and test-local data dirs (previously covered by unanchored data/)
 apps/*/data/
 test/data/
