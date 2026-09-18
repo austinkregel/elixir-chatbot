@@ -82,8 +82,7 @@ defmodule Mix.Tasks.TrainMicro do
           list: :boolean,
           verbose: :boolean,
           publish: :boolean,
-          skip_weight_optimization: :boolean,
-          no_balance: :boolean
+          skip_weight_optimization: :boolean
         ],
         aliases: [o: :only, l: :list, v: :verbose]
       )
@@ -103,11 +102,10 @@ defmodule Mix.Tasks.TrainMicro do
       publish? = opts[:publish] || false
 
       skip_optimization? = opts[:skip_weight_optimization] || false
-      balance? = !(opts[:no_balance] || false)
 
       results =
         Enum.map(names, fn name ->
-          train_classifier(name, output_dir, opts[:verbose] || false, publish?, skip_optimization?, balance?)
+          train_classifier(name, output_dir, opts[:verbose] || false, publish?, skip_optimization?)
         end)
 
       successes = Enum.count(results, fn {status, _, _} -> status == :ok end)
@@ -168,7 +166,7 @@ defmodule Mix.Tasks.TrainMicro do
     end
   end
 
-  defp train_classifier(name, output_dir, verbose, publish?, skip_optimization?, balance?) do
+  defp train_classifier(name, output_dir, verbose, publish?, skip_optimization?) do
     data_path = data_file_path(name)
 
     with {:ok, json} <- read_file(data_path),
@@ -183,9 +181,9 @@ defmodule Mix.Tasks.TrainMicro do
         )
       end
 
-      model = train_model(kind, training_data, skip_optimization?, name, balance?)
+      model = train_model(kind, training_data, skip_optimization?, name)
       model_path = Path.join(output_dir, "#{name}.term")
-      File.write!(model_path, :erlang.term_to_binary(model))
+      File.write!(model_path, Brain.ML.ModelStore.serialize(model))
 
       if publish? do
         remote_key = ModelStore.version_prefix() <> "micro/#{name}.term"
@@ -265,19 +263,17 @@ defmodule Mix.Tasks.TrainMicro do
     {:ok, pairs, :text}
   end
 
-  defp train_model(:feature_vector, training_data, skip_optimization?, name, balance?) do
+  defp train_model(:feature_vector, training_data, skip_optimization?, name) do
     n_classes = training_data |> Enum.map(&elem(&1, 1)) |> Enum.uniq() |> length()
-
-    balance_label = if balance?, do: " (balanced centroids)", else: ""
 
     cond do
       n_classes < 2 ->
         Mix.shell().info("  [#{name}] Only #{n_classes} class — skipping GA (nothing to optimize)")
-        FeatureVectorClassifier.train(training_data, balance: balance?)
+        FeatureVectorClassifier.train(training_data)
 
       skip_optimization? ->
-        Mix.shell().info("  [#{name}] Skipping weight optimization (--skip-weight-optimization)#{balance_label}")
-        FeatureVectorClassifier.train(training_data, balance: balance?)
+        Mix.shell().info("  [#{name}] Skipping weight optimization (--skip-weight-optimization)")
+        FeatureVectorClassifier.train(training_data)
 
       true ->
         Mix.shell().info("  [#{name}] Running GA weight optimization (#{n_classes} classes, balanced fitness)...")
@@ -292,11 +288,11 @@ defmodule Mix.Tasks.TrainMicro do
         alive = Enum.count(result.weights, &(&1 > 0.01))
         Mix.shell().info("  [#{name}] #{alive}/#{length(result.weights)} dimensions active (weight > 0.01)")
 
-        FeatureVectorClassifier.train(training_data, weights: result.weights, balance: balance?)
+        FeatureVectorClassifier.train(training_data, weights: result.weights)
     end
   end
 
-  defp train_model(:text, training_data, _skip_optimization?, _name, _balance?) do
+  defp train_model(:text, training_data, _skip_optimization?, _name) do
     SimpleClassifier.train(training_data)
   end
 
