@@ -15,7 +15,7 @@
   },
   "entity_verbalizations": {
     "topic": ["about $value", "on $value", "regarding $value"],
-    "news-source": ["from $value", "via $value"]
+    "news_source": ["from $value", "via $value"]
   },
   "acknowledgment_prefixes": [
     "Sure,",
@@ -23,6 +23,6 @@
   ],
   "slot_requirements": {
     "required": [],
-    "optional": ["topic", "news-source", "date"]
+    "optional": ["topic", "news_source", "date"]
   }
 }
