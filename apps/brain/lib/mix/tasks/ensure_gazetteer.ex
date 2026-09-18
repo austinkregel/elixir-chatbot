@@ -35,8 +35,8 @@ defmodule Mix.Tasks.EnsureGazetteer do
     ensure_non_empty!(path)
   end
 
-  # An empty gazetteer map deserializes fine but breaks extraction tests;
-  # mirror ModelFactory.ensure_gazetteer_non_empty!/1 with a minimal seed.
+  # An empty gazetteer deserializes fine but means extraction knows no words,
+  # so it is an error rather than something to paper over.
   defp ensure_non_empty!(path) do
     term =
       case File.read(path) do
@@ -45,9 +45,10 @@ defmodule Mix.Tasks.EnsureGazetteer do
       end
 
     if is_map(term) and map_size(term) == 0 do
-      seed = %{"model_factory_seed" => %{entity_type: "thing", value: "seed"}}
-      File.write!(path, :erlang.term_to_binary(seed))
-      Mix.shell().info("Gazetteer was empty; wrote minimal seed map")
+      Mix.raise(
+        "ensure_gazetteer: #{path} is empty. It is built from the entity and CSV sources " <>
+          "under the configured :training_data_path; check that they are present."
+      )
     end
   end
 end
