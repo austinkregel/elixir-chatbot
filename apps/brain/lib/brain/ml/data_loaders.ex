@@ -119,8 +119,8 @@ defmodule Brain.ML.DataLoaders do
                 existing = Map.get(acc, entity_type, [])
                 Map.put(acc, entity_type, existing ++ entries)
 
-              {:error, _} ->
-                acc
+              {:error, reason} ->
+                raise "DataLoaders: entity file #{file_path} could not be loaded: #{inspect(reason)}"
             end
           end)
 
@@ -137,6 +137,19 @@ defmodule Brain.ML.DataLoaders do
         Logger.warning("Failed to list entities directory", %{path: entities_dir, reason: reason})
         {:error, reason}
     end
+  end
+
+  @doc """
+  Unwraps a loader result for a source the caller cannot work without.
+
+  Raises when the source failed to load, naming the source and the data
+  directory, so a gazetteer is never built from fewer sources than it expects.
+  """
+  def require_source!({:ok, records}, _source), do: records
+
+  def require_source!({:error, reason}, source) do
+    raise "DataLoaders: required source #{inspect(source)} could not be loaded from " <>
+            "#{get_data_path("")}: #{inspect(reason)}"
   end
 
   @doc "Load a single entity definition file.\nSupports both _entries_en.json format and regular .json format.\n"
@@ -293,7 +306,11 @@ defmodule Brain.ML.DataLoaders do
         value = entry.value
         synonyms = Map.get(entry, :synonyms, [])
 
-        Enum.reduce([value | synonyms], inner_acc, fn synonym, lookup ->
+        # A record often lists its value among its own synonyms; each surface
+        # form is indexed once per record, or the record would appear twice.
+        [value | synonyms]
+        |> Enum.uniq_by(&normalize_text/1)
+        |> Enum.reduce(inner_acc, fn synonym, lookup ->
           normalized = normalize_text(synonym)
 
           if String.length(normalized) >= 2 do
@@ -440,7 +457,7 @@ defmodule Brain.ML.DataLoaders do
 
       if String.length(normalized) >= 2 do
         Map.put(acc, normalized, %{
-          entity_type: "music-artist",
+          entity_type: "music_artist",
           value: name,
           genre: Map.get(artist, :artist_genre),
           country: Map.get(artist, :country)
