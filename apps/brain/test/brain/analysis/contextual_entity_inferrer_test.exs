@@ -11,7 +11,6 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
     ensure_started(Brain.ML.SpeechActClassifierSimple)
     ensure_started(Brain.ML.SentimentClassifierSimple)
     ensure_started(Brain.ML.MicroClassifiers)
-    ensure_started(Brain.ML.EntityExtractor)
     ensure_started(Brain.Memory.Embedder)
     :ok
   end
