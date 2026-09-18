@@ -100,12 +100,8 @@ defmodule Brain.Test.ModelFactory do
       end
 
     if is_map(term) and map_size(term) == 0 do
-      seed = %{"model_factory_seed" => %{entity_type: "thing", value: "seed"}}
-      File.write!(path, :erlang.term_to_binary(seed))
-
-      Logger.warning(
-        "[ModelFactory] Gazetteer was empty after Trainer.build_gazetteer_data/2; wrote minimal seed map"
-      )
+      raise "ModelFactory: gazetteer at #{path} is empty. It is built from the entity and " <>
+              "CSV sources under the configured :training_data_path; check that they are present."
     end
   end
 
