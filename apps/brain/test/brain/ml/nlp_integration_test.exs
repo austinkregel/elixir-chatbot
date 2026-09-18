@@ -16,8 +16,6 @@ defmodule Brain.ML.NLPIntegrationTest do
       training_data_path: "data"
     )
 
-    EntityExtractor.load_entity_maps()
-
     :ok
   end
 
