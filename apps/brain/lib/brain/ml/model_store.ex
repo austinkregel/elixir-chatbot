@@ -33,6 +33,18 @@ defmodule Brain.ML.ModelStore do
   # ---------------------------------------------------------------------------
 
   @doc """
+  Encodes a model for writing to a `.term` file.
+
+  Every model file is written through this. The encoding is deterministic, so
+  the same model always produces the same bytes and comparing file hashes
+  compares models. Plain `:erlang.term_to_binary/1` makes no such promise:
+  equal terms can encode differently. Extra options such as `:compressed`
+  pass through.
+  """
+  @spec serialize(term(), list()) :: binary()
+  def serialize(model, opts \\ []), do: :erlang.term_to_binary(model, [:deterministic | opts])
+
+  @doc """
   Uploads a local `.term` file to the model store under a versioned key.
 
   Returns `{:ok, remote_key}` on success, `{:error, reason}` on failure,
