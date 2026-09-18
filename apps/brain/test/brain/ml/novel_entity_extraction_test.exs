@@ -82,11 +82,6 @@ defmodule Brain.ML.NovelEntityExtractionTest do
   # ============================================================================
 
   describe "EntityExtractor multi-word proper noun merging" do
-    setup do
-      ensure_started(EntityExtractor)
-      :ok
-    end
-
     test "consecutive novel PROPN tokens merge into a single entity" do
       # "Korvo Mitski" — neither word is in the training data or Gazetteer
       entities = EntityExtractor.extract_entities("Play some Korvo Mitski")
@@ -194,18 +189,6 @@ defmodule Brain.ML.NovelEntityExtractionTest do
 
       assert entity[:entity_type] in ["person", "name"],
         "Expected person/name type, got: #{entity[:entity_type]}"
-    end
-  end
-
-  # ============================================================================
-  # Helpers
-  # ============================================================================
-
-  defp ensure_started(child_spec) do
-    case start_supervised(child_spec) do
-      {:ok, _pid} -> :ok
-      {:error, {:already_started, _pid}} -> :ok
-      {:error, _reason} -> :ok
     end
   end
 end
