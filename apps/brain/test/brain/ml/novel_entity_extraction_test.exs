@@ -170,7 +170,7 @@ defmodule Brain.ML.NovelEntityExtractionTest do
         "Expected 'Korvo Mitski' entity to be extracted from analysis. " <>
         "Entities: #{inspect(Enum.map(analysis.entities, &{&1[:value], &1[:entity_type]}))}"
 
-      assert entity[:entity_type] in ["artist", "music-artist", "person"],
+      assert entity[:entity_type] in ["artist", "music_artist", "person"],
         "Expected entity type artist/music-artist/person, got: #{entity[:entity_type]}"
 
       assert analysis.intent =~ "music",
