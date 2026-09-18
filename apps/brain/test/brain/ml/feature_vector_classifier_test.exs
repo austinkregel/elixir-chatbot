@@ -125,4 +125,52 @@ defmodule Brain.ML.FeatureVectorClassifierTest do
                "so MicroClassifiers can route classify/classify_vector correctly."
     end
   end
+
+  describe "determinism and completeness" do
+    # Built from a formula, not random draws, and imbalanced (60 vs 25) with
+    # enough examples per class that K-means++ runs (k > 1).
+    defp imbalanced_training do
+      big = for i <- 1..60, do: {[:math.sin(i), :math.cos(i), i / 60], "big"}
+      small = for i <- 1..25, do: {[:math.cos(i) + 2.0, :math.sin(i), i / 25], "small"}
+      big ++ small
+    end
+
+    test "the same data and seed always produce the same model" do
+      first = FeatureVectorClassifier.train(imbalanced_training(), seed: 7)
+      second = FeatureVectorClassifier.train(imbalanced_training(), seed: 7)
+
+      assert first == second
+    end
+
+    test "records the seed it trained with, defaulting to the configured one" do
+      assert FeatureVectorClassifier.train(imbalanced_training(), seed: 7).training_seed == 7
+
+      assert FeatureVectorClassifier.train(imbalanced_training()).training_seed ==
+               Brain.ML.TrainingSeed.get!()
+    end
+
+    test "leaves the calling process's random state untouched" do
+      :rand.seed(:exsss, {1, 2, 3})
+      expected = :rand.uniform()
+
+      :rand.seed(:exsss, {1, 2, 3})
+      FeatureVectorClassifier.train(imbalanced_training(), seed: 7)
+
+      assert :rand.uniform() == expected
+    end
+
+    test "uses every example of a large class rather than dropping some to match smaller ones" do
+      model = FeatureVectorClassifier.train(imbalanced_training(), seed: 7)
+
+      # 60 examples give min(4, 60 div 10) = 4 prototypes. Undersampling the
+      # class to the size of the smaller one (25) would give only 2.
+      assert length(model.label_centroids["big"]) == 4
+    end
+
+    test "rejects an unknown option instead of ignoring it" do
+      assert_raise ArgumentError, fn ->
+        FeatureVectorClassifier.train(imbalanced_training(), balance: true)
+      end
+    end
+  end
 end
