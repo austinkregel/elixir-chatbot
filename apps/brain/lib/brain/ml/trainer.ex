@@ -195,76 +195,48 @@ defmodule Brain.ML.Trainer do
 
     File.mkdir_p!(models_path)
 
+    # Every source is required. A source that cannot be loaded raises rather
+    # than leaving a gazetteer that silently knows fewer words.
+    entity_lookup =
+      DataLoaders.load_all_entities()
+      |> DataLoaders.require_source!(:entities)
+      |> DataLoaders.build_entity_lookup()
+
+    Logger.info("Built entity lookup", %{entries: map_size(entity_lookup)})
+
+    city_lookup =
+      DataLoaders.load_cities()
+      |> DataLoaders.require_source!(:cities)
+      |> DataLoaders.build_city_lookup()
+
+    Logger.info("Built city lookup", %{entries: map_size(city_lookup)})
+
+    artist_lookup =
+      DataLoaders.load_artists()
+      |> DataLoaders.require_source!(:artists)
+      |> DataLoaders.build_artist_lookup()
+
+    Logger.info("Built artist lookup", %{entries: map_size(artist_lookup)})
+
+    emoji_lookup =
+      DataLoaders.load_emojis()
+      |> DataLoaders.require_source!(:emojis)
+      |> DataLoaders.build_emoji_lookup()
+
+    Logger.info("Built emoji lookup", %{entries: map_size(emoji_lookup)})
+
     gazetteer_data = %{
-      entities: %{},
-      cities: %{},
-      artists: %{},
-      emojis: %{}
+      entities: entity_lookup,
+      cities: city_lookup,
+      artists: artist_lookup,
+      emojis: emoji_lookup
     }
 
-    gazetteer_data =
-      case DataLoaders.load_all_entities() do
-        {:ok, entities} ->
-          entity_lookup = DataLoaders.build_entity_lookup(entities)
-          Logger.info("Built entity lookup", %{entries: map_size(entity_lookup)})
-          %{gazetteer_data | entities: entity_lookup}
-
-        {:error, _} ->
-          gazetteer_data
-      end
-
-    gazetteer_data =
-      case DataLoaders.load_cities() do
-        {:ok, cities} ->
-          sampled_cities =
-            if length(cities) > 10_000 do
-              Enum.take(cities, 10_000)
-            else
-              cities
-            end
-
-          city_lookup = DataLoaders.build_city_lookup(sampled_cities)
-          Logger.info("Built city lookup", %{entries: map_size(city_lookup)})
-          %{gazetteer_data | cities: city_lookup}
-
-        {:error, _} ->
-          gazetteer_data
-      end
-
-    gazetteer_data =
-      case DataLoaders.load_artists() do
-        {:ok, artists} ->
-          sampled_artists =
-            if length(artists) > 10_000 do
-              Enum.take(artists, 10_000)
-            else
-              artists
-            end
-
-          artist_lookup = DataLoaders.build_artist_lookup(sampled_artists)
-          Logger.info("Built artist lookup", %{entries: map_size(artist_lookup)})
-          %{gazetteer_data | artists: artist_lookup}
-
-        {:error, _} ->
-          gazetteer_data
-      end
-
-    gazetteer_data =
-      case DataLoaders.load_emojis() do
-        {:ok, emojis} ->
-          emoji_lookup = DataLoaders.build_emoji_lookup(emojis)
-          Logger.info("Built emoji lookup", %{entries: map_size(emoji_lookup)})
-          %{gazetteer_data | emojis: emoji_lookup}
-
-        {:error, _} ->
-          gazetteer_data
-      end
-
     combined_lookup =
-      gazetteer_data.entities
-      |> Map.merge(gazetteer_data.cities)
-      |> Map.merge(gazetteer_data.artists)
-      |> Map.merge(gazetteer_data.emojis)
+      entity_lookup
+      |> merge_candidates(city_lookup)
+      |> merge_candidates(artist_lookup)
+      |> merge_candidates(emoji_lookup)
 
     gazetteer_path = Path.join(models_path, "gazetteer.term")
     File.write!(gazetteer_path, :erlang.term_to_binary(combined_lookup))
@@ -283,6 +255,23 @@ defmodule Brain.ML.Trainer do
     stats
     |> Map.put(:gazetteer_entries, total_entries)
     |> Map.put(:entity_types, count_entity_types(gazetteer_data))
+  end
+
+  # One surface form can belong to several sources: "lights" is a device and a
+  # band. Every candidate is kept, one per entity type, and the extractor lets
+  # context choose between them. Brain.ML.Gazetteer indexes its sources the
+  # same way.
+  defp merge_candidates(lookup, source_lookup) do
+    Enum.reduce(source_lookup, lookup, fn {key, info}, acc ->
+      existing = acc |> Map.get(key, []) |> List.wrap()
+      known_types = MapSet.new(existing, & &1.entity_type)
+      added = info |> List.wrap() |> Enum.reject(&MapSet.member?(known_types, &1.entity_type))
+
+      case existing ++ added do
+        [single] -> Map.put(acc, key, single)
+        candidates -> Map.put(acc, key, candidates)
+      end
+    end)
   end
 
   defp count_entity_types(gazetteer_data) do
