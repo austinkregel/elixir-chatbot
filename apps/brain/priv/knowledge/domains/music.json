@@ -65,7 +65,7 @@
     }
   },
   "entity_verbalizations": {
-    "music-artist": ["by $value", "from $value", "$value's"],
+    "music_artist": ["by $value", "from $value", "$value's"],
     "song": ["$value", "the song $value"],
     "genre": ["some $value", "$value music"]
   },
@@ -76,7 +76,7 @@
   ],
   "slot_requirements": {
     "required": [],
-    "optional": ["music-artist", "song", "genre"]
+    "optional": ["music_artist", "song", "genre"]
   },
   "enrichment_service": "home_assistant",
   "enrichment_fields": {
