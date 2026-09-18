@@ -96,7 +96,9 @@ defmodule Mix.Tasks.Evaluate.Ner do
       {extracted, counts} =
         try do
           analysis = Pipeline.analyze_chunk(text, side_effects: false)
-          {analysis.entities || [], %{counts | ok: counts.ok + 1}}
+          # The pipeline emits system types; map them onto the gold standard's labels.
+          extracted = ML.EntityExtractor.normalize_entity_types(analysis.entities || [])
+          {extracted, %{counts | ok: counts.ok + 1}}
         rescue
           e ->
             Logger.warning("NER pipeline crashed on #{inspect(text)}: #{Exception.message(e)}")
