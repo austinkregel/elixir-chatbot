@@ -264,7 +264,7 @@ defmodule Brain.Test.ModelFactory do
             {acc, [name | miss]}
 
           pairs ->
-            model = FeatureVectorClassifier.train(pairs, balance: true)
+            model = FeatureVectorClassifier.train(pairs)
             {Map.put(acc, name, model), miss}
         end
       end)
@@ -310,7 +310,7 @@ defmodule Brain.Test.ModelFactory do
           p
       end
 
-    model = FeatureVectorClassifier.train(pairs, balance: true)
+    model = FeatureVectorClassifier.train(pairs)
     persist_micro_models!(%{framing_class: model})
 
     neutral = compute_neutral_centroid(model, pairs)
@@ -414,14 +414,16 @@ defmodule Brain.Test.ModelFactory do
       raise "ModelFactory: no Poincare hierarchy data found at #{entity_types_path()}"
     end
 
+    seed = Brain.ML.TrainingSeed.get!()
+
     {:ok, embeddings, entity_to_idx, idx_to_entity} =
-      Embeddings.train(pairs, dim: 5, epochs: 20, learning_rate: 0.01)
+      Embeddings.train(pairs, dim: 5, epochs: 20, learning_rate: 0.01, seed: seed)
 
     models_path = Application.get_env(:brain, :ml)[:models_path]
 
     if models_path do
       path = Path.join([models_path, "default", "poincare", "embeddings.term"])
-      Embeddings.save(embeddings, entity_to_idx, idx_to_entity, 5, path)
+      Embeddings.save(embeddings, entity_to_idx, idx_to_entity, 5, path, training_seed: seed)
     end
 
     {:ok, length(pairs)}
@@ -477,7 +479,7 @@ defmodule Brain.Test.ModelFactory do
       {:ok, model} = Brain.Memory.Embedder.export_model()
       save_path = Path.join(models_path, "embedder.term")
       File.mkdir_p!(Path.dirname(save_path))
-      File.write!(save_path, :erlang.term_to_binary(model))
+      File.write!(save_path, Brain.ML.ModelStore.serialize(model))
     end
 
     {:ok, vocab_size}
@@ -733,7 +735,7 @@ defmodule Brain.Test.ModelFactory do
 
         Enum.each(models, fn {name, model} ->
           path = Path.join(dir, "#{name}.term")
-          File.write!(path, :erlang.term_to_binary(model))
+          File.write!(path, Brain.ML.ModelStore.serialize(model))
         end)
     end
   end
@@ -747,7 +749,7 @@ defmodule Brain.Test.ModelFactory do
         dir = Path.join(base, "micro")
         File.mkdir_p!(dir)
         path = Path.join(dir, "framing_neutral_centroid.term")
-        File.write!(path, :erlang.term_to_binary(centroid))
+        File.write!(path, Brain.ML.ModelStore.serialize(centroid))
     end
   end
 
@@ -759,7 +761,7 @@ defmodule Brain.Test.ModelFactory do
       base ->
         File.mkdir_p!(base)
         path = Path.join(base, filename)
-        File.write!(path, :erlang.term_to_binary(model))
+        File.write!(path, Brain.ML.ModelStore.serialize(model))
     end
   end
 
