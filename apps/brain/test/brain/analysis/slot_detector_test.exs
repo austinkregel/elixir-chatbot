@@ -226,10 +226,10 @@ defmodule Brain.Analysis.SlotDetectorTest do
       assert prompt == "Could you please specify the unknown slot?"
     end
 
-    test "handles slot names with hyphens" do
-      prompt = SlotDetector.get_clarification_prompt("music-artist", "music.play")
+    test "handles compound slot names" do
+      prompt = SlotDetector.get_clarification_prompt("music_artist", "music.play")
 
-      # Should use generic prompt since music.play doesn't have clarification for music-artist
+      # Should use generic prompt since music.play doesn't have clarification for music_artist
       assert prompt == "Could you please specify the music artist?"
     end
 
@@ -324,9 +324,9 @@ defmodule Brain.Analysis.SlotDetectorTest do
       assert SlotResult.get_slot_value(result, "location") == "Owosso"
     end
 
-    test "place-name entity fills location slot via TypeHierarchy compatibility" do
+    test "place_name entity fills location slot via TypeHierarchy compatibility" do
       entities = [
-        %{entity_type: "place-name", value: "Grand Rapids", confidence: 0.9}
+        %{entity_type: "place_name", value: "Grand Rapids", confidence: 0.9}
       ]
 
       result = SlotDetector.detect("weather.query", entities)
