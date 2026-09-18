@@ -512,7 +512,7 @@ defmodule Mix.Tasks.Train do
       model = Brain.ML.SimpleClassifier.train(training_data)
       save_path = Path.join(models_path, "speech_act_classifier.term")
       File.mkdir_p!(Path.dirname(save_path))
-      binary = :erlang.term_to_binary(model, [:compressed])
+      binary = Brain.ML.ModelStore.serialize(model, [:compressed])
       File.write!(save_path, binary)
       Mix.shell().info("  Speech act TF-IDF classifier saved to #{save_path}")
     else
