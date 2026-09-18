@@ -529,7 +529,7 @@ defmodule Brain.ML.MicroClassifiers do
   defp persist_model(name, model) do
     path = model_file_path(name)
     File.mkdir_p!(Path.dirname(path))
-    File.write!(path, :erlang.term_to_binary(model))
+    File.write!(path, Brain.ML.ModelStore.serialize(model))
     Logger.info("MicroClassifiers: persisted #{name} to #{path}")
   rescue
     e -> Logger.warning("MicroClassifiers: failed to persist #{name}: #{inspect(e)}")
