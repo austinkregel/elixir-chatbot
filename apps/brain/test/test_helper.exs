@@ -1,7 +1,3 @@
-# Gazetteer must exist on disk before Brain starts — EntityExtractor loads it
-# at boot and no longer falls back to raw JSON.
-Brain.Test.ModelFactory.ensure_gazetteer_on_disk!()
-
 # Start Atlas only first so we can migrate before Brain GenServers (e.g.
 # CredentialVault) query `atlas_test.*` tables.
 {:ok, _} = Application.ensure_all_started(:atlas)
@@ -30,19 +26,15 @@ try do
 
   Brain.Test.AtlasSandbox.allow_for_test_owner!(bootstrap_owner)
 
+  # The gazetteer loads its sources in init/1, so it must already be loaded
+  # the moment the application has started. Checked here, before any test can
+  # reload or modify the shared table and mask a regression.
+  unless Brain.ML.Gazetteer.loaded?() do
+    raise "test_helper: the gazetteer did not load during application startup"
+  end
+
   # Train and persist all test models, then reload MicroClassifiers from disk.
   Brain.Test.ModelFactory.train_and_load_test_models()
-
-  # Eager gazetteer load (not only the async Application init task) so
-  # `Gazetteer.loaded?/0` and feature tests see a ready gazetteer.
-  case Brain.ML.Gazetteer.load_all() do
-    {:ok, _} ->
-      :ok
-
-    other ->
-      IO.puts(:stderr, "test_helper: Gazetteer.load_all/0 returned #{inspect(other)}")
-      raise "test_helper: Gazetteer failed to load"
-  end
 
   # Validate stored models: every required file must exist and deserialize.
   Brain.ML.ModelPreflight.validate_all!()
