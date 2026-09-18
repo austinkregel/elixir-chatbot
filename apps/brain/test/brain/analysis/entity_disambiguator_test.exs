@@ -114,7 +114,7 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
 
     test "prefers music-artist for music intents", %{world_id: world_id} do
       person_info = %{entity_type: "person", value: "Prince"}
-      artist_info = %{entity_type: "music-artist", value: "Prince"}
+      artist_info = %{entity_type: "music_artist", value: "Prince"}
 
       entities = [
         %{
@@ -139,7 +139,7 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
 
       assert length(result) == 1
       # For music intent, should prefer music-artist
-      assert hd(result).entity_type == "music-artist"
+      assert hd(result).entity_type == "music_artist"
     end
 
     test "handles empty entities list", %{world_id: world_id} do
