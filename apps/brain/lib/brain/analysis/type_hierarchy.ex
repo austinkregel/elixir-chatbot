@@ -13,7 +13,7 @@ defmodule Brain.Analysis.TypeHierarchy do
   ## API
 
       TypeHierarchy.is_a?("artist", "person")  # => true
-      TypeHierarchy.specializations("person")   # => ["artist", "music-artist", "name"]
+      TypeHierarchy.specializations("person")   # => ["artist", "name", "given_name", "last_name"]
       TypeHierarchy.compatible?("person", "artist")  # => true
       TypeHierarchy.narrowing_candidates("person", ["artist", "song"]) # => ["artist"]
   """
@@ -63,7 +63,7 @@ defmodule Brain.Analysis.TypeHierarchy do
   ## Examples
 
       iex> TypeHierarchy.specializations("person")
-      ["artist", "music-artist", "name"]
+      ["artist", "name", "given_name", "last_name"]
   """
   def specializations(parent_type) when is_binary(parent_type) do
     case safe_ets_lookup(parent_type) do
