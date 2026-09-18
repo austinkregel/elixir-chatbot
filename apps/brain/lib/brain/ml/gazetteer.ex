@@ -602,66 +602,34 @@ defmodule Brain.ML.Gazetteer do
 
     start_time = System.monotonic_time(:millisecond)
 
-    # Load and index entities from JSON files
-    stats =
-      case DataLoaders.load_all_entities() do
-        {:ok, entities} ->
-          entity_lookup = DataLoaders.build_entity_lookup(entities)
-          indexed = index_entities(entity_lookup, "json_entity")
-          %{stats | entities: stats.entities + indexed, entity_types: map_size(entities)}
+    # Every source is required: one that cannot be loaded raises instead of
+    # leaving the gazetteer silently short of entries.
 
-        {:error, _} ->
-          stats
-      end
+    # Load and index entities from JSON files
+    entities = DataLoaders.load_all_entities() |> DataLoaders.require_source!(:entities)
+    indexed = entities |> DataLoaders.build_entity_lookup() |> index_entities("json_entity")
+    stats = %{stats | entities: stats.entities + indexed, entity_types: map_size(entities)}
 
     # Load and index world cities
-    stats =
-      case DataLoaders.load_cities() do
-        {:ok, cities} ->
-          city_lookup = DataLoaders.build_city_lookup(cities)
-          indexed = index_entities(city_lookup, :cities)
-          %{stats | entities: stats.entities + indexed, cities: length(cities)}
-
-        {:error, _} ->
-          stats
-      end
+    cities = DataLoaders.load_cities() |> DataLoaders.require_source!(:cities)
+    indexed = cities |> DataLoaders.build_city_lookup() |> index_entities(:cities)
+    stats = %{stats | entities: stats.entities + indexed, cities: length(cities)}
 
     # Load and index US cities (comprehensive dataset)
-    stats =
-      case DataLoaders.load_us_cities() do
-        {:ok, us_cities} ->
-          us_city_lookup = DataLoaders.build_us_city_lookup(us_cities)
-          indexed = index_entities(us_city_lookup, :us_cities)
-          Logger.info("Loaded US cities", %{count: length(us_cities), indexed: indexed})
-          %{stats | entities: stats.entities + indexed, us_cities: length(us_cities)}
-
-        {:error, _} ->
-          stats
-      end
+    us_cities = DataLoaders.load_us_cities() |> DataLoaders.require_source!(:us_cities)
+    indexed = us_cities |> DataLoaders.build_us_city_lookup() |> index_entities(:us_cities)
+    Logger.info("Loaded US cities", %{count: length(us_cities), indexed: indexed})
+    stats = %{stats | entities: stats.entities + indexed, us_cities: length(us_cities)}
 
     # Load and index artists
-    stats =
-      case DataLoaders.load_artists() do
-        {:ok, artists} ->
-          artist_lookup = DataLoaders.build_artist_lookup(artists)
-          indexed = index_entities(artist_lookup, "artist")
-          %{stats | entities: stats.entities + indexed, artists: length(artists)}
-
-        {:error, _} ->
-          stats
-      end
+    artists = DataLoaders.load_artists() |> DataLoaders.require_source!(:artists)
+    indexed = artists |> DataLoaders.build_artist_lookup() |> index_entities("artist")
+    stats = %{stats | entities: stats.entities + indexed, artists: length(artists)}
 
     # Load and index emojis
-    stats =
-      case DataLoaders.load_emojis() do
-        {:ok, emojis} ->
-          emoji_lookup = DataLoaders.build_emoji_lookup(emojis)
-          indexed = index_entities(emoji_lookup, "emoji")
-          %{stats | entities: stats.entities + indexed, emojis: length(emojis)}
-
-        {:error, _} ->
-          stats
-      end
+    emojis = DataLoaders.load_emojis() |> DataLoaders.require_source!(:emojis)
+    indexed = emojis |> DataLoaders.build_emoji_lookup() |> index_entities("emoji")
+    stats = %{stats | entities: stats.entities + indexed, emojis: length(emojis)}
 
     # Enrich from Atlas knowledge_graph entities
     atlas_synced = sync_from_atlas()
