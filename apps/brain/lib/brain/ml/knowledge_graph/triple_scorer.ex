@@ -19,6 +19,7 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
   require Logger
 
   alias Brain.ML.Tokenizer
+  alias Brain.ML.TrainingSeed
 
   @default_embedding_dim 64
   @default_hidden_dim 128
@@ -109,11 +110,16 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
       - `:embedding_dim` - Embedding dimension (default: #{@default_embedding_dim})
       - `:hidden_dim` - LSTM hidden dimension (default: #{@default_hidden_dim})
       - `:max_seq_length` - Maximum sequence length (default: #{@default_max_seq_length})
+      - `:seed` - Seed for the LSTM's initial-state key and dropout's key
+        (default: `Brain.ML.TrainingSeed.get!/0`). Axon otherwise seeds both
+        from the clock. A loaded model restores these keys from its saved
+        parameters, so the seed only affects training.
   """
   def build_model(vocab_size, opts \\ []) do
     embedding_dim = Keyword.get(opts, :embedding_dim, @default_embedding_dim)
     hidden_dim = Keyword.get(opts, :hidden_dim, @default_hidden_dim)
     max_seq_length = Keyword.get(opts, :max_seq_length, @default_max_seq_length)
+    seed = Keyword.get_lazy(opts, :seed, &TrainingSeed.get!/0)
 
     input = Axon.input("input", shape: {nil, max_seq_length})
     mask_input = Axon.input("mask", shape: {nil, max_seq_length, 1})
@@ -121,7 +127,7 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
     encoder =
       input
       |> Axon.embedding(vocab_size, embedding_dim, name: "embedding")
-      |> Axon.lstm(hidden_dim, name: "lstm")
+      |> Axon.lstm(hidden_dim, name: "lstm", seed: seed)
       |> then(fn {seq, _state} -> seq end)
 
     pooled =
@@ -138,7 +144,7 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
 
     pooled
     |> Axon.dense(128, activation: :relu, name: "dense1")
-    |> Axon.dropout(rate: 0.3, name: "dropout")
+    |> Axon.dropout(rate: 0.3, name: "dropout", seed: seed)
     |> Axon.dense(1, name: "output")
     |> Axon.sigmoid(name: "score")
   end
@@ -153,11 +159,17 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
       - `:learning_rate` - Learning rate (default: #{@default_learning_rate})
       - `:neg_ratio` - Negative-to-positive ratio (default: 5)
       - `:verbose` - Print per-epoch loss (default: false)
+      - `:seed` - Seed for negative sampling, shuffling, parameter
+        initialization and the model's random keys (default:
+        `Brain.ML.TrainingSeed.get!/0`). Recorded in the config as
+        `:training_seed`.
   """
   def train(positive_triples, opts \\ []) do
     epochs = Keyword.get(opts, :epochs, @default_epochs)
     lr = Keyword.get(opts, :learning_rate, @default_learning_rate)
     neg_ratio = Keyword.get(opts, :neg_ratio, 5)
+    seed = Keyword.get_lazy(opts, :seed, &TrainingSeed.get!/0)
+    rand = TrainingSeed.state(seed)
 
     entities =
       positive_triples
@@ -170,17 +182,18 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
     model =
       build_model(vocab_size,
         embedding_dim: Keyword.get(opts, :embedding_dim, @default_embedding_dim),
-        hidden_dim: Keyword.get(opts, :hidden_dim, @default_hidden_dim)
+        hidden_dim: Keyword.get(opts, :hidden_dim, @default_hidden_dim),
+        seed: seed
       )
 
     positive_set = MapSet.new(positive_triples)
-    negatives = generate_negatives(positive_triples, entities, positive_set, neg_ratio)
+    {negatives, rand} = generate_negatives(positive_triples, entities, positive_set, neg_ratio, rand)
 
     all_examples =
       Enum.map(positive_triples, &{&1, 1.0}) ++
         Enum.map(negatives, &{&1, 0.0})
 
-    shuffled = Enum.shuffle(all_examples)
+    {shuffled, _rand} = TrainingSeed.shuffle(all_examples, rand)
     {inputs, labels} = encode_examples(shuffled, vocab)
 
     train_data =
@@ -193,7 +206,7 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
 
     params =
       model
-      |> Axon.Loop.trainer(:binary_cross_entropy, optimizer, log: log_interval)
+      |> Axon.Loop.trainer(:binary_cross_entropy, optimizer, log: log_interval, seed: seed)
       |> Axon.Loop.run(train_data, Axon.ModelState.empty(),
         epochs: epochs,
         iterations: 1,
@@ -206,7 +219,8 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
       vocab_size: vocab_size,
       embedding_dim: Keyword.get(opts, :embedding_dim, @default_embedding_dim),
       hidden_dim: Keyword.get(opts, :hidden_dim, @default_hidden_dim),
-      max_seq_length: @default_max_seq_length
+      max_seq_length: @default_max_seq_length,
+      training_seed: seed
     }
 
     {:ok, model, params, vocab, config}
@@ -225,7 +239,7 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
       |> maybe_put(:relation_coverage, Keyword.get(opts, :relation_coverage))
       |> maybe_put(:model_version, Keyword.get(opts, :model_version))
 
-    File.write!(path, :erlang.term_to_binary(data))
+    File.write!(path, Brain.ML.ModelStore.serialize(data))
     :ok
   end
 
@@ -461,14 +475,16 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
     end)
   end
 
-  defp generate_negatives(positives, entities, positive_set, ratio) do
+  # Negative sampling draws from `rand` and returns it advanced, so the same
+  # seed always yields the same negatives.
+  defp generate_negatives(positives, entities, positive_set, ratio, rand) do
     entity_types = build_entity_type_index(entities)
 
-    Enum.flat_map(positives, fn {h, r, t} ->
+    Enum.flat_map_reduce(positives, rand, fn {h, r, t}, rand ->
       type_constrained_count = div(ratio * 4, 5)
       uniform_count = ratio - type_constrained_count
 
-      type_constrained =
+      {type_constrained, rand} =
         generate_type_constrained(
           h,
           r,
@@ -476,25 +492,18 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
           entities,
           entity_types,
           positive_set,
-          type_constrained_count
+          type_constrained_count,
+          rand
         )
 
-      uniform =
-        Stream.repeatedly(fn ->
-          if :rand.uniform() > 0.5 do
-            {Enum.random(entities), r, t}
-          else
-            {h, r, Enum.random(entities)}
-          end
-        end)
-        |> Stream.reject(&MapSet.member?(positive_set, &1))
-        |> Enum.take(uniform_count)
+      {uniform, rand} =
+        sample_corruptions({h, r, t}, entities, entities, positive_set, uniform_count, rand)
 
-      type_constrained ++ uniform
+      {type_constrained ++ uniform, rand}
     end)
   end
 
-  defp generate_type_constrained(h, r, t, entities, entity_types, positive_set, count) do
+  defp generate_type_constrained(h, r, t, entities, entity_types, positive_set, count, rand) do
     h_type = Map.get(entity_types, h)
     t_type = Map.get(entity_types, t)
 
@@ -504,15 +513,33 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
     t_peers =
       if t_type, do: Map.get(entity_types, {:type_members, t_type}, entities), else: entities
 
-    Stream.repeatedly(fn ->
-      if :rand.uniform() > 0.5 do
-        {Enum.random(h_peers), r, t}
+    sample_corruptions({h, r, t}, h_peers, t_peers, positive_set, count, rand)
+  end
+
+  # Replaces the head (from h_peers) or the tail (from t_peers) with even odds,
+  # skipping any corruption that is itself a positive, until `count` are drawn.
+  defp sample_corruptions(triple, h_peers, t_peers, positive_set, count, rand),
+    do: sample_corruptions(triple, h_peers, t_peers, positive_set, count, rand, [])
+
+  defp sample_corruptions(_triple, _hp, _tp, _set, 0, rand, acc), do: {Enum.reverse(acc), rand}
+
+  defp sample_corruptions({h, r, t} = triple, h_peers, t_peers, set, count, rand, acc) do
+    {coin, rand} = :rand.uniform_s(rand)
+
+    {corrupted, rand} =
+      if coin > 0.5 do
+        {head, rand} = TrainingSeed.pick(h_peers, rand)
+        {{head, r, t}, rand}
       else
-        {h, r, Enum.random(t_peers)}
+        {tail, rand} = TrainingSeed.pick(t_peers, rand)
+        {{h, r, tail}, rand}
       end
-    end)
-    |> Stream.reject(&MapSet.member?(positive_set, &1))
-    |> Enum.take(count)
+
+    if MapSet.member?(set, corrupted) do
+      sample_corruptions(triple, h_peers, t_peers, set, count, rand, acc)
+    else
+      sample_corruptions(triple, h_peers, t_peers, set, count - 1, rand, [corrupted | acc])
+    end
   end
 
   defp build_entity_type_index(entities) do
