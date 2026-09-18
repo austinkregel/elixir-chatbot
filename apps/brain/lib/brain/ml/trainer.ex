@@ -21,9 +21,7 @@ defmodule Brain.ML.Trainer do
 
   @type training_stats :: %{
           intent_samples: integer(),
-          vocab_size: integer(),
-          entity_types: integer(),
-          gazetteer_entries: integer()
+          vocab_size: integer()
         }
 
   @doc "Main training function that loads data, trains all models, and saves them.\nReturns {:ok, stats} or {:error, reason}.\n\n## Options\n  - models_path: Override the default models output path\n"
@@ -39,8 +37,6 @@ defmodule Brain.ML.Trainer do
     stats = %{
       intent_samples: 0,
       vocab_size: 0,
-      entity_types: 0,
-      gazetteer_entries: 0,
       entity_model_trained: false,
       sentiment_samples: 0,
       sentiment_labels: 0
@@ -51,7 +47,6 @@ defmodule Brain.ML.Trainer do
     case result do
       :ok ->
         stats = train_entity_model(stats, models_path: models_path)
-        stats = build_gazetteer_data(stats, models_path: models_path)
         stats = train_sentiment_classifier(stats, models_path: models_path)
 
         Logger.info("Training pipeline completed", stats)
@@ -182,125 +177,6 @@ defmodule Brain.ML.Trainer do
         Logger.warning("Entity model training failed", %{reason: reason})
         stats
     end
-  end
-
-  @doc "Build gazetteer lookup data and save for fast runtime access.\n\n## Options\n  - models_path: Override the default models output path\n"
-  def build_gazetteer_data(stats \\ %{}, opts \\ []) do
-    Logger.info("Building gazetteer data...")
-
-    models_path =
-      Keyword.get(opts, :models_path) ||
-        Application.get_env(:brain, :ml)[:models_path] ||
-        Brain.priv_path("ml_models")
-
-    File.mkdir_p!(models_path)
-
-    # Every source is required. A source that cannot be loaded raises rather
-    # than leaving a gazetteer that silently knows fewer words.
-    entity_lookup =
-      DataLoaders.load_all_entities()
-      |> DataLoaders.require_source!(:entities)
-      |> DataLoaders.build_entity_lookup()
-
-    Logger.info("Built entity lookup", %{entries: map_size(entity_lookup)})
-
-    city_lookup =
-      DataLoaders.load_cities()
-      |> DataLoaders.require_source!(:cities)
-      |> DataLoaders.build_city_lookup()
-
-    Logger.info("Built city lookup", %{entries: map_size(city_lookup)})
-
-    artist_lookup =
-      DataLoaders.load_artists()
-      |> DataLoaders.require_source!(:artists)
-      |> DataLoaders.build_artist_lookup()
-
-    Logger.info("Built artist lookup", %{entries: map_size(artist_lookup)})
-
-    emoji_lookup =
-      DataLoaders.load_emojis()
-      |> DataLoaders.require_source!(:emojis)
-      |> DataLoaders.build_emoji_lookup()
-
-    Logger.info("Built emoji lookup", %{entries: map_size(emoji_lookup)})
-
-    gazetteer_data = %{
-      entities: entity_lookup,
-      cities: city_lookup,
-      artists: artist_lookup,
-      emojis: emoji_lookup
-    }
-
-    combined_lookup =
-      entity_lookup
-      |> merge_candidates(city_lookup)
-      |> merge_candidates(artist_lookup)
-      |> merge_candidates(emoji_lookup)
-
-    gazetteer_path = Path.join(models_path, "gazetteer.term")
-    File.write!(gazetteer_path, :erlang.term_to_binary(combined_lookup))
-
-    Logger.info("Gazetteer saved", %{
-      path: gazetteer_path,
-      total_entries: map_size(combined_lookup)
-    })
-
-    total_entries =
-      map_size(gazetteer_data.entities) +
-        map_size(gazetteer_data.cities) +
-        map_size(gazetteer_data.artists) +
-        map_size(gazetteer_data.emojis)
-
-    stats
-    |> Map.put(:gazetteer_entries, total_entries)
-    |> Map.put(:entity_types, count_entity_types(gazetteer_data))
-  end
-
-  # One surface form can belong to several sources: "lights" is a device and a
-  # band. Every candidate is kept, one per entity type, and the extractor lets
-  # context choose between them. Brain.ML.Gazetteer indexes its sources the
-  # same way.
-  defp merge_candidates(lookup, source_lookup) do
-    Enum.reduce(source_lookup, lookup, fn {key, info}, acc ->
-      existing = acc |> Map.get(key, []) |> List.wrap()
-      known_types = MapSet.new(existing, & &1.entity_type)
-      added = info |> List.wrap() |> Enum.reject(&MapSet.member?(known_types, &1.entity_type))
-
-      case existing ++ added do
-        [single] -> Map.put(acc, key, single)
-        candidates -> Map.put(acc, key, candidates)
-      end
-    end)
-  end
-
-  defp count_entity_types(gazetteer_data) do
-    all_lookups = [
-      gazetteer_data.entities,
-      gazetteer_data.cities,
-      gazetteer_data.artists,
-      gazetteer_data.emojis
-    ]
-
-    all_lookups
-    |> Enum.flat_map(fn lookup ->
-      Map.values(lookup)
-      |> Enum.flat_map(fn info ->
-        case info do
-          entries when is_list(entries) ->
-            Enum.map(entries, fn entry -> Map.get(entry, :entity_type) end)
-
-          entry when is_map(entry) ->
-            [Map.get(entry, :entity_type)]
-
-          _ ->
-            []
-        end
-      end)
-    end)
-    |> Enum.uniq()
-    |> Enum.filter(&(&1 != nil))
-    |> length()
   end
 
   @doc "Load training data from intent files using DataLoaders.\nReturns a list of {text, intent_label} tuples.\n"
