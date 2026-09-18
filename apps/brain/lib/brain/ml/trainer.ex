@@ -86,7 +86,7 @@ defmodule Brain.ML.Trainer do
       }
 
       embedder_path = Path.join(models_path, "embedder.term")
-      File.write!(embedder_path, :erlang.term_to_binary(embedder_model))
+      File.write!(embedder_path, Brain.ML.ModelStore.serialize(embedder_model))
       Logger.info("Embedder vocabulary saved", %{path: embedder_path})
 
       updated_stats = %{
@@ -145,7 +145,7 @@ defmodule Brain.ML.Trainer do
 
       File.mkdir_p!(models_path)
       model_path = Path.join(models_path, "sentiment_classifier.term")
-      File.write!(model_path, :erlang.term_to_binary(model))
+      File.write!(model_path, Brain.ML.ModelStore.serialize(model))
       Logger.info("Sentiment classifier saved", %{path: model_path})
 
       %{
