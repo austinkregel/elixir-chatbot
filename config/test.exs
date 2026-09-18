@@ -94,9 +94,14 @@ ouro_ml =
 
 # Brain app test configuration
 config :brain,
-  # OURO_ENABLED=false skips the Python sidecar (and, via test_helper, the
-  # :requires_ouro tests) on machines that can't run the model — e.g. CI.
-  ouro_enabled: System.get_env("OURO_ENABLED", "true") != "false",
+  # Ouro is OFF for the test run by default: the Python sidecar and the
+  # Elixir-side Ouro.Model backend init are both skipped, and test_helper
+  # excludes the :requires_ouro tests that need real generation.
+  #
+  # It is off because loading the model alongside the suite exhausts memory
+  # and takes the run down with it. Opt back in per-run with OURO_ENABLED=true
+  # when you are actually exercising generation.
+  ouro_enabled: System.get_env("OURO_ENABLED", "false") == "true",
   # Use mock HTTP client for snapshot-based testing (no external API calls)
   http_client: Brain.Test.MockHTTP,
   # Use test-specific directories
