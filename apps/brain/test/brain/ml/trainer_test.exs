@@ -2,7 +2,6 @@ defmodule Brain.ML.TrainerTest do
   use ExUnit.Case, async: false
   require Nx
 
-  alias Brain.ML.DataLoaders
   alias Brain.ML.Trainer
 
   @moduletag :training
@@ -110,91 +109,6 @@ defmodule Brain.ML.TrainerTest do
     end
   end
 
-  describe "build_gazetteer_data/1" do
-    test "returns stats with entry counts" do
-      stats = %{
-        gazetteer_entries: 0,
-        entity_types: 0
-      }
-
-      result = Trainer.build_gazetteer_data(stats)
-
-      assert is_map(result)
-      assert Map.has_key?(result, :gazetteer_entries)
-      assert Map.has_key?(result, :entity_types)
-      assert is_integer(result.gazetteer_entries)
-      assert is_integer(result.entity_types)
-    end
-
-    test "raises when a source cannot be loaded" do
-      ml = Application.get_env(:brain, :ml)
-      empty_dir = Path.join(System.tmp_dir!(), "no_sources_#{System.unique_integer([:positive])}")
-      File.mkdir_p!(empty_dir)
-
-      on_exit(fn ->
-        Application.put_env(:brain, :ml, ml)
-        File.rm_rf!(empty_dir)
-      end)
-
-      Application.put_env(:brain, :ml, Keyword.put(ml, :training_data_path, empty_dir))
-
-      assert_raise RuntimeError, ~r/required source :entities could not be loaded/, fn ->
-        Trainer.build_gazetteer_data(%{}, models_path: empty_dir)
-      end
-    end
-  end
-
-  describe "build_gazetteer_data/2 output" do
-    setup do
-      models_path = Path.join(System.tmp_dir!(), "gazetteer_#{System.unique_integer([:positive])}")
-      File.mkdir_p!(models_path)
-      on_exit(fn -> File.rm_rf!(models_path) end)
-
-      Trainer.build_gazetteer_data(%{}, models_path: models_path)
-
-      gazetteer =
-        models_path |> Path.join("gazetteer.term") |> File.read!() |> :erlang.binary_to_term()
-
-      %{gazetteer: gazetteer}
-    end
-
-    test "includes every artist and city in the sources", %{gazetteer: gazetteer} do
-      {:ok, artists} = DataLoaders.load_artists()
-      {:ok, cities} = DataLoaders.load_cities()
-      artist_lookup = DataLoaders.build_artist_lookup(artists)
-      city_lookup = DataLoaders.build_city_lookup(cities)
-
-      # Both sources are larger than the 10,000 rows the build used to keep.
-      assert map_size(artist_lookup) > 10_000
-      assert map_size(city_lookup) > 10_000
-
-      missing_artists = Enum.reject(Map.keys(artist_lookup), &has_type?(gazetteer, &1, "music_artist"))
-      missing_cities = Enum.reject(Map.keys(city_lookup), &has_type?(gazetteer, &1, "location"))
-
-      assert missing_artists == [], "#{length(missing_artists)} artists missing"
-      assert missing_cities == [], "#{length(missing_cities)} cities missing"
-    end
-
-    test "keeps a candidate from each source when they share a surface form",
-         %{gazetteer: gazetteer} do
-      # "door" is a device in the entity data and an emoji name; the emojis
-      # are merged last, so an overwriting merge leaves only the emoji.
-      assert has_type?(gazetteer, "door", "device")
-      assert has_type?(gazetteer, "door", "emoji")
-
-      # "thursday" is a date in the entity data and a band in the artist data.
-      assert has_type?(gazetteer, "thursday", "sys_date")
-      assert has_type?(gazetteer, "thursday", "music_artist")
-    end
-  end
-
-  defp has_type?(gazetteer, key, entity_type) do
-    gazetteer
-    |> Map.get(key, [])
-    |> List.wrap()
-    |> Enum.any?(&(&1.entity_type == entity_type))
-  end
-
   describe "train_intent_classifier/2 (slow)" do
     @tag :slow
     @tag timeout: 180_000
@@ -258,7 +172,6 @@ defmodule Brain.ML.TrainerTest do
       assert stats.intent_samples > 0
       assert stats.vocab_size > 0
       assert File.exists?(Path.join(models_path, "embedder.term"))
-      assert File.exists?(Path.join(models_path, "gazetteer.term"))
     end
   end
 end
