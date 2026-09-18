@@ -1,0 +1,83 @@
+Post-rebuild axis reference — all 18 axes over the 450-sentence cognitive-distortions set.
+
+Captured 2026-09-18 at commit 95bc263, tracked tree clean.
+Reproduce: mix run apps/brain/priv/baselines/distortions_probe.exs
+
+Why this file exists
+--------------------
+The 2026-09-16 reference no longer reproduces, and that is expected: its
+inputs changed. This is the reference later work compares against.
+
+1. Entity data. data/entities and data/legacy were deleted on 2026-09-17.
+   data/entities was recreated from the 2026-04-24 copy in
+   data/training/entities: the 33 Dialogflow entry files plus room and
+   ambiguous_name_location, renamed to underscores, contents byte-identical.
+   The deleted data had diverged from that copy; measured against the
+   previous gazetteer, it cost exactly two types, genre (88 words) and
+   language (41). Nothing else it knew was lost.
+
+2. Gazetteer. Rebuilt with no cap on artists or cities (18,190 artists and
+   31,278 cities, previously 10,000 rows of each source), every candidate
+   kept when sources share a word, and each record indexed once.
+
+3. Entity types. Extraction returns system types (music_artist, sys_date),
+   no longer relabelled to the NER gold standard's labels.
+
+data/ and gazetteer.term are gitignored, so this commit does not by itself
+pin the inputs above; the description here does.
+
+Known limitations of these numbers
+----------------------------------
+- slot_completeness is measured against a generic fallback schema, not the
+  intent registry. SlotDetector reads "priv/analysis/intent_registry.json"
+  relative to the working directory (slot_detector.ex:8); run from the
+  umbrella root the file is not found and a default schema is substituted
+  silently. Every earlier reference has the same limitation.
+- Which extraction path runs depends on timing: the ETS Gazetteer loads in a
+  detached Task at boot (application.ex:97), and extraction uses the
+  gazetteer.term path until it finishes. The two paths choose between
+  candidates differently.
+
+Stability
+---------
+Two consecutive runs at identical code produced identical values. The
+certainty map in TEST 3 printed its keys in a different order between runs
+(%{hedged: 360, committed: 90} vs %{committed: 90, hedged: 360}): small maps
+print in atom-creation order, not sorted. Compare that line by value, not by
+bytes.
+
+=== per-axis computed / distinct values over 450 sentences ===
+
+axis                      computed  values
+----------------------------------------------------------------------------------------------------
+domain                     450/450  :smalltalk=127, :music=110, :calendar=78, :weather=57, :reminder=39, :
+tense                      450/450  :future=255, :past=177, :present=18
+aspect                     450/450  :simple=372, :progressive=65, :perfect=13
+urgency                    450/450  :critical=419, :low=31
+certainty                  450/450  :hedged=360, :committed=90
+speech_act_category        450/450  :assertive=448, :directive=2
+speech_act_subtype         450/450  :statement=448, :command=2
+addressee                  450/450  :ambiguous=412, :bot=23, :third_party=15
+slot_completeness          343/450  1.0=357, 0.0=90, 0.5=3
+novelty_score                0/450  0.0=450
+target                     162/450  :ambiguous=288, :agent=162
+modality                     2/450  :declarative=448, :imperative=2
+polarity                   450/450  0.0=226, 1.0=206, 0.35=15, 0.7=3
+sentiment_alignment          0/450  :neutral=450
+response_posture           370/450  :hedged=280, :clarify=90, :direct=80
+engagement_level           420/450  :urgent_demand=419, :casual_engagement=30, :active_request=1
+self_disclosure_level        0/450  :none=450
+temporal_framing           401/450  :hypothetical_future=255, :completed_past=92, :negated_past=53, :timel
+
+=== TEST 1: polarity on 204 sentences containing negation tokens ===
+  polarity: %{1.0 => 204}
+  status: %{computed: 204}
+
+=== TEST 2: target/self_disclosure on 430 first-person sentences ===
+  target: %{ambiguous: 272, agent: 158}
+  addressee: %{ambiguous: 404, bot: 19, third_party: 7}
+  self_disclosure: %{none: 430}
+
+=== TEST 3: certainty vs absolutist/hedging split ===
+  certainty: %{committed: 90, hedged: 360}
+  speech_act: %{directive: 2, assertive: 448}
