@@ -18,6 +18,24 @@ defmodule Brain.ML.DataLoadersTest do
     end
   end
 
+  describe "require_source!/2" do
+    test "returns the records of a source that loaded" do
+      assert DataLoaders.require_source!({:ok, [:a, :b]}, :cities) == [:a, :b]
+    end
+
+    test "raises naming the source when it failed to load" do
+      assert_raise RuntimeError, ~r/required source :entities could not be loaded/, fn ->
+        DataLoaders.require_source!({:error, :enoent}, :entities)
+      end
+    end
+
+    test "a missing entities directory is a failed source, not an empty one" do
+      missing = Path.join(System.tmp_dir!(), "no_entities_#{System.unique_integer([:positive])}")
+
+      assert {:error, :enoent} = DataLoaders.load_all_entities(missing)
+    end
+  end
+
   describe "load_all_intents/0" do
     test "loads intent examples from JSON files" do
       result = DataLoaders.load_all_intents()
