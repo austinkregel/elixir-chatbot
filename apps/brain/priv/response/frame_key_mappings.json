@@ -4,9 +4,9 @@
     "content,date": "create_with_date",
     "content": "create_content_only",
     "action,device": "control_device",
-    "music-artist": "play_artist",
+    "music_artist": "play_artist",
     "song": "play_song",
-    "music-artist,song": "play_artist_song",
+    "music_artist,song": "play_artist_song",
     "topic": "with_topic",
     "symbol": "explain_symbol"
   },
