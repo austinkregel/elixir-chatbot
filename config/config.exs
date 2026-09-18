@@ -29,6 +29,10 @@ config :brain,
     use_gpu: System.get_env("ML_USE_GPU", "true") == "true",
     batch_size: System.get_env("ML_BATCH_SIZE", "1000") |> String.to_integer(),
     max_features: System.get_env("ML_MAX_FEATURES", "5000") |> String.to_integer(),
+    # Seed for every stochastic training step (k-means++, shuffles, negative
+    # sampling). Training the same data with the same seed produces the same
+    # model; the seed is recorded in the models it produces.
+    training_seed: System.get_env("ML_TRAINING_SEED", "42") |> String.to_integer(),
     ouro_sequence_length: System.get_env("OURO_SEQUENCE_LENGTH", "4096") |> String.to_integer(),
     ouro_max_new_tokens: System.get_env("OURO_MAX_NEW_TOKENS", "256") |> String.to_integer(),
     ouro_generation_timeout:
