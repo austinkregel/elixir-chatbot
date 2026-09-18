@@ -149,7 +149,7 @@ defmodule Brain.ML.POSTagger do
     model_path = path || get_model_path()
     File.mkdir_p!(Path.dirname(model_path))
 
-    binary = :erlang.term_to_binary(model)
+    binary = Brain.ML.ModelStore.serialize(model)
 
     case File.write(model_path, binary) do
       :ok ->
