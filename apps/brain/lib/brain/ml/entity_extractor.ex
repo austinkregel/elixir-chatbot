@@ -1,9 +1,8 @@
 defmodule Brain.ML.EntityExtractor do
-  @moduledoc "Entity extraction using gazetteer lookups and classical NLP techniques.\n\nThis module extracts entities from user input text using:\n- Gazetteer lookups for known entities (cities, artists, devices, etc.)\n- BIO-tagged sequence model for unknown entity detection\n- Token-based pattern matching for system entities (dates, numbers)\n\nAvoids regex in favor of tokenizer-based approaches.\n\n## Process Lifecycle\n\nThis module runs as a GenServer that starts with the application,\nensuring the entity maps are always loaded and the process is always\nregistered. This allows the ops dashboard to correctly report the\nloaded status.\n"
+  @moduledoc "Entity extraction using gazetteer lookups and classical NLP techniques.\n\nThis module extracts entities from user input text using:\n- Gazetteer lookups for known entities (cities, artists, devices, etc.)\n- BIO-tagged sequence model for unknown entity detection\n- Token-based pattern matching for system entities (dates, numbers)\n\nAvoids regex in favor of tokenizer-based approaches.\n\nKnown entities come from `Brain.ML.Gazetteer`, which loads its sources before\nthe application finishes starting. There is no second copy of the gazetteer\nhere.\n"
 
   alias Brain.Analysis
   alias Brain.ML
-  use GenServer
   require Logger
 
   alias ML.{Gazetteer, Tokenizer, EntityTrainer, POSTagger}
@@ -58,163 +57,16 @@ defmodule Brain.ML.EntityExtractor do
     end
   end
 
-  @doc """
-  Starts the entity extractor GenServer.
+  @doc "Returns true when the gazetteer extraction reads from has loaded.\n"
+  def is_loaded?, do: Gazetteer.loaded?()
 
-  ## Options
-    - `:name` - The name to register the GenServer under (default: `#{__MODULE__}`)
-  """
-  def start_link(opts \\ []) do
-    name = Keyword.get(opts, :name, __MODULE__)
-    GenServer.start_link(__MODULE__, opts, name: name)
-  end
-
-  @impl true
-  def init(_opts) do
-    send(self(), :load_entity_maps)
-
-    {:ok, %{entity_maps: %{}, loaded: false, loading: true}}
-  end
-
-  @impl true
-  def handle_info(:load_entity_maps, state) do
-    entity_maps = do_load_entity_maps()
-
-    Logger.info("EntityExtractor: Entity maps loaded", %{
-      entities_count: map_size(entity_maps)
-    })
-
-    {:noreply, %{state | entity_maps: entity_maps, loaded: true, loading: false}}
-  end
-
-  @impl true
-  def handle_call(:get_entity_maps, _from, state) do
-    {:reply, state.entity_maps, state}
-  end
-
-  @impl true
-  def handle_call(:is_loaded?, _from, state) do
-    {:reply, state.loaded, state}
-  end
-
-  @impl true
-  def handle_call(:get_status, _from, state) do
-    status = %{
-      loaded: state.loaded,
-      loading: state.loading,
-      entities_count: map_size(state.entity_maps)
-    }
-
-    {:reply, status, state}
-  end
-
-  @impl true
-  def handle_call({:reload}, _from, state) do
-    entity_maps = do_load_entity_maps()
-
-    Logger.info("EntityExtractor: Entity maps reloaded", %{
-      entities_count: map_size(entity_maps)
-    })
-
-    {:reply, {:ok, entity_maps},
-     %{state | entity_maps: entity_maps, loaded: true, loading: false}}
-  end
-
-  @doc "Returns true if entity maps are loaded.\n"
-  def is_loaded?(opts \\ []) do
-    server = Keyword.get(opts, :server, __MODULE__)
-
-    try do
-      GenServer.call(server, :is_loaded?, 100)
-    catch
-      :exit, _ -> false
-    end
-  end
-
-  @doc "Returns the current status of the entity extractor.\n"
-  def get_status(opts \\ []) do
-    server = Keyword.get(opts, :server, __MODULE__)
-
-    try do
-      GenServer.call(server, :get_status, 100)
-    catch
-      :exit, _ -> %{loaded: false, loading: false, entities_count: 0}
-    end
-  end
-
-  @doc "Load entity maps from saved gazetteer or build fresh.\nReturns {:ok, maps} or {:error, reason}.\n\nNote: With the GenServer implementation, entity maps are loaded automatically\non startup. This function now reloads the maps if called explicitly.\n"
-  def load_entity_maps(opts \\ []) do
-    server = Keyword.get(opts, :server, __MODULE__)
-
-    try do
-      GenServer.call(server, {:reload}, 30_000)
-    catch
-      :exit, _ ->
-        {:ok, do_load_entity_maps()}
-    end
-  end
-
-  defp do_load_entity_maps do
-    models_path = Application.get_env(:brain, :ml)[:models_path]
-    gazetteer_path = Path.join(models_path || Brain.priv_path("ml_models"), "gazetteer.term")
-    Brain.ML.ModelStore.ensure_local("gazetteer.term", gazetteer_path)
-
-    unless File.exists?(gazetteer_path) do
-      raise """
-      EntityExtractor: missing gazetteer at #{gazetteer_path}.
-      Run `mix train` (gazetteer stage) or, in test, `Brain.Test.ModelFactory.ensure_gazetteer_on_disk!/0`
-      before starting the Brain application.
-      """
-    end
-
-    case File.read(gazetteer_path) do
-      {:ok, binary} ->
-        try do
-          :erlang.binary_to_term(binary)
-        rescue
-          e ->
-            reraise """
-            EntityExtractor: corrupt gazetteer at #{gazetteer_path}: #{Exception.message(e)}
-            Retrain with `mix train` or delete the file and regenerate.
-            """,
-                    __STACKTRACE__
-        end
-
-      {:error, reason} ->
-        raise "EntityExtractor: cannot read gazetteer at #{gazetteer_path}: #{inspect(reason)}"
-    end
-  end
-
-  @doc "Get entity maps from GenServer.\n"
-  def get_entity_maps(opts \\ []) do
-    server = Keyword.get(opts, :server, __MODULE__)
-
-    try do
-      GenServer.call(server, :get_entity_maps, 100)
-    rescue
-      _e ->
-        load_entity_maps_fallback()
-    catch
-      :exit, _ ->
-        load_entity_maps_fallback()
-    end
-  end
-
-  defp load_entity_maps_fallback do
-    do_load_entity_maps()
-  end
-
-  @doc "Extract entities from text using gazetteer lookups and pattern matching.\nReturns a list of entity matches with positions and confidence scores.\n\n## Options\n\n- `:entity_maps` - Pre-loaded entity maps (optional)\n- `:discourse` - Discourse analysis result for disambiguation context\n- `:speech_act` - Speech act classification result for disambiguation context\n- `:skip_disambiguation` - If true, skip the disambiguation step (default: false)\n- `:world_id` - World ID for world-scoped type inference (required for disambiguation)\n"
+  @doc "Extract entities from text using gazetteer lookups and pattern matching.\nReturns a list of entity matches with positions and confidence scores.\n\n## Options\n\n- `:discourse` - Discourse analysis result for disambiguation context\n- `:speech_act` - Speech act classification result for disambiguation context\n- `:skip_disambiguation` - If true, skip the disambiguation step (default: false)\n- `:world_id` - World ID for world-scoped type inference (required for disambiguation)\n"
   def extract_entities(text, opts \\ [])
 
   def extract_entities(text, opts) when is_list(opts) do
     Telemetry.span(:entity_extract, %{text_length: String.length(text || "")}, fn ->
       do_extract_entities(text, opts)
     end)
-  end
-
-  def extract_entities(text, entity_maps) when is_map(entity_maps) do
-    extract_entities(text, entity_maps: entity_maps)
   end
 
   def extract_entities(text, nil) do
@@ -225,7 +77,6 @@ defmodule Brain.ML.EntityExtractor do
     debug? = Application.get_env(:brain, :debug_pipeline_timing, false)
     t0 = if debug?, do: System.monotonic_time(:millisecond)
 
-    entity_maps = Keyword.get(opts, :entity_maps) || get_entity_maps()
     discourse = Keyword.get(opts, :discourse)
     speech_act = Keyword.get(opts, :speech_act)
     skip_disambiguation = Keyword.get(opts, :skip_disambiguation, false)
@@ -235,7 +86,7 @@ defmodule Brain.ML.EntityExtractor do
     if debug?, do: Logger.info("    extractor:tokenize=#{System.monotonic_time(:millisecond) - t0}ms")
 
     gaz_context = Keyword.take(opts, [:domain, :intent, :world_id])
-    gazetteer_entities = extract_gazetteer_entities(tokens, entity_maps, gaz_context)
+    gazetteer_entities = extract_gazetteer_entities(tokens, gaz_context)
 
     if debug?, do: Logger.info("    extractor:gazetteer=#{System.monotonic_time(:millisecond) - t0}ms (#{length(gazetteer_entities)} found)")
 
@@ -243,8 +94,8 @@ defmodule Brain.ML.EntityExtractor do
 
     if debug?, do: Logger.info("    extractor:system=#{System.monotonic_time(:millisecond) - t0}ms (#{length(system_entities)} found)")
 
-    location_entities = extract_location_hints(tokens, entity_maps)
-    proper_noun_entities = extract_proper_noun_hints(tokens, entity_maps)
+    location_entities = extract_location_hints(tokens)
+    proper_noun_entities = extract_proper_noun_hints(tokens)
 
     if debug?, do: Logger.info("    extractor:location+proper=#{System.monotonic_time(:millisecond) - t0}ms")
 
@@ -473,8 +324,7 @@ defmodule Brain.ML.EntityExtractor do
 
   @doc "Extract entities using the BIO-tagged model (if available).\nFalls back to gazetteer if model not loaded.\n"
   def extract_entities_with_model(text, opts \\ []) do
-    entity_maps = Keyword.get(opts, :entity_maps) || get_entity_maps()
-    gazetteer_entities = extract_entities(text, entity_maps)
+    gazetteer_entities = extract_entities(text, opts)
 
     model_entities =
       case EntityTrainer.load_model() do
@@ -505,15 +355,7 @@ defmodule Brain.ML.EntityExtractor do
     |> resolve_entity_conflicts()
   end
 
-  defp extract_gazetteer_entities(tokens, entity_maps, gaz_context) do
-    if Gazetteer.loaded?() do
-      extract_with_gazetteer_server(tokens, gaz_context)
-    else
-      extract_with_local_maps(tokens, entity_maps)
-    end
-  end
-
-  defp extract_with_gazetteer_server(tokens, gaz_context) do
+  defp extract_gazetteer_entities(tokens, gaz_context) do
     token_texts =
       Enum.map(tokens, fn t ->
         t.text
@@ -591,83 +433,6 @@ defmodule Brain.ML.EntityExtractor do
           }
       end
     end)
-  end
-
-  defp extract_with_local_maps(tokens, entity_maps) do
-    max_span = 5
-    token_count = length(tokens)
-
-    find_all_local_spans(tokens, entity_maps, 0, token_count, max_span, [])
-  end
-
-  defp find_all_local_spans(_tokens, _entity_maps, start_idx, token_count, _max_span, acc)
-       when start_idx >= token_count do
-    resolve_entity_conflicts(Enum.reverse(acc))
-  end
-
-  defp find_all_local_spans(tokens, entity_maps, start_idx, token_count, max_span, acc) do
-    match = find_longest_local_match(tokens, entity_maps, start_idx, max_span)
-
-    case match do
-      {:ok, end_idx, entity_infos, match_text} ->
-        start_token = Enum.at(tokens, start_idx)
-        end_token = Enum.at(tokens, end_idx)
-
-        new_entities =
-          Enum.map(entity_infos, fn entity_info ->
-            entity_type = Map.get(entity_info, :entity_type, "unknown")
-            entity_value = Map.get(entity_info, :value, match_text)
-
-            %{
-              entity_type: entity_type,
-              value: entity_value,
-              match: match_text,
-              start_pos: start_token.start_pos,
-              end_pos: end_token.end_pos,
-              confidence: calculate_confidence(match_text, entity_type, entity_value),
-              source: :gazetteer
-            }
-          end)
-
-        find_all_local_spans(
-          tokens,
-          entity_maps,
-          start_idx + 1,
-          token_count,
-          max_span,
-          new_entities ++ acc
-        )
-
-      :not_found ->
-        find_all_local_spans(tokens, entity_maps, start_idx + 1, token_count, max_span, acc)
-    end
-  end
-
-  defp find_longest_local_match(tokens, entity_maps, start_idx, max_span) do
-    token_count = length(tokens)
-    actual_max = min(max_span, token_count - start_idx)
-
-    if actual_max < 1 do
-      :not_found
-    else
-      actual_max..1//-1
-      |> Enum.reduce_while(:not_found, fn span_len, _acc ->
-        span_tokens = Enum.slice(tokens, start_idx, span_len)
-        phrase = Enum.map_join(span_tokens, " ", & &1.text)
-        normalized = String.downcase(phrase)
-
-        case Map.get(entity_maps, normalized) do
-          nil ->
-            {:cont, :not_found}
-
-          entity_info when is_list(entity_info) ->
-            {:halt, {:ok, start_idx + span_len - 1, entity_info, phrase}}
-
-          entity_info when is_map(entity_info) ->
-            {:halt, {:ok, start_idx + span_len - 1, [entity_info], phrase}}
-        end
-      end)
-    end
   end
 
   defp extract_system_entities(tokens, _text) do
@@ -835,19 +600,19 @@ defmodule Brain.ML.EntityExtractor do
     end
   end
 
-  defp extract_location_hints(tokens, entity_maps) do
+  defp extract_location_hints(tokens) do
     tokens
     |> Enum.with_index()
     |> Enum.flat_map(fn {token, idx} ->
       if is_location_preposition?(token.text) do
-        extract_following_location(tokens, idx + 1, entity_maps)
+        extract_following_location(tokens, idx + 1)
       else
         []
       end
     end)
   end
 
-  defp extract_following_location(tokens, start_idx, entity_maps) do
+  defp extract_following_location(tokens, start_idx) do
     remaining = Enum.drop(tokens, start_idx)
 
     location_tokens =
@@ -860,7 +625,7 @@ defmodule Brain.ML.EntityExtractor do
       location_text = Enum.map_join(location_tokens, " ", & &1.text)
       normalized = String.downcase(location_text)
 
-      unless Map.has_key?(entity_maps, normalized) do
+      unless in_gazetteer?(normalized) do
         first_token = List.first(location_tokens)
         last_token = List.last(location_tokens)
         loc_type = classify_location_type(location_text, remaining)
@@ -909,11 +674,11 @@ defmodule Brain.ML.EntityExtractor do
     end
   end
 
-  defp extract_proper_noun_hints(tokens, entity_maps) do
-    extract_with_pos_tagger(tokens, entity_maps)
+  defp extract_proper_noun_hints(tokens) do
+    extract_with_pos_tagger(tokens)
   end
 
-  defp extract_with_pos_tagger(tokens, entity_maps) do
+  defp extract_with_pos_tagger(tokens) do
     propn_tag = TypeHierarchy.config(["pos_tag_roles", "proper_noun"], "PROPN")
     default_type = TypeHierarchy.config("default_propn_type", "person")
 
@@ -925,7 +690,7 @@ defmodule Brain.ML.EntityExtractor do
         predictions
         |> Enum.with_index()
         |> Enum.reduce([], fn {{word, tag}, idx}, acc ->
-          if tag == propn_tag and capitalized?(word) and not in_gazetteer?(word, entity_maps) do
+          if tag == propn_tag and capitalized?(word) and not in_gazetteer?(word) do
             token = Enum.at(tokens, idx)
 
             case acc do
@@ -965,18 +730,9 @@ defmodule Brain.ML.EntityExtractor do
     end
   end
 
-  defp in_gazetteer?(word, entity_maps) when is_binary(word) do
-    normalized = String.downcase(word)
-    Map.has_key?(entity_maps, normalized) or Gazetteer.lookup(normalized) != :not_found
+  defp in_gazetteer?(word) when is_binary(word) do
+    Gazetteer.lookup(String.downcase(word)) != :not_found
   end
-
-  defp in_gazetteer?(%{text: text}, entity_maps) when is_binary(text),
-    do: in_gazetteer?(text, entity_maps)
-
-  defp in_gazetteer?(%{"text" => text}, entity_maps) when is_binary(text),
-    do: in_gazetteer?(text, entity_maps)
-
-  defp in_gazetteer?(_, _), do: false
 
   defp score_and_pick_primary(infos) when is_list(infos) do
     adjustments = TypeHierarchy.config("confidence_adjustments", %{})
