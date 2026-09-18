@@ -1,5 +1,5 @@
 defmodule Mix.Tasks.TrainModels do
-  @moduledoc "Mix task to train ML models from training data.\n\n## Usage\n\n    mix train_models [options]\n\n## Options\n\n  --world <id>     Train models for a specific world (default: saves to priv/ml_models/)\n  --intent-only    Train only the intent classifier\n  --entity-only    Train only the entity recognition model\n  --pos-only       Train only the POS tagger model\n  --gazetteer-only Build only the gazetteer lookup tables\n  --skip-gazetteer Skip gazetteer building (faster training)\n  --skip-pos       Skip POS tagger training\n\n## World-Specific Training\n\nWhen --world is specified, models are saved to:\n  priv/training_worlds/{world_id}/models/\n\nThis allows each world to have its own isolated ML models. When no world is\nspecified, models are saved to the default location (priv/ml_models/).\n\n## Examples\n\n    # Train all models for the default location\n    mix train_models\n\n    # Train all models for the \"star_trek\" world\n    mix train_models --world star_trek\n\n    # Train only intent classifier for a world\n    mix train_models --world my_world --intent-only\n\nThis task will:\n- Load intent training data from data/intents/ (or data/training/intents/)\n- Load entity definitions from data/entities/\n- Load supplementary data (cities, artists, emojis) from CSVs\n- Build TF-IDF vectorizer and train intent classifier\n- Train BIO-tagged entity recognition model\n- Train POS tagger from annotated data (if available)\n- Build gazetteer lookup tables for fast entity extraction\n- Save all models to priv/ml_models/ (or world-specific path)\n- Report training statistics and model sizes\n"
+  @moduledoc "Mix task to train ML models from training data.\n\n## Usage\n\n    mix train_models [options]\n\n## Options\n\n  --world <id>     Train models for a specific world (default: saves to priv/ml_models/)\n  --intent-only    Train only the intent classifier\n  --entity-only    Train only the entity recognition model\n  --pos-only       Train only the POS tagger model\n  --skip-pos       Skip POS tagger training\n\n## World-Specific Training\n\nWhen --world is specified, models are saved to:\n  priv/training_worlds/{world_id}/models/\n\nThis allows each world to have its own isolated ML models. When no world is\nspecified, models are saved to the default location (priv/ml_models/).\n\n## Examples\n\n    # Train all models for the default location\n    mix train_models\n\n    # Train all models for the \"star_trek\" world\n    mix train_models --world star_trek\n\n    # Train only intent classifier for a world\n    mix train_models --world my_world --intent-only\n\nThis task will:\n- Load intent training data from data/intents/ (or data/training/intents/)\n- Build TF-IDF vectorizer and train intent classifier\n- Train BIO-tagged entity recognition model\n- Train POS tagger from annotated data (if available)\n- Save all models to priv/ml_models/ (or world-specific path)\n- Report training statistics and model sizes\n"
 
   # World.Persistence is in a sibling umbrella app that depends on :brain.
   # It's available at runtime but not at compile time.
@@ -21,8 +21,6 @@ defmodule Mix.Tasks.TrainModels do
           intent_only: :boolean,
           entity_only: :boolean,
           pos_only: :boolean,
-          gazetteer_only: :boolean,
-          skip_gazetteer: :boolean,
           skip_pos: :boolean
         ]
       )
@@ -62,12 +60,6 @@ defmodule Mix.Tasks.TrainModels do
 
         Keyword.get(opts, :pos_only, false) ->
           run_pos_training(models_path)
-
-        Keyword.get(opts, :gazetteer_only, false) ->
-          run_gazetteer_building(models_path)
-
-        Keyword.get(opts, :skip_gazetteer, false) ->
-          run_training_without_gazetteer(models_path)
 
         true ->
           skip_pos = Keyword.get(opts, :skip_pos, false)
@@ -110,33 +102,6 @@ defmodule Mix.Tasks.TrainModels do
     Mix.shell().info("Training entity recognition model only...")
     stats = Trainer.train_entity_model(%{}, models_path: models_path)
     {:ok, stats}
-  end
-
-  defp run_gazetteer_building(_models_path) do
-    Mix.shell().info("Building gazetteer lookup tables only...")
-    stats = Trainer.build_gazetteer_data()
-    {:ok, stats}
-  end
-
-  defp run_training_without_gazetteer(models_path) do
-    Mix.shell().info("Training models (skipping gazetteer)...")
-
-    stats = %{
-      intent_samples: 0,
-      vocab_size: 0,
-      entity_model_trained: false
-    }
-
-    {stats, result} = Trainer.train_intent_classifier(stats, models_path: models_path)
-
-    case result do
-      :ok ->
-        stats = Trainer.train_entity_model(stats, models_path: models_path)
-        {:ok, stats}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
   end
 
   defp run_full_training(skip_pos, models_path) do
@@ -371,12 +336,6 @@ defmodule Mix.Tasks.TrainModels do
       Mix.shell().info("    - Feature count:    #{Map.get(stats, :pos_feature_count, 0)}")
     end
 
-    if Map.has_key?(stats, :gazetteer_entries) and stats.gazetteer_entries > 0 do
-      Mix.shell().info("  Gazetteer:")
-      Mix.shell().info("    - Total entries:    #{stats.gazetteer_entries}")
-      Mix.shell().info("    - Entity types:     #{stats.entity_types}")
-    end
-
     Mix.shell().info("")
     Mix.shell().info("  Total training time: #{format_duration(duration)}")
     Mix.shell().info("")
@@ -386,7 +345,6 @@ defmodule Mix.Tasks.TrainModels do
     display_model_file(models_path, "classifier.term", "Intent Classifier")
     display_model_file(models_path, "entity_model.term", "Entity Model")
     display_model_file(models_path, "pos_model.term", "POS Tagger")
-    display_model_file(models_path, "gazetteer.term", "Gazetteer")
     display_model_file(models_path, "vectorizer.term", "TF-IDF Vectorizer")
     display_model_file(models_path, "embedder.term", "Embedder Vocabulary")
 
@@ -412,9 +370,6 @@ defmodule Mix.Tasks.TrainModels do
     Mix.shell().error("Please check:")
     Mix.shell().error("  - Training data format and locations")
     Mix.shell().error("  - Dependencies (Nx for tensor operations)")
-    Mix.shell().error("  - Available memory (large gazetteers need RAM)")
-    Mix.shell().error("")
-    Mix.shell().error("Try running with --skip-gazetteer to reduce memory usage")
   end
 
   defp format_duration(ms) when ms < 1000 do
