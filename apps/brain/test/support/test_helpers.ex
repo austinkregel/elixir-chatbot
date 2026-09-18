@@ -3,7 +3,6 @@ defmodule Brain.TestHelpers do
 
   alias Brain.Analysis.Pipeline
   alias Brain.TestWorldSandbox
-  alias Brain.ML.EntityExtractor
   alias Brain.ML.Gazetteer
   import ExUnit.Callbacks
 
@@ -71,8 +70,6 @@ which starts the full supervision tree.
     if Gazetteer.is_loaded?() == false do
       Gazetteer.load_all()
     end
-
-    EntityExtractor.load_entity_maps()
 
     Brain.Test.ModelFactory.train_and_load_test_models()
 
@@ -414,7 +411,6 @@ this is typically a no-op, but some tests call it directly as a safety check.
         Brain.ML.InformalExpansions,
         Brain.ML.Gazetteer,
         Brain.ML.SentimentClassifierSimple,
-        Brain.ML.EntityExtractor,
         Brain.Response.TemplateStore,
         Brain.Response.TemplateBlender,
         Brain.Analysis.AnalyzerCalibration
