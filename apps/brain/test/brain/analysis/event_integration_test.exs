@@ -2,7 +2,6 @@ defmodule Brain.Analysis.EventIntegrationTest do
   @moduledoc "Integration tests for the event extraction system.\n\nTests end-to-end flow from Pipeline through EventExtractor to Memory and Epistemic systems.\n"
 
   alias Brain.Analysis.EventPatterns
-  alias Brain.ML.EntityExtractor
   alias Brain.Analysis
   use Brain.Test.GraphCase, async: false
 
@@ -15,7 +14,6 @@ defmodule Brain.Analysis.EventIntegrationTest do
 
   setup do
     start_test_services()
-    EntityExtractor.load_entity_maps()
 
     if Process.whereis(MemoryStore) do
       :ok
