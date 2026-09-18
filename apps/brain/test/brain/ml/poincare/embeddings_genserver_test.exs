@@ -102,4 +102,36 @@ defmodule Brain.ML.Poincare.EmbeddingsGenServerTest do
       assert {:error, _} = result
     end
   end
+
+  describe "determinism" do
+    # Enough entities that negative sampling has real choices to make.
+    @pairs for i <- 1..8, do: {"child_#{i}", "parent_#{rem(i, 3)}"}
+
+    test "the same pairs and seed always produce the same embeddings" do
+      {:ok, first, _, _} = Embeddings.train(@pairs, dim: 3, epochs: 5, seed: 9)
+      {:ok, second, _, _} = Embeddings.train(@pairs, dim: 3, epochs: 5, seed: 9)
+
+      assert Nx.to_flat_list(first) == Nx.to_flat_list(second)
+    end
+
+    test "leaves the calling process's random state untouched" do
+      :rand.seed(:exsss, {1, 2, 3})
+      expected = :rand.uniform()
+
+      :rand.seed(:exsss, {1, 2, 3})
+      Embeddings.train(@pairs, dim: 3, epochs: 2, seed: 9)
+
+      assert :rand.uniform() == expected
+    end
+
+    test "save records the seed when given one" do
+      {:ok, embeddings, to_idx, from_idx} = Embeddings.train(@pairs, dim: 3, epochs: 2, seed: 9)
+      path = Path.join(System.tmp_dir!(), "poincare_seed_#{System.unique_integer([:positive])}.term")
+      on_exit(fn -> File.rm(path) end)
+
+      :ok = Embeddings.save(embeddings, to_idx, from_idx, 3, path, training_seed: 9)
+
+      assert {:ok, %{training_seed: 9}} = Embeddings.load(path)
+    end
+  end
 end
