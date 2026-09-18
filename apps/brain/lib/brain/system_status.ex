@@ -7,7 +7,6 @@ defmodule Brain.SystemStatus do
             [World.ModelRegistry, World.Embedder, World.Manager, World.Persistence, World.Metrics]}
 
   alias Brain.Metrics.Aggregator
-  alias Brain.ML.EntityExtractor
   alias Brain.ML.EntityTrainer
   alias Brain.ML.MicroClassifiers
   alias Brain.ML.POSTagger
@@ -51,7 +50,6 @@ defmodule Brain.SystemStatus do
       {Brain.ML.MicroClassifiers, "Micro Classifiers", :has_ready},
       {Brain.ML.SentimentClassifierSimple, "Sentiment Classifier", :has_ready},
       {Brain.ML.SpeechActClassifierSimple, "Speech Act Classifier", :has_ready},
-      {Brain.ML.EntityExtractor, "Entity Extractor", :has_ready},
       {Brain.ML.TrainingExampleBuffer, "Training Example Buffer", :has_ready_and_stats},
       {Brain.ML.TrainingServer, "Training Server", :has_status},
       {Brain.ML.KnowledgeGraph.TripleScorer, "Triple Scorer", :has_ready},
@@ -452,11 +450,14 @@ defmodule Brain.SystemStatus do
     %{
       pos_model: get_model_file_status(models_path, "pos_model.term"),
       entity_model: get_model_file_status(models_path, "entity_model.term"),
-      gazetteer: get_model_file_status(models_path, "gazetteer.term"),
+      # The gazetteer is built in memory from its sources, not stored as a model
+      # file. Its process loads in init/1, so a running process is a loaded one.
+      gazetteer: get_agent_status(Brain.ML.Gazetteer),
       sentiment_classifier: get_model_file_status(models_path, "sentiment_classifier.term"),
       speech_act_classifier: get_model_file_status(models_path, "speech_act_classifier.term"),
       intent_classifier: get_intent_classifier_status(models_path),
-      entity_extractor: get_agent_status(Brain.ML.EntityExtractor),
+      # Entity extraction has no process of its own; it reads the gazetteer.
+      entity_extractor: get_agent_status(Brain.ML.Gazetteer),
       last_evaluation: get_last_evaluation(),
       checked_at: DateTime.utc_now()
     }
@@ -1020,19 +1021,6 @@ defmodule Brain.SystemStatus do
       Brain.priv_path("ml_models")
   end
 
-  defp get_model_file_status(models_path, "gazetteer.term" = filename) do
-    path = Path.join(models_path, filename)
-
-    is_loaded =
-      try do
-        Gazetteer.loaded?()
-      catch
-        :exit, _ -> false
-      end
-
-    build_model_file_status(path, is_loaded)
-  end
-
   defp get_model_file_status(models_path, "pos_model.term" = filename) do
     path = Path.join(models_path, filename)
 
@@ -1089,35 +1077,6 @@ defmodule Brain.SystemStatus do
           modified_at: nil,
           path: path
         }
-    end
-  end
-
-  defp get_agent_status(Brain.ML.EntityExtractor = module) do
-    pid = Process.whereis(module)
-
-    if pid do
-      process_info = get_process_info(pid)
-
-      is_loaded =
-        try do
-          EntityExtractor.is_loaded?()
-        catch
-          :exit, _ -> false
-        end
-
-      %{
-        loaded: is_loaded,
-        pid: pid,
-        memory_bytes: process_info[:memory],
-        message_queue_len: process_info[:message_queue_len]
-      }
-    else
-      %{
-        loaded: false,
-        pid: nil,
-        memory_bytes: nil,
-        message_queue_len: nil
-      }
     end
   end
 
@@ -1201,22 +1160,6 @@ defmodule Brain.SystemStatus do
           vocabulary: embedder_status.vocabulary_size,
           progress: embedder_status.progress
         }
-    }
-  end
-
-  defp enhance_status(status, Brain.ML.EntityExtractor, :has_ready) do
-    ready =
-      try do
-        EntityExtractor.is_loaded?()
-      catch
-        :exit, _ -> false
-      end
-
-    %{
-      status
-      | ready: ready,
-        status: if(ready, do: :ready, else: :initializing),
-        label: if(ready, do: "Ready", else: "Initializing...")
     }
   end
 
