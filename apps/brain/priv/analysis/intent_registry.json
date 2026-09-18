@@ -79,17 +79,17 @@
     "description": "Music playback request",
     "domain": "music",
     "entity_mappings": {
-      "music-album": [
-        "music-album"
+      "music_album": [
+        "music_album"
       ],
-      "music-artist": [
-        "music-artist"
+      "music_artist": [
+        "music_artist"
       ],
-      "music-service": [
-        "music-service"
+      "music_service": [
+        "music_service"
       ],
-      "music-sort": [
-        "music-sort"
+      "music_sort": [
+        "music_sort"
       ],
       "playlist": [
         "playlist"
@@ -110,11 +110,11 @@
     ],
     "optional": [
       "song",
-      "music-artist",
-      "music-album",
+      "music_artist",
+      "music_album",
       "playlist",
-      "music-service",
-      "music-sort"
+      "music_service",
+      "music_sort"
     ],
     "output_contexts": [
       {
@@ -356,13 +356,13 @@
     "domain": "music",
     "entity_mappings": {
       "album": [
-        "music-album"
+        "music_album"
       ],
       "artist": [
-        "sys.music-artist"
+        "sys.music_artist"
       ],
       "genre": [
-        "sys.music-genre"
+        "sys.music_genre"
       ],
       "playlist": [
         "playlist"
@@ -520,8 +520,8 @@
       "category": [
         "category"
       ],
-      "date-time": [
-        "sys.date-time"
+      "date_time": [
+        "sys.date_time"
       ],
       "merchant": [
         "merchant"
@@ -549,7 +549,7 @@
       "merchant",
       "account",
       "category",
-      "date-time"
+      "date_time"
     ],
     "output_contexts": [
       {
@@ -609,8 +609,8 @@
       "address": [
         "sys.location"
       ],
-      "date-time": [
-        "sys.date-time"
+      "date_time": [
+        "sys.date_time"
       ]
     },
     "input_contexts": [
@@ -621,7 +621,7 @@
     ],
     "optional": [
       "activity",
-      "date-time",
+      "date_time",
       "address"
     ],
     "output_contexts": [
@@ -739,17 +739,17 @@
       "category": [
         "topic"
       ],
-      "date-time": [
-        "sys.date-time"
+      "date_time": [
+        "sys.date_time"
       ],
       "keyword": [
         "sys.any"
       ],
       "sort": [
-        "news-sort"
+        "news_sort"
       ],
       "source": [
-        "news-source"
+        "news_source"
       ]
     },
     "input_contexts": [
@@ -764,7 +764,7 @@
     ],
     "optional": [
       "keyword",
-      "date-time",
+      "date_time",
       "category",
       "source",
       "sort"
@@ -964,7 +964,7 @@
         "sys.any"
       ],
       "service": [
-        "search-engine"
+        "search_engine"
       ]
     },
     "input_contexts": [
@@ -1015,7 +1015,7 @@
       "date": [
         "date",
         "relative_date",
-        "sys-date"
+        "sys_date"
       ],
       "location": [
         "location",
@@ -1025,10 +1025,10 @@
       ],
       "time": [
         "time",
-        "sys-time"
+        "sys_time"
       ],
-      "unit-temperature": [
-        "unit-temperature"
+      "unit_temperature": [
+        "unit_temperature"
       ]
     },
     "input_contexts": [
@@ -1040,7 +1040,7 @@
     "optional": [
       "date",
       "time",
-      "unit-temperature"
+      "unit_temperature"
     ],
     "required": [
       "location"
@@ -1066,8 +1066,8 @@
       "address": [
         "sys.location"
       ],
-      "date-time": [
-        "sys.date-time"
+      "date_time": [
+        "sys.date_time"
       ],
       "outfit": [
         "outfit"
@@ -1082,7 +1082,7 @@
     "optional": [
       "outfit",
       "address",
-      "date-time"
+      "date_time"
     ],
     "output_contexts": [
       {
@@ -1215,8 +1215,8 @@
       "category": [
         "category"
       ],
-      "date-time": [
-        "sys.date-time"
+      "date_time": [
+        "sys.date_time"
       ]
     },
     "input_contexts": [
@@ -1239,7 +1239,7 @@
     ],
     "optional": [
       "account",
-      "date-time",
+      "date_time",
       "category"
     ],
     "output_contexts": [
@@ -1475,14 +1475,14 @@
       "address": [
         "sys.location"
       ],
-      "date-time": [
-        "sys.date-time"
+      "date_time": [
+        "sys.date_time"
       ],
       "temperature": [
         "temperature"
       ],
       "unit": [
-        "unit-temperature"
+        "unit_temperature"
       ]
     },
     "input_contexts": [
@@ -1494,7 +1494,7 @@
     "optional": [
       "address",
       "temperature",
-      "date-time",
+      "date_time",
       "unit"
     ],
     "output_contexts": [
@@ -2461,19 +2461,19 @@
     "domain": "music",
     "entity_mappings": {
       "album": [
-        "music-album"
+        "music_album"
       ],
       "amount": [
         "sys.number"
       ],
       "artist": [
-        "sys.music-artist"
+        "sys.music_artist"
       ],
-      "end-year": [
+      "end_year": [
         "sys.number"
       ],
       "genre": [
-        "sys.music-genre"
+        "sys.music_genre"
       ],
       "language": [
         "sys.language"
@@ -2482,15 +2482,15 @@
         "playlist"
       ],
       "service": [
-        "music-service"
+        "music_service"
       ],
       "song": [
         "song"
       ],
       "sort": [
-        "music-sort"
+        "music_sort"
       ],
-      "start-year": [
+      "start_year": [
         "sys.number"
       ]
     },
@@ -2513,8 +2513,8 @@
       "playlist",
       "service",
       "language",
-      "start-year",
-      "end-year",
+      "start_year",
+      "end_year",
       "amount"
     ],
     "output_contexts": [
