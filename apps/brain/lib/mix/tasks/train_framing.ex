@@ -17,7 +17,6 @@ defmodule Mix.Tasks.TrainFraming do
   ## Options
 
       --skip-weight-optimization  Train without GA (uniform weights)
-      --no-balance                Disable balanced centroid computation
       --neutral-class NAME        Label to use as the neutral-framing reference
                                   (default: auto-detect smallest deviation class)
       --verbose                   Print per-class metrics
@@ -44,7 +43,6 @@ defmodule Mix.Tasks.TrainFraming do
       OptionParser.parse(args,
         switches: [
           skip_weight_optimization: :boolean,
-          no_balance: :boolean,
           neutral_class: :string,
           verbose: :boolean,
           publish: :boolean,
@@ -72,20 +70,19 @@ defmodule Mix.Tasks.TrainFraming do
       end
 
       skip_optimization? = opts[:skip_weight_optimization] || false
-      balance? = !(opts[:no_balance] || false)
 
-      model = train_model(training_data, skip_optimization?, balance?, opts)
+      model = train_model(training_data, skip_optimization?, opts)
 
       output_dir = Path.join(get_models_path(), "micro")
       File.mkdir_p!(output_dir)
 
       model_path = Path.join(output_dir, "framing_class.term")
-      File.write!(model_path, :erlang.term_to_binary(model))
+      File.write!(model_path, Brain.ML.ModelStore.serialize(model))
       Mix.shell().info("Saved model to #{model_path}")
 
       neutral_centroid = compute_neutral_centroid(model, training_data, opts[:neutral_class])
       centroid_path = Path.join(output_dir, "framing_neutral_centroid.term")
-      File.write!(centroid_path, :erlang.term_to_binary(neutral_centroid))
+      File.write!(centroid_path, Brain.ML.ModelStore.serialize(neutral_centroid))
       Mix.shell().info("Saved neutral centroid to #{centroid_path}")
 
       if opts[:publish] do
@@ -130,17 +127,17 @@ defmodule Mix.Tasks.TrainFraming do
     end
   end
 
-  defp train_model(training_data, skip_optimization?, balance?, opts) do
+  defp train_model(training_data, skip_optimization?, opts) do
     n_classes = training_data |> Enum.map(&elem(&1, 1)) |> Enum.uniq() |> length()
 
     cond do
       n_classes < 2 ->
         Mix.shell().info("Only #{n_classes} class — skipping GA")
-        FeatureVectorClassifier.train(training_data, balance: balance?)
+        FeatureVectorClassifier.train(training_data)
 
       skip_optimization? ->
         Mix.shell().info("Skipping weight optimization (--skip-weight-optimization)")
-        FeatureVectorClassifier.train(training_data, balance: balance?)
+        FeatureVectorClassifier.train(training_data)
 
       true ->
         Mix.shell().info(
@@ -184,7 +181,7 @@ defmodule Mix.Tasks.TrainFraming do
         alive = Enum.count(result.weights, &(&1 > 0.01))
         Mix.shell().info("#{alive}/#{length(result.weights)} dimensions active")
 
-        FeatureVectorClassifier.train(training_data, weights: result.weights, balance: balance?)
+        FeatureVectorClassifier.train(training_data, weights: result.weights)
     end
   end
 
