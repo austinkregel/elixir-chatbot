@@ -48,6 +48,16 @@ find apps/brain/priv/ml_models -name "*.term" -type f -print0 | xargs -0 shasum 
 `mix run apps/brain/priv/baselines/polarity_evidence.exs` reads the polarity instrumentation directly;
 its result is recorded below rather than as a separate file.
 
+### Later references
+
+Each is a dated output of `distortions_probe.exs` with a header recording the commit and
+why a new reference was needed. The newest one is the one to compare against.
+
+| file | captured at | why |
+|---|---|---|
+| `axes.2026-09-16.pre-lexicon-swap.txt` | `e54856d` | Reference for routing lexical lookups through `Brain.Lexicon` without changing any axis |
+| `axes.2026-09-18.post-gazetteer-rebuild.txt` | `95bc263` | Entity data recreated, gazetteer rebuilt without caps and with every candidate kept, extraction returning system types |
+
 ## What the baseline says
 
 The numbers the rebuild has to move:
