@@ -150,6 +150,32 @@ defmodule Brain.ML.DataLoadersTest do
       assert Map.has_key?(lookup, "valid")
       assert Map.has_key?(lookup, "ok")
     end
+
+    test "indexes a record once when its value is repeated among its synonyms" do
+      # Dialogflow exports list every value among its own synonyms.
+      entities = %{
+        "room" => [%{value: "kitchen", synonyms: ["kitchen", "Kitchen"], entity_type: "room"}]
+      }
+
+      lookup = DataLoaders.build_entity_lookup(entities)
+
+      assert %{value: "kitchen", entity_type: "room"} = Map.fetch!(lookup, "kitchen")
+    end
+
+    test "keeps separate records that share a surface form" do
+      entities = %{
+        "person" => [%{value: "Madison", synonyms: ["Madison"], entity_type: "person"}],
+        "location" => [%{value: "Madison", synonyms: ["Madison"], entity_type: "location"}]
+      }
+
+      candidates = lookup_types(DataLoaders.build_entity_lookup(entities), "madison")
+
+      assert Enum.sort(candidates) == ["location", "person"]
+    end
+  end
+
+  defp lookup_types(lookup, key) do
+    lookup |> Map.fetch!(key) |> List.wrap() |> Enum.map(& &1.entity_type)
   end
 
   describe "build_city_lookup/1" do
@@ -186,7 +212,7 @@ defmodule Brain.ML.DataLoadersTest do
       assert Map.has_key?(lookup, "madonna")
 
       beatles = Map.get(lookup, "the beatles")
-      assert beatles.entity_type == "music-artist"
+      assert beatles.entity_type == "music_artist"
       assert beatles.value == "The Beatles"
       assert beatles.genre == "Rock"
     end
