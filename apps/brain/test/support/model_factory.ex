@@ -68,44 +68,6 @@ defmodule Brain.Test.ModelFactory do
   )a
 
   @doc """
-  Writes `gazetteer.term` via `Brain.ML.Trainer.build_gazetteer_data/2` if it is
-  missing at the configured `models_path`. Call **before**
-  `Application.ensure_all_started(:brain)` so `EntityExtractor` can load maps
-  without the removed legacy JSON fallback.
-  """
-  def ensure_gazetteer_on_disk! do
-    models_path = Application.get_env(:brain, :ml, [])[:models_path]
-
-    if is_nil(models_path) do
-      raise "ModelFactory.ensure_gazetteer_on_disk!: :models_path must be set in test config"
-    end
-
-    path = Path.join(models_path, "gazetteer.term")
-
-    if not File.exists?(path) do
-      File.mkdir_p!(models_path)
-      _stats = Brain.ML.Trainer.build_gazetteer_data(%{}, models_path: models_path)
-      Logger.info("[ModelFactory] Wrote gazetteer.term to #{path}")
-    end
-
-    ensure_gazetteer_non_empty!(path)
-    :ok
-  end
-
-  defp ensure_gazetteer_non_empty!(path) do
-    term =
-      case File.read(path) do
-        {:ok, bin} -> :erlang.binary_to_term(bin)
-        {:error, reason} -> raise "ModelFactory: cannot read gazetteer at #{path}: #{inspect(reason)}"
-      end
-
-    if is_map(term) and map_size(term) == 0 do
-      raise "ModelFactory: gazetteer at #{path} is empty. It is built from the entity and " <>
-              "CSV sources under the configured :training_data_path; check that they are present."
-    end
-  end
-
-  @doc """
   Trains and loads all test models into their respective GenServers.
 
   Trains sentiment, speech act, micro-classifiers, POS, Poincare, triple
