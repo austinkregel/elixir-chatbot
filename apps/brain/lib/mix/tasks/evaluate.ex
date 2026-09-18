@@ -168,7 +168,8 @@ defmodule Mix.Tasks.Evaluate do
 
   defp extract_entities_safely(text) do
     analysis = Pipeline.analyze_chunk(text, side_effects: false)
-    {:ok, analysis.entities || []}
+    # The pipeline emits system types; map them onto the gold standard's labels.
+    {:ok, ML.EntityExtractor.normalize_entity_types(analysis.entities || [])}
   rescue
     e ->
       Logger.warning("NER extraction crashed: #{Exception.message(e)}")
