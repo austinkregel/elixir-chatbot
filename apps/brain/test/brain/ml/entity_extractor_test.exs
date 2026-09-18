@@ -3,15 +3,28 @@ defmodule Brain.ML.EntityExtractorTest do
 
   alias Brain.ML.EntityExtractor
 
-  setup do
-    EntityExtractor.load_entity_maps()
-    :ok
-  end
-
   describe "extract_entities/1" do
     test "returns a list of entities" do
       entities = EntityExtractor.extract_entities("hello world")
       assert is_list(entities)
+    end
+
+    test "a word with several gazetteer candidates keeps all of them" do
+      # "door" is a device, a lock and an emoji name. Extraction reads the one
+      # gazetteer, picks a primary type, and keeps every candidate in :types.
+      entities = EntityExtractor.extract_entities("open the door")
+      door = Enum.find(entities, &(String.downcase(&1.value) == "door"))
+
+      assert door
+      candidate_types = Enum.map(door.types, & &1[:entity_type])
+      assert "device" in candidate_types
+      assert "emoji" in candidate_types
+      assert door.entity_type in candidate_types
+    end
+
+    test "reports loaded when the gazetteer it reads has loaded" do
+      assert EntityExtractor.is_loaded?() == Brain.ML.Gazetteer.loaded?()
+      assert EntityExtractor.is_loaded?()
     end
 
     test "extracts known entity from entity maps" do
@@ -104,28 +117,6 @@ defmodule Brain.ML.EntityExtractorTest do
     end
   end
 
-  describe "extract_entities with custom entity maps" do
-    test "uses provided entity maps" do
-      custom_maps = %{
-        "custom item" => %{entity_type: "custom", value: "Custom Item"}
-      }
-
-      entities = EntityExtractor.extract_entities("I need a custom item please", custom_maps)
-
-      custom =
-        Enum.find(entities, fn e ->
-          Map.get(e, :entity_type) == "custom" or
-            String.downcase(Map.get(e, :value, "")) == "custom item"
-        end)
-
-      if custom do
-        assert custom.value == "Custom Item" or custom.value == "custom item"
-      else
-        assert is_list(entities)
-      end
-    end
-  end
-
   describe "location extraction" do
     test "extracts location from prepositional context" do
       entities = EntityExtractor.extract_entities("weather in New York")
@@ -144,47 +135,19 @@ defmodule Brain.ML.EntityExtractorTest do
 
   describe "conflict resolution" do
     test "resolves overlapping entities by keeping longest match" do
-      custom_maps = %{
-        "new" => %{entity_type: "word", value: "New"},
-        "new york" => %{entity_type: "city", value: "New York"}
-      }
+      # "new york" and "york" are both cities in the gazetteer; only the
+      # longer span may survive.
+      entities = EntityExtractor.extract_entities("I'm in New York")
 
-      entities = EntityExtractor.extract_entities("I'm in New York", custom_maps)
+      new_york = Enum.find(entities, &(String.downcase(&1.value) == "new york"))
+      assert new_york
 
-      new_york =
-        Enum.find(entities, fn e ->
-          String.downcase(Map.get(e, :value, "")) == "new york"
+      inside =
+        Enum.filter(entities, fn e ->
+          e != new_york and e.start_pos >= new_york.start_pos and e.end_pos <= new_york.end_pos
         end)
 
-      just_new =
-        Enum.find(entities, fn e ->
-          Map.get(e, :value) == "New" and Map.get(e, :entity_type) == "word"
-        end)
-
-      if new_york do
-        assert just_new == nil or just_new.start_pos != new_york.start_pos
-      end
-    end
-  end
-
-  describe "load_entity_maps/0" do
-    test "loads and caches entity maps" do
-      result = EntityExtractor.load_entity_maps()
-
-      case result do
-        {:ok, maps} ->
-          assert is_map(maps)
-
-        {:error, _} ->
-          assert true
-      end
-    end
-  end
-
-  describe "get_entity_maps/0" do
-    test "returns cached entity maps" do
-      maps = EntityExtractor.get_entity_maps()
-      assert is_map(maps)
+      assert inside == []
     end
   end
 
