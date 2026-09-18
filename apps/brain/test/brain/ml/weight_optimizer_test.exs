@@ -181,4 +181,44 @@ defmodule Brain.ML.WeightOptimizerTest do
       assert result.classifier == :unknown
     end
   end
+
+  describe "determinism" do
+    @quick [population_size: 12, max_generations: 6, early_stop_generations: 3, verbose: false]
+
+    # Three overlapping classes built from a formula (no random draws). Unlike
+    # tiny_dataset/0, no initial individual separates them perfectly, so the
+    # search has to move and every random step affects the weights it returns.
+    defp overlapping_dataset do
+      for i <- 1..60 do
+        label = Enum.at(["a", "b", "c"], rem(i, 3))
+        c = rem(i, 3)
+        {[:math.sin(i) + c * 0.3, :math.cos(i * 2), :math.sin(i * 3) - c * 0.2, c * 0.1 + :math.cos(i)], label}
+      end
+    end
+
+    test "the same data and seed always produce the same weights" do
+      first = WeightOptimizer.optimize(overlapping_dataset(), [seed: 5, run_id: "d1"] ++ @quick)
+      second = WeightOptimizer.optimize(overlapping_dataset(), [seed: 5, run_id: "d2"] ++ @quick)
+
+      assert first.weights == second.weights
+      assert first.history == second.history
+    end
+
+    test "records the seed it ran with, defaulting to the configured one" do
+      assert WeightOptimizer.optimize(tiny_dataset(), [seed: 5] ++ @quick).training_seed == 5
+
+      assert WeightOptimizer.optimize(tiny_dataset(), @quick).training_seed ==
+               Brain.ML.TrainingSeed.get!()
+    end
+
+    test "leaves the calling process's random state untouched" do
+      :rand.seed(:exsss, {1, 2, 3})
+      expected = :rand.uniform()
+
+      :rand.seed(:exsss, {1, 2, 3})
+      WeightOptimizer.optimize(tiny_dataset(), [seed: 5] ++ @quick)
+
+      assert :rand.uniform() == expected
+    end
+  end
 end
