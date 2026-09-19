@@ -8,8 +8,11 @@ defmodule Brain.Graph.Training do
   ## Integration Points
 
   - `pos_graph` -> POS Tagger: Transition weight refresh from accumulated tag patterns
-  - `knowledge_graph` -> Gazetteer: Entity sync from discovered entities
   - `conversation_graph` -> Intent Classifier: Topic transition priors
+
+  The gazetteer is deliberately not fed from the graph: the graph holds the
+  system's own unreviewed extractions, and the gazetteer learns only what a
+  human reviewer approved (see `Brain.Knowledge.ReviewQueue`).
 
   ## Blend Ratios
 
@@ -17,7 +20,6 @@ defmodule Brain.Graph.Training do
   noisy graph data from overwhelming labeled training data:
 
   - POS weights: 70% existing + 30% graph (default)
-  - Gazetteer: Additive (graph entities supplement, don't replace)
   - Intent priors: 85% TF-IDF score + 15% graph prior (default)
   """
 
@@ -135,114 +137,6 @@ defmodule Brain.Graph.Training do
   end
 
   defp build_tag_priors(_), do: %{}
-
-  # ============================================================================
-  # Gazetteer Sync
-  # ============================================================================
-
-  @doc """
-  Collects gazetteer entries from the knowledge_graph without writing them.
-
-  Returns `{:ok, entries}` where entries is a list of `{name, entity_type, metadata}` tuples,
-  or `{:error, reason}`. The caller (Gazetteer) is responsible for inserting into ETS,
-  avoiding the self-call deadlock that occurs when a GenServer calls its own public API.
-  """
-  def collect_gazetteer_entries do
-    labels = discover_entity_labels()
-
-    if labels == [] do
-      Logger.debug("No entity labels found in knowledge_graph, skipping Gazetteer sync")
-      {:ok, []}
-    else
-      entries =
-        Enum.flat_map(labels, fn label ->
-          entity_type = label_to_entity_type(label)
-          collect_label_entries(label, entity_type)
-        end)
-
-      Logger.info("Collected #{length(entries)} gazetteer entries from knowledge_graph")
-      {:ok, entries}
-    end
-  rescue
-    e ->
-      Logger.warning("Gazetteer entry collection failed", reason: inspect(e))
-      {:error, e}
-  end
-
-  @doc """
-  Sync knowledge_graph entities into the Gazetteer ETS table.
-
-  Safe to call from outside the Gazetteer process. Do NOT call from within
-  the Gazetteer GenServer -- use `collect_gazetteer_entries/0` instead.
-  """
-  def sync_gazetteer do
-    case collect_gazetteer_entries() do
-      {:ok, entries} ->
-        Enum.each(entries, fn {name, entity_type, metadata} ->
-          Brain.ML.Gazetteer.add_entry(name, entity_type, metadata)
-        end)
-
-        :ok
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
-  @doc """
-  Discovers all distinct node labels present in the knowledge_graph.
-
-  Returns a list of label strings (e.g., ["Location", "Person", "Device"]).
-  """
-  def discover_entity_labels do
-    query = "MATCH (n) RETURN DISTINCT labels(n) AS lbls"
-
-    case Graph.cypher("knowledge_graph", query) do
-      {:ok, rows} ->
-        rows
-        |> Enum.flat_map(fn
-          [labels] when is_list(labels) -> labels
-          _ -> []
-        end)
-        |> Enum.uniq()
-        |> Enum.reject(&(&1 in ["_internal", ""]))
-
-      _ ->
-        []
-    end
-  rescue
-    _ -> []
-  end
-
-  defp collect_label_entries(label, entity_type) do
-    query = "MATCH (n:#{label}) RETURN n"
-
-    case Graph.cypher("knowledge_graph", query) do
-      {:ok, rows} ->
-        Enum.flat_map(rows, fn
-          [%Atlas.Graph.Types.Vertex{properties: props}] ->
-            name = Map.get(props, "name", "")
-
-            if name != "" do
-              metadata = Map.drop(props, ["name"])
-              [{name, entity_type, metadata}]
-            else
-              []
-            end
-
-          _ ->
-            []
-        end)
-
-      _ ->
-        []
-    end
-  end
-
-  defp label_to_entity_type(label) do
-    label
-    |> String.downcase()
-  end
 
   # ============================================================================
   # Intent Classification Priors
