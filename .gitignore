@@ -140,6 +140,10 @@ apps/brain/priv/evaluation/results/
 apps/brain/priv/evaluation/sentiment/
 apps/brain/priv/evaluation/**/*.bak
 
+# Training fixtures in the task 086 format, and the declared sources they are
+# built from. A fresh clone must train on exactly these (data/ is ignored).
+!apps/brain/priv/training/
+
 # Umbrella-root training data stays local, except the small hand-curated
 # informal-expansions map that InformalExpansions loads at runtime, and the
 # gazetteer's sources: Brain.ML.Gazetteer refuses to start without every one of
