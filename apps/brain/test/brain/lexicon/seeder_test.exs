@@ -7,6 +7,7 @@ defmodule Brain.Lexicon.SeederTest do
 
   alias Brain.Lexicon.Seeder
   alias Brain.Lexicon.UserDefined
+  alias Brain.ML.Lexicon, as: WordNet
 
   setup do
     prefix = :"seeder_test_#{System.unique_integer([:positive])}"
@@ -101,10 +102,126 @@ defmodule Brain.Lexicon.SeederTest do
     end
   end
 
+  describe "derive_sense_usage/1" do
+    setup do
+      {:ok, usage: Map.new(Seeder.derive_sense_usage())}
+    end
+
+    # The SemCor count of every counted noun sense of `word` that WordNet
+    # places under `anchor_word`, read from WordNet rather than written here.
+    defp semcor_count_under(word, anchor_word) do
+      WordNet.senses(word)
+      |> Enum.filter(fn s ->
+        s.pos == :noun and
+          Enum.any?(WordNet.synset_ancestors(s.synset_id), fn {_sid, words, _d} -> anchor_word in words end)
+      end)
+      |> Enum.map(& &1.tag_count)
+      |> Enum.sum()
+    end
+
+    test "counts a weekday's uses as a date and never as a band", %{usage: usage} do
+      expected = semcor_count_under("thursday", "day of the week")
+
+      assert expected > 0
+      assert usage["thursday"].types == %{"sys_date" => expected}
+    end
+
+    test "counts a named city's uses as a location", %{usage: usage} do
+      assert usage["paris"].types["location"] == semcor_count_under("paris", "location")
+      assert usage["paris"].types["location"] > 0
+    end
+
+    test "counts uses under no anchor as ordinary, split by part of speech", %{usage: usage} do
+      # "nice" is used as an adjective, never (in SemCor) as the city.
+      adjective_uses =
+        WordNet.senses("nice")
+        |> Enum.reject(&(&1.pos == :noun))
+        |> Enum.map(& &1.tag_count)
+        |> Enum.sum()
+
+      assert adjective_uses > 0
+      assert usage["nice"].types == %{}
+      assert usage["nice"].ordinary == %{"other_pos" => adjective_uses}
+    end
+
+    test "ignores senses SemCor never counted" do
+      # Every Madonna sense has a count of zero, so the word derives nothing.
+      assert Enum.all?(WordNet.senses("madonna"), &(&1.tag_count == 0))
+      refute List.keymember?(Seeder.derive_sense_usage(), "madonna", 0)
+    end
+
+    test "every count is positive and every type is one the anchor table declares", %{usage: usage} do
+      declared = Brain.Lexicon.TypeAnchors.load!() |> Map.values() |> MapSet.new()
+
+      for {_word, %{types: types, ordinary: ordinary}} <- usage do
+        assert Enum.all?(Map.values(types) ++ Map.values(ordinary), &(&1 > 0))
+        assert Enum.all?(Map.keys(types), &MapSet.member?(declared, &1))
+        assert Enum.all?(Map.keys(ordinary), &(&1 in ["noun", "other_pos"]))
+      end
+    end
+  end
+
+  describe "seed_sense_usage/1" do
+    test "writes one fact per word and type, and per word and part of speech", %{store: store} do
+      {:ok, count} = Seeder.seed_sense_usage(store: store)
+
+      expected =
+        Seeder.derive_sense_usage()
+        |> Enum.map(fn {_w, u} -> map_size(u.types) + map_size(u.ordinary) end)
+        |> Enum.sum()
+
+      assert count == expected
+
+      assert [fact] = UserDefined.facts("thursday", [key: "sense_usage"], store)
+      assert fact.source == "seed:semcor"
+      assert fact.kind == "property"
+      assert fact.ref == "sys_date"
+      assert fact.value["count"] > 0
+
+      assert [ordinary] = UserDefined.facts("nice", [key: "ordinary_usage"], store)
+      assert ordinary.ref == "other_pos"
+    end
+
+    test "is idempotent", %{store: store} do
+      {:ok, first} = Seeder.seed_sense_usage(store: store)
+      before_count = UserDefined.fact_count(store)
+
+      {:ok, second} = Seeder.seed_sense_usage(store: store)
+
+      assert first == second
+      assert UserDefined.fact_count(store) == before_count
+    end
+  end
+
+  describe "seed_closed_class/1" do
+    test "writes one authored ordinary-use fact per closed-class word", %{store: store} do
+      {:ok, count} = Seeder.seed_closed_class(store: store, count: 42)
+
+      assert count == length(Brain.Lexicon.ClosedClass.words())
+
+      for word <- ~w(of the all) do
+        assert [fact] = UserDefined.facts(word, [key: "ordinary_usage", source: "authored"], store)
+        assert fact.ref == "closed_class"
+        assert fact.value == %{"count" => 42}
+      end
+    end
+
+    test "the count is the configured one by default", %{store: store} do
+      {:ok, _} = Seeder.seed_closed_class(store: store)
+      [fact] = UserDefined.facts("of", [key: "ordinary_usage", source: "authored"], store)
+
+      assert fact.value["count"] == Application.fetch_env!(:brain, :closed_class_ordinary_count)
+    end
+  end
+
   describe "seed_all/1" do
     test "reports what it wrote", %{store: store} do
-      assert {:ok, %{negation: count}} = Seeder.seed_all(store: store)
-      assert count > 1_000
+      assert {:ok, %{negation: negation, sense_usage: sense_usage, closed_class: closed_class}} =
+               Seeder.seed_all(store: store)
+
+      assert negation > 1_000
+      assert sense_usage > 1_000
+      assert closed_class == length(Brain.Lexicon.ClosedClass.words())
     end
   end
 end
