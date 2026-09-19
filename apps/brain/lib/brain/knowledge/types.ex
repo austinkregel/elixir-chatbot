@@ -84,9 +84,13 @@ defmodule Brain.Knowledge.Types do
             confidence: float(),
             corroboration_group: String.t() | nil,
             embedding: [float()] | nil,
-            comprehension_profile_id: String.t() | nil
+            comprehension_profile_id: String.t() | nil,
+            world_id: String.t() | nil
           }
 
+    # `world_id` scopes an entity finding to one world: once approved, the
+    # entity is added to that world's gazetteer overlay rather than to the
+    # global gazetteer. `nil` means the finding is about the world at large.
     @enforce_keys [:id, :claim, :entity, :source]
     defstruct [
       :id,
@@ -97,6 +101,7 @@ defmodule Brain.Knowledge.Types do
       :corroboration_group,
       :embedding,
       :comprehension_profile_id,
+      :world_id,
       raw_context: "",
       extracted_at: nil,
       confidence: 0.5
@@ -115,7 +120,8 @@ defmodule Brain.Knowledge.Types do
         confidence: Keyword.get(opts, :confidence, 0.5),
         corroboration_group: Keyword.get(opts, :corroboration_group),
         embedding: Keyword.get(opts, :embedding),
-        comprehension_profile_id: Keyword.get(opts, :comprehension_profile_id)
+        comprehension_profile_id: Keyword.get(opts, :comprehension_profile_id),
+        world_id: Keyword.get(opts, :world_id)
       }
     end
 
@@ -894,7 +900,10 @@ defmodule Brain.Knowledge.Types do
 
     alias Types.{Finding, SourceInfo}
 
-    @type status :: :pending | :approved | :rejected | :deferred
+    # :approved is a human decision; :auto_approved is the queue's own. They
+    # are kept apart because only what a human reviewed may teach the
+    # gazetteer.
+    @type status :: :pending | :approved | :auto_approved | :rejected | :deferred
 
     @type t :: %__MODULE__{
             id: String.t(),
@@ -937,9 +946,14 @@ defmodule Brain.Knowledge.Types do
       }
     end
 
-    @doc "Marks a candidate as approved.\n"
+    @doc "Marks a candidate as approved by a human reviewer.\n"
     def approve(%__MODULE__{} = candidate, notes \\ nil) do
       %{candidate | status: :approved, reviewed_at: DateTime.utc_now(), reviewer_notes: notes}
+    end
+
+    @doc "Marks a candidate as approved by the queue itself, without a human.\n"
+    def auto_approve(%__MODULE__{} = candidate, notes \\ nil) do
+      %{candidate | status: :auto_approved, reviewed_at: DateTime.utc_now(), reviewer_notes: notes}
     end
 
     @doc "Marks a candidate as rejected.\n"
