@@ -633,7 +633,8 @@ defmodule Brain.AtlasIntegration do
             entity_type: Map.get(row.finding || %{}, "entity_type"),
             source: source,
             raw_context: Map.get(row.finding || %{}, "raw_context", ""),
-            confidence: Map.get(row.finding || %{}, "confidence", 0.5)
+            confidence: Map.get(row.finding || %{}, "confidence", 0.5),
+            world_id: Map.get(row.finding || %{}, "world_id")
           }
 
           candidate = %Brain.Knowledge.Types.ReviewCandidate{
@@ -652,6 +653,38 @@ defmodule Brain.AtlasIntegration do
     end
   end
 
+  @doc """
+  Returns every entity a human reviewer approved, as `{entity, entity_type,
+  world_id}` with `world_id` nil for the world at large.
+
+  Only `approved` candidates count: `auto_approved` ones were never seen by a
+  human, and pending, deferred or rejected ones were not approved. A
+  candidate without an entity or a type names nothing to learn and is left
+  out. The gazetteer reads this at boot, so what a reviewer approved survives
+  a restart.
+  """
+  @spec load_reviewed_entities() :: {:ok, [{String.t(), String.t(), String.t() | nil}]} | {:error, term()}
+  def load_reviewed_entities do
+    import Ecto.Query, only: [from: 2]
+
+    with {:ok, rows} <-
+           sync(fn ->
+             Atlas.Repo.all(from c in Atlas.Schemas.ReviewCandidate, where: c.status == "approved")
+           end) do
+      entities =
+        rows
+        |> Enum.map(fn row ->
+          finding = row.finding || %{}
+          {finding["entity"], finding["entity_type"], finding["world_id"]}
+        end)
+        |> Enum.filter(fn {entity, type, _world} ->
+          is_binary(entity) and entity != "" and is_binary(type) and type != ""
+        end)
+
+      {:ok, entities}
+    end
+  end
+
   @doc "Persist a review candidate to Atlas."
   def persist_review_candidate(%Brain.Knowledge.Types.ReviewCandidate{} = candidate) do
     async(fn ->
@@ -660,7 +693,8 @@ defmodule Brain.AtlasIntegration do
         "entity" => candidate.finding.entity,
         "entity_type" => candidate.finding.entity_type,
         "raw_context" => candidate.finding.raw_context,
-        "confidence" => candidate.finding.confidence
+        "confidence" => candidate.finding.confidence,
+        "world_id" => candidate.finding.world_id
       }
 
       corroborating =
