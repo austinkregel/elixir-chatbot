@@ -15,7 +15,9 @@ defmodule Mix.Tasks.DownloadWordnet do
 
   @github_archive_url "https://github.com/ekaf/wordnet-prolog/archive/refs/heads/master.tar.gz"
 
-  @required_files ~w(wn_s.pl wn_g.pl wn_hyp.pl wn_ant.pl wn_exc.pl wn_mm.pl wn_ms.pl wn_mp.pl wn_sim.pl wn_der.pl wn_ins.pl)
+  # wn_morphy.pl holds WordNet's suffix rules for reducing an inflected form
+  # to its base form ("lights" -> "light"); Brain.ML.Lexicon requires it.
+  @required_files ~w(wn_s.pl wn_g.pl wn_hyp.pl wn_ant.pl wn_exc.pl wn_morphy.pl wn_mm.pl wn_ms.pl wn_mp.pl wn_sim.pl wn_der.pl wn_ins.pl)
 
   @impl Mix.Task
   def run(args) do
@@ -92,7 +94,6 @@ defmodule Mix.Tasks.DownloadWordnet do
           name_str = to_string(name)
           String.ends_with?(name_str, ".pl") and not String.contains?(name_str, "/wn_query") and
             not String.contains?(name_str, "/wn_valid") and
-            not String.contains?(name_str, "/wn_morphy") and
             not String.contains?(name_str, "/wn2csv") and
             not String.contains?(name_str, "/wn_syntax") and
             not String.contains?(name_str, "/utils") and
