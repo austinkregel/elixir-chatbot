@@ -393,6 +393,22 @@ defmodule Brain.Lexicon do
   @doc "Returns the base/lemma form of a word."
   def lemma(word) when is_binary(word), do: WordNet.lemma(word)
 
+  @doc """
+  Returns every lemma a word can be a form of, as `{lemma, pos}`: regular
+  and irregular inflections and the word itself. See
+  `Brain.ML.Lexicon.base_forms/2`.
+  """
+  @spec base_forms(String.t()) :: [{String.t(), atom()}]
+  def base_forms(word) when is_binary(word), do: WordNet.base_forms(word)
+
+  @doc """
+  The grammatical number of a word read as a noun: `:plural`, `:singular`,
+  or `nil` when it is no noun WordNet knows. See
+  `Brain.ML.Lexicon.grammatical_number/2`.
+  """
+  @spec grammatical_number(String.t()) :: :plural | :singular | nil
+  def grammatical_number(word) when is_binary(word), do: WordNet.grammatical_number(word)
+
   @doc "Returns all synset IDs for a word, optionally filtered by POS."
   def synset_ids(word, pos \\ nil) when is_binary(word) do
     senses = WordNet.senses(String.downcase(word))
