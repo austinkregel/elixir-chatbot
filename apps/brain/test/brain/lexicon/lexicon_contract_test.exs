@@ -146,6 +146,168 @@ defmodule Brain.Lexicon.ContractTest do
     end
   end
 
+  defp first_noun_sense(word) do
+    Enum.find(WordNet.senses(word), &(&1.pos == :noun)).synset_id
+  end
+
+  describe "synset_ancestors/2" do
+    test "follows instance edges, so a named place reaches its class" do
+      # Paris is an *instance of* national capital; plain hypernym edges alone
+      # never reach "city".
+      words =
+        "paris"
+        |> first_noun_sense()
+        |> WordNet.synset_ancestors()
+        |> Enum.flat_map(fn {_sid, words, _distance} -> words end)
+
+      assert "national capital" in words
+      assert "city" in words
+      assert "location" in words
+    end
+
+    test "works per sense: two senses of one word reach different classes" do
+      [singer, mother] =
+        "madonna"
+        |> WordNet.senses()
+        |> Enum.filter(&(&1.pos == :noun))
+        |> Enum.map(fn sense ->
+          sense.synset_id
+          |> WordNet.synset_ancestors()
+          |> Enum.flat_map(fn {_sid, words, _d} -> words end)
+        end)
+        |> Enum.sort_by(&("singer" in &1), :desc)
+
+      assert "singer" in singer and "musician" in singer
+      refute "mother" in singer
+      assert "mother" in mother
+      refute "musician" in mother
+    end
+
+    test "is ordered by distance, then by synset id, and each ancestor appears once" do
+      ancestors = WordNet.synset_ancestors(first_noun_sense("paris"))
+      keys = Enum.map(ancestors, fn {sid, _words, distance} -> {distance, sid} end)
+
+      assert keys == Enum.sort(keys)
+      assert length(keys) == length(Enum.uniq_by(keys, &elem(&1, 1)))
+      assert {_, _, 1} = hd(ancestors)
+    end
+
+    test "stops at max_depth" do
+      sid = first_noun_sense("paris")
+      shallow = WordNet.synset_ancestors(sid, max_depth: 2)
+
+      assert shallow != []
+      assert Enum.all?(shallow, fn {_sid, _words, distance} -> distance <= 2 end)
+      assert length(shallow) < length(WordNet.synset_ancestors(sid))
+    end
+  end
+
+  describe "base_forms/2" do
+    test "applies WordNet's regular suffix rules, which lemma/1 does not" do
+      assert {"light", :noun} in WordNet.base_forms("lights")
+      assert {"city", :noun} in WordNet.base_forms("cities")
+      assert {"box", :noun} in WordNet.base_forms("boxes")
+      assert {"run", :verb} in WordNet.base_forms("running")
+      # lemma/1 still reads only the exception list.
+      assert WordNet.lemma("lights") == "lights"
+    end
+
+    test "applies the exception list for irregular forms" do
+      assert {"mouse", :noun} in WordNet.base_forms("mice")
+      assert {"run", :verb} in WordNet.base_forms("ran")
+    end
+
+    test "includes the word itself for each part of speech it is a lemma of" do
+      forms = WordNet.base_forms("light")
+      assert {"light", :noun} in forms
+      assert {"light", :verb} in forms
+      assert {"light", :adj} in forms
+    end
+
+    test "keeps only candidates WordNet holds with that part of speech" do
+      # "bus" minus "s" is "bu", which WordNet does not hold.
+      refute Enum.any?(WordNet.base_forms("bus"), fn {lemma, _pos} -> lemma == "bu" end)
+      assert WordNet.base_forms("zorbls") == []
+    end
+
+    test "is sorted and free of duplicates" do
+      forms = WordNet.base_forms("lights")
+      assert forms == forms |> Enum.uniq() |> Enum.sort()
+    end
+  end
+
+  describe "grammatical_number/2" do
+    test "a regular or irregular plural of a noun is plural" do
+      assert WordNet.grammatical_number("lights") == :plural
+      assert WordNet.grammatical_number("cities") == :plural
+      assert WordNet.grammatical_number("mice") == :plural
+    end
+
+    test "a noun lemma that is no other noun's plural is singular" do
+      assert WordNet.grammatical_number("light") == :singular
+      assert WordNet.grammatical_number("office") == :singular
+    end
+
+    test "a word WordNet knows as no noun has no number" do
+      assert WordNet.grammatical_number("quickly") == nil
+      assert WordNet.grammatical_number("zorbls") == nil
+    end
+  end
+
+  describe "WordNetParser.parse_endings/1" do
+    @tag :tmp_dir
+    test "reads the rule lines and skips the Prolog around them", %{tmp_dir: dir} do
+      path = Path.join(dir, "wn_morphy.pl")
+
+      File.write!(path, """
+      /* header */
+      :- include(loader).
+      ending(n, "ies", "y").
+      ending(v, "ing", "").
+      ending(a, "est", "e").
+      morph(Pos,Form,Lemma):-
+        exc(Pos,Form,Lemma).
+      """)
+
+      assert Brain.ML.Lexicon.WordNetParser.parse_endings(path) ==
+               [{:noun, "ies", "y"}, {:verb, "ing", ""}, {:adj, "est", "e"}]
+    end
+
+    test "the shipped rules include the plural rules" do
+      endings =
+        Brain.ML.Lexicon.WordNetParser.parse_endings(
+          Path.join(:code.priv_dir(:brain), "wordnet/wn_morphy.pl")
+        )
+
+      assert {:noun, "s", ""} in endings
+      assert {:noun, "ies", "y"} in endings
+      assert length(endings) >= 20
+    end
+  end
+
+  describe "synset/2 and words/1" do
+    test "synset/2 returns a synset's words, gloss and POS" do
+      sid = Enum.find(WordNet.senses("thursday"), &(&1.pos == :noun)).synset_id
+
+      assert {:ok, %{words: words, definition: definition, pos: _}} = WordNet.synset(sid)
+      assert "thursday" in Enum.map(words, &String.downcase/1)
+      assert definition =~ "day of the week"
+    end
+
+    test "synset/2 reports an id WordNet does not hold" do
+      assert WordNet.synset(1) == :error
+    end
+
+    test "words/1 lists every word, lowercased, including multiword entries" do
+      words = WordNet.words()
+
+      assert "thursday" in words
+      assert "new york" in words
+      assert Enum.all?(words, &(&1 == String.downcase(&1)))
+      assert length(words) > 100_000
+    end
+  end
+
   describe "antonyms/1" do
     test "returns the antonym lemmas" do
       assert WordNet.antonyms("unable") == ["able"]
