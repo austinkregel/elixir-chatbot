@@ -193,13 +193,21 @@ defmodule Mix.Tasks.Atlas.Seed do
   # ---------------------------------------------------------------------------
   defp seed_lexicon(verbose?, dry_run?) do
     if dry_run? do
-      {:ok, "would seed #{length(Brain.Lexicon.Seeder.derive_negation())} negation facts"}
+      negation = length(Brain.Lexicon.Seeder.derive_negation())
+      usage_words = length(Brain.Lexicon.Seeder.derive_sense_usage())
+      {:ok, "would seed #{negation} negation facts and SemCor usage for #{usage_words} words"}
     else
       {:ok, counts} = Brain.Lexicon.Seeder.seed_all()
 
-      if verbose?, do: Mix.shell().info("  Negation facts written: #{counts.negation}")
+      if verbose? do
+        Mix.shell().info("  Negation facts written: #{counts.negation}")
+        Mix.shell().info("  SemCor usage facts written: #{counts.sense_usage}")
+        Mix.shell().info("  Closed-class usage facts written: #{counts.closed_class}")
+      end
 
-      {:ok, "#{counts.negation} negation facts"}
+      {:ok,
+       "#{counts.negation} negation facts, #{counts.sense_usage} SemCor usage facts, " <>
+         "#{counts.closed_class} closed-class usage facts"}
     end
   end
 
