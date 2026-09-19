@@ -1,0 +1,16 @@
+{
+  "description": "English closed-class (function) words, by Universal Dependencies part of speech. A closed class is finite by definition, so it is declared here rather than learned; WordNet holds none of these words. A word may belong to several classes: 'to' is a preposition and the infinitive marker, 'that' a determiner, pronoun and conjunction. 'features' marks UD morphological features: PronType=Tot is UD's total (collective) quantifier -- 'all', 'every', 'each', 'everything' -- which applies what is said to every member of what it quantifies. Loaded by Brain.Lexicon.ClosedClass.",
+  "classes": {
+    "DET": ["a", "an", "the", "this", "that", "these", "those", "some", "any", "no", "every", "each", "all", "both", "either", "neither", "another", "such", "what", "which", "whatever", "whichever", "few", "many", "much", "several"],
+    "PRON": ["i", "me", "my", "mine", "myself", "you", "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its", "itself", "we", "us", "our", "ours", "ourselves", "they", "them", "their", "theirs", "themselves", "who", "whom", "whose", "which", "what", "that", "this", "these", "those", "someone", "somebody", "something", "anyone", "anybody", "anything", "everyone", "everybody", "everything", "nobody", "nothing", "none", "all", "each", "both"],
+    "ADP": ["of", "in", "on", "at", "to", "for", "from", "by", "with", "into", "onto", "upon", "about", "above", "below", "between", "through", "during", "before", "after", "since", "until", "under", "over", "among", "across", "against", "along", "around", "behind", "beside", "beyond", "despite", "except", "inside", "outside", "near", "off", "toward", "towards", "via", "within", "without", "per"],
+    "CCONJ": ["and", "or", "but", "nor", "yet", "so"],
+    "SCONJ": ["because", "although", "though", "while", "if", "when", "unless", "whether", "since", "until", "as", "than", "that", "once", "whereas"],
+    "AUX": ["am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "do", "does", "did", "will", "would", "shall", "should", "can", "could", "may", "might", "must"],
+    "PART": ["not", "to"],
+    "ADV": ["everywhere", "somewhere", "anywhere", "nowhere"]
+  },
+  "features": {
+    "PronType=Tot": ["all", "every", "each", "everyone", "everybody", "everything", "everywhere"]
+  }
+}
