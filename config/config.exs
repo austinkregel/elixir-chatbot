@@ -69,6 +69,13 @@ config :brain,
     context_mismatch_likelihood: 0.01
   ],
 
+  # How many ordinary uses Brain.Lexicon.Seeder records for each
+  # closed-class word ("of", "the", "all"), which WordNet does not count. An
+  # estimate, not a measurement: large enough that a function word is read as
+  # the word it almost always is rather than as a name ("Of", the Turkish
+  # town), and meant to be replaced by frequencies measured from a corpus.
+  closed_class_ordinary_count: 1000,
+
   # Intent promotion (novel intent discovery)
   intent_promotion_enabled: System.get_env("INTENT_PROMOTION_ENABLED", "false") == "true",
 
