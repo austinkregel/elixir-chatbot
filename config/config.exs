@@ -46,6 +46,29 @@ config :brain,
     ouro_model_id: System.get_env("OURO_MODEL_ID", "ByteDance/Ouro-2.6B")
   ],
 
+  # How Brain.Analysis.EntityTypeScorer weighs the evidence for what a
+  # gazetteer match means. Each value is a likelihood or pseudo-count, not a
+  # score to add; see that module for the model.
+  entity_type_scoring: [
+    # Pseudo-count added to every candidate type's usage count, so a type
+    # never observed in use is unlikely rather than impossible. Not added to
+    # "just an ordinary word", which is only as likely as its observed uses:
+    # a name WordNet never saw is not thereby half likely to be a plain word.
+    prior_smoothing: 1.0,
+    # Probability that a word is typed capitalized when it is not the first
+    # word of a sentence: for a proper name, and for an ordinary word. Their
+    # ratio is how strongly casing tells the two apart. Both are estimates,
+    # not measurements -- chat users often lowercase names, and rarely
+    # capitalize an ordinary word mid-sentence -- and should be replaced by
+    # rates measured from the brain's own conversations.
+    proper_name_capitalized: 0.8,
+    ordinary_word_capitalized: 0.005,
+    # Likelihood of a reading the classified intent has no slot for, relative
+    # to one it does. Small, but not zero, so a strong prior can still
+    # overrule the intent.
+    context_mismatch_likelihood: 0.01
+  ],
+
   # Intent promotion (novel intent discovery)
   intent_promotion_enabled: System.get_env("INTENT_PROMOTION_ENABLED", "false") == "true",
 
@@ -72,6 +95,16 @@ config :world,
   # Note: Uses World app's priv directory if not set
   # Resolved at runtime via Application.app_dir(:world, "priv/training_worlds")
   training_worlds_path: System.get_env("TRAINING_WORLDS_PATH") || nil
+
+# When World.EntityPromoter may suggest an entity for human review. It never
+# adds to the gazetteer itself; a reviewer decides.
+config :world, World.EntityPromoter,
+  # Minimum sample: how many times an entity must be observed in a world
+  # before the promoter suggests it at all, so it does not suggest what it
+  # has barely seen.
+  min_occurrences: 3,
+  # Minimum confidence, averaged over those observations.
+  min_confidence: 0.6
 
 # ============================================================================
 # ChatWeb App Configuration
