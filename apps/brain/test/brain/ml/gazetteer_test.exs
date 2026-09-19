@@ -4,7 +4,12 @@ defmodule Brain.ML.GazetteerTest do
   alias Brain.ML.Gazetteer
   import Brain.TestHelpers
 
-  setup do
+  # Loading reads the entities human reviewers approved from Atlas, so every
+  # test runs with a sandboxed Atlas connection the gazetteer process shares.
+  setup tags do
+    owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
+    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+
     ensure_started(Brain.ML.Gazetteer)
     :ok
   end
@@ -16,14 +21,15 @@ defmodule Brain.ML.GazetteerTest do
     end
 
     test "lookup is case-insensitive" do
-      if Gazetteer.loaded?() do
-        _result1 = Gazetteer.lookup("kitchen")
-        _result2 = Gazetteer.lookup("KITCHEN")
-        _result3 = Gazetteer.lookup("Kitchen")
-        assert true
-      else
-        assert true
-      end
+      name = "Zorblax#{System.unique_integer([:positive])}"
+      on_exit(fn -> Gazetteer.remove_entry(name) end)
+      {:ok, _} = Gazetteer.add_reviewed(name, "location")
+
+      found = Gazetteer.lookup(name)
+
+      assert {:ok, _} = found
+      assert Gazetteer.lookup(String.downcase(name)) == found
+      assert Gazetteer.lookup(String.upcase(name)) == found
     end
   end
 
