@@ -551,10 +551,14 @@ defmodule Brain.Analysis.Pipeline do
       pass: 2
     })
 
+    # Now that the intent is known, weigh each entity's candidate readings
+    # against the entity types its slot schema expects.
+    rescored_entities = Brain.Analysis.EntityTypeScorer.rescore(pass1.entities, intent)
+
     {entities_after_inference, intent, intent_details} =
       Brain.Analysis.ContextualEntityInferrer.infer(
         pass1.text,
-        pass1.entities,
+        rescored_entities,
         intent,
         intent_details,
         world_id: Keyword.get(opts, :world_id, "default")
