@@ -1,15 +1,14 @@
 defmodule Brain.Analysis.EntityDisambiguator do
-  @moduledoc "Disambiguates entities when multiple types are possible,\nusing speech act, discourse, and POS-tagged syntactic context.\n\nWhen the gazetteer returns multiple possible entity types for the same\ntext (e.g., \"Austin\" could be a person or a location), this module\nuses contextual features to determine the most likely interpretation.\n\nAlso handles cases where a single-type entity (e.g., \"Nice\" as location)\nis being used as a proper noun/name in context (e.g., \"I'm Nice\"),\nrecognizing proper noun usage and mapping it to the appropriate entity type.\n\n## Features Used\n\n- **POS tags**: What part of speech precedes/follows the entity\n- **Discourse indicators**: Is this a self-referential statement?\n- **Speech act context**: Is this a greeting, question, command?\n- **Intent hints**: What domain does the intent belong to?\n- **ChunkProfile**: Domain from feature-vector classification for entity type expectations\n\n## Usage\n\n    # With POS-tagged tokens\n    pos_tagged = [{\"I\", \"PRON\"}, {\"am\", \"VERB\"}, {\"Austin\", \"PROPN\"}]\n    entities = [%{value: \"Austin\", types: [person_info, location_info], ...}]\n    context = %{discourse: discourse_result, speech_act: speech_act_result}\n\n    disambiguated = EntityDisambiguator.disambiguate(entities, pos_tagged, context)\n\n"
+  @moduledoc "Disambiguates entities when multiple types are possible,\nusing speech act, discourse, and POS-tagged syntactic context.\n\nWhen the gazetteer returns multiple possible entity types for the same\ntext (e.g., \"Austin\" could be a person or a location), this module\nuses contextual features to determine the most likely interpretation.\n\nAlso handles cases where a single-type entity (e.g., \"Nice\" as location)\nis being used as a proper noun/name in context (e.g., \"I'm Nice\"),\nrecognizing proper noun usage and mapping it to the appropriate entity type.\n\n## Features Used\n\n- **Candidate readings**: chosen by `Brain.Analysis.EntityTypeScorer` from how the word is used, how it was typed, and the entity types the intent's slot schema lists\n- **POS tags**: What part of speech precedes/follows the entity (introduction patterns)\n- **Discourse indicators**: Is this a self-referential statement?\n- **Speech act context**: Is this a greeting, question, command?\n- **ChunkProfile**: Domain from feature-vector classification, for widening an ambiguous-type entity's candidates\n\n## Usage\n\n    # With POS-tagged tokens\n    pos_tagged = [{\"I\", \"PRON\"}, {\"am\", \"VERB\"}, {\"Austin\", \"PROPN\"}]\n    entities = [%{value: \"Austin\", types: [person_info, location_info], ...}]\n    context = %{discourse: discourse_result, speech_act: speech_act_result}\n\n    disambiguated = EntityDisambiguator.disambiguate(entities, pos_tagged, context)\n\n"
 
   # World.TypeInferrer is in a sibling umbrella app that depends on :brain.
   # It's available at runtime but not at compile time.
   @compile {:no_warn_undefined, World.TypeInferrer}
 
   alias Brain.Analysis
-  alias Brain.Graph.Reader
   require Logger
 
-  alias Analysis.{ChunkProfile, TypeHierarchy}
+  alias Analysis.{ChunkProfile, EntityTypeScorer, TypeHierarchy}
   alias Brain.Analysis.Pipeline
   alias World.TypeInferrer
 
@@ -23,12 +22,6 @@ defmodule Brain.Analysis.EntityDisambiguator do
     |> List.flatten()
     |> MapSet.new()
   )
-
-  @external_resource Path.join(:code.priv_dir(:brain), "analysis/context_preferences.json")
-  @context_preferences Path.join(:code.priv_dir(:brain), "analysis/context_preferences.json")
-                       |> File.read!()
-                       |> Jason.decode!()
-                       |> Enum.into(%{}, fn {k, v} -> {String.to_atom(k), v} end)
 
   @type entity_candidate :: %{
           value: String.t(),
@@ -174,48 +167,22 @@ defmodule Brain.Analysis.EntityDisambiguator do
     end
   end
 
-  defp score_and_select(entity, types, pos_tagged, context) do
-    features = extract_features(entity, pos_tagged, context)
-
-    base_scored =
-      Enum.map(types, fn type_info ->
-        score = score_type_base(type_info, features, context)
-        {type_info, score}
-      end)
-      |> Enum.sort_by(fn {_, score} -> -score end)
-
-    atlas_margin = atlas_boost_margin()
-
-    scored_types =
-      case base_scored do
-        [{_, top}, {_, second} | _] when top - second > atlas_margin ->
-          base_scored
-
-        _ ->
-          entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
-          candidate_labels = Enum.map(types, &get_type_name/1)
-
-          prefetched =
-            if entity_value != "" do
-              Reader.entity_context_multi_label(entity_value, candidate_labels)
-            else
-              %{}
-            end
-
-          Enum.map(base_scored, fn {type_info, base} ->
-            boost = atlas_co_occurrence_boost_from_prefetch(type_info, context, prefetched)
-            {type_info, base + boost}
-          end)
+  # Weighs every candidate reading with EntityTypeScorer: how the word is
+  # used, how it was typed, and which entity types the intent's slot schema
+  # expects. The entity takes the winner's type, value and confidence, and
+  # keeps its candidates so it can be scored again once the intent is known.
+  defp score_and_select(entity, types, _pos_tagged, context) do
+    text =
+      case Map.get(context, :original_text) do
+        text when is_binary(text) -> text
+        other -> raise ArgumentError, "EntityDisambiguator: context has no :original_text (#{inspect(other)})"
       end
 
-    {best_type, _score} = Enum.max_by(scored_types, fn {_, score} -> score end)
-
-    select_type(entity, best_type)
-  end
-
-  defp atlas_boost_margin do
-    config = Application.get_env(:brain, :disambiguation, [])
-    Keyword.get(config, :atlas_boost_margin, 0.1)
+    entity
+    |> Map.put(:types, types)
+    |> EntityTypeScorer.mark_position(text)
+    |> EntityTypeScorer.apply_to(EntityTypeScorer.expected_types(Map.get(context, :intent)))
+    |> then(&Map.merge(&1, %{entity: &1.entity_type, disambiguation_source: :context_analysis}))
   end
 
   @doc """
@@ -349,27 +316,6 @@ defmodule Brain.Analysis.EntityDisambiguator do
     Float.round(min(score, 1.0), 4)
   end
 
-  defp extract_features(_entity, _pos_tagged, context) do
-    intent = Map.get(context, :intent, "")
-    profile = Map.get(context, :profile)
-
-    {domain, expected_types} =
-      case profile do
-        %ChunkProfile{domain: d} when d != :unknown ->
-          {d, Pipeline.expected_entity_types_from_domain(d)}
-
-        _ ->
-          d = domain_from_intent(intent)
-          {d, Pipeline.expected_entity_types_from_domain(d)}
-      end
-
-    %{
-      expected_entity_types: expected_types,
-      intent: intent,
-      domain: domain
-    }
-  end
-
   defp get_entity_position(entity, pos_tagged) when is_list(pos_tagged) do
     entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
     entity_value_lower = String.downcase(entity_value)
@@ -443,159 +389,6 @@ defmodule Brain.Analysis.EntityDisambiguator do
     Map.get(speech_act, :category) == :expressive and
       Map.get(speech_act, :sub_type) in [:greeting, :nice_to_meet]
   end
-
-
-  defp score_type_base(type_info, features, context) do
-    entity_type = get_type_name(type_info)
-    domain = features.domain
-    expected_types = Map.get(features, :expected_entity_types, [])
-
-    dynamic_score =
-      if entity_type in expected_types do
-        0.8
-      else
-        0.0
-      end
-
-    preferences = Map.get(@context_preferences, domain, @context_preferences.default)
-    static_score = Map.get(preferences, entity_type, 0.3)
-
-    base_score =
-      if expected_types != [] and dynamic_score > 0 do
-        dynamic_score
-      else
-        static_score
-      end
-
-    lexicon_boost = lexicon_sense_boost(type_info, context)
-
-    base_score + lexicon_boost
-  end
-
-  defp lexicon_sense_boost(type_info, context) do
-    entity_value = Map.get(type_info, :value) || ""
-    entity_type = get_type_name(type_info)
-    original_text = Map.get(context, :original_text, "")
-
-    if entity_value == "" or original_text == "" do
-      0.0
-    else
-      senses = Brain.Lexicon.senses(entity_value)
-
-      if senses == [] do
-        0.0
-      else
-        context_words =
-          original_text
-          |> Brain.ML.Tokenizer.tokenize_normalized(min_length: 3)
-          |> MapSet.new()
-
-        best_match =
-          senses
-          |> Enum.map(fn sense ->
-            defn_words =
-              sense.definition
-              |> Brain.ML.Tokenizer.tokenize_normalized(min_length: 3)
-              |> MapSet.new()
-
-            overlap = MapSet.intersection(context_words, defn_words) |> MapSet.size()
-
-            chain = Brain.Lexicon.hypernym_chain(entity_value, sense.pos, max_depth: 5)
-            type_match = if entity_type in chain, do: 1, else: 0
-
-            overlap + type_match * 2
-          end)
-          |> Enum.max(fn -> 0 end)
-
-        cond do
-          best_match >= 3 -> 0.2
-          best_match >= 1 -> 0.1
-          true -> 0.0
-        end
-      end
-    end
-  end
-
-  defp atlas_co_occurrence_boost_from_prefetch(type_info, context, prefetched) do
-    entity_type = get_type_name(type_info)
-    label = normalize_label_for_lookup(entity_type)
-
-    case Map.get(prefetched, label) do
-      %{node: node, neighbors: neighbors} when not is_nil(node) ->
-        score_atlas_neighbors(neighbors, context)
-
-      _ ->
-        0.0
-    end
-  rescue
-    _ -> 0.0
-  end
-
-  defp score_atlas_neighbors(neighbors, context) do
-    intent = Map.get(context, :intent, "")
-    profile = Map.get(context, :profile)
-
-    expected_types =
-      case profile do
-        %ChunkProfile{domain: domain} when domain != :unknown ->
-          Pipeline.expected_entity_types_from_domain(domain)
-
-        _ ->
-          Pipeline.expected_entity_types_from_domain(domain_from_intent(intent))
-      end
-
-    neighbor_count = length(neighbors)
-
-    intent_aligned =
-      if expected_types != [] do
-        Enum.count(neighbors, fn neighbor ->
-          neighbor_labels = Map.get(neighbor, :labels, [])
-          neighbor_props = Map.get(neighbor, :properties, %{})
-          neighbor_type = Map.get(neighbor_props, "type", "")
-
-          neighbor_type_indicators =
-            [neighbor_type | neighbor_labels]
-            |> Enum.map(&String.downcase(to_string(&1)))
-
-          Enum.any?(expected_types, fn et ->
-            et_lower = String.downcase(et)
-            Enum.any?(neighbor_type_indicators, fn ind ->
-              ind == et_lower or String.contains?(ind, et_lower)
-            end)
-          end)
-        end)
-      else
-        0
-      end
-
-    intent_boost =
-      cond do
-        intent_aligned >= 3 -> 0.35
-        intent_aligned >= 1 -> 0.25
-        true -> 0.0
-      end
-
-    existence_boost =
-      cond do
-        neighbor_count >= 5 -> 0.15
-        neighbor_count >= 2 -> 0.1
-        neighbor_count >= 1 -> 0.05
-        true -> 0.0
-      end
-
-    max(intent_boost, existence_boost)
-  end
-
-  defp normalize_label_for_lookup(type) when is_binary(type) do
-    type
-    |> String.replace("-", "_")
-    |> String.split("_")
-    |> Enum.map(&String.capitalize/1)
-    |> Enum.join("")
-  end
-
-  defp normalize_label_for_lookup(type) when is_atom(type), do: normalize_label_for_lookup(to_string(type))
-  defp normalize_label_for_lookup(_), do: "Entity"
 
 
   defp get_type_name(type_info) when is_map(type_info) do
