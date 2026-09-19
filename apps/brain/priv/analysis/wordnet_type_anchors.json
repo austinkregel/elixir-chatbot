@@ -1,0 +1,21 @@
+{
+  "description": "Declares which WordNet synsets stand for which entity types. A WordNet sense belongs to the entity type of the nearest anchor among its ancestors (hypernym and instance edges), so a singer, reached through 'musician' before 'person', counts as music_artist. Brain.Lexicon.Seeder uses this to turn SemCor sense counts into per-type usage counts for each word. Each anchor names a word its synset must contain; loading fails if WordNet no longer agrees, so a changed WordNet release cannot silently re-point an anchor. Types absent from this table have no WordNet evidence at all, which is different from evidence of zero use.",
+  "wordnet_version": "3.1",
+  "anchors": {
+    "sys_date": [
+      {"synset_id": 115188052, "word": "day of the week"},
+      {"synset_id": 115234209, "word": "calendar month"}
+    ],
+    "music_artist": [
+      {"synset_id": 110360025, "word": "musician"},
+      {"synset_id": 110359679, "word": "musician"},
+      {"synset_id": 108263534, "word": "musical organization"}
+    ],
+    "location": [
+      {"synset_id": 100027365, "word": "location"}
+    ],
+    "person": [
+      {"synset_id": 100007846, "word": "person"}
+    ]
+  }
+}
