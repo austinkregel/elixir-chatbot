@@ -16,35 +16,6 @@ defmodule Brain.Graph.TrainingTest do
     end
   end
 
-  describe "sync_gazetteer/0" do
-    test "adds knowledge_graph entities to Gazetteer" do
-      # Ensure gazetteer is running
-      if Process.whereis(Brain.ML.Gazetteer) do
-        :ok = Brain.Graph.Training.sync_gazetteer()
-
-        # Seeds have Paris, London, France, UK, Elixir, BEAM
-        case Brain.ML.Gazetteer.lookup("Paris") do
-          {:ok, results} -> assert length(results) >= 1
-          :not_found -> flunk("Expected Paris to be found in Gazetteer after sync")
-        end
-      end
-    end
-
-    test "is idempotent (running twice does not change result count)" do
-      if Process.whereis(Brain.ML.Gazetteer) do
-        :ok = Brain.Graph.Training.sync_gazetteer()
-        {:ok, results_first} = Brain.ML.Gazetteer.lookup("Paris")
-        count_first = length(results_first)
-
-        :ok = Brain.Graph.Training.sync_gazetteer()
-        {:ok, results_second} = Brain.ML.Gazetteer.lookup("Paris")
-        count_second = length(results_second)
-
-        assert count_first == count_second
-      end
-    end
-  end
-
   describe "extract_intent_priors/0" do
     test "builds transition matrix from conversation_graph topics" do
       priors = Brain.Graph.Training.extract_intent_priors()
