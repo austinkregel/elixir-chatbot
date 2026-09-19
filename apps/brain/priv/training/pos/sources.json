@@ -1,0 +1,16 @@
+{
+  "description": "Declared sources for POS training fixtures. Each is pinned to a release and to the SHA-256 of every file read, so an import cannot silently pick up different data under the same name. mix pos.import_ud_ewt fetches, verifies and converts them.",
+  "ud_ewt": {
+    "name": "Universal Dependencies English Web Treebank",
+    "version": "r2.18",
+    "license": "cc-by-sa-4.0",
+    "url": "https://github.com/UniversalDependencies/UD_English-EWT",
+    "raw_base": "https://raw.githubusercontent.com/UniversalDependencies/UD_English-EWT/r2.18",
+    "tagset": "ud_v2",
+    "files": {
+      "train": {"file": "en_ewt-ud-train.conllu", "sha256": "d68e06122a702464c613076523d56740f047e5bbe89dd90ec32737e04d952143"},
+      "dev": {"file": "en_ewt-ud-dev.conllu", "sha256": "39239e0a60db3ae68f4b7036189f11b6692741d10ff8240dd91f74f2760d90f8"},
+      "test": {"file": "en_ewt-ud-test.conllu", "sha256": "fa024f43dc5da3c5ac02563bc9bd0e974f46cbb1560823976a8f342a37dc494a"}
+    }
+  }
+}
