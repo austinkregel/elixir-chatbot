@@ -6,7 +6,7 @@ defmodule Brain.ML.EntityExtractor do
   require Logger
 
   alias ML.{Gazetteer, Tokenizer, EntityTrainer, POSTagger}
-  alias Analysis.{EntityDisambiguator, TypeHierarchy}
+  alias Analysis.{EntityDisambiguator, EntityTypeScorer, TypeHierarchy}
   alias Brain.Telemetry
 
   @type_mappings_path "evaluation/ner/type_mappings.json"
@@ -86,7 +86,7 @@ defmodule Brain.ML.EntityExtractor do
     if debug?, do: Logger.info("    extractor:tokenize=#{System.monotonic_time(:millisecond) - t0}ms")
 
     gaz_context = Keyword.take(opts, [:domain, :intent, :world_id])
-    gazetteer_entities = extract_gazetteer_entities(tokens, gaz_context)
+    gazetteer_entities = extract_gazetteer_entities(tokens, text, gaz_context)
 
     if debug?, do: Logger.info("    extractor:gazetteer=#{System.monotonic_time(:millisecond) - t0}ms (#{length(gazetteer_entities)} found)")
 
@@ -355,7 +355,10 @@ defmodule Brain.ML.EntityExtractor do
     |> resolve_entity_conflicts()
   end
 
-  defp extract_gazetteer_entities(tokens, gaz_context) do
+  # Every candidate reading of a span is kept in :types and scored by
+  # EntityTypeScorer; the entity takes the most probable reading. The intent,
+  # when the caller knows it, supplies the types the context expects.
+  defp extract_gazetteer_entities(tokens, text, gaz_context) do
     token_texts =
       Enum.map(tokens, fn t ->
         t.text
@@ -364,75 +367,97 @@ defmodule Brain.ML.EntityExtractor do
         |> String.trim()
       end)
 
+    expected_types = EntityTypeScorer.expected_types(gaz_context[:intent])
+
     Gazetteer.lookup_spans(token_texts, gaz_context)
-    |> Enum.map(fn {start_idx, end_idx, entity_info} ->
+    |> Enum.sort_by(fn {start_idx, _end_idx, _info} -> start_idx end)
+    |> attach_quantifiers(tokens)
+    |> Enum.map(fn {start_idx, end_idx, entity_info, quantifier} ->
       start_token = Enum.at(tokens, start_idx)
       end_token = Enum.at(tokens, end_idx)
 
       matched_tokens = Enum.slice(tokens, start_idx..end_idx)
       match_text = Enum.map_join(matched_tokens, " ", & &1.text)
 
-      case entity_info do
-        infos when is_list(infos) and length(infos) > 1 ->
-          primary_info = score_and_pick_primary(infos)
-          primary_type = Map.get(primary_info, :entity_type, "unknown")
-          entity_value = Map.get(primary_info, :value, match_text)
+      candidates =
+        case entity_info do
+          [_ | _] = infos -> infos
+          info when is_map(info) -> [info]
+        end
 
-          %{
-            entity_type: primary_type,
-            value: entity_value,
-            match: match_text,
-            start_pos: start_token.start_pos,
-            end_pos: end_token.end_pos,
-            confidence: calculate_confidence(match_text, primary_type, entity_value),
-            types: infos,
-            source: :gazetteer
-          }
+      scored =
+        %{
+          entity_type: nil,
+          value: match_text,
+          match: match_text,
+          start_pos: start_token.start_pos,
+          end_pos: end_token.end_pos,
+          confidence: nil,
+          types: candidates,
+          source: :gazetteer
+        }
+        |> EntityTypeScorer.mark_position(text)
+        |> EntityTypeScorer.apply_to(expected_types)
 
-        [single_info] ->
-          entity_type = Map.get(single_info, :entity_type, "unknown")
-          entity_value = Map.get(single_info, :value, match_text)
+      selected =
+        Enum.find(candidates, &(&1[:entity_type] == scored.entity_type and &1[:value] == scored.value)) ||
+          Enum.find(candidates, &(&1[:entity_type] == scored.entity_type))
 
-          base = %{
-            entity_type: entity_type,
-            value: entity_value,
-            match: match_text,
-            start_pos: start_token.start_pos,
-            end_pos: end_token.end_pos,
-            confidence: calculate_confidence(match_text, entity_type, entity_value),
-            source: :gazetteer
-          }
+      # The span's grammatical number, read from its last word -- the head
+      # of an English noun phrase ("office lights"): :plural, :singular, or
+      # nil when WordNet knows no noun it could be.
+      number = end_token.text |> String.downcase() |> Brain.Lexicon.grammatical_number()
 
-          extract_gazetteer_metadata(base, single_info)
-
-        single_info when is_map(single_info) ->
-          entity_type = Map.get(single_info, :entity_type, "unknown")
-          entity_value = Map.get(single_info, :value, match_text)
-
-          base = %{
-            entity_type: entity_type,
-            value: entity_value,
-            match: match_text,
-            start_pos: start_token.start_pos,
-            end_pos: end_token.end_pos,
-            confidence: calculate_confidence(match_text, entity_type, entity_value),
-            source: :gazetteer
-          }
-
-          extract_gazetteer_metadata(base, single_info)
-
-        _ ->
-          %{
-            entity_type: "unknown",
-            value: match_text,
-            match: match_text,
-            start_pos: start_token.start_pos,
-            end_pos: end_token.end_pos,
-            confidence: 0.5,
-            source: :gazetteer
-          }
-      end
+      scored
+      |> Map.put(:number, number)
+      |> Map.put(:quantifier, quantifier)
+      |> extract_gazetteer_metadata(selected)
     end)
+  end
+
+  # Gives each span its quantifier: :total when a total quantifier ("all",
+  # "every", "each") quantifies it -- "all the lights", "every room", "all of
+  # the lights" -- so the action applies to each of them; nil otherwise.
+  #
+  # A quantifier stands among the function words before its noun phrase and
+  # quantifies the phrase's head, which in English comes last. Spans that
+  # directly follow one another form one phrase ("kitchen lights"), so in
+  # "all the kitchen lights" the lights are quantified, not the kitchen.
+  defp attach_quantifiers(spans, tokens) do
+    spans
+    |> Enum.chunk_while(
+      [],
+      fn {start_idx, _e, _i} = span, run ->
+        case run do
+          [{_s, prev_end, _} | _] when start_idx == prev_end + 1 -> {:cont, [span | run]}
+          [] -> {:cont, [span]}
+          _ -> {:cont, Enum.reverse(run), [span]}
+        end
+      end,
+      fn
+        [] -> {:cont, []}
+        run -> {:cont, Enum.reverse(run), []}
+      end
+    )
+    |> Enum.flat_map(fn [{first_start, _, _} | _] = run ->
+      quantifier = quantifier_before(tokens, first_start)
+      head = length(run) - 1
+
+      run
+      |> Enum.with_index()
+      |> Enum.map(fn {{s, e, info}, i} -> {s, e, info, if(i == head, do: quantifier)} end)
+    end)
+  end
+
+  # :total when a total quantifier stands among the function words directly
+  # before token `start_idx`; the run stops at the first open-class word.
+  defp quantifier_before(tokens, start_idx) do
+    tokens
+    |> Enum.take(start_idx)
+    |> Enum.reverse()
+    |> Enum.take_while(&Brain.Lexicon.ClosedClass.member?(&1.text))
+    |> Enum.any?(&Brain.Lexicon.ClosedClass.total_quantifier?(&1.text))
+    |> if(do: :total, else: nil)
   end
 
   defp extract_system_entities(tokens, _text) do
@@ -734,23 +759,6 @@ defmodule Brain.ML.EntityExtractor do
     Gazetteer.lookup(String.downcase(word)) != :not_found
   end
 
-  defp score_and_pick_primary(infos) when is_list(infos) do
-    adjustments = TypeHierarchy.config("confidence_adjustments", %{})
-    source_priority = TypeHierarchy.config("source_priority", %{})
-
-    infos
-    |> Enum.sort_by(fn info ->
-      entity_type = Map.get(info, :entity_type, "unknown")
-      source = Map.get(info, :source, :unknown) |> to_string()
-
-      type_score = Map.get(adjustments, entity_type, 0.0)
-      source_score = Map.get(source_priority, source, 0)
-
-      {-source_score, -type_score}
-    end)
-    |> hd()
-  end
-
   defp extract_gazetteer_metadata(base, info) when is_map(info) do
     metadata_keys = [:ha_entity_id, :ha_domain, :state_code, :state_name, :region, :country, :county]
 
@@ -768,39 +776,6 @@ defmodule Brain.ML.EntityExtractor do
     else
       base
     end
-  end
-
-  defp calculate_confidence(match_text, entity_type, entity_value) do
-    base = min(0.9, 0.5 + String.length(match_text) * 0.03)
-    adjustments = TypeHierarchy.config("confidence_adjustments", %{})
-
-    type_bonus = Map.get(adjustments, entity_type, 0.0)
-
-    casing_penalty =
-      if entity_value && match_text != entity_value do
-        match_lower = String.downcase(match_text)
-        value_lower = String.downcase(entity_value)
-
-        if match_lower == value_lower && match_text != entity_value do
-          value_is_capitalized = capitalized?(entity_value)
-          match_is_lowercase = match_text == match_lower
-
-          penalty =
-            if value_is_capitalized && match_is_lowercase do
-              0.3
-            else
-              0.15
-            end
-
-          -penalty
-        else
-          0.0
-        end
-      else
-        0.0
-      end
-
-    min(0.95, max(0.1, base + type_bonus + casing_penalty))
   end
 
   defp capitalized?(text) do
