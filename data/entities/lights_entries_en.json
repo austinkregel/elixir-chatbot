@@ -24,5 +24,12 @@
     "synonyms": [
       "decorations"
     ]
+  },
+  {
+    "value": "light",
+    "synonyms": [
+      "light",
+      "lights"
+    ]
   }
 ]
