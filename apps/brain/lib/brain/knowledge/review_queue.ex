@@ -35,7 +35,7 @@ defmodule Brain.Knowledge.ReviewQueue do
   @doc "Gets candidates by status.\n\n## Options\n  - :limit - Maximum number to return (default: 100)\n  - :sort_by - Sort field (:confidence, :created_at, :reviewed_at)\n"
   @spec get_by_status(atom(), keyword()) :: [ReviewCandidate.t()]
   def get_by_status(status, opts \\ [])
-      when status in [:pending, :approved, :rejected, :deferred] do
+      when status in [:pending, :approved, :auto_approved, :rejected, :deferred] do
     GenServer.call(__MODULE__, {:get_by_status, status, opts})
   end
 
@@ -43,6 +43,25 @@ defmodule Brain.Knowledge.ReviewQueue do
   @spec get(String.t()) :: {:ok, ReviewCandidate.t()} | {:error, :not_found}
   def get(id) when is_binary(id) do
     GenServer.call(__MODULE__, {:get, id})
+  end
+
+  @doc """
+  True when the queue already holds a candidate, in any status, typing
+  `entity` as `entity_type` in `world_id` (nil for the world at large).
+  Entity names compare case-insensitively. Lets a producer avoid suggesting
+  what a reviewer has already seen, approved or rejected.
+  """
+  @spec has_entity_candidate?(String.t(), String.t(), String.t() | nil) :: boolean()
+  def has_entity_candidate?(entity, entity_type, world_id)
+      when is_binary(entity) and is_binary(entity_type) do
+    wanted = String.downcase(entity)
+
+    @ets_table
+    |> :ets.tab2list()
+    |> Enum.any?(fn {_id, %ReviewCandidate{finding: finding}} ->
+      is_binary(finding.entity) and String.downcase(finding.entity) == wanted and
+        finding.entity_type == entity_type and finding.world_id == world_id
+    end)
   end
 
   @doc "Approves a candidate and integrates it into the knowledge systems.\n"
@@ -384,6 +403,7 @@ defmodule Brain.Knowledge.ReviewQueue do
           [{^id, candidate}] when candidate.status == :pending ->
             updated = ReviewCandidate.approve(candidate, "Bulk approved")
             :ets.insert(@ets_table, {id, updated})
+            Brain.AtlasIntegration.persist_review_candidate(updated)
             integrate_approved_candidate(updated)
             record_source_feedback(updated, :approved)
             count + 1
@@ -673,19 +693,7 @@ defmodule Brain.Knowledge.ReviewQueue do
       e -> Logger.warning("Failed to add to FactDatabase", error: Exception.message(e))
     end
 
-    if finding.entity_type in ["person", "location", "organization", "city", "country"] do
-      try do
-        Gazetteer.add_entry(
-          finding.entity,
-          finding.entity_type,
-          %{source: :knowledge_expansion, confidence: candidate.aggregate_confidence}
-        )
-      rescue
-        e -> Logger.warning("Failed to add to Gazetteer", error: Exception.message(e))
-      catch
-        :exit, _ -> Logger.warning("Gazetteer not available")
-      end
-    end
+    teach_gazetteer(candidate)
 
     try do
       if BeliefStore.ready?() do
@@ -739,6 +747,43 @@ defmodule Brain.Knowledge.ReviewQueue do
     :ok
   end
 
+  # Only what a human reviewer approved teaches the gazetteer; an
+  # auto-approval never does. Whatever type the reviewer approved is learned.
+  # A world-scoped finding teaches that world's overlay, which World.Manager
+  # persists with the world; a global one is loaded again at every boot from
+  # the approval itself (Gazetteer, via load_reviewed_entities/0).
+  defp teach_gazetteer(%ReviewCandidate{status: :approved, finding: finding}) do
+    entity = finding.entity
+    type = finding.entity_type
+
+    if is_binary(entity) and entity != "" and is_binary(type) and type != "" do
+      result =
+        case finding.world_id do
+          nil -> Gazetteer.add_reviewed(entity, type)
+          world_id -> Gazetteer.add_to_world(world_id, entity, type, %{reviewed: true})
+        end
+
+      case result do
+        {:ok, _key} ->
+          :ok
+
+        # Already known under this type: the approval confirms it.
+        {:error, {:duplicate, _type}} ->
+          :ok
+
+        {:error, reason} ->
+          raise "ReviewQueue: approved #{inspect(entity)} as #{inspect(type)} but the " <>
+                  "gazetteer refused it: #{inspect(reason)}"
+      end
+    else
+      # A finding that types no entity (a plain fact) has nothing to teach
+      # the gazetteer.
+      :ok
+    end
+  end
+
+  defp teach_gazetteer(%ReviewCandidate{}), do: :ok
+
   defp normalize_predicate(entity) when is_binary(entity) do
     normalized = entity |> String.downcase() |> String.replace(~r/[^a-z0-9]+/, "_")
     String.to_existing_atom(normalized)
@@ -775,6 +820,7 @@ defmodule Brain.Knowledge.ReviewQueue do
             case candidate.status do
               :pending -> {p + 1, a, r, d}
               :approved -> {p, a + 1, r, d}
+              :auto_approved -> {p, a + 1, r, d}
               :rejected -> {p, a, r + 1, d}
               :deferred -> {p, a, r, d + 1}
               _ -> {p, a, r, d}
@@ -882,17 +928,15 @@ defmodule Brain.Knowledge.ReviewQueue do
     end
   end
 
+  # The queue's own approval, recorded as :auto_approved so it is never
+  # mistaken for a human's (and so never teaches the gazetteer).
   defp do_approve(id, notes, state) do
     case :ets.lookup(@ets_table, id) do
       [{^id, candidate}] ->
-        updated = %{
-          candidate
-          | status: :approved,
-            reviewed_at: DateTime.utc_now(),
-            reviewer_notes: notes
-        }
+        updated = ReviewCandidate.auto_approve(candidate, notes)
 
         :ets.insert(@ets_table, {id, updated})
+        Brain.AtlasIntegration.persist_review_candidate(updated)
         integrate_approved_candidate(updated)
 
         new_stats = %{
