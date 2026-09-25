@@ -52,7 +52,7 @@ config :atlas, Atlas.Repo,
   types: Atlas.PostgrexTypes,
   after_connect: atlas_repo_after_connect
 
-phx_port = env!("PHX_PORT", :integer, 4000)
+phx_port = env!("PHX_PORT", :integer, 4001)
 
 config :chat_web, ChatWeb.Endpoint, http: [port: phx_port]
 
