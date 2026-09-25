@@ -753,7 +753,7 @@ defmodule Brain do
     user_id = Keyword.get(opts, :user_id)
     entities = Map.get(context, :entities, [])
     extract_and_store_beliefs(input, entities, user_id, conversation_id)
-    feed_entities_to_world(entities, world_id)
+    feed_entities_to_world(entities, world_id, input)
 
     if ml_config[:enabled] and entities != [] and Config.auto_extraction_enabled?() do
       Learner.learn_from_classical_extraction(state.persona.name, entities, input)
@@ -2155,7 +2155,11 @@ defmodule Brain do
       Logger.warning("Failed to extract beliefs: #{inspect(e)}")
   end
 
-  defp feed_entities_to_world(entities, world_id) when is_list(entities) do
+  # `input` is the text the entities were extracted from, and becomes each
+  # candidate's `:context`. Without it World.EntityPromoter died with a KeyError
+  # while aggregating, and a reviewer would have had no text to judge the
+  # suggestion against. Measured 2026-09-23.
+  defp feed_entities_to_world(entities, world_id, input) when is_list(entities) do
     promotable_types = ~w(person location city country organization company place)
     now = DateTime.utc_now()
 
@@ -2171,6 +2175,7 @@ defmodule Brain do
           value: to_string(value),
           inferred_type: type_str,
           confidence: entity[:confidence] || entity["confidence"] || 0.5,
+          context: to_string(input),
           discovered_at: now,
           occurrences: 1
         }
@@ -2187,7 +2192,7 @@ defmodule Brain do
     :ok
   end
 
-  defp feed_entities_to_world(_, _), do: :ok
+  defp feed_entities_to_world(_, _, _), do: :ok
 
   defp is_user_fact?(entity_type) do
     entity_type_str = to_string(entity_type) |> String.downcase()
