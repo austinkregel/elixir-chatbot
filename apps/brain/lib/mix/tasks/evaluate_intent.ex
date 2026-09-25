@@ -20,20 +20,25 @@ defmodule Mix.Tasks.Evaluate.Intent do
     ML.MicroClassifiers.await_ready(:infinity)
     IO.puts("MicroClassifiers ready.")
 
-    gold = EvaluationStore.load_gold_standard("intent")
+    # Held-out only. Evaluating on the full gold standard measures the model
+    # against the rows it was fitted to: every intent figure this repo has
+    # produced, including 43.5% and 38.4%, was training-set accuracy.
+    # `load_gold_standard/2` raises when no split exists rather than quietly
+    # falling back to the training set, which is the defect being closed.
+    gold = EvaluationStore.load_gold_standard("intent", :held_out)
 
     if gold == [] do
-      IO.puts("\nNo gold standard data for intent classification.")
-      IO.puts("Add annotated examples to: priv/evaluation/intent/gold_standard.json")
-      IO.puts("")
-      IO.puts("Format: [{\"text\": \"What's the weather?\", \"intent\": \"weather.query\"}, ...]")
-      IO.puts("")
-      exit(:normal)
+      Mix.raise("""
+      The held-out split for intent is empty: #{EvaluationStore.held_out_path("intent")}
+
+      An empty evaluation set cannot measure anything, which is not the same as
+      a model that scores zero. Re-carve it with `mix split.held_out intent`.
+      """)
     end
 
     IO.puts("\n" <> String.duplicate("=", 60))
-    IO.puts("INTENT CLASSIFICATION EVALUATION (#{length(gold)} examples)")
-    IO.puts("(Using production pipeline)")
+    IO.puts("INTENT CLASSIFICATION EVALUATION (#{length(gold)} held-out examples)")
+    IO.puts("(Using production pipeline; the model never saw these rows)")
     IO.puts(String.duplicate("=", 60) <> "\n")
 
     start_time = System.monotonic_time(:millisecond)
