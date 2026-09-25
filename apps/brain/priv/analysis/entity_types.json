@@ -75,6 +75,42 @@
     "temporal_parent_type": "date_time",
     "temporal_types": ["sys_date", "date", "relative_date", "day", "weekday", "month", "day_name", "month_name", "time", "sys_time"],
     "month_types": ["month", "month_name"],
+    "mention_pos": {
+      "description": "The UD parts of speech a mention of each entity type takes in a sentence, as Brain.Analysis.EntityTypeScorer weighs the word's tag. A reading whose parts of speech include the tag keeps full weight; any other is weighed down. 'default' is every type not listed. '*' means any part of speech: a title can be any word ('chill' the playlist). Declared from the values in each type's entity file; extend a type here when its data grows a new kind of mention.",
+      "default": ["NOUN", "PROPN"],
+      "lexicon_pos": {
+        "description": "Which tags each part of speech the lexicon counts uses under ('noun', 'verb', 'adj', 'adv', from SemCor) is compatible with.",
+        "noun": ["NOUN", "PROPN"],
+        "verb": ["VERB", "AUX"],
+        "adj": ["ADJ"],
+        "adv": ["ADV"]
+      },
+      "tag_aliases": {
+        "description": "Tags the POS tagger emits that stand for several UD classes the closed-class vocabulary uses.",
+        "CONJ": ["CCONJ", "SCONJ"],
+        "VERB": ["AUX"]
+      },
+      "types": {
+        "sys_date": ["NOUN", "PROPN", "ADV"],
+        "sys_time": ["NUM", "NOUN"],
+        "recurrence": ["NOUN", "PROPN", "ADV", "ADJ"],
+        "color": ["ADJ", "NOUN"],
+        "temperature": ["ADJ", "NOUN"],
+        "locks_status": ["ADJ", "VERB"],
+        "weather_condition": ["NOUN", "ADJ"],
+        "music_sort": ["ADJ", "NOUN", "VERB"],
+        "news_sort": ["ADJ", "NOUN", "VERB"],
+        "topic": ["NOUN", "ADJ"],
+        "condition": ["NOUN", "VERB"],
+        "activity": ["NOUN", "VERB"],
+        "unit_temperature": "*",
+        "song": "*",
+        "music_album": "*",
+        "playlist": "*",
+        "message_content": "*",
+        "news_source": "*"
+      }
+    },
     "confidence_adjustments": {
       "device": 0.1,
       "room": 0.1,
