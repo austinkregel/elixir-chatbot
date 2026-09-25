@@ -245,6 +245,56 @@ defmodule Brain.Analysis.ChunkProfile do
   end
 
   @doc """
+  Returns the provenance entry for one axis, or `nil` when the profile has none.
+
+  Every entry carries at least `:source` and `:status`. Which further keys are
+  present depends on the source: `:micro_classifier` entries add `:classifier`
+  and `:confidence`, `:analysis` entries add `:field`, `:composed` entries add
+  `:evidence`, `:derived` entries add `:depends_on` and `:parents_defaulted`,
+  and every `:defaulted` entry adds `:reason`.
+
+  Callers previously reached into `:feature_provenance` directly, three
+  different ways across three call sites — `Map.get/2`, `get_in/2` and a
+  `%{status: :defaulted}` pattern match. This is the one accessor, added before
+  a fourth appeared.
+  """
+  @spec provenance(t(), atom()) :: map() | nil
+  def provenance(%__MODULE__{feature_provenance: provenance}, axis) when is_atom(axis) do
+    Map.get(provenance, axis)
+  end
+
+  @doc """
+  Whether an axis was actually determined, as opposed to left at its default.
+
+  An unrecorded axis is `false`: absent provenance is not evidence that the
+  axis was computed. Note this is weaker than task 083's selection rule, which
+  also requires the value to be off `axis_default/1` — an axis can be genuinely
+  computed and land on its default value, and the two claims are different.
+  """
+  @spec computed?(t(), atom()) :: boolean()
+  def computed?(%__MODULE__{} = profile, axis) when is_atom(axis) do
+    case provenance(profile, axis) do
+      %{status: :computed} -> true
+      _ -> false
+    end
+  end
+
+  @doc """
+  Why an axis holds its default, or `nil` when it was computed or unrecorded.
+
+  The distinction this preserves: a `:defaulted` axis holds exactly its
+  declared default, so the value alone cannot say whether the axis was
+  determined to be that value or never determined at all.
+  """
+  @spec default_reason(t(), atom()) :: atom() | nil
+  def default_reason(%__MODULE__{} = profile, axis) when is_atom(axis) do
+    case provenance(profile, axis) do
+      %{status: :defaulted, reason: reason} -> reason
+      _ -> nil
+    end
+  end
+
+  @doc """
   Materializes a profile from a `ChunkAnalysis` (or compatible map) and a
   pre-computed feature vector.
 
@@ -531,12 +581,14 @@ defmodule Brain.Analysis.ChunkProfile do
   # that derived axes "re-count their parents' information" applies to their
   # failures too.
   defp derived_prov(status, parents, profile, extra \\ %{}) do
+    # Matches `:defaulted` rather than `not computed?/2`: those differ for a
+    # parent with no provenance entry at all, and this counts only parents
+    # positively recorded as defaulted. Every parent is recorded today, so the
+    # two agree in practice; keeping the narrower test avoids changing what
+    # `parents_defaulted` means as a side effect of introducing the accessor.
     defaulted =
       Enum.filter(parents, fn parent ->
-        case Map.get(profile.feature_provenance, parent) do
-          %{status: :defaulted} -> true
-          _ -> false
-        end
+        match?(%{status: :defaulted}, provenance(profile, parent))
       end)
 
     Map.merge(
