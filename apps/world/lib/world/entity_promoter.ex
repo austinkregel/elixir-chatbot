@@ -71,7 +71,7 @@ defmodule World.EntityPromoter do
     min_confidence = Keyword.fetch!(config, :min_confidence)
 
     candidates
-    |> World.EntityDiscoverer.aggregate_discoveries()
+    |> World.EntityDiscoverer.aggregate_candidates()
     |> Enum.filter(fn entity ->
       entity.occurrences >= min_occurrences and
         entity.confidence >= min_confidence and
