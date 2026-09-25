@@ -276,7 +276,38 @@ defmodule Brain.ML.MicroClassifiers do
   def init(_opts) do
     models = load_all_models()
 
-    {:ok, %{models: models}}
+    # `schema_verified` names the feature-vector classifiers whose extractor
+    # schema fingerprint has been checked against the current one. It cannot be
+    # done here -- see verify_schema!/2 -- so it starts empty and fills on first
+    # use.
+    {:ok, %{models: models, schema_verified: MapSet.new()}}
+  end
+
+  # The second half of task 072's gate.
+  #
+  # ChunkFeatures.schema_fingerprint/0 walks dimension_manifest/0, whose group
+  # 23 takes its names from Brain.Analysis.TypeHierarchy.parent_types/0 -- ETS
+  # populated out of the AGE graph. This GenServer starts before TypeHierarchy,
+  # so at init the fingerprint does not merely differ, it raises
+  # ("TypeHierarchy must be ready for feature extraction (group 23)").
+  #
+  # The feature vector's schema is therefore not knowable at boot. The first
+  # classification is both the earliest moment it *is* knowable -- producing a
+  # vector requires TypeHierarchy -- and the first moment a stale model could
+  # return a wrong answer. Checked once per classifier, then remembered.
+  defp verify_schema!(state, name) do
+    if MapSet.member?(state.schema_verified, name) do
+      state
+    else
+      :ok =
+        Brain.ML.MicroProvenance.check_schema!(
+          Map.fetch!(state.models, name),
+          name,
+          model_file_path(name)
+        )
+
+      %{state | schema_verified: MapSet.put(state.schema_verified, name)}
+    end
   end
 
   @impl true
@@ -311,6 +342,8 @@ defmodule Brain.ML.MicroClassifiers do
         {:reply, {:error, :not_loaded}, state}
 
       %{kind: :feature_vector} = model ->
+        state = verify_schema!(state, name)
+
         case FeatureVectorClassifier.classify(feature_vector, model) do
           {:ok, label, score, _details} ->
             {:reply, {:ok, label, score}, state}
@@ -357,6 +390,8 @@ defmodule Brain.ML.MicroClassifiers do
         {:reply, {:error, :not_loaded}, state}
 
       %{kind: :feature_vector} = model ->
+        state = verify_schema!(state, name)
+
         case FeatureVectorClassifier.classify(feature_vector, model) do
           {:ok, label, score, details} ->
             lattice =
@@ -446,20 +481,35 @@ defmodule Brain.ML.MicroClassifiers do
           incremental_count: new_count
         )
 
-        {:reply, {:ok, new_count}, %{state | models: Map.put(state.models, name, updated_model)}}
+        # The model changed, so its recorded verdict no longer describes it.
+        {:reply, {:ok, new_count},
+         %{
+           state
+           | models: Map.put(state.models, name, updated_model),
+             schema_verified: MapSet.delete(state.schema_verified, name)
+         }}
     end
   end
 
   @impl true
   def handle_call(:reload, _from, _state) do
     models = load_all_models()
-    {:reply, :ok, %{models: models}}
+    {:reply, :ok, %{models: models, schema_verified: MapSet.new()}}
   end
 
   @impl true
   def handle_call({:load_trained_models, models_map}, _from, state) when is_map(models_map) do
     merged = Map.merge(state.models, models_map)
-    {:reply, :ok, %{state | models: merged}}
+
+    # Every replaced model is unverified again. Carrying the old verdict
+    # forward would let a freshly loaded stale model inherit a pass from the
+    # model it displaced -- which is the shape of the bug this gate exists for.
+    {:reply, :ok,
+     %{
+       state
+       | models: merged,
+         schema_verified: MapSet.difference(state.schema_verified, MapSet.new(Map.keys(models_map)))
+     }}
   end
 
   @impl true
@@ -511,13 +561,33 @@ defmodule Brain.ML.MicroClassifiers do
 
     case File.read(model_path) do
       {:ok, binary} ->
-        try do
-          model = :erlang.binary_to_term(binary)
-          {:ok, model}
-        rescue
-          _ ->
-            Logger.error("MicroClassifiers: corrupt model file for #{name}. Run `mix train_micro` to retrain.")
+        model =
+          try do
+            :erlang.binary_to_term(binary)
+          rescue
+            _ ->
+              Logger.error("MicroClassifiers: corrupt model file for #{name}. Run `mix train_micro` to retrain.")
+              :corrupted_model
+          end
+
+        case model do
+          :corrupted_model ->
             {:error, :corrupted_model}
+
+          model ->
+            # Task 072's gate, and deliberately outside the `try`: a stale model
+            # must crash the load, not be rescued into {:error, _} and logged as
+            # a warning. Being fed inverted features is not a recoverable
+            # condition -- it is how six classifiers ran on a sign flip for
+            # months while every length check passed.
+            #
+            # Only the training-data half runs here. The extractor schema
+            # fingerprint cannot be computed at this point: it walks feature
+            # group 23, whose names come from TypeHierarchy, which starts after
+            # this GenServer. That half runs at the first classification --
+            # see verify_schema!/2 below.
+            :ok = Brain.ML.MicroProvenance.check_inputs!(model, name, model_path)
+            {:ok, model}
         end
 
       {:error, _} ->
