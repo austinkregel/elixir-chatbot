@@ -6,7 +6,12 @@ defmodule Brain.ML.NLPIntegrationTest do
   alias Brain.ML.EntityExtractor
   alias Brain.ML.NLPPipeline
 
-  setup do
+  setup tags do
+    # The pipeline reads the knowledge graph; without a checked-out connection
+    # those lookups fail silently.
+    owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
+    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+
     ensure_pubsub_started()
 
     Application.put_env(:chat_bot, :ml,
