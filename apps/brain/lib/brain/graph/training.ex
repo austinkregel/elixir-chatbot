@@ -7,136 +7,25 @@ defmodule Brain.Graph.Training do
 
   ## Integration Points
 
-  - `pos_graph` -> POS Tagger: Transition weight refresh from accumulated tag patterns
   - `conversation_graph` -> Intent Classifier: Topic transition priors
 
   The gazetteer is deliberately not fed from the graph: the graph holds the
   system's own unreviewed extractions, and the gazetteer learns only what a
-  human reviewer approved (see `Brain.Knowledge.ReviewQueue`).
+  human reviewer approved (see `Brain.Knowledge.ReviewQueue`). Nor is the POS
+  tagger: it is a neural model trained on the UD English Web Treebank
+  (`Brain.Training.POS`), with no transition table to blend graph counts into.
 
   ## Blend Ratios
 
   Graph-derived weights are blended with existing model weights to prevent
   noisy graph data from overwhelming labeled training data:
 
-  - POS weights: 70% existing + 30% graph (default)
   - Intent priors: 85% TF-IDF score + 15% graph prior (default)
   """
 
   alias Atlas.Graph
   alias Atlas.Graph.EdgeLabels
   require Logger
-
-  # ============================================================================
-  # POS Tagger Weight Refresh
-  # ============================================================================
-
-  @doc """
-  Refresh POS tagger weights from pos_graph data.
-
-  Exports FOLLOWED_BY edge frequencies as transition weights and
-  HAS_TAG edge counts as tag priors, then blends with existing model.
-
-  ## Options
-
-  - `:blend` -- blend ratio for graph weights (default: 0.3)
-  """
-  def refresh_pos_weights(opts \\ []) do
-    blend = Keyword.get(opts, :blend, 0.3)
-
-    with {:ok, transitions} <- fetch_pos_transitions(),
-         {:ok, tag_counts} <- fetch_tag_counts() do
-      transition_weights = build_transition_weights(transitions)
-      tag_priors = build_tag_priors(tag_counts)
-
-      Brain.ML.POSTagger.update_weights(transition_weights, tag_priors, blend: blend)
-    else
-      {:error, reason} ->
-        Logger.warning("Failed to refresh POS weights from graph", reason: inspect(reason))
-        {:error, reason}
-    end
-  end
-
-  defp fetch_pos_transitions do
-    query = "MATCH (a:POSTag)-[r:#{EdgeLabels.followed_by()}]->(b:POSTag) RETURN a, b, r"
-
-    case Graph.cypher("pos_graph", query) do
-      {:ok, rows} ->
-        parsed =
-          Enum.map(rows, fn
-            [%Atlas.Graph.Types.Vertex{properties: a_props}, %Atlas.Graph.Types.Vertex{properties: b_props}, %Atlas.Graph.Types.Edge{properties: r_props}] ->
-              [Map.get(a_props, "name", ""), Map.get(b_props, "name", ""), Map.get(r_props, "frequency", 0)]
-
-            _ ->
-              nil
-          end)
-          |> Enum.reject(&is_nil/1)
-
-        {:ok, parsed}
-
-      error ->
-        {:error, error}
-    end
-  rescue
-    e -> {:error, e}
-  end
-
-  defp fetch_tag_counts do
-    query = "MATCH (:Token)-[r:#{EdgeLabels.has_tag()}]->(t:POSTag) RETURN t, r"
-
-    case Graph.cypher("pos_graph", query) do
-      {:ok, rows} ->
-        parsed =
-          Enum.reduce(rows, %{}, fn
-            [%Atlas.Graph.Types.Vertex{properties: t_props}, %Atlas.Graph.Types.Edge{properties: r_props}], acc ->
-              tag = Map.get(t_props, "name", "")
-              count = Map.get(r_props, "count", 0)
-              Map.update(acc, tag, count, &(&1 + count))
-
-            _, acc ->
-              acc
-          end)
-          |> Enum.map(fn {tag, count} -> [tag, count] end)
-
-        {:ok, parsed}
-
-      error ->
-        {:error, error}
-    end
-  rescue
-    e -> {:error, e}
-  end
-
-  defp build_transition_weights(rows) when is_list(rows) do
-    Enum.reduce(rows, %{}, fn
-      [from_tag, to_tag, freq], acc when is_binary(from_tag) and is_binary(to_tag) ->
-        inner = Map.get(acc, from_tag, %{})
-        Map.put(acc, from_tag, Map.put(inner, to_tag, freq || 0))
-
-      _, acc ->
-        acc
-    end)
-  end
-
-  defp build_transition_weights(_), do: %{}
-
-  defp build_tag_priors(rows) when is_list(rows) do
-    raw =
-      Enum.reduce(rows, %{}, fn
-        [tag, count], acc when is_binary(tag) -> Map.put(acc, tag, count || 0)
-        _, acc -> acc
-      end)
-
-    total = Enum.sum(Map.values(raw))
-
-    if total > 0 do
-      Map.new(raw, fn {tag, count} -> {tag, count / total} end)
-    else
-      %{}
-    end
-  end
-
-  defp build_tag_priors(_), do: %{}
 
   # ============================================================================
   # Intent Classification Priors
