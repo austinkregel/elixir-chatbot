@@ -13,11 +13,7 @@ defmodule World.EntityPromoterTest do
   setup do
     owner = Brain.Test.AtlasSandbox.checkout_and_configure!(%{async: false})
 
-    on_exit(fn ->
-      Brain.Test.AtlasSandbox.drain_and_stop_owner(owner)
-      # Other World tests run without a sandbox owner.
-      Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :auto)
-    end)
+    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
 
     ReviewQueue.clear()
 
