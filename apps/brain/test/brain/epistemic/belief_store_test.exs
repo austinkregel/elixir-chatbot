@@ -12,8 +12,11 @@ defmodule Brain.Epistemic.BeliefStoreTest do
     # Start BeliefStore under ExUnit supervision
     ensure_started(BeliefStore)
 
-    # Clear before each test
-    BeliefStore.clear()
+    # Empty before each test and empty again after: the BeliefStore keeps its
+    # beliefs in GenServer state, which the Sandbox does not roll back, so
+    # anything this file adds would otherwise stay visible for the rest of the
+    # run. Empty is the boot state (0 rows in atlas_beliefs).
+    Brain.Test.Singletons.reset_epistemic_stores!([:beliefs])
 
     :ok
   end
