@@ -242,6 +242,64 @@ defmodule Brain.Analysis.ChunkProfileTest do
                "provenance cannot be told apart from one that was defaulted."
     end
 
+    test "provenance/2 returns the same entry as reaching into the map", %{profile: profile} do
+      Enum.each(ChunkProfile.axes(), fn axis ->
+        assert ChunkProfile.provenance(profile, axis) ==
+                 Map.get(profile.feature_provenance, axis)
+      end)
+    end
+
+    test "provenance/2 is nil for an axis with no entry", %{profile: profile} do
+      refute ChunkProfile.provenance(profile, :not_an_axis)
+    end
+
+    test "computed?/2 agrees with the recorded status for every axis", %{profile: profile} do
+      Enum.each(ChunkProfile.axes(), fn axis ->
+        expected = match?(%{status: :computed}, Map.get(profile.feature_provenance, axis))
+
+        assert ChunkProfile.computed?(profile, axis) == expected,
+               "computed?/2 disagreed with the recorded status for #{axis}"
+      end)
+    end
+
+    test "computed?/2 is false for an unrecorded axis, not an error", %{profile: profile} do
+      # Absent provenance is not evidence that an axis was computed.
+      refute ChunkProfile.computed?(profile, :not_an_axis)
+    end
+
+    test "default_reason/2 gives a reason exactly for defaulted axes", %{profile: profile} do
+      Enum.each(ChunkProfile.axes(), fn axis ->
+        case Map.get(profile.feature_provenance, axis) do
+          %{status: :defaulted, reason: reason} ->
+            assert ChunkProfile.default_reason(profile, axis) == reason
+
+          %{status: :computed} ->
+            refute ChunkProfile.default_reason(profile, axis),
+                   "#{axis} was computed but default_reason/2 returned something"
+
+          _ ->
+            :ok
+        end
+      end)
+    end
+
+    test "a defaulted axis holds its declared default, and says why", %{profile: profile} do
+      # The pairing that makes the two readable together: without the reason,
+      # an axis sitting on its default cannot be told apart from an axis
+      # determined to be that value.
+      defaulted =
+        ChunkProfile.axes()
+        |> Enum.filter(&match?(%{status: :defaulted}, ChunkProfile.provenance(profile, &1)))
+
+      Enum.each(defaulted, fn axis ->
+        assert Map.get(profile, axis) == ChunkProfile.axis_default(axis),
+               "#{axis} is defaulted but does not hold its declared default"
+
+        assert ChunkProfile.default_reason(profile, axis),
+               "#{axis} is defaulted with no reason recorded"
+      end)
+    end
+
     test "every entry carries a source and a status", %{profile: profile} do
       Enum.each(ChunkProfile.axes(), fn axis ->
         entry = Map.fetch!(profile.feature_provenance, axis)
