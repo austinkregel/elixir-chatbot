@@ -7,7 +7,16 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
   alias Brain.Analysis.Pipeline
   alias Brain.ML.Gazetteer
   import Brain.TestHelpers
+  import Brain.SnapshotHelper, only: [assert_snapshot: 3]
   @moduletag :edge_cases
+
+  # Each `:snapshot` test ends with `assert_snapshot/3`, which records that the
+  # analysis has not *changed*. It is deliberately the last thing in the test,
+  # after the assertions that check the analysis is *right*: a snapshot is only
+  # written for a state that already satisfied them, so
+  # `mix test.update_snapshots` cannot quietly bless output a test says is
+  # wrong. Snapshots live in apps/brain/test/snapshots/edge_cases/.
+  @snapshot_dir "edge_cases"
 
   @doc "Extracts a normalized snapshot from a Pipeline analysis result.\nThis captures the key fields we want to assert on.\n"
   def extract_snapshot(result) do
@@ -934,6 +943,8 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
       end
 
       assert analysis.response_strategy in [:can_respond, :hedged_response]
+
+      assert_snapshot(snapshot, "hello_im_austin", subdirectory: @snapshot_dir)
     end
 
     @tag :snapshot
@@ -962,6 +973,8 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
         [sarah] = sarah_entities
         assert sarah.type == "person"
       end
+
+      assert_snapshot(snapshot, "hi_my_name_is_sarah", subdirectory: @snapshot_dir)
     end
   end
 
@@ -1000,6 +1013,8 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
       end
 
       assert analysis.speech_act_type in [:request_information, :question, :request]
+
+      assert_snapshot(snapshot, "weather_in_austin", subdirectory: @snapshot_dir)
     end
 
     @tag :snapshot
@@ -1021,6 +1036,8 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
       if analysis.response_strategy == :needs_clarification do
         assert "location" in analysis.slots_missing
       end
+
+      assert_snapshot(snapshot, "weather_no_location", subdirectory: @snapshot_dir)
     end
   end
 
@@ -1047,6 +1064,8 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
       assert greeting_analysis.text =~ ~r/hello/i
       assert weather_analysis.speech_act_category == :directive
       assert weather_analysis.text =~ ~r/weather/i
+
+      assert_snapshot(snapshot, "hello_whats_the_weather", subdirectory: @snapshot_dir)
     end
 
     @tag :snapshot
@@ -1083,6 +1102,8 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
           assert austin_in_weather == [], "Austin leaked into weather chunk - potential issue"
         end
       end
+
+      assert_snapshot(snapshot, "hello_im_austin_weather_dallas", subdirectory: @snapshot_dir)
     end
   end
 
@@ -1107,6 +1128,8 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
       [analysis] = snapshot.analyses
       assert analysis.speech_act_category == :directive
       assert analysis.speech_act_type in [:command, :request, :action]
+
+      assert_snapshot(snapshot, "play_some_music", subdirectory: @snapshot_dir)
     end
 
     @tag :snapshot
@@ -1130,7 +1153,14 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
           v =~ ~r/light|living|room/i
         end)
 
-      assert has_relevant or length(analysis.entities) >= 0
+      # This was `assert has_relevant or length(analysis.entities) >= 0`.
+      # `length(list) >= 0` is true for every list, so the whole "with location"
+      # subject of the test was unasserted. The pipeline does extract them --
+      # measured 2026-09-23: light/lights and "living room"/room.
+      assert has_relevant,
+             "expected a light/living/room entity, got: #{inspect(entity_values)}"
+
+      assert_snapshot(snapshot, "turn_on_lights_living_room", subdirectory: @snapshot_dir)
     end
   end
 
@@ -1156,6 +1186,8 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
       assert analysis.speech_act_category in [:expressive, :assertive, :unknown, nil],
              "Expected informal greeting to be recognized, got: #{analysis.speech_act_category}"
+
+      assert_snapshot(snapshot, "yo_greeting", subdirectory: @snapshot_dir)
     end
 
     @tag :snapshot
@@ -1171,6 +1203,8 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
       [analysis | _] = snapshot.analyses
       assert analysis.speech_act_category != nil
+
+      assert_snapshot(snapshot, "names_bond_james_bond", subdirectory: @snapshot_dir)
     end
 
     @tag :snapshot
@@ -1189,6 +1223,8 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
       Enum.each(snapshot.analyses, fn a ->
         assert a.speech_act_category != nil
       end)
+
+      assert_snapshot(snapshot, "mixed_content", subdirectory: @snapshot_dir)
     end
   end
 
@@ -1214,6 +1250,8 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
         refute analysis.detected_intent =~ ~r/music|play/i,
                "Hello should not have music intent, got: #{analysis.detected_intent}"
       end
+
+      assert_snapshot(snapshot, "hello_regression", subdirectory: @snapshot_dir)
     end
 
     @tag :snapshot
@@ -1242,6 +1280,8 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
         refute analysis.detected_intent =~ ~r/weather/i,
                "Hello, I'm Austin should not have weather intent"
       end
+
+      assert_snapshot(snapshot, "hello_im_austin_regression", subdirectory: @snapshot_dir)
     end
   end
 end
