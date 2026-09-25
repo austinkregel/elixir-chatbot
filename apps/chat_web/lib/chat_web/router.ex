@@ -36,6 +36,7 @@ defmodule ChatWeb.Router do
       live "/accuracy", AccuracyLive
       live "/lexicon", LexiconLive
       live "/training-studio", TrainingStudioLive
+      live "/training/pos", POSTrainingLive
     end
 
     # Legacy route redirects
