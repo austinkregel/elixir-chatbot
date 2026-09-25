@@ -325,6 +325,12 @@ defmodule Brain.ML.GazetteerTest do
     setup do
       table = :gazetteer_entities
 
+      # These keys hold real entries ("new" is a music_sort word, "New York" an
+      # ambiguous name/location). The table belongs to the running gazetteer,
+      # so put them back rather than leaving this test's readings in it.
+      Brain.Test.Singletons.preserve_ets_keys!(table, ["new", "new york"])
+      Brain.Test.Singletons.preserve_ets_keys!(:gazetteer_prefixes, ["new"])
+
       :ets.insert(table, {"new", [%{entity_type: "person", value: "New", source: :json}]})
       :ets.insert(table, {"new york", [%{entity_type: "location", value: "New York", source: :csv}]})
 
