@@ -4,20 +4,12 @@
   "generated_by": "scripts/generate_informal_expansions.py",
   "include_internet_abbrevs": false,
   "phonetic_validation": false,
-  "total_entries": 170,
+  "total_entries": 150,
   "expansions": {
     "i'm": "i am",
     "you're": "you are",
     "we're": "we are",
     "they're": "they are",
-    "he's": "he is",
-    "she's": "she is",
-    "it's": "it is",
-    "that's": "that is",
-    "what's": "what is",
-    "who's": "who is",
-    "there's": "there is",
-    "here's": "here is",
     "i'll": "i will",
     "you'll": "you will",
     "we'll": "we will",
@@ -26,13 +18,6 @@
     "she'll": "she will",
     "it'll": "it will",
     "that'll": "that will",
-    "i'd": "i would",
-    "you'd": "you would",
-    "we'd": "we would",
-    "they'd": "they would",
-    "he'd": "he would",
-    "she'd": "she would",
-    "it'd": "it would",
     "i've": "i have",
     "you've": "you have",
     "we've": "we have",
@@ -61,11 +46,6 @@
     "mustn't": "must not",
     "needn't": "need not",
     "shan't": "shall not",
-    "let's": "let us",
-    "how's": "how is",
-    "where's": "where is",
-    "when's": "when is",
-    "why's": "why is",
     "gonna": "going to",
     "gotta": "got to",
     "wanna": "want to",
@@ -199,46 +179,6 @@
       "category": "apostrophe_contractions"
     },
     {
-      "informal": "he's",
-      "formal": "he is",
-      "category": "apostrophe_contractions"
-    },
-    {
-      "informal": "she's",
-      "formal": "she is",
-      "category": "apostrophe_contractions"
-    },
-    {
-      "informal": "it's",
-      "formal": "it is",
-      "category": "apostrophe_contractions"
-    },
-    {
-      "informal": "that's",
-      "formal": "that is",
-      "category": "apostrophe_contractions"
-    },
-    {
-      "informal": "what's",
-      "formal": "what is",
-      "category": "apostrophe_contractions"
-    },
-    {
-      "informal": "who's",
-      "formal": "who is",
-      "category": "apostrophe_contractions"
-    },
-    {
-      "informal": "there's",
-      "formal": "there is",
-      "category": "apostrophe_contractions"
-    },
-    {
-      "informal": "here's",
-      "formal": "here is",
-      "category": "apostrophe_contractions"
-    },
-    {
       "informal": "i'll",
       "formal": "i will",
       "category": "apostrophe_contractions"
@@ -276,41 +216,6 @@
     {
       "informal": "that'll",
       "formal": "that will",
-      "category": "apostrophe_contractions"
-    },
-    {
-      "informal": "i'd",
-      "formal": "i would",
-      "category": "apostrophe_contractions"
-    },
-    {
-      "informal": "you'd",
-      "formal": "you would",
-      "category": "apostrophe_contractions"
-    },
-    {
-      "informal": "we'd",
-      "formal": "we would",
-      "category": "apostrophe_contractions"
-    },
-    {
-      "informal": "they'd",
-      "formal": "they would",
-      "category": "apostrophe_contractions"
-    },
-    {
-      "informal": "he'd",
-      "formal": "he would",
-      "category": "apostrophe_contractions"
-    },
-    {
-      "informal": "she'd",
-      "formal": "she would",
-      "category": "apostrophe_contractions"
-    },
-    {
-      "informal": "it'd",
-      "formal": "it would",
       "category": "apostrophe_contractions"
     },
     {
@@ -451,31 +356,6 @@
     {
       "informal": "shan't",
       "formal": "shall not",
-      "category": "apostrophe_contractions"
-    },
-    {
-      "informal": "let's",
-      "formal": "let us",
-      "category": "apostrophe_contractions"
-    },
-    {
-      "informal": "how's",
-      "formal": "how is",
-      "category": "apostrophe_contractions"
-    },
-    {
-      "informal": "where's",
-      "formal": "where is",
-      "category": "apostrophe_contractions"
-    },
-    {
-      "informal": "when's",
-      "formal": "when is",
-      "category": "apostrophe_contractions"
-    },
-    {
-      "informal": "why's",
-      "formal": "why is",
       "category": "apostrophe_contractions"
     },
     {
