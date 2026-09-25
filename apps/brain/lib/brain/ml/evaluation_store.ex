@@ -108,21 +108,39 @@ defmodule Brain.ML.EvaluationStore do
   @doc """
   Load gold standard data for a task.
 
-  Returns a list of annotated examples or an empty list if no data exists.
+  `split` selects which partition of the corpus to return:
+
+    * `:all` (default) -- every annotated example
+    * `:train` -- everything except the held-out split
+    * `:held_out` -- only the held-out split
+
+  The split is applied **here, at read time**, against `held_out.json` beside
+  the gold standard. It is deliberately not carved out of
+  `gold_standard.json`: `mix rebuild_gold_standard`, `cleanup_gold_standard`,
+  `normalize_gold_standard` and `augment_training_data` all regenerate that
+  file, and any of them would silently undo a split stored in it.
+
+  `:train` and `:held_out` require the split to exist. Without it there is no
+  such thing as a training partition, and answering as though there were is how
+  every accuracy figure in this repo came to be measured on its own training
+  data. Use `:all` when you genuinely want the whole corpus.
+
+  Raises on a missing or malformed file. This used to return `[]`, which made
+  "no corpus" and "the corpus failed to load" indistinguishable.
   """
-  def load_gold_standard(task) do
-    path = gold_standard_path(task)
+  @spec load_gold_standard(String.t(), :all | :train | :held_out) :: [map()]
+  def load_gold_standard(task, split \\ :all)
 
-    case File.read(path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, data} when is_list(data) -> data
-          _ -> []
-        end
+  def load_gold_standard(task, :all), do: read_json_array!(gold_standard_path(task))
 
-      {:error, _} ->
-        []
-    end
+  def load_gold_standard(task, :held_out), do: read_json_array!(held_out_path!(task))
+
+  def load_gold_standard(task, :train) do
+    held = MapSet.new(read_json_array!(held_out_path!(task)))
+
+    task
+    |> load_gold_standard(:all)
+    |> Enum.reject(&MapSet.member?(held, &1))
   end
 
   @doc """
@@ -131,6 +149,61 @@ defmodule Brain.ML.EvaluationStore do
   def gold_standard_path(task) do
     Path.join([evaluation_base_path(), task, "gold_standard.json"])
   end
+
+  @doc "Where the held-out split for a task lives, whether or not it exists yet."
+  @spec held_out_path(String.t()) :: Path.t()
+  def held_out_path(task) do
+    Path.join([evaluation_base_path(), task, "held_out.json"])
+  end
+
+  @doc "True when a held-out split has been carved for this task."
+  @spec held_out?(String.t()) :: boolean()
+  def held_out?(task), do: task |> held_out_path() |> File.exists?()
+
+  defp held_out_path!(task) do
+    path = held_out_path(task)
+
+    if File.exists?(path) do
+      path
+    else
+      raise """
+      No held-out split for #{inspect(task)} at #{path}
+
+      Without one there is no training partition to separate from an evaluation
+      partition, so any accuracy measured here would be measured on the data the
+      model was fitted to.
+
+      Carve one with `mix split.held_out #{task}`, or ask for :all if you really
+      do want the whole corpus.
+      """
+    end
+  end
+
+  defp read_json_array!(path) do
+    case File.read(path) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, data} when is_list(data) ->
+            data
+
+          {:ok, other} ->
+            raise "#{path} holds a #{type_name(other)}; an array of annotated examples was expected"
+
+          {:error, reason} ->
+            raise "#{path} is not valid JSON: #{Exception.message(reason)}"
+        end
+
+      {:error, reason} ->
+        raise "Cannot read #{path}: #{:file.format_error(reason)}"
+    end
+  end
+
+  defp type_name(v) when is_map(v), do: "JSON object"
+  defp type_name(v) when is_binary(v), do: "JSON string"
+  defp type_name(v) when is_number(v), do: "JSON number"
+  defp type_name(v) when is_boolean(v), do: "JSON boolean"
+  defp type_name(nil), do: "JSON null"
+  defp type_name(_), do: "value of an unexpected type"
 
   # ============================================================================
   # Atlas Storage
