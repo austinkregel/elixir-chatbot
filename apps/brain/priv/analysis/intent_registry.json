@@ -2594,17 +2594,6 @@
     "required": [],
     "speech_act": "request_information"
   },
-  "test.intent.promotion": {
-    "category": "directive",
-    "clarification_templates": {},
-    "defaults": {},
-    "description": "Intent created from novel candidate review",
-    "domain": "test",
-    "entity_mappings": {},
-    "optional": [],
-    "required": [],
-    "speech_act": "request_information"
-  },
   "smalltalk.compliment": {
     "category": "expressive",
     "clarification_templates": {},
@@ -2719,25 +2708,6 @@
     "required": [],
     "speech_act": "self_expression"
   },
-  "smarthome.set": {
-    "category": "directive",
-    "clarification_templates": {
-      "device": "Which device would you like to adjust?",
-      "number": "What value should I set it to?"
-    },
-    "description": "Set a smart device to a specific value (temperature, brightness, etc.)",
-    "domain": "smarthome",
-    "entity_mappings": {
-      "device": ["device", "appliance"],
-      "location": ["location", "room"],
-      "number": ["number"]
-    },
-    "input_contexts": [],
-    "optional": ["location"],
-    "output_contexts": [],
-    "required": ["device", "number"],
-    "speech_act": "command"
-  },
   "device.control": {
     "category": "directive",
     "clarification_templates": {
@@ -2753,22 +2723,6 @@
     "optional": ["location"],
     "output_contexts": [],
     "required": ["device"],
-    "speech_act": "command"
-  },
-  "timer.start": {
-    "category": "directive",
-    "clarification_templates": {
-      "duration": "How long should the timer be?"
-    },
-    "description": "Start a countdown timer",
-    "domain": "timer",
-    "entity_mappings": {
-      "duration": ["duration", "number"]
-    },
-    "input_contexts": [],
-    "optional": [],
-    "output_contexts": [],
-    "required": ["duration"],
     "speech_act": "command"
   }
 }
