@@ -119,6 +119,13 @@ defmodule Brain.Lexicon.SeederTest do
       |> Enum.sum()
     end
 
+    defp semcor_count_with_pos(word, pos) do
+      WordNet.senses(word)
+      |> Enum.filter(&(&1.pos in pos))
+      |> Enum.map(& &1.tag_count)
+      |> Enum.sum()
+    end
+
     test "counts a weekday's uses as a date and never as a band", %{usage: usage} do
       expected = semcor_count_under("thursday", "day of the week")
 
@@ -131,17 +138,22 @@ defmodule Brain.Lexicon.SeederTest do
       assert usage["paris"].types["location"] > 0
     end
 
-    test "counts uses under no anchor as ordinary, split by part of speech", %{usage: usage} do
+    test "counts uses under no anchor as ordinary, by part of speech", %{usage: usage} do
       # "nice" is used as an adjective, never (in SemCor) as the city.
-      adjective_uses =
-        WordNet.senses("nice")
-        |> Enum.reject(&(&1.pos == :noun))
-        |> Enum.map(& &1.tag_count)
-        |> Enum.sum()
+      adjective_uses = semcor_count_with_pos("nice", [:adj, :adj_satellite])
 
       assert adjective_uses > 0
       assert usage["nice"].types == %{}
-      assert usage["nice"].ordinary == %{"other_pos" => adjective_uses}
+      assert usage["nice"].ordinary == %{"adj" => adjective_uses}
+    end
+
+    test "keeps a word's parts of speech apart", %{usage: usage} do
+      # "light" is a noun, an adjective and a verb, each counted on its own.
+      light = usage["light"].ordinary
+
+      assert light["adj"] == semcor_count_with_pos("light", [:adj, :adj_satellite])
+      assert light["verb"] == semcor_count_with_pos("light", [:verb])
+      assert light["adj"] > 0 and light["verb"] > 0 and light["noun"] > 0
     end
 
     test "ignores senses SemCor never counted" do
@@ -156,7 +168,7 @@ defmodule Brain.Lexicon.SeederTest do
       for {_word, %{types: types, ordinary: ordinary}} <- usage do
         assert Enum.all?(Map.values(types) ++ Map.values(ordinary), &(&1 > 0))
         assert Enum.all?(Map.keys(types), &MapSet.member?(declared, &1))
-        assert Enum.all?(Map.keys(ordinary), &(&1 in ["noun", "other_pos"]))
+        assert Enum.all?(Map.keys(ordinary), &(&1 in ["noun", "verb", "adj", "adv"]))
       end
     end
   end
@@ -179,7 +191,31 @@ defmodule Brain.Lexicon.SeederTest do
       assert fact.value["count"] > 0
 
       assert [ordinary] = UserDefined.facts("nice", [key: "ordinary_usage"], store)
-      assert ordinary.ref == "other_pos"
+      assert ordinary.ref == "adj"
+    end
+
+    test "retires its own facts that it no longer derives, and only those", %{store: store} do
+      stale = %{
+        word: "nice",
+        kind: "property",
+        key: "ordinary_usage",
+        ref: "other_pos",
+        value: %{"count" => 29},
+        source: "seed:semcor"
+      }
+
+      other_source = %{stale | source: "derived", ref: "noun"}
+      {:ok, _} = UserDefined.put_facts([stale, other_source], store)
+
+      {:ok, _} = Seeder.seed_sense_usage(store: store)
+
+      live = UserDefined.facts("nice", [key: "ordinary_usage"], store)
+      refute Enum.any?(live, &(&1.ref == "other_pos"))
+      # A fact from another source is not this seed's to retire.
+      assert Enum.any?(live, &(&1.source == "derived"))
+
+      archived = UserDefined.facts("nice", [key: "ordinary_usage", include_archived: true], store)
+      assert Enum.any?(archived, &(&1.ref == "other_pos" and &1.archived))
     end
 
     test "is idempotent", %{store: store} do
