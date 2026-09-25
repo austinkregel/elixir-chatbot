@@ -27,6 +27,7 @@ defmodule Brain.Analysis.Pipeline do
 
   alias Brain.Lattice
   alias Brain.Lattice.Candidate, as: LatticeCandidate
+  alias Brain.Lexicon.IntentDomains
   alias Brain.ML.{EntityExtractor, MicroClassifiers, POSTagger, Tokenizer}
 
   alias Brain.Memory.Embedder
@@ -823,35 +824,51 @@ defmodule Brain.Analysis.Pipeline do
     if Keyword.get(opts, :skip_event_extraction, false) do
       []
     else
-      case pos_result do
-        {:ok, pos_tags, tokens} ->
-          analysis_input = %{
-            pos_tags: pos_tags,
-            entities: entities,
-            tokens: tokens
-          }
+      {:ok, pos_tags, tokens} = pos_result
 
-          case EventExtractor.extract(analysis_input, opts) do
-            {:ok, events} -> events
-            {:error, _reason} -> []
-          end
+      analysis_input = %{
+        pos_tags: pos_tags,
+        entities: entities,
+        tokens: tokens
+      }
 
-        {:error, _reason} ->
-          []
+      case EventExtractor.extract(analysis_input, opts) do
+        {:ok, events} -> events
+        {:error, _reason} -> []
       end
     end
   end
 
+  # The tagger is required, not optional. `pos_tags` feeds WordFeatures, and
+  # WordFeatures feeds every WordNet group (supersenses, lexical domains,
+  # selectional preferences, subcategorization, meaning depth), ConceptNet
+  # edges and pos_distribution -- 169 of the 343 feature dimensions.
+  #
+  # This used to return `{:error, reason}` and the callers turned that into
+  # `[]`, so an unloadable model produced a *constant* feature vector instead
+  # of a wrong one: `mix gen_micro_data` wrote 4,869 half-empty training rows
+  # and `mix train_micro` trained on them, both reporting success. Measured
+  # 2026-09-23. A missing tagger now stops the analysis.
   defp get_pos_tags(text) do
     tokens = Tokenizer.tokenize_words(text)
 
     case POSTagger.get_model() do
       {:ok, model} ->
-        pos_tags = POSTagger.predict(tokens, model)
-        {:ok, pos_tags, tokens}
+        {:ok, POSTagger.predict(tokens, model), tokens}
 
       {:error, reason} ->
-        {:error, reason}
+        raise """
+        POSTagger: no usable model at #{POSTagger.model_path()}
+
+        #{reason}
+
+        Analysis cannot continue without part-of-speech tags: they feed 169 of
+        the 343 feature dimensions, so proceeding would yield a constant
+        feature vector rather than a wrong one.
+
+        Train one with `mix pos.train`, or install an existing run with
+        `Brain.Training.POSRuns.promote!(run_id, "best", :production)`.
+        """
     end
   end
 
@@ -881,20 +898,16 @@ defmodule Brain.Analysis.Pipeline do
   end
 
   defp link_events(events, entities, pos_result, _opts) do
-    case pos_result do
-      {:ok, pos_tags_tuples, tokens} ->
-        tag_strings = extract_tag_strings(pos_tags_tuples)
+    {:ok, pos_tags_tuples, tokens} = pos_result
+    tag_strings = extract_tag_strings(pos_tags_tuples)
 
-        token_maps = Enum.map(tokens, fn t ->
-          %{text: t, normalized: String.downcase(t)}
-        end)
+    token_maps =
+      Enum.map(tokens, fn t ->
+        %{text: t, normalized: String.downcase(t)}
+      end)
 
-        frames = EventLinker.link(events, entities, token_maps, tag_strings)
-        {frames, tag_strings}
-
-      {:error, _} ->
-        {[], []}
-    end
+    frames = EventLinker.link(events, entities, token_maps, tag_strings)
+    {frames, tag_strings}
   rescue
     e ->
       Logger.warning("EventLinker failed: #{Exception.message(e)}")
@@ -902,15 +915,10 @@ defmodule Brain.Analysis.Pipeline do
   end
 
   defp run_srl(pos_result, entities, _opts) do
-    case pos_result do
-      {:ok, pos_tags_tuples, tokens} ->
-        tag_strings = extract_tag_strings(pos_tags_tuples)
-        bio_tags = generate_srl_bio_tags(tokens, tag_strings, entities)
-        SemanticRoleLabeler.label(tokens, bio_tags, entities)
-
-      {:error, _} ->
-        []
-    end
+    {:ok, pos_tags_tuples, tokens} = pos_result
+    tag_strings = extract_tag_strings(pos_tags_tuples)
+    bio_tags = generate_srl_bio_tags(tokens, tag_strings, entities)
+    SemanticRoleLabeler.label(tokens, bio_tags, entities: entities)
   rescue
     e ->
       Logger.warning("SemanticRoleLabeler failed: #{Exception.message(e)}")
@@ -918,7 +926,6 @@ defmodule Brain.Analysis.Pipeline do
   end
 
   defp pos_result_to_tags({:ok, pos_tags, _tokens}), do: pos_tags
-  defp pos_result_to_tags(_), do: []
 
   defp extract_tag_strings(pos_tags) do
     Enum.map(pos_tags, fn
@@ -928,32 +935,76 @@ defmodule Brain.Analysis.Pipeline do
     end)
   end
 
+  # Predicates are content verbs only. In UD a copula or auxiliary is `AUX`
+  # ("is going" -> AUX + VERB), and treating those as predicates would invent a
+  # frame per auxiliary. `VERB` alone is the predicate.
+  @srl_predicate_tags ~w(VERB)
+  @srl_arg0_tags ~w(NOUN PROPN PRON)
+  @srl_nominal_tags ~w(NOUN PROPN)
+
+  # These tags come from `POSTagger.predict/2`, which emits Universal
+  # Dependencies (`POSTagger.valid_tags/0`). This used to test Penn Treebank
+  # tags -- "VB", "VBD", "NN", "NNP" -- none of which a UD tagger can produce.
+  # So "B-V" was never emitted, `extract_spans/1` found no predicate, and every
+  # chunk got zero SRL frames: 10 feature dimensions constant across all 4,869
+  # training rows, with no exception and no log line. Measured 2026-09-23.
   defp generate_srl_bio_tags(tokens, pos_tags, entities) do
     entity_spans = build_entity_spans(tokens, entities)
 
     tokens
     |> Enum.with_index()
-    |> Enum.map(fn {_token, idx} ->
-      pos = Enum.at(pos_tags, idx, "NN")
+    |> Enum.map(fn {token, idx} ->
+      pos = srl_pos_at!(pos_tags, idx, token)
       entity_role = Map.get(entity_spans, idx)
 
       cond do
-        pos in ["VB", "VBD", "VBG", "VBN", "VBP", "VBZ"] ->
+        pos in @srl_predicate_tags ->
           "B-V"
 
         entity_role != nil ->
           entity_role
 
-        idx == 0 and pos in ["NN", "NNP", "NNS", "NNPS", "PRP"] ->
+        idx == 0 and pos in @srl_arg0_tags ->
           "B-ARG0"
 
-        pos in ["NN", "NNP", "NNS", "NNPS"] ->
+        pos in @srl_nominal_tags ->
           "B-ARG1"
 
+        # A known tag that carries no semantic role -- DET, ADP, PUNCT and the
+        # rest. This is the one branch that may legitimately produce nothing.
         true ->
           "O"
       end
     end)
+  end
+
+  # A tag outside the tagger's own vocabulary means the two sides have drifted
+  # apart again, which is exactly the failure this function shipped with. It is
+  # not a token we can label, so it stops here rather than becoming an "O".
+  defp srl_pos_at!(pos_tags, idx, token) do
+    case Enum.at(pos_tags, idx) do
+      nil ->
+        raise """
+        SRL: no POS tag for token #{inspect(token)} at index #{idx} \
+        (#{length(pos_tags)} tags for a longer token list).
+        Tags and tokens must line up one to one.
+        """
+
+      tag ->
+        if tag in POSTagger.valid_tags() do
+          tag
+        else
+          raise """
+          SRL: #{inspect(tag)} is not a tag POSTagger emits, so it cannot be \
+          mapped to a semantic role.
+
+          POSTagger.valid_tags/0: #{Enum.join(POSTagger.valid_tags(), " ")}
+
+          A tag from another scheme here means the tagger and this function have \
+          drifted apart.
+          """
+        end
+    end
   end
 
   defp build_entity_spans(tokens, entities) do
@@ -998,7 +1049,10 @@ defmodule Brain.Analysis.Pipeline do
   defp entity_type_to_srl_role(type) do
     downcased = String.downcase(type)
     cond do
-      downcased in ["person", "user", "agent"] -> "ARG0"
+      # `given_name` / `last_name` come from EntityExtractor's person splitting
+      # (entity_extractor.ex:196-202). Without them a person entity lands in the
+      # catch-all below and is labelled ARG1 -- a patient rather than an agent.
+      downcased in ["person", "user", "agent", "given_name", "last_name"] -> "ARG0"
       downcased in ["location", "place", "city", "country", "geo"] -> "ARGM-LOC"
       downcased in ["temporal", "date", "time", "datetime"] -> "ARGM-TMP"
       true -> "ARG1"
@@ -1140,13 +1194,18 @@ defmodule Brain.Analysis.Pipeline do
         false
 
       profile_domain ->
-        classifier_domain =
-          case Map.get(@intent_metadata, classifier_intent) do
-            %{domain: d} when is_binary(d) and d != "" -> d
-            _ -> intent_domain_prefix(classifier_intent)
-          end
-
-        classifier_domain != "" and classifier_domain != profile_domain
+        # Both sides are consolidated first, because the profile's domain comes
+        # from the :intent_domain classifier and that model is trained on the
+        # consolidated vocabulary (Brain.Lexicon.IntentDomains).
+        #
+        # This used to take the registry's `domain` field, falling back to the
+        # raw label prefix. Neither is a value the classifier can emit: an
+        # `alarm.*` intent compared "alarm" against "reminder", and
+        # `smalltalk.user.introduction` compared the registry's "introduction"
+        # against "smalltalk". Both mismatch on every single request, so 22
+        # intents covering 390 gold examples (8% of the corpus) had every
+        # correct prediction discarded unconditionally. Measured 2026-09-23.
+        IntentDomains.consolidate(classifier_intent) != IntentDomains.consolidate(profile_domain)
     end
   end
 
