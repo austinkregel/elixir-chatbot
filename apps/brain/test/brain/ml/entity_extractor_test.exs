@@ -159,17 +159,15 @@ defmodule Brain.ML.EntityExtractorTest do
         Gazetteer.load_all()
       end
 
+      # All four are already in the gazetteer's person sources, so `add_entry`
+      # refuses them as duplicates and the old `remove_entry` cleanup deleted
+      # the real entries for the rest of the run. Snapshot and restore instead.
+      Brain.Test.Singletons.preserve_ets_keys!(:gazetteer_entities, ~w(michael sarah john emily))
+
       Gazetteer.add_entry("Michael", "person", %{confidence: 0.9})
       Gazetteer.add_entry("Sarah", "person", %{confidence: 0.9})
       Gazetteer.add_entry("John", "person", %{confidence: 0.9})
       Gazetteer.add_entry("Emily", "person", %{confidence: 0.9})
-
-      on_exit(fn ->
-        Gazetteer.remove_entry("Michael")
-        Gazetteer.remove_entry("Sarah")
-        Gazetteer.remove_entry("John")
-        Gazetteer.remove_entry("Emily")
-      end)
 
       :ok
     end
