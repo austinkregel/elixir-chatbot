@@ -10,6 +10,10 @@ defmodule Brain.Memory.StoreTest do
     ensure_pubsub_started()
     ensure_started(Embedder)
 
+    # The vocabulary below replaces the global one; put the suite's back
+    # afterwards, or every later test embeds to a zero vector.
+    Brain.Test.Singletons.preserve_embedder!()
+
     texts = [
       "hello world",
       "goodbye world",
