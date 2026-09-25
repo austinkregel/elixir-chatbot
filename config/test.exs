@@ -11,6 +11,14 @@ config :atlas, Atlas.Repo,
   migration_default_prefix: "atlas_test",
   after_connect: {Atlas.Repo, :load_age_test, []}
 
+# `mix credo_fix.unused_alias` reads the compiler's warnings by cleaning and
+# recompiling a project in a child process. Under test it compiles this scratch
+# project: pointed at the umbrella, the clean deletes the build the running
+# suite loads its modules from, which took out every FourthWall module that had
+# not been loaded yet.
+config :fourth_wall,
+  credo_fix_compile_dir: Path.expand("../apps/fourth_wall/test/fixtures/compile_sandbox", __DIR__)
+
 # Explicitly disable auto-migration and auto-import in test env.
 # Migrations are handled by the atlas test_helper or the Docker entrypoint.
 config :atlas, auto_migrate: false, auto_import: false
@@ -75,6 +83,8 @@ ouro_api_url = "http://127.0.0.1:#{ouro_test_port}"
 
 ouro_ml_base = [
   models_path: Path.expand("../apps/brain/test/ml_models", __DIR__),
+  # Training runs started under test never land among the real runs.
+  training_runs_path: Path.expand("../_build/test/training_runs", __DIR__),
   ouro_api_url: ouro_api_url,
   # Lazy-start via `SidecarLauncher.ensure_ready!/1` in `test_helper.exs` so
   # Application boot does not spawn Python (avoids fighting a manual sidecar
@@ -107,8 +117,19 @@ config :brain,
   # Use test-specific directories
   knowledge_dir: "test/knowledge",
   memory_dir: "test/memory",
-  # Isolated learned data paths to prevent test pollution
-  learning_params_path: "test/data/learned_params.json",
+  # Isolated learned data path, absolute so one file is both read and written.
+  # It was the relative "test/data/learned_params.json", which resolves against
+  # the current working directory — and there are two of those in a run: Mix
+  # boots the applications from the umbrella root, so LearningStore.init/1 read
+  # <root>/test/data/learned_params.json, then runs this app's tests from
+  # apps/brain, so every save wrote apps/brain/test/data/learned_params.json.
+  # Two different gitignored files: what the tests wrote was never read back.
+  # apps/brain is the one that wins, because it sits with the rest of this
+  # app's test data (test/data/learned.json, test/data/pos_model.term) and it
+  # is the file the suite has actually been writing. Same idiom as
+  # :pos_test_model_path in config/config.exs.
+  learning_params_path:
+    Path.expand("../apps/brain/test/data/learned_params.json", __DIR__),
   # Isolated ML models path so test training never overwrites dev/prod models
   # Auto-start the Ouro Python sidecar and poll health aggressively
   ml: ouro_ml,
