@@ -71,7 +71,13 @@ defmodule Mix.Tasks.TrainFraming do
 
       skip_optimization? = opts[:skip_weight_optimization] || false
 
-      model = train_model(training_data, skip_optimization?, opts)
+      # Stamped for the same reason `mix train_micro` stamps: framing_class is
+      # one of MicroClassifiers' 17 models and goes through the same load gate,
+      # but it is trained here rather than by train_micro, so without this it
+      # would be the one model that never carries provenance.
+      model =
+        train_model(training_data, skip_optimization?, opts)
+        |> Brain.ML.MicroProvenance.stamp!("framing_class")
 
       output_dir = Path.join(get_models_path(), "micro")
       File.mkdir_p!(output_dir)
