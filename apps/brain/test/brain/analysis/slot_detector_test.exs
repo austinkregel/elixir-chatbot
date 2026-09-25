@@ -42,8 +42,16 @@ defmodule Brain.Analysis.SlotDetectorTest do
 
       result = SlotDetector.detect("smarthome.lights.switch.off", entities)
 
+      # "room" is an entity type, not a slot: no schema in
+      # priv/analysis/intent_registry.json declares a "room" slot, and every
+      # smarthome schema there (smarthome.switch, smarthome.set,
+      # smarthome.device_set) maps a "room" entity onto its "location" slot,
+      # as does the Home Assistant service schema
+      # (Brain.Services.HomeAssistant.slot_schema/0) that answers for the
+      # unregistered "smarthome.lights.switch.off" through its "smarthome"
+      # parent.
       assert SlotResult.get_slot_value(result, "device") == "lights"
-      assert SlotResult.get_slot_value(result, "room") == "kitchen"
+      assert SlotResult.get_slot_value(result, "location") == "kitchen"
     end
 
     test "handles unknown intent gracefully" do
