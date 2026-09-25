@@ -70,8 +70,10 @@ defmodule Brain.Test.ModelFactory do
   @doc """
   Trains and loads all test models into their respective GenServers.
 
-  Trains sentiment, speech act, micro-classifiers, POS, Poincare, triple
-  scorer, embedder, and persists artifacts under `models_path` where applicable.
+  Trains sentiment, speech act, micro-classifiers, Poincare, triple scorer,
+  embedder, and persists artifacts under `models_path` where applicable. The
+  POS tagger is not trained here: the suite requires the model promoted from
+  the POS training page (`require_pos_tagger/0`).
   """
   def train_and_load_test_models do
     if already_trained?() do
@@ -86,7 +88,7 @@ defmodule Brain.Test.ModelFactory do
         feature_vector_micro:
           run_step!("feature-vector micro classifiers", &train_feature_vector_micro_classifiers/0),
         framing: run_step!("framing classifier", &train_framing_classifier/0),
-        pos: run_step!("POS tagger", &train_pos_tagger/0),
+        pos: run_step!("POS tagger (promoted, not trained)", &require_pos_tagger/0),
         poincare: run_step!("Poincare embeddings", &train_poincare_embeddings/0),
         triple_scorer: run_step!("KG triple scorer", &train_triple_scorer/0),
         embedder: run_step!("embedder", &train_embedder/0)
@@ -354,51 +356,34 @@ defmodule Brain.Test.ModelFactory do
   end
 
   @doc """
-  Trains a POS tagger from gold standard POS-annotated data and saves
-  the model to the test models path so POSTagger.load_model() works.
+  Requires the test POS model: the model promoted to the test suite from a
+  recorded run on the POS training page (`Brain.Training.POSRuns.promote!/3`).
+  The suite never trains it.
 
-  Raises on missing data or a training failure.
+  Raises when the model is missing, is not where `POSTagger.load_model/0`
+  looks in tests, was trained on other fixtures than the current ones, or
+  carries no evaluation beating its lookup baseline.
   """
-  def train_pos_tagger do
-    alias Brain.ML.POSTagger
+  def require_pos_tagger do
+    path = Application.fetch_env!(:brain, :ml) |> Keyword.fetch!(:pos_test_model_path)
 
-    {sequences, source_path} = load_pos_sequences_from_gold_standard()
-    sequences = sequences ++ pos_music_propn_bootstrap_sequences()
-
-    if sequences == [] do
-      raise """
-      ModelFactory: no POS training data (tokens + pos_tags) found in any gold-standard
-      file under #{gold_standard_path("intent/")}.
-
-      Tried, in order:
-        - intent/gold_standard.json (current; post-migration this file no longer
-          carries `tokens`/`pos_tags`)
-        - intent/gold_standard.pre-rebuild.json (legacy snapshot retained for
-          POS bootstrap)
-
-      Add POS-labeled sequences to one of those files, or extend
-      Brain.Test.ModelFactory.@pos_corpus_candidates to point at a new
-      POS corpus file under priv/evaluation/.
-      """
+    unless path == Brain.ML.POSTagger.model_path() do
+      raise "ModelFactory: the test POS model path #{path} is not where POSTagger loads from " <>
+              "in tests (#{Brain.ML.POSTagger.model_path()}); :pos_test_model_path and :models_path disagree"
     end
 
-    Logger.info("[ModelFactory] POS training using #{length(sequences)} sequences from #{source_path}")
+    model =
+      case Brain.ML.POSTagger.load_model(path) do
+        {:ok, model} ->
+          model
 
-    case POSTagger.train(sequences) do
-      {:ok, model} ->
-        models_path = Application.get_env(:brain, :ml)[:models_path]
+        {:error, reason} ->
+          raise "ModelFactory: no test POS model at #{path} (#{reason}). Train a run on the POS " <>
+                  "training page (/training/pos) and promote a snapshot to the test model."
+      end
 
-        if models_path do
-          save_path = Path.join(models_path, "pos_model.term")
-          File.mkdir_p!(Path.dirname(save_path))
-          POSTagger.save_model(model, save_path)
-        end
-
-        {:ok, length(sequences)}
-
-      {:error, reason} ->
-        raise "ModelFactory: POSTagger.train/1 failed: #{inspect(reason)}"
-    end
+    :ok = Brain.Training.POS.check_current!(model, path)
+    {:ok, %{accuracy: model.evaluation.accuracy, lookup_baseline: model.evaluation.lookup_baseline}}
   end
 
   @doc """
@@ -487,122 +472,20 @@ defmodule Brain.Test.ModelFactory do
 
   # -- Private --
 
-  # POS training is bootstrapped from any gold-standard file that still
-  # carries `tokens` + `pos_tags`. After the feature-vector migration the
-  # primary `intent/gold_standard.json` only ships `intent` + `text`, so
-  # we fall through to the retained `pre-rebuild` snapshot which still
-  # has the legacy POS columns. List is ordered preferred-first.
-  @pos_corpus_candidates [
-    "intent/gold_standard.json",
-    "intent/gold_standard.pre-rebuild.json"
-  ]
-
-  # Keeps FeatureTest-style music commands extracting OOV artist/title spans
-  # via `EntityExtractor` PROPN hints when the legacy gold snapshot is thin.
-  defp pos_music_propn_bootstrap_sequences do
-    [
-      %{
-        tokens: ["Play", "some", "Korvo", "Mitski"],
-        tags: ["VERB", "DET", "PROPN", "PROPN"],
-        source: "bootstrap_music_propn"
-      },
-      %{
-        tokens: ["Play", "Bohemian", "Rhapsody"],
-        tags: ["VERB", "PROPN", "PROPN"],
-        source: "bootstrap_music_propn"
-      }
-    ]
-  end
-
-  defp load_pos_sequences_from_gold_standard do
-    Enum.reduce_while(@pos_corpus_candidates, {[], nil}, fn relative, _acc ->
-      path = gold_standard_path(relative)
-
-      case load_pos_sequences_from_path(path) do
-        [] -> {:cont, {[], path}}
-        sequences -> {:halt, {sequences, path}}
-      end
-    end)
-  end
-
-  defp load_pos_sequences_from_path(path) do
-    case File.read(path) do
-      {:ok, json} ->
-        case Jason.decode(json) do
-          {:ok, entries} when is_list(entries) ->
-            entries
-            |> Enum.filter(fn ex ->
-              tokens = ex["tokens"] || []
-              tags = ex["pos_tags"] || []
-              tokens != [] and length(tokens) == length(tags)
-            end)
-            |> Enum.map(fn ex ->
-              %{tokens: ex["tokens"], tags: ex["pos_tags"], source: ex["intent"]}
-            end)
-
-          {:ok, other} ->
-            raise "ModelFactory: gold standard at #{path} decoded to a non-list: #{inspect(other) |> String.slice(0, 200)}"
-
-          {:error, reason} ->
-            raise "ModelFactory: failed to decode gold standard JSON at #{path}: #{inspect(reason)}"
-        end
-
-      {:error, :enoent} ->
-        Logger.debug("[ModelFactory] POS corpus candidate not found: #{path}")
-        []
-
-      {:error, reason} ->
-        raise "ModelFactory: cannot read gold standard at #{path}: #{inspect(reason)}"
-    end
-  end
-
+  # Training rows only, through EvaluationStore, so the test models are fitted
+  # to the same partition production trains on and never see the held-out split.
+  #
+  # This used to read gold_standard.json directly and, when the file was
+  # missing, drop to a small hardcoded fixture behind a `Logger.info` -- so a
+  # model trained on a handful of examples was indistinguishable from one
+  # trained on 4,869, and that fixture loader itself returned `[]` on a parse
+  # failure. Both paths are gone; a missing corpus now raises.
   defp load_intent_fixture do
-    # Use gold standard data for realistic classification accuracy.
-    # This ensures test models reflect the same reality as production models.
-    path = gold_standard_path("intent/gold_standard.json")
-
-    case File.read(path) do
-      {:ok, json} ->
-        case Jason.decode(json) do
-          {:ok, entries} when is_list(entries) ->
-            Enum.map(entries, fn entry ->
-              {Map.get(entry, "text", ""), Map.get(entry, "intent", "unknown")}
-            end)
-
-          {:ok, other} ->
-            raise "ModelFactory: intent gold standard at #{path} decoded to a non-list: #{inspect(other) |> String.slice(0, 200)}"
-
-          {:error, reason} ->
-            raise "ModelFactory: failed to decode intent gold standard JSON at #{path}: #{inspect(reason)}"
-        end
-
-      {:error, :enoent} ->
-        Logger.info("[ModelFactory] gold standard not found at #{path}, using small fallback fixture")
-        load_intent_fallback()
-
-      {:error, reason} ->
-        raise "ModelFactory: cannot read intent gold standard at #{path}: #{inspect(reason)}"
-    end
-  end
-
-  defp load_intent_fallback do
-    path = fixtures_path("intents_small.json")
-
-    case File.read(path) do
-      {:ok, json} ->
-        case Jason.decode(json) do
-          {:ok, entries} ->
-            Enum.map(entries, fn entry ->
-              {Map.get(entry, "text", ""), Map.get(entry, "intent", "unknown")}
-            end)
-
-          _ ->
-            []
-        end
-
-      _ ->
-        []
-    end
+    "intent"
+    |> Brain.ML.EvaluationStore.load_gold_standard(:train)
+    |> Enum.map(fn entry ->
+      {Map.get(entry, "text", ""), Map.get(entry, "intent", "unknown")}
+    end)
   end
 
   defp load_sentiment_fixture do
