@@ -7,26 +7,41 @@ defmodule Brain.Analysis.EntityTypeScorer do
   (`sys_date`), the band (`music_artist`), or no entity -- just an ordinary
   word, as "nice" is in "have a nice day". Each reading gets a posterior:
 
-      P(reading | span, context)  ∝  prior × casing likelihood × context likelihood
+      P(reading | span, context)  ∝  prior × tag × casing × context
 
   ## Prior -- how the word is used
 
   Read from the brain's own lexicon: `sense_usage` facts count how often the
   word is used as each entity type, `ordinary_usage` facts how often as a
-  plain noun or as another part of speech. SemCor seeds them
-  (`Brain.Lexicon.Seeder`); any other source writing the same facts --
-  running statistics from conversations -- adds to the same counts.
+  plain word, by part of speech (`noun`, `verb`, `adj`, `adv`, and
+  `closed_class` for function words). SemCor and the closed-class vocabulary
+  seed them (`Brain.Lexicon.Seeder`); any other source writing the same
+  facts -- running statistics from conversations -- adds to the same counts.
 
   - An entity type counts its own uses. A candidate whose stored value is
     lowercase is a common word that a curated file lists in its everyday
     meaning -- a room file's "office", a date file's "later" -- so it also
-    counts every ordinary use of the word, whatever its part of speech.
+    counts the word's ordinary uses in the parts of speech its mentions take
+    (`mention_pos` in entity_types.json): the lights file's "light" takes the
+    noun's uses, and the adjective ("a light meal") stays an ordinary word.
     Every type also gets the `prior_smoothing` pseudo-count, so an unseen
     type is unlikely, not impossible.
-  - Ordinary word counts the word's uses as entity types no candidate
-    offers, and -- when every candidate is a proper name (stored
-    capitalized) -- its ordinary uses. It gets no pseudo-count: a name
-    WordNet has never seen is not thereby half likely to be a plain word.
+  - Ordinary word counts every ordinary use no candidate takes, its function-
+    word uses, and its uses as entity types no candidate offers. It gets no
+    pseudo-count: a name WordNet has never seen is not thereby half likely to
+    be a plain word.
+
+  ## Part of speech
+
+  The word's tag in this sentence (from the POS tagger) is evidence about
+  which use this is. An entity reading whose `mention_pos` includes the tag
+  keeps full weight; any other is multiplied by `tag_mismatch_likelihood`.
+  The ordinary reading is a mix of its uses: each use counts at full weight
+  when its part of speech fits the tag and at `tag_mismatch_likelihood` when
+  it does not. So "may" tagged VERB is the modal, tagged NOUN the month. The
+  tag-to-part-of-speech correspondences are declared in entity_types.json
+  (`mention_pos.lexicon_pos`, `mention_pos.tag_aliases`), not here. With no
+  tag, part of speech says nothing.
 
   ## Casing
 
@@ -59,10 +74,16 @@ defmodule Brain.Analysis.EntityTypeScorer do
 
   @ordinary :ordinary
 
+  # The ordinary-use refs the lexicon records. Any other ref is stale or
+  # unknown data and fails the score rather than being summed.
+  @lexicon_pos ~w(noun verb adj adv)
+  @closed_class "closed_class"
+
   @type evidence :: %{
           required(:match) => String.t(),
           required(:sentence_initial) => boolean(),
-          optional(:expected_types) => [String.t()] | nil
+          optional(:expected_types) => [String.t()] | nil,
+          optional(:tag) => String.t() | nil
         }
 
   @type result :: %{
@@ -78,13 +99,15 @@ defmodule Brain.Analysis.EntityTypeScorer do
 
   `candidates` are gazetteer infos, each with `:entity_type` and `:value`.
   `evidence` carries the matched text as typed, whether it starts a
-  sentence, and the entity types the intent expects (`nil` or `[]` when
-  there is no context).
+  sentence, the entity types the intent expects (`nil` or `[]` when there is
+  no context), and the UD tag of the span's head word (`nil` when there is
+  none).
 
   ## Options
 
-  - `:usage` -- `%{types: %{type => count}, ordinary: %{"noun" | "other_pos"
-    => count}}` to use instead of reading the lexicon.
+  - `:usage` -- `%{types: %{type => count}, ordinary: %{"noun" | "verb" |
+    "adj" | "adv" | "closed_class" => count}}` to use instead of reading
+    the lexicon.
   - `:lexicon` -- the `Brain.Lexicon.UserDefined` store to read usage from.
   - `:config` -- keyword list replacing `config :brain, :entity_type_scoring`.
   """
@@ -100,6 +123,7 @@ defmodule Brain.Analysis.EntityTypeScorer do
     config = Keyword.get_lazy(opts, :config, &config!/0)
     alpha = Keyword.fetch!(config, :prior_smoothing)
     epsilon = Keyword.fetch!(config, :context_mismatch_likelihood)
+    delta = Keyword.fetch!(config, :tag_mismatch_likelihood)
 
     casing = %{
       name: Keyword.fetch!(config, :proper_name_capitalized),
@@ -110,17 +134,27 @@ defmodule Brain.Analysis.EntityTypeScorer do
     usage = Keyword.get_lazy(opts, :usage, fn -> usage(surface, Keyword.get(opts, :lexicon, UserDefined)) end)
     by_type = one_candidate_per_type(candidates, match)
     expected = Map.get(evidence, :expected_types) || []
+    pos = pos_config!()
+    tag_fit = tag_fit(Map.get(evidence, :tag), surface, pos, delta)
 
-    counts = prior_counts(by_type, usage)
+    {entity_counts, ordinary_uses} = prior_counts(by_type, usage, pos)
     typed_capitalized? = capitalized?(match)
 
-    weights =
-      Map.new(counts, fn {reading, count} ->
-        prior = if reading == @ordinary, do: count, else: count + alpha
-        casing_l = casing_likelihood(reading, by_type, typed_capitalized?, initial?, casing)
-        context_l = context_likelihood(reading, expected, epsilon)
-        {reading, prior * casing_l * context_l}
+    weight = fn reading, prior_weight ->
+      prior_weight *
+        casing_likelihood(reading, by_type, typed_capitalized?, initial?, casing) *
+        context_likelihood(reading, expected, epsilon)
+    end
+
+    entity_weights =
+      Map.new(entity_counts, fn {type, count} ->
+        {type, weight.(type, (count + alpha) * tag_fit.({:type, type}))}
       end)
+
+    ordinary_weight =
+      weight.(@ordinary, ordinary_uses |> Enum.map(fn {use, n} -> n * tag_fit.(use) end) |> Enum.sum())
+
+    weights = Map.put(entity_weights, @ordinary, ordinary_weight)
 
     total = weights |> Map.values() |> Enum.sum()
     posteriors = Map.new(weights, fn {reading, w} -> {reading, w / total} end)
@@ -155,17 +189,22 @@ defmodule Brain.Analysis.EntityTypeScorer do
   result: the entity takes the selected type, value and confidence, and
   records its posteriors. The candidates stay in `:types`, so the entity can
   be scored again once the intent is known. The entity must carry
-  `:sentence_initial` (see `mark_position/2`).
+  `:sentence_initial` (see `mark_position/2`) and `:tag`, the UD tag of its
+  head word (`nil` when it was extracted with none).
   """
   @spec apply_to(map(), [String.t()] | nil, keyword()) :: map()
   def apply_to(entity, expected_types, opts \\ [])
 
-  def apply_to(%{types: [_ | _] = candidates, match: match, sentence_initial: initial?} = entity, expected_types, opts)
-      when is_boolean(initial?) do
+  def apply_to(
+        %{types: [_ | _] = candidates, match: match, sentence_initial: initial?, tag: tag} = entity,
+        expected_types,
+        opts
+      )
+      when is_boolean(initial?) and (is_binary(tag) or is_nil(tag)) do
     result =
       score(
         candidates,
-        %{match: match, sentence_initial: initial?, expected_types: expected_types},
+        %{match: match, sentence_initial: initial?, expected_types: expected_types, tag: tag},
         opts
       )
 
@@ -181,8 +220,8 @@ defmodule Brain.Analysis.EntityTypeScorer do
 
   def apply_to(entity, _expected_types, _opts) do
     raise ArgumentError,
-          "EntityTypeScorer: cannot score an entity without :types, :match and " <>
-            ":sentence_initial: #{inspect(entity)}"
+          "EntityTypeScorer: cannot score an entity without :types, :match, " <>
+            ":sentence_initial and :tag: #{inspect(entity)}"
   end
 
   @doc """
@@ -306,28 +345,103 @@ defmodule Brain.Analysis.EntityTypeScorer do
     end
   end
 
-  defp prior_counts(by_type, usage) do
+  # Returns {%{type => count}, [{use, count}]}: each candidate type's usage
+  # count, and the ordinary reading's uses by kind ({:lexicon, pos} or
+  # :closed_class). A common-word candidate takes the ordinary uses in the
+  # parts of speech its mentions take; what no candidate takes stays ordinary,
+  # as do function-word uses and uses as types no candidate offers (nouns).
+  defp prior_counts(by_type, usage, pos) do
     type_counts = Map.get(usage, :types, %{})
-    ordinary_counts = Map.get(usage, :ordinary, %{})
-    ordinary_uses = ordinary_counts |> Map.values() |> Enum.sum()
 
-    common_word_candidate? = Enum.any?(by_type, fn {_t, c} -> not proper_name?(c) end)
+    ordinary_counts =
+      Map.new(Map.get(usage, :ordinary, %{}), fn {ref, n} ->
+        cond do
+          ref in @lexicon_pos -> {{:lexicon, ref}, n}
+          ref == @closed_class -> {:closed_class, n}
+          true -> raise "EntityTypeScorer: unknown ordinary_usage ref #{inspect(ref)} (count #{n})"
+        end
+      end)
+
+    taken_by = fn type ->
+      for {{:lexicon, lpos}, _n} <- ordinary_counts, takes_lexicon_pos?(type, lpos, pos), do: {:lexicon, lpos}
+    end
+
+    common = for {type, candidate} <- by_type, not proper_name?(candidate), into: %{}, do: {type, taken_by.(type)}
+    taken = common |> Map.values() |> List.flatten() |> MapSet.new()
 
     entity_counts =
-      Map.new(by_type, fn {type, candidate} ->
-        own = Map.get(type_counts, type, 0)
-        {type, if(proper_name?(candidate), do: own, else: own + ordinary_uses)}
+      Map.new(by_type, fn {type, _candidate} ->
+        absorbed = common |> Map.get(type, []) |> Enum.map(&Map.fetch!(ordinary_counts, &1)) |> Enum.sum()
+        {type, Map.get(type_counts, type, 0) + absorbed}
       end)
 
     unoffered =
       type_counts
       |> Enum.reject(fn {type, _n} -> Map.has_key?(by_type, type) end)
-      |> Enum.map(fn {_type, n} -> n end)
-      |> Enum.sum()
+      |> Enum.map(fn {_type, n} -> {{:lexicon, "noun"}, n} end)
 
-    ordinary = unoffered + if(common_word_candidate?, do: 0, else: ordinary_uses)
+    ordinary_uses =
+      ordinary_counts
+      |> Enum.reject(fn {use, _n} -> MapSet.member?(taken, use) end)
+      |> Enum.concat(unoffered)
 
-    Map.put(entity_counts, @ordinary, ordinary)
+    {entity_counts, ordinary_uses}
+  end
+
+  # True when a mention of `type` can be the part of speech `lpos` counts
+  # uses under: some tag the type's mentions take fits `lpos`.
+  defp takes_lexicon_pos?(type, lpos, pos) do
+    case mention_tags(type, pos) do
+      :any -> true
+      tags -> Enum.any?(tags, &(&1 in Map.fetch!(pos.lexicon_pos, lpos)))
+    end
+  end
+
+  defp mention_tags(type, pos) do
+    case Map.get(pos.types, type, pos.default) do
+      "*" -> :any
+      tags when is_list(tags) -> tags
+    end
+  end
+
+  # How well a reading or a use fits the head word's tag: 1.0 when it fits,
+  # delta when it does not, 1.0 for everything when there is no tag.
+  defp tag_fit(nil, _surface, _pos, _delta), do: fn _ -> 1.0 end
+
+  defp tag_fit(tag, surface, pos, delta) do
+    tags = [tag | Map.get(pos.tag_aliases, tag, [])]
+    fit = fn fits? -> if fits?, do: 1.0, else: delta end
+
+    fn
+      {:type, type} ->
+        case mention_tags(type, pos) do
+          :any -> 1.0
+          mention -> fit.(tag in mention)
+        end
+
+      {:lexicon, lpos} ->
+        fit.(tag in Map.fetch!(pos.lexicon_pos, lpos))
+
+      :closed_class ->
+        fit.(Enum.any?(tags, &(&1 in Brain.Lexicon.ClosedClass.classes(surface))))
+    end
+  end
+
+  defp pos_config! do
+    case TypeHierarchy.config("mention_pos") do
+      %{"default" => default, "types" => types, "lexicon_pos" => lexicon_pos, "tag_aliases" => aliases}
+      when is_list(default) and is_map(types) ->
+        %{
+          default: default,
+          types: types,
+          lexicon_pos: Map.new(@lexicon_pos, &{&1, Map.fetch!(lexicon_pos, &1)}),
+          tag_aliases: Map.delete(aliases, "description")
+        }
+
+      other ->
+        raise "EntityTypeScorer: entity_types.json config.mention_pos is missing or malformed " <>
+                "(got #{inspect(other)})"
+    end
   end
 
   defp casing_likelihood(_reading, _by_type, _typed_capitalized?, true = _initial?, _casing), do: 1.0
