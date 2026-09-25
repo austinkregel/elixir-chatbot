@@ -346,10 +346,34 @@ defmodule Brain.ML.DataLoaders do
     end
   end
 
+  # The rest of the pipeline reads these fields as atoms (`&1.entity_type`), but
+  # a `types` entry decoded from JSON arrives with string keys. Only declared
+  # keys are converted; anything else is preserved under `:metadata` rather than
+  # dropped or turned into a new atom at runtime.
+  @type_entry_keys %{
+    "entity_type" => :entity_type,
+    "confidence" => :confidence,
+    "disambiguation_hints" => :disambiguation_hints,
+    "source" => :source,
+    "country" => :country,
+    "state" => :state,
+    "subcountry" => :subcountry
+  }
+
   defp build_entry_from_type_data(type_data, value, original) do
-    type_data
+    {known, extra} =
+      Enum.reduce(type_data, {%{}, %{}}, fn {key, val}, {known, extra} ->
+        cond do
+          is_atom(key) -> {Map.put(known, key, val), extra}
+          Map.has_key?(@type_entry_keys, key) -> {Map.put(known, @type_entry_keys[key], val), extra}
+          true -> {known, Map.put(extra, key, val)}
+        end
+      end)
+
+    known
     |> Map.put(:value, value)
     |> Map.put(:original, original)
+    |> put_if_present(:metadata, extra)
     |> ensure_entity_type()
   end
 
@@ -693,16 +717,31 @@ defmodule Brain.ML.DataLoaders do
     |> String.replace("-", "_")
   end
 
+  # A source entry may declare several readings of the same surface form, as
+  # `data/entities/ambiguous_name_location_entries_en.json` does: "Austin" is
+  # both a person and a city, each with its own confidence.
+  #
+  # This used to keep only value/synonyms plus an `entity_type` derived from the
+  # *filename*, so every such entry collapsed into one junk type -- all 35
+  # ambiguous names loaded as "ambiguous_name_location" rather than as person +
+  # city, and the per-type confidence and disambiguation_hints were dropped
+  # here, before anything downstream could read them.
+  #
+  # `build_entries_from_data/3` has always had a `types` branch ready for this;
+  # it was simply never reached, because this function stripped its input.
+  # Measured 2026-09-23.
   defp parse_entity_data(data, entity_type) when is_list(data) do
-    Enum.map(data, fn item ->
-      value = Map.get(item, "value") || Map.get(item, "name") || ""
-      synonyms = Map.get(item, "synonyms", [])
-
-      %{
-        value: value,
-        synonyms: List.wrap(synonyms),
+    data
+    |> Enum.map(fn item ->
+      base = %{
+        value: Map.get(item, "value") || Map.get(item, "name") || "",
+        synonyms: item |> Map.get("synonyms", []) |> List.wrap(),
         entity_type: entity_type
       }
+
+      base
+      |> put_if_present(:types, Map.get(item, "types"))
+      |> put_if_present(:metadata, Map.get(item, "metadata"))
     end)
     |> Enum.filter(fn entry -> entry.value != "" end)
   end
@@ -714,6 +753,11 @@ defmodule Brain.ML.DataLoaders do
   defp parse_entity_data(_, _entity_type) do
     []
   end
+
+  defp put_if_present(map, _key, nil), do: map
+  defp put_if_present(map, _key, []), do: map
+  defp put_if_present(map, _key, empty) when empty == %{}, do: map
+  defp put_if_present(map, key, value), do: Map.put(map, key, value)
 
   defp extract_intent_name(filename) do
     filename
