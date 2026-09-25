@@ -8,7 +8,7 @@ defmodule Mix.Tasks.Pos.ImportUdEwt do
 
   1. Reads the pinned release from `priv/training/pos/sources.json` and
      fetches each file into `data/corpora/ud_ewt/<version>/` unless it is
-     already there.
+     already there (`Brain.Training.UDEWT`).
   2. Verifies every file's SHA-256 against the manifest. A mismatch fails the
      import: different data under the same release name is never used.
   3. Converts each split to `priv/training/pos/ud_ewt.<split>.json`, mapping
@@ -24,6 +24,8 @@ defmodule Mix.Tasks.Pos.ImportUdEwt do
 
   use Mix.Task
 
+  alias Brain.Training.UDEWT
+
   @fixture_dir "training/pos"
   @producer_version "1"
 
@@ -32,19 +34,15 @@ defmodule Mix.Tasks.Pos.ImportUdEwt do
     {_opts, _, invalid} = OptionParser.parse(args, strict: [])
     if invalid != [], do: Mix.raise("pos.import_ud_ewt: unknown options #{inspect(invalid)}")
 
-    Application.ensure_all_started(:req)
-
     fixture_dir = Brain.priv_path(@fixture_dir)
-    source = fixture_dir |> Path.join("sources.json") |> read_json!() |> Map.fetch!("ud_ewt")
+    source = UDEWT.source()
     mapping_path = Path.join(fixture_dir, "ud_v2_to_ud_v1.json")
-    mapping = mapping_path |> read_json!() |> Map.fetch!("map")
-    mapping_sha = sha256_file(mapping_path)
-    cache_dir = Path.join([data_path(), "corpora", "ud_ewt", source["version"]])
+    mapping = mapping_path |> File.read!() |> Jason.decode!() |> Map.fetch!("map")
+    mapping_sha = UDEWT.sha256_file(mapping_path)
     produced_at = DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.to_iso8601()
 
     for {split, %{"file" => file, "sha256" => sha}} <- Enum.sort(source["files"]) do
-      path = fetch!(source["raw_base"], file, cache_dir)
-      verify!(path, sha)
+      path = UDEWT.fetch_verified!(split)
 
       producer = %{
         "name" => inspect(__MODULE__),
@@ -61,7 +59,7 @@ defmodule Mix.Tasks.Pos.ImportUdEwt do
 
       records =
         path
-        |> parse_conllu!()
+        |> UDEWT.parse!()
         |> Enum.map(&to_record(&1, file, source["license"], produced_at, producer, mapping))
 
       out = Path.join(fixture_dir, "ud_ewt.#{split}.json")
@@ -73,101 +71,12 @@ defmodule Mix.Tasks.Pos.ImportUdEwt do
     end
   end
 
-  defp data_path do
-    Application.fetch_env!(:brain, :ml) |> Keyword.fetch!(:training_data_path)
-  end
-
-  defp read_json!(path), do: path |> File.read!() |> Jason.decode!()
-
-  defp fetch!(raw_base, file, cache_dir) do
-    path = Path.join(cache_dir, file)
-
-    unless File.exists?(path) do
-      File.mkdir_p!(cache_dir)
-      url = "#{raw_base}/#{file}"
-      Mix.shell().info("Fetching #{url}")
-
-      case Req.get(url, into: File.stream!(path), receive_timeout: 300_000) do
-        {:ok, %{status: 200}} ->
-          :ok
-
-        {:ok, %{status: status}} ->
-          File.rm(path)
-          Mix.raise("pos.import_ud_ewt: #{url} returned HTTP #{status}")
-
-        {:error, reason} ->
-          File.rm(path)
-          Mix.raise("pos.import_ud_ewt: could not fetch #{url}: #{inspect(reason)}")
-      end
-    end
-
-    path
-  end
-
-  defp verify!(path, expected) do
-    actual = sha256_file(path)
-
-    unless actual == expected do
-      Mix.raise(
-        "pos.import_ud_ewt: #{path} has sha256 #{actual}, but sources.json pins #{expected}. " <>
-          "Delete the file to fetch it again, or update the pin if the release changed deliberately."
-      )
-    end
-  end
-
-  defp sha256_file(path) do
-    path |> File.stream!(2_048) |> Enum.reduce(:crypto.hash_init(:sha256), &:crypto.hash_update(&2, &1))
-    |> :crypto.hash_final()
-    |> Base.encode16(case: :lower)
-  end
-
-  # Returns [%{sent_id, text, words: [{form, upos}]}] in file order.
-  defp parse_conllu!(path) do
-    path
-    |> File.read!()
-    |> String.split(~r/\n\s*\n/, trim: true)
-    |> Enum.map(&parse_sentence!(&1, path))
-  end
-
-  defp parse_sentence!(block, path) do
-    lines = String.split(block, "\n", trim: true)
-    meta = for "# " <> rest <- lines, [k, v] = String.split(rest, " = ", parts: 2), into: %{}, do: {k, v}
-
-    words =
-      for line <- lines, not String.starts_with?(line, "#"), word = parse_word!(line, path), word != :skip do
-        word
-      end
-
-    sent_id = Map.get(meta, "sent_id") || Mix.raise("pos.import_ud_ewt: #{path}: a sentence has no sent_id")
-    text = Map.get(meta, "text") || Mix.raise("pos.import_ud_ewt: #{path}: #{sent_id} has no text")
-    if words == [], do: Mix.raise("pos.import_ud_ewt: #{path}: #{sent_id} has no words")
-
-    %{sent_id: sent_id, text: text, words: words}
-  end
-
-  defp parse_word!(line, path) do
-    case String.split(line, "\t") do
-      [id, form, _lemma, upos | _rest] = cols when length(cols) == 10 ->
-        cond do
-          # A fused token ("don't" over "do" + "n't"): its words follow.
-          String.contains?(id, "-") -> :skip
-          # An empty node of the enhanced graph: not a word.
-          String.contains?(id, ".") -> :skip
-          upos == "_" -> Mix.raise("pos.import_ud_ewt: #{path}: word #{inspect(form)} has no UPOS")
-          true -> {form, upos}
-        end
-
-      _ ->
-        Mix.raise("pos.import_ud_ewt: #{path}: malformed line #{inspect(line)}")
-    end
-  end
-
   defp to_record(sentence, file, license, produced_at, producer, mapping) do
     source_id = "#{file}##{sentence.sent_id}"
     digest = :crypto.hash(:sha256, source_id <> "\n" <> sentence.text) |> Base.encode16(case: :lower)
 
     tags =
-      Enum.map(sentence.words, fn {form, upos} ->
+      Enum.map(sentence.words, fn %{form: form, upos: upos} ->
         Map.get(mapping, upos) ||
           Mix.raise("pos.import_ud_ewt: #{source_id}: #{inspect(form)} has tag #{upos}, which ud_v2_to_ud_v1 does not map")
       end)
@@ -180,7 +89,7 @@ defmodule Mix.Tasks.Pos.ImportUdEwt do
       "license" => license,
       "produced_at" => produced_at,
       "producer" => producer,
-      "tokens" => Enum.map(sentence.words, &elem(&1, 0)),
+      "tokens" => Enum.map(sentence.words, & &1.form),
       "layers" => %{
         "pos" => %{
           "tags" => tags,
