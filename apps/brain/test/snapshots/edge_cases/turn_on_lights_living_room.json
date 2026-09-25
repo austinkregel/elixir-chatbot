@@ -5,24 +5,27 @@
       "text": "Turn on the lights in the living room",
       "entities": [
         {
+          "type": "lights",
+          "value": "light",
+          "confidence": 0.6
+        },
+        {
           "type": "room",
           "value": "living room",
           "confidence": 0.93
         }
       ],
-      "response_strategy": "can_respond",
-      "slots_filled": [
-        "room"
-      ],
-      "slots_missing": [],
-      "detected_intent": "smarthome.context_room.comment_specify.or.change.room",
+      "response_strategy": "hedged_response",
+      "detected_intent": "smarthome.schedule_create",
       "speech_act_category": "directive",
       "speech_act_type": "command",
-      "speech_act_confidence": 0.88,
+      "speech_act_confidence": 1.0,
       "discourse_addressee": "bot",
-      "discourse_self_referential": "false"
+      "discourse_self_referential": "false",
+      "slots_filled": [],
+      "slots_missing": []
     }
   ],
-  "overall_strategy": "can_respond",
+  "overall_strategy": "hedged_response",
   "chunk_count": 1
 }
