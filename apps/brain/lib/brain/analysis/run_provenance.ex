@@ -52,7 +52,7 @@ defmodule Brain.Analysis.RunProvenance do
   alias Brain.Analysis.FeatureExtractor.ChunkFeatures
   alias Brain.Analysis.TypeHierarchy
 
-  @classifier_dir "data/classifiers"
+  @classifier_dir "classifiers"
 
   @doc """
   The full provenance record for the current environment.
@@ -224,7 +224,10 @@ defmodule Brain.Analysis.RunProvenance do
   end
 
   defp datasets! do
-    path = Path.join(File.cwd!(), @classifier_dir)
+    # Brain.data_path/1, not File.cwd!/0: an umbrella run has two working
+    # directories (root for boot, apps/brain for that app's tests), so a
+    # relative "data/classifiers" names two different places in one run.
+    path = Brain.data_path(@classifier_dir)
 
     unless File.dir?(path) do
       raise "RunProvenance: no classifier training data at #{path}. " <>
