@@ -62,6 +62,7 @@ defmodule Brain.Application do
       Brain.Services.HomeAssistant.CapabilityRegistry,
       Brain.ML.Ouro.Model,
       Brain.ML.Ouro.SidecarLauncher,
+      {Task.Supervisor, [name: Brain.ML.TrainingServer.TaskSupervisor]},
       Brain.ML.TrainingServer,
       Brain.ML.TrainingExampleBuffer,
       {Task.Supervisor, [name: Brain.ML.WeightOptimizer.TaskSupervisor]},
