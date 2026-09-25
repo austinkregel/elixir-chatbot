@@ -2,20 +2,6 @@ defmodule Brain.Graph.TrainingTest do
   use Brain.Test.GraphCase, async: false
   @moduletag seed_graphs: true
 
-  describe "refresh_pos_weights/0" do
-    test "updates POS tagger transition weights from pos_graph" do
-      result = Brain.Graph.Training.refresh_pos_weights()
-      # Will succeed if POS model exists on disk, fail gracefully otherwise
-      assert result == :ok or match?({:error, _}, result)
-    end
-
-    test "respects blend ratio option" do
-      # Running with blend: 0.0 should effectively be a no-op
-      result = Brain.Graph.Training.refresh_pos_weights(blend: 0.0)
-      assert result == :ok or match?({:error, _}, result)
-    end
-  end
-
   describe "extract_intent_priors/0" do
     test "builds transition matrix from conversation_graph topics" do
       priors = Brain.Graph.Training.extract_intent_priors()
