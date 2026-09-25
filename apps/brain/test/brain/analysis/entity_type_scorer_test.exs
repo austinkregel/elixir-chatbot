@@ -220,6 +220,63 @@ defmodule Brain.Analysis.EntityTypeScorerTest do
     end
   end
 
+  describe "part of speech" do
+    # Tags are given explicitly: these test how the scorer weighs a tag, not
+    # how accurate the tagger is.
+    defp tagged(word, typed, tag, opts \\ []) do
+      evidence = %{match: typed, sentence_initial: false, expected_types: nil, tag: tag}
+      EntityTypeScorer.score(candidates(word), evidence, opts)
+    end
+
+    test "tagged as a verb, 'may' is the modal, not the month" do
+      assert tagged("may", "may", "VERB").p_ordinary > 0.9
+    end
+
+    test "the month reading of 'may' is likelier tagged NOUN than tagged VERB" do
+      assert tagged("may", "may", "NOUN").posteriors["sys_date"] >
+               tagged("may", "may", "VERB").posteriors["sys_date"]
+    end
+
+    test "tagged as an adjective, 'light' is an ordinary word; as a noun, the light" do
+      as_adj = tagged("light", "light", "ADJ")
+      as_noun = tagged("light", "light", "NOUN")
+
+      assert as_adj.p_ordinary > 0.5
+      assert as_noun.entity_type == "lights"
+      assert as_noun.p_ordinary < 0.2
+    end
+
+    test "a curated word takes only the uses in the parts of speech its mentions take" do
+      # With no tag, 'light' the device competes with the adjective and verb
+      # uses, which the lights file does not mean.
+      untagged = tagged("light", "light", nil)
+      assert untagged.p_ordinary > 0.2
+    end
+
+    test "no tag says nothing: the same as leaving the tag out" do
+      with_nil = tagged("thursday", "thursday", nil)
+
+      without =
+        EntityTypeScorer.score(candidates("thursday"), %{match: "thursday", sentence_initial: false})
+
+      assert with_nil == without
+    end
+
+    test "with tag_mismatch_likelihood at 1, the tag stops mattering" do
+      blind = Keyword.put(@config, :tag_mismatch_likelihood, 1.0)
+
+      assert tagged("may", "may", "VERB", config: blind) == tagged("may", "may", "NOUN", config: blind)
+    end
+
+    test "a stale or unknown ordinary-use ref fails the score rather than being summed" do
+      assert_raise RuntimeError, ~r/unknown ordinary_usage ref "other_pos"/, fn ->
+        EntityTypeScorer.score(candidates("nice"), %{match: "nice", sentence_initial: false},
+          usage: %{types: %{}, ordinary: %{"other_pos" => 29}}
+        )
+      end
+    end
+  end
+
   describe "inflected forms are weighed by their lemma's uses" do
     test "a plural has the usage of its lemma, which it has none of itself" do
       assert Brain.Lexicon.UserDefined.facts("lights", kind: "property") == []
