@@ -17,7 +17,7 @@ defmodule Brain.ML.FeatureVectorClassifierTest do
   alias Brain.ML.FeatureVectorClassifier
 
   describe "train/1" do
-    test "builds a model with per-label centroids and a declared input_dim" do
+    test "builds a model with per-label prototype lists and a declared input_dim" do
       training = [
         {[0.0, 1.0, 0.0], "calendar"},
         {[0.1, 0.9, 0.0], "calendar"},
@@ -33,10 +33,14 @@ defmodule Brain.ML.FeatureVectorClassifierTest do
       assert Map.has_key?(model.label_centroids, "calendar")
       assert Map.has_key?(model.label_centroids, "weather")
       assert Map.has_key?(model.label_centroids, "meta")
-      assert length(model.label_centroids["calendar"]) == 3
+
+      # A label holds a list of prototypes, k = min(4, max(1, n ÷ 10)).
+      # "calendar" has 2 examples, so one prototype, of input_dim components.
+      assert [calendar_prototype] = model.label_centroids["calendar"]
+      assert length(calendar_prototype) == 3
     end
 
-    test "centroid for a label averages its training vectors componentwise" do
+    test "the single prototype of a label averages its training vectors componentwise" do
       training = [
         {[0.0, 0.0, 0.0], "zeros"},
         {[1.0, 1.0, 1.0], "zeros"}
@@ -44,7 +48,7 @@ defmodule Brain.ML.FeatureVectorClassifierTest do
 
       model = FeatureVectorClassifier.train(training)
 
-      assert model.label_centroids["zeros"] == [0.5, 0.5, 0.5]
+      assert model.label_centroids["zeros"] == [[0.5, 0.5, 0.5]]
     end
 
     test "rejects mixed-dimension training data" do
