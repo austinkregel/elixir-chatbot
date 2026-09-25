@@ -302,11 +302,14 @@ defmodule Brain.Test.ModelFactory do
     pairs =
       case load_feature_vector_data(:framing_class) do
         [] ->
-          Logger.info(
-            "[ModelFactory] framing_class corpus not found; training minimal placeholder model"
-          )
+          raise """
+          ModelFactory: no framing_class training data at #{data_classifiers_path("framing_class.json")}.
 
-          minimal_framing_training_pairs()
+          This used to fall back to a four-example synthetic corpus, which meant
+          the framing classifier trained on placeholder data whenever the real
+          corpus was absent -- and every framing assertion in the suite then
+          measured the placeholder. Run `mix gen_micro_data` to produce it.
+          """
 
         p ->
           p
@@ -328,32 +331,12 @@ defmodule Brain.Test.ModelFactory do
     {:ok, length(pairs)}
   end
 
-  # Tiny synthetic corpus so `micro/framing_class.term` and
-  # `framing_neutral_centroid.term` always exist in test (FramingDetector +
-  # ModelPreflight expect them). Vector length matches the live chunk feature
-  # extractor so `MicroClassifiers.classify_vector(:framing_class, ...)` agrees
-  # with production models.
-  defp minimal_framing_training_pairs do
-    dim = Brain.Analysis.FeatureExtractor.ChunkFeatures.vector_dimension()
-    z = List.duplicate(0.0, dim)
-
-    v_neutral =
-      z
-      |> List.replace_at(0, 0.12)
-      |> List.replace_at(1, 0.05)
-
-    v_control =
-      z
-      |> List.replace_at(0, 0.88)
-      |> List.replace_at(1, 0.42)
-
-    [
-      {v_neutral, "neutral"},
-      {v_control, "control"},
-      {List.replace_at(v_neutral, 2, 0.03), "neutral"},
-      {List.replace_at(v_control, 2, 0.11), "control"}
-    ]
-  end
+  # minimal_framing_training_pairs/0 was removed here: it built a four-example
+  # synthetic corpus so `micro/framing_class.term` would always exist, and
+  # train_framing_classifier/0 fell back to it whenever the real corpus was
+  # absent. That made every framing assertion in the suite measure the
+  # placeholder instead of the model. Its only caller now raises, so the
+  # generator is dead.
 
   @doc """
   Requires the test POS model: the model promoted to the test suite from a
@@ -594,18 +577,13 @@ defmodule Brain.Test.ModelFactory do
     end
   end
 
-  defp data_classifiers_path(relative) do
-    # `data/classifiers/` lives at the umbrella root, not inside the brain
-    # priv tree. Resolve it from the current working directory (Mix tests
-    # always run from the umbrella root) and fall back to walking up from
-    # priv if for some reason cwd is the brain app.
-    candidates = [
-      Path.join([File.cwd!(), "data", "classifiers", relative]),
-      Path.join([File.cwd!(), "..", "..", "data", "classifiers", relative]) |> Path.expand()
-    ]
-
-    Enum.find(candidates, hd(candidates), &File.exists?/1)
-  end
+  # `data/classifiers/` lives at the umbrella root, not inside the brain priv
+  # tree. This used to try two cwd-relative candidates and pick whichever
+  # existed, on the stated assumption that "Mix tests always run from the
+  # umbrella root" -- which is false: Mix boots the applications from the root
+  # and then runs each app's tests from apps/<app>. Guessing between two
+  # candidates also meant a missing file silently resolved to the first guess.
+  defp data_classifiers_path(relative), do: Brain.data_path(Path.join("classifiers", relative))
 
   defp persist_micro_models!(models) when is_map(models) do
     case Application.get_env(:brain, :ml, [])[:models_path] do
@@ -618,7 +596,12 @@ defmodule Brain.Test.ModelFactory do
 
         Enum.each(models, fn {name, model} ->
           path = Path.join(dir, "#{name}.term")
-          File.write!(path, Brain.ML.ModelStore.serialize(model))
+          # Stamped for the same reason `mix train_micro` stamps: the next boot
+          # reads these from disk through MicroClassifiers.load_model/1, which
+          # checks the record and raises without one. A test model written
+          # unstamped would fail the gate it exists to exercise.
+          stamped = Brain.ML.MicroProvenance.stamp!(model, name)
+          File.write!(path, Brain.ML.ModelStore.serialize(stamped))
         end)
     end
   end
