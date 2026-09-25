@@ -1112,13 +1112,16 @@ defmodule ChatWeb.DashboardLive do
   end
 
   def file_based_models(ml_models_status) do
-    [:pos_model, :entity_model, :gazetteer, :sentiment_classifier, :speech_act_classifier]
+    [:pos_model, :entity_model, :sentiment_classifier, :speech_act_classifier]
     |> Enum.map(fn key -> {key, Map.get(ml_models_status, key)} end)
     |> Enum.filter(fn {_k, v} -> v != nil end)
   end
 
+  # The gazetteer is built in memory from its sources, so it has no file on disk;
+  # Brain.SystemStatus reports it as a process. Size-on-disk and modified-at are
+  # not meaningful for it, so it belongs with the runtime agents.
   def agent_based_models(ml_models_status) do
-    [:entity_extractor]
+    [:gazetteer, :entity_extractor]
     |> Enum.map(fn key -> {key, Map.get(ml_models_status, key)} end)
     |> Enum.filter(fn {_k, v} -> v != nil end)
   end
