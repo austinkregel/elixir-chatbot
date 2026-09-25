@@ -114,7 +114,14 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
 
       entity_type = austin_entity[:entity] || austin_entity[:entity_type]
 
-      assert entity_type in ["location", "city", "ambiguous_name_location"],
+      # "ambiguous_name_location" used to be accepted here. It was never a
+      # reading of anything -- it was the *filename* of
+      # ambiguous_name_location_entries_en.json, which the loader used as the
+      # entity_type because it discarded each entry's declared `types` array.
+      # Accepting it meant this assertion passed whatever the disambiguator
+      # decided. The loader now preserves the declared readings, so the junk
+      # type no longer exists and the assertion means what it says.
+      assert entity_type in ["location", "city"],
              "Expected 'Austin' to be disambiguated as location-like type for weather query, " <>
                "got '#{entity_type}'. Full entity: #{inspect(austin_entity)}"
 
@@ -152,9 +159,6 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
             assert entity_type != nil, "Expected TypeInferrer to provide a type, got nil"
 
           entity_type == "person" ->
-            :ok
-
-          entity_type in ["ambiguous_name_location"] ->
             :ok
 
           true ->
@@ -451,12 +455,17 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
           String.downcase(e[:value] || "") == "austin"
         end)
 
-      if austin do
-        entity_type = austin[:entity] || austin[:entity_type]
+      # Previously `if austin do ... end` with no else, so the test passed
+      # green precisely when Austin was not extracted at all -- the regression
+      # it exists to catch. And "ambiguous_name_location" was the loader's
+      # filename-derived junk type, which made the assertion accept anything.
+      assert austin, "Austin was not extracted from the introduction: #{inspect(entities)}"
 
-        assert entity_type in ["person", "ambiguous_name_location"],
-               "Expected Austin to be disambiguated as person or ambiguous_name_location, got: #{entity_type}"
-      end
+      entity_type = austin[:entity] || austin[:entity_type]
+
+      assert entity_type == "person",
+             "Expected Austin to be disambiguated as a person in an introduction, got: " <>
+               "#{entity_type}. Full entity: #{inspect(austin)}"
     end
   end
 
