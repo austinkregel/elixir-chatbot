@@ -50,13 +50,17 @@ defmodule Brain.Graph.Reader do
           %{entity: entity, neighbors: neighbors, node: node}
 
         :miss ->
-          result = fetch_entity_context(label, value, depth)
-          ContextCache.put(world_id, "knowledge_graph", label, value, result)
-
-          case result do
+          case fetch_entity_context(label, value, depth) do
             {node, neighbors} when not is_nil(node) ->
+              ContextCache.put(world_id, "knowledge_graph", label, value, {node, neighbors})
               %{entity: entity, neighbors: neighbors, node: node}
 
+            # A miss is not cached. `fetch_entity_context/3` cannot tell "no
+            # such entity" from a lookup that failed -- an unavailable graph,
+            # a connection error -- so caching it records a failure as a fact,
+            # for every later reader, until the process that cached it
+            # remembers to purge. Re-reading a genuinely unknown entity costs
+            # one query.
             _ ->
               %{entity: entity, neighbors: [], node: nil}
           end
@@ -121,11 +125,21 @@ defmodule Brain.Graph.Reader do
         neighbors = get_neighbors("knowledge_graph", node.id, depth)
         {node, neighbors}
 
-      _ ->
+      :not_found ->
+        {nil, []}
+
+      # Still degrades — response generation must not block on the graph — but
+      # says so. "The graph is unreachable" and "we have never heard of this
+      # entity" produce the same empty result here and the same hedged reply
+      # downstream, so the difference has to be visible somewhere.
+      {:error, reason} ->
+        Logger.warning("Reader: lookup of #{label} #{inspect(value)} failed: #{inspect(reason)}")
         {nil, []}
     end
   rescue
-    _ -> {nil, []}
+    e ->
+      Logger.warning("Reader: lookup of #{label} #{inspect(value)} raised: #{Exception.message(e)}")
+      {nil, []}
   end
 
   @doc """
@@ -146,7 +160,12 @@ defmodule Brain.Graph.Reader do
          {:ok, node_b} <- AtlasIntegration.find_node("knowledge_graph", label_b, name_b) do
       find_path("knowledge_graph", node_a, node_b)
     else
-      _ -> {:error, :not_found}
+      :not_found ->
+        {:error, :not_found}
+
+      {:error, reason} ->
+        Logger.warning("Reader: relationship path lookup failed: #{inspect(reason)}")
+        {:error, :not_found}
     end
   rescue
     _ -> {:error, :not_found}
