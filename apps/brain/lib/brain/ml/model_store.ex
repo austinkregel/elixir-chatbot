@@ -150,8 +150,23 @@ defmodule Brain.ML.ModelStore do
   call this before `File.read!` to transparently pull from MinIO when
   running in a container that starts without local model files.
 
-  When the store is disabled or unreachable, this is a silent no-op so
-  existing local-file loading continues to work.
+  When the store is **disabled** this is a no-op, because local files are then
+  the intended source and there is nothing to fetch.
+
+  When the store is **enabled** and the file is missing, a failed fetch raises.
+  It used to return `:ok`, which meant a configured object store could be
+  unreachable and the only symptom was the model reporting itself unavailable
+  several layers later. A required dependency is required; see the house rule
+  about not routing around one.
+
+  Note this still does not re-verify a file that already exists locally. That
+  is what re-served the stale `format: nil` POS model for months. It is not
+  fixed here because fixing it needs a remote digest to compare against, and
+  `fetch/3` performs no ETag or size check at all -- that is a feature, not a
+  fallback to delete. The in-model provenance gates
+  (`Brain.ML.MicroProvenance.check_current!/3` and
+  `Brain.Training.POS.check_current!/2`) are what now catch a stale local file,
+  at load rather than at download.
   """
   @spec ensure_local(String.t(), String.t(), keyword()) :: :ok
   def ensure_local(remote_key, local_path, opts \\ []) do
@@ -164,8 +179,19 @@ defmodule Brain.ML.ModelStore do
 
         _ ->
           case fetch(remote_key, local_path, opts) do
-            :ok -> :ok
-            {:error, _} -> :ok
+            :ok ->
+              :ok
+
+            {:error, reason} ->
+              raise """
+              ModelStore is enabled but could not fetch #{remote_key} to #{local_path}: \
+              #{inspect(reason)}
+
+              Both the versioned prefix and the bare key failed. Either the store is \
+              unreachable, the object is missing, or `latest` names a prefix that does \
+              not hold it -- fetch_latest/2 assumes a prefix holds *every* model, so a \
+              partial publish orphans the rest.
+              """
           end
       end
     else
