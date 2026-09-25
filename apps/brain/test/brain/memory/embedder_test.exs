@@ -8,6 +8,10 @@ defmodule Brain.Memory.EmbedderTest do
     ensure_pubsub_started()
     ensure_started(Embedder)
 
+    # These tests build vocabularies to assert on; the vocabulary is global,
+    # so the suite's is put back afterwards.
+    Brain.Test.Singletons.preserve_embedder!()
+
     :ok
   end
 
