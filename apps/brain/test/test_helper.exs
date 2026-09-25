@@ -1,26 +1,24 @@
-# Start Atlas only first so we can migrate before Brain GenServers (e.g.
-# CredentialVault) query `atlas_test.*` tables.
+# Start Atlas only first so the Sandbox is in :manual before any Brain
+# GenServer (e.g. CredentialVault) queries `atlas_test.*` tables.
 {:ok, _} = Application.ensure_all_started(:atlas)
 
-# Migrations must run on the main process before Sandbox ownership — Ecto may
-# run them inside a Task, which cannot check out a sandbox connection. Atlas's
-# test run (umbrella `mix test` runs it before brain) leaves the Sandbox in
-# :manual with no owner, so flip to :auto for the bootstrap/migration block;
-# start_owner! below moves it to shared mode for Brain boot.
-Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :auto)
+# :manual for the whole run, set before anything else can write. Every test
+# then works inside a transaction that is rolled back, and a write from a
+# process holding no connection raises DBConnection.OwnershipError instead of
+# persisting. Nothing here switches to :auto: the schema, migrations and
+# seeded lexicon come from `MIX_ENV=test mix test.prepare`, which the root
+# `mix test` alias runs first.
+Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :manual)
 
-_ = Mix.Task.run("atlas.bootstrap_age")
-Atlas.Repo.query!(~s(CREATE SCHEMA IF NOT EXISTS atlas_test), [])
-migrations_path = Application.app_dir(:atlas, "priv/repo/migrations")
-Ecto.Migrator.run(Atlas.Repo, migrations_path, :up, all: true, prefix: "atlas_test")
-
-# Umbrella `mix test` runs atlas (and other apps) before brain. Their Sandboxes
-# leave `Atlas.Repo` in :manual with no owner, so unqualified `Repo.query!`
-# here raises DBConnection.OwnershipError. A shared owner covers Brain boot
-# until we hand off to per-test `GraphCase` / `BrainCase` owners.
+# A shared owner covers application boot until the per-test `GraphCase` /
+# `BrainCase` owners take over; whatever boot writes is rolled back with it.
 bootstrap_owner = Ecto.Adapters.SQL.Sandbox.start_owner!(Atlas.Repo, shared: true)
 
 try do
+  # Fails loudly when the database was not prepared, rather than letting every
+  # lexicon-dependent test fail for lack of data.
+  Brain.Test.Database.verify_prepared!()
+
   # Start Brain application to get PubSub and core services
   {:ok, _} = Application.ensure_all_started(:brain)
 
@@ -43,34 +41,20 @@ try do
   if Application.get_env(:brain, :ouro_enabled, true) do
     Brain.ML.Ouro.SidecarLauncher.ensure_ready!(timeout: 120_000)
   end
+
+  # The lexicon the brain reads all run: seeded by `mix test.prepare`, loaded
+  # into the store at boot above (`Lexicon.UserDefined: loaded N facts from
+  # Atlas`). Without those facts every word would read as non-negating and
+  # anything asserting on morphological negation would fail for lack of data
+  # rather than for a real reason.
+  #
+  # Counted in the database, not through `UserDefined.count/1`: that counts
+  # words carrying a *sense*, which the seeded property facts are not, so it
+  # reads 0 on a correctly loaded store. Inside the block: the count needs the
+  # bootstrap owner's connection.
+  IO.puts("test_helper: lexicon ready (#{Brain.Test.Database.count_lexicon_facts()} facts seeded)")
 after
   Ecto.Adapters.SQL.Sandbox.stop_owner(bootstrap_owner)
-end
-
-# Seed the brain's own lexicon. This runs while the Repo is still in :auto mode,
-# after the bootstrap owner has stopped and before per-test sandboxing begins,
-# so the facts persist for the whole run instead of being rolled back with the
-# first test. Seeding is idempotent, so later runs reuse what is already there.
-#
-# Without this, every word reads as non-negating and anything asserting on
-# morphological negation fails for lack of data rather than for a real reason.
-#
-# The pool is left in :manual mode once the bootstrap owner stops, and seeding
-# runs from the store's own process, which owns no connection. :auto lets it
-# write; the block below puts the pool back into :manual for the tests.
-Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :auto)
-
-{:ok, lexicon_counts} = Brain.Lexicon.Seeder.seed_all()
-{:ok, lexicon_facts} = Brain.Lexicon.UserDefined.reload()
-
-IO.puts(
-  "test_helper: lexicon seeded (#{lexicon_counts.negation} negation facts, " <>
-    "#{lexicon_facts} facts loaded)"
-)
-
-# Per-test isolation: each case template checks out or shares its own owner.
-if Process.whereis(Atlas.Repo) do
-  Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :manual)
 end
 
 # Start HTTP snapshot server for external API mocking
