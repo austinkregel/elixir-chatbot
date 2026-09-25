@@ -51,6 +51,24 @@ defmodule Brain.ML.InformalExpansionsTest do
       assert {:ok, "Going to"} = InformalExpansions.expand("Gonna")
     end
 
+    test "does not expand a contraction whose clitic has more than one meaning" do
+      # "'s" is the possessive, is, has or us; "'d" is would or had.
+      for word <- ~w(he's she's it's what's let's i'd she'd) do
+        assert :not_found = InformalExpansions.expand(word), "#{word} was expanded"
+      end
+    end
+
+    test "every contraction it expands ends in a clitic with one meaning" do
+      with_clitic =
+        for {informal, _} <- InformalExpansions.all_expansions(),
+            {_host, clitic} <- [Brain.Lexicon.Clitics.split(informal)],
+            do: {informal, clitic}
+
+      # n't, 'm, 'll, 've and 're all appear in the dataset.
+      assert with_clitic |> Enum.map(&elem(&1, 1)) |> Enum.uniq() |> length() >= 5
+      assert Enum.filter(with_clitic, fn {_, clitic} -> Brain.Lexicon.Clitics.ambiguous?(clitic) end) == []
+    end
+
     test "returns :not_found for unknown tokens" do
       assert :not_found = InformalExpansions.expand("hello")
       assert :not_found = InformalExpansions.expand("world")
@@ -74,6 +92,52 @@ defmodule Brain.ML.InformalExpansionsTest do
       assert InformalExpansions.has_expansion?("GONNA")
       assert InformalExpansions.has_expansion?("Gonna")
       assert InformalExpansions.has_expansion?("gonna")
+    end
+  end
+
+  describe "missing data fails loudly" do
+    # Stops the application's agent for the test and restarts it after, with
+    # the configured data path restored.
+    setup %{tmp_dir: dir} do
+      ml = Application.fetch_env!(:brain, :ml)
+      :ok = Supervisor.terminate_child(Brain.Supervisor, InformalExpansions)
+
+      on_exit(fn ->
+        Application.put_env(:brain, :ml, ml)
+        {:ok, _} = Supervisor.restart_child(Brain.Supervisor, InformalExpansions)
+      end)
+
+      %{ml: ml, dir: dir}
+    end
+
+    @tag :tmp_dir
+    test "a lookup before the agent has started raises" do
+      assert_raise RuntimeError, ~r/InformalExpansions is not started/, fn -> InformalExpansions.expand("gonna") end
+      assert_raise RuntimeError, ~r/not started/, fn -> Brain.ML.Tokenizer.expand_contractions("I'm gonna go") end
+      assert_raise RuntimeError, ~r/not started/, fn -> InformalExpansions.all_expansions() end
+      assert_raise RuntimeError, ~r/not started/, fn -> InformalExpansions.metadata() end
+    end
+
+    @tag :tmp_dir
+    test "a missing, malformed or empty data file fails the start", %{ml: ml, dir: dir} do
+      Application.put_env(:brain, :ml, Keyword.put(ml, :training_data_path, dir))
+      Process.flag(:trap_exit, true)
+      path = Path.join(dir, "informal_expansions.json")
+
+      assert {:error, {%RuntimeError{message: message}, _}} = InformalExpansions.start_link()
+      assert message =~ "cannot read #{path}"
+
+      File.write!(path, "{not json")
+      assert {:error, {%RuntimeError{message: message}, _}} = InformalExpansions.start_link()
+      assert message =~ "not valid JSON"
+
+      File.write!(path, ~s({"expansions": {}}))
+      assert {:error, {%RuntimeError{message: message}, _}} = InformalExpansions.start_link()
+      assert message =~ ~s(no non-empty "expansions")
+
+      File.write!(path, ~s({"expansions": {"gonna": "going to", "he's": "he is"}}))
+      assert {:error, {%RuntimeError{message: message}, _}} = InformalExpansions.start_link()
+      assert message =~ ~s(expands ["he's"])
     end
   end
 
@@ -101,6 +165,13 @@ defmodule Brain.ML.InformalExpansionsTest do
       assert "I am going to the store" = Tokenizer.expand_contractions("I'm gonna the store")
       assert "What are you doing" = Tokenizer.expand_contractions("Whatcha doing")
       assert "I do not know" = Tokenizer.expand_contractions("I dunno")
+    end
+
+    test "leaves an ambiguous contraction for the tokenizer to split" do
+      assert "he's been there, she'd go" = Tokenizer.expand_contractions("he's been there, she'd go")
+
+      assert Tokenizer.tokenize_normalized("he's been there", expand_contractions: true) ==
+               ["he", "'s", "been", "there"]
     end
 
     test "preserves proper names" do
