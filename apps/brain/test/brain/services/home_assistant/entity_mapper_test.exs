@@ -7,6 +7,19 @@ defmodule Brain.Services.HomeAssistant.EntityMapperTest do
   @ets_table :ha_capability_registry
 
   setup do
+    # `CapabilityRegistry` hardcodes `@ets_table` as :ha_capability_registry
+    # (capability_registry.ex:18, used at 11 sites), so there is no per-test
+    # table to seed and this file writes 11 invented entities plus
+    # {:ready, true} straight into the table the running registry owns.
+    # Snapshot those three keys and put them back, the way the gazetteer tests
+    # do — a plain delete afterwards would not be a restore, because the
+    # registry itself writes :ready and would lose its own value.
+    Brain.Test.Singletons.preserve_ets_keys!(@ets_table, [
+      :ready,
+      :entity_states,
+      :entities_by_domain
+    ])
+
     ensure_ets_table()
     seed_entity_states()
     :ok
