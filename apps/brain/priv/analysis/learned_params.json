@@ -25,16 +25,16 @@
     "learned_at": null
   },
   "feedback_stats": {
-    "clarifications_needed": 3,
+    "clarifications_needed": 5,
     "deferral_confirmations": 0,
     "optional_responses_deferred": 0,
     "optional_responses_proceeded": 0,
     "responses_deferred": 0,
     "silence_frustrations": 0,
     "successful_responses": 163,
-    "total_interactions": 166
+    "total_interactions": 168
   },
-  "last_updated": "2026-05-01T20:53:20.814309Z",
+  "last_updated": "2026-09-19T06:30:38.978142Z",
   "response_optionality": {
     "acknowledgment_defer_confidence": 0.7,
     "admin_locked": false,
