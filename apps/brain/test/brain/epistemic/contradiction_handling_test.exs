@@ -424,8 +424,12 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
     ensure_started(ContradictionHandler)
     ensure_started(UserModelStore)
     ensure_started(FactDatabase)
-    BeliefStore.clear()
-    JTMS.clear()
-    UserModelStore.clear_all()
+
+    # Empty before each test and empty again after: all three keep their
+    # contents in GenServer state, which the Sandbox does not roll back, so
+    # this file's beliefs, nodes and models would otherwise stay visible for
+    # the rest of the run. Empty is the boot state for all three (0 rows in
+    # atlas_beliefs and atlas_user_models; JTMS loads nothing at all).
+    Brain.Test.Singletons.reset_epistemic_stores!([:beliefs, :jtms, :user_models])
   end
 end
