@@ -36,11 +36,6 @@
     "text": "play Miracle"
   },
   {
-    "intent": "test.intent.promotion",
-    "status": "needs_review",
-    "text": "What is the test intent?"
-  },
-  {
     "intent": "smarthome.device_set",
     "text": "set all computers brightness level"
   },
