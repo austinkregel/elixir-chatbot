@@ -33,15 +33,31 @@ defmodule Brain.ML.TokenizerTest do
       assert "!" in texts
     end
 
-    test "handles contractions" do
-      tokens = Tokenizer.tokenize("I'm going to don't")
+    test "splits clitics off their host the way the treebank does" do
+      assert Tokenizer.tokenize_words("I'm going to don't") == ["I", "'m", "going", "to", "do", "n't"]
+      assert Tokenizer.tokenize_words("I can't, he won't") == ["I", "ca", "n't", ",", "he", "wo", "n't"]
+      assert Tokenizer.tokenize_words("they've we're you'll") == ["they", "'ve", "we", "'re", "you", "'ll"]
+    end
 
-      texts = Enum.map(tokens, & &1.text)
-      assert length(texts) >= 4
-      assert "going" in texts
-      assert "to" in texts
-      has_contraction = "I'm" in texts or ("I" in texts and "m" in texts)
-      assert has_contraction
+    test "keeps a possessive or ambiguous clitic as its own token" do
+      assert Tokenizer.tokenize_words("Turn on Sarah's lights") == ["Turn", "on", "Sarah", "'s", "lights"]
+      assert Tokenizer.tokenize_words("he's been, she'd go") == ["he", "'s", "been", ",", "she", "'d", "go"]
+    end
+
+    test "a clitic token keeps its casing and position, and normalizes to the table's form" do
+      text = "DON’T touch O'Donnell's"
+      tokens = Tokenizer.tokenize(text)
+
+      assert Enum.map(tokens, &{&1.text, &1.normalized}) ==
+               [{"DO", "do"}, {"N’T", "n't"}, {"touch", "touch"}, {"O", "o"}, {"'", "'"}, {"Donnell", "donnell"}, {"'s", "'s"}]
+
+      for token <- tokens, do: assert(String.slice(text, token.start_pos..token.end_pos) == token.text)
+      assert Enum.filter(tokens, &(&1.type == :contraction)) |> Enum.map(& &1.normalized) == ["n't", "'s"]
+    end
+
+    test "an apostrophe that ends no clitic is left alone" do
+      # Letters after the would-be clitic, a quote, and a clitic with no host.
+      assert Tokenizer.tokenize_words("O'Donnell 'hello' n't") == ["O", "'", "Donnell", "'", "hello", "'", "n", "'", "t"]
     end
 
     test "handles numbers" do
