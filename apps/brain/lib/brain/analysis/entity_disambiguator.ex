@@ -171,7 +171,7 @@ defmodule Brain.Analysis.EntityDisambiguator do
   # used, how it was typed, and which entity types the intent's slot schema
   # expects. The entity takes the winner's type, value and confidence, and
   # keeps its candidates so it can be scored again once the intent is known.
-  defp score_and_select(entity, types, _pos_tagged, context) do
+  defp score_and_select(entity, types, pos_tagged, context) do
     text =
       case Map.get(context, :original_text) do
         text when is_binary(text) -> text
@@ -180,10 +180,33 @@ defmodule Brain.Analysis.EntityDisambiguator do
 
     entity
     |> Map.put(:types, types)
+    |> Map.put_new_lazy(:tag, fn -> head_tag(entity, pos_tagged) end)
     |> EntityTypeScorer.mark_position(text)
     |> EntityTypeScorer.apply_to(EntityTypeScorer.expected_types(Map.get(context, :intent)))
     |> then(&Map.merge(&1, %{entity: &1.entity_type, disambiguation_source: :context_analysis}))
   end
+
+  # The tag of the entity's head word (its last word) in the sentence's tags,
+  # for an entity that was not extracted with one; nil when the head word is
+  # not among the tagged tokens.
+  defp head_tag(entity, pos_tagged) when is_list(pos_tagged) do
+    head =
+      (Map.get(entity, :match) || Map.get(entity, :value) || "")
+      |> String.split()
+      |> List.last()
+      |> Kernel.||("")
+      |> String.downcase()
+
+    Enum.find_value(pos_tagged, fn
+      {token, tag} when is_binary(token) and is_binary(tag) ->
+        if String.downcase(token) == head, do: tag
+
+      _ ->
+        nil
+    end)
+  end
+
+  defp head_tag(_entity, _pos_tagged), do: nil
 
   @doc """
   Check if an entity type requires context-based disambiguation.
