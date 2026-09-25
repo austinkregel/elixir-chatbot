@@ -155,6 +155,25 @@ defmodule Brain.Lexicon.UserDefined do
   end
 
   @doc """
+  Archives every fact from `source` with one of `keys` whose identity
+  `{word, kind, key, ref}` is not in `keep` -- how a seeder retires what it
+  no longer derives, rather than leaving stale facts to be read alongside
+  the new ones. `:ref` in `opts` narrows it to one ref. Archiving is
+  reversible: writing the fact again un-archives it.
+
+  Returns `{:ok, count}` of facts archived.
+  """
+  @spec retire_unlisted(String.t(), [String.t()], MapSet.t(), keyword()) :: {:ok, non_neg_integer()}
+  def retire_unlisted(source, keys, keep, opts \\ [])
+      when is_binary(source) and is_list(keys) do
+    GenServer.call(
+      Keyword.get(opts, :name, __MODULE__),
+      {:retire_unlisted, source, keys, keep, Keyword.get(opts, :ref)},
+      :infinity
+    )
+  end
+
+  @doc """
   Adds or updates a sense for a word.
 
   An existing sense whose centroid is at least `:similarity_threshold`
@@ -277,6 +296,25 @@ defmodule Brain.Lexicon.UserDefined do
       end
 
     {:reply, reply, state}
+  end
+
+  def handle_call({:retire_unlisted, source, keys, keep, ref}, _from, state) do
+    retired =
+      state.table
+      |> :ets.tab2list()
+      |> Enum.flat_map(fn {_word, facts} -> facts end)
+      |> Enum.filter(fn fact ->
+        fact.source == source and fact.key in keys and not fact.archived and
+          (is_nil(ref) or fact.ref == ref) and
+          not MapSet.member?(keep, {fact.word, fact.kind, fact.key, fact.ref})
+      end)
+      |> Enum.map(fn fact ->
+        {:ok, _} = Facts.update_fact(fact, %{archived: true})
+        fact.word
+      end)
+
+    refresh_words(state.table, Enum.uniq(retired))
+    {:reply, {:ok, length(retired)}, state}
   end
 
   def handle_call({:decay_senses, opts}, _from, state) do
