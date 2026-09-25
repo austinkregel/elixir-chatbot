@@ -519,26 +519,11 @@ defmodule Mix.Tasks.GenMicroData do
     Brain.ML.EvaluationStore.load_gold_standard("intent", :train)
   end
 
-  defp output_dir do
-    priv_dir =
-      case :code.priv_dir(:brain) do
-        {:error, _} -> "apps/brain/priv"
-        dir -> to_string(dir)
-      end
-
-    umbrella_root =
-      case File.read_link(priv_dir) do
-        {:ok, link_target} ->
-          parent = Path.dirname(priv_dir)
-          real_priv = Path.join(parent, link_target) |> Path.expand()
-          Path.join(real_priv, "../../..") |> Path.expand()
-
-        {:error, _} ->
-          Path.join(priv_dir, "../../../../..") |> Path.expand()
-      end
-
-    Path.join(umbrella_root, "data/classifiers")
-  end
+  # Brain.data_path/1 owns this resolution. It used to be duplicated here, which
+  # meant the task that *writes* data/classifiers and the code that *reads* it
+  # each resolved the umbrella root independently -- and a reader that disagrees
+  # with the writer reports a missing dataset rather than a wrong path.
+  defp output_dir, do: Brain.data_path("classifiers")
 
   defp check_lexicon_data do
     priv_dir =
