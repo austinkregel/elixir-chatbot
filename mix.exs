@@ -54,6 +54,10 @@ defmodule ChatBot.Umbrella.MixProject do
         "train"
       ],
 
+      # The suites never write to the database outside a test transaction, so
+      # the schema, migrations and seeded lexicon they read are prepared first.
+      test: ["test.prepare", "test"],
+
       # Precommit runs format check, Credo, and tests
       precommit: ["format --check-formatted", "credo --strict", "test"],
 
