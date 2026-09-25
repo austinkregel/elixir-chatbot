@@ -9,7 +9,6 @@ defmodule Mix.Tasks.TrainModels do
   use Mix.Task
   require Logger
   alias Brain.ML.Trainer
-  alias Brain.ML.POSTagger
 
   @shortdoc "Train ML models from training data"
 
@@ -111,10 +110,8 @@ defmodule Mix.Tasks.TrainModels do
           if skip_pos do
             stats
           else
-            case run_pos_training_internal(models_path) do
-              {:ok, pos_stats} -> Map.merge(stats, pos_stats)
-              {:error, _reason} -> stats
-            end
+            {:ok, pos_stats} = run_pos_training_internal(models_path)
+            Map.merge(stats, pos_stats)
           end
 
         {:ok, stats}
@@ -129,74 +126,22 @@ defmodule Mix.Tasks.TrainModels do
     run_pos_training_internal(models_path)
   end
 
+  # Trains on the committed EWT fixtures (Brain.Training.POS), which raises
+  # rather than saving a model that cannot beat the lookup baseline.
   defp run_pos_training_internal(models_path) do
-    gold_standard_path = Brain.priv_path("evaluation/intent/gold_standard.json")
+    Mix.shell().info("  Training the POS tagger on the EWT fixtures...")
 
-    Mix.shell().info("  Loading POS training data from gold standard...")
-    sequences = load_pos_from_gold_standard(gold_standard_path)
+    {path, model} =
+      Brain.Training.POS.train_and_save!(out: Path.join(models_path, "pos_model.term"))
 
-    if sequences != [] do
-      Mix.shell().info("  Found #{length(sequences)} POS-annotated sequences from gold standard")
+    Mix.shell().info("  POS model saved to #{path}")
 
-      case POSTagger.train(sequences) do
-        {:ok, model} ->
-          save_path = Path.join(models_path, "pos_model.term")
-
-          case POSTagger.save_model(model, save_path) do
-            {:ok, path} ->
-              Mix.shell().info("  POS model saved to #{path}")
-
-              {:ok,
-               %{
-                 pos_model_trained: true,
-                 pos_tag_count: map_size(model.tag_vocabulary),
-                 pos_feature_count: map_size(model.feature_weights)
-               }}
-
-            {:error, reason} ->
-              Mix.shell().error("  Failed to save POS model: #{reason}")
-              {:error, reason}
-          end
-
-        {:error, reason} ->
-          Mix.shell().error("  POS training failed: #{reason}")
-          {:error, reason}
-      end
-    else
-      Mix.shell().info("  No POS-annotated data in gold standard. Skipping POS training.")
-      Mix.shell().info("  Run: python scripts/enrich_gold_standard_pos.py")
-      {:error, :no_training_data}
-    end
-  end
-
-  defp load_pos_from_gold_standard(gold_standard_path) do
-    case File.read(gold_standard_path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, examples} when is_list(examples) ->
-            examples
-            |> Enum.filter(fn ex ->
-              tokens = ex["tokens"] || []
-              tags = ex["pos_tags"] || []
-              tokens != [] and length(tokens) == length(tags)
-            end)
-            |> Enum.map(fn ex ->
-              %{
-                tokens: ex["tokens"],
-                tags: ex["pos_tags"],
-                source: ex["intent"]
-              }
-            end)
-
-          _ ->
-            Mix.shell().info("  Warning: Could not parse #{gold_standard_path}")
-            []
-        end
-
-      {:error, reason} ->
-        Mix.shell().info("  Warning: Could not read #{gold_standard_path}: #{inspect(reason)}")
-        []
-    end
+    {:ok,
+     %{
+       pos_model_trained: true,
+       pos_accuracy: model.evaluation.accuracy,
+       pos_lookup_baseline: model.evaluation.lookup_baseline
+     }}
   end
 
   defp display_data_sources(training_data_path) do
@@ -234,16 +179,9 @@ defmodule Mix.Tasks.TrainModels do
       Mix.shell().error("  Intents:    NOT FOUND at #{legacy_intents}")
     end
 
-    pos_data_path = Path.join(training_data_path, "training/pos/sequences.json")
-
-    if File.exists?(pos_data_path) do
-      Mix.shell().info("  POS Data:   training/pos/sequences.json")
-    else
-      if File.exists?(enriched_intents) do
-        Mix.shell().info("  POS Data:   (from enriched intents)")
-      else
-        Mix.shell().info("  POS Data:   NOT FOUND (run 'mix migrate_training_data')")
-      end
+    for {split, path} <- Enum.sort(Brain.Training.POS.fixture_paths()) do
+      status = if File.exists?(path), do: Path.relative_to_cwd(path), else: "NOT FOUND (run mix pos.import_ud_ewt)"
+      Mix.shell().info("  POS #{String.pad_trailing(split, 6)} #{status}")
     end
 
     entities_dir = Path.join(training_data_path, "entities")
@@ -332,8 +270,8 @@ defmodule Mix.Tasks.TrainModels do
 
     if Map.get(stats, :pos_model_trained, false) do
       Mix.shell().info("  POS Tagger:")
-      Mix.shell().info("    - Tag vocabulary:   #{Map.get(stats, :pos_tag_count, 0)}")
-      Mix.shell().info("    - Feature count:    #{Map.get(stats, :pos_feature_count, 0)}")
+      Mix.shell().info("    - Test accuracy:    #{Float.round(stats.pos_accuracy * 100, 2)}%")
+      Mix.shell().info("    - Lookup baseline:  #{Float.round(stats.pos_lookup_baseline * 100, 2)}%")
     end
 
     Mix.shell().info("")
