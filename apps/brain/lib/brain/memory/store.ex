@@ -297,14 +297,14 @@ defmodule Brain.Memory.Store do
 
         {:reply, {:ok, episode.id}, state}
 
-      {:error, _reason} ->
-        # Atlas unavailable -- write-through to VectorIndex only
-        if embedding != [] do
-          VectorIndex.insert(state.episode_index, {world_id, episode.id}, embedding)
-        end
-
-        Brain.AtlasIntegration.persist_episode(episode, world_id)
-        {:reply, {:ok, episode.id}, state}
+      # The episode was not written. Saying `{:ok, id}` here told the caller
+      # its memory was stored when nothing holds it, and indexing it anyway
+      # left the vector index claiming episodes the database does not have —
+      # which is what makes `get_episode/1` miss on an id the index just
+      # returned. Neither the index nor the caller is told a write happened.
+      {:error, reason} ->
+        Logger.error("Memory.Store: episode #{episode.id} was not persisted: #{inspect(reason)}")
+        {:reply, {:error, reason}, state}
     end
   end
 
@@ -320,13 +320,10 @@ defmodule Brain.Memory.Store do
 
         {:reply, {:ok, episode.id}, state}
 
-      {:error, _reason} ->
-        if is_list(episode.embedding) and episode.embedding != [] do
-          VectorIndex.insert(state.episode_index, {world_id, episode.id}, episode.embedding)
-        end
-
-        Brain.AtlasIntegration.persist_episode(episode, world_id)
-        {:reply, {:ok, episode.id}, state}
+      # Not written: report the failure rather than an id nothing holds.
+      {:error, reason} ->
+        Logger.error("Memory.Store: episode #{episode.id} was not persisted: #{inspect(reason)}")
+        {:reply, {:error, reason}, state}
     end
   end
 
@@ -340,13 +337,10 @@ defmodule Brain.Memory.Store do
 
         {:reply, {:ok, semantic.id}, state}
 
-      {:error, _reason} ->
-        if is_list(semantic.embedding) and semantic.embedding != [] do
-          VectorIndex.insert(state.semantic_index, {world_id, semantic.id}, semantic.embedding)
-        end
-
-        Brain.AtlasIntegration.persist_semantic(semantic, world_id)
-        {:reply, {:ok, semantic.id}, state}
+      # Not written: report the failure rather than an id nothing holds.
+      {:error, reason} ->
+        Logger.error("Memory.Store: semantic fact #{semantic.id} was not persisted: #{inspect(reason)}")
+        {:reply, {:error, reason}, state}
     end
   end
 
