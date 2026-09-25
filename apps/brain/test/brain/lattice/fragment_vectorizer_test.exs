@@ -4,6 +4,14 @@ defmodule Brain.Lattice.FragmentVectorizerTest do
   alias Brain.Analysis.FeatureExtractor.ChunkFeatures
   alias Brain.Lattice.FragmentVectorizer
 
+  # Feature extraction reads the knowledge graph; without a checked-out
+  # connection those lookups fail silently.
+  setup tags do
+    owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
+    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+    :ok
+  end
+
   @tag :integration
   test "vectorize_fragment_text returns vector of expected dimension" do
     Mix.Task.run("app.start")
