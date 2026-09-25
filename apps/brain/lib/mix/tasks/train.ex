@@ -77,7 +77,6 @@ defmodule Mix.Tasks.Train do
   @compile {:no_warn_undefined, World.Persistence}
 
   alias World.Persistence
-  alias Brain.ML.POSTagger
   alias Brain.ML.Trainer
   alias Brain.ML.ModelStore
   use Mix.Task
@@ -526,44 +525,21 @@ defmodule Mix.Tasks.Train do
     Mix.shell().info("  Stage 2/9: POS Tagger  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
-    models_path = get_models_path(opts[:world])
-    gold_standard_path = Brain.priv_path("evaluation/intent/gold_standard.json")
+    # Trains on the committed EWT fixtures (Brain.Training.POS). An invalid
+    # fixture or a model that cannot beat the lookup baseline raises: this
+    # stage never reports success without a model.
+    save_path = Path.join(get_models_path(opts[:world]), "pos_model.term")
+    Mix.shell().info("  Training the POS tagger on the EWT fixtures...")
 
-    sequences = load_pos_from_gold_standard(gold_standard_path)
+    {path, model} = Brain.Training.POS.train_and_save!(out: save_path)
+    e = model.evaluation
 
-    sequences =
-      if sequences != [] do
-        Mix.shell().info("  Found #{length(sequences)} pre-annotated POS sequences")
-        sequences
-      else
-        Mix.shell().info("  No POS-annotated data in gold standard. Auto-enriching with WordNet + rules...")
-        auto_enrich_pos(gold_standard_path)
-      end
+    Mix.shell().info(
+      "  POS model saved to #{path}: test accuracy #{Float.round(e.accuracy * 100, 2)}% " <>
+        "(lookup baseline #{Float.round(e.lookup_baseline * 100, 2)}%)"
+    )
 
-    if sequences != [] do
-      Mix.shell().info("  Training POS model on #{length(sequences)} sequences...")
-
-      case POSTagger.train(sequences) do
-        {:ok, model} ->
-          save_path = Path.join(models_path, "pos_model.term")
-          File.mkdir_p!(Path.dirname(save_path))
-
-          case POSTagger.save_model(model, save_path) do
-            {:ok, path} ->
-              Mix.shell().info("  POS model saved to #{path}")
-              {:ok, %{pos_trained: true, tag_count: map_size(model.tag_vocabulary)}}
-
-            {:error, reason} ->
-              {:error, reason}
-          end
-
-        {:error, reason} ->
-          {:error, reason}
-      end
-    else
-      Mix.shell().info("  No training data available for POS model.")
-      {:ok, %{pos_trained: false}}
-    end
+    {:ok, %{pos_trained: true, accuracy: e.accuracy, lookup_baseline: e.lookup_baseline}}
   end
 
   defp train_poincare_embeddings(opts) do
@@ -896,131 +872,6 @@ defmodule Mix.Tasks.Train do
   defp get_models_path(world_id) do
     world_path = Persistence.world_path(world_id)
     Path.join(world_path, "models")
-  end
-
-  defp load_pos_from_gold_standard(gold_standard_path) do
-    case File.read(gold_standard_path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, examples} when is_list(examples) ->
-            examples
-            |> Enum.filter(fn ex ->
-              tokens = ex["tokens"] || []
-              tags = ex["pos_tags"] || []
-              tokens != [] and length(tokens) == length(tags)
-            end)
-            |> Enum.map(fn ex ->
-              %{
-                tokens: ex["tokens"],
-                tags: ex["pos_tags"],
-                source: ex["intent"]
-              }
-            end)
-
-          _ ->
-            Mix.shell().info("  Warning: Could not parse #{gold_standard_path}")
-            []
-        end
-
-      {:error, reason} ->
-        Mix.shell().info("  Warning: Could not read #{gold_standard_path}: #{inspect(reason)}")
-        []
-    end
-  end
-
-  # Auto-enriches gold standard examples with tokens + POS tags using the
-  # Elixir tokenizer and a WordNet-backed rule-based tagger. Replaces the
-  # old Python/NLTK dependency (scripts/enrich_gold_standard_pos.py).
-  defp auto_enrich_pos(gold_standard_path) do
-    case File.read(gold_standard_path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, examples} when is_list(examples) ->
-            sequences =
-              examples
-              |> Enum.filter(fn ex -> is_binary(ex["text"]) and ex["text"] != "" end)
-              |> Enum.map(fn ex ->
-                tokens = Brain.ML.Tokenizer.tokenize_words(ex["text"])
-                tags = Enum.map(tokens, &rule_based_pos/1)
-                %{tokens: tokens, tags: tags, source: ex["intent"]}
-              end)
-              |> Enum.filter(fn seq -> seq.tokens != [] end)
-
-            Mix.shell().info("  Auto-enriched #{length(sequences)} examples with rule-based POS tags")
-            sequences
-
-          _ ->
-            []
-        end
-
-      {:error, _} ->
-        []
-    end
-  end
-
-  @determiners ~w(a an the this that these those my your his her its our their some any no every each all both few many much several)
-  @prepositions ~w(in on at to for from by with of into onto upon about above below between through during before after since until)
-  @conjunctions ~w(and or but nor yet so for because although though while if when unless)
-  @pronouns ~w(i me my mine myself you your yours yourself he him his himself she her hers herself it its itself we us our ours ourselves they them their theirs themselves who whom whose which what)
-  @auxiliaries ~w(am is are was were be been being have has had do does did will would shall should can could may might must)
-  @particles ~w(not to up down out off away back)
-  @interjections ~w(oh hey wow oops ah uh um hmm hello hi bye yes no ok okay please thanks)
-
-  defp rule_based_pos(token) do
-    lower = String.downcase(token)
-
-    cond do
-      String.match?(token, ~r/^\d+(\.\d+)?$/) -> "NUM"
-      String.match?(token, ~r/^[[:punct:]]+$/) -> "PUNCT"
-      lower in @determiners -> "DET"
-      lower in @prepositions -> "ADP"
-      lower in @conjunctions -> "CONJ"
-      lower in @pronouns -> "PRON"
-      lower in @auxiliaries -> "AUX"
-      lower in @particles -> "PART"
-      lower in @interjections -> "INTJ"
-      true -> wordnet_pos_lookup(lower, token)
-    end
-  end
-
-  defp wordnet_pos_lookup(lower, original) do
-    case Brain.Lexicon.senses(lower) do
-      [_ | _] = senses ->
-        best =
-          senses
-          |> Enum.group_by(& &1.pos)
-          |> Enum.max_by(fn {_pos, group} -> Enum.sum(Enum.map(group, & &1.tag_count)) end)
-          |> elem(0)
-
-        wordnet_to_universal(best)
-
-      [] ->
-        guess_pos_from_shape(lower, original)
-    end
-  rescue
-    _ -> guess_pos_from_shape(lower, original)
-  end
-
-  defp wordnet_to_universal(:n), do: "NOUN"
-  defp wordnet_to_universal(:v), do: "VERB"
-  defp wordnet_to_universal(:a), do: "ADJ"
-  defp wordnet_to_universal(:s), do: "ADJ"
-  defp wordnet_to_universal(:r), do: "ADV"
-  defp wordnet_to_universal(_), do: "NOUN"
-
-  defp guess_pos_from_shape(lower, original) do
-    cond do
-      original == String.upcase(original) and String.length(original) > 1 -> "PROPN"
-      String.match?(original, ~r/^[A-Z]/) -> "PROPN"
-      String.ends_with?(lower, "ly") -> "ADV"
-      String.ends_with?(lower, "ing") -> "VERB"
-      String.ends_with?(lower, "ed") -> "VERB"
-      String.ends_with?(lower, "tion") or String.ends_with?(lower, "ness") -> "NOUN"
-      String.ends_with?(lower, "able") or String.ends_with?(lower, "ible") -> "ADJ"
-      String.ends_with?(lower, "ous") or String.ends_with?(lower, "ful") -> "ADJ"
-      String.ends_with?(lower, "er") or String.ends_with?(lower, "est") -> "ADJ"
-      true -> "NOUN"
-    end
   end
 
   defp format_duration(seconds) when seconds < 60 do
