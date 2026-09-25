@@ -38,13 +38,20 @@ defmodule Brain.Lexicon.Seeder do
   per word and type, the type in `ref` and the count in `value`.
 
   Counted senses that reach no anchor are the word's ordinary uses, written
-  as `ordinary_usage` facts: `ref: "noun"` for nouns and `ref: "other_pos"`
-  for verbs, adjectives and adverbs. `nice` is used 29 times as an adjective
-  and never as the city.
+  as `ordinary_usage` facts with the part of speech in `ref`: `"noun"`,
+  `"verb"`, `"adj"` (head and satellite adjectives) or `"adv"`. `nice` is
+  used 29 times as an adjective and never as the city; `light` 107 times as
+  an ordinary noun, 45 as an adjective and 27 as a verb. The part of speech
+  is kept so a word can be weighed by the uses that fit how it is used in a
+  sentence.
 
   A word with no counted use of some kind gets no fact for it: zero is what
   an absent fact already says. These are the starting point for the running
   statistics the brain keeps from its own conversations, not the final word.
+
+  Each seed also retires (archives) the facts of its own that it no longer
+  derives, so a changed anchor table or split never leaves stale counts to be
+  read alongside the new ones.
 
   ## Closed-class words
 
@@ -114,10 +121,23 @@ defmodule Brain.Lexicon.Seeder do
         }
       end)
 
+    written = put_and_retire!(facts, "authored", ["ordinary_usage"], store, ref: "closed_class")
+    Logger.info("Lexicon.Seeder: seeded #{written} closed-class usage facts")
+    {:ok, written}
+  end
+
+  # Writes the facts, then archives the facts of the same source and keys
+  # (and ref, when given) that this seed no longer derives.
+  defp put_and_retire!(facts, source, keys, store, opts \\ []) do
     case UserDefined.put_facts(facts, store) do
       {:ok, written} ->
-        Logger.info("Lexicon.Seeder: seeded #{written} closed-class usage facts")
-        {:ok, written}
+        keep = MapSet.new(facts, &{&1.word, &1.kind, &1.key, &1.ref})
+
+        {:ok, retired} =
+          UserDefined.retire_unlisted(source, keys, keep, Keyword.put(opts, :name, store))
+
+        if retired > 0, do: Logger.info("Lexicon.Seeder: retired #{retired} #{source} facts no longer derived")
+        written
 
       {:error, {index, changeset}} ->
         raise "Lexicon.Seeder: refusing to seed, fact #{index} is invalid: " <>
@@ -143,15 +163,9 @@ defmodule Brain.Lexicon.Seeder do
           usage_facts(word, "ordinary_usage", usage.ordinary)
       end)
 
-    case UserDefined.put_facts(facts, store) do
-      {:ok, count} ->
-        Logger.info("Lexicon.Seeder: seeded #{count} SemCor sense usage facts")
-        {:ok, count}
-
-      {:error, {index, changeset}} ->
-        raise "Lexicon.Seeder: refusing to seed, fact #{index} is invalid: " <>
-                inspect(changeset.errors)
-    end
+    count = put_and_retire!(facts, @semcor_source, ["sense_usage", "ordinary_usage"], store)
+    Logger.info("Lexicon.Seeder: seeded #{count} SemCor sense usage facts")
+    {:ok, count}
   end
 
   defp usage_facts(word, key, counts) do
@@ -169,8 +183,8 @@ defmodule Brain.Lexicon.Seeder do
 
   @doc """
   Returns `{word, %{types: %{entity_type => count}, ordinary: %{"noun" |
-  "other_pos" => count}}}` for every word with at least one SemCor-counted
-  sense, without writing anything.
+  "verb" | "adj" | "adv" => count}}}` for every word with at least one
+  SemCor-counted sense, without writing anything.
 
   Only counted senses are classified: a sense SemCor never saw adds nothing
   to any count.
@@ -202,7 +216,9 @@ defmodule Brain.Lexicon.Seeder do
     end
   end
 
-  defp classify_sense(_sense, _anchors), do: {:ordinary, "other_pos"}
+  defp classify_sense(%{pos: :verb}, _anchors), do: {:ordinary, "verb"}
+  defp classify_sense(%{pos: pos}, _anchors) when pos in [:adj, :adj_satellite], do: {:ordinary, "adj"}
+  defp classify_sense(%{pos: :adv}, _anchors), do: {:ordinary, "adv"}
 
   @doc """
   Writes one `negation` property fact for every word WordNet shows to be
