@@ -1,6 +1,11 @@
 defmodule Atlas.LexiconTest do
   use Atlas.DataCase, async: false
 
+  # These count and list whole tables, so they start from an empty one rather
+  # than from the lexicon `mix test.prepare` seeds. Emptied inside each test's
+  # transaction and rolled back with it.
+  @moduletag :blank_slate
+
   alias Atlas.Lexicon
   alias Atlas.Schemas.LexiconFact
 
