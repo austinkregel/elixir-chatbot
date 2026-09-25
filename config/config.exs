@@ -26,6 +26,13 @@ config :brain,
     # (apps/brain/priv/ml_models via Application.app_dir)
     models_path: System.get_env("ML_MODELS_PATH") || nil,
     training_data_path: System.get_env("ML_TRAINING_DATA_PATH", Path.expand("../data", __DIR__)),
+    # Recorded training runs (Brain.Training.POSRuns): each run's settings,
+    # learning curve and model snapshots.
+    training_runs_path:
+      System.get_env("ML_TRAINING_RUNS_PATH", Path.expand("../data/training_runs", __DIR__)),
+    # The POS model the test suite loads. Promoted from a recorded run on the
+    # POS training page; the suite never trains it.
+    pos_test_model_path: Path.expand("../apps/brain/test/ml_models/pos_model.term", __DIR__),
     use_gpu: System.get_env("ML_USE_GPU", "true") == "true",
     batch_size: System.get_env("ML_BATCH_SIZE", "1000") |> String.to_integer(),
     max_features: System.get_env("ML_MAX_FEATURES", "5000") |> String.to_integer(),
@@ -66,7 +73,13 @@ config :brain,
     # Likelihood of a reading the classified intent has no slot for, relative
     # to one it does. Small, but not zero, so a strong prior can still
     # overrule the intent.
-    context_mismatch_likelihood: 0.01
+    context_mismatch_likelihood: 0.01,
+    # Likelihood of the word's part-of-speech tag under a reading whose parts
+    # of speech do not include it, relative to one whose do. Not zero: the
+    # tagger is wrong often enough ("light" in "a light meal" tagged NOUN)
+    # that its tag weighs a reading down rather than ruling it out. An
+    # estimate, to be replaced by the tagger's measured error rate.
+    tag_mismatch_likelihood: 0.05
   ],
 
   # How many ordinary uses Brain.Lexicon.Seeder records for each
@@ -75,6 +88,30 @@ config :brain,
   # the word it almost always is rather than as a name ("Of", the Turkish
   # town), and meant to be replaced by frequencies measured from a corpus.
   closed_class_ordinary_count: 1000,
+
+  # Brain.ML.POSTagger: a BiLSTM over words and characters with a
+  # word-frequency auxiliary head (Plank, Søgaard & Goldberg 2016). Sizes
+  # follow that paper (128-dim words, 100-dim characters, 100 hidden units);
+  # dropout stands in for its Gaussian noise. Training stops when accuracy on
+  # the dev split has not improved for `patience` epochs.
+  pos_tagger: [
+    word_dim: 128,
+    char_dim: 100,
+    char_hidden: 100,
+    word_hidden: 100,
+    dropout: 0.25,
+    # Probability a word seen once in training is replaced by the unknown-word
+    # token, so the model learns to tag words it has never seen.
+    singleton_unk_rate: 0.5,
+    # Longer words keep their first and last half of this many characters.
+    max_word_chars: 20,
+    # Weight of the word-frequency head's loss beside the tag loss.
+    aux_loss_weight: 1.0,
+    batch_size: 32,
+    learning_rate: 1.0e-3,
+    max_epochs: 20,
+    patience: 3
+  ],
 
   # Intent promotion (novel intent discovery)
   intent_promotion_enabled: System.get_env("INTENT_PROMOTION_ENABLED", "false") == "true",
